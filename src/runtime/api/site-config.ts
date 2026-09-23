@@ -164,6 +164,14 @@ export default class SiteConfig {
     })
   }
 
+  public async purgeHttpCache(): Promise<void> {
+    const { method, headers } = this.cwaFetch.getRequestOptions('POST')
+    await this.cwaFetch.fetch('/_/http_cache/purge', {
+      method,
+      headers: headers as Record<string, string>,
+    })
+  }
+
   public async warmPageCache(onProgress: (progress: PageCacheWarmProgress) => void): Promise<PageCacheWarmSummary> {
     const stream = await $fetch<ReadableStream<Uint8Array>>('/_cwa/page-cache/warm', {
       method: 'POST',

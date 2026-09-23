@@ -264,4 +264,22 @@ describe('SiteConfig', () => {
       await expect(siteConfig.purgePageCache()).rejects.toBe(error)
     })
   })
+
+  describe('purgeHttpCache', () => {
+    test('POSTs to the HTTP cache purge operation', async () => {
+      const { siteConfig, mockFetch, mockGetRequestOptions } = buildSiteConfig()
+      await siteConfig.purgeHttpCache()
+      expect(mockGetRequestOptions).toHaveBeenCalledWith('POST')
+      expect(mockFetch).toHaveBeenCalledTimes(1)
+      expect(mockFetch).toHaveBeenCalledWith('/_/http_cache/purge', { method: 'POST', headers: {} })
+      expect(mockFetch.mock.calls[0]![1]).not.toHaveProperty('body')
+    })
+
+    test('rejects with the fetch error', async () => {
+      const { siteConfig, mockFetch } = buildSiteConfig()
+      const error = Object.assign(new Error('Not Implemented'), { statusCode: 501 })
+      mockFetch.mockRejectedValueOnce(error)
+      await expect(siteConfig.purgeHttpCache()).rejects.toBe(error)
+    })
+  })
 })

@@ -180,12 +180,12 @@
           </div>
         </div>
         <hr class="cwa:my-8 cwa:text-stone-600">
-        <template v-if="pageCacheEnabled">
-          <div>
-            <h2 class="cwa:text-xl cwa:mb-4">
-              Page cache
-            </h2>
-            <div class="cwa:flex cwa:flex-col cwa:gap-y-4">
+        <div>
+          <h2 class="cwa:text-xl cwa:mb-4">
+            {{ pageCacheEnabled ? 'Page cache' : 'Cached data' }}
+          </h2>
+          <div class="cwa:flex cwa:flex-col cwa:gap-y-4">
+            <template v-if="pageCacheEnabled">
               <p class="cwa:text-sm cwa:text-stone-400">
                 Visitors are served a cached copy of each page. Purging drops every cached page at once, and each one is rebuilt the next time it is visited. No content is lost. You do not need to do this after ordinary edits, because those refresh the cache automatically.
               </p>
@@ -227,10 +227,43 @@
               >
                 {{ warmPageCacheResult.message }}
               </p>
+            </template>
+            <p class="cwa:text-sm cwa:text-stone-400">
+              <span>Purging all cached data also drops everything the API has cached, for use after data has been changed outside the admin.</span>
+              <span v-if="!pageCacheEnabled">&nbsp;Pages are rendered fresh on every visit in this configuration, so this purges the API cache only.</span>
+            </p>
+            <div class="cwa:flex cwa:flex-wrap cwa:gap-4">
+              <CwaUiFormButton
+                :disabled="purgingHttpCache"
+                type="button"
+                @click="purgeHttpCache"
+              >
+                {{ purgingHttpCache ? 'Purging all cached data…' : 'Purge all cached data' }}
+              </CwaUiFormButton>
+              <CwaUiFormButton
+                v-if="pageCacheEnabled && purgeHttpCacheResult?.success"
+                :disabled="warmingPageCache"
+                type="button"
+                @click="warmPageCache"
+              >
+                {{ warmingPageCache ? warmPageCacheLabel : 'Warm page cache now' }}
+              </CwaUiFormButton>
             </div>
+            <p
+              v-if="purgeHttpCacheResult?.success"
+              class="cwa:text-sm cwa:font-bold"
+            >
+              All cached data has been purged. Pages will be slow until they have been rendered again.
+            </p>
+            <p
+              v-else-if="purgeHttpCacheResult"
+              class="cwa:text-sm cwa:text-danger cwa:font-bold"
+            >
+              {{ purgeHttpCacheResult.message }}
+            </p>
           </div>
-          <hr class="cwa:my-8 cwa:text-stone-600">
-        </template>
+        </div>
+        <hr class="cwa:my-8 cwa:text-stone-600">
         <div>
           <h2 class="cwa:text-bas cwa:mb-4">
             CWA Version Info
@@ -463,6 +496,43 @@ async function purgePageCache() {
   }
   finally {
     purgingPageCache.value = false
+  }
+}
+
+const purgingHttpCache = ref(false)
+const purgeHttpCacheResult = ref<{ success: true } | { success: false, message: string }>()
+
+function purgeHttpCacheFailureMessage(error: unknown) {
+  const statusCode = (error as { statusCode?: number } | undefined)?.statusCode
+  if (statusCode === 501) {
+    return 'Nothing was purged. This deployment\'s cache cannot be flushed.'
+  }
+  if (statusCode === 401 || statusCode === 403) {
+    return 'The cache could not be purged: your account does not have permission to do this.'
+  }
+  return `The cache could not be purged (${statusCode || 'network error'}). Please try again.`
+}
+
+async function purgeHttpCache() {
+  const dialog = createConfirmDialog(ConfirmDialog as Parameters<typeof createConfirmDialog>[0])
+  const { isCanceled } = await dialog.reveal({
+    title: 'Purge all cached data?',
+    content: '<p>Everything the API has cached will be dropped at once, along with every cached page. Use this after data has been changed outside the admin — ordinary edits are purged for you. Pages will be slow until they have been rendered again, and no content will be lost.</p>',
+  })
+  if (isCanceled) {
+    return
+  }
+  purgeHttpCacheResult.value = undefined
+  purgingHttpCache.value = true
+  try {
+    await $cwa.siteConfig.purgeHttpCache()
+    purgeHttpCacheResult.value = { success: true }
+  }
+  catch (error) {
+    purgeHttpCacheResult.value = { success: false, message: purgeHttpCacheFailureMessage(error) }
+  }
+  finally {
+    purgingHttpCache.value = false
   }
 }
 

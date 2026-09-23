@@ -411,6 +411,20 @@ Site settings has a **Warm page cache** button beside purge, calling `POST /_cwa
 
 **Testing note:** `vi.mock('#build/cwa-options', …)` **works**, unlike `#imports` and `#components` — `#build` is a real alias to a real directory, so vitest's resolver finds it.
 
+### Purging everything the API has cached ([#326](https://github.com/components-web-app/cwa-nuxt-module/issues/326))
+
+Site settings has a **Purge all cached data** action calling `SiteConfig.purgeHttpCache()` → `POST /_/http_cache/purge` (api-components-bundle#291): `ROLE_ADMIN`, no body, **204**, flushing the API and HTML caches together.
+
+**It is a sibling endpoint, not a scope on the existing one.** `/_/rendered_html/purge` is declared `input: false`, which is what pins that no body or query string can widen its purge; a scope parameter would have reversed that guarantee. So `purgePageCache()` is untouched and `purgeHttpCache()` sits beside it, identical in shape. There is deliberately no API-only option — pages are rendered from API responses, so dropping the API without the HTML leaves pages built from the old data.
+
+**A 501 is reported as "nothing was purged", never as success.** The bundle returns 501 when the deployment's purger cannot flush at all — anything but a Souin purger, or no known invalidation URL. Claiming a purge there would be exactly the lie the bundle refused to tell, so it has its own message rather than joining the generic failure branch. 401/403 and every other status stay ordinary errors.
+
+**The action is available whether or not page caching is enabled**, which is why the section is no longer wrapped in `v-if="pageCacheEnabled"`. The API cache exists regardless of `pageCache.enabled` — that option only governs whether *this app's* rendered HTML is cached — so hiding the action with the page-cache section would have left an operator with no way to drop stale API data in the configuration where it matters just as much. With page caching off the section is titled **Cached data**, carries a note that pages are rendered fresh so the purge covers the API cache only, and shows neither the page-cache purge nor the warm.
+
+**The warm is offered straight after a successful full purge, but only when page caching is enabled** — `server/cwa-page-cache-warm.post.ts` is registered only then, so the button would 404 otherwise. It calls the same `warmPageCache()`, confirmation and all, rather than a second code path.
+
+**Unverified, and worth knowing before an operator presses it:** what Souin's flush does to its Redis store. If it flushes the whole database and that database is shared, the flush takes the rest with it.
+
 ---
 
 ## Admin updates are a merge-patch: only changed fields are sent
