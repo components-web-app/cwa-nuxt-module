@@ -1,6 +1,6 @@
 import { join } from 'path'
 import path from 'node:path'
-import { statSync, readFileSync } from 'node:fs'
+import { statSync, readFileSync, realpathSync } from 'node:fs'
 import { defu } from 'defu'
 import mergeWith from 'lodash-es/mergeWith'
 import isArray from 'lodash-es/isArray'
@@ -180,6 +180,29 @@ export default defineNuxtModule<CwaModuleOptions>({
       }
       pages.forEach(applyDefaultLayout)
     })
+
+    // Temporary, remove once https://github.com/nuxt/nuxt/issues/36401 is fixed in a Nuxt version we support.
+    if (!nuxt.options.dev) {
+      const toRealPath = (file: string) => {
+        try {
+          return realpathSync(file)
+        }
+        catch {
+          return file
+        }
+      }
+      const realpathPages = (pages: NuxtPage[]) => {
+        for (const page of pages) {
+          if (page.file) {
+            page.file = toRealPath(page.file)
+          }
+          if (page.children) {
+            realpathPages(page.children)
+          }
+        }
+      }
+      nuxt.hook('pages:extend', realpathPages)
+    }
 
     const cwaVueComponentsDir = join(vueTemplatesDir, 'components')
 

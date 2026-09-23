@@ -458,6 +458,27 @@ What moved, and why each is safe:
 
 ---
 
+## Every public page prefetched the admin and auth pages ([#329](https://github.com/components-web-app/cwa-nuxt-module/issues/329))
+
+Nuxt removes page chunks from the app entry's `dynamicImports` in `build:manifest`, so pages are not prefetched. It builds the exclusion list with `relative(srcDir, page.file)` and compares it against Vite's manifest keys — and when a layer is extended by a **filesystem path that goes through a symlink**, those two strings are different spellings of the same file. `page.file` keeps the symlink path; Vite resolved the module through `realpath`. Nothing matches, so every `/_cwa` admin page and every auth page is a prefetch hint on every public page.
+
+This is the module's problem to fix, not each application's: the module registers those pages, and `extends: ['./node_modules/@cwa/nuxt/dist/layer']` is how every application installs it through pnpm. A layer extended by a **bare specifier** resolves through `realpath` and is filtered correctly — which is the clean long-term route, but it needs a config change in every app, and the hook needs none.
+
+**The workaround is a `pages:extend` hook that rewrites `page.file` to its realpath**, in `module.ts` after the two `extendPages` passes — so it also covers the `cwa-page.vue` catch-alls, which have the same problem under a published install. Two deliberate choices:
+
+- **It realpaths every page, not only this module's.** Realpathing an already-real path returns the same string, so it is a no-op wherever nothing is symlinked — the module's own playground is unaffected — and it also helps an application whose own pages are symlinked. Scoping it to the module's directory would have required comparing realpaths on both sides anyway, because `import.meta.url` is already resolved while `page.file` is not.
+- **Production only** (`if (!nuxt.options.dev)`). `build:manifest` returns early in dev, so there is nothing to gain there, and dev's watcher expects the symlink paths.
+
+Upstream: [nuxt/nuxt#36401](https://github.com/nuxt/nuxt/issues/36401), reproduction at [silverbackdan/nuxt-layer-symlink-prefetch](https://github.com/silverbackdan/nuxt-layer-symlink-prefetch). Removal conditions are in `DEPRECATIONS.md`.
+
+**Measured** on a symlinked copy of the playground (identical tree, `extends` pointed at a symlink to `src/layer`), comparing the entry-derived prefetch set replayed from the built `precomputed.mjs`: **92 links / 480,304 B raw / 180,842 B gzip → 33 links / 276,794 B / 95,885 B**. The un-symlinked playground, where the hook is a no-op, builds **33 links / 276,791 B / 95,880 B** — three bytes apart, so the hook restores exactly the behaviour Nuxt intended rather than inventing one. A real production render of `/login` went from 89 prefetch hints (491,524 B) to 62 (399,500 B), with 1.9 KB less HTML, and `/login`, `/forgot-password`, `/reset-password/:username/:token` and `/_cwa/pages` all still resolve. Daniel measured 80 → 23 hints on the template.
+
+**The trap: the playground cannot reproduce this**, because it extends the layer by a real relative path (`./../src/layer`). So no build-output guard in this repo can catch a regression of #329 — a prefetch assertion in `test/e2e/entry-bundle-markers.mjs` would pass with or without the hook. The behaviour is pinned in `module.spec.ts` instead (`page file realpath (#329)`), and the only faithful check is a throwaway copy whose `extends` goes through a symlink. The dev-gate case passes vacuously against a missing hook, so it was mutation-tested.
+
+**Prefetch is not the same mechanism as a nested dynamic import.** `vue-bundle-renderer` walks `dynamicImports` exactly **one level** from each entrypoint and rendered module, and for each dynamic dependency adds only that chunk's *static* import graph. A chunk reached only through a nested dynamic import is never prefetched at all — which is why the TipTap editor is neither preloaded nor prefetched (#332), and why a `build:manifest` hook setting `prefetch = false` under the layer path was rejected as the fix here. The admin pages' bytes live in shared `_hash.js` chunks with no `src` key, so a path-based flag reaches only the page chunks themselves; simulated against a symlinked build it recovered 19 of the 54 links that realpathing recovers, leaving ~120 KB of admin-only shared chunks behind. It would also have suppressed `CwaRootLayout.vue`, which every public page wants.
+
+---
+
 ## Admin updates are a merge-patch: only changed fields are sent
 
 `useItemPage.saveResource` sends an update as `application/merge-patch+json` containing **only the fields where `localResourceData` differs from the stored resource** (deep comparison, lodash `isEqual`), plus any `extraData`. Creating still sends the full body. If nothing changed, no request is made and the stored resource is returned.

@@ -31,6 +31,10 @@ vi.mock('@nuxt/kit', async () => {
   }
 })
 
+const { mockRealpathSync } = vi.hoisted(() => ({
+  mockRealpathSync: vi.fn((file: string) => file),
+}))
+
 vi.mock('node:fs', () => {
   return {
     default: {
@@ -38,6 +42,7 @@ vi.mock('node:fs', () => {
         isDirectory: vi.fn(() => true),
       })),
       readFileSync: vi.fn(() => ('{ "name": "@cwa/nuxt", "version": "1.0.0" }')),
+      realpathSync: mockRealpathSync,
     },
   }
 })
@@ -684,6 +689,76 @@ declare module 'vue-router' {
       expect(explicitLayout.meta.layout).toBe('alternate-layout')
       expect(disabledLayout.meta.layout).toBe(false)
       expect(withChildren.children[0].meta.layout).toBe('cwa-root-layout')
+    })
+
+    describe('page file realpath (#329)', () => {
+      afterEach(() => {
+        mockRealpathSync.mockImplementation(file => file)
+      })
+
+      async function capturePagesExtendHook(nuxt?: any) {
+        const mockNuxt = await prepareMockNuxt({}, nuxt)
+        const call = (mockNuxt.hook as Mock).mock.calls.find(([name]) => name === 'pages:extend')
+        return call?.[1]
+      }
+
+      test('rewrites a page file that resolves through a symlink', async () => {
+        mockRealpathSync.mockImplementation(file => file.replace('/node_modules/@cwa/nuxt/dist/', '/node_modules/.pnpm/@cwa+nuxt/node_modules/@cwa/nuxt/dist/'))
+        const hook = await capturePagesExtendHook()
+        const page: any = { name: 'forgot-password', path: '/forgot-password', file: '/app/node_modules/@cwa/nuxt/dist/layer/pages/forgot-password.vue' }
+
+        hook([page])
+
+        expect(page.file).toBe('/app/node_modules/.pnpm/@cwa+nuxt/node_modules/@cwa/nuxt/dist/layer/pages/forgot-password.vue')
+      })
+
+      test('leaves a page file that is already a real path', async () => {
+        mockRealpathSync.mockImplementation(file => file)
+        const hook = await capturePagesExtendHook()
+        const page: any = { name: 'index', path: '/', file: '/app/app/pages/index.vue' }
+
+        hook([page])
+
+        expect(page.file).toBe('/app/app/pages/index.vue')
+      })
+
+      test('rewrites child pages', async () => {
+        mockRealpathSync.mockImplementation(() => '/real/layer/pages/_cwa/index/settings.vue')
+        const hook = await capturePagesExtendHook()
+        const child: any = { name: '_cwa-index-settings', path: 'settings', file: '/app/link/layer/pages/_cwa/index/settings.vue' }
+        const parent: any = { name: '_cwa-index', path: '/_cwa', children: [child] }
+
+        hook([parent])
+
+        expect(child.file).toBe('/real/layer/pages/_cwa/index/settings.vue')
+      })
+
+      test('keeps the file of a page that cannot be resolved', async () => {
+        mockRealpathSync.mockImplementation(() => {
+          throw new Error('ENOENT')
+        })
+        const hook = await capturePagesExtendHook()
+        const page: any = { name: 'virtual', path: '/virtual', file: 'virtual:some-generated-page.vue' }
+
+        expect(() => hook([page])).not.toThrow()
+        expect(page.file).toBe('virtual:some-generated-page.vue')
+      })
+
+      test('is not registered in dev, where the prefetch filter does not run', async () => {
+        const mockNuxt = await prepareMockNuxt({}, {
+          options: {
+            dev: true,
+            sitemap: {},
+            runtimeConfig: { public: { cwa: {} } },
+            alias: {},
+            css: [],
+            build: { transpile: [] },
+            dir: { app: '' },
+          },
+        })
+
+        expect((mockNuxt.hook as Mock).mock.calls.find(([name]) => name === 'pages:extend')).toBeUndefined()
+      })
     })
   })
 })
