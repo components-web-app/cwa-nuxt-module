@@ -44,14 +44,6 @@ The hard deadline is API Platform 6.0, which removes `#[ApiFilter]` and
 `SearchFilter`. An application still using them cannot upgrade to 6.0, so an
 application has to migrate by then at the latest.
 
-### `OrSearchFilter` (bundle-side, recorded here because the module's behaviour depends on it)
-
-The bundle keeps `Silverback\ApiComponentsBundle\Filter\OrSearchFilter` marked
-`@deprecated` for applications that still use it on their own entities. The
-template no longer does: `cc8f57c` moved its `User` to a `search`
-`QueryParameter`. It goes when the applications have migrated. Nothing in the module references it —
-the module only ever sent parameter names.
-
 ---
 
 ## Temporary workarounds pending an upstream fix
