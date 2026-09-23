@@ -485,6 +485,12 @@ When a session ends, the module deletes the app's API data caches so data cached
 
 ---
 
+## Deprecations and temporary code
+
+Code kept only to support an older API, or to work around someone else's bug, is logged in **`DEPRECATIONS.md`** with the condition that has to be true before it can be deleted. Add an entry whenever you leave something in place for one of those reasons — an entry with no precondition is a todo, not a deprecation.
+
+---
+
 ## Dependencies
 
 Everything was taken to latest on 2026-08-21 (`pnpm up --latest -r "!typescript"`), which cleared **37 audit vulnerabilities (2 critical, 28 high) down to 0**. Three constraints came out of it that must not be silently undone:
