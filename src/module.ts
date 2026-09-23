@@ -164,6 +164,10 @@ export default defineNuxtModule<CwaModuleOptions>({
       createDefaultCwaPages(pages, pageComponent, options.pagesDepth || 4, options.layoutName)
     })
 
+    nuxt.hook('pages:routerOptions', ({ files }) => {
+      files.splice(1, 0, { path: resolve('./runtime/router.options') })
+    })
+
     const defaultLayoutName = options.layoutName || 'cwa-root-layout'
     extendPages((pages: NuxtPage[]) => {
       function applyDefaultLayout(page: NuxtPage) {

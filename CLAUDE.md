@@ -1453,7 +1453,37 @@ Per call wins over the module default, which wins over the built-in defaults; an
 
 **No generated route may declare a `cwaPage0` param.** `api/fetcher/fetcher.ts:93` reads `route.params.cwaPage0` and treats it as a resource IRI — that param belongs to the layer route `/_cwa/:cwaPage0()` alone. A single catch-all named `:cwaPage0(.*)*` would re-create the bare-IRI 404 documented above, which is one reason the fix is N sibling routes rather than one catch-all; the other is that a catch-all makes depth unbounded.
 
-**Still broken, deliberately out of scope:** `page:loading:end` now fires on `nextTick`, which is **before CWA has fetched the page content**, so a restored `savedPosition` (Back/Forward) and a cross-page `#hash` are applied against a page that has not reached its real height and land short. Both were completely dead before this fix, so it is a strict improvement. Closing that gap needs the scroll deferred behind `$cwa.resources.isLoading` (already public) and is a separate issue — if it is ever shipped from the module, register it through the `pages:routerOptions` hook rather than a layer `app/router.options.ts`: `resolveRouterOptions` (`nuxt/dist/index.mjs:1253-1265`) unshifts per layer and the template spreads them in order (`:1666`), so an app's own file wins over a layer's, and the layer would additionally have to sit under whatever `srcDir`/`dir.app` resolves to for `src/layer`, which has no `app/` directory.
+**`page:loading:end` fires before CWA content exists**, which left a restored `savedPosition` and a cross-page `#hash` landing short. Closed by the follow-up below.
+
+---
+
+## The scroll waits for CWA content, but only when it has a target to hit ([#338](https://github.com/components-web-app/cwa-nuxt-module/issues/338))
+
+`page:loading:end` fires on `nextTick` after the route change (`page.js:94`, the constant-route-key branch above), which is **before the primary fetch has resolved anything**. Measured against the real `NuxtPage` over the playground router with a replayed cassette: at the hook the mounted page is `<div class="cwa:page cwa:h-full"><!--v-if--><!--v-if--></div>` — **one element, no text, no `displayPageIri`**, with 12 of 13 resources still pending; after settling it is 10 elements and 147 characters. So vue-router applied `savedPosition` to a page of no height, and a `#hash` to an element that did not exist.
+
+**`isLoading` alone is not the signal, and this is the part to remember.** With the replay resolving in microtasks — network lag removed — `$cwa.resources.isLoading` was **false for the whole navigation** while the DOM stayed empty for a further **~94ms**, polled at 5ms: the hook at t+7ms, content at t+101ms. Two causes, neither visible to the store: the `CwaComponent*` names `ResourceLoader` resolves are Nuxt's **async global component wrappers**, so the chunk is still being imported; and `ResourceLoader.resourceLoadBuffering` holds a spinner on a **20ms `setTimeout`**. A `nextTick` or a single `requestAnimationFrame` after `isLoading` misses this by ~20 frames. **The cymru-kitchens `router.options.ts` workaround on #337 is mistimed for exactly this reason** — it scrolls off an `isLoading` watcher alone (registered `immediate: true`, so it often fired before the new page was even fetched).
+
+**So the wait is two-stage and target-specific**, in the pure `waitForScrollTarget` (`runtime/scroll/wait-for-scroll-target.ts`), which takes `isLoading` / `readHeight` / `onHeightChange` / `findElement` as injected functions and never touches `document` — happy-dom reports `scrollHeight` as `0` under every condition, so a DOM-reading waiter would be untestable here.
+
+- **A restored position** resolves when `scrollHeight >= savedPosition.top + innerHeight`: the document is tall enough to *honour* the position. Falling back to "the height is stable" requires `isLoading` to be false **and the height to have changed at least once**, because during that measured 94ms window the height is stable at its empty value and a naive stability check fires there.
+- **A `#hash`** resolves when the element exists.
+- **`SCROLL_TARGET_TIMEOUT` is 1000ms**, a constant rather than a module option — deliberately, until something asks for it. The scroll always happens.
+
+**Only `savedPosition` and a cross-page `#hash` defer.** A plain forward navigation still resolves `{left: 0, top: 0}` on `page:loading:end` with no wait at all, and the same-path in-page anchor branch stays synchronous. The wait returns whether it actually deferred, and a deferred hash scrolls `instant` — an animated scroll after a 400ms pause reads as a glitch. A deep-linked `#hash` on a first load (`from === START_LOCATION`) waits too, which is a deliberate divergence from Nuxt: SSR already has the content so it is a no-op there, but a static or client-only render needs it.
+
+**`useNuxtApp()` is called once, synchronously, at the top of `scrollBehavior`.** The deferral runs inside a `requestAnimationFrame` callback, which is outside the Nuxt context, so reading it there throws — the #263 / #313 mechanism again. The regression guard counts `useNuxtApp` calls and asserts none happen after the page load flushes.
+
+**The router options file is `splice(1, 0, …)`d into `pages:routerOptions`, never pushed.** `resolveRouterOptions` (`nuxt/dist/index.mjs:1253-1265`) unshifts per layer and then unshifts the built-in, so index 0 is always the built-in and **an app's own `app/router.options.ts` is always last**; the template spreads them in array order (`:1666`), so later wins. Pushing would put the module after the app and **silently override an application** — the one outcome that is not acceptable. Splicing at 1 beats the built-in, loses to every layer and to the app, and leaves an app that only sets `hashMode`/`scrollBehaviorType` with our `scrollBehavior` intact, because the merge is per-key. A layer `app/router.options.ts` is not an option at all: `src/layer` has no `app/` directory. Verified against a real `pnpm run dev:prepare` — the generated `.nuxt/router.options.mjs` imports ours as `routerOptions1`, spread after the built-in.
+
+**We reproduce Nuxt's `scrollBehavior` rather than wrapping it**, because `nuxt/dist/pages/runtime/router.options` is absent from nuxt's `exports` map and cannot be imported by specifier. That means `runtime/router.options.ts` **tracks Nuxt** and has to be re-read against it on a major upgrade. One nuance is deliberately not reproduced: `isChangingPage` is an unexported internal, and with CWA's constant route key it returns `false` between every pair of CWA pages, so Nuxt's own hash behaviour there is already `instant`.
+
+**Failure modes stated rather than defended:**
+
+- **Images with no intrinsic dimensions** keep growing the page after `isLoading` is false, so a restored position can still land short once the height target is met early. Waiting on images is unbounded; the timeout is the bound.
+- **A genuinely shorter page** never meets the height target and takes the stability fallback, or the full timeout. The browser clamps the position anyway, so the outcome is right and merely late.
+- **A fetch that never settles** takes the timeout.
+
+**Not assertable here:** the scroll position, any height, and whether `ResizeObserver` fires. happy-dom has the APIs but no layout. The manual checks are the only proof.
 
 ---
 

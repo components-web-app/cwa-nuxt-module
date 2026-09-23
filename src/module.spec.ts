@@ -691,6 +691,46 @@ declare module 'vue-router' {
       expect(withChildren.children[0].meta.layout).toBe('cwa-root-layout')
     })
 
+    describe('scroll behaviour router options', () => {
+      async function captureRouterOptionsHook() {
+        vi.spyOn(nuxtKit, 'createResolver').mockReturnValue({
+          resolve: vi.fn((...args: string[]) => join(...args)),
+          resolvePath: vi.fn(),
+        } as never)
+        const mockNuxt = await prepareMockNuxt()
+        const call = (mockNuxt.hook as Mock).mock.calls.find(([name]: [string]) => name === 'pages:routerOptions')
+        return call?.[1] as (context: { files: { path: string, optional?: boolean }[] }) => void
+      }
+
+      test('the module router options are added after the built-in ones', async () => {
+        const hook = await captureRouterOptionsHook()
+        const files = [{ path: '/nuxt/pages/runtime/router.options', optional: true }]
+
+        hook({ files })
+
+        expect(files.map(file => file.path)).toEqual([
+          '/nuxt/pages/runtime/router.options',
+          join('./runtime/router.options'),
+        ])
+      })
+
+      test('an application router options file is left last so it still wins', async () => {
+        const hook = await captureRouterOptionsHook()
+        const files = [
+          { path: '/nuxt/pages/runtime/router.options', optional: true },
+          { path: '/app/app/router.options.ts' },
+        ]
+
+        hook({ files })
+
+        expect(files.map(file => file.path)).toEqual([
+          '/nuxt/pages/runtime/router.options',
+          join('./runtime/router.options'),
+          '/app/app/router.options.ts',
+        ])
+      })
+    })
+
     describe('page file realpath (#329)', () => {
       afterEach(() => {
         mockRealpathSync.mockImplementation(file => file)
