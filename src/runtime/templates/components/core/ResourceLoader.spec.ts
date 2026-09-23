@@ -19,13 +19,15 @@ vi.mock('vue', async () => {
   }
 })
 
-function createWrapper(resource?: any, status?: CwaAuthStatus, component?: any, isStaticRender = false) {
+function createWrapper(resource?: any, status?: CwaAuthStatus, component?: any, isStaticRender = false, user: any = { roles: [] }) {
   // @ts-expect-error
   vi.spyOn(cwaComposables, 'useCwa').mockImplementationOnce(() => ({
     auth: {
       status: {
         value: status ?? CwaAuthStatus.SIGNED_IN,
       },
+      user,
+      signedIn: ref(!!user),
     },
     fetchResource: vi.fn(),
     resources: {
@@ -305,9 +307,27 @@ describe('ResourceLoader', () => {
         expect(wrapper.vm.$cwa.fetchResource).not.toHaveBeenCalled()
       })
 
-      test('should fetch resource IF resource data is empty, silent error occurred, resource was fetched during SSR', async () => {
+      test('should fetch resource IF resource data is empty, silent error occurred, resource was fetched during SSR AND the visitor is signed in', async () => {
         const resource = { apiState: { ssr: true, error: { statusCode: 404 }, status: CwaResourceApiStatuses.ERROR }, data: undefined }
         const wrapper = createWrapper(resource)
+
+        await wrapper.vm.methods.fetchResource()
+
+        expect(wrapper.vm.$cwa.fetchResource).toHaveBeenCalledWith({ path: mockIri })
+      })
+
+      test('should NOT fetch resource IF resource data is empty, silent error occurred, resource was fetched during SSR AND the visitor is signed out', async () => {
+        const resource = { apiState: { ssr: true, error: { statusCode: 404 }, status: CwaResourceApiStatuses.ERROR }, data: undefined }
+        const wrapper = createWrapper(resource, undefined, undefined, false, null)
+
+        await wrapper.vm.methods.fetchResource()
+
+        expect(wrapper.vm.$cwa.fetchResource).not.toHaveBeenCalled()
+      })
+
+      test('should fetch resource IF resource data is empty, silent error occurred, resource was fetched during SSR AND the render is static', async () => {
+        const resource = { apiState: { ssr: true, error: { statusCode: 404 }, status: CwaResourceApiStatuses.ERROR }, data: undefined }
+        const wrapper = createWrapper(resource, undefined, undefined, true, null)
 
         await wrapper.vm.methods.fetchResource()
 
@@ -352,9 +372,10 @@ describe('ResourceLoader', () => {
         },
       })
 
-      expect(watchSpy.mock.calls[0][0]).toHaveLength(2)
+      expect(watchSpy.mock.calls[0][0]).toHaveLength(3)
       expect(watchSpy.mock.calls[0][0][0].value).toEqual(wrapper.vm.hasSilentError)
       expect(watchSpy.mock.calls[0][0][1].value).toEqual(wrapper.vm.resource)
+      expect(watchSpy.mock.calls[0][0][2].value).toEqual(true)
       // expect(watchSpy.mock.calls[0][0]).toEqual([wrapper.vm.hasSilentError, wrapper.vm.resource])
       expect(watchSpy.mock.calls[0][1]).toEqual(wrapper.vm.methods.fetchResource)
       expect(watchSpy.mock.calls[0][2]).toEqual({ immediate: true })

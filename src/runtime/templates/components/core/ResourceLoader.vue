@@ -136,7 +136,10 @@ const resolvedComponent = computed(() => {
 })
 
 const ssrNoDataWithSilentError = computed(() => {
-  return resource.value?.apiState.ssr && resource.value?.data === undefined && hasSilentError.value
+  return resource.value?.apiState.ssr
+    && resource.value?.data === undefined
+    && hasSilentError.value
+    && (!!$cwa.auth.user || $cwa.isStaticRender)
 })
 
 const ssrPositionHasPartialData = computed(() => {
@@ -201,7 +204,7 @@ const methods = {
 onMounted(() => {
   isStaticRender.value && clientFetchResource()
 
-  watch([hasSilentError, resource], methods.fetchResource, {
+  watch([hasSilentError, resource, $cwa.auth.signedIn], methods.fetchResource, {
     immediate: true,
   })
 })

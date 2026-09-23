@@ -851,6 +851,33 @@ Fixed 2026-07-16. `ResourceLoader.isOutdated` re-fetched any SSR resource whose 
 
 ---
 
+## Bug: an SSR 4xx for a component was re-requested for every visitor ✅ Fixed ([#334](https://github.com/components-web-app/cwa-nuxt-module/issues/334))
+
+The client-side counterpart of [#324](https://github.com/components-web-app/cwa-nuxt-module/issues/324), which stopped a 4xx making the **page** uncacheable. This stops the **browser** asking again for something it cannot be shown.
+
+`ResourceLoader.ssrNoDataWithSilentError` was the only one of the three `onMounted` re-fetch conditions with no auth gate — its two siblings, `ssrPositionHasPartialData` and `refetchPublishedSsrResourceToResolveDraft`, both require `$cwa.auth.user`. So every anonymous page view re-requested every component the server render had 4xx'd, and could only get the same 4xx. Those responses are `no-store`, so each one reached PHP, plus a CORS preflight when the API is on another origin.
+
+**The state it fires on:** `setResourceFetchError` stores `{ status: ERROR, error: error.asObject, ssr: import.meta.server }` and never sets `data`, so a server 4xx hydrates as `ssr: true` + `data === undefined` + a 4xx `statusCode` — all three parts of the condition. `asObject` is a plain object, so `statusCode` survives the payload. It is self-limiting to one retry: the client fetch rewrites `ssr` to `false` in both `setResourceFetchStatus` and `setResourceFetchError`.
+
+**The spinner flash is downstream of that one request, not a separate defect.** `$cwa.resources.isLoading` is `!fetchesResolved || !!resourceLoadStatus.pending`, and `fetchesResolved` is not involved — `isFetchResolving` only ever reports a fetch with an unresolved *manifest*, which a standalone `fetchResource` has none of. It is `pending`, the count of `currentIds` in `IN_PROGRESS`, which `startFetchResource` sets. The same transition drives `ResourceLoader`'s own local `isLoading`. Suppressing the request removes both spinners; nothing else flips `isLoading` on an anonymous hydration.
+
+**The gate is `(!!$cwa.auth.user || $cwa.isStaticRender)`**, and both halves earn their place:
+
+- **A signed-in visitor keeps the retry** because the server render may have been anonymous when they are not. With page HTML caching on by default (#289), a cached anonymous page can be served to a signed-in admin — `plugin-page-cache.server.ts` gates storage on `auth.signedIn`, and edge bypass for the auth cookie is a deployment prerequisite, not something the module can enforce. The retry is how that admin still resolves a draft. An anonymous visitor has no such gap: SSR forwarded their (absent) cookie, so the client can only repeat the result.
+- **A static render keeps it** because `isStaticRender` (the `ResourceLoader` computed, distinct from `Cwa.isStaticRender`) requires `status === SUCCESS`, so the re-fetch at `onMounted` never covers an errored resource. Without this half, a prerendered or ISR page whose component has since been published would stay broken until the page was re-rendered.
+
+**`auth.user`, not `signedIn`, inside the gate.** `signedIn` is `false` while `/me` is in flight (`status` returns `LOADING`), and `user` is plain store state so there is no #260 `ComputedRef` trap. It also matches the two siblings exactly. The gate is deliberately "has a session" rather than "is an admin": draft visibility follows `publishable.permission`, which is app-configurable, so hard-coding `ROLE_ADMIN` would break an app that relaxed it.
+
+**Reading auth at mount is safe**, traced rather than assumed: `route-middleware.ts` awaits `initClientSide()` → `auth.init()` → `refreshUser()` **before** its `isFirstClientSideRun` early return, and Nuxt awaits `app:created` (which runs that middleware inside the initial `router.replace`) before `vueApp.mount()`. The two sibling conditions already depend on this and work.
+
+**`$cwa.auth.signedIn` is a third `watch` source**, so someone who signs in *without* reloading discovers the draft — otherwise the resource sits at `ssr: true` with nothing left to re-trigger the condition. `refreshUser` sets the cookie and the user before clearing `loading`, so by the time `signedIn` flips the gate is already satisfiable.
+
+**Known and accepted:** a component that 401s for a reason other than draft visibility — the gated-route boundary in api-components-bundle#224, where a component reachable only via a not-yet-live route returns 401 rather than 404 — also stops being retried anonymously. Retrying could not have helped there either.
+
+Tests: `test/integration/ssr-4xx-rehydration.spec.ts` drives the real stores and a real `node:http` API through `ResourceLoader`, asserting the requests the server actually receives and that `isLoading` never turns on; `ResourceLoader.spec.ts` pins the signed-in / signed-out / static-render branches. **Trap met writing it:** `createWrapper`'s `user` parameter has a default, so passing `undefined` for "signed out" silently produced a signed-in user and the new test passed against the unfixed code — signed out must be `null`.
+
+---
+
 ## Bug: an API URL with no path prefix breaks all resource typing and depth headers ✅ Fixed ([#266](https://github.com/components-web-app/cwa-nuxt-module/issues/266))
 
 Fixed 2026-07-17. Found while investigating #264.
