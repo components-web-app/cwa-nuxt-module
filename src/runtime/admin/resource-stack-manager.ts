@@ -60,6 +60,7 @@ export default class ResourceStackManager {
   private focusWrapper: HTMLElement | undefined
   private focusProxy: ComponentPublicInstance | undefined
   private focusGeneration = 0
+  private focusDomElements: Ref<HTMLElement[]> | undefined
   private _currentStackItem: ComputedRef<undefined | ResourceStackItem> | undefined
   private _currentIri: ComputedRef<string | undefined> | undefined
   private readonly _adminStore: CwaAdminStoreInterface
@@ -407,19 +408,27 @@ export default class ResourceStackManager {
   }
 
   private async createFocusComponent() {
-    this.removeFocusComponent()
+    const generation = ++this.focusGeneration
     const stackItem = this.currentStackItem.value
     if (!this.currentIri.value || !stackItem) {
+      this.removeFocusComponent()
       return
     }
 
-    const generation = this.focusGeneration
+    if (this.focusComponent && this.focusDomElements === stackItem.domElements) {
+      return
+    }
+
     const container = useNuxtApp().vueApp._container
     const { default: ComponentFocus } = await import('#cwa/templates/components/main/admin/resource-manager/ComponentFocus.vue')
     if (generation !== this.focusGeneration) {
       return
     }
 
+    this.removeFocusComponent()
+    this.focusGeneration = generation
+
+    this.focusDomElements = stackItem.domElements
     this.focusComponent = createApp(ComponentFocus, {
       iri: this.currentIri,
       domElements: stackItem.domElements,
@@ -435,6 +444,7 @@ export default class ResourceStackManager {
 
   private removeFocusComponent() {
     this.focusGeneration++
+    this.focusDomElements = undefined
     if (this.focusComponent) {
       const toUnmount = this.focusComponent
       this.focusComponent = undefined
