@@ -11,8 +11,8 @@
     <div
       v-else
       ref="htmlContainer"
+      v-cwa-html="htmlContent"
       :class="proseClasses"
-      v-html="htmlContent"
     />
   </article>
 </template>

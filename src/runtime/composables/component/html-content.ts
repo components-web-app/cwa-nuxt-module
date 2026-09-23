@@ -2,6 +2,7 @@ import { createApp, h, onBeforeUnmount, onMounted, toValue, watch } from 'vue'
 import type { Ref, WatchStopHandle, App, MaybeRefOrGetter } from 'vue'
 import { useRouter } from 'vue-router'
 import { CwaLink } from '#components'
+import { vCwaHtml } from '#cwa/directives/cwa-html'
 
 export const useHtmlContent = (container: Ref<null | HTMLElement>, html?: MaybeRefOrGetter<string | undefined>) => {
   const router = useRouter()
@@ -98,4 +99,8 @@ export const useHtmlContent = (container: Ref<null | HTMLElement>, html?: MaybeR
     watchStopHandle && watchStopHandle()
     unmountApps()
   })
+
+  return {
+    vCwaHtml,
+  }
 }

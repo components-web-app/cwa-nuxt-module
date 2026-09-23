@@ -14,7 +14,7 @@
     <div
       v-else
       ref="htmlContainer"
-      v-html="htmlContent"
+      v-cwa-html="htmlContent"
     />
   </article>
 </template>
