@@ -8,7 +8,7 @@ entry with no precondition is not a deprecation, it is a todo.
 
 ---
 
-## Remove when API Platform 4 support is dropped
+## Remove when applications declare a `search` parameter
 
 ### The per-field search parameters on admin lists
 
@@ -32,16 +32,24 @@ has not migrated ([#328](https://github.com/components-web-app/cwa-nuxt-module/i
 - the transition notes in the CLAUDE.md section for #328
 
 **Precondition:** every application entity an admin list shows declares a
-`search` parameter. That is [components-web-app#89](https://github.com/components-web-app/components-web-app/issues/89)
-for the template's `User` and `BlogArticleData`, and the same change in each
-application for its own page data. Until then `users.vue` and `data/[type].vue`
-depend on the old names.
+`search` parameter. This does not depend on the API Platform version: the
+bundle's filters work on 4.4 and 5, so an application can migrate while still on
+4.4. The template has migrated its `User` and `BlogArticleData` (components-web-app
+`cc8f57c`, [#89](https://github.com/components-web-app/components-web-app/issues/89)).
+Applications generated before that still need the same change for their `User`
+and their own page data, and until they make it `users.vue` and
+`data/[type].vue` depend on the old names.
+
+The hard deadline is API Platform 6.0, which removes `#[ApiFilter]` and
+`SearchFilter`. An application still using them cannot upgrade to 6.0, so an
+application has to migrate by then at the latest.
 
 ### `OrSearchFilter` (bundle-side, recorded here because the module's behaviour depends on it)
 
 The bundle keeps `Silverback\ApiComponentsBundle\Filter\OrSearchFilter` marked
-`@deprecated`, purely so the template's `User` does not break before #89. It
-goes when the applications have migrated. Nothing in the module references it —
+`@deprecated` for applications that still use it on their own entities. The
+template no longer does: `cc8f57c` moved its `User` to a `search`
+`QueryParameter`. It goes when the applications have migrated. Nothing in the module references it —
 the module only ever sent parameter names.
 
 ---
