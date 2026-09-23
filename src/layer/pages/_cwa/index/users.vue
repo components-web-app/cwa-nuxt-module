@@ -4,13 +4,11 @@
       title="Users"
       @add="goToAdd"
     />
-    <ListFilter
-      :order-options="orderOptions"
-      :search-fields="['emailAddress', 'username']"
-    />
+    <ListFilter :order-options="orderOptions" />
     <ListContent
       ref="listContent"
       fetch-url="/users"
+      :search-fields="['emailAddress', 'username']"
     >
       <template #item="{ data }">
         <div

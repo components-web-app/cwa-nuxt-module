@@ -1218,6 +1218,42 @@ Now the page query is added only to **Collection component** fetches (`{prefix}/
 
 If the API ever reads the page query for another resource type, add that type to `consumesPageQuery` in `fetcher.ts`.
 
+### Admin lists build their own query, and that is the only other caller allowed to
+
+Narrowing `consumesPageQuery` silently broke every admin list. `ListContent` fetches `/_/layouts`, `/_/pages`, `/_/routes`, `/users` and the page-data entrypoints — none of which are Collection components — so from `0fd23d7c` until this fix **search, sort, `page` and `perPage` never reached the API**. The lists still rewrote the URL and re-fetched on every change, so they looked alive while always returning the server's default ordering and first page. Nothing failed: a list that ignores its filters is indistinguishable from one whose filters matched everything.
+
+`ListContent.reloadItems` now merges the route query into `fetchUrl` itself and passes `noQuery: true`. **Do not fix this by widening `consumesPageQuery`** — that would put the tracking parameters back on every public render, which is the whole point of #318. The query belongs to the caller that knows it needs one.
+
+`mergeQueryIntoPath` (`api/fetcher/query-utils.ts`) is the single implementation of the merge, used by both `Fetcher.appendQueryToPath` and `ListContent`. It is shared rather than copied because its rules are not guessable and must not drift: `URLSearchParams` serialisation (a valueless parameter becomes `k=`, values are encoded, `order[createdAt]` travels as `order%5BcreatedAt%5D` — the form `SearchResource` has always sent and the API accepts), one `?` for a path that already carries a query, and **the path's own parameter wins** over a page parameter of the same name.
+
+**It forwards the whole route query, not a named set.** A named set would have to be a prop threaded through all five list pages, because the filter names are page-specific — `searchFields` differs per page and `isTemplate[]` exists only on `pages.vue` — and it would buy nothing: these fetches are admin-only and authenticated, so #318's shared-cache fragmentation does not apply, and the API ignores parameters it does not know (verified against api-components-bundle#297). The one module parameter that could ride along, `cwa_force`, is deleted by `NavigationGuard` (`admin/navigation-guard.ts:27`) before the route becomes active, so a list never renders holding it.
+
+**Untested, and known:** `reloadItems` has no error handling and `CwaFetch` sets no `ignoreResponseError`, so a non-2xx rejects and leaves `loading` true — the spinner stays up forever. Since api-components-bundle#297 an invalid sort direction is a **422** rather than being ignored, so a hand-edited or stale bookmarked `?order[reference]=sideways` now reaches that path. The module only ever emits `asc`/`desc` from hard-coded option lists, so normal use cannot trigger it.
+
+---
+
+## Admin list search is one `search` parameter ([#328](https://github.com/components-web-app/cwa-nuxt-module/issues/328))
+
+API Platform deprecated `#[ApiFilter]`, `SearchFilter`, `OrderFilter` and `AbstractFilter`, so the bundle moved its resources to `QueryParameter` filters (api-components-bundle#289, merged as #297 — needs API Platform 5). Search stopped being one parameter per field ORed by `OrSearchFilter` and became **one `search` parameter per resource**, with the server deciding which fields it covers:
+
+| Resource | `search` covers | `order[…]` | other |
+|---|---|---|---|
+| `/_/layouts` | `reference`, `uiComponent` | `createdAt`, `reference` | |
+| `/_/pages` | `title`, `reference`, `uiComponent` | `createdAt`, `reference` | `isTemplate[]` |
+| `/_/routes` | `path` | `createdAt`, `path` | |
+
+It is case-insensitive and matches part of a value. **Sorting and `isTemplate[]` did not change**, which is why neither moved.
+
+**The browser URL carries only `search`; the legacy names are added at request time.** `ListFilter` binds its box to the single `search` parameter, so what an admin bookmarks or shares is `?search=x`. `ListContent` expands that into the per-field names as it builds the request, from a `searchFields` prop each list page declares. The prop therefore lives on **`ListContent`, not `ListFilter`** — the component that builds the request owns the transitional expansion, and `ListFilter` no longer needs to know the field names at all. A page parameter that is already set wins, so an explicit `?reference=y` is never overwritten by the search value.
+
+**Both are sent everywhere, including `users.vue` and `data/[type].vue`.** Those two query the *application's* entities, which have no `search` until components-web-app#89 and the applications that follow it. API Platform ignores parameters it does not know — the bundle pins this in `features/main/page.feature` ("A per-field search parameter no longer filters pages") — so dual-sending is correct against a bundle from before the change and after it, the module never has to deploy in lockstep with an API, and those two lists start filtering the moment their entity declares a `search` parameter, with no further module change.
+
+`SearchResource` (public as `CwaUiFormSearchResource`) sends `search` alongside what it already sent. Its `searchProperties` prop is unused in this repo but stays: it is public surface an application may be using, and least exposure governs *adding* API, not removing what apps already have.
+
+**Deleting the transition** — once components-web-app#89 has migrated the template's `User` and `BlogArticleData`, and the applications have followed: remove `searchFields` from `ListContent` and the five list pages, delete `buildRequestQuery`'s expansion loop, and drop the per-field lines from `SearchResource.search()`. Nothing else refers to the legacy names. Do it only when no supported application is still relying on them; sending a parameter no one reads costs nothing, and removing it too early silently unfilters someone's admin.
+
+**`order[field]` stays exactly as it is.** The bundle kept the URL shape (`'order[:property]' => new QueryParameter(filter: new SortFilter())`), and `URLSearchParams` sends it as `order%5Bfield%5D`, which is the form `SearchResource` has always used against this API.
+
 ---
 
 ## `CwaComponentGroup` resolves `location` to the published IRI ([#317](https://github.com/components-web-app/cwa-nuxt-module/issues/317))

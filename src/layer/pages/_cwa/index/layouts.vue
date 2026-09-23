@@ -3,13 +3,11 @@
     title="Layouts"
     @add="goToAdd"
   />
-  <ListFilter
-    :order-options="orderOptions"
-    :search-fields="['reference', 'uiComponent']"
-  />
+  <ListFilter :order-options="orderOptions" />
   <ListContent
     ref="listContent"
     fetch-url="/_/layouts"
+    :search-fields="['reference', 'uiComponent']"
   >
     <template #item="{ data }">
       <div class="cwa:flex cwa:border-b cwa:border-b-stone-700 cwa:py-6 cwa:gap-x-4 cwa:items-center">

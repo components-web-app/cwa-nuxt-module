@@ -66,6 +66,7 @@ import ListContainer from './ListContainer.vue'
 import ListPagination from './ListPagination.vue'
 import Spinner from '#cwa/templates/components/utils/Spinner.vue'
 import { useCwa, useQueryBoundModel } from '#imports'
+import { mergeQueryIntoPath } from '#cwa/api/fetcher/query-utils'
 import type { CwaResource } from '#cwa/resources/resource-utils'
 
 const $cwa = useCwa()
@@ -84,6 +85,7 @@ watch(perPageModel, (newValue) => {
 
 const props = defineProps<{
   fetchUrl: string
+  searchFields?: string[]
 }>()
 
 const loading = ref(true)
@@ -91,12 +93,26 @@ const items = ref<any[]>([])
 const hydraData = ref()
 const currentRequestId = ref<number>(0)
 
+function buildRequestQuery(): LocationQuery {
+  const query: LocationQuery = { ...route.query }
+  const search = query.search
+  if (!search || !props.searchFields) {
+    return query
+  }
+  for (const field of props.searchFields) {
+    if (query[field] === undefined) {
+      query[field] = search
+    }
+  }
+  return query
+}
+
 async function reloadItems() {
   const thisRequestId = currentRequestId.value + 1
   currentRequestId.value = thisRequestId
   loading.value = true
 
-  const { response } = $cwa.fetch({ path: props.fetchUrl })
+  const { response } = $cwa.fetch({ path: mergeQueryIntoPath(props.fetchUrl, buildRequestQuery()), noQuery: true })
   const { _data: data } = await response
   /*
   hydra:totalItems: 123

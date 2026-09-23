@@ -102,6 +102,7 @@ async function search() {
     return
   }
   fetchingSearchResults.value = true
+  searchParamsObj['search'] = searchValue.value
   if (props.searchProperties) {
     for (const prop of props.searchProperties) {
       searchParamsObj[prop] = searchValue.value

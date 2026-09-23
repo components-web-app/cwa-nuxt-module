@@ -26,13 +26,20 @@ const mockResults = [
   { '@id': '/_/routes//about', 'path': '/about' },
 ]
 
+let fetchMock: ReturnType<typeof vi.fn>
+
 function mockCwaImpl(opts: { results?: any[], currentResource?: any } = {}) {
+  fetchMock = vi.fn().mockReturnValue({
+    response: Promise.resolve({ _data: { member: opts.results ?? mockResults } }),
+  })
   vi.spyOn(cwaComposable, 'useCwa').mockReturnValue({
     fetchResource: vi.fn().mockResolvedValue(opts.currentResource ?? null),
-    fetch: vi.fn().mockReturnValue({
-      response: Promise.resolve({ _data: { member: opts.results ?? mockResults } }),
-    }),
+    fetch: fetchMock,
   } as any)
+}
+
+function fetchedParams() {
+  return new URLSearchParams(fetchMock.mock.calls[0][0].path.split('?')[1])
 }
 
 const stubs = {
@@ -77,6 +84,37 @@ describe('SearchResource', () => {
 
   afterEach(() => {
     vi.useRealTimers()
+  })
+
+  describe('fetched url', () => {
+    test('the typed value is sent as the search parameter', async () => {
+      const wrapper = mountComp()
+      await openDropdown(wrapper)
+      expect(fetchedParams().get('search')).toBe('/home')
+    })
+
+    test('the typed value is still sent under the display property', async () => {
+      const wrapper = mountComp()
+      await openDropdown(wrapper)
+      expect(fetchedParams().get('path')).toBe('/home')
+    })
+
+    test('the typed value is sent under every declared search property', async () => {
+      const wrapper = mountComp({ searchProperties: ['path', 'reference'] })
+      await openDropdown(wrapper)
+      const params = fetchedParams()
+      expect(params.get('search')).toBe('/home')
+      expect(params.get('path')).toBe('/home')
+      expect(params.get('reference')).toBe('/home')
+    })
+
+    test('paging and sorting are unchanged', async () => {
+      const wrapper = mountComp()
+      await openDropdown(wrapper)
+      const params = fetchedParams()
+      expect(params.get('perPage')).toBe('6')
+      expect(params.get('order[path]')).toBe('asc')
+    })
   })
 
   describe('results panel visibility', () => {

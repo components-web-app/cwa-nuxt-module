@@ -13,14 +13,12 @@
       </NuxtLink>
     </div>
   </ListHeading>
-  <ListFilter
-    :order-options="orderOptions"
-    :search-fields="['title']"
-  />
+  <ListFilter :order-options="orderOptions" />
   <ListContent
     v-if="endpoint"
     ref="listContent"
     :fetch-url="endpoint"
+    :search-fields="['title']"
   >
     <template #item="{ data }">
       <div class="cwa:flex cwa:border-b cwa:border-b-stone-700 cwa:py-6 cwa:gap-x-4 cwa:items-center">

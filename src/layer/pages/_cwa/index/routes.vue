@@ -3,13 +3,11 @@
     title="Routes"
     :hide-add="true"
   />
-  <ListFilter
-    :order-options="orderOptions"
-    :search-fields="['path']"
-  />
+  <ListFilter :order-options="orderOptions" />
   <ListContent
     ref="listContent"
     fetch-url="/_/routes"
+    :search-fields="['path']"
   >
     <template #item="{ data, rawData }">
       <RouteListRow
