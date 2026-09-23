@@ -264,7 +264,7 @@ describe('CwaFetch -> unauthorised responses', () => {
     expect(cwaFetch.httpCacheState).toEqual({ storable: true, sharedMaxAge: undefined })
   })
 
-  test('a 401 on the server does not call the handler and is still recorded', () => {
+  test('a 401 on the server does not call the handler', () => {
     const { cwaFetch, onResponse } = createInstance(true)
     const handler = vi.fn()
     cwaFetch.onUnauthorised(handler)
@@ -272,6 +272,57 @@ describe('CwaFetch -> unauthorised responses', () => {
     onResponse(createResponseCtx(401))
 
     expect(handler).not.toHaveBeenCalled()
+  })
+})
+
+describe('CwaFetch -> error responses and the page cache', () => {
+  const createResponseCtx = (status: number, cacheControl: string, request = 'https://my-api/_api/_/routes//') => ({
+    request,
+    response: { status, headers: new Headers({ 'cache-control': cacheControl }) },
+  })
+
+  function serverInstance() {
+    vi.spyOn(processComposables, 'useProcess').mockReturnValue({ isClient: false, isServer: true })
+    // @ts-expect-error mocked
+    const createSpy = vi.spyOn($fetch, 'create').mockReturnValue(vi.fn())
+    const cwaFetch = new CwaFetch('https://my-api/_api')
+    const onResponse = createSpy.mock.calls[createSpy.mock.calls.length - 1][0].onResponse
+    return { cwaFetch, onResponse }
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockUseRequestHeaders.mockReturnValue({})
+  })
+
+  test.each([
+    ['an unpublished component', 'https://my-api/_api/component/html_contents/abc?published=true'],
+    ['a component position', 'https://my-api/_api/_/component_positions/abc'],
+    ['a component group', 'https://my-api/_api/_/component_groups/abc'],
+  ])('a 404 for %s does not stop the page being cached', (_resource, request) => {
+    const { cwaFetch, onResponse } = serverInstance()
+
+    onResponse(createResponseCtx(200, 'public, s-maxage=600'))
+    onResponse(createResponseCtx(404, 'no-cache, private, max-age=0', request))
+
+    expect(cwaFetch.httpCacheState).toEqual({ storable: true, sharedMaxAge: 600 })
+  })
+
+  test('a 401 for a resource that is not public yet does not stop the page being cached', () => {
+    const { cwaFetch, onResponse } = serverInstance()
+
+    onResponse(createResponseCtx(200, 'public, s-maxage=600'))
+    onResponse(createResponseCtx(401, 'no-cache, private', 'https://my-api/_api/component/images/abc'))
+
+    expect(cwaFetch.httpCacheState).toEqual({ storable: true, sharedMaxAge: 600 })
+  })
+
+  test.each([500, 502, 503])('a %i anywhere in the render keeps the page unstorable', (status) => {
+    const { cwaFetch, onResponse } = serverInstance()
+
+    onResponse(createResponseCtx(200, 'public, s-maxage=600'))
+    onResponse(createResponseCtx(status, 'no-cache, private'))
+
     expect(cwaFetch.httpCacheState.storable).toBe(false)
   })
 })

@@ -68,6 +68,20 @@ describe('cwa page cache nitro plugin', () => {
     expect(mockSetResponseHeader).toHaveBeenCalledTimes(1)
   })
 
+  test('sends no-store and no Surrogate-Key when a failed primary fetch left the render cacheable', async () => {
+    const beforeResponse = await captureBeforeResponse()
+    const event = createEvent(404, {
+      surrogateKey: '/_api/_/routes//missing',
+      cacheControl: 'public, max-age=0, s-maxage=300',
+    })
+
+    beforeResponse(event)
+
+    expect(mockRemoveResponseHeader).toHaveBeenCalledWith(event, 'Surrogate-Key')
+    expect(mockSetResponseHeader).toHaveBeenCalledWith(event, 'Cache-Control', 'no-store')
+    expect(mockSetResponseHeader).toHaveBeenCalledTimes(1)
+  })
+
   test('forces private, no-store when the render was personalised', async () => {
     const beforeResponse = await captureBeforeResponse()
     const event = createEvent(200, { unstorable: true })
