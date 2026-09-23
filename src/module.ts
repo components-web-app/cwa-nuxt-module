@@ -201,6 +201,20 @@ export default defineNuxtModule<CwaModuleOptions>({
 
     const cwaVueComponentsDir = join(vueTemplatesDir, 'components')
 
+    const adminSourceDirs = [
+      join(cwaVueComponentsDir, 'main', 'admin'),
+      join(cwaVueComponentsDir, 'core', 'admin'),
+    ].map(dir => `${path.relative(nuxt.options.srcDir, dir)}/`)
+    const isAdminSource = (id: string) => adminSourceDirs.some(dir => id.startsWith(dir))
+    nuxt.hook('build:manifest', (manifest) => {
+      for (const chunk of Object.values(manifest)) {
+        if (chunk.src && isAdminSource(chunk.src)) {
+          continue
+        }
+        chunk.dynamicImports = chunk.dynamicImports?.filter(id => !isAdminSource(id))
+      }
+    })
+
     logger.info(`Registering user components for CWA...`)
     const userComponentsPath = join(appDir, 'cwa', 'components')
     nuxt.options.alias['#cwaComponents'] = userComponentsPath

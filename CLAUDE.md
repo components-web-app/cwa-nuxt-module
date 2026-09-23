@@ -503,6 +503,55 @@ Upstream: [nuxt/nuxt#36401](https://github.com/nuxt/nuxt/issues/36401), reproduc
 
 ---
 
+## The admin UI is never prefetched ([#336](https://github.com/components-web-app/cwa-nuxt-module/issues/336))
+
+On Nuxt 4.5 every anonymous visitor started getting prefetch hints for the admin `Header`, `ResourceManager`, `LayoutPageOverlay` and everything they import — on the template, an anonymous `/login` went from **18 hints / 126,665 B raw / 47,104 B gzip** to **59 / 303,962 B / 114,868 B**. `Header` alone accounts for +31 files / +127,329 B, because it *statically* imports `PageResourceAdminModal.vue`, which drags in `useItemPage`, the modal/form stack, `RoutesTab` and `cwa-form-input`.
+
+**It is not a Nuxt regression, and pinning Nuxt at 4.4.8 was never the fix.** Both of Nuxt's `build:manifest` filters (pages, and global components) are byte-identical between 4.4.8 and 4.5.2, as is the layouts template. What changed is the **client manifest**, and the mechanism is worth keeping because it is counter-intuitive:
+
+- `vue-bundle-renderer` walks `dynamicImports` one level from each id in `entrypoints ∪ ssrContext.modules`. `ssrContext.modules` holds **source paths**, so a rendered chunk is a prefetch root only if the Vite manifest has an entry under that same source key.
+- Under **Vite 7 / Rollup** the root-layout chunk got **no `facadeModuleId`**, so Vite keyed it `_D4X7aU3e.js`. `ssrContext.modules`' `…/layer/layouts/CwaRootLayout.vue` matched nothing, and the layout's admin children were never walked. Cause, from the chunk's own tail: it exported `{pe as C, ne as _}` — the frozen interop namespace `genDynamicImport(file, { interopDefault: true })` produces, with **no `default`** — so Rollup could not treat it as that module's facade. It was the **only** dynamic entry in the whole 4.4.8 build without a source key (62 with, 1 without); 4.5.2 has none.
+- Under **Vite 8 / Rolldown** the same chunk (5,016 B → 5,610 B, same modules) exports `{z as default, …}`, gets its facade, and is keyed by its source path. The layout becomes a second prefetch root and its four lazy children — plus their static closures — follow.
+
+**The cross-test that settles it.** Holding one side fixed and swapping the other, for `ids = {entry, layout}`:
+
+| | vbr 2.3.1 (4.4.8's renderer) | vbr 2.3.2 (4.5.2's renderer) |
+|---|---|---|
+| 4.4.8 manifest | 22 prefetch / 128,285 B — admin **absent** | 23 / 128,532 B — admin **absent** |
+| 4.5.2 manifest | **61** / 305,137 B — admin **present** | **61** / 305,137 B — admin **present** |
+
+Swapping the renderer changes nothing; swapping the manifest is the whole effect. (2.3.1 → 2.3.2 did change — `precomputeDependencies` stopped baking each module's dynamic-import prefetch into its own set and propagating it up static-import chains, storing `modules[id].dynamicImports` for a runtime walk instead — but that is a **narrowing** change and cannot add hints. 2.4.0 is unchanged in this respect.) Nuxt 4.5 also rewrote the hint-emitting block in `renderer.mjs` to honour `~lazyHydratedModules` / `~neverHydratedModules`; that is inert here, since we use no `hydrate-*` and `dependencyOptions` stays `undefined`.
+
+**4.5 is the more correct of the two.** On 4.4.8 the root-layout chunk — needed to hydrate every page — was only ever a `prefetch` hint and never `modulepreload`ed, because nothing could attribute it. We were relying on an accident, so this is ours to fix.
+
+### The fix: a `build:manifest` filter in `module.ts`
+
+```ts
+for (const chunk of Object.values(manifest)) {
+  if (chunk.src && isAdminSource(chunk.src)) continue
+  chunk.dynamicImports = chunk.dynamicImports?.filter(id => !isAdminSource(id))
+}
+```
+
+`isAdminSource` matches `relative(srcDir, …)` of `runtime/templates/components/main/admin/` and `…/core/admin/` — the same base Nuxt's own two hooks use, and `import.meta.url` is already a real path (#329) so it matches `facadeModuleId`. Directory-scoped rather than a list of components, so a new admin component is covered without anyone remembering. Measured on the template against two builds of this module differing only in the hook: anonymous `/login` goes from **59 hints / 304,089 B raw / 114,869 B gzip** to **23 / 154,299 B / 54,148 B**, and `modulepreload` stays byte-identical at 37 links / 610,388 B.
+
+**Why a manifest filter works here when #329 rejected one.** #329 would have had to set `prefetch = false` on hash-keyed shared chunks with no `src`, which reached 19 of 54 links. This strips **edges keyed by the target's source id**, and `Header.vue` / `ResourceManager.vue` / `LayoutPageOverlay.vue` all have source keys on 4.5 — removing the edge takes the whole downstream static closure with it. `CwaRootLayout.vue` itself is untouched and stays preloaded. Hints are the only consumer: the import edge lives in the chunk's own code and `__vite__mapDeps`, so the admin UI still loads on demand (verified — the header chunk's filename is still in the layout chunk and absent from the HTML).
+
+**An admin chunk's own dynamic imports are left alone.** A visitor must never prefetch admin, but an admin who has already loaded the chrome should keep its internal prefetching, or every manager tab costs a cold fetch. The exemption is keyed on `chunk.src`, which is the honest expression of it: **an anonymous `_hash.js` chunk has no `src` and cannot be identified as admin** — but it can never be a prefetch root either (`ssrContext.modules` only ever holds source paths), so filtering it is inert.
+
+**Two things the rule does not reach, deliberately:**
+
+- **`core/ConfirmDialog.vue` is not under an admin directory** and, on Rolldown, is not even a manifest key — it is merged into an anonymous chunk the entry dynamic-imports. It is admin-only in practice (`confirmDelete`, `confirmDiscardAddingResource`, `confirmStackChange`), but no path rule can reach it. `ComponentFocus.vue` *is* under `main/admin/` and *is* caught.
+- **`ErrorPage.vue` stays prefetched** (25,373 B raw, the second-largest hint on both versions, from #331's `LazyCwaErrorPage`). It is the one thing you want already present when something has gone wrong.
+
+**No dev gate**, unlike #329's `pages:extend` hook. `build:manifest` *does* fire in dev, but with a two-entry stub manifest (`@vite/client` + the entry) that carries no `dynamicImports`, so a gate would be dead code — and Nuxt's own global-component filter, the closest analogue, has none either. `module.spec.ts` pins the absence of the branch rather than asserting on a stub, because a test fed the dev stub passes with or without a gate — the #329 vacuity trap.
+
+**Latent, and recorded here rather than filed upstream:** Nuxt's own page and global-component filters are gated on `if (chunk.isEntry)`. On Vite 8 more rendered chunks are manifest roots, so a page or a global component dynamically imported from a **non-entry** chunk would escape them. It does not bite in the template today — the only non-entry roots are `CwaRootLayout.vue`, an anonymous ResourceManager-tabs chunk, and `cwa/layouts/primary.vue`, whose one dynamic import is an app SVG. Ours deliberately has no such gate, which `module.spec.ts` mutation-tests by re-adding it.
+
+**The playground reproduces this, unlike #329**, because the layout chunk's source key does not depend on symlinks. So `test/e2e/prefetch-hints.mjs` (in `pnpm run test:e2e`) is a real guard: it replays `getRequestDependencies` for a rendered `CwaRootLayout.vue` and fails on an admin manifest key, an admin chunk file, or the markers `Sign out` (Header) and `Add Component` (ResourceManager). It **fails first if the layout has no manifest key, or if the manifest holds no admin keys at all** — without those two checks it would pass exactly as it would have on 4.4.8, for the wrong reason.
+
+---
+
 ## Admin updates are a merge-patch: only changed fields are sent
 
 `useItemPage.saveResource` sends an update as `application/merge-patch+json` containing **only the fields where `localResourceData` differs from the stored resource** (deep comparison, lodash `isEqual`), plus any `extraData`. Creating still sends the full body. If nothing changed, no request is made and the stored resource is returned.

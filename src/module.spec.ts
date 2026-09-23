@@ -52,8 +52,10 @@ async function prepareMockNuxt(options = {}, nuxt?: any) {
 
   const [{ setup }] = (nuxtKit.defineNuxtModule as Mock).mock.lastCall
 
-  const mockNuxt = Object.assign({ hook: vi.fn(), options: {
-    sitemap: {}, runtimeConfig: { public: { cwa: {} } }, alias: {}, css: [], build: { transpile: [] }, dir: { app: '' } } }, nuxt || {})
+  const defaultOptions = {
+    srcDir: 'app', sitemap: {}, runtimeConfig: { public: { cwa: {} } }, alias: {}, css: [], build: { transpile: [] }, dir: { app: '' },
+  }
+  const mockNuxt = Object.assign({ hook: vi.fn() }, nuxt || {}, { options: { ...defaultOptions, ...(nuxt?.options || {}) } })
 
   await setup(options, mockNuxt)
 
@@ -756,6 +758,125 @@ declare module 'vue-router' {
         })
 
         expect((mockNuxt.hook as Mock).mock.calls.find(([name]) => name === 'pages:extend')).toBeUndefined()
+      })
+    })
+
+    describe('admin prefetch hints (#336)', () => {
+      const mainAdmin = '../runtime/templates/components/main/admin'
+      const coreAdmin = '../runtime/templates/components/core/admin'
+      const header = `${mainAdmin}/header/Header.vue`
+      const resourceManager = `${mainAdmin}/resource-manager/ResourceManager.vue`
+      const componentFocus = `${mainAdmin}/resource-manager/ComponentFocus.vue`
+      const groupTab = `${mainAdmin}/resource-manager/_tabs/group/Group.vue`
+      const listContent = `${coreAdmin}/ListContent.vue`
+      const layout = '../layer/layouts/CwaRootLayout.vue'
+      const defaultLayout = '../runtime/templates/components/main/DefaultLayout.vue'
+
+      async function captureBuildManifestHook(overrides: Record<string, unknown> = {}) {
+        const mockNuxt = await prepareMockNuxt({}, { options: overrides })
+        const call = (mockNuxt.hook as Mock).mock.calls.find(([name]) => name === 'build:manifest')
+        return call?.[1]
+      }
+
+      test('strips admin components from a rendered layout chunk', async () => {
+        const hook = await captureBuildManifestHook()
+        const manifest: any = {
+          [layout]: { src: layout, file: 'layout.js', isDynamicEntry: true, dynamicImports: [header, resourceManager, defaultLayout] },
+        }
+
+        hook(manifest)
+
+        expect(manifest[layout].dynamicImports).toEqual([defaultLayout])
+      })
+
+      test('strips admin components from the app entry', async () => {
+        const hook = await captureBuildManifestHook()
+        const manifest: any = {
+          'entry.js': { src: 'entry.js', file: 'entry.js', isEntry: true, dynamicImports: [componentFocus, defaultLayout] },
+        }
+
+        hook(manifest)
+
+        expect(manifest['entry.js'].dynamicImports).toEqual([defaultLayout])
+      })
+
+      test('strips components under the core admin directory', async () => {
+        const hook = await captureBuildManifestHook()
+        const manifest: any = {
+          [layout]: { src: layout, file: 'layout.js', dynamicImports: [listContent, defaultLayout] },
+        }
+
+        hook(manifest)
+
+        expect(manifest[layout].dynamicImports).toEqual([defaultLayout])
+      })
+
+      test('keeps the dynamic imports of a chunk that is itself admin', async () => {
+        const hook = await captureBuildManifestHook()
+        const manifest: any = {
+          [resourceManager]: { src: resourceManager, file: 'rm.js', isDynamicEntry: true, dynamicImports: [groupTab, componentFocus] },
+        }
+
+        hook(manifest)
+
+        expect(manifest[resourceManager].dynamicImports).toEqual([groupTab, componentFocus])
+      })
+
+      test('keeps a component whose path only begins with the admin directory name', async () => {
+        const hook = await captureBuildManifestHook()
+        const administration = '../runtime/templates/components/main/administration/Report.vue'
+        const manifest: any = {
+          [layout]: { src: layout, file: 'layout.js', dynamicImports: [administration] },
+        }
+
+        hook(manifest)
+
+        expect(manifest[layout].dynamicImports).toEqual([administration])
+      })
+
+      test('leaves static imports, css and assets untouched', async () => {
+        const hook = await captureBuildManifestHook()
+        const manifest: any = {
+          [layout]: { src: layout, file: 'layout.js', imports: [header], css: ['Header.css'], assets: ['logo.svg'], dynamicImports: [header] },
+        }
+
+        hook(manifest)
+
+        expect(manifest[layout].imports).toEqual([header])
+        expect(manifest[layout].css).toEqual(['Header.css'])
+        expect(manifest[layout].assets).toEqual(['logo.svg'])
+      })
+
+      test('leaves a chunk with no dynamic imports alone', async () => {
+        const hook = await captureBuildManifestHook()
+        const manifest: any = {
+          'Header.css': { file: 'Header.css', resourceType: 'style' },
+        }
+
+        expect(() => hook(manifest)).not.toThrow()
+        expect(manifest['Header.css']).toEqual({ file: 'Header.css', resourceType: 'style' })
+      })
+
+      test('filters a shared chunk that carries no source of its own', async () => {
+        const hook = await captureBuildManifestHook()
+        const manifest: any = {
+          '_shared.js': { file: 'shared.js', dynamicImports: [header, defaultLayout] },
+        }
+
+        hook(manifest)
+
+        expect(manifest['_shared.js'].dynamicImports).toEqual([defaultLayout])
+      })
+
+      test('is not gated on dev, so the same manifest is filtered either way', async () => {
+        const hook = await captureBuildManifestHook({ dev: true })
+        const manifest: any = {
+          [layout]: { src: layout, file: 'layout.js', dynamicImports: [header, defaultLayout] },
+        }
+
+        hook(manifest)
+
+        expect(manifest[layout].dynamicImports).toEqual([defaultLayout])
       })
     })
   })
