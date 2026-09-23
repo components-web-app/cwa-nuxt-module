@@ -17,6 +17,7 @@ type Events = {
   redrawFocus: undefined
   manageableComponentMounted: string
   componentMounted: string
+  componentUpdated: string
   selectResource: string
   reorder: ReorderEvent
 }

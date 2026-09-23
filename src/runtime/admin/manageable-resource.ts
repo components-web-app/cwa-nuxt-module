@@ -1,7 +1,8 @@
 import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/resources/resource-utils'
 import { NEW_RESOURCE_IRI } from '#cwa/storage/stores/resources/state'
-import { watchOnce } from '@vueuse/core'
 import { consola } from 'consola'
+import throttle from 'lodash-es/throttle'
+import type { DebouncedFunc } from 'lodash-es/debounce'
 import {
   computed,
   markRaw,
@@ -32,6 +33,7 @@ export default class ManageableResource {
   private tabResolver: ManagerTabsResolver
   private isIriInit: boolean = false
   private pendingChildMountedReInit: boolean = false
+  private throttledRefreshFn: undefined | DebouncedFunc<() => void>
 
   constructor(
     private readonly component: ComponentPublicInstance,
@@ -76,7 +78,33 @@ export default class ManageableResource {
     return this.domElements
   }
 
+  public refreshElements() {
+    if (!this.throttledRefreshFn) {
+      this.throttledRefreshFn = throttle(this.doRefreshElements.bind(this), 40, {
+        leading: true,
+        trailing: true,
+      })
+    }
+    this.throttledRefreshFn()
+  }
+
+  private doRefreshElements() {
+    const currentIri = this.currentIri?.value
+    if (!this.isIriInit || !currentIri) {
+      return
+    }
+    const newElements = this.getAllEls()
+    const existingElements = this.domElements.value
+    if (newElements.length === existingElements.length && newElements.every((el, index) => el === existingElements[index])) {
+      return
+    }
+    this.removeClickEventListeners()
+    this.addClickEventListeners()
+    this.$cwa.admin.eventBus.emit('componentMounted', currentIri)
+  }
+
   public clear(soft: boolean = false) {
+    this.throttledRefreshFn?.cancel()
     if (!this.isIriInit) {
       return
     }
@@ -208,16 +236,15 @@ export default class ManageableResource {
         resolve()
         return
       }
-      const timeout = setTimeout(() => {
+      function finish() {
         stopWatch()
         clearTimeout(timeout)
-      }, 1000)
-      const stopWatch = watchOnce(this.domElements, (newDomEls) => {
-        if (newDomEls.length) {
-          resolve()
-          clearTimeout(timeout)
-        }
+        resolve()
+      }
+      const stopWatch = watch(this.domElements, (newDomEls) => {
+        newDomEls.length && finish()
       })
+      const timeout = setTimeout(finish, 1000)
     })
     const firstDomElement = this.domElements.value[0]
     if (!firstDomElement) {

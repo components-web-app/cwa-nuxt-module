@@ -34,14 +34,22 @@ export const useCwaResourceManageable = (iri: Ref<string | undefined>, ops?: Man
     }
   }
 
+  const onComponentUpdated = (iriUpdated: string) => {
+    if (iriUpdated === iri.value) {
+      manageableResource.refreshElements()
+    }
+  }
+
   const initAdmin = () => {
     manageableResource.init(iri)
     iri.value && $cwa.admin.eventBus.emit('componentMounted', iri.value)
     $cwa.admin.eventBus.on('manageableComponentMounted', onManageableComponentMounted)
+    $cwa.admin.eventBus.on('componentUpdated', onComponentUpdated)
   }
 
   const clearAdmin = () => {
     $cwa.admin.eventBus.off('manageableComponentMounted', onManageableComponentMounted)
+    $cwa.admin.eventBus.off('componentUpdated', onComponentUpdated)
     manageableResource.clear()
   }
 

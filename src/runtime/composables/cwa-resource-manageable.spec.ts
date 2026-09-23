@@ -12,6 +12,7 @@ vi.mock('../admin/manageable-resource', () => {
         init: vi.fn(),
         clear: vi.fn(),
         initNewIri: vi.fn(),
+        refreshElements: vi.fn(),
         elements: ref([]),
       }
     }),
@@ -220,6 +221,42 @@ describe('CWA resource manageable composable', () => {
       watchCallback!(true, false)
 
       expect(initSpy).toHaveBeenCalledWith(mockIri)
+    })
+  })
+
+  describe('onComponentUpdated listener', () => {
+    test('refreshes the recorded elements when the iri matches', () => {
+      mockCwa.auth.isAdmin.value = true
+      vi.spyOn(vue, 'getCurrentInstance').mockReturnValue({ proxy: { mock: 'proxy' } })
+
+      const refreshElementsSpy = vi.fn()
+      ManageableResource.mockImplementationOnce(function () {
+        return { init: vi.fn(), clear: vi.fn(), initNewIri: vi.fn(), refreshElements: refreshElementsSpy, elements: ref([]) }
+      })
+
+      useCwaResourceManageable(mockIri)
+
+      const listener = mockCwa.admin.eventBus.on.mock.calls.find(([name]) => name === 'componentUpdated')?.[1]
+      listener(mockIri.value)
+
+      expect(refreshElementsSpy).toHaveBeenCalledOnce()
+    })
+
+    test('does nothing when the iri does not match', () => {
+      mockCwa.auth.isAdmin.value = true
+      vi.spyOn(vue, 'getCurrentInstance').mockReturnValue({ proxy: { mock: 'proxy' } })
+
+      const refreshElementsSpy = vi.fn()
+      ManageableResource.mockImplementationOnce(function () {
+        return { init: vi.fn(), clear: vi.fn(), initNewIri: vi.fn(), refreshElements: refreshElementsSpy, elements: ref([]) }
+      })
+
+      useCwaResourceManageable(mockIri)
+
+      const listener = mockCwa.admin.eventBus.on.mock.calls.find(([name]) => name === 'componentUpdated')?.[1]
+      listener('/different-iri')
+
+      expect(refreshElementsSpy).not.toHaveBeenCalled()
     })
   })
 

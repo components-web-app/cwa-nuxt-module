@@ -1,5 +1,5 @@
 import type { CwaResource } from '#cwa/resources/resource-utils'
-import { computed, getCurrentInstance, onMounted } from 'vue'
+import { computed, getCurrentInstance, onMounted, onUpdated } from 'vue'
 import type { ComputedRef, Ref } from 'vue'
 import { useCwa } from './cwa'
 import { useCwaAutoClass } from './cwa-auto-class'
@@ -37,16 +37,27 @@ export const useCwaResource = (iri: Ref<string>, ops?: CwaResourceUtilsOps) => {
 
   const disableManager = !!ops?.manager?.disabled
 
+  const isDetached = () => {
+    const el = instance?.proxy?.$el
+    return !!el && !el.isConnected
+  }
+
   onMounted(() => {
     // todo: !! But needs to be done here, or when this component is mounted and not the parent component position resource
     // we need to emit this after we have already init manageable component so the first click event is this resource to clear the stack
     // otherwise the stack will not be cleared when the first event already is a resource existing in the current stack, clicking from one to another in same group
     // this is for adding a new resource where click events have already been assigned to the group etc. and clicking between components
-    const el = instance?.proxy?.$el
-    if (el && !el.isConnected) {
+    if (isDetached()) {
       return
     }
     $cwa.admin.eventBus.emit(disableManager ? 'componentMounted' : 'manageableComponentMounted', iri.value)
+  })
+
+  onUpdated(() => {
+    if (!$cwa.auth.isAdmin.value || isDetached()) {
+      return
+    }
+    $cwa.admin.eventBus.emit('componentUpdated', iri.value)
   })
 
   const uiStyles = ops?.styles

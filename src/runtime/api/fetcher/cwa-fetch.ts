@@ -58,6 +58,9 @@ export default class CwaFetch {
           }
           return
         }
+        if (ctx.response.status >= 400 && ctx.response.status < 500) {
+          return
+        }
         const merged = mergeCacheDirectives(cacheState, readResponseCacheDirectives(ctx.response.headers))
         cacheState.storable = merged.storable
         cacheState.sharedMaxAge = merged.sharedMaxAge

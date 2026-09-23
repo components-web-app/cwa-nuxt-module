@@ -19,6 +19,9 @@ vi.mock('vue', async () => {
 describe('CWA resources composable', () => {
   const mockManager = { mock: 'manager' }
   const mockCwa = {
+    auth: {
+      isAdmin: ref(true),
+    },
     admin: {
       eventBus: {
         emit: vi.fn(),
@@ -260,6 +263,58 @@ describe('CWA resources composable', () => {
       })
       const result = getCurrentStyleName({ uiClassNames: ['text-xl'] } as any)
       expect(result).toBeUndefined()
+    })
+  })
+
+  describe('root element changes after mounting', () => {
+    test('emits componentUpdated so the admin selection follows the new element', () => {
+      vi.spyOn(cwaResourceManageable, 'useCwaResourceManageable').mockImplementation(() => mockManager)
+      mockCwa.auth.isAdmin.value = true
+      let updatedCallback: (() => void) | undefined
+      vi.spyOn(vue, 'onUpdated').mockImplementation((fn: any) => {
+        updatedCallback = fn
+      })
+      const mockIri = ref('mock-iri')
+
+      useCwaResource(mockIri)
+      mockCwa.admin.eventBus.emit.mockClear()
+      updatedCallback!()
+
+      expect(mockCwa.admin.eventBus.emit).toHaveBeenCalledWith('componentUpdated', mockIri.value)
+    })
+
+    test('emits nothing when the visitor is not an admin', () => {
+      vi.spyOn(cwaResourceManageable, 'useCwaResourceManageable').mockImplementation(() => mockManager)
+      mockCwa.auth.isAdmin.value = false
+      let updatedCallback: (() => void) | undefined
+      vi.spyOn(vue, 'onUpdated').mockImplementation((fn: any) => {
+        updatedCallback = fn
+      })
+
+      useCwaResource(ref('mock-iri'))
+      mockCwa.admin.eventBus.emit.mockClear()
+      updatedCallback!()
+
+      expect(mockCwa.admin.eventBus.emit).not.toHaveBeenCalled()
+      mockCwa.auth.isAdmin.value = true
+    })
+
+    test('emits nothing when the element is detached from the DOM', () => {
+      vi.spyOn(cwaResourceManageable, 'useCwaResourceManageable').mockImplementation(() => mockManager)
+      mockCwa.auth.isAdmin.value = true
+      vi.spyOn(vue, 'getCurrentInstance').mockReturnValue({
+        proxy: { $el: { isConnected: false } },
+      } as any)
+      let updatedCallback: (() => void) | undefined
+      vi.spyOn(vue, 'onUpdated').mockImplementation((fn: any) => {
+        updatedCallback = fn
+      })
+
+      useCwaResource(ref('mock-iri'))
+      mockCwa.admin.eventBus.emit.mockClear()
+      updatedCallback!()
+
+      expect(mockCwa.admin.eventBus.emit).not.toHaveBeenCalled()
     })
   })
 })
