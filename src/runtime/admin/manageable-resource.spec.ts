@@ -105,11 +105,6 @@ vi.mock('vue', async () => {
   }
 })
 
-const watchOnceMock = vi.fn()
-vi.mock('@vueuse/core', () => ({
-  watchOnce: (...args: any[]) => watchOnceMock(...args),
-}))
-
 vi.mock('consola', () => ({
   consola: {
     error: vi.fn(),
@@ -128,6 +123,8 @@ function createDomElement(nodeType: 1 | 2 | 3, nodeValue?: string): DummyDom {
     nodeValue,
     nodeType,
     nextSibling: null,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
   }
 }
 
@@ -145,6 +142,7 @@ function createManageableResource($el?: DummyDom) {
 describe('ManageableResource Class', () => {
   afterEach(() => {
     vi.clearAllMocks()
+    vi.useRealTimers()
   })
 
   test('ManagerTabsResolver is initialised with correct parameters', () => {
@@ -625,70 +623,137 @@ describe('ManageableResource Class', () => {
       const dispatched = dispatchEvent.mock.calls[0][0]
       expect(dispatched.type).toBe('click')
       expect(dispatched.bubbles).toBe(true)
-      expect(watchOnceMock).not.toHaveBeenCalled()
+      expect(vue.watch).not.toHaveBeenCalled()
     })
 
-    test('waits for dom elements to appear via watchOnce then dispatches', async () => {
+    test('dispatches a click once the dom elements appear', async () => {
       const { instance } = createManageableResource()
       instance.domElements.value = []
       const dispatchEvent = vi.fn()
-
-      watchOnceMock.mockImplementation((_source, cb) => {
-        instance.domElements.value = [{ nodeType: 1, dispatchEvent }]
-        cb(instance.domElements.value)
+      let watchCallback: ((els: any[]) => void) | undefined
+      vi.spyOn(vue, 'watch').mockImplementation((_source: any, cb: any) => {
+        watchCallback = cb
         return vi.fn()
       })
 
-      await instance.triggerClick()
+      const promise = instance.triggerClick()
 
-      expect(watchOnceMock).toHaveBeenCalled()
+      instance.domElements.value = [{ nodeType: 1, dispatchEvent }]
+      watchCallback!(instance.domElements.value)
+
+      await promise
+
       expect(dispatchEvent).toHaveBeenCalledTimes(1)
     })
 
-    test('watchOnce callback does not resolve while dom elements remain empty', async () => {
+    test('dispatches a click when the dom elements are emptied before they appear', async () => {
       const { instance } = createManageableResource()
       instance.domElements.value = []
-
-      watchOnceMock.mockImplementation((_source, cb) => {
-        cb([])
+      const dispatchEvent = vi.fn()
+      let watchCallback: ((els: any[]) => void) | undefined
+      vi.spyOn(vue, 'watch').mockImplementation((_source: any, cb: any) => {
+        watchCallback = cb
         return vi.fn()
       })
+
+      const promise = instance.triggerClick()
+
+      watchCallback!([])
+
+      instance.domElements.value = [{ nodeType: 1, dispatchEvent }]
+      watchCallback!(instance.domElements.value)
+
+      await promise
+
+      expect(dispatchEvent).toHaveBeenCalledTimes(1)
+    })
+
+    test('logs an error when the dom elements never appear', async () => {
+      vi.useFakeTimers()
+      const { consola } = await import('consola')
+      const { instance } = createManageableResource()
+      instance.currentIri = ref('/missing')
+      instance.domElements.value = []
+      vi.spyOn(vue, 'watch').mockImplementation(() => vi.fn())
 
       let settled = false
       const promise = instance.triggerClick().then(() => {
         settled = true
       })
 
-      await nextTick()
-      expect(settled).toBe(false)
-
-      const dispatchEvent = vi.fn()
-      instance.domElements.value = [{ nodeType: 1, dispatchEvent }]
-      const cb = watchOnceMock.mock.calls[0][1]
-      cb(instance.domElements.value)
-
+      vi.advanceTimersByTime(1000)
       await promise
+
       expect(settled).toBe(true)
-      expect(dispatchEvent).toHaveBeenCalled()
-    })
-
-    test('logs an error when resolved but no dom element is found', async () => {
-      const { consola } = await import('consola')
-      const { instance } = createManageableResource()
-      instance.currentIri = ref('/missing')
-      instance.domElements.value = []
-
-      watchOnceMock.mockImplementation((_source, cb) => {
-        cb([{ nodeType: 1 }])
-        return vi.fn()
-      })
-
-      await instance.triggerClick()
-
       expect((consola.error as any)).toHaveBeenCalledWith(
         'Manageable resource listener called to select component, but no dom elements found.',
         '/missing',
       )
+    })
+  })
+
+  describe('refreshElements function', () => {
+    test('moves the click listeners onto the new root element', () => {
+      const { instance } = createManageableResource()
+      instance.currentIri = ref('/abc')
+      instance.isIriInit = true
+      const previousElement = createDomElement(Node.ELEMENT_NODE)
+      instance.domElements.value = [previousElement]
+      const newElement = createDomElement(Node.ELEMENT_NODE)
+      instance.component.$el = newElement
+
+      instance.refreshElements()
+
+      expect(previousElement.removeEventListener).toHaveBeenCalledWith('click', expect.any(Function))
+      expect(newElement.addEventListener).toHaveBeenCalledWith('click', expect.any(Function), false)
+      expect(instance.domElements.value).toEqual([newElement])
+    })
+
+    test('notifies parent resources so they record the new element too', () => {
+      const { instance, $cwa } = createManageableResource()
+      instance.currentIri = ref('/abc')
+      instance.isIriInit = true
+      instance.domElements.value = [createDomElement(Node.ELEMENT_NODE)]
+      instance.component.$el = createDomElement(Node.ELEMENT_NODE)
+
+      instance.refreshElements()
+
+      expect($cwa.admin.eventBus.emit).toHaveBeenCalledWith('componentMounted', '/abc')
+    })
+
+    test('does nothing when the elements are unchanged', () => {
+      const { instance, $cwa } = createManageableResource()
+      instance.currentIri = ref('/abc')
+      instance.isIriInit = true
+      instance.domElements.value = [createDomElement(Node.ELEMENT_NODE)]
+      const element = instance.domElements.value[0]
+      instance.component.$el = element
+
+      instance.refreshElements()
+
+      expect(element.addEventListener).not.toHaveBeenCalled()
+      expect($cwa.admin.eventBus.emit).not.toHaveBeenCalled()
+    })
+
+    test('does nothing once the resource has been cleared', () => {
+      vi.useFakeTimers()
+      const { instance } = createManageableResource()
+      instance.currentIri = ref('/abc')
+      instance.isIriInit = true
+      instance.domElements.value = [createDomElement(Node.ELEMENT_NODE)]
+      instance.component.$el = createDomElement(Node.ELEMENT_NODE)
+
+      instance.refreshElements()
+      instance.component.$el = createDomElement(Node.ELEMENT_NODE)
+      instance.refreshElements()
+
+      instance.clear()
+      const elementAfterClear = createDomElement(Node.ELEMENT_NODE)
+      instance.component.$el = elementAfterClear
+
+      vi.advanceTimersByTime(100)
+
+      expect(elementAfterClear.addEventListener).not.toHaveBeenCalled()
     })
   })
 

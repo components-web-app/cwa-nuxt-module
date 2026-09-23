@@ -932,6 +932,31 @@ A full docs accuracy audit filed #269–#283. **Every claim was re-verified agai
 
 ---
 
+## Bug: a component root element that changes without a remount loses its outline and its clicks ✅ Fixed ([#321](https://github.com/components-web-app/cwa-nuxt-module/issues/321))
+
+`ManageableResource` records a component's DOM elements only on mount-shaped events: the IRI changing (`_initNewIri`), a child mounting (`componentMountedListener`), and `manageableComponentMounted` for its own IRI. **A component that replaces its own root element, or renders none until after it mounts, emits none of them**, so the recording is left pointing at an element that is no longer on the page.
+
+Two things break together, which is why the fix belongs in the recording and not in `ComponentFocus`:
+
+- The stack item holds that ref, `createFocusComponent` passes it to `ComponentFocus`, and the outline is measured from it. A detached element measures 0×0, and `useElementSize` reports 0 and recomputes `position`, so the outline collapses — **selected, manager open, nothing drawn**.
+- The click listeners are bound to the old element, so **clicking the component does nothing**. Inside a nested group the click reaches the Container's element and selects that instead.
+
+**The issue's `ResourceLoader` hypothesis was wrong.** Its `v-if` chain is safe: every branch change *remounts* the component, which emits `manageableComponentMounted` and re-reads. The trigger is the app component's own root — `<div v-if="editor">` in a TipTap editor, whose editor is created in `onMounted`, or any root branch that settles a tick late. Resource data is also retained through a re-fetch (`storage/stores/resources/actions.ts`), so an existing component never drops to the loader's spinner in the first place.
+
+**Why auto-add is where it surfaces.** `AddComponentDialog`'s `watch(isInstantAddResourceSaved)` awaits `addResourceAction()` and emits `selectResource` on `nextTick`, so the component is selected the instant it is created — exactly while its root is still settling. Clicking a component that has been on the page for a while never hits it. That asymmetry is the bug: an auto-added component is an implementation detail and must behave exactly like selecting an existing one.
+
+**The fix** is `ManageableResource.refreshElements()`, called from a new `componentUpdated` bus event that `useCwaResource` emits in `onUpdated`. It recomputes `getAllEls()`, and when the set has changed it rebinds the listeners and emits `componentMounted` so ancestors re-read too — the same path a mount already takes. The stack item holds the same ref object, so `ComponentFocus` repositions itself and no focus component is recreated.
+
+- **Throttled at 40ms, leading and trailing**, matching `Admin.emitRedraw` exactly (`lodash-es/throttle`, created lazily on the instance). Values change on every keystroke, so the emit is frequent. **Leading must stay true** — the auto-add selection happens immediately after creation, so the first refresh has to be synchronous or the bug returns. **Trailing must stay true** — the last render of a burst is the one that settles the element. `clear()` cancels it, so a pending trailing call cannot fire against a torn-down instance.
+- **Gated on `$cwa.auth.isAdmin`, read inside the callback.** `ManageableResource` only exists for admins, so a public render must do no work at all. Reading it at setup would capture the `ComputedRef` and make the gate permanently truthy — the #260 trap.
+- The same detached-element guard as the mount emit, so a component updating inside a deactivated `KeepAlive` does not record elements that are off the page.
+
+**`triggerClick` no longer swallows a dropped selection.** It waited on `watchOnce`, which is spent on the first change even when that change is the empty array `clear()` assigns, and the 1s timeout only stopped the watcher — it never resolved, so the promise hung and the `consola.error` never ran. It now watches with `watch`, re-checking each change, and resolves on timeout. Without this the late-root case fails silently: the component is never selected and nothing is logged.
+
+Tests: `admin/auto-add-selection.spec.ts` drives the real stores, group, position, loader, manager and focus component through the auto-add path and asserts the same outcome as a control case that clicks a pre-existing component — 3 of its 4 cases failed against the old code (detached element, never selected, and a click that selected nothing), the control passed throughout. Unit cover in `admin/manageable-resource.spec.ts` (rebinding, no-op when unchanged, cancel on clear, the two `triggerClick` paths) and the two composable specs (the emit, the admin gate, the listener).
+
+---
+
 ## Bug: a layout with an unresolvable `uiComponent` rendered a blank page silently ✅ Fixed ([#277](https://github.com/components-web-app/cwa-nuxt-module/issues/277))
 
 When an app renames or deletes a layout component, the Layout resource's stored `uiComponent` dangles. **Vue renders an unresolvable name as an unknown HTML element** (`<cwalayoutdeletedbyapp>`), not as nothing — so the page content is technically still in the DOM, but inside an unstyled inline element with every bit of layout chrome gone. That is what reads as a blank page.
