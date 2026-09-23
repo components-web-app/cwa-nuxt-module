@@ -1346,6 +1346,44 @@ Deliberately out of scope: a timeout on the wait for `docsPath`, resolving `docs
 
 ---
 
+## Large images are downscaled in the browser before upload ([#335](https://github.com/components-web-app/cwa-nuxt-module/issues/335))
+
+**On by default.** `useCwaResourceUpload.handleInputChangeFile` passes the picked file through `downscaleImageFile` (`src/runtime/files/image-downscale.ts`) before the `FormData` is built. The argument is not only API memory — GD decodes the whole image inside the upload request at about 11.7 MB per megapixel, so a 48 MP photo peaks at ~563 MB — it is that above a certain size a bigger image gives the visitor nothing and costs them download time and the site storage.
+
+**Defaults: 2560 px longest edge, 20 MP, quality 0.85.** 2560 is larger than anything a CWA layout renders. Quality 0.85 is the usual knee of the JPEG curve, and the not-smaller guard below means a bad choice can only cost a re-encode, never bytes.
+
+**The defaults are chosen to sit under the template's server-side caps, and the two must be kept in step.** components-web-app accepts 20 MB uploads (`3338b9c`) and refuses over 40 MP with a 422 rather than a 500 (`d067024`, `Assert\Image(maxPixels: 40_000_000)` on `Image::$file`). The module's job is to make that refusal rare, not to replace it — a direct API upload never runs this code. **If the template's caps move, move these defaults, and say so in the docs.**
+
+**Threshold and target are separate numbers**, because one limit conflates "is this worth touching" with "how big should it end up". `thresholdEdge` / `thresholdPixels` decide whether the file qualifies; `maxEdge` / `maxPixels` decide what it becomes. They default to the same values, so anything above the target is resized.
+
+**Both an edge rule and a pixel rule, and it matters which triggers what.** The server's rule is pixels; the display rule is edge length. A file qualifies when it is over **either** threshold, and is scaled to fit **both** targets. With the default 2560 edge the pixel cap can never bind (2560² = 6.6 MP), and that is fine: it is the safety net for an application that raises `maxEdge` — a 20000×1000 panorama is only 20 MP, so an edge-only rule would scale it 7.8× for no server-side reason, and a pixel-only rule would leave a 8000×6000 photo at 48 MP.
+
+**If the re-encoded file is not smaller than the original, the original is uploaded.** One size comparison, no format heuristics, and it can never make things worse. It is what covers a palette PNG decoding to 32-bit RGBA and re-encoding larger — the case that would otherwise argue for excluding PNG, which we do not want to do because transparency has to survive.
+
+**The format is kept**: a JPEG stays a JPEG, a PNG stays a PNG, and the name, type and `lastModified` carry over.
+
+**Excluded: SVG, GIF and animated WebP.** SVG and GIF by type; an animated WebP is detected by reading **21 bytes** of the RIFF header (`RIFF`…`WEBP`…`VP8X`, then the `ANIM` flag `0x02` at byte 20), not by guessing from the extension — a canvas round-trip would silently drop the animation. Anything outside `image/jpeg|png|webp` — AVIF included — is passed through untouched. Every failure path (no `createImageBitmap`, a decode or encode throw, an unreadable header) uploads the original; the helper never rejects.
+
+**EXIF is applied and then dropped.** `createImageBitmap(file, { imageOrientation: 'from-image' })` bakes the orientation in, and the re-encode carries no EXIF — which also strips **GPS and camera metadata from phone photos**. A privacy gain for a public site, a loss for anyone who wants capture metadata, and one of the reasons the opt-out exists. **Known limit:** the `imageOrientation` option is ignored rather than rejected on Safari below 16.4, which would upload a rotated photo un-rotated; not defended against, and part of the manual browser check.
+
+**No UI message about what was resized.** Graceful resizing on upload is expected; a notice invites worry. The only case worth surfacing is one that still fails the server's cap, which the template already reports.
+
+**The decision logic is pure and the browser APIs are injected.** `resolveImageDownscaleOptions`, `isDownscalableImageType`, `isAnimatedWebpHeader`, `getDownscaleTarget` and `downscaleImageFile` are unit-tested with fake deps; `createBrowserImageDownscaleDeps` is the only untested part, because there is no canvas in happy-dom. **Encode quality, EXIF orientation and the Safari fallbacks (`createImageBitmap` resize options, `OffscreenCanvas.convertToBlob`) are proven only by a manual browser check** — do not write a test that appears to cover the encode when it is mocked end to end.
+
+Configuration, module-wide and per call:
+
+```ts
+// nuxt.config.ts
+cwa: { upload: { image: { enabled: true, thresholdEdge: 2560, thresholdPixels: 20_000_000, maxEdge: 2560, maxPixels: 20_000_000, quality: 0.85 } } }
+
+// one field that must keep originals
+const { bind } = useCwaResourceUpload(iri, 'file', 'File', { imageDownscale: { enabled: false } })
+```
+
+Per call wins over the module default, which wins over the built-in defaults; an `undefined` value never overrides. **The built-in defaults live in exactly one place** (`DEFAULTS` in `image-downscale.ts`) — unlike `pageCache`, nothing is decided at build time, so `module.ts` needs no second copy and must not grow one.
+
+---
+
 ## `allowedComponents` format contract
 
 The `:allowed-components` prop on `<CwaComponentGroup>` accepts **component collection IRIs** — relative paths without the API path prefix (e.g. `'/component/navigation_links'`). The synchroniser normalises these to the prefixed format before storing or comparing.

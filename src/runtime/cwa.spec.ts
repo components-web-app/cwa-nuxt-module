@@ -380,6 +380,12 @@ describe('Cwa delegation methods and getters', () => {
     expect($cwa.pageDataConfig).toBe(pageData)
   })
 
+  test('uploadConfig returns options.upload', () => {
+    const upload = { image: { maxEdge: 1920 } }
+    const $cwa = createCwa({ storeName, upload })
+    expect($cwa.uploadConfig).toBe(upload)
+  })
+
   test('config returns siteConfig.config', () => {
     const $cwa = createCwa({ storeName })
     expect($cwa.config).toBe(SiteConfig.mock.results[0].value.config)

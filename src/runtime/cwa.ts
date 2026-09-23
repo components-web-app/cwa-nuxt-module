@@ -165,6 +165,10 @@ export default class Cwa {
     return this.options.pageData
   }
 
+  public get uploadConfig() {
+    return this.options.upload
+  }
+
   public get config() {
     return this.siteConfig.config
   }
