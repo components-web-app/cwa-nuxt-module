@@ -1142,6 +1142,68 @@ The original `route-middleware.ts:64` todo — "redirects do not work if clickin
 
 ---
 
+## The layer's admin composables live in `src/layer/_composables/` ([#330](https://github.com/components-web-app/cwa-nuxt-module/issues/330))
+
+**Nothing but a Vue page may live under `src/layer/pages/`.** Nuxt scans the pages directory for every extension it resolves — `.js`, `.jsx`, `.mjs`, `.ts`, `.tsx`, `.vue` — so the seven composables that used to sit in `pages/_cwa/index/composables/` were each registered as a **route** with its own lazy chunk (`_cwa-index-composables-useItemPage`, path `composables/useItemPage`, …). Every one of them was also a dynamic entry of the app entry in the client manifest, so it became a `<link rel="prefetch">` hint on every **public** page — admin-only code advertised to anonymous visitors (#329, #331).
+
+They moved to `src/layer/_composables/`, imported explicitly as `#cwa-layer/_composables/<name>`.
+
+**Why `_composables/` and not `composables/`:** a layer's `composables/` directory is auto-imported, which would put seven admin-only composables into every consuming app's global import map under names the app never asked for — the opposite of the least-exposure principle, and a namespace collision waiting to happen. The underscore prefix means the directory matches none of Nuxt's magic directory names, so it is inert: nothing scans it, and the only way in is an explicit import. That is exactly why `src/layer/_components/` already exists beside the auto-scanned `src/layer/components/`, and `_composables/` relies on the same mechanism — **being outside every directory Nuxt scans**, not on an `ignore` pattern or a `pages:extend` hook that a consuming app could undo.
+
+`copy-layer` (`copyfiles -u 1 "./src/layer/**" dist/`) is a wholesale glob, so a new top-level layer directory ships without any change to the build.
+
+**The guard is `src/layer/pages.spec.ts`**, which asserts that every file the layer ships from `pages/` is a `.vue` file. It is a filesystem invariant rather than a route-table assertion because `nuxi prepare` does not emit `routes.mjs` — the route table only exists after a real build, so there is nothing for vitest to read. The built route table is the honest end-to-end check and belongs with the other build-output assertions in `test/e2e/entry-bundle-markers.mjs` (#331), not in a second mechanism of its own.
+
+The spec ignores `*.spec.*` because `copy-layer` strips those, so the specs still under `pages/` are routes in the dev playground only and never reach the published package.
+
+---
+
+## `v-html` re-parses the LCP paragraph on hydration — `v-cwa-html` ([#333](https://github.com/components-web-app/cwa-nuxt-module/issues/333))
+
+Since Vue **3.5.39** (`vuejs/core@024cf06d`, "force patch dynamic props when hydrating"), hydration re-assigns `innerHTML` on every `v-html` element even when the server HTML is byte-identical. `v-html` compiles to a *dynamic* prop — `_createElementBlock("div", { class, innerHTML: _ctx.html }, null, 8, ["innerHTML"])` — and `hydrateElement` force-patches anything in `dynamicProps` (`@vue/runtime-core/dist/runtime-core.esm-bundler.js:2207-2213`, `… || dynamicProps && dynamicProps.includes(key)`). The `isUnchangedResourceProp` escape hatch does not help: it covers only `src`/`srcset`/`href`/`poster` (`:2405`), and `patchDOMProp` assigns unconditionally with no equality check (`@vue/runtime-dom/dist/runtime-dom.esm-bundler.js:645-649`). vuejs/core#15138 reported the side effect and it was closed as intended.
+
+So the browser throws away the server-rendered paragraphs and parses them again during hydration. On a CMS page the largest paragraph is usually the LCP element, which moves from first paint to after the JS has run — observed FCP 0.80 s against observed LCP 1.44 s on preview.cwa.rocks.
+
+**`vCwaHtml` (`src/runtime/directives/cwa-html.ts`) is returned by `useHtmlContent`**, so a component writes `v-cwa-html="htmlContent"` instead of `v-html`:
+
+```ts
+const { vCwaHtml } = useHtmlContent(htmlContainer, htmlContent)
+```
+
+### `beforeUpdate`, never `updated`
+
+The issue proposed `updated`. **That would have been a live regression**, and it is the reason the ordering test exists.
+
+A `flush: 'post'` watcher job is queued with **no `job.id`** — `runtime-core.esm-bundler.js:895-919` sets `job.id = instance.uid` only in the `isPre` branch — and so is a directive's `updated` hook. Post-flush callbacks sort stably by id, so insertion order decides, and the watcher's scheduler fires synchronously when the value changes, *before* the render effect flushes and queues the directive hook. `useHtmlContent`'s anchor-conversion watcher (`html-content.ts:90-93`, `flush: 'post'`, #275) would therefore have run against the **outgoing** HTML on every edit: anchors in the new content never converted to `CwaLink`, and the `createApp` instances it had mounted orphaned inside DOM that is then discarded.
+
+`beforeUpdate` is invoked synchronously inside `patchElement`, which is exactly where `v-html`'s prop patch happens today, so it restores the current ordering precisely. `binding.oldValue` is populated for any hook (`invokeDirectiveHook`, `:762-781`), so the `!==` guard works there. Mount is unaffected either way: the element's directive `mounted` hook is queued before the component's `onMounted`, which creates the watcher with `immediate: true` and runs it synchronously.
+
+### Returned from the composable, not exported and not global
+
+- **Global registration** from `runtime/plugin.ts` would put the name in every consuming app's global directive namespace whether used or not, resolve at runtime (`resolveDirective`, so a typo is a warning rather than a type error) and ship in every client bundle.
+- **A standalone export** adds a public export path, and **cannot be auto-imported**: the SFC compiler emits `resolveDirective("cwa-html")` whenever the identifier is not already a setup binding, and unimport runs after that, so the name never appears for it to inject. An auto-imported directive would be a dead entry.
+- **Returning it** adds one key to a composable that already returns nothing, is a compile-time local binding (`[[_unref(vCwaHtml), htmlContent.value]]`, and `_ssrGetDirectiveProps` on the server), and keeps the directive next to the container ref it shares an element with — which is what lets one spec pin the ordering contract above.
+
+`src/runtime/directives/` is deliberately **not** in any `addImportsDir`.
+
+### A `bind` object is not viable
+
+The issue's third option — `useHtmlContent` returning a `bind` object so components never write a directive — was tested and rejected. `v-bind="{ innerHTML }"` does survive hydration (FULL_PROPS, `dynamicProps` is null, so the force-patch never fires), but `@vue/compiler-ssr` emits **no children** for it: `_push(\`<div${_ssrRenderAttrs(_mergeProps({class:"prose"}, _ctx.bind, _attrs))}></div>\`)`, and `ssrRenderAttrs` skips `innerHTML`. The server would render an empty container. Only a directive gets the `getSSRProps` → `_temp0.innerHTML` branch.
+
+### The `mounted` guard, and when the saving does not land
+
+`mounted` assigns only when `el.innerHTML !== value`, so the win depends on the browser's reserialisation of the stored string matching it. **For editor-written content it always does**: TipTap's `getHTML()` is `container.innerHTML` of a detached div (`@tiptap/core/dist/index.js:1222-1226`), so stored CWA HTML is already a fixed point. Measured as matching: bare `<br>`, `&nbsp;`, `&amp;`, `&lt;`, literal curly quotes, double-quoted attributes, attribute order, comments, empty elements.
+
+Measured as **differing**, where `mounted` re-assigns once — today's behaviour, no worse, but no saving either: self-closed `<br/>`, numeric entities (`&#160;` → `&nbsp;`), a raw `&` in an attribute, unquoted or single-quoted attributes, uppercase tags, and boolean attributes without `=""`. All of these mean the HTML was written by something other than the editor — fixtures, the REST API, a migration.
+
+### The win only lands per app
+
+The module change alone changes nothing. Each app has to switch its own components, including the **components-web-app template**, which carries its own copies of `HtmlContent.vue` / `ui/AltHtmlContent.vue`. The playground copies are the worked example.
+
+Left alone deliberately: `ConfirmDialog.vue:47` and `AddComponentDialog.vue:41` are admin UI, only ever instantiated client-side in response to an admin action. `ErrorPage.vue:115` *is* a public page that hydrates — the issue's "not hydrated on public pages" is wrong about that one — but it is gated on `v-if="stack"` and is a debug `<pre>`, never an LCP element. `playground/.../ExampleForm.vue:158` is a public hydrated `v-html` the issue missed; it is a checkbox label, so it is never an LCP candidate either.
+
+---
+
 ## A component still being added takes changes as merge-patch ([#319](https://github.com/components-web-app/cwa-nuxt-module/issues/319))
 
 While a component is being added (`_metadata.persisted === false`), `ResourcesManager.updateResource` applies a change to the local copy instead of PATCHing. Its `mergeWith` customiser used to **join arrays** (`b.concat(a)`), so selecting a second style stored the first twice, deselecting never removed anything, and choosing Default (`null`) threw. It now mirrors the API's merge-patch: an array or `null` replaces the stored value, and objects merge field by field. Every caller already sends the complete array, so nothing relied on joining.

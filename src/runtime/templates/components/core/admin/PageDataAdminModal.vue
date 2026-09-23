@@ -188,24 +188,24 @@
 </template>
 
 <script setup lang="ts">
-import { useDataType } from '#cwa-layer/pages/_cwa/index/composables/useDataType'
+import { useDataType } from '#cwa-layer/_composables/useDataType'
 import { computed, onMounted, ref, watch, watchEffect } from 'vue'
 import { navigateTo, useCwa } from '#imports'
-import { useParentPageLoader } from '#cwa-layer/pages/_cwa/index/composables/useParentPageLoader'
-import { useParentPageDataLoader } from '#cwa-layer/pages/_cwa/index/composables/useParentPageDataLoader'
+import { useParentPageLoader } from '#cwa-layer/_composables/useParentPageLoader'
+import { useParentPageDataLoader } from '#cwa-layer/_composables/useParentPageDataLoader'
 import ResourceModal from '#cwa/templates/components/core/admin/ResourceModal.vue'
 import ResourceModalTabs from '#cwa/templates/components/core/admin/ResourceModalTabs.vue'
 import type { ResourceModalTab } from '#cwa/templates/components/core/admin/ResourceModalTabs.vue'
 import ModalInfo from '#cwa/templates/components/core/admin/form/ModalInfo.vue'
 import ModalInput from '#cwa/templates/components/core/admin/form/ModalInput.vue'
-import { useItemPage } from '#cwa-layer/pages/_cwa/index/composables/useItemPage'
+import { useItemPage } from '#cwa-layer/_composables/useItemPage'
 import type { SelectOption } from '#cwa/composables/cwa-select-input'
 import ModalSelect from '#cwa/templates/components/core/admin/form/ModalSelect.vue'
 import ModalRadioTabs from '#cwa/templates/components/core/admin/form/ModalRadioTabs.vue'
 import type { CwaResource } from '#cwa/resources/resource-utils'
 import RoutesTab from '#cwa/templates/components/core/admin/RoutesTab.vue'
-import { useDynamicPageLoader } from '#cwa-layer/pages/_cwa/index/composables/useDynamicPageLoader'
-import { useDataList } from '#cwa-layer/pages/_cwa/index/composables/useDataList'
+import { useDynamicPageLoader } from '#cwa-layer/_composables/useDynamicPageLoader'
+import { useDataList } from '#cwa-layer/_composables/useDataList'
 
 const $cwa = useCwa()
 const { parentPages, loadParentPageOptions } = useParentPageLoader()

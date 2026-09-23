@@ -41,7 +41,7 @@ import ListContent from '#cwa/templates/components/core/admin/ListContent.vue'
 import { CwaUserRoles } from '#cwa/storage/stores/auth/state'
 import ListFilter from '#cwa/templates/components/core/admin/ListFilter.vue'
 import ResourceModalOverlay from '#cwa/templates/components/core/admin/ResourceModalOverlay.vue'
-import { useListPage } from '#cwa-layer/pages/_cwa/index/composables/useListPage'
+import { useListPage } from '#cwa-layer/_composables/useListPage'
 import { definePageMeta, useHead } from '#imports'
 
 const listContent = ref<InstanceType<typeof ListContent> | null>(null)

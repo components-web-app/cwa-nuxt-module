@@ -244,11 +244,11 @@ import RoutesTab from '#cwa/templates/components/core/admin/RoutesTab.vue'
 import type { SelectOption } from '#cwa/composables/cwa-select-input'
 import type { CwaResource } from '#cwa/resources/resource-utils'
 import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/resources/resource-utils'
-import { useItemPage } from '#cwa-layer/pages/_cwa/index/composables/useItemPage'
-import { useParentPageLoader } from '#cwa-layer/pages/_cwa/index/composables/useParentPageLoader'
-import { useParentPageDataLoader } from '#cwa-layer/pages/_cwa/index/composables/useParentPageDataLoader'
-import { useDynamicPageLoader } from '#cwa-layer/pages/_cwa/index/composables/useDynamicPageLoader'
-import { useDataType } from '#cwa-layer/pages/_cwa/index/composables/useDataType'
+import { useItemPage } from '#cwa-layer/_composables/useItemPage'
+import { useParentPageLoader } from '#cwa-layer/_composables/useParentPageLoader'
+import { useParentPageDataLoader } from '#cwa-layer/_composables/useParentPageDataLoader'
+import { useDynamicPageLoader } from '#cwa-layer/_composables/useDynamicPageLoader'
+import { useDataType } from '#cwa-layer/_composables/useDataType'
 
 const emit = defineEmits<{
   close: []

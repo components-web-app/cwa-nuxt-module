@@ -67,7 +67,7 @@
 <script setup lang="ts">
 import ListHeading from '#cwa/templates/components/core/admin/ListHeading.vue'
 import ListContainer from '#cwa/templates/components/core/admin/ListContainer.vue'
-import { useDataList } from '#cwa-layer/pages/_cwa/index/composables/useDataList'
+import { useDataList } from '#cwa-layer/_composables/useDataList'
 import Spinner from '#cwa/templates/components/utils/Spinner.vue'
 import { definePageMeta, useHead } from '#imports'
 

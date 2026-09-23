@@ -10,7 +10,7 @@ const { mockUseItemPage } = vi.hoisted(() => ({
   mockUseItemPage: vi.fn(),
 }))
 
-vi.mock('../composables/useItemPage', () => ({
+vi.mock('#cwa-layer/_composables/useItemPage', () => ({
   useItemPage: mockUseItemPage,
 }))
 
