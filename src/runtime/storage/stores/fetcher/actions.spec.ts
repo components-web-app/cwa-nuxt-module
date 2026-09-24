@@ -794,6 +794,37 @@ describe('Fetcher store action -> depth tracking (setManifestIrisByDepth / regis
     expect(fetcherState.depthPaths[0]).toBeUndefined()
   })
 
+  test('a manifest with no repeated IRI does not warn', () => {
+    setManifest([
+      depthNode(['/_/routes//conference', '/page_data/parent', '/_/pages/parent-template', '/_/component_positions/parent-cp']),
+      depthNode(['/_/routes//conference/programme', '/page_data/child', '/_/pages/child-template', '/_/component_positions/child-cp']),
+    ])
+    expect(logger.warn).not.toHaveBeenCalled()
+  })
+
+  test('an IRI recorded at more than one depth warns once, naming the IRI and both depths', () => {
+    setManifest([
+      depthNode(['/_/routes//conference', '/page_data/parent', '/_/pages/shared-template', '/_/component_groups/cg', '/_/component_positions/dynamic-cp']),
+      depthNode(['/_/routes//conference/programme', '/page_data/child', '/_/pages/shared-template', '/_/component_groups/cg', '/_/component_positions/dynamic-cp']),
+    ])
+    expect(logger.warn).toHaveBeenCalledTimes(1)
+    const warning = vi.mocked(logger.warn).mock.calls[0]![0] as string
+    expect(warning).toContain('\'/_/pages/shared-template\' (depths 0, 1)')
+    expect(warning).toContain('\'/_/component_groups/cg\' (depths 0, 1)')
+    expect(warning).toContain('\'/_/component_positions/dynamic-cp\' (depths 0, 1)')
+    expect(warning).not.toContain('/page_data/parent')
+  })
+
+  test('an IRI repeated across three depths names every depth in the one warning', () => {
+    setManifest([
+      depthNode(['/_/routes//a', '/_/pages/shared-template']),
+      depthNode(['/_/routes//a/b', '/_/pages/shared-template']),
+      depthNode(['/_/routes//a/b/c', '/_/pages/shared-template']),
+    ])
+    expect(logger.warn).toHaveBeenCalledTimes(1)
+    expect(vi.mocked(logger.warn).mock.calls[0]![0]).toContain('\'/_/pages/shared-template\' (depths 0, 1, 2)')
+  })
+
   test('registerIriDepth adds an IRI the manifest did not contain', () => {
     fetcherActions.registerIriDepth({ iri: '/component/some-uuid', depth: 0 })
     expect(fetcherState.iriDepths['/component/some-uuid']).toBe(0)

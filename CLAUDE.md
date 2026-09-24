@@ -1397,6 +1397,36 @@ A nested group's `location` may be the component's draft `iri` or its `published
 
 ---
 
+## A shared template page at two depths renders the deepest depth's dynamic components
+
+**Only the dynamic `ComponentPosition` response varies by the `path` request header**, and that is what keeps this small. The bundle reads the header in exactly **one** place — `PageDataProvider.php:51`, `$request->headers->get('path')`; a repo-wide grep for `headers->get('path')` returns that line alone. Its callers are `getPageData()` and `getOriginalRequestPath()`, and the only non-fixture consumer of either is `ComponentPositionNormalizer`, at `:162` (behind the `if (!$object->pageDataProperty) return $object;` guard at `:152`) and `:105` (writing `_metadata.pageDataPath`). `Vary: path` is scoped to match: `ComponentPositionEventListener.php:49-61` returns early unless the data is a `ComponentPosition` on a `GET`, then sets it only `if ($data->getPageDataProperty())`. Nothing varies on a Route, Page, PageData, Layout or ComponentGroup.
+
+**The variance does not propagate.** `normalizeForPageData` ends at `:225` with `$object->setComponent($component)`, read off the page-data entity by property accessor — so two depths resolve to two **distinct component IRIs**, which already coexist in the store. Only three fields on the position differ: `component`, `_metadata.pageDataPath` and `_metadata.isDynamicPosition`.
+
+**The manifest emits a shared template Page at both depths by design.** `ManifestDepthGroupTrait.php:33-39` re-initialises `$seen` **inside** the per-depth loop; only `layout` is deduped across depths (`$emittedLayouts`). So a Page shared by a parent and a child page data, its component groups and its positions are all listed twice.
+
+**What we then do with it, and why the parent depth is wrong.** `iriDepths` holds one depth per IRI and the loop in `setManifestIrisByDepth` ascends, so the **deepest** depth wins; `irisByDepth[0]` and `irisByDepth[1]` both contain the shared page IRI, so `pageIriAtDepth(0)` and `pageIriAtDepth(1)` return the same one and both `CwaPage` depths render the same template; and `addFetchResource` refuses the repeated position (`fetchStatus.resources.includes(event.resource)`), so exactly **one** request goes out, carrying the child's path. `ComponentPosition.vue:43` reads the single store entry. The parent depth therefore renders the **child's** dynamic component, silently — no error, no failed request, no warning until now. `depthPaths` is not affected; it is keyed by depth and stays correct.
+
+`setManifestIrisByDepth` now emits **one** `logger.warn` per manifest naming every repeated IRI and all of its depths. Deepest-wins is deliberately unchanged: first-wins would simply break the child instead of the parent, and neither is correct.
+
+**No site does this today and the fix is deferred.** It is not marginal when it happens — a template worth sharing between two page datas is mostly dynamic positions, since static ones would render identically twice — but it is unused, and the areas it touches are where the silent bugs live (#256 retention, #261 depth headers, #257 eviction).
+
+**The shape it would take.** Fetch identity becomes (IRI, `path` header) so the position is requested once per depth; the store keeps IRI keys and the position entry gains a map of only the fields that vary, so `byId`, `allIds`, `currentIds` and every public IRI-keyed composable are untouched; `ComponentPosition.vue` picks its variant from the injected depth. **`fetchStatus.resources` must stay bare IRIs**: the surrogate-key filter (`api/http-cache.ts:109`) is `getResourceTypeFromIri(id) !== undefined`, a **prefix** test, so a composite id like `/_/component_positions/x::/conference` passes it and is emitted as a key the API's purger can never match — a silent loss of invalidation, the same failure mode as a mismatched `cwa-html`. `positionsByComponent` and the delete cascade would also need the depth, and Mercure's position refetch and `ResourceLoader`'s client refetch each resolve one depth today.
+
+**What makes it tractable later:** the render depth is already available by injection — `CwaPage.vue:47` provides `'cwa-page-own-depth'`, inherited through groups and positions — so no new plumbing is needed to choose a variant at render time. Layout-level groups sit above `CwaPage` and inject the default `0`, which is right, since layouts are the one thing the manifest dedupes across depths.
+
+**Unreproduced risk:** a shared template puts two `ComponentGroup` instances on the page for one group IRI, each with its own debounce queue and each listening to the `reorder` bus, and puts two DOM instances of one position IRI in front of an admin stack that is IRI-keyed throughout (`isResourceInStack`, `refreshFocusForIri`, `currentIri`). Whether that double-PATCHes through the #339 synchroniser or the #316 reorder queue was not tested.
+
+### The `@type` variance guard in `isFetchStatusResourcesResolved` is dead — leave it alone
+
+`getters.ts:334-337` compares `resourceData.data?.['@type']` against `CwaResourceTypes.COMPONENT_POSITION`, which is the string `'COMPONENT_POSITION'`, while the API sends `'ComponentPosition'` (bundle `features/assets/schema/component_position.schema.json:17`). The condition has never been true in production. Its test at `getters.spec.ts:373` constructs `'@type': CwaResourceTypes.COMPONENT_POSITION` — the enum key, not an API value — so it **passes for the wrong reason**.
+
+**Correcting the `@type` alone would be a regression, which is why it is recorded rather than fixed.** The second half compares `apiState.headers.path` (a depth path, `/conference`) against `fetchStatus.path` (the primary IRI, `/_api/_/routes//conference`); those can never be equal either, so a "fixed" guard would return `false` for **every** page containing a dynamic position, making `isCurrentSuccessResourcesResolved` permanently false and breaking #256's early switch and #257's instant revisit together. Any future change here has to fix both halves at once and be tested against the real `'ComponentPosition'` string.
+
+The live counterpart does work and is the precedent to follow: `storage/stores/resources/actions.ts:555-565` clears a dynamic position's `data` when it is re-fetched under a different `path` header, keyed on `_metadata.isDynamicPosition === true` — a real API field.
+
+---
+
 ## A group the synchroniser cannot find is PATCHed with its location twice ([#339](https://github.com/components-web-app/cwa-nuxt-module/issues/339))
 
 Loading a page as a signed-in admin sent `PATCH /_/component_groups/{id}` for groups that already belonged to the location, with the location IRI **duplicated** — `{"layouts": [X, X]}`, and `{"pages": [P, P]}` for a page's own group.

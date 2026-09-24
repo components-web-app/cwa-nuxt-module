@@ -147,9 +147,14 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
       const prefix = ResourceTypeFromIri.getPathPrefix() || ''
       const routePathPrefix = `${prefix}/_/routes/`
       clearIriDepths()
+      const repeatedDepths: Record<string, number[]> = {}
       for (let depth = 0; depth < irisByDepth.length; depth++) {
         let pageDataIri: string | undefined
         for (const iri of irisByDepth[depth]!) {
+          const previousDepth = fetcherState.iriDepths[iri]
+          if (previousDepth !== undefined && previousDepth !== depth) {
+            repeatedDepths[iri] = [...(repeatedDepths[iri] || [previousDepth]), depth]
+          }
           fetcherState.iriDepths[iri] = depth
           if (fetcherState.depthPaths[depth] === undefined && iri.startsWith(routePathPrefix)) {
             fetcherState.depthPaths[depth] = iri.substring(routePathPrefix.length)
@@ -161,6 +166,11 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
         if (fetcherState.depthPaths[depth] === undefined && pageDataIri !== undefined) {
           fetcherState.depthPaths[depth] = pageDataIri
         }
+      }
+      const repeatedIris = Object.entries(repeatedDepths)
+      if (repeatedIris.length) {
+        const listed = repeatedIris.map(([iri, depths]) => `'${iri}' (depths ${depths.join(', ')})`).join(', ')
+        logger.warn(`Manifest resources are listed at more than one depth: ${listed}. Only the deepest depth is recorded, so it is the only one used for the 'path' request header and a shallower depth will render the deepest depth's resolution of any dynamic component position.`)
       }
     },
     registerIriDepth(event: RegisterIriDepthEvent) {
