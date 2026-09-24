@@ -57,6 +57,7 @@ export default class FetchStatusManager {
 
   private readonly routeCacheLimit: number
   private readonly nuxtApp: NuxtApp
+  private readonly primaryFetchError: { handler?: () => void } = {}
 
   constructor(
     fetcherStoreDefinition: FetcherStore,
@@ -72,6 +73,10 @@ export default class FetchStatusManager {
     this._resourcesStore = resourcesStoreDefinition.useStore()
     this.routeCacheLimit = routeCacheLimit ?? 50
     this.nuxtApp = nuxtApp
+  }
+
+  public onPrimaryFetchError(handler: () => void) {
+    this.primaryFetchError.handler = handler
   }
 
   public async getFetchedCurrentResource(iri: string, timeout?: number): Promise<CwaResource | undefined> {
@@ -187,6 +192,9 @@ export default class FetchStatusManager {
     const showErrorPage = this.finishFetchShowError(fetchStatus, event.resource)
 
     const setFinalResourceFetchError = (error: CwaResourceError | undefined) => {
+      if (showErrorPage) {
+        this.primaryFetchError.handler?.()
+      }
       this.resourcesStore.setResourceFetchError({
         iri: event.resource,
         error,

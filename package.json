@@ -53,7 +53,7 @@
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
     "test": "vitest --run --reporter=verbose",
-    "test:e2e": "pnpm run dev:build && node test/e2e/entry-bundle-markers.mjs && node test/e2e/prefetch-hints.mjs && node test/e2e/ssr-concurrent-status.mjs",
+    "test:e2e": "pnpm run dev:build && node test/e2e/entry-bundle-markers.mjs && node test/e2e/prefetch-hints.mjs && node test/e2e/ssr-concurrent-status.mjs && node test/e2e/page-cache-error-headers.mjs",
     "test:watch": "vitest --watch --reporter=verbose",
     "test:watch:coverage": "vitest --watch --coverage --reporter=verbose",
     "test:coverage": "vitest --run --coverage --reporter=verbose",

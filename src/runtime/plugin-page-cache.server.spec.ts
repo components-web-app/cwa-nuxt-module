@@ -5,7 +5,7 @@ import { mockNuxtImport } from '@nuxt/test-utils/runtime'
 import { computed, ref } from 'vue'
 import { ResourceTypeFromIri } from '#cwa/resources/resource-utils'
 
-const mockEvent = vi.hoisted(() => ({ value: undefined as undefined | { context: Record<string, unknown> } }))
+const mockEvent = vi.hoisted(() => ({ value: undefined as undefined | { context: Record<string, unknown>, headers: Headers } }))
 mockNuxtImport('useRequestEvent', () => () => mockEvent.value)
 
 vi.mock('#build/cwa-options', () => ({
@@ -41,7 +41,7 @@ describe('cwa page cache plugin', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     ResourceTypeFromIri.setPathPrefix('/_api')
-    mockEvent.value = { context: {} }
+    mockEvent.value = { context: {}, headers: new Headers() }
   })
 
   afterEach(() => {
@@ -102,5 +102,34 @@ describe('cwa page cache plugin', () => {
 
     expect(() => plugin.setup(nuxtApp as never)).not.toThrow()
     expect(() => rendered()).not.toThrow()
+  })
+
+  describe('#340 the internal error render', () => {
+    beforeEach(() => {
+      mockEvent.value = { context: {}, headers: new Headers({ 'x-nuxt-error': 'true' }) }
+    })
+
+    test('declines, although Nitro sees the error render itself as a 200', async () => {
+      const plugin = await importPlugin()
+      const { nuxtApp, rendered } = createNuxtApp(createCwa())
+
+      plugin.setup(nuxtApp as never)
+      rendered()
+
+      expect(mockEvent.value!.context.cwaPageCache).toEqual({ unstorable: true })
+    })
+
+    test('declines even when every API response the error page made was storable', async () => {
+      const plugin = await importPlugin()
+      const { nuxtApp, rendered } = createNuxtApp(createCwa({
+        apiHttpCacheState: { storable: true, sharedMaxAge: 600 },
+      }))
+
+      plugin.setup(nuxtApp as never)
+      rendered()
+
+      expect(mockEvent.value!.context.cwaPageCache).not.toHaveProperty('surrogateKey')
+      expect(mockEvent.value!.context.cwaPageCache).toEqual({ unstorable: true })
+    })
   })
 })

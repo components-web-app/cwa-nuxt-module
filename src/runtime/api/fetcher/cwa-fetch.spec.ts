@@ -325,4 +325,22 @@ describe('CwaFetch -> error responses and the page cache', () => {
 
     expect(cwaFetch.httpCacheState.storable).toBe(false)
   })
+
+  test('#340 markUnstorable makes the render unstorable while keeping the API freshness bound', () => {
+    const { cwaFetch, onResponse } = serverInstance()
+
+    onResponse(createResponseCtx(200, 'public, s-maxage=600'))
+    cwaFetch.markUnstorable()
+
+    expect(cwaFetch.httpCacheState).toEqual({ storable: false, sharedMaxAge: 600 })
+  })
+
+  test('#340 a storable response after markUnstorable cannot make the render storable again', () => {
+    const { cwaFetch, onResponse } = serverInstance()
+
+    cwaFetch.markUnstorable()
+    onResponse(createResponseCtx(200, 'public, s-maxage=600'))
+
+    expect(cwaFetch.httpCacheState.storable).toBe(false)
+  })
 })

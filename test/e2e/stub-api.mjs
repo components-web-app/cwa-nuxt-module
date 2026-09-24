@@ -2,8 +2,11 @@ import http from 'node:http'
 
 const prefix = '/_api'
 const routeIri = `${prefix}/_/routes//real`
+const scheduledRouteIri = `${prefix}/_/routes//scheduled`
 const pageIri = `${prefix}/_/pages/e2e-page`
 const layoutIri = `${prefix}/_/layouts/e2e-layout`
+const brokenRouteIri = `${prefix}/_/routes//broken`
+const brokenRenderRouteIri = `${prefix}/_/routes//e2e-broken-render`
 
 const resources = {
   [routeIri]: {
@@ -38,6 +41,19 @@ const resources = {
       { iri: routeIri, children: [{ iri: pageIri, children: [{ iri: layoutIri, children: [] }] }] },
     ],
   },
+  [brokenRenderRouteIri]: {
+    '@id': brokenRenderRouteIri,
+    '@type': 'Route',
+    'path': '/e2e-broken-render',
+    'name': 'e2e-broken-render',
+    'page': pageIri,
+    '_metadata': { persisted: true },
+  },
+  [`${prefix}/_/resource_manifest//e2e-broken-render`]: {
+    resource_iris: [
+      { iri: brokenRenderRouteIri, children: [{ iri: pageIri, children: [{ iri: layoutIri, children: [] }] }] },
+    ],
+  },
   [`${prefix}/_/site_config_parameters`]: {
     '@id': `${prefix}/_/site_config_parameters`,
     '@type': 'hydra:Collection',
@@ -48,6 +64,28 @@ const resources = {
   },
 }
 
+const scheduledResources = {
+  [scheduledRouteIri]: {
+    '@id': scheduledRouteIri,
+    '@type': 'Route',
+    'path': '/scheduled',
+    'name': 'scheduled',
+    'page': pageIri,
+    '_metadata': { persisted: true },
+  },
+  [`${prefix}/_/resource_manifest//scheduled`]: {
+    resource_iris: [
+      { iri: scheduledRouteIri, children: [{ iri: pageIri, children: [{ iri: layoutIri, children: [] }] }] },
+    ],
+  },
+}
+
+let scheduledRouteIsLive = false
+
+export function setScheduledRouteLive(isLive) {
+  scheduledRouteIsLive = isLive
+}
+
 const notFound = {
   '@type': 'hydra:Error',
   'hydra:title': 'An error occurred',
@@ -55,13 +93,30 @@ const notFound = {
   'status': 404,
 }
 
+const serverError = {
+  '@type': 'hydra:Error',
+  'hydra:title': 'An error occurred',
+  'hydra:description': 'Internal Server Error',
+  'status': 500,
+}
+
 export function startStubApi(port) {
   const server = http.createServer((req, res) => {
     const path = new URL(req.url, 'http://stub').pathname
-    const body = resources[path]
+    const body = resources[path] || (scheduledRouteIsLive ? scheduledResources[path] : undefined)
     setTimeout(() => {
-      res.writeHead(body ? 200 : 404, { 'content-type': 'application/ld+json' })
-      res.end(JSON.stringify(body || notFound))
+      if (path === brokenRouteIri || path === `${prefix}/_/resource_manifest//broken`) {
+        res.writeHead(500, { 'content-type': 'application/ld+json', 'cache-control': 'no-store, private' })
+        res.end(JSON.stringify(serverError))
+        return
+      }
+      if (!body) {
+        res.writeHead(404, { 'content-type': 'application/ld+json', 'cache-control': 'no-store, private' })
+        res.end(JSON.stringify(notFound))
+        return
+      }
+      res.writeHead(200, { 'content-type': 'application/ld+json', 'cache-control': 'public, max-age=0, s-maxage=600' })
+      res.end(JSON.stringify(body))
     }, 40 + Math.random() * 40)
   })
   return new Promise((resolve, reject) => {

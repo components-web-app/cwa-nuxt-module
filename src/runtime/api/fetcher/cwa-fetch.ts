@@ -72,6 +72,10 @@ export default class CwaFetch {
     this.unauthorised.handler = handler
   }
 
+  public markUnstorable() {
+    this.cacheState.storable = false
+  }
+
   public get httpCacheState(): ApiCacheDirectives {
     return { ...this.cacheState }
   }
