@@ -146,6 +146,34 @@ describe('RoutesTab route binding', () => {
     })
   })
 
+  test('saving a live route the editor left untouched sends no request at all', async () => {
+    const routeIri = '/_/routes//2027'
+    const { updateResource } = mockCwa({
+      [routeIri]: {
+        data: {
+          '@id': routeIri,
+          '@type': 'Route',
+          'name': '/2027',
+          'path': '/2027',
+          'pageData': conferenceIri,
+          'liveAt': '2020-01-01T00:00:00+00:00',
+        },
+        apiState: { status: 'SUCCESS', path: `${routeIri}/redirects` },
+      },
+    })
+    const wrapper = mount(RoutesTab, {
+      props: { pageResource: { ...conference, route: routeIri } as any },
+      shallow: true,
+    })
+    await flushPromises()
+
+    await wrapper.findComponent(RoutesTabView).vm.$emit('changePage', 'manage-route')
+    await wrapper.findComponent(RoutesTabManage).vm.$emit('save')
+    await flushPromises()
+
+    expect(updateResource).not.toHaveBeenCalled()
+  })
+
   test('creating a route for a page still sends the full body including the page', async () => {
     const page = { '@id': '/_/pages/standalone-uuid', '@type': 'Page', 'reference': 'standalone', 'parentPage': null, 'parentPageData': null }
     const { createResource } = mockCwa({ [page['@id']]: { data: page, apiState: { status: 'SUCCESS' } } })

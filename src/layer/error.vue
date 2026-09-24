@@ -8,6 +8,6 @@ defineProps<{
 
 <template>
   <NuxtLayout>
-    <CwaErrorPage :error="error" />
+    <LazyCwaErrorPage :error="error" />
   </NuxtLayout>
 </template>

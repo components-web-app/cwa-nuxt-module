@@ -194,7 +194,7 @@
 <script setup lang="ts">
 import { useDebounceFn } from '@vueuse/core'
 import { computed, ref, watch } from 'vue'
-import { useItemPage } from '../composables/useItemPage'
+import { useItemPage } from '#cwa-layer/_composables/useItemPage'
 import SpinnerTick from '#cwa/templates/components/utils/SpinnerTick.vue'
 import { useResendVerifyEmail } from '#cwa/composables/useResendVerifyEmail'
 import TextButton from '#cwa-layer/_components/TextButton.vue'

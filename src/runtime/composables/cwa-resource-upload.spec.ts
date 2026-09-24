@@ -7,13 +7,28 @@ const mockUpdateResource = vi.hoisted(() => vi.fn().mockResolvedValue(undefined)
 const mockGetResource = vi.hoisted(() => vi.fn())
 const mockEndpointUpload = vi.hoisted(() => ({ value: '/resources/1/upload' }))
 const mockEndpointDelete = vi.hoisted(() => ({ value: '/resources/1' }))
+const mockModuleUploadConfig = vi.hoisted(() => ({ value: undefined as undefined | { image?: Record<string, unknown> } }))
+const mockDownscaleImageFile = vi.hoisted(() => vi.fn(async (file: File) => file))
+const mockBrowserDeps = vi.hoisted(() => ({ decode: () => undefined }))
 
 vi.mock('#cwa/composables/cwa', () => ({
   useCwa: () => ({
     resources: { getResource: mockGetResource },
     resourcesManager: { updateResource: mockUpdateResource },
+    get uploadConfig() {
+      return mockModuleUploadConfig.value
+    },
   }),
 }))
+
+vi.mock('#cwa/files/image-downscale', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('#cwa/files/image-downscale')>()
+  return {
+    ...actual,
+    downscaleImageFile: mockDownscaleImageFile,
+    createBrowserImageDownscaleDeps: () => mockBrowserDeps,
+  }
+})
 
 let endpointCallCount = 0
 vi.mock('#cwa/composables/cwa-resource-endpoint', () => ({
@@ -40,6 +55,8 @@ describe('useCwaResourceUpload', () => {
     endpointCallCount = 0
     vi.clearAllMocks()
     mockGetResource.mockReturnValue(ref(undefined))
+    mockModuleUploadConfig.value = undefined
+    mockDownscaleImageFile.mockImplementation(async (file: File) => file)
   })
 
   describe('initial state', () => {
@@ -130,6 +147,58 @@ describe('useCwaResourceUpload', () => {
       const file = new File([''], 'test.png')
       await handleInputChangeFile(file)
       expect(updating.value).toBe(false)
+    })
+  })
+
+  describe('image downscaling (#335)', () => {
+    const uploadedFile = async (upload: ReturnType<typeof useCwaResourceUpload>, file: File) => {
+      await upload.handleInputChangeFile(file)
+      return (mockUpdateResource.mock.calls[0]![0].data as FormData).get('file')
+    }
+
+    test('the downscaled file is uploaded in place of the one the admin picked', async () => {
+      const picked = new File(['x'.repeat(5000)], 'photo.jpg', { type: 'image/jpeg' })
+      const downscaled = new File(['x'], 'photo.jpg', { type: 'image/jpeg' })
+      mockDownscaleImageFile.mockResolvedValue(downscaled)
+      expect(await uploadedFile(useCwaResourceUpload(iri), picked)).toBe(downscaled)
+      expect(mockDownscaleImageFile).toHaveBeenCalledWith(picked, expect.anything(), mockBrowserDeps)
+    })
+
+    test('the downscaler is given the built-in defaults when nothing is configured', async () => {
+      await useCwaResourceUpload(iri).handleInputChangeFile(new File([''], 'photo.jpg', { type: 'image/jpeg' }))
+      expect(mockDownscaleImageFile).toHaveBeenCalledWith(expect.anything(), {
+        enabled: true,
+        thresholdEdge: 2560,
+        thresholdPixels: 20000000,
+        maxEdge: 2560,
+        maxPixels: 20000000,
+        quality: 0.85,
+      }, mockBrowserDeps)
+    })
+
+    test('the module default is applied to every field', async () => {
+      mockModuleUploadConfig.value = { image: { maxEdge: 1920 } }
+      await useCwaResourceUpload(iri).handleInputChangeFile(new File([''], 'photo.jpg', { type: 'image/jpeg' }))
+      expect(mockDownscaleImageFile.mock.calls[0]![1]).toMatchObject({ maxEdge: 1920, thresholdEdge: 2560 })
+    })
+
+    test('the module default switches it off for every field', async () => {
+      mockModuleUploadConfig.value = { image: { enabled: false } }
+      await useCwaResourceUpload(iri).handleInputChangeFile(new File([''], 'photo.jpg', { type: 'image/jpeg' }))
+      expect(mockDownscaleImageFile.mock.calls[0]![1]).toMatchObject({ enabled: false })
+    })
+
+    test('a per-call option overrides the module default for one field', async () => {
+      mockModuleUploadConfig.value = { image: { maxEdge: 1920 } }
+      const upload = useCwaResourceUpload(iri, 'file', 'Image', { imageDownscale: { maxEdge: 4096 } })
+      await upload.handleInputChangeFile(new File([''], 'photo.jpg', { type: 'image/jpeg' }))
+      expect(mockDownscaleImageFile.mock.calls[0]![1]).toMatchObject({ maxEdge: 4096 })
+    })
+
+    test('a field that must keep originals can switch it off on its own', async () => {
+      const upload = useCwaResourceUpload(iri, 'download', 'File', { imageDownscale: { enabled: false } })
+      await upload.handleInputChangeFile(new File([''], 'photo.jpg', { type: 'image/jpeg' }))
+      expect(mockDownscaleImageFile.mock.calls[0]![1]).toMatchObject({ enabled: false })
     })
   })
 

@@ -54,11 +54,15 @@ const resourceTypeToIriPrefix: TypeToPathPrefixMap = {
   [CwaResourceTypes.COMPONENT]: '/component/',
 }
 
+export function normaliseApiPathPrefix(prefix?: string): string | undefined {
+  return prefix?.replace(/\/+$/, '') || undefined
+}
+
 export class ResourceTypeFromIriCls extends Function {
   private pathPrefix: string | undefined
 
   setPathPrefix(prefix?: string) {
-    this.pathPrefix = prefix?.replace(/\/+$/, '') || undefined
+    this.pathPrefix = normaliseApiPathPrefix(prefix)
   }
 
   getPathPrefix() {

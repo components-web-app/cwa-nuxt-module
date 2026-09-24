@@ -1,7 +1,7 @@
 // @vitest-environment nuxt
 
 import { join } from 'path'
-import { afterEach, describe, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import type { Mock } from 'vitest'
 import * as nuxtKit from '@nuxt/kit'
 
@@ -11,7 +11,9 @@ vi.mock('@nuxt/kit', async () => {
   const newModule = {
     ...actual,
     addPlugin: vi.fn(),
+    addImports: vi.fn(),
     addImportsDir: vi.fn(),
+    tryResolveModule: vi.fn(async (id: string) => `/node_modules/${id}`),
     addTemplate: vi.fn(),
     addServerTemplate: vi.fn(),
     addServerHandler: vi.fn(),
@@ -31,6 +33,10 @@ vi.mock('@nuxt/kit', async () => {
   }
 })
 
+const { mockRealpathSync } = vi.hoisted(() => ({
+  mockRealpathSync: vi.fn((file: string) => file),
+}))
+
 vi.mock('node:fs', () => {
   return {
     default: {
@@ -38,6 +44,7 @@ vi.mock('node:fs', () => {
         isDirectory: vi.fn(() => true),
       })),
       readFileSync: vi.fn(() => ('{ "name": "@cwa/nuxt", "version": "1.0.0" }')),
+      realpathSync: mockRealpathSync,
     },
   }
 })
@@ -47,8 +54,10 @@ async function prepareMockNuxt(options = {}, nuxt?: any) {
 
   const [{ setup }] = (nuxtKit.defineNuxtModule as Mock).mock.lastCall
 
-  const mockNuxt = Object.assign({ hook: vi.fn(), options: {
-    sitemap: {}, runtimeConfig: { public: { cwa: {} } }, alias: {}, css: [], build: { transpile: [] }, dir: { app: '' } } }, nuxt || {})
+  const defaultOptions = {
+    srcDir: 'app', sitemap: {}, runtimeConfig: { public: { cwa: {} } }, alias: {}, css: [], build: { transpile: [] }, dir: { app: '' },
+  }
+  const mockNuxt = Object.assign({ hook: vi.fn() }, nuxt || {}, { options: { ...defaultOptions, ...(nuxt?.options || {}) } })
 
   await setup(options, mockNuxt)
 
@@ -108,7 +117,7 @@ describe('CWA module', () => {
 
       const [{ moduleDependencies }] = (nuxtKit.defineNuxtModule as Mock).mock.lastCall
 
-      expect(moduleDependencies).toEqual({
+      expect(await moduleDependencies({ options: { modulesDir: ['/app/node_modules'] } })).toEqual({
         '@pinia/nuxt': {
           version: '^1.0.2',
           optional: false,
@@ -120,6 +129,7 @@ describe('CWA module', () => {
           version: '^8.0',
           optional: false,
           defaults: {
+            cacheMaxAgeSeconds: 0,
             sitemaps: {
               cwa: {
                 sources: ['/__sitemap__/cwa-urls'],
@@ -144,6 +154,24 @@ describe('CWA module', () => {
           version: '^4.0.8',
         },
       })
+    })
+
+    test('the sitemap options are defaults, so an app can still choose its own server-side cache', async () => {
+      await import('./module')
+
+      const [{ moduleDependencies }] = (nuxtKit.defineNuxtModule as Mock).mock.lastCall
+      const sitemap = (await moduleDependencies({ options: { modulesDir: ['/app/node_modules'] } }))['@nuxtjs/sitemap']
+
+      expect(sitemap.defaults).toEqual({
+        cacheMaxAgeSeconds: 0,
+        sitemaps: {
+          cwa: {
+            sources: ['/__sitemap__/cwa-urls'],
+            chunks: true,
+          },
+        },
+      })
+      expect(sitemap.overrides).toBeUndefined()
     })
   })
 
@@ -501,15 +529,109 @@ declare module 'vue-router' {
         const mockNuxt = await prepare()
 
         expect(mockNuxt.options.runtimeConfig.cwa).toEqual({
+          apiUrl: '',
           pageCacheWarm: { concurrency: 3, timeout: 30000, origin: '' },
+          readiness: { path: '/_/health', timeout: 2000 },
         })
         expect(mockNuxt.options.runtimeConfig.public.cwa).not.toHaveProperty('pageCacheWarm')
+      })
+
+      test('registers the readiness route whether or not the page cache is enabled', async () => {
+        const readinessHandler = {
+          route: '/_cwa/readiness',
+          handler: expect.stringMatching(/runtime\/server\/cwa-readiness\.get$/),
+        }
+        await prepare()
+        expect(nuxtKit.addServerHandler as Mock).toHaveBeenCalledWith(readinessHandler)
+
+        await prepare({ pageCache: { enabled: false } })
+        expect(nuxtKit.addServerHandler as Mock).toHaveBeenCalledWith(readinessHandler)
+      })
+
+      test('adds the readiness defaults whether or not the page cache is enabled', async () => {
+        const mockNuxt = await prepare({ pageCache: { enabled: false } })
+
+        expect(mockNuxt.options.runtimeConfig.cwa).toEqual({
+          apiUrl: '',
+          readiness: { path: '/_/health', timeout: 2000 },
+        })
+      })
+
+      test('registers the sitemap cache plugin whether or not the page cache is enabled', async () => {
+        const sitemapPlugin = expect.stringMatching(/runtime\/server\/sitemap-cache-plugin$/)
+
+        ;(nuxtKit.addServerPlugin as Mock).mockClear()
+        await prepare()
+        expect(nuxtKit.addServerPlugin as Mock).toHaveBeenCalledWith(sitemapPlugin)
+
+        ;(nuxtKit.addServerPlugin as Mock).mockClear()
+        await prepare({ pageCache: { enabled: false } })
+        expect(nuxtKit.addServerPlugin as Mock).toHaveBeenCalledWith(sitemapPlugin)
+        expect(nuxtKit.addServerPlugin as Mock).not.toHaveBeenCalledWith(expect.stringMatching(/runtime\/server\/page-cache-plugin$/))
+      })
+
+      test('passes the sitemap cache settings to the server options the nitro plugin reads', async () => {
+        await prepare({ sitemapCache: { sharedMaxAge: 60 } })
+
+        const { lastCall: [{ getContents }] } = (nuxtKit.addServerTemplate as Mock).mock
+
+        expect(JSON.parse(getContents().split('export const options = ')[1]).sitemapCache).toEqual({ sharedMaxAge: 60 })
       })
 
       test('keeps warm settings the app has configured', async () => {
         const mockNuxt = await prepare({}, { public: { cwa: {} }, cwa: { pageCacheWarm: { concurrency: 5, origin: 'http://caddy' } } })
 
         expect(mockNuxt.options.runtimeConfig.cwa.pageCacheWarm).toEqual({ concurrency: 5, timeout: 30000, origin: 'http://caddy' })
+      })
+    })
+
+    describe('api url runtime config (#345)', () => {
+      async function prepare(moduleOptions: any = {}, runtimeConfig: any = { public: { cwa: {} } }) {
+        return prepareMockNuxt({ ...moduleOptions }, {
+          hook: vi.fn((hookName, callback) => {
+            if (hookName === 'modules:done') {
+              callback()
+            }
+          }),
+          options: {
+            runtimeConfig,
+            alias: {},
+            css: [],
+            build: { transpile: [] },
+            dir: { app: '' },
+            sitemap: {},
+          },
+        })
+      }
+
+      test('declares the public keys so an app that sets neither still honours the environment variables', async () => {
+        const mockNuxt = await prepare({}, { public: {} })
+
+        expect(mockNuxt.options.runtimeConfig.public.cwa).toEqual({ apiUrl: '', apiUrlBrowser: '' })
+      })
+
+      test('keeps the public values an app has configured', async () => {
+        const mockNuxt = await prepare({}, { public: { cwa: { apiUrlBrowser: 'https://www.example.com/_api' } } })
+
+        expect(mockNuxt.options.runtimeConfig.public.cwa).toEqual({ apiUrl: '', apiUrlBrowser: 'https://www.example.com/_api' })
+      })
+
+      test('declares the private key whether or not the page cache is enabled', async () => {
+        const mockNuxt = await prepare({ pageCache: { enabled: false } })
+
+        expect(mockNuxt.options.runtimeConfig.cwa.apiUrl).toBe('')
+      })
+
+      test('keeps the private value an app has configured', async () => {
+        const mockNuxt = await prepare({}, { public: { cwa: {} }, cwa: { apiUrl: 'http://php/_api' } })
+
+        expect(mockNuxt.options.runtimeConfig.cwa.apiUrl).toBe('http://php/_api')
+      })
+
+      test('does not publish the private key to the browser', async () => {
+        const mockNuxt = await prepare({}, { public: { cwa: {} }, cwa: { apiUrl: 'http://php/_api' } })
+
+        expect(mockNuxt.options.runtimeConfig.public.cwa).toEqual({ apiUrl: '', apiUrlBrowser: '' })
       })
     })
 
@@ -603,9 +725,8 @@ declare module 'vue-router' {
       })
     })
 
-    test('should extend pages with 3 levels by default', async () => {
+    function capturePageCallbacks() {
       const callbacks: ((pages: any[]) => void)[] = []
-      const mockPages: any[] = []
       const mockResolver = vi.fn(path => path)
       vi.spyOn(nuxtKit, 'createResolver').mockReturnValue({
         resolve: mockResolver,
@@ -614,6 +735,12 @@ declare module 'vue-router' {
       vi.spyOn(nuxtKit, 'extendPages').mockImplementation((callback) => {
         callbacks.push(callback)
       })
+      return { callbacks, mockResolver }
+    }
+
+    test('registers sibling routes per depth so a CWA route matches a single record (#337)', async () => {
+      const { callbacks, mockResolver } = capturePageCallbacks()
+      const mockPages: any[] = []
 
       await prepareMockNuxt()
 
@@ -621,46 +748,39 @@ declare module 'vue-router' {
 
       callbacks[0](mockPages)
 
+      const meta = { cwa: { disabled: false }, layout: 'cwa-root-layout', key: 'cwa-page' }
+      const file = mockResolver('./runtime/templates')
+
       expect(mockPages).toEqual([
-        {
-          name: 'cwaPage0',
-          path: '/',
-          meta: { cwa: { disabled: false }, layout: 'cwa-root-layout' },
-          file: mockResolver('./runtime/templates'),
-          children: [
-            {
-              name: 'cwaPage1',
-              path: ':cwaPage1',
-              meta: { cwa: { disabled: false }, layout: 'cwa-root-layout' },
-              file: mockResolver('./runtime/templates'),
-              children: [
-                {
-                  name: 'cwaPage2',
-                  path: ':cwaPage2',
-                  meta: { cwa: { disabled: false }, layout: 'cwa-root-layout' },
-                  file: mockResolver('./runtime/templates'),
-                  children: [
-                    {
-                      name: 'cwaPage3',
-                      path: ':cwaPage3',
-                      meta: { cwa: { disabled: false }, layout: 'cwa-root-layout' },
-                      file: mockResolver('./runtime/templates'),
-                      children: [
-                        {
-                          name: 'cwaPage4',
-                          path: ':cwaPage4',
-                          meta: { cwa: { disabled: false }, layout: 'cwa-root-layout' },
-                          file: mockResolver('./runtime/templates'),
-                          children: [],
-                        },
-                      ],
-                    },
-                  ],
-                },
-              ],
-            },
-          ],
-        },
+        { name: 'cwaPage0', path: '/', meta, file },
+        { name: 'cwaPage1', path: '/:cwaPage1', meta, file },
+        { name: 'cwaPage2', path: '/:cwaPage1/:cwaPage2', meta, file },
+        { name: 'cwaPage3', path: '/:cwaPage1/:cwaPage2/:cwaPage3', meta, file },
+        { name: 'cwaPage4', path: '/:cwaPage1/:cwaPage2/:cwaPage3/:cwaPage4', meta, file },
+      ])
+    })
+
+    test('no generated route declares a cwaPage0 param, which the fetcher reads as an IRI', async () => {
+      const { callbacks } = capturePageCallbacks()
+      const mockPages: any[] = []
+
+      await prepareMockNuxt()
+      callbacks[0](mockPages)
+
+      expect(mockPages.filter(page => page.path.includes(':cwaPage0'))).toEqual([])
+    })
+
+    test('pagesDepth limits how many path segments are matched', async () => {
+      const { callbacks } = capturePageCallbacks()
+      const mockPages: any[] = []
+
+      await prepareMockNuxt({ pagesDepth: 2 })
+      callbacks[0](mockPages)
+
+      expect(mockPages.map(page => page.path)).toEqual([
+        '/',
+        '/:cwaPage1',
+        '/:cwaPage1/:cwaPage2',
       ])
     })
 
@@ -684,6 +804,312 @@ declare module 'vue-router' {
       expect(explicitLayout.meta.layout).toBe('alternate-layout')
       expect(disabledLayout.meta.layout).toBe(false)
       expect(withChildren.children[0].meta.layout).toBe('cwa-root-layout')
+    })
+
+    describe('scroll behaviour router options', () => {
+      async function captureRouterOptionsHook() {
+        vi.spyOn(nuxtKit, 'createResolver').mockReturnValue({
+          resolve: vi.fn((...args: string[]) => join(...args)),
+          resolvePath: vi.fn(),
+        } as never)
+        const mockNuxt = await prepareMockNuxt()
+        const call = (mockNuxt.hook as Mock).mock.calls.find(([name]: [string]) => name === 'pages:routerOptions')
+        return call?.[1] as (context: { files: { path: string, optional?: boolean }[] }) => void
+      }
+
+      test('the module router options are added after the built-in ones', async () => {
+        const hook = await captureRouterOptionsHook()
+        const files = [{ path: '/nuxt/pages/runtime/router.options', optional: true }]
+
+        hook({ files })
+
+        expect(files.map(file => file.path)).toEqual([
+          '/nuxt/pages/runtime/router.options',
+          join('./runtime/router.options'),
+        ])
+      })
+
+      test('an application router options file is left last so it still wins', async () => {
+        const hook = await captureRouterOptionsHook()
+        const files = [
+          { path: '/nuxt/pages/runtime/router.options', optional: true },
+          { path: '/app/app/router.options.ts' },
+        ]
+
+        hook({ files })
+
+        expect(files.map(file => file.path)).toEqual([
+          '/nuxt/pages/runtime/router.options',
+          join('./runtime/router.options'),
+          '/app/app/router.options.ts',
+        ])
+      })
+    })
+
+    describe('page file realpath (#329)', () => {
+      afterEach(() => {
+        mockRealpathSync.mockImplementation(file => file)
+      })
+
+      async function capturePagesExtendHook(nuxt?: any) {
+        const mockNuxt = await prepareMockNuxt({}, nuxt)
+        const call = (mockNuxt.hook as Mock).mock.calls.find(([name]) => name === 'pages:extend')
+        return call?.[1]
+      }
+
+      test('rewrites a page file that resolves through a symlink', async () => {
+        mockRealpathSync.mockImplementation(file => file.replace('/node_modules/@cwa/nuxt/dist/', '/node_modules/.pnpm/@cwa+nuxt/node_modules/@cwa/nuxt/dist/'))
+        const hook = await capturePagesExtendHook()
+        const page: any = { name: 'forgot-password', path: '/forgot-password', file: '/app/node_modules/@cwa/nuxt/dist/layer/pages/forgot-password.vue' }
+
+        hook([page])
+
+        expect(page.file).toBe('/app/node_modules/.pnpm/@cwa+nuxt/node_modules/@cwa/nuxt/dist/layer/pages/forgot-password.vue')
+      })
+
+      test('leaves a page file that is already a real path', async () => {
+        mockRealpathSync.mockImplementation(file => file)
+        const hook = await capturePagesExtendHook()
+        const page: any = { name: 'index', path: '/', file: '/app/app/pages/index.vue' }
+
+        hook([page])
+
+        expect(page.file).toBe('/app/app/pages/index.vue')
+      })
+
+      test('rewrites child pages', async () => {
+        mockRealpathSync.mockImplementation(() => '/real/layer/pages/_cwa/index/settings.vue')
+        const hook = await capturePagesExtendHook()
+        const child: any = { name: '_cwa-index-settings', path: 'settings', file: '/app/link/layer/pages/_cwa/index/settings.vue' }
+        const parent: any = { name: '_cwa-index', path: '/_cwa', children: [child] }
+
+        hook([parent])
+
+        expect(child.file).toBe('/real/layer/pages/_cwa/index/settings.vue')
+      })
+
+      test('keeps the file of a page that cannot be resolved', async () => {
+        mockRealpathSync.mockImplementation(() => {
+          throw new Error('ENOENT')
+        })
+        const hook = await capturePagesExtendHook()
+        const page: any = { name: 'virtual', path: '/virtual', file: 'virtual:some-generated-page.vue' }
+
+        expect(() => hook([page])).not.toThrow()
+        expect(page.file).toBe('virtual:some-generated-page.vue')
+      })
+
+      test('is not registered in dev, where the prefetch filter does not run', async () => {
+        const mockNuxt = await prepareMockNuxt({}, {
+          options: {
+            dev: true,
+            sitemap: {},
+            runtimeConfig: { public: { cwa: {} } },
+            alias: {},
+            css: [],
+            build: { transpile: [] },
+            dir: { app: '' },
+          },
+        })
+
+        expect((mockNuxt.hook as Mock).mock.calls.find(([name]) => name === 'pages:extend')).toBeUndefined()
+      })
+    })
+
+    describe('admin prefetch hints (#336)', () => {
+      const mainAdmin = '../runtime/templates/components/main/admin'
+      const coreAdmin = '../runtime/templates/components/core/admin'
+      const header = `${mainAdmin}/header/Header.vue`
+      const resourceManager = `${mainAdmin}/resource-manager/ResourceManager.vue`
+      const componentFocus = `${mainAdmin}/resource-manager/ComponentFocus.vue`
+      const groupTab = `${mainAdmin}/resource-manager/_tabs/group/Group.vue`
+      const listContent = `${coreAdmin}/ListContent.vue`
+      const layout = '../layer/layouts/CwaRootLayout.vue'
+      const defaultLayout = '../runtime/templates/components/main/DefaultLayout.vue'
+
+      async function captureBuildManifestHook(overrides: Record<string, unknown> = {}) {
+        const mockNuxt = await prepareMockNuxt({}, { options: overrides })
+        const call = (mockNuxt.hook as Mock).mock.calls.find(([name]) => name === 'build:manifest')
+        return call?.[1]
+      }
+
+      test('strips admin components from a rendered layout chunk', async () => {
+        const hook = await captureBuildManifestHook()
+        const manifest: any = {
+          [layout]: { src: layout, file: 'layout.js', isDynamicEntry: true, dynamicImports: [header, resourceManager, defaultLayout] },
+        }
+
+        hook(manifest)
+
+        expect(manifest[layout].dynamicImports).toEqual([defaultLayout])
+      })
+
+      test('strips admin components from the app entry', async () => {
+        const hook = await captureBuildManifestHook()
+        const manifest: any = {
+          'entry.js': { src: 'entry.js', file: 'entry.js', isEntry: true, dynamicImports: [componentFocus, defaultLayout] },
+        }
+
+        hook(manifest)
+
+        expect(manifest['entry.js'].dynamicImports).toEqual([defaultLayout])
+      })
+
+      test('strips components under the core admin directory', async () => {
+        const hook = await captureBuildManifestHook()
+        const manifest: any = {
+          [layout]: { src: layout, file: 'layout.js', dynamicImports: [listContent, defaultLayout] },
+        }
+
+        hook(manifest)
+
+        expect(manifest[layout].dynamicImports).toEqual([defaultLayout])
+      })
+
+      test('keeps the dynamic imports of a chunk that is itself admin', async () => {
+        const hook = await captureBuildManifestHook()
+        const manifest: any = {
+          [resourceManager]: { src: resourceManager, file: 'rm.js', isDynamicEntry: true, dynamicImports: [groupTab, componentFocus] },
+        }
+
+        hook(manifest)
+
+        expect(manifest[resourceManager].dynamicImports).toEqual([groupTab, componentFocus])
+      })
+
+      test('keeps a component whose path only begins with the admin directory name', async () => {
+        const hook = await captureBuildManifestHook()
+        const administration = '../runtime/templates/components/main/administration/Report.vue'
+        const manifest: any = {
+          [layout]: { src: layout, file: 'layout.js', dynamicImports: [administration] },
+        }
+
+        hook(manifest)
+
+        expect(manifest[layout].dynamicImports).toEqual([administration])
+      })
+
+      test('leaves static imports, css and assets untouched', async () => {
+        const hook = await captureBuildManifestHook()
+        const manifest: any = {
+          [layout]: { src: layout, file: 'layout.js', imports: [header], css: ['Header.css'], assets: ['logo.svg'], dynamicImports: [header] },
+        }
+
+        hook(manifest)
+
+        expect(manifest[layout].imports).toEqual([header])
+        expect(manifest[layout].css).toEqual(['Header.css'])
+        expect(manifest[layout].assets).toEqual(['logo.svg'])
+      })
+
+      test('leaves a chunk with no dynamic imports alone', async () => {
+        const hook = await captureBuildManifestHook()
+        const manifest: any = {
+          'Header.css': { file: 'Header.css', resourceType: 'style' },
+        }
+
+        expect(() => hook(manifest)).not.toThrow()
+        expect(manifest['Header.css']).toEqual({ file: 'Header.css', resourceType: 'style' })
+      })
+
+      test('filters a shared chunk that carries no source of its own', async () => {
+        const hook = await captureBuildManifestHook()
+        const manifest: any = {
+          '_shared.js': { file: 'shared.js', dynamicImports: [header, defaultLayout] },
+        }
+
+        hook(manifest)
+
+        expect(manifest['_shared.js'].dynamicImports).toEqual([defaultLayout])
+      })
+
+      test('is not gated on dev, so the same manifest is filtered either way', async () => {
+        const hook = await captureBuildManifestHook({ dev: true })
+        const manifest: any = {
+          [layout]: { src: layout, file: 'layout.js', dynamicImports: [header, defaultLayout] },
+        }
+
+        hook(manifest)
+
+        expect(manifest[layout].dynamicImports).toEqual([defaultLayout])
+      })
+    })
+  })
+
+  describe('open graph image renderer (#273)', () => {
+    beforeEach(() => {
+      ;(nuxtKit.addImports as Mock).mockClear()
+      ;(nuxtKit.addTypeTemplate as Mock).mockClear()
+    })
+
+    afterEach(() => {
+      ;(nuxtKit.tryResolveModule as Mock).mockImplementation(async (id: string) => `/node_modules/${id}`)
+      ;(nuxtKit.hasNuxtModule as Mock).mockReturnValue(false)
+    })
+
+    async function getModuleDependencies(nuxt: any = { options: { modulesDir: ['/app/node_modules'] } }) {
+      await import('./module')
+      const [{ moduleDependencies }] = (nuxtKit.defineNuxtModule as Mock).mock.lastCall
+      return moduleDependencies(nuxt)
+    }
+
+    async function prepareWithModulesDone(ogImageInstalled: boolean) {
+      ;(nuxtKit.hasNuxtModule as Mock).mockImplementation((name: string) => name === 'nuxt-og-image' && ogImageInstalled)
+      return prepareMockNuxt({ mock: true }, {
+        hook: vi.fn((hookName, callback) => {
+          if (hookName === 'modules:done') {
+            callback()
+          }
+        }),
+        options: {
+          modulesDir: ['/app/node_modules'],
+          runtimeConfig: { public: { cwa: {} } },
+          alias: {},
+          css: [],
+          build: { transpile: [] },
+          dir: { app: '' },
+          sitemap: {},
+        },
+      })
+    }
+
+    test('requires nuxt-og-image when both renderer packages resolve', async () => {
+      const dependencies = await getModuleDependencies()
+
+      expect(dependencies['nuxt-og-image']).toEqual({ version: '^6.0' })
+      expect(nuxtKit.tryResolveModule).toHaveBeenCalledWith('satori', ['/app/node_modules'])
+      expect(nuxtKit.tryResolveModule).toHaveBeenCalledWith('@resvg/resvg-js', ['/app/node_modules'])
+    })
+
+    test.each(['satori', '@resvg/resvg-js'])('omits nuxt-og-image when %s is not installed', async (missing) => {
+      ;(nuxtKit.tryResolveModule as Mock).mockImplementation(async (id: string) => id === missing ? undefined : `/node_modules/${id}`)
+
+      const dependencies = await getModuleDependencies()
+
+      expect(dependencies['nuxt-og-image']).toBeUndefined()
+      expect(dependencies['@pinia/nuxt']).toEqual({ version: '^1.0.2', optional: false })
+    })
+
+    test('declares the og image component types when nuxt-og-image is installed', async () => {
+      await prepareWithModulesDone(true)
+
+      const filenames = (nuxtKit.addTypeTemplate as Mock).mock.calls.map(([{ filename }]) => filename)
+
+      expect(filenames).toContain('types/cwa-og-image.d.ts')
+      expect(nuxtKit.addImports).not.toHaveBeenCalled()
+    })
+
+    test('registers a no-op defineOgImage when nuxt-og-image is absent, so cwa-page still builds', async () => {
+      await prepareWithModulesDone(false)
+
+      const filenames = (nuxtKit.addTypeTemplate as Mock).mock.calls.map(([{ filename }]) => filename)
+
+      expect(filenames).not.toContain('types/cwa-og-image.d.ts')
+      expect(nuxtKit.addImports).toHaveBeenCalledWith({
+        name: 'defineOgImage',
+        as: 'defineOgImage',
+        from: 'runtime/og-image-fallback',
+      })
     })
   })
 })

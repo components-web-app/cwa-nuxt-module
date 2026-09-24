@@ -1,10 +1,11 @@
 import { join } from 'path'
 import path from 'node:path'
-import { statSync, readFileSync } from 'node:fs'
+import { statSync, readFileSync, realpathSync } from 'node:fs'
 import { defu } from 'defu'
 import mergeWith from 'lodash-es/mergeWith'
 import isArray from 'lodash-es/isArray'
 import {
+  addImports,
   addImportsDir,
   addPlugin,
   addServerHandler,
@@ -20,8 +21,10 @@ import {
   extendRouteRules,
   addServerPlugin,
   hasNuxtModule,
+  tryResolveModule,
 } from '@nuxt/kit'
-import type { Component, NuxtPage, ViteConfig } from '@nuxt/schema'
+import type { Component, ModuleDependencies, Nuxt, NuxtPage, ViteConfig } from '@nuxt/schema'
+import { READINESS_DEFAULTS } from './runtime/server/readiness'
 import { defaultSiteConfig } from './runtime/composables/useCwaSiteConfig'
 import type { CwaModuleOptions, CwaResourcesMeta, GlobalComponentNames } from './runtime/types'
 
@@ -34,14 +37,21 @@ declare module 'nuxt/schema' {
   }
   interface RuntimeConfig {
     cwa: {
+      apiUrl: string
       pageCacheWarm: {
         concurrency: number
         timeout: number
         origin: string
       }
+      readiness: {
+        path: string
+        timeout: number
+      }
     }
   }
 }
+
+const CWA_PAGE_ROUTE_KEY = 'cwa-page'
 
 function createDefaultCwaPages(
   pages: NuxtPage[],
@@ -49,72 +59,84 @@ function createDefaultCwaPages(
   maxDepth: number,
   layout?: string | undefined,
 ) {
-  function getPage(currentDepth: number): NuxtPage {
-    return {
-      name: `cwaPage${currentDepth}`,
-      path: currentDepth === 0 ? '/' : `:cwaPage${currentDepth}`,
+  const segments: string[] = []
+  for (let depth = 0; depth <= maxDepth; depth++) {
+    if (depth > 0) {
+      segments.push(`:cwaPage${depth}`)
+    }
+    pages.push({
+      name: `cwaPage${depth}`,
+      path: `/${segments.join('/')}`,
       file: pageComponentFilePath,
       meta: {
         cwa: {
           disabled: false,
         },
         layout: layout || 'cwa-root-layout',
+        key: CWA_PAGE_ROUTE_KEY,
       },
-      children: [] as NuxtPage[],
-    }
+    })
   }
-
-  function createTree(currentDepth: number) {
-    const page = getPage(currentDepth)
-    if (currentDepth < maxDepth) {
-      const child = createTree(currentDepth + 1)
-      page.children = [child]
-    }
-    return page
-  }
-  // pages.push(getPage(0))
-  pages.push(createTree(0))
 }
 
 export const NAME = '@cwa/nuxt' as const
 
-export default defineNuxtModule<CwaModuleOptions>({
-  moduleDependencies: {
-    '@pinia/nuxt': {
-      version: '^1.0.2',
-      optional: false,
-    },
-    '@nuxtjs/robots': {
-      version: '^6.0',
-    },
-    '@nuxtjs/sitemap': {
-      version: '^8.0',
-      optional: false,
-      defaults: {
-        sitemaps: {
-          cwa: {
-            sources: ['/__sitemap__/cwa-urls'],
-            chunks: true,
-          },
+const OG_IMAGE_RENDERER_PACKAGES = ['satori', '@resvg/resvg-js'] as const
+
+const ogImageModuleDependency: ModuleDependencies = {
+  'nuxt-og-image': {
+    version: '^6.0',
+  },
+}
+
+const baseModuleDependencies: ModuleDependencies = {
+  '@pinia/nuxt': {
+    version: '^1.0.2',
+    optional: false,
+  },
+  '@nuxtjs/robots': {
+    version: '^6.0',
+  },
+  '@nuxtjs/sitemap': {
+    version: '^8.0',
+    optional: false,
+    defaults: {
+      cacheMaxAgeSeconds: 0,
+      sitemaps: {
+        cwa: {
+          sources: ['/__sitemap__/cwa-urls'],
+          chunks: true,
         },
       },
     },
-    'nuxt-link-checker': {
-      version: '^5.0',
-    },
-    'nuxt-schema-org': {
-      version: '^6.0',
-    },
-    'nuxt-seo-utils': {
-      version: '^8.1',
-    },
-    'nuxt-site-config': {
-      version: '^4.0.8',
-    },
-    'nuxt-og-image': {
-      version: '^6.0',
-    },
   },
+  'nuxt-link-checker': {
+    version: '^5.0',
+  },
+  'nuxt-schema-org': {
+    version: '^6.0',
+  },
+  'nuxt-seo-utils': {
+    version: '^8.1',
+  },
+  'nuxt-site-config': {
+    version: '^4.0.8',
+  },
+}
+
+async function hasOgImageRenderer(nuxt: Nuxt): Promise<boolean> {
+  const resolved = await Promise.all(
+    OG_IMAGE_RENDERER_PACKAGES.map(id => tryResolveModule(id, nuxt.options.modulesDir)),
+  )
+  return resolved.every(Boolean)
+}
+
+export default defineNuxtModule<CwaModuleOptions>({
+  moduleDependencies: async (nuxt: Nuxt): Promise<ModuleDependencies> => (
+    await hasOgImageRenderer(nuxt)
+      ? { ...baseModuleDependencies, ...ogImageModuleDependency }
+      : baseModuleDependencies
+  ),
   meta: {
     name: NAME,
     configKey: 'cwa',
@@ -145,6 +167,15 @@ export default defineNuxtModule<CwaModuleOptions>({
     )
     logger.info(`Adding ${NAME} module (${name}@${version})...`)
 
+    if (!await hasOgImageRenderer(nuxt)) {
+      logger.warn(`${NAME}: open graph image generation is disabled. Install ${OG_IMAGE_RENDERER_PACKAGES.join(' and ')} to enable it.`)
+    }
+
+    nuxt.options.runtimeConfig.public.cwa = defu(nuxt.options.runtimeConfig.public.cwa, {
+      apiUrl: '',
+      apiUrlBrowser: '',
+    })
+
     // common alias due to releasing different package names
     nuxt.options.alias['#cwa'] = resolve('./runtime')
     nuxt.options.alias['#cwa-layer'] = resolve('./layer')
@@ -169,6 +200,10 @@ export default defineNuxtModule<CwaModuleOptions>({
       createDefaultCwaPages(pages, pageComponent, options.pagesDepth || 4, options.layoutName)
     })
 
+    nuxt.hook('pages:routerOptions', ({ files }) => {
+      files.splice(1, 0, { path: resolve('./runtime/router.options') })
+    })
+
     const defaultLayoutName = options.layoutName || 'cwa-root-layout'
     extendPages((pages: NuxtPage[]) => {
       function applyDefaultLayout(page: NuxtPage) {
@@ -181,7 +216,44 @@ export default defineNuxtModule<CwaModuleOptions>({
       pages.forEach(applyDefaultLayout)
     })
 
+    // Temporary, remove once https://github.com/nuxt/nuxt/issues/36401 is fixed in a Nuxt version we support.
+    if (!nuxt.options.dev) {
+      const toRealPath = (file: string) => {
+        try {
+          return realpathSync(file)
+        }
+        catch {
+          return file
+        }
+      }
+      const realpathPages = (pages: NuxtPage[]) => {
+        for (const page of pages) {
+          if (page.file) {
+            page.file = toRealPath(page.file)
+          }
+          if (page.children) {
+            realpathPages(page.children)
+          }
+        }
+      }
+      nuxt.hook('pages:extend', realpathPages)
+    }
+
     const cwaVueComponentsDir = join(vueTemplatesDir, 'components')
+
+    const adminSourceDirs = [
+      join(cwaVueComponentsDir, 'main', 'admin'),
+      join(cwaVueComponentsDir, 'core', 'admin'),
+    ].map(dir => `${path.relative(nuxt.options.srcDir, dir)}/`)
+    const isAdminSource = (id: string) => adminSourceDirs.some(dir => id.startsWith(dir))
+    nuxt.hook('build:manifest', (manifest) => {
+      for (const chunk of Object.values(manifest)) {
+        if (chunk.src && isAdminSource(chunk.src)) {
+          continue
+        }
+        chunk.dynamicImports = chunk.dynamicImports?.filter(id => !isAdminSource(id))
+      }
+    })
 
     logger.info(`Registering user components for CWA...`)
     const userComponentsPath = join(appDir, 'cwa', 'components')
@@ -283,10 +355,11 @@ export const currentModulePackageInfo:{ version: string, name: string } = ${JSON
         },
       })
 
-      addTypeTemplate({
-        filename: 'types/cwa-og-image.d.ts',
-        write: true,
-        getContents: () => /* ts */`import type CwaDefaultSatori from '${resolve('./layer/components/og-image/CwaDefault.satori.vue')}'
+      if (hasNuxtModule('nuxt-og-image', nuxt)) {
+        addTypeTemplate({
+          filename: 'types/cwa-og-image.d.ts',
+          write: true,
+          getContents: () => /* ts */`import type CwaDefaultSatori from '${resolve('./layer/components/og-image/CwaDefault.satori.vue')}'
 declare module '#og-image/components' {
   interface OgImageComponents {
     CwaDefault: typeof CwaDefaultSatori
@@ -294,7 +367,15 @@ declare module '#og-image/components' {
     CwaDefaultSatori: typeof CwaDefaultSatori
   }
 }`,
-      })
+        })
+      }
+      else {
+        addImports({
+          name: 'defineOgImage',
+          as: 'defineOgImage',
+          from: resolve('./runtime/og-image-fallback'),
+        })
+      }
 
       addTypeTemplate({
         filename: 'types/cwa.d.ts',
@@ -318,6 +399,11 @@ declare module 'vue-router' {
 
       addPlugin({
         src: resolve('./runtime/plugin'),
+      })
+
+      nuxt.options.runtimeConfig.cwa = defu(nuxt.options.runtimeConfig.cwa, {
+        apiUrl: '',
+        readiness: { ...READINESS_DEFAULTS },
       })
 
       if (options.pageCache?.enabled ?? true) {
@@ -344,6 +430,7 @@ declare module 'vue-router' {
         getContents: () => {
           const serverOps = {
             siteConfig: options.siteConfig,
+            sitemapCache: options.sitemapCache,
           }
           return `export const options = ${JSON.stringify(serverOps, undefined, 2)}
 `
@@ -361,9 +448,14 @@ declare module 'vue-router' {
         route: '/__sitemap__/cwa-custom.xml',
         handler: resolve('./runtime/server/cwa-custom-sitemap.get'),
       })
+      addServerPlugin(resolve('./runtime/server/sitemap-cache-plugin'))
       addServerHandler({
         route: '/_cwa/healthcheck',
         handler: resolve('./runtime/server/cwa-healthcheck.get'),
+      })
+      addServerHandler({
+        route: '/_cwa/readiness',
+        handler: resolve('./runtime/server/cwa-readiness.get'),
       })
     })
 

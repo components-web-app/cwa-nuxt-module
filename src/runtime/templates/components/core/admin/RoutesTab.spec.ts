@@ -19,7 +19,7 @@ const { mockUseItemPage, mockReveal, mockNavigateTo } = vi.hoisted(() => ({
 
 mockNuxtImport('navigateTo', () => mockNavigateTo)
 
-vi.mock('#cwa-layer/pages/_cwa/index/composables/useItemPage', () => ({ useItemPage: mockUseItemPage }))
+vi.mock('#cwa-layer/_composables/useItemPage', () => ({ useItemPage: mockUseItemPage }))
 vi.mock('vuejs-confirm-dialog', () => ({
   createConfirmDialog: vi.fn(() => ({ reveal: mockReveal })),
 }))

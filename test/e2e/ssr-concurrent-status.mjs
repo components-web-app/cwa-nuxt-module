@@ -91,6 +91,18 @@ async function waitForApp() {
   throw new Error(`Playground server did not become ready on ${appBase}\n${appLog.slice(-4000)}`)
 }
 
+async function assertErrorPageRenders() {
+  const response = await fetch(`${appBase}/nope-error-page-render`, { redirect: 'manual', headers: { accept: 'text/html' } })
+  const body = await response.text()
+  if (response.status !== 404) {
+    throw new Error(`Expected 404 from the error page, got ${response.status}`)
+  }
+  if (!body.includes('<canvas')) {
+    throw new Error('The CWA error page rendered no content on the server (#331: <LazyCwaErrorPage> must resolve inside the Suspense boundary)')
+  }
+  console.log('Error page server-renders its content\n')
+}
+
 async function request(testCase, round, mode) {
   const path = testCase.path(round)
   const url = `${appBase}${path}?e2e=${mode}-${round}-${Math.random().toString(36).slice(2)}`
@@ -135,7 +147,7 @@ async function main() {
       NITRO_HOST: '127.0.0.1',
       PORT: String(appPort),
       NITRO_PORT: String(appPort),
-      NUXT_PUBLIC_CWA_API_URL: apiUrl,
+      NUXT_CWA_API_URL: apiUrl,
       NUXT_PUBLIC_CWA_API_URL_BROWSER: apiUrl,
     },
     stdio: ['ignore', 'pipe', 'pipe'],
@@ -147,6 +159,7 @@ async function main() {
   app.stderr.on('data', capture)
 
   await waitForApp()
+  await assertErrorPageRenders()
 
   console.log(`Sequential control: ${rounds} rounds, one request at a time`)
   const sequentialFailures = await runRounds('sequential', async (round) => {

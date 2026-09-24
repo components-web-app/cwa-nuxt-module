@@ -6,7 +6,6 @@ import unset from 'lodash-es/unset'
 import mergeWith from 'lodash-es/mergeWith'
 import isArray from 'lodash-es/isArray'
 import { createConfirmDialog } from 'vuejs-confirm-dialog'
-import { DateTime } from 'luxon'
 import type { CwaResourcesStoreInterface, ResourcesStore } from '../storage/stores/resources/resources-store'
 import type CwaFetch from '../api/fetcher/cwa-fetch'
 import type FetchStatusManager from '../api/fetcher/fetch-status-manager'
@@ -22,7 +21,6 @@ import {
 import type { CwaResource } from './resource-utils'
 import { NEW_RESOURCE_IRI } from '#cwa/storage/stores/resources/state'
 import type Fetcher from '#cwa/api/fetcher/fetcher'
-import ConfirmDialog from '#cwa/templates/components/core/ConfirmDialog.vue'
 import type { AddResourceEvent, ResourceStackItem } from '#cwa/admin/resource-stack-manager'
 import type Admin from '#cwa/admin/admin'
 import type { Resources } from '#cwa/resources/resources'
@@ -137,6 +135,7 @@ export class ResourcesManager {
       title: 'Delete this resource?',
       content: '<p>Are you sure you want to permanently delete this resource?</p>',
     }
+    const { default: ConfirmDialog } = await import('#cwa/templates/components/core/ConfirmDialog.vue')
     // @ts-expect-error-next-line
     const dialog = createConfirmDialog(ConfirmDialog)
     const { isCanceled } = await dialog.reveal(alertData)
@@ -208,7 +207,7 @@ export class ResourcesManager {
 
     // if we are publishing, then we are adding positions to refresh as well. Could possibly bypass this and adjust locally manually.
     if (currentIsDraft) {
-      isPublishing = event.data.publishedAt <= DateTime.local().toUTC().toISO()
+      isPublishing = event.data.publishedAt <= new Date().toISOString()
       if (isPublishing) {
         existingLiveIri = currentResource ? getPublishedResourceIri(currentResource) : null
         const currentLiveResource = existingLiveIri ? this.resourcesStore.getResource(existingLiveIri)?.data : undefined
@@ -455,6 +454,7 @@ export class ResourcesManager {
       title: 'Discard new resource?',
       content: '<p>Are you sure you want to discard your new resource. It will NOT be saved.</p>',
     }
+    const { default: ConfirmDialog } = await import('#cwa/templates/components/core/ConfirmDialog.vue')
     // @ts-expect-error-next-line
     const dialog = createConfirmDialog(ConfirmDialog)
     const { isCanceled } = await dialog.reveal(alertData)
@@ -597,7 +597,7 @@ export class ResourcesManager {
     }
 
     if (publish !== undefined) {
-      resource.publishedAt = publish ? DateTime.local().toUTC().toISO() : null
+      resource.publishedAt = publish ? new Date().toISOString() : null
     }
 
     const postData: Omit<CwaResource, '@id' | '@type'> = { ...resource, '@id': undefined, '@type': undefined }

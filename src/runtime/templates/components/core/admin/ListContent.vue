@@ -1,5 +1,8 @@
 <template>
   <ListContainer class="cwa:py-4">
+    <CwaUiAlertWarning v-if="loadError">
+      {{ loadError }}
+    </CwaUiAlertWarning>
     <div class="cwa:relative">
       <Transition
         appear
@@ -12,7 +15,7 @@
           :show="true"
         />
         <div
-          v-else-if="!items.length"
+          v-else-if="!items.length && !loadError"
           class="cwa:flex cwa:justify-center"
         >
           <div class="cwa:w-full cwa:max-w-xl cwa:text-center cwa:flex cwa:flex-col cwa:gap-y-2 cwa:text-stone-400">
@@ -24,7 +27,7 @@
             </h2>
           </div>
         </div>
-        <div v-else>
+        <div v-else-if="items.length">
           <ListPagination
             v-model:page.number="pageModel"
             v-model:per-page.number="perPageModel"
@@ -59,6 +62,7 @@
 
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue'
+import { consola as logger } from 'consola'
 import { useTransitions } from '#cwa/composables/transitions'
 import { useRoute } from 'vue-router'
 import type { LocationQuery } from 'vue-router'
@@ -66,6 +70,7 @@ import ListContainer from './ListContainer.vue'
 import ListPagination from './ListPagination.vue'
 import Spinner from '#cwa/templates/components/utils/Spinner.vue'
 import { useCwa, useQueryBoundModel } from '#imports'
+import { mergeQueryIntoPath } from '#cwa/api/fetcher/query-utils'
 import type { CwaResource } from '#cwa/resources/resource-utils'
 
 const $cwa = useCwa()
@@ -84,36 +89,69 @@ watch(perPageModel, (newValue) => {
 
 const props = defineProps<{
   fetchUrl: string
+  searchFields?: string[]
 }>()
 
 const loading = ref(true)
 const items = ref<any[]>([])
 const hydraData = ref()
 const currentRequestId = ref<number>(0)
+const loadError = ref<string>()
+
+function loadFailureMessage(error: unknown) {
+  const statusCode = (error as { statusCode?: number } | undefined)?.statusCode
+  return `The list could not be loaded (${statusCode || 'network error'}). Please try again.`
+}
+
+function buildRequestQuery(): LocationQuery {
+  const query: LocationQuery = { ...route.query }
+  const search = query.search
+  if (!search || !props.searchFields) {
+    return query
+  }
+  for (const field of props.searchFields) {
+    if (query[field] === undefined) {
+      query[field] = search
+    }
+  }
+  return query
+}
 
 async function reloadItems() {
   const thisRequestId = currentRequestId.value + 1
   currentRequestId.value = thisRequestId
   loading.value = true
+  loadError.value = undefined
 
-  const { response } = $cwa.fetch({ path: props.fetchUrl })
-  const { _data: data } = await response
-  /*
-  hydra:totalItems: 123
-  hydra:view:
-    @id: "/_/routes?perPage=5&page=1"
-    @type: "hydra:PartialCollectionView"
-    hydra:first: "/_/routes?perPage=5&page=1"
-    hydra:last: "/_/routes?perPage=5&page=5"
-    hydra:next: "/_/routes?perPage=5&page=2"
-   */
-  hydraData.value = {
-    totalItems: data?.['totalItems'] || 0,
-    view: data?.['view'],
-  }
-  if (thisRequestId === currentRequestId.value) {
+  try {
+    const { response } = $cwa.fetch({ path: mergeQueryIntoPath(props.fetchUrl, buildRequestQuery()), noQuery: true })
+    const { _data: data } = await response
+    /*
+    hydra:totalItems: 123
+    hydra:view:
+      @id: "/_/routes?perPage=5&page=1"
+      @type: "hydra:PartialCollectionView"
+      hydra:first: "/_/routes?perPage=5&page=1"
+      hydra:last: "/_/routes?perPage=5&page=5"
+      hydra:next: "/_/routes?perPage=5&page=2"
+     */
+    if (thisRequestId !== currentRequestId.value) {
+      return
+    }
+    hydraData.value = {
+      totalItems: data?.['totalItems'] || 0,
+      view: data?.['view'],
+    }
     data && (items.value = data['member'])
     loading.value = false
+  }
+  catch (error) {
+    if (thisRequestId !== currentRequestId.value) {
+      return
+    }
+    loadError.value = loadFailureMessage(error)
+    loading.value = false
+    logger.error('[CWA] Could not load the list', error)
   }
 }
 

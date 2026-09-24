@@ -1,6 +1,5 @@
 import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/resources/resource-utils'
 import type { Resources } from '#cwa/resources/resources'
-import ConfirmDialog from '#cwa/templates/components/core/ConfirmDialog.vue'
 import type { ComponentUi, ManagerTab } from '#cwa/types'
 import { useNuxtApp } from '#imports'
 import { consola as logger } from 'consola'
@@ -9,7 +8,6 @@ import { computed, createApp, nextTick, ref, shallowRef, watch } from 'vue'
 import { createConfirmDialog } from 'vuejs-confirm-dialog'
 import type { AdminStore, CwaAdminStoreInterface } from '../storage/stores/admin/admin-store'
 import type { CwaResourcesStoreInterface, ResourcesStore } from '../storage/stores/resources/resources-store'
-import ComponentFocus from '../templates/components/main/admin/resource-manager/ComponentFocus.vue'
 import type { ManageableResourceOps, StyleOptions } from './manageable-resource'
 
 interface _ResourceStackItem {
@@ -61,6 +59,8 @@ export default class ResourceStackManager {
   private focusComponent: App | undefined
   private focusWrapper: HTMLElement | undefined
   private focusProxy: ComponentPublicInstance | undefined
+  private focusGeneration = 0
+  private focusDomElements: Ref<HTMLElement[]> | undefined
   private _currentStackItem: ComputedRef<undefined | ResourceStackItem> | undefined
   private _currentIri: ComputedRef<string | undefined> | undefined
   private readonly _adminStore: CwaAdminStoreInterface
@@ -182,6 +182,7 @@ export default class ResourceStackManager {
       this.currentResourceStack.value = this.previousResourceStack.value
     }
 
+    const { default: ConfirmDialog } = await import('#cwa/templates/components/core/ConfirmDialog.vue')
     // @ts-expect-error-next-line
     const dialog = createConfirmDialog(ConfirmDialog)
     const { isCanceled } = await dialog.reveal(alertData)
@@ -406,13 +407,28 @@ export default class ResourceStackManager {
     this.createFocusComponent()
   }
 
-  private createFocusComponent() {
-    this.removeFocusComponent()
+  private async createFocusComponent() {
+    const generation = ++this.focusGeneration
     const stackItem = this.currentStackItem.value
     if (!this.currentIri.value || !stackItem) {
+      this.removeFocusComponent()
       return
     }
 
+    if (this.focusComponent && this.focusDomElements === stackItem.domElements) {
+      return
+    }
+
+    const container = useNuxtApp().vueApp._container
+    const { default: ComponentFocus } = await import('#cwa/templates/components/main/admin/resource-manager/ComponentFocus.vue')
+    if (generation !== this.focusGeneration) {
+      return
+    }
+
+    this.removeFocusComponent()
+    this.focusGeneration = generation
+
+    this.focusDomElements = stackItem.domElements
     this.focusComponent = createApp(ComponentFocus, {
       iri: this.currentIri,
       domElements: stackItem.domElements,
@@ -421,12 +437,14 @@ export default class ResourceStackManager {
     this.focusWrapper = document.createElement('div')
     this.focusWrapper.className = 'cwa:absolute cwa:z-manager-focus cwa:top-0 cwa:left-0 cwa:focus-wrapper'
 
-    useNuxtApp().vueApp._container?.appendChild(this.focusWrapper)
+    container?.appendChild(this.focusWrapper)
 
     this.focusProxy = this.focusComponent.mount(this.focusWrapper)
   }
 
   private removeFocusComponent() {
+    this.focusGeneration++
+    this.focusDomElements = undefined
     if (this.focusComponent) {
       const toUnmount = this.focusComponent
       this.focusComponent = undefined

@@ -214,14 +214,52 @@ describe('buildPageCacheHeaders', () => {
     })).toEqual({})
   })
 
-  test('drops stale-while-revalidate when the TTL was bounded by the API', () => {
+  test('emits stale-while-revalidate when the TTL was bounded by the API', () => {
     const decision = buildPageCacheHeaders({
       ids: ['/_api/_/routes//'],
       api: { storable: true, sharedMaxAge: 120 },
       options: { ...options, staleWhileRevalidate: 60 },
     })
 
-    expect(decision.cacheControl).not.toContain('stale-while-revalidate')
+    expect(decision.cacheControl).toBe('public, max-age=0, s-maxage=120, stale-while-revalidate=60')
+  })
+
+  test('emits stale-while-revalidate when no cap is configured', () => {
+    const decision = buildPageCacheHeaders({
+      ids: ['/_api/_/routes//'],
+      api: { storable: true, sharedMaxAge: 31557600 },
+      options: { enabled: true, staleWhileRevalidate: 60 },
+    })
+
+    expect(decision.cacheControl).toBe('public, max-age=0, s-maxage=31557600, stale-while-revalidate=60')
+  })
+
+  test('follows the API TTL when no cap is configured', () => {
+    const decision = buildPageCacheHeaders({
+      ids: ['/_api/_/routes//'],
+      api: { storable: true, sharedMaxAge: 31557600 },
+      options: { enabled: true, staleWhileRevalidate: 0 },
+    })
+
+    expect(decision.cacheControl).toContain('s-maxage=31557600')
+  })
+
+  test('falls back to an hour when no cap is configured and the API supplied no TTL', () => {
+    const decision = buildPageCacheHeaders({
+      ids: ['/_api/_/routes//'],
+      api: storable,
+      options: { enabled: true, staleWhileRevalidate: 0 },
+    })
+
+    expect(decision.cacheControl).toContain('s-maxage=3600')
+  })
+
+  test('a zero API TTL still emits no cache headers when no cap is configured', () => {
+    expect(buildPageCacheHeaders({
+      ids: ['/_api/_/routes//'],
+      api: { storable: true, sharedMaxAge: 0 },
+      options: { enabled: true, staleWhileRevalidate: 0 },
+    })).toEqual({})
   })
 
   test('emits stale-while-revalidate when the TTL is the configured default', () => {
@@ -236,16 +274,20 @@ describe('buildPageCacheHeaders', () => {
 })
 
 describe('resolvePageCacheOptions', () => {
-  test('page caching is on by default, for an hour with no stale window', () => {
-    expect(resolvePageCacheOptions()).toEqual({ enabled: true, sharedMaxAge: 3600, staleWhileRevalidate: 0 })
+  test('page caching is on by default, following the API TTL with no stale window', () => {
+    expect(resolvePageCacheOptions()).toEqual({ enabled: true, sharedMaxAge: undefined, staleWhileRevalidate: 0 })
   })
 
   test('an app can still turn page caching off', () => {
     expect(resolvePageCacheOptions({ enabled: false })).toEqual({
       enabled: false,
-      sharedMaxAge: 3600,
+      sharedMaxAge: undefined,
       staleWhileRevalidate: 0,
     })
+  })
+
+  test('an app can still cap the TTL', () => {
+    expect(resolvePageCacheOptions({ sharedMaxAge: 600 }).sharedMaxAge).toBe(600)
   })
 
   test('defaults are applied to a partial option object', () => {

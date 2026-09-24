@@ -8,6 +8,8 @@ on:
     branches:
       - 'main'
       - 'dev'
+    tags:
+      - 'v*'
   pull_request:
     paths-ignore:
       - "docs/**"
@@ -103,9 +105,34 @@ jobs:
       - name: Audit
         run: pnpm audit
 
+  fresh-install:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: latest
+          run_install: false
+
+      - name: Use Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: latest
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Pack and build a fresh app against the published package
+        run: pnpm run test:fresh-install
+
   deploy-next:
     runs-on: ubuntu-latest
-    needs: [test]
+    needs: [test, fresh-install]
     if: |
       github.ref == 'refs/heads/dev' &&
       github.event_name == 'push' &&
@@ -135,6 +162,35 @@ jobs:
       - run: pnpm build
       - name: Release Edge
         run: ./scripts/release-edge.sh ${{ github.ref == 'refs/heads/dev' && 'latest' || '1x' }}
+        env:
+          NPM_CONFIG_PROVENANCE: true
+
+  release:
+    runs-on: ubuntu-latest
+    needs: [test, fresh-install]
+    if: |
+      startsWith(github.ref, 'refs/tags/v') &&
+      github.event_name == 'push' &&
+      github.repository_owner == 'components-web-app'
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/checkout@v6
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: latest
+          run_install: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: latest
+          registry-url: 'https://registry.npmjs.org'
+          package-manager-cache: false
+      - run: pnpm install
+      - run: pnpm dev:prepare
+      - run: pnpm build
+      - name: Release
+        run: ./scripts/release.sh
         env:
           NPM_CONFIG_PROVENANCE: true
 

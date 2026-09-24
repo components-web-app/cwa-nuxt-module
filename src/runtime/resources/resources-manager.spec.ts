@@ -1,4 +1,4 @@
-import { describe, vi, test, expect, beforeEach } from 'vitest'
+import { describe, vi, test, expect, beforeEach, afterEach } from 'vitest'
 import { createConfirmDialog } from 'vuejs-confirm-dialog'
 import { ResourcesManager } from './resources-manager'
 import type { CwaResource } from '#cwa/resources/resource-utils'
@@ -538,6 +538,37 @@ describe('Resources manager', () => {
       expect(removeSpy).toHaveBeenCalledWith({ resource: '/things/draft', noCascade: true })
     })
 
+    test('treats a publishedAt equal to the current instant as publishing', async () => {
+      vi.useFakeTimers()
+      vi.setSystemTime(new Date('2026-01-02T03:04:05.678Z'))
+      try {
+        const { resourcesManager, cwaFetch, resourcesStoreActions, mockAdmin } = createResourcesManager({ includeAdmin: true })
+        resourcesStoreActions.getResource.mockImplementation((iri: string) => {
+          if (iri === '/things/draft') {
+            return {
+              data: {
+                '@id': '/things/draft',
+                '@type': 'Thing',
+                'publishedResource': '/things/live',
+                'componentPositions': undefined,
+                '_metadata': { persisted: true, publishable: { published: false } },
+              },
+            }
+          }
+          if (iri === '/things/live') {
+            return { data: { '@id': '/things/live', 'componentPositions': [] } }
+          }
+        })
+        cwaFetch.fetch.mockResolvedValue({ '@id': '/things/draft' })
+        vi.spyOn(resourcesManager, 'storeResource').mockImplementation(() => {})
+        await resourcesManager.updateResource({ endpoint: '/things/draft', data: { publishedAt: '2026-01-02T03:04:05.678Z' } })
+        expect(mockAdmin!.emptyStack).toHaveBeenCalled()
+      }
+      finally {
+        vi.useRealTimers()
+      }
+    })
+
     test('sets forcePublishedVersion to false when response IRI differs (new draft created)', async () => {
       const { resourcesManager, cwaFetch, resourcesStoreActions, mockAdmin } = createResourcesManager({ includeAdmin: true })
       resourcesStoreActions.getResource.mockReturnValue({
@@ -657,6 +688,10 @@ describe('Resources manager', () => {
   })
 
   describe('addResourceAction', () => {
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
     function setupStore(resourcesManager: ResourcesManager, opts: {
       newResourceData?: any
       addEventOverrides?: any
@@ -822,7 +857,9 @@ describe('Resources manager', () => {
       expect(updateSpy).not.toHaveBeenCalled()
     })
 
-    test('sets publishedAt when publish=true', async () => {
+    test('sets publishedAt to the current instant as a UTC ISO string when publish=true', async () => {
+      vi.useFakeTimers()
+      vi.setSystemTime(new Date('2026-01-02T03:04:05.678Z'))
       const { resourcesManager, cwaFetch } = createResourcesManager({ includeAdmin: true })
       cwaFetch.fetch.mockResolvedValue({ '@id': '/component/1' })
       vi.spyOn(resourcesManager, 'storeResource').mockImplementation(() => {})
@@ -830,7 +867,7 @@ describe('Resources manager', () => {
         addEventOverrides: { targetIri: '/_/component_positions/p1', addAfter: null, closest: {} },
       })
       await resourcesManager.addResourceAction(true)
-      expect(newResourceData.publishedAt).toBeTruthy()
+      expect(newResourceData.publishedAt).toBe('2026-01-02T03:04:05.678Z')
     })
 
     test('sets publishedAt to null when publish=false', async () => {

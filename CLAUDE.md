@@ -352,13 +352,31 @@ So the gate is entirely server-side, and for non-admins `RouteExtension::applyTo
 
 Between #233 and #234 only the own-date half existed, and a child under a scheduled parent was published to search engines as a soft-404. **That is the failure mode to remember: `GET /_/routes` does not fetch what it lists, it publishes it**, so a listing inconsistency there is not cosmetic. **If that fetch is ever made authenticated — an admin preview sitemap, say — every gate above disappears at once and a module-side filter becomes necessary.**
 
+### Choosing "Live" on a route that is already live ([#341](https://github.com/components-web-app/cwa-nuxt-module/issues/341))
+
+**The issue's premise was wrong, and the real defect was its opposite.** It reported that re-choosing **Live** on a route whose scheduled `liveAt` has passed emits nothing, so no PATCH is sent and nothing is purged. The select does emit: `useCwaSelectInput`'s computed setter emits unconditionally, and Headless UI has **no equality guard** — `useControllable`'s setter calls `onChange` on every `Listbox.select()`, which `ListboxOption`'s click handler fires for the already-selected option too. A full mount confirms it: clicking **Live** on a route live since 2020 emitted `update:liveAt` with `now`.
+
+So the defect was a **silent destructive rewrite**: `handlePublicationStateChange('live')` wrote `new Date()` with no check that the route was already live, replacing the date it actually went live — and, per the inheritance rule above, a parent's date feeds every descendant's `effectiveLiveAt`, so the reset propagated. Nothing in the UI changed either way, because the select already read "Live" and the `datetime-local` input is gated behind the `scheduled` state, so **a live route's own date was not visible anywhere**.
+
+Fixed by making the control idempotent and the data visible: choosing Live keeps the **stored** `liveAt` (`routePublication`, i.e. the store resource, not `localResourceData`) when the route's own stored state is already live, and only stamps `now` when coming from scheduled or draft; returning to Live after an unsaved edit restores the stored date. `RoutesTabManage` now shows **"Live since &lt;date&gt;"** for a live route — the route's **own** date, since that is what this control edits, while the badges keep reporting the effective date. Badges were deliberately left alone.
+
+**Deliberately not built: a "Publish now" action, or a per-route cache purge.** Their only real purpose was forcing a PATCH so the page is purged, and that was [#340](https://github.com/components-web-app/cwa-nuxt-module/issues/340)'s cached-404 bug, fixed properly at the cache layer — we do not add failsafes for bad caching at every level. A global purge already exists in site settings.
+
+**Why it was missed, and the lesson:** every `RoutesTabManage` spec is `shallow: true` and emits straight from the select stub, so the real select's behaviour was never covered — which is exactly how an issue came to assert the opposite of what the code does. `ModalSelect.spec.ts` now pins it with a real Headless UI mount and a real DOM click on the already-selected option.
+
 ---
 
 ## Page HTML caching ([#289](https://github.com/components-web-app/cwa-nuxt-module/issues/289))
 
-**On by default**; turn it off with `cwa: { pageCache: { enabled: false } }`, and tune it with `sharedMaxAge` (3600) and `staleWhileRevalidate` (0).
+**On by default**; turn it off with `cwa: { pageCache: { enabled: false } }`, and tune it with `sharedMaxAge` (unset — follow the API) and `staleWhileRevalidate` (0).
 
-**Why an hour, and why not a day.** The TTL is now only a **backstop for when purge does not happen** — a dropped `PURGE`, a misconfigured `CACHE_URL`, an edge that was never wired up — because content edits purge by resource IRI, site-config changes purge via `cwa-html`, and scheduled go-lives arrive as a capped `s-maxage`. A page with any traffic is already at ~100% hit rate within an hour, so stretching to a day saves one re-render per page per hour (negligible: SRNTE measured 450 req/s of cached HTML with the SSR pods idle) while making every silent purge failure 24× longer-lived. The other uncovered case is a **deploy** — new `/_nuxt` hashes with no resource IRI changing, which a persistent CDN would serve as stale HTML pointing at dead assets; Souin's in-memory store dies with the pod, so the template is safe and a CDN in front is not. The default lives in **two** places that must agree — `resolvePageCacheOptions` for the runtime, and the `?? true` guarding plugin registration in `module.ts`, which cannot import the runtime helper (it resolves `#cwa/resources/resource-utils`, unavailable at module-build time). Changing only the runtime default is a no-op for an app that sets no `pageCache` key at all, which is exactly the app the default exists for.
+**A page's TTL follows the API's, and is no longer capped at an hour** ([#325](https://github.com/components-web-app/cwa-nuxt-module/issues/325)). `sharedMaxAge` is now **unset by default**: `buildPageCacheHeaders` takes the lowest of the configured cap (when there is one) and the lowest `s-maxage`/`Expires` across the render's API responses, so in production a page inherits API Platform's `shared_max_age` — a year in a CWA API. `FALLBACK_SHARED_MAX_AGE` (3600) applies **only** when neither is present, which is a render whose API responses carried no freshness at all. `stale-while-revalidate` is now emitted whenever it is configured above zero; it used to be dropped unless the configured cap was the binding number, which with no cap would have meant never.
+
+**This reverses the earlier "why an hour, and why not a day" reasoning, deliberately.** That argued the TTL is only a **backstop for when purge does not happen** — a dropped `PURGE`, a misconfigured `CACHE_URL`, an edge that was never wired up — so a longer TTL buys almost nothing (a page with traffic is at ~100% hit rate within the hour; SRNTE measured 450 req/s of cached HTML with the SSR pods idle) while making a silent purge failure proportionally longer-lived. What changed is that every case the hour was covering is now covered directly: content edits purge by resource IRI, site-config changes purge via `cwa-html`, scheduled publishing is bounded by the API (api-components-bundle#227), and a **deploy** — new `/_nuxt` hashes with no resource IRI changing — runs `purge-rendered-html` and re-warms from the sitemap (components-web-app#71, #80). The API tier already runs this exact model with a year-long TTL, and pages are built only from its responses.
+
+**What the hour still hid, and now does not.** A silent purge failure now lasts as long as the API's TTL rather than an hour, and **output that did not come from the API is not tagged at all** — a server-rendered date or "time ago", a third-party fetch, anything from `useAsyncData` outside CWA — so it never refreshes. `sharedMaxAge` is the escape hatch for both, and that is what it is for: an app whose pages carry untagged time-sensitive output should set it.
+
+The `enabled` default still lives in **two** places that must agree — `resolvePageCacheOptions` for the runtime, and the `?? true` guarding plugin registration in `module.ts`, which cannot import the runtime helper (it resolves `#cwa/resources/resource-utils`, unavailable at module-build time). Changing only the runtime default is a no-op for an app that sets no `pageCache` key at all, which is exactly the app the default exists for.
 
 **Enabling it by default is a deliberate alpha-stage trade** (four known applications, kept in sync with the API, no stable release). Two risks it accepts, neither detectable by the module: an app whose SSR HTML carries its **own** personalised content — a cookie-driven `useFetch`, a geo banner, a per-visitor experiment — will publish it to a shared cache, because our gates only understand CWA data; and an app whose edge does not bypass the auth cookie will serve a signed-in admin the cached anonymous page, with no admin chrome until a hard reload. Tags the rendered HTML with the API resource IRIs it was built from (`Surrogate-Key`, joined with `', '` to match `ApiPlatform\HttpCache\SouinPurger::SEPARATOR`) so the API's existing purge invalidates pages, and derives the page's `s-maxage` from the API responses that fed the render.
 
@@ -368,9 +386,30 @@ Between #233 and #234 only the own-date half existed, and a child under a schedu
 
 **A 4xx never counts towards the page's cache directives; a 5xx always does** ([#324](https://github.com/components-web-app/cwa-nuxt-module/issues/324)). `CwaFetch`'s server `onResponse` skips the merge for any 4xx, whatever the resource and whether or not it was the primary fetch. Without it, a page placing an **unpublished component** — a draft of a published one, or one never published — was never cached for anonymous visitors: the render fetches that component, the API answers 404 `no-cache, private`, and one `private` made the whole page `private, no-store`. That is the normal anonymous path, not evidence of private content, and the home page is the most likely place for it.
 
-Nothing is lost by ignoring them, because three other gates already cover what a 4xx would have told us. **The page's own status decides**: `server/page-cache-plugin.ts` forces `no-store` on any non-200, so a failed primary fetch is never stored regardless. **Invalidation still reaches it**: the 404'd IRI stays in `allIds` (`initResource` runs from both `setResourceFetchStatus` and `setResourceFetchError`), so it is in the `Surrogate-Key`, and creating or publishing it purges the page — equally true for a position or a group. **A signed-in render stays unstorable** through the separate `auth.signedIn` gate, which is why a 401 is ignored too: under bundle#225 a component on an unrouted page answers 401 to an anonymous request, the same "not public yet" case as the 404.
+Nothing is lost by ignoring them, because three other gates already cover what a 4xx would have told us. **A failed primary fetch marks the render unstorable at source** — see #340 below; this used to read "the page's own status decides, because `server/page-cache-plugin.ts` forces `no-store` on any non-200", **and that claim was wrong**: the Nitro hook never sees an error status, because Nuxt renders the error page as an internal 200. #324 shipped on that justification and exposed #340. **Invalidation still reaches it**: the 404'd IRI stays in `allIds` (`initResource` runs from both `setResourceFetchStatus` and `setResourceFetchError`), so it is in the `Surrogate-Key`, and creating or publishing it purges the page — equally true for a position or a group. **A signed-in render stays unstorable** through the separate `auth.signedIn` gate, which is why a 401 is ignored too: under bundle#225 a component on an unrouted page answers 401 to an anonymous request, the same "not public yet" case as the 404.
 
 **5xx is the carve-out, and the distinction is whether anything will purge the page later.** A 404 means not public yet, and the publish that makes it public purges the page. A 500 means the render is unreliable, and nothing purges anything when the API recovers — so a page built from a failed nested fetch must not be stored. Deciding on the status alone also keeps the rule in the one place that has the status, with no resource-type test and no URL parsing, so the bare-host prefix hazard (#266) never enters it.
+
+### The Nitro hook never sees an error status ([#340](https://github.com/components-web-app/cwa-nuxt-module/issues/340))
+
+**Error pages were being stored for the full TTL**, so a route scheduled with a future `liveAt` stayed a cached 404 after it went live — nothing purges on a clock transition, and an anonymous 404 is exactly what a shared cache will keep. Reproduced against a built playground: `/nope-123` came back `404` with `Cache-Control: public, max-age=0, s-maxage=3600` and `Surrogate-Key: cwa-html, /_api/_/routes//nope-123`.
+
+**We caused this. #324 (`26f06f8d`) is what exposed it**, and the justification quoted above — "the page's own status decides" — was wrong in its key claim. Before #324, a gated route's `private, no-store` 404 made the whole render unstorable and hid the gap; skipping 4xx removed the only thing that was accidentally covering it.
+
+**The mechanism, verified in the installed packages.** Nuxt does not render the error page on the request that failed. `@nuxt/nitro-server@4.5.2/dist/runtime/handlers/error.mjs:27` fires an internal `localFetch('/__nuxt_error', { headers: { …reqHeaders, 'x-nuxt-error': 'true' } })`, and `nitropack/dist/runtime/internal/app.mjs:100` routes that through the same node handler — so **our `beforeResponse` hook runs on the internal request**, whose status is `getResponseStatus(event)` on a fresh event, i.e. **200** (`renderer.mjs:234`). The `statusCode !== 200` guard therefore never fires, and we emit a full cacheable decision. `error.mjs:42-48` then copies **every** header of that internal response onto the real 404, and h3 does not run `onBeforeResponse` on the outer error path (`h3@1.15.11/dist/index.mjs:2325-2335`: the error handler's `send` sets `event.handled`, and the `if (event.handled) return` above the `onBeforeResponse` call short-circuits).
+
+It is not limited to a plain 404. **Any** error goes through the same handler, so a 500 and a CWA route resolving to an error behave identically. The internal error render also re-runs CWA route middleware against the original URL — which is why the stale 404 carried the route's own IRI in its `Surrogate-Key`, and why saving the route did purge it.
+
+**Two guards, both at `app:rendered`, no new emission point.**
+
+1. **`plugin-page-cache.server.ts` declines the error render.** `event.headers.get('x-nuxt-error')` is read in `setup()` and the hook writes `{ unstorable: true }`. **The request header is the signal, not `nuxtApp.payload.error` and not the `/__nuxt_error` path.** The path is `joinURL(app.baseURL, '/__nuxt_error')`, so a `startsWith('/__nuxt_error')` test silently stops matching for an app served under a sub-path; `payload.error` is a mutable reactive field that `clearError()` empties — and `FetchStatusManager` calls `clearError()` on a primary-fetch success (#313) — so it is a render outcome rather than a request fact. The header is set by Nuxt's own handler as its re-entrancy guard, is baseURL-independent, and is readable synchronously before anything renders.
+2. **A failed primary fetch marks the render unstorable at source.** `CwaFetch.markUnstorable()` flips the same per-request `cacheState` that `onResponse` folds API responses into; `FetchStatusManager.onPrimaryFetchError(handler)` fires it from `setFinalResourceFetchError` whenever `finishFetchShowError` is true — the primary fetch's own resource failed — and `Cwa` wires the two together. `onResponse` deliberately does not know which response is the primary fetch (that was the reason for #324's blanket 4xx skip); `FetchStatusManager` does.
+
+**Honest accounting: guard 1 alone passes every case the e2e covers; guard 2 alone does not.** Rebuilt and measured all four combinations. With neither, the two 404 cases are stored. With guard 2 only, a **page that throws on a route the API serves** still goes out as `500` with `s-maxage=600` and a surrogate key — because the error render's own route fetch succeeds, so nothing marks it unstorable. With guard 1 only, everything passes. Guard 2 is therefore not what closes #340; it is kept because it is the rule the #324 change was supposed to honour, it holds without depending on `x-nuxt-error` remaining a Nuxt contract, and it makes `apiHttpCacheState` truthful for anything that reads it later.
+
+**The guard must stay in the decision, not in the emission.** `page-cache-plugin.ts`'s `statusCode !== 200` check is unchanged and still earns its place for a CWA render that ends non-200 without an error page (a redirect, `setResponseStatus`); it simply cannot be the only gate.
+
+`test/e2e/page-cache-error-headers.mjs` is the faithful guard, because **only the real renderer produces the outer response** — the unit and integration specs can assert the decision object but not the headers Nuxt copies onto the 404. It asserts a live page is stored and tagged, that a missing route, a route not live yet, an API failure and a throwing page each come back `no-store` with **no** `Surrogate-Key`, and that the scheduled route is stored the moment the stub API starts serving it.
 
 **The API folds both scheduled transitions into `s-maxage` itself** (api-components-bundle#240). `CacheHeadersEventListener::findNextTransition()` caps an anonymous response at the earliest of its own `Expires` — a publishable draft's scheduled date, set by `PublishableEventListener` before the `isGranted` return — and, for classes in `http_cache.scheduled_expiry_resource_classes` (default `Route`, `RoutableInterface`, `ResourceManifest`), the next route `liveAt`. So the lowest `s-maxage` across a render already carries every clock-driven change. The module still reads `Expires` separately; that is now redundant but harmless, and it is converted using **that response's own `Date` header**, never `Date.now()` — comparing a server-issued absolute time against the local clock is exactly the [#262](https://github.com/components-web-app/cwa-nuxt-module/issues/262) bug.
 
@@ -378,7 +417,7 @@ Nothing is lost by ignoring them, because three other gates already cover what a
 
 ### Three things that bite, in order of how much
 
-1. **The TTL ceiling is the consuming app's API config.** A page can never be cached longer than the shortest `s-maxage` the API returned. The bundle ships **no** `http_cache` defaults, so the value is entirely the app's `api_platform.defaults.cache_headers.shared_max_age`. **An app on `shared_max_age: 60` gets 60-second pages and `pageCache.sharedMaxAge` is inert.** Raising it is an API config change, and it is safe to raise — the API's own entries are purge-invalidated exactly as the HTML now is, and clock-driven transitions are capped, so the two mechanisms cover each other.
+1. **The TTL is the consuming app's API config.** A page can never be cached longer than the shortest `s-maxage` the API returned, and since #325 that value *is* the page's TTL unless the app caps it. The bundle ships **no** `http_cache` defaults, so it is entirely the app's `api_platform.defaults.cache_headers.shared_max_age`. **An app on `shared_max_age: 60` gets 60-second pages**, and no module setting can lengthen that. Raising it is an API config change, and it is safe to raise — the API's own entries are purge-invalidated exactly as the HTML now is, and clock-driven transitions are capped, so the two mechanisms cover each other.
 2. **Edge bypass for authenticated requests is a deployment prerequisite.** The module deliberately emits no `Vary: Cookie` (cookie cardinality collapses the hit rate). The shared cache must bypass requests carrying the auth cookie. This is not a content leak — two independent gates guarantee a cached entry is anonymous — but a signed-in admin served a cached page sees no draft content and no admin chrome until a hard reload.
 3. **Go-live bounding is global.** `findNextLiveAt` is `MIN(liveAt)` over future dates across the **whole routes table**, so any pending go-live anywhere shortens every page's TTL. Over-conservative, therefore safe: a route's effective date is always the latest in its chain, so every real transition is some route's own `liveAt`, and the minimum can expire a response early but never late.
 
@@ -391,6 +430,13 @@ Every cacheable HTML response carries the constant key **`cwa-html`** alongside 
 This exists because a resource can shape every page without the front end ever holding it as a resource. **Site config is that case**: `siteName`, `concatTitle`, `maintenanceModeEnabled` and the robots settings come through `server/useFetcher.ts`'s own `$fetch`, never enter the resources store, and so appear in neither the accumulator nor `allIds`. Tagging pages with the site-config member IRIs was considered and rejected — it only works for resources the front end fetches *and can enumerate*, so every future site-wide resource would need the same bespoke plumbing.
 
 The key is only emitted on a page the module actually caches; a declined or unstorable render carries no key at all. Purging it drops every cached page at once and the traffic lands on SSR together, which is why the bundle's class list that triggers it should stay short, and why this is driven by a write on an already-secured resource rather than by a purge endpoint anyone could call.
+
+### The Route collection tag a route write purges — a cross-repo contract (api-components-bundle#313, for #344)
+
+Every Route write (create, update, delete) purges the Route **collection** IRI, so a response tagged with it is dropped by any route write. In the CWA template that tag is exactly **`/_api/_/routes`**; each route's own tag is **`/_api/_/routes/<path>`**, e.g. `/_api/_/routes//my-route` (the double slash is the leading `/` of the path). Pinned by `features/main/route_purge_tags.feature` in the bundle, with the harness serving the API under `/_api`.
+
+- **The `/_api` comes from the route import prefix** (`prefix: /_api` in the template's `config/routes/*.yaml`), not from Caddy (which uses `handle`, not `handle_path`, so the path reaches php unchanged) and not from a request base path. So the purged tag is the same whether the write came from HTTP, a console command, fixtures or a messenger worker. It is the same string as the `@id` the API returns, so emit the tag as the API spells it; do not rebuild it from `apiUrl`.
+- **A route going live on its `liveAt` date purges nothing.** It is not a write. A cached sitemap tagged with this key still needs its own TTL to pick up a clock-based go-live.
 
 ### Warming the page cache ([#315](https://github.com/components-web-app/cwa-nuxt-module/issues/315))
 
@@ -407,9 +453,182 @@ Site settings has a **Warm page cache** button beside purge, calling `POST /_cwa
 
 **Trap: Node's global `fetch` (undici) silently replaces a `Host` header you set**, so the warm would have stored every page under the wrong key. A real-server test caught it (`expected '127.0.0.1:56720' to be 'www.example.com'`). Anything that needs a specific `Host` must use `node:http` / `node:https`.
 
+#### Behind Caddy's automatic HTTPS the warm needs an `https://` origin ([#343](https://github.com/components-web-app/cwa-nuxt-module/issues/343))
+
+**`servername` is not the fix, and must not be added.** Node's HTTP agent derives both the TLS SNI name **and** the certificate identity check from the request's **`Host` header** when no `servername` is given (`_http_agent.js` puts `host` into the connection options, and `tls.connect` falls back to it). The warm already sends the public `Host`, so it already negotiates and validates as the public hostname. Setting `servername` to the same value changes nothing. The issue proposed it; it was measured and rejected.
+
+**The one real failure is certificate trust, and no module code can fix it.** Where Caddy issues the certificate itself — `SERVER_NAME=localhost`, a `.local` host, or `tls internal` — Node rejects it with `DEPTH_ZERO_SELF_SIGNED_CERT`, because its root is not in the trust store. The mechanisms are `NODE_EXTRA_CA_CERTS` (Caddy writes its root to `/data/caddy/pki/authorities/local/root.crt`), `--use-system-ca`, or pointing the warm at an origin whose certificate is publicly trusted. **There is deliberately no `rejectUnauthorized: false` option, not even opt-in**: it is a permanent invisible downgrade in the module's only TLS client, and it would make a *wrong* origin succeed silently — warming the wrong host would report "36/36 warmed" with nothing stored.
+
+**The default origin derivation stays `apiUrl`.** Caddy's `reverse_proxy` sets `X-Forwarded-Proto` from the scheme it terminated, so warming over plain HTTP would render and store each page as `http://` — canonical and og URLs a visitor never receives, cached for the API's full TTL.
+
+**So on a single-server deploy, `NUXT_CWA_PAGE_CACHE_WARM_ORIGIN` is mandatory, not an escape hatch.** Rendering and warming want different URLs there: SSR must call the API over **HTTP** (`http://php.local/_api`), because over HTTPS the TLS name would be the internal host and only an internally issued certificate covers it; the warm must use **HTTPS** (`https://php.local`), because it sends the public `Host`, so the TLS name becomes the real domain and its ACME certificate validates — and over plain HTTP Caddy's automatic HTTPS answers every page with a **308**. Kubernetes is unaffected: Caddy there listens on port 80 with no redirect, so the derived origin is already right.
+
+**What was built instead is diagnosis.** `WarmPageResult` (and `PageCacheWarmFailure`) carry `location` — set only for a 3xx that sends one — and `detail`, the error `code` of a network failure. `detail` is deliberately **not** set for a timeout (`ABORT_ERR` says nothing about the cause) nor on the `!response.complete` close path (there is no error object). The admin then reads `/about (308 → https://www.example.com/about)` or `/about (no response: DEPTH_ZERO_SELF_SIGNED_CERT)` instead of a bare status. **200-only still counts as warmed**: `fetchCwaPagePaths` already excludes redirect routes, so any 3xx here means the request never reached the renderer.
+
+**There is no TLS test, on purpose.** Proving Node derives SNI from `Host` is a test of Node; our side is "the `Host` header is sent", which `requestPage`'s first spec already pins. Generating an X.509 in-test would mean shelling out to `openssl` or taking a new devDependency.
+
+**The 409 is per process.** The `warming` lock is a module-level variable, so several SSR replicas can warm concurrently; the message says "on this server" rather than pretending otherwise. A shared lock was considered and rejected — a duplicate warm wastes renders and corrupts nothing, while a lock stranded by a pod killed mid-warm blocks the operator with no way to clear it.
+
 **Trap: in streaming tests, page timeouts must outlast the test's own timeout.** A test that held one response open with a 1s page timeout failed to catch fully buffered output, because the held request timed out and flushed everything.
 
 **Testing note:** `vi.mock('#build/cwa-options', …)` **works**, unlike `#imports` and `#components` — `#build` is a real alias to a real directory, so vitest's resolver finds it.
+
+### Purging everything the API has cached ([#326](https://github.com/components-web-app/cwa-nuxt-module/issues/326))
+
+Site settings has a **Purge all cached data** action calling `SiteConfig.purgeHttpCache()` → `POST /_/http_cache/purge` (api-components-bundle#291): `ROLE_ADMIN`, no body, **204**, flushing the API and HTML caches together.
+
+**It is a sibling endpoint, not a scope on the existing one.** `/_/rendered_html/purge` is declared `input: false`, which is what pins that no body or query string can widen its purge; a scope parameter would have reversed that guarantee. So `purgePageCache()` is untouched and `purgeHttpCache()` sits beside it, identical in shape. There is deliberately no API-only option — pages are rendered from API responses, so dropping the API without the HTML leaves pages built from the old data.
+
+**A 501 is reported as "nothing was purged", never as success.** The bundle returns 501 when the deployment's purger cannot flush at all — anything but a Souin purger, or no known invalidation URL. Claiming a purge there would be exactly the lie the bundle refused to tell, so it has its own message rather than joining the generic failure branch. 401/403 and every other status stay ordinary errors.
+
+**The action is available whether or not page caching is enabled**, which is why the section is no longer wrapped in `v-if="pageCacheEnabled"`. The API cache exists regardless of `pageCache.enabled` — that option only governs whether *this app's* rendered HTML is cached — so hiding the action with the page-cache section would have left an operator with no way to drop stale API data in the configuration where it matters just as much. With page caching off the section is titled **Cached data**, carries a note that pages are rendered fresh so the purge covers the API cache only, and shows neither the page-cache purge nor the warm.
+
+**The warm is offered straight after a successful full purge, but only when page caching is enabled** — `server/cwa-page-cache-warm.post.ts` is registered only then, so the button would 404 otherwise. It calls the same `warmPageCache()`, confirmation and all, rather than a second code path.
+
+**Unverified, and worth knowing before an operator presses it:** what Souin's flush does to its Redis store. If it flushes the whole database and that database is shared, the flush takes the rest with it.
+
+---
+
+## The sitemap is purged like a page, not held per SSR process ([#344](https://github.com/components-web-app/cwa-nuxt-module/issues/344))
+
+`@nuxtjs/sitemap` cached the generated XML **inside each SSR process** for 600s and sent `public, max-age=600, s-maxage=600, stale-while-revalidate=3600` with **no `Surrogate-Key`**. So each replica held its own copy, nothing a route write did reached any of them, and a new page could be missing from `/sitemap.xml` for 10–20 minutes while replicas disagreed. The post-deploy CI warm reads the sitemap (components-web-app#80), so it warmed a stale list.
+
+**`cacheMaxAgeSeconds` is the only lever, and `runtimeCacheStorage: false` is a no-op.** That option appears only in `module.mjs` and decides whether a custom Nitro storage driver is mounted at the `sitemap` base; it never reaches the `defineCachedFunction` calls. `cacheMaxAgeSeconds` gates all of them (`shouldCache` is `!import.meta.dev && !import.meta.prerender && typeof cacheMaxAgeSeconds === 'number' && cacheMaxAgeSeconds > 0`) **and** flips the package's own header to `no-cache, no-store`. It is set to `0` under the sitemap entry's **`defaults`**, not `overrides`, because `@nuxt/kit`'s `installModules` merges `defu(...overrides, nuxt.options[configKey], ...defaults)` — so an app that wants a server-side cache back sets its own. Proven by rebuilding the playground with `sitemap: { cacheMaxAgeSeconds: 600 }`: the app's value wins, and the e2e guard fails on exactly the reported symptom.
+
+**The headers come from our own Nitro plugin, keyed on the package's internal `event.context._isSitemap`** (`server/sitemap-cache-plugin.ts`), registered **unconditionally** beside the sitemap handlers rather than behind `pageCache.enabled` — the sitemap exists regardless (same reasoning as #326). Decide-then-emit at `beforeResponse`, mirroring `page-cache-plugin.ts`, and it returns unless the status is 200. `setSitemapResponseHeaders` sets that flag on both branches and is the single place it is written, identically in 8.3.4 and 8.5.1 (`dist/runtime/server/sitemap/nitro.js:222`), and it covers the index and every chunked child. `/__sitemap__/style.xsl` never sets it, and `/sitemap.xml` is a Nitro route rule redirect that never reaches the handler, so both are left alone.
+
+**`s-maxage` gets its own number — `cwa.sitemapCache.sharedMaxAge`, default 600 — and deliberately does not reuse `buildPageCacheHeaders`' derivation.** The sitemap structurally cannot read the API's freshness: h3's `fetchWithEvent` hands the internal source request a **fresh `event.context` object** (`nitropack/dist/runtime/internal/app.mjs:49-57` rebuilds it from `__unenv__._platform`), so nothing `cwa-urls.get.ts` learns can be written back onto the outer response. A fixed TTL therefore bounds only the go-live-by-clock case, which is a strict improvement on today, where nothing purges it at all.
+
+**The tag is `cwa-html, <prefix>/_/routes`, and the prefix is derived from `apiUrl` inside the plugin — never from `ResourceTypeFromIri.getPathPrefix()`.** That singleton is set only by `Cwa`'s constructor, which a Nitro-only route never runs, so it is empty on a pod that has served no page, and it is cross-request shared state besides. The normalisation rule is the one pure helper `normaliseApiPathPrefix` (`resources/resource-utils.ts`), used by `setPathPrefix` and by the builder, so `/`, `//`, `/_api/` and `/_api` keep resolving identically — a bare-host API must yield `/_/routes`, not `//_/routes`, which is #266 by another route. `sitemap-cache.spec.ts` pins that the emitted collection token satisfies `getResourceTypeFromIri(token) === ROUTE`, so it cannot drift into something the surrogate-key filter would reject.
+
+**Both tokens, and no more.** `cwa-html` earns its place independently — `sitemapEnabled` and `sitemapXml` are site config, which never enters the resources store, and a deploy should drop the sitemap before the CI warm reads it. `<prefix>/_/routes` is what fixes the reported bug. The per-route item IRIs are deliberately left out: header cardinality on a large site, and the collection tag already covers every Route write. `cwa-custom-sitemap.get.ts` is built purely from site config, so it carries **`cwa-html` only** and sets its decision directly on its own event.
+
+**The token is a cross-repo contract, and api-components-bundle#317 pins it.** `features/main/route_purge_tags.feature` asserts that with the route import prefix `/_api` a create, a path change, a delete and a CLI write each purge `/_api/_/routes`, and that `/_/routes` is **not** purged — the general form is `<route import prefix>/_/routes`. The bundle notes the tag is the same string as a Route collection response's `@id` and suggests emitting it as the API spells it; the module derives it from `apiUrl` instead, which is the same assumption every page `Surrogate-Key` already rests on (`cwa.ts` seeds `ResourceTypeFromIri` from `new URL(apiUrl).pathname`). **An app whose route import prefix differs from its `apiUrl` pathname would tag nothing** — no current app does, and nothing detects it.
+
+**`test/e2e/sitemap-cache-headers.mjs` is the only faithful guard**, because the cache lives inside `defineCachedFunction` in third-party runtime code and is additionally gated on `!import.meta.dev`, so it does not exist outside a production build. `stub-api.mjs` gained a mutable `/_/routes` collection (`setSitemapRoutePaths`) for it. The load-bearing assertion is that a route added to the stub is listed **on the very next request**; it is the one that failed when the package's cache was restored.
+
+**The `apiUrl` must come from `resolveApiUrl`, not from `runtimeConfig.public.cwa`** (#345). `sitemap-cache-config.ts` read the public key directly on its first pass, which was written before the server URL moved to the private key — so an app setting only `NUXT_CWA_API_URL` would have emitted a bare `/_/routes`, matching nothing, with no error anywhere. `readiness-config.ts` had the identical bug. Both went through the real e2e before the prefix was right, which is the argument for that guard existing at all: a unit spec on the builder passes with either value.
+
+**Two things not proven here:** whether Souin actually stores or purges anything (no edge in the test rig), and what a given deployment's prefix really is — the bundle pins the form, not any one app's value.
+
+---
+
+## Admin-only code is kept out of the entry chunk ([#331](https://github.com/components-web-app/cwa-nuxt-module/issues/331))
+
+The runtime singletons are constructed for every visitor, so anything they import at module scope lands in the Nuxt app entry and is `modulepreload`ed on every page. They were statically importing the confirm dialog, the component-focus overlay, `luxon` and an XML validator; Nuxt additionally imports the layer's `error.vue` statically (`nuxt-root.vue`: `import ErrorComponent from '#build/error-component.mjs'` — unavoidable), which pulled in the full-screen error page and its WebGL particle animation.
+
+**Measured on the playground** by reading the Nuxt app entry's `preload` set out of `.output/server/chunks/virtual/precomputed.mjs` and summing the real chunk files: **36 chunks / 643,720 B raw / 227,115 B gzip → 18 chunks / 427,905 B raw / 152,556 B gzip**, i.e. **−215,815 B raw (−33.5 %), −74,559 B gzip**. The issue's own figures were taken on the components-web-app template, whose entry is larger, so the absolute numbers there differ; every relative claim held.
+
+What moved, and why each is safe:
+
+- **`luxon` → `new Date().toISOString()`** (`resources/resources-manager.ts`, `…/cta/CurrentResourceCta.vue`). Both uses were `DateTime.local().toUTC().toISO()`, which emits `…Z`, not `…+00:00` — byte-identical to `toISOString()`. That matters because `resources-manager.ts:210` **string-compares** `publishedAt` against now, so a format change would silently stop a just-published resource counting as published. `luxon` and `@types/luxon` are gone from `package.json`.
+- **`ConfirmDialog` → `await import()`** in `confirmDelete`, `confirmDiscardAddingResource` and `confirmStackChange`, all already `async` and all immediately `await dialog.reveal(...)`. This is what drags `@headlessui/vue` (via `DialogBox`'s auto-imported `<CwaUiFormButton>`) and `@popperjs/core` in.
+- **`ComponentFocus` → `await import()`** in `ResourceStackManager.createFocusComponent`, now `async`. With the confirm dialog this also removes the last entry-graph edge to `@vueuse/core`.
+- **`<LazyCwaErrorPage>`** in `layer/error.vue`. Nuxt renders the error component inside `nuxt-root`'s `<Suspense>`, so it still server-renders; a client-side `showError()` now fetches the chunk first.
+- **`fast-xml-parser` → `await import()`** inside the `sitemapXml` branch, which makes `SiteConfig.saveConfig` **`async`** — a deliberate public-API change, one in-repo caller (`settings.vue`), already `async`.
+- **`LazyCwaAdminResourceManagerLayoutPageOverlay`** in `CwaRootLayout.vue`. `OutdatedContentNotice` beside it is deliberately left static: it renders in the **`v-else`, non-admin** branch, so making it lazy would cost every anonymous visitor a request.
+
+**The `createApp`/`defineExpose` trap.** `createApp(defineAsyncComponent(() => import(…)))` looks like the obvious fix and is wrong: `mount()` then returns the *async wrapper's* proxy, while `ComponentFocus`'s `defineExpose({ redraw })` is on the inner component — so `redrawFocus()`'s `focusProxy.redraw()` throws. Use `await import()` and pass the resolved component to `createApp`.
+
+**The staleness guard.** The `await` opens a window in which `removeFocusComponent()` can run (the `showManager` watcher does exactly that), which would leave an orphan overlay mounted after the focus was dismissed. `removeFocusComponent` increments `focusGeneration`; `createFocusComponent` captures it after its own leading `removeFocusComponent()` and bails if it changed. This also makes two overlapping calls safe.
+
+**The unmount and the mount must stay in one synchronous block after the import.** `createFocusComponent` originally removed the mounted overlay *first* and awaited the import afterwards, which put a real gap between them: a cached dynamic import still resolves in a fresh task, so the browser gets a rendering opportunity with nothing mounted, and `ComponentFocus` is what dims the whole window around the selection — so **every selection change flashed the page bright**, and the first one waited on the network. The import is now awaited before anything is torn down, and `removeFocusComponent()` runs immediately before `createApp().mount()`. Measured through the container's child count across a selection change: `[1, 0, 0, 0, …]` before, `[1, 1, 1, …]` after.
+
+The same method now also **does nothing at all when the mounted overlay is already the right one** — the live `domElements` ref is recorded as `focusDomElements` and compared against the incoming stack item's. `iri` is passed as the manager's own `currentIri` computed, the same object every time, so that ref is the only prop that can differ. Re-clicking the component already selected used to rebuild the overlay invisibly (the rebuild predates #331; only the gap was new) and now creates nothing, and a draft↔published swap on one element keeps the overlay mounted and recolours reactively instead of blinking. `refreshFocusForIri` still rebuilds when a component remounts with a fresh `ManageableResource`, because that is a new ref.
+
+**`focusGeneration` is incremented at the top of the method, before either early return.** Every call supersedes whatever is in flight, including the one that then decides it has nothing to do — otherwise selecting B and returning to A before B's import resolves would take the no-op path without cancelling B, and **B's overlay would mount over A's selection**. Pinned in `resource-stack-manager.focus.spec.ts`, which needs the real `watch` and so cannot live in `resource-stack-manager.spec.ts`, where it is mocked away at file level.
+
+**`useNuxtApp()` is read before the `await`, deliberately.** This path is client-only today (`document.createElement`), and on the client Nuxt sets the app context permanently, so resolving it after an await would work — but hoisting it costs nothing and removes any chance of a #263/#313 repeat if the path ever runs server-side.
+
+**The build-output guard** (`test/e2e/entry-bundle-markers.mjs`, folded into `pnpm run test:e2e`) is the only thing that can catch a regression: bundle size is not unit-testable, and a static import added anywhere in the singletons' graph reintroduces this silently. It resolves the entry's `preload` set from the built manifest and fails on marker strings — `Invalid DateTime`, `InvalidXml`, `headlessui`, `preventOverflow`, `OES_texture_half_float`. Markers, not a byte budget, so dependency bumps don't produce false failures. `OES_texture_half_float` is a WebGL literal inside `BackgroundParticles.vue` rather than the component name, which a compiler change could stop emitting. `ssr-concurrent-status.mjs` additionally asserts the 404 page server-renders its `<canvas>` — proven non-vacuous, since no non-error page contains one — because the lazy error page is the one change that could break SSR while every status stayed correct.
+
+---
+
+## The layer is published as the `@cwa/nuxt/layer` subpath export
+
+An application should extend the layer by its **package specifier**, not by a path into `node_modules`:
+
+```ts
+extends: ['@cwa/nuxt/layer']
+```
+
+The export names the config file, not the directory — `"./layer": "./dist/layer/nuxt.config.ts"` — because an `exports` map cannot name a directory and does not need to. `@nuxt/kit`'s `extends` resolver only intercepts filesystem paths and `~`/`@` aliases, so a bare specifier falls through to c12, which resolves it with exsolve and sets the layer's `cwd` to the resolved file's **dirname**. Node applies `realpath` on the way, which is what makes this matter: a layer resolved this way has a real `cwd`, so nuxt#36401 never applies to it. The old path form still works — it is a filesystem path, so the `exports` map never applies — and an application that keeps it keeps the prefetch bug, which is why the `pages:extend` workaround above stays until every application has moved.
+
+**The two are complementary, not alternatives.** The workaround fixes every application without a config change; the export removes the cause for an application that adopts it and is a no-op for the workaround, since realpathing an already-real path returns the same string.
+
+**Upgrading is one-directional:** the export exists only from this build onwards, so an application changing `extends` must take the module upgrade at the same time. The reverse is safe — upgrade first, change `extends` later.
+
+Closes the layer half of [#273](https://github.com/components-web-app/cwa-nuxt-module/issues/273); the `.` subpath is still the only other export.
+
+---
+
+## Every public page prefetched the admin and auth pages ([#329](https://github.com/components-web-app/cwa-nuxt-module/issues/329))
+
+Nuxt removes page chunks from the app entry's `dynamicImports` in `build:manifest`, so pages are not prefetched. It builds the exclusion list with `relative(srcDir, page.file)` and compares it against Vite's manifest keys — and when a layer is extended by a **filesystem path that goes through a symlink**, those two strings are different spellings of the same file. `page.file` keeps the symlink path; Vite resolved the module through `realpath`. Nothing matches, so every `/_cwa` admin page and every auth page is a prefetch hint on every public page.
+
+This is the module's problem to fix, not each application's: the module registers those pages, and `extends: ['./node_modules/@cwa/nuxt/dist/layer']` is how every application installs it through pnpm. A layer extended by a **bare specifier** resolves through `realpath` and is filtered correctly — which is the clean long-term route, but it needs a config change in every app, and the hook needs none.
+
+**The workaround is a `pages:extend` hook that rewrites `page.file` to its realpath**, in `module.ts` after the two `extendPages` passes — so it also covers the `cwa-page.vue` catch-alls, which have the same problem under a published install. Two deliberate choices:
+
+- **It realpaths every page, not only this module's.** Realpathing an already-real path returns the same string, so it is a no-op wherever nothing is symlinked — the module's own playground is unaffected — and it also helps an application whose own pages are symlinked. Scoping it to the module's directory would have required comparing realpaths on both sides anyway, because `import.meta.url` is already resolved while `page.file` is not.
+- **Production only** (`if (!nuxt.options.dev)`). `build:manifest` returns early in dev, so there is nothing to gain there, and dev's watcher expects the symlink paths.
+
+Upstream: [nuxt/nuxt#36401](https://github.com/nuxt/nuxt/issues/36401), reproduction at [silverbackdan/nuxt-layer-symlink-prefetch](https://github.com/silverbackdan/nuxt-layer-symlink-prefetch). Removal conditions are in `DEPRECATIONS.md`.
+
+**Measured** on a symlinked copy of the playground (identical tree, `extends` pointed at a symlink to `src/layer`), comparing the entry-derived prefetch set replayed from the built `precomputed.mjs`: **92 links / 480,304 B raw / 180,842 B gzip → 33 links / 276,794 B / 95,885 B**. The un-symlinked playground, where the hook is a no-op, builds **33 links / 276,791 B / 95,880 B** — three bytes apart, so the hook restores exactly the behaviour Nuxt intended rather than inventing one. A real production render of `/login` went from 89 prefetch hints (491,524 B) to 62 (399,500 B), with 1.9 KB less HTML, and `/login`, `/forgot-password`, `/reset-password/:username/:token` and `/_cwa/pages` all still resolve. Daniel measured 80 → 23 hints on the template.
+
+**The trap: the playground cannot reproduce this**, because it extends the layer by a real relative path (`./../src/layer`). So no build-output guard in this repo can catch a regression of #329 — a prefetch assertion in `test/e2e/entry-bundle-markers.mjs` would pass with or without the hook. The behaviour is pinned in `module.spec.ts` instead (`page file realpath (#329)`), and the only faithful check is a throwaway copy whose `extends` goes through a symlink. The dev-gate case passes vacuously against a missing hook, so it was mutation-tested.
+
+**Prefetch is not the same mechanism as a nested dynamic import.** `vue-bundle-renderer` walks `dynamicImports` exactly **one level** from each entrypoint and rendered module, and for each dynamic dependency adds only that chunk's *static* import graph. A chunk reached only through a nested dynamic import is never prefetched at all — which is why the TipTap editor is neither preloaded nor prefetched (#332), and why a `build:manifest` hook setting `prefetch = false` under the layer path was rejected as the fix here. The admin pages' bytes live in shared `_hash.js` chunks with no `src` key, so a path-based flag reaches only the page chunks themselves; simulated against a symlinked build it recovered 19 of the 54 links that realpathing recovers, leaving ~120 KB of admin-only shared chunks behind. It would also have suppressed `CwaRootLayout.vue`, which every public page wants.
+
+---
+
+## The admin UI is never prefetched ([#336](https://github.com/components-web-app/cwa-nuxt-module/issues/336))
+
+On Nuxt 4.5 every anonymous visitor started getting prefetch hints for the admin `Header`, `ResourceManager`, `LayoutPageOverlay` and everything they import — on the template, an anonymous `/login` went from **18 hints / 126,665 B raw / 47,104 B gzip** to **59 / 303,962 B / 114,868 B**. `Header` alone accounts for +31 files / +127,329 B, because it *statically* imports `PageResourceAdminModal.vue`, which drags in `useItemPage`, the modal/form stack, `RoutesTab` and `cwa-form-input`.
+
+**It is not a Nuxt regression, and pinning Nuxt at 4.4.8 was never the fix.** Both of Nuxt's `build:manifest` filters (pages, and global components) are byte-identical between 4.4.8 and 4.5.2, as is the layouts template. What changed is the **client manifest**, and the mechanism is worth keeping because it is counter-intuitive:
+
+- `vue-bundle-renderer` walks `dynamicImports` one level from each id in `entrypoints ∪ ssrContext.modules`. `ssrContext.modules` holds **source paths**, so a rendered chunk is a prefetch root only if the Vite manifest has an entry under that same source key.
+- Under **Vite 7 / Rollup** the root-layout chunk got **no `facadeModuleId`**, so Vite keyed it `_D4X7aU3e.js`. `ssrContext.modules`' `…/layer/layouts/CwaRootLayout.vue` matched nothing, and the layout's admin children were never walked. Cause, from the chunk's own tail: it exported `{pe as C, ne as _}` — the frozen interop namespace `genDynamicImport(file, { interopDefault: true })` produces, with **no `default`** — so Rollup could not treat it as that module's facade. It was the **only** dynamic entry in the whole 4.4.8 build without a source key (62 with, 1 without); 4.5.2 has none.
+- Under **Vite 8 / Rolldown** the same chunk (5,016 B → 5,610 B, same modules) exports `{z as default, …}`, gets its facade, and is keyed by its source path. The layout becomes a second prefetch root and its four lazy children — plus their static closures — follow.
+
+**The cross-test that settles it.** Holding one side fixed and swapping the other, for `ids = {entry, layout}`:
+
+| | vbr 2.3.1 (4.4.8's renderer) | vbr 2.3.2 (4.5.2's renderer) |
+|---|---|---|
+| 4.4.8 manifest | 22 prefetch / 128,285 B — admin **absent** | 23 / 128,532 B — admin **absent** |
+| 4.5.2 manifest | **61** / 305,137 B — admin **present** | **61** / 305,137 B — admin **present** |
+
+Swapping the renderer changes nothing; swapping the manifest is the whole effect. (2.3.1 → 2.3.2 did change — `precomputeDependencies` stopped baking each module's dynamic-import prefetch into its own set and propagating it up static-import chains, storing `modules[id].dynamicImports` for a runtime walk instead — but that is a **narrowing** change and cannot add hints. 2.4.0 is unchanged in this respect.) Nuxt 4.5 also rewrote the hint-emitting block in `renderer.mjs` to honour `~lazyHydratedModules` / `~neverHydratedModules`; that is inert here, since we use no `hydrate-*` and `dependencyOptions` stays `undefined`.
+
+**4.5 is the more correct of the two.** On 4.4.8 the root-layout chunk — needed to hydrate every page — was only ever a `prefetch` hint and never `modulepreload`ed, because nothing could attribute it. We were relying on an accident, so this is ours to fix.
+
+### The fix: a `build:manifest` filter in `module.ts`
+
+```ts
+for (const chunk of Object.values(manifest)) {
+  if (chunk.src && isAdminSource(chunk.src)) continue
+  chunk.dynamicImports = chunk.dynamicImports?.filter(id => !isAdminSource(id))
+}
+```
+
+`isAdminSource` matches `relative(srcDir, …)` of `runtime/templates/components/main/admin/` and `…/core/admin/` — the same base Nuxt's own two hooks use, and `import.meta.url` is already a real path (#329) so it matches `facadeModuleId`. Directory-scoped rather than a list of components, so a new admin component is covered without anyone remembering. Measured on the template against two builds of this module differing only in the hook: anonymous `/login` goes from **59 hints / 304,089 B raw / 114,869 B gzip** to **23 / 154,299 B / 54,148 B**, and `modulepreload` stays byte-identical at 37 links / 610,388 B.
+
+**Why a manifest filter works here when #329 rejected one.** #329 would have had to set `prefetch = false` on hash-keyed shared chunks with no `src`, which reached 19 of 54 links. This strips **edges keyed by the target's source id**, and `Header.vue` / `ResourceManager.vue` / `LayoutPageOverlay.vue` all have source keys on 4.5 — removing the edge takes the whole downstream static closure with it. `CwaRootLayout.vue` itself is untouched and stays preloaded. Hints are the only consumer: the import edge lives in the chunk's own code and `__vite__mapDeps`, so the admin UI still loads on demand (verified — the header chunk's filename is still in the layout chunk and absent from the HTML).
+
+**An admin chunk's own dynamic imports are left alone.** A visitor must never prefetch admin, but an admin who has already loaded the chrome should keep its internal prefetching, or every manager tab costs a cold fetch. The exemption is keyed on `chunk.src`, which is the honest expression of it: **an anonymous `_hash.js` chunk has no `src` and cannot be identified as admin** — but it can never be a prefetch root either (`ssrContext.modules` only ever holds source paths), so filtering it is inert.
+
+**Two things the rule does not reach, deliberately:**
+
+- **`core/ConfirmDialog.vue` is not under an admin directory** and, on Rolldown, is not even a manifest key — it is merged into an anonymous chunk the entry dynamic-imports. It is admin-only in practice (`confirmDelete`, `confirmDiscardAddingResource`, `confirmStackChange`), but no path rule can reach it. `ComponentFocus.vue` *is* under `main/admin/` and *is* caught.
+- **`ErrorPage.vue` stays prefetched** (25,373 B raw, the second-largest hint on both versions, from #331's `LazyCwaErrorPage`). It is the one thing you want already present when something has gone wrong.
+
+**No dev gate**, unlike #329's `pages:extend` hook. `build:manifest` *does* fire in dev, but with a two-entry stub manifest (`@vite/client` + the entry) that carries no `dynamicImports`, so a gate would be dead code — and Nuxt's own global-component filter, the closest analogue, has none either. `module.spec.ts` pins the absence of the branch rather than asserting on a stub, because a test fed the dev stub passes with or without a gate — the #329 vacuity trap.
+
+**Latent, and recorded here rather than filed upstream:** Nuxt's own page and global-component filters are gated on `if (chunk.isEntry)`. On Vite 8 more rendered chunks are manifest roots, so a page or a global component dynamically imported from a **non-entry** chunk would escape them. It does not bite in the template today — the only non-entry roots are `CwaRootLayout.vue`, an anonymous ResourceManager-tabs chunk, and `cwa/layouts/primary.vue`, whose one dynamic import is an app SVG. Ours deliberately has no such gate, which `module.spec.ts` mutation-tests by re-adding it.
+
+**The playground reproduces this, unlike #329**, because the layout chunk's source key does not depend on symlinks. So `test/e2e/prefetch-hints.mjs` (in `pnpm run test:e2e`) is a real guard: it replays `getRequestDependencies` for a rendered `CwaRootLayout.vue` and fails on an admin manifest key, an admin chunk file, or the markers `Sign out` (Header) and `Add Component` (ResourceManager). It **fails first if the layout has no manifest key, or if the manifest holds no admin keys at all** — without those two checks it would pass exactly as it would have on 4.4.8, for the wrong reason.
 
 ---
 
@@ -440,6 +659,270 @@ When a session ends, the module deletes the app's API data caches so data cached
 
 ---
 
+## The error page says when the site is empty, and when the API is not answering ([#346](https://github.com/components-web-app/cwa-nuxt-module/issues/346))
+
+Two first-hour failures looked the same as any other error. A new site with no
+routes gave a 404 at `/` with **Go back home** hidden (we are already home) and
+the sign-in CTA gated on 401/403 — so the only person who could act had nothing
+prominent to act on. And an unreachable API produced a generic 500, or Souin's
+*Gateway Timeout* after 10s on a cold start, pointing at nothing.
+
+**The issue overstates the first one slightly, and the correction matters for the
+tests.** A `<ClientOnly>` footer already renders **Go to admin** or **Sign in →**
+on every error page. So it is not "nothing to click", it is "nothing that reads
+as a way in" — and `wrapper.html().includes('/login')` therefore **passes today
+for the wrong reason**. Every CTA assertion is scoped to a
+`data-testid="error-actions"` block, and one test asserts the footer link is
+still the only `/login` on a non-root 404, so the file cannot go vacuous.
+
+### Status code alone cannot tell the cases apart
+
+ofetch's `statusCode` getter is `response && response.status`, so a connection
+failure carries **no status**, and `createError` defaults it to 500 — identical
+to an API 500. The invalid-resource error (`Not Saved. The response was not a
+valid CWA Resource`) is a plain `Error` with no status either. So the flag is
+set at the fetch site, where the difference is still visible:
+
+```ts
+if (error.statusCode === undefined) return !!error.request
+return [502, 503, 504].includes(error.statusCode)
+```
+
+`!!error.request` is what separates a request that went out and got nothing from
+one that was never made. **An API 500 is deliberately not unreachable** — the API
+answered.
+
+**`data` is the only transport, and it was free.** `H3Error.toJSON()` emits only
+`message`, `statusCode`, `statusMessage` and `data`, and nitro ships that object
+to `/__nuxt_error` as a **query string**. Every field on `CwaResourceError` is a
+non-enumerable `defineProperty`, so the old `data: error` serialised to literally
+`{"name":"CwaResourceError"}` — nothing read it, and its one virtue was
+accidental: it did not leak `request`. It is now `{ apiUnreachable: true }` or
+nothing. `experimental.parseErrorData` defaults to true, but an app can turn it
+off, so the page reads `data` through a string-tolerant parse.
+
+**`error.request` is the absolute internal API URL** and must never reach the
+browser. It is logged server-side only. It is already in the Pinia payload via
+`error.asObject`, which is #345's problem and deliberately untouched here — a
+spec asserts the API origin never appears in anything passed to `showError`,
+mutation-tested by putting `asObject` back.
+
+### Maintenance and a starting API cannot be confused
+
+The maintenance 503 is thrown in `server-middleware.ts` and never reaches
+`setResourceFetchError`, so it carries no flag — and it cannot even occur when
+the API is down, because `resolveConfigEventHandler` returns `undefined` first
+and the maintenance branch is gated on `if (resolvedConfig)`. Keying on the flag
+rather than the status is what keeps them apart, and the test that earns its
+place is the one that fails when the rule is rewritten as `[500,502,503,504].includes(statusCode)`.
+
+**A 503 from a container coming live is the case this copy is for**, not a
+counter-example: "isn't responding **yet**" is literally true of it. The proper
+fix for that window is the readiness route above — gate the traffic, and a
+visitor never reaches this page during startup. The page is what is left for
+deployments with no readiness gating.
+
+### Copy
+
+- **A 404 at `/`** — *No page here yet* / *Sign in to create one.* with a sign-in
+  CTA. **`/` is a heuristic and is not disguised as anything else**: the copy is
+  true of any 404 at the root regardless of whether the site is empty, and it
+  claims nothing about the rest of the site. Proving "no routes at all" would cost
+  `GET /_/routes?perPage=1` on a path that is already failing, which also fails
+  when the API is down, and would change nothing we say.
+- **Not on any other 404.** A mistyped URL on a public site is an ordinary miss;
+  a login CTA there advertises an admin surface to everyone who fat-fingers a
+  link. The footer link is the right weight for that case.
+- **API unreachable** — *The site's API isn't responding yet* / *Please try
+  again in a moment.*, with **no** sign-in link, because signing in needs the
+  same API. It takes precedence over the empty-site case, which cannot co-occur
+  anyway.
+
+### The unhandled rejection in the same failure
+
+`route-middleware.ts` calls `siteConfig.loadConfig(...)` **unawaited**, and
+`loadConfig` had no error handling — so every SSR request with the API down threw
+an unhandled rejection, and left `isLoading` stuck true. `loadConfig` now resets
+`isLoading` and **rethrows** (an awaited caller, `settings.vue`, must still see
+the failure rather than silently render defaults and save them back), and the
+middleware — the caller that discards the promise — catches and logs.
+
+**Deliberately not built:** reading `Retry-After` (usually absent, a new field to
+thread through for nothing), and auto-retry on the error page (it turns a real
+outage into a silently looping page, and it is a behaviour change rather than a
+copy change).
+
+---
+
+## The health check stopped calling the API, and readiness became its own route ([#342](https://github.com/components-web-app/cwa-nuxt-module/issues/342))
+
+`/_cwa/healthcheck` returned a static OK, but it was not a static request.
+`server-middleware.ts` is registered with **no route**, so it runs for every
+Nitro request, and it fetched `/_/site_config_parameters` **before** its skip
+check. So every probe hit PHP. With the API down the probe still said OK; with
+the API slow it waited, unbounded, past a 1s Kubernetes probe timeout.
+
+**Two things the issue did not say, and both shaped the fix:**
+
+- **`/_nuxt/*` never reaches the middleware**, so no asset skip is needed. Nitro
+  unshifts its static handler ahead of every scanned handler, and h3
+  short-circuits once that returns a body.
+- **`/__sitemap__/*` and `/robots.txt` must NOT be skipped.** The middleware's
+  `updateSiteConfig(e, …)` is the only thing feeding nuxt-site-config, and
+  `skipMaintenanceChecks()` deliberately runs *after* the fetch for exactly that
+  reason — it skips **maintenance**, not **config**. So the fix is a new early
+  return, not a change to that helper.
+
+**The skip is two exact paths, not `startsWith('/_cwa')`.** `/_cwa/pages` and
+the rest of the admin UI are real renders that want the site config. It splits
+on `?` because h3's `_decodePath` puts the query string in `e.path`, so
+`allowedPaths.includes(e.path)` already misses `/robots.txt?x=1` — a pre-existing
+bug this does not fix, but must not repeat. `module.spec.ts` pins that `/about`
+**and** `/_cwa/pages` still resolve the config, which is the guard against the
+list widening into a prefix test.
+
+It also closes an exposure by accident: the maintenance block reads
+`getRequestURL(e).pathname`, which **includes** the baseURL, and tests
+`startsWith('/_cwa')` — so under a sub-path baseURL, maintenance mode returned
+503 to the liveness probe and would have had the pod restarted.
+
+### `/_cwa/readiness`
+
+Registered **unconditionally**, unlike the warm route, because readiness is
+always meaningful. It requests the API's `/_/health`
+(api-components-bundle#312) at the server-resolved API URL, with
+`credentials: 'omit'`, `ignoreResponseError: true` and **`redirect: 'manual'`**,
+and returns 200 `{status:'OK'}` or 503 `{status:'UNAVAILABLE'}` with
+`cache-control: no-store`.
+
+- **Never `''` or `/`.** The API answers `/` with a trailing-slash 301, so the
+  entrypoint is a redirect hazard — and not following redirects is what makes
+  the probe honest.
+- **Not `/_/site_config_parameters`.** Souin caches it, so a cached 200 would
+  report ready while PHP was dead.
+- **A 3xx is not ready**, and the `location` is logged: a redirect means the
+  configured URL is not the API's address. Following it can turn an SSO wall
+  into a false 200.
+- **A 4xx other than 404 is ready** — the API answered; readiness is "can it
+  serve", not "am I allowed". **A 404 is ready with a warning**, which is a
+  transition recorded in `DEPRECATIONS.md`, not a permanent rule.
+- **The URL, the status and the error stay out of the response body** — it is
+  unauthenticated — and go to `consola` server-side.
+
+**No caching or debouncing of the result.** A stale "ready" served after the API
+fell over is the exact failure this exists to prevent.
+
+**The probe timeout must be shorter than the caller's, and that is a contract
+with the template.** 2000ms by default, so we answer 503 *with a logged reason*
+rather than being killed mid-request; a Kubernetes readiness probe therefore
+needs `timeoutSeconds` of at least 3. Both settings live in private
+`runtimeConfig.cwa.readiness` (`NUXT_CWA_READINESS_PATH` /
+`NUXT_CWA_READINESS_TIMEOUT`), defu'd in **outside** the `pageCache.enabled`
+block. Unlike `pageCacheWarm`, the numbers live in **one** place — `module.ts`
+imports `READINESS_DEFAULTS` from `runtime/server/readiness.ts`, which has no
+virtual-alias imports.
+
+**The site-config fetch now has a 5s timeout** (half Souin's 10s backend
+timeout), and the trade-off is worth stating: a timed-out fetch returns
+`undefined`, so the render proceeds on `options.siteConfig` defaults **and
+maintenance mode is not enforced**. It is the only number here with a
+correctness cost.
+
+**Untested, and knowingly so:** that timeout. `useFetcher.ts` has no spec and
+cannot get one cheaply — it imports `useRuntimeConfig` from `#imports` and the
+`addServerTemplate` virtual `#cwa/server-options.ts`, neither of which vitest
+can intercept. Every other spec mocks `./useFetcher` wholesale. A spec that
+appeared to cover it would be asserting against a mock of the thing under test.
+
+`cwa-readiness.get.spec.ts` drives the real handler over **real ofetch against a
+real `node:http` server**, which is the only way to prove `redirect: 'manual'`
+and the timeout actually reach undici rather than being dropped — the options
+object alone proves nothing. It also asserts the visitor's cookie is never sent
+and the API origin never appears in the response body.
+
+---
+
+## Maintenance mode verified the admin's JWT with the API, not by decoding it
+
+Anyone could walk past the maintenance screen. `server-middleware.ts` gated the
+bypass on `jwtDecode(cookies.api_component)`, and `jwt-decode` **only
+base64-decodes — it performs no signature check at all**. Every value the gate
+read was therefore attacker-controlled: `roles`, `exp`, and the `cwa_auth=1`
+cookie tested alongside them. A hand-written `{"roles":["ROLE_ADMIN"],"exp":<future>}`
+with a junk signature and two cookies was enough, and no API request was involved
+in the decision.
+
+**Low severity, and worth being precise about why.** The pages a bypasser then
+sees are rendered from API responses made with their own invalid cookie, so the
+API serves them the anonymous public site. Nothing private leaks; what fails is
+that maintenance mode does not hide the site.
+
+**The fix was already in the repo, one directory over.** `cwa-page-cache-warm.post.ts`
+forwarded the incoming cookie to the API's `/me` and read `roles` off the
+**verified** response, added precisely because — as the #315 notes put it —
+`server-middleware.ts` "only decodes the JWT without verifying it, which is too
+weak". That function moved to `server/is-admin.ts` unchanged and both callers use it.
+
+- **The decode stays as a cheap pre-filter.** No cookies, a wrong `cwa_auth`, no
+  admin role, a missing or past `exp`, or a decode that throws all refuse without
+  touching the network — so maintenance mode does not turn every anonymous hit
+  into an API round trip. Only a request already presenting a live-looking admin
+  token costs a `/me`.
+- **`/me` is what grants the bypass**, with a 3s timeout, and **it fails closed**:
+  a timeout, a non-2xx or any throw shows the maintenance page. An admin shown
+  maintenance because the API is sick is the right outcome.
+- **The timeout is a constant, not an option.** `runtimeConfig.cwa.pageCacheWarm`
+  is registered only when page caching is enabled, and nothing has asked for this
+  to be tunable.
+
+`server-middleware.spec.ts` pins it: the API refusing a well-formed admin claim
+still 503s, and each pre-filter refusal asserts `/me` was **not** called. The
+existing bypass test now asserts it **was** — a mock never asserted on is not
+proven live. Mutation-tested by restoring the unverified bypass, which fails two.
+
+---
+
+## The API URL: an unregistrable fallback, and a private server URL ([#345](https://github.com/components-web-app/cwa-nuxt-module/issues/345))
+
+**One pure resolver decides the URL**, `resolveApiUrl(runtimeConfig, isServer)` in `src/runtime/api/api-url.ts`, used by `cwa.ts`, `server/useFetcher.ts`, `server/page-cache-warm-config.ts` and `server/server-plugin.ts`. It returns the URL **and its `source`**, which is what lets the server-start diagnostics say something specific without a second copy of the precedence rules.
+
+- **Server:** `runtimeConfig.cwa.apiUrl` → `public.cwa.apiUrl` (deprecated) → `public.cwa.apiUrlBrowser` → the fallback.
+- **Client:** `public.cwa.apiUrlBrowser` → `public.cwa.apiUrl` (deprecated) → the fallback.
+
+**The client must never read `runtimeConfig.cwa`**, and the gate is the property access itself, not a falsy check on its value. Nuxt wraps the client runtime config in a dev-only Proxy that fires a `NUXT_E1003` diagnostic for an unknown top-level key, so reading it and discarding the result is still wrong. The resolver only touches `runtimeConfig.cwa` inside its `isServer` branch, and `api-url.spec.ts` pins that with a counting getter rather than an assertion on the returned URL.
+
+**The fallback is `https://api-url-not-set.invalid`, and the TLD is the whole point.** It was `https://api-url-not-set.com` — a registrable domain that is not registered — while `CwaFetch` appends the visitor's entire `cookie` header to every SSR request with no origin check, so a misconfigured deploy would have posted visitors' `api_component` JWTs to whoever bought it. `.invalid` is reserved by RFC 2606 and can never resolve.
+
+**Keeping a fallback at all is deliberate.** With no fallback `apiUrl` is `''`, `cwa.ts`'s `if (this.apiUrl)` skips `setPathPrefix`, and the first fetch dies inside ofetch with an opaque `TypeError: Invalid URL`. The `.invalid` host fails by name — `getaddrinfo ENOTFOUND api-url-not-set.invalid` — and, because a DNS failure carries no status and does carry a `request`, `isApiUnreachable` is true and the [#346](https://github.com/components-web-app/cwa-nuxt-module/issues/346) error page renders "The site's API isn't responding yet". Verified against a built playground. `new URL(…).pathname` is `/`, which `setPathPrefix` normalises to no prefix (#266), and `resolvePageCacheWarmSettings` now gets a parseable URL where an empty string used to throw.
+
+**The public keys are declared unconditionally in `module.ts`.** Nuxt only applies an env override to a key that exists at build time, so an app that declares neither silently ignores `NUXT_PUBLIC_CWA_API_URL_BROWSER` — a second route into the same leak, and one that looks like the app's own mistake. `{ apiUrl: '', apiUrlBrowser: '' }` is defu'd into `runtimeConfig.public.cwa` in `setup()`, and `{ apiUrl: '' }` into the private `runtimeConfig.cwa` beside the `readiness` defaults — **outside** the `pageCache.enabled` block, because the API URL has nothing to do with page caching.
+
+**Three diagnostics, all in `server/server-plugin.ts`, all once per server process.** Not at build time: `module.ts` cannot see `NUXT_PUBLIC_CWA_API_URL`, and the template's build-time value is legitimately empty in every correct deployment, so a build error would break every consuming app. Not per request. **And the server does not refuse to start** — once the host is `.invalid` the misconfiguration is a broken site rather than a security problem, and crash-looping a container on first run is worse.
+
+1. `source === 'unset'` → `logger.error`, naming `NUXT_CWA_API_URL` and `NUXT_PUBLIC_CWA_API_URL_BROWSER` and saying no API request will succeed.
+2. `source === 'public'` → `logger.warn` that the deprecated key supplied the server URL.
+3. Pages are cached and no site URL is configured → `logger.warn`. This one **cannot run at start**, because the canonical URL lives in the site config, which only a request resolves. It runs on `afterResponse`, gated on `event.context.cwaPageCache` (set only by `plugin-page-cache.server.ts`, which is registered only when page caching is enabled) **and** on `event.context.cwaSiteConfig` — a response whose site config never resolved must not spend the one report.
+
+**What that third warning may and may not claim.** `nuxt-site-config-kit@4.2.3`'s `getNitroOrigin` (`dist/util.mjs:80-81`) forces `https` in production for any non-localhost host, so **the scheme does not leak from the rendering request — only the Host does**, and the warning says only that. The `http://` case is real in dev and where the public host is localhost or `127.*`. This is one line in a dependency; re-read it on an upgrade.
+
+**Checking for a configured site URL needs `process.env`, not just the runtime config.** `NUXT_SITE_URL` and `NUXT_PUBLIC_SITE_URL` are read at runtime by nuxt-site-config's own nitro middleware through `envSiteConfig(import.meta.env)`, which the build compiles to `globalThis._importMeta_.env`, i.e. `process.env` — they never reach `runtimeConfig.site.url`, which nothing declares. A check against the runtime config alone warned on a correctly configured site; found by booting the built playground, not by any test. `hasConfiguredSiteUrl` therefore checks the two env names, then `runtimeConfig.site.url` / `public.site.url`, then any `url` in `runtimeConfig['nuxt-site-config'].stack` (which is where `site: { url }` in `nuxt.config` lands).
+
+**Rejected: #345's own item 3**, falling back to `apiUrlBrowser`'s origin for nuxt-site-config's `url`. An app whose API is on a separate host would silently get every canonical and og URL pointing at the API.
+
+**Tests.** `api-url.spec.ts` is the pure spec. `server-plugin.spec.ts` mocks `nitropack/runtime` for both `defineNitroPlugin` and `useRuntimeConfig` — deliberately **not** `#imports`, which never intercepts. Its "says nothing" cases were mutation-tested six ways (each guard made unconditional in turn); every mutant failed. `test/e2e/api-url-not-published.mjs` boots the built playground with only the private variable set and asserts the server URL is absent from `window.__NUXT__.config` while the page still renders API data; it fails when the deprecated public key is used instead, so it is not vacuous. **Residual leak it deliberately does not assert away:** `apiDocumentation.docsPath` and `mercure.hub` come from the API's own `Link` headers during SSR and are serialised into the payload, so a real API still publishes its URL there. The stub sends no `Link` headers, so that run shows it neither way.
+
+**Every server-side consumer goes through `resolveApiUrl`** — `cwa.ts`, `server/useFetcher.ts`, `server/page-cache-warm-config.ts` and `server/readiness-config.ts`. The last of those was missed on the first pass and is the shape of the bug to watch for: it read `runtimeConfig.public.cwa` directly, so an app that set only `NUXT_CWA_API_URL` would have probed an empty readiness URL and reported itself permanently not ready. Anything new that needs the API URL must call the resolver rather than reach into the config.
+
+**`readiness-config.ts` and `page-cache-warm-config.ts` have no specs**, and deliberately: both are three-line wrappers whose only untested part is `useRuntimeConfig` from `#imports`, which vitest cannot intercept. Their logic lives in the pure helpers (`readiness.ts`, `page-cache-warm.ts`, `api-url.ts`) which are specced, and the wiring is exercised by `test/e2e`. A spec here would assert against a mock of the thing under test.
+
+---
+
+## Deprecations and temporary code
+
+Code kept only to support an older API, or to work around someone else's bug, is logged in **`DEPRECATIONS.md`** with the condition that has to be true before it can be deleted. Add an entry whenever you leave something in place for one of those reasons — an entry with no precondition is a todo, not a deprecation.
+
+---
+
 ## Dependencies
 
 Everything was taken to latest on 2026-08-21 (`pnpm up --latest -r "!typescript"`), which cleared **37 audit vulnerabilities (2 critical, 28 high) down to 0**. Three constraints came out of it that must not be silently undone:
@@ -460,6 +943,52 @@ Two API migrations came with it:
 **Security overrides** (`pnpm-workspace.yaml`) still carry the transitive pins the update cannot reach on its own — `tar`, `sharp`, `valibot` and the rest. A pin whose range still matches an installed version does **not** force a re-resolve, so bumping the *floor* alone is not enough: move the match key too (`tar@<=7.5.15: ^7.5.16` → `tar@<=7.5.20: ^7.5.21`). New pinned versions also need adding to `minimumReleaseAgeExclude`.
 
 **Verification after any dependency change:** `pnpm run dev:prepare` first (regenerates stubs and the playground), then `test`, `test:types` (module **and** playground), `lint`, `build`, `dev:build`, and boot `dev:http` — the module build passing does not prove the vite/nuxt pairing works, and the playground typecheck covers layer files the module's own `tsconfig` excludes.
+
+---
+
+## The published package could not be installed ([#273](https://github.com/components-web-app/cwa-nuxt-module/issues/273))
+
+Everything under `src/runtime/` and `src/layer/` ships, so an import there is a promise to every consuming app. Several were promises the package could not keep, and the repo could not notice: the **playground declares `@headlessui/vue`, `@tailwindcss/vite` and `@resvg/resvg-js` itself**, so nothing in this repo ever exercised the package as an app receives it.
+
+**Proven by packing and installing, not by reading.** A fresh Nuxt 4.5 app with the tarball and nothing else failed twice: first `[nuxt-og-image] satori renderer missing dependencies: satori, @resvg/resvg-js`, then `Rolldown failed to resolve import "@headlessui/vue" from …/dist/runtime/templates/components/core/DialogBox.vue`.
+
+### What moved, and the rule behind each
+
+- **`@headlessui/vue` → `dependencies`.** Nine shipped `.vue` files import it. **Not a peer:** there is no v2 — `1.7.23` has been latest throughout — so `^1.7.23` dedupes with any app on `^1`, and a peer would force a line into every app's `package.json` for nothing. Two copies would cost bytes rather than correctness: context is `provide`/`inject` keyed by module-level `Symbol(...)`, so only composing an app's `<ListboxOption>` inside our `<Listbox>` would break, and every CWA usage is self-contained. Its `useId` defers to Vue 3.5's, so ids do not diverge across copies either. This is what #236 already accepted in principle — Headless UI injects no theme or config, so a hard dependency is safe.
+- **`@nuxt/kit` and `@nuxt/schema` → `dependencies`.** `@nuxt/kit` is a real top-level import of `dist/module.mjs`; `@nuxt/schema` is emitted into `dist/module.d.mts` and `dist/types.d.mts`. Both resolved only through pnpm's default hoisting — the `unbuild` trap above, one layer out.
+
+  **The cost is contractual and invisible in the diff: `^4.5.2` now ships to every app.** It must stay in step with `meta.compatibility.nuxt` and with the `moduleDependencies` versions; raising one without the others gives an app two Nuxt toolchains or a version error it cannot act on.
+- **The five `@nuxtjs/seo` sub-modules → `dependencies`** at the same ranges `@nuxtjs/seo` uses, so they dedupe to one copy rather than installing a second `nuxt-site-config`. They are named in `moduleDependencies` and their `#site-config/…` aliases are imported by shipped code, but they were only ever reachable transitively.
+- **Removed: `@takumi-rs/core` and `@nuxtjs/color-mode`.** Neither is referenced anywhere in `src`. Takumi is an *optional peer of `nuxt-og-image`*, so putting it in our `dependencies` never helped: under an isolated install it sits in our own deps directory where og-image cannot see it, and setting `ogImage: { renderer: 'takumi' }` still failed on the satori check. `cwa:dark:` compiles to `@media (prefers-color-scheme: dark)` with no `.dark` class selector, so nothing needed color-mode either.
+- **`@tailwindcss/vite` → `devDependencies`.** Only the playground uses it, and it declares its own.
+
+### OG images are opt-in, and `moduleDependencies` is a function because of it
+
+`satori` and `@resvg/resvg-js` are **optional `peerDependencies`**, not dependencies. `@resvg/resvg-js` is a native binary; forcing it onto every app and CI image to fix a case no current app hits is the wrong trade, and it joins the `sharp` family of security overrides.
+
+`moduleDependencies` is therefore a function of `nuxt`: it requires `nuxt-og-image` **only when both renderer packages resolve** from `nuxt.options.modulesDir`. Three things make that the shape it has to be:
+
+- **`optional: true` is not the mechanism.** `@nuxt/kit`'s `installModules` skips an entry entirely only when it is optional **and** carries no `version`, `defaults` or `overrides` — with a version it still resolves it and records an error. And `@nuxtjs/seo` is our dependency, so `nuxt-og-image` is always *resolvable*; an optional entry would still have installed it, and it would still have thrown.
+- **Neither the template nor SRNTE lists `nuxt-og-image` in `modules`** — both rely entirely on this `moduleDependencies` entry. Skipping it unconditionally would have switched their OG images off silently. Both already declare all three optional packages as dependencies, so the conditional keeps them exactly as they are.
+- **`cwa-page.vue` calls `defineOgImage`**, an auto-import that does not exist when og-image is absent. So `modules:done` registers a no-op `defineOgImage` (`runtime/og-image-fallback.ts`) in that case, and skips the `#og-image/components` type template. This mirrors what og-image itself does when disabled.
+
+**What the failure looks like now.** An app with no renderer gets one build-time line — `open graph image generation is disabled. Install satori and @resvg/resvg-js to enable it.` — and a working build with no OG images. An app that lists `nuxt-og-image` in `modules` itself bypasses our gate and gets og-image's own message, which already names both packages and the install command.
+
+### The guard: `pnpm run test:fresh-install`
+
+`test/e2e/fresh-install.mjs` packs the module, installs the tarball into a throwaway app outside the repo with **none** of the optional packages, and builds it — twice: once with a default pnpm install, once with `hoist: false`.
+
+**The no-hoist round is the one that earns its place, and mutation testing says so.** Demoting `@headlessui/vue` back to a devDependency fails both rounds; demoting `@nuxt/kit` **passes the default round and fails only the no-hoist one** with `Cannot find module '@nuxt/kit'`. A default install would have kept reporting green for exactly the bug that shipped.
+
+The scratch app declares `nuxt` and `vue` and nothing else. `vue` is there because `hoist: false` also exposes *other packages'* undeclared imports — `nuxt-schema-org` imports `vue` without depending on it — and this check is about our package, not theirs. `vue` is already one of our own dependencies, so declaring it in the app hides nothing.
+
+It is **not** in `pnpm run test`: it needs a network install and takes about 90 seconds locally. It runs in CI as its own `fresh-install` job which **`deploy-next` now depends on** — before this, a package that could not be installed would publish anyway, which is how this shipped. It is gated to `push` events, so it covers the publishing branches and stays off pull requests.
+
+**`pnpm pack` runs `prepack`, so the check rebuilds `dist/`.** Run `pnpm run dev:prepare` afterwards to get the stub back.
+
+### Snapshots no longer ship
+
+`@nuxt/module-builder`'s mkdist pattern excludes `*.spec.ts` but not `*.spec.ts.snap`, so eleven snapshot files were published in `dist/runtime`. `build.config.ts` appends the missing negation in a `build:before` hook — the entry's own pattern, so nothing copies them in the first place. A `del` step in the `build` script was rejected: under the stub build `dist/runtime` is a **symlink to `src/runtime`**, so a mistimed run would delete the source snapshots.
 
 ---
 
@@ -806,6 +1335,33 @@ Fixed 2026-07-16. `ResourceLoader.isOutdated` re-fetched any SSR resource whose 
 
 ---
 
+## Bug: an SSR 4xx for a component was re-requested for every visitor ✅ Fixed ([#334](https://github.com/components-web-app/cwa-nuxt-module/issues/334))
+
+The client-side counterpart of [#324](https://github.com/components-web-app/cwa-nuxt-module/issues/324), which stopped a 4xx making the **page** uncacheable. This stops the **browser** asking again for something it cannot be shown.
+
+`ResourceLoader.ssrNoDataWithSilentError` was the only one of the three `onMounted` re-fetch conditions with no auth gate — its two siblings, `ssrPositionHasPartialData` and `refetchPublishedSsrResourceToResolveDraft`, both require `$cwa.auth.user`. So every anonymous page view re-requested every component the server render had 4xx'd, and could only get the same 4xx. Those responses are `no-store`, so each one reached PHP, plus a CORS preflight when the API is on another origin.
+
+**The state it fires on:** `setResourceFetchError` stores `{ status: ERROR, error: error.asObject, ssr: import.meta.server }` and never sets `data`, so a server 4xx hydrates as `ssr: true` + `data === undefined` + a 4xx `statusCode` — all three parts of the condition. `asObject` is a plain object, so `statusCode` survives the payload. It is self-limiting to one retry: the client fetch rewrites `ssr` to `false` in both `setResourceFetchStatus` and `setResourceFetchError`.
+
+**The spinner flash is downstream of that one request, not a separate defect.** `$cwa.resources.isLoading` is `!fetchesResolved || !!resourceLoadStatus.pending`, and `fetchesResolved` is not involved — `isFetchResolving` only ever reports a fetch with an unresolved *manifest*, which a standalone `fetchResource` has none of. It is `pending`, the count of `currentIds` in `IN_PROGRESS`, which `startFetchResource` sets. The same transition drives `ResourceLoader`'s own local `isLoading`. Suppressing the request removes both spinners; nothing else flips `isLoading` on an anonymous hydration.
+
+**The gate is `(!!$cwa.auth.user || $cwa.isStaticRender)`**, and both halves earn their place:
+
+- **A signed-in visitor keeps the retry** because the server render may have been anonymous when they are not. With page HTML caching on by default (#289), a cached anonymous page can be served to a signed-in admin — `plugin-page-cache.server.ts` gates storage on `auth.signedIn`, and edge bypass for the auth cookie is a deployment prerequisite, not something the module can enforce. The retry is how that admin still resolves a draft. An anonymous visitor has no such gap: SSR forwarded their (absent) cookie, so the client can only repeat the result.
+- **A static render keeps it** because `isStaticRender` (the `ResourceLoader` computed, distinct from `Cwa.isStaticRender`) requires `status === SUCCESS`, so the re-fetch at `onMounted` never covers an errored resource. Without this half, a prerendered or ISR page whose component has since been published would stay broken until the page was re-rendered.
+
+**`auth.user`, not `signedIn`, inside the gate.** `signedIn` is `false` while `/me` is in flight (`status` returns `LOADING`), and `user` is plain store state so there is no #260 `ComputedRef` trap. It also matches the two siblings exactly. The gate is deliberately "has a session" rather than "is an admin": draft visibility follows `publishable.permission`, which is app-configurable, so hard-coding `ROLE_ADMIN` would break an app that relaxed it.
+
+**Reading auth at mount is safe**, traced rather than assumed: `route-middleware.ts` awaits `initClientSide()` → `auth.init()` → `refreshUser()` **before** its `isFirstClientSideRun` early return, and Nuxt awaits `app:created` (which runs that middleware inside the initial `router.replace`) before `vueApp.mount()`. The two sibling conditions already depend on this and work.
+
+**`$cwa.auth.signedIn` is a third `watch` source**, so someone who signs in *without* reloading discovers the draft — otherwise the resource sits at `ssr: true` with nothing left to re-trigger the condition. `refreshUser` sets the cookie and the user before clearing `loading`, so by the time `signedIn` flips the gate is already satisfiable.
+
+**Known and accepted:** a component that 401s for a reason other than draft visibility — the gated-route boundary in api-components-bundle#224, where a component reachable only via a not-yet-live route returns 401 rather than 404 — also stops being retried anonymously. Retrying could not have helped there either.
+
+Tests: `test/integration/ssr-4xx-rehydration.spec.ts` drives the real stores and a real `node:http` API through `ResourceLoader`, asserting the requests the server actually receives and that `isLoading` never turns on; `ResourceLoader.spec.ts` pins the signed-in / signed-out / static-render branches. **Trap met writing it:** `createWrapper`'s `user` parameter has a default, so passing `undefined` for "signed out" silently produced a signed-in user and the new test passed against the unfixed code — signed out must be `null`.
+
+---
+
 ## Bug: an API URL with no path prefix breaks all resource typing and depth headers ✅ Fixed ([#266](https://github.com/components-web-app/cwa-nuxt-module/issues/266))
 
 Fixed 2026-07-17. Found while investigating #264.
@@ -1070,6 +1626,68 @@ The original `route-middleware.ts:64` todo — "redirects do not work if clickin
 
 ---
 
+## The layer's admin composables live in `src/layer/_composables/` ([#330](https://github.com/components-web-app/cwa-nuxt-module/issues/330))
+
+**Nothing but a Vue page may live under `src/layer/pages/`.** Nuxt scans the pages directory for every extension it resolves — `.js`, `.jsx`, `.mjs`, `.ts`, `.tsx`, `.vue` — so the seven composables that used to sit in `pages/_cwa/index/composables/` were each registered as a **route** with its own lazy chunk (`_cwa-index-composables-useItemPage`, path `composables/useItemPage`, …). Every one of them was also a dynamic entry of the app entry in the client manifest, so it became a `<link rel="prefetch">` hint on every **public** page — admin-only code advertised to anonymous visitors (#329, #331).
+
+They moved to `src/layer/_composables/`, imported explicitly as `#cwa-layer/_composables/<name>`.
+
+**Why `_composables/` and not `composables/`:** a layer's `composables/` directory is auto-imported, which would put seven admin-only composables into every consuming app's global import map under names the app never asked for — the opposite of the least-exposure principle, and a namespace collision waiting to happen. The underscore prefix means the directory matches none of Nuxt's magic directory names, so it is inert: nothing scans it, and the only way in is an explicit import. That is exactly why `src/layer/_components/` already exists beside the auto-scanned `src/layer/components/`, and `_composables/` relies on the same mechanism — **being outside every directory Nuxt scans**, not on an `ignore` pattern or a `pages:extend` hook that a consuming app could undo.
+
+`copy-layer` (`copyfiles -u 1 "./src/layer/**" dist/`) is a wholesale glob, so a new top-level layer directory ships without any change to the build.
+
+**The guard is `src/layer/pages.spec.ts`**, which asserts that every file the layer ships from `pages/` is a `.vue` file. It is a filesystem invariant rather than a route-table assertion because `nuxi prepare` does not emit `routes.mjs` — the route table only exists after a real build, so there is nothing for vitest to read. The built route table is the honest end-to-end check and belongs with the other build-output assertions in `test/e2e/entry-bundle-markers.mjs` (#331), not in a second mechanism of its own.
+
+The spec ignores `*.spec.*` because `copy-layer` strips those, so the specs still under `pages/` are routes in the dev playground only and never reach the published package.
+
+---
+
+## `v-html` re-parses the LCP paragraph on hydration — `v-cwa-html` ([#333](https://github.com/components-web-app/cwa-nuxt-module/issues/333))
+
+Since Vue **3.5.39** (`vuejs/core@024cf06d`, "force patch dynamic props when hydrating"), hydration re-assigns `innerHTML` on every `v-html` element even when the server HTML is byte-identical. `v-html` compiles to a *dynamic* prop — `_createElementBlock("div", { class, innerHTML: _ctx.html }, null, 8, ["innerHTML"])` — and `hydrateElement` force-patches anything in `dynamicProps` (`@vue/runtime-core/dist/runtime-core.esm-bundler.js:2207-2213`, `… || dynamicProps && dynamicProps.includes(key)`). The `isUnchangedResourceProp` escape hatch does not help: it covers only `src`/`srcset`/`href`/`poster` (`:2405`), and `patchDOMProp` assigns unconditionally with no equality check (`@vue/runtime-dom/dist/runtime-dom.esm-bundler.js:645-649`). vuejs/core#15138 reported the side effect and it was closed as intended.
+
+So the browser throws away the server-rendered paragraphs and parses them again during hydration. On a CMS page the largest paragraph is usually the LCP element, which moves from first paint to after the JS has run — observed FCP 0.80 s against observed LCP 1.44 s on preview.cwa.rocks.
+
+**`vCwaHtml` (`src/runtime/directives/cwa-html.ts`) is returned by `useHtmlContent`**, so a component writes `v-cwa-html="htmlContent"` instead of `v-html`:
+
+```ts
+const { vCwaHtml } = useHtmlContent(htmlContainer, htmlContent)
+```
+
+### `beforeUpdate`, never `updated`
+
+The issue proposed `updated`. **That would have been a live regression**, and it is the reason the ordering test exists.
+
+A `flush: 'post'` watcher job is queued with **no `job.id`** — `runtime-core.esm-bundler.js:895-919` sets `job.id = instance.uid` only in the `isPre` branch — and so is a directive's `updated` hook. Post-flush callbacks sort stably by id, so insertion order decides, and the watcher's scheduler fires synchronously when the value changes, *before* the render effect flushes and queues the directive hook. `useHtmlContent`'s anchor-conversion watcher (`html-content.ts:90-93`, `flush: 'post'`, #275) would therefore have run against the **outgoing** HTML on every edit: anchors in the new content never converted to `CwaLink`, and the `createApp` instances it had mounted orphaned inside DOM that is then discarded.
+
+`beforeUpdate` is invoked synchronously inside `patchElement`, which is exactly where `v-html`'s prop patch happens today, so it restores the current ordering precisely. `binding.oldValue` is populated for any hook (`invokeDirectiveHook`, `:762-781`), so the `!==` guard works there. Mount is unaffected either way: the element's directive `mounted` hook is queued before the component's `onMounted`, which creates the watcher with `immediate: true` and runs it synchronously.
+
+### Returned from the composable, not exported and not global
+
+- **Global registration** from `runtime/plugin.ts` would put the name in every consuming app's global directive namespace whether used or not, resolve at runtime (`resolveDirective`, so a typo is a warning rather than a type error) and ship in every client bundle.
+- **A standalone export** adds a public export path, and **cannot be auto-imported**: the SFC compiler emits `resolveDirective("cwa-html")` whenever the identifier is not already a setup binding, and unimport runs after that, so the name never appears for it to inject. An auto-imported directive would be a dead entry.
+- **Returning it** adds one key to a composable that already returns nothing, is a compile-time local binding (`[[_unref(vCwaHtml), htmlContent.value]]`, and `_ssrGetDirectiveProps` on the server), and keeps the directive next to the container ref it shares an element with — which is what lets one spec pin the ordering contract above.
+
+`src/runtime/directives/` is deliberately **not** in any `addImportsDir`.
+
+### A `bind` object is not viable
+
+The issue's third option — `useHtmlContent` returning a `bind` object so components never write a directive — was tested and rejected. `v-bind="{ innerHTML }"` does survive hydration (FULL_PROPS, `dynamicProps` is null, so the force-patch never fires), but `@vue/compiler-ssr` emits **no children** for it: `_push(\`<div${_ssrRenderAttrs(_mergeProps({class:"prose"}, _ctx.bind, _attrs))}></div>\`)`, and `ssrRenderAttrs` skips `innerHTML`. The server would render an empty container. Only a directive gets the `getSSRProps` → `_temp0.innerHTML` branch.
+
+### The `mounted` guard, and when the saving does not land
+
+`mounted` assigns only when `el.innerHTML !== value`, so the win depends on the browser's reserialisation of the stored string matching it. **For editor-written content it always does**: TipTap's `getHTML()` is `container.innerHTML` of a detached div (`@tiptap/core/dist/index.js:1222-1226`), so stored CWA HTML is already a fixed point. Measured as matching: bare `<br>`, `&nbsp;`, `&amp;`, `&lt;`, literal curly quotes, double-quoted attributes, attribute order, comments, empty elements.
+
+Measured as **differing**, where `mounted` re-assigns once — today's behaviour, no worse, but no saving either: self-closed `<br/>`, numeric entities (`&#160;` → `&nbsp;`), a raw `&` in an attribute, unquoted or single-quoted attributes, uppercase tags, and boolean attributes without `=""`. All of these mean the HTML was written by something other than the editor — fixtures, the REST API, a migration.
+
+### The win only lands per app
+
+The module change alone changes nothing. Each app has to switch its own components, including the **components-web-app template**, which carries its own copies of `HtmlContent.vue` / `ui/AltHtmlContent.vue`. The playground copies are the worked example.
+
+Left alone deliberately: `ConfirmDialog.vue:47` and `AddComponentDialog.vue:41` are admin UI, only ever instantiated client-side in response to an admin action. `ErrorPage.vue:115` *is* a public page that hydrates — the issue's "not hydrated on public pages" is wrong about that one — but it is gated on `v-if="stack"` and is a debug `<pre>`, never an LCP element. `playground/.../ExampleForm.vue:158` is a public hydrated `v-html` the issue missed; it is a checkbox label, so it is never an LCP candidate either.
+
+---
+
 ## A component still being added takes changes as merge-patch ([#319](https://github.com/components-web-app/cwa-nuxt-module/issues/319))
 
 While a component is being added (`_metadata.persisted === false`), `ResourcesManager.updateResource` applies a change to the local copy instead of PATCHing. Its `mergeWith` customiser used to **join arrays** (`b.concat(a)`), so selecting a second style stored the first twice, deselecting never removed anything, and choosing Default (`null`) threw. It now mirrors the API's merge-patch: an array or `null` replaces the stored value, and objects merge field by field. Every caller already sends the complete array, so nothing relied on joining.
@@ -1084,6 +1702,60 @@ Now the page query is added only to **Collection component** fetches (`{prefix}/
 
 If the API ever reads the page query for another resource type, add that type to `consumesPageQuery` in `fetcher.ts`.
 
+### Admin lists build their own query, and that is the only other caller allowed to
+
+Narrowing `consumesPageQuery` silently broke every admin list. `ListContent` fetches `/_/layouts`, `/_/pages`, `/_/routes`, `/users` and the page-data entrypoints — none of which are Collection components — so from `0fd23d7c` until this fix **search, sort, `page` and `perPage` never reached the API**. The lists still rewrote the URL and re-fetched on every change, so they looked alive while always returning the server's default ordering and first page. Nothing failed: a list that ignores its filters is indistinguishable from one whose filters matched everything.
+
+`ListContent.reloadItems` now merges the route query into `fetchUrl` itself and passes `noQuery: true`. **Do not fix this by widening `consumesPageQuery`** — that would put the tracking parameters back on every public render, which is the whole point of #318. The query belongs to the caller that knows it needs one.
+
+`mergeQueryIntoPath` (`api/fetcher/query-utils.ts`) is the single implementation of the merge, used by both `Fetcher.appendQueryToPath` and `ListContent`. It is shared rather than copied because its rules are not guessable and must not drift: `URLSearchParams` serialisation (a valueless parameter becomes `k=`, values are encoded, `order[createdAt]` travels as `order%5BcreatedAt%5D` — the form `SearchResource` has always sent and the API accepts), one `?` for a path that already carries a query, and **the path's own parameter wins** over a page parameter of the same name.
+
+**It forwards the whole route query, not a named set.** A named set would have to be a prop threaded through all five list pages, because the filter names are page-specific — `searchFields` differs per page and `isTemplate[]` exists only on `pages.vue` — and it would buy nothing: these fetches are admin-only and authenticated, so #318's shared-cache fragmentation does not apply, and the API ignores parameters it does not know (verified against api-components-bundle#297). The one module parameter that could ride along, `cwa_force`, is deleted by `NavigationGuard` (`admin/navigation-guard.ts:27`) before the route becomes active, so a list never renders holding it.
+
+`reloadItems` used to have no error handling at all, which is the next section.
+
+---
+
+## An admin list that fails to load says so, and keeps what it was showing
+
+`ListContent.reloadItems` had no error handling, and `CwaFetch` sets no `ignoreResponseError`, so a non-2xx rejected the promise and the function exited at `await response` before touching anything. `loading` stayed `true`, so the spinner ran forever over an empty page — measured `wrapper.text()` as `""`. Every call site discards the promise (`onMounted`, the route-query watcher, `useListPage.triggerReload`), so the failure was an unhandled rejection and nothing else. `SearchResource.search()` had the identical gap: `fetchingSearchResults` is set before the fetch and cleared only on the success path, so a failed search left "Loading..." in the popover permanently.
+
+**The realistic trigger is an expired session, not the stale bookmark the #318 note described.** An admin leaves a list open, the JWT expires, and the next filter change or reload 401s. `CwaFetch`'s client `onResponse` branch fires `unauthorised.handler` (`api/fetcher/cwa-fetch.ts:55-58`), which is `Auth.onSessionEnd`'s closure (`api/auth.ts:274-278`) — it clears browser caches (#293) and **deliberately does not sign the user out**, so ofetch still rejects and nothing else happens. A 500 and an unreachable API are the next two; the 422 from a hand-edited `?order[reference]=sideways` is the least likely of the four, and an aborted request is not reachable at all, because nothing passes an `AbortSignal` and an SPA route change does not abort an in-flight fetch.
+
+**The previous items are kept on purpose.** The state already retained them — only the spinner branch hid them — so rendering them is both the smaller change and the right one: an admin who mistypes a URL does not lose the list they were reading. The alert above the transition is what says the list is not the one the filters now describe, which is also why the items are not additionally dimmed: that would be a second mechanism for a fact the alert already states. The empty state carries `&& !loadError` so a first-load failure never renders "Sorry, no items found" under the alert, and the list branch is `v-else-if="items.length"` rather than a bare `v-else` so the transition simply has no child in that case — `hydraData` is `undefined` on a first load and the pagination would have thrown reading it.
+
+**One generic message with the status code, no per-status catalogue.** `The list could not be loaded (422). Please try again.`, or `(network error)` when there is no status — the shape `settings.vue` already uses for its purge failures. There is deliberately **no 401 message**: "your session has expired" is actionable, but it belongs with a wider decision about what a mid-session expiry should do, given that `Auth.onSessionEnd` does not sign the user out, and putting that decision in one list component would pre-empt it. Recovery needs no button either — changing Sort or Search rewrites the query, the watcher fires and the list reloads, and `loadError` is cleared at the top of `reloadItems` so a successful retry drops the alert.
+
+**The catch sits inside the `thisRequestId === currentRequestId.value` guard, and that placement is the whole correctness of the change.** The counter is incremented before the request, so a superseded request that later fails is still holding an old id; an unguarded catch would let a slow old 500 clear a newer in-flight request's spinner and raise a false alert over a good list. It reads like redundancy and it is not. `ListContent.spec.ts`'s `an older failure does not interrupt a newer request still loading` and `an older failure does not replace a newer success` both pass against the original code and both fail when the guard is deleted — mutation-tested, which is the only way a guard-shaped test earns its place.
+
+**The `hydraData` write moved inside that same guard, fixing a bug that predates all of this.** It sat outside at `ListContent.vue:126-129`, so a slower *older* response overwrote a newer one's totals: measured as pagination showing `totalItems: 999` from the newer response and then reverting to `1` when the older landed, while `items` stayed the newer set. Reachable by typing in Search faster than the API answers, and nothing to do with errors — it surfaced only because drawing a `try` around those lines forces the question of which side of the guard they belong on.
+
+**`SearchResource` gets the same treatment with a different display.** A compact popover is the wrong place for `CwaUiAlertWarning` — the alert is a full-width danger block with its own padding and outline, and the panel is `max-h-60 max-w-[300px]` — so the failure renders as a single `cwa:text-danger` line where "Loading..." would be, reading `Search failed (500)`. Retyping is the retry, so it carries no instruction. `open` gains `!!searchError` or the panel would close and the message would never be seen.
+
+**Its late-response guard had to change to make that sound.** It compared `searchValue.value === fetchingSearchValue.value`, and `fetchingSearchValue` is overwritten by each new search — so both values are the *newest* search by the time an older response lands, and an older response passed the guard and clobbered the newer results. The request's own value is now captured in `requestedSearchValue` and compared against that, which is the request-id reasoning applied to a component that identifies its requests by the string it searched for. Pinned by `an older response does not replace newer results`, which fails against the old comparison.
+
+## Admin list search is one `search` parameter ([#328](https://github.com/components-web-app/cwa-nuxt-module/issues/328))
+
+API Platform deprecated `#[ApiFilter]`, `SearchFilter`, `OrderFilter` and `AbstractFilter`, so the bundle moved its resources to `QueryParameter` filters (api-components-bundle#289, merged as #297 in `ab76fc8b`). Every filter it uses exists in API Platform 4.4, and the bundle's Behat matrix runs on both `^4.4` and `^5.0`, so this does **not** need API Platform 5. Search stopped being one parameter per field ORed by `OrSearchFilter` and became **one `search` parameter per resource**, with the server deciding which fields it covers:
+
+| Resource | `search` covers | `order[…]` | other |
+|---|---|---|---|
+| `/_/layouts` | `reference`, `uiComponent` | `createdAt`, `reference` | |
+| `/_/pages` | `title`, `reference`, `uiComponent` | `createdAt`, `reference` | `isTemplate[]` |
+| `/_/routes` | `path` | `createdAt`, `path` | |
+
+It is case-insensitive and matches part of a value. **The URLs for sorting and `isTemplate[]` did not change**, which is why neither moved. The `isTemplate` implementation did: `SearchFilter` exact became `ExactFilter` with `BooleanQueryValue`, which maps `true`/`false` to `1`/`0`, so `isTemplate=false` now matches. The module sends the same URL either way. An invalid `order[...]` direction now returns 422.
+
+**The browser URL carries only `search`; the legacy names are added at request time.** `ListFilter` binds its box to the single `search` parameter, so what an admin bookmarks or shares is `?search=x`. `ListContent` expands that into the per-field names as it builds the request, from a `searchFields` prop each list page declares. The prop therefore lives on **`ListContent`, not `ListFilter`** — the component that builds the request owns the transitional expansion, and `ListFilter` no longer needs to know the field names at all. A page parameter that is already set wins, so an explicit `?reference=y` is never overwritten by the search value.
+
+**Both are sent everywhere, including `users.vue` and `data/[type].vue`.** Those two query the *application's* entities, which have no `search` until each application migrates. The template did so in components-web-app `cc8f57c` (#89, held until this change deploys), but applications generated earlier have not. API Platform ignores parameters it does not know — the bundle pins this in `features/main/page.feature` ("A per-field search parameter no longer filters pages") — so dual-sending is correct against a bundle from before the change and after it, the module never has to deploy in lockstep with an API, and those two lists start filtering the moment their entity declares a `search` parameter, with no further module change.
+
+`SearchResource` (public as `CwaUiFormSearchResource`) sends `search` alongside what it already sent. Its `searchProperties` prop is unused in this repo but stays: it is public surface an application may be using, and least exposure governs *adding* API, not removing what apps already have.
+
+**Deleting the transition** — the template's `User` and `BlogArticleData` are already migrated (components-web-app `cc8f57c`), so what remains is the applications that follow: remove `searchFields` from `ListContent` and the five list pages, delete `buildRequestQuery`'s expansion loop, and drop the per-field lines from `SearchResource.search()`. Nothing else refers to the legacy names. Do it only when no supported application is still relying on them; sending a parameter no one reads costs nothing, and removing it too early silently unfilters someone's admin.
+
+**`order[field]` stays exactly as it is.** The bundle kept the URL shape (`'order[:property]' => new QueryParameter(filter: new SortFilter())`), and `URLSearchParams` sends it as `order%5Bfield%5D`, which is the form `SearchResource` has always used against this API.
+
 ---
 
 ## `CwaComponentGroup` resolves `location` to the published IRI ([#317](https://github.com/components-web-app/cwa-nuxt-module/issues/317))
@@ -1091,6 +1763,54 @@ If the API ever reads the page query for another resource type, add that type to
 A nested group's `location` may be the component's draft `iri` or its `publishedIri`; both now resolve to the same group. `ComponentGroup.vue` derives `resolvedLocation = findPublishedComponentIri(location) ?? location` and uses it for the group reference, the location lookup, the not-a-current-resource alert, the disabled check and the synchroniser. Before, passing the draft `iri` looked up a different group and the synchroniser could create a stray empty group against the draft.
 
 `findPublishedComponentIri` treats a non-publishable resource as published and returns it unchanged, and returns `undefined` for a never-published draft, so pages, layouts and never-published drafts keep their own IRI. `hasLocation` (#276) and `isNewPosition` still read the raw prop. The getter itself had no tests; `getters.spec.ts` now pins its behaviour.
+
+---
+
+## A shared template page at two depths renders the deepest depth's dynamic components
+
+**Only the dynamic `ComponentPosition` response varies by the `path` request header**, and that is what keeps this small. The bundle reads the header in exactly **one** place — `PageDataProvider.php:51`, `$request->headers->get('path')`; a repo-wide grep for `headers->get('path')` returns that line alone. Its callers are `getPageData()` and `getOriginalRequestPath()`, and the only non-fixture consumer of either is `ComponentPositionNormalizer`, at `:162` (behind the `if (!$object->pageDataProperty) return $object;` guard at `:152`) and `:105` (writing `_metadata.pageDataPath`). `Vary: path` is scoped to match: `ComponentPositionEventListener.php:49-61` returns early unless the data is a `ComponentPosition` on a `GET`, then sets it only `if ($data->getPageDataProperty())`. Nothing varies on a Route, Page, PageData, Layout or ComponentGroup.
+
+**The variance does not propagate.** `normalizeForPageData` ends at `:225` with `$object->setComponent($component)`, read off the page-data entity by property accessor — so two depths resolve to two **distinct component IRIs**, which already coexist in the store. Only three fields on the position differ: `component`, `_metadata.pageDataPath` and `_metadata.isDynamicPosition`.
+
+**The manifest emits a shared template Page at both depths by design.** `ManifestDepthGroupTrait.php:33-39` re-initialises `$seen` **inside** the per-depth loop; only `layout` is deduped across depths (`$emittedLayouts`). So a Page shared by a parent and a child page data, its component groups and its positions are all listed twice.
+
+**What we then do with it, and why the parent depth is wrong.** `iriDepths` holds one depth per IRI and the loop in `setManifestIrisByDepth` ascends, so the **deepest** depth wins; `irisByDepth[0]` and `irisByDepth[1]` both contain the shared page IRI, so `pageIriAtDepth(0)` and `pageIriAtDepth(1)` return the same one and both `CwaPage` depths render the same template; and `addFetchResource` refuses the repeated position (`fetchStatus.resources.includes(event.resource)`), so exactly **one** request goes out, carrying the child's path. `ComponentPosition.vue:43` reads the single store entry. The parent depth therefore renders the **child's** dynamic component, silently — no error, no failed request, no warning until now. `depthPaths` is not affected; it is keyed by depth and stays correct.
+
+`setManifestIrisByDepth` now emits **one** `logger.warn` per manifest naming every repeated IRI and all of its depths. Deepest-wins is deliberately unchanged: first-wins would simply break the child instead of the parent, and neither is correct.
+
+**No site does this today and the fix is deferred.** It is not marginal when it happens — a template worth sharing between two page datas is mostly dynamic positions, since static ones would render identically twice — but it is unused, and the areas it touches are where the silent bugs live (#256 retention, #261 depth headers, #257 eviction).
+
+**The shape it would take.** Fetch identity becomes (IRI, `path` header) so the position is requested once per depth; the store keeps IRI keys and the position entry gains a map of only the fields that vary, so `byId`, `allIds`, `currentIds` and every public IRI-keyed composable are untouched; `ComponentPosition.vue` picks its variant from the injected depth. **`fetchStatus.resources` must stay bare IRIs**: the surrogate-key filter (`api/http-cache.ts:109`) is `getResourceTypeFromIri(id) !== undefined`, a **prefix** test, so a composite id like `/_/component_positions/x::/conference` passes it and is emitted as a key the API's purger can never match — a silent loss of invalidation, the same failure mode as a mismatched `cwa-html`. `positionsByComponent` and the delete cascade would also need the depth, and Mercure's position refetch and `ResourceLoader`'s client refetch each resolve one depth today.
+
+**What makes it tractable later:** the render depth is already available by injection — `CwaPage.vue:47` provides `'cwa-page-own-depth'`, inherited through groups and positions — so no new plumbing is needed to choose a variant at render time. Layout-level groups sit above `CwaPage` and inject the default `0`, which is right, since layouts are the one thing the manifest dedupes across depths.
+
+**Unreproduced risk:** a shared template puts two `ComponentGroup` instances on the page for one group IRI, each with its own debounce queue and each listening to the `reorder` bus, and puts two DOM instances of one position IRI in front of an admin stack that is IRI-keyed throughout (`isResourceInStack`, `refreshFocusForIri`, `currentIri`). Whether that double-PATCHes through the #339 synchroniser or the #316 reorder queue was not tested.
+
+### The `@type` variance guard in `isFetchStatusResourcesResolved` is dead — leave it alone
+
+`getters.ts:334-337` compares `resourceData.data?.['@type']` against `CwaResourceTypes.COMPONENT_POSITION`, which is the string `'COMPONENT_POSITION'`, while the API sends `'ComponentPosition'` (bundle `features/assets/schema/component_position.schema.json:17`). The condition has never been true in production. Its test at `getters.spec.ts:373` constructs `'@type': CwaResourceTypes.COMPONENT_POSITION` — the enum key, not an API value — so it **passes for the wrong reason**.
+
+**Correcting the `@type` alone would be a regression, which is why it is recorded rather than fixed.** The second half compares `apiState.headers.path` (a depth path, `/conference`) against `fetchStatus.path` (the primary IRI, `/_api/_/routes//conference`); those can never be equal either, so a "fixed" guard would return `false` for **every** page containing a dynamic position, making `isCurrentSuccessResourcesResolved` permanently false and breaking #256's early switch and #257's instant revisit together. Any future change here has to fix both halves at once and be tested against the real `'ComponentPosition'` string.
+
+The live counterpart does work and is the precedent to follow: `storage/stores/resources/actions.ts:555-565` clears a dynamic position's `data` when it is re-fetched under a different `path` header, keyed on `_metadata.isDynamicPosition === true` — a real API field.
+
+---
+
+## A group the synchroniser cannot find is PATCHed with its location twice ([#339](https://github.com/components-web-app/cwa-nuxt-module/issues/339))
+
+Loading a page as a signed-in admin sent `PATCH /_/component_groups/{id}` for groups that already belonged to the location, with the location IRI **duplicated** — `{"layouts": [X, X]}`, and `{"pages": [P, P]}` for a page's own group.
+
+`createComponentGroupWatchHandler` (`ComponentGroup.Util.Synchronizer.ts`) fetches the group by `fullReference` when it is not in the store, and appended the location unconditionally. It now normalises the stored list to IRIs — tolerating an embedded resource, as `fetchAssociatedResources` already does — and returns without PATCHing when the location is there. The normalised list is also what a genuine PATCH sends, so an embedded resource is never echoed back as an object.
+
+**A failed fetch is indistinguishable from "this group does not exist".** `getComponentGroupByReference` matches on `data.reference`, and a resource whose fetch errored sits in the store with `status: ERROR` and **no `data`** — so the lookup returns `undefined` either way, and the synchroniser's answer to `undefined` is fetch-by-reference-then-PATCH. That is why the fix is worth more than the redundant write it removes: **a misfire now costs a wasted GET instead of a bad write.**
+
+**Arrival timing is not the trigger, and this is not layout-specific.** The server render does not resolve until every component group response has landed (proved by withholding them in the `test/integration` harness and watching `fetchRoute` stay pending), and the Pinia payload round-trips faithfully, so a hydrated SSR load whose fetches all succeeded never reaches this path. Page groups are affected identically to layout groups, which is what ruled out the first hypothesis — that the layout's groups arrive a round trip late because `Layout::$componentGroups` lacks `Route:manifest:read` (api-components-bundle#306). That manifest gap is real and worth fixing for the extra round trip and the late render, but it does not cause this.
+
+**A successful PATCH would not stop it recurring.** The association it asks for already exists, so the API dedupes it, and the lookup is by `reference`, which the PATCH never touches. Every load starts from an empty store, so the cost is one spurious write per affected group **per page load, indefinitely** — not one bad write ever. Reproduced as three PATCHes on one signed-in hard reload, then one on a later reload of the same page, which is the intermittency of the underlying failure, not the write taking effect.
+
+**The upstream cause is still unknown**: why those server-side group fetches produce no saved data. The candidates are a failed request, a response rejected by `isCwaResource` (logged `[CWA FETCH ERROR: Not a valid CWA resource]` and not saved), or a save dropped by `finishFetchResource`'s `abort || !isCurrent` guard. Settle it on a reload that PATCHes by reading `$cwa.resources.getResource(groupIri).value` — `apiState.status` and whether `data` exists — alongside the SSR log for that render.
+
+**Coverage gap this sat in:** every existing spec mocked `fetchResource` as `vi.fn()` returning `undefined`, so the found-by-reference branch had **never been executed by any test**. Note also that `'should NOT create OR update resource IF loading is in progress'` passed only because `signedIn` was false — the class reads no loading state at all — and is renamed to say so.
 
 ---
 
@@ -1122,6 +1842,98 @@ Found through components-web-app#83. There, SSR stored an `http://` `docsPath`, 
 - `AddComponentDialog` sets its loading state on every open. A failure now shows "Could not load the available components" and logs the cause. Reopening the dialog is the retry.
 
 Deliberately out of scope: a timeout on the wait for `docsPath`, resolving `docsPath` against `apiUrlBrowser`, and requesting `''` instead of `'/'` for the entrypoint (the API answers `'/'` with a trailing-slash 301).
+
+---
+
+## Large images are downscaled in the browser before upload ([#335](https://github.com/components-web-app/cwa-nuxt-module/issues/335))
+
+**On by default.** `useCwaResourceUpload.handleInputChangeFile` passes the picked file through `downscaleImageFile` (`src/runtime/files/image-downscale.ts`) before the `FormData` is built. The argument is not only API memory — GD decodes the whole image inside the upload request at about 11.7 MB per megapixel, so a 48 MP photo peaks at ~563 MB — it is that above a certain size a bigger image gives the visitor nothing and costs them download time and the site storage.
+
+**Defaults: 2560 px longest edge, 20 MP, quality 0.85.** 2560 is larger than anything a CWA layout renders. Quality 0.85 is the usual knee of the JPEG curve, and the not-smaller guard below means a bad choice can only cost a re-encode, never bytes.
+
+**The defaults are chosen to sit under the template's server-side caps, and the two must be kept in step.** components-web-app accepts 20 MB uploads (`3338b9c`) and refuses over 40 MP with a 422 rather than a 500 (`d067024`, `Assert\Image(maxPixels: 40_000_000)` on `Image::$file`). The module's job is to make that refusal rare, not to replace it — a direct API upload never runs this code. **If the template's caps move, move these defaults, and say so in the docs.**
+
+**Threshold and target are separate numbers**, because one limit conflates "is this worth touching" with "how big should it end up". `thresholdEdge` / `thresholdPixels` decide whether the file qualifies; `maxEdge` / `maxPixels` decide what it becomes. They default to the same values, so anything above the target is resized.
+
+**Both an edge rule and a pixel rule, and it matters which triggers what.** The server's rule is pixels; the display rule is edge length. A file qualifies when it is over **either** threshold, and is scaled to fit **both** targets. With the default 2560 edge the pixel cap can never bind (2560² = 6.6 MP), and that is fine: it is the safety net for an application that raises `maxEdge` — a 20000×1000 panorama is only 20 MP, so an edge-only rule would scale it 7.8× for no server-side reason, and a pixel-only rule would leave a 8000×6000 photo at 48 MP.
+
+**If the re-encoded file is not smaller than the original, the original is uploaded.** One size comparison, no format heuristics, and it can never make things worse. It is what covers a palette PNG decoding to 32-bit RGBA and re-encoding larger — the case that would otherwise argue for excluding PNG, which we do not want to do because transparency has to survive.
+
+**The format is kept**: a JPEG stays a JPEG, a PNG stays a PNG, and the name, type and `lastModified` carry over.
+
+**Excluded: SVG, GIF and animated WebP.** SVG and GIF by type; an animated WebP is detected by reading **21 bytes** of the RIFF header (`RIFF`…`WEBP`…`VP8X`, then the `ANIM` flag `0x02` at byte 20), not by guessing from the extension — a canvas round-trip would silently drop the animation. Anything outside `image/jpeg|png|webp` — AVIF included — is passed through untouched. Every failure path (no `createImageBitmap`, a decode or encode throw, an unreadable header) uploads the original; the helper never rejects.
+
+**EXIF is applied and then dropped.** `createImageBitmap(file, { imageOrientation: 'from-image' })` bakes the orientation in, and the re-encode carries no EXIF — which also strips **GPS and camera metadata from phone photos**. A privacy gain for a public site, a loss for anyone who wants capture metadata, and one of the reasons the opt-out exists. **Known limit:** the `imageOrientation` option is ignored rather than rejected on Safari below 16.4, which would upload a rotated photo un-rotated; not defended against, and part of the manual browser check.
+
+**No UI message about what was resized.** Graceful resizing on upload is expected; a notice invites worry. The only case worth surfacing is one that still fails the server's cap, which the template already reports.
+
+**The decision logic is pure and the browser APIs are injected.** `resolveImageDownscaleOptions`, `isDownscalableImageType`, `isAnimatedWebpHeader`, `getDownscaleTarget` and `downscaleImageFile` are unit-tested with fake deps; `createBrowserImageDownscaleDeps` is the only untested part, because there is no canvas in happy-dom. **Encode quality, EXIF orientation and the Safari fallbacks (`createImageBitmap` resize options, `OffscreenCanvas.convertToBlob`) are proven only by a manual browser check** — do not write a test that appears to cover the encode when it is mocked end to end.
+
+Configuration, module-wide and per call:
+
+```ts
+// nuxt.config.ts
+cwa: { upload: { image: { enabled: true, thresholdEdge: 2560, thresholdPixels: 20_000_000, maxEdge: 2560, maxPixels: 20_000_000, quality: 0.85 } } }
+
+// one field that must keep originals
+const { bind } = useCwaResourceUpload(iri, 'file', 'File', { imageDownscale: { enabled: false } })
+```
+
+Per call wins over the module default, which wins over the built-in defaults; an `undefined` value never overrides. **The built-in defaults live in exactly one place** (`DEFAULTS` in `image-downscale.ts`) — unlike `pageCache`, nothing is decided at build time, so `module.ts` needs no second copy and must not grow one.
+
+---
+
+## CWA page routes are siblings, and their route key must stay constant ([#337](https://github.com/components-web-app/cwa-nuxt-module/issues/337))
+
+`createDefaultCwaPages` used to register the `pagesDepth` routes as a **nested chain** — `cwaPage0` with `cwaPage1` as its child, and so on — all rendering `cwa-page.vue`, which never renders a child `<NuxtPage>`. So any CWA URL below `/` matched two or more route records while only the first ever rendered, and Nuxt read that as "a nested `<NuxtPage>` will finish the job".
+
+**The chain, in the installed Nuxt 4.5.2:**
+
+- `pages/runtime/page.js:193-196` — `hasChildrenRoutes` is `matched.findIndex(m => m.components?.default === Component?.type) < matched.length - 1`. Its `if (!fork) return false` escape never applies, because `PageRouteSymbol` is provided app-wide by `app/components/nuxt-root.vue:47` and re-provided by `app/components/nuxt-layout.js:137`.
+- `page.js:94` and `page.js:146` are the only places `page:loading:end` is raised for a **successful** navigation (`pages/runtime/plugins/router.js:102` and `:190` fire it only on navigation failure or a router error), and both are gated on `!willRenderAnotherChild`.
+- `pages/runtime/router.options.js:24-38` — the default `scrollBehavior` returns a Promise resolved only inside `hookOnce('page:loading:end', …)`. Nothing resolved it, so **vue-router never scrolled at all**: a new page opened at the previous page's scroll offset. `router.options.js:23` (`from === START_LOCATION`) is why a hard load was always fine.
+
+**Every matched record resolves to the same component object**, verified by probing the real router: for `/a/b`, `matched[0..2].components.default` are identity-equal. So `findIndex` always returns `0`, at every level. **That is why rendering a nested `<NuxtPage />` from `cwa-page.vue` cannot fix this** — even the innermost one would compute `0 < matched.length - 1` and still decline to fire the hook. It would take a distinct component per depth, which is strictly worse than having no nesting.
+
+**The fix: flat sibling routes, one per depth** (`/`, `/:cwaPage1`, `/:cwaPage1/:cwaPage2`, …), so a CWA URL matches exactly one record and Nuxt fires the hook itself at `page.js:94`. The path strings, param names and `pagesDepth` cap — including the 404 for a URL deeper than it — are the same ones vue-router already derived from the nested tree, so matching and ranking are unchanged.
+
+**The `meta.key` is the load-bearing half.** `generateRouteKey` (`pages/runtime/utils.js:9-13`) also uses `matched.find(...)`, so under the nested tree the key was **accidentally the constant `/` for every CWA URL** — which is why `cwa-page.vue` was never remounted between CWA navigations, and why #256's navigation retention and the `KeepAlive` around `ResourceLoader` work. Flat routes make the key vary per path, which remounts the page component on every navigation and tears the held page down. A constant `meta.key` (`'cwa-page'`, deliberately not exported) restores exactly the old behaviour. The regression guard is that `page:finish` must **not** fire on a CWA→CWA navigation; drop the key and it fires.
+
+**`page:finish` never fired on CWA→CWA navigation either**, for the same reason — worth knowing, because a workaround built on it is relying on something that does not happen. `<NuxtLoadingIndicator>` was the second visible symptom: `app/composables/loading-indicator.js:86-89` subscribes to the same pair, so the bar started and never completed on any page below `/`.
+
+**No generated route may declare a `cwaPage0` param.** `api/fetcher/fetcher.ts:93` reads `route.params.cwaPage0` and treats it as a resource IRI — that param belongs to the layer route `/_cwa/:cwaPage0()` alone. A single catch-all named `:cwaPage0(.*)*` would re-create the bare-IRI 404 documented above, which is one reason the fix is N sibling routes rather than one catch-all; the other is that a catch-all makes depth unbounded.
+
+**`page:loading:end` fires before CWA content exists**, which left a restored `savedPosition` and a cross-page `#hash` landing short. Closed by the follow-up below.
+
+---
+
+## The scroll waits for CWA content, but only when it has a target to hit ([#338](https://github.com/components-web-app/cwa-nuxt-module/issues/338))
+
+`page:loading:end` fires on `nextTick` after the route change (`page.js:94`, the constant-route-key branch above), which is **before the primary fetch has resolved anything**. Measured against the real `NuxtPage` over the playground router with a replayed cassette: at the hook the mounted page is `<div class="cwa:page cwa:h-full"><!--v-if--><!--v-if--></div>` — **one element, no text, no `displayPageIri`**, with 12 of 13 resources still pending; after settling it is 10 elements and 147 characters. So vue-router applied `savedPosition` to a page of no height, and a `#hash` to an element that did not exist.
+
+**`isLoading` alone is not the signal, and this is the part to remember.** With the replay resolving in microtasks — network lag removed — `$cwa.resources.isLoading` was **false for the whole navigation** while the DOM stayed empty for a further **~94ms**, polled at 5ms: the hook at t+7ms, content at t+101ms. Two causes, neither visible to the store: the `CwaComponent*` names `ResourceLoader` resolves are Nuxt's **async global component wrappers**, so the chunk is still being imported; and `ResourceLoader.resourceLoadBuffering` holds a spinner on a **20ms `setTimeout`**. A `nextTick` or a single `requestAnimationFrame` after `isLoading` misses this by ~20 frames. **The cymru-kitchens `router.options.ts` workaround on #337 is mistimed for exactly this reason** — it scrolls off an `isLoading` watcher alone (registered `immediate: true`, so it often fired before the new page was even fetched).
+
+**So the wait is two-stage and target-specific**, in the pure `waitForScrollTarget` (`runtime/scroll/wait-for-scroll-target.ts`), which takes `isLoading` / `readHeight` / `onHeightChange` / `findElement` as injected functions and never touches `document` — happy-dom reports `scrollHeight` as `0` under every condition, so a DOM-reading waiter would be untestable here.
+
+- **A restored position** resolves when `scrollHeight >= savedPosition.top + innerHeight`: the document is tall enough to *honour* the position. Falling back to "the height is stable" requires `isLoading` to be false **and the height to have changed at least once**, because during that measured 94ms window the height is stable at its empty value and a naive stability check fires there.
+- **A `#hash`** resolves when the element exists.
+- **`SCROLL_TARGET_TIMEOUT` is 1000ms**, a constant rather than a module option — deliberately, until something asks for it. The scroll always happens.
+
+**Only `savedPosition` and a cross-page `#hash` defer.** A plain forward navigation still resolves `{left: 0, top: 0}` on `page:loading:end` with no wait at all, and the same-path in-page anchor branch stays synchronous. The wait returns whether it actually deferred, and a deferred hash scrolls `instant` — an animated scroll after a 400ms pause reads as a glitch. A deep-linked `#hash` on a first load (`from === START_LOCATION`) waits too, which is a deliberate divergence from Nuxt: SSR already has the content so it is a no-op there, but a static or client-only render needs it.
+
+**`useNuxtApp()` is called once, synchronously, at the top of `scrollBehavior`.** The deferral runs inside a `requestAnimationFrame` callback, which is outside the Nuxt context, so reading it there throws — the #263 / #313 mechanism again. The regression guard counts `useNuxtApp` calls and asserts none happen after the page load flushes.
+
+**The router options file is `splice(1, 0, …)`d into `pages:routerOptions`, never pushed.** `resolveRouterOptions` (`nuxt/dist/index.mjs:1253-1265`) unshifts per layer and then unshifts the built-in, so index 0 is always the built-in and **an app's own `app/router.options.ts` is always last**; the template spreads them in array order (`:1666`), so later wins. Pushing would put the module after the app and **silently override an application** — the one outcome that is not acceptable. Splicing at 1 beats the built-in, loses to every layer and to the app, and leaves an app that only sets `hashMode`/`scrollBehaviorType` with our `scrollBehavior` intact, because the merge is per-key. A layer `app/router.options.ts` is not an option at all: `src/layer` has no `app/` directory. Verified against a real `pnpm run dev:prepare` — the generated `.nuxt/router.options.mjs` imports ours as `routerOptions1`, spread after the built-in.
+
+**We reproduce Nuxt's `scrollBehavior` rather than wrapping it**, because `nuxt/dist/pages/runtime/router.options` is absent from nuxt's `exports` map and cannot be imported by specifier. That means `runtime/router.options.ts` **tracks Nuxt** and has to be re-read against it on a major upgrade. One nuance is deliberately not reproduced: `isChangingPage` is an unexported internal, and with CWA's constant route key it returns `false` between every pair of CWA pages, so Nuxt's own hash behaviour there is already `instant`.
+
+**Failure modes stated rather than defended:**
+
+- **Images with no intrinsic dimensions** keep growing the page after `isLoading` is false, so a restored position can still land short once the height target is met early. Waiting on images is unbounded; the timeout is the bound.
+- **A genuinely shorter page** never meets the height target and takes the stability fallback, or the full timeout. The browser clamps the position anyway, so the outcome is right and merely late.
+- **A fetch that never settles** takes the timeout.
+
+**Not assertable here:** the scroll position, any height, and whether `ResizeObserver` fires. happy-dom has the APIs but no layout. The manual checks are the only proof.
 
 ---
 

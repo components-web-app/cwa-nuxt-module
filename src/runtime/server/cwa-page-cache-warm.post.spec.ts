@@ -37,6 +37,7 @@ let origin: string
 let originRequests: OriginRequest[]
 let holdPaths: Set<string>
 let statuses: Record<string, number>
+let locations: Record<string, string>
 let handlerUrl: string
 
 function adminSession(roles = ['ROLE_USER', 'ROLE_ADMIN']) {
@@ -102,11 +103,19 @@ beforeEach(async () => {
   originRequests = []
   holdPaths = new Set()
   statuses = {}
+  locations = {}
   pagesList = ['/', '/about']
 
   origin = await listen((req, res) => {
     const release = (status = statuses[req.url!] ?? 200) => {
+      if (res.headersSent) {
+        return
+      }
       res.statusCode = status
+      const location = locations[req.url!]
+      if (location) {
+        res.setHeader('location', location)
+      }
       res.end('<html></html>')
     }
     originRequests.push({ path: req.url!, headers: req.headers, release })
@@ -264,6 +273,22 @@ describe('POST /_cwa/page-cache/warm warming', () => {
         { path: '/missing', status: 404 },
         { path: '/moved', status: 301 },
       ]),
+    })
+  })
+
+  test('reports where a redirected page was sent, on its page line and in the summary', async () => {
+    adminSession()
+    pagesList = ['/about']
+    statuses = { '/about': 308 }
+    locations = { '/about': 'https://www.example.com/about' }
+    const all = await readAll(await postWarm({ cookie: 'api_component=jwt', host: 'www.example.com' }).response)
+
+    expect(all[1]).toEqual({ type: 'page', path: '/about', status: 308, location: 'https://www.example.com/about', completed: 1, total: 1 })
+    expect(all.at(-1)).toEqual({
+      type: 'done',
+      total: 1,
+      warmed: 0,
+      failed: [{ path: '/about', status: 308, location: 'https://www.example.com/about' }],
     })
   })
 

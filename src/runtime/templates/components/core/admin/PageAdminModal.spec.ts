@@ -11,13 +11,13 @@ const { mockUseItemPage, mockUseParentPageLoader, mockUseParentPageDataLoader } 
   mockUseParentPageDataLoader: vi.fn(),
 }))
 
-vi.mock('#cwa-layer/pages/_cwa/index/composables/useItemPage', () => ({
+vi.mock('#cwa-layer/_composables/useItemPage', () => ({
   useItemPage: mockUseItemPage,
 }))
-vi.mock('#cwa-layer/pages/_cwa/index/composables/useParentPageLoader', () => ({
+vi.mock('#cwa-layer/_composables/useParentPageLoader', () => ({
   useParentPageLoader: mockUseParentPageLoader,
 }))
-vi.mock('#cwa-layer/pages/_cwa/index/composables/useParentPageDataLoader', () => ({
+vi.mock('#cwa-layer/_composables/useParentPageDataLoader', () => ({
   useParentPageDataLoader: mockUseParentPageDataLoader,
 }))
 

@@ -86,7 +86,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useItemPage } from '../composables/useItemPage'
+import { useItemPage } from '#cwa-layer/_composables/useItemPage'
 import { definePageMeta, useCwa } from '#imports'
 import type { SelectOption } from '#cwa/composables/cwa-select-input'
 import ResourceModal from '#cwa/templates/components/core/admin/ResourceModal.vue'

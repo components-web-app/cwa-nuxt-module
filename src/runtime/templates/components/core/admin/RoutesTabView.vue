@@ -5,7 +5,7 @@ import { formatRouteLiveAt, getRouteLiveState, isRouteGatedByAncestor, routeLive
 import Spinner from '#cwa/templates/components/utils/Spinner.vue'
 import RouteRedirectsTree from '#cwa/templates/components/core/admin/RouteRedirectsTree.vue'
 import type { CwaResource } from '#cwa/resources/resource-utils'
-import type { TempCwaResource } from '#cwa-layer/pages/_cwa/index/composables/useItemPage'
+import type { TempCwaResource } from '#cwa-layer/_composables/useItemPage'
 import type { RouteScreens } from '#cwa/templates/components/core/admin/RoutesTab.vue'
 
 const props = defineProps<{

@@ -6,12 +6,15 @@ import { useRuntimeConfig } from '#imports'
 import { options } from '#cwa/server-options.ts'
 import useCwaSiteConfig from '#cwa/composables/useCwaSiteConfig'
 import type { CwaResource } from '#cwa/resources/resource-utils'
+import type { ApiUrlRuntimeConfig } from '#cwa/api/api-url'
+import { resolveApiUrl } from '#cwa/api/api-url'
+
+const SITE_CONFIG_TIMEOUT = 5000
 
 export const useFetcher = () => {
-  const { public: { cwa: { apiUrl, apiUrlBrowser } } } = useRuntimeConfig()
-  const resolvedUrl = apiUrl || apiUrlBrowser || ''
+  const { url } = resolveApiUrl(useRuntimeConfig() as ApiUrlRuntimeConfig, true)
   const fetcher = $fetch.create({
-    baseURL: resolvedUrl,
+    baseURL: url,
     headers: {
       accept: 'application/ld+json,application/json',
     },
@@ -32,6 +35,7 @@ export const resolveConfigEventHandler = async (e?: H3Event) => {
   try {
     const data = await fetcher<CwaResource>('/_/site_config_parameters', {
       credentials: 'omit',
+      timeout: SITE_CONFIG_TIMEOUT,
     })
 
     const serverValues = responseToConfig(data, true)

@@ -13,14 +13,12 @@
       </NuxtLink>
     </div>
   </ListHeading>
-  <ListFilter
-    :order-options="orderOptions"
-    :search-fields="['title']"
-  />
+  <ListFilter :order-options="orderOptions" />
   <ListContent
     v-if="endpoint"
     ref="listContent"
     :fetch-url="endpoint"
+    :search-fields="['title']"
   >
     <template #item="{ data }">
       <div class="cwa:flex cwa:border-b cwa:border-b-stone-700 cwa:py-6 cwa:gap-x-4 cwa:items-center">
@@ -49,13 +47,13 @@ import { computed, onMounted, ref, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
 import ListHeading from '#cwa/templates/components/core/admin/ListHeading.vue'
 import { definePageMeta, useCwa, useCwaResourceRoute, useHead } from '#imports'
-import { useDataList } from '#cwa-layer/pages/_cwa/index/composables/useDataList'
+import { useDataList } from '#cwa-layer/_composables/useDataList'
 import ListFilter from '#cwa/templates/components/core/admin/ListFilter.vue'
 import ResourceModalOverlay from '#cwa/templates/components/core/admin/ResourceModalOverlay.vue'
 import ListContent from '#cwa/templates/components/core/admin/ListContent.vue'
-import { useListPage } from '#cwa-layer/pages/_cwa/index/composables/useListPage'
-import { useDataType } from '#cwa-layer/pages/_cwa/index/composables/useDataType'
-import { useDynamicPageLoader } from '#cwa-layer/pages/_cwa/index/composables/useDynamicPageLoader'
+import { useListPage } from '#cwa-layer/_composables/useListPage'
+import { useDataType } from '#cwa-layer/_composables/useDataType'
+import { useDynamicPageLoader } from '#cwa-layer/_composables/useDynamicPageLoader'
 import type { CwaResource } from '#cwa/resources/resource-utils'
 
 const listContent = ref<InstanceType<typeof ListContent> | null>(null)

@@ -1,6 +1,5 @@
 import { updateSiteConfig } from '#imports'
 import { computed, ref } from 'vue'
-import { XMLValidator } from 'fast-xml-parser'
 import { consola } from 'consola'
 import type {
   CwaSiteConfigStoreInterface,
@@ -43,9 +42,18 @@ export default class SiteConfig {
     this.store.$patch({
       isLoading: true,
     })
-    const response = await this.cwaFetch.fetch('/_/site_config_parameters', {
-      credentials: 'omit',
-    })
+    let response: CwaResource
+    try {
+      response = await this.cwaFetch.fetch('/_/site_config_parameters', {
+        credentials: 'omit',
+      })
+    }
+    catch (error) {
+      this.store.$patch({
+        isLoading: false,
+      })
+      throw error
+    }
     const serverConfig = this.utils.responseToConfig(response, true)
     const resolvedConfig = this.utils.mergeConfig(this.userConfig, serverConfig)
     this.store.$patch({
@@ -56,12 +64,13 @@ export default class SiteConfig {
     return resolvedConfig
   }
 
-  public saveConfig(newConfig: Partial<SiteConfigParams>) {
+  public async saveConfig(newConfig: Partial<SiteConfigParams>) {
     const returnData = {
       totalConfigsChanged: 0,
     }
 
     if (newConfig.sitemapXml) {
+      const { XMLValidator } = await import('fast-xml-parser')
       const validationResult = XMLValidator.validate(newConfig.sitemapXml)
       if (validationResult !== true) {
         consola.error(validationResult)
@@ -159,6 +168,14 @@ export default class SiteConfig {
   public async purgePageCache(): Promise<void> {
     const { method, headers } = this.cwaFetch.getRequestOptions('POST')
     await this.cwaFetch.fetch('/_/rendered_html/purge', {
+      method,
+      headers: headers as Record<string, string>,
+    })
+  }
+
+  public async purgeHttpCache(): Promise<void> {
+    const { method, headers } = this.cwaFetch.getRequestOptions('POST')
+    await this.cwaFetch.fetch('/_/http_cache/purge', {
       method,
       headers: headers as Record<string, string>,
     })

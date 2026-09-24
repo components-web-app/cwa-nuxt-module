@@ -69,7 +69,7 @@ describe('requestPage', () => {
       .resolves.toEqual({ path: '/', status: 200 })
   })
 
-  test('does not follow a redirect and reports its status', async () => {
+  test('does not follow a redirect, reporting its status and where it was sent', async () => {
     const { origin, received } = await startOrigin((req, res) => {
       if (req.url === '/old') {
         res.writeHead(301, { location: '/new' })
@@ -78,8 +78,27 @@ describe('requestPage', () => {
     })
 
     await expect(requestPage({ origin, path: '/old', host: 'www.example.com', headers: {}, timeout: 1000 }))
-      .resolves.toEqual({ path: '/old', status: 301 })
+      .resolves.toEqual({ path: '/old', status: 301, location: '/new' })
     expect(received.map(r => r.path)).toEqual(['/old'])
+  })
+
+  test('reports the absolute location an automatic HTTPS redirect sends the page to', async () => {
+    const { origin } = await startOrigin((_req, res) => {
+      res.writeHead(308, { location: 'https://www.example.com/about' })
+      res.end()
+    })
+
+    await expect(requestPage({ origin, path: '/about', host: 'www.example.com', headers: {}, timeout: 1000 }))
+      .resolves.toEqual({ path: '/about', status: 308, location: 'https://www.example.com/about' })
+  })
+
+  test('reports no location for a page that was served rather than redirected', async () => {
+    const { origin } = await startOrigin((_req, res) => res.end('<html></html>'))
+
+    const result = await requestPage({ origin, path: '/about', host: 'www.example.com', headers: {}, timeout: 1000 })
+
+    expect(result).toEqual({ path: '/about', status: 200 })
+    expect(result).not.toHaveProperty('location')
   })
 
   test('reports a page that does not answer within the timeout as timed out', async () => {
@@ -89,13 +108,22 @@ describe('requestPage', () => {
       .resolves.toEqual({ path: '/slow', status: 0, error: 'timeout' })
   })
 
-  test('reports a page whose origin refuses the connection as having no response', async () => {
+  test('reports a page whose origin refuses the connection as having no response, naming the cause', async () => {
     const { origin } = await startOrigin((_req, res) => res.end())
     servers[0]!.closeAllConnections()
     await new Promise(resolve => servers.splice(0)[0]!.close(resolve))
 
     await expect(requestPage({ origin, path: '/', host: 'www.example.com', headers: {}, timeout: 1000 }))
-      .resolves.toEqual({ path: '/', status: 0, error: 'network' })
+      .resolves.toEqual({ path: '/', status: 0, error: 'network', detail: 'ECONNREFUSED' })
+  })
+
+  test('names no cause for a page that timed out', async () => {
+    const { origin } = await startOrigin(() => {})
+
+    const result = await requestPage({ origin, path: '/slow', host: 'www.example.com', headers: {}, timeout: 50 })
+
+    expect(result).toEqual({ path: '/slow', status: 0, error: 'timeout' })
+    expect(result).not.toHaveProperty('detail')
   })
 })
 

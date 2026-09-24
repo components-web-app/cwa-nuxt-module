@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
 import { beforeEach, afterEach, describe, expect, test, vi } from 'vitest'
+import type { Mock } from 'vitest'
 import type { CwaResourceError } from '../../../errors/cwa-resource-error'
 import { createCwaResourceError } from '../../../errors/cwa-resource-error'
 import * as ResourceUtils from '../../../resources/resource-utils'
@@ -648,11 +649,35 @@ describe('resources action setResourceFetchError', () => {
       statusMessage: 'teapot',
       message: 'teapot',
       cause: 'Resource store returned a bad status code on a primary fetch',
-      data: error,
+      data: undefined,
     }
 
     expect(createError).toHaveBeenCalledWith(createErrorObj)
     expect(app.showError).toHaveBeenCalledWith(createErrorObj)
+  })
+
+  test('a primary fetch that never reached the API marks the error so the page can say so', () => {
+    vi.spyOn(app, 'showError').mockImplementationOnce(() => {})
+    const error = createCwaResourceError({ message: 'fetch failed', request: 'https://api.example.com/_api/_/routes//' })
+    resourcesActions.setResourceFetchError({ showErrorPage: true, iri: 'id', error, nuxtApp: passThroughNuxtApp })
+
+    expect(createError).toHaveBeenCalledWith(expect.objectContaining({ data: { apiUnreachable: true } }))
+  })
+
+  test('an API that answered with an error is not marked unreachable', () => {
+    vi.spyOn(app, 'showError').mockImplementationOnce(() => {})
+    const error = createCwaResourceError({ statusMessage: 'Internal Server Error', statusCode: 500, request: 'https://api.example.com/_api/_/routes//' })
+    resourcesActions.setResourceFetchError({ showErrorPage: true, iri: 'id', error, nuxtApp: passThroughNuxtApp })
+
+    expect(createError).toHaveBeenCalledWith(expect.objectContaining({ data: undefined }))
+  })
+
+  test('the API url tried is never put on the error shown to the visitor', () => {
+    vi.spyOn(app, 'showError').mockImplementationOnce(() => {})
+    const error = createCwaResourceError({ message: 'fetch failed', request: 'https://internal-api.example.com/_api/_/routes//' })
+    resourcesActions.setResourceFetchError({ showErrorPage: true, iri: 'id', error, nuxtApp: passThroughNuxtApp })
+
+    expect(JSON.stringify((createError as unknown as Mock).mock.calls)).not.toContain('internal-api.example.com')
   })
 
   test('forwards the upstream Set-Cookie headers onto our own response', async () => {

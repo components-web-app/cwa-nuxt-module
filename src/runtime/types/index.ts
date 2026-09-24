@@ -1,4 +1,5 @@
 import type { SelectOption } from '../composables/cwa-select-input'
+import type { ImageDownscaleOptions } from '../files/image-downscale'
 import type { DefineComponent, GlobalComponents } from 'vue'
 
 export type GlobalComponentNames = keyof GlobalComponents
@@ -51,8 +52,15 @@ export interface CwaModuleOptions {
   auth?: {
     clearCachesOnSessionEnd?: string[]
   }
+  upload?: {
+    image?: Partial<ImageDownscaleOptions>
+  }
   pageCache?: {
     enabled?: boolean
+    sharedMaxAge?: number
+    staleWhileRevalidate?: number
+  }
+  sitemapCache?: {
     sharedMaxAge?: number
     staleWhileRevalidate?: number
   }

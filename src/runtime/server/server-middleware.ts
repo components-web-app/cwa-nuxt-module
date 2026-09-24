@@ -1,10 +1,17 @@
-import { defineEventHandler, parseCookies, getRequestURL, createError } from 'h3'
+import { defineEventHandler, parseCookies, getRequestURL, getRequestHeader, createError } from 'h3'
 import { jwtDecode } from 'jwt-decode'
 import useCwaSiteConfig from '#cwa/composables/useCwaSiteConfig'
 import { updateSiteConfig } from '#site-config/server/composables'
 import { resolveConfigEventHandler } from '#cwa/server/useFetcher'
+import { ADMIN_ROLES, isAdmin } from '#cwa/server/is-admin'
+
+const ADMIN_CHECK_TIMEOUT = 3000
+const OPERATIONAL_PATHS = ['/_cwa/healthcheck', '/_cwa/readiness']
 
 export default defineEventHandler(async (e) => {
+  const [requestPath] = e.path.split('?')
+  if (requestPath && OPERATIONAL_PATHS.includes(requestPath)) return
+
   const skipMaintenanceChecks = () => {
     if (e.context.skipMaintenanceChecks === true) return true
     const allowedPaths = ['/sitemap.xml', '/sitemap_index.xml', '/robots.txt']
@@ -25,7 +32,7 @@ export default defineEventHandler(async (e) => {
     if (skipMaintenanceChecks()) return
 
     if (resolvedConfig.maintenanceModeEnabled) {
-      const isUserAllowedToBypassMaintenance = () => {
+      const claimsLiveAdminToken = () => {
         const cookies = parseCookies(e)
         if (cookies.cwa_auth !== '1' || !cookies.api_component) {
           return false
@@ -38,22 +45,19 @@ export default defineEventHandler(async (e) => {
           if (!decoded.roles || !Array.isArray(decoded.roles)) {
             return false
           }
-          const includesAny = (arr: string[], values: string[]) => values.some(v => arr.includes(v))
-          if (!includesAny(decoded.roles, ['ROLE_ADMIN', 'ROLE_SUPER_ADMIN'])) {
+          if (!decoded.roles.some(role => ADMIN_ROLES.includes(role))) {
             return false
           }
           if (!decoded.exp) {
             return false
           }
-          const expiry = new Date(decoded.exp * 1e3)
-          const expired = (/* @__PURE__ */ new Date()).getTime() >= expiry.getTime()
-          return !expired
+          return Date.now() < decoded.exp * 1e3
         }
-        catch (e2) {
+        catch {
           return false
         }
       }
-      if (isUserAllowedToBypassMaintenance()) {
+      if (claimsLiveAdminToken() && await isAdmin(getRequestHeader(e, 'cookie'), ADMIN_CHECK_TIMEOUT)) {
         return
       }
       const url = getRequestURL(e)

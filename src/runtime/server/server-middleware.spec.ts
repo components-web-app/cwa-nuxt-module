@@ -4,6 +4,8 @@ import { describe, expect, test, vi, beforeEach } from 'vitest'
 
 const mockParseCookies = vi.fn()
 const mockGetRequestURL = vi.fn()
+const mockGetRequestHeader = vi.fn()
+const mockIsAdmin = vi.fn()
 const mockJwtDecode = vi.fn()
 const mockUpdateSiteConfig = vi.fn()
 const mockResolveConfigEventHandler = vi.fn()
@@ -13,6 +15,7 @@ vi.mock('h3', () => ({
   defineEventHandler: (fn: any) => fn,
   parseCookies: (...args: any[]) => mockParseCookies(...args),
   getRequestURL: (...args: any[]) => mockGetRequestURL(...args),
+  getRequestHeader: (...args: any[]) => mockGetRequestHeader(...args),
   createError: (opts: any) => {
     const err = new Error(opts.statusMessage) as any
     err.statusCode = opts.statusCode
@@ -37,6 +40,11 @@ vi.mock('#cwa/server/useFetcher', () => ({
   resolveConfigEventHandler: (...args: any[]) => mockResolveConfigEventHandler(...args),
 }))
 
+vi.mock('#cwa/server/is-admin', () => ({
+  isAdmin: (...args: any[]) => mockIsAdmin(...args),
+  ADMIN_ROLES: ['ROLE_ADMIN', 'ROLE_SUPER_ADMIN'],
+}))
+
 const importHandler = async () => (await import('./server-middleware')).default
 
 const createEvent = (overrides: Partial<{ path: string, context: any }> = {}) => ({
@@ -50,6 +58,39 @@ describe('server-middleware', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockResolvedConfigToSiteConfig.mockImplementation(c => c)
+    mockIsAdmin.mockResolvedValue(true)
+    mockGetRequestHeader.mockReturnValue('cwa_auth=1; api_component=token')
+  })
+
+  test.each(['/_cwa/healthcheck', '/_cwa/readiness'])('does not ask the API for the site config on %s', async (path) => {
+    const handler = await importHandler()
+
+    await expect(handler(createEvent({ path }))).resolves.toBeUndefined()
+    expect(mockResolveConfigEventHandler).not.toHaveBeenCalled()
+  })
+
+  test('ignores a query string when matching an operational path', async () => {
+    const handler = await importHandler()
+
+    await expect(handler(createEvent({ path: '/_cwa/healthcheck?probe=1' }))).resolves.toBeUndefined()
+    expect(mockResolveConfigEventHandler).not.toHaveBeenCalled()
+  })
+
+  test('does not enforce maintenance mode on an operational path', async () => {
+    mockResolveConfigEventHandler.mockResolvedValue({ maintenanceModeEnabled: true })
+    const handler = await importHandler()
+
+    await expect(handler(createEvent({ path: '/_cwa/readiness' }))).resolves.toBeUndefined()
+    expect(mockUpdateSiteConfig).not.toHaveBeenCalled()
+  })
+
+  test.each(['/about', '/_cwa/pages'])('still resolves the site config for %s', async (path) => {
+    mockResolveConfigEventHandler.mockResolvedValue({ maintenanceModeEnabled: false })
+    const handler = await importHandler()
+
+    await handler(createEvent({ path }))
+
+    expect(mockResolveConfigEventHandler).toHaveBeenCalled()
   })
 
   test('does nothing when no resolved config', async () => {
@@ -120,6 +161,49 @@ describe('server-middleware', () => {
 
     await expect(handler(createEvent({ path: '/some-page' }))).resolves.toBeUndefined()
     expect(mockGetRequestURL).not.toHaveBeenCalled()
+    expect(mockIsAdmin).toHaveBeenCalledWith('cwa_auth=1; api_component=token', 3000)
+  })
+
+  test('throws 503 when the JWT claims admin but the API does not confirm it', async () => {
+    mockResolveConfigEventHandler.mockResolvedValue({ maintenanceModeEnabled: true })
+    mockParseCookies.mockReturnValue({ cwa_auth: '1', api_component: 'forged-token' })
+    mockJwtDecode.mockReturnValue(validAdminToken())
+    mockIsAdmin.mockResolvedValue(false)
+    mockGetRequestURL.mockReturnValue(new URL('https://example.com/some-page'))
+    const handler = await importHandler()
+
+    await expect(handler(createEvent({ path: '/some-page' }))).rejects.toMatchObject({ statusCode: 503 })
+    expect(mockIsAdmin).toHaveBeenCalled()
+  })
+
+  test.each([
+    ['there are no auth cookies', {}],
+    ['cwa_auth is not "1"', { cwa_auth: '0', api_component: 'token' }],
+    ['there is no token', { cwa_auth: '1' }],
+  ])('does not ask the API when %s', async (_name, cookies) => {
+    mockResolveConfigEventHandler.mockResolvedValue({ maintenanceModeEnabled: true })
+    mockParseCookies.mockReturnValue(cookies)
+    mockGetRequestURL.mockReturnValue(new URL('https://example.com/some-page'))
+    const handler = await importHandler()
+
+    await expect(handler(createEvent({ path: '/some-page' }))).rejects.toMatchObject({ statusCode: 503 })
+    expect(mockIsAdmin).not.toHaveBeenCalled()
+  })
+
+  test.each([
+    ['the token has no admin role', { roles: ['ROLE_USER'], exp: Math.floor(Date.now() / 1e3) + 3600 }],
+    ['the token has no roles', { exp: Math.floor(Date.now() / 1e3) + 3600 }],
+    ['the token has no exp', { roles: ['ROLE_ADMIN'] }],
+    ['the token has expired', { roles: ['ROLE_ADMIN'], exp: Math.floor(Date.now() / 1e3) - 10 }],
+  ])('does not ask the API when %s', async (_name, decoded) => {
+    mockResolveConfigEventHandler.mockResolvedValue({ maintenanceModeEnabled: true })
+    mockParseCookies.mockReturnValue({ cwa_auth: '1', api_component: 'token' })
+    mockJwtDecode.mockReturnValue(decoded)
+    mockGetRequestURL.mockReturnValue(new URL('https://example.com/some-page'))
+    const handler = await importHandler()
+
+    await expect(handler(createEvent({ path: '/some-page' }))).rejects.toMatchObject({ statusCode: 503 })
+    expect(mockIsAdmin).not.toHaveBeenCalled()
   })
 
   test('throws 503 when JWT has no admin role', async () => {

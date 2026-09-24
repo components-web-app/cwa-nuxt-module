@@ -20,6 +20,8 @@ import Admin from './admin/admin'
 import NavigationGuard from './admin/navigation-guard'
 import { ResourceTypeFromIri } from '#cwa/resources/resource-utils'
 import SiteConfig from '#cwa/api/site-config'
+import type { ApiUrlRuntimeConfig } from '#cwa/api/api-url'
+import { resolveApiUrl } from '#cwa/api/api-url'
 
 export default class Cwa {
   private readonly apiUrl: string
@@ -53,15 +55,8 @@ export default class Cwa {
 
   constructor($router: Router, options: CwaModuleOptions, currentModulePackageInfo: { version: string, name: string }) {
     this.currentModulePackageInfo = currentModulePackageInfo
-    const { isClient } = useProcess()
-    const { public: { cwa: { apiUrl, apiUrlBrowser } } } = useRuntimeConfig()
-    const defaultApiUrl = 'https://api-url-not-set.com'
-    if (isClient) {
-      this.apiUrl = apiUrlBrowser || apiUrl || defaultApiUrl
-    }
-    else {
-      this.apiUrl = apiUrl || apiUrlBrowser || defaultApiUrl
-    }
+    const { isServer } = useProcess()
+    this.apiUrl = resolveApiUrl(useRuntimeConfig() as ApiUrlRuntimeConfig, isServer).url
     if (this.apiUrl) {
       ResourceTypeFromIri.setPathPrefix((new URL(this.apiUrl)).pathname)
     }
@@ -73,6 +68,7 @@ export default class Cwa {
     this.apiDocumentation = new ApiDocumentation(this.cwaFetch, this.storage.stores.apiDocumentation)
     this.mercure = new Mercure(this.storage.stores.mercure, this.storage.stores.resources, this.storage.stores.fetcher)
     this.fetchStatusManager = new FetchStatusManager(this.storage.stores.fetcher, this.mercure, this.apiDocumentation, this.storage.stores.resources, this.options.routeCacheLimit, useNuxtApp())
+    this.fetchStatusManager.onPrimaryFetchError(() => this.cwaFetch.markUnstorable())
 
     this.fetcher = new Fetcher(this.cwaFetch, this.fetchStatusManager, $router, this.storage.stores.resources)
 
@@ -163,6 +159,10 @@ export default class Cwa {
 
   public get pageDataConfig() {
     return this.options.pageData
+  }
+
+  public get uploadConfig() {
+    return this.options.upload
   }
 
   public get config() {

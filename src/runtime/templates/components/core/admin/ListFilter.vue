@@ -38,11 +38,10 @@ import FilterSelect from '#cwa/templates/components/core/admin/form/FilterSelect
 import { useQueryBoundModel } from '#imports'
 
 const props = defineProps<{
-  searchFields: string[]
   orderOptions: { label: string, value: any }[]
 }>()
 
-const { model: searchModel } = useQueryBoundModel(props.searchFields, {
+const { model: searchModel } = useQueryBoundModel('search', {
   delay: 250,
 })
 

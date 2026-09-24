@@ -1,29 +1,14 @@
 import { createError, defineEventHandler, getRequestHeader, getRequestHost, setResponseHeaders } from 'h3'
 import type { H3Event } from 'h3'
-import useFetcher from './useFetcher'
 import { fetchCwaPagePaths } from './cwa-page-paths'
 import { usePageCacheWarmSettings } from './page-cache-warm-config'
 import { requestPage, warmPages } from './page-cache-warm'
+import { isAdmin } from './is-admin'
 
 const ROUTE_LIST_TIMEOUT = 30000
-const ADMIN_ROLES = ['ROLE_ADMIN', 'ROLE_SUPER_ADMIN']
 const FORWARDED_HEADERS = ['accept', 'accept-encoding']
 
 let warming = false
-
-async function isAdmin(cookie: string | undefined, timeout: number) {
-  if (!cookie) {
-    return false
-  }
-  const { fetcher } = useFetcher()
-  try {
-    const user = await fetcher<{ roles?: unknown }>('/me', { headers: { cookie }, timeout })
-    return Array.isArray(user?.roles) && user.roles.some(role => ADMIN_ROLES.includes(role))
-  }
-  catch {
-    return false
-  }
-}
 
 function forwardedHeaders(event: H3Event) {
   const headers: Record<string, string> = {}

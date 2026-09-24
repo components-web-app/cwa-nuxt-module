@@ -918,3 +918,73 @@ describe('FetchStatusManager -> isCurrentSuccessResourcesResolved', () => {
     expect(fetchStatusManager.isCurrentSuccessResourcesResolved).toBe(true)
   })
 })
+
+describe('FetchStatusManager -> onPrimaryFetchError (#340)', () => {
+  let fetchStatusManager: FetchStatusManager
+  let markUnstorable: ReturnType<typeof vi.fn>
+
+  beforeEach(() => {
+    fetchStatusManager = createFetchStatusManager()
+    markUnstorable = vi.fn()
+    fetchStatusManager.onPrimaryFetchError(markUnstorable)
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  test('notifies when the primary fetch resource itself failed', () => {
+    vi.spyOn(fetchStatusManager, 'finishFetchShowError').mockReturnValue(true)
+
+    fetchStatusManager.finishFetchResource({
+      resource: '/another-resource',
+      success: false,
+      token: 'a-token',
+      error: createCwaResourceError({ statusCode: 404 }),
+    })
+
+    expect(markUnstorable).toHaveBeenCalledTimes(1)
+  })
+
+  test('does not notify when a nested resource failed but the page still renders', () => {
+    vi.spyOn(fetchStatusManager, 'finishFetchShowError').mockReturnValue(false)
+
+    fetchStatusManager.finishFetchResource({
+      resource: '/component/html_contents/draft',
+      success: false,
+      token: 'a-token',
+      error: createCwaResourceError({ statusCode: 404 }),
+    })
+
+    expect(markUnstorable).not.toHaveBeenCalled()
+  })
+
+  test('notifies when the primary fetch succeeded but the response was not a CWA resource', () => {
+    vi.spyOn(fetchStatusManager, 'finishFetchShowError').mockReturnValue(true)
+
+    fetchStatusManager.finishFetchResource({
+      resource: '/another-resource',
+      success: true,
+      token: 'a-token',
+      fetchResponse: { _data: 'not a resource' },
+      headers: {},
+    })
+
+    expect(markUnstorable).toHaveBeenCalledTimes(1)
+  })
+
+  test('does not notify when the primary fetch succeeded', () => {
+    vi.spyOn(app, 'useError').mockImplementationOnce(() => ({ value: undefined }) as never)
+    vi.spyOn(fetchStatusManager, 'finishFetchShowError').mockReturnValue(true)
+
+    fetchStatusManager.finishFetchResource({
+      resource: '/another-resource',
+      success: true,
+      token: 'a-token',
+      fetchResponse: { _data: mockCwaResource, headers: new Headers() },
+      headers: {},
+    })
+
+    expect(markUnstorable).not.toHaveBeenCalled()
+  })
+})

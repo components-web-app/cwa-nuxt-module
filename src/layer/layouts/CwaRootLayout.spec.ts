@@ -1,7 +1,7 @@
 // @vitest-environment nuxt
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { computed, reactive } from 'vue'
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { mockNuxtImport } from '@nuxt/test-utils/runtime'
 import CwaRootLayout from './CwaRootLayout.vue'
 import * as cwaComposable from '#cwa/composables/cwa'
@@ -24,6 +24,8 @@ type SetupOpts = {
   uiComponent?: string
   layoutIri?: string
   registeredComponents?: string[]
+  isAdmin?: boolean
+  isEditing?: boolean
 }
 
 function setup(opts: SetupOpts = {}) {
@@ -36,8 +38,8 @@ function setup(opts: SetupOpts = {}) {
   const merged = computed(() => ({ ...state }))
 
   vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => ({
-    auth: { isAdmin: computed(() => false) },
-    admin: reactive({ isEditing: false }),
+    auth: { isAdmin: computed(() => opts.isAdmin ?? false) },
+    admin: reactive({ isEditing: opts.isEditing ?? false }),
     resources: {
       layout: computed(() => opts.uiComponent ? { data: { uiComponent: opts.uiComponent } } : undefined),
       layoutIri: computed(() => opts.layoutIri),
@@ -90,6 +92,24 @@ describe('CwaRootLayout titleTemplate', () => {
 
     state.concatTitle = false
     expect(titleTemplate()).toBe('%s')
+  })
+})
+
+describe('CwaRootLayout admin overlay', () => {
+  function hasOverlay(wrapper: ReturnType<typeof setup>['wrapper']) {
+    return wrapper.findAll('*').some(el => el.attributes('page') !== undefined && el.attributes('layout') !== undefined)
+  }
+
+  test('renders the layout page overlay for an admin who is editing', async () => {
+    const { wrapper } = setup({ isAdmin: true, isEditing: true, registeredComponents: ['CwaLayoutPrimary'] })
+    await flushPromises()
+    expect(hasOverlay(wrapper)).toBe(true)
+  })
+
+  test('renders no layout page overlay when not editing', async () => {
+    const { wrapper } = setup({ isAdmin: true, isEditing: false, registeredComponents: ['CwaLayoutPrimary'] })
+    await flushPromises()
+    expect(hasOverlay(wrapper)).toBe(false)
   })
 })
 

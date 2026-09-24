@@ -19,11 +19,11 @@ const { mockUseItemPage, mockUseDynamicPageLoader, mockUseParentPageLoader, mock
   mockUseDataType: vi.fn(),
 }))
 
-vi.mock('#cwa-layer/pages/_cwa/index/composables/useItemPage', () => ({ useItemPage: mockUseItemPage }))
-vi.mock('#cwa-layer/pages/_cwa/index/composables/useDynamicPageLoader', () => ({ useDynamicPageLoader: mockUseDynamicPageLoader }))
-vi.mock('#cwa-layer/pages/_cwa/index/composables/useParentPageLoader', () => ({ useParentPageLoader: mockUseParentPageLoader }))
-vi.mock('#cwa-layer/pages/_cwa/index/composables/useParentPageDataLoader', () => ({ useParentPageDataLoader: mockUseParentPageDataLoader }))
-vi.mock('#cwa-layer/pages/_cwa/index/composables/useDataType', () => ({ useDataType: mockUseDataType }))
+vi.mock('#cwa-layer/_composables/useItemPage', () => ({ useItemPage: mockUseItemPage }))
+vi.mock('#cwa-layer/_composables/useDynamicPageLoader', () => ({ useDynamicPageLoader: mockUseDynamicPageLoader }))
+vi.mock('#cwa-layer/_composables/useParentPageLoader', () => ({ useParentPageLoader: mockUseParentPageLoader }))
+vi.mock('#cwa-layer/_composables/useParentPageDataLoader', () => ({ useParentPageDataLoader: mockUseParentPageDataLoader }))
+vi.mock('#cwa-layer/_composables/useDataType', () => ({ useDataType: mockUseDataType }))
 
 function setup(opts: {
   iri?: string

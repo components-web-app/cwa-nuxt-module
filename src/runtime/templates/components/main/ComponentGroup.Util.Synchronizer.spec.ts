@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
 import * as vue from 'vue'
 import { CwaResourceApiStatuses } from '../../../storage/stores/resources/state'
@@ -46,13 +46,14 @@ function createGroupSynchronizer() {
   const mockAuth = {
     signedIn: ref(false),
   }
+  const mockFetchResource = vi.fn()
 
   vi.spyOn(cwaComposables, 'useCwa').mockImplementation(() => {
     return {
       auth: mockAuth,
       resources: mockResources,
       resourcesManager: mockResourcesManager,
-      fetchResource: vi.fn(),
+      fetchResource: mockFetchResource,
       addUniquePromise: vi.fn((scope: string, key: string, fn: () => Promise<void>) => {
         return fn()
       }),
@@ -67,15 +68,16 @@ function createGroupSynchronizer() {
     resources: mockResources,
     resourcesManager: mockResourcesManager,
     auth: mockAuth,
+    fetchResource: mockFetchResource,
   }
 }
 
-function createSyncWatcher(groupSynchronizer: ComponentGroupUtilSynchronizer, ops?: { resource: any, allowedComponents?: null | string[] }) {
+function createSyncWatcher(groupSynchronizer: ComponentGroupUtilSynchronizer, ops?: { resource: any, allowedComponents?: null | string[], location?: string, fullReference?: string }) {
   const mockResource = computed(() => {
     return (ops?.resource !== undefined ? ops.resource : { data: {} })
   })
-  const mockLocation = 'mockLocation'
-  const mockReference = computed(() => 'mockReference')
+  const mockLocation = ops?.location ?? 'mockLocation'
+  const mockReference = computed(() => ops?.fullReference ?? 'mockReference')
 
   const syncWatcherOps = {
     resource: mockResource,
@@ -92,7 +94,7 @@ describe('Group synchronizer', () => {
     vi.clearAllMocks()
   })
 
-  test('should NOT create OR update resource IF loading is in progress', async () => {
+  test('should NOT create OR update resource IF user is not signed in, whatever the loading state', async () => {
     const { resources, groupSynchronizer, resourcesManager } = createGroupSynchronizer()
 
     createSyncWatcher(groupSynchronizer)
@@ -393,6 +395,106 @@ describe('Group synchronizer', () => {
       finally {
         ResourceUtils.ResourceTypeFromIri.setPathPrefix(undefined)
       }
+    })
+  })
+
+  describe('a group found by reference', () => {
+    const LAYOUT = '/_api/_/layouts/c7e086b5'
+    const PAGE = '/_api/_/pages/3d594703'
+    const GROUP = '/_api/_/component_groups/49552a4f'
+
+    afterEach(() => {
+      vi.mocked(ResourceUtils.getResourceTypeFromIri).mockReset()
+    })
+
+    function findGroupByReference(locationType: CwaResourceTypes, location: string, fullReference: string, groupData: Record<string, any>) {
+      const context = createGroupSynchronizer()
+      vi.mocked(ResourceUtils.getResourceTypeFromIri).mockReturnValue(locationType)
+      context.fetchResource.mockResolvedValue({
+        '@id': GROUP,
+        'reference': fullReference,
+        ...groupData,
+      })
+      createSyncWatcher(context.groupSynchronizer, {
+        resource: null,
+        allowedComponents: undefined,
+        location,
+        fullReference,
+      })
+      context.auth.signedIn.value = true
+      return context
+    }
+
+    test('does not update a layout group that already lists the layout', async () => {
+      const { resourcesManager } = findGroupByReference(CwaResourceTypes.LAYOUT, LAYOUT, `top_${LAYOUT}`, { layouts: [LAYOUT] })
+
+      await nextTick()
+
+      expect(resourcesManager.updateResource).not.toHaveBeenCalled()
+    })
+
+    test('does not update a page group that already lists the page', async () => {
+      const { resourcesManager } = findGroupByReference(CwaResourceTypes.PAGE, PAGE, `primary_${PAGE}`, { pages: [PAGE] })
+
+      await nextTick()
+
+      expect(resourcesManager.updateResource).not.toHaveBeenCalled()
+    })
+
+    test('does not update a group that lists the location as an embedded resource', async () => {
+      const { resourcesManager } = findGroupByReference(CwaResourceTypes.LAYOUT, LAYOUT, `top_${LAYOUT}`, {
+        layouts: [{ '@id': LAYOUT, '@type': 'Layout' }],
+      })
+
+      await nextTick()
+
+      expect(resourcesManager.updateResource).not.toHaveBeenCalled()
+    })
+
+    test('stores the group it found without updating it', async () => {
+      const { resourcesManager, fetchResource } = findGroupByReference(CwaResourceTypes.LAYOUT, LAYOUT, `top_${LAYOUT}`, { layouts: [LAYOUT] })
+
+      await nextTick()
+
+      expect(fetchResource).toHaveBeenCalledWith({ path: `/_/component_groups/top_${LAYOUT}` })
+      expect(resourcesManager.updateResource).not.toHaveBeenCalled()
+    })
+
+    test('adds the location to a group listing another location', async () => {
+      const { resourcesManager } = findGroupByReference(CwaResourceTypes.LAYOUT, LAYOUT, `top_${LAYOUT}`, {
+        layouts: ['/_api/_/layouts/other'],
+      })
+
+      await nextTick()
+
+      expect(resourcesManager.updateResource).toHaveBeenCalledWith({
+        endpoint: GROUP,
+        data: { layouts: ['/_api/_/layouts/other', LAYOUT] },
+      })
+    })
+
+    test('adds the location as an iri when the other locations are embedded resources', async () => {
+      const { resourcesManager } = findGroupByReference(CwaResourceTypes.LAYOUT, LAYOUT, `top_${LAYOUT}`, {
+        layouts: [{ '@id': '/_api/_/layouts/other', '@type': 'Layout' }],
+      })
+
+      await nextTick()
+
+      expect(resourcesManager.updateResource).toHaveBeenCalledWith({
+        endpoint: GROUP,
+        data: { layouts: ['/_api/_/layouts/other', LAYOUT] },
+      })
+    })
+
+    test('adds the location to a group listing no locations', async () => {
+      const { resourcesManager } = findGroupByReference(CwaResourceTypes.LAYOUT, LAYOUT, `top_${LAYOUT}`, {})
+
+      await nextTick()
+
+      expect(resourcesManager.updateResource).toHaveBeenCalledWith({
+        endpoint: GROUP,
+        data: { layouts: [LAYOUT] },
+      })
     })
   })
 

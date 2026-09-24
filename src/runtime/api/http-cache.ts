@@ -4,6 +4,8 @@ export const SURROGATE_KEY_SEPARATOR = ', '
 
 export const RENDERED_HTML_SURROGATE_KEY = 'cwa-html'
 
+const FALLBACK_SHARED_MAX_AGE = 3600
+
 export interface ApiCacheDirectives {
   storable: boolean
   sharedMaxAge?: number
@@ -11,7 +13,7 @@ export interface ApiCacheDirectives {
 
 export interface PageCacheOptions {
   enabled: boolean
-  sharedMaxAge: number
+  sharedMaxAge?: number
   staleWhileRevalidate: number
 }
 
@@ -109,15 +111,13 @@ export function buildPageCacheHeaders({ ids, api, options }: BuildPageCacheHeade
     return {}
   }
 
-  const sharedMaxAge = api.sharedMaxAge === undefined
-    ? options.sharedMaxAge
-    : Math.min(options.sharedMaxAge, api.sharedMaxAge)
+  const sharedMaxAge = lowest(options.sharedMaxAge, api.sharedMaxAge) ?? FALLBACK_SHARED_MAX_AGE
   if (sharedMaxAge <= 0) {
     return {}
   }
 
   const cacheControl = ['public', 'max-age=0', `s-maxage=${sharedMaxAge}`]
-  if (options.staleWhileRevalidate > 0 && sharedMaxAge === options.sharedMaxAge) {
+  if (options.staleWhileRevalidate > 0) {
     cacheControl.push(`stale-while-revalidate=${options.staleWhileRevalidate}`)
   }
 
@@ -130,7 +130,7 @@ export function buildPageCacheHeaders({ ids, api, options }: BuildPageCacheHeade
 export function resolvePageCacheOptions(options?: Partial<PageCacheOptions>): PageCacheOptions {
   return {
     enabled: options?.enabled ?? true,
-    sharedMaxAge: options?.sharedMaxAge ?? 3600,
+    sharedMaxAge: options?.sharedMaxAge,
     staleWhileRevalidate: options?.staleWhileRevalidate ?? 0,
   }
 }

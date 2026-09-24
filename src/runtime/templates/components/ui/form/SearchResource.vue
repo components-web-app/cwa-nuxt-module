@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import debounce from 'lodash-es/debounce'
+import { consola as logger } from 'consola'
 import { Popover, PopoverPanel } from '@headlessui/vue'
 import CwaUiFormInput from './Input.vue'
 import { useCwa, usePopper } from '#imports'
@@ -35,10 +36,16 @@ const fetchingSearchValue = ref()
 const debounceFetchActive = ref(false)
 const fetchingSearchResults = ref(false)
 const searchResults = ref<CwaResource[]>()
+const searchError = ref<string>()
 const focussed = ref(false)
 const open = computed(() => {
-  return focussed.value && (showLoadingIndicator.value || !!searchResults.value)
+  return focussed.value && (showLoadingIndicator.value || !!searchResults.value || !!searchError.value)
 })
+
+function searchFailureMessage(error: unknown) {
+  const statusCode = (error as { statusCode?: number } | undefined)?.statusCode
+  return `Search failed (${statusCode || 'network error'})`
+}
 
 let debouncedSearchCall: any
 
@@ -83,6 +90,7 @@ async function fetchResource() {
 
 async function search() {
   debounceFetchActive.value = false
+  searchError.value = undefined
   const searchParamsObj: { [key: string]: string } = {
     perPage: '6',
     [`order[${props.property}]`]: 'asc',
@@ -101,7 +109,9 @@ async function search() {
     fetchingSearchResults.value = false
     return
   }
+  const requestedSearchValue = searchValue.value
   fetchingSearchResults.value = true
+  searchParamsObj['search'] = searchValue.value
   if (props.searchProperties) {
     for (const prop of props.searchProperties) {
       searchParamsObj[prop] = searchValue.value
@@ -113,13 +123,25 @@ async function search() {
   const params = new URLSearchParams(searchParamsObj)
   const query = params.toString()
   const path = `${props.endpoint}?${query}`
-  const fetch = $cwa.fetch({
-    path,
-  })
-  const result = await fetch.response
-  if (searchValue.value === fetchingSearchValue.value) {
+  try {
+    const fetch = $cwa.fetch({
+      path,
+    })
+    const result = await fetch.response
+    if (searchValue.value !== requestedSearchValue) {
+      return
+    }
     fetchingSearchResults.value = false
     searchResults.value = result._data?.['member']
+  }
+  catch (error) {
+    if (searchValue.value !== requestedSearchValue) {
+      return
+    }
+    fetchingSearchResults.value = false
+    searchResults.value = undefined
+    searchError.value = searchFailureMessage(error)
+    logger.error('[CWA] Could not search for resources', error)
   }
 }
 
@@ -209,6 +231,12 @@ onMounted(() => {
       >
         <div v-if="showLoadingIndicator">
           Loading...
+        </div>
+        <div
+          v-else-if="searchError"
+          class="cwa:text-danger cwa:p-2 cwa:text-sm"
+        >
+          {{ searchError }}
         </div>
         <template
           v-for="(option, index) of displaySearchResults"

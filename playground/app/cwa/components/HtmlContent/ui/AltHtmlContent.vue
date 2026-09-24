@@ -4,9 +4,8 @@
       src="/logo.svg"
       placeholder
     />
-    <TipTapHtmlEditor
+    <LazyTipTapHtmlEditor
       v-if="$cwa.admin.isEditing"
-      ref="editorComponent"
       v-model="resourceModel.model.value"
       :disabled="disableEditor"
       data-placeholder="[Empty HTML Content Area]"
@@ -15,7 +14,7 @@
     <div
       v-else
       ref="htmlContainer"
-      v-html="htmlContent"
+      v-cwa-html="htmlContent"
     />
   </article>
 </template>
@@ -24,7 +23,6 @@
 import { computed, ref, toRef } from 'vue'
 import type { IriProp } from '#cwa/composables/cwa-resource'
 import { useCwaResource, useHtmlContent } from '#imports'
-import TipTapHtmlEditor from '../../../../components/TipTapHtmlEditor.vue'
 import { useCustomHtmlComponent } from '../../../../composables/useCustomHtmlComponent'
 
 // Setup the resource
@@ -39,10 +37,10 @@ const resource = getResource()
 const htmlContainer = ref<null | HTMLElement>(null)
 
 const htmlContent = computed<string>(() => resource.value?.data?.html)
-useHtmlContent(htmlContainer, htmlContent)
+const { vCwaHtml } = useHtmlContent(htmlContainer, htmlContent)
 
 // This deals with the HTML editor
-const { editorComponent, resourceModel, disableEditor } = useCustomHtmlComponent(iriRef)
+const { resourceModel, disableEditor } = useCustomHtmlComponent(iriRef)
 </script>
 
 <style>

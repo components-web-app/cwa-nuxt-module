@@ -3,13 +3,11 @@
     title="Routes"
     :hide-add="true"
   />
-  <ListFilter
-    :order-options="orderOptions"
-    :search-fields="['path']"
-  />
+  <ListFilter :order-options="orderOptions" />
   <ListContent
     ref="listContent"
     fetch-url="/_/routes"
+    :search-fields="['path']"
   >
     <template #item="{ data, rawData }">
       <RouteListRow
@@ -28,7 +26,7 @@ import { ref } from 'vue'
 import ListHeading from '#cwa/templates/components/core/admin/ListHeading.vue'
 import ListContent from '#cwa/templates/components/core/admin/ListContent.vue'
 import ListFilter from '#cwa/templates/components/core/admin/ListFilter.vue'
-import { useListPage } from '#cwa-layer/pages/_cwa/index/composables/useListPage'
+import { useListPage } from '#cwa-layer/_composables/useListPage'
 import { definePageMeta, useCwa, useHead } from '#imports'
 import RouteListRow from '#cwa/templates/components/core/admin/RouteListRow.vue'
 import ResourceModalOverlay from '#cwa/templates/components/core/admin/ResourceModalOverlay.vue'

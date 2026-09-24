@@ -6,10 +6,11 @@ import SettingsPage from './settings.vue'
 import * as cwaComposable from '#cwa/composables/cwa'
 import { PageCacheWarmInterruptedError } from '#cwa/api/page-cache-warm'
 
-const { mockOptions, mockReveal, mockPurgePageCache, mockWarmPageCache } = vi.hoisted(() => ({
+const { mockOptions, mockReveal, mockPurgePageCache, mockPurgeHttpCache, mockWarmPageCache } = vi.hoisted(() => ({
   mockOptions: { pageCache: undefined as undefined | { enabled?: boolean } },
   mockReveal: vi.fn(),
   mockPurgePageCache: vi.fn(),
+  mockPurgeHttpCache: vi.fn(),
   mockWarmPageCache: vi.fn(),
 }))
 
@@ -47,6 +48,7 @@ async function setup() {
       totalRequests: computed(() => 0),
       apiState: { hasError: ref(false) },
       purgePageCache: mockPurgePageCache,
+      purgeHttpCache: mockPurgeHttpCache,
       warmPageCache: mockWarmPageCache,
     },
     getApiDocumentation: vi.fn().mockResolvedValue(undefined),
@@ -276,6 +278,20 @@ describe('Site settings page cache warm', () => {
     expect(wrapper.text()).toContain('2 pages were checked, but 1 could not be warmed: /c (no response).')
   })
 
+  test('names the cause when a page could not be reached at all', async () => {
+    mockWarmPageCache.mockResolvedValue({ total: 2, warmed: 1, failed: [{ path: '/c', status: 0, error: 'network', detail: 'DEPTH_ZERO_SELF_SIGNED_CERT' }] })
+    const wrapper = await setup()
+    await clickWarm(wrapper)
+    expect(wrapper.text()).toContain('2 pages were checked, but 1 could not be warmed: /c (no response: DEPTH_ZERO_SELF_SIGNED_CERT).')
+  })
+
+  test('names where a redirected page was sent instead of being rendered', async () => {
+    mockWarmPageCache.mockResolvedValue({ total: 2, warmed: 1, failed: [{ path: '/about', status: 308, location: 'https://www.example.com/about' }] })
+    const wrapper = await setup()
+    await clickWarm(wrapper)
+    expect(wrapper.text()).toContain('2 pages were checked, but 1 could not be warmed: /about (308 → https://www.example.com/about).')
+  })
+
   test('explains a warm refused for lack of permission', async () => {
     mockWarmPageCache.mockRejectedValue(Object.assign(new Error('Forbidden'), { statusCode: 403 }))
     const wrapper = await setup()
@@ -287,7 +303,7 @@ describe('Site settings page cache warm', () => {
     mockWarmPageCache.mockRejectedValue(Object.assign(new Error('Conflict'), { statusCode: 409 }))
     const wrapper = await setup()
     await clickWarm(wrapper)
-    expect(wrapper.text()).toContain('The page cache is already being warmed. Please wait for it to finish.')
+    expect(wrapper.text()).toContain('The page cache is already being warmed on this server. Please wait for it to finish.')
   })
 
   test('explains a warm that stopped part way through', async () => {
@@ -309,5 +325,140 @@ describe('Site settings page cache warm', () => {
     const wrapper = await setup()
     await clickWarm(wrapper)
     expect(wrapper.text()).toContain('The page cache could not be warmed (network error). Please try again.')
+  })
+})
+
+function purgeAllButton(wrapper: Wrapper) {
+  return wrapper.findAll('button').find(b => ['Purge all cached data', 'Purging all cached data…'].includes(b.text()))
+}
+
+function warmNowButton(wrapper: Wrapper) {
+  return wrapper.findAll('button').find(b => b.text() === 'Warm page cache now')
+}
+
+async function clickPurgeAll(wrapper: Wrapper) {
+  await purgeAllButton(wrapper)!.trigger('click')
+  await flushPromises()
+}
+
+describe('Site settings full cache purge', () => {
+  beforeEach(() => {
+    mockOptions.pageCache = undefined
+    mockReveal.mockResolvedValue({ isCanceled: false })
+    mockPurgeHttpCache.mockResolvedValue(undefined)
+    mockWarmPageCache.mockResolvedValue({ total: 36, warmed: 36, failed: [] })
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+    mockReveal.mockReset()
+    mockPurgeHttpCache.mockReset()
+    mockWarmPageCache.mockReset()
+  })
+
+  test('offers purging everything beside the page cache actions when page caching is on', async () => {
+    const wrapper = await setup()
+    expect(purgeAllButton(wrapper)!.text()).toBe('Purge all cached data')
+    expect(purgeButton(wrapper)).toBeDefined()
+    expect(warmButton(wrapper)).toBeDefined()
+  })
+
+  test('offers purging everything when page caching is off, with no page cache actions', async () => {
+    mockOptions.pageCache = { enabled: false }
+    const wrapper = await setup()
+    expect(purgeAllButton(wrapper)!.text()).toBe('Purge all cached data')
+    expect(wrapper.text()).toContain('Pages are rendered fresh on every visit in this configuration, so this purges the API cache only.')
+    expect(purgeButton(wrapper)).toBeUndefined()
+    expect(warmButton(wrapper)).toBeUndefined()
+  })
+
+  test('confirms before purging everything with the approved wording', async () => {
+    const wrapper = await setup()
+    await clickPurgeAll(wrapper)
+    expect(mockReveal).toHaveBeenCalledWith({
+      title: 'Purge all cached data?',
+      content: '<p>Everything the API has cached will be dropped at once, along with every cached page. Use this after data has been changed outside the admin — ordinary edits are purged for you. Pages will be slow until they have been rendered again, and no content will be lost.</p>',
+    })
+  })
+
+  test('does not purge anything when the confirmation is cancelled', async () => {
+    mockReveal.mockResolvedValue({ isCanceled: true })
+    const wrapper = await setup()
+    await clickPurgeAll(wrapper)
+    expect(mockPurgeHttpCache).not.toHaveBeenCalled()
+    expect(wrapper.text()).not.toContain('All cached data has been purged')
+    expect(wrapper.text()).not.toContain('Nothing was purged')
+    expect(wrapper.text()).not.toContain('The cache could not be purged')
+  })
+
+  test('shows the purging label while the full purge is in flight', async () => {
+    let resolvePurge!: () => void
+    mockPurgeHttpCache.mockReturnValue(new Promise<void>((resolve) => {
+      resolvePurge = resolve
+    }))
+    const wrapper = await setup()
+    await clickPurgeAll(wrapper)
+    expect(purgeAllButton(wrapper)!.text()).toBe('Purging all cached data…')
+    expect(purgeAllButton(wrapper)!.attributes('disabled')).toBeDefined()
+    resolvePurge()
+    await flushPromises()
+    expect(purgeAllButton(wrapper)!.text()).toBe('Purge all cached data')
+  })
+
+  test('purges after confirmation and reports success', async () => {
+    const wrapper = await setup()
+    await clickPurgeAll(wrapper)
+    expect(mockPurgeHttpCache).toHaveBeenCalledTimes(1)
+    expect(wrapper.text()).toContain('All cached data has been purged. Pages will be slow until they have been rendered again.')
+  })
+
+  test('reports a deployment that cannot flush its cache as nothing purged, never as success', async () => {
+    mockPurgeHttpCache.mockRejectedValue(Object.assign(new Error('Not Implemented'), { statusCode: 501 }))
+    const wrapper = await setup()
+    await clickPurgeAll(wrapper)
+    expect(wrapper.text()).toContain('Nothing was purged. This deployment\'s cache cannot be flushed.')
+    expect(wrapper.text()).not.toContain('All cached data has been purged')
+    expect(warmNowButton(wrapper)).toBeUndefined()
+  })
+
+  test('explains a full purge refused for lack of permission', async () => {
+    mockPurgeHttpCache.mockRejectedValue(Object.assign(new Error('Forbidden'), { statusCode: 403 }))
+    const wrapper = await setup()
+    await clickPurgeAll(wrapper)
+    expect(wrapper.text()).toContain('The cache could not be purged: your account does not have permission to do this.')
+    expect(wrapper.text()).not.toContain('All cached data has been purged')
+  })
+
+  test('explains any other failed full purge with its status code', async () => {
+    mockPurgeHttpCache.mockRejectedValue(Object.assign(new Error('Server Error'), { statusCode: 500 }))
+    const wrapper = await setup()
+    await clickPurgeAll(wrapper)
+    expect(wrapper.text()).toContain('The cache could not be purged (500). Please try again.')
+  })
+
+  test('explains a failed full purge with no response as a network error', async () => {
+    mockPurgeHttpCache.mockRejectedValue(new TypeError('Failed to fetch'))
+    const wrapper = await setup()
+    await clickPurgeAll(wrapper)
+    expect(wrapper.text()).toContain('The cache could not be purged (network error). Please try again.')
+  })
+
+  test('offers the warm after a successful full purge when page caching is on', async () => {
+    const wrapper = await setup()
+    expect(warmNowButton(wrapper)).toBeUndefined()
+    await clickPurgeAll(wrapper)
+    expect(warmNowButton(wrapper)).toBeDefined()
+    await warmNowButton(wrapper)!.trigger('click')
+    await flushPromises()
+    expect(mockWarmPageCache).toHaveBeenCalledTimes(1)
+    expect(wrapper.text()).toContain('The page cache has been warmed. All 36 pages were loaded.')
+  })
+
+  test('does not offer the warm after a successful full purge when page caching is off', async () => {
+    mockOptions.pageCache = { enabled: false }
+    const wrapper = await setup()
+    await clickPurgeAll(wrapper)
+    expect(wrapper.text()).toContain('All cached data has been purged')
+    expect(warmNowButton(wrapper)).toBeUndefined()
   })
 })

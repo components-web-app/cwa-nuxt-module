@@ -4,6 +4,12 @@ import { createConfirmDialog } from 'vuejs-confirm-dialog'
 import { useCwaResourceEndpoint } from '#cwa/composables/cwa-resource-endpoint'
 import { useCwa } from '#cwa/composables/cwa'
 import ConfirmDialog from '#cwa/templates/components/core/ConfirmDialog.vue'
+import { createBrowserImageDownscaleDeps, downscaleImageFile, resolveImageDownscaleOptions } from '#cwa/files/image-downscale'
+import type { ImageDownscaleOptions } from '#cwa/files/image-downscale'
+
+export interface CwaResourceUploadOps {
+  imageDownscale?: Partial<ImageDownscaleOptions>
+}
 
 export interface CwaResourceUploadBind {
   'modelValue': string | number | undefined | null
@@ -14,7 +20,7 @@ export interface CwaResourceUploadBind {
   'onDelete': () => Promise<void>
 }
 
-export const useCwaResourceUpload = (iri: ComputedRef<string | undefined>, filename: string = 'file', fileDisplayType: string = 'File') => {
+export const useCwaResourceUpload = (iri: ComputedRef<string | undefined>, filename: string = 'file', fileDisplayType: string = 'File', ops?: CwaResourceUploadOps) => {
   const $cwa = useCwa()
   const resource = computed(() => iri.value ? $cwa.resources.getResource(iri.value).value : undefined)
 
@@ -40,8 +46,13 @@ export const useCwaResourceUpload = (iri: ComputedRef<string | undefined>, filen
       return
     }
     updating.value = true
+    const uploadFile = await downscaleImageFile(
+      newFile,
+      resolveImageDownscaleOptions($cwa.uploadConfig?.image, ops?.imageDownscale),
+      createBrowserImageDownscaleDeps(),
+    )
     const formData = new FormData()
-    formData.append(filename, newFile)
+    formData.append(filename, uploadFile)
     await $cwa.resourcesManager.updateResource({
       iri: iri.value,
       endpoint: updateEndpoint.value,

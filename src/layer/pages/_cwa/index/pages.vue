@@ -3,10 +3,7 @@
     title="Pages"
     @add="goToAdd"
   />
-  <ListFilter
-    :order-options="orderOptions"
-    :search-fields="['reference', 'title', 'uiComponent']"
-  />
+  <ListFilter :order-options="orderOptions" />
   <ListContainer>
     <div>
       <div>
@@ -41,6 +38,7 @@
   <ListContent
     ref="listContent"
     fetch-url="/_/pages"
+    :search-fields="['reference', 'title', 'uiComponent']"
   >
     <template #item="{ data }">
       <div class="cwa:flex cwa:border-b cwa:border-b-stone-700 cwa:py-6 cwa:gap-x-4 cwa:items-center">
@@ -67,7 +65,7 @@
 <script lang="ts" setup>
 import { useRouter } from 'vue-router'
 import { ref } from 'vue'
-import { useListPage } from './composables/useListPage'
+import { useListPage } from '#cwa-layer/_composables/useListPage'
 import ListHeading from '#cwa/templates/components/core/admin/ListHeading.vue'
 import ListContent from '#cwa/templates/components/core/admin/ListContent.vue'
 import ListFilter from '#cwa/templates/components/core/admin/ListFilter.vue'

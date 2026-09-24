@@ -90,7 +90,7 @@
 import { computed, ref, watch, watchEffect } from 'vue'
 import { createConfirmDialog } from 'vuejs-confirm-dialog'
 import type { CwaResource } from '#cwa/resources/resource-utils'
-import { useItemPage } from '#cwa-layer/pages/_cwa/index/composables/useItemPage'
+import { useItemPage } from '#cwa-layer/_composables/useItemPage'
 import { routePublicationFromResource } from '#cwa/resources/route-publication'
 import { useCwa, navigateTo, useRoute } from '#imports'
 import RoutesTabView from '#cwa/templates/components/core/admin/RoutesTabView.vue'

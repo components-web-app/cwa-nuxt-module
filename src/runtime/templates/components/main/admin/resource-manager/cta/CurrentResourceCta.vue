@@ -1,6 +1,5 @@
 <script lang="ts" setup>
 import { computed, ref } from 'vue'
-import { DateTime } from 'luxon'
 import {
 
   CwaResourceTypes,
@@ -81,7 +80,7 @@ async function publishResource() {
   await $cwa.resourcesManager.updateResource({
     endpoint: props.currentIri,
     data: {
-      publishedAt: DateTime.local().toUTC().toISO(),
+      publishedAt: new Date().toISOString(),
     },
   })
   publishing.value = false

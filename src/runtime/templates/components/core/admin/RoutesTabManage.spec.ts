@@ -199,13 +199,50 @@ describe('RoutesTabManage', () => {
       expect(wrapper.emitted('update:liveAt')).toEqual([[null]])
     })
 
-    test('putting a scheduled route live commits an instant that has already passed', async () => {
+    test('choosing live on a route scheduled for a future date commits an instant that has already passed', async () => {
       const wrapper = mountManage({ liveAt: '2999-01-01T00:00:00+00:00' })
       const before = Date.now()
       await getStateSelect(wrapper).vm.$emit('update:modelValue', 'live')
       const committed = wrapper.emitted('update:liveAt')?.[0]?.[0] as string
       expect(new Date(committed).getTime()).toBeGreaterThanOrEqual(before)
       expect(new Date(committed).getTime()).toBeLessThanOrEqual(Date.now())
+    })
+
+    test('choosing live on a route with no go-live date commits an instant that has already passed', async () => {
+      const wrapper = mountManage({ liveAt: null })
+      const before = Date.now()
+      await getStateSelect(wrapper).vm.$emit('update:modelValue', 'live')
+      const committed = wrapper.emitted('update:liveAt')?.[0]?.[0] as string
+      expect(new Date(committed).getTime()).toBeGreaterThanOrEqual(before)
+      expect(new Date(committed).getTime()).toBeLessThanOrEqual(Date.now())
+    })
+
+    test('choosing live on a route that is already live keeps the date it went live', async () => {
+      const wrapper = mountManage({ liveAt: '2020-01-01T00:00:00+00:00' })
+      await getStateSelect(wrapper).vm.$emit('update:modelValue', 'live')
+      expect(wrapper.emitted('update:liveAt')).toBeUndefined()
+    })
+
+    test('returning a live route to live after scheduling it restores the date it went live', async () => {
+      const wrapper = mountManage({ liveAt: '2020-01-01T00:00:00+00:00' })
+      await getStateSelect(wrapper).vm.$emit('update:modelValue', 'scheduled')
+      await getStateSelect(wrapper).vm.$emit('update:modelValue', 'live')
+      expect(wrapper.emitted('update:liveAt')).toEqual([[null], ['2020-01-01T00:00:00+00:00']])
+    })
+
+    test('shows a live route the date it has been live from', () => {
+      const wrapper = mountManage({ liveAt: '2020-01-01T00:00:00+00:00' })
+      expect(wrapper.find('[data-live-since]').text()).toContain(formatRouteLiveAt('2020-01-01T00:00:00+00:00'))
+    })
+
+    test('shows no live-since date for a route that is not live', () => {
+      const wrapper = mountManage({ liveAt: null })
+      expect(wrapper.find('[data-live-since]').exists()).toBe(false)
+    })
+
+    test('shows no live-since date for a route that is scheduled', () => {
+      const wrapper = mountManage({ liveAt: '2999-01-01T00:00:00+00:00' })
+      expect(wrapper.find('[data-live-since]').exists()).toBe(false)
     })
 
     test('choosing scheduled reveals a datetime-local input and holds the route back until a date is given', async () => {

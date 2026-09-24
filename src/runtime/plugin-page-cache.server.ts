@@ -16,7 +16,14 @@ export default defineNuxtPlugin({
 
     event.context.cwaPageCache = {}
 
+    const isErrorRender = !!event.headers.get('x-nuxt-error')
+
     nuxtApp.hook('app:rendered', () => {
+      if (isErrorRender) {
+        event.context.cwaPageCache = { unstorable: true }
+        return
+      }
+
       const $cwa = nuxtApp.$cwa as Cwa
       if ($cwa.auth.signedIn.value) {
         event.context.cwaPageCache = { unstorable: true }

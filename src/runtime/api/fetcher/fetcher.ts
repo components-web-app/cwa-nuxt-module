@@ -16,6 +16,7 @@ import { flattenManifestNode } from '../../storage/stores/fetcher/manifest-utils
 import type CwaFetch from './cwa-fetch'
 import type FetchStatusManager from './fetch-status-manager'
 import preloadHeaders from './preload-headers'
+import { mergeQueryIntoPath } from './query-utils'
 
 export interface FetchResourceEvent {
   path: string
@@ -310,25 +311,7 @@ export default class Fetcher {
   }
 
   private appendQueryToPath(path: string): string {
-    const queryObj = this.router.currentRoute.value?.query
-    if (!queryObj || !Object.keys(queryObj).length) {
-      return path
-    }
-
-    const queryStart = path.indexOf('?')
-    const pathname = queryStart === -1 ? path : path.slice(0, queryStart)
-    const params = new URLSearchParams(queryStart === -1 ? '' : path.slice(queryStart + 1))
-    const ownKeys = new Set(params.keys())
-    for (const [key, value] of Object.entries(queryObj)) {
-      if (ownKeys.has(key)) {
-        continue
-      }
-      for (const item of Array.isArray(value) ? value : [value]) {
-        params.append(key, item ?? '')
-      }
-    }
-    const queryString = params.toString()
-    return queryString ? `${pathname}?${queryString}` : pathname
+    return mergeQueryIntoPath(path, this.router.currentRoute.value?.query)
   }
 
   private createRequestHeaders(event: FetchEvent): Record<string, string> {
