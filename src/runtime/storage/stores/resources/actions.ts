@@ -1,6 +1,7 @@
 import { consola } from 'consola'
 import type { CwaFetchRequestHeaders } from '#cwa/api/fetcher/fetcher'
 import type { CwaResourceError } from '#cwa/errors/cwa-resource-error'
+import { isApiUnreachable } from '#cwa/errors/api-unreachable'
 import {
   CwaResourceTypes,
   getPublishedResourceState,
@@ -594,13 +595,17 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
             }
           }
 
-          const h3Error = createError<typeof error>({
+          const apiUnreachable = isApiUnreachable(error)
+          if (apiUnreachable && useProcess().isServer) {
+            consola.error(`[CWA] The site's API did not respond. Tried: ${error.request}`)
+          }
+          const h3Error = createError({
             name: 'cwa-resource-error',
             statusCode: error.statusCode,
             statusMessage: error.statusMessage,
             message: error.statusMessage,
             cause: 'Resource store returned a bad status code on a primary fetch',
-            data: error,
+            data: apiUnreachable ? { apiUnreachable: true } : undefined,
           })
           consola.info(h3Error)
           // , message: error.message - when the error related to a primary fetch of a resource - it's a bit verbose for

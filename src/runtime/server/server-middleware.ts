@@ -9,7 +9,8 @@ const ADMIN_CHECK_TIMEOUT = 3000
 const OPERATIONAL_PATHS = ['/_cwa/healthcheck', '/_cwa/readiness']
 
 export default defineEventHandler(async (e) => {
-  if (OPERATIONAL_PATHS.includes(e.path.split('?')[0])) return
+  const [requestPath] = e.path.split('?')
+  if (requestPath && OPERATIONAL_PATHS.includes(requestPath)) return
 
   const skipMaintenanceChecks = () => {
     if (e.context.skipMaintenanceChecks === true) return true

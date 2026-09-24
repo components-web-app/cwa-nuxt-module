@@ -47,6 +47,14 @@ describe('SiteConfig', () => {
       expect(mockPatch).toHaveBeenLastCalledWith(expect.objectContaining({ isLoading: false }))
     })
 
+    test('stops loading and rethrows when the API cannot be reached', async () => {
+      const { siteConfig, mockPatch, mockFetch } = buildSiteConfig()
+      mockFetch.mockRejectedValueOnce(new Error('fetch failed'))
+
+      await expect(siteConfig.loadConfig()).rejects.toThrow('fetch failed')
+      expect(mockPatch).toHaveBeenLastCalledWith({ isLoading: false })
+    })
+
     test('fetches from /_/site_config_parameters with credentials: omit', async () => {
       const { siteConfig, mockFetch } = buildSiteConfig()
       await siteConfig.loadConfig()

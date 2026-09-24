@@ -42,9 +42,18 @@ export default class SiteConfig {
     this.store.$patch({
       isLoading: true,
     })
-    const response = await this.cwaFetch.fetch('/_/site_config_parameters', {
-      credentials: 'omit',
-    })
+    let response: CwaResource
+    try {
+      response = await this.cwaFetch.fetch('/_/site_config_parameters', {
+        credentials: 'omit',
+      })
+    }
+    catch (error) {
+      this.store.$patch({
+        isLoading: false,
+      })
+      throw error
+    }
     const serverConfig = this.utils.responseToConfig(response, true)
     const resolvedConfig = this.utils.mergeConfig(this.userConfig, serverConfig)
     this.store.$patch({

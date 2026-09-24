@@ -6,6 +6,7 @@ import { computed } from 'vue'
 import * as processComposables from './composables/process'
 import routeMiddleware from './route-middleware'
 import * as nuxt from 'nuxt/app'
+import { consola } from 'consola'
 
 function createToRoute(cwa?: boolean | undefined): RouteLocationNormalizedLoaded {
   if (cwa === undefined) {
@@ -56,7 +57,7 @@ describe('Test route middleware', () => {
     vi.spyOn(nuxt, 'useNuxtApp').mockImplementation(() => {
       return {
         payload: {},
-        $cwa: { fetchRoute: fetchRouteFn, initClientSide, adminNavigationGuardFn, clearPrimaryFetch, resourcesManager: { confirmDiscardAddingResource }, auth: { isAdmin: computed(() => false) }, admin: { isEditing: false }, siteConfig: { loadConfig: vi.fn() } },
+        $cwa: { fetchRoute: fetchRouteFn, initClientSide, adminNavigationGuardFn, clearPrimaryFetch, resourcesManager: { confirmDiscardAddingResource }, auth: { isAdmin: computed(() => false) }, admin: { isEditing: false }, siteConfig: { loadConfig: vi.fn(async () => {}) } },
       }
     })
     vi.spyOn(nuxt, 'callWithNuxt').mockImplementation(() => 'callWithNuxtResponse')
@@ -122,7 +123,7 @@ describe('Test route middleware', () => {
   })
 
   test('Server-side passes event context to loadConfig so preloaded config skips API call', async () => {
-    const loadConfigFn = vi.fn()
+    const loadConfigFn = vi.fn(async () => {})
     vi.spyOn(nuxt, 'useNuxtApp').mockImplementationOnce(() => {
       return {
         payload: {},
@@ -139,8 +140,31 @@ describe('Test route middleware', () => {
     expect(loadConfigFn).toHaveBeenCalledWith(eventContext)
   })
 
+  test('a site config that cannot be loaded is reported, not left as an unhandled rejection', async () => {
+    const loadConfigFn = vi.fn(async () => {
+      throw new Error('fetch failed')
+    })
+    vi.spyOn(nuxt, 'useNuxtApp').mockImplementationOnce(() => {
+      return {
+        payload: {},
+        $cwa: { fetchRoute: fetchRouteFn, initClientSide, adminNavigationGuardFn, clearPrimaryFetch, resourcesManager: { confirmDiscardAddingResource }, auth: { isAdmin: computed(() => false) }, siteConfig: { loadConfig: loadConfigFn } },
+      }
+    })
+    vi.spyOn(nuxt, 'useRequestEvent').mockReturnValueOnce(undefined as any)
+    vi.spyOn(processComposables, 'useProcess').mockImplementationOnce(() => ({
+      isClient: false,
+      isServer: true,
+    }))
+    const logged = vi.spyOn(consola, 'error').mockImplementationOnce(() => {})
+
+    await expect(routeMiddleware(createToRoute())).resolves.not.toThrow()
+    await flushPromises()
+
+    expect(logged).toHaveBeenCalled()
+  })
+
   test('Server-side passes undefined context to loadConfig when no request event', async () => {
-    const loadConfigFn = vi.fn()
+    const loadConfigFn = vi.fn(async () => {})
     vi.spyOn(nuxt, 'useNuxtApp').mockImplementationOnce(() => {
       return {
         payload: {},
@@ -190,7 +214,7 @@ describe('Test route middleware', () => {
     vi.spyOn(nuxt, 'useNuxtApp').mockImplementationOnce(() => {
       return {
         payload: {},
-        $cwa: { fetchRoute: fetchRouteRedirectFn, initClientSide, adminNavigationGuardFn, resourcesManager: { confirmDiscardAddingResource }, auth: { isAdmin: computed(() => false) }, siteConfig: { loadConfig: vi.fn() } },
+        $cwa: { fetchRoute: fetchRouteRedirectFn, initClientSide, adminNavigationGuardFn, resourcesManager: { confirmDiscardAddingResource }, auth: { isAdmin: computed(() => false) }, siteConfig: { loadConfig: vi.fn(async () => {}) } },
       }
     })
     vi.spyOn(processComposables, 'useProcess').mockImplementation(() => {
@@ -233,7 +257,7 @@ describe('Test route middleware', () => {
           resourcesManager: { confirmDiscardAddingResource },
           auth: { isAdmin: computed(() => false) },
           admin: { isEditing: true },
-          siteConfig: { loadConfig: vi.fn() },
+          siteConfig: { loadConfig: vi.fn(async () => {}) },
         },
       }))
       vi.spyOn(processComposables, 'useProcess').mockImplementationOnce(() => ({ isClient: false, isServer: true }))

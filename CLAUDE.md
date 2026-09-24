@@ -431,6 +431,13 @@ This exists because a resource can shape every page without the front end ever h
 
 The key is only emitted on a page the module actually caches; a declined or unstorable render carries no key at all. Purging it drops every cached page at once and the traffic lands on SSR together, which is why the bundle's class list that triggers it should stay short, and why this is driven by a write on an already-secured resource rather than by a purge endpoint anyone could call.
 
+### The Route collection tag a route write purges — a cross-repo contract (api-components-bundle#313, for #344)
+
+Every Route write (create, update, delete) purges the Route **collection** IRI, so a response tagged with it is dropped by any route write. In the CWA template that tag is exactly **`/_api/_/routes`**; each route's own tag is **`/_api/_/routes/<path>`**, e.g. `/_api/_/routes//my-route` (the double slash is the leading `/` of the path). Pinned by `features/main/route_purge_tags.feature` in the bundle, with the harness serving the API under `/_api`.
+
+- **The `/_api` comes from the route import prefix** (`prefix: /_api` in the template's `config/routes/*.yaml`), not from Caddy (which uses `handle`, not `handle_path`, so the path reaches php unchanged) and not from a request base path. So the purged tag is the same whether the write came from HTTP, a console command, fixtures or a messenger worker. It is the same string as the `@id` the API returns, so emit the tag as the API spells it; do not rebuild it from `apiUrl`.
+- **A route going live on its `liveAt` date purges nothing.** It is not a write. A cached sitemap tagged with this key still needs its own TTL to pick up a clock-based go-live.
+
 ### Warming the page cache ([#315](https://github.com/components-web-app/cwa-nuxt-module/issues/315))
 
 Site settings has a **Warm page cache** button beside purge, calling `POST /_cwa/page-cache/warm` (`server/cwa-page-cache-warm.post.ts`, registered only when `pageCache.enabled`).
@@ -609,6 +616,101 @@ When a session ends, the module deletes the app's API data caches so data cached
 - **`wasSignedIn` is read before the cookie is cleared**, and notification happens **before** `clearSession()`'s early return while middleware is processing — otherwise it is skipped exactly when an expiry is detected in middleware.
 
 **Limit:** a browser closed after a session, whose login has lapsed by the next visit, looks anonymous and triggers nothing. The cache's own `maxAgeSeconds` remains the only bound there.
+
+---
+
+## The error page says when the site is empty, and when the API is not answering ([#346](https://github.com/components-web-app/cwa-nuxt-module/issues/346))
+
+Two first-hour failures looked the same as any other error. A new site with no
+routes gave a 404 at `/` with **Go back home** hidden (we are already home) and
+the sign-in CTA gated on 401/403 — so the only person who could act had nothing
+prominent to act on. And an unreachable API produced a generic 500, or Souin's
+*Gateway Timeout* after 10s on a cold start, pointing at nothing.
+
+**The issue overstates the first one slightly, and the correction matters for the
+tests.** A `<ClientOnly>` footer already renders **Go to admin** or **Sign in →**
+on every error page. So it is not "nothing to click", it is "nothing that reads
+as a way in" — and `wrapper.html().includes('/login')` therefore **passes today
+for the wrong reason**. Every CTA assertion is scoped to a
+`data-testid="error-actions"` block, and one test asserts the footer link is
+still the only `/login` on a non-root 404, so the file cannot go vacuous.
+
+### Status code alone cannot tell the cases apart
+
+ofetch's `statusCode` getter is `response && response.status`, so a connection
+failure carries **no status**, and `createError` defaults it to 500 — identical
+to an API 500. The invalid-resource error (`Not Saved. The response was not a
+valid CWA Resource`) is a plain `Error` with no status either. So the flag is
+set at the fetch site, where the difference is still visible:
+
+```ts
+if (error.statusCode === undefined) return !!error.request
+return [502, 503, 504].includes(error.statusCode)
+```
+
+`!!error.request` is what separates a request that went out and got nothing from
+one that was never made. **An API 500 is deliberately not unreachable** — the API
+answered.
+
+**`data` is the only transport, and it was free.** `H3Error.toJSON()` emits only
+`message`, `statusCode`, `statusMessage` and `data`, and nitro ships that object
+to `/__nuxt_error` as a **query string**. Every field on `CwaResourceError` is a
+non-enumerable `defineProperty`, so the old `data: error` serialised to literally
+`{"name":"CwaResourceError"}` — nothing read it, and its one virtue was
+accidental: it did not leak `request`. It is now `{ apiUnreachable: true }` or
+nothing. `experimental.parseErrorData` defaults to true, but an app can turn it
+off, so the page reads `data` through a string-tolerant parse.
+
+**`error.request` is the absolute internal API URL** and must never reach the
+browser. It is logged server-side only. It is already in the Pinia payload via
+`error.asObject`, which is #345's problem and deliberately untouched here — a
+spec asserts the API origin never appears in anything passed to `showError`,
+mutation-tested by putting `asObject` back.
+
+### Maintenance and a starting API cannot be confused
+
+The maintenance 503 is thrown in `server-middleware.ts` and never reaches
+`setResourceFetchError`, so it carries no flag — and it cannot even occur when
+the API is down, because `resolveConfigEventHandler` returns `undefined` first
+and the maintenance branch is gated on `if (resolvedConfig)`. Keying on the flag
+rather than the status is what keeps them apart, and the test that earns its
+place is the one that fails when the rule is rewritten as `[500,502,503,504].includes(statusCode)`.
+
+**A 503 from a container coming live is the case this copy is for**, not a
+counter-example: "isn't responding **yet**" is literally true of it. The proper
+fix for that window is the readiness route above — gate the traffic, and a
+visitor never reaches this page during startup. The page is what is left for
+deployments with no readiness gating.
+
+### Copy
+
+- **A 404 at `/`** — *No page here yet* / *Sign in to create one.* with a sign-in
+  CTA. **`/` is a heuristic and is not disguised as anything else**: the copy is
+  true of any 404 at the root regardless of whether the site is empty, and it
+  claims nothing about the rest of the site. Proving "no routes at all" would cost
+  `GET /_/routes?perPage=1` on a path that is already failing, which also fails
+  when the API is down, and would change nothing we say.
+- **Not on any other 404.** A mistyped URL on a public site is an ordinary miss;
+  a login CTA there advertises an admin surface to everyone who fat-fingers a
+  link. The footer link is the right weight for that case.
+- **API unreachable** — *The site's API isn't responding yet* / *Please try
+  again in a moment.*, with **no** sign-in link, because signing in needs the
+  same API. It takes precedence over the empty-site case, which cannot co-occur
+  anyway.
+
+### The unhandled rejection in the same failure
+
+`route-middleware.ts` calls `siteConfig.loadConfig(...)` **unawaited**, and
+`loadConfig` had no error handling — so every SSR request with the API down threw
+an unhandled rejection, and left `isLoading` stuck true. `loadConfig` now resets
+`isLoading` and **rethrows** (an awaited caller, `settings.vue`, must still see
+the failure rather than silently render defaults and save them back), and the
+middleware — the caller that discards the promise — catches and logs.
+
+**Deliberately not built:** reading `Retry-After` (usually absent, a new field to
+thread through for nothing), and auto-retry on the error page (it turns a real
+outage into a silently looping page, and it is a behaviour change rather than a
+copy change).
 
 ---
 

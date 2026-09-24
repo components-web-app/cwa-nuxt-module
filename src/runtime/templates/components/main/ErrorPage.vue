@@ -54,7 +54,29 @@ const statusMessages: Record<number, string> = {
 
 const is404 = statusCode === 404
 const isAuthError = [401, 403].includes(statusCode)
+
+function readErrorData(data: unknown) {
+  if (typeof data !== 'string') {
+    return data as { apiUnreachable?: boolean } | undefined
+  }
+  try {
+    return JSON.parse(data) as { apiUnreachable?: boolean }
+  }
+  catch {
+    return undefined
+  }
+}
+const apiUnreachable = readErrorData(_error.data)?.apiUnreachable === true
+const isEmptySite = is404 && $route.path === '/'
+const showSignIn = !apiUnreachable && (isAuthError || isEmptySite)
+
 const statusMessage = computed(() => {
+  if (apiUnreachable) {
+    return 'The site’s API isn’t responding yet'
+  }
+  if (isEmptySite) {
+    return 'No page here yet'
+  }
   if (statusMessages[statusCode]) {
     return statusMessages[statusCode]
   }
@@ -64,8 +86,16 @@ const statusMessage = computed(() => {
   return 'Internal Server Error'
 })
 
-const description = _error.message || _error.toString()
-const stack = import.meta.dev && !is404 ? description || `${stacktrace}` : undefined
+const description = computed(() => {
+  if (apiUnreachable) {
+    return 'Please try again in a moment.'
+  }
+  if (isEmptySite) {
+    return 'Sign in to create one.'
+  }
+  return _error.message || _error.toString()
+})
+const stack = import.meta.dev && !is404 ? _error.message || `${stacktrace}` : undefined
 
 useHead({
   bodyAttrs: {
@@ -115,7 +145,10 @@ onMounted(() => {
               v-html="stack"
             />
           </div>
-          <div class="cwa:mt-10 cwa:flex cwa:flex-col cwa:items-center cwa:justify-center cwa:gap-y-6">
+          <div
+            data-testid="error-actions"
+            class="cwa:mt-10 cwa:flex cwa:flex-col cwa:items-center cwa:justify-center cwa:gap-y-6"
+          >
             <button
               v-if="$route.path !== '/'"
               class="cwa:cursor-pointer cwa:rounded-md cwa:bg-blue-600 cwa:px-3.5 cwa:py-2.5 cwa:text-sm cwa:font-semibold cwa:text-white cwa:shadow-sm cwa:hover:bg-indigo-500 cwa:focus-visible:outline cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-indigo-600"
@@ -124,7 +157,7 @@ onMounted(() => {
               Go back home
             </button>
             <CwaLink
-              v-if="isAuthError"
+              v-if="showSignIn"
               to="/login"
               class="cwa:cursor-pointer cwa:rounded-md cwa:bg-white/20 cwa:px-3.5 cwa:py-1.5 cwa:text-xs cwa:font-semibold cwa:text-white cwa:shadow-sm cwa:hover:bg-indigo-500 cwa:focus-visible:outline cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-indigo-600"
             >
