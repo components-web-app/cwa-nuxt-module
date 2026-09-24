@@ -100,11 +100,16 @@ const liveAtTimezone = routeLiveAtTimezoneLabel()
 const editedPublication = computed<CwaRouteLiveAt>(() => ({ ...routePublication, liveAt: liveAtModel.value }))
 const gatedByAncestor = computed(() => isRouteGatedByAncestor(editedPublication.value))
 const reachableAt = computed(() => formatRouteLiveAt(routeReachableAt(editedPublication.value)))
+const liveSince = computed(() => localPublicationState.value === 'live' ? formatRouteLiveAt(liveAtModel.value) : '')
 
 function handlePublicationStateChange(state: RouteLiveState) {
   localPublicationState.value = state
   if (state === 'live') {
-    liveAtModel.value = (new Date()).toISOString()
+    const storedLiveAt = routePublication?.liveAt
+    const nextLiveAt = getRouteOwnLiveState({ liveAt: storedLiveAt }) === 'live' ? storedLiveAt : (new Date()).toISOString()
+    if (nextLiveAt !== liveAtModel.value) {
+      liveAtModel.value = nextLiveAt
+    }
     return
   }
   if (state === 'draft') {
@@ -200,6 +205,13 @@ function handleLiveAtChange(value: string | number | null | undefined) {
           Times are in {{ liveAtTimezone }}.
         </p>
       </div>
+      <p
+        v-if="liveSince"
+        data-live-since
+        class="cwa:text-xs cwa:text-stone-300"
+      >
+        Live since {{ liveSince }}.
+      </p>
       <p
         v-if="gatedByAncestor"
         data-effective-live-at

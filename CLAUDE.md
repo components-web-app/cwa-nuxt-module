@@ -352,6 +352,18 @@ So the gate is entirely server-side, and for non-admins `RouteExtension::applyTo
 
 Between #233 and #234 only the own-date half existed, and a child under a scheduled parent was published to search engines as a soft-404. **That is the failure mode to remember: `GET /_/routes` does not fetch what it lists, it publishes it**, so a listing inconsistency there is not cosmetic. **If that fetch is ever made authenticated — an admin preview sitemap, say — every gate above disappears at once and a module-side filter becomes necessary.**
 
+### Choosing "Live" on a route that is already live ([#341](https://github.com/components-web-app/cwa-nuxt-module/issues/341))
+
+**The issue's premise was wrong, and the real defect was its opposite.** It reported that re-choosing **Live** on a route whose scheduled `liveAt` has passed emits nothing, so no PATCH is sent and nothing is purged. The select does emit: `useCwaSelectInput`'s computed setter emits unconditionally, and Headless UI has **no equality guard** — `useControllable`'s setter calls `onChange` on every `Listbox.select()`, which `ListboxOption`'s click handler fires for the already-selected option too. A full mount confirms it: clicking **Live** on a route live since 2020 emitted `update:liveAt` with `now`.
+
+So the defect was a **silent destructive rewrite**: `handlePublicationStateChange('live')` wrote `new Date()` with no check that the route was already live, replacing the date it actually went live — and, per the inheritance rule above, a parent's date feeds every descendant's `effectiveLiveAt`, so the reset propagated. Nothing in the UI changed either way, because the select already read "Live" and the `datetime-local` input is gated behind the `scheduled` state, so **a live route's own date was not visible anywhere**.
+
+Fixed by making the control idempotent and the data visible: choosing Live keeps the **stored** `liveAt` (`routePublication`, i.e. the store resource, not `localResourceData`) when the route's own stored state is already live, and only stamps `now` when coming from scheduled or draft; returning to Live after an unsaved edit restores the stored date. `RoutesTabManage` now shows **"Live since &lt;date&gt;"** for a live route — the route's **own** date, since that is what this control edits, while the badges keep reporting the effective date. Badges were deliberately left alone.
+
+**Deliberately not built: a "Publish now" action, or a per-route cache purge.** Their only real purpose was forcing a PATCH so the page is purged, and that was [#340](https://github.com/components-web-app/cwa-nuxt-module/issues/340)'s cached-404 bug, fixed properly at the cache layer — we do not add failsafes for bad caching at every level. A global purge already exists in site settings.
+
+**Why it was missed, and the lesson:** every `RoutesTabManage` spec is `shallow: true` and emits straight from the select stub, so the real select's behaviour was never covered — which is exactly how an issue came to assert the opposite of what the code does. `ModalSelect.spec.ts` now pins it with a real Headless UI mount and a real DOM click on the already-selected option.
+
 ---
 
 ## Page HTML caching ([#289](https://github.com/components-web-app/cwa-nuxt-module/issues/289))
