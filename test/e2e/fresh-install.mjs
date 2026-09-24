@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process'
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync, readdirSync } from 'node:fs'
+import { existsSync, mkdtempSync, mkdirSync, rmSync, writeFileSync, readdirSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -42,6 +42,9 @@ function run(command, args, options = {}) {
 }
 
 function pack(destination) {
+  if (!existsSync(join(repoRoot, '.nuxt/tsconfig.json'))) {
+    run('pnpm', ['run', 'dev:prepare'], { cwd: repoRoot, stdio: 'inherit' })
+  }
   run('pnpm', ['pack', '--pack-destination', destination], { cwd: repoRoot })
   const tarball = readdirSync(destination).find(file => file.endsWith('.tgz'))
   if (!tarball) {
