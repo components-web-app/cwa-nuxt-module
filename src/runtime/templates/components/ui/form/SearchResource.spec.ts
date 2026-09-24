@@ -2,8 +2,11 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { ref } from 'vue'
+import { consola } from 'consola'
 import SearchResource from './SearchResource.vue'
 import * as cwaComposable from '#cwa/composables/cwa'
+
+vi.mock('consola')
 
 vi.mock('@headlessui/vue', () => ({
   Popover: { name: 'Popover', template: '<div><slot /></div>' },
@@ -36,6 +39,34 @@ function mockCwaImpl(opts: { results?: any[], currentResource?: any } = {}) {
     fetchResource: vi.fn().mockResolvedValue(opts.currentResource ?? null),
     fetch: fetchMock,
   } as any)
+}
+
+function mockCwaWithResponses(responses: { response: Promise<any> }[]) {
+  let call = 0
+  fetchMock = vi.fn(() => responses[call++])
+  vi.spyOn(cwaComposable, 'useCwa').mockReturnValue({
+    fetchResource: vi.fn().mockResolvedValue(null),
+    fetch: fetchMock,
+  } as any)
+}
+
+function deferredFetchResponse() {
+  let resolveResponse: (value: any) => void
+  let rejectResponse: (error: any) => void
+  const response = new Promise((resolve, reject) => {
+    resolveResponse = resolve
+    rejectResponse = reject
+  })
+  response.catch(() => undefined)
+  return {
+    fetchReturn: { response },
+    resolveWith(member: any[]) {
+      resolveResponse({ _data: { member } })
+    },
+    rejectWith(error: any) {
+      rejectResponse(error)
+    },
+  }
 }
 
 function fetchedParams() {
@@ -189,6 +220,94 @@ describe('SearchResource', () => {
       await wrapper.vm.$nextTick()
 
       expect(wrapper.find('[data-testid="results-panel"]').exists()).toBe(false)
+    })
+  })
+
+  describe('failed search', () => {
+    async function typeInto(wrapper: ReturnType<typeof mountComp>, value: string) {
+      const input = wrapper.find('input')
+      await input.trigger('focus')
+      await input.setValue(value)
+      vi.advanceTimersByTime(250)
+      await flushPromises()
+    }
+
+    test('the loading indicator stops when a search fails', async () => {
+      mockCwaWithResponses([{ response: Promise.reject({ statusCode: 500 }) }])
+      const wrapper = mountComp()
+      await typeInto(wrapper, '/home')
+      expect(wrapper.text()).not.toContain('Loading...')
+    })
+
+    test('a failed search is reported in the panel with the status code', async () => {
+      mockCwaWithResponses([{ response: Promise.reject({ statusCode: 500 }) }])
+      const wrapper = mountComp()
+      await typeInto(wrapper, '/home')
+      expect(wrapper.find('[data-testid="results-panel"]').exists()).toBe(true)
+      expect(wrapper.text()).toContain('Search failed (500)')
+    })
+
+    test('a failed search with no status code is reported as a network error', async () => {
+      mockCwaWithResponses([{ response: Promise.reject(new Error('fetch failed')) }])
+      const wrapper = mountComp()
+      await typeInto(wrapper, '/home')
+      expect(wrapper.text()).toContain('Search failed (network error)')
+    })
+
+    test('the cause of a failed search is logged', async () => {
+      const error = { statusCode: 500 }
+      mockCwaWithResponses([{ response: Promise.reject(error) }])
+      const wrapper = mountComp()
+      await typeInto(wrapper, '/home')
+      expect(consola.error).toHaveBeenCalledWith('[CWA] Could not search for resources', error)
+    })
+
+    test('the failure is cleared when a later search succeeds', async () => {
+      mockCwaWithResponses([
+        { response: Promise.reject({ statusCode: 500 }) },
+        { response: Promise.resolve({ _data: { member: mockResults } }) },
+      ])
+      const wrapper = mountComp()
+      await typeInto(wrapper, '/ho')
+      expect(wrapper.text()).toContain('Search failed')
+
+      await typeInto(wrapper, '/home')
+      expect(wrapper.text()).not.toContain('Search failed')
+      expect(wrapper.findAll('button').length).toBeGreaterThan(0)
+    })
+
+    test('an older failure does not replace newer results', async () => {
+      const older = deferredFetchResponse()
+      const newer = deferredFetchResponse()
+      mockCwaWithResponses([older.fetchReturn, newer.fetchReturn])
+      const wrapper = mountComp()
+      await typeInto(wrapper, '/ho')
+      await typeInto(wrapper, '/home')
+
+      newer.resolveWith(mockResults)
+      await flushPromises()
+      older.rejectWith({ statusCode: 500 })
+      await flushPromises()
+
+      expect(wrapper.text()).not.toContain('Search failed')
+      expect(wrapper.findAll('button').length).toBeGreaterThan(0)
+    })
+
+    test('an older response does not replace newer results', async () => {
+      const older = deferredFetchResponse()
+      const newer = deferredFetchResponse()
+      mockCwaWithResponses([older.fetchReturn, newer.fetchReturn])
+      const wrapper = mountComp()
+      await typeInto(wrapper, '/ho')
+      await typeInto(wrapper, '/home')
+
+      newer.resolveWith([{ '@id': '/_/routes//home', 'path': '/home' }])
+      await flushPromises()
+      older.resolveWith([{ '@id': '/_/routes//stale', 'path': '/stale' }])
+      await flushPromises()
+
+      expect(wrapper.text()).toContain('/home')
+      expect(wrapper.text()).not.toContain('/stale')
     })
   })
 

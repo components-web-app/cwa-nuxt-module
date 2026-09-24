@@ -2,8 +2,11 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { ref, nextTick } from 'vue'
 import { mount, flushPromises } from '@vue/test-utils'
+import { consola } from 'consola'
 import ListContent from './ListContent.vue'
 import * as cwaComposable from '#cwa/composables/cwa'
+
+vi.mock('consola')
 
 // eslint-disable-next-line no-var
 var mockRoute: { query: Record<string, any> }
@@ -35,12 +38,36 @@ const ListPaginationStub = {
 }
 const SpinnerStub = { name: 'Spinner', props: ['show'], template: '<div class="spinner-stub" />' }
 const CwaUiIconWarningIconStub = { name: 'CwaUiIconWarningIcon', template: '<svg class="warning-icon-stub" />' }
+const CwaUiAlertWarningStub = { name: 'CwaUiAlertWarning', template: '<div class="alert-stub"><slot /></div>' }
 
 function makeFetchResponse(member: any[] | undefined, extra: Record<string, any> = {}) {
   return {
     response: Promise.resolve({
       _data: member === undefined ? undefined : { member, ...extra },
     }),
+  }
+}
+
+function makeFetchRejection(error: any) {
+  return { response: Promise.reject(error) }
+}
+
+function deferredFetchResponse() {
+  let resolveResponse: (value: any) => void
+  let rejectResponse: (error: any) => void
+  const response = new Promise((resolve, reject) => {
+    resolveResponse = resolve
+    rejectResponse = reject
+  })
+  response.catch(() => undefined)
+  return {
+    fetchReturn: { response },
+    resolveWith(member: any[], extra: Record<string, any> = {}) {
+      resolveResponse({ _data: { member, ...extra } })
+    },
+    rejectWith(error: any) {
+      rejectResponse(error)
+    },
   }
 }
 
@@ -72,6 +99,7 @@ function mountComponent(slots: Record<string, any> = {}, fetchUrl = '/_/routes',
         ListPagination: ListPaginationStub,
         Spinner: SpinnerStub,
         CwaUiIconWarningIcon: CwaUiIconWarningIconStub,
+        CwaUiAlertWarning: CwaUiAlertWarningStub,
       },
     },
     slots,
@@ -289,6 +317,180 @@ describe('ListContent', () => {
     await nextTick()
     expect(wrapper.findComponent(SpinnerStub).exists()).toBe(false)
     expect(wrapper.text()).toContain('Sorry, no items found')
+  })
+
+  describe('failed load', () => {
+    test('the spinner stops when the list fails to load', async () => {
+      mockCwa({ fetchImpl: vi.fn(() => makeFetchRejection({ statusCode: 422 })) })
+      const wrapper = mountComponent()
+      await flushPromises()
+      await nextTick()
+      expect(wrapper.findComponent(SpinnerStub).exists()).toBe(false)
+    })
+
+    test('a failure is reported in an alert with the status code', async () => {
+      mockCwa({ fetchImpl: vi.fn(() => makeFetchRejection({ statusCode: 422 })) })
+      const wrapper = mountComponent()
+      await flushPromises()
+      await nextTick()
+      const alert = wrapper.findComponent(CwaUiAlertWarningStub)
+      expect(alert.exists()).toBe(true)
+      expect(alert.text()).toBe('The list could not be loaded (422). Please try again.')
+    })
+
+    test('a failure with no status code is reported as a network error', async () => {
+      mockCwa({ fetchImpl: vi.fn(() => makeFetchRejection(new Error('fetch failed'))) })
+      const wrapper = mountComponent()
+      await flushPromises()
+      await nextTick()
+      expect(wrapper.findComponent(CwaUiAlertWarningStub).text()).toBe('The list could not be loaded (network error). Please try again.')
+    })
+
+    test('the cause of a failure is logged', async () => {
+      const error = { statusCode: 500 }
+      mockCwa({ fetchImpl: vi.fn(() => makeFetchRejection(error)) })
+      mountComponent()
+      await flushPromises()
+      expect(consola.error).toHaveBeenCalledWith('[CWA] Could not load the list', error)
+    })
+
+    test('the empty state is not shown alongside the failure', async () => {
+      mockCwa({ fetchImpl: vi.fn(() => makeFetchRejection({ statusCode: 500 })) })
+      const wrapper = mountComponent()
+      await flushPromises()
+      await nextTick()
+      expect(wrapper.text()).not.toContain('Sorry, no items found')
+    })
+
+    test('the previous items are still shown after a failed reload', async () => {
+      let shouldFail = false
+      mockCwa({
+        fetchImpl: vi.fn(() => shouldFail
+          ? makeFetchRejection({ statusCode: 422 })
+          : makeFetchResponse([{ '@id': '/a' }, { '@id': '/b' }], { totalItems: 2 })),
+      })
+      const wrapper = mountComponent()
+      await flushPromises()
+      await nextTick()
+      expect(wrapper.findAll('li')).toHaveLength(2)
+
+      shouldFail = true
+      // @ts-expect-error exposed method
+      await wrapper.vm.reloadItems()
+      await flushPromises()
+      await nextTick()
+      expect(wrapper.findComponent(CwaUiAlertWarningStub).exists()).toBe(true)
+      expect(wrapper.findAll('li')).toHaveLength(2)
+    })
+
+    test('the failure is cleared when a retry succeeds', async () => {
+      let shouldFail = true
+      mockCwa({
+        fetchImpl: vi.fn(() => shouldFail
+          ? makeFetchRejection({ statusCode: 500 })
+          : makeFetchResponse([{ '@id': '/a' }], { totalItems: 1 })),
+      })
+      const wrapper = mountComponent()
+      await flushPromises()
+      await nextTick()
+      expect(wrapper.findComponent(CwaUiAlertWarningStub).exists()).toBe(true)
+
+      shouldFail = false
+      // @ts-expect-error exposed method
+      await wrapper.vm.reloadItems()
+      await flushPromises()
+      await nextTick()
+      expect(wrapper.findComponent(CwaUiAlertWarningStub).exists()).toBe(false)
+      expect(wrapper.findAll('li')).toHaveLength(1)
+    })
+
+    test('a superseded response does not change the totals', async () => {
+      const older = deferredFetchResponse()
+      const newer = deferredFetchResponse()
+      const returns = [older.fetchReturn, newer.fetchReturn]
+      let call = 0
+      mockCwa({ fetchImpl: vi.fn(() => returns[call++]) })
+      const wrapper = mountComponent()
+      await nextTick()
+      // @ts-expect-error exposed method
+      wrapper.vm.reloadItems()
+      await nextTick()
+
+      newer.resolveWith([{ '@id': '/new' }], { totalItems: 999 })
+      await flushPromises()
+      await nextTick()
+      older.resolveWith([{ '@id': '/old' }], { totalItems: 1 })
+      await flushPromises()
+      await nextTick()
+
+      expect(wrapper.findAllComponents(ListPaginationStub)[0].props('totalItems')).toBe(999)
+    })
+
+    test('an older failure does not interrupt a newer request still loading', async () => {
+      const older = deferredFetchResponse()
+      const newer = deferredFetchResponse()
+      const returns = [older.fetchReturn, newer.fetchReturn]
+      let call = 0
+      mockCwa({ fetchImpl: vi.fn(() => returns[call++]) })
+      const wrapper = mountComponent()
+      await nextTick()
+      // @ts-expect-error exposed method
+      wrapper.vm.reloadItems()
+      await nextTick()
+
+      older.rejectWith({ statusCode: 500 })
+      await flushPromises()
+      await nextTick()
+
+      expect(wrapper.findComponent(SpinnerStub).exists()).toBe(true)
+      expect(wrapper.findComponent(CwaUiAlertWarningStub).exists()).toBe(false)
+    })
+
+    test('an older failure does not replace a newer success', async () => {
+      const older = deferredFetchResponse()
+      const newer = deferredFetchResponse()
+      const returns = [older.fetchReturn, newer.fetchReturn]
+      let call = 0
+      mockCwa({ fetchImpl: vi.fn(() => returns[call++]) })
+      const wrapper = mountComponent()
+      await nextTick()
+      // @ts-expect-error exposed method
+      wrapper.vm.reloadItems()
+      await nextTick()
+
+      newer.resolveWith([{ '@id': '/new' }], { totalItems: 1 })
+      await flushPromises()
+      await nextTick()
+      older.rejectWith({ statusCode: 500 })
+      await flushPromises()
+      await nextTick()
+
+      expect(wrapper.findComponent(CwaUiAlertWarningStub).exists()).toBe(false)
+      expect(wrapper.findAll('li')).toHaveLength(1)
+    })
+
+    test('a newer failure is not overridden by an older success', async () => {
+      const older = deferredFetchResponse()
+      const newer = deferredFetchResponse()
+      const returns = [older.fetchReturn, newer.fetchReturn]
+      let call = 0
+      mockCwa({ fetchImpl: vi.fn(() => returns[call++]) })
+      const wrapper = mountComponent()
+      await nextTick()
+      // @ts-expect-error exposed method
+      wrapper.vm.reloadItems()
+      await nextTick()
+
+      newer.rejectWith({ statusCode: 500 })
+      await flushPromises()
+      await nextTick()
+      older.resolveWith([{ '@id': '/old' }], { totalItems: 1 })
+      await flushPromises()
+      await nextTick()
+
+      expect(wrapper.findComponent(CwaUiAlertWarningStub).exists()).toBe(true)
+      expect(wrapper.findAll('li')).toHaveLength(0)
+    })
   })
 
   describe('route query watchers', () => {
