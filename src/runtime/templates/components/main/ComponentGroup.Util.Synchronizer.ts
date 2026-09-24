@@ -74,12 +74,17 @@ export class ComponentGroupUtilSynchronizer {
       // simpler to update the location resource, except for when there are multiple simultaneous requests which can happen.
       // then we could lose data of a component group being added. Safer to update the component group as it's less
       // common for there to be another simultaneous update call
-      const locationResourceType = getResourceTypeFromIri(locationResource.value.data['@id']) as keyof typeof resourceTypeProperty
+      const locationIri = locationResource.value.data['@id']
+      const locationResourceType = getResourceTypeFromIri(locationIri) as keyof typeof resourceTypeProperty
       const locationProperty = resourceTypeProperty[locationResourceType]
+      const existingLocations = this.toLocationIris(resourceByRef[locationProperty])
+      if (existingLocations.includes(locationIri)) {
+        return
+      }
       await this.resourcesManager.updateResource({
         endpoint: resourceByRef['@id'],
         data: {
-          [locationProperty]: [...(resourceByRef[locationProperty] || []), locationResource.value.data['@id']],
+          [locationProperty]: [...existingLocations, locationIri],
         },
       })
       return
@@ -137,6 +142,19 @@ export class ComponentGroupUtilSynchronizer {
       endpoint: '/_/component_groups',
       data: postData,
     })
+  }
+
+  private toLocationIris(locations: unknown): string[] {
+    if (!Array.isArray(locations)) {
+      return []
+    }
+    return locations.reduce<string[]>((iris, location) => {
+      const iri = typeof location === 'string' ? location : (location as { '@id'?: string })?.['@id']
+      if (iri) {
+        iris.push(iri)
+      }
+      return iris
+    }, [])
   }
 
   private normalizeAllowedComponents(allowedComponents: string[] | null | undefined): string[] | null | undefined {

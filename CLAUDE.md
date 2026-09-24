@@ -1397,6 +1397,24 @@ A nested group's `location` may be the component's draft `iri` or its `published
 
 ---
 
+## A group the synchroniser cannot find is PATCHed with its location twice ([#339](https://github.com/components-web-app/cwa-nuxt-module/issues/339))
+
+Loading a page as a signed-in admin sent `PATCH /_/component_groups/{id}` for groups that already belonged to the location, with the location IRI **duplicated** — `{"layouts": [X, X]}`, and `{"pages": [P, P]}` for a page's own group.
+
+`createComponentGroupWatchHandler` (`ComponentGroup.Util.Synchronizer.ts`) fetches the group by `fullReference` when it is not in the store, and appended the location unconditionally. It now normalises the stored list to IRIs — tolerating an embedded resource, as `fetchAssociatedResources` already does — and returns without PATCHing when the location is there. The normalised list is also what a genuine PATCH sends, so an embedded resource is never echoed back as an object.
+
+**A failed fetch is indistinguishable from "this group does not exist".** `getComponentGroupByReference` matches on `data.reference`, and a resource whose fetch errored sits in the store with `status: ERROR` and **no `data`** — so the lookup returns `undefined` either way, and the synchroniser's answer to `undefined` is fetch-by-reference-then-PATCH. That is why the fix is worth more than the redundant write it removes: **a misfire now costs a wasted GET instead of a bad write.**
+
+**Arrival timing is not the trigger, and this is not layout-specific.** The server render does not resolve until every component group response has landed (proved by withholding them in the `test/integration` harness and watching `fetchRoute` stay pending), and the Pinia payload round-trips faithfully, so a hydrated SSR load whose fetches all succeeded never reaches this path. Page groups are affected identically to layout groups, which is what ruled out the first hypothesis — that the layout's groups arrive a round trip late because `Layout::$componentGroups` lacks `Route:manifest:read` (api-components-bundle#306). That manifest gap is real and worth fixing for the extra round trip and the late render, but it does not cause this.
+
+**A successful PATCH would not stop it recurring.** The association it asks for already exists, so the API dedupes it, and the lookup is by `reference`, which the PATCH never touches. Every load starts from an empty store, so the cost is one spurious write per affected group **per page load, indefinitely** — not one bad write ever. Reproduced as three PATCHes on one signed-in hard reload, then one on a later reload of the same page, which is the intermittency of the underlying failure, not the write taking effect.
+
+**The upstream cause is still unknown**: why those server-side group fetches produce no saved data. The candidates are a failed request, a response rejected by `isCwaResource` (logged `[CWA FETCH ERROR: Not a valid CWA resource]` and not saved), or a save dropped by `finishFetchResource`'s `abort || !isCurrent` guard. Settle it on a reload that PATCHes by reading `$cwa.resources.getResource(groupIri).value` — `apiState.status` and whether `data` exists — alongside the SSR log for that render.
+
+**Coverage gap this sat in:** every existing spec mocked `fetchResource` as `vi.fn()` returning `undefined`, so the found-by-reference branch had **never been executed by any test**. Note also that `'should NOT create OR update resource IF loading is in progress'` passed only because `signedIn` was false — the class reads no loading state at all — and is renamed to say so.
+
+---
+
 ## Reordering positions in a group ([#316](https://github.com/components-web-app/cwa-nuxt-module/issues/316))
 
 Positions could land in the wrong order after reordering. From consistent data a single move was always correct; it went wrong when the local copy had drifted: duplicate `sortValue`s, a failed PATCH that was still mirrored locally, another editor's pending updates, and two moves inside one debounce window (only the last was sent).
