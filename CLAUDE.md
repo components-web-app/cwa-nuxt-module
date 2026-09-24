@@ -612,6 +612,46 @@ When a session ends, the module deletes the app's API data caches so data cached
 
 ---
 
+## Maintenance mode verified the admin's JWT with the API, not by decoding it
+
+Anyone could walk past the maintenance screen. `server-middleware.ts` gated the
+bypass on `jwtDecode(cookies.api_component)`, and `jwt-decode` **only
+base64-decodes — it performs no signature check at all**. Every value the gate
+read was therefore attacker-controlled: `roles`, `exp`, and the `cwa_auth=1`
+cookie tested alongside them. A hand-written `{"roles":["ROLE_ADMIN"],"exp":<future>}`
+with a junk signature and two cookies was enough, and no API request was involved
+in the decision.
+
+**Low severity, and worth being precise about why.** The pages a bypasser then
+sees are rendered from API responses made with their own invalid cookie, so the
+API serves them the anonymous public site. Nothing private leaks; what fails is
+that maintenance mode does not hide the site.
+
+**The fix was already in the repo, one directory over.** `cwa-page-cache-warm.post.ts`
+forwarded the incoming cookie to the API's `/me` and read `roles` off the
+**verified** response, added precisely because — as the #315 notes put it —
+`server-middleware.ts` "only decodes the JWT without verifying it, which is too
+weak". That function moved to `server/is-admin.ts` unchanged and both callers use it.
+
+- **The decode stays as a cheap pre-filter.** No cookies, a wrong `cwa_auth`, no
+  admin role, a missing or past `exp`, or a decode that throws all refuse without
+  touching the network — so maintenance mode does not turn every anonymous hit
+  into an API round trip. Only a request already presenting a live-looking admin
+  token costs a `/me`.
+- **`/me` is what grants the bypass**, with a 3s timeout, and **it fails closed**:
+  a timeout, a non-2xx or any throw shows the maintenance page. An admin shown
+  maintenance because the API is sick is the right outcome.
+- **The timeout is a constant, not an option.** `runtimeConfig.cwa.pageCacheWarm`
+  is registered only when page caching is enabled, and nothing has asked for this
+  to be tunable.
+
+`server-middleware.spec.ts` pins it: the API refusing a well-formed admin claim
+still 503s, and each pre-filter refusal asserts `/me` was **not** called. The
+existing bypass test now asserts it **was** — a mock never asserted on is not
+proven live. Mutation-tested by restoring the unverified bypass, which fails two.
+
+---
+
 ## Deprecations and temporary code
 
 Code kept only to support an older API, or to work around someone else's bug, is logged in **`DEPRECATIONS.md`** with the condition that has to be true before it can be deleted. Add an entry whenever you leave something in place for one of those reasons — an entry with no precondition is a todo, not a deprecation.
