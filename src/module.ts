@@ -37,6 +37,7 @@ declare module 'nuxt/schema' {
   }
   interface RuntimeConfig {
     cwa: {
+      apiUrl: string
       pageCacheWarm: {
         concurrency: number
         timeout: number
@@ -168,6 +169,11 @@ export default defineNuxtModule<CwaModuleOptions>({
     if (!await hasOgImageRenderer(nuxt)) {
       logger.warn(`${NAME}: open graph image generation is disabled. Install ${OG_IMAGE_RENDERER_PACKAGES.join(' and ')} to enable it.`)
     }
+
+    nuxt.options.runtimeConfig.public.cwa = defu(nuxt.options.runtimeConfig.public.cwa, {
+      apiUrl: '',
+      apiUrlBrowser: '',
+    })
 
     // common alias due to releasing different package names
     nuxt.options.alias['#cwa'] = resolve('./runtime')
@@ -395,6 +401,7 @@ declare module 'vue-router' {
       })
 
       nuxt.options.runtimeConfig.cwa = defu(nuxt.options.runtimeConfig.cwa, {
+        apiUrl: '',
         readiness: { ...READINESS_DEFAULTS },
       })
 

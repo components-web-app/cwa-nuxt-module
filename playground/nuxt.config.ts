@@ -35,9 +35,11 @@ export default defineNuxtConfig({
     },
   },
   runtimeConfig: {
+    cwa: {
+      apiUrl: 'https://localhost/_api',
+    },
     public: {
       cwa: {
-        apiUrl: 'https://localhost/_api',
         apiUrlBrowser: 'https://localhost/_api',
       },
     },

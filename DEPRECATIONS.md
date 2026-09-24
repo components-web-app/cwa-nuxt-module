@@ -46,6 +46,43 @@ application has to migrate by then at the latest.
 
 ---
 
+## Remove when no application sets the public API URL
+
+### `runtimeConfig.public.cwa.apiUrl` as the server's API URL
+
+The URL the server renders from is `runtimeConfig.cwa.apiUrl`
+(`NUXT_CWA_API_URL`), which is private and never reaches the browser. It used to
+be `runtimeConfig.public.cwa.apiUrl` (`NUXT_PUBLIC_CWA_API_URL`), which put the
+internal API URL in the HTML of every page — `apiUrl:"https://php.local/_api"`
+on the template ([#345](https://github.com/components-web-app/cwa-nuxt-module/issues/345)).
+
+The public key is still read, after the private one and before
+`apiUrlBrowser`, so an application that has not moved its environment variable
+keeps working. `server-plugin.ts` warns once per server process when it is the
+key that supplied the server's URL.
+
+**Delete:**
+
+- the `publicApiUrl` branch of the server half of `resolveApiUrl`
+  (`src/runtime/api/api-url.ts`), leaving private then browser
+- the `'public'` member of `ApiUrlSource`, if nothing else reports it
+- the `source === 'public'` warning in `src/runtime/server/server-plugin.ts`,
+  and the `the deprecated public API URL` describe in `server-plugin.spec.ts`
+- the `falls back to the deprecated public URL` cases in
+  `src/runtime/api/api-url.spec.ts` and `src/runtime/cwa.spec.ts`
+
+**Precondition:** every supported application sets `NUXT_CWA_API_URL` rather
+than `NUXT_PUBLIC_CWA_API_URL`. The browser key `NUXT_PUBLIC_CWA_API_URL_BROWSER`
+is not deprecated and stays: the browser has to be told where the API is.
+
+Removing it early does not break a deployment loudly. An application that still
+sets only the public key would fall back to `apiUrlBrowser`, which is usually the
+public URL of the same API — so the server would start routing its own requests
+back out through the edge instead of reaching the API directly, and only the
+latency and the cache behaviour would say so.
+
+---
+
 ## Remove when every API exposes a health endpoint
 
 ### A 404 from the readiness probe counts as ready

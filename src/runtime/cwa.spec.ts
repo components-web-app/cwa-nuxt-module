@@ -17,6 +17,7 @@ import Admin from './admin/admin'
 import NavigationGuard from './admin/navigation-guard'
 import Auth from './api/auth'
 import SiteConfig from '#cwa/api/site-config'
+import { UNSET_API_URL } from '#cwa/api/api-url'
 import * as nuxtApp from '#app/nuxt'
 
 vi.mock('#app/composables/cookie.js', () => {
@@ -165,16 +166,35 @@ vi.mock('./admin/navigation-guard', function () {
 const storeName = 'dummystore'
 const $router = vi.fn()
 const requestNuxtApp = { name: 'REQUEST_NUXT_APP' }
-function createCwa(opts: CwaModuleOptions = { storeName }) {
+
+type CwaTestOptions = CwaModuleOptions & {
+  apiUrl?: string
+  apiUrlBrowser?: string
+  privateApiUrl?: string
+}
+
+let privateConfigReads = 0
+
+function createCwa(opts: CwaTestOptions = { storeName }) {
   vi.spyOn(nuxtApp, 'useNuxtApp').mockReturnValue(requestNuxtApp as never)
-  vi.spyOn(nuxtApp, 'useRuntimeConfig').mockImplementation(() => ({
-    public: {
-      cwa: {
-        apiUrlBrowser: opts.apiUrlBrowser,
-        apiUrl: opts.apiUrl,
+  vi.spyOn(nuxtApp, 'useRuntimeConfig').mockImplementation(() => {
+    const runtimeConfig = {
+      public: {
+        cwa: {
+          apiUrlBrowser: opts.apiUrlBrowser,
+          apiUrl: opts.apiUrl,
+        },
       },
-    },
-  }))
+    }
+    Object.defineProperty(runtimeConfig, 'cwa', {
+      enumerable: true,
+      get() {
+        privateConfigReads++
+        return opts.privateApiUrl === undefined ? undefined : { apiUrl: opts.privateApiUrl }
+      },
+    })
+    return runtimeConfig as never
+  })
   return new Cwa($router as Router, {
     storeName,
     ...opts,
@@ -185,42 +205,60 @@ function createCwa(opts: CwaModuleOptions = { storeName }) {
 }
 
 describe('$cwa.apiUrl tests', () => {
-  test('API Url set correctly for client-side requests', () => {
-    let $cwa
-    vi.spyOn(processComposables, 'useProcess').mockImplementation(() => {
-      return {
-        isClient: true,
-        isServer: false,
-      }
-    })
-
-    $cwa = createCwa({ storeName })
-    expect($cwa.apiUrl).toBe('https://api-url-not-set.com')
-
-    $cwa = createCwa({ storeName, apiUrl: 'https://api-url', apiUrlBrowser: 'https://api-url-browser' })
-    expect($cwa.apiUrl).toBe('https://api-url-browser')
-
-    $cwa = createCwa({ storeName, apiUrl: 'https://api-url' })
-    expect($cwa.apiUrl).toBe('https://api-url')
+  beforeEach(() => {
+    privateConfigReads = 0
   })
 
-  test('API Url set correctly for server-side requests', () => {
-    let $cwa
-    vi.spyOn(processComposables, 'useProcess').mockImplementation(() => {
-      return {
-        isClient: false,
-        isServer: true,
-      }
+  describe('client-side requests', () => {
+    beforeEach(() => {
+      vi.spyOn(processComposables, 'useProcess').mockImplementation(() => ({ isClient: true, isServer: false }))
     })
 
-    $cwa = createCwa({ storeName })
-    expect($cwa.apiUrl).toBe('https://api-url-not-set.com')
+    test('uses a host that can never be registered when nothing is configured', () => {
+      expect(new URL(createCwa({ storeName }).apiUrl).hostname.endsWith('.invalid')).toBe(true)
+    })
 
-    $cwa = createCwa({ storeName, apiUrl: 'https://api-url', apiUrlBrowser: 'https://api-url-browser' })
-    expect($cwa.apiUrl).toBe('https://api-url')
+    test('prefers the browser URL', () => {
+      expect(createCwa({ storeName, apiUrl: 'https://api-url', apiUrlBrowser: 'https://api-url-browser' }).apiUrl)
+        .toBe('https://api-url-browser')
+    })
 
-    $cwa = createCwa({ storeName, apiUrlBrowser: 'https://api-url-browser' })
-    expect($cwa.apiUrl).toBe('https://api-url-browser')
+    test('falls back to the deprecated public URL', () => {
+      expect(createCwa({ storeName, apiUrl: 'https://api-url' }).apiUrl).toBe('https://api-url')
+    })
+
+    test('never reads the private runtime config, which the client proxy reports as an unknown key', () => {
+      createCwa({ storeName, privateApiUrl: 'https://private-api-url', apiUrlBrowser: 'https://api-url-browser' })
+      expect(privateConfigReads).toBe(0)
+    })
+  })
+
+  describe('server-side requests', () => {
+    beforeEach(() => {
+      vi.spyOn(processComposables, 'useProcess').mockImplementation(() => ({ isClient: false, isServer: true }))
+    })
+
+    test('uses a host that can never be registered when nothing is configured', () => {
+      expect(new URL(createCwa({ storeName }).apiUrl).hostname.endsWith('.invalid')).toBe(true)
+    })
+
+    test('prefers the private URL, which is never published to the browser', () => {
+      expect(createCwa({
+        storeName,
+        privateApiUrl: 'https://private-api-url',
+        apiUrl: 'https://api-url',
+        apiUrlBrowser: 'https://api-url-browser',
+      }).apiUrl).toBe('https://private-api-url')
+    })
+
+    test('falls back to the deprecated public URL', () => {
+      expect(createCwa({ storeName, apiUrl: 'https://api-url', apiUrlBrowser: 'https://api-url-browser' }).apiUrl)
+        .toBe('https://api-url')
+    })
+
+    test('falls back to the browser URL', () => {
+      expect(createCwa({ storeName, apiUrlBrowser: 'https://api-url-browser' }).apiUrl).toBe('https://api-url-browser')
+    })
   })
 })
 
@@ -247,7 +285,7 @@ describe('Cwa class test', () => {
 
   test('CwaFetch created to provide a fetch instance with defaults', () => {
     createCwa({ storeName })
-    expect(CwaFetch).toBeCalledWith('https://api-url-not-set.com')
+    expect(CwaFetch).toBeCalledWith(UNSET_API_URL)
   })
 
   test('FetchStatusManager is initialised', () => {

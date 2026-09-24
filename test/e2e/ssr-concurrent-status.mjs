@@ -147,7 +147,7 @@ async function main() {
       NITRO_HOST: '127.0.0.1',
       PORT: String(appPort),
       NITRO_PORT: String(appPort),
-      NUXT_PUBLIC_CWA_API_URL: apiUrl,
+      NUXT_CWA_API_URL: apiUrl,
       NUXT_PUBLIC_CWA_API_URL_BROWSER: apiUrl,
     },
     stdio: ['ignore', 'pipe', 'pipe'],

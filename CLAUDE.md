@@ -842,6 +842,41 @@ proven live. Mutation-tested by restoring the unverified bypass, which fails two
 
 ---
 
+## The API URL: an unregistrable fallback, and a private server URL ([#345](https://github.com/components-web-app/cwa-nuxt-module/issues/345))
+
+**One pure resolver decides the URL**, `resolveApiUrl(runtimeConfig, isServer)` in `src/runtime/api/api-url.ts`, used by `cwa.ts`, `server/useFetcher.ts`, `server/page-cache-warm-config.ts` and `server/server-plugin.ts`. It returns the URL **and its `source`**, which is what lets the server-start diagnostics say something specific without a second copy of the precedence rules.
+
+- **Server:** `runtimeConfig.cwa.apiUrl` → `public.cwa.apiUrl` (deprecated) → `public.cwa.apiUrlBrowser` → the fallback.
+- **Client:** `public.cwa.apiUrlBrowser` → `public.cwa.apiUrl` (deprecated) → the fallback.
+
+**The client must never read `runtimeConfig.cwa`**, and the gate is the property access itself, not a falsy check on its value. Nuxt wraps the client runtime config in a dev-only Proxy that fires a `NUXT_E1003` diagnostic for an unknown top-level key, so reading it and discarding the result is still wrong. The resolver only touches `runtimeConfig.cwa` inside its `isServer` branch, and `api-url.spec.ts` pins that with a counting getter rather than an assertion on the returned URL.
+
+**The fallback is `https://api-url-not-set.invalid`, and the TLD is the whole point.** It was `https://api-url-not-set.com` — a registrable domain that is not registered — while `CwaFetch` appends the visitor's entire `cookie` header to every SSR request with no origin check, so a misconfigured deploy would have posted visitors' `api_component` JWTs to whoever bought it. `.invalid` is reserved by RFC 2606 and can never resolve.
+
+**Keeping a fallback at all is deliberate.** With no fallback `apiUrl` is `''`, `cwa.ts`'s `if (this.apiUrl)` skips `setPathPrefix`, and the first fetch dies inside ofetch with an opaque `TypeError: Invalid URL`. The `.invalid` host fails by name — `getaddrinfo ENOTFOUND api-url-not-set.invalid` — and, because a DNS failure carries no status and does carry a `request`, `isApiUnreachable` is true and the [#346](https://github.com/components-web-app/cwa-nuxt-module/issues/346) error page renders "The site's API isn't responding yet". Verified against a built playground. `new URL(…).pathname` is `/`, which `setPathPrefix` normalises to no prefix (#266), and `resolvePageCacheWarmSettings` now gets a parseable URL where an empty string used to throw.
+
+**The public keys are declared unconditionally in `module.ts`.** Nuxt only applies an env override to a key that exists at build time, so an app that declares neither silently ignores `NUXT_PUBLIC_CWA_API_URL_BROWSER` — a second route into the same leak, and one that looks like the app's own mistake. `{ apiUrl: '', apiUrlBrowser: '' }` is defu'd into `runtimeConfig.public.cwa` in `setup()`, and `{ apiUrl: '' }` into the private `runtimeConfig.cwa` beside the `readiness` defaults — **outside** the `pageCache.enabled` block, because the API URL has nothing to do with page caching.
+
+**Three diagnostics, all in `server/server-plugin.ts`, all once per server process.** Not at build time: `module.ts` cannot see `NUXT_PUBLIC_CWA_API_URL`, and the template's build-time value is legitimately empty in every correct deployment, so a build error would break every consuming app. Not per request. **And the server does not refuse to start** — once the host is `.invalid` the misconfiguration is a broken site rather than a security problem, and crash-looping a container on first run is worse.
+
+1. `source === 'unset'` → `logger.error`, naming `NUXT_CWA_API_URL` and `NUXT_PUBLIC_CWA_API_URL_BROWSER` and saying no API request will succeed.
+2. `source === 'public'` → `logger.warn` that the deprecated key supplied the server URL.
+3. Pages are cached and no site URL is configured → `logger.warn`. This one **cannot run at start**, because the canonical URL lives in the site config, which only a request resolves. It runs on `afterResponse`, gated on `event.context.cwaPageCache` (set only by `plugin-page-cache.server.ts`, which is registered only when page caching is enabled) **and** on `event.context.cwaSiteConfig` — a response whose site config never resolved must not spend the one report.
+
+**What that third warning may and may not claim.** `nuxt-site-config-kit@4.2.3`'s `getNitroOrigin` (`dist/util.mjs:80-81`) forces `https` in production for any non-localhost host, so **the scheme does not leak from the rendering request — only the Host does**, and the warning says only that. The `http://` case is real in dev and where the public host is localhost or `127.*`. This is one line in a dependency; re-read it on an upgrade.
+
+**Checking for a configured site URL needs `process.env`, not just the runtime config.** `NUXT_SITE_URL` and `NUXT_PUBLIC_SITE_URL` are read at runtime by nuxt-site-config's own nitro middleware through `envSiteConfig(import.meta.env)`, which the build compiles to `globalThis._importMeta_.env`, i.e. `process.env` — they never reach `runtimeConfig.site.url`, which nothing declares. A check against the runtime config alone warned on a correctly configured site; found by booting the built playground, not by any test. `hasConfiguredSiteUrl` therefore checks the two env names, then `runtimeConfig.site.url` / `public.site.url`, then any `url` in `runtimeConfig['nuxt-site-config'].stack` (which is where `site: { url }` in `nuxt.config` lands).
+
+**Rejected: #345's own item 3**, falling back to `apiUrlBrowser`'s origin for nuxt-site-config's `url`. An app whose API is on a separate host would silently get every canonical and og URL pointing at the API.
+
+**Tests.** `api-url.spec.ts` is the pure spec. `server-plugin.spec.ts` mocks `nitropack/runtime` for both `defineNitroPlugin` and `useRuntimeConfig` — deliberately **not** `#imports`, which never intercepts. Its "says nothing" cases were mutation-tested six ways (each guard made unconditional in turn); every mutant failed. `test/e2e/api-url-not-published.mjs` boots the built playground with only the private variable set and asserts the server URL is absent from `window.__NUXT__.config` while the page still renders API data; it fails when the deprecated public key is used instead, so it is not vacuous. **Residual leak it deliberately does not assert away:** `apiDocumentation.docsPath` and `mercure.hub` come from the API's own `Link` headers during SSR and are serialised into the payload, so a real API still publishes its URL there. The stub sends no `Link` headers, so that run shows it neither way.
+
+**Every server-side consumer goes through `resolveApiUrl`** — `cwa.ts`, `server/useFetcher.ts`, `server/page-cache-warm-config.ts` and `server/readiness-config.ts`. The last of those was missed on the first pass and is the shape of the bug to watch for: it read `runtimeConfig.public.cwa` directly, so an app that set only `NUXT_CWA_API_URL` would have probed an empty readiness URL and reported itself permanently not ready. Anything new that needs the API URL must call the resolver rather than reach into the config.
+
+**`readiness-config.ts` and `page-cache-warm-config.ts` have no specs**, and deliberately: both are three-line wrappers whose only untested part is `useRuntimeConfig` from `#imports`, which vitest cannot intercept. Their logic lives in the pure helpers (`readiness.ts`, `page-cache-warm.ts`, `api-url.ts`) which are specced, and the wiring is exercised by `test/e2e`. A spec here would assert against a mock of the thing under test.
+
+---
+
 ## Deprecations and temporary code
 
 Code kept only to support an older API, or to work around someone else's bug, is logged in **`DEPRECATIONS.md`** with the condition that has to be true before it can be deleted. Add an entry whenever you leave something in place for one of those reasons — an entry with no precondition is a todo, not a deprecation.

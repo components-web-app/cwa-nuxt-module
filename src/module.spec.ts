@@ -510,6 +510,7 @@ declare module 'vue-router' {
         const mockNuxt = await prepare()
 
         expect(mockNuxt.options.runtimeConfig.cwa).toEqual({
+          apiUrl: '',
           pageCacheWarm: { concurrency: 3, timeout: 30000, origin: '' },
           readiness: { path: '/_/health', timeout: 2000 },
         })
@@ -532,6 +533,7 @@ declare module 'vue-router' {
         const mockNuxt = await prepare({ pageCache: { enabled: false } })
 
         expect(mockNuxt.options.runtimeConfig.cwa).toEqual({
+          apiUrl: '',
           readiness: { path: '/_/health', timeout: 2000 },
         })
       })
@@ -540,6 +542,56 @@ declare module 'vue-router' {
         const mockNuxt = await prepare({}, { public: { cwa: {} }, cwa: { pageCacheWarm: { concurrency: 5, origin: 'http://caddy' } } })
 
         expect(mockNuxt.options.runtimeConfig.cwa.pageCacheWarm).toEqual({ concurrency: 5, timeout: 30000, origin: 'http://caddy' })
+      })
+    })
+
+    describe('api url runtime config (#345)', () => {
+      async function prepare(moduleOptions: any = {}, runtimeConfig: any = { public: { cwa: {} } }) {
+        return prepareMockNuxt({ ...moduleOptions }, {
+          hook: vi.fn((hookName, callback) => {
+            if (hookName === 'modules:done') {
+              callback()
+            }
+          }),
+          options: {
+            runtimeConfig,
+            alias: {},
+            css: [],
+            build: { transpile: [] },
+            dir: { app: '' },
+            sitemap: {},
+          },
+        })
+      }
+
+      test('declares the public keys so an app that sets neither still honours the environment variables', async () => {
+        const mockNuxt = await prepare({}, { public: {} })
+
+        expect(mockNuxt.options.runtimeConfig.public.cwa).toEqual({ apiUrl: '', apiUrlBrowser: '' })
+      })
+
+      test('keeps the public values an app has configured', async () => {
+        const mockNuxt = await prepare({}, { public: { cwa: { apiUrlBrowser: 'https://www.example.com/_api' } } })
+
+        expect(mockNuxt.options.runtimeConfig.public.cwa).toEqual({ apiUrl: '', apiUrlBrowser: 'https://www.example.com/_api' })
+      })
+
+      test('declares the private key whether or not the page cache is enabled', async () => {
+        const mockNuxt = await prepare({ pageCache: { enabled: false } })
+
+        expect(mockNuxt.options.runtimeConfig.cwa.apiUrl).toBe('')
+      })
+
+      test('keeps the private value an app has configured', async () => {
+        const mockNuxt = await prepare({}, { public: { cwa: {} }, cwa: { apiUrl: 'http://php/_api' } })
+
+        expect(mockNuxt.options.runtimeConfig.cwa.apiUrl).toBe('http://php/_api')
+      })
+
+      test('does not publish the private key to the browser', async () => {
+        const mockNuxt = await prepare({}, { public: { cwa: {} }, cwa: { apiUrl: 'http://php/_api' } })
+
+        expect(mockNuxt.options.runtimeConfig.public.cwa).toEqual({ apiUrl: '', apiUrlBrowser: '' })
       })
     })
 

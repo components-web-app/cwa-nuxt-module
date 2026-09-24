@@ -20,6 +20,8 @@ import Admin from './admin/admin'
 import NavigationGuard from './admin/navigation-guard'
 import { ResourceTypeFromIri } from '#cwa/resources/resource-utils'
 import SiteConfig from '#cwa/api/site-config'
+import type { ApiUrlRuntimeConfig } from '#cwa/api/api-url'
+import { resolveApiUrl } from '#cwa/api/api-url'
 
 export default class Cwa {
   private readonly apiUrl: string
@@ -53,15 +55,8 @@ export default class Cwa {
 
   constructor($router: Router, options: CwaModuleOptions, currentModulePackageInfo: { version: string, name: string }) {
     this.currentModulePackageInfo = currentModulePackageInfo
-    const { isClient } = useProcess()
-    const { public: { cwa: { apiUrl, apiUrlBrowser } } } = useRuntimeConfig()
-    const defaultApiUrl = 'https://api-url-not-set.com'
-    if (isClient) {
-      this.apiUrl = apiUrlBrowser || apiUrl || defaultApiUrl
-    }
-    else {
-      this.apiUrl = apiUrl || apiUrlBrowser || defaultApiUrl
-    }
+    const { isServer } = useProcess()
+    this.apiUrl = resolveApiUrl(useRuntimeConfig() as ApiUrlRuntimeConfig, isServer).url
     if (this.apiUrl) {
       ResourceTypeFromIri.setPathPrefix((new URL(this.apiUrl)).pathname)
     }
