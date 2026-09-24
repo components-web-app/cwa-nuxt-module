@@ -6,8 +6,11 @@ import { resolveConfigEventHandler } from '#cwa/server/useFetcher'
 import { ADMIN_ROLES, isAdmin } from '#cwa/server/is-admin'
 
 const ADMIN_CHECK_TIMEOUT = 3000
+const OPERATIONAL_PATHS = ['/_cwa/healthcheck', '/_cwa/readiness']
 
 export default defineEventHandler(async (e) => {
+  if (OPERATIONAL_PATHS.includes(e.path.split('?')[0])) return
+
   const skipMaintenanceChecks = () => {
     if (e.context.skipMaintenanceChecks === true) return true
     const allowedPaths = ['/sitemap.xml', '/sitemap_index.xml', '/robots.txt']

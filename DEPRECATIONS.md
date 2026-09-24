@@ -46,6 +46,40 @@ application has to migrate by then at the latest.
 
 ---
 
+## Remove when every API exposes a health endpoint
+
+### A 404 from the readiness probe counts as ready
+
+`/_cwa/readiness` requests the API's `/_/health`
+([api-components-bundle#312](https://github.com/components-web-app/api-components-bundle/issues/312))
+and reports 503 for anything that says the API is not answering. A **404** is
+deliberately treated as **ready**, with a warning naming the URL tried.
+
+That endpoint does not exist on any released bundle. A hard 503 would leave
+every current site permanently un-ready, so the pod would never enter service
+and the deploy would never come up — a diagnostic that can brick a rollout is
+worse than one that occasionally over-reports. A 404 also proves the request was
+routed: TCP connected, TLS validated, PHP answered and Symfony matched nothing.
+
+The cost is narrow and stated rather than defended: an `apiUrl` pointing at the
+Nuxt app itself would also 404 and read as ready. The warning names the URL.
+
+**Delete:**
+
+- the `status === 404` branch in `classifyReadiness` (`src/runtime/server/readiness.ts`),
+  so a 404 falls through to the `status >= 400` branch — or make it not ready,
+  whichever is right at the time
+- `a 404 is ready but reported, because the API may predate the health endpoint`
+  in `src/runtime/server/readiness.spec.ts`, and
+  `is ready but warns when the API has no health endpoint` in
+  `cwa-readiness.get.spec.ts`
+- this entry, and the paragraph in the CLAUDE.md readiness section
+
+**Precondition:** every supported application runs a bundle exposing `/_/health`.
+Until then a 404 is the normal answer, not a fault.
+
+---
+
 ## Temporary workarounds pending an upstream fix
 
 ### Realpathing `page.file` so Nuxt can filter layer pages out of prefetch

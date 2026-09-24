@@ -24,6 +24,7 @@ import {
   tryResolveModule,
 } from '@nuxt/kit'
 import type { Component, ModuleDependencies, Nuxt, NuxtPage, ViteConfig } from '@nuxt/schema'
+import { READINESS_DEFAULTS } from './runtime/server/readiness'
 import { defaultSiteConfig } from './runtime/composables/useCwaSiteConfig'
 import type { CwaModuleOptions, CwaResourcesMeta, GlobalComponentNames } from './runtime/types'
 
@@ -40,6 +41,10 @@ declare module 'nuxt/schema' {
         concurrency: number
         timeout: number
         origin: string
+      }
+      readiness: {
+        path: string
+        timeout: number
       }
     }
   }
@@ -389,6 +394,10 @@ declare module 'vue-router' {
         src: resolve('./runtime/plugin'),
       })
 
+      nuxt.options.runtimeConfig.cwa = defu(nuxt.options.runtimeConfig.cwa, {
+        readiness: { ...READINESS_DEFAULTS },
+      })
+
       if (options.pageCache?.enabled ?? true) {
         if (options.staticRender ?? hasStaticRouteRules()) {
           logger.warn(`${NAME}: pageCache is enabled alongside isr/swr/prerender route rules. Nitro's own cache is not purged by the API, so edits will not appear until the route rule window lapses.`)
@@ -433,6 +442,10 @@ declare module 'vue-router' {
       addServerHandler({
         route: '/_cwa/healthcheck',
         handler: resolve('./runtime/server/cwa-healthcheck.get'),
+      })
+      addServerHandler({
+        route: '/_cwa/readiness',
+        handler: resolve('./runtime/server/cwa-readiness.get'),
       })
     })
 

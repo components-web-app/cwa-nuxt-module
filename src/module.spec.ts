@@ -511,8 +511,29 @@ declare module 'vue-router' {
 
         expect(mockNuxt.options.runtimeConfig.cwa).toEqual({
           pageCacheWarm: { concurrency: 3, timeout: 30000, origin: '' },
+          readiness: { path: '/_/health', timeout: 2000 },
         })
         expect(mockNuxt.options.runtimeConfig.public.cwa).not.toHaveProperty('pageCacheWarm')
+      })
+
+      test('registers the readiness route whether or not the page cache is enabled', async () => {
+        const readinessHandler = {
+          route: '/_cwa/readiness',
+          handler: expect.stringMatching(/runtime\/server\/cwa-readiness\.get$/),
+        }
+        await prepare()
+        expect(nuxtKit.addServerHandler as Mock).toHaveBeenCalledWith(readinessHandler)
+
+        await prepare({ pageCache: { enabled: false } })
+        expect(nuxtKit.addServerHandler as Mock).toHaveBeenCalledWith(readinessHandler)
+      })
+
+      test('adds the readiness defaults whether or not the page cache is enabled', async () => {
+        const mockNuxt = await prepare({ pageCache: { enabled: false } })
+
+        expect(mockNuxt.options.runtimeConfig.cwa).toEqual({
+          readiness: { path: '/_/health', timeout: 2000 },
+        })
       })
 
       test('keeps warm settings the app has configured', async () => {

@@ -62,6 +62,37 @@ describe('server-middleware', () => {
     mockGetRequestHeader.mockReturnValue('cwa_auth=1; api_component=token')
   })
 
+  test.each(['/_cwa/healthcheck', '/_cwa/readiness'])('does not ask the API for the site config on %s', async (path) => {
+    const handler = await importHandler()
+
+    await expect(handler(createEvent({ path }))).resolves.toBeUndefined()
+    expect(mockResolveConfigEventHandler).not.toHaveBeenCalled()
+  })
+
+  test('ignores a query string when matching an operational path', async () => {
+    const handler = await importHandler()
+
+    await expect(handler(createEvent({ path: '/_cwa/healthcheck?probe=1' }))).resolves.toBeUndefined()
+    expect(mockResolveConfigEventHandler).not.toHaveBeenCalled()
+  })
+
+  test('does not enforce maintenance mode on an operational path', async () => {
+    mockResolveConfigEventHandler.mockResolvedValue({ maintenanceModeEnabled: true })
+    const handler = await importHandler()
+
+    await expect(handler(createEvent({ path: '/_cwa/readiness' }))).resolves.toBeUndefined()
+    expect(mockUpdateSiteConfig).not.toHaveBeenCalled()
+  })
+
+  test.each(['/about', '/_cwa/pages'])('still resolves the site config for %s', async (path) => {
+    mockResolveConfigEventHandler.mockResolvedValue({ maintenanceModeEnabled: false })
+    const handler = await importHandler()
+
+    await handler(createEvent({ path }))
+
+    expect(mockResolveConfigEventHandler).toHaveBeenCalled()
+  })
+
   test('does nothing when no resolved config', async () => {
     mockResolveConfigEventHandler.mockResolvedValue(undefined)
     const handler = await importHandler()

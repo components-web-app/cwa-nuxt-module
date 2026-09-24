@@ -612,6 +612,94 @@ When a session ends, the module deletes the app's API data caches so data cached
 
 ---
 
+## The health check stopped calling the API, and readiness became its own route ([#342](https://github.com/components-web-app/cwa-nuxt-module/issues/342))
+
+`/_cwa/healthcheck` returned a static OK, but it was not a static request.
+`server-middleware.ts` is registered with **no route**, so it runs for every
+Nitro request, and it fetched `/_/site_config_parameters` **before** its skip
+check. So every probe hit PHP. With the API down the probe still said OK; with
+the API slow it waited, unbounded, past a 1s Kubernetes probe timeout.
+
+**Two things the issue did not say, and both shaped the fix:**
+
+- **`/_nuxt/*` never reaches the middleware**, so no asset skip is needed. Nitro
+  unshifts its static handler ahead of every scanned handler, and h3
+  short-circuits once that returns a body.
+- **`/__sitemap__/*` and `/robots.txt` must NOT be skipped.** The middleware's
+  `updateSiteConfig(e, …)` is the only thing feeding nuxt-site-config, and
+  `skipMaintenanceChecks()` deliberately runs *after* the fetch for exactly that
+  reason — it skips **maintenance**, not **config**. So the fix is a new early
+  return, not a change to that helper.
+
+**The skip is two exact paths, not `startsWith('/_cwa')`.** `/_cwa/pages` and
+the rest of the admin UI are real renders that want the site config. It splits
+on `?` because h3's `_decodePath` puts the query string in `e.path`, so
+`allowedPaths.includes(e.path)` already misses `/robots.txt?x=1` — a pre-existing
+bug this does not fix, but must not repeat. `module.spec.ts` pins that `/about`
+**and** `/_cwa/pages` still resolve the config, which is the guard against the
+list widening into a prefix test.
+
+It also closes an exposure by accident: the maintenance block reads
+`getRequestURL(e).pathname`, which **includes** the baseURL, and tests
+`startsWith('/_cwa')` — so under a sub-path baseURL, maintenance mode returned
+503 to the liveness probe and would have had the pod restarted.
+
+### `/_cwa/readiness`
+
+Registered **unconditionally**, unlike the warm route, because readiness is
+always meaningful. It requests the API's `/_/health`
+(api-components-bundle#312) at the server-resolved API URL, with
+`credentials: 'omit'`, `ignoreResponseError: true` and **`redirect: 'manual'`**,
+and returns 200 `{status:'OK'}` or 503 `{status:'UNAVAILABLE'}` with
+`cache-control: no-store`.
+
+- **Never `''` or `/`.** The API answers `/` with a trailing-slash 301, so the
+  entrypoint is a redirect hazard — and not following redirects is what makes
+  the probe honest.
+- **Not `/_/site_config_parameters`.** Souin caches it, so a cached 200 would
+  report ready while PHP was dead.
+- **A 3xx is not ready**, and the `location` is logged: a redirect means the
+  configured URL is not the API's address. Following it can turn an SSO wall
+  into a false 200.
+- **A 4xx other than 404 is ready** — the API answered; readiness is "can it
+  serve", not "am I allowed". **A 404 is ready with a warning**, which is a
+  transition recorded in `DEPRECATIONS.md`, not a permanent rule.
+- **The URL, the status and the error stay out of the response body** — it is
+  unauthenticated — and go to `consola` server-side.
+
+**No caching or debouncing of the result.** A stale "ready" served after the API
+fell over is the exact failure this exists to prevent.
+
+**The probe timeout must be shorter than the caller's, and that is a contract
+with the template.** 2000ms by default, so we answer 503 *with a logged reason*
+rather than being killed mid-request; a Kubernetes readiness probe therefore
+needs `timeoutSeconds` of at least 3. Both settings live in private
+`runtimeConfig.cwa.readiness` (`NUXT_CWA_READINESS_PATH` /
+`NUXT_CWA_READINESS_TIMEOUT`), defu'd in **outside** the `pageCache.enabled`
+block. Unlike `pageCacheWarm`, the numbers live in **one** place — `module.ts`
+imports `READINESS_DEFAULTS` from `runtime/server/readiness.ts`, which has no
+virtual-alias imports.
+
+**The site-config fetch now has a 5s timeout** (half Souin's 10s backend
+timeout), and the trade-off is worth stating: a timed-out fetch returns
+`undefined`, so the render proceeds on `options.siteConfig` defaults **and
+maintenance mode is not enforced**. It is the only number here with a
+correctness cost.
+
+**Untested, and knowingly so:** that timeout. `useFetcher.ts` has no spec and
+cannot get one cheaply — it imports `useRuntimeConfig` from `#imports` and the
+`addServerTemplate` virtual `#cwa/server-options.ts`, neither of which vitest
+can intercept. Every other spec mocks `./useFetcher` wholesale. A spec that
+appeared to cover it would be asserting against a mock of the thing under test.
+
+`cwa-readiness.get.spec.ts` drives the real handler over **real ofetch against a
+real `node:http` server**, which is the only way to prove `redirect: 'manual'`
+and the timeout actually reach undici rather than being dropped — the options
+object alone proves nothing. It also asserts the visitor's cookie is never sent
+and the API origin never appears in the response body.
+
+---
+
 ## Maintenance mode verified the admin's JWT with the API, not by decoding it
 
 Anyone could walk past the maintenance screen. `server-middleware.ts` gated the
