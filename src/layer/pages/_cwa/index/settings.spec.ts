@@ -278,6 +278,20 @@ describe('Site settings page cache warm', () => {
     expect(wrapper.text()).toContain('2 pages were checked, but 1 could not be warmed: /c (no response).')
   })
 
+  test('names the cause when a page could not be reached at all', async () => {
+    mockWarmPageCache.mockResolvedValue({ total: 2, warmed: 1, failed: [{ path: '/c', status: 0, error: 'network', detail: 'DEPTH_ZERO_SELF_SIGNED_CERT' }] })
+    const wrapper = await setup()
+    await clickWarm(wrapper)
+    expect(wrapper.text()).toContain('2 pages were checked, but 1 could not be warmed: /c (no response: DEPTH_ZERO_SELF_SIGNED_CERT).')
+  })
+
+  test('names where a redirected page was sent instead of being rendered', async () => {
+    mockWarmPageCache.mockResolvedValue({ total: 2, warmed: 1, failed: [{ path: '/about', status: 308, location: 'https://www.example.com/about' }] })
+    const wrapper = await setup()
+    await clickWarm(wrapper)
+    expect(wrapper.text()).toContain('2 pages were checked, but 1 could not be warmed: /about (308 → https://www.example.com/about).')
+  })
+
   test('explains a warm refused for lack of permission', async () => {
     mockWarmPageCache.mockRejectedValue(Object.assign(new Error('Forbidden'), { statusCode: 403 }))
     const wrapper = await setup()
@@ -289,7 +303,7 @@ describe('Site settings page cache warm', () => {
     mockWarmPageCache.mockRejectedValue(Object.assign(new Error('Conflict'), { statusCode: 409 }))
     const wrapper = await setup()
     await clickWarm(wrapper)
-    expect(wrapper.text()).toContain('The page cache is already being warmed. Please wait for it to finish.')
+    expect(wrapper.text()).toContain('The page cache is already being warmed on this server. Please wait for it to finish.')
   })
 
   test('explains a warm that stopped part way through', async () => {

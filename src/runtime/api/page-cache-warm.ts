@@ -7,6 +7,8 @@ export interface PageCacheWarmFailure {
   path: string
   status: number
   error?: 'timeout' | 'network'
+  location?: string
+  detail?: string
 }
 
 export interface PageCacheWarmSummary {

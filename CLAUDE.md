@@ -453,6 +453,22 @@ Site settings has a **Warm page cache** button beside purge, calling `POST /_cwa
 
 **Trap: Node's global `fetch` (undici) silently replaces a `Host` header you set**, so the warm would have stored every page under the wrong key. A real-server test caught it (`expected '127.0.0.1:56720' to be 'www.example.com'`). Anything that needs a specific `Host` must use `node:http` / `node:https`.
 
+#### Behind Caddy's automatic HTTPS the warm needs an `https://` origin ([#343](https://github.com/components-web-app/cwa-nuxt-module/issues/343))
+
+**`servername` is not the fix, and must not be added.** Node's HTTP agent derives both the TLS SNI name **and** the certificate identity check from the request's **`Host` header** when no `servername` is given (`_http_agent.js` puts `host` into the connection options, and `tls.connect` falls back to it). The warm already sends the public `Host`, so it already negotiates and validates as the public hostname. Setting `servername` to the same value changes nothing. The issue proposed it; it was measured and rejected.
+
+**The one real failure is certificate trust, and no module code can fix it.** Where Caddy issues the certificate itself — `SERVER_NAME=localhost`, a `.local` host, or `tls internal` — Node rejects it with `DEPTH_ZERO_SELF_SIGNED_CERT`, because its root is not in the trust store. The mechanisms are `NODE_EXTRA_CA_CERTS` (Caddy writes its root to `/data/caddy/pki/authorities/local/root.crt`), `--use-system-ca`, or pointing the warm at an origin whose certificate is publicly trusted. **There is deliberately no `rejectUnauthorized: false` option, not even opt-in**: it is a permanent invisible downgrade in the module's only TLS client, and it would make a *wrong* origin succeed silently — warming the wrong host would report "36/36 warmed" with nothing stored.
+
+**The default origin derivation stays `apiUrl`.** Caddy's `reverse_proxy` sets `X-Forwarded-Proto` from the scheme it terminated, so warming over plain HTTP would render and store each page as `http://` — canonical and og URLs a visitor never receives, cached for the API's full TTL.
+
+**So on a single-server deploy, `NUXT_CWA_PAGE_CACHE_WARM_ORIGIN` is mandatory, not an escape hatch.** Rendering and warming want different URLs there: SSR must call the API over **HTTP** (`http://php.local/_api`), because over HTTPS the TLS name would be the internal host and only an internally issued certificate covers it; the warm must use **HTTPS** (`https://php.local`), because it sends the public `Host`, so the TLS name becomes the real domain and its ACME certificate validates — and over plain HTTP Caddy's automatic HTTPS answers every page with a **308**. Kubernetes is unaffected: Caddy there listens on port 80 with no redirect, so the derived origin is already right.
+
+**What was built instead is diagnosis.** `WarmPageResult` (and `PageCacheWarmFailure`) carry `location` — set only for a 3xx that sends one — and `detail`, the error `code` of a network failure. `detail` is deliberately **not** set for a timeout (`ABORT_ERR` says nothing about the cause) nor on the `!response.complete` close path (there is no error object). The admin then reads `/about (308 → https://www.example.com/about)` or `/about (no response: DEPTH_ZERO_SELF_SIGNED_CERT)` instead of a bare status. **200-only still counts as warmed**: `fetchCwaPagePaths` already excludes redirect routes, so any 3xx here means the request never reached the renderer.
+
+**There is no TLS test, on purpose.** Proving Node derives SNI from `Host` is a test of Node; our side is "the `Host` header is sent", which `requestPage`'s first spec already pins. Generating an X.509 in-test would mean shelling out to `openssl` or taking a new devDependency.
+
+**The 409 is per process.** The `warming` lock is a module-level variable, so several SSR replicas can warm concurrently; the message says "on this server" rather than pretending otherwise. A shared lock was considered and rejected — a duplicate warm wastes renders and corrupts nothing, while a lock stranded by a pod killed mid-warm blocks the operator with no way to clear it.
+
 **Trap: in streaming tests, page timeouts must outlast the test's own timeout.** A test that held one response open with a 1s page timeout failed to catch fully buffered output, because the held request timed out and flushed everything.
 
 **Testing note:** `vi.mock('#build/cwa-options', …)` **works**, unlike `#imports` and `#components` — `#build` is a real alias to a real directory, so vitest's resolver finds it.

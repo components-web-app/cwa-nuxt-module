@@ -553,9 +553,9 @@ function describeWarmFailure(failure: PageCacheWarmFailure) {
     return `${failure.path} (timed out)`
   }
   if (failure.error === 'network') {
-    return `${failure.path} (no response)`
+    return failure.detail ? `${failure.path} (no response: ${failure.detail})` : `${failure.path} (no response)`
   }
-  return `${failure.path} (${failure.status})`
+  return failure.location ? `${failure.path} (${failure.status} → ${failure.location})` : `${failure.path} (${failure.status})`
 }
 
 function warmPageCacheSummaryResult(summary: PageCacheWarmSummary) {
@@ -574,7 +574,7 @@ function warmPageCacheFailureMessage(error: unknown) {
     return 'The page cache could not be warmed: your account does not have permission to do this.'
   }
   if (statusCode === 409) {
-    return 'The page cache is already being warmed. Please wait for it to finish.'
+    return 'The page cache is already being warmed on this server. Please wait for it to finish.'
   }
   return `The page cache could not be warmed (${statusCode || 'network error'}). Please try again.`
 }

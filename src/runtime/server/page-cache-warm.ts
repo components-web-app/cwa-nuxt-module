@@ -5,6 +5,8 @@ export interface WarmPageResult {
   path: string
   status: number
   error?: 'timeout' | 'network'
+  location?: string
+  detail?: string
 }
 
 export interface RequestPageOptions {
@@ -54,10 +56,17 @@ export function requestPage({ origin, path, host, headers, timeout, signal }: Re
         resolve(result)
       }
     }
-    const fail = () => settle({ path, status: 0, error: timeoutSignal.aborted ? 'timeout' : 'network' })
+    const fail = (cause?: { code?: string }) => {
+      if (timeoutSignal.aborted) {
+        return settle({ path, status: 0, error: 'timeout' })
+      }
+      settle({ path, status: 0, error: 'network', ...(cause?.code ? { detail: cause.code } : {}) })
+    }
 
     const request = client.request(url, { method: 'GET', headers: { ...headers, host }, signal: combinedSignal }, (response) => {
-      response.on('end', () => settle({ path, status: response.statusCode ?? 0 }))
+      const status = response.statusCode ?? 0
+      const location = status >= 300 && status < 400 ? response.headers.location : undefined
+      response.on('end', () => settle({ path, status, ...(location ? { location } : {}) }))
       response.on('error', fail)
       response.on('close', () => {
         if (!response.complete) {
