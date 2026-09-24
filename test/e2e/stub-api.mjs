@@ -86,6 +86,31 @@ export function setScheduledRouteLive(isLive) {
   scheduledRouteIsLive = isLive
 }
 
+const routeCollectionIri = `${prefix}/_/routes`
+
+let sitemapRoutePaths = ['/real']
+
+export function setSitemapRoutePaths(paths) {
+  sitemapRoutePaths = [...paths]
+}
+
+function routeCollection() {
+  const member = sitemapRoutePaths.map(path => ({
+    '@id': `${routeCollectionIri}/${path}`,
+    '@type': 'Route',
+    path,
+    'page': pageIri,
+    '_metadata': { persisted: true },
+  }))
+  return {
+    '@id': routeCollectionIri,
+    '@type': 'hydra:Collection',
+    member,
+    'hydra:member': member,
+    'totalItems': member.length,
+  }
+}
+
 const notFound = {
   '@type': 'hydra:Error',
   'hydra:title': 'An error occurred',
@@ -103,7 +128,9 @@ const serverError = {
 export function startStubApi(port) {
   const server = http.createServer((req, res) => {
     const path = new URL(req.url, 'http://stub').pathname
-    const body = resources[path] || (scheduledRouteIsLive ? scheduledResources[path] : undefined)
+    const body = path === routeCollectionIri
+      ? routeCollection()
+      : resources[path] || (scheduledRouteIsLive ? scheduledResources[path] : undefined)
     setTimeout(() => {
       if (path === brokenRouteIri || path === `${prefix}/_/resource_manifest//broken`) {
         res.writeHead(500, { 'content-type': 'application/ld+json', 'cache-control': 'no-store, private' })

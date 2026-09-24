@@ -101,6 +101,7 @@ const baseModuleDependencies: ModuleDependencies = {
     version: '^8.0',
     optional: false,
     defaults: {
+      cacheMaxAgeSeconds: 0,
       sitemaps: {
         cwa: {
           sources: ['/__sitemap__/cwa-urls'],
@@ -429,6 +430,7 @@ declare module 'vue-router' {
         getContents: () => {
           const serverOps = {
             siteConfig: options.siteConfig,
+            sitemapCache: options.sitemapCache,
           }
           return `export const options = ${JSON.stringify(serverOps, undefined, 2)}
 `
@@ -446,6 +448,7 @@ declare module 'vue-router' {
         route: '/__sitemap__/cwa-custom.xml',
         handler: resolve('./runtime/server/cwa-custom-sitemap.get'),
       })
+      addServerPlugin(resolve('./runtime/server/sitemap-cache-plugin'))
       addServerHandler({
         route: '/_cwa/healthcheck',
         handler: resolve('./runtime/server/cwa-healthcheck.get'),

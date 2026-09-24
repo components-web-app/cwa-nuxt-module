@@ -60,6 +60,10 @@ export interface CwaModuleOptions {
     sharedMaxAge?: number
     staleWhileRevalidate?: number
   }
+  sitemapCache?: {
+    sharedMaxAge?: number
+    staleWhileRevalidate?: number
+  }
   layouts?: {
     [type: string]: CwaUiMeta
   }

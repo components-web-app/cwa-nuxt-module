@@ -1,8 +1,9 @@
-import { defaultContentType, defineEventHandler } from 'h3'
+import { defaultContentType, defineEventHandler, setResponseHeader } from 'h3'
 import { consola } from 'consola'
 import useFetcher from '#cwa/server/useFetcher'
 import type { CwaResource } from '#cwa/resources/resource-utils'
 import useCwaSiteConfig from '#cwa/composables/useCwaSiteConfig'
+import { buildCustomSitemapCacheHeaders, resolveSitemapCacheOptions } from '#cwa/api/sitemap-cache'
 import { createError } from '#imports'
 
 // this endpoint will return a sitemap as defined by a user in the settings page
@@ -16,6 +17,11 @@ export default defineEventHandler(async (event) => {
     const resolvedConfig = mergeConfig(options.siteConfig, responseToConfig(data, true))
 
     defaultContentType(event, 'application/xml')
+
+    const decision = buildCustomSitemapCacheHeaders({ options: resolveSitemapCacheOptions(options.sitemapCache) })
+    setResponseHeader(event, 'Surrogate-Key', decision.surrogateKey)
+    setResponseHeader(event, 'Cache-Control', decision.cacheControl)
+
     const sitemapXml = resolvedConfig.sitemapXml
     if (!sitemapXml || sitemapXml === '') {
       return `<?xml version="1.0" encoding="UTF-8"?><?xml-stylesheet type="text/xsl" href="/__sitemap__/style.xsl"?>

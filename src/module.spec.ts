@@ -129,6 +129,7 @@ describe('CWA module', () => {
           version: '^8.0',
           optional: false,
           defaults: {
+            cacheMaxAgeSeconds: 0,
             sitemaps: {
               cwa: {
                 sources: ['/__sitemap__/cwa-urls'],
@@ -153,6 +154,24 @@ describe('CWA module', () => {
           version: '^4.0.8',
         },
       })
+    })
+
+    test('the sitemap options are defaults, so an app can still choose its own server-side cache', async () => {
+      await import('./module')
+
+      const [{ moduleDependencies }] = (nuxtKit.defineNuxtModule as Mock).mock.lastCall
+      const sitemap = (await moduleDependencies({ options: { modulesDir: ['/app/node_modules'] } }))['@nuxtjs/sitemap']
+
+      expect(sitemap.defaults).toEqual({
+        cacheMaxAgeSeconds: 0,
+        sitemaps: {
+          cwa: {
+            sources: ['/__sitemap__/cwa-urls'],
+            chunks: true,
+          },
+        },
+      })
+      expect(sitemap.overrides).toBeUndefined()
     })
   })
 
@@ -536,6 +555,27 @@ declare module 'vue-router' {
           apiUrl: '',
           readiness: { path: '/_/health', timeout: 2000 },
         })
+      })
+
+      test('registers the sitemap cache plugin whether or not the page cache is enabled', async () => {
+        const sitemapPlugin = expect.stringMatching(/runtime\/server\/sitemap-cache-plugin$/)
+
+        ;(nuxtKit.addServerPlugin as Mock).mockClear()
+        await prepare()
+        expect(nuxtKit.addServerPlugin as Mock).toHaveBeenCalledWith(sitemapPlugin)
+
+        ;(nuxtKit.addServerPlugin as Mock).mockClear()
+        await prepare({ pageCache: { enabled: false } })
+        expect(nuxtKit.addServerPlugin as Mock).toHaveBeenCalledWith(sitemapPlugin)
+        expect(nuxtKit.addServerPlugin as Mock).not.toHaveBeenCalledWith(expect.stringMatching(/runtime\/server\/page-cache-plugin$/))
+      })
+
+      test('passes the sitemap cache settings to the server options the nitro plugin reads', async () => {
+        await prepare({ sitemapCache: { sharedMaxAge: 60 } })
+
+        const { lastCall: [{ getContents }] } = (nuxtKit.addServerTemplate as Mock).mock
+
+        expect(JSON.parse(getContents().split('export const options = ')[1]).sitemapCache).toEqual({ sharedMaxAge: 60 })
       })
 
       test('keeps warm settings the app has configured', async () => {
