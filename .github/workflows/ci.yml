@@ -103,9 +103,34 @@ jobs:
       - name: Audit
         run: pnpm audit
 
+  fresh-install:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: latest
+          run_install: false
+
+      - name: Use Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: latest
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Pack and build a fresh app against the published package
+        run: pnpm run test:fresh-install
+
   deploy-next:
     runs-on: ubuntu-latest
-    needs: [test]
+    needs: [test, fresh-install]
     if: |
       github.ref == 'refs/heads/dev' &&
       github.event_name == 'push' &&

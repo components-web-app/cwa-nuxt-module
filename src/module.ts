@@ -5,6 +5,7 @@ import { defu } from 'defu'
 import mergeWith from 'lodash-es/mergeWith'
 import isArray from 'lodash-es/isArray'
 import {
+  addImports,
   addImportsDir,
   addPlugin,
   addServerHandler,
@@ -20,8 +21,9 @@ import {
   extendRouteRules,
   addServerPlugin,
   hasNuxtModule,
+  tryResolveModule,
 } from '@nuxt/kit'
-import type { Component, NuxtPage, ViteConfig } from '@nuxt/schema'
+import type { Component, ModuleDependencies, Nuxt, NuxtPage, ViteConfig } from '@nuxt/schema'
 import { defaultSiteConfig } from './runtime/composables/useCwaSiteConfig'
 import type { CwaModuleOptions, CwaResourcesMeta, GlobalComponentNames } from './runtime/types'
 
@@ -73,43 +75,61 @@ function createDefaultCwaPages(
 
 export const NAME = '@cwa/nuxt' as const
 
-export default defineNuxtModule<CwaModuleOptions>({
-  moduleDependencies: {
-    '@pinia/nuxt': {
-      version: '^1.0.2',
-      optional: false,
-    },
-    '@nuxtjs/robots': {
-      version: '^6.0',
-    },
-    '@nuxtjs/sitemap': {
-      version: '^8.0',
-      optional: false,
-      defaults: {
-        sitemaps: {
-          cwa: {
-            sources: ['/__sitemap__/cwa-urls'],
-            chunks: true,
-          },
+const OG_IMAGE_RENDERER_PACKAGES = ['satori', '@resvg/resvg-js'] as const
+
+const ogImageModuleDependency: ModuleDependencies = {
+  'nuxt-og-image': {
+    version: '^6.0',
+  },
+}
+
+const baseModuleDependencies: ModuleDependencies = {
+  '@pinia/nuxt': {
+    version: '^1.0.2',
+    optional: false,
+  },
+  '@nuxtjs/robots': {
+    version: '^6.0',
+  },
+  '@nuxtjs/sitemap': {
+    version: '^8.0',
+    optional: false,
+    defaults: {
+      sitemaps: {
+        cwa: {
+          sources: ['/__sitemap__/cwa-urls'],
+          chunks: true,
         },
       },
     },
-    'nuxt-link-checker': {
-      version: '^5.0',
-    },
-    'nuxt-schema-org': {
-      version: '^6.0',
-    },
-    'nuxt-seo-utils': {
-      version: '^8.1',
-    },
-    'nuxt-site-config': {
-      version: '^4.0.8',
-    },
-    'nuxt-og-image': {
-      version: '^6.0',
-    },
   },
+  'nuxt-link-checker': {
+    version: '^5.0',
+  },
+  'nuxt-schema-org': {
+    version: '^6.0',
+  },
+  'nuxt-seo-utils': {
+    version: '^8.1',
+  },
+  'nuxt-site-config': {
+    version: '^4.0.8',
+  },
+}
+
+async function hasOgImageRenderer(nuxt: Nuxt): Promise<boolean> {
+  const resolved = await Promise.all(
+    OG_IMAGE_RENDERER_PACKAGES.map(id => tryResolveModule(id, nuxt.options.modulesDir)),
+  )
+  return resolved.every(Boolean)
+}
+
+export default defineNuxtModule<CwaModuleOptions>({
+  moduleDependencies: async (nuxt: Nuxt): Promise<ModuleDependencies> => (
+    await hasOgImageRenderer(nuxt)
+      ? { ...baseModuleDependencies, ...ogImageModuleDependency }
+      : baseModuleDependencies
+  ),
   meta: {
     name: NAME,
     configKey: 'cwa',
@@ -139,6 +159,10 @@ export default defineNuxtModule<CwaModuleOptions>({
       readFileSync(resolve('../package.json'), 'utf8'),
     )
     logger.info(`Adding ${NAME} module (${name}@${version})...`)
+
+    if (!await hasOgImageRenderer(nuxt)) {
+      logger.warn(`${NAME}: open graph image generation is disabled. Install ${OG_IMAGE_RENDERER_PACKAGES.join(' and ')} to enable it.`)
+    }
 
     // common alias due to releasing different package names
     nuxt.options.alias['#cwa'] = resolve('./runtime')
@@ -319,10 +343,11 @@ export const currentModulePackageInfo:{ version: string, name: string } = ${JSON
         },
       })
 
-      addTypeTemplate({
-        filename: 'types/cwa-og-image.d.ts',
-        write: true,
-        getContents: () => /* ts */`import type CwaDefaultSatori from '${resolve('./layer/components/og-image/CwaDefault.satori.vue')}'
+      if (hasNuxtModule('nuxt-og-image', nuxt)) {
+        addTypeTemplate({
+          filename: 'types/cwa-og-image.d.ts',
+          write: true,
+          getContents: () => /* ts */`import type CwaDefaultSatori from '${resolve('./layer/components/og-image/CwaDefault.satori.vue')}'
 declare module '#og-image/components' {
   interface OgImageComponents {
     CwaDefault: typeof CwaDefaultSatori
@@ -330,7 +355,15 @@ declare module '#og-image/components' {
     CwaDefaultSatori: typeof CwaDefaultSatori
   }
 }`,
-      })
+        })
+      }
+      else {
+        addImports({
+          name: 'defineOgImage',
+          as: 'defineOgImage',
+          from: resolve('./runtime/og-image-fallback'),
+        })
+      }
 
       addTypeTemplate({
         filename: 'types/cwa.d.ts',

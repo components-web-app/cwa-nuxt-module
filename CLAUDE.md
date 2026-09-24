@@ -641,6 +641,52 @@ Two API migrations came with it:
 
 ---
 
+## The published package could not be installed ([#273](https://github.com/components-web-app/cwa-nuxt-module/issues/273))
+
+Everything under `src/runtime/` and `src/layer/` ships, so an import there is a promise to every consuming app. Several were promises the package could not keep, and the repo could not notice: the **playground declares `@headlessui/vue`, `@tailwindcss/vite` and `@resvg/resvg-js` itself**, so nothing in this repo ever exercised the package as an app receives it.
+
+**Proven by packing and installing, not by reading.** A fresh Nuxt 4.5 app with the tarball and nothing else failed twice: first `[nuxt-og-image] satori renderer missing dependencies: satori, @resvg/resvg-js`, then `Rolldown failed to resolve import "@headlessui/vue" from …/dist/runtime/templates/components/core/DialogBox.vue`.
+
+### What moved, and the rule behind each
+
+- **`@headlessui/vue` → `dependencies`.** Nine shipped `.vue` files import it. **Not a peer:** there is no v2 — `1.7.23` has been latest throughout — so `^1.7.23` dedupes with any app on `^1`, and a peer would force a line into every app's `package.json` for nothing. Two copies would cost bytes rather than correctness: context is `provide`/`inject` keyed by module-level `Symbol(...)`, so only composing an app's `<ListboxOption>` inside our `<Listbox>` would break, and every CWA usage is self-contained. Its `useId` defers to Vue 3.5's, so ids do not diverge across copies either. This is what #236 already accepted in principle — Headless UI injects no theme or config, so a hard dependency is safe.
+- **`@nuxt/kit` and `@nuxt/schema` → `dependencies`.** `@nuxt/kit` is a real top-level import of `dist/module.mjs`; `@nuxt/schema` is emitted into `dist/module.d.mts` and `dist/types.d.mts`. Both resolved only through pnpm's default hoisting — the `unbuild` trap above, one layer out.
+
+  **The cost is contractual and invisible in the diff: `^4.5.2` now ships to every app.** It must stay in step with `meta.compatibility.nuxt` and with the `moduleDependencies` versions; raising one without the others gives an app two Nuxt toolchains or a version error it cannot act on.
+- **The five `@nuxtjs/seo` sub-modules → `dependencies`** at the same ranges `@nuxtjs/seo` uses, so they dedupe to one copy rather than installing a second `nuxt-site-config`. They are named in `moduleDependencies` and their `#site-config/…` aliases are imported by shipped code, but they were only ever reachable transitively.
+- **Removed: `@takumi-rs/core` and `@nuxtjs/color-mode`.** Neither is referenced anywhere in `src`. Takumi is an *optional peer of `nuxt-og-image`*, so putting it in our `dependencies` never helped: under an isolated install it sits in our own deps directory where og-image cannot see it, and setting `ogImage: { renderer: 'takumi' }` still failed on the satori check. `cwa:dark:` compiles to `@media (prefers-color-scheme: dark)` with no `.dark` class selector, so nothing needed color-mode either.
+- **`@tailwindcss/vite` → `devDependencies`.** Only the playground uses it, and it declares its own.
+
+### OG images are opt-in, and `moduleDependencies` is a function because of it
+
+`satori` and `@resvg/resvg-js` are **optional `peerDependencies`**, not dependencies. `@resvg/resvg-js` is a native binary; forcing it onto every app and CI image to fix a case no current app hits is the wrong trade, and it joins the `sharp` family of security overrides.
+
+`moduleDependencies` is therefore a function of `nuxt`: it requires `nuxt-og-image` **only when both renderer packages resolve** from `nuxt.options.modulesDir`. Three things make that the shape it has to be:
+
+- **`optional: true` is not the mechanism.** `@nuxt/kit`'s `installModules` skips an entry entirely only when it is optional **and** carries no `version`, `defaults` or `overrides` — with a version it still resolves it and records an error. And `@nuxtjs/seo` is our dependency, so `nuxt-og-image` is always *resolvable*; an optional entry would still have installed it, and it would still have thrown.
+- **Neither the template nor SRNTE lists `nuxt-og-image` in `modules`** — both rely entirely on this `moduleDependencies` entry. Skipping it unconditionally would have switched their OG images off silently. Both already declare all three optional packages as dependencies, so the conditional keeps them exactly as they are.
+- **`cwa-page.vue` calls `defineOgImage`**, an auto-import that does not exist when og-image is absent. So `modules:done` registers a no-op `defineOgImage` (`runtime/og-image-fallback.ts`) in that case, and skips the `#og-image/components` type template. This mirrors what og-image itself does when disabled.
+
+**What the failure looks like now.** An app with no renderer gets one build-time line — `open graph image generation is disabled. Install satori and @resvg/resvg-js to enable it.` — and a working build with no OG images. An app that lists `nuxt-og-image` in `modules` itself bypasses our gate and gets og-image's own message, which already names both packages and the install command.
+
+### The guard: `pnpm run test:fresh-install`
+
+`test/e2e/fresh-install.mjs` packs the module, installs the tarball into a throwaway app outside the repo with **none** of the optional packages, and builds it — twice: once with a default pnpm install, once with `hoist: false`.
+
+**The no-hoist round is the one that earns its place, and mutation testing says so.** Demoting `@headlessui/vue` back to a devDependency fails both rounds; demoting `@nuxt/kit` **passes the default round and fails only the no-hoist one** with `Cannot find module '@nuxt/kit'`. A default install would have kept reporting green for exactly the bug that shipped.
+
+The scratch app declares `nuxt` and `vue` and nothing else. `vue` is there because `hoist: false` also exposes *other packages'* undeclared imports — `nuxt-schema-org` imports `vue` without depending on it — and this check is about our package, not theirs. `vue` is already one of our own dependencies, so declaring it in the app hides nothing.
+
+It is **not** in `pnpm run test`: it needs a network install and takes about 90 seconds locally. It runs in CI as its own `fresh-install` job which **`deploy-next` now depends on** — before this, a package that could not be installed would publish anyway, which is how this shipped. It is gated to `push` events, so it covers the publishing branches and stays off pull requests.
+
+**`pnpm pack` runs `prepack`, so the check rebuilds `dist/`.** Run `pnpm run dev:prepare` afterwards to get the stub back.
+
+### Snapshots no longer ship
+
+`@nuxt/module-builder`'s mkdist pattern excludes `*.spec.ts` but not `*.spec.ts.snap`, so eleven snapshot files were published in `dist/runtime`. `build.config.ts` appends the missing negation in a `build:before` hook — the entry's own pattern, so nothing copies them in the first place. A `del` step in the `build` script was rejected: under the stub build `dist/runtime` is a **symlink to `src/runtime`**, so a mistimed run would delete the source snapshots.
+
+---
+
 ## Tailwind v4
 
 The module uses **Tailwind v4** (`tailwindcss: ^4.2.4`, `@tailwindcss/postcss: ^4.2.4`, `@tailwindcss/vite: ^4.2.4`). The build is CSS-first — no `tailwind.config.js`. All configuration lives in `src/tailwind/tailwind-cwa.css`.

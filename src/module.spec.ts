@@ -1,7 +1,7 @@
 // @vitest-environment nuxt
 
 import { join } from 'path'
-import { afterEach, describe, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import type { Mock } from 'vitest'
 import * as nuxtKit from '@nuxt/kit'
 
@@ -11,7 +11,9 @@ vi.mock('@nuxt/kit', async () => {
   const newModule = {
     ...actual,
     addPlugin: vi.fn(),
+    addImports: vi.fn(),
     addImportsDir: vi.fn(),
+    tryResolveModule: vi.fn(async (id: string) => `/node_modules/${id}`),
     addTemplate: vi.fn(),
     addServerTemplate: vi.fn(),
     addServerHandler: vi.fn(),
@@ -115,7 +117,7 @@ describe('CWA module', () => {
 
       const [{ moduleDependencies }] = (nuxtKit.defineNuxtModule as Mock).mock.lastCall
 
-      expect(moduleDependencies).toEqual({
+      expect(await moduleDependencies({ options: { modulesDir: ['/app/node_modules'] } })).toEqual({
         '@pinia/nuxt': {
           version: '^1.0.2',
           optional: false,
@@ -917,6 +919,83 @@ declare module 'vue-router' {
         hook(manifest)
 
         expect(manifest[layout].dynamicImports).toEqual([defaultLayout])
+      })
+    })
+  })
+
+  describe('open graph image renderer (#273)', () => {
+    beforeEach(() => {
+      ;(nuxtKit.addImports as Mock).mockClear()
+      ;(nuxtKit.addTypeTemplate as Mock).mockClear()
+    })
+
+    afterEach(() => {
+      ;(nuxtKit.tryResolveModule as Mock).mockImplementation(async (id: string) => `/node_modules/${id}`)
+      ;(nuxtKit.hasNuxtModule as Mock).mockReturnValue(false)
+    })
+
+    async function getModuleDependencies(nuxt: any = { options: { modulesDir: ['/app/node_modules'] } }) {
+      await import('./module')
+      const [{ moduleDependencies }] = (nuxtKit.defineNuxtModule as Mock).mock.lastCall
+      return moduleDependencies(nuxt)
+    }
+
+    async function prepareWithModulesDone(ogImageInstalled: boolean) {
+      ;(nuxtKit.hasNuxtModule as Mock).mockImplementation((name: string) => name === 'nuxt-og-image' && ogImageInstalled)
+      return prepareMockNuxt({ mock: true }, {
+        hook: vi.fn((hookName, callback) => {
+          if (hookName === 'modules:done') {
+            callback()
+          }
+        }),
+        options: {
+          modulesDir: ['/app/node_modules'],
+          runtimeConfig: { public: { cwa: {} } },
+          alias: {},
+          css: [],
+          build: { transpile: [] },
+          dir: { app: '' },
+          sitemap: {},
+        },
+      })
+    }
+
+    test('requires nuxt-og-image when both renderer packages resolve', async () => {
+      const dependencies = await getModuleDependencies()
+
+      expect(dependencies['nuxt-og-image']).toEqual({ version: '^6.0' })
+      expect(nuxtKit.tryResolveModule).toHaveBeenCalledWith('satori', ['/app/node_modules'])
+      expect(nuxtKit.tryResolveModule).toHaveBeenCalledWith('@resvg/resvg-js', ['/app/node_modules'])
+    })
+
+    test.each(['satori', '@resvg/resvg-js'])('omits nuxt-og-image when %s is not installed', async (missing) => {
+      ;(nuxtKit.tryResolveModule as Mock).mockImplementation(async (id: string) => id === missing ? undefined : `/node_modules/${id}`)
+
+      const dependencies = await getModuleDependencies()
+
+      expect(dependencies['nuxt-og-image']).toBeUndefined()
+      expect(dependencies['@pinia/nuxt']).toEqual({ version: '^1.0.2', optional: false })
+    })
+
+    test('declares the og image component types when nuxt-og-image is installed', async () => {
+      await prepareWithModulesDone(true)
+
+      const filenames = (nuxtKit.addTypeTemplate as Mock).mock.calls.map(([{ filename }]) => filename)
+
+      expect(filenames).toContain('types/cwa-og-image.d.ts')
+      expect(nuxtKit.addImports).not.toHaveBeenCalled()
+    })
+
+    test('registers a no-op defineOgImage when nuxt-og-image is absent, so cwa-page still builds', async () => {
+      await prepareWithModulesDone(false)
+
+      const filenames = (nuxtKit.addTypeTemplate as Mock).mock.calls.map(([{ filename }]) => filename)
+
+      expect(filenames).not.toContain('types/cwa-og-image.d.ts')
+      expect(nuxtKit.addImports).toHaveBeenCalledWith({
+        name: 'defineOgImage',
+        as: 'defineOgImage',
+        from: 'runtime/og-image-fallback',
       })
     })
   })
