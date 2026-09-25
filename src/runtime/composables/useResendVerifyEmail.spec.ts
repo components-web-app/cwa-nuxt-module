@@ -108,10 +108,10 @@ describe('useResendVerifyEmail', () => {
   })
 
   test('FetchError falls back to statusMessage', async () => {
-    mockAuth.resendVerifyEmail.mockResolvedValue(makeFetchError(503, undefined, 'Service Unavailable'))
+    mockAuth.resendVerifyEmail.mockResolvedValue(makeFetchError(502, undefined, 'Bad Gateway'))
     const { resendVerifyEmail, error } = useResendVerifyEmail()
     await resendVerifyEmail('user@example.com', 'current')
-    expect(error.value).toBe('Service Unavailable')
+    expect(error.value).toBe('Bad Gateway')
   })
 
   test('FetchError falls back to generic message', async () => {
@@ -155,6 +155,18 @@ describe('useResendVerifyEmail', () => {
       vi.advanceTimersByTime(1000)
       expect(retryIn.value).toBe(239)
       vi.advanceTimersByTime(239_000)
+      expect(retryIn.value).toBe(0)
+    })
+
+    test.each(['current', 'new'] as const)('for the %s address, a failed send says so and allows an immediate retry', async (type) => {
+      mockAuth.resendVerifyEmail.mockResolvedValue(makeFetchError(503, 'Symfony mailer transport error'))
+      mockAuth.resendVerifyNewEmail.mockResolvedValue(makeFetchError(503, 'Symfony mailer transport error'))
+      const { resendVerifyEmail, error, success, retryIn } = useResendVerifyEmail()
+
+      await resendVerifyEmail('user@example.com', type)
+
+      expect(error.value).toBe('The email couldn\'t be sent. Please try again.')
+      expect(success.value).toBe(false)
       expect(retryIn.value).toBe(0)
     })
 

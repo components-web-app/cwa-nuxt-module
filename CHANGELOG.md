@@ -5,6 +5,7 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 ## [Unreleased]
 
 - Throttled email requests (429) say when another can be sent; the admin resend link counts down until then ([#353](https://github.com/components-web-app/cwa-nuxt-module/issues/353))
+- A failed email send (503) says the email couldn't be sent, rather than implying one is on its way ([#353](https://github.com/components-web-app/cwa-nuxt-module/issues/353))
 - Cancel a pending email change from the admin user page ([#353](https://github.com/components-web-app/cwa-nuxt-module/issues/353))
 - `CwaUiDatePicker`, `CwaUiCalendar` and `CwaUiInputDate`, built on `reka-ui` and ported from Nuxt UI; the Publish tab and a route's go-live date use the picker ([#320](https://github.com/components-web-app/cwa-nuxt-module/issues/320))
 - Schedule a draft to publish at a future time from the Publish tab ([#320](https://github.com/components-web-app/cwa-nuxt-module/issues/320))

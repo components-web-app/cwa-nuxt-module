@@ -40,6 +40,9 @@ export const useResendVerifyEmail = () => {
         startCountdown(seconds)
       }
     }
+    else if (fetchError.status === 503) {
+      error.value = 'The email couldn\'t be sent. Please try again.'
+    }
     else if (fetchError.status === 404) {
       error.value = 'Username not found'
     }
