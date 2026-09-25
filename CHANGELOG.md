@@ -4,6 +4,10 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+- An `undefined` or non-string `allowedComponents` entry warns and syncs nothing instead of throwing ([#354](https://github.com/components-web-app/cwa-nuxt-module/issues/354), [825cf38c](https://github.com/components-web-app/cwa-nuxt-module/commit/825cf38c))
+- `useResendVerifyEmail` resets `success` when a new request starts, so a throttled or failed resend no longer shows alongside the earlier success; Back to Login after a password reset no longer sends a second reset request ([#355](https://github.com/components-web-app/cwa-nuxt-module/issues/355), [28901c51](https://github.com/components-web-app/cwa-nuxt-module/commit/28901c51))
+- An email the API refuses to send (400) asks the visitor to contact the site administrator, and warns in the console about `user.email_links.allowed_origins` ([#356](https://github.com/components-web-app/cwa-nuxt-module/issues/356), [28901c51](https://github.com/components-web-app/cwa-nuxt-module/commit/28901c51))
+
 ## [2.0.0-alpha.2] - 2026-09-25
 
 - Throttled email requests (429) say when another can be sent; the admin resend link counts down until then ([#353](https://github.com/components-web-app/cwa-nuxt-module/issues/353), [6e0fd593](https://github.com/components-web-app/cwa-nuxt-module/commit/6e0fd593))
