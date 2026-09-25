@@ -1,5 +1,6 @@
 import { getCurrentScope, onScopeDispose, ref } from 'vue'
 import { FetchError } from 'ofetch'
+import { consola as logger } from 'consola'
 import { useCwa } from '#cwa/composables/cwa'
 import { formatWait, retryAfterSeconds } from '#cwa/api/retry-after'
 
@@ -43,6 +44,10 @@ export const useResendVerifyEmail = () => {
     else if (fetchError.status === 503) {
       error.value = 'The email couldn\'t be sent. Please try again.'
     }
+    else if (fetchError.status === 400) {
+      error.value = 'The email couldn\'t be sent. Please contact the site administrator.'
+      logger.warn('[CWA] The API refused to send the email (400). The likely cause is that this site\'s origin is not in the API\'s `user.email_links.allowed_origins` and no `default_origin` is configured.')
+    }
     else if (fetchError.status === 404) {
       error.value = 'Username not found'
     }
@@ -58,6 +63,7 @@ export const useResendVerifyEmail = () => {
     }
     submitting.value = true
     error.value = undefined
+    success.value = false
     const callFunction = (type: 'current' | 'new') => {
       if (type === 'new') {
         return $cwa.auth.resendVerifyNewEmail(username)

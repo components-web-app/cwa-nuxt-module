@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, test, vi, beforeEach } from 'vitest'
 import { createFetchError } from 'ofetch'
+import { consola as logger } from 'consola'
 import * as cwaComposable from '#cwa/composables/cwa'
 import { useResendVerifyEmail } from '#cwa/composables/useResendVerifyEmail'
 
@@ -178,6 +179,45 @@ describe('useResendVerifyEmail', () => {
 
       expect(error.value).toBe('A confirmation email was already sent. You can send another shortly.')
       expect(retryIn.value).toBe(0)
+    })
+  })
+
+  describe('a new request after a successful one (#355)', () => {
+    test.each([
+      ['current', 429],
+      ['current', 503],
+      ['new', 429],
+      ['new', 503],
+    ] as const)('for the %s address, a following %i leaves success false', async (type, status) => {
+      const endpoint = type === 'new' ? mockAuth.resendVerifyNewEmail : mockAuth.resendVerifyEmail
+      endpoint.mockResolvedValueOnce({})
+      endpoint.mockResolvedValueOnce(makeFetchError(status))
+      const { resendVerifyEmail, error, success } = useResendVerifyEmail()
+
+      await resendVerifyEmail('user@example.com', type)
+      expect(success.value).toBe(true)
+
+      await resendVerifyEmail('user@example.com', type)
+      expect(error.value).toBeDefined()
+      expect(success.value).toBe(false)
+    })
+  })
+
+  describe('the API refusing to send the email (#356)', () => {
+    test.each(['current', 'new'] as const)('for the %s address, a 400 with no body asks the visitor to contact the administrator and warns once', async (type) => {
+      const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {})
+      mockAuth.resendVerifyEmail.mockResolvedValue(makeFetchError(400, undefined, 'Bad Request'))
+      mockAuth.resendVerifyNewEmail.mockResolvedValue(makeFetchError(400, undefined, 'Bad Request'))
+      const { resendVerifyEmail, error, success } = useResendVerifyEmail()
+
+      await resendVerifyEmail('user@example.com', type)
+
+      expect(error.value).toBe('The email couldn\'t be sent. Please contact the site administrator.')
+      expect(success.value).toBe(false)
+      expect(warn).toHaveBeenCalledOnce()
+      expect(warn.mock.calls[0]!.join(' ')).toContain('user.email_links.allowed_origins')
+      expect(warn.mock.calls[0]!.join(' ')).toContain('default_origin')
+      warn.mockRestore()
     })
   })
 })
