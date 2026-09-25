@@ -7,7 +7,8 @@ import ModalSelect from '#cwa/templates/components/core/admin/form/ModalSelect.v
 import type { CwaResource } from '#cwa/resources/resource-utils'
 import type { CwaRouteLiveAt, RouteLiveState } from '#cwa/resources/route-publication'
 import { getRouteOwnLiveState, isRouteGatedByAncestor, routeReachableAt } from '#cwa/resources/route-publication'
-import { dateTimeZoneLabel, formatDateTime, fromDateTimeInput, toDateTimeInput } from '#cwa/resources/date-time-input'
+import { formatDateTime } from '#cwa/resources/date-time-input'
+import DatePicker from '#cwa/templates/components/ui/DatePicker.vue'
 
 const { pageResource, parentRoutePrefix, currentPath, disableButtons, routePublication } = defineProps<{
   disableButtons: boolean
@@ -95,8 +96,8 @@ const publicationOptions = [
 ]
 
 const localPublicationState = ref<RouteLiveState>(getRouteOwnLiveState({ liveAt: liveAtModel.value }))
-const localLiveAt = ref(toDateTimeInput(liveAtModel.value))
-const liveAtTimezone = dateTimeZoneLabel()
+const localLiveAt = ref<string | null>(liveAtModel.value ?? null)
+const minLiveAt = new Date().toISOString()
 
 const editedPublication = computed<CwaRouteLiveAt>(() => ({ ...routePublication, liveAt: liveAtModel.value }))
 const gatedByAncestor = computed(() => isRouteGatedByAncestor(editedPublication.value))
@@ -117,18 +118,17 @@ function handlePublicationStateChange(state: RouteLiveState) {
     liveAtModel.value = null
     return
   }
-  const scheduled = fromDateTimeInput(localLiveAt.value)
+  const scheduled = localLiveAt.value
   const isFuture = !!scheduled && new Date(scheduled).getTime() > Date.now()
   if (!isFuture) {
-    localLiveAt.value = ''
+    localLiveAt.value = null
   }
   liveAtModel.value = isFuture ? scheduled : null
 }
 
-function handleLiveAtChange(value: string | number | null | undefined) {
-  const localValue = value === null || value === undefined ? '' : String(value)
-  localLiveAt.value = localValue
-  liveAtModel.value = fromDateTimeInput(localValue)
+function handleLiveAtChange(value: string) {
+  localLiveAt.value = value
+  liveAtModel.value = value
 }
 </script>
 
@@ -192,19 +192,13 @@ function handleLiveAtChange(value: string | number | null | undefined) {
         v-if="localPublicationState === 'scheduled'"
         class="cwa:flex cwa:flex-col cwa:gap-y-2"
       >
-        <ModalInput
+        <DatePicker
           data-live-at
-          :model-value="localLiveAt"
           label="Goes live"
-          type="datetime-local"
+          :model-value="localLiveAt"
+          :min="minLiveAt"
           @update:model-value="handleLiveAtChange"
         />
-        <p
-          data-live-at-timezone
-          class="cwa:text-xs cwa:text-stone-300"
-        >
-          Times are in {{ liveAtTimezone }}.
-        </p>
       </div>
       <p
         v-if="liveSince"

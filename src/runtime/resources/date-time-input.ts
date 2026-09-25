@@ -1,6 +1,7 @@
 import dayjs from 'dayjs'
+import { fromDate, getLocalTimeZone } from '@internationalized/date'
+import type { DateValue, ZonedDateTime } from '@internationalized/date'
 
-const DATETIME_LOCAL_FORMAT = 'YYYY-MM-DDTHH:mm'
 const DISPLAY_FORMAT = 'D MMM YYYY, HH:mm'
 
 export function formatDateTime(value?: string | null): string {
@@ -11,28 +12,34 @@ export function formatDateTime(value?: string | null): string {
   return parsed.isValid() ? parsed.format(DISPLAY_FORMAT) : ''
 }
 
-export function toDateTimeInput(value?: string | null): string {
-  if (!value) {
-    return ''
-  }
-  const parsed = dayjs(value)
-  return parsed.isValid() ? parsed.format(DATETIME_LOCAL_FORMAT) : ''
-}
-
-export function fromDateTimeInput(value?: string | null): string | null {
-  if (!value) {
-    return null
-  }
-  const parsed = new Date(value)
-  return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString()
-}
-
-export function dateTimeZoneLabel(): string {
+export function dateTimeZoneLabel(at?: string | null): string {
   const { timeZone } = Intl.DateTimeFormat().resolvedOptions()
-  const offsetMinutes = -(new Date()).getTimezoneOffset()
+  const date = at ? new Date(at) : new Date()
+  const offsetMinutes = -(Number.isNaN(date.getTime()) ? new Date() : date).getTimezoneOffset()
   const sign = offsetMinutes < 0 ? '-' : '+'
   const absolute = Math.abs(offsetMinutes)
   const hours = String(Math.floor(absolute / 60)).padStart(2, '0')
   const minutes = String(absolute % 60).padStart(2, '0')
   return `${timeZone}, UTC${sign}${hours}:${minutes}`
+}
+
+export function toLocalDateTime(value?: string | null): ZonedDateTime | undefined {
+  if (!value) {
+    return undefined
+  }
+  const time = new Date(value).getTime()
+  return Number.isNaN(time) ? undefined : fromDate(new Date(time), getLocalTimeZone())
+}
+
+export function fromLocalDateTime(value?: DateValue | null): string | null {
+  if (!value) {
+    return null
+  }
+  const date = 'timeZone' in value ? value.toDate() : value.toDate(getLocalTimeZone())
+  return date.toISOString()
+}
+
+export function earliestSelectable(value: string, minuteStep: number): string {
+  const step = minuteStep * 60_000
+  return new Date(Math.ceil(new Date(value).getTime() / step) * step).toISOString()
 }

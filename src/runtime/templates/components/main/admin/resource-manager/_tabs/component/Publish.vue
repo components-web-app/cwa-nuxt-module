@@ -3,8 +3,8 @@ import { computed, ref, watch } from 'vue'
 import { useCwaResourceManagerTab } from '#cwa/composables/cwa-resource-manager-tab'
 import { DEFAULT_TAB_ORDER } from '#cwa/admin/manager-tabs-resolver'
 import { getPublishedResourceState } from '#cwa/resources/resource-utils'
-import { dateTimeZoneLabel, formatDateTime, fromDateTimeInput, toDateTimeInput } from '#cwa/resources/date-time-input'
-import ModalInput from '#cwa/templates/components/core/admin/form/ModalInput.vue'
+import { formatDateTime } from '#cwa/resources/date-time-input'
+import DatePicker from '#cwa/templates/components/ui/DatePicker.vue'
 
 const { exposeMeta, resource, $cwa, iri } = useCwaResourceManagerTab({
   name: 'Publish',
@@ -42,13 +42,12 @@ const scheduledAt = computed<string | undefined>(() => {
   return new Date(publishedAt).getTime() > Date.now() ? publishedAt : undefined
 })
 const scheduledAtLabel = computed(() => formatDateTime(scheduledAt.value))
-const scheduleInput = ref(toDateTimeInput(scheduledAt.value))
-const minScheduleInput = toDateTimeInput(new Date().toISOString())
-const timeZone = dateTimeZoneLabel()
+const scheduleValue = ref<string | null>(scheduledAt.value ?? null)
+const minSchedule = new Date().toISOString()
 const saving = ref(false)
 
 watch(scheduledAt, (value) => {
-  scheduleInput.value = toDateTimeInput(value)
+  scheduleValue.value = value ?? null
 })
 
 async function savePublishedAt(publishedAt: string | null) {
@@ -68,7 +67,7 @@ async function savePublishedAt(publishedAt: string | null) {
 }
 
 function schedule() {
-  const chosen = fromDateTimeInput(scheduleInput.value)
+  const chosen = scheduleValue.value
   if (!chosen) {
     return
   }
@@ -103,18 +102,14 @@ defineExpose(exposeMeta)
       >
         Scheduled for {{ scheduledAtLabel }}
       </p>
-      <ModalInput
-        v-model="scheduleInput"
+      <DatePicker
+        v-model="scheduleValue"
         label="Publish at"
-        type="datetime-local"
-        :min="minScheduleInput"
+        :min="minSchedule"
       />
-      <p class="cwa:text-xs cwa:text-stone-300">
-        Times are in {{ timeZone }}.
-      </p>
       <div class="cwa:flex cwa:gap-x-2">
         <CwaUiFormButton
-          :disabled="saving || !scheduleInput"
+          :disabled="saving || !scheduleValue"
           @click="schedule"
         >
           Schedule

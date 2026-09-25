@@ -2,7 +2,8 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { computed, ref } from 'vue'
-import ModalInput from '#cwa/templates/components/core/admin/form/ModalInput.vue'
+import { resetLocalTimeZone } from '@internationalized/date'
+import DatePicker from '#cwa/templates/components/ui/DatePicker.vue'
 import Publish from './Publish.vue'
 
 const iri = ref('/component/draft')
@@ -54,20 +55,22 @@ describe('Publish tab — scheduling a draft', () => {
 
   beforeEach(() => {
     process.env.TZ = 'Europe/London'
+    resetLocalTimeZone()
     vi.useFakeTimers({ now: new Date('2026-09-25T12:00:00Z'), toFake: ['Date'] })
     updateResource.mockReset()
   })
 
   afterEach(() => {
     process.env.TZ = originalTz
+    resetLocalTimeZone()
     vi.useRealTimers()
   })
 
-  test('saves a future time the editor picks, in their own timezone, as a UTC publishedAt on the draft', async () => {
+  test('saves the future time the editor picks as publishedAt on the draft', async () => {
     draft()
     const wrapper = mountPublish()
 
-    await wrapper.findComponent(ModalInput).vm.$emit('update:modelValue', '2026-10-01T09:00')
+    await wrapper.findComponent(DatePicker).vm.$emit('update:modelValue', '2026-10-01T08:00:00.000Z')
     await findButton(wrapper, 'Schedule')!.trigger('click')
     await flushPromises()
 
@@ -82,14 +85,14 @@ describe('Publish tab — scheduling a draft', () => {
     draft()
     const wrapper = mountPublish()
 
-    expect(wrapper.find('input[type="datetime-local"]').attributes('min')).toBe('2026-09-25T13:00')
+    expect(wrapper.findComponent(DatePicker).props('min')).toBe('2026-09-25T12:00:00.000Z')
   })
 
   test('a time that is already past when saved publishes now, as the Publish button does', async () => {
     draft()
     const wrapper = mountPublish()
 
-    await wrapper.findComponent(ModalInput).vm.$emit('update:modelValue', '2026-09-25T10:00')
+    await wrapper.findComponent(DatePicker).vm.$emit('update:modelValue', '2026-09-25T09:00:00.000Z')
     await findButton(wrapper, 'Schedule')!.trigger('click')
     await flushPromises()
 
@@ -136,7 +139,7 @@ describe('Publish tab — scheduling a draft', () => {
     }
     const wrapper = mountPublish()
 
-    expect(wrapper.findComponent(ModalInput).exists()).toBe(false)
+    expect(wrapper.findComponent(DatePicker).exists()).toBe(false)
     expect(findButton(wrapper, 'Schedule')).toBeUndefined()
   })
 })

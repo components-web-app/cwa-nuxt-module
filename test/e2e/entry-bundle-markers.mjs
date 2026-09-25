@@ -12,6 +12,7 @@ const forbidden = [
   { marker: 'Invalid DateTime', source: 'luxon' },
   { marker: 'InvalidXml', source: 'fast-xml-parser' },
   { marker: 'headlessui', source: '@headlessui/vue' },
+  { marker: 'data-reka-date-field-segment', source: 'reka-ui' },
   { marker: 'preventOverflow', source: '@popperjs/core' },
   { marker: 'OES_texture_half_float', source: 'ui/BackgroundParticles.vue' },
 ]

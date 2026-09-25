@@ -68,6 +68,7 @@
   },
   "dependencies": {
     "@headlessui/vue": "^1.7.23",
+    "@internationalized/date": "^3.12.4",
     "@nuxt/kit": "^4.5.2",
     "@nuxt/schema": "^4.5.2",
     "@nuxtjs/robots": "^6.1.5",
@@ -90,6 +91,7 @@
     "nuxt-seo-utils": "^8.4.1",
     "nuxt-site-config": "^4.2.2",
     "pinia": "^4.0.3",
+    "reka-ui": "^2.10.5",
     "set-cookie-parser": "^3.1.2",
     "slugify": "^1.6.9",
     "uuid": "^14.0.2",
