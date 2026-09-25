@@ -4,7 +4,7 @@ import { mount } from '@vue/test-utils'
 import RoutesTabManage from './RoutesTabManage.vue'
 import ModalInput from '#cwa/templates/components/core/admin/form/ModalInput.vue'
 import ModalSelect from '#cwa/templates/components/core/admin/form/ModalSelect.vue'
-import { formatRouteLiveAt, toRouteLiveAtInput } from '#cwa/resources/route-publication'
+import { formatDateTime } from '#cwa/resources/date-time-input'
 
 function mountManage(options: {
   modelValue?: string
@@ -184,7 +184,7 @@ describe('RoutesTabManage', () => {
     test('shows a route with a future go-live date as scheduled, with the date it goes live', () => {
       const wrapper = mountManage({ liveAt: '2999-01-01T09:00:00Z' })
       expect(getStateSelect(wrapper).props('modelValue')).toBe('scheduled')
-      expect(getLiveAtInput(wrapper).props('modelValue')).toBe(toRouteLiveAtInput('2999-01-01T09:00:00Z'))
+      expect(getLiveAtInput(wrapper).props('modelValue')).toBe('2999-01-01T09:00:00Z')
     })
 
     test('shows a route the API gave no go-live date as not live', () => {
@@ -232,7 +232,7 @@ describe('RoutesTabManage', () => {
 
     test('shows a live route the date it has been live from', () => {
       const wrapper = mountManage({ liveAt: '2020-01-01T00:00:00+00:00' })
-      expect(wrapper.find('[data-live-since]').text()).toContain(formatRouteLiveAt('2020-01-01T00:00:00+00:00'))
+      expect(wrapper.find('[data-live-since]').text()).toContain(formatDateTime('2020-01-01T00:00:00+00:00'))
     })
 
     test('shows no live-since date for a route that is not live', () => {
@@ -245,22 +245,19 @@ describe('RoutesTabManage', () => {
       expect(wrapper.find('[data-live-since]').exists()).toBe(false)
     })
 
-    test('choosing scheduled reveals a datetime-local input and holds the route back until a date is given', async () => {
+    test('choosing scheduled reveals the date picker, offering nothing earlier than now, and holds the route back until a date is given', async () => {
       const wrapper = mountManage({ liveAt: '2020-01-01T00:00:00+00:00' })
+      const before = Date.now()
       await getStateSelect(wrapper).vm.$emit('update:modelValue', 'scheduled')
-      expect(getLiveAtInput(wrapper).props('type')).toBe('datetime-local')
+      expect(getLiveAtInput(wrapper).props('modelValue')).toBeNull()
+      expect(new Date(getLiveAtInput(wrapper).props('min')).getTime()).toBeGreaterThanOrEqual(before - 1000)
       expect(wrapper.emitted('update:liveAt')).toEqual([[null]])
     })
 
-    test('an editor scheduling Friday 9am commits their own 9am, not the server\'s', async () => {
+    test('commits the UTC instant the date picker gives', async () => {
       const wrapper = mountManage({ liveAt: '2999-01-01T00:00:00+00:00' })
-      await getLiveAtInput(wrapper).vm.$emit('update:modelValue', '2026-09-25T09:00')
-      expect(wrapper.emitted('update:liveAt')).toEqual([[new Date('2026-09-25T09:00').toISOString()]])
-    })
-
-    test('names the timezone the scheduled date is committed in', () => {
-      const wrapper = mountManage({ liveAt: '2999-01-01T00:00:00+00:00' })
-      expect(wrapper.find('[data-live-at-timezone]').text()).toContain(Intl.DateTimeFormat().resolvedOptions().timeZone)
+      await getLiveAtInput(wrapper).vm.$emit('update:modelValue', '2999-09-25T08:00:00.000Z')
+      expect(wrapper.emitted('update:liveAt')).toEqual([['2999-09-25T08:00:00.000Z']])
     })
   })
 
@@ -269,7 +266,7 @@ describe('RoutesTabManage', () => {
       const effectiveLiveAt = '2999-01-01T09:00:00Z'
       const wrapper = mountManage({ liveAt: '2020-01-01T00:00:00+00:00', effectiveLiveAt })
       expect(getStateSelect(wrapper).props('modelValue')).toBe('live')
-      expect(wrapper.find('[data-effective-live-at]').text()).toContain(formatRouteLiveAt(effectiveLiveAt))
+      expect(wrapper.find('[data-effective-live-at]').text()).toContain(formatDateTime(effectiveLiveAt))
     })
 
     test('says nothing about parents when the effective date matches the route own date', () => {
@@ -287,7 +284,7 @@ describe('RoutesTabManage', () => {
     test('stops claiming a parent gate once the editor schedules beyond it', async () => {
       const wrapper = mountManage({ liveAt: '2020-01-01T00:00:00+00:00', effectiveLiveAt: '2999-01-01T09:00:00Z' })
       await getStateSelect(wrapper).vm.$emit('update:modelValue', 'scheduled')
-      await getLiveAtInput(wrapper).vm.$emit('update:modelValue', '3999-01-01T09:00')
+      await getLiveAtInput(wrapper).vm.$emit('update:modelValue', '3999-01-01T09:00:00.000Z')
       expect(wrapper.find('[data-effective-live-at]').exists()).toBe(false)
     })
   })

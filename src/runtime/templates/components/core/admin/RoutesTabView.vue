@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import ModalInfo from '#cwa/templates/components/core/admin/form/ModalInfo.vue'
-import { formatRouteLiveAt, getRouteLiveState, isRouteGatedByAncestor, routeLiveStateLabel, routePublicationFromResource, routeReachableAt } from '#cwa/resources/route-publication'
+import { getRouteLiveState, isRouteGatedByAncestor, routeLiveStateLabel, routePublicationFromResource, routeReachableAt } from '#cwa/resources/route-publication'
+import { formatDateTime } from '#cwa/resources/date-time-input'
 import Spinner from '#cwa/templates/components/utils/Spinner.vue'
 import RouteRedirectsTree from '#cwa/templates/components/core/admin/RouteRedirectsTree.vue'
 import type { CwaResource } from '#cwa/resources/resource-utils'
@@ -18,7 +19,7 @@ const props = defineProps<{
 const routePublication = computed(() => routePublicationFromResource(props.resource))
 const publicationState = computed(() => getRouteLiveState(routePublication.value))
 const publicationLabel = computed(() => routeLiveStateLabel(routePublication.value))
-const goesLiveAt = computed(() => formatRouteLiveAt(routeReachableAt(routePublication.value)))
+const goesLiveAt = computed(() => formatDateTime(routeReachableAt(routePublication.value)))
 const gatedByAncestor = computed(() => isRouteGatedByAncestor(routePublication.value))
 const publicationClass = computed(() => {
   if (publicationState.value === 'live') {

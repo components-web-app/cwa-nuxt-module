@@ -69,7 +69,8 @@ import IconPages from '#cwa/templates/components/core/assets/IconPages.vue'
 import IconRoutes from '#cwa/templates/components/core/assets/IconRoutes.vue'
 import type { CwaResource } from '#cwa/resources/resource-utils'
 import IconData from '#cwa/templates/components/core/assets/IconData.vue'
-import { formatRouteLiveAt, getRouteLiveState, routeLiveStateLabel, routePublicationFromResource, routeReachableAt } from '#cwa/resources/route-publication'
+import { getRouteLiveState, routeLiveStateLabel, routePublicationFromResource, routeReachableAt } from '#cwa/resources/route-publication'
+import { formatDateTime } from '#cwa/resources/date-time-input'
 
 const props = defineProps<{
   data: CwaResource
@@ -89,7 +90,7 @@ defineEmits<{
 const routePublication = computed(() => routePublicationFromResource(props.data))
 const publicationState = computed(() => getRouteLiveState(routePublication.value))
 const publicationLabel = computed(() => routeLiveStateLabel(routePublication.value))
-const goesLiveAt = computed(() => formatRouteLiveAt(routeReachableAt(routePublication.value)))
+const goesLiveAt = computed(() => formatDateTime(routeReachableAt(routePublication.value)))
 const publicationClass = computed(() => {
   if (publicationState.value === 'live') {
     return 'cwa:text-stone-300 cwa:border-stone-600'

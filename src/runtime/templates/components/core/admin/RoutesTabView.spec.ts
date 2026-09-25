@@ -3,7 +3,7 @@ import { describe, test, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
 import RoutesTabView from './RoutesTabView.vue'
 import ModalInfo from '#cwa/templates/components/core/admin/form/ModalInfo.vue'
-import { formatRouteLiveAt } from '#cwa/resources/route-publication'
+import { formatDateTime } from '#cwa/resources/date-time-input'
 
 function mountView(overrides: Record<string, any> = {}) {
   return mount(RoutesTabView, {
@@ -102,7 +102,7 @@ describe('RoutesTabView', () => {
       const wrapper = mountView({ resource: { path: '/topic-1', redirectedFrom: [], liveAt, _metadata: { persisted: true, effectiveLiveAt: liveAt } } })
       const text = wrapper.find('[data-route-publication]').text()
       expect(text).toContain('Scheduled')
-      expect(text).toContain(formatRouteLiveAt(liveAt))
+      expect(text).toContain(formatDateTime(liveAt))
     })
 
     test('shows a route with a past go-live date as live', () => {
@@ -140,7 +140,7 @@ describe('RoutesTabView', () => {
     test('a live child route whose parent goes live next week reads as not yet reachable', () => {
       const text = mountView({ resource: gatedChild }).find('[data-route-publication]').text()
       expect(text).toContain('Scheduled')
-      expect(text).toContain(formatRouteLiveAt(gatedChild._metadata.effectiveLiveAt))
+      expect(text).toContain(formatDateTime(gatedChild._metadata.effectiveLiveAt))
       expect(text).not.toContain('Live')
     })
 

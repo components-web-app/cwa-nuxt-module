@@ -81,11 +81,11 @@ describe('useForgotPassword', () => {
   })
 
   test('doSubmit FetchError with statusMessage falls back to it', async () => {
-    mockAuth.forgotPassword.mockResolvedValue(makeFetchError(503, undefined, 'Service Unavailable'))
+    mockAuth.forgotPassword.mockResolvedValue(makeFetchError(502, undefined, 'Bad Gateway'))
     const { doSubmit, credentials, error } = useForgotPassword()
     credentials.username = 'user@example.com'
     await doSubmit()
-    expect(error.value).toBe('Service Unavailable')
+    expect(error.value).toBe('Bad Gateway')
   })
 
   test('doSubmit FetchError with no message uses fallback', async () => {
@@ -119,5 +119,30 @@ describe('useForgotPassword', () => {
     await doSubmit()
     expect(capturedSubmitting).toBe(true)
     expect(submitting.value).toBe(false)
+  })
+
+  test('a throttled request says a reset email was already sent recently (#353)', async () => {
+    mockAuth.forgotPassword.mockResolvedValue(createFetchError({
+      options: {},
+      response: Object.assign(new Response(null, { status: 429, headers: { 'Retry-After': '86400' } }), { _data: {} }),
+    } as any))
+    const { doSubmit, credentials, error, success } = useForgotPassword()
+    credentials.username = 'user@example.com'
+
+    await doSubmit()
+
+    expect(error.value).toBe('A reset email was already sent recently. Please check your inbox and spam folder.')
+    expect(success.value).toBe(false)
+  })
+
+  test('a failed send says so, rather than implying an email is on its way (#353)', async () => {
+    mockAuth.forgotPassword.mockResolvedValue(makeFetchError(503, 'Symfony mailer transport error'))
+    const { doSubmit, credentials, error, success } = useForgotPassword()
+    credentials.username = 'user@example.com'
+
+    await doSubmit()
+
+    expect(error.value).toBe('The email couldn\'t be sent. Please try again.')
+    expect(success.value).toBe(false)
   })
 })

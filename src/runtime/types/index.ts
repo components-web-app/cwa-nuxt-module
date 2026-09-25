@@ -1,8 +1,11 @@
 import type { SelectOption } from '../composables/cwa-select-input'
 import type { ImageDownscaleOptions } from '../files/image-downscale'
 import type { DefineComponent, GlobalComponents } from 'vue'
+import type { CwaComponentName } from '#build/cwa-component-names'
 
 export type GlobalComponentNames = keyof GlobalComponents
+
+export type CwaAllowedComponent = CwaComponentName | `/${string}`
 
 export type ManagerTab = GlobalComponentNames | DefineComponent<object, object, any>
 export type ComponentUi = GlobalComponentNames

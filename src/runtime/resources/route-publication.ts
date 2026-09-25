@@ -1,5 +1,3 @@
-import dayjs from 'dayjs'
-
 export type RouteLiveState = 'live' | 'scheduled' | 'draft'
 
 export interface CwaRouteLiveAt {
@@ -11,9 +9,6 @@ export interface CwaRouteLiveAtResource {
   liveAt?: string | null
   _metadata?: { effectiveLiveAt?: string | null, [key: string]: unknown } | null
 }
-
-const DATETIME_LOCAL_FORMAT = 'YYYY-MM-DDTHH:mm'
-const DISPLAY_FORMAT = 'D MMM YYYY, HH:mm'
 
 const stateLabels: Record<RouteLiveState, string> = {
   live: 'Live',
@@ -68,38 +63,4 @@ export function isRouteGatedByAncestor(resource?: CwaRouteLiveAt | null): boolea
 
 export function routeLiveStateLabel(resource?: CwaRouteLiveAt | null, now: Date = new Date()): string {
   return stateLabels[getRouteLiveState(resource, now)]
-}
-
-export function formatRouteLiveAt(liveAt?: string | null): string {
-  if (!liveAt) {
-    return ''
-  }
-  const parsed = dayjs(liveAt)
-  return parsed.isValid() ? parsed.format(DISPLAY_FORMAT) : ''
-}
-
-export function toRouteLiveAtInput(liveAt?: string | null): string {
-  if (!liveAt) {
-    return ''
-  }
-  const parsed = dayjs(liveAt)
-  return parsed.isValid() ? parsed.format(DATETIME_LOCAL_FORMAT) : ''
-}
-
-export function fromRouteLiveAtInput(value?: string | null): string | null {
-  if (!value) {
-    return null
-  }
-  const parsed = new Date(value)
-  return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString()
-}
-
-export function routeLiveAtTimezoneLabel(): string {
-  const { timeZone } = Intl.DateTimeFormat().resolvedOptions()
-  const offsetMinutes = -(new Date()).getTimezoneOffset()
-  const sign = offsetMinutes < 0 ? '-' : '+'
-  const absolute = Math.abs(offsetMinutes)
-  const hours = String(Math.floor(absolute / 60)).padStart(2, '0')
-  const minutes = String(absolute % 60).padStart(2, '0')
-  return `${timeZone}, UTC${sign}${hours}:${minutes}`
 }

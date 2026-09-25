@@ -1,6 +1,6 @@
 {
   "name": "@cwa/nuxt",
-  "version": "2.0.0-alpha.1",
+  "version": "2.0.0-alpha.2",
   "license": "MIT",
   "type": "module",
   "description": "Components Web Apps Nuxt Module. UI for creating component-driven web apps with the API Components Bundle",
@@ -38,7 +38,7 @@
     "bin"
   ],
   "scripts": {
-    "build": "pnpm run clean-dist && pnpm run copy-layer && nuxt-module-build build && pnpm run tailwind:main && pnpm run tailwind:base",
+    "build": "pnpm run clean-dist && pnpm run copy-layer && nuxt-module-build build && node scripts/check-declarations.mjs && pnpm run tailwind:main && pnpm run tailwind:base",
     "prepack": "pnpm build",
     "clean-dist": "del dist/",
     "copy-layer": "copyfiles -e \"./src/layer/**/*.spec.*\" -u 1 \"./src/layer/**\" dist/",
@@ -68,6 +68,7 @@
   },
   "dependencies": {
     "@headlessui/vue": "^1.7.23",
+    "@internationalized/date": "^3.12.4",
     "@nuxt/kit": "^4.5.2",
     "@nuxt/schema": "^4.5.2",
     "@nuxtjs/robots": "^6.1.5",
@@ -90,6 +91,7 @@
     "nuxt-seo-utils": "^8.4.1",
     "nuxt-site-config": "^4.2.2",
     "pinia": "^4.0.3",
+    "reka-ui": "^2.10.5",
     "set-cookie-parser": "^3.1.2",
     "slugify": "^1.6.9",
     "uuid": "^14.0.2",
