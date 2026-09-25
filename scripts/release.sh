@@ -15,7 +15,5 @@ case "$VERSION" in
   *-*) DIST_TAG=$(node -p "require('./package.json').version.split('-')[1].split('.')[0]") ;;
 esac
 
-echo "gitChecks: false" >> ~/pnpm-workspace.yaml
-
-echo "Publishing @cwa/nuxt@${VERSION} under the ${DIST_TAG} tag..."
-pnpm publish --ignore-scripts --access public --tag "$DIST_TAG"
+echo "Staging @cwa/nuxt@${VERSION} under the ${DIST_TAG} tag. It goes live once approved on npmjs.com."
+npx -y npm@^11.15 stage publish --ignore-scripts --access public --tag "$DIST_TAG" --provenance

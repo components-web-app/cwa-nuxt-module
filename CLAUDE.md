@@ -27,6 +27,8 @@ Record the **rule** and the **trap**, with the issue link — not the investigat
 
 To release: rename `## [Unreleased]` to `## [x.y.z] - YYYY-MM-DD`, add a fresh empty `## [Unreleased]` above it, update the compare links at the bottom, set `package.json`'s version, and push a `vX.Y.Z` tag. The `release` CI job (`scripts/changelog-section.mjs`) **refuses to publish when that version has no changelog entries**, then creates the GitHub release for the tag with that section as its notes (marked pre-release for a `-` version). `scripts/release.sh` also refuses a tag that does not match `package.json`.
 
+**`@cwa/nuxt` is staged, never published directly** ([#350](https://github.com/components-web-app/cwa-nuxt-module/issues/350)). `release.sh` runs `npm stage publish` through trusted publishing (OIDC, no token), and the version goes live only when a maintainer approves it with 2FA on npmjs.com → Staged Packages, or with `npm stage approve <id>`. Its npm trusted publisher is stage-only, so a direct `publish` from CI is rejected. `@cwa/nuxt-edge` publishes directly, because it publishes on every push. Staging needs npm ≥ 11.15, hence `npx npm@^11.15`, and packs with npm rather than pnpm — safe only while `package.json` has no `workspace:`/`catalog:` specifiers. The dist-tag is fixed when a version is staged. Rehearse locally with `GITHUB_REF_NAME=vX.Y.Z npm_config_dry_run=true ./scripts/release.sh`. The GitHub release is created when the version is staged, so delete it if the staged version is rejected.
+
 ---
 
 ## Overview

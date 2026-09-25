@@ -192,7 +192,7 @@ jobs:
       - run: pnpm install
       - run: pnpm dev:prepare
       - run: pnpm build
-      - name: Release
+      - name: Stage release for approval on npmjs.com
         run: ./scripts/release.sh
         env:
           NPM_CONFIG_PROVENANCE: true
