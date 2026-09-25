@@ -169,6 +169,12 @@ export class ComponentGroupUtilSynchronizer {
     if (!allowedComponents) return allowedComponents
     if (!allowedComponents.length) return null
 
+    const invalid = allowedComponents.filter(entry => typeof entry !== 'string')
+    if (invalid.length) {
+      logger.warn(`[CWA] allowedComponents was not synced: ${invalid.map(String).join(', ')} is not a component name.`)
+      return UNRESOLVED
+    }
+
     const names = allowedComponents.filter(entry => !entry.startsWith('/'))
     let endpoints: Record<string, string> = {}
     if (names.length) {

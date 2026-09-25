@@ -406,6 +406,29 @@ describe('Group synchronizer', () => {
       warn.mockRestore()
     })
 
+    test.each([
+      ['an existing group', () => existingGroup(['/_api/component/html_contents'])],
+      ['a missing group', () => null],
+    ])('an undefined or non-string entry warns and syncs nothing for %s', async (_, resource) => {
+      const warn = vi.spyOn(consola, 'warn').mockImplementation(() => undefined)
+      const { auth, groupSynchronizer, resourcesManager, getComponentMetadata } = createGroupSynchronizer()
+      getComponentMetadata.mockResolvedValue(metadata)
+      createSyncWatcher(groupSynchronizer, {
+        resource: resource(),
+        allowedComponents: ['HtmlContent', undefined, 42] as unknown as string[],
+      })
+
+      auth.signedIn.value = true
+      await vi.waitFor(() => expect(warn).toHaveBeenCalled())
+      await flushPromises()
+
+      expect(warn.mock.lastCall![0]).toContain('undefined, 42')
+      expect(warn.mock.lastCall![0]).toContain('not a component name')
+      expect(resourcesManager.updateResource).not.toHaveBeenCalled()
+      expect(resourcesManager.createResource).not.toHaveBeenCalled()
+      warn.mockRestore()
+    })
+
     test('nothing is synced when the API docs could not be loaded', async () => {
       const { auth, groupSynchronizer, resourcesManager, getComponentMetadata } = createGroupSynchronizer()
       getComponentMetadata.mockResolvedValue(undefined)
