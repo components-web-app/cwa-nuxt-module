@@ -43,7 +43,7 @@ export type ResourceModalTab = {
 
 const route = useRoute()
 
-const props = defineProps<{
+const { tabs } = defineProps<{
   tabs: ResourceModalTab[]
 }>()
 
@@ -68,13 +68,13 @@ function getIndexFromHash() {
 }
 
 function getIndexFromId(checkId: string) {
-  const index = props.tabs.findIndex(({ id }) => id === checkId)
+  const index = tabs.findIndex(({ id }) => id === checkId)
   return index !== -1 ? index : 0
 }
 
 const selectedTabIndex = ref(getIndexFromHash())
 const selectedTabId = computed(() => {
-  return props.tabs[selectedTabIndex.value]?.id
+  return tabs[selectedTabIndex.value]?.id
 })
 
 const indexAndId = computed(() => {
@@ -96,7 +96,7 @@ watch(indexAndId, (newValues, oldValues) => {
   }
 })
 
-type TabId = typeof props.tabs[number]['id']
+type TabId = typeof tabs[number]['id']
 defineSlots<
   {
     [K in TabId as K extends string ? `${K}` : never]?: () => any
