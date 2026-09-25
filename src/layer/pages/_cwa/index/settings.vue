@@ -4,6 +4,16 @@
     hide-add
   />
   <ListContainer class="cwa:relative cwa:py-10">
+    <CwaUiAlertInfo
+      v-if="orphanCount"
+      data-testid="orphaned-notice"
+      class="cwa:mb-8 cwa:justify-between cwa:gap-x-4"
+    >
+      <span class="cwa:grow">Orphaned resources discovered: {{ orphanCount }} {{ orphanCount === 1 ? 'resource is' : 'resources are' }} no longer used anywhere on the site.</span>
+      <CwaUiFormButton :to="{ name: '_cwa-orphaned' }">
+        Review now
+      </CwaUiFormButton>
+    </CwaUiAlertInfo>
     <Spinner
       v-if="$cwa.siteConfig.isLoading || allSettings === undefined"
       :show="true"
@@ -264,6 +274,47 @@
           </div>
         </div>
         <hr class="cwa:my-8 cwa:text-stone-600">
+        <div data-testid="orphaned-settings">
+          <h2 class="cwa:text-xl cwa:mb-4">
+            Orphaned resources
+          </h2>
+          <div class="cwa:flex cwa:flex-col cwa:gap-y-4">
+            <p class="cwa:text-sm cwa:text-stone-400">
+              A scan finds component groups, component positions and components that are no longer used anywhere on the site. Scanning never deletes anything; you can review what it finds and choose what to delete.
+            </p>
+            <p
+              v-if="orphanReport !== undefined"
+              class="cwa:text-sm cwa:font-bold"
+            >
+              {{ orphanReport ? `Last scanned ${formatDateTime(orphanReport.generatedAt)}` : 'Never scanned' }}
+            </p>
+            <div class="cwa:flex cwa:flex-wrap cwa:gap-4">
+              <CwaUiFormButton
+                :disabled="scanningOrphans"
+                type="button"
+                @click="scanOrphans"
+              >
+                {{ scanningOrphans ? 'Scanning…' : 'Scan now' }}
+              </CwaUiFormButton>
+              <CwaUiFormButton :to="{ name: '_cwa-orphaned' }">
+                Review orphaned resources
+              </CwaUiFormButton>
+            </div>
+            <p
+              v-if="orphanScanPending"
+              class="cwa:text-sm cwa:font-bold"
+            >
+              The scan has been requested but has not finished yet. Reload this page in a moment to see the new report.
+            </p>
+            <p
+              v-if="orphanScanError"
+              class="cwa:text-sm cwa:text-danger cwa:font-bold"
+            >
+              {{ orphanScanError }}
+            </p>
+          </div>
+        </div>
+        <hr class="cwa:my-8 cwa:text-stone-600">
         <div>
           <h2 class="cwa:text-bas cwa:mb-4">
             CWA Version Info
@@ -333,8 +384,20 @@ import { resolvePageCacheOptions } from '#cwa/api/http-cache'
 import { PageCacheWarmInterruptedError } from '#cwa/api/page-cache-warm'
 import type { PageCacheWarmFailure, PageCacheWarmProgress, PageCacheWarmSummary } from '#cwa/api/page-cache-warm'
 import { options } from '#build/cwa-options'
+import { formatDateTime } from '#cwa/resources/date-time-input'
+import { useOrphanedResourceReport } from '#cwa-layer/_composables/useOrphanedResourceReport'
 
 const $cwa = useCwa()
+
+const {
+  report: orphanReport,
+  orphanCount,
+  scanError: orphanScanError,
+  scanning: scanningOrphans,
+  scanPending: orphanScanPending,
+  loadReport: loadOrphanReport,
+  scan: scanOrphans,
+} = useOrphanedResourceReport()
 
 const allSettings = ref<SiteConfigParams>()
 
@@ -619,6 +682,7 @@ async function processChanges() {
 
 onMounted(async () => {
   setApiVersion()
+  loadOrphanReport()
   allSettings.value = await $cwa.siteConfig.loadConfig()
   watch(() => $cwa.siteConfig.config, (newConfig) => {
     allSettings.value = { ...newConfig }

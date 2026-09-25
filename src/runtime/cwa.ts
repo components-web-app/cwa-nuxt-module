@@ -20,6 +20,7 @@ import Admin from './admin/admin'
 import NavigationGuard from './admin/navigation-guard'
 import { ResourceTypeFromIri } from '#cwa/resources/resource-utils'
 import SiteConfig from '#cwa/api/site-config'
+import OrphanedResources from '#cwa/api/orphaned-resources'
 import type { ApiUrlRuntimeConfig } from '#cwa/api/api-url'
 import { resolveApiUrl } from '#cwa/api/api-url'
 
@@ -47,6 +48,8 @@ export default class Cwa {
   public readonly auth: Auth
 
   public readonly forms: Forms
+
+  public readonly orphanedResources: OrphanedResources
 
   public readonly admin: Admin
   private readonly adminNavGuard: NavigationGuard
@@ -87,6 +90,7 @@ export default class Cwa {
       useCookie('cwa_auth', { sameSite: 'strict' }),
     )
     this.forms = new Forms(this.storage.stores.resources, this.cwaFetch)
+    this.orphanedResources = new OrphanedResources(this.cwaFetch)
     this.mercure.setFetcher(this.fetcher)
     this.mercure.setRequestCount(this.resourcesManager.requestCount)
     this.adminNavGuard = new NavigationGuard($router, this.storage.stores.admin)
