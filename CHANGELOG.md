@@ -4,7 +4,7 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
-- Review orphaned component groups, positions and components at `/_cwa/orphaned`, view and delete them, and scan from site settings, which says when a scan has found orphans ([api-components-bundle#190](https://github.com/components-web-app/api-components-bundle/issues/190))
+- Review orphaned component groups, positions and components at `/_cwa/orphaned`, view and delete them, and scan from site settings, which says when a scan has found orphans ([api-components-bundle#190](https://github.com/components-web-app/api-components-bundle/issues/190), [dca1fb13](https://github.com/components-web-app/cwa-nuxt-module/commit/dca1fb13))
 - An `undefined` or non-string `allowedComponents` entry warns and syncs nothing instead of throwing ([#354](https://github.com/components-web-app/cwa-nuxt-module/issues/354), [825cf38c](https://github.com/components-web-app/cwa-nuxt-module/commit/825cf38c))
 - `useResendVerifyEmail` resets `success` when a new request starts, so a throttled or failed resend no longer shows alongside the earlier success; Back to Login after a password reset no longer sends a second reset request ([#355](https://github.com/components-web-app/cwa-nuxt-module/issues/355), [28901c51](https://github.com/components-web-app/cwa-nuxt-module/commit/28901c51))
 - An email the API refuses to send (400) asks the visitor to contact the site administrator, and warns in the console about `user.email_links.allowed_origins` ([#356](https://github.com/components-web-app/cwa-nuxt-module/issues/356), [28901c51](https://github.com/components-web-app/cwa-nuxt-module/commit/28901c51))
