@@ -233,7 +233,7 @@ Code kept only for an older API, or to work around someone else's bug, is logged
 - **`resolveApiUrl(runtimeConfig, isServer)`** (`api/api-url.ts`) is the only way to get the API URL. Server: `runtimeConfig.cwa.apiUrl` → `public.cwa.apiUrl` (deprecated) → `public.cwa.apiUrlBrowser` → fallback. Client: never touches `runtimeConfig.cwa` (not even to read it). Anything new that needs the URL must call it ([#345](https://github.com/components-web-app/cwa-nuxt-module/issues/345)).
 - The fallback is `https://api-url-not-set.invalid` — `.invalid` can never resolve, because `CwaFetch` forwards visitors' cookies.
 - Public and private `cwa.apiUrl*` keys are declared unconditionally in `module.ts` so env overrides apply.
-- **Path prefix:** a bare-host API has no prefix; `normaliseApiPathPrefix` trims trailing slashes so `/`, `//` → none and `/_api/` → `/_api` ([#266](https://github.com/components-web-app/cwa-nuxt-module/issues/266)). Stripping is leading-only. Use `getResourceTypeFromIri`, never `startsWith('/_api/')`.
+- **Path prefix:** a bare-host API has no prefix; `normaliseApiPathPrefix` trims trailing slashes so `/`, `//` → none and `/_api/` → `/_api` ([#266](https://github.com/components-web-app/cwa-nuxt-module/issues/266)). Stripping is leading-only. Use `getResourceTypeFromIri`, never `startsWith('/_api/')`. `ResourceTypeFromIri` is a process-wide singleton written per request, safe only because the prefix never varies between requests; revisit if the API URL ever does ([#264](https://github.com/components-web-app/cwa-nuxt-module/issues/264), won't fix).
 
 ## Nested sub-pages and the manifest
 
@@ -280,7 +280,7 @@ On by default (`cwa.pageCache.enabled`; the `?? true` in `module.ts` and `resolv
 - `liveAt` is the route's own, writable date; `_metadata.effectiveLiveAt` is the latest across routed ancestors, read-only. Both admin-only. **Badges show effective; the control edits own.**
 - `effectiveLiveAt` is read **only** in `resources/route-publication.ts`. `isRouteGatedByAncestor` is `effective > own`; compare parsed instants; absent effective means not live.
 - Choosing **Live** on an already-live route keeps its stored `liveAt` (Headless UI emits on re-selecting the selected option).
-- `datetime-local` values are browser-local, committed as UTC.
+- `datetime-local` values are the editor's **computer** time, committed as a UTC instant (`…Z`), with the zone stated next to the control. The conversion lives only in `resources/date-time-input.ts`; its spec pins fixed zones through `process.env.TZ`, because CI runs in UTC, where a bug that saved the typed time as UTC would pass.
 - `Route` is not publishable — keep `publishedAt` inference away from it.
 
 ## Security and server routes
@@ -325,6 +325,7 @@ CSS-first config in `src/tailwind/tailwind-cwa.css`; every class uses the `cwa:`
 - Text-selection drags don't deselect: the guard is central in `ResourceStackManager._addToStack` ([#254](https://github.com/components-web-app/cwa-nuxt-module/issues/254)).
 - Deleting the page on screen navigates from `requestCompleteFn` (before store removal), with `cwa_force`.
 - Admin lists keep their previous items and show an alert on failure; error handling sits **inside** the request-id guard. List search sends one `search` parameter plus the legacy per-field names (`searchFields` on `ListContent`) until every app has migrated ([#328](https://github.com/components-web-app/cwa-nuxt-module/issues/328)).
+- **Scheduled publishing** ([#320](https://github.com/components-web-app/cwa-nuxt-module/issues/320)): the Publish tab sets a future `publishedAt` on a draft. The API decides draft/live (`_metadata.publishable.published`), and `updateResource` only treats `publishedAt <= now` as publishing, so a future date is a plain PATCH. The field's `min` is now; a time already past when saved is sent as now, which is exactly the Publish button's path. The admin does not notice the time passing until the next fetch — nothing is written then, so Mercure sends nothing.
 - `ResourcesManager.storeResource` writes to the store only (no API request) and is `@internal` ([#282](https://github.com/components-web-app/cwa-nuxt-module/issues/282)).
 - A layout whose `uiComponent` doesn't resolve falls back to the default layout **and** shows a warning ([#277](https://github.com/components-web-app/cwa-nuxt-module/issues/277)).
 

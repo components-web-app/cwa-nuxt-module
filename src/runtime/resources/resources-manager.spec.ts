@@ -569,6 +569,37 @@ describe('Resources manager', () => {
       }
     })
 
+    test('a future publishedAt schedules the draft rather than publishing it (#320)', async () => {
+      const { resourcesManager, cwaFetch, resourcesStoreActions, mockAdmin } = createResourcesManager({ includeAdmin: true })
+      resourcesStoreActions.getResource.mockImplementation((iri: string) => {
+        if (iri === '/things/draft') {
+          return {
+            data: {
+              '@id': '/things/draft',
+              '@type': 'Thing',
+              'publishedResource': '/things/live',
+              '_metadata': { persisted: true, publishable: { published: false } },
+            },
+          }
+        }
+        if (iri === '/things/live') {
+          return { data: { '@id': '/things/live', 'componentPositions': ['/_/component_positions/1'] } }
+        }
+      })
+      cwaFetch.fetch.mockResolvedValue({ '@id': '/things/draft' })
+      vi.spyOn(resourcesManager, 'storeResource').mockImplementation(() => {})
+      const removeSpy = vi.spyOn(resourcesManager, 'removeResource')
+      const future = new Date(Date.now() + 86_400_000).toISOString()
+
+      const event = { endpoint: '/things/draft', data: { publishedAt: future } }
+      await resourcesManager.updateResource(event)
+
+      expect(cwaFetch.fetch).toHaveBeenCalledTimes(1)
+      expect(event).not.toHaveProperty('refreshEndpoints')
+      expect(mockAdmin!.emptyStack).not.toHaveBeenCalled()
+      expect(removeSpy).not.toHaveBeenCalled()
+    })
+
     test('sets forcePublishedVersion to false when response IRI differs (new draft created)', async () => {
       const { resourcesManager, cwaFetch, resourcesStoreActions, mockAdmin } = createResourcesManager({ includeAdmin: true })
       resourcesStoreActions.getResource.mockReturnValue({

@@ -6,7 +6,8 @@ import ModalInput from '#cwa/templates/components/core/admin/form/ModalInput.vue
 import ModalSelect from '#cwa/templates/components/core/admin/form/ModalSelect.vue'
 import type { CwaResource } from '#cwa/resources/resource-utils'
 import type { CwaRouteLiveAt, RouteLiveState } from '#cwa/resources/route-publication'
-import { formatRouteLiveAt, fromRouteLiveAtInput, getRouteOwnLiveState, isRouteGatedByAncestor, routeLiveAtTimezoneLabel, routeReachableAt, toRouteLiveAtInput } from '#cwa/resources/route-publication'
+import { getRouteOwnLiveState, isRouteGatedByAncestor, routeReachableAt } from '#cwa/resources/route-publication'
+import { dateTimeZoneLabel, formatDateTime, fromDateTimeInput, toDateTimeInput } from '#cwa/resources/date-time-input'
 
 const { pageResource, parentRoutePrefix, currentPath, disableButtons, routePublication } = defineProps<{
   disableButtons: boolean
@@ -94,13 +95,13 @@ const publicationOptions = [
 ]
 
 const localPublicationState = ref<RouteLiveState>(getRouteOwnLiveState({ liveAt: liveAtModel.value }))
-const localLiveAt = ref(toRouteLiveAtInput(liveAtModel.value))
-const liveAtTimezone = routeLiveAtTimezoneLabel()
+const localLiveAt = ref(toDateTimeInput(liveAtModel.value))
+const liveAtTimezone = dateTimeZoneLabel()
 
 const editedPublication = computed<CwaRouteLiveAt>(() => ({ ...routePublication, liveAt: liveAtModel.value }))
 const gatedByAncestor = computed(() => isRouteGatedByAncestor(editedPublication.value))
-const reachableAt = computed(() => formatRouteLiveAt(routeReachableAt(editedPublication.value)))
-const liveSince = computed(() => localPublicationState.value === 'live' ? formatRouteLiveAt(liveAtModel.value) : '')
+const reachableAt = computed(() => formatDateTime(routeReachableAt(editedPublication.value)))
+const liveSince = computed(() => localPublicationState.value === 'live' ? formatDateTime(liveAtModel.value) : '')
 
 function handlePublicationStateChange(state: RouteLiveState) {
   localPublicationState.value = state
@@ -116,7 +117,7 @@ function handlePublicationStateChange(state: RouteLiveState) {
     liveAtModel.value = null
     return
   }
-  const scheduled = fromRouteLiveAtInput(localLiveAt.value)
+  const scheduled = fromDateTimeInput(localLiveAt.value)
   const isFuture = !!scheduled && new Date(scheduled).getTime() > Date.now()
   if (!isFuture) {
     localLiveAt.value = ''
@@ -127,7 +128,7 @@ function handlePublicationStateChange(state: RouteLiveState) {
 function handleLiveAtChange(value: string | number | null | undefined) {
   const localValue = value === null || value === undefined ? '' : String(value)
   localLiveAt.value = localValue
-  liveAtModel.value = fromRouteLiveAtInput(localValue)
+  liveAtModel.value = fromDateTimeInput(localValue)
 }
 </script>
 

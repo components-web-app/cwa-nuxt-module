@@ -4,7 +4,7 @@ import { mount } from '@vue/test-utils'
 import RoutesTabManage from './RoutesTabManage.vue'
 import ModalInput from '#cwa/templates/components/core/admin/form/ModalInput.vue'
 import ModalSelect from '#cwa/templates/components/core/admin/form/ModalSelect.vue'
-import { formatRouteLiveAt, toRouteLiveAtInput } from '#cwa/resources/route-publication'
+import { formatDateTime, toDateTimeInput } from '#cwa/resources/date-time-input'
 
 function mountManage(options: {
   modelValue?: string
@@ -184,7 +184,7 @@ describe('RoutesTabManage', () => {
     test('shows a route with a future go-live date as scheduled, with the date it goes live', () => {
       const wrapper = mountManage({ liveAt: '2999-01-01T09:00:00Z' })
       expect(getStateSelect(wrapper).props('modelValue')).toBe('scheduled')
-      expect(getLiveAtInput(wrapper).props('modelValue')).toBe(toRouteLiveAtInput('2999-01-01T09:00:00Z'))
+      expect(getLiveAtInput(wrapper).props('modelValue')).toBe(toDateTimeInput('2999-01-01T09:00:00Z'))
     })
 
     test('shows a route the API gave no go-live date as not live', () => {
@@ -232,7 +232,7 @@ describe('RoutesTabManage', () => {
 
     test('shows a live route the date it has been live from', () => {
       const wrapper = mountManage({ liveAt: '2020-01-01T00:00:00+00:00' })
-      expect(wrapper.find('[data-live-since]').text()).toContain(formatRouteLiveAt('2020-01-01T00:00:00+00:00'))
+      expect(wrapper.find('[data-live-since]').text()).toContain(formatDateTime('2020-01-01T00:00:00+00:00'))
     })
 
     test('shows no live-since date for a route that is not live', () => {
@@ -269,7 +269,7 @@ describe('RoutesTabManage', () => {
       const effectiveLiveAt = '2999-01-01T09:00:00Z'
       const wrapper = mountManage({ liveAt: '2020-01-01T00:00:00+00:00', effectiveLiveAt })
       expect(getStateSelect(wrapper).props('modelValue')).toBe('live')
-      expect(wrapper.find('[data-effective-live-at]').text()).toContain(formatRouteLiveAt(effectiveLiveAt))
+      expect(wrapper.find('[data-effective-live-at]').text()).toContain(formatDateTime(effectiveLiveAt))
     })
 
     test('says nothing about parents when the effective date matches the route own date', () => {

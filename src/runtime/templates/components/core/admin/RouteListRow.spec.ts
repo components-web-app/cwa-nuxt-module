@@ -2,7 +2,7 @@
 import { describe, test, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
 import RouteListRow from './RouteListRow.vue'
-import { formatRouteLiveAt } from '#cwa/resources/route-publication'
+import { formatDateTime } from '#cwa/resources/date-time-input'
 
 function mountRow(data: Record<string, any> = {}) {
   return mount(RouteListRow, {
@@ -31,7 +31,7 @@ describe('RouteListRow', () => {
       const liveAt = '2999-01-01T09:00:00Z'
       const text = mountRow({ liveAt, _metadata: { persisted: true, effectiveLiveAt: liveAt } }).find('[data-route-publication]').text()
       expect(text).toContain('Scheduled')
-      expect(text).toContain(formatRouteLiveAt(liveAt))
+      expect(text).toContain(formatDateTime(liveAt))
     })
 
     test('shows a route with a past go-live date as live', () => {
@@ -43,7 +43,7 @@ describe('RouteListRow', () => {
       const effectiveLiveAt = '2999-01-01T09:00:00Z'
       const text = mountRow({ liveAt: '2020-01-01T00:00:00+00:00', _metadata: { persisted: true, effectiveLiveAt } }).find('[data-route-publication]').text()
       expect(text).toContain('Scheduled')
-      expect(text).toContain(formatRouteLiveAt(effectiveLiveAt))
+      expect(text).toContain(formatDateTime(effectiveLiveAt))
       expect(text).not.toContain('Live')
     })
 

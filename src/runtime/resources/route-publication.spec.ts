@@ -1,16 +1,11 @@
 import { describe, test, expect } from 'vitest'
-import dayjs from 'dayjs'
 import {
-  formatRouteLiveAt,
-  fromRouteLiveAtInput,
   getRouteLiveState,
   getRouteOwnLiveState,
   isRouteGatedByAncestor,
-  routeLiveAtTimezoneLabel,
   routeLiveStateLabel,
   routePublicationFromResource,
   routeReachableAt,
-  toRouteLiveAtInput,
 } from './route-publication'
 
 const now = new Date('2026-09-20T12:00:00.000Z')
@@ -128,59 +123,11 @@ describe('reading the effective go-live date off a route resource', () => {
   })
 })
 
-describe('datetime-local conversion', () => {
-  test('a wall clock time an editor types is committed as that instant in their own timezone', () => {
-    expect(fromRouteLiveAtInput('2026-09-25T09:00')).toBe(new Date('2026-09-25T09:00').toISOString())
-  })
-
-  test('a stored instant is shown back as the same wall clock time the editor typed', () => {
-    const committed = fromRouteLiveAtInput('2026-09-25T09:00')
-    expect(toRouteLiveAtInput(committed)).toBe('2026-09-25T09:00')
-  })
-
-  test('clearing the input commits no date rather than an empty string', () => {
-    expect(fromRouteLiveAtInput('')).toBeNull()
-    expect(fromRouteLiveAtInput(undefined)).toBeNull()
-    expect(fromRouteLiveAtInput(null)).toBeNull()
-  })
-
-  test('an unparseable input commits no date', () => {
-    expect(fromRouteLiveAtInput('not a date')).toBeNull()
-  })
-
-  test('a draft route shows an empty datetime input', () => {
-    expect(toRouteLiveAtInput(null)).toBe('')
-    expect(toRouteLiveAtInput(undefined)).toBe('')
-  })
-
-  test('the committed instant is offset-bearing so the API never has to guess a timezone', () => {
-    expect(fromRouteLiveAtInput('2026-09-25T09:00')).toMatch(/Z$/)
-  })
-})
-
 describe('display', () => {
   test('labels each state the same way wherever a route is listed', () => {
     expect(routeLiveStateLabel({ liveAt: past, effectiveLiveAt: past }, now)).toBe('Live')
     expect(routeLiveStateLabel({ liveAt: future, effectiveLiveAt: future }, now)).toBe('Scheduled')
     expect(routeLiveStateLabel({ liveAt: null }, now)).toBe('Not live')
     expect(routeLiveStateLabel({}, now)).toBe('Not live')
-  })
-
-  test('shows a go-live date in the editor own timezone, not UTC', () => {
-    const committed = fromRouteLiveAtInput('2026-09-25T09:00') as string
-    expect(formatRouteLiveAt(committed)).toBe(dayjs(committed).format('D MMM YYYY, HH:mm'))
-  })
-
-  test('shows no date for a route that has none', () => {
-    expect(formatRouteLiveAt(null)).toBe('')
-    expect(formatRouteLiveAt(undefined)).toBe('')
-  })
-})
-
-describe('timezone label', () => {
-  test('names the zone and offset the control is committing to', () => {
-    const label = routeLiveAtTimezoneLabel()
-    expect(label).toContain(Intl.DateTimeFormat().resolvedOptions().timeZone)
-    expect(label).toMatch(/UTC[+-]\d{2}:\d{2}/)
   })
 })

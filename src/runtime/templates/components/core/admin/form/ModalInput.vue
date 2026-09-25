@@ -21,6 +21,7 @@
       :id="id"
       v-model="model"
       :type="type"
+      :min="min"
       :placeholder="placeholder"
       :autocomplete="autocomplete"
       class="cwa:flex cwa:relative cwa:px-4 cwa:pt-6 cwa:pb-0 cwa:text-left cwa:text-light cwa:w-full cwa:border-0 cwa:items-center cwa:bg-transparent cwa:border-0 cwa:focus:ring-0 cwa:outline-0"
@@ -41,7 +42,7 @@ const [model, modifiers] = defineModel<string | null | undefined | number>({
     return value
   },
 })
-const { type } = defineProps<{ label: string, type?: 'text' | 'number' | 'email' | 'password' | 'textarea' | 'url' | 'datetime-local', placeholder?: string, autocomplete?: string }>()
+const { type, min } = defineProps<{ label: string, type?: 'text' | 'number' | 'email' | 'password' | 'textarea' | 'url' | 'datetime-local', placeholder?: string, autocomplete?: string, min?: string }>()
 
 const { textarea, input } = useTextareaAutosize({
   // @ts-expect-error MaybeRef expected instead of ModelRef but they should behave the same
