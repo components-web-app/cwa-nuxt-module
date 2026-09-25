@@ -28,35 +28,33 @@
             class="cwa:mb-4 cwa:text-sm"
           >
             <p>You have requested to change the email address to <span class="cwa:font-bold">{{ resource.newEmailAddress }}</span></p>
-            <div class="cwa:flex cwa:items-center cwa:gap-x-2">
+            <div class="cwa:flex cwa:items-center cwa:gap-x-1.5">
               <TextButton
                 data-resend-email
                 :disabled="requestingEmail || retryIn > 0"
                 @click="resendVerifyEmail(resource.username, 'new')"
               >
                 <span class="cwa:group-disabled:opacity-50">Resend email verification<template v-if="retryIn"> ({{ formatCountdown(retryIn) }})</template></span>
-                <span
-                  class="cwa:transition-opacity"
-                  :class="{ 'cwa:opacity-0': !showSpinnerTick }"
-                >
-                  <SpinnerTick
-                    :is-loading="requestingEmail"
-                    :is-pending="!!requestError"
-                    size="cwa:size-4"
-                  />
-                </span>
               </TextButton>
-              <span
-                aria-hidden="true"
-                class="cwa:text-stone-500"
-              >·</span>
-              <TextButton
+              <button
+                type="button"
                 data-cancel-email-change
+                class="cwa:cursor-pointer cwa:text-red-700 cwa:hover:text-red-600 cwa:disabled:opacity-50 cwa:disabled:cursor-default"
                 :disabled="cancellingEmailChange"
                 @click="cancelEmailChange"
               >
-                <span class="cwa:group-disabled:opacity-50">Cancel change</span>
-              </TextButton>
+                Cancel change
+              </button>
+              <span
+                class="cwa:transition-opacity"
+                :class="{ 'cwa:opacity-0': !showSpinnerTick }"
+              >
+                <SpinnerTick
+                  :is-loading="requestingEmail"
+                  :is-pending="!!requestError"
+                  size="cwa:size-4"
+                />
+              </span>
             </div>
           </div>
           <div v-else-if="localResourceData.emailAddressVerified === false">

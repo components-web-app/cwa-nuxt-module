@@ -7,6 +7,8 @@
     monospace;
     --cwa-color-red-400: oklch(70.4% 0.191 22.216);
     --cwa-color-red-500: #ef4444;
+    --cwa-color-red-600: oklch(57.7% 0.245 27.325);
+    --cwa-color-red-700: oklch(50.5% 0.213 27.518);
     --cwa-color-amber-400: oklch(82.8% 0.189 84.429);
     --cwa-color-yellow-500: oklch(79.5% 0.184 86.047);
     --cwa-color-blue-500: oklch(62.3% 0.214 259.815);
@@ -1473,6 +1475,9 @@
 .cwa\:text-red-400 {
   color: var(--cwa-color-red-400);
 }
+.cwa\:text-red-700 {
+  color: var(--cwa-color-red-700);
+}
 .cwa\:text-stone-100 {
   color: var(--cwa-color-stone-100);
 }
@@ -1892,6 +1897,9 @@
   .cwa\:hover\:text-neutral-200:hover {
     color: var(--cwa-color-neutral-200);
   }
+  .cwa\:hover\:text-red-600:hover {
+    color: var(--cwa-color-red-600);
+  }
   .cwa\:hover\:text-stone-300:hover {
     color: var(--cwa-color-stone-300);
   }
@@ -1985,6 +1993,9 @@
 }
 .cwa\:disabled\:pointer-events-none:disabled {
   pointer-events: none;
+}
+.cwa\:disabled\:cursor-default:disabled {
+  cursor: default;
 }
 .cwa\:disabled\:cursor-not-allowed:disabled {
   cursor: not-allowed;
