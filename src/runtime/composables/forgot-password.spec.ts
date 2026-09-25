@@ -120,4 +120,18 @@ describe('useForgotPassword', () => {
     expect(capturedSubmitting).toBe(true)
     expect(submitting.value).toBe(false)
   })
+
+  test('a throttled request says a reset email was already sent recently (#353)', async () => {
+    mockAuth.forgotPassword.mockResolvedValue(createFetchError({
+      options: {},
+      response: Object.assign(new Response(null, { status: 429, headers: { 'Retry-After': '86400' } }), { _data: {} }),
+    } as any))
+    const { doSubmit, credentials, error, success } = useForgotPassword()
+    credentials.username = 'user@example.com'
+
+    await doSubmit()
+
+    expect(error.value).toBe('A reset email was already sent recently. Please check your inbox and spam folder.')
+    expect(success.value).toBe(false)
+  })
 })

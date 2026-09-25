@@ -15,7 +15,10 @@ export const useForgotPassword = () => {
   const success = ref(false)
 
   function handleResetError(fetchError: FetchError) {
-    if (fetchError.status === 404) {
+    if (fetchError.status === 429) {
+      error.value = 'A reset email was already sent recently. Please check your inbox and spam folder.'
+    }
+    else if (fetchError.status === 404) {
       error.value = 'Username not found'
     }
     else {

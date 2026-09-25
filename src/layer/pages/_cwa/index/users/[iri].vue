@@ -28,30 +28,45 @@
             class="cwa:mb-4 cwa:text-sm"
           >
             <p>You have requested to change the email address to <span class="cwa:font-bold">{{ resource.newEmailAddress }}</span></p>
-            <TextButton
-              :disabled="requestingEmail"
-              @click="resendVerifyEmail(resource.username, 'new')"
-            >
-              <span class="cwa:group-disabled:opacity-50">Resend email verification</span>
-              <span
-                class="cwa:transition-opacity"
-                :class="{ 'cwa:opacity-0': !showSpinnerTick }"
+            <div class="cwa:flex cwa:items-center cwa:gap-x-2">
+              <TextButton
+                data-resend-email
+                :disabled="requestingEmail || retryIn > 0"
+                @click="resendVerifyEmail(resource.username, 'new')"
               >
-                <SpinnerTick
-                  :is-loading="requestingEmail"
-                  :is-pending="!!requestError"
-                  size="cwa:size-4"
-                />
-              </span>
-            </TextButton>
+                <span class="cwa:group-disabled:opacity-50">Resend email verification<template v-if="retryIn"> ({{ formatCountdown(retryIn) }})</template></span>
+                <span
+                  class="cwa:transition-opacity"
+                  :class="{ 'cwa:opacity-0': !showSpinnerTick }"
+                >
+                  <SpinnerTick
+                    :is-loading="requestingEmail"
+                    :is-pending="!!requestError"
+                    size="cwa:size-4"
+                  />
+                </span>
+              </TextButton>
+              <span
+                aria-hidden="true"
+                class="cwa:text-stone-500"
+              >·</span>
+              <TextButton
+                data-cancel-email-change
+                :disabled="cancellingEmailChange"
+                @click="cancelEmailChange"
+              >
+                <span class="cwa:group-disabled:opacity-50">Cancel change</span>
+              </TextButton>
+            </div>
           </div>
           <div v-else-if="localResourceData.emailAddressVerified === false">
             <p>Email not verified.</p>
             <TextButton
-              :disabled="requestingEmail"
+              data-resend-email
+              :disabled="requestingEmail || retryIn > 0"
               @click="resendVerifyEmail(resource.username, 'current')"
             >
-              <span class="cwa:group-disabled:opacity-50">Resend email verification</span>
+              <span class="cwa:group-disabled:opacity-50">Resend email verification<template v-if="retryIn"> ({{ formatCountdown(retryIn) }})</template></span>
               <span
                 class="cwa:transition-opacity"
                 :class="{ 'cwa:opacity-0': !showSpinnerTick }"
@@ -64,6 +79,13 @@
               </span>
             </TextButton>
           </div>
+          <p
+            v-if="requestError"
+            data-email-request-error
+            class="cwa:mb-4 cwa:text-xs cwa:text-red-400"
+          >
+            {{ requestError }}
+          </p>
           <div>
             <ModalSelect
               v-model="selectRole"
@@ -197,6 +219,8 @@ import { computed, ref, watch } from 'vue'
 import { useItemPage } from '#cwa-layer/_composables/useItemPage'
 import SpinnerTick from '#cwa/templates/components/utils/SpinnerTick.vue'
 import { useResendVerifyEmail } from '#cwa/composables/useResendVerifyEmail'
+import { useCwa } from '#cwa/composables/cwa'
+import { formatCountdown } from '#cwa/api/retry-after'
 import TextButton from '#cwa-layer/_components/TextButton.vue'
 import { definePageMeta } from '#imports'
 import type { SelectOption } from '#cwa/composables/cwa-select-input'
@@ -290,7 +314,31 @@ const {
   resendVerifyEmail,
   submitting: requestingEmail,
   error: requestError,
+  retryIn,
 } = useResendVerifyEmail()
+
+const $cwa = useCwa()
+const cancellingEmailChange = ref(false)
+
+async function cancelEmailChange() {
+  const iri = resource.value?.['@id']
+  if (!iri) {
+    return
+  }
+  cancellingEmailChange.value = true
+  try {
+    await $cwa.resourcesManager.updateResource({
+      endpoint: iri,
+      data: { newEmailAddress: null },
+    })
+    if (localResourceData.value) {
+      localResourceData.value.newEmailAddress = null
+    }
+  }
+  finally {
+    cancellingEmailChange.value = false
+  }
+}
 
 const debouncedHideSpinner = useDebounceFn(() => {
   if (!requestingEmail.value) {

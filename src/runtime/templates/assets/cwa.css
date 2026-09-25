@@ -5,6 +5,7 @@
   :root, :host {
     --cwa-font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
     monospace;
+    --cwa-color-red-400: oklch(70.4% 0.191 22.216);
     --cwa-color-red-500: #ef4444;
     --cwa-color-amber-400: oklch(82.8% 0.189 84.429);
     --cwa-color-yellow-500: oklch(79.5% 0.184 86.047);
@@ -1468,6 +1469,9 @@
 }
 .cwa\:text-neutral-900 {
   color: var(--cwa-color-neutral-900);
+}
+.cwa\:text-red-400 {
+  color: var(--cwa-color-red-400);
 }
 .cwa\:text-stone-100 {
   color: var(--cwa-color-stone-100);
