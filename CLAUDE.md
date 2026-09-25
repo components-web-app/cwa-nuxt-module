@@ -23,7 +23,7 @@ All feature work follows this cycle:
 Record the **rule** and the **trap**, with the issue link — not the investigation, measurements or history. Those belong in the issue. Delete a section once its rule is enforced by a test and nothing about it is surprising.
 
 ### Changelog — every change, every release
-`CHANGELOG.md` is maintained continuously. Any change that affects the published package adds **one short line** under `## [Unreleased]`, linking the PR (`[#123](…/pull/123)`) or the commit (`[abc1234](…/commit/<sha>)`). Tooling, CI and docs-only changes do not need a line.
+`CHANGELOG.md` is maintained continuously. Any change that affects the published package adds **one short line** under `## [Unreleased]`, always linking the **commit** (`[abc12345](…/commit/<sha>)`) or the **PR** (`[#123](…/pull/123)`), plus the issue when there is one. An issue link alone is not enough. Tooling, CI and docs-only changes do not need a line.
 
 To release: rename `## [Unreleased]` to `## [x.y.z] - YYYY-MM-DD`, add a fresh empty `## [Unreleased]` above it, update the compare links at the bottom, set `package.json`'s version, and push a `vX.Y.Z` tag. The `release` CI job (`scripts/changelog-section.mjs`) **refuses to publish when that version has no changelog entries**, then creates the GitHub release for the tag with that section as its notes (marked pre-release for a `-` version). `scripts/release.sh` also refuses a tag that does not match `package.json`.
 
