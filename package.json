@@ -31,7 +31,7 @@
     }
   },
   "bin": {
-    "cwa": "./bin/cwa.mjs"
+    "cwa": "bin/cwa.mjs"
   },
   "files": [
     "dist",
