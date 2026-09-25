@@ -259,14 +259,25 @@ export default defineNuxtModule<CwaModuleOptions>({
     const userComponentsPath = join(appDir, 'cwa', 'components')
     nuxt.options.alias['#cwaComponents'] = userComponentsPath
 
-    function extendCwaOptions(components: Component[]) {
-      const defaultResourcesConfig: CwaResourcesMeta = {}
-
+    function resolveUserComponents(components: Component[]) {
       // exclude files within admin and ui folders which will not need a configuration
       const regex = /^(?!.+\/(admin|ui)\/).+.vue$/
       const allUserComponents = components.filter(({ filePath }) => filePath.startsWith(userComponentsPath))
+      return {
+        allUserComponents,
+        userComponents: allUserComponents.filter(({ filePath }) => regex.test(filePath)),
+      }
+    }
+
+    function toResourceType(component: Component) {
+      return component.pascalName.replace(/^CwaComponent/, '')
+    }
+
+    function extendCwaOptions(components: Component[]) {
+      const defaultResourcesConfig: CwaResourcesMeta = {}
+
+      const { allUserComponents, userComponents } = resolveUserComponents(components)
       const componentsByPath: { [key: string]: Component } = allUserComponents.reduce((obj, value) => ({ ...obj, [value.filePath]: value }), {})
-      const userComponents = allUserComponents.filter(({ filePath }) => regex.test(filePath))
       for (const component of userComponents) {
         const isDirectory = (p: string) => {
           try {
@@ -297,7 +308,7 @@ export default defineNuxtModule<CwaModuleOptions>({
         const uiDir = resolveAlias(resolve(path.dirname(component.filePath), 'ui'))
         const ui: GlobalComponentNames[] = resolveComponentNames(uiDir)
 
-        const resourceType = component.pascalName.replace(/^CwaComponent/, '')
+        const resourceType = toResourceType(component)
         defaultResourcesConfig[resourceType] = {
           // auto name with spaces in place of pascal/camel case
           name: resourceType.replace(/(?!^)([A-Z])/g, ' $1'),
@@ -344,6 +355,24 @@ export default defineNuxtModule<CwaModuleOptions>({
       else {
         delete options.auth
       }
+
+      addTemplate({
+        filename: 'cwa-component-names.ts',
+        write: true,
+        getContents: ({ app }) => {
+          const names = resolveUserComponents(app.components).userComponents
+            .filter(({ filePath }) => path.basename(filePath, '.vue') === path.basename(path.dirname(filePath)))
+            .map(toResourceType)
+          const constant = JSON.stringify(Object.fromEntries(names.map(name => [name, name])), undefined, 2)
+          return `export const CwaComponentNames = ${constant} as const
+export type CwaComponentName = typeof CwaComponentNames[keyof typeof CwaComponentNames]
+`
+        },
+      })
+      addImports([
+        { name: 'CwaComponentNames', from: '#build/cwa-component-names' },
+        { name: 'CwaComponentName', from: '#build/cwa-component-names', type: true },
+      ])
 
       addTemplate({
         filename: 'cwa-options.ts',
@@ -511,6 +540,7 @@ declare module 'vue-router' {
         await updateTemplates({
           filter: template => [
             'cwa-options.ts',
+            'cwa-component-names.ts',
             '#cwa/server-options.ts',
           ].includes(template.filename),
         })

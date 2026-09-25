@@ -2,6 +2,7 @@ import type Cwa from '#cwa/cwa'
 import { watch } from 'vue'
 import type { ComputedRef, WatchStopHandle } from 'vue'
 import isEqual from 'lodash-es/isEqual'
+import { consola as logger } from 'consola'
 import type { ResourcesManager } from '../../../resources/resources-manager'
 import { CwaResourceTypes, ResourceTypeFromIri, getResourceTypeFromIri } from '../../../resources/resource-utils'
 import type { Resources } from '../../../resources/resources'
@@ -26,6 +27,8 @@ interface SyncWatcherOps {
   fullReference: ComputedRef<string>
   allowedComponents: string[] | null | undefined
 }
+
+const UNRESOLVED = Symbol('unresolved')
 
 export class ComponentGroupUtilSynchronizer {
   private readonly resourcesManager: ResourcesManager
@@ -123,6 +126,11 @@ export class ComponentGroupUtilSynchronizer {
     const locationResourceType = getResourceTypeFromIri(iri) as keyof typeof resourceTypeProperty
     const locationProperty = resourceTypeProperty[locationResourceType]
 
+    const resolvedAllowedComponents = await this.resolveAllowedComponents(allowedComponents)
+    if (resolvedAllowedComponents === UNRESOLVED) {
+      return
+    }
+
     const postData: {
       reference?: string
       location: string
@@ -133,7 +141,7 @@ export class ComponentGroupUtilSynchronizer {
     } = {
       reference: fullReference.value,
       location: iri,
-      allowedComponents: this.normalizeAllowedComponents(allowedComponents),
+      allowedComponents: resolvedAllowedComponents,
     }
     if (locationProperty) {
       postData[locationProperty] = [iri]
@@ -157,19 +165,36 @@ export class ComponentGroupUtilSynchronizer {
     }, [])
   }
 
-  private normalizeAllowedComponents(allowedComponents: string[] | null | undefined): string[] | null | undefined {
+  private async resolveAllowedComponents(allowedComponents: string[] | null | undefined): Promise<string[] | null | undefined | typeof UNRESOLVED> {
     if (!allowedComponents) return allowedComponents
     if (!allowedComponents.length) return null
+
+    const names = allowedComponents.filter(entry => !entry.startsWith('/'))
+    let endpoints: Record<string, string> = {}
+    if (names.length) {
+      const metadata = await this.$cwa.getComponentMetadata()
+      if (!metadata) {
+        return UNRESOLVED
+      }
+      const unknown = names.filter(name => !metadata[name])
+      if (unknown.length) {
+        logger.warn(`[CWA] allowedComponents was not synced: the API has no component named ${unknown.join(', ')}.`)
+        return UNRESOLVED
+      }
+      endpoints = Object.fromEntries(names.map(name => [name, metadata[name]!.endpoint]))
+    }
+
+    const iris = allowedComponents.map(entry => endpoints[entry] ?? entry)
     const prefix = ResourceTypeFromIri.getPathPrefix()
-    if (!prefix) return allowedComponents
-    return allowedComponents.map(iri => iri.startsWith(prefix) ? iri : `${prefix}${iri}`)
+    if (!prefix) return iris
+    return iris.map(iri => iri.startsWith(prefix) ? iri : `${prefix}${iri}`)
   }
 
   private async updateAllowedComponents(allowedComponents: string[] | null | undefined, resource: any) {
     if (allowedComponents === undefined) return
     const stored = resource?.data?.allowedComponents
-    const normalized = this.normalizeAllowedComponents(allowedComponents)
-    if (isEqual(normalized, stored ?? null)) {
+    const normalized = await this.resolveAllowedComponents(allowedComponents)
+    if (normalized === UNRESOLVED || isEqual(normalized, stored ?? null)) {
       return
     }
 

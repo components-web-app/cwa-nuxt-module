@@ -4,6 +4,7 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+- `allowedComponents` accepts component names, with an auto-imported `CwaComponentNames` constant and `CwaComponentName` type ([#352](https://github.com/components-web-app/cwa-nuxt-module/issues/352))
 - Sync `allowedComponents` to groups with no stored list; an empty list is sent as `null` ([#351](https://github.com/components-web-app/cwa-nuxt-module/issues/351))
 
 ## [2.0.0-alpha.1] - 2026-09-24

@@ -70,6 +70,7 @@ import {
   useComponentGroupEvents,
 } from '#cwa/templates/components/main/ComponentGroup.Util.Events'
 import type { CwaComponentGroupPair } from '#cwa/templates/components/main/ComponentGroup.Util.Events'
+import type { CwaAllowedComponent } from '#cwa/types'
 import ComponentPosition from '#cwa/templates/components/core/ComponentPosition.vue'
 import ResourceLoader from '#cwa/templates/components/core/ResourceLoader.vue'
 import { CwaResourceApiStatuses, NEW_RESOURCE_IRI } from '#cwa/storage/stores/resources/state'
@@ -87,7 +88,7 @@ const $cwa = useCwa()
 
 useCwaResourceManageable(iri)
 
-type PropsType = { reference: string, locationReference?: string, location?: string, allowedComponents?: string[] | null }
+type PropsType = { reference: string, locationReference?: string, location?: string, allowedComponents?: CwaAllowedComponent[] | null }
 const props = defineProps<PropsType>()
 
 const hasLocation = computed(() => props.location !== undefined)

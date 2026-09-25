@@ -19,6 +19,7 @@ vi.mock('@nuxt/kit', async () => {
     addServerHandler: vi.fn(),
     addServerPlugin: vi.fn(),
     addTypeTemplate: vi.fn(),
+    updateTemplates: vi.fn(),
     extendPages: vi.fn(),
     defineNuxtModule: vi.fn(),
     installModule: vi.fn(),
@@ -485,6 +486,73 @@ declare module 'vue-router' {
       expect(mockResolver).toHaveBeenCalledWith('./runtime/composables')
 
       expect(nuxtKit.addImportsDir as Mock).toHaveBeenCalledWith(mockResolver('./runtime/composables'))
+    })
+
+    describe('component names constant (#352)', () => {
+      const components = [
+        { filePath: 'cwa/components/HtmlContent/HtmlContent.vue', pascalName: 'CwaComponentHtmlContent' },
+        { filePath: 'cwa/components/HtmlContent/admin/Tab.vue', pascalName: 'CwaComponentHtmlContentAdminTab', global: true },
+        { filePath: 'cwa/components/HtmlContent/ui/AltUi.vue', pascalName: 'CwaComponentHtmlContentUiAltUi', global: true },
+        { filePath: 'cwa/components/WatchPastConference/WatchPastConference.vue', pascalName: 'CwaComponentWatchPastConference' },
+        { filePath: 'cwa/components/WatchPastConference/ConferenceCard.vue', pascalName: 'CwaComponentWatchPastConferenceConferenceCard' },
+        { filePath: 'cwa/layouts/Primary.vue', pascalName: 'CwaLayoutPrimary' },
+      ]
+
+      async function prepare() {
+        const mockNuxt = await prepareMockNuxt({}, {
+          hook: vi.fn((hookName, callback) => {
+            if (hookName === 'modules:done') {
+              callback()
+            }
+          }),
+        })
+        const template = (nuxtKit.addTemplate as Mock).mock.calls
+          .map(([template]) => template)
+          .find(({ filename }) => filename === 'cwa-component-names.ts')
+        return { mockNuxt, template }
+      }
+
+      test('generates a constant and a union type from each <Name>/<Name>.vue only', async () => {
+        const { template } = await prepare()
+
+        expect(template).toBeDefined()
+        expect(template.write).toBe(true)
+        expect(await template.getContents({ app: { components } })).toEqual(`export const CwaComponentNames = {
+  "HtmlContent": "HtmlContent",
+  "WatchPastConference": "WatchPastConference"
+} as const
+export type CwaComponentName = typeof CwaComponentNames[keyof typeof CwaComponentNames]
+`)
+      })
+
+      test('auto-imports the constant and the type from the generated template', async () => {
+        await prepare()
+
+        expect(nuxtKit.addImports as Mock).toHaveBeenCalledWith([
+          { name: 'CwaComponentNames', from: '#build/cwa-component-names' },
+          { name: 'CwaComponentName', from: '#build/cwa-component-names', type: true },
+        ])
+      })
+
+      test('is regenerated when a component folder is added or removed in dev', async () => {
+        vi.spyOn(nuxtKit, 'createResolver').mockReturnValue({
+          resolve: vi.fn((...args: string[]) => join(...args)),
+          resolvePath: vi.fn(),
+        })
+        let watchCallback: ((event: string, path: string) => Promise<void>) | undefined
+        await prepareMockNuxt({}, {
+          hook: vi.fn((hookName, callback) => {
+            if (hookName === 'builder:watch') {
+              watchCallback = callback
+            }
+          }),
+        })
+
+        await watchCallback!('add', 'cwa/components/NewThing/NewThing.vue')
+
+        const [{ filter }] = (nuxtKit.updateTemplates as Mock).mock.lastCall!
+        expect(filter!({ filename: 'cwa-component-names.ts' } as any)).toBe(true)
+      })
     })
 
     describe('page cache warm route', () => {
@@ -1096,7 +1164,7 @@ declare module 'vue-router' {
       const filenames = (nuxtKit.addTypeTemplate as Mock).mock.calls.map(([{ filename }]) => filename)
 
       expect(filenames).toContain('types/cwa-og-image.d.ts')
-      expect(nuxtKit.addImports).not.toHaveBeenCalled()
+      expect(nuxtKit.addImports).not.toHaveBeenCalledWith(expect.objectContaining({ name: 'defineOgImage' }))
     })
 
     test('registers a no-op defineOgImage when nuxt-og-image is absent, so cwa-page still builds', async () => {

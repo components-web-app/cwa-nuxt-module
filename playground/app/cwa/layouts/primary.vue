@@ -25,7 +25,7 @@
               <CwaComponentGroup
                 reference="top"
                 :location="$cwa.resources.layoutIri.value"
-                :allowed-components="['/component/navigation_links']"
+                :allowed-components="[CwaComponentNames.NavigationLink]"
               />
               <TryAdminLink />
             </div>
@@ -45,7 +45,7 @@
           <CwaComponentGroup
             reference="bottom"
             :location="$cwa.resources.layoutIri.value"
-            :allowed-components="['/component/navigation_links']"
+            :allowed-components="[CwaComponentNames.NavigationLink]"
           />
           <TryAdminLink />
         </div>
@@ -72,7 +72,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import Spinner from '#cwa/templates/components/utils/Spinner.vue'
-import { useCwa, useCwaLayout } from '#imports'
+import { CwaComponentNames, useCwa, useCwaLayout } from '#imports'
 import { useHead } from '#app'
 
 const $cwa = useCwa()

@@ -1,10 +1,12 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
-import { computed, nextTick, ref } from 'vue'
+import { computed, ref } from 'vue'
 import * as vue from 'vue'
 import { CwaResourceApiStatuses } from '../../../storage/stores/resources/state'
 import * as ResourceUtils from '../../../resources/resource-utils'
 import * as cwaComposables from '../../../composables/cwa'
 import { CwaResourceTypes } from '../../../resources/resource-utils'
+import { consola } from 'consola'
+import { flushPromises } from '@vue/test-utils'
 import { ComponentGroupUtilSynchronizer } from './ComponentGroup.Util.Synchronizer'
 
 vi.mock('../../../resources/resource-utils', async (importOriginal) => {
@@ -47,6 +49,7 @@ function createGroupSynchronizer() {
     signedIn: ref(false),
   }
   const mockFetchResource = vi.fn()
+  const mockGetComponentMetadata = vi.fn()
 
   vi.spyOn(cwaComposables, 'useCwa').mockImplementation(() => {
     return {
@@ -54,6 +57,7 @@ function createGroupSynchronizer() {
       resources: mockResources,
       resourcesManager: mockResourcesManager,
       fetchResource: mockFetchResource,
+      getComponentMetadata: mockGetComponentMetadata,
       addUniquePromise: vi.fn((scope: string, key: string, fn: () => Promise<void>) => {
         return fn()
       }),
@@ -69,6 +73,7 @@ function createGroupSynchronizer() {
     resourcesManager: mockResourcesManager,
     auth: mockAuth,
     fetchResource: mockFetchResource,
+    getComponentMetadata: mockGetComponentMetadata,
   }
 }
 
@@ -83,7 +88,7 @@ function createSyncWatcher(groupSynchronizer: ComponentGroupUtilSynchronizer, op
     resource: mockResource,
     location: mockLocation,
     fullReference: mockReference,
-    allowedComponents: ops && 'allowedComponents' in ops ? ops.allowedComponents : ['a', 'b', 'c'],
+    allowedComponents: ops && 'allowedComponents' in ops ? ops.allowedComponents : ['/component/a', '/component/b', '/component/c'],
   }
   groupSynchronizer.createSyncWatcher(syncWatcherOps)
   return syncWatcherOps
@@ -101,7 +106,7 @@ describe('Group synchronizer', () => {
 
     resources.isLoading.value = true
 
-    await nextTick()
+    await flushPromises()
 
     expect(resourcesManager.createResource).not.toHaveBeenCalled()
     expect(resourcesManager.updateResource).not.toHaveBeenCalled()
@@ -115,7 +120,7 @@ describe('Group synchronizer', () => {
     resources.isLoading.value = false
     auth.signedIn.value = false
 
-    await nextTick()
+    await flushPromises()
 
     expect(resourcesManager.createResource).not.toHaveBeenCalled()
     expect(resourcesManager.updateResource).not.toHaveBeenCalled()
@@ -133,7 +138,7 @@ describe('Group synchronizer', () => {
 
     auth.signedIn.value = true
 
-    await nextTick()
+    await flushPromises()
 
     expect(resourcesManager.createResource).toHaveBeenCalledWith({
       endpoint: '/_/component_groups',
@@ -156,7 +161,7 @@ describe('Group synchronizer', () => {
     resources.isLoading.value = false
     auth.signedIn.value = true
 
-    await nextTick()
+    await flushPromises()
 
     expect(resourcesManager.createResource).toHaveBeenCalledWith({
       endpoint: '/_/component_groups',
@@ -175,7 +180,7 @@ describe('Group synchronizer', () => {
       resource: {
         data: {
           '@id': mockId,
-          'allowedComponents': ['a'],
+          'allowedComponents': ['/component/a'],
         },
         apiState: {
           status: CwaResourceApiStatuses.SUCCESS,
@@ -186,7 +191,7 @@ describe('Group synchronizer', () => {
     resources.isLoading.value = false
     auth.signedIn.value = true
 
-    await nextTick()
+    await flushPromises()
 
     expect(resourcesManager.updateResource).toHaveBeenCalledWith({
       endpoint: mockId,
@@ -203,7 +208,7 @@ describe('Group synchronizer', () => {
       resource: {
         data: {
           '@id': mockId,
-          'allowedComponents': ['a', 'b', 'c'],
+          'allowedComponents': ['/component/a', '/component/b', '/component/c'],
         },
         apiState: {
           status: CwaResourceApiStatuses.SUCCESS,
@@ -214,7 +219,7 @@ describe('Group synchronizer', () => {
     resources.isLoading.value = false
     auth.signedIn.value = true
 
-    await nextTick()
+    await flushPromises()
 
     expect(resourcesManager.updateResource).not.toHaveBeenCalled()
   })
@@ -237,7 +242,7 @@ describe('Group synchronizer', () => {
     resources.isLoading.value = false
     auth.signedIn.value = true
 
-    await nextTick()
+    await flushPromises()
 
     expect(resourcesManager.updateResource).not.toHaveBeenCalled()
   })
@@ -256,16 +261,16 @@ describe('Group synchronizer', () => {
       const { auth, groupSynchronizer, resourcesManager } = createGroupSynchronizer()
       createSyncWatcher(groupSynchronizer, {
         resource: groupWithNoStoredList(),
-        allowedComponents: ['a', 'b', 'c'],
+        allowedComponents: ['/component/a', '/component/b', '/component/c'],
       })
 
       auth.signedIn.value = true
-      await nextTick()
+      await flushPromises()
 
       expect(resourcesManager.updateResource).toHaveBeenCalledTimes(1)
       expect(resourcesManager.updateResource).toHaveBeenCalledWith({
         endpoint: '/test',
-        data: { allowedComponents: ['a', 'b', 'c'] },
+        data: { allowedComponents: ['/component/a', '/component/b', '/component/c'] },
       })
     })
 
@@ -277,7 +282,7 @@ describe('Group synchronizer', () => {
       })
 
       auth.signedIn.value = true
-      await nextTick()
+      await flushPromises()
 
       expect(resourcesManager.updateResource).not.toHaveBeenCalled()
     })
@@ -290,9 +295,144 @@ describe('Group synchronizer', () => {
       })
 
       auth.signedIn.value = true
-      await nextTick()
+      await flushPromises()
 
       expect(resourcesManager.updateResource).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('component names in allowedComponents (#352)', () => {
+    const metadata = {
+      HtmlContent: { resourceName: 'HtmlContent', endpoint: '/component/html_contents', isPublishable: true, explicitAllowOnly: false },
+      WatchPastConference: { resourceName: 'WatchPastConference', endpoint: '/component/watch_past_conferences', isPublishable: false, explicitAllowOnly: true },
+    }
+
+    beforeEach(() => {
+      ResourceUtils.ResourceTypeFromIri.setPathPrefix('/_api')
+    })
+
+    afterEach(() => {
+      ResourceUtils.ResourceTypeFromIri.setPathPrefix(undefined)
+    })
+
+    function existingGroup(allowedComponents?: string[]) {
+      return {
+        data: {
+          '@id': '/test',
+          ...(allowedComponents ? { allowedComponents } : {}),
+        },
+        apiState: { status: CwaResourceApiStatuses.SUCCESS },
+      }
+    }
+
+    test('are resolved to prefixed endpoints before PATCHing', async () => {
+      const { auth, groupSynchronizer, resourcesManager, getComponentMetadata } = createGroupSynchronizer()
+      getComponentMetadata.mockResolvedValue(metadata)
+      createSyncWatcher(groupSynchronizer, {
+        resource: existingGroup(),
+        allowedComponents: ['HtmlContent', 'WatchPastConference'],
+      })
+
+      auth.signedIn.value = true
+      await vi.waitFor(() => expect(resourcesManager.updateResource).toHaveBeenCalled())
+
+      expect(resourcesManager.updateResource).toHaveBeenCalledWith({
+        endpoint: '/test',
+        data: { allowedComponents: ['/_api/component/html_contents', '/_api/component/watch_past_conferences'] },
+      })
+    })
+
+    test('are compared as endpoints, so a matching stored list is not PATCHed', async () => {
+      const { auth, groupSynchronizer, resourcesManager, getComponentMetadata } = createGroupSynchronizer()
+      getComponentMetadata.mockResolvedValue(metadata)
+      createSyncWatcher(groupSynchronizer, {
+        resource: existingGroup(['/_api/component/html_contents']),
+        allowedComponents: ['HtmlContent'],
+      })
+
+      auth.signedIn.value = true
+      await vi.waitFor(() => expect(getComponentMetadata).toHaveBeenCalled())
+      await flushPromises()
+
+      expect(resourcesManager.updateResource).not.toHaveBeenCalled()
+    })
+
+    test('can be mixed with collection IRIs', async () => {
+      const { auth, groupSynchronizer, resourcesManager, getComponentMetadata } = createGroupSynchronizer()
+      getComponentMetadata.mockResolvedValue(metadata)
+      createSyncWatcher(groupSynchronizer, {
+        resource: existingGroup(),
+        allowedComponents: ['HtmlContent', '/component/navigation_links'],
+      })
+
+      auth.signedIn.value = true
+      await vi.waitFor(() => expect(resourcesManager.updateResource).toHaveBeenCalled())
+
+      expect(resourcesManager.updateResource).toHaveBeenCalledWith({
+        endpoint: '/test',
+        data: { allowedComponents: ['/_api/component/html_contents', '/_api/component/navigation_links'] },
+      })
+    })
+
+    test('are resolved when creating a new component group', async () => {
+      const { auth, groupSynchronizer, resourcesManager, getComponentMetadata } = createGroupSynchronizer()
+      getComponentMetadata.mockResolvedValue(metadata)
+      createSyncWatcher(groupSynchronizer, {
+        resource: null,
+        allowedComponents: ['WatchPastConference'],
+      })
+
+      auth.signedIn.value = true
+      await vi.waitFor(() => expect(resourcesManager.createResource).toHaveBeenCalled())
+
+      expect(resourcesManager.createResource.mock.lastCall[0].data.allowedComponents).toEqual(['/_api/component/watch_past_conferences'])
+    })
+
+    test('a name the API does not know warns and syncs nothing', async () => {
+      const warn = vi.spyOn(consola, 'warn').mockImplementation(() => undefined)
+      const { auth, groupSynchronizer, resourcesManager, getComponentMetadata } = createGroupSynchronizer()
+      getComponentMetadata.mockResolvedValue(metadata)
+      createSyncWatcher(groupSynchronizer, {
+        resource: existingGroup(['/_api/component/html_contents']),
+        allowedComponents: ['HtmlContent', 'NotAnApiComponent'],
+      })
+
+      auth.signedIn.value = true
+      await vi.waitFor(() => expect(warn).toHaveBeenCalled())
+      await flushPromises()
+
+      expect(warn.mock.lastCall![0]).toContain('NotAnApiComponent')
+      expect(resourcesManager.updateResource).not.toHaveBeenCalled()
+      warn.mockRestore()
+    })
+
+    test('nothing is synced when the API docs could not be loaded', async () => {
+      const { auth, groupSynchronizer, resourcesManager, getComponentMetadata } = createGroupSynchronizer()
+      getComponentMetadata.mockResolvedValue(undefined)
+      createSyncWatcher(groupSynchronizer, {
+        resource: null,
+        allowedComponents: ['HtmlContent'],
+      })
+
+      auth.signedIn.value = true
+      await vi.waitFor(() => expect(getComponentMetadata).toHaveBeenCalled())
+      await flushPromises()
+
+      expect(resourcesManager.createResource).not.toHaveBeenCalled()
+      expect(resourcesManager.updateResource).not.toHaveBeenCalled()
+    })
+
+    test('a list of IRIs only never requests the API docs', async () => {
+      const { auth, groupSynchronizer, resourcesManager, getComponentMetadata } = createGroupSynchronizer()
+      createSyncWatcher(groupSynchronizer, {
+        resource: existingGroup(),
+        allowedComponents: ['/component/navigation_links'],
+      })
+
+      auth.signedIn.value = true
+      await vi.waitFor(() => expect(resourcesManager.updateResource).toHaveBeenCalled())
+
+      expect(getComponentMetadata).not.toHaveBeenCalled()
     })
   })
 
@@ -314,7 +454,7 @@ describe('Group synchronizer', () => {
         })
 
         auth.signedIn.value = true
-        await nextTick()
+        await flushPromises()
 
         expect(resourcesManager.updateResource).not.toHaveBeenCalled()
         expect(resource.data.allowedComponents).toEqual(['/_api/component/navigation_links'])
@@ -338,7 +478,7 @@ describe('Group synchronizer', () => {
       })
 
       auth.signedIn.value = true
-      await nextTick()
+      await flushPromises()
 
       expect(resourcesManager.updateResource).toHaveBeenCalledTimes(1)
       expect(resourcesManager.updateResource).toHaveBeenCalledWith({
@@ -366,7 +506,7 @@ describe('Group synchronizer', () => {
         })
 
         auth.signedIn.value = true
-        await nextTick()
+        await flushPromises()
 
         expect(resourcesManager.updateResource).not.toHaveBeenCalled()
       }
@@ -392,7 +532,7 @@ describe('Group synchronizer', () => {
         })
 
         auth.signedIn.value = true
-        await nextTick()
+        await flushPromises()
 
         expect(resourcesManager.updateResource).not.toHaveBeenCalled()
       }
@@ -418,7 +558,7 @@ describe('Group synchronizer', () => {
         })
 
         auth.signedIn.value = true
-        await nextTick()
+        await flushPromises()
 
         expect(resourcesManager.updateResource).toHaveBeenCalledWith({
           endpoint: mockId,
@@ -441,7 +581,7 @@ describe('Group synchronizer', () => {
         })
 
         auth.signedIn.value = true
-        await nextTick()
+        await flushPromises()
 
         const call = resourcesManager.createResource.mock.calls[0][0]
         expect(call.data.allowedComponents).toEqual(['/_api/component/nav'])
@@ -482,7 +622,7 @@ describe('Group synchronizer', () => {
     test('does not update a layout group that already lists the layout', async () => {
       const { resourcesManager } = findGroupByReference(CwaResourceTypes.LAYOUT, LAYOUT, `top_${LAYOUT}`, { layouts: [LAYOUT] })
 
-      await nextTick()
+      await flushPromises()
 
       expect(resourcesManager.updateResource).not.toHaveBeenCalled()
     })
@@ -490,7 +630,7 @@ describe('Group synchronizer', () => {
     test('does not update a page group that already lists the page', async () => {
       const { resourcesManager } = findGroupByReference(CwaResourceTypes.PAGE, PAGE, `primary_${PAGE}`, { pages: [PAGE] })
 
-      await nextTick()
+      await flushPromises()
 
       expect(resourcesManager.updateResource).not.toHaveBeenCalled()
     })
@@ -500,7 +640,7 @@ describe('Group synchronizer', () => {
         layouts: [{ '@id': LAYOUT, '@type': 'Layout' }],
       })
 
-      await nextTick()
+      await flushPromises()
 
       expect(resourcesManager.updateResource).not.toHaveBeenCalled()
     })
@@ -508,7 +648,7 @@ describe('Group synchronizer', () => {
     test('stores the group it found without updating it', async () => {
       const { resourcesManager, fetchResource } = findGroupByReference(CwaResourceTypes.LAYOUT, LAYOUT, `top_${LAYOUT}`, { layouts: [LAYOUT] })
 
-      await nextTick()
+      await flushPromises()
 
       expect(fetchResource).toHaveBeenCalledWith({ path: `/_/component_groups/top_${LAYOUT}` })
       expect(resourcesManager.updateResource).not.toHaveBeenCalled()
@@ -519,7 +659,7 @@ describe('Group synchronizer', () => {
         layouts: ['/_api/_/layouts/other'],
       })
 
-      await nextTick()
+      await flushPromises()
 
       expect(resourcesManager.updateResource).toHaveBeenCalledWith({
         endpoint: GROUP,
@@ -532,7 +672,7 @@ describe('Group synchronizer', () => {
         layouts: [{ '@id': '/_api/_/layouts/other', '@type': 'Layout' }],
       })
 
-      await nextTick()
+      await flushPromises()
 
       expect(resourcesManager.updateResource).toHaveBeenCalledWith({
         endpoint: GROUP,
@@ -543,7 +683,7 @@ describe('Group synchronizer', () => {
     test('adds the location to a group listing no locations', async () => {
       const { resourcesManager } = findGroupByReference(CwaResourceTypes.LAYOUT, LAYOUT, `top_${LAYOUT}`, {})
 
-      await nextTick()
+      await flushPromises()
 
       expect(resourcesManager.updateResource).toHaveBeenCalledWith({
         endpoint: GROUP,
