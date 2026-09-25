@@ -67,14 +67,13 @@ describe('CwaUiDatePicker', () => {
       expect(wrapper.find('[role="group"]').attributes('aria-labelledby')).toBe(label.attributes('id'))
     })
 
-    test('shows the offset inside the field, at the chosen date rather than today, with the zone named on hover', () => {
-      const winter = mountPicker({ modelValue: '2026-12-01T09:00:00.000Z' }).find('[data-time-zone]')
-      const summer = mountPicker({ modelValue: '2026-10-01T08:00:00.000Z' }).find('[data-time-zone]')
+    test('keeps the time zone out of the field, naming it with the offset at the chosen date on the calendar button', () => {
+      const winter = mountPicker({ modelValue: '2026-12-01T09:00:00.000Z' })
+      const summer = mountPicker({ modelValue: '2026-10-01T08:00:00.000Z' })
 
-      expect(winter.text()).toBe('UTC+00:00')
-      expect(winter.attributes('title')).toBe('Times are in Europe/London, UTC+00:00')
-      expect(summer.text()).toBe('UTC+01:00')
-      expect(summer.element.closest('[role="group"]')).not.toBeNull()
+      expect(winter.find('[role="group"]').text()).not.toContain('UTC')
+      expect(winter.find('[data-date-picker-trigger]').attributes('title')).toBe('Times are in Europe/London, UTC+00:00')
+      expect(summer.find('[data-date-picker-trigger]').attributes('title')).toBe('Times are in Europe/London, UTC+01:00')
     })
 
     test('changing the hour emits that moment in UTC', async () => {

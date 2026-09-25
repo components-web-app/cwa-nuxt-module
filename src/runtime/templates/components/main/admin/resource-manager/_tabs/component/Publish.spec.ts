@@ -42,8 +42,19 @@ function draft(publishedAt?: string | null) {
   }
 }
 
+const ToggleStub = {
+  name: 'CwaUiFormToggle',
+  props: ['modelValue', 'label'],
+  emits: ['update:modelValue'],
+  template: '<input type="checkbox" :checked="modelValue" @change="$emit(\'update:modelValue\', $event.target.checked)">',
+}
+
 function mountPublish() {
-  return mount(Publish, { global: { stubs: { CwaUiFormButton: ButtonStub, CwaUiFormToggle: true, CwaUiFormLabelWrapper: { props: ['label'], template: '<div><span>{{ label }}</span><slot /></div>' } } } })
+  return mount(Publish, { global: { stubs: { CwaUiFormButton: ButtonStub, CwaUiFormToggle: ToggleStub } } })
+}
+
+async function turnOnScheduling(wrapper: ReturnType<typeof mountPublish>) {
+  await wrapper.find('[data-schedule-toggle]').setValue(true)
 }
 
 function findButton(wrapper: ReturnType<typeof mountPublish>, label: string) {
@@ -66,9 +77,44 @@ describe('Publish tab — scheduling a draft', () => {
     vi.useRealTimers()
   })
 
+  test('a draft offers Publish now, with no date picker, until scheduling is switched on', () => {
+    draft()
+    const wrapper = mountPublish()
+
+    expect(wrapper.find('[data-schedule-toggle]').element).toHaveProperty('checked', false)
+    expect(findButton(wrapper, 'Publish now')).toBeDefined()
+    expect(findButton(wrapper, 'Schedule')).toBeUndefined()
+    expect(wrapper.findComponent(DatePicker).exists()).toBe(false)
+  })
+
+  test('Publish now publishes the draft at the current time', async () => {
+    draft()
+    const wrapper = mountPublish()
+
+    await findButton(wrapper, 'Publish now')!.trigger('click')
+    await flushPromises()
+
+    expect(updateResource).toHaveBeenCalledWith({
+      endpoint: '/component/draft',
+      data: { publishedAt: '2026-09-25T12:00:00.000Z' },
+    })
+  })
+
+  test('switching scheduling on shows the date picker, offering nothing earlier than now, and a Schedule button', async () => {
+    draft()
+    const wrapper = mountPublish()
+
+    await turnOnScheduling(wrapper)
+
+    expect(wrapper.findComponent(DatePicker).props('min')).toBe('2026-09-25T12:00:00.000Z')
+    expect(findButton(wrapper, 'Schedule')).toBeDefined()
+    expect(findButton(wrapper, 'Publish now')).toBeUndefined()
+  })
+
   test('saves the future time the editor picks as publishedAt on the draft', async () => {
     draft()
     const wrapper = mountPublish()
+    await turnOnScheduling(wrapper)
 
     await wrapper.findComponent(DatePicker).vm.$emit('update:modelValue', '2026-10-01T08:00:00.000Z')
     await findButton(wrapper, 'Schedule')!.trigger('click')
@@ -81,16 +127,10 @@ describe('Publish tab — scheduling a draft', () => {
     })
   })
 
-  test('does not offer a time earlier than now', () => {
+  test('a time that is already past when saved publishes now, as Publish now does', async () => {
     draft()
     const wrapper = mountPublish()
-
-    expect(wrapper.findComponent(DatePicker).props('min')).toBe('2026-09-25T12:00:00.000Z')
-  })
-
-  test('a time that is already past when saved publishes now, as the Publish button does', async () => {
-    draft()
-    const wrapper = mountPublish()
+    await turnOnScheduling(wrapper)
 
     await wrapper.findComponent(DatePicker).vm.$emit('update:modelValue', '2026-09-25T09:00:00.000Z')
     await findButton(wrapper, 'Schedule')!.trigger('click')
@@ -102,10 +142,11 @@ describe('Publish tab — scheduling a draft', () => {
     })
   })
 
-  test('a scheduled draft reads Scheduled, with its date in the field', () => {
+  test('a scheduled draft opens with scheduling on, reads Scheduled, and has its date in the picker', () => {
     draft('2026-10-01T08:00:00+00:00')
     const wrapper = mountPublish()
 
+    expect(wrapper.find('[data-schedule-toggle]').element).toHaveProperty('checked', true)
     expect(wrapper.find('[data-publish-state]').text()).toBe('Scheduled')
     expect(wrapper.findComponent(DatePicker).props('modelValue')).toBe('2026-10-01T08:00:00+00:00')
   })
@@ -130,9 +171,10 @@ describe('Publish tab — scheduling a draft', () => {
     })
   })
 
-  test('a draft with no schedule offers no cancel', () => {
+  test('a draft with no schedule offers no cancel, even with scheduling switched on', async () => {
     draft()
     const wrapper = mountPublish()
+    await turnOnScheduling(wrapper)
 
     expect(findButton(wrapper, 'Cancel schedule')).toBeUndefined()
   })
@@ -147,5 +189,6 @@ describe('Publish tab — scheduling a draft', () => {
 
     expect(wrapper.findComponent(DatePicker).exists()).toBe(false)
     expect(findButton(wrapper, 'Schedule')).toBeUndefined()
+    expect(findButton(wrapper, 'Publish now')).toBeUndefined()
   })
 })

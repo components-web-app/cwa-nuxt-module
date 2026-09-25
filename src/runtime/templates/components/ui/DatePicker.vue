@@ -5,7 +5,7 @@ import type { DateValue } from '@internationalized/date'
 import { CalendarDateTime, toCalendarDate } from '@internationalized/date'
 import { PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { isZonedDateTime } from 'reka-ui/date'
-import { dateTimeOffsetLabel, dateTimeZoneLabel, earliestSelectable, fromLocalDateTime, toLocalDateTime } from '#cwa/resources/date-time-input'
+import { dateTimeZoneLabel, earliestSelectable, fromLocalDateTime, toLocalDateTime } from '#cwa/resources/date-time-input'
 import Calendar from './Calendar.vue'
 import InputDate from './InputDate.vue'
 
@@ -30,7 +30,6 @@ const labelId = useId()
 
 const localValue = computed(() => toLocalDateTime(props.modelValue))
 const timeZone = computed(() => dateTimeZoneLabel(props.modelValue))
-const offset = computed(() => dateTimeOffsetLabel(props.modelValue))
 
 let duplicateChecked = false
 watch(localValue, (value) => {
@@ -93,15 +92,11 @@ function onCalendarUpdate(date?: DateValue) {
       :disabled="disabled"
       @update:model-value="onFieldUpdate"
     >
-      <span
-        data-time-zone
-        :title="`Times are in ${timeZone}`"
-        class="cwa:px-2 cwa:text-xs cwa:text-stone-400 cwa:whitespace-nowrap"
-      >{{ offset }}</span>
       <PopoverRoot v-model:open="open">
         <PopoverTrigger
           data-date-picker-trigger
           aria-label="Choose a date"
+          :title="`Times are in ${timeZone}`"
           :disabled="disabled"
           class="cwa:flex cwa:items-center cwa:justify-center cwa:size-7 cwa:rounded-md cwa:text-stone-400 cwa:hover:bg-stone-700 cwa:hover:text-light cwa:focus-visible:outline-2 cwa:focus-visible:outline-stone-400 cwa:cursor-pointer"
         >

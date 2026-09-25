@@ -12,7 +12,7 @@ export function formatDateTime(value?: string | null): string {
   return parsed.isValid() ? parsed.format(DISPLAY_FORMAT) : ''
 }
 
-export function dateTimeOffsetLabel(at?: string | null): string {
+function dateTimeOffsetLabel(at?: string | null): string {
   const date = at ? new Date(at) : new Date()
   const offsetMinutes = -(Number.isNaN(date.getTime()) ? new Date() : date).getTimezoneOffset()
   const sign = offsetMinutes < 0 ? '-' : '+'

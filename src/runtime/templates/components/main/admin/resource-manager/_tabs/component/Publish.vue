@@ -46,12 +46,16 @@ const publishStateLabel = computed(() => {
   }
   return scheduledAt.value ? 'Scheduled' : 'Draft'
 })
+const scheduling = ref(!!scheduledAt.value)
 const scheduleValue = ref<string | null>(scheduledAt.value ?? null)
 const minSchedule = new Date().toISOString()
 const saving = ref(false)
 
 watch(scheduledAt, (value) => {
   scheduleValue.value = value ?? null
+  if (value) {
+    scheduling.value = true
+  }
 })
 
 async function savePublishedAt(publishedAt: string | null) {
@@ -79,6 +83,10 @@ function schedule() {
   return savePublishedAt(new Date(chosen).getTime() > now.getTime() ? chosen : now.toISOString())
 }
 
+function publishNow() {
+  return savePublishedAt(new Date().toISOString())
+}
+
 function cancelSchedule() {
   return savePublishedAt(null)
 }
@@ -95,18 +103,30 @@ defineExpose(exposeMeta)
     />
     <span data-publish-state>{{ publishStateLabel }}</span>
     <template v-if="publishableState === false">
-      <CwaUiFormLabelWrapper label="Publish at:">
-        <DatePicker
-          v-model="scheduleValue"
-          :min="minSchedule"
-        />
-      </CwaUiFormLabelWrapper>
-      <div class="cwa:flex cwa:gap-x-2">
+      <CwaUiFormToggle
+        v-model="scheduling"
+        data-schedule-toggle
+        label="Schedule"
+      />
+      <DatePicker
+        v-if="scheduling"
+        v-model="scheduleValue"
+        :min="minSchedule"
+      />
+      <div class="cwa:flex cwa:items-center cwa:gap-x-2">
         <CwaUiFormButton
+          v-if="scheduling"
           :disabled="saving || !scheduleValue"
           @click="schedule"
         >
           Schedule
+        </CwaUiFormButton>
+        <CwaUiFormButton
+          v-else
+          :disabled="saving"
+          @click="publishNow"
+        >
+          Publish now
         </CwaUiFormButton>
         <CwaUiFormButton
           v-if="scheduledAt"
