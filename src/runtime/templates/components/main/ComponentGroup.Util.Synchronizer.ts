@@ -159,6 +159,7 @@ export class ComponentGroupUtilSynchronizer {
 
   private normalizeAllowedComponents(allowedComponents: string[] | null | undefined): string[] | null | undefined {
     if (!allowedComponents) return allowedComponents
+    if (!allowedComponents.length) return null
     const prefix = ResourceTypeFromIri.getPathPrefix()
     if (!prefix) return allowedComponents
     return allowedComponents.map(iri => iri.startsWith(prefix) ? iri : `${prefix}${iri}`)
@@ -167,7 +168,6 @@ export class ComponentGroupUtilSynchronizer {
   private async updateAllowedComponents(allowedComponents: string[] | null | undefined, resource: any) {
     if (allowedComponents === undefined) return
     const stored = resource?.data?.allowedComponents
-    if (stored === undefined) return
     const normalized = this.normalizeAllowedComponents(allowedComponents)
     if (isEqual(normalized, stored ?? null)) {
       return

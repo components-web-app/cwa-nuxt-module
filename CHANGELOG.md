@@ -4,6 +4,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+- Sync `allowedComponents` to groups with no stored list; an empty list is sent as `null` ([#351](https://github.com/components-web-app/cwa-nuxt-module/issues/351))
+
 ## [2.0.0-alpha.1] - 2026-09-24
 
 - First tagged release of `@cwa/nuxt`; releases are now published from `v*` tags ([7c61b7c](https://github.com/components-web-app/cwa-nuxt-module/commit/7c61b7ce331ec4a0cb8e76951a5de2ff806ed07a))

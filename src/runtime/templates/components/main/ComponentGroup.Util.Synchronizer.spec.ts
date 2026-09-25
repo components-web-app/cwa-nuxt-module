@@ -242,6 +242,60 @@ describe('Group synchronizer', () => {
     expect(resourcesManager.updateResource).not.toHaveBeenCalled()
   })
 
+  describe('a group the API returns with no allowedComponents key (#351)', () => {
+    function groupWithNoStoredList() {
+      return {
+        data: {
+          '@id': '/test',
+        },
+        apiState: { status: CwaResourceApiStatuses.SUCCESS },
+      }
+    }
+
+    test('is given the template list', async () => {
+      const { auth, groupSynchronizer, resourcesManager } = createGroupSynchronizer()
+      createSyncWatcher(groupSynchronizer, {
+        resource: groupWithNoStoredList(),
+        allowedComponents: ['a', 'b', 'c'],
+      })
+
+      auth.signedIn.value = true
+      await nextTick()
+
+      expect(resourcesManager.updateResource).toHaveBeenCalledTimes(1)
+      expect(resourcesManager.updateResource).toHaveBeenCalledWith({
+        endpoint: '/test',
+        data: { allowedComponents: ['a', 'b', 'c'] },
+      })
+    })
+
+    test('is left alone when the prop is omitted', async () => {
+      const { auth, groupSynchronizer, resourcesManager } = createGroupSynchronizer()
+      createSyncWatcher(groupSynchronizer, {
+        resource: groupWithNoStoredList(),
+        allowedComponents: undefined,
+      })
+
+      auth.signedIn.value = true
+      await nextTick()
+
+      expect(resourcesManager.updateResource).not.toHaveBeenCalled()
+    })
+
+    test('is left alone when the prop is an empty list, which the API stores as null', async () => {
+      const { auth, groupSynchronizer, resourcesManager } = createGroupSynchronizer()
+      createSyncWatcher(groupSynchronizer, {
+        resource: groupWithNoStoredList(),
+        allowedComponents: [],
+      })
+
+      auth.signedIn.value = true
+      await nextTick()
+
+      expect(resourcesManager.updateResource).not.toHaveBeenCalled()
+    })
+  })
+
   describe('an omitted allowedComponents prop', () => {
     test('leaves a fixture-set list untouched: no PATCH and the stored list survives', async () => {
       ResourceUtils.ResourceTypeFromIri.setPathPrefix('/_api')
