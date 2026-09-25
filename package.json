@@ -1,6 +1,6 @@
 {
   "name": "@cwa/nuxt",
-  "version": "2.0.0-alpha.1",
+  "version": "2.0.0-alpha.2",
   "license": "MIT",
   "type": "module",
   "description": "Components Web Apps Nuxt Module. UI for creating component-driven web apps with the API Components Bundle",
