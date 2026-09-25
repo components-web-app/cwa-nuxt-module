@@ -43,7 +43,7 @@ function draft(publishedAt?: string | null) {
 }
 
 function mountPublish() {
-  return mount(Publish, { global: { stubs: { CwaUiFormButton: ButtonStub, CwaUiFormToggle: true } } })
+  return mount(Publish, { global: { stubs: { CwaUiFormButton: ButtonStub, CwaUiFormToggle: true, CwaUiFormLabelWrapper: { props: ['label'], template: '<div><span>{{ label }}</span><slot /></div>' } } } })
 }
 
 function findButton(wrapper: ReturnType<typeof mountPublish>, label: string) {
@@ -102,12 +102,19 @@ describe('Publish tab — scheduling a draft', () => {
     })
   })
 
-  test('shows when a scheduled draft will publish, and the timezone it is shown in', () => {
+  test('a scheduled draft reads Scheduled, with its date in the field', () => {
     draft('2026-10-01T08:00:00+00:00')
     const wrapper = mountPublish()
 
-    expect(wrapper.text()).toContain('Scheduled for 1 Oct 2026, 09:00')
-    expect(wrapper.text()).toContain('Europe/London, UTC+01:00')
+    expect(wrapper.find('[data-publish-state]').text()).toBe('Scheduled')
+    expect(wrapper.findComponent(DatePicker).props('modelValue')).toBe('2026-10-01T08:00:00+00:00')
+  })
+
+  test('an unscheduled draft reads Draft', () => {
+    draft()
+    const wrapper = mountPublish()
+
+    expect(wrapper.find('[data-publish-state]').text()).toBe('Draft')
   })
 
   test('cancelling a schedule clears publishedAt so the draft stays a draft', async () => {
@@ -128,7 +135,6 @@ describe('Publish tab — scheduling a draft', () => {
     const wrapper = mountPublish()
 
     expect(findButton(wrapper, 'Cancel schedule')).toBeUndefined()
-    expect(wrapper.text()).not.toContain('Scheduled for')
   })
 
   test('a live resource has nothing to schedule', () => {

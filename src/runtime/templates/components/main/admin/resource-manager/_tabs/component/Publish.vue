@@ -3,7 +3,6 @@ import { computed, ref, watch } from 'vue'
 import { useCwaResourceManagerTab } from '#cwa/composables/cwa-resource-manager-tab'
 import { DEFAULT_TAB_ORDER } from '#cwa/admin/manager-tabs-resolver'
 import { getPublishedResourceState } from '#cwa/resources/resource-utils'
-import { formatDateTime } from '#cwa/resources/date-time-input'
 import DatePicker from '#cwa/templates/components/ui/DatePicker.vue'
 
 const { exposeMeta, resource, $cwa, iri } = useCwaResourceManagerTab({
@@ -41,7 +40,12 @@ const scheduledAt = computed<string | undefined>(() => {
   }
   return new Date(publishedAt).getTime() > Date.now() ? publishedAt : undefined
 })
-const scheduledAtLabel = computed(() => formatDateTime(scheduledAt.value))
+const publishStateLabel = computed(() => {
+  if (publishableState.value !== false) {
+    return 'Live'
+  }
+  return scheduledAt.value ? 'Scheduled' : 'Draft'
+})
 const scheduleValue = ref<string | null>(scheduledAt.value ?? null)
 const minSchedule = new Date().toISOString()
 const saving = ref(false)
@@ -83,30 +87,20 @@ defineExpose(exposeMeta)
 </script>
 
 <template>
-  <div>
+  <div class="cwa:flex cwa:items-center cwa:gap-x-6">
     <CwaUiFormToggle
       v-if="alternateIri"
       v-model="editLiveVersion"
       label="Edit live version"
     />
-    <span v-else>
-      {{ publishableState === false ? 'Draft' : 'Live' }}
-    </span>
-    <div
-      v-if="publishableState === false"
-      class="cwa:flex cwa:flex-col cwa:gap-y-2 cwa:mt-4"
-    >
-      <p
-        v-if="scheduledAt"
-        data-scheduled-at
-      >
-        Scheduled for {{ scheduledAtLabel }}
-      </p>
-      <DatePicker
-        v-model="scheduleValue"
-        label="Publish at"
-        :min="minSchedule"
-      />
+    <span data-publish-state>{{ publishStateLabel }}</span>
+    <template v-if="publishableState === false">
+      <CwaUiFormLabelWrapper label="Publish at:">
+        <DatePicker
+          v-model="scheduleValue"
+          :min="minSchedule"
+        />
+      </CwaUiFormLabelWrapper>
       <div class="cwa:flex cwa:gap-x-2">
         <CwaUiFormButton
           :disabled="saving || !scheduleValue"
@@ -122,6 +116,6 @@ defineExpose(exposeMeta)
           Cancel schedule
         </CwaUiFormButton>
       </div>
-    </div>
+    </template>
   </div>
 </template>
