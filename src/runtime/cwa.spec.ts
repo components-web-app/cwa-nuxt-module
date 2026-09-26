@@ -17,6 +17,7 @@ import Admin from './admin/admin'
 import NavigationGuard from './admin/navigation-guard'
 import Auth from './api/auth'
 import SiteConfig from '#cwa/api/site-config'
+import OrphanedResources from '#cwa/api/orphaned-resources'
 import { UNSET_API_URL } from '#cwa/api/api-url'
 import * as nuxtApp from '#app/nuxt'
 
@@ -144,6 +145,7 @@ vi.mock('./api/auth', function () {
   }
 })
 vi.mock('./api/forms')
+vi.mock('#cwa/api/orphaned-resources')
 vi.mock('./admin/admin', function () {
   return {
     default: vi.fn(function () {
@@ -360,6 +362,12 @@ describe('Cwa class test', () => {
     createCwa({ storeName })
     const stores = Storage.mock.results[0].value.stores
     expect(SiteConfig).toBeCalledWith(CwaFetch.mock.results[0].value, stores.siteConfig, undefined)
+  })
+
+  test('OrphanedResources is initialised with the shared fetch', () => {
+    const $cwa = createCwa({ storeName })
+    expect(OrphanedResources).toBeCalledWith(CwaFetch.mock.results[0].value)
+    expect($cwa.orphanedResources).toBe(OrphanedResources.mock.instances[0])
   })
 })
 

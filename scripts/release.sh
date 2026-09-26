@@ -10,10 +10,7 @@ if [ "$VERSION" != "$TAG_VERSION" ]; then
   exit 1
 fi
 
-DIST_TAG=latest
-case "$VERSION" in
-  *-*) DIST_TAG=$(node -p "require('./package.json').version.split('-')[1].split('.')[0]") ;;
-esac
+DIST_TAG=$(node scripts/release-dist-tag.mjs @cwa/nuxt "$VERSION")
 
 echo "Staging @cwa/nuxt@${VERSION} under the ${DIST_TAG} tag. It goes live once approved on npmjs.com."
 npx -y npm@^11.15 stage publish --ignore-scripts --access public --tag "$DIST_TAG" --provenance

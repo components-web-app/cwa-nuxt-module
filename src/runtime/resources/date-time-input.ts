@@ -4,16 +4,20 @@ import type { DateValue, ZonedDateTime } from '@internationalized/date'
 
 const DISPLAY_FORMAT = 'D MMM YYYY, HH:mm'
 
+export function toMillisecondPrecision(value: string): string {
+  return value.replace(/(\.\d{3})\d+/, '$1')
+}
+
 export function formatDateTime(value?: string | null): string {
   if (!value) {
     return ''
   }
-  const parsed = dayjs(value)
+  const parsed = dayjs(toMillisecondPrecision(value))
   return parsed.isValid() ? parsed.format(DISPLAY_FORMAT) : ''
 }
 
 function dateTimeOffsetLabel(at?: string | null): string {
-  const date = at ? new Date(at) : new Date()
+  const date = at ? new Date(toMillisecondPrecision(at)) : new Date()
   const offsetMinutes = -(Number.isNaN(date.getTime()) ? new Date() : date).getTimezoneOffset()
   const sign = offsetMinutes < 0 ? '-' : '+'
   const absolute = Math.abs(offsetMinutes)
@@ -31,7 +35,7 @@ export function toLocalDateTime(value?: string | null): ZonedDateTime | undefine
   if (!value) {
     return undefined
   }
-  const time = new Date(value).getTime()
+  const time = new Date(toMillisecondPrecision(value)).getTime()
   return Number.isNaN(time) ? undefined : fromDate(new Date(time), getLocalTimeZone())
 }
 

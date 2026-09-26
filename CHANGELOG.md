@@ -4,6 +4,15 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+## [2.0.0-alpha.3] - 2026-09-26
+
+- Times from the API with more than millisecond precision, such as the orphan report's `generatedAt`, display correctly in every browser ([d1695b8d](https://github.com/components-web-app/cwa-nuxt-module/commit/d1695b8d))
+- Orphaned resources are deleted in one request to `POST /_/orphaned_resources/delete`, which checks each one again first; the page re-reads the report afterwards and lists what was deleted, including cascaded items, and what was kept and why. Needs an api-components-bundle release containing #353 ([#358](https://github.com/components-web-app/cwa-nuxt-module/issues/358), [519ef3e5](https://github.com/components-web-app/cwa-nuxt-module/commit/519ef3e5))
+- Review orphaned component groups, positions and components at `/_cwa/orphaned`, view and delete them, and scan from site settings, which says when a scan has found orphans ([api-components-bundle#190](https://github.com/components-web-app/api-components-bundle/issues/190), [dca1fb13](https://github.com/components-web-app/cwa-nuxt-module/commit/dca1fb13))
+- An `undefined` or non-string `allowedComponents` entry warns and syncs nothing instead of throwing ([#354](https://github.com/components-web-app/cwa-nuxt-module/issues/354), [825cf38c](https://github.com/components-web-app/cwa-nuxt-module/commit/825cf38c))
+- `useResendVerifyEmail` resets `success` when a new request starts, so a throttled or failed resend no longer shows alongside the earlier success; Back to Login after a password reset no longer sends a second reset request ([#355](https://github.com/components-web-app/cwa-nuxt-module/issues/355), [28901c51](https://github.com/components-web-app/cwa-nuxt-module/commit/28901c51))
+- An email the API refuses to send (400) asks the visitor to contact the site administrator, and warns in the console about `user.email_links.allowed_origins` ([#356](https://github.com/components-web-app/cwa-nuxt-module/issues/356), [28901c51](https://github.com/components-web-app/cwa-nuxt-module/commit/28901c51))
+
 ## [2.0.0-alpha.2] - 2026-09-25
 
 - Throttled email requests (429) say when another can be sent; the admin resend link counts down until then ([#353](https://github.com/components-web-app/cwa-nuxt-module/issues/353), [6e0fd593](https://github.com/components-web-app/cwa-nuxt-module/commit/6e0fd593))
@@ -19,6 +28,7 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 - First tagged release of `@cwa/nuxt`; releases are now published from `v*` tags ([7c61b7c](https://github.com/components-web-app/cwa-nuxt-module/commit/7c61b7ce331ec4a0cb8e76951a5de2ff806ed07a))
 
-[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.2...HEAD
+[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.3...HEAD
+[2.0.0-alpha.3]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.2...v2.0.0-alpha.3
 [2.0.0-alpha.2]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.1...v2.0.0-alpha.2
 [2.0.0-alpha.1]: https://github.com/components-web-app/cwa-nuxt-module/releases/tag/v2.0.0-alpha.1

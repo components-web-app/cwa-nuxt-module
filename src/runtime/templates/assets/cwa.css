@@ -274,6 +274,9 @@
 .cwa\:mt-2\.5 {
   margin-top: calc(var(--cwa-spacing) * 2.5);
 }
+.cwa\:mt-3 {
+  margin-top: calc(var(--cwa-spacing) * 3);
+}
 .cwa\:mt-4 {
   margin-top: calc(var(--cwa-spacing) * 4);
 }
@@ -424,6 +427,9 @@
 }
 .cwa\:max-h-60 {
   max-height: calc(var(--cwa-spacing) * 60);
+}
+.cwa\:max-h-96 {
+  max-height: calc(var(--cwa-spacing) * 96);
 }
 .cwa\:max-h-full {
   max-height: 100%;
@@ -1420,6 +1426,9 @@
 }
 .cwa\:text-pretty {
   text-wrap: pretty;
+}
+.cwa\:break-all {
+  word-break: break-all;
 }
 .cwa\:whitespace-nowrap {
   white-space: nowrap;

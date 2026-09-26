@@ -6,12 +6,14 @@ import SettingsPage from './settings.vue'
 import * as cwaComposable from '#cwa/composables/cwa'
 import { PageCacheWarmInterruptedError } from '#cwa/api/page-cache-warm'
 
-const { mockOptions, mockReveal, mockPurgePageCache, mockPurgeHttpCache, mockWarmPageCache } = vi.hoisted(() => ({
+const { mockOptions, mockReveal, mockPurgePageCache, mockPurgeHttpCache, mockWarmPageCache, mockFetchOrphanReport, mockRequestOrphanScan } = vi.hoisted(() => ({
   mockOptions: { pageCache: undefined as undefined | { enabled?: boolean } },
   mockReveal: vi.fn(),
   mockPurgePageCache: vi.fn(),
   mockPurgeHttpCache: vi.fn(),
   mockWarmPageCache: vi.fn(),
+  mockFetchOrphanReport: vi.fn(),
+  mockRequestOrphanScan: vi.fn(),
 }))
 
 vi.mock('#build/cwa-options', () => ({
@@ -51,6 +53,10 @@ async function setup() {
       purgeHttpCache: mockPurgeHttpCache,
       warmPageCache: mockWarmPageCache,
     },
+    orphanedResources: {
+      fetchReport: mockFetchOrphanReport,
+      requestScan: mockRequestOrphanScan,
+    },
     getApiDocumentation: vi.fn().mockResolvedValue(undefined),
     currentModulePackageInfo: { version: '1.0.0', name: '@cwa/nuxt' },
   }))
@@ -61,6 +67,7 @@ async function setup() {
         ListHeading: true,
         MenuLink: true,
         Spinner: true,
+        RouterLink: { props: ['to'], template: '<a :data-route-name="to?.name"><slot /></a>' },
       },
     },
   })
@@ -460,5 +467,115 @@ describe('Site settings full cache purge', () => {
     await clickPurgeAll(wrapper)
     expect(wrapper.text()).toContain('All cached data has been purged')
     expect(warmNowButton(wrapper)).toBeUndefined()
+  })
+})
+
+function orphanReport(overrides: Record<string, any> = {}) {
+  return {
+    generatedAt: '2026-09-25T10:00:00+00:00',
+    components: ['/component/html_contents/c1', '/component/images/c2'],
+    componentPositions: ['/_/component_positions/p1'],
+    componentGroups: [],
+    ...overrides,
+  }
+}
+
+function orphanStatusError(statusCode: number) {
+  return Object.assign(new Error('failed'), { statusCode })
+}
+
+describe('Site settings orphaned resources', () => {
+  beforeEach(() => {
+    mockOptions.pageCache = undefined
+    mockFetchOrphanReport.mockReset().mockResolvedValue(orphanReport())
+    mockRequestOrphanScan.mockReset().mockResolvedValue(undefined)
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.restoreAllMocks()
+  })
+
+  function notice(wrapper: Wrapper) {
+    return wrapper.find('[data-testid="orphaned-notice"]')
+  }
+
+  function section(wrapper: Wrapper) {
+    return wrapper.find('[data-testid="orphaned-settings"]')
+  }
+
+  function scanNowButton(wrapper: Wrapper) {
+    return section(wrapper).findAll('button').find(b => ['Scan now', 'Scanning…'].includes(b.text()))
+  }
+
+  test('links to the orphaned resources page', async () => {
+    const wrapper = await setup()
+    const link = section(wrapper).findAll('a').find(a => a.text() === 'Review orphaned resources')
+    expect(link?.attributes('data-route-name')).toBe('_cwa-orphaned')
+  })
+
+  test('a report listing orphans shows a notice with its count and a review link', async () => {
+    const wrapper = await setup()
+    expect(notice(wrapper).text()).toContain('Orphaned resources discovered')
+    expect(notice(wrapper).text()).toContain('3')
+    const cta = notice(wrapper).findAll('a').find(a => a.text() === 'Review now')
+    expect(cta?.attributes('data-route-name')).toBe('_cwa-orphaned')
+  })
+
+  test('an empty report shows no notice', async () => {
+    mockFetchOrphanReport.mockResolvedValue(orphanReport({ components: [], componentPositions: [] }))
+    const wrapper = await setup()
+    expect(notice(wrapper).exists()).toBe(false)
+  })
+
+  test('no stored report shows no notice and says it has never been scanned', async () => {
+    mockFetchOrphanReport.mockRejectedValue(orphanStatusError(404))
+    const wrapper = await setup()
+    expect(notice(wrapper).exists()).toBe(false)
+    expect(section(wrapper).text()).toContain('Never scanned')
+  })
+
+  test('a failed report request shows no notice and no error, and does not scan', async () => {
+    mockFetchOrphanReport.mockRejectedValue(orphanStatusError(500))
+    const wrapper = await setup()
+    expect(notice(wrapper).exists()).toBe(false)
+    expect(wrapper.text()).not.toContain('could not be loaded')
+    expect(section(wrapper).text()).not.toContain('Never scanned')
+    expect(mockRequestOrphanScan).not.toHaveBeenCalled()
+  })
+
+  test('shows when the last scan ran', async () => {
+    const wrapper = await setup()
+    expect(section(wrapper).text()).toContain('Last scanned 25 Sep 2026')
+  })
+
+  test('scan now requests a scan and refreshes from the new report', async () => {
+    mockFetchOrphanReport.mockRejectedValueOnce(orphanStatusError(404))
+    const wrapper = await setup()
+    expect(notice(wrapper).exists()).toBe(false)
+    await scanNowButton(wrapper)!.trigger('click')
+    await flushPromises()
+    expect(mockRequestOrphanScan).toHaveBeenCalledTimes(1)
+    expect(mockFetchOrphanReport).toHaveBeenCalledTimes(2)
+    expect(section(wrapper).text()).toContain('Last scanned 25 Sep 2026')
+    expect(notice(wrapper).text()).toContain('Orphaned resources discovered')
+  })
+
+  test('a scan that has not finished within the polling bound says it was requested', async () => {
+    vi.useFakeTimers()
+    const wrapper = await setup()
+    await scanNowButton(wrapper)!.trigger('click')
+    await vi.advanceTimersByTimeAsync(60_000)
+    await flushPromises()
+    expect(section(wrapper).text()).toContain('The scan has been requested but has not finished yet.')
+  })
+
+  test('a failed scan shows its error in the orphaned resources section', async () => {
+    mockRequestOrphanScan.mockRejectedValue(orphanStatusError(403))
+    const wrapper = await setup()
+    await scanNowButton(wrapper)!.trigger('click')
+    await flushPromises()
+    expect(section(wrapper).text()).toContain('The scan could not be requested (403). Please try again.')
+    expect(notice(wrapper).text()).toContain('Orphaned resources discovered')
   })
 })

@@ -1,6 +1,7 @@
 // @vitest-environment nuxt
 import { describe, expect, test, vi, beforeEach } from 'vitest'
 import { createFetchError } from 'ofetch'
+import { consola as logger } from 'consola'
 import { mockNuxtImport } from '@nuxt/test-utils/runtime'
 import * as cwaComposable from '#cwa/composables/cwa'
 import { useForgotPassword } from '#cwa/composables/forgot-password'
@@ -108,6 +109,18 @@ describe('useForgotPassword', () => {
     expect(mockNavigateTo).toHaveBeenCalledWith('/login')
   })
 
+  test('Back to Login after a success only navigates, sending no second reset request (#355)', async () => {
+    mockAuth.forgotPassword.mockResolvedValue({})
+    const { doSubmit, credentials, success } = useForgotPassword()
+    credentials.username = 'user@example.com'
+    await doSubmit()
+
+    await doSubmit()
+
+    expect(mockAuth.forgotPassword).toHaveBeenCalledTimes(1)
+    expect(success.value).toBe(true)
+  })
+
   test('submitting is true during API call and false after', async () => {
     let capturedSubmitting: boolean | undefined
     mockAuth.forgotPassword.mockImplementation(async () => {
@@ -144,5 +157,21 @@ describe('useForgotPassword', () => {
 
     expect(error.value).toBe('The email couldn\'t be sent. Please try again.')
     expect(success.value).toBe(false)
+  })
+
+  test('a 400 with no body asks the visitor to contact the administrator and warns once (#356)', async () => {
+    const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {})
+    mockAuth.forgotPassword.mockResolvedValue(makeFetchError(400, undefined, 'Bad Request'))
+    const { doSubmit, credentials, error, success } = useForgotPassword()
+    credentials.username = 'user@example.com'
+
+    await doSubmit()
+
+    expect(error.value).toBe('The email couldn\'t be sent. Please contact the site administrator.')
+    expect(success.value).toBe(false)
+    expect(warn).toHaveBeenCalledOnce()
+    expect(warn.mock.calls[0]!.join(' ')).toContain('user.email_links.allowed_origins')
+    expect(warn.mock.calls[0]!.join(' ')).toContain('default_origin')
+    warn.mockRestore()
   })
 })
