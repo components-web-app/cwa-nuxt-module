@@ -4,6 +4,7 @@ import type { RouteLocationNormalizedLoaded } from 'vue-router'
 import { computed } from 'vue'
 import cwaAdminMiddleware from './cwa-admin'
 import * as nuxt from 'nuxt/app'
+import * as processComposables from '#cwa/composables/process'
 
 function createRoute(fullPath = '/reports'): RouteLocationNormalizedLoaded {
   return {
@@ -35,6 +36,7 @@ function mockCwa({ signedIn, isAdmin }: { signedIn: boolean, isAdmin: boolean })
 
 describe('cwa-admin middleware', () => {
   beforeEach(() => {
+    vi.spyOn(processComposables, 'useProcess').mockReturnValue({ isClient: true, isServer: false })
     vi.spyOn(nuxt, 'navigateTo').mockImplementation(() => 'navigateToResponse' as never)
   })
 
@@ -68,5 +70,25 @@ describe('cwa-admin middleware', () => {
     const { init } = mockCwa({ signedIn: true, isAdmin: true })
     await cwaAdminMiddleware(createRoute(), createRoute())
     expect(init).toHaveBeenCalled()
+  })
+
+  describe('on the server, where a cross-origin API cookie is not sent', () => {
+    beforeEach(() => {
+      vi.spyOn(processComposables, 'useProcess').mockReturnValue({ isClient: false, isServer: true })
+    })
+
+    test('does not redirect a visitor it cannot see signed in, and leaves the decision to the browser', async () => {
+      const { init } = mockCwa({ signedIn: false, isAdmin: false })
+      const result = await cwaAdminMiddleware(createRoute('/reports'), createRoute())
+      expect(init).toHaveBeenCalled()
+      expect(result).toBeUndefined()
+      expect(nuxt.navigateTo).not.toHaveBeenCalled()
+    })
+
+    test('still sends a signed-in non-admin home, because the server knows who they are', async () => {
+      mockCwa({ signedIn: true, isAdmin: false })
+      await cwaAdminMiddleware(createRoute(), createRoute())
+      expect(nuxt.navigateTo).toHaveBeenCalledWith('/')
+    })
   })
 })

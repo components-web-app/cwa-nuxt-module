@@ -1,5 +1,6 @@
 import { defineNuxtRouteMiddleware, navigateTo, useNuxtApp } from 'nuxt/app'
 import type { RouteLocationNormalized } from 'vue-router'
+import { useProcess } from '#cwa/composables/process'
 
 export default defineNuxtRouteMiddleware(async (to: RouteLocationNormalized) => {
   const { $cwa } = useNuxtApp()
@@ -12,6 +13,10 @@ export default defineNuxtRouteMiddleware(async (to: RouteLocationNormalized) => 
 
   if ($cwa.auth.signedIn.value) {
     return navigateTo('/')
+  }
+
+  if (useProcess().isServer) {
+    return
   }
 
   return navigateTo({

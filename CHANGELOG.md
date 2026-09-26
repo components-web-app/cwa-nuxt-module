@@ -5,7 +5,7 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 ## [Unreleased]
 
 - View on a never-published orphaned component shows its content instead of a 404 ([#359](https://github.com/components-web-app/cwa-nuxt-module/issues/359), [292f7885](https://github.com/components-web-app/cwa-nuxt-module/commit/292f7885))
-- Every `/_cwa` admin page is guarded by the `cwa-admin` middleware on the server as well as the client: signed out goes to login, a non-admin goes home ([5be5b635](https://github.com/components-web-app/cwa-nuxt-module/commit/5be5b635))
+- Every `/_cwa` admin page is guarded by the `cwa-admin` middleware: a signed-in non-admin goes home, and a signed-out visitor goes to login from the browser, since with a cross-origin API the server cannot see the session ([5be5b635](https://github.com/components-web-app/cwa-nuxt-module/commit/5be5b635))
 ## [2.0.0-alpha.3] - 2026-09-26
 
 - Times from the API with more than millisecond precision, such as the orphan report's `generatedAt`, display correctly in every browser ([d1695b8d](https://github.com/components-web-app/cwa-nuxt-module/commit/d1695b8d))
