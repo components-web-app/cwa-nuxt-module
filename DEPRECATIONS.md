@@ -145,9 +145,11 @@ A layer extended by a **bare specifier** is unaffected — that resolves through
   `realpathSync` from that file's `node:fs` mock
 - the `#329` section in CLAUDE.md
 
-**Precondition:** the upstream fix released in a Nuxt version our `compatibility`
-range supports (`>=3.16` today, so the range has to be raised past the first
-fixed release before the hook can go).
+**Precondition:** the upstream fix, [nuxt/nuxt#36402](https://github.com/nuxt/nuxt/pull/36402)
+(in the merge queue on 2026-09-26), released, and our `meta.compatibility.nuxt`
+raised past the first release containing it (it is still `>=3.16`, stale since
+the module requires `@nuxt/kit ^4.5.2`). Tracked, with the verification step, in
+[#361](https://github.com/components-web-app/cwa-nuxt-module/issues/361).
 
 The hook rewrites `page.file` to its realpath for **every** page, not just this
 module's. Realpathing a path that is already real returns the same string, so it
