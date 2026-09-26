@@ -1,7 +1,24 @@
 import { afterEach, describe, test, expect, vi } from 'vitest'
 import dayjs from 'dayjs'
 import { CalendarDateTime, resetLocalTimeZone } from '@internationalized/date'
-import { dateTimeZoneLabel, earliestSelectable, formatDateTime, fromLocalDateTime, toLocalDateTime } from './date-time-input'
+import { dateTimeZoneLabel, earliestSelectable, formatDateTime, fromLocalDateTime, toLocalDateTime, toMillisecondPrecision } from './date-time-input'
+
+describe('instants with more than millisecond precision (api-components-bundle#354)', () => {
+  test('trims the fraction to the three digits every browser is required to parse', () => {
+    expect(toMillisecondPrecision('2026-09-26T00:40:40.123456+00:00')).toBe('2026-09-26T00:40:40.123+00:00')
+    expect(toMillisecondPrecision('2026-09-26T00:40:40.1234Z')).toBe('2026-09-26T00:40:40.123Z')
+  })
+
+  test('leaves instants with three digits or fewer, or no fraction, as they are', () => {
+    expect(toMillisecondPrecision('2026-09-26T00:40:40.123Z')).toBe('2026-09-26T00:40:40.123Z')
+    expect(toMillisecondPrecision('2026-09-26T00:40:40.5+01:00')).toBe('2026-09-26T00:40:40.5+01:00')
+    expect(toMillisecondPrecision('2026-09-26T00:40:40+00:00')).toBe('2026-09-26T00:40:40+00:00')
+  })
+
+  test('a report time with microseconds is shown like any other', () => {
+    expect(formatDateTime('2026-09-26T00:40:40.123456+00:00')).toBe(formatDateTime('2026-09-26T00:40:40+00:00'))
+  })
+})
 
 describe('display', () => {
   test('shows a date in the editor own timezone, not UTC', () => {

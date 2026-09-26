@@ -281,7 +281,7 @@ On by default (`cwa.pageCache.enabled`; the `?? true` in `module.ts` and `resolv
 - `liveAt` is the route's own, writable date; `_metadata.effectiveLiveAt` is the latest across routed ancestors, read-only. Both admin-only. **Badges show effective; the control edits own.**
 - `effectiveLiveAt` is read **only** in `resources/route-publication.ts`. `isRouteGatedByAncestor` is `effective > own`; compare parsed instants; absent effective means not live.
 - Choosing **Live** on an already-live route keeps its stored `liveAt` (Headless UI emits on re-selecting the selected option).
-- `datetime-local` values are the editor's **computer** time, committed as a UTC instant (`…Z`), with the zone stated next to the control. The conversion lives only in `resources/date-time-input.ts`; its spec pins fixed zones through `process.env.TZ`, because CI runs in UTC, where a bug that saved the typed time as UTC would pass.
+- `datetime-local` values are the editor's **computer** time, committed as a UTC instant (`…Z`), with the zone stated next to the control. The conversion lives only in `resources/date-time-input.ts`, which also trims API instants to millisecond precision before parsing (`toMillisecondPrecision`): ECMAScript only guarantees three fractional digits, and the orphan report's `generatedAt` carries microseconds (api-components-bundle#354); its spec pins fixed zones through `process.env.TZ`, because CI runs in UTC, where a bug that saved the typed time as UTC would pass.
 - `Route` is not publishable — keep `publishedAt` inference away from it.
 
 ## Security and server routes
