@@ -4,6 +4,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import OrphanedPage from './orphaned.vue'
 import * as cwaComposable from '#cwa/composables/cwa'
 import { useRouter } from '#app/composables/router'
+import cwaAdmin from '#cwa-layer/middleware/cwa-admin'
 
 const { mockReveal } = vi.hoisted(() => ({ mockReveal: vi.fn() }))
 
@@ -95,6 +96,11 @@ describe('Orphaned resources page', () => {
 
   test('is the _cwa-orphaned admin route the settings page links to', () => {
     expect(useRouter().resolve({ name: '_cwa-orphaned' }).path).toBe('/_cwa/orphaned')
+  })
+
+  test('is guarded by the cwa-admin middleware, which runs on the server as well as the client', () => {
+    const matched = useRouter().resolve({ name: '_cwa-orphaned' }).matched
+    expect(matched.some(record => ([] as unknown[]).concat(record.meta.middleware ?? []).includes(cwaAdmin))).toBe(true)
   })
 
   test('before any scan it says so plainly and offers a scan', async () => {
