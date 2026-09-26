@@ -1,7 +1,8 @@
 import { computed, ref } from 'vue'
+import type { Ref } from 'vue'
 import { consola as logger } from 'consola'
 import { useCwa } from '#cwa/composables/cwa'
-import type { OrphanedResourceReport } from '#cwa/api/orphaned-resources'
+import type { OrphanedFileReport, OrphanedResourceReport } from '#cwa/api/orphaned-resources'
 
 const SCAN_POLL_ATTEMPTS = 5
 const SCAN_POLL_INTERVAL = 2000
@@ -18,37 +19,40 @@ function wait(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
 
-function reportLoadFailure(error: unknown) {
-  logger.error('[CWA] Could not load the orphaned resources report', error)
-  return `The report could not be loaded (${statusLabel(error)}). Please try again.`
+interface OrphanReportSource<T extends { generatedAt: string }> {
+  name: string
+  fetchReport: () => Promise<T>
+  requestScan: () => Promise<void>
+  count: (report: T) => number
 }
 
-export function useOrphanedResourceReport(ops: { onReport?: (report: OrphanedResourceReport) => void } = {}) {
-  const $cwa = useCwa()
+export interface OrphanReportOptions<T> {
+  onReport?: (report: T) => void
+}
 
+function useOrphanReport<T extends { generatedAt: string }>(source: OrphanReportSource<T>, ops: OrphanReportOptions<T>) {
   const loading = ref(true)
-  const report = ref<OrphanedResourceReport | null>()
+  const report = ref<T | null>() as Ref<T | null | undefined>
   const loadError = ref<string>()
   const scanError = ref<string>()
   const scanning = ref(false)
   const scanPending = ref(false)
 
-  const orphanCount = computed(() => {
-    const current = report.value
-    if (!current) {
-      return 0
-    }
-    return (current.components?.length || 0) + (current.componentPositions?.length || 0) + (current.componentGroups?.length || 0)
-  })
+  const orphanCount = computed(() => report.value ? source.count(report.value) : 0)
 
-  function applyReport(newReport: OrphanedResourceReport) {
+  function reportLoadFailure(error: unknown) {
+    logger.error(`[CWA] Could not load the ${source.name} report`, error)
+    return `The report could not be loaded (${statusLabel(error)}). Please try again.`
+  }
+
+  function applyReport(newReport: T) {
     report.value = newReport
     ops.onReport?.(newReport)
   }
 
-  async function fetchReport(): Promise<OrphanedResourceReport | null> {
+  async function fetchReport(): Promise<T | null> {
     try {
-      return await $cwa.orphanedResources.fetchReport()
+      return await source.fetchReport()
     }
     catch (error) {
       if (isNotFound(error)) {
@@ -111,11 +115,11 @@ export function useOrphanedResourceReport(ops: { onReport?: (report: OrphanedRes
     loadError.value = undefined
     try {
       try {
-        await $cwa.orphanedResources.requestScan()
+        await source.requestScan()
       }
       catch (error) {
         scanError.value = `The scan could not be requested (${statusLabel(error)}). Please try again.`
-        logger.error('[CWA] Could not request an orphaned resources scan', error)
+        logger.error(`[CWA] Could not request an ${source.name} scan`, error)
         return
       }
       try {
@@ -142,4 +146,26 @@ export function useOrphanedResourceReport(ops: { onReport?: (report: OrphanedRes
     refreshReport,
     scan,
   }
+}
+
+export function useOrphanedResourceReport(ops: OrphanReportOptions<OrphanedResourceReport> = {}) {
+  const $cwa = useCwa()
+  return useOrphanReport<OrphanedResourceReport>({
+    name: 'orphaned resources',
+    fetchReport: () => $cwa.orphanedResources.fetchReport(),
+    requestScan: () => $cwa.orphanedResources.requestScan(),
+    count: report => (report.components?.length || 0) + (report.componentPositions?.length || 0) + (report.componentGroups?.length || 0),
+  }, ops)
+}
+
+export function useOrphanedFileReport(ops: OrphanReportOptions<OrphanedFileReport> = {}) {
+  const $cwa = useCwa()
+  const state = useOrphanReport<OrphanedFileReport>({
+    name: 'orphaned files',
+    fetchReport: () => $cwa.orphanedResources.fetchFileReport(),
+    requestScan: () => $cwa.orphanedResources.requestFileScan(),
+    count: report => report.orphanedFiles?.length || 0,
+  }, ops)
+  const missingCount = computed(() => state.report.value?.missingFiles?.length || 0)
+  return { ...state, missingCount }
 }

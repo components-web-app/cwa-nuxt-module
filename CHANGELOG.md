@@ -4,6 +4,7 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+- `/_cwa/orphaned` also reports stored files: orphaned files nothing references, which can be deleted after a confirmation, and missing files, whose resource can be viewed; site settings scans files separately and counts both reports in its notice. Needs an api-components-bundle release containing #371 ([#362](https://github.com/components-web-app/cwa-nuxt-module/issues/362))
 - The module declares its real minimum Nuxt version, `>=4.5.2`, so Nuxt warns an app on an older version instead of failing later ([e0ef82ed](https://github.com/components-web-app/cwa-nuxt-module/commit/e0ef82ed))
 - View on a never-published orphaned component shows its content instead of a 404 ([#359](https://github.com/components-web-app/cwa-nuxt-module/issues/359), [292f7885](https://github.com/components-web-app/cwa-nuxt-module/commit/292f7885))
 - Every `/_cwa` admin page is guarded by the `cwa-admin` middleware: a signed-in non-admin goes home, and a signed-out visitor goes to login from the browser, since with a cross-origin API the server cannot see the session ([dd4f8a6d](https://github.com/components-web-app/cwa-nuxt-module/commit/dd4f8a6d), [5be5b635](https://github.com/components-web-app/cwa-nuxt-module/commit/5be5b635))

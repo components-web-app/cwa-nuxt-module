@@ -1,15 +1,29 @@
 // @vitest-environment nuxt
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
-import { useOrphanedResourceReport } from './useOrphanedResourceReport'
+import { useOrphanedFileReport, useOrphanedResourceReport } from './useOrphanReport'
 import * as cwaComposable from '#cwa/composables/cwa'
 
-function report(overrides: Record<string, any> = {}) {
+function resourceReport(overrides: Record<string, any> = {}) {
   return {
     generatedAt: '2026-09-25T10:00:00+00:00',
     components: ['/component/html_contents/c1', '/component/images/c2'],
     componentPositions: ['/_/component_positions/p1'],
     componentGroups: ['/_/component_groups/g1'],
+    ...overrides,
+  }
+}
+
+function fileReport(overrides: Record<string, any> = {}) {
+  return {
+    generatedAt: '2026-09-25T10:00:00+00:00',
+    orphanedFiles: [
+      { adapter: 'local', path: 'files/a.png' },
+      { adapter: 'local', path: 'files/b.png' },
+      { adapter: 's3', path: 'files/b.png' },
+      { adapter: 's3', path: 'files/c.pdf' },
+    ],
+    missingFiles: [{ resource: '/component/images/i1', adapter: 'local', path: 'files/gone.png' }],
     ...overrides,
   }
 }
@@ -20,29 +34,56 @@ function statusError(statusCode?: number) {
 
 const mockFetchReport = vi.fn()
 const mockRequestScan = vi.fn()
+const mockOtherFetch = vi.fn()
+const mockOtherScan = vi.fn()
 const onReport = vi.fn()
 
-function setup() {
-  // @ts-expect-error partial mock
-  vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => ({
-    orphanedResources: {
-      fetchReport: mockFetchReport,
-      requestScan: mockRequestScan,
-    },
-  }))
-  return useOrphanedResourceReport({ onReport })
-}
+const cases = [
+  {
+    name: 'useOrphanedResourceReport',
+    methods: ['fetchReport', 'requestScan'],
+    others: ['fetchFileReport', 'requestFileScan'],
+    use: useOrphanedResourceReport,
+    report: resourceReport,
+    emptied: { components: [] },
+  },
+  {
+    name: 'useOrphanedFileReport',
+    methods: ['fetchFileReport', 'requestFileScan'],
+    others: ['fetchReport', 'requestScan'],
+    use: useOrphanedFileReport,
+    report: fileReport,
+    emptied: { orphanedFiles: [] },
+  },
+] as const
 
-async function loaded() {
-  const orphans = setup()
-  await orphans.loadReport()
-  return orphans
-}
+describe.each(cases)('$name', ({ methods, others, use, report: reportOf, emptied }) => {
+  const report = (overrides: Record<string, any> = {}) => reportOf(overrides)
 
-describe('useOrphanedResourceReport', () => {
+  function setup() {
+    // @ts-expect-error partial mock
+    vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => ({
+      orphanedResources: {
+        [methods[0]]: mockFetchReport,
+        [methods[1]]: mockRequestScan,
+        [others[0]]: mockOtherFetch,
+        [others[1]]: mockOtherScan,
+      },
+    }))
+    return use({ onReport } as any)
+  }
+
+  async function loaded() {
+    const orphans = setup()
+    await orphans.loadReport()
+    return orphans
+  }
+
   beforeEach(() => {
     mockFetchReport.mockReset().mockResolvedValue(report())
     mockRequestScan.mockReset().mockResolvedValue(undefined)
+    mockOtherFetch.mockReset()
+    mockOtherScan.mockReset()
     onReport.mockReset()
   })
 
@@ -65,6 +106,7 @@ describe('useOrphanedResourceReport', () => {
       const orphans = await loaded()
       expect(orphans.report.value).toEqual(report())
       expect(orphans.orphanCount.value).toBe(4)
+      expect(mockOtherFetch).not.toHaveBeenCalled()
       expect(onReport).toHaveBeenCalledWith(report())
     })
 
@@ -86,7 +128,7 @@ describe('useOrphanedResourceReport', () => {
   describe('refreshing the report', () => {
     test('keeps and hands on the refreshed report without showing the loading state', async () => {
       const orphans = await loaded()
-      const refreshed = report({ generatedAt: '2026-09-25T11:00:00+00:00', components: [] })
+      const refreshed = report({ generatedAt: '2026-09-25T11:00:00+00:00', ...emptied })
       mockFetchReport.mockResolvedValue(refreshed)
       const refreshing = orphans.refreshReport()
       expect(orphans.loading.value).toBe(false)
@@ -116,11 +158,13 @@ describe('useOrphanedResourceReport', () => {
   describe('scanning', () => {
     test('requests a scan and keeps the new report when the scan ran synchronously', async () => {
       const orphans = await loaded()
-      const newReport = report({ generatedAt: '2026-09-25T11:00:00+00:00', components: [] })
+      const newReport = report({ generatedAt: '2026-09-25T11:00:00+00:00', ...emptied })
       mockFetchReport.mockResolvedValue(newReport)
       await orphans.scan()
       expect(mockRequestScan).toHaveBeenCalledTimes(1)
       expect(mockFetchReport).toHaveBeenCalledTimes(2)
+      expect(mockOtherScan).not.toHaveBeenCalled()
+      expect(mockOtherFetch).not.toHaveBeenCalled()
       expect(orphans.report.value).toEqual(newReport)
       expect(onReport).toHaveBeenLastCalledWith(newReport)
       expect(orphans.scanPending.value).toBe(false)
@@ -245,5 +289,39 @@ describe('useOrphanedResourceReport', () => {
       await orphans.scan()
       expect(orphans.scanError.value).toBeUndefined()
     })
+  })
+})
+
+describe('useOrphanedFileReport counts', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  async function loadedWith(report: Record<string, any> | Error) {
+    const fetchFileReport = report instanceof Error ? vi.fn().mockRejectedValue(report) : vi.fn().mockResolvedValue(report)
+    // @ts-expect-error partial mock
+    vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => ({
+      orphanedResources: { fetchFileReport, requestFileScan: vi.fn() },
+    }))
+    const files = useOrphanedFileReport()
+    await files.loadReport()
+    return files
+  }
+
+  test('missing files are counted apart from orphaned files, since they are not orphans', async () => {
+    const files = await loadedWith(fileReport({
+      orphanedFiles: [],
+      missingFiles: [
+        { resource: '/component/images/i1', adapter: 'local', path: 'files/gone.png' },
+        { resource: '/component/images/i2', adapter: 'local', path: 'files/gone-too.png' },
+      ],
+    }))
+    expect(files.orphanCount.value).toBe(0)
+    expect(files.missingCount.value).toBe(2)
+  })
+
+  test('no report counts nothing missing', async () => {
+    const files = await loadedWith(statusError(404))
+    expect(files.missingCount.value).toBe(0)
   })
 })
