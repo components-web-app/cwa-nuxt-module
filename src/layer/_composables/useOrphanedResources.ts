@@ -5,7 +5,7 @@ import { useCwa } from '#cwa/composables/cwa'
 import ConfirmDialog from '#cwa/templates/components/core/ConfirmDialog.vue'
 import { orphanedResourceEndpoint } from '#cwa/api/orphaned-resources'
 import type { OrphanedResourceDeletionRequest, OrphanedResourceDeletionResult, OrphanedResourceKind, OrphanedResourceRejection } from '#cwa/api/orphaned-resources'
-import { statusLabel, useOrphanedResourceReport } from './useOrphanedResourceReport'
+import { isNotFound, statusLabel, useOrphanedResourceReport } from './useOrphanedResourceReport'
 import { CwaResourceTypes, getResourceTypeFromIri, ResourceTypeFromIri } from '#cwa/resources/resource-utils'
 
 const REJECTION_REASONS: Record<OrphanedResourceRejection['reason'], string> = {
@@ -95,6 +95,25 @@ export function useOrphanedResources() {
     return reportState.scan()
   }
 
+  async function fetchData(path: string) {
+    const { response } = $cwa.fetch({ path, noQuery: true })
+    const { _data: data } = await response
+    return data
+  }
+
+  async function fetchViewData(iri: string) {
+    const endpoint = orphanedResourceEndpoint(iri)
+    try {
+      return await fetchData(endpoint)
+    }
+    catch (error) {
+      if (endpoint === iri || !isNotFound(error)) {
+        throw error
+      }
+      return await fetchData(iri)
+    }
+  }
+
   async function toggleView(row: OrphanedRow) {
     row.viewOpen = !row.viewOpen
     if (!row.viewOpen || row.viewData !== undefined || row.viewLoading) {
@@ -103,9 +122,7 @@ export function useOrphanedResources() {
     row.viewLoading = true
     row.viewError = undefined
     try {
-      const { response } = $cwa.fetch({ path: orphanedResourceEndpoint(row.iri), noQuery: true })
-      const { _data: data } = await response
-      row.viewData = data
+      row.viewData = await fetchViewData(row.iri)
     }
     catch (error) {
       row.viewError = `The resource could not be loaded (${statusLabel(error)}).`

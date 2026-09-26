@@ -138,6 +138,37 @@ describe('useOrphanedResources', () => {
       expect(row.viewData).toEqual({ '@id': COMPONENT, 'html': '<p>x</p>' })
     })
 
+    test('a never-published draft component, which has no published version, is fetched by its own IRI (#359)', async () => {
+      const orphans = await loaded()
+      mockFetch
+        .mockReturnValueOnce({ response: Promise.reject(statusError(404)) })
+        .mockReturnValueOnce({ response: Promise.resolve({ _data: { '@id': COMPONENT, 'html': '<p>draft</p>' } }) })
+      const row = orphans.sections[0]!.rows[0]!
+      await orphans.toggleView(row)
+      expect(mockFetch).toHaveBeenNthCalledWith(1, { path: `${COMPONENT}?published=true`, noQuery: true })
+      expect(mockFetch).toHaveBeenNthCalledWith(2, { path: COMPONENT, noQuery: true })
+      expect(row.viewData).toEqual({ '@id': COMPONENT, 'html': '<p>draft</p>' })
+      expect(row.viewError).toBeUndefined()
+    })
+
+    test('a component that fails for any other reason is not fetched again as a draft', async () => {
+      const orphans = await loaded()
+      mockFetch.mockReturnValue({ response: Promise.reject(statusError(500)) })
+      const row = orphans.sections[0]!.rows[0]!
+      await orphans.toggleView(row)
+      expect(mockFetch).toHaveBeenCalledTimes(1)
+      expect(row.viewError).toBe('The resource could not be loaded (500).')
+    })
+
+    test('a position or group that 404s is not fetched again', async () => {
+      const orphans = await loaded()
+      mockFetch.mockReturnValue({ response: Promise.reject(statusError(404)) })
+      const row = orphans.sections[1]!.rows[0]!
+      await orphans.toggleView(row)
+      expect(mockFetch).toHaveBeenCalledTimes(1)
+      expect(row.viewError).toBe('The resource could not be loaded (404).')
+    })
+
     test('toggling again hides it without fetching again', async () => {
       const orphans = await loaded()
       mockFetch.mockReturnValue({ response: Promise.resolve({ _data: {} }) })
