@@ -5,8 +5,8 @@
   />
   <ListContainer class="cwa:relative cwa:py-10">
     <div class="cwa:flex cwa:flex-col cwa:gap-y-6">
-      <CwaUiAlertWarning v-if="loadError || scanError">
-        {{ loadError || scanError }}
+      <CwaUiAlertWarning v-if="loadError || scanError || deleteError">
+        {{ loadError || scanError || deleteError }}
       </CwaUiAlertWarning>
       <p
         v-if="scanPending"
@@ -46,7 +46,29 @@
             <p class="cwa:text-light cwa:font-bold">
               Last scanned {{ formatDateTime(generatedAt) }}
             </p>
-            <p>This report reflects that scan. Resources you delete here are removed from it, and anything else that has changed since appears when you scan again.</p>
+            <p>This report reflects that scan. Anything you delete here is checked again first, and the report is updated afterwards. Anything else that has changed since appears when you scan again.</p>
+          </div>
+          <div
+            v-if="deleteOutcome"
+            data-testid="orphaned-delete-outcome"
+            class="cwa:text-sm cwa:flex cwa:flex-col cwa:gap-y-2"
+          >
+            <p class="cwa:font-bold">
+              {{ deleteOutcome.summary }}
+            </p>
+            <ul
+              v-if="deleteOutcome.rejected.length"
+              class="cwa:flex cwa:flex-col cwa:gap-y-1"
+            >
+              <li
+                v-for="item of deleteOutcome.rejected"
+                :key="item.iri"
+                class="cwa:flex cwa:flex-wrap cwa:gap-x-2"
+              >
+                <span class="cwa:font-mono cwa:break-all">{{ item.iri }}</span>
+                <span class="cwa:text-stone-400">{{ item.reason }}</span>
+              </li>
+            </ul>
           </div>
           <div class="cwa:flex cwa:flex-wrap cwa:gap-4">
             <CwaUiFormButton
@@ -87,6 +109,12 @@
             </CwaUiFormButton>
           </div>
           <p
+            v-if="section.error"
+            class="cwa:text-sm cwa:text-danger cwa:font-bold cwa:mb-4"
+          >
+            {{ section.error }}
+          </p>
+          <p
             v-if="!section.rows.length"
             class="cwa:text-sm cwa:text-stone-400"
           >
@@ -119,7 +147,7 @@
                   color="error"
                   :disabled="busy"
                   type="button"
-                  @click="deleteRow(section, row)"
+                  @click="deleteRow(row)"
                 >
                   {{ row.deleting ? 'Deleting…' : 'Delete' }}
                 </CwaUiFormButton>
@@ -184,6 +212,8 @@ const {
   scanning,
   scanPending,
   busy,
+  deleteOutcome,
+  deleteError,
   sections,
   totalCount,
   loadReport,

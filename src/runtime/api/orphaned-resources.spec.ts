@@ -37,24 +37,68 @@ describe('OrphanedResources', () => {
     expect(mockFetch.mock.calls[0]![1]).not.toHaveProperty('body')
   })
 
-  test('deletes a resource at its endpoint', async () => {
-    const { service, mockFetch, mockGetRequestOptions } = buildService()
-    await service.deleteResource('/_/component_groups/abc')
-    expect(mockGetRequestOptions).toHaveBeenCalledWith('DELETE')
-    expect(mockFetch).toHaveBeenCalledWith('/_/component_groups/abc', { method: 'DELETE', headers: { accept: 'application/ld+json,application/json' } })
-  })
+  describe('deleting orphans', () => {
+    const result = {
+      deleted: { componentGroups: [], componentPositions: [], components: ['/component/html_contents/abc'] },
+      rejected: [{ iri: '/_/component_groups/abc', reason: 'not_found' }],
+    }
 
-  test('deletes the published version of a component, never a draft the API would otherwise resolve to', async () => {
-    const { service, mockFetch } = buildService()
-    await service.deleteResource('/component/html_contents/abc')
-    expect(mockFetch.mock.calls[0]![0]).toBe('/component/html_contents/abc?published=true')
-  })
+    test('posts the selected IRIs to the bulk delete endpoint and returns its result', async () => {
+      const { service, mockFetch, mockGetRequestOptions } = buildService()
+      mockFetch.mockResolvedValueOnce(result)
+      await expect(service.deleteOrphans({ iris: ['/component/html_contents/abc', '/_/component_groups/abc'] })).resolves.toBe(result)
+      expect(mockGetRequestOptions).toHaveBeenCalledWith('POST')
+      expect(mockFetch).toHaveBeenCalledWith('/_/orphaned_resources/delete', {
+        method: 'POST',
+        headers: { accept: 'application/ld+json,application/json' },
+        body: { iris: ['/component/html_contents/abc', '/_/component_groups/abc'] },
+      })
+    })
 
-  test('rejects with the fetch error when a delete fails', async () => {
-    const { service, mockFetch } = buildService()
-    const error = Object.assign(new Error('Server Error'), { statusCode: 500 })
-    mockFetch.mockRejectedValueOnce(error)
-    await expect(service.deleteResource('/_/component_positions/abc')).rejects.toBe(error)
+    test('sends IRIs as they are, leaving the API to resolve which version is orphaned', async () => {
+      const { service, mockFetch } = buildService()
+      await service.deleteOrphans({ iris: ['/component/html_contents/abc'] })
+      expect(mockFetch.mock.calls[0]![1].body).toEqual({ iris: ['/component/html_contents/abc'] })
+    })
+
+    test('asks for everything with all set to true', async () => {
+      const { service, mockFetch } = buildService()
+      await service.deleteOrphans({ all: true })
+      expect(mockFetch).toHaveBeenCalledWith('/_/orphaned_resources/delete', {
+        method: 'POST',
+        headers: { accept: 'application/ld+json,application/json' },
+        body: { all: true },
+      })
+    })
+
+    test('an empty IRI list sends no request and deletes nothing', async () => {
+      const { service, mockFetch } = buildService()
+      await expect(service.deleteOrphans({ iris: [] })).resolves.toEqual({
+        deleted: { componentGroups: [], componentPositions: [], components: [] },
+        rejected: [],
+      })
+      expect(mockFetch).not.toHaveBeenCalled()
+    })
+
+    test('a body with neither IRIs nor all set to true sends no request', async () => {
+      const { service, mockFetch } = buildService()
+      await service.deleteOrphans({} as any)
+      await service.deleteOrphans({ all: false } as any)
+      expect(mockFetch).not.toHaveBeenCalled()
+    })
+
+    test('a body naming IRIs and all together deletes only the IRIs, never everything', async () => {
+      const { service, mockFetch } = buildService()
+      await service.deleteOrphans({ iris: ['/_/component_groups/abc'], all: true } as any)
+      expect(mockFetch.mock.calls[0]![1].body).toEqual({ iris: ['/_/component_groups/abc'] })
+    })
+
+    test('rejects with the fetch error when the delete fails', async () => {
+      const { service, mockFetch } = buildService()
+      const error = Object.assign(new Error('Unprocessable'), { statusCode: 422 })
+      mockFetch.mockRejectedValueOnce(error)
+      await expect(service.deleteOrphans({ all: true })).rejects.toBe(error)
+    })
   })
 
   describe('orphanedResourceEndpoint', () => {

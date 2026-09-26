@@ -4,12 +4,16 @@ import { consola as logger } from 'consola'
 import { useCwa } from '#cwa/composables/cwa'
 import ConfirmDialog from '#cwa/templates/components/core/ConfirmDialog.vue'
 import { orphanedResourceEndpoint } from '#cwa/api/orphaned-resources'
-import { isNotFound, statusLabel, useOrphanedResourceReport } from './useOrphanedResourceReport'
+import type { OrphanedResourceDeletionRequest, OrphanedResourceDeletionResult, OrphanedResourceKind, OrphanedResourceRejection } from '#cwa/api/orphaned-resources'
+import { statusLabel, useOrphanedResourceReport } from './useOrphanedResourceReport'
 import { CwaResourceTypes, getResourceTypeFromIri, ResourceTypeFromIri } from '#cwa/resources/resource-utils'
 
-const DELETE_CONCURRENCY = 4
+const REJECTION_REASONS: Record<OrphanedResourceRejection['reason'], string> = {
+  not_orphaned: 'Kept: it is in use again, or it is a draft.',
+  not_found: 'Already gone.',
+}
 
-export type OrphanedSectionKey = 'components' | 'componentPositions' | 'componentGroups'
+export type OrphanedSectionKey = OrphanedResourceKind
 
 export interface OrphanedRow {
   iri: string
@@ -28,6 +32,12 @@ export interface OrphanedSection {
   singular: string
   plural: string
   rows: OrphanedRow[]
+  error?: string
+}
+
+export interface OrphanedDeleteOutcome {
+  summary: string
+  rejected: { iri: string, reason: string }[]
 }
 
 function componentCollection(iri: string) {
@@ -53,6 +63,8 @@ export function useOrphanedResources() {
   const $cwa = useCwa()
 
   const deleting = ref(false)
+  const deleteOutcome = ref<OrphanedDeleteOutcome>()
+  const deleteError = ref<string>()
 
   const sections = reactive<OrphanedSection[]>([
     { key: 'components', title: 'Components', singular: 'component', plural: 'components', rows: [] },
@@ -78,6 +90,8 @@ export function useOrphanedResources() {
     if (busy.value) {
       return Promise.resolve()
     }
+    deleteOutcome.value = undefined
+    deleteError.value = undefined
     return reportState.scan()
   }
 
@@ -101,43 +115,72 @@ export function useOrphanedResources() {
     }
   }
 
-  function removeRow(section: OrphanedSection, iri: string) {
-    const index = section.rows.findIndex(row => row.iri === iri)
-    if (index !== -1) {
-      section.rows.splice(index, 1)
+  function countLabel(section: OrphanedSection, count: number) {
+    return `${count} ${count === 1 ? section.singular : section.plural}`
+  }
+
+  function describeOutcome(result: OrphanedResourceDeletionResult): OrphanedDeleteOutcome {
+    const parts = sections
+      .map(section => ({ section, count: result.deleted?.[section.key]?.length || 0 }))
+      .filter(({ count }) => count > 0)
+      .map(({ section, count }) => countLabel(section, count))
+    const listed = parts.length > 1 ? `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}` : parts[0]
+    return {
+      summary: listed ? `Deleted ${listed}, including anything they contained.` : 'Nothing was deleted.',
+      rejected: (result.rejected || []).map(({ iri, reason }) => ({ iri, reason: REJECTION_REASONS[reason] || 'Not deleted.' })),
     }
   }
 
-  async function deleteOne(section: OrphanedSection, row: OrphanedRow) {
-    row.deleting = true
-    row.error = undefined
-    try {
-      await $cwa.orphanedResources.deleteResource(row.iri)
-      removeRow(section, row.iri)
+  function removeLocally(result: OrphanedResourceDeletionResult) {
+    const gone = new Set<string>([
+      ...Object.values(result.deleted || {}).flat(),
+      ...(result.rejected || []).filter(({ reason }) => reason === 'not_found').map(({ iri }) => iri),
+    ])
+    for (const section of sections) {
+      section.rows = section.rows.filter(row => !gone.has(row.iri))
     }
-    catch (error) {
-      if (isNotFound(error)) {
-        removeRow(section, row.iri)
+  }
+
+  async function showRemaining(result: OrphanedResourceDeletionResult) {
+    try {
+      if (await reportState.refreshReport()) {
         return
       }
-      row.error = `It could not be deleted (${statusLabel(error)}).`
-      logger.error(`[CWA] Could not delete the orphaned resource ${row.iri}`, error)
     }
-    finally {
-      row.deleting = false
+    catch (error) {
+      logger.error('[CWA] Could not reload the orphaned resources report after deleting', error)
     }
+    removeLocally(result)
   }
 
-  async function deleteRows(section: OrphanedSection) {
-    const queue = [...section.rows]
-    const worker = async () => {
-      let row = queue.shift()
-      while (row) {
-        await deleteOne(section, row)
-        row = queue.shift()
+  async function deleteOrphans(request: OrphanedResourceDeletionRequest, rows: OrphanedRow[], onError: (label: string | number) => void) {
+    deleteOutcome.value = undefined
+    deleteError.value = undefined
+    for (const section of sections) {
+      section.error = undefined
+      for (const row of section.rows) {
+        row.error = undefined
       }
     }
-    await Promise.all(Array.from({ length: Math.min(DELETE_CONCURRENCY, queue.length) }, worker))
+    for (const row of rows) {
+      row.deleting = true
+    }
+    let result: OrphanedResourceDeletionResult
+    try {
+      result = await $cwa.orphanedResources.deleteOrphans(request)
+    }
+    catch (error) {
+      logger.error('[CWA] Could not delete orphaned resources', error)
+      onError(statusLabel(error))
+      return
+    }
+    finally {
+      for (const row of rows) {
+        row.deleting = false
+      }
+    }
+    deleteOutcome.value = describeOutcome(result)
+    await showRemaining(result)
   }
 
   async function whileDeleting(confirmed: () => Promise<boolean>, run: () => Promise<void>) {
@@ -156,35 +199,43 @@ export function useOrphanedResources() {
     }
   }
 
-  function deleteRow(section: OrphanedSection, row: OrphanedRow) {
+  function deleteRow(row: OrphanedRow) {
     return whileDeleting(
-      () => confirm('Delete this resource?', '<p>It will be permanently deleted, along with anything it contains. This cannot be undone.</p>'),
-      () => deleteOne(section, row),
+      () => confirm('Delete this resource?', '<p>It will be checked again first, then permanently deleted along with anything it contains. This cannot be undone.</p>'),
+      () => deleteOrphans({ iris: [row.iri] }, [row], (label) => {
+        row.error = `It could not be deleted (${label}).`
+      }),
     )
   }
 
   function deleteSection(section: OrphanedSection) {
-    const count = section.rows.length
+    const rows = [...section.rows]
+    if (!rows.length) {
+      return Promise.resolve()
+    }
     return whileDeleting(
       () => confirm(
-        `Delete ${count} orphaned ${count === 1 ? section.singular : section.plural}?`,
-        '<p>They will be permanently deleted, along with anything they contain. This cannot be undone.</p>',
+        `Delete ${rows.length} orphaned ${rows.length === 1 ? section.singular : section.plural}?`,
+        '<p>Each is checked again first, then permanently deleted along with anything it contains. This cannot be undone.</p>',
       ),
-      () => deleteRows(section),
+      () => deleteOrphans({ iris: rows.map(row => row.iri) }, rows, (label) => {
+        section.error = `They could not be deleted (${label}).`
+      }),
     )
   }
 
   function deleteAll() {
+    if (!totalCount.value) {
+      return Promise.resolve()
+    }
     return whileDeleting(
       () => confirm(
         `Delete all ${totalCount.value} orphaned resources?`,
-        '<p>Components are deleted first, then component positions, then component groups. Deleting a group also deletes the positions inside it. This cannot be undone.</p>',
+        '<p>Everything is checked again first. Whatever is still unused is permanently deleted along with anything it contains, including anything that has become unused since the last scan. This cannot be undone.</p>',
       ),
-      async () => {
-        for (const section of sections) {
-          await deleteRows(section)
-        }
-      },
+      () => deleteOrphans({ all: true }, sections.flatMap(section => section.rows), (label) => {
+        deleteError.value = `The orphaned resources could not be deleted (${label}). Please try again.`
+      }),
     )
   }
 
@@ -197,6 +248,8 @@ export function useOrphanedResources() {
     scanning,
     scanPending: reportState.scanPending,
     busy,
+    deleteOutcome,
+    deleteError,
     sections,
     totalCount,
     loadReport: reportState.loadReport,

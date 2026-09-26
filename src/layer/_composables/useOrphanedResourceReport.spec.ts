@@ -83,6 +83,36 @@ describe('useOrphanedResourceReport', () => {
     })
   })
 
+  describe('refreshing the report', () => {
+    test('keeps and hands on the refreshed report without showing the loading state', async () => {
+      const orphans = await loaded()
+      const refreshed = report({ generatedAt: '2026-09-25T11:00:00+00:00', components: [] })
+      mockFetchReport.mockResolvedValue(refreshed)
+      const refreshing = orphans.refreshReport()
+      expect(orphans.loading.value).toBe(false)
+      await expect(refreshing).resolves.toBe(true)
+      expect(orphans.report.value).toEqual(refreshed)
+      expect(onReport).toHaveBeenLastCalledWith(refreshed)
+    })
+
+    test('a 404 keeps the current report and says it was not refreshed', async () => {
+      const orphans = await loaded()
+      mockFetchReport.mockRejectedValue(statusError(404))
+      await expect(orphans.refreshReport()).resolves.toBe(false)
+      expect(orphans.report.value).toEqual(report())
+      expect(onReport).toHaveBeenCalledTimes(1)
+    })
+
+    test('a failure rejects, keeps the current report and sets no load error', async () => {
+      const orphans = await loaded()
+      const error = statusError(500)
+      mockFetchReport.mockRejectedValue(error)
+      await expect(orphans.refreshReport()).rejects.toBe(error)
+      expect(orphans.report.value).toEqual(report())
+      expect(orphans.loadError.value).toBeUndefined()
+    })
+  })
+
   describe('scanning', () => {
     test('requests a scan and keeps the new report when the scan ran synchronously', async () => {
       const orphans = await loaded()

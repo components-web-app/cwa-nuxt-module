@@ -4,6 +4,7 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+- Orphaned resources are deleted in one request to `POST /_/orphaned_resources/delete`, which checks each one again first; the page re-reads the report afterwards and lists what was deleted, including cascaded items, and what was kept and why. Needs an api-components-bundle release containing #353 ([#358](https://github.com/components-web-app/cwa-nuxt-module/issues/358))
 - Review orphaned component groups, positions and components at `/_cwa/orphaned`, view and delete them, and scan from site settings, which says when a scan has found orphans ([api-components-bundle#190](https://github.com/components-web-app/api-components-bundle/issues/190), [dca1fb13](https://github.com/components-web-app/cwa-nuxt-module/commit/dca1fb13))
 - An `undefined` or non-string `allowedComponents` entry warns and syncs nothing instead of throwing ([#354](https://github.com/components-web-app/cwa-nuxt-module/issues/354), [825cf38c](https://github.com/components-web-app/cwa-nuxt-module/commit/825cf38c))
 - `useResendVerifyEmail` resets `success` when a new request starts, so a throttled or failed resend no longer shows alongside the earlier success; Back to Login after a password reset no longer sends a second reset request ([#355](https://github.com/components-web-app/cwa-nuxt-module/issues/355), [28901c51](https://github.com/components-web-app/cwa-nuxt-module/commit/28901c51))

@@ -25,13 +25,20 @@ function report(overrides: Record<string, any> = {}) {
   }
 }
 
+function deletion(deleted: Record<string, string[]> = {}, rejected: { iri: string, reason: string }[] = []) {
+  return {
+    deleted: { componentGroups: [], componentPositions: [], components: [], ...deleted },
+    rejected,
+  }
+}
+
 function statusError(statusCode?: number) {
   return Object.assign(new Error('failed'), { statusCode })
 }
 
 const mockFetchReport = vi.fn()
 const mockRequestScan = vi.fn()
-const mockDeleteResource = vi.fn()
+const mockDeleteOrphans = vi.fn()
 const mockFetch = vi.fn()
 
 async function setup() {
@@ -41,7 +48,7 @@ async function setup() {
     orphanedResources: {
       fetchReport: mockFetchReport,
       requestScan: mockRequestScan,
-      deleteResource: mockDeleteResource,
+      deleteOrphans: mockDeleteOrphans,
     },
   }))
   const wrapper = mount(OrphanedPage, {
@@ -76,7 +83,7 @@ describe('Orphaned resources page', () => {
   beforeEach(() => {
     mockFetchReport.mockReset().mockResolvedValue(report())
     mockRequestScan.mockReset().mockResolvedValue(undefined)
-    mockDeleteResource.mockReset().mockResolvedValue(undefined)
+    mockDeleteOrphans.mockReset().mockResolvedValue(deletion())
     mockFetch.mockReset()
     mockReveal.mockReset().mockResolvedValue({ isCanceled: false })
   })
@@ -173,38 +180,71 @@ describe('Orphaned resources page', () => {
     const wrapper = await setup()
     await click(wrapper, 'Delete', 'orphaned-section-componentGroups')
     expect(mockReveal).toHaveBeenCalledTimes(1)
-    expect(mockDeleteResource).not.toHaveBeenCalled()
+    expect(mockDeleteOrphans).not.toHaveBeenCalled()
     expect(rowIris(wrapper, 'componentGroups')).toEqual([GROUP])
   })
 
-  test('a confirmed delete removes the row without rescanning', async () => {
+  test('a confirmed delete sends that IRI, shows the re-read report and what was deleted, without rescanning', async () => {
     const wrapper = await setup()
+    mockDeleteOrphans.mockResolvedValue(deletion({ componentGroups: [GROUP], componentPositions: [POSITION] }))
+    mockFetchReport.mockResolvedValue(report({ componentPositions: [], componentGroups: [] }))
     await click(wrapper, 'Delete', 'orphaned-section-componentGroups')
-    expect(mockDeleteResource).toHaveBeenCalledWith(GROUP)
+    expect(mockDeleteOrphans).toHaveBeenCalledWith({ iris: [GROUP] })
     expect(rowIris(wrapper, 'componentGroups')).toEqual([])
-    expect(wrapper.find('[data-testid="orphaned-section-componentGroups"]').text()).toContain('No orphaned component groups.')
+    expect(rowIris(wrapper, 'componentPositions')).toEqual([])
+    expect(wrapper.find('[data-testid="orphaned-delete-outcome"]').text()).toContain('Deleted 1 component position and 1 component group, including anything they contained.')
     expect(mockRequestScan).not.toHaveBeenCalled()
   })
 
-  test('a failed delete keeps the row and shows its error', async () => {
-    mockDeleteResource.mockRejectedValue(statusError(500))
+  test('resources the API kept or found already gone are listed with the reason', async () => {
+    const wrapper = await setup()
+    mockDeleteOrphans.mockResolvedValue(deletion({}, [
+      { iri: COMPONENT, reason: 'not_orphaned' },
+      { iri: GROUP, reason: 'not_found' },
+    ]))
+    mockFetchReport.mockResolvedValue(report({ componentGroups: [] }))
+    await click(wrapper, 'Delete everything')
+    const items = wrapper.find('[data-testid="orphaned-delete-outcome"]').findAll('li').map(li => li.findAll('span').map(span => span.text()))
+    expect(items).toEqual([
+      [COMPONENT, 'Kept: it is in use again, or it is a draft.'],
+      [GROUP, 'Already gone.'],
+    ])
+    expect(wrapper.find('[data-testid="orphaned-delete-outcome"]').text()).toContain('Nothing was deleted.')
+    expect(rowIris(wrapper, 'components')).toEqual([COMPONENT])
+    expect(rowIris(wrapper, 'componentGroups')).toEqual([])
+  })
+
+  test('a failed row delete keeps the row and shows its error', async () => {
+    mockDeleteOrphans.mockRejectedValue(statusError(500))
     const wrapper = await setup()
     await click(wrapper, 'Delete', 'orphaned-section-componentGroups')
     expect(rowIris(wrapper, 'componentGroups')).toEqual([GROUP])
     expect(wrapper.find('[data-testid="orphaned-section-componentGroups"]').text()).toContain('It could not be deleted (500).')
+    expect(wrapper.find('[data-testid="orphaned-delete-outcome"]').exists()).toBe(false)
   })
 
-  test('delete all in a section deletes only that section', async () => {
+  test('delete all in a section sends only that section, and a failure shows on the section', async () => {
+    mockDeleteOrphans.mockRejectedValue(statusError(422))
     const wrapper = await setup()
     await click(wrapper, 'Delete all', 'orphaned-section-components')
-    expect(mockDeleteResource.mock.calls.map(call => call[0])).toEqual([COMPONENT])
-    expect(rowIris(wrapper, 'componentPositions')).toEqual([POSITION])
+    expect(mockDeleteOrphans).toHaveBeenCalledWith({ iris: [COMPONENT] })
+    expect(rowIris(wrapper, 'components')).toEqual([COMPONENT])
+    expect(wrapper.find('[data-testid="orphaned-section-components"]').text()).toContain('They could not be deleted (422).')
   })
 
-  test('delete everything deletes every section and is unavailable once nothing is left', async () => {
+  test('delete everything asks the API for everything and is unavailable once the re-read report is empty', async () => {
+    const wrapper = await setup()
+    mockFetchReport.mockResolvedValue(report({ components: [], componentPositions: [], componentGroups: [] }))
+    await click(wrapper, 'Delete everything')
+    expect(mockDeleteOrphans).toHaveBeenCalledWith({ all: true })
+    expect(button(wrapper, 'Delete everything')!.attributes('disabled')).toBeDefined()
+  })
+
+  test('a failed delete everything keeps every row and shows the error', async () => {
+    mockDeleteOrphans.mockRejectedValue(statusError(403))
     const wrapper = await setup()
     await click(wrapper, 'Delete everything')
-    expect(mockDeleteResource.mock.calls.map(call => call[0])).toEqual([COMPONENT, POSITION, GROUP])
-    expect(button(wrapper, 'Delete everything')!.attributes('disabled')).toBeDefined()
+    expect(wrapper.find('[role="alert"]').text()).toContain('The orphaned resources could not be deleted (403). Please try again.')
+    expect(rowIris(wrapper, 'components')).toEqual([COMPONENT])
   })
 })

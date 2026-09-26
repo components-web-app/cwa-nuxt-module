@@ -78,6 +78,15 @@ export function useOrphanedResourceReport(ops: { onReport?: (report: OrphanedRes
     }
   }
 
+  async function refreshReport() {
+    const fetched = await fetchReport()
+    if (!fetched) {
+      return false
+    }
+    applyReport(fetched)
+    return true
+  }
+
   async function pollForNewReport(previous: string | undefined) {
     for (let attempt = 0; attempt <= SCAN_POLL_ATTEMPTS; attempt++) {
       if (attempt > 0) {
@@ -130,6 +139,7 @@ export function useOrphanedResourceReport(ops: { onReport?: (report: OrphanedRes
     scanning,
     scanPending,
     loadReport,
+    refreshReport,
     scan,
   }
 }
