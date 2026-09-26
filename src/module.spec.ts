@@ -75,8 +75,17 @@ describe('CWA module', () => {
       expect(meta).toEqual({
         name: '@cwa/nuxt',
         configKey: 'cwa',
-        compatibility: { nuxt: '>=3.16' },
+        compatibility: { nuxt: '>=4.5.2' },
       })
+    })
+
+    test('declares the same minimum Nuxt as the @nuxt/kit it depends on, so Nuxt refuses an app too old for it', async () => {
+      await import('./module')
+      const { dependencies } = await import('../package.json')
+
+      const [{ meta }] = (nuxtKit.defineNuxtModule as Mock).mock.lastCall
+
+      expect(meta.compatibility.nuxt).toBe(`>=${dependencies['@nuxt/kit'].replace(/^\^/, '')}`)
     })
 
     test('should be called with correct defaults', async () => {

@@ -141,7 +141,7 @@ export default defineNuxtModule<CwaModuleOptions>({
     name: NAME,
     configKey: 'cwa',
     compatibility: {
-      nuxt: '>=3.16',
+      nuxt: '>=4.5.2',
     },
   },
   defaults: {
