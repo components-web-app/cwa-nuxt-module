@@ -329,6 +329,31 @@
               </li>
             </ul>
           </div>
+          <div data-testid="orphaned-files-section-unknown">
+            <h3 class="cwa:text-xl cwa:mb-2">
+              Unknown files ({{ files.unknownFiles.rows.length }})
+            </h3>
+            <p class="cwa:text-sm cwa:text-stone-400 cwa:mb-4">
+              Nothing references these, but they do not look like files the CWA uploaded, so something else may own them. They are reported only and Delete everything skips them. Remove them from storage directly if you are sure, or exclude their location in the API's <code>orphaned_files.excluded_paths</code>.
+            </p>
+            <p
+              v-if="!files.unknownFiles.rows.length"
+              class="cwa:text-sm cwa:text-stone-400"
+            >
+              No unknown files.
+            </p>
+            <ul v-else>
+              <li
+                v-for="row of files.unknownFiles.rows"
+                :key="row.key"
+                data-testid="orphaned-file-row"
+                class="cwa:border-b cwa:border-b-stone-700 cwa:py-4 cwa:flex cwa:flex-col cwa:gap-y-1"
+              >
+                <span class="cwa:font-mono cwa:text-sm cwa:break-all">{{ row.path }}</span>
+                <span class="cwa:text-xs cwa:text-stone-400">{{ row.adapter }}</span>
+              </li>
+            </ul>
+          </div>
           <div data-testid="orphaned-files-section-missing">
             <h3 class="cwa:text-xl cwa:mb-2">
               Missing files ({{ files.missingFiles.rows.length }})

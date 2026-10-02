@@ -53,6 +53,7 @@ function fileReport(overrides: Record<string, any> = {}) {
   return {
     generatedAt: '2026-09-24T09:00:00.123456+00:00',
     orphanedFiles: [ORPHAN_FILE, ORPHAN_FILE_S3],
+    unknownFiles: [{ adapter: 'local', path: 'files/logo.png' }],
     missingFiles: [MISSING],
     ...overrides,
   }
@@ -313,7 +314,7 @@ describe('Orphaned resources page', () => {
     test('lists orphaned files with their adapter and path, then missing files with the resource that points at them', async () => {
       const wrapper = await setup()
       const headings = block(wrapper).findAll('h3').map(el => el.text())
-      expect(headings).toEqual(['Orphaned files (2)', 'Missing files (1)'])
+      expect(headings).toEqual(['Orphaned files (2)', 'Unknown files (1)', 'Missing files (1)'])
       expect(fileRows(wrapper, 'orphaned')).toEqual([
         expect.stringContaining('files/a.png'),
         expect.stringContaining('files/b.pdf'),
@@ -327,12 +328,22 @@ describe('Orphaned resources page', () => {
     })
 
     test('empty lists say so', async () => {
-      mockFetchFileReport.mockResolvedValue(fileReport({ orphanedFiles: [], missingFiles: [] }))
+      mockFetchFileReport.mockResolvedValue(fileReport({ orphanedFiles: [], unknownFiles: [], missingFiles: [] }))
       const wrapper = await setup()
       expect(block(wrapper).text()).toContain('No orphaned files.')
       expect(block(wrapper).text()).toContain('No missing files.')
+      expect(block(wrapper).text()).toContain('No unknown files.')
       expect(button(wrapper, 'Delete all', 'orphaned-files-section-orphaned')).toBeUndefined()
       expect(button(wrapper, 'Delete everything', FILES)!.attributes('disabled')).toBeDefined()
+    })
+
+    test('unknown files are listed with their adapter and path, explained, and have no buttons', async () => {
+      const wrapper = await setup()
+      const section = wrapper.find('[data-testid="orphaned-files-section-unknown"]')
+      expect(fileRows(wrapper, 'unknown')).toEqual([expect.stringContaining('files/logo.png')])
+      expect(fileRows(wrapper, 'unknown')[0]).toContain('local')
+      expect(section.text()).toContain('do not look like files the CWA uploaded')
+      expect(section.findAll('button')).toHaveLength(0)
     })
 
     test('missing files offer View and never Delete', async () => {

@@ -34,6 +34,7 @@ export interface MissingFile extends OrphanedFile {
 export interface OrphanedFileReport {
   generatedAt: string
   orphanedFiles: OrphanedFile[]
+  unknownFiles?: OrphanedFile[]
   missingFiles: MissingFile[]
 }
 
@@ -41,7 +42,7 @@ export type OrphanedFileDeletionRequest = { paths: string[], all?: never } | { a
 
 export interface OrphanedFileRejection {
   path: string
-  reason: 'not_orphaned' | 'not_found' | 'delete_failed'
+  reason: 'not_orphaned' | 'not_found' | 'delete_failed' | 'unknown'
 }
 
 export interface OrphanedFileDeletionResult {

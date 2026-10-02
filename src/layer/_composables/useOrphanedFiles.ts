@@ -9,9 +9,14 @@ const REJECTION_REASONS: Record<OrphanedFileRejection['reason'], string> = {
   not_orphaned: 'Kept: something references it again.',
   not_found: 'Already gone.',
   delete_failed: 'Could not be deleted from storage.',
+  unknown: 'Kept: it does not look like a file the CWA uploaded, so it is never deleted from here.',
 }
 
 export interface OrphanedFileRow extends DeletableRow, OrphanedFile {
+  key: string
+}
+
+export interface UnknownFileRow extends OrphanedFile {
   key: string
 }
 
@@ -41,11 +46,13 @@ export function useOrphanedFiles() {
   const $cwa = useCwa()
 
   const orphanedFiles = reactive<{ rows: OrphanedFileRow[], error?: string }>({ rows: [] })
+  const unknownFiles = reactive<{ rows: UnknownFileRow[] }>({ rows: [] })
   const missingFiles = reactive<{ rows: MissingFileRow[] }>({ rows: [] })
 
   const reportState = useOrphanedFileReport({
     onReport(report) {
       orphanedFiles.rows = (report.orphanedFiles || []).map(createOrphanedRow)
+      unknownFiles.rows = (report.unknownFiles || []).map(file => ({ key: fileKey(file), adapter: file.adapter, path: file.path }))
       missingFiles.rows = (report.missingFiles || []).map(createMissingRow)
     },
   })
@@ -129,7 +136,7 @@ export function useOrphanedFiles() {
     return deletion.run(
       [
         `Delete all ${totalCount.value} orphaned files?`,
-        '<p>Everything is checked again first. Whatever is still unused is permanently deleted from storage, including anything that has become unused since the last scan. Missing files are never deleted. This cannot be undone.</p>',
+        '<p>Everything is checked again first. Whatever is still unused is permanently deleted from storage, including anything that has become unused since the last scan. Unknown files and missing files are never deleted. This cannot be undone.</p>',
       ],
       { all: true },
       [...orphanedFiles.rows],
@@ -151,6 +158,7 @@ export function useOrphanedFiles() {
     deleteOutcome: deletion.deleteOutcome,
     deleteError,
     orphanedFiles,
+    unknownFiles,
     missingFiles,
     totalCount,
     loadReport: reportState.loadReport,

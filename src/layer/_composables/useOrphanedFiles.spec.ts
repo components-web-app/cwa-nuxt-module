@@ -14,12 +14,14 @@ const A = { adapter: 'local', path: 'files/a.png' }
 const B_LOCAL = { adapter: 'local', path: 'files/b.png' }
 const B_S3 = { adapter: 's3', path: 'files/b.png' }
 const MISSING = { resource: '/component/images/i1', adapter: 'local', path: 'files/gone.png' }
+const UNKNOWN = { adapter: 'local', path: 'files/logo.png' }
 const MISSING_PAGE_DATA = { resource: '/page_data/pd1', adapter: 's3', path: 'files/gone-too.png' }
 
 function report(overrides: Record<string, any> = {}) {
   return {
     generatedAt: '2026-09-25T10:00:00.123456+00:00',
     orphanedFiles: [A, B_LOCAL, B_S3],
+    unknownFiles: [UNKNOWN],
     missingFiles: [MISSING, MISSING_PAGE_DATA],
     ...overrides,
   }
@@ -101,6 +103,18 @@ describe('useOrphanedFiles', () => {
       expect(files(orphans.orphanedFiles.rows)).toEqual([A, B_LOCAL, B_S3])
       expect(orphans.missingFiles.rows.map(({ iri, adapter, path }) => ({ resource: iri, adapter, path }))).toEqual([MISSING, MISSING_PAGE_DATA])
       expect(orphans.totalCount.value).toBe(3)
+    })
+
+    test('unknown files are listed apart, report-only, and never counted as deletable', async () => {
+      const orphans = await loaded()
+      expect(files(orphans.unknownFiles.rows)).toEqual([UNKNOWN])
+      expect(orphans.totalCount.value).toBe(3)
+    })
+
+    test('a report from before unknown files existed lists none', async () => {
+      mockFetchFileReport.mockResolvedValue(report({ unknownFiles: undefined }))
+      const orphans = await loaded()
+      expect(orphans.unknownFiles.rows).toEqual([])
     })
 
     test('one path on two adapters is two rows with distinct keys', async () => {
@@ -197,7 +211,7 @@ describe('useOrphanedFiles', () => {
       await orphans.deleteAll()
       expect(mockReveal).toHaveBeenCalledWith({
         title: 'Delete all 3 orphaned files?',
-        content: '<p>Everything is checked again first. Whatever is still unused is permanently deleted from storage, including anything that has become unused since the last scan. Missing files are never deleted. This cannot be undone.</p>',
+        content: '<p>Everything is checked again first. Whatever is still unused is permanently deleted from storage, including anything that has become unused since the last scan. Unknown files and missing files are never deleted. This cannot be undone.</p>',
       })
       expect(mockDeleteOrphanedFiles).toHaveBeenCalledTimes(1)
       expect(mockDeleteOrphanedFiles).toHaveBeenCalledWith({ all: true })
@@ -273,6 +287,7 @@ describe('useOrphanedFiles', () => {
         { path: A.path, reason: 'not_orphaned' },
         { path: B_LOCAL.path, reason: 'not_found' },
         { path: B_S3.path, reason: 'delete_failed' },
+        { path: UNKNOWN.path, reason: 'unknown' },
         { path: 'files/x.png', reason: 'something_new' },
       ]))
       await orphans.deleteAll()
@@ -280,6 +295,7 @@ describe('useOrphanedFiles', () => {
         { path: A.path, reason: 'Kept: something references it again.' },
         { path: B_LOCAL.path, reason: 'Already gone.' },
         { path: B_S3.path, reason: 'Could not be deleted from storage.' },
+        { path: UNKNOWN.path, reason: 'Kept: it does not look like a file the CWA uploaded, so it is never deleted from here.' },
         { path: 'files/x.png', reason: 'Not deleted.' },
       ])
     })
