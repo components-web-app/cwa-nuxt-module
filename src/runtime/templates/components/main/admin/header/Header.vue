@@ -92,6 +92,21 @@
             >
               {{ $cwa.admin.isEditing ? 'Done' : 'Edit' }}
             </CwaUiFormButton>
+            <button
+              v-if="unrenderedWarningCount"
+              type="button"
+              data-testid="unrendered-groups-warning"
+              class="cwa:flex cwa:items-center cwa:gap-x-1 cwa:text-orange cwa:hover:text-white cwa:transition-colors cwa:cursor-pointer"
+              title="Component groups attached to this page are not shown on it"
+              @click="showUnrenderedModal = true"
+            >
+              <CwaUiIconWarningIcon
+                class="cwa:h-6 cwa:w-6"
+                aria-hidden="true"
+              />
+              <span>{{ unrenderedWarningCount }}</span>
+              <span class="cwa:sr-only">component groups attached to this page are not shown on it</span>
+            </button>
             <!-- this will be used when cloning a component only -->
             <CwaUiFormToggle
               v-if="false && $cwa.admin.isEditing"
@@ -130,11 +145,19 @@
         @reload="goToAdminPagesView"
       />
     </ResourceModalOverlayTemplate>
+    <ResourceModalOverlayTemplate :show="showUnrenderedModal">
+      <UnrenderedComponentGroupsModal
+        v-if="showUnrenderedModal"
+        :groups="unrenderedGroups"
+        :targets="renderedGroups"
+        @close="showUnrenderedModal = false"
+      />
+    </ResourceModalOverlayTemplate>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, useTemplateRef } from 'vue'
+import { computed, defineAsyncComponent, onMounted, ref, useTemplateRef } from 'vue'
 import ResourceLoadingIndicator from '../_common/ResourceLoadingIndicator.vue'
 import SpinnerTick from '../../../utils/SpinnerTick.vue'
 import PathSelector from './_parts/PathSelector.vue'
@@ -149,6 +172,9 @@ import ResourceModalOverlayTemplate from '#cwa/templates/components/core/admin/R
 import PageResourceAdminModal from '#cwa/templates/components/core/admin/PageResourceAdminModal.vue'
 import IconRoutes from '#cwa/templates/components/core/assets/IconRoutes.vue'
 import IconData from '#cwa/templates/components/core/assets/IconData.vue'
+import { useUnrenderedComponentGroups } from '#cwa/admin/unrendered-component-groups'
+
+const UnrenderedComponentGroupsModal = defineAsyncComponent(() => import('#cwa/templates/components/core/admin/UnrenderedComponentGroupsModal.vue').then(module => module.default))
 
 const $cwa = useCwa()
 const route = useRoute()
@@ -162,6 +188,12 @@ const error = useError()
 const pageIsAdmin = computed(() => route.meta.cwa?.admin)
 const isErrorPage = computed(() => !!error.value)
 const showEditModal = ref(false)
+const showUnrenderedModal = ref(false)
+const {
+  unrendered: unrenderedGroups,
+  rendered: renderedGroups,
+  warningCount: unrenderedWarningCount,
+} = useUnrenderedComponentGroups()
 const editPageLabel = computed(() => {
   if ($cwa.resources.isDataPage.value) {
     return $cwa.resources.pageData?.value?.data?.title || 'Data Page'

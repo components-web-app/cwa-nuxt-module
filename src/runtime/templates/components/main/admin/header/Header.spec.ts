@@ -1,10 +1,33 @@
 // @vitest-environment happy-dom
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { ref, reactive, computed } from 'vue'
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { mockNuxtImport } from '@nuxt/test-utils/runtime'
 import Header from './Header.vue'
 import * as cwaComposable from '#cwa/composables/cwa'
+
+const unrenderedState = reactive({
+  unrendered: [] as any[],
+  rendered: [] as any[],
+  warningCount: 0,
+})
+
+vi.mock('#cwa/admin/unrendered-component-groups', () => ({
+  useUnrenderedComponentGroups: () => ({
+    unrendered: computed(() => unrenderedState.unrendered),
+    rendered: computed(() => unrenderedState.rendered),
+    warningCount: computed(() => unrenderedState.warningCount),
+  }),
+}))
+
+vi.mock('#cwa/templates/components/core/admin/UnrenderedComponentGroupsModal.vue', () => ({
+  default: {
+    name: 'UnrenderedComponentGroupsModal',
+    props: ['groups', 'targets'],
+    emits: ['close'],
+    template: '<div class="unrendered-modal-stub" />',
+  },
+}))
 
 const errorRef = ref<any>(null)
 const replaceMock = vi.fn()
@@ -91,6 +114,7 @@ function mountHeader() {
           template: '<div class="toggle-stub" />',
         },
         CwaUiIconCogIcon: { name: 'CwaUiIconCogIcon', template: '<svg class="cog-icon-stub" />' },
+        CwaUiIconWarningIcon: { name: 'CwaUiIconWarningIcon', template: '<svg class="warning-icon-stub" />' },
         NuxtLink: { name: 'NuxtLink', props: ['to', 'activeClass'], template: '<a :href="to"><slot /></a>' },
         IconLayouts: { name: 'IconLayouts', template: '<svg class="icon-layouts" />' },
         IconPages: { name: 'IconPages', template: '<svg class="icon-pages" />' },
@@ -107,6 +131,65 @@ describe('Header', () => {
     vi.clearAllMocks()
     errorRef.value = null
     mockRouteMeta.cwa = { admin: false }
+    unrenderedState.unrendered = []
+    unrenderedState.rendered = []
+    unrenderedState.warningCount = 0
+  })
+
+  describe('hidden component groups warning', () => {
+    const hiddenGroup = { iri: '/_/component_groups/top', reference: 'top', fromLayout: false, positions: [] }
+    const layoutGroup = { iri: '/_/component_groups/footer', reference: 'footer', fromLayout: true, positions: [] }
+    const shownGroup = { iri: '/_/component_groups/hero', reference: 'hero' }
+
+    test('shows no warning when nothing attached to the page is hidden', () => {
+      mockCwa()
+      const wrapper = mountHeader()
+      expect(wrapper.find('[data-testid="unrendered-groups-warning"]').exists()).toBe(false)
+    })
+
+    test('shows no warning when only layout groups are hidden', () => {
+      unrenderedState.unrendered = [layoutGroup]
+      mockCwa()
+      const wrapper = mountHeader()
+      expect(wrapper.find('[data-testid="unrendered-groups-warning"]').exists()).toBe(false)
+    })
+
+    test('shows the warning with the count next to the Edit button', () => {
+      unrenderedState.unrendered = [hiddenGroup, layoutGroup]
+      unrenderedState.warningCount = 1
+      mockCwa()
+      const wrapper = mountHeader()
+      const warning = wrapper.find('[data-testid="unrendered-groups-warning"]')
+      expect(warning.exists()).toBe(true)
+      expect(warning.text()).toContain('1')
+      expect(warning.element.parentElement!.textContent).toContain('Edit')
+    })
+
+    test('shows no warning on an admin page', () => {
+      unrenderedState.unrendered = [hiddenGroup]
+      unrenderedState.warningCount = 1
+      mockRouteMeta.cwa = { admin: true }
+      mockCwa()
+      const wrapper = mountHeader()
+      expect(wrapper.find('[data-testid="unrendered-groups-warning"]').exists()).toBe(false)
+    })
+
+    test('opens the modal with every hidden group and the shown groups as targets, and closes it', async () => {
+      unrenderedState.unrendered = [hiddenGroup, layoutGroup]
+      unrenderedState.rendered = [shownGroup]
+      unrenderedState.warningCount = 1
+      mockCwa()
+      const wrapper = mountHeader()
+      expect(wrapper.findComponent({ name: 'UnrenderedComponentGroupsModal' }).exists()).toBe(false)
+      await wrapper.find('[data-testid="unrendered-groups-warning"]').trigger('click')
+      await flushPromises()
+      const modal = wrapper.findComponent({ name: 'UnrenderedComponentGroupsModal' })
+      expect(modal.props('groups')).toEqual([hiddenGroup, layoutGroup])
+      expect(modal.props('targets')).toEqual([shownGroup])
+      modal.vm.$emit('close')
+      await flushPromises()
+      expect(wrapper.findComponent({ name: 'UnrenderedComponentGroupsModal' }).exists()).toBe(false)
+    })
   })
 
   describe('mount + spacer side effect (onMounted)', () => {
