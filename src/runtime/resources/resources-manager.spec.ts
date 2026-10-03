@@ -409,7 +409,7 @@ describe('Resources manager', () => {
       expect(createConfirmDialog).toHaveBeenCalledTimes(1)
     })
 
-    test('sends the DELETE without asking again when the caller has already confirmed', async () => {
+    test('with force, sends the DELETE without asking for confirmation', async () => {
       const { resourcesManager, cwaFetch, resourcesStoreActions } = createResourcesManager()
       resourcesStoreActions.getResource.mockReturnValue(undefined)
       cwaFetch.fetch.mockResolvedValue({})

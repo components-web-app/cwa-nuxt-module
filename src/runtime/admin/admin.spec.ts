@@ -1,7 +1,6 @@
 import { describe, expect, test, vi, beforeEach } from 'vitest'
 import type { Mock } from 'vitest'
 import mitt from 'mitt'
-import { computed } from 'vue'
 import { AdminStore } from '../storage/stores/admin/admin-store'
 import { ResourcesStore } from '../storage/stores/resources/resources-store'
 import { Resources } from '../resources/resources'
@@ -141,38 +140,5 @@ describe('Admin class', () => {
     admin = createAdmin()
 
     expect(ResourceStackManager as Mock).toHaveBeenCalledWith(AdminStore.mock.results[0].value, ResourcesStore.mock.results[0].value, Resources.mock.results[0].value)
-  })
-
-  describe('mounted component groups', () => {
-    test('a group is mounted from registration until its release', () => {
-      admin = createAdmin()
-      expect(admin.isComponentGroupMounted('/_/component_groups/a')).toBe(false)
-      const release = admin.registerMountedComponentGroup('/_/component_groups/a')
-      expect(admin.isComponentGroupMounted('/_/component_groups/a')).toBe(true)
-      expect(admin.isComponentGroupMounted('/_/component_groups/b')).toBe(false)
-      release()
-      expect(admin.isComponentGroupMounted('/_/component_groups/a')).toBe(false)
-    })
-
-    test('a group mounted twice stays mounted until both are released, and a repeated release is ignored', () => {
-      admin = createAdmin()
-      const first = admin.registerMountedComponentGroup('/_/component_groups/a')
-      const second = admin.registerMountedComponentGroup('/_/component_groups/a')
-      first()
-      first()
-      expect(admin.isComponentGroupMounted('/_/component_groups/a')).toBe(true)
-      second()
-      expect(admin.isComponentGroupMounted('/_/component_groups/a')).toBe(false)
-    })
-
-    test('the mounted state is reactive', () => {
-      admin = createAdmin()
-      const mounted = computed(() => admin!.isComponentGroupMounted('/_/component_groups/a'))
-      expect(mounted.value).toBe(false)
-      const release = admin.registerMountedComponentGroup('/_/component_groups/a')
-      expect(mounted.value).toBe(true)
-      release()
-      expect(mounted.value).toBe(false)
-    })
   })
 })

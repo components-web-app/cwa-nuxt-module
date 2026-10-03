@@ -1,15 +1,15 @@
 <template>
   <div
     class="cwa:text-light cwa:w-full cwa:bg-stone-800 cwa:max-w-4xl cwa:max-h-full cwa:flex cwa:flex-col"
-    data-testid="unrendered-groups-modal"
+    data-testid="stranded-groups-modal"
   >
     <div class="cwa:bg-stone-900/40 cwa:border-b-2 cwa:border-b-orange cwa:p-3 cwa:flex cwa:items-center cwa:justify-between cwa:gap-x-4">
       <h2 class="cwa:text-2xl cwa:px-3">
-        Hidden component groups
+        Stranded component groups
       </h2>
       <button
         class="cwa:cursor-pointer cwa:text-stone-400"
-        data-testid="unrendered-groups-close"
+        data-testid="stranded-groups-close"
         @click="emit('close')"
       >
         <CwaUiIconXMarkIcon class="cwa:h-10" />
@@ -19,18 +19,18 @@
     <div class="cwa:grow cwa:px-4 cwa:pt-4 cwa:pb-10 cwa:flex cwa:justify-center cwa:min-h-0">
       <div class="cwa:w-full cwa:max-w-xl cwa:overflow-auto cwa:flex cwa:flex-col cwa:gap-y-6">
         <p class="cwa:text-sm cwa:text-stone-300">
-          These component groups are attached to this page, but nothing on it shows them, for example after a group's reference was renamed in code. Merge each one into a group that is shown, or delete it.
+          These component groups are attached to this page, but no template on it declares them, so they are not shown, for example after a group's reference was renamed in code. Merge each one into a group that is shown, or delete it.
         </p>
         <p
           v-if="!groups.length"
           class="cwa:text-sm cwa:text-stone-400"
         >
-          Every attached component group is shown on this page.
+          Every component group attached to this page is shown.
         </p>
         <section
           v-for="group of groups"
           :key="group.iri"
-          data-testid="unrendered-group"
+          data-testid="stranded-group"
           class="cwa:border-b cwa:border-b-stone-700 cwa:pb-6 cwa:flex cwa:flex-col cwa:gap-y-3"
         >
           <div class="cwa:flex cwa:flex-col cwa:gap-y-1">
@@ -38,11 +38,6 @@
               {{ group.reference }}
             </h3>
             <span class="cwa:font-mono cwa:text-xs cwa:text-stone-400 cwa:break-all">{{ group.iri }}</span>
-            <span
-              v-if="group.fromLayout"
-              data-testid="unrendered-group-layout-note"
-              class="cwa:text-xs cwa:text-orange"
-            >Attached to the layout, so it may be shown on other pages</span>
           </div>
           <p
             v-if="!group.positions.length"
@@ -93,7 +88,7 @@
           </div>
           <div
             v-if="outcomes[group.iri]"
-            data-testid="unrendered-group-outcome"
+            data-testid="stranded-group-outcome"
             class="cwa:text-sm cwa:text-danger cwa:font-bold cwa:flex cwa:flex-col cwa:gap-y-1"
           >
             <template v-if="outcomes[group.iri]!.length">
@@ -123,12 +118,12 @@ import { reactive } from 'vue'
 import escape from 'lodash-es/escape'
 import { createConfirmDialog } from 'vuejs-confirm-dialog'
 import { useCwa } from '#cwa/composables/cwa'
-import { mergeComponentGroup } from '#cwa/admin/unrendered-component-groups'
-import type { RenderedComponentGroup, UnrenderedComponentGroup } from '#cwa/admin/unrendered-component-groups'
+import { mergeComponentGroup } from '#cwa/admin/stranded-component-groups'
+import type { ShownComponentGroup, StrandedComponentGroup } from '#cwa/admin/stranded-component-groups'
 
 const props = defineProps<{
-  groups: UnrenderedComponentGroup[]
-  targets: RenderedComponentGroup[]
+  groups: StrandedComponentGroup[]
+  targets: ShownComponentGroup[]
 }>()
 
 const emit = defineEmits<{
@@ -141,13 +136,13 @@ const selectedTargets = reactive<Record<string, string | undefined>>({})
 const busy = reactive<Record<string, boolean>>({})
 const outcomes = reactive<Record<string, string[] | undefined>>({})
 
-function targetOptions(group: UnrenderedComponentGroup) {
+function targetOptions(group: StrandedComponentGroup) {
   return props.targets
     .filter(target => target.iri !== group.iri)
     .map(target => ({ label: target.reference, value: target.iri }))
 }
 
-async function confirmMerge(group: UnrenderedComponentGroup, target: RenderedComponentGroup | undefined) {
+async function confirmMerge(group: StrandedComponentGroup, target: ShownComponentGroup | undefined) {
   const { default: ConfirmDialog } = await import('#cwa/templates/components/core/ConfirmDialog.vue')
   const dialog = createConfirmDialog(ConfirmDialog as Parameters<typeof createConfirmDialog>[0])
   const count = group.positions.length
@@ -158,7 +153,7 @@ async function confirmMerge(group: UnrenderedComponentGroup, target: RenderedCom
   return !isCanceled
 }
 
-async function merge(group: UnrenderedComponentGroup) {
+async function merge(group: StrandedComponentGroup) {
   const targetIri = selectedTargets[group.iri]
   if (!targetIri || busy[group.iri]) {
     return
@@ -179,7 +174,7 @@ async function merge(group: UnrenderedComponentGroup) {
   }
 }
 
-async function remove(group: UnrenderedComponentGroup) {
+async function remove(group: StrandedComponentGroup) {
   if (busy[group.iri]) {
     return
   }

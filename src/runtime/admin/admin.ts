@@ -1,6 +1,6 @@
 import mitt from 'mitt'
 import type { Emitter } from 'mitt'
-import { shallowReactive, watch } from 'vue'
+import { watch } from 'vue'
 import throttle from 'lodash-es/throttle'
 import type { DebouncedFunc } from 'lodash-es/debounce'
 import type { AdminStore, CwaAdminStoreInterface } from '../storage/stores/admin/admin-store'
@@ -27,7 +27,6 @@ export default class Admin {
   private readonly emitter: Emitter<Events>
   private throttledRedrawEmitFn: undefined | DebouncedFunc<() => void>
   private readonly _adminStore: CwaAdminStoreInterface
-  private readonly mountedComponentGroups = shallowReactive(new Map<string, number>())
 
   public constructor(adminStoreDefinition: AdminStore, resourcesStoreDefinition: ResourcesStore, resources: Resources) {
     this.emitter = mitt<Events>()
@@ -55,27 +54,6 @@ export default class Admin {
       this.emptyStack()
     }
     this.adminStore.toggleEdit(editing)
-  }
-
-  public registerMountedComponentGroup(iri: string): () => void {
-    this.mountedComponentGroups.set(iri, (this.mountedComponentGroups.get(iri) ?? 0) + 1)
-    let released = false
-    return () => {
-      if (released) {
-        return
-      }
-      released = true
-      const count = (this.mountedComponentGroups.get(iri) ?? 1) - 1
-      if (count > 0) {
-        this.mountedComponentGroups.set(iri, count)
-        return
-      }
-      this.mountedComponentGroups.delete(iri)
-    }
-  }
-
-  public isComponentGroupMounted(iri: string): boolean {
-    return this.mountedComponentGroups.has(iri)
   }
 
   public setNavigationGuardDisabled(disabled: boolean) {

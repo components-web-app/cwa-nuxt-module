@@ -1,5 +1,5 @@
 // @vitest-environment nuxt
-import { describe, expect, test, vi, afterEach, beforeEach } from 'vitest'
+import { describe, expect, test, vi, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import * as vue from 'vue'
 import { computed, reactive, ref } from 'vue'
@@ -45,9 +45,6 @@ const mockResourceReference = 'mockResourceReference'
 const mockLocation = 'mockLocation'
 const mockPublishedIris: Record<string, string | undefined> = reactive({})
 const mockIsComponentGroupDisabled = vi.fn(() => false)
-const mockReleaseMountedGroup = vi.fn()
-const mockRegisterMountedComponentGroup = vi.fn((_iri: string) => mockReleaseMountedGroup)
-const mockGroupByReference = reactive<{ group?: { data: { '@id': string } } }>({})
 const mockCwaResources = {
   findPublishedComponentIri: vi.fn((iri: string) => computed(() => (iri in mockPublishedIris ? mockPublishedIris[iri] : iri))),
   getResource: vi.fn().mockImplementation(() => vue.computed(() => { return undefined })),
@@ -86,7 +83,6 @@ function createWrapper(ops: {
       },
       admin: {
         isEditing,
-        registerMountedComponentGroup: mockRegisterMountedComponentGroup,
         resourceStackManager: {
           isComponentGroupDisabled: mockIsComponentGroupDisabled,
         },
@@ -370,55 +366,6 @@ describe('ComponentGroup', () => {
       wrapper.unmount()
 
       expect(unwatchSpy).toHaveBeenCalled()
-    })
-  })
-
-  describe('registers the group it renders as mounted', () => {
-    let wrapper: ReturnType<typeof createWrapper> | undefined
-
-    beforeEach(() => {
-      vi.mocked(ComponentGroupUtilSynchronizer).mockImplementation(function () {
-        return { createSyncWatcher: vi.fn(), stopSyncWatcher: vi.fn() } as any
-      })
-    })
-
-    afterEach(() => {
-      wrapper?.unmount()
-      wrapper = undefined
-      delete mockGroupByReference.group
-    })
-
-    test('registers the resolved group iri once mounted and releases it on unmount', async () => {
-      mockGroupByReference.group = { data: { '@id': '/_/component_groups/hero' } }
-      mockCwaResources.getComponentGroupByReference.mockImplementation(() => mockGroupByReference.group)
-      const mounted = createWrapper()
-      await vue.nextTick()
-      expect(mockRegisterMountedComponentGroup).toHaveBeenCalledTimes(1)
-      expect(mockRegisterMountedComponentGroup).toHaveBeenCalledWith('/_/component_groups/hero')
-      expect(mockReleaseMountedGroup).not.toHaveBeenCalled()
-      mounted.unmount()
-      expect(mockReleaseMountedGroup).toHaveBeenCalledTimes(1)
-    })
-
-    test('registers nothing while the group resource has not resolved, then registers it when it does', async () => {
-      mockCwaResources.getComponentGroupByReference.mockImplementation(() => mockGroupByReference.group)
-      wrapper = createWrapper()
-      await vue.nextTick()
-      expect(mockRegisterMountedComponentGroup).not.toHaveBeenCalled()
-      mockGroupByReference.group = { data: { '@id': '/_/component_groups/late' } }
-      await vue.nextTick()
-      expect(mockRegisterMountedComponentGroup).toHaveBeenCalledWith('/_/component_groups/late')
-    })
-
-    test('releases the previous iri when the resolved group changes', async () => {
-      mockGroupByReference.group = { data: { '@id': '/_/component_groups/old' } }
-      mockCwaResources.getComponentGroupByReference.mockImplementation(() => mockGroupByReference.group)
-      wrapper = createWrapper()
-      await vue.nextTick()
-      mockGroupByReference.group = { data: { '@id': '/_/component_groups/new' } }
-      await vue.nextTick()
-      expect(mockReleaseMountedGroup).toHaveBeenCalledTimes(1)
-      expect(mockRegisterMountedComponentGroup).toHaveBeenLastCalledWith('/_/component_groups/new')
     })
   })
 

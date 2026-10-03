@@ -169,11 +169,6 @@ function getResourceKey(positionIri: string) {
 let syncWatcherStarted = false
 
 onMounted(() => {
-  watch(iri, (mountedIri, _previousIri, onCleanup) => {
-    if (mountedIri) {
-      onCleanup($cwa.admin.registerMountedComponentGroup(mountedIri))
-    }
-  }, { immediate: true })
   if (isNewPosition.value) {
     return
   }

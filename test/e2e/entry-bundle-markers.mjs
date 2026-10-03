@@ -15,6 +15,7 @@ const forbidden = [
   { marker: 'data-reka-date-field-segment', source: 'reka-ui' },
   { marker: 'preventOverflow', source: '@popperjs/core' },
   { marker: 'OES_texture_half_float', source: 'ui/BackgroundParticles.vue' },
+  { marker: 'CwaLayoutSecondary:[]', source: 'cwa-component-group-declarations' },
 ]
 
 async function readEntryChunks() {

@@ -6,26 +6,24 @@ import { mockNuxtImport } from '@nuxt/test-utils/runtime'
 import Header from './Header.vue'
 import * as cwaComposable from '#cwa/composables/cwa'
 
-const unrenderedState = reactive({
-  unrendered: [] as any[],
-  rendered: [] as any[],
-  warningCount: 0,
+const strandedState = reactive({
+  stranded: [] as any[],
+  shown: [] as any[],
 })
 
-vi.mock('#cwa/admin/unrendered-component-groups', () => ({
-  useUnrenderedComponentGroups: () => ({
-    unrendered: computed(() => unrenderedState.unrendered),
-    rendered: computed(() => unrenderedState.rendered),
-    warningCount: computed(() => unrenderedState.warningCount),
+vi.mock('#cwa/admin/stranded-component-groups', () => ({
+  useStrandedComponentGroups: () => ({
+    stranded: computed(() => strandedState.stranded),
+    shown: computed(() => strandedState.shown),
   }),
 }))
 
-vi.mock('#cwa/templates/components/core/admin/UnrenderedComponentGroupsModal.vue', () => ({
+vi.mock('#cwa/templates/components/core/admin/StrandedComponentGroupsModal.vue', () => ({
   default: {
-    name: 'UnrenderedComponentGroupsModal',
+    name: 'StrandedComponentGroupsModal',
     props: ['groups', 'targets'],
     emits: ['close'],
-    template: '<div class="unrendered-modal-stub" />',
+    template: '<div class="stranded-modal-stub" />',
   },
 }))
 
@@ -131,64 +129,53 @@ describe('Header', () => {
     vi.clearAllMocks()
     errorRef.value = null
     mockRouteMeta.cwa = { admin: false }
-    unrenderedState.unrendered = []
-    unrenderedState.rendered = []
-    unrenderedState.warningCount = 0
+    strandedState.stranded = []
+    strandedState.shown = []
   })
 
-  describe('hidden component groups warning', () => {
-    const hiddenGroup = { iri: '/_/component_groups/top', reference: 'top', fromLayout: false, positions: [] }
-    const layoutGroup = { iri: '/_/component_groups/footer', reference: 'footer', fromLayout: true, positions: [] }
+  describe('stranded component groups warning', () => {
+    const strandedGroup = { iri: '/_/component_groups/top', reference: 'top', positions: [] }
+    const otherStrandedGroup = { iri: '/_/component_groups/footer', reference: 'footer', positions: [] }
     const shownGroup = { iri: '/_/component_groups/hero', reference: 'hero' }
 
-    test('shows no warning when nothing attached to the page is hidden', () => {
+    test('shows no warning when no attached group is stranded', () => {
       mockCwa()
       const wrapper = mountHeader()
-      expect(wrapper.find('[data-testid="unrendered-groups-warning"]').exists()).toBe(false)
+      expect(wrapper.find('[data-testid="stranded-groups-warning"]').exists()).toBe(false)
     })
 
-    test('shows no warning when only layout groups are hidden', () => {
-      unrenderedState.unrendered = [layoutGroup]
+    test('shows the warning with the count of stranded groups next to the Edit button', () => {
+      strandedState.stranded = [strandedGroup, otherStrandedGroup]
       mockCwa()
       const wrapper = mountHeader()
-      expect(wrapper.find('[data-testid="unrendered-groups-warning"]').exists()).toBe(false)
-    })
-
-    test('shows the warning with the count next to the Edit button', () => {
-      unrenderedState.unrendered = [hiddenGroup, layoutGroup]
-      unrenderedState.warningCount = 1
-      mockCwa()
-      const wrapper = mountHeader()
-      const warning = wrapper.find('[data-testid="unrendered-groups-warning"]')
+      const warning = wrapper.find('[data-testid="stranded-groups-warning"]')
       expect(warning.exists()).toBe(true)
-      expect(warning.text()).toContain('1')
+      expect(warning.text()).toContain('2')
       expect(warning.element.parentElement!.textContent).toContain('Edit')
     })
 
     test('shows no warning on an admin page', () => {
-      unrenderedState.unrendered = [hiddenGroup]
-      unrenderedState.warningCount = 1
+      strandedState.stranded = [strandedGroup]
       mockRouteMeta.cwa = { admin: true }
       mockCwa()
       const wrapper = mountHeader()
-      expect(wrapper.find('[data-testid="unrendered-groups-warning"]').exists()).toBe(false)
+      expect(wrapper.find('[data-testid="stranded-groups-warning"]').exists()).toBe(false)
     })
 
-    test('opens the modal with every hidden group and the shown groups as targets, and closes it', async () => {
-      unrenderedState.unrendered = [hiddenGroup, layoutGroup]
-      unrenderedState.rendered = [shownGroup]
-      unrenderedState.warningCount = 1
+    test('opens the modal with every stranded group and the shown groups as targets, and closes it', async () => {
+      strandedState.stranded = [strandedGroup, otherStrandedGroup]
+      strandedState.shown = [shownGroup]
       mockCwa()
       const wrapper = mountHeader()
-      expect(wrapper.findComponent({ name: 'UnrenderedComponentGroupsModal' }).exists()).toBe(false)
-      await wrapper.find('[data-testid="unrendered-groups-warning"]').trigger('click')
+      expect(wrapper.findComponent({ name: 'StrandedComponentGroupsModal' }).exists()).toBe(false)
+      await wrapper.find('[data-testid="stranded-groups-warning"]').trigger('click')
       await flushPromises()
-      const modal = wrapper.findComponent({ name: 'UnrenderedComponentGroupsModal' })
-      expect(modal.props('groups')).toEqual([hiddenGroup, layoutGroup])
+      const modal = wrapper.findComponent({ name: 'StrandedComponentGroupsModal' })
+      expect(modal.props('groups')).toEqual([strandedGroup, otherStrandedGroup])
       expect(modal.props('targets')).toEqual([shownGroup])
       modal.vm.$emit('close')
       await flushPromises()
-      expect(wrapper.findComponent({ name: 'UnrenderedComponentGroupsModal' }).exists()).toBe(false)
+      expect(wrapper.findComponent({ name: 'StrandedComponentGroupsModal' }).exists()).toBe(false)
     })
   })
 

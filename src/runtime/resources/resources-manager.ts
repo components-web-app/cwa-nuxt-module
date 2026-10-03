@@ -153,8 +153,8 @@ export class ResourcesManager {
     return `${iri}${postfix}`
   }
 
-  public async deleteResource(event: ApiResourceEvent, confirmed = false) {
-    if (!confirmed && !await this.confirmDelete()) {
+  public async deleteResource(event: ApiResourceEvent, force = false) {
+    if (!force && !await this.confirmDelete()) {
       return false
     }
     const args: [string, RequestOptions] = [

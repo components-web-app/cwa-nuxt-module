@@ -26,6 +26,7 @@ import {
 import type { Component, ModuleDependencies, Nuxt, NuxtPage, ViteConfig } from '@nuxt/schema'
 import { READINESS_DEFAULTS } from './runtime/server/readiness'
 import { defaultSiteConfig } from './runtime/composables/useCwaSiteConfig'
+import { scanComponentGroupDeclarations } from './component-group-declarations'
 import type { CwaModuleOptions, CwaResourcesMeta, GlobalComponentNames } from './runtime/types'
 
 declare module 'nuxt/schema' {
@@ -269,6 +270,40 @@ export default defineNuxtModule<CwaModuleOptions>({
       }
     }
 
+    function isCwaTemplate({ filePath }: Component) {
+      const within = (dir: string) => filePath.startsWith(`${dir}/`)
+      if (within(join(appDir, 'cwa', 'layouts'))) {
+        return true
+      }
+      if (within(join(appDir, 'cwa', 'pages'))) {
+        return !filePath.includes('/admin/')
+      }
+      if (!within(userComponentsPath)) {
+        return false
+      }
+      const [name, ...rest] = path.relative(userComponentsPath, filePath).split('/')
+      return (rest.length === 1 && rest[0] === `${name}.vue`) || (rest.length === 2 && rest[0] === 'ui')
+    }
+
+    function resolveComponentImport(source: string, importer: string) {
+      const aliased = resolveAlias(source, nuxt.options.alias)
+      if (path.isAbsolute(aliased)) {
+        return aliased
+      }
+      if (aliased.startsWith('.')) {
+        return path.resolve(path.dirname(importer), aliased)
+      }
+    }
+
+    function readSource(filePath: string) {
+      try {
+        return readFileSync(filePath, 'utf8')
+      }
+      catch {
+        return undefined
+      }
+    }
+
     function toResourceType(component: Component) {
       return component.pascalName.replace(/^CwaComponent/, '')
     }
@@ -373,6 +408,23 @@ export type CwaComponentName = typeof CwaComponentNames[keyof typeof CwaComponen
         { name: 'CwaComponentNames', from: '#build/cwa-component-names' },
         { name: 'CwaComponentName', from: '#build/cwa-component-names', type: true },
       ])
+
+      addTemplate({
+        filename: 'cwa-component-group-declarations.ts',
+        write: true,
+        getContents: ({ app }) => {
+          const declarations = scanComponentGroupDeclarations({
+            templates: app.components.filter(isCwaTemplate),
+            components: app.components,
+            componentGroupFile: resolve('./runtime/templates/components/main/ComponentGroup.vue'),
+            readFile: readSource,
+            resolveImport: resolveComponentImport,
+          })
+          return `import type { ComponentGroupDeclarations } from '#cwa/admin/stranded-component-groups'
+export const componentGroupDeclarations: ComponentGroupDeclarations = ${JSON.stringify(declarations, undefined, 2)}
+`
+        },
+      })
 
       addTemplate({
         filename: 'cwa-options.ts',
@@ -529,20 +581,19 @@ declare module 'vue-router' {
 
     // todo: test - this will rebuild the options template when cwa files are added or deleted so that we auto-detect tabs to change in dev
     nuxt.hook('builder:watch', async (event, relativePath) => {
-      // only if files have been added or removed
-      if (!['add', 'unlink'].includes(event)) {
-        return
-      }
-      logger.info(`File added or removed - updating options for ${NAME} module...`)
+      const filenames: string[] = []
       const path = resolve(appDir, relativePath)
       const cwaDirs = [userComponentsPath]
-      if (cwaDirs.some(dir => dir === path || path.startsWith(dir + '/'))) {
+      if (['add', 'unlink'].includes(event) && cwaDirs.some(dir => dir === path || path.startsWith(dir + '/'))) {
+        logger.info(`File added or removed - updating options for ${NAME} module...`)
+        filenames.push('cwa-options.ts', 'cwa-component-names.ts', '#cwa/server-options.ts')
+      }
+      if (['add', 'change', 'unlink'].includes(event) && relativePath.endsWith('.vue')) {
+        filenames.push('cwa-component-group-declarations.ts')
+      }
+      if (filenames.length) {
         await updateTemplates({
-          filter: template => [
-            'cwa-options.ts',
-            'cwa-component-names.ts',
-            '#cwa/server-options.ts',
-          ].includes(template.filename),
+          filter: template => filenames.includes(template.filename),
         })
       }
     })

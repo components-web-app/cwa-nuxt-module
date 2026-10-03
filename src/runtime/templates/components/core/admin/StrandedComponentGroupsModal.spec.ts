@@ -2,27 +2,26 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createConfirmDialog } from 'vuejs-confirm-dialog'
-import UnrenderedComponentGroupsModal from './UnrenderedComponentGroupsModal.vue'
+import StrandedComponentGroupsModal from './StrandedComponentGroupsModal.vue'
 import * as cwaComposable from '#cwa/composables/cwa'
-import { mergeComponentGroup } from '#cwa/admin/unrendered-component-groups'
-import type { RenderedComponentGroup, UnrenderedComponentGroup } from '#cwa/admin/unrendered-component-groups'
+import { mergeComponentGroup } from '#cwa/admin/stranded-component-groups'
+import type { ShownComponentGroup, StrandedComponentGroup } from '#cwa/admin/stranded-component-groups'
 
 vi.mock('#cwa/templates/components/core/ConfirmDialog.vue', () => ({ default: {} }))
 vi.mock('vuejs-confirm-dialog', () => ({
   createConfirmDialog: vi.fn(),
 }))
-vi.mock('#cwa/admin/unrendered-component-groups', () => ({
+vi.mock('#cwa/admin/stranded-component-groups', () => ({
   mergeComponentGroup: vi.fn(),
 }))
 
 const deleteResource = vi.fn()
 const $cwa = { resourcesManager: { deleteResource } }
 
-const groups: UnrenderedComponentGroup[] = [
+const groups: StrandedComponentGroup[] = [
   {
     iri: '/_/component_groups/top',
     reference: 'top',
-    fromLayout: false,
     positions: [
       { iri: '/_/component_positions/a', component: '/component/html/1', componentType: 'HtmlContent' },
       { iri: '/_/component_positions/dyn', pageDataProperty: 'heroImage' },
@@ -31,12 +30,11 @@ const groups: UnrenderedComponentGroup[] = [
   {
     iri: '/_/component_groups/footer',
     reference: 'footer',
-    fromLayout: true,
     positions: [],
   },
 ]
 
-const targets: RenderedComponentGroup[] = [
+const targets: ShownComponentGroup[] = [
   { iri: '/_/component_groups/hero', reference: 'hero' },
   { iri: '/_/component_groups/top', reference: 'top' },
 ]
@@ -48,7 +46,7 @@ function confirmWith(isCanceled: boolean) {
 }
 
 function mountModal() {
-  return mount(UnrenderedComponentGroupsModal, {
+  return mount(StrandedComponentGroupsModal, {
     props: { groups, targets },
     global: {
       stubs: {
@@ -70,7 +68,7 @@ function mountModal() {
 }
 
 function section(wrapper: ReturnType<typeof mountModal>, index: number) {
-  return wrapper.findAll('[data-testid="unrendered-group"]')[index]!
+  return wrapper.findAll('[data-testid="stranded-group"]')[index]!
 }
 
 function button(wrapper: ReturnType<typeof mountModal>, index: number, label: string) {
@@ -82,7 +80,7 @@ async function chooseTarget(wrapper: ReturnType<typeof mountModal>, index: numbe
   await wrapper.vm.$nextTick()
 }
 
-describe('UnrenderedComponentGroupsModal', () => {
+describe('StrandedComponentGroupsModal', () => {
   beforeEach(() => {
     // @ts-expect-error partial Cwa
     vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => $cwa)
@@ -95,17 +93,17 @@ describe('UnrenderedComponentGroupsModal', () => {
     vi.restoreAllMocks()
   })
 
-  test('lists each group with its components, and notes only the layout group as possibly shown elsewhere', () => {
+  test('lists each group with its components', () => {
     const wrapper = mountModal()
     expect(section(wrapper, 0).text()).toContain('top')
     expect(section(wrapper, 0).text()).toContain('HtmlContent')
     expect(section(wrapper, 0).text()).toContain('/component/html/1')
     expect(section(wrapper, 0).text()).toContain('heroImage')
-    expect(section(wrapper, 0).find('[data-testid="unrendered-group-layout-note"]').exists()).toBe(false)
-    expect(section(wrapper, 1).find('[data-testid="unrendered-group-layout-note"]').text()).toContain('may be shown on other pages')
+    expect(section(wrapper, 1).text()).toContain('footer')
+    expect(section(wrapper, 1).text()).toContain('This group is empty.')
   })
 
-  test('offers only rendered groups as merge targets, never the group itself', () => {
+  test('offers only shown groups as merge targets, never the group itself', () => {
     const wrapper = mountModal()
     const options = section(wrapper, 0).findComponent({ name: 'CwaUiFormSelect' }).props('options')
     expect(options).toEqual([{ label: 'hero', value: '/_/component_groups/hero' }])
@@ -138,7 +136,7 @@ describe('UnrenderedComponentGroupsModal', () => {
     await button(wrapper, 0, 'Merge').trigger('click')
     await flushPromises()
     expect(mergeComponentGroup).toHaveBeenCalledWith($cwa, '/_/component_groups/top', '/_/component_groups/hero')
-    expect(section(wrapper, 0).find('[data-testid="unrendered-group-outcome"]').exists()).toBe(false)
+    expect(section(wrapper, 0).find('[data-testid="stranded-group-outcome"]').exists()).toBe(false)
   })
 
   test('reports the positions that could not be moved and that the group was kept', async () => {
@@ -148,7 +146,7 @@ describe('UnrenderedComponentGroupsModal', () => {
     await chooseTarget(wrapper, 0, '/_/component_groups/hero')
     await button(wrapper, 0, 'Merge').trigger('click')
     await flushPromises()
-    const outcome = section(wrapper, 0).find('[data-testid="unrendered-group-outcome"]')
+    const outcome = section(wrapper, 0).find('[data-testid="stranded-group-outcome"]')
     expect(outcome.text()).toContain('kept')
     expect(outcome.text()).toContain('/_/component_positions/a')
   })
@@ -160,7 +158,7 @@ describe('UnrenderedComponentGroupsModal', () => {
     await chooseTarget(wrapper, 0, '/_/component_groups/hero')
     await button(wrapper, 0, 'Merge').trigger('click')
     await flushPromises()
-    expect(section(wrapper, 0).find('[data-testid="unrendered-group-outcome"]').text()).toContain('could not be deleted')
+    expect(section(wrapper, 0).find('[data-testid="stranded-group-outcome"]').text()).toContain('could not be deleted')
   })
 
   test('delete goes through the resource manager\'s own confirmation', async () => {
@@ -174,7 +172,7 @@ describe('UnrenderedComponentGroupsModal', () => {
 
   test('the close button emits close', async () => {
     const wrapper = mountModal()
-    await wrapper.find('[data-testid="unrendered-groups-close"]').trigger('click')
+    await wrapper.find('[data-testid="stranded-groups-close"]').trigger('click')
     expect(wrapper.emitted('close')).toHaveLength(1)
   })
 })
