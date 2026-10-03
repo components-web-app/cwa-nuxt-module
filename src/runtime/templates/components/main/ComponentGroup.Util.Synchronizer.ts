@@ -21,6 +21,8 @@ const resourceTypeProperty: {
   [CwaResourceTypes.COMPONENT]: 'components',
 }
 
+type LocationProperty = typeof resourceTypeProperty[keyof typeof resourceTypeProperty]
+
 interface SyncWatcherOps {
   resource: ComputedRef<CwaCurrentResourceInterface | undefined>
   location: string
@@ -60,6 +62,12 @@ export class ComponentGroupUtilSynchronizer {
       return
     }
 
+    const locationProperty = this.locationPropertyFor(location)
+    if (!locationProperty) {
+      logger.warn(`[CWA] The component group '${fullReference.value}' was not created or attached: its location '${location}' cannot own a component group. A component group cannot be owned by page data, so it would be invisible to visitors and reported as orphaned. Pass the page IRI as the location instead.`)
+      return
+    }
+
     // find the resource where this component group should be located
     const locationResource = this.resources.getResource(location)
     // no location, no action
@@ -78,8 +86,6 @@ export class ComponentGroupUtilSynchronizer {
       // then we could lose data of a component group being added. Safer to update the component group as it's less
       // common for there to be another simultaneous update call
       const locationIri = locationResource.value.data['@id']
-      const locationResourceType = getResourceTypeFromIri(locationIri) as keyof typeof resourceTypeProperty
-      const locationProperty = resourceTypeProperty[locationResourceType]
       const existingLocations = this.toLocationIris(resourceByRef[locationProperty])
       if (existingLocations.includes(locationIri)) {
         return
@@ -93,7 +99,7 @@ export class ComponentGroupUtilSynchronizer {
       return
     }
 
-    await this.createComponentGroup(location, fullReference, allowedComponents)
+    await this.createComponentGroup(location, locationProperty, fullReference, allowedComponents)
   }
 
   public createSyncWatcher(ops: SyncWatcherOps) {
@@ -122,33 +128,28 @@ export class ComponentGroupUtilSynchronizer {
     this.watchStopHandle?.()
   }
 
-  private async createComponentGroup(iri: string, fullReference: ComputedRef<string | undefined>, allowedComponents: string[] | null | undefined) {
-    const locationResourceType = getResourceTypeFromIri(iri) as keyof typeof resourceTypeProperty
-    const locationProperty = resourceTypeProperty[locationResourceType]
+  private locationPropertyFor(iri: string): LocationProperty | undefined {
+    const locationResourceType = getResourceTypeFromIri(iri)
+    if (!locationResourceType || !(locationResourceType in resourceTypeProperty)) {
+      return undefined
+    }
+    return resourceTypeProperty[locationResourceType as keyof typeof resourceTypeProperty]
+  }
 
+  private async createComponentGroup(iri: string, locationProperty: LocationProperty, fullReference: ComputedRef<string | undefined>, allowedComponents: string[] | null | undefined) {
     const resolvedAllowedComponents = await this.resolveAllowedComponents(allowedComponents)
     if (resolvedAllowedComponents === UNRESOLVED) {
       return
     }
 
-    const postData: {
-      reference?: string
-      location: string
-      allowedComponents?: string[] | null
-      pages?: string[]
-      layouts?: string[]
-      components?: string[]
-    } = {
-      reference: fullReference.value,
-      location: iri,
-      allowedComponents: resolvedAllowedComponents,
-    }
-    if (locationProperty) {
-      postData[locationProperty] = [iri]
-    }
     await this.resourcesManager.createResource({
       endpoint: '/_/component_groups',
-      data: postData,
+      data: {
+        reference: fullReference.value,
+        location: iri,
+        allowedComponents: resolvedAllowedComponents,
+        [locationProperty]: [iri],
+      },
     })
   }
 
