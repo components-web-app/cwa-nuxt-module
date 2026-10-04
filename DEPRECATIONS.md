@@ -156,3 +156,27 @@ module's. Realpathing a path that is already real returns the same string, so it
 is a no-op wherever nothing is symlinked — which is why it is safe to leave in
 whether or not an application extends the layer by a bare specifier, and safe for
 an application that already applies the same workaround itself.
+
+---
+
+## Remove when node-forge and braces publish fixes
+
+### Ignored audit advisories in `pnpm-workspace.yaml`
+
+`auditConfig.ignoreGhsas` ignores two high advisories that have **no patched
+release** (`first_patched_version` is null on both):
+
+- `GHSA-86w9-cpqp-85rv`: node-forge ≤ 1.4.0, RSA PKCS#1 v1.5 signature
+  verification. Reached only through `listhen`, the Nuxt dev server's HTTPS
+  certificate tooling.
+- `GHSA-vfj7-8cjw-p6xm`: braces ≤ 3.0.3, stack exhaustion on deeply nested
+  patterns. Reached only through `nitropack`'s build-time `globby`, matching
+  the app's own patterns.
+
+Neither is in a built app's server bundle. They are ignored by ID, not by
+lowering the audit level, so any new advisory still fails CI.
+
+**Delete:** the two IDs (and `auditConfig` if empty), and add an override in
+`overrides` instead if the fix is not picked up by a lockfile update.
+
+**When:** node-forge > 1.4.0 and braces > 3.0.3 are on npm.
