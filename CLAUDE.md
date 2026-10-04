@@ -313,6 +313,7 @@ On by default (`cwa.pageCache.enabled`; the `?? true` in `module.ts` and `resolv
 - **`vite` pinned to `^8` by override** — a mixed vite 7/8 tree stops every test file starting.
 - `@pinia/nuxt ^1` is required by `moduleDependencies` (breaking for apps).
 - Security overrides live in `pnpm-workspace.yaml`; move the match key as well as the floor, and add new versions to `minimumReleaseAgeExclude`.
+- **An advisory with no patched release is ignored by GHSA ID** (`auditConfig.ignoreGhsas`), only when its paths are build or dev tooling, and logged in `DEPRECATIONS.md`. Never lower the audit level. `pnpm audit`'s "Patched versions" column can name a version that does not exist; check `npm view <pkg> versions`.
 - After any dependency change: `dev:prepare`, `test`, `test:types`, `lint`, `build`, `dev:build`, boot `dev:http`.
 
 ## Tailwind v4
