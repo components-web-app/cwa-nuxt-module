@@ -344,13 +344,13 @@ describe('Mercure -> hubUrl', () => {
     expect(mercure.hubUrl).toBeUndefined()
   })
 
-  test('A hub url is created with a wildcard topic', () => {
-    expect(mercure.hubUrl).toBe('http://hub-url/?topic=*')
+  test('A hub url subscribes to every topic with the Mercure 1.0 match-all', () => {
+    expect(mercure.hubUrl).toBe('http://hub-url/?match=*')
   })
 
-  test('lastEventId is appended if it exists', () => {
+  test('lastEventId is appended as the Mercure 1.0 last_event_id parameter if it exists', () => {
     mercure.lastEventId = 'abcdefg'
-    expect(mercure.hubUrl).toBe('http://hub-url/?topic=*&Last-Event-ID=abcdefg')
+    expect(mercure.hubUrl).toBe('http://hub-url/?match=*&last_event_id=abcdefg')
   })
 })
 

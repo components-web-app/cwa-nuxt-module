@@ -354,6 +354,8 @@ CSS-first config in `src/tailwind/tailwind-cwa.css`; every class uses the `cwa:`
 
 Replay is not trusted. On reconnect (`connected` going `false` → `true`; `undefined` until the first open) or an `online` event, on-screen resources are refetched with `isNew: true` — unchanged ones are discarded, changes surface through the existing outdated-content notice.
 
+**The hub speaks Mercure 1.0** ([#364](https://github.com/components-web-app/cwa-nuxt-module/issues/364)): subscribe with `match=*` (`topic=` is a 400 outside compatibility mode) and reconnect with `last_event_id`. No 0.x fallback — breaking during the alpha by decision. The subscriber cookie (`__Secure-mercure_access_token`) is the bundle's; the module never reads it by name and relies on `withCredentials`. A 1.0 hub sends `event: mercure` only for its own subscription events, so `onmessage` still receives updates while the bundle publishes without a `type`.
+
 ## Composables
 
 - **`useCwaComponent(props, plugins?, ops?)`** is the recommended entry point (#238/#239): returns `resource`, `exposeMeta` plus merged plugin results; `defineExpose(exposeMeta)` is still required. Plugins: `withCollection()`, `withFile(fileOps?)` (exposes a `files` map keyed by `fileProp`; the merge accumulates `files`).
