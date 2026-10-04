@@ -68,21 +68,26 @@ describe('Test NavigationGuard Class', () => {
   })
 
   describe('isRouteForcedNavigation', () => {
-    test('Returns true and clears query if cwa_force is set', () => {
+    test.each([
+      { cwaForce: 'true', forced: true },
+      { cwaForce: 'x', forced: false },
+      { cwaForce: ['true', 'x'], forced: false },
+    ])('is forced only by cwa_force=true, and leaves the query for the guard to clear ($cwaForce)', ({ cwaForce, forced }) => {
       const guard = createNavigationGuard()
 
       const toRoute: any = {
         path: '/path-to-greatness',
         query: {
-          cwa_force: 'true',
+          cwa_force: cwaForce,
           another: 'thing',
         },
       }
 
       const result = guard.isRouteForcedNavigation(toRoute)
 
-      expect(result).toBe(true)
+      expect(result).toBe(forced)
       expect(toRoute.query).toEqual({
+        cwa_force: cwaForce,
         another: 'thing',
       })
     })
@@ -170,6 +175,33 @@ describe('Test NavigationGuard Class', () => {
         expect(guard.programmatic).toBe(false)
       },
     )
+
+    test.each([
+      { cwaForce: 'true', redirects: 1 },
+      { cwaForce: 'x', redirects: 1 },
+      { cwaForce: '', redirects: 1 },
+      { cwaForce: null, redirects: 1 },
+      { cwaForce: ['true', 'x'], redirects: 1 },
+      { cwaForce: undefined, redirects: 0 },
+    ])('settles after at most one redirect, without cwa_force, when cwa_force is $cwaForce (#366)', ({ cwaForce, redirects }) => {
+      const guard = createNavigationGuard()
+      const fn = guard.adminNavigationGuardFn
+      let fromRoute: any = { path: '/', query: {}, hash: '' }
+      let toRoute: any = { path: '/page', query: { keep: 'me', ...(cwaForce === undefined ? {} : { cwa_force: cwaForce }) }, hash: '' }
+
+      let redirectCount = 0
+      let response = fn(toRoute, fromRoute)
+      while (typeof response === 'object' && redirectCount < 5) {
+        redirectCount++
+        fromRoute = toRoute
+        toRoute = { path: response.path, query: { ...response.query }, hash: response.hash }
+        response = fn(toRoute, fromRoute)
+      }
+
+      expect(response).toBe(true)
+      expect(redirectCount).toBe(redirects)
+      expect(toRoute.query).toEqual({ keep: 'me' })
+    })
   })
 
   test('adminStore getter returns store instance', () => {
