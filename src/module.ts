@@ -409,6 +409,7 @@ export type CwaComponentName = typeof CwaComponentNames[keyof typeof CwaComponen
         { name: 'CwaComponentName', from: '#build/cwa-component-names', type: true },
       ])
 
+      const reportedUncheckable = new Set<string>()
       addTemplate({
         filename: 'cwa-component-group-declarations.ts',
         write: true,
@@ -419,6 +420,14 @@ export type CwaComponentName = typeof CwaComponentNames[keyof typeof CwaComponen
             componentGroupFile: resolve('./runtime/templates/components/main/ComponentGroup.vue'),
             readFile: readSource,
             resolveImport: resolveComponentImport,
+            onUncheckable: (filePath, reason) => {
+              const key = `${filePath}\0${reason}`
+              if (reportedUncheckable.has(key)) {
+                return
+              }
+              reportedUncheckable.add(key)
+              logger.warn(`${NAME}: stranded component group warnings are off for the whole site, because ${filePath} ${reason}, so it could declare any group. Pass a literal reference, or a location the module recognises (the template's iri or publishedIri, the layout IRI, or a literal location-reference).`)
+            },
           })
           return `import type { ComponentGroupDeclarations } from '#cwa/admin/stranded-component-groups'
 export const componentGroupDeclarations: ComponentGroupDeclarations = ${JSON.stringify(declarations, undefined, 2)}

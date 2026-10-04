@@ -12,6 +12,7 @@ export interface ScanComponentGroupDeclarationsOptions {
   componentGroupFile: string
   readFile: (filePath: string) => string | undefined
   resolveImport: (source: string, importer: string) => string | undefined
+  onUncheckable?: (filePath: string, reason: string) => void
 }
 
 interface FileScan {
@@ -35,6 +36,7 @@ const NODE_ATTRIBUTE = 6
 const NODE_DIRECTIVE = 7
 
 const ANY_REFERENCE: ComponentGroupDeclaration = { reference: null, location: 'unknown' }
+const V_BIND_OBJECT = Symbol('v-bind object')
 const SELF_EXPRESSIONS = ['iri', 'publishedIri']
 const LAYOUT_EXPRESSIONS = ['$cwa.resources.layoutIri', 'layoutIri']
 
@@ -164,7 +166,7 @@ export function scanComponentGroupDeclarations(options: ScanComponentGroupDeclar
     return toPascalCase(tag).replace(/^Lazy/, '') === 'CwaComponentGroup' || files.includes(options.componentGroupFile)
   }
 
-  function declarationFor(element: AstNode, inTemplate: boolean): ComponentGroupDeclaration {
+  function declarationFor(element: AstNode, inTemplate: boolean): ComponentGroupDeclaration | typeof V_BIND_OBJECT {
     const statics = new Map<string, string>()
     const bound = new Map<string, string>()
     for (const prop of element.props ?? []) {
@@ -176,7 +178,7 @@ export function scanComponentGroupDeclarations(options: ScanComponentGroupDeclar
         continue
       }
       if (!prop.arg) {
-        return ANY_REFERENCE
+        return V_BIND_OBJECT
       }
       if (prop.arg.isStatic) {
         bound.set(camelize(prop.arg.content), prop.exp?.content ?? '')
@@ -210,17 +212,28 @@ export function scanComponentGroupDeclarations(options: ScanComponentGroupDeclar
     const result: FileScan = { declarations: [], children: [] }
     scans.set(filePath, result)
 
+    const uncheckable = (reason: string) => {
+      if (!result.declarations.includes(ANY_REFERENCE)) {
+        result.declarations.push(ANY_REFERENCE)
+      }
+      options.onUncheckable?.(filePath, reason)
+    }
+
     const source = options.readFile(filePath)
     if (source === undefined) {
-      result.declarations.push(ANY_REFERENCE)
+      uncheckable('could not be read')
       return result
     }
     const { descriptor, errors } = parse(source, { filename: filePath })
     const scripts = [descriptor.script, descriptor.scriptSetup].filter(script => !!script)
     const bindings = errors.length ? undefined : localBindings(filePath, scripts)
     const ast = descriptor.template?.ast as AstNode | undefined
-    if (!bindings || (descriptor.template && (!ast || (descriptor.template.lang ?? 'html') !== 'html'))) {
-      result.declarations.push(ANY_REFERENCE)
+    if (!bindings || (descriptor.template && !ast)) {
+      uncheckable('could not be parsed')
+      return result
+    }
+    if (descriptor.template && (descriptor.template.lang ?? 'html') !== 'html') {
+      uncheckable('has a template that is not HTML')
       return result
     }
     const inTemplate = templateFiles.has(filePath)
@@ -229,7 +242,16 @@ export function scanComponentGroupDeclarations(options: ScanComponentGroupDeclar
       if (node.type === NODE_ELEMENT && node.tag) {
         const files = resolveTag(node.tag, bindings)
         if (isComponentGroup(node.tag, files)) {
-          result.declarations.push(declarationFor(node, inTemplate))
+          const declaration = declarationFor(node, inTemplate)
+          if (declaration === V_BIND_OBJECT) {
+            uncheckable('binds its props with a v-bind object')
+          }
+          else if (declaration.reference === null && declaration.location === 'unknown') {
+            uncheckable('binds reference at a location that cannot be classified')
+          }
+          else {
+            result.declarations.push(declaration)
+          }
         }
         else {
           for (const file of files) {

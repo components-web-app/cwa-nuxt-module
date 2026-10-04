@@ -8,8 +8,9 @@ const GROUP_FILE = '/module/runtime/templates/components/main/ComponentGroup.vue
 
 type Entry = { pascalName: string, filePath: string }
 
-function scan(files: Record<string, string>, templates: Entry[], components: Entry[] = []) {
+function scan(files: Record<string, string>, templates: Entry[], components: Entry[] = [], onUncheckable?: (filePath: string, reason: string) => void) {
   return scanComponentGroupDeclarations({
+    onUncheckable,
     templates,
     components: [...templates, ...components, { pascalName: 'CwaComponentGroup', filePath: GROUP_FILE }],
     componentGroupFile: GROUP_FILE,
@@ -503,6 +504,77 @@ import Group from '#cwa/templates/components/main/ComponentGroup.vue'
       ])
 
       expect(result).toEqual({ CwaPagePrimary: [] })
+    })
+  })
+
+  describe('a file that switches stranded-group reporting off (#367)', () => {
+    const page = template('CwaPagePrimary', 'cwa/pages/Primary.vue')
+    const pageUsing = (tag: string) => `<template><${tag} /></template>
+${iriScript}`
+    const wrapperFile = `${APP}/components/GroupWrapper.vue`
+    const wrapper = { pascalName: 'GroupWrapper', filePath: wrapperFile }
+
+    function uncheckable(wrapperSource: string | undefined) {
+      const reported: [string, string][] = []
+      scan({
+        [page.filePath]: pageUsing('GroupWrapper'),
+        ...(wrapperSource === undefined ? {} : { [wrapperFile]: wrapperSource }),
+      }, [page], [wrapper], (filePath, reason) => reported.push([filePath, reason]))
+      return reported
+    }
+
+    test.each([
+      {
+        case: 'a bound reference at a location it cannot classify',
+        source: `<template><CwaComponentGroup :reference="reference" :location="location" /></template>
+<script setup lang="ts">
+defineProps<{ reference: string, location: string }>()
+</script>`,
+        reason: 'binds reference at a location that cannot be classified',
+      },
+      {
+        case: 'a v-bind object',
+        source: `<template><CwaComponentGroup v-bind="groupProps" /></template>
+<script setup lang="ts">
+defineProps<{ groupProps: Record<string, string> }>()
+</script>`,
+        reason: 'binds its props with a v-bind object',
+      },
+      { case: 'an unreadable file', source: undefined, reason: 'could not be read' },
+      {
+        case: 'a script that does not parse',
+        source: `<template><div /></template>
+<script setup lang="ts">
+const = ;
+</script>`,
+        reason: 'could not be parsed',
+      },
+      { case: 'a preprocessed template', source: `<template lang="pug">div</template>`, reason: 'has a template that is not HTML' },
+    ])('reports $case, naming the file', ({ source, reason }) => {
+      expect(uncheckable(source)).toEqual([[wrapperFile, reason]])
+    })
+
+    test('does not report a bound reference the check can still narrow, or a declaration it can classify', () => {
+      expect(uncheckable(`<template>
+  <div>
+    <CwaComponentGroup :reference="reference" :location="$cwa.resources.layoutIri.value" />
+    <CwaComponentGroup :reference="reference" location-reference="footer" />
+    <CwaComponentGroup reference="tabs" :location="location" />
+  </div>
+</template>
+<script setup lang="ts">
+defineProps<{ reference: string, location: string }>()
+</script>`)).toEqual([])
+    })
+
+    test('reports a file once, however many templates reach it', () => {
+      const reported: string[] = []
+      const second = template('CwaPageSecond', 'cwa/pages/Second.vue')
+      scan({
+        [page.filePath]: pageUsing('GroupWrapper'),
+        [second.filePath]: pageUsing('GroupWrapper'),
+      }, [page, second], [wrapper], filePath => reported.push(filePath))
+      expect(reported).toEqual([wrapperFile])
     })
   })
 })
