@@ -50,6 +50,7 @@ function createGroupSynchronizer() {
   }
   const mockFetchResource = vi.fn()
   const mockGetComponentMetadata = vi.fn()
+  vi.mocked(ResourceUtils.getResourceTypeFromIri).mockReturnValue(CwaResourceTypes.COMPONENT)
 
   vi.spyOn(cwaComposables, 'useCwa').mockImplementation(() => {
     return {
@@ -169,6 +170,7 @@ describe('Group synchronizer', () => {
         reference: syncWatcherOps.fullReference.value,
         location: syncWatcherOps.location,
         allowedComponents: syncWatcherOps.allowedComponents,
+        components: [syncWatcherOps.location],
       },
     })
   })
@@ -712,6 +714,86 @@ describe('Group synchronizer', () => {
         endpoint: GROUP,
         data: { layouts: [LAYOUT] },
       })
+    })
+  })
+
+  describe('a page data location (#363)', () => {
+    const PAGE_DATA = '/_api/page_data/blog_articles/9a1c'
+    const REFERENCE = `primary_${PAGE_DATA}`
+
+    afterEach(() => {
+      vi.mocked(ResourceUtils.getResourceTypeFromIri).mockReset()
+      vi.restoreAllMocks()
+    })
+
+    function syncPageDataLocation(existingGroup?: Record<string, any>) {
+      const warn = vi.spyOn(consola, 'warn').mockImplementation(() => undefined)
+      const context = createGroupSynchronizer()
+      vi.mocked(ResourceUtils.getResourceTypeFromIri).mockReturnValue(CwaResourceTypes.PAGE_DATA)
+      context.fetchResource.mockResolvedValue(existingGroup)
+      createSyncWatcher(context.groupSynchronizer, {
+        resource: null,
+        allowedComponents: ['/component/a'],
+        location: PAGE_DATA,
+        fullReference: REFERENCE,
+      })
+      context.auth.signedIn.value = true
+      return { ...context, warn }
+    }
+
+    test('creates no component group and warns, naming the reference and suggesting the page IRI', async () => {
+      const { resourcesManager, warn } = syncPageDataLocation()
+
+      await flushPromises()
+
+      expect(resourcesManager.createResource).not.toHaveBeenCalled()
+      expect(warn).toHaveBeenCalledTimes(1)
+      expect(warn.mock.lastCall![0]).toContain(REFERENCE)
+      expect(warn.mock.lastCall![0]).toContain('page data')
+      expect(warn.mock.lastCall![0]).toContain('orphaned')
+      expect(warn.mock.lastCall![0]).toContain('page IRI')
+    })
+
+    test('does not attach an existing group found by reference, so no relation is ever sent as undefined', async () => {
+      const { resourcesManager, warn } = syncPageDataLocation({
+        '@id': '/_api/_/component_groups/49552a4f',
+        'reference': REFERENCE,
+      })
+
+      await flushPromises()
+
+      expect(resourcesManager.updateResource).not.toHaveBeenCalled()
+      expect(resourcesManager.createResource).not.toHaveBeenCalled()
+      expect(warn).toHaveBeenCalledTimes(1)
+      expect(warn.mock.lastCall![0]).toContain(REFERENCE)
+    })
+
+    test('still syncs allowedComponents on a group that is already loaded', async () => {
+      const { resourcesManager, warn } = (() => {
+        const warn = vi.spyOn(consola, 'warn').mockImplementation(() => undefined)
+        const context = createGroupSynchronizer()
+        vi.mocked(ResourceUtils.getResourceTypeFromIri).mockReturnValue(CwaResourceTypes.PAGE_DATA)
+        createSyncWatcher(context.groupSynchronizer, {
+          resource: {
+            data: { '@id': '/test', 'allowedComponents': ['/component/b'] },
+            apiState: { status: CwaResourceApiStatuses.SUCCESS },
+          },
+          allowedComponents: ['/component/a'],
+          location: PAGE_DATA,
+          fullReference: REFERENCE,
+        })
+        context.auth.signedIn.value = true
+        return { ...context, warn }
+      })()
+
+      await flushPromises()
+
+      expect(resourcesManager.updateResource).toHaveBeenCalledTimes(1)
+      expect(resourcesManager.updateResource).toHaveBeenCalledWith({
+        endpoint: '/test',
+        data: { allowedComponents: ['/component/a'] },
+      })
+      expect(warn).not.toHaveBeenCalled()
     })
   })
 

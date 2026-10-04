@@ -4,6 +4,7 @@ import { join } from 'path'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import type { Mock } from 'vitest'
 import * as nuxtKit from '@nuxt/kit'
+import { scanComponentGroupDeclarations } from './component-group-declarations'
 
 vi.mock('@nuxt/kit', async () => {
   const actual = await vi.importActual<typeof nuxtKit>('@nuxt/kit')
@@ -33,6 +34,10 @@ vi.mock('@nuxt/kit', async () => {
     default: newModule,
   }
 })
+
+vi.mock('./component-group-declarations', () => ({
+  scanComponentGroupDeclarations: vi.fn(() => ({})),
+}))
 
 const { mockRealpathSync } = vi.hoisted(() => ({
   mockRealpathSync: vi.fn((file: string) => file),
@@ -75,8 +80,17 @@ describe('CWA module', () => {
       expect(meta).toEqual({
         name: '@cwa/nuxt',
         configKey: 'cwa',
-        compatibility: { nuxt: '>=3.16' },
+        compatibility: { nuxt: '>=4.5.2' },
       })
+    })
+
+    test('declares the same minimum Nuxt as the @nuxt/kit it depends on, so Nuxt refuses an app too old for it', async () => {
+      await import('./module')
+      const { dependencies } = await import('../package.json')
+
+      const [{ meta }] = (nuxtKit.defineNuxtModule as Mock).mock.lastCall
+
+      expect(meta.compatibility.nuxt).toBe(`>=${dependencies['@nuxt/kit'].replace(/^\^/, '')}`)
     })
 
     test('should be called with correct defaults', async () => {
@@ -700,6 +714,132 @@ export type CwaComponentName = typeof CwaComponentNames[keyof typeof CwaComponen
         const mockNuxt = await prepare({}, { public: { cwa: {} }, cwa: { apiUrl: 'http://php/_api' } })
 
         expect(mockNuxt.options.runtimeConfig.public.cwa).toEqual({ apiUrl: '', apiUrlBrowser: '' })
+      })
+    })
+
+    describe('component group declarations (#360)', () => {
+      const components = [
+        { filePath: 'cwa/components/HeroSection/HeroSection.vue', pascalName: 'CwaComponentHeroSection' },
+        { filePath: 'cwa/components/HeroSection/ui/Wide.vue', pascalName: 'CwaComponentHeroSectionUiWide' },
+        { filePath: 'cwa/components/HeroSection/admin/Tab.vue', pascalName: 'CwaComponentHeroSectionAdminTab' },
+        { filePath: 'cwa/components/HeroSection/Helper.vue', pascalName: 'CwaComponentHeroSectionHelper' },
+        { filePath: 'cwa/layouts/primary.vue', pascalName: 'CwaLayoutPrimary' },
+        { filePath: 'cwa/pages/PrimaryPageTemplate.vue', pascalName: 'CwaPagePrimaryPageTemplate' },
+        { filePath: 'cwa/pages/admin/PageTab.vue', pascalName: 'CwaPageAdminPageTab' },
+        { filePath: 'components/HeaderMenuLinks.vue', pascalName: 'HeaderMenuLinks' },
+      ]
+
+      async function prepare(alias: Record<string, string> = {}) {
+        await prepareMockNuxt({}, {
+          hook: vi.fn((hookName, callback) => {
+            if (hookName === 'modules:done') {
+              callback()
+            }
+          }),
+          options: { srcDir: 'app', sitemap: {}, runtimeConfig: { public: { cwa: {} } }, alias, css: [], build: { transpile: [] }, dir: { app: '' } },
+        })
+        return (nuxtKit.addTemplate as Mock).mock.calls
+          .map(([template]) => template)
+          .filter(({ filename }) => filename === 'cwa-component-group-declarations.ts')
+          .at(-1)
+      }
+
+      test('writes the scanned declarations to a typed template', async () => {
+        vi.mocked(scanComponentGroupDeclarations).mockReturnValueOnce({ CwaLayoutPrimary: [{ reference: 'top', location: 'layout' }] })
+        const template = await prepare()
+
+        expect(template.write).toBe(true)
+        expect(await template.getContents({ app: { components } })).toEqual(`import type { ComponentGroupDeclarations } from '#cwa/admin/stranded-component-groups'
+export const componentGroupDeclarations: ComponentGroupDeclarations = {
+  "CwaLayoutPrimary": [
+    {
+      "reference": "top",
+      "location": "layout"
+    }
+  ]
+}
+`)
+      })
+
+      test('scans the CWA layouts, pages, components and their ui variants as templates, through every registered component', async () => {
+        const template = await prepare()
+        await template.getContents({ app: { components } })
+
+        const [scanOptions] = vi.mocked(scanComponentGroupDeclarations).mock.lastCall!
+        expect(scanOptions.templates.map(({ pascalName }) => pascalName)).toEqual([
+          'CwaComponentHeroSection',
+          'CwaComponentHeroSectionUiWide',
+          'CwaLayoutPrimary',
+          'CwaPagePrimaryPageTemplate',
+        ])
+        expect(scanOptions.components).toBe(components)
+        expect(scanOptions.componentGroupFile).toMatch(/runtime\/templates\/components\/main\/ComponentGroup\.vue$/)
+      })
+
+      test('resolves aliased and relative imports, and nothing else', async () => {
+        const template = await prepare({ '~': '/site/app' })
+        await template.getContents({ app: { components } })
+
+        const [{ resolveImport }] = vi.mocked(scanComponentGroupDeclarations).mock.lastCall!
+        expect(resolveImport('~/layouts/static.vue', '/site/app/cwa/layouts/primary.vue')).toBe('/site/app/layouts/static.vue')
+        expect(resolveImport('../../../components/Editor.vue', '/site/app/cwa/components/Html/Html.vue')).toBe('/site/app/components/Editor.vue')
+        expect(resolveImport('lightgallery/vue', '/site/app/cwa/components/Gallery/Gallery.vue')).toBeUndefined()
+      })
+
+      test('is not auto-imported', async () => {
+        await prepare()
+
+        const imported = vi.mocked(nuxtKit.addImports).mock.calls.flatMap(([imports]) => [imports].flat())
+        expect(imported.some(({ from }) => from === '#build/cwa-component-group-declarations')).toBe(false)
+      })
+
+      test('is regenerated when any Vue file is added, changed or removed in dev, and only then', async () => {
+        vi.spyOn(nuxtKit, 'createResolver').mockReturnValue({
+          resolve: vi.fn((...args: string[]) => join(...args)),
+          resolvePath: vi.fn(),
+        })
+        let watchCallback: ((event: string, path: string) => Promise<void>) | undefined
+        await prepareMockNuxt({}, {
+          hook: vi.fn((hookName, callback) => {
+            if (hookName === 'builder:watch') {
+              watchCallback = callback
+            }
+          }),
+        })
+        const regenerates = async (event: string, path: string) => {
+          vi.mocked(nuxtKit.updateTemplates).mockClear()
+          await watchCallback!(event, path)
+          const call = vi.mocked(nuxtKit.updateTemplates).mock.lastCall
+          return !!call?.[0]?.filter?.({ filename: 'cwa-component-group-declarations.ts' } as any)
+        }
+
+        expect(await regenerates('change', 'components/HeaderMenuLinks.vue')).toBe(true)
+        expect(await regenerates('add', 'layouts/static.vue')).toBe(true)
+        expect(await regenerates('unlink', 'cwa/components/Hero/Hero.vue')).toBe(true)
+        expect(await regenerates('change', 'composables/useThing.ts')).toBe(false)
+        expect(await regenerates('addDir', 'components/new')).toBe(false)
+      })
+
+      test('a changed Vue file outside the CWA components does not regenerate the other CWA templates', async () => {
+        vi.spyOn(nuxtKit, 'createResolver').mockReturnValue({
+          resolve: vi.fn((...args: string[]) => join(...args)),
+          resolvePath: vi.fn(),
+        })
+        let watchCallback: ((event: string, path: string) => Promise<void>) | undefined
+        await prepareMockNuxt({}, {
+          hook: vi.fn((hookName, callback) => {
+            if (hookName === 'builder:watch') {
+              watchCallback = callback
+            }
+          }),
+        })
+        vi.mocked(nuxtKit.updateTemplates).mockClear()
+
+        await watchCallback!('change', 'cwa/components/Hero/Hero.vue')
+
+        const [{ filter }] = vi.mocked(nuxtKit.updateTemplates).mock.lastCall!
+        expect(filter!({ filename: 'cwa-options.ts' } as any)).toBe(false)
+        expect(filter!({ filename: 'cwa-component-names.ts' } as any)).toBe(false)
       })
     })
 

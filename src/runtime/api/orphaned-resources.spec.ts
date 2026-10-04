@@ -101,6 +101,76 @@ describe('OrphanedResources', () => {
     })
   })
 
+  describe('orphaned files', () => {
+    const headers = { accept: 'application/ld+json,application/json' }
+
+    test('fetches the stored file report', async () => {
+      const { service, mockFetch } = buildService()
+      const report = { generatedAt: '2026-09-25T10:00:00.123456+00:00', orphanedFiles: [], missingFiles: [] }
+      mockFetch.mockResolvedValueOnce(report)
+      await expect(service.fetchFileReport()).resolves.toBe(report)
+      expect(mockFetch).toHaveBeenCalledWith('/_/orphaned_files')
+    })
+
+    test('rejects with the fetch error when no file report has been stored', async () => {
+      const { service, mockFetch } = buildService()
+      const error = Object.assign(new Error('Not Found'), { statusCode: 404 })
+      mockFetch.mockRejectedValueOnce(error)
+      await expect(service.fetchFileReport()).rejects.toBe(error)
+    })
+
+    test('requests a file scan with a POST and no body', async () => {
+      const { service, mockFetch, mockGetRequestOptions } = buildService()
+      await service.requestFileScan()
+      expect(mockGetRequestOptions).toHaveBeenCalledWith('POST')
+      expect(mockFetch).toHaveBeenCalledWith('/_/orphaned_files/scan', { method: 'POST', headers })
+      expect(mockFetch.mock.calls[0]![1]).not.toHaveProperty('body')
+    })
+
+    test('posts the selected paths to the file delete endpoint and returns its result', async () => {
+      const { service, mockFetch } = buildService()
+      const result = { deleted: [{ adapter: 'local', path: 'files/a.png' }], rejected: [{ path: 'files/b.png', reason: 'delete_failed' }] }
+      mockFetch.mockResolvedValueOnce(result)
+      await expect(service.deleteOrphanedFiles({ paths: ['files/a.png', 'files/b.png'] })).resolves.toBe(result)
+      expect(mockFetch).toHaveBeenCalledWith('/_/orphaned_files/delete', { method: 'POST', headers, body: { paths: ['files/a.png', 'files/b.png'] } })
+    })
+
+    test('a path listed on more than one adapter is sent once', async () => {
+      const { service, mockFetch } = buildService()
+      await service.deleteOrphanedFiles({ paths: ['files/a.png', 'files/a.png'] })
+      expect(mockFetch.mock.calls[0]![1].body).toEqual({ paths: ['files/a.png'] })
+    })
+
+    test('asks for every orphaned file with all set to true', async () => {
+      const { service, mockFetch } = buildService()
+      await service.deleteOrphanedFiles({ all: true })
+      expect(mockFetch).toHaveBeenCalledWith('/_/orphaned_files/delete', { method: 'POST', headers, body: { all: true } })
+    })
+
+    test('an empty path list, or a body with neither paths nor all set to true, sends no request', async () => {
+      const { service, mockFetch } = buildService()
+      await expect(service.deleteOrphanedFiles({ paths: [] })).resolves.toEqual({ deleted: [], rejected: [] })
+      await service.deleteOrphanedFiles({} as any)
+      await service.deleteOrphanedFiles({ all: false } as any)
+      await service.deleteOrphanedFiles({ all: 'true' } as any)
+      await service.deleteOrphanedFiles({ iris: ['files/a.png'] } as any)
+      expect(mockFetch).not.toHaveBeenCalled()
+    })
+
+    test('a body naming paths and all together deletes only the paths, never everything', async () => {
+      const { service, mockFetch } = buildService()
+      await service.deleteOrphanedFiles({ paths: ['files/a.png'], all: true } as any)
+      expect(mockFetch.mock.calls[0]![1].body).toEqual({ paths: ['files/a.png'] })
+    })
+
+    test('rejects with the fetch error when the delete fails', async () => {
+      const { service, mockFetch } = buildService()
+      const error = Object.assign(new Error('Unprocessable'), { statusCode: 422 })
+      mockFetch.mockRejectedValueOnce(error)
+      await expect(service.deleteOrphanedFiles({ all: true })).rejects.toBe(error)
+    })
+  })
+
   describe('orphanedResourceEndpoint', () => {
     test('asks for the published version of a component', () => {
       expect(orphanedResourceEndpoint('/component/html_contents/abc')).toBe('/component/html_contents/abc?published=true')

@@ -6,7 +6,7 @@ import SettingsPage from './settings.vue'
 import * as cwaComposable from '#cwa/composables/cwa'
 import { PageCacheWarmInterruptedError } from '#cwa/api/page-cache-warm'
 
-const { mockOptions, mockReveal, mockPurgePageCache, mockPurgeHttpCache, mockWarmPageCache, mockFetchOrphanReport, mockRequestOrphanScan } = vi.hoisted(() => ({
+const { mockOptions, mockReveal, mockPurgePageCache, mockPurgeHttpCache, mockWarmPageCache, mockFetchOrphanReport, mockRequestOrphanScan, mockFetchFileReport, mockRequestFileScan } = vi.hoisted(() => ({
   mockOptions: { pageCache: undefined as undefined | { enabled?: boolean } },
   mockReveal: vi.fn(),
   mockPurgePageCache: vi.fn(),
@@ -14,6 +14,8 @@ const { mockOptions, mockReveal, mockPurgePageCache, mockPurgeHttpCache, mockWar
   mockWarmPageCache: vi.fn(),
   mockFetchOrphanReport: vi.fn(),
   mockRequestOrphanScan: vi.fn(),
+  mockFetchFileReport: vi.fn(),
+  mockRequestFileScan: vi.fn(),
 }))
 
 vi.mock('#build/cwa-options', () => ({
@@ -56,6 +58,8 @@ async function setup() {
     orphanedResources: {
       fetchReport: mockFetchOrphanReport,
       requestScan: mockRequestOrphanScan,
+      fetchFileReport: mockFetchFileReport,
+      requestFileScan: mockRequestFileScan,
     },
     getApiDocumentation: vi.fn().mockResolvedValue(undefined),
     currentModulePackageInfo: { version: '1.0.0', name: '@cwa/nuxt' },
@@ -480,6 +484,15 @@ function orphanReport(overrides: Record<string, any> = {}) {
   }
 }
 
+function fileReport(overrides: Record<string, any> = {}) {
+  return {
+    generatedAt: '2026-09-24T09:00:00.123456+00:00',
+    orphanedFiles: [{ adapter: 'local', path: 'files/a.png' }, { adapter: 's3', path: 'files/b.png' }],
+    missingFiles: [{ resource: '/component/images/i1', adapter: 'local', path: 'files/gone.png' }],
+    ...overrides,
+  }
+}
+
 function orphanStatusError(statusCode: number) {
   return Object.assign(new Error('failed'), { statusCode })
 }
@@ -489,6 +502,8 @@ describe('Site settings orphaned resources', () => {
     mockOptions.pageCache = undefined
     mockFetchOrphanReport.mockReset().mockResolvedValue(orphanReport())
     mockRequestOrphanScan.mockReset().mockResolvedValue(undefined)
+    mockFetchFileReport.mockReset().mockResolvedValue(fileReport({ orphanedFiles: [], missingFiles: [] }))
+    mockRequestFileScan.mockReset().mockResolvedValue(undefined)
   })
 
   afterEach(() => {
@@ -577,5 +592,96 @@ describe('Site settings orphaned resources', () => {
     await flushPromises()
     expect(section(wrapper).text()).toContain('The scan could not be requested (403). Please try again.')
     expect(notice(wrapper).text()).toContain('Orphaned resources discovered')
+  })
+
+  describe('files', () => {
+    function scanFilesButton(wrapper: Wrapper) {
+      return section(wrapper).findAll('button').find(b => ['Scan files', 'Scanning…'].includes(b.text()))
+    }
+
+    test('the notice counts orphaned resources, orphaned files and missing files together', async () => {
+      mockFetchFileReport.mockResolvedValue(fileReport())
+      const wrapper = await setup()
+      expect(notice(wrapper).text()).toContain('Orphaned resources discovered: 3 resources and 2 files are no longer used anywhere on the site. 1 file is missing from storage.')
+    })
+
+    test('orphaned files alone show the notice', async () => {
+      mockFetchOrphanReport.mockResolvedValue(orphanReport({ components: [], componentPositions: [] }))
+      mockFetchFileReport.mockResolvedValue(fileReport({ orphanedFiles: [{ adapter: 'local', path: 'files/a.png' }], missingFiles: [] }))
+      const wrapper = await setup()
+      expect(notice(wrapper).text()).toContain('Orphaned resources discovered: 1 file is no longer used anywhere on the site.')
+      expect(notice(wrapper).text()).not.toContain('missing')
+    })
+
+    test('missing files alone show the notice', async () => {
+      mockFetchOrphanReport.mockResolvedValue(orphanReport({ components: [], componentPositions: [] }))
+      mockFetchFileReport.mockResolvedValue(fileReport({ orphanedFiles: [], missingFiles: [
+        { resource: '/component/images/i1', adapter: 'local', path: 'files/gone.png' },
+        { resource: '/component/images/i2', adapter: 'local', path: 'files/gone-too.png' },
+      ] }))
+      const wrapper = await setup()
+      expect(notice(wrapper).text()).toContain('Orphaned resources discovered: 2 files are missing from storage.')
+      expect(notice(wrapper).findAll('a').find(a => a.text() === 'Review now')?.attributes('data-route-name')).toBe('_cwa-orphaned')
+    })
+
+    test('a failed file report shows no error and leaves the resource count in the notice', async () => {
+      mockFetchFileReport.mockRejectedValue(orphanStatusError(500))
+      const wrapper = await setup()
+      expect(notice(wrapper).text()).toContain('Orphaned resources discovered: 3 resources are no longer used anywhere on the site.')
+      expect(wrapper.text()).not.toContain('could not be loaded')
+      expect(section(wrapper).text()).not.toContain('Files: Never scanned')
+      expect(mockRequestFileScan).not.toHaveBeenCalled()
+    })
+
+    test('failures of both reports show no notice at all', async () => {
+      mockFetchOrphanReport.mockRejectedValue(orphanStatusError(500))
+      mockFetchFileReport.mockRejectedValue(orphanStatusError(502))
+      const wrapper = await setup()
+      expect(notice(wrapper).exists()).toBe(false)
+    })
+
+    test('shows when files were last scanned, or that they never have been', async () => {
+      mockFetchFileReport.mockResolvedValue(fileReport())
+      const wrapper = await setup()
+      expect(section(wrapper).text()).toContain('Components: Last scanned 25 Sep 2026')
+      expect(section(wrapper).text()).toContain('Files: Last scanned 24 Sep 2026')
+      mockFetchFileReport.mockRejectedValue(orphanStatusError(404))
+      const unscanned = await setup()
+      expect(section(unscanned).text()).toContain('Files: Never scanned')
+    })
+
+    test('loading the page scans nothing', async () => {
+      await setup()
+      expect(mockRequestOrphanScan).not.toHaveBeenCalled()
+      expect(mockRequestFileScan).not.toHaveBeenCalled()
+    })
+
+    test('scan files requests a file scan only and refreshes the notice from the new file report', async () => {
+      mockFetchOrphanReport.mockResolvedValue(orphanReport({ components: [], componentPositions: [] }))
+      const wrapper = await setup()
+      expect(notice(wrapper).exists()).toBe(false)
+      mockFetchFileReport.mockResolvedValue(fileReport({ generatedAt: '2026-09-26T09:00:00+00:00' }))
+      await scanFilesButton(wrapper)!.trigger('click')
+      await flushPromises()
+      expect(mockRequestFileScan).toHaveBeenCalledTimes(1)
+      expect(mockRequestOrphanScan).not.toHaveBeenCalled()
+      expect(section(wrapper).text()).toContain('Files: Last scanned 26 Sep 2026')
+      expect(notice(wrapper).text()).toContain('2 files')
+    })
+
+    test('scan now scans components only', async () => {
+      const wrapper = await setup()
+      await scanNowButton(wrapper)!.trigger('click')
+      await flushPromises()
+      expect(mockRequestFileScan).not.toHaveBeenCalled()
+    })
+
+    test('a failed file scan shows its error in the section', async () => {
+      mockRequestFileScan.mockRejectedValue(orphanStatusError(403))
+      const wrapper = await setup()
+      await scanFilesButton(wrapper)!.trigger('click')
+      await flushPromises()
+      expect(section(wrapper).text()).toContain('The scan could not be requested (403). Please try again.')
+    })
   })
 })

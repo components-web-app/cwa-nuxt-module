@@ -293,9 +293,9 @@ export default class Mercure {
       return
     }
     const hub = new URL(this.hub)
-    hub.searchParams.append('topic', '*')
+    hub.searchParams.append('match', '*')
     if (this.lastEventId) {
-      hub.searchParams.append('Last-Event-ID', this.lastEventId)
+      hub.searchParams.append('last_event_id', this.lastEventId)
     }
     return hub.toString()
   }

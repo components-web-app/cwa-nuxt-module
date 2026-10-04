@@ -4,6 +4,7 @@ import type { RouteLocationNormalizedLoaded } from 'vue-router'
 import { computed, ref } from 'vue'
 import cwaAuthMiddleware from './cwa-auth'
 import * as nuxt from 'nuxt/app'
+import * as processComposables from '#cwa/composables/process'
 
 function createRoute(fullPath = '/members/area'): RouteLocationNormalizedLoaded {
   return {
@@ -36,6 +37,7 @@ function mockCwa({ signedIn }: { signedIn: boolean }) {
 
 describe('cwa-auth middleware', () => {
   beforeEach(() => {
+    vi.spyOn(processComposables, 'useProcess').mockReturnValue({ isClient: true, isServer: false })
     vi.spyOn(nuxt, 'navigateTo').mockImplementation(() => 'navigateToResponse' as never)
   })
 
@@ -63,5 +65,19 @@ describe('cwa-auth middleware', () => {
     const { init } = mockCwa({ signedIn: true })
     await cwaAuthMiddleware(createRoute(), createRoute())
     expect(init).toHaveBeenCalled()
+  })
+
+  describe('on the server, where a cross-origin API cookie is not sent', () => {
+    beforeEach(() => {
+      vi.spyOn(processComposables, 'useProcess').mockReturnValue({ isClient: false, isServer: true })
+    })
+
+    test('does not redirect a visitor it cannot see signed in, and leaves the decision to the browser', async () => {
+      const { init } = mockCwa({ signedIn: false })
+      const result = await cwaAuthMiddleware(createRoute('/reports'), createRoute())
+      expect(init).toHaveBeenCalled()
+      expect(result).toBeUndefined()
+      expect(nuxt.navigateTo).not.toHaveBeenCalled()
+    })
   })
 })

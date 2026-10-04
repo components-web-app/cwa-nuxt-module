@@ -18,6 +18,7 @@
 <script lang="ts" setup>
 import { onBeforeMount } from 'vue'
 import { definePageMeta, useCwa, navigateTo, useHead } from '#imports'
+import cwaAdmin from '#cwa-layer/middleware/cwa-admin'
 
 const $cwa = useCwa()
 
@@ -28,6 +29,7 @@ onBeforeMount(async () => {
 })
 
 definePageMeta({
+  middleware: cwaAdmin,
   cwa: {
     disabled: true,
     admin: true,

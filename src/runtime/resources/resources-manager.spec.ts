@@ -401,6 +401,25 @@ describe('Resources manager', () => {
       )
       expect(removeSpy).toHaveBeenCalledWith({ resource: '/components/1' })
     })
+
+    test('asks for confirmation by default', async () => {
+      const { resourcesManager, cwaFetch } = createResourcesManager()
+      cwaFetch.fetch.mockResolvedValue({})
+      await resourcesManager.deleteResource({ endpoint: '/components/1' })
+      expect(createConfirmDialog).toHaveBeenCalledTimes(1)
+    })
+
+    test('with force, sends the DELETE without asking for confirmation', async () => {
+      const { resourcesManager, cwaFetch, resourcesStoreActions } = createResourcesManager()
+      resourcesStoreActions.getResource.mockReturnValue(undefined)
+      cwaFetch.fetch.mockResolvedValue({})
+      await resourcesManager.deleteResource({ endpoint: '/_/component_groups/1' }, true)
+      expect(createConfirmDialog).not.toHaveBeenCalled()
+      expect(cwaFetch.fetch).toHaveBeenCalledWith(
+        '/_/component_groups/1',
+        expect.objectContaining({ method: 'DELETE' }),
+      )
+    })
   })
 
   describe('updateResource (additional branches)', () => {

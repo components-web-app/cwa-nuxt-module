@@ -5,11 +5,11 @@
   />
   <ListContainer class="cwa:relative cwa:py-10">
     <CwaUiAlertInfo
-      v-if="orphanCount"
+      v-if="orphanNotice"
       data-testid="orphaned-notice"
       class="cwa:mb-8 cwa:justify-between cwa:gap-x-4"
     >
-      <span class="cwa:grow">Orphaned resources discovered: {{ orphanCount }} {{ orphanCount === 1 ? 'resource is' : 'resources are' }} no longer used anywhere on the site.</span>
+      <span class="cwa:grow">Orphaned resources discovered: {{ orphanNotice }}</span>
       <CwaUiFormButton :to="{ name: '_cwa-orphaned' }">
         Review now
       </CwaUiFormButton>
@@ -280,14 +280,19 @@
           </h2>
           <div class="cwa:flex cwa:flex-col cwa:gap-y-4">
             <p class="cwa:text-sm cwa:text-stone-400">
-              A scan finds component groups, component positions and components that are no longer used anywhere on the site. Scanning never deletes anything; you can review what it finds and choose what to delete.
+              A scan finds component groups, component positions and components that are no longer used anywhere on the site. A file scan finds uploaded files nothing uses any more, and resources whose file is missing from storage; it is separate because listing storage can be slow. Scanning never deletes anything; you can review what it finds and choose what to delete.
             </p>
-            <p
-              v-if="orphanReport !== undefined"
-              class="cwa:text-sm cwa:font-bold"
+            <div
+              v-if="orphanReport !== undefined || fileReport !== undefined"
+              class="cwa:text-sm cwa:font-bold cwa:flex cwa:flex-col cwa:gap-y-1"
             >
-              {{ orphanReport ? `Last scanned ${formatDateTime(orphanReport.generatedAt)}` : 'Never scanned' }}
-            </p>
+              <p v-if="orphanReport !== undefined">
+                Components: {{ orphanReport ? `Last scanned ${formatDateTime(orphanReport.generatedAt)}` : 'Never scanned' }}
+              </p>
+              <p v-if="fileReport !== undefined">
+                Files: {{ fileReport ? `Last scanned ${formatDateTime(fileReport.generatedAt)}` : 'Never scanned' }}
+              </p>
+            </div>
             <div class="cwa:flex cwa:flex-wrap cwa:gap-4">
               <CwaUiFormButton
                 :disabled="scanningOrphans"
@@ -296,21 +301,28 @@
               >
                 {{ scanningOrphans ? 'Scanning…' : 'Scan now' }}
               </CwaUiFormButton>
+              <CwaUiFormButton
+                :disabled="scanningFiles"
+                type="button"
+                @click="scanFiles"
+              >
+                {{ scanningFiles ? 'Scanning…' : 'Scan files' }}
+              </CwaUiFormButton>
               <CwaUiFormButton :to="{ name: '_cwa-orphaned' }">
                 Review orphaned resources
               </CwaUiFormButton>
             </div>
             <p
-              v-if="orphanScanPending"
+              v-if="orphanScanPending || fileScanPending"
               class="cwa:text-sm cwa:font-bold"
             >
               The scan has been requested but has not finished yet. Reload this page in a moment to see the new report.
             </p>
             <p
-              v-if="orphanScanError"
+              v-if="orphanScanError || fileScanError"
               class="cwa:text-sm cwa:text-danger cwa:font-bold"
             >
-              {{ orphanScanError }}
+              {{ orphanScanError || fileScanError }}
             </p>
           </div>
         </div>
@@ -385,7 +397,7 @@ import { PageCacheWarmInterruptedError } from '#cwa/api/page-cache-warm'
 import type { PageCacheWarmFailure, PageCacheWarmProgress, PageCacheWarmSummary } from '#cwa/api/page-cache-warm'
 import { options } from '#build/cwa-options'
 import { formatDateTime } from '#cwa/resources/date-time-input'
-import { useOrphanedResourceReport } from '#cwa-layer/_composables/useOrphanedResourceReport'
+import { useOrphanedFileReport, useOrphanedResourceReport } from '#cwa-layer/_composables/useOrphanReport'
 
 const $cwa = useCwa()
 
@@ -398,6 +410,33 @@ const {
   loadReport: loadOrphanReport,
   scan: scanOrphans,
 } = useOrphanedResourceReport()
+
+const {
+  report: fileReport,
+  orphanCount: fileOrphanCount,
+  missingCount: missingFileCount,
+  scanError: fileScanError,
+  scanning: scanningFiles,
+  scanPending: fileScanPending,
+  loadReport: loadFileReport,
+  scan: scanFiles,
+} = useOrphanedFileReport()
+
+function countLabel(count: number, noun: string) {
+  return count ? `${count} ${noun}${count === 1 ? '' : 's'}` : undefined
+}
+
+const orphanNotice = computed(() => {
+  const unused = [countLabel(orphanCount.value, 'resource'), countLabel(fileOrphanCount.value, 'file')].filter(Boolean)
+  const sentences: string[] = []
+  if (unused.length) {
+    sentences.push(`${unused.join(' and ')} ${orphanCount.value + fileOrphanCount.value === 1 ? 'is' : 'are'} no longer used anywhere on the site.`)
+  }
+  if (missingFileCount.value) {
+    sentences.push(`${countLabel(missingFileCount.value, 'file')} ${missingFileCount.value === 1 ? 'is' : 'are'} missing from storage.`)
+  }
+  return sentences.join(' ')
+})
 
 const allSettings = ref<SiteConfigParams>()
 
@@ -683,6 +722,7 @@ async function processChanges() {
 onMounted(async () => {
   setApiVersion()
   loadOrphanReport()
+  loadFileReport()
   allSettings.value = await $cwa.siteConfig.loadConfig()
   watch(() => $cwa.siteConfig.config, (newConfig) => {
     allSettings.value = { ...newConfig }

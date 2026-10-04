@@ -1320,6 +1320,9 @@
 .cwa\:pb-4 {
   padding-bottom: calc(var(--cwa-spacing) * 4);
 }
+.cwa\:pb-6 {
+  padding-bottom: calc(var(--cwa-spacing) * 6);
+}
 .cwa\:pb-8 {
   padding-bottom: calc(var(--cwa-spacing) * 8);
 }
@@ -1480,6 +1483,9 @@
 }
 .cwa\:text-neutral-900 {
   color: var(--cwa-color-neutral-900);
+}
+.cwa\:text-orange {
+  color: var(--cwa-color-orange);
 }
 .cwa\:text-red-400 {
   color: var(--cwa-color-red-400);

@@ -4,6 +4,16 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+## [2.0.0-alpha.4] - 2026-10-04
+
+- **Security:** `?cwa_force=` with any value other than `true` no longer sends the server render into an endless redirect that pinned an SSR process; the parameter is removed whatever its value ([#366](https://github.com/components-web-app/cwa-nuxt-module/issues/366), [038e1364](https://github.com/components-web-app/cwa-nuxt-module/commit/038e1364))
+- **Breaking:** live updates subscribe with the Mercure 1.0 protocol (`match=*`, and `last_event_id` on reconnect), so the API's hub must be Mercure 1.0 (api-components-bundle 2.0.0-alpha.8); a 0.x hub rejects the subscription ([#364](https://github.com/components-web-app/cwa-nuxt-module/issues/364), [61dd29f8](https://github.com/components-web-app/cwa-nuxt-module/commit/61dd29f8))
+- A `<CwaComponentGroup>` whose location is page data (or any type that cannot own a group) is no longer created or attached, and the admin console warns to pass the page IRI instead: such a group was invisible to visitors, listed as orphaned, and was PATCHed with an `undefined` property on every admin load ([#363](https://github.com/components-web-app/cwa-nuxt-module/issues/363), [0a02879d](https://github.com/components-web-app/cwa-nuxt-module/commit/0a02879d))
+- A warning in the admin header counts stranded component groups: groups attached to the page, its layout or a component on it whose reference no `<CwaComponentGroup>` in the app's templates declares, such as the old group left behind when a reference is renamed or a legacy group located at a draft IRI; the declarations are read from the app's Vue files at build time. Its modal lists their components and merges each one to the end of a shown group or deletes it ([#360](https://github.com/components-web-app/cwa-nuxt-module/issues/360), [94481372](https://github.com/components-web-app/cwa-nuxt-module/commit/94481372), [fee09284](https://github.com/components-web-app/cwa-nuxt-module/commit/fee09284))
+- `/_cwa/orphaned` also reports stored files: orphaned files nothing references, which can be deleted after a confirmation, unknown files the API cannot prove it wrote, which are only listed, and missing files, whose resource can be viewed; site settings scans files separately and counts both reports in its notice. Needs an api-components-bundle release containing #371 ([#362](https://github.com/components-web-app/cwa-nuxt-module/issues/362), [60a0d792](https://github.com/components-web-app/cwa-nuxt-module/commit/60a0d792), [0d76809e](https://github.com/components-web-app/cwa-nuxt-module/commit/0d76809e))
+- The module declares its real minimum Nuxt version, `>=4.5.2`, so Nuxt warns an app on an older version instead of failing later ([e0ef82ed](https://github.com/components-web-app/cwa-nuxt-module/commit/e0ef82ed))
+- View on a never-published orphaned component shows its content instead of a 404 ([#359](https://github.com/components-web-app/cwa-nuxt-module/issues/359), [292f7885](https://github.com/components-web-app/cwa-nuxt-module/commit/292f7885))
+- Every `/_cwa` admin page is guarded by the `cwa-admin` middleware: a signed-in non-admin goes home, and a signed-out visitor goes to login from the browser, since with a cross-origin API the server cannot see the session ([dd4f8a6d](https://github.com/components-web-app/cwa-nuxt-module/commit/dd4f8a6d), [5be5b635](https://github.com/components-web-app/cwa-nuxt-module/commit/5be5b635))
 ## [2.0.0-alpha.3] - 2026-09-26
 
 - Times from the API with more than millisecond precision, such as the orphan report's `generatedAt`, display correctly in every browser ([d1695b8d](https://github.com/components-web-app/cwa-nuxt-module/commit/d1695b8d))
@@ -28,7 +38,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 - First tagged release of `@cwa/nuxt`; releases are now published from `v*` tags ([7c61b7c](https://github.com/components-web-app/cwa-nuxt-module/commit/7c61b7ce331ec4a0cb8e76951a5de2ff806ed07a))
 
-[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.3...HEAD
+[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.4...HEAD
+[2.0.0-alpha.4]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.3...v2.0.0-alpha.4
 [2.0.0-alpha.3]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.2...v2.0.0-alpha.3
 [2.0.0-alpha.2]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.1...v2.0.0-alpha.2
 [2.0.0-alpha.1]: https://github.com/components-web-app/cwa-nuxt-module/releases/tag/v2.0.0-alpha.1

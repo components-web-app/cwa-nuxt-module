@@ -1,10 +1,31 @@
 // @vitest-environment happy-dom
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { ref, reactive, computed } from 'vue'
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { mockNuxtImport } from '@nuxt/test-utils/runtime'
 import Header from './Header.vue'
 import * as cwaComposable from '#cwa/composables/cwa'
+
+const strandedState = reactive({
+  stranded: [] as any[],
+  shown: [] as any[],
+})
+
+vi.mock('#cwa/admin/stranded-component-groups', () => ({
+  useStrandedComponentGroups: () => ({
+    stranded: computed(() => strandedState.stranded),
+    shown: computed(() => strandedState.shown),
+  }),
+}))
+
+vi.mock('#cwa/templates/components/core/admin/StrandedComponentGroupsModal.vue', () => ({
+  default: {
+    name: 'StrandedComponentGroupsModal',
+    props: ['groups', 'targets'],
+    emits: ['close'],
+    template: '<div class="stranded-modal-stub" />',
+  },
+}))
 
 const errorRef = ref<any>(null)
 const replaceMock = vi.fn()
@@ -91,6 +112,7 @@ function mountHeader() {
           template: '<div class="toggle-stub" />',
         },
         CwaUiIconCogIcon: { name: 'CwaUiIconCogIcon', template: '<svg class="cog-icon-stub" />' },
+        CwaUiIconWarningIcon: { name: 'CwaUiIconWarningIcon', template: '<svg class="warning-icon-stub" />' },
         NuxtLink: { name: 'NuxtLink', props: ['to', 'activeClass'], template: '<a :href="to"><slot /></a>' },
         IconLayouts: { name: 'IconLayouts', template: '<svg class="icon-layouts" />' },
         IconPages: { name: 'IconPages', template: '<svg class="icon-pages" />' },
@@ -107,6 +129,54 @@ describe('Header', () => {
     vi.clearAllMocks()
     errorRef.value = null
     mockRouteMeta.cwa = { admin: false }
+    strandedState.stranded = []
+    strandedState.shown = []
+  })
+
+  describe('stranded component groups warning', () => {
+    const strandedGroup = { iri: '/_/component_groups/top', reference: 'top', positions: [] }
+    const otherStrandedGroup = { iri: '/_/component_groups/footer', reference: 'footer', positions: [] }
+    const shownGroup = { iri: '/_/component_groups/hero', reference: 'hero' }
+
+    test('shows no warning when no attached group is stranded', () => {
+      mockCwa()
+      const wrapper = mountHeader()
+      expect(wrapper.find('[data-testid="stranded-groups-warning"]').exists()).toBe(false)
+    })
+
+    test('shows the warning with the count of stranded groups next to the Edit button', () => {
+      strandedState.stranded = [strandedGroup, otherStrandedGroup]
+      mockCwa()
+      const wrapper = mountHeader()
+      const warning = wrapper.find('[data-testid="stranded-groups-warning"]')
+      expect(warning.exists()).toBe(true)
+      expect(warning.text()).toContain('2')
+      expect(warning.element.parentElement!.textContent).toContain('Edit')
+    })
+
+    test('shows no warning on an admin page', () => {
+      strandedState.stranded = [strandedGroup]
+      mockRouteMeta.cwa = { admin: true }
+      mockCwa()
+      const wrapper = mountHeader()
+      expect(wrapper.find('[data-testid="stranded-groups-warning"]').exists()).toBe(false)
+    })
+
+    test('opens the modal with every stranded group and the shown groups as targets, and closes it', async () => {
+      strandedState.stranded = [strandedGroup, otherStrandedGroup]
+      strandedState.shown = [shownGroup]
+      mockCwa()
+      const wrapper = mountHeader()
+      expect(wrapper.findComponent({ name: 'StrandedComponentGroupsModal' }).exists()).toBe(false)
+      await wrapper.find('[data-testid="stranded-groups-warning"]').trigger('click')
+      await flushPromises()
+      const modal = wrapper.findComponent({ name: 'StrandedComponentGroupsModal' })
+      expect(modal.props('groups')).toEqual([strandedGroup, otherStrandedGroup])
+      expect(modal.props('targets')).toEqual([shownGroup])
+      modal.vm.$emit('close')
+      await flushPromises()
+      expect(wrapper.findComponent({ name: 'StrandedComponentGroupsModal' }).exists()).toBe(false)
+    })
   })
 
   describe('mount + spacer side effect (onMounted)', () => {

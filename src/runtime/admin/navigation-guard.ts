@@ -22,14 +22,8 @@ export default class NavigationGuard {
   }
 
   private isRouteForcedNavigation(toRoute: RouteLocationNormalized) {
-    const cwaForceQuery = toRoute.query?.cwa_force === 'true'
-    if (cwaForceQuery) {
-      delete toRoute.query.cwa_force
-      return true
-    }
-
-    const cwaForceParam = toRoute.params?.cwa_force
-    return cwaForceParam === 'true'
+    return toRoute.query?.cwa_force === 'true'
+      || toRoute.params?.cwa_force === 'true'
   }
 
   private allowNavigation(toRoute: RouteLocationNormalized) {
@@ -46,18 +40,18 @@ export default class NavigationGuard {
   public get adminNavigationGuardFn() {
     return (toRoute: RouteLocationNormalized, fromRoute: RouteLocationNormalized) => {
       try {
-        const cwaForceQuery = toRoute.query?.cwa_force
+        const hasCwaForceQuery = !!toRoute.query && 'cwa_force' in toRoute.query
         const isQueryOnlyChange = fromRoute && toRoute.path === fromRoute.path && toRoute.hash === fromRoute.hash
 
         if (!this.allowNavigation(toRoute) && !isQueryOnlyChange) {
           return false
         }
 
-        if (!cwaForceQuery) {
+        if (!hasCwaForceQuery) {
           return true
         }
 
-        // only redirect if necessary - infinite loops otherwise
+        delete toRoute.query.cwa_force
         return {
           path: toRoute.path,
           query: toRoute.query,
