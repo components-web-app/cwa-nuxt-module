@@ -4,6 +4,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+- The build warns, naming the file and the reason, when a `<CwaComponentGroup>` (a bound reference at an unrecognised location, a `v-bind` object) or an unreadable file switches stranded component group warnings off for the whole site ([#367](https://github.com/components-web-app/cwa-nuxt-module/issues/367), [ceee52b2](https://github.com/components-web-app/cwa-nuxt-module/commit/ceee52b2))
+
 ## [2.0.0-alpha.4] - 2026-10-04
 
 - **Security:** `?cwa_force=` with any value other than `true` no longer sends the server render into an endless redirect that pinned an SSR process; the parameter is removed whatever its value ([#366](https://github.com/components-web-app/cwa-nuxt-module/issues/366), [038e1364](https://github.com/components-web-app/cwa-nuxt-module/commit/038e1364))
