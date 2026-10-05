@@ -4,6 +4,7 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+- Navigating between page-data pages no longer shows the previous page's dynamic component under the new title and then a blank body: a dynamic position renders the component the displayed page's manifest resolved for it until it is re-fetched for that path ([#368](https://github.com/components-web-app/cwa-nuxt-module/issues/368), [1e76b367](https://github.com/components-web-app/cwa-nuxt-module/commit/1e76b367))
 - The build warns, naming the file and the reason, when a `<CwaComponentGroup>` (a bound reference at an unrecognised location, a `v-bind` object) or an unreadable file switches stranded component group warnings off for the whole site ([#367](https://github.com/components-web-app/cwa-nuxt-module/issues/367), [ceee52b2](https://github.com/components-web-app/cwa-nuxt-module/commit/ceee52b2))
 
 ## [2.0.0-alpha.4] - 2026-10-04
