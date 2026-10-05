@@ -797,7 +797,7 @@ describe('resources action setResourceFetchError runs its Nuxt composables insid
 })
 
 describe('resources action -> setResourceFetchStatus dynamic position', () => {
-  test('clears data when dynamic position path changes', () => {
+  test('keeps a dynamic position\'s data, and the path it was resolved for, while it is re-fetched for another path (#368)', () => {
     const resourcesState = state()
     const resourcesGetters = getters(resourcesState)
     const resourcesActions = actions(resourcesState, resourcesGetters)
@@ -817,8 +817,13 @@ describe('resources action -> setResourceFetchStatus dynamic position', () => {
     }
     resourcesState.current.allIds.push(iri)
 
-    resourcesActions.setResourceFetchStatus({ iri, isComplete: false, path: '/page-b' })
-    expect(resourcesState.current.byId[iri].data).toBeUndefined()
+    resourcesActions.setResourceFetchStatus({ iri, isComplete: false, path: '/page-b', headers: { path: '/page-b' } })
+    expect(resourcesState.current.byId[iri].data).toEqual({
+      '@id': iri,
+      '@type': 'ComponentPosition',
+      '_metadata': { persisted: true, isDynamicPosition: true },
+    })
+    expect(resourcesState.current.byId[iri].apiState.headers).toEqual({ path: '/page-a' })
   })
 
   test('retains data when dynamic position headers path matches', () => {

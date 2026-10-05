@@ -4,8 +4,7 @@ import { consola as logger } from 'consola'
 import type { CwaResourceError } from '../../../errors/cwa-resource-error'
 import type { CwaFetcherStateInterface, FetchAbortReason, FetchStatus, NestedJsonStructure } from './state'
 import type { CwaFetcherGettersInterface } from './getters'
-import { flattenManifestNode } from './manifest-utils'
-import { CwaResourceTypes, ResourceTypeFromIri, getResourceTypeFromIri } from '#cwa/resources/resource-utils'
+import { flattenManifestNode, manifestDepthPath } from './manifest-utils'
 import type { CwaFetchRequestHeaders } from '#cwa/api/fetcher/fetcher'
 
 export interface StartFetchEvent {
@@ -144,33 +143,25 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
       const irisByDepth = event.resourceIris.map(flattenManifestNode)
       fetchStatus.manifest.irisByDepth = irisByDepth
 
-      const prefix = ResourceTypeFromIri.getPathPrefix() || ''
-      const routePathPrefix = `${prefix}/_/routes/`
       clearIriDepths()
       const repeatedDepths: Record<string, number[]> = {}
       for (let depth = 0; depth < irisByDepth.length; depth++) {
-        let pageDataIri: string | undefined
         for (const iri of irisByDepth[depth]!) {
           const previousDepth = fetcherState.iriDepths[iri]
           if (previousDepth !== undefined && previousDepth !== depth) {
             repeatedDepths[iri] = [...(repeatedDepths[iri] || [previousDepth]), depth]
           }
           fetcherState.iriDepths[iri] = depth
-          if (fetcherState.depthPaths[depth] === undefined && iri.startsWith(routePathPrefix)) {
-            fetcherState.depthPaths[depth] = iri.substring(routePathPrefix.length)
-          }
-          if (pageDataIri === undefined && getResourceTypeFromIri(iri) === CwaResourceTypes.PAGE_DATA) {
-            pageDataIri = iri
-          }
         }
-        if (fetcherState.depthPaths[depth] === undefined && pageDataIri !== undefined) {
-          fetcherState.depthPaths[depth] = pageDataIri
+        const depthPath = manifestDepthPath(irisByDepth[depth]!)
+        if (depthPath !== undefined) {
+          fetcherState.depthPaths[depth] = depthPath
         }
       }
       const repeatedIris = Object.entries(repeatedDepths)
       if (repeatedIris.length) {
         const listed = repeatedIris.map(([iri, depths]) => `'${iri}' (depths ${depths.join(', ')})`).join(', ')
-        logger.warn(`Manifest resources are listed at more than one depth: ${listed}. Only the deepest depth is recorded, so it is the only one used for the 'path' request header and a shallower depth will render the deepest depth's resolution of any dynamic component position.`)
+        logger.warn(`Manifest resources are listed at more than one depth: ${listed}. Only the deepest depth is recorded, so it is the only one used for the 'path' request header. Each depth renders its own dynamic components from the manifest, but a dynamic component position is re-fetched for the deepest depth only, so a shallower depth shows a change to which component its page data holds after the next navigation.`)
       }
     },
     registerIriDepth(event: RegisterIriDepthEvent) {

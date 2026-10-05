@@ -786,6 +786,24 @@ export const componentGroupDeclarations: ComponentGroupDeclarations = {
         expect(resolveImport('lightgallery/vue', '/site/app/cwa/components/Gallery/Gallery.vue')).toBeUndefined()
       })
 
+      test('warns once per file and reason that switches stranded-group reporting off, naming both (#367)', async () => {
+        const logger = { info: vi.fn(), warn: vi.fn(), debug: vi.fn(), error: vi.fn(), success: vi.fn() }
+        vi.spyOn(nuxtKit, 'useLogger').mockReturnValue(logger as any)
+        vi.mocked(scanComponentGroupDeclarations).mockImplementation(({ onUncheckable }) => {
+          onUncheckable?.('/site/app/components/GroupWrapper.vue', 'binds reference at a location that cannot be classified')
+          return {}
+        })
+        const template = await prepare()
+        await template.getContents({ app: { components } })
+        await template.getContents({ app: { components } })
+
+        const warnings = logger.warn.mock.calls.map(([message]) => message).filter(message => message.includes('GroupWrapper.vue'))
+        expect(warnings).toHaveLength(1)
+        expect(warnings[0]).toContain('stranded component group')
+        expect(warnings[0]).toContain('binds reference at a location that cannot be classified')
+        vi.mocked(scanComponentGroupDeclarations).mockImplementation(() => ({}))
+      })
+
       test('is not auto-imported', async () => {
         await prepare()
 

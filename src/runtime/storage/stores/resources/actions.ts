@@ -13,7 +13,6 @@ import { createError } from 'h3'
 import type { CwaResourcesGettersInterface } from './getters'
 import type {
   CwaCurrentResourceInterface,
-  CwaResourceApiState,
   CwaResourceApiStateGeneral,
   CwaResourcesStateInterface,
 } from './state'
@@ -521,8 +520,6 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
         iri: event.iri,
         isCurrent: true,
       })
-      const originalApiState = { ...data.apiState }
-
       if (event.isComplete) {
         data.apiState = {
           status: CwaResourceApiStatuses.SUCCESS,
@@ -551,20 +548,6 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
         newApiState.headers = data.apiState.headers
         newApiState.ssr = data.apiState.ssr
       }
-      // existing data and apiState for the resource we are fetching. Check if we need to clear it because we do not
-      // want to show old data as it is refreshing on data pages if dynamic position
-      if (getResourceTypeFromIri(event.iri) === CwaResourceTypes.COMPONENT_POSITION && data.data && data.apiState && data.data?._metadata?.isDynamicPosition === true) {
-        const getHeaders = (apiState: CwaResourceApiState | SetResourceStatusEvent) => {
-          if (!('headers' in apiState)) {
-            return {}
-          }
-          return apiState.headers || {}
-        }
-        if (getHeaders(event).path !== getHeaders(originalApiState).path) {
-          data.data = undefined
-        }
-      }
-
       data.apiState = newApiState
     },
     async setResourceFetchError({ iri, error, isCurrent, showErrorPage, nuxtApp }: SetResourceFetchErrorEvent): Promise<void> {

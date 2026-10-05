@@ -5,6 +5,7 @@ import { CwaResourceApiStatuses, NEW_RESOURCE_IRI } from '../storage/stores/reso
 import type { CwaCurrentResourceInterface } from '../storage/stores/resources/state'
 import type { CwaFetcherStoreInterface, FetcherStore } from '../storage/stores/fetcher/fetcher-store'
 import type { FetchStatus } from '../storage/stores/fetcher/state'
+import { findManifestNode, manifestDepthPath } from '../storage/stores/fetcher/manifest-utils'
 import {
   CwaResourceTypes,
   getResourceTypeFromIri,
@@ -239,6 +240,33 @@ export class Resources {
         return this.getPageIriByFetchStatus(fetchStatus)
       }
       return undefined
+    })
+  }
+
+  public pageDataIriOf(iri: string): ComputedRef<string | undefined> {
+    return this.pageDataIriAtDepth(this.fetcherStore.iriDepths[iri] ?? 0)
+  }
+
+  public positionComponentIri(positionIri: string, depth?: number): ComputedRef<string | undefined> {
+    const d = depth ?? inject<number>('cwa-page-own-depth', 0)
+    return computed(() => {
+      const position = this.getResource(positionIri).value
+      const storedComponent = position?.data?.component
+      if (!position?.data?.pageDataProperty) {
+        return storedComponent
+      }
+      const manifest = this.displayFetchStatus?.manifest
+      const tree = manifest?.resourceTree?.[d]
+      const irisAtDepth = manifest?.irisByDepth?.[d]
+      const positionNode = tree ? findManifestNode(tree, positionIri) : undefined
+      if (!positionNode || !irisAtDepth) {
+        return storedComponent
+      }
+      const storedHeaders = position.apiState && 'headers' in position.apiState ? position.apiState.headers : undefined
+      if (storedHeaders?.path === manifestDepthPath(irisAtDepth)) {
+        return storedComponent
+      }
+      return positionNode.children[0]?.iri
     })
   }
 
