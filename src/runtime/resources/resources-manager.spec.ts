@@ -931,8 +931,11 @@ describe('Resources manager', () => {
       expect(newResourceData.publishedAt).toBeNull()
     })
 
-    test('calls updateResource with pageDataProperty binding after creating', async () => {
-      const mockResources = { pageDataIri: { value: '/page_data/uuid' } }
+    test('binds the new component on the page data at the target position\'s depth, not the routed page\'s', async () => {
+      const mockResources = {
+        pageDataIri: { value: '/page_data/routed' },
+        pageDataIriOf: vi.fn((iri: string) => ({ value: iri === '/_/component_positions/p1' ? '/page_data/uuid' : undefined })),
+      }
       const { resourcesManager, cwaFetch } = createResourcesManager({
         includeAdmin: true,
         fetcher: undefined,
@@ -954,6 +957,7 @@ describe('Resources manager', () => {
         endpoint: '/page_data/uuid',
         data: { heroImage: '/component/new' },
       }))
+      expect(mockResources.pageDataIriOf).toHaveBeenCalledWith('/_/component_positions/p1')
     })
 
     test('clears addResourceEvent after successful create via requestCompleteFn', async () => {

@@ -23,7 +23,8 @@ const hasDynamicComponent = computed(() => {
 })
 
 const availablePropsToComponentNames = computed<{ [prop: string]: string }>(() => {
-  const pageData = $cwa.resources.pageData?.value
+  const pageDataIri = iri.value ? $cwa.resources.pageDataIriOf(iri.value).value : undefined
+  const pageData = pageDataIri ? $cwa.resources.getResource(pageDataIri).value : undefined
   if (!pageData) {
     return {}
   }

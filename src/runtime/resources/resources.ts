@@ -243,6 +243,10 @@ export class Resources {
     })
   }
 
+  public pageDataIriOf(iri: string): ComputedRef<string | undefined> {
+    return this.pageDataIriAtDepth(this.fetcherStore.iriDepths[iri] ?? 0)
+  }
+
   public positionComponentIri(positionIri: string, depth?: number): ComputedRef<string | undefined> {
     const d = depth ?? inject<number>('cwa-page-own-depth', 0)
     return computed(() => {

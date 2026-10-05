@@ -753,6 +753,34 @@ describe('Resources', () => {
     })
   })
 
+  describe('pageDataIriOf', () => {
+    function setup(iriDepths: Record<string, number>) {
+      const fetcherStore = { primaryFetch: {}, fetches: {}, iriDepths }
+      const { resources } = createResources(fetcherStore)
+      vi.spyOn(resources, 'displayFetchStatus', 'get').mockReturnValue({
+        path: '/_/routes//conference/programme',
+        isPrimary: true,
+        manifest: {
+          irisByDepth: [
+            ['/_/routes//conference', '/page_data/conference', '/_/pages/conference-template', '/_/component_positions/conference-body'],
+            ['/_/routes//conference/programme', '/page_data/programme', '/_/pages/programme-template', '/_/component_positions/programme-body'],
+          ],
+        },
+      } as any)
+      return resources
+    }
+
+    test('is the page data at the depth the IRI was recorded at, not the routed page\'s', () => {
+      const resources = setup({ '/_/component_positions/conference-body': 0, '/_/component_positions/programme-body': 1 })
+      expect(resources.pageDataIriOf('/_/component_positions/conference-body').value).toBe('/page_data/conference')
+      expect(resources.pageDataIriOf('/_/component_positions/programme-body').value).toBe('/page_data/programme')
+    })
+
+    test('is the page data at depth 0 for an IRI with no recorded depth', () => {
+      expect(setup({}).pageDataIriOf('/_/component_positions/unknown').value).toBe('/page_data/conference')
+    })
+  })
+
   describe('positionComponentIri (#368)', () => {
     const position = '/_/component_positions/body'
     const node = (iri: string, children: any[] = []) => ({ iri, children })

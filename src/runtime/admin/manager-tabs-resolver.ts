@@ -19,8 +19,8 @@ export default class ManagerTabsResolver {
     yield defineAsyncComponent(() => import('#cwa/templates/components/main/admin/resource-manager/_tabs/group/Group.vue'))
   }
 
-  private* getComponentPositionTabs(isDynamicPosition?: boolean) {
-    if (this.cwa.resources.isDataPage.value && isDynamicPosition) {
+  private* getComponentPositionTabs(positionIri: string | undefined, isDynamicPosition?: boolean) {
+    if (isDynamicPosition && positionIri && this.cwa.resources.pageDataIriOf(positionIri).value) {
       yield defineAsyncComponent(() => import('#cwa/templates/components/main/admin/resource-manager/_tabs/position/DataPage.vue'))
       return
     }
@@ -51,7 +51,7 @@ export default class ManagerTabsResolver {
           tabs = [...tabs, ...this.getComponentGroupTabs()]
           break
         case CwaResourceTypes.COMPONENT_POSITION: {
-          const positionTabs = this.getComponentPositionTabs(ops.resource.data?._metadata.isDynamicPosition)
+          const positionTabs = this.getComponentPositionTabs(ops.resource.data?.['@id'], ops.resource.data?._metadata.isDynamicPosition)
           if (positionTabs) {
             tabs = [...tabs, ...positionTabs]
           }

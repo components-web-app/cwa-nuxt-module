@@ -613,9 +613,10 @@ export class ResourcesManager {
 
     const newResource = await this.createResource(createResourceEvent)
 
-    if (newResource && addEvent.pageDataProperty) {
+    const pageDataIri = addEvent.pageDataProperty ? this.resources.pageDataIriOf(addEvent.targetIri).value : undefined
+    if (newResource && addEvent.pageDataProperty && pageDataIri) {
       await this.updateResource({
-        endpoint: this.resources.pageDataIri.value,
+        endpoint: pageDataIri,
         data: { [addEvent.pageDataProperty]: newResource['@id'] },
         refreshEndpoints: [addEvent.targetIri],
         requestCompleteFn,

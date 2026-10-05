@@ -33,11 +33,13 @@ function setup(opts: SetupOpts = {}, errorHandler?: (...args: any[]) => void) {
       : opts.resourceData
   }
 
+  if (opts.pageData) {
+    resourcesStore['/page_data/at-position-depth'] = opts.pageData
+  }
   const getResource = vi.fn((iri: string) => ({
     value: resourcesStore[iri] ?? null,
   }))
-
-  const pageDataRef = ref(opts.pageData ?? null)
+  const pageDataIriOf = vi.fn(() => ref(opts.pageData ? '/page_data/at-position-depth' : undefined))
 
   const initAddResource = opts.initAddResource ?? vi.fn().mockResolvedValue(undefined)
   const setAddResourceEventResource = opts.setAddResourceEventResource ?? vi.fn().mockResolvedValue(undefined)
@@ -57,7 +59,8 @@ function setup(opts: SetupOpts = {}, errorHandler?: (...args: any[]) => void) {
     },
     resources: {
       getResource,
-      pageData: pageDataRef,
+      pageData: ref({ data: { _metadata: { pageDataMetadata: { properties: [{ property: 'heroImage', componentShortName: 'Image' }] } } } }),
+      pageDataIriOf,
     },
     resourcesConfig: opts.resourcesConfig ?? {},
     resourcesManager: {
@@ -78,7 +81,7 @@ function setup(opts: SetupOpts = {}, errorHandler?: (...args: any[]) => void) {
     },
   })
 
-  return { wrapper, $cwa, getResource, initAddResource, setAddResourceEventResource, emit, iriRef, resourcesStore }
+  return { wrapper, $cwa, getResource, initAddResource, setAddResourceEventResource, emit, iriRef, resourcesStore, pageDataIriOf }
 }
 
 function findButton(wrapper: any) {
@@ -179,7 +182,7 @@ describe('DataPage', () => {
       expect(findButton(wrapper).exists()).toBe(false)
     })
 
-    test('no button when there is no pageData in the store', () => {
+    test('no button when the position\'s depth has no page data, even though the routed page\'s page data has the property', () => {
       const { wrapper } = setup({
         resourceData: { data: { component: null, _metadata: { staticComponent: null }, pageDataProperty: 'heroImage' } },
         pageData: null,

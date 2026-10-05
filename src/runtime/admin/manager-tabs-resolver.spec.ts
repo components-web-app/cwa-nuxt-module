@@ -8,11 +8,13 @@ import type { CwaCurrentResourceInterface } from '#cwa/storage/stores/resources/
 // vi.hoisted runs before imports — use plain objects instead of Vue refs
 const mockIsDataPage = vi.hoisted(() => ({ value: false }))
 const mockIsDynamicPage = vi.hoisted(() => ({ value: false }))
+const mockPageDataIriOf = vi.hoisted(() => ({ byIri: {} as Record<string, string | undefined> }))
 
 mockNuxtImport('useCwa', () => () => ({
   resources: {
     isDataPage: mockIsDataPage,
     isDynamicPage: mockIsDynamicPage,
+    pageDataIriOf: (iri: string) => ({ value: mockPageDataIriOf.byIri[iri] }),
   },
 }))
 
@@ -35,6 +37,7 @@ describe('ManagerTabsResolver', () => {
   beforeEach(() => {
     mockIsDataPage.value = false
     mockIsDynamicPage.value = false
+    mockPageDataIriOf.byIri = {}
   })
 
   describe('resolve', () => {
@@ -88,8 +91,29 @@ describe('ManagerTabsResolver', () => {
       expect(tabs).toHaveLength(2)
     })
 
+    test.each([
+      { routedIsDataPage: false, positionDepthPageData: '/page_data/conference', tabs: 2 },
+      { routedIsDataPage: true, positionDepthPageData: undefined, tabs: 1 },
+    ])('a dynamic position gets the DataPage tab when its own depth has page data, whatever the routed page ($positionDepthPageData)', ({ routedIsDataPage, positionDepthPageData, tabs: expected }) => {
+      mockIsDataPage.value = routedIsDataPage
+      mockPageDataIriOf.byIri = { '/positions/1': positionDepthPageData }
+      const resolver = new ManagerTabsResolver()
+      const tabs = resolver.resolve({
+        resourceType: CwaResourceTypes.COMPONENT_POSITION,
+        resource: {
+          data: {
+            '@id': '/positions/1',
+            '@type': 'ComponentPosition',
+            '_metadata': { persisted: true, isDynamicPosition: true },
+          },
+        },
+      })
+      expect(tabs).toHaveLength(expected)
+    })
+
     test('COMPONENT_POSITION with isDataPage and isDynamicPosition adds DataPage tab', () => {
       mockIsDataPage.value = true
+      mockPageDataIriOf.byIri = { '/positions/1': '/page_data/routed' }
       const resolver = new ManagerTabsResolver()
       const tabs = resolver.resolve({
         resourceType: CwaResourceTypes.COMPONENT_POSITION,
