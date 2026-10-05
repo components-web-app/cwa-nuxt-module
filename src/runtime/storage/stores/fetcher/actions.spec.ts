@@ -813,6 +813,9 @@ describe('Fetcher store action -> depth tracking (setManifestIrisByDepth / regis
     expect(warning).toContain('\'/_/component_groups/cg\' (depths 0, 1)')
     expect(warning).toContain('\'/_/component_positions/dynamic-cp\' (depths 0, 1)')
     expect(warning).not.toContain('/page_data/parent')
+    expect(warning).toContain('Each depth renders its own dynamic components')
+    expect(warning).toContain('after the next navigation')
+    expect(warning).not.toContain('render the deepest depth\'s resolution')
   })
 
   test('an IRI repeated across three depths names every depth in the one warning', () => {

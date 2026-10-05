@@ -816,6 +816,17 @@ describe('Resources', () => {
       expect(resources.positionComponentIri(position, 0).value).toBe('/component/html_contents/article-1')
     })
 
+    test('a template page shared at two depths renders each depth\'s own resolution, though the position is fetched for the deepest', () => {
+      const depthTree = (route: string, pageData: string, component: string) => node(route, [node(pageData, [node('/_/pages/template', [node('/_/component_groups/primary', [node(position, [node(component)])])])])])
+      const tree = [
+        depthTree('/_/routes//conference', '/page_data/conference', '/component/html_contents/conference-body'),
+        depthTree('/_/routes//conference/programme', '/page_data/programme', '/component/html_contents/programme-body'),
+      ]
+      const resources = setup({ storedPath: '/conference/programme', storedComponent: '/component/html_contents/programme-body-edited', tree })
+      expect(resources.positionComponentIri(position, 0).value).toBe('/component/html_contents/conference-body')
+      expect(resources.positionComponentIri(position, 1).value).toBe('/component/html_contents/programme-body-edited')
+    })
+
     test('compares against the page data IRI at a depth with no route, and reads the manifest at the position\'s own depth', () => {
       const parent = node('/_/routes//blog', [node('/_/pages/blog-index', [node('/_/component_groups/list', [node(position, [node('/component/html_contents/at-depth-0')])])])])
       const child = node('/page_data/article-2', [node('/_/pages/template', [node('/_/component_groups/primary', [node(position, [node('/component/html_contents/at-depth-1')])])])])

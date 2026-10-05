@@ -161,7 +161,7 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
       const repeatedIris = Object.entries(repeatedDepths)
       if (repeatedIris.length) {
         const listed = repeatedIris.map(([iri, depths]) => `'${iri}' (depths ${depths.join(', ')})`).join(', ')
-        logger.warn(`Manifest resources are listed at more than one depth: ${listed}. Only the deepest depth is recorded, so it is the only one used for the 'path' request header and a shallower depth will render the deepest depth's resolution of any dynamic component position.`)
+        logger.warn(`Manifest resources are listed at more than one depth: ${listed}. Only the deepest depth is recorded, so it is the only one used for the 'path' request header. Each depth renders its own dynamic components from the manifest, but a dynamic component position is re-fetched for the deepest depth only, so a shallower depth shows a change to which component its page data holds after the next navigation.`)
       }
     },
     registerIriDepth(event: RegisterIriDepthEvent) {
