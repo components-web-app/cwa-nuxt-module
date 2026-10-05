@@ -4,6 +4,7 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+- A live page-data update that swaps a dynamic component now shows on other open pages straight away, instead of after the next navigation ([3938a1f3](https://github.com/components-web-app/cwa-nuxt-module/commit/3938a1f3))
 - On a nested URL, adding a component to a dynamic position on a shallower page-data page writes it to that page's page data, not the routed child's, and its tab lists that page's properties ([bf37fd73](https://github.com/components-web-app/cwa-nuxt-module/commit/bf37fd73))
 - A template page shared at two depths now renders each depth's own dynamic components; the console warning says what is left: a shallower depth shows a change to which component its page data holds after the next navigation ([05f4611e](https://github.com/components-web-app/cwa-nuxt-module/commit/05f4611e))
 - Navigating between page-data pages no longer shows the previous page's dynamic component under the new title and then a blank body: a dynamic position renders the component the displayed page's manifest resolved for it until it is re-fetched for that path ([#368](https://github.com/components-web-app/cwa-nuxt-module/issues/368), [1e76b367](https://github.com/components-web-app/cwa-nuxt-module/commit/1e76b367))
