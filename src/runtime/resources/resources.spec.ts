@@ -753,6 +753,77 @@ describe('Resources', () => {
     })
   })
 
+  describe('positionComponentIri (#368)', () => {
+    const position = '/_/component_positions/body'
+    const node = (iri: string, children: any[] = []) => ({ iri, children })
+    const articleTree = (article: string, component?: string) => node(`/_/routes//blog/${article}`, [
+      node(`/page_data/${article}`, [
+        node('/_/pages/template', [
+          node('/_/component_groups/primary', [
+            node(position, component ? [node(component)] : []),
+          ]),
+        ]),
+      ]),
+    ])
+    const flatten = (n: any): string[] => [n.iri, ...n.children.flatMap(flatten)]
+
+    function setup({ storedPath = '/blog/article-1', storedComponent = '/component/html_contents/article-1', pageDataProperty = 'htmlContent' as string | null, tree = [articleTree('article-2', '/component/html_contents/article-2')] as any[] | null, status = CwaResourceApiStatuses.SUCCESS } = {}) {
+      const current = reactive({
+        currentIds: [position],
+        byId: {
+          [position]: {
+            apiState: { status, headers: { path: storedPath } },
+            data: { '@id': position, 'component': storedComponent, ...(pageDataProperty ? { pageDataProperty } : {}) },
+          },
+        } as Record<string, any>,
+      })
+      const { resources } = createResources(undefined, { current, getResource: vi.fn((id: string) => current.byId[id]) })
+      vi.spyOn(resources, 'displayFetchStatus', 'get').mockReturnValue({
+        path: '/_/routes//blog/article-2',
+        isPrimary: true,
+        manifest: tree ? { resourceTree: tree, irisByDepth: tree.map(flatten) } : undefined,
+      } as any)
+      return resources
+    }
+
+    test('renders the stored component of a dynamic position resolved for the displayed path, which keeps admin edits', () => {
+      const resources = setup({ storedPath: '/blog/article-2', storedComponent: '/component/html_contents/just-added' })
+      expect(resources.positionComponentIri(position, 0).value).toBe('/component/html_contents/just-added')
+    })
+
+    test('renders the component the displayed manifest nests under a dynamic position resolved for another path', () => {
+      const resources = setup()
+      expect(resources.positionComponentIri(position, 0).value).toBe('/component/html_contents/article-2')
+    })
+
+    test('renders the manifest\'s component while the position is re-fetched for the displayed path', () => {
+      const resources = setup({ status: CwaResourceApiStatuses.IN_PROGRESS })
+      expect(resources.positionComponentIri(position, 0).value).toBe('/component/html_contents/article-2')
+    })
+
+    test('renders nothing when the displayed manifest nests no component under a dynamic position resolved for another path', () => {
+      const resources = setup({ tree: [articleTree('article-2')] })
+      expect(resources.positionComponentIri(position, 0).value).toBeUndefined()
+    })
+
+    test('renders the stored component when the displayed manifest does not list the position, or there is no manifest', () => {
+      expect(setup({ tree: [node('/_/routes//blog/article-2')] }).positionComponentIri(position, 0).value).toBe('/component/html_contents/article-1')
+      expect(setup({ tree: null }).positionComponentIri(position, 0).value).toBe('/component/html_contents/article-1')
+    })
+
+    test('renders the stored component of a position that is not dynamic, whatever the path', () => {
+      const resources = setup({ pageDataProperty: null })
+      expect(resources.positionComponentIri(position, 0).value).toBe('/component/html_contents/article-1')
+    })
+
+    test('compares against the page data IRI at a depth with no route, and reads the manifest at the position\'s own depth', () => {
+      const parent = node('/_/routes//blog', [node('/_/pages/blog-index', [node('/_/component_groups/list', [node(position, [node('/component/html_contents/at-depth-0')])])])])
+      const child = node('/page_data/article-2', [node('/_/pages/template', [node('/_/component_groups/primary', [node(position, [node('/component/html_contents/at-depth-1')])])])])
+      expect(setup({ storedPath: '/blog', tree: [parent, child] }).positionComponentIri(position, 1).value).toBe('/component/html_contents/at-depth-1')
+      expect(setup({ storedPath: '/page_data/article-2', storedComponent: '/component/html_contents/stored', tree: [parent, child] }).positionComponentIri(position, 1).value).toBe('/component/html_contents/stored')
+    })
+  })
+
   describe('pageAtDepth', () => {
     test('returns the page resource for an explicit depth', () => {
       const pageIri = '/_/pages/child-uuid'

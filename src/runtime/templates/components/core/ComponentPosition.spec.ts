@@ -9,7 +9,7 @@ import ComponentPosition from './ComponentPosition.vue'
 
 const mockComponentIri = 'test'
 
-function createWrapper({ isAdmin = false, positionData = { 'component': mockComponentIri, '@id': '/position-iri' } as any } = {}) {
+function createWrapper({ isAdmin = false, positionData = { 'component': mockComponentIri, '@id': '/position-iri' } as any, resolvedComponentIri = positionData?.component as string | undefined } = {}) {
   // @ts-expect-error
   vi.spyOn(cwaResourceComposables, 'useCwaResource').mockImplementation(() => ({
     getResource: vi.fn(() => ref({ data: positionData })),
@@ -24,7 +24,8 @@ function createWrapper({ isAdmin = false, positionData = { 'component': mockComp
       isEditing: false,
     },
     resources: {
-      findPublishedComponentIri: vi.fn(() => ref(positionData?.component ? mockComponentIri : undefined)),
+      positionComponentIri: vi.fn(() => computed(() => resolvedComponentIri)),
+      findPublishedComponentIri: vi.fn((iri?: string) => ref(iri === mockComponentIri ? mockComponentIri : iri)),
       findDraftComponentIri: vi.fn(() => ref(undefined)),
       getResource: vi.fn(() => undefined),
     },
@@ -69,6 +70,14 @@ describe('ComponentPosition', () => {
       expect(wrapper.findComponent({ name: 'ComponentPlaceholder' }).exists()).toBe(false)
       expect(wrapper.findComponent({ name: 'ResourceLoader' }).exists()).toBe(true)
     })
+  })
+
+  test('renders the component resolved for the displayed page, not the stored one from another path (#368)', () => {
+    const wrapper = createWrapper({
+      positionData: { '@id': '/position-iri', 'pageDataProperty': 'htmlContent', 'component': '/component/html_contents/previous-article' },
+      resolvedComponentIri: '/component/html_contents/this-article',
+    })
+    expect(wrapper.findComponent({ name: 'ResourceLoader' }).props('iri')).toBe('/component/html_contents/this-article')
   })
 
   describe('snapshots', () => {
