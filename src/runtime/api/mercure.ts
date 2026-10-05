@@ -5,7 +5,7 @@ import type { ComputedRef } from 'vue'
 import type { CwaMercureStoreInterface, MercureStore } from '../storage/stores/mercure/mercure-store'
 import type { CwaResourcesStoreInterface, ResourcesStore } from '../storage/stores/resources/resources-store'
 import type { CwaResource } from '../resources/resource-utils'
-import { getPublishedResourceIri } from '../resources/resource-utils'
+import { CwaResourceTypes, getPublishedResourceIri, getResourceTypeFromIri } from '../resources/resource-utils'
 import type { CwaFetcherStoreInterface, FetcherStore } from '../storage/stores/fetcher/fetcher-store'
 import type Fetcher from './fetcher/fetcher'
 import { useProcess } from '#cwa/composables/process'
@@ -232,7 +232,7 @@ export default class Mercure {
 
   private collectResourceActions(messages: MercureMessageInterface[]) {
     const toSave = []
-    const toFetch = []
+    const toFetch: string[] = []
     for (const message of messages) {
       this.lastEventId = message.event.lastEventId
 
@@ -247,12 +247,25 @@ export default class Mercure {
         continue
       }
 
+      if (!isDelete && getResourceTypeFromIri(message.data['@id']) === CwaResourceTypes.PAGE_DATA) {
+        toFetch.push(...this.positionsBoundToChangedPageData(message.data))
+      }
+
       toSave.push(message.data)
     }
     return {
       toSave,
-      toFetch,
+      toFetch: [...new Set(toFetch)],
     }
+  }
+
+  private positionsBoundToChangedPageData(pageData: CwaResource) {
+    const stored = this.resourcesStore.current.byId[pageData['@id']]?.data
+    const changed = (property: string) => property in pageData && pageData[property] !== stored?.[property]
+    return this.resourcesStore.current.currentIds.filter((iri) => {
+      const property = this.resourcesStore.current.byId[iri]?.data?.pageDataProperty
+      return !!property && changed(property)
+    })
   }
 
   private async fetch(paths: string[]) {

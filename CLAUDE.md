@@ -358,6 +358,8 @@ CSS-first config in `src/tailwind/tailwind-cwa.css`; every class uses the `cwa:`
 
 Replay is not trusted. On reconnect (`connected` going `false` → `true`; `undefined` until the first open) or an `online` event, on-screen resources are refetched with `isNew: true` — unchanged ones are discarded, changes surface through the existing outdated-content notice.
 
+**A page-data message re-fetches the on-screen dynamic positions bound to a property it changed.** The bundle publishes only the page data when an editor swaps the component a property holds — the position itself did not change, its component is resolved from the `path` — so without this the positions kept the old component until navigation. Each re-fetch carries its own depth's `path` header. (The Nuxt 2 module only re-fetched a position's own message, as `collectResourceActions` still does.)
+
 **The hub speaks Mercure 1.0** ([#364](https://github.com/components-web-app/cwa-nuxt-module/issues/364)): subscribe with `match=*` (`topic=` is a 400 outside compatibility mode) and reconnect with `last_event_id`. No 0.x fallback — breaking during the alpha by decision. The subscriber cookie (`__Secure-mercure_access_token`) is the bundle's; the module never reads it by name and relies on `withCredentials`. A 1.0 hub sends `event: mercure` only for its own subscription events, so `onmessage` still receives updates while the bundle publishes without a `type`.
 
 ## Composables
