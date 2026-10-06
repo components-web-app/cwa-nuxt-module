@@ -16,7 +16,7 @@ export default defineNuxtPlugin({
 
     event.context.cwaPageCache = {}
 
-    const isErrorRender = !!event.headers.get('x-nuxt-error')
+    const isErrorRender = !!nuxtApp.ssrContext?.error
 
     nuxtApp.hook('app:rendered', () => {
       if (isErrorRender) {

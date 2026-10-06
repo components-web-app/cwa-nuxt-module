@@ -145,7 +145,7 @@ describe('useCwaAutoClass', () => {
         useCwaAutoClass(computed(() => classes.value))
         return {}
       },
-      template: '<!--start--><div class="py-4">content</div><!--end-->',
+      template: '<div class="py-4">content</div><span>sibling</span>',
     })
     const wrapper = mount(Comp, { attachTo: document.body })
     expect(wrapper.find('div').element.className).toBe('py-4')

@@ -6,10 +6,13 @@ import { mockNuxtImport } from '@nuxt/test-utils/runtime'
 import { useRouter } from '#app/composables/router'
 import CwaAdminParentPage from '../index.vue'
 
-const { mockNavigateTo, adminState } = vi.hoisted(() => ({
+const { mockNavigateTo, adminState, mockCwaAdminMiddleware } = vi.hoisted(() => ({
   mockNavigateTo: vi.fn(),
   adminState: { isAdmin: false },
+  mockCwaAdminMiddleware: vi.fn(),
 }))
+
+vi.mock('#cwa-layer/middleware/cwa-admin', () => ({ default: mockCwaAdminMiddleware }))
 
 mockNuxtImport('navigateTo', () => mockNavigateTo)
 mockNuxtImport('useCwa', () => () => ({
@@ -41,6 +44,8 @@ describe('/_cwa', () => {
     expect(guardedPaths).toEqual(['/_cwa/pages'])
     expect(router.currentRoute.value.matched.map(record => record.path)).toEqual(['/_cwa', '/_cwa/pages'])
     expect(router.currentRoute.value.matched[0].meta.cwa).toEqual({ disabled: true, admin: true })
+    expect(mockCwaAdminMiddleware).toHaveBeenCalledTimes(1)
+    expect(mockCwaAdminMiddleware.mock.calls[0][0].fullPath).toBe('/_cwa/pages')
   })
 
   test('a non-admin reaching the admin area is sent home', async () => {

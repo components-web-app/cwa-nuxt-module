@@ -10,25 +10,28 @@ allowBuilds:
   unrs-resolver: true
   vue-demi: true
 minimumReleaseAgeExclude:
-  - svgo@3.3.3
+  - svgo@3.3.3 || 4.1.0
   - serialize-javascript@7.0.5
-  - qs@6.15.2
+  - qs@6.15.2 || 6.16.0
   - shell-quote@1.8.4
   - vite@7.3.5
-  - tar@7.5.16
+  - tar@7.5.16 || 7.5.22
   - launch-editor@2.14.1
-  - js-yaml@4.1.2
+  - js-yaml@4.1.2 || 4.3.2
   - '@babel/core@7.29.1'
   - '@nuxt/ui@4.7.2'
-  - tar@7.5.22
   - valibot@1.4.2
-  - sharp@0.35.3
-  - sharp@0.35.4
-  - qs@6.16.0
-  - svgo@4.1.0
-  - js-yaml@4.3.2
+  - sharp@0.35.3 || 0.35.4
   - fast-uri@3.1.8
   - devalue@5.9.4
+  - '@nuxt/cli@4.0.0'
+  - '@nuxt/kit@4.6.0'
+  - '@nuxt/nitro-server@4.6.0'
+  - '@nuxt/schema@4.6.0'
+  - '@nuxt/vite-builder@4.6.0'
+  - '@nuxt/vite-server@4.6.0'
+  - nuxt@4.6.0
+  - cssnano-utils@8.2.0
 overrides:
   qs@<6.16.0: ^6.16.0
   serialize-javascript@<7.0.5: ^7.0.5
@@ -49,7 +52,16 @@ overrides:
   brace-expansion@<1.1.21: ^1.1.21
   brace-expansion@>=2.0.0 <2.1.7: ^2.1.7
   brace-expansion@>=4.0.0 <5.0.12: ^5.0.12
+  vue@<3.5.42: ^3.5.43
+  '@vue/server-renderer@<3.5.42': ^3.5.43
+  source-map-js@<1.2.2: ^1.2.2
+  postcss-selector-parser@>=7.0.0 <7.1.6: ^7.1.6
 auditConfig:
   ignoreGhsas:
     - GHSA-86w9-cpqp-85rv
     - GHSA-vfj7-8cjw-p6xm
+    - GHSA-rj75-hqrm-r3gf
+    - GHSA-v5rq-49vh-5v5c
+    - GHSA-x6jw-m9v5-85vh
+    - GHSA-g4wm-2vf7-vfgr
+    - GHSA-858h-whjf-mvg5

@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process'
-import { existsSync, mkdtempSync, mkdirSync, rmSync, writeFileSync, readdirSync } from 'node:fs'
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync, readdirSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -18,7 +18,7 @@ const APP_FILES = {
     type: 'module',
     dependencies: {
       '@cwa/nuxt': '',
-      'nuxt': '^4.5.2',
+      'nuxt': '^4.6.0',
       'vue': '^3.5.41',
     },
   }, undefined, 2),
@@ -53,12 +53,18 @@ function pack(destination) {
   return join(destination, tarball)
 }
 
+function minimumReleaseAgeExclude() {
+  const workspace = readFileSync(join(repoRoot, 'pnpm-workspace.yaml'), 'utf8')
+  const list = workspace.match(/^minimumReleaseAgeExclude:\n((?: {2}- .*\n)+)/m)
+  return list ? `minimumReleaseAgeExclude:\n${list[1]}` : ''
+}
+
 function writeApp(appDir, tarball, hoist) {
   mkdirSync(join(appDir, 'app'), { recursive: true })
   for (const [file, contents] of Object.entries(APP_FILES)) {
     writeFileSync(join(appDir, file), file === 'package.json' ? contents.replace('"@cwa/nuxt": ""', `"@cwa/nuxt": "file:${tarball}"`) : contents)
   }
-  writeFileSync(join(appDir, 'pnpm-workspace.yaml'), `hoist: ${hoist}\nstrictDepBuilds: false\n`)
+  writeFileSync(join(appDir, 'pnpm-workspace.yaml'), `hoist: ${hoist}\nstrictDepBuilds: false\n${minimumReleaseAgeExclude()}`)
 }
 
 function build(appDir) {

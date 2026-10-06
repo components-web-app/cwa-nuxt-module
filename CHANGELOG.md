@@ -4,6 +4,13 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+## [2.0.0-alpha.6] - 2026-10-06
+
+- **Breaking:** the minimum Nuxt version is 4.6.0, the first release that keeps layer pages reached through a symlink out of prefetch itself, so the module's workaround for it is removed ([#361](https://github.com/components-web-app/cwa-nuxt-module/issues/361), [6bb0743a](https://github.com/components-web-app/cwa-nuxt-module/commit/6bb0743a))
+- **Security:** requires `vue` ^3.5.43, which fixes GHSA-g2v6-rqmx-r4w6 in `@vue/server-renderer` ([675cf507](https://github.com/components-web-app/cwa-nuxt-module/commit/675cf507))
+- In development with Vue 3.5.42 or later, selecting a newly added component whose element renders after it mounts outlines that component, not the next one in the group ([532ebbed](https://github.com/components-web-app/cwa-nuxt-module/commit/532ebbed))
+- On Nuxt 4.6, a page that throws while rendering a route the API serves is no longer sent as a cacheable 500: an error render is recognised by Nuxt's `ssrContext.error`, which also covers Nuxt 5's inline error rendering ([#340](https://github.com/components-web-app/cwa-nuxt-module/issues/340), [11f72946](https://github.com/components-web-app/cwa-nuxt-module/commit/11f72946))
+
 ## [2.0.0-alpha.5] - 2026-10-05
 
 - A live page-data update that swaps a dynamic component now shows on other open pages straight away, instead of after the next navigation ([3938a1f3](https://github.com/components-web-app/cwa-nuxt-module/commit/3938a1f3))
@@ -46,7 +53,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 - First tagged release of `@cwa/nuxt`; releases are now published from `v*` tags ([7c61b7c](https://github.com/components-web-app/cwa-nuxt-module/commit/7c61b7ce331ec4a0cb8e76951a5de2ff806ed07a))
 
-[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.5...HEAD
+[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.6...HEAD
+[2.0.0-alpha.6]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.5...v2.0.0-alpha.6
 [2.0.0-alpha.5]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.4...v2.0.0-alpha.5
 [2.0.0-alpha.4]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.3...v2.0.0-alpha.4
 [2.0.0-alpha.3]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.2...v2.0.0-alpha.3

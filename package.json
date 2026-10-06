@@ -1,6 +1,6 @@
 {
   "name": "@cwa/nuxt",
-  "version": "2.0.0-alpha.5",
+  "version": "2.0.0-alpha.6",
   "license": "MIT",
   "type": "module",
   "description": "Components Web Apps Nuxt Module. UI for creating component-driven web apps with the API Components Bundle",
@@ -69,8 +69,8 @@
   "dependencies": {
     "@headlessui/vue": "^1.7.23",
     "@internationalized/date": "^3.12.4",
-    "@nuxt/kit": "^4.5.2",
-    "@nuxt/schema": "^4.5.2",
+    "@nuxt/kit": "^4.6.0",
+    "@nuxt/schema": "^4.6.0",
     "@nuxtjs/robots": "^6.1.5",
     "@nuxtjs/seo": "^5.3.13",
     "@nuxtjs/sitemap": "^8.3.4",
@@ -95,7 +95,7 @@
     "set-cookie-parser": "^3.1.2",
     "slugify": "^1.6.9",
     "uuid": "^14.0.2",
-    "vue": "^3.5.41",
+    "vue": "^3.5.43",
     "vue-input-autowidth": "^2.2.1",
     "vuejs-confirm-dialog": "^0.5.2"
   },
@@ -137,7 +137,7 @@
     "eslint": "^10.8.1",
     "globby": "^16.2.4",
     "happy-dom": "^20.11.6",
-    "nuxt": "^4.5.2",
+    "nuxt": "^4.6.0",
     "pathe": "^2.0.3",
     "playwright-core": "^1.62.1",
     "postcss": "^8.5.26",

@@ -117,48 +117,6 @@ Until then a 404 is the normal answer, not a fault.
 
 ---
 
-## Temporary workarounds pending an upstream fix
-
-### Realpathing `page.file` so Nuxt can filter layer pages out of prefetch
-
-Nuxt drops page chunks from the app entry's `dynamicImports` in `build:manifest`,
-but it builds that list with `relative(srcDir, page.file)` and compares it with
-Vite's manifest keys. When a layer is extended by a **filesystem path** that goes
-through a symlink — `extends: ['./node_modules/@cwa/nuxt/dist/layer']`, which is
-how every application installs this module through pnpm — `page.file` is the
-symlink path and the manifest key is the realpath. The two never match, so every
-`/_cwa` admin page and every auth page is prefetched on every public page
-([#329](https://github.com/components-web-app/cwa-nuxt-module/issues/329),
-upstream [nuxt/nuxt#36401](https://github.com/nuxt/nuxt/issues/36401), with a
-reproduction at
-[silverbackdan/nuxt-layer-symlink-prefetch](https://github.com/silverbackdan/nuxt-layer-symlink-prefetch)).
-
-A layer extended by a **bare specifier** is unaffected — that resolves through
-`realpath` already.
-
-**Delete:**
-
-- the `if (!nuxt.options.dev)` block in `src/module.ts` that registers the
-  `pages:extend` hook (`toRealPath` / `realpathPages`), and `realpathSync` from
-  the `node:fs` import
-- the `page file realpath (#329)` describe in `src/module.spec.ts`, and
-  `realpathSync` from that file's `node:fs` mock
-- the `#329` section in CLAUDE.md
-
-**Precondition:** the upstream fix, [nuxt/nuxt#36402](https://github.com/nuxt/nuxt/pull/36402)
-(in the merge queue on 2026-09-26), released, and our `meta.compatibility.nuxt`
-(`>=4.5.2`, in step with `@nuxt/kit`) raised past the first release containing
-it. Tracked, with the verification step, in
-[#361](https://github.com/components-web-app/cwa-nuxt-module/issues/361).
-
-The hook rewrites `page.file` to its realpath for **every** page, not just this
-module's. Realpathing a path that is already real returns the same string, so it
-is a no-op wherever nothing is symlinked — which is why it is safe to leave in
-whether or not an application extends the layer by a bare specifier, and safe for
-an application that already applies the same workaround itself.
-
----
-
 ## Remove when node-forge and braces publish fixes
 
 ### Ignored audit advisories in `pnpm-workspace.yaml`
@@ -180,3 +138,25 @@ lowering the audit level, so any new advisory still fails CI.
 `overrides` instead if the fix is not picked up by a lockfile update.
 
 **When:** node-forge > 1.4.0 and braces > 3.0.3 are on npm.
+
+---
+
+## Remove when `@nuxt/devtools` and `@tailwindcss/typography` take the fixed majors
+
+### More ignored audit advisories in `pnpm-workspace.yaml`
+
+These have patched releases, but only in a major the package that pins them
+cannot load:
+
+- `GHSA-v5rq-49vh-5v5c`, `GHSA-x6jw-m9v5-85vh`, `GHSA-g4wm-2vf7-vfgr`,
+  `GHSA-858h-whjf-mvg5`: simple-git 3.36.0 and `@simple-git/argv-parser` 1.x.
+  Fixed only in simple-git 4, which dropped the default export that
+  `@nuxt/devtools` 3.4.2 imports, so an override breaks `dev:prepare`. Reached
+  only through devtools, which runs in development only.
+- `GHSA-rj75-hqrm-r3gf`: postcss-selector-parser 6.0.10, pinned exactly by
+  `@tailwindcss/typography` 0.5.20 (the playground's dependency). The 7.x copies
+  are overridden to `^7.1.6`.
+
+**Delete:** the IDs, once `@nuxt/devtools` depends on simple-git ≥ 4.0.1 and
+`@tailwindcss/typography` on postcss-selector-parser ≥ 7.1.6; check with
+`pnpm audit` after removing them.

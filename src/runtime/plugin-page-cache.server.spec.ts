@@ -15,11 +15,12 @@ vi.mock('#build/cwa-options', () => ({
 
 const importPlugin = async () => (await import('./plugin-page-cache.server')).default
 
-function createNuxtApp(cwa: Record<string, unknown>) {
+function createNuxtApp(cwa: Record<string, unknown>, ssrContext: Record<string, unknown> = {}) {
   const hooks: Record<string, () => void> = {}
   return {
     nuxtApp: {
       $cwa: cwa,
+      ssrContext,
       hook: (name: string, fn: () => void) => {
         hooks[name] = fn
       },
@@ -104,14 +105,10 @@ describe('cwa page cache plugin', () => {
     expect(() => rendered()).not.toThrow()
   })
 
-  describe('#340 the internal error render', () => {
-    beforeEach(() => {
-      mockEvent.value = { context: {}, headers: new Headers({ 'x-nuxt-error': 'true' }) }
-    })
-
+  describe('#340 the error render', () => {
     test('declines, although Nitro sees the error render itself as a 200', async () => {
       const plugin = await importPlugin()
-      const { nuxtApp, rendered } = createNuxtApp(createCwa())
+      const { nuxtApp, rendered } = createNuxtApp(createCwa(), { error: true })
 
       plugin.setup(nuxtApp as never)
       rendered()
@@ -123,13 +120,24 @@ describe('cwa page cache plugin', () => {
       const plugin = await importPlugin()
       const { nuxtApp, rendered } = createNuxtApp(createCwa({
         apiHttpCacheState: { storable: true, sharedMaxAge: 600 },
-      }))
+      }), { error: true })
 
       plugin.setup(nuxtApp as never)
       rendered()
 
       expect(mockEvent.value!.context.cwaPageCache).not.toHaveProperty('surrogateKey')
       expect(mockEvent.value!.context.cwaPageCache).toEqual({ unstorable: true })
+    })
+
+    test('is recognised by the SSR context, not by the x-nuxt-error request header Nuxt 4.6 no longer sends', async () => {
+      mockEvent.value = { context: {}, headers: new Headers({ 'x-nuxt-error': 'true' }) }
+      const plugin = await importPlugin()
+      const { nuxtApp, rendered } = createNuxtApp(createCwa())
+
+      plugin.setup(nuxtApp as never)
+      rendered()
+
+      expect(mockEvent.value!.context.cwaPageCache).toHaveProperty('surrogateKey')
     })
   })
 })

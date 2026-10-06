@@ -2,8 +2,7 @@
 import { afterEach, beforeEach, describe, expect, test } from 'vitest'
 import { createApp } from 'vue'
 import { createPinia, setActivePinia } from 'pinia'
-import { executeAsync, getContext } from 'unctx'
-import { createNuxtApp, useNuxtApp } from '#app/nuxt'
+import { createNuxtApp, getNuxtAppCtx } from '#app/nuxt'
 import type { NuxtApp } from '#app/nuxt'
 import { ResourcesStore } from '#cwa/storage/stores/resources/resources-store'
 import { FetcherStore } from '#cwa/storage/stores/fetcher/fetcher-store'
@@ -13,13 +12,11 @@ import { createCwaResourceError } from '#cwa/errors/cwa-resource-error'
 const ROUTE = '/_api/_/routes//page'
 const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
-let nuxtAppContext: ReturnType<typeof getContext<NuxtApp>>
+const nuxtAppContext = getNuxtAppCtx()
 let testNuxtApp: NuxtApp | null
 
 function createRequestApp() {
-  const app = createNuxtApp({ vueApp: createApp({}) } as never)
-  app.runWithContext = (fn => nuxtAppContext.callAsync(app, fn as never)) as NuxtApp['runWithContext']
-  return app
+  return createNuxtApp({ vueApp: createApp({}) } as never)
 }
 
 function createRequestManager(app: NuxtApp) {
@@ -36,18 +33,14 @@ function createRequestManager(app: NuxtApp) {
   return { manager, token }
 }
 
-function leakContextFromTransformedCode(app: NuxtApp) {
-  return nuxtAppContext.callAsync(app, async () => {
-    const [pending, restore] = executeAsync(() => wait(5))
-    await pending
-    restore()
-    await wait(30)
-  })
+async function leakAnotherRequestsApp(app: NuxtApp) {
+  await wait(5)
+  nuxtAppContext.set(app)
+  await wait(30)
 }
 
 describe('#313 concurrent SSR requests keep their own Nuxt app', () => {
   beforeEach(() => {
-    nuxtAppContext ||= getContext<NuxtApp>(useNuxtApp()._id)
     testNuxtApp = nuxtAppContext.tryUse()
     nuxtAppContext.unset()
   })
@@ -75,7 +68,7 @@ describe('#313 concurrent SSR requests keep their own Nuxt app', () => {
           error: createCwaResourceError({ statusCode: 404, statusMessage: 'Not Found' }),
         })
       }),
-      leakContextFromTransformedCode(appB),
+      leakAnotherRequestsApp(appB),
     ])
 
     expect(appA.payload.error?.statusCode).toBe(404)
@@ -104,7 +97,7 @@ describe('#313 concurrent SSR requests keep their own Nuxt app', () => {
           headers: {},
         })
       }),
-      leakContextFromTransformedCode(appB),
+      leakAnotherRequestsApp(appB),
     ])
 
     expect(appA.payload.error).toBeUndefined()
