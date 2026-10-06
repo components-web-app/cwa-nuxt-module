@@ -208,13 +208,7 @@ export default defineNuxtConfig({
             plugins: [
               {
                 // The authoritative gate: never store a response the API flagged as personalised.
-                cacheWillUpdate: async ({ response }) => {
-                  const cc = response.headers.get('cache-control') || ''
-                  if (/no-store|private/.test(cc)) {
-                    return null
-                  }
-                  return response.status === 200 ? response : null
-                },
+                cacheWillUpdate: async ({ response }) => /no-store|private/.test(response.headers.get('cache-control') || '') || response.status !== 200 ? null : response,
               },
             ],
             expiration: {

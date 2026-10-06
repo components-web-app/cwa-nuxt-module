@@ -117,48 +117,6 @@ Until then a 404 is the normal answer, not a fault.
 
 ---
 
-## Temporary workarounds pending an upstream fix
-
-### Realpathing `page.file` so Nuxt can filter layer pages out of prefetch
-
-Nuxt drops page chunks from the app entry's `dynamicImports` in `build:manifest`,
-but it builds that list with `relative(srcDir, page.file)` and compares it with
-Vite's manifest keys. When a layer is extended by a **filesystem path** that goes
-through a symlink — `extends: ['./node_modules/@cwa/nuxt/dist/layer']`, which is
-how every application installs this module through pnpm — `page.file` is the
-symlink path and the manifest key is the realpath. The two never match, so every
-`/_cwa` admin page and every auth page is prefetched on every public page
-([#329](https://github.com/components-web-app/cwa-nuxt-module/issues/329),
-upstream [nuxt/nuxt#36401](https://github.com/nuxt/nuxt/issues/36401), with a
-reproduction at
-[silverbackdan/nuxt-layer-symlink-prefetch](https://github.com/silverbackdan/nuxt-layer-symlink-prefetch)).
-
-A layer extended by a **bare specifier** is unaffected — that resolves through
-`realpath` already.
-
-**Delete:**
-
-- the `if (!nuxt.options.dev)` block in `src/module.ts` that registers the
-  `pages:extend` hook (`toRealPath` / `realpathPages`), and `realpathSync` from
-  the `node:fs` import
-- the `page file realpath (#329)` describe in `src/module.spec.ts`, and
-  `realpathSync` from that file's `node:fs` mock
-- the `#329` section in CLAUDE.md
-
-**Precondition:** the upstream fix, [nuxt/nuxt#36402](https://github.com/nuxt/nuxt/pull/36402)
-(in the merge queue on 2026-09-26), released, and our `meta.compatibility.nuxt`
-(`>=4.5.2`, in step with `@nuxt/kit`) raised past the first release containing
-it. Tracked, with the verification step, in
-[#361](https://github.com/components-web-app/cwa-nuxt-module/issues/361).
-
-The hook rewrites `page.file` to its realpath for **every** page, not just this
-module's. Realpathing a path that is already real returns the same string, so it
-is a no-op wherever nothing is symlinked — which is why it is safe to leave in
-whether or not an application extends the layer by a bare specifier, and safe for
-an application that already applies the same workaround itself.
-
----
-
 ## Remove when node-forge and braces publish fixes
 
 ### Ignored audit advisories in `pnpm-workspace.yaml`

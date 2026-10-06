@@ -18,7 +18,7 @@ const APP_FILES = {
     type: 'module',
     dependencies: {
       '@cwa/nuxt': '',
-      'nuxt': '^4.5.2',
+      'nuxt': '^4.6.0',
       'vue': '^3.5.41',
     },
   }, undefined, 2),
