@@ -4,6 +4,9 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+- **Breaking:** the minimum Nuxt version is 4.6.0, the first release that keeps layer pages reached through a symlink out of prefetch itself, so the module's workaround for it is removed ([#361](https://github.com/components-web-app/cwa-nuxt-module/issues/361), [6bb0743a](https://github.com/components-web-app/cwa-nuxt-module/commit/6bb0743a))
+- On Nuxt 4.6, a page that throws while rendering a route the API serves is no longer sent as a cacheable 500: an error render is recognised by Nuxt's `ssrContext.error`, which also covers Nuxt 5's inline error rendering ([#340](https://github.com/components-web-app/cwa-nuxt-module/issues/340), [11f72946](https://github.com/components-web-app/cwa-nuxt-module/commit/11f72946))
+
 ## [2.0.0-alpha.5] - 2026-10-05
 
 - A live page-data update that swaps a dynamic component now shows on other open pages straight away, instead of after the next navigation ([3938a1f3](https://github.com/components-web-app/cwa-nuxt-module/commit/3938a1f3))
