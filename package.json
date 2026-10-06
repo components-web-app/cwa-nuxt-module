@@ -95,7 +95,7 @@
     "set-cookie-parser": "^3.1.2",
     "slugify": "^1.6.9",
     "uuid": "^14.0.2",
-    "vue": "^3.5.41",
+    "vue": "^3.5.43",
     "vue-input-autowidth": "^2.2.1",
     "vuejs-confirm-dialog": "^0.5.2"
   },
