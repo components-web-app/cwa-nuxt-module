@@ -5,6 +5,7 @@ import throttle from 'lodash-es/throttle'
 import type { DebouncedFunc } from 'lodash-es/debounce'
 import {
   computed,
+  Fragment,
   markRaw,
   nextTick,
   ref,
@@ -191,7 +192,8 @@ export default class ManageableResource {
   // GET DOM ELEMENTS TO ADD CLICK EVENTS TO
   private getAllEls(): any[] {
     const allSiblings: any[] = []
-    let currentEl: any = this.component.$el
+    const subTree = this.component.$?.subTree
+    let currentEl: any = subTree?.type === Fragment ? subTree.el : this.component.$el
     if (!currentEl) {
       return []
     }
