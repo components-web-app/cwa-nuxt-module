@@ -795,13 +795,13 @@ describe('Resources', () => {
     ])
     const flatten = (n: any): string[] => [n.iri, ...n.children.flatMap(flatten)]
 
-    function setup({ storedPath = '/blog/article-1', storedComponent = '/component/html_contents/article-1', pageDataProperty = 'htmlContent' as string | null, tree = [articleTree('article-2', '/component/html_contents/article-2')] as any[] | null, status = CwaResourceApiStatuses.SUCCESS } = {}) {
+    function setup({ storedPath = '/blog/article-1', storedComponent = '/component/html_contents/article-1', isDynamicPosition = true, pageDataProperty = null as string | null, tree = [articleTree('article-2', '/component/html_contents/article-2')] as any[] | null, status = CwaResourceApiStatuses.SUCCESS } = {}) {
       const current = reactive({
         currentIds: [position],
         byId: {
           [position]: {
             apiState: { status, headers: { path: storedPath } },
-            data: { '@id': position, 'component': storedComponent, ...(pageDataProperty ? { pageDataProperty } : {}) },
+            data: { '@id': position, 'component': storedComponent, '_metadata': { isDynamicPosition }, ...(pageDataProperty ? { pageDataProperty } : {}) },
           },
         } as Record<string, any>,
       })
@@ -839,8 +839,13 @@ describe('Resources', () => {
       expect(setup({ tree: null }).positionComponentIri(position, 0).value).toBe('/component/html_contents/article-1')
     })
 
+    test('treats a position as dynamic by its metadata, because pageDataProperty is only serialised for admins', () => {
+      expect(setup({ pageDataProperty: null }).positionComponentIri(position, 0).value).toBe('/component/html_contents/article-2')
+      expect(setup({ pageDataProperty: 'htmlContent' }).positionComponentIri(position, 0).value).toBe('/component/html_contents/article-2')
+    })
+
     test('renders the stored component of a position that is not dynamic, whatever the path', () => {
-      const resources = setup({ pageDataProperty: null })
+      const resources = setup({ isDynamicPosition: false })
       expect(resources.positionComponentIri(position, 0).value).toBe('/component/html_contents/article-1')
     })
 

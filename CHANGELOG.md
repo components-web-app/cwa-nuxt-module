@@ -4,6 +4,10 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+## [2.0.0-alpha.7] - 2026-10-06
+
+- Visitors no longer see the previous page's dynamic component after client navigation between page-data pages, get live page-data component changes, and keep a dynamic position when its component is deleted: a dynamic position is recognised by `_metadata.isDynamicPosition`, since `pageDataProperty` is only sent to admins ([#368](https://github.com/components-web-app/cwa-nuxt-module/issues/368), [60c9635c](https://github.com/components-web-app/cwa-nuxt-module/commit/60c9635c))
+
 ## [2.0.0-alpha.6] - 2026-10-06
 
 - **Breaking:** the minimum Nuxt version is 4.6.0, the first release that keeps layer pages reached through a symlink out of prefetch itself, so the module's workaround for it is removed ([#361](https://github.com/components-web-app/cwa-nuxt-module/issues/361), [6bb0743a](https://github.com/components-web-app/cwa-nuxt-module/commit/6bb0743a))
@@ -53,7 +57,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 - First tagged release of `@cwa/nuxt`; releases are now published from `v*` tags ([7c61b7c](https://github.com/components-web-app/cwa-nuxt-module/commit/7c61b7ce331ec4a0cb8e76951a5de2ff806ed07a))
 
-[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.6...HEAD
+[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.7...HEAD
+[2.0.0-alpha.7]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.6...v2.0.0-alpha.7
 [2.0.0-alpha.6]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.5...v2.0.0-alpha.6
 [2.0.0-alpha.5]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.4...v2.0.0-alpha.5
 [2.0.0-alpha.4]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.3...v2.0.0-alpha.4

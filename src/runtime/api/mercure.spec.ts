@@ -773,6 +773,47 @@ describe('Mercure -> collectResourceActions', () => {
       expect(result.toFetch).toStrictEqual(['/_/component_positions/body'])
     })
   })
+
+  describe('a page data message seen by a visitor, who is not sent pageDataProperty', () => {
+    function setup() {
+      const pinia = createTestingPinia({
+        createSpy: vi.fn,
+        initialState: {
+          'storeName.resources': {
+            current: {
+              currentIds: ['/page_data/article', '/_/component_positions/body', '/_/component_positions/image', '/_/component_positions/static'],
+              byId: {
+                '/page_data/article': { data: { '@id': '/page_data/article', 'htmlContent': '/component/html_contents/old', 'image': null, 'title': 'Article' } },
+                '/_/component_positions/body': { data: { '@id': '/_/component_positions/body', 'component': '/component/html_contents/old', '_metadata': { isDynamicPosition: true } } },
+                '/_/component_positions/image': { data: { '@id': '/_/component_positions/image', '_metadata': { isDynamicPosition: true } } },
+                '/_/component_positions/static': { data: { '@id': '/_/component_positions/static', 'component': '/component/html_contents/old', '_metadata': { isDynamicPosition: false } } },
+              },
+            },
+          },
+        },
+      })
+      setActivePinia(pinia)
+      const mercure = createMercure()
+      vi.spyOn(mercure, 'isMessageForCurrentResource').mockReturnValue(true)
+      return mercure
+    }
+    const pageDataMessage = (data: Record<string, unknown>) => ({ event: new MessageEvent('message'), data: { '@id': '/page_data/article', ...data } })
+
+    test('re-fetches every on-screen dynamic position when a property holding a component changes', () => {
+      const mercure = setup()
+      expect(mercure.collectResourceActions([pageDataMessage({ htmlContent: '/component/html_contents/new' })]).toFetch).toStrictEqual(['/_/component_positions/body', '/_/component_positions/image'])
+    })
+
+    test('re-fetches when a property gains or loses its component', () => {
+      expect(setup().collectResourceActions([pageDataMessage({ image: '/component/images/new' })]).toFetch).toStrictEqual(['/_/component_positions/body', '/_/component_positions/image'])
+      expect(setup().collectResourceActions([pageDataMessage({ htmlContent: null })]).toFetch).toStrictEqual(['/_/component_positions/body', '/_/component_positions/image'])
+    })
+
+    test('re-fetches nothing when only a property that holds no component changes', () => {
+      const mercure = setup()
+      expect(mercure.collectResourceActions([pageDataMessage({ htmlContent: '/component/html_contents/old', title: 'Renamed' })]).toFetch).toStrictEqual([])
+    })
+  })
 })
 
 describe('Mercure -> fetch', () => {

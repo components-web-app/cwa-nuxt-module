@@ -252,7 +252,7 @@ export class Resources {
     return computed(() => {
       const position = this.getResource(positionIri).value
       const storedComponent = position?.data?.component
-      if (!position?.data?.pageDataProperty) {
+      if (!position?.data?._metadata?.isDynamicPosition) {
         return storedComponent
       }
       const manifest = this.displayFetchStatus?.manifest
