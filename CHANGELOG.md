@@ -4,6 +4,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+- Visitors no longer see the previous page's dynamic component after client navigation between page-data pages, get live page-data component changes, and keep a dynamic position when its component is deleted: a dynamic position is recognised by `_metadata.isDynamicPosition`, since `pageDataProperty` is only sent to admins ([#368](https://github.com/components-web-app/cwa-nuxt-module/issues/368), [60c9635c](https://github.com/components-web-app/cwa-nuxt-module/commit/60c9635c))
+
 ## [2.0.0-alpha.6] - 2026-10-06
 
 - **Breaking:** the minimum Nuxt version is 4.6.0, the first release that keeps layer pages reached through a symlink out of prefetch itself, so the module's workaround for it is removed ([#361](https://github.com/components-web-app/cwa-nuxt-module/issues/361), [6bb0743a](https://github.com/components-web-app/cwa-nuxt-module/commit/6bb0743a))
