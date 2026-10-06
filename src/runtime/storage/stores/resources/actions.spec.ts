@@ -121,7 +121,7 @@ describe('Resources -> deleteResource', () => {
     expect(resourcesState.current.byId['/_/component_groups/group'].data.componentPositions).toStrictEqual(['/_/component_positions/to-keep'])
   })
 
-  test('When deleting a component, the positions it is within should be deleted only when it is not a dynamic position', () => {
+  test('When deleting a component, the positions it is within should be deleted only when it is not a dynamic position, known by its metadata because visitors are not sent pageDataProperty', () => {
     resourcesState.current.byId = {
       '/component/to-delete': {
         apiState: {
@@ -153,7 +153,7 @@ describe('Resources -> deleteResource', () => {
         data: {
           '@id': '/_/component_positions/dynamic',
           'component': '/component/to-delete',
-          'pageDataProperty': 'anything',
+          '_metadata': { isDynamicPosition: true },
         },
       },
     }

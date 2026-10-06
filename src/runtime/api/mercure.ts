@@ -262,9 +262,14 @@ export default class Mercure {
   private positionsBoundToChangedPageData(pageData: CwaResource) {
     const stored = this.resourcesStore.current.byId[pageData['@id']]?.data
     const changed = (property: string) => property in pageData && pageData[property] !== stored?.[property]
+    const isComponentIri = (value: unknown) => typeof value === 'string' && getResourceTypeFromIri(value) === CwaResourceTypes.COMPONENT
+    const anyComponentChanged = Object.keys(pageData).some(property => changed(property) && (isComponentIri(pageData[property]) || isComponentIri(stored?.[property])))
     return this.resourcesStore.current.currentIds.filter((iri) => {
-      const property = this.resourcesStore.current.byId[iri]?.data?.pageDataProperty
-      return !!property && changed(property)
+      const position = this.resourcesStore.current.byId[iri]?.data
+      if (position?.pageDataProperty) {
+        return changed(position.pageDataProperty)
+      }
+      return !!position?._metadata?.isDynamicPosition && anyComponentChanged
     })
   }
 

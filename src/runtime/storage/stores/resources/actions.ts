@@ -146,7 +146,7 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
             if (!positionResource?.data) {
               continue
             }
-            if (!positionResource.data.pageDataProperty) {
+            if (!positionResource.data._metadata?.isDynamicPosition) {
               // if we are deleting a component because it has been replaced by a live, we should not be deleting the
               // position, it will be being refreshed
               deleteResource({
