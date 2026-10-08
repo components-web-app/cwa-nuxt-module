@@ -4,6 +4,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+- The manager's Info tab names the version a delete removes: **Delete Draft** for a draft and **Delete Live** for the live version of a publishable component; other resources still say **Delete** ([#371](https://github.com/components-web-app/cwa-nuxt-module/issues/371), [fd3b4d97](https://github.com/components-web-app/cwa-nuxt-module/commit/fd3b4d97))
+
 ## [2.0.0-alpha.8] - 2026-10-08
 
 - Pages and page data have a **Public without a route** toggle in their settings, so a routeless page loaded by a custom fetch IRI can be read by visitors; it has no effect while the page has a route, and a flagged page shows as public (green) like a routed one. Needs api-components-bundle 2.0.0-alpha.9 or later ([#369](https://github.com/components-web-app/cwa-nuxt-module/issues/369), [5a919456](https://github.com/components-web-app/cwa-nuxt-module/commit/5a919456))
