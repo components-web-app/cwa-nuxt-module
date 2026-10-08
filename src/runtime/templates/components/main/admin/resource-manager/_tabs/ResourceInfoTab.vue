@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/resources/resource-utils'
+import { CwaResourceTypes, getPublishedResourceState, getResourceTypeFromIri } from '#cwa/resources/resource-utils'
 import { computed, ref } from 'vue'
 import { useCwaResourceManagerTab } from '#cwa/composables/cwa-resource-manager-tab'
 import { DEFAULT_TAB_ORDER } from '#cwa/admin/manager-tabs-resolver'
@@ -58,6 +58,20 @@ const isDeleteEnabled = computed(() => {
 const isAddingNew = computed(() => {
   return iri.value === NEW_RESOURCE_IRI
 })
+
+const deleteLabel = computed(() => {
+  if (isAddingNew.value) {
+    return 'Discard'
+  }
+  const publishableState = resource.value ? getPublishedResourceState(resource.value) : undefined
+  if (publishableState === true) {
+    return 'Delete Live'
+  }
+  if (publishableState === false) {
+    return 'Delete Draft'
+  }
+  return 'Delete'
+})
 </script>
 
 <template>
@@ -72,7 +86,7 @@ const isAddingNew = computed(() => {
         :disabled="disableButton"
         @click="handleDelete"
       >
-        {{ isAddingNew ? 'Discard' : 'Delete' }}
+        {{ deleteLabel }}
       </CwaUiFormButton>
     </div>
   </div>
