@@ -3,9 +3,10 @@ import { Switch, SwitchGroup, SwitchLabel } from '@headlessui/vue'
 import { computed } from 'vue'
 
 const emit = defineEmits(['update:modelValue'])
-const { modelValue } = defineProps<{
+const { modelValue, disabled = false } = defineProps<{
   label: string
   modelValue: boolean | undefined | null
+  disabled?: boolean
 }>()
 
 const valueAsBoolean = computed<boolean>({
@@ -29,8 +30,9 @@ function handleSwitchInput(newValue: boolean) {
   >
     <Switch
       :model-value="valueAsBoolean"
+      :disabled="disabled"
       :class="[
-        modelValue ? 'cwa:bg-indigo-600' : 'cwa:bg-gray-200', 'cwa:relative cwa:inline-flex cwa:h-6 cwa:w-11 cwa:shrink-0 cwa:cursor-pointer cwa:border-2 cwa:border-transparent cwa:transition-colors cwa:duration-200 cwa:ease-in-out cwa:rounded-full',
+        modelValue ? 'cwa:bg-indigo-600' : 'cwa:bg-gray-200', disabled ? 'cwa:opacity-50 cwa:cursor-not-allowed' : 'cwa:cursor-pointer', 'cwa:relative cwa:inline-flex cwa:h-6 cwa:w-11 cwa:shrink-0 cwa:border-2 cwa:border-transparent cwa:transition-colors cwa:duration-200 cwa:ease-in-out cwa:rounded-full',
       ]"
       @update:model-value="handleSwitchInput"
     >
@@ -42,7 +44,8 @@ function handleSwitchInput(newValue: boolean) {
 
     <SwitchLabel
       as="span"
-      class="cwa:ml-3 cwa:text-sm cwa:cursor-pointer"
+      class="cwa:ml-3 cwa:text-sm"
+      :class="disabled ? 'cwa:opacity-50 cwa:cursor-not-allowed' : 'cwa:cursor-pointer'"
     >
       <span class="cwa:font-medium">{{ label }}</span>
     </SwitchLabel>

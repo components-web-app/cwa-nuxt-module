@@ -33,6 +33,7 @@ function setup(opts: {
   fqcnToEntrypointKey?: (t: string) => any
   pageDataConfig?: any
   localDataOverrides?: Record<string, any>
+  isAdding?: boolean
 } = {}) {
   const iri = opts.iri ?? '/_/pages/uuid-self'
   const localResourceData = ref<Record<string, any>>({
@@ -46,7 +47,7 @@ function setup(opts: {
   })
 
   const handlers = {
-    isAdding: ref(false),
+    isAdding: ref(opts.isAdding ?? false),
     isLoading: ref(false),
     isUpdating: ref(false),
     localResourceData,
@@ -104,7 +105,7 @@ function setup(opts: {
   return { wrapper, handlers, localResourceData }
 }
 
-function setupPageData(opts: { pageDataConfig?: any, localDataOverrides?: Record<string, any> } = {}) {
+function setupPageData(opts: { pageDataConfig?: any, localDataOverrides?: Record<string, any>, resource?: any } = {}) {
   return setup({
     iri: '/page_data/uuid-self',
     resourceType: 'App\\Entity\\EventData',
@@ -223,5 +224,53 @@ describe('PageResourceAdminModal meta fields config', () => {
     const select = wrapper.findAllComponents(ModalSelect).find(s => s.props('label') === 'Category')
     await select!.vm.$emit('update:modelValue', 'a')
     expect(localResourceData.value.category).toBe('a')
+  })
+})
+
+describe('PageResourceAdminModal public without a route', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  test.each([
+    ['page', setup],
+    ['page data', setupPageData],
+  ])('binds the toggle to isReachableWithoutRoute for a %s', async (_label, mountFn) => {
+    const { wrapper, localResourceData } = mountFn({ localDataOverrides: { isReachableWithoutRoute: false } })
+    const toggle = wrapper.findComponent({ name: 'ModalReachableToggle' })
+    expect(toggle.props('modelValue')).toBe(false)
+    expect(toggle.props('hasRoute')).toBe(false)
+    await toggle.vm.$emit('update:modelValue', true)
+    expect(localResourceData.value.isReachableWithoutRoute).toBe(true)
+  })
+
+  test('tells the toggle the saved resource has a route', () => {
+    const { wrapper } = setup({ resource: { '@id': '/_/pages/uuid-self', '@type': 'Page', 'route': '/_/routes/r' } })
+    expect(wrapper.findComponent({ name: 'ModalReachableToggle' }).props('hasRoute')).toBe(true)
+  })
+
+  test('shows the toggle when adding so it can be sent on create', () => {
+    const { wrapper } = setup({ isAdding: true })
+    expect(wrapper.findComponent({ name: 'ModalReachableToggle' }).exists()).toBe(true)
+  })
+
+  test.each([
+    [{ route: '/_/routes/r', isReachableWithoutRoute: false }, 'cwa:border-b-green'],
+    [{ route: null, isReachableWithoutRoute: true }, 'cwa:border-b-green'],
+    [{ route: null, isReachableWithoutRoute: false }, 'cwa:border-b-orange'],
+  ])('page data border for saved %o is %s', (saved, expected) => {
+    const { wrapper } = setupPageData({
+      resource: { '@id': '/page_data/uuid-self', '@type': 'App\\Entity\\EventData', ...saved },
+      localDataOverrides: { isReachableWithoutRoute: !saved.isReachableWithoutRoute },
+    })
+    expect(wrapper.findComponent({ name: 'ResourceModal' }).attributes('border-color-class')).toBe(expected)
+  })
+
+  test('a flagged page keeps its page type border', () => {
+    const { wrapper } = setup({
+      resource: { '@id': '/_/pages/uuid-self', '@type': 'Page', 'route': null, 'isReachableWithoutRoute': true },
+      localDataOverrides: { isTemplate: false },
+    })
+    expect(wrapper.findComponent({ name: 'ResourceModal' }).attributes('border-color-class')).toBe('cwa:border-b-blue-600')
   })
 })

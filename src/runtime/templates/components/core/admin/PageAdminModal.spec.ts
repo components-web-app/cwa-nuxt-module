@@ -31,6 +31,7 @@ function setup(
   localDataOverrides: Record<string, any> = {},
   getResource: (iri: string) => any = () => ref(null),
   parentPagesOverride?: any[],
+  itemPageOverrides: Record<string, any> = {},
 ) {
   const localResourceData = ref({
     '@id': '/_/pages/uuid-self',
@@ -58,6 +59,7 @@ function setup(
     saveTitle: vi.fn(),
     loadResource: vi.fn(),
     getInternalResourceLink: vi.fn(() => ({ name: '_cwa-index-pages-iri', params: {} })),
+    ...itemPageOverrides,
   })
 
   mockUseParentPageLoader.mockReturnValue({
@@ -569,5 +571,32 @@ describe('PageAdminModal additional coverage', () => {
       const html = wrapper.html()
       expect(html.toLowerCase()).toContain('eyeicon')
     })
+  })
+})
+
+describe('PageAdminModal public without a route', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  test('binds the toggle to isReachableWithoutRoute', async () => {
+    const wrapper = setup({ isReachableWithoutRoute: false }, undefined, undefined, { resource: ref({ '@id': '/_/pages/uuid-self', 'route': null }) })
+    const toggle = wrapper.findComponent({ name: 'ModalReachableToggle' })
+    expect(toggle.props('modelValue')).toBe(false)
+    expect(toggle.props('hasRoute')).toBe(false)
+    await toggle.vm.$emit('update:modelValue', true)
+    expect(wrapper.findComponent({ name: 'ModalReachableToggle' }).props('modelValue')).toBe(true)
+  })
+
+  test('tells the toggle the saved page has a route', () => {
+    const wrapper = setup({ isReachableWithoutRoute: true })
+    expect(wrapper.findComponent({ name: 'ModalReachableToggle' }).props('hasRoute')).toBe(true)
+  })
+
+  test('shows the toggle when adding so it can be sent on create', () => {
+    const wrapper = setup({}, undefined, undefined, { isAdding: ref(true), resource: ref(undefined) })
+    const toggle = wrapper.findComponent({ name: 'ModalReachableToggle' })
+    expect(toggle.exists()).toBe(true)
+    expect(toggle.props('hasRoute')).toBe(false)
   })
 })
