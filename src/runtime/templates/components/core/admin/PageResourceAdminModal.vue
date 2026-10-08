@@ -163,6 +163,10 @@
               </template>
             </div>
           </template>
+          <ModalReachableToggle
+            v-model="localResourceData.isReachableWithoutRoute"
+            :has-route="!!resource?.route"
+          />
           <div class="cwa:flex cwa:justify-end cwa:pt-2 cwa:gap-x-2">
             <div>
               <CwaUiFormButton
@@ -239,6 +243,7 @@ import ModalInfo from '#cwa/templates/components/core/admin/form/ModalInfo.vue'
 import ModalInput from '#cwa/templates/components/core/admin/form/ModalInput.vue'
 import ModalSelect from '#cwa/templates/components/core/admin/form/ModalSelect.vue'
 import ModalRadioTabs from '#cwa/templates/components/core/admin/form/ModalRadioTabs.vue'
+import ModalReachableToggle from '#cwa/templates/components/core/admin/form/ModalReachableToggle.vue'
 import PageTypeSelect from '#cwa/templates/components/core/admin/form/PageTypeSelect.vue'
 import RoutesTab from '#cwa/templates/components/core/admin/RoutesTab.vue'
 import type { SelectOption } from '#cwa/composables/cwa-select-input'
@@ -361,7 +366,7 @@ const borderColorClass = computed(() => {
   if (isDisplayingPage.value) {
     return localResourceData.value?.isTemplate ? 'cwa:border-b-yellow' : 'cwa:border-b-blue-600'
   }
-  return resource.value?.route ? 'cwa:border-b-green' : 'cwa:border-b-orange'
+  return resource.value?.route || resource.value?.isReachableWithoutRoute ? 'cwa:border-b-green' : 'cwa:border-b-orange'
 })
 
 function saveResource(close = false) {

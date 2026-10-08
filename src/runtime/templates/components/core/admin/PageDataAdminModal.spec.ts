@@ -622,3 +622,40 @@ describe('PageDataAdminModal', () => {
     })
   })
 })
+
+describe('PageDataAdminModal public without a route', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  test('binds the toggle to isReachableWithoutRoute', async () => {
+    const { wrapper, localResourceData } = setupAdvanced({ localDataOverrides: { isReachableWithoutRoute: false } })
+    const toggle = wrapper.findComponent({ name: 'ModalReachableToggle' })
+    expect(toggle.props('modelValue')).toBe(false)
+    expect(toggle.props('hasRoute')).toBe(false)
+    await toggle.vm.$emit('update:modelValue', true)
+    expect((localResourceData.value as Record<string, any>).isReachableWithoutRoute).toBe(true)
+  })
+
+  test('tells the toggle the saved page data has a route', () => {
+    const { wrapper } = setupAdvanced({ resource: { '@id': '/_/abstract_page_data/uuid-self', '@type': 'ConferenceData', 'route': '/_/routes/r' } })
+    expect(wrapper.findComponent({ name: 'ModalReachableToggle' }).props('hasRoute')).toBe(true)
+  })
+
+  test('shows the toggle when adding so it can be sent on create', () => {
+    const { wrapper } = setupAdvanced({ itemPageOverrides: { isAdding: ref(true), resource: ref(undefined) } })
+    expect(wrapper.findComponent({ name: 'ModalReachableToggle' }).exists()).toBe(true)
+  })
+
+  test.each([
+    [{ route: '/_/routes/r', isReachableWithoutRoute: false }, 'cwa:border-b-green'],
+    [{ route: null, isReachableWithoutRoute: true }, 'cwa:border-b-green'],
+    [{ route: null, isReachableWithoutRoute: false }, 'cwa:border-b-orange'],
+  ])('border for saved %o is %s', (saved, expected) => {
+    const { wrapper } = setupAdvanced({
+      resource: { '@id': '/_/abstract_page_data/uuid-self', '@type': 'ConferenceData', ...saved },
+      localDataOverrides: { isReachableWithoutRoute: !saved.isReachableWithoutRoute },
+    })
+    expect(wrapper.findComponent({ name: 'ResourceModal' }).attributes('border-color-class')).toBe(expected)
+  })
+})

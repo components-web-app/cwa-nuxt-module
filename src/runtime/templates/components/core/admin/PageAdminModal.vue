@@ -111,6 +111,10 @@
               />
             </div>
           </div>
+          <ModalReachableToggle
+            v-model="localResourceData.isReachableWithoutRoute"
+            :has-route="!!resource?.route"
+          />
           <div class="cwa:flex cwa:justify-end cwa:pt-2 cwa:gap-x-2">
             <div>
               <CwaUiFormButton
@@ -191,6 +195,7 @@ import type { SelectOption } from '#cwa/composables/cwa-select-input'
 import { useCwa } from '#imports'
 import ModalSelect from '#cwa/templates/components/core/admin/form/ModalSelect.vue'
 import ModalRadioTabs from '#cwa/templates/components/core/admin/form/ModalRadioTabs.vue'
+import ModalReachableToggle from '#cwa/templates/components/core/admin/form/ModalReachableToggle.vue'
 import type { CwaResource } from '#cwa/resources/resource-utils'
 import PageTypeSelect from '#cwa/templates/components/core/admin/form/PageTypeSelect.vue'
 import RoutesTab from '#cwa/templates/components/core/admin/RoutesTab.vue'

@@ -4,7 +4,7 @@
     v-model="localResourceData.title"
     title-placeholder="No Title"
     :is-loading="isLoading"
-    :border-color-class="resource?.route ? 'cwa:border-b-green': 'cwa:border-b-orange'"
+    :border-color-class="resource?.route || resource?.isReachableWithoutRoute ? 'cwa:border-b-green': 'cwa:border-b-orange'"
     @close="$emit('close')"
     @save="saveTitle"
   >
@@ -122,6 +122,10 @@
               />
             </template>
           </div>
+          <ModalReachableToggle
+            v-model="localResourceData.isReachableWithoutRoute"
+            :has-route="!!resource?.route"
+          />
           <div class="cwa:flex cwa:justify-end cwa:pt-2 cwa:gap-x-2">
             <div>
               <CwaUiFormButton
@@ -202,6 +206,7 @@ import { useItemPage } from '#cwa-layer/_composables/useItemPage'
 import type { SelectOption } from '#cwa/composables/cwa-select-input'
 import ModalSelect from '#cwa/templates/components/core/admin/form/ModalSelect.vue'
 import ModalRadioTabs from '#cwa/templates/components/core/admin/form/ModalRadioTabs.vue'
+import ModalReachableToggle from '#cwa/templates/components/core/admin/form/ModalReachableToggle.vue'
 import type { CwaResource } from '#cwa/resources/resource-utils'
 import RoutesTab from '#cwa/templates/components/core/admin/RoutesTab.vue'
 import { useDynamicPageLoader } from '#cwa-layer/_composables/useDynamicPageLoader'
