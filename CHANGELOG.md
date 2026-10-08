@@ -4,6 +4,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+- Pages and page data have a **Public without a route** toggle in their settings, so a routeless page loaded by a custom fetch IRI can be read by visitors; it has no effect while the page has a route, and a flagged page shows as public (green) like a routed one. Needs the api-components-bundle release with `isReachableWithoutRoute` ([#369](https://github.com/components-web-app/cwa-nuxt-module/issues/369), [5a919456](https://github.com/components-web-app/cwa-nuxt-module/commit/5a919456))
+
 ## [2.0.0-alpha.7] - 2026-10-06
 
 - Visitors no longer see the previous page's dynamic component after client navigation between page-data pages, get live page-data component changes, and keep a dynamic position when its component is deleted: a dynamic position is recognised by `_metadata.isDynamicPosition`, since `pageDataProperty` is only sent to admins ([#368](https://github.com/components-web-app/cwa-nuxt-module/issues/368), [60c9635c](https://github.com/components-web-app/cwa-nuxt-module/commit/60c9635c))
