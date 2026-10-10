@@ -87,7 +87,7 @@ describe('Publish tab — scheduling a draft', () => {
     expect(wrapper.findComponent(DatePicker).exists()).toBe(false)
   })
 
-  test('Publish now publishes the draft at the current time', async () => {
+  test('Publish now publishes the draft by the API\'s clock, sending "now" (#381)', async () => {
     draft()
     const wrapper = mountPublish()
 
@@ -96,7 +96,7 @@ describe('Publish tab — scheduling a draft', () => {
 
     expect(updateResource).toHaveBeenCalledWith({
       endpoint: '/component/draft',
-      data: { publishedAt: '2026-09-25T12:00:00.000Z' },
+      data: { publishedAt: 'now' },
     })
   })
 
@@ -127,7 +127,7 @@ describe('Publish tab — scheduling a draft', () => {
     })
   })
 
-  test('a time that is already past when saved publishes now, as Publish now does', async () => {
+  test('a time that is already past when saved publishes now, sending "now" as Publish now does (#381)', async () => {
     draft()
     const wrapper = mountPublish()
     await turnOnScheduling(wrapper)
@@ -138,7 +138,7 @@ describe('Publish tab — scheduling a draft', () => {
 
     expect(updateResource).toHaveBeenCalledWith({
       endpoint: '/component/draft',
-      data: { publishedAt: '2026-09-25T12:00:00.000Z' },
+      data: { publishedAt: 'now' },
     })
   })
 

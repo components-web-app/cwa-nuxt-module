@@ -941,17 +941,20 @@ describe('Resources manager', () => {
       expect(updateSpy).not.toHaveBeenCalled()
     })
 
-    test('sets publishedAt to the current instant as a UTC ISO string when publish=true', async () => {
+    test('posts publishedAt "now" when publish=true so the API publishes by its own clock (#381)', async () => {
       vi.useFakeTimers()
       vi.setSystemTime(new Date('2026-01-02T03:04:05.678Z'))
       const { resourcesManager, cwaFetch } = createResourcesManager({ includeAdmin: true })
       cwaFetch.fetch.mockResolvedValue({ '@id': '/component/1' })
       vi.spyOn(resourcesManager, 'storeResource').mockImplementation(() => {})
-      const { newResourceData } = setupStore(resourcesManager, {
+      setupStore(resourcesManager, {
         addEventOverrides: { targetIri: '/_/component_positions/p1', addAfter: null, closest: {} },
       })
       await resourcesManager.addResourceAction(true)
-      expect(newResourceData.publishedAt).toBe('2026-01-02T03:04:05.678Z')
+      expect(cwaFetch.fetch).toHaveBeenCalledWith('/component', expect.objectContaining({
+        method: 'POST',
+        body: expect.objectContaining({ publishedAt: 'now' }),
+      }))
     })
 
     test('sets publishedAt to null when publish=false', async () => {
@@ -963,6 +966,10 @@ describe('Resources manager', () => {
       })
       await resourcesManager.addResourceAction(false)
       expect(newResourceData.publishedAt).toBeNull()
+      expect(cwaFetch.fetch).toHaveBeenCalledWith('/component', expect.objectContaining({
+        method: 'POST',
+        body: expect.objectContaining({ publishedAt: null }),
+      }))
     })
 
     test('binds the new component on the page data at the target position\'s depth, not the routed page\'s', async () => {

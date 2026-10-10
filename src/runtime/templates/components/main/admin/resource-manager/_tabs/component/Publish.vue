@@ -79,12 +79,11 @@ function schedule() {
   if (!chosen) {
     return
   }
-  const now = new Date()
-  return savePublishedAt(new Date(chosen).getTime() > now.getTime() ? chosen : now.toISOString())
+  return savePublishedAt(new Date(chosen).getTime() > Date.now() ? chosen : 'now')
 }
 
 function publishNow() {
-  return savePublishedAt(new Date().toISOString())
+  return savePublishedAt('now')
 }
 
 function cancelSchedule() {

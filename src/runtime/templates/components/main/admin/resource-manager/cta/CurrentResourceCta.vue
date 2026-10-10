@@ -80,7 +80,7 @@ async function publishResource() {
   await $cwa.resourcesManager.updateResource({
     endpoint: props.currentIri,
     data: {
-      publishedAt: new Date().toISOString(),
+      publishedAt: 'now',
     },
   })
   publishing.value = false

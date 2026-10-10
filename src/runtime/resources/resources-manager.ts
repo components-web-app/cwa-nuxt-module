@@ -581,7 +581,7 @@ export class ResourcesManager {
     }
 
     if (publish !== undefined) {
-      resource.publishedAt = publish ? new Date().toISOString() : null
+      resource.publishedAt = publish ? 'now' : null
     }
 
     const postData: Omit<CwaResource, '@id' | '@type'> = { ...resource, '@id': undefined, '@type': undefined }
