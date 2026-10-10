@@ -70,6 +70,7 @@ vi.mock('../cwa', () => {
           },
           resourceStackManager: {
             addToStack: vi.fn(),
+            selectFromModule: vi.fn((dispatchClick: () => void) => dispatchClick()),
             currentStackItem: ref({ iri: '/something' }),
           },
         },
@@ -613,12 +614,13 @@ describe('ManageableResource Class', () => {
 
   describe('triggerClick function', () => {
     test('dispatches a click immediately when dom elements already exist', async () => {
-      const { instance } = createManageableResource()
+      const { instance, $cwa } = createManageableResource()
       const dispatchEvent = vi.fn()
       instance.domElements.value = [{ nodeType: 1, dispatchEvent }]
 
       await instance.triggerClick()
 
+      expect($cwa.admin.resourceStackManager.selectFromModule).toHaveBeenCalledTimes(1)
       expect(dispatchEvent).toHaveBeenCalledTimes(1)
       const dispatched = dispatchEvent.mock.calls[0][0]
       expect(dispatched.type).toBe('click')

@@ -221,6 +221,7 @@ describe('#321 selection outline follows a component root element that changes w
     for (const wrapper of mountedWrappers.splice(0)) {
       wrapper.unmount()
     }
+    document.getSelection()?.removeAllRanges()
     document.body.innerHTML = ''
     rectSpy?.mockRestore()
     rootBehaviour.value = 'settled'
@@ -319,5 +320,54 @@ describe('#321 selection outline follows a component root element that changes w
       elementsConnected: true,
       outlineStyle: 'top: 100px; left: 10px; width: 200px; height: 50px;',
     })
+  })
+
+  function selectTextOf(element: HTMLElement) {
+    const range = document.createRange()
+    range.selectNodeContents(element)
+    const selection = document.getSelection() as Selection
+    selection.removeAllRanges()
+    selection.addRange(range)
+  }
+
+  test('a component added by auto-add is selected while text in the previously selected component is still selected', async () => {
+    stubElementRects()
+    const { admin, resourcesManager } = build()
+    const { root, stackManager } = mountPage(admin)
+    await settle()
+
+    const componentA = root.querySelector(`[data-iri="${COMPONENT_A}"]`) as HTMLElement
+    clickElement(componentA)
+    await settle()
+
+    selectTextOf(componentA)
+    expect(document.getSelection()?.toString()).toBe('A')
+
+    await autoAddComponent(admin, resourcesManager)
+
+    expect(document.getSelection()?.toString()).toBe('A')
+    expect(selectionState(stackManager)).toEqual({
+      iri: COMPONENT_NEW,
+      showManager: true,
+      elementsConnected: true,
+      outlineStyle: 'top: 100px; left: 10px; width: 200px; height: 50px;',
+    })
+  })
+
+  test('a user click during a text selection is still ignored (#254)', async () => {
+    stubElementRects()
+    const { admin } = build()
+    const { root, stackManager } = mountPage(admin)
+    await settle()
+
+    const componentA = root.querySelector(`[data-iri="${COMPONENT_A}"]`) as HTMLElement
+    clickElement(componentA)
+    await settle()
+
+    selectTextOf(componentA)
+    clickElement(root.querySelector(`[data-iri="${COMPONENT_B}"]`) as HTMLElement)
+    await settle()
+
+    expect(selectionState(stackManager).iri).toBe(COMPONENT_A)
   })
 })

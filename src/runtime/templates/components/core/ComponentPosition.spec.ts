@@ -1,11 +1,17 @@
 // @vitest-environment happy-dom
-import { describe, expect, test, vi } from 'vitest'
-import { shallowMount } from '@vue/test-utils'
+import { afterEach, describe, expect, test, vi } from 'vitest'
+import { flushPromises, mount, shallowMount } from '@vue/test-utils'
 import { computed, ref } from 'vue'
+import { createPinia, setActivePinia } from 'pinia'
 import * as cwaComposable from '../../../composables/cwa'
 import * as cwaResourceComposables from '../../../composables/cwa-resource'
 import * as cwaResourceManageableComposable from '../../../composables/cwa-resource-manageable'
 import ComponentPosition from './ComponentPosition.vue'
+import { ResourcesManager } from '#cwa/resources/resources-manager'
+import { Resources } from '#cwa/resources/resources'
+import { ResourcesStore } from '#cwa/storage/stores/resources/resources-store'
+import { FetcherStore } from '#cwa/storage/stores/fetcher/fetcher-store'
+import { ErrorStore } from '#cwa/storage/stores/error/error-store'
 
 const mockComponentIri = 'test'
 
@@ -84,6 +90,84 @@ describe('ComponentPosition', () => {
     test('should match snapshot with ResourceLoader component with componentIri', () => {
       const wrapper = createWrapper()
       expect(wrapper.element).toMatchSnapshot()
+    })
+  })
+
+  describe('editing after publishing while the browser clock is ahead of the API (#373)', () => {
+    const liveIri = '/component/html_contents/live'
+    const draftIri = '/component/html_contents/draft'
+    const positionIri = '/_/component_positions/p1'
+
+    afterEach(() => {
+      vi.useRealTimers()
+      vi.restoreAllMocks()
+    })
+
+    async function publishWithSkewedClock() {
+      setActivePinia(createPinia())
+      const resourcesStoreDef = new ResourcesStore('cwa')
+      const resources = new Resources(resourcesStoreDef, new FetcherStore('cwa'))
+      const cwaFetch = { fetch: vi.fn() }
+      const resourcesManager = new ResourcesManager(
+        cwaFetch as never,
+        resourcesStoreDef,
+        { primaryFetchPath: undefined } as never,
+        new ErrorStore('cwa'),
+        { fetchBatch: vi.fn().mockResolvedValue(undefined) } as never,
+        { emptyStack: vi.fn(), resourceStackManager: { forcePublishedVersion: { value: undefined } } } as never,
+        resources,
+      )
+      const store = resourcesStoreDef.useStore()
+      store.saveResource({ resource: { '@id': liveIri, '@type': 'HtmlContent', 'draftResource': draftIri, 'componentPositions': [positionIri], '_metadata': { persisted: true, publishable: { published: true } } } as never })
+      store.saveResource({ resource: { '@id': draftIri, '@type': 'HtmlContent', 'publishedResource': liveIri, 'publishedAt': null, '_metadata': { persisted: true, publishable: { published: false } } } as never })
+      store.saveResource({ resource: { '@id': positionIri, '@type': 'ComponentPosition', 'component': liveIri, '_metadata': { persisted: true } } as never })
+      cwaFetch.fetch.mockResolvedValue({
+        '@id': draftIri,
+        '@type': 'HtmlContent',
+        'publishedResource': liveIri,
+        'publishedAt': new Date(Date.now() + 500).toISOString(),
+        '_metadata': { persisted: true, publishable: { published: false } },
+      })
+      await resourcesManager.updateResource({ endpoint: draftIri, data: { publishedAt: new Date().toISOString() } })
+      expect(cwaFetch.fetch).toHaveBeenCalledTimes(1)
+      return { resources, store }
+    }
+
+    test('does not render "has not been requested" for the position\'s component', async () => {
+      const { resources, store } = await publishWithSkewedClock()
+      // @ts-expect-error
+      vi.spyOn(cwaResourceComposables, 'useCwaResource').mockImplementation(() => ({
+        getResource: vi.fn(() => computed(() => store.current.byId[positionIri])),
+      }))
+      vi.spyOn(cwaResourceManageableComposable, 'useCwaResourceManageable').mockImplementation(() => ({}) as never)
+      vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => ({
+        auth: { isAdmin: computed(() => true), user: { roles: [] }, signedIn: ref(true) },
+        admin: { isEditing: true, resourceStackManager: { currentIri: ref(undefined) } },
+        resources,
+        resourcesManager: { addResourceEvent: ref(undefined) },
+        fetchResource: vi.fn(),
+        isStaticRender: false,
+      }) as never)
+
+      const wrapper = mount(ComponentPosition, {
+        props: { iri: positionIri },
+        global: {
+          stubs: {
+            ComponentPlaceholder: true,
+            CwaUiAlertWarning: { template: '<div class="warning"><slot /></div>' },
+          },
+          components: {
+            CwaComponentHtmlContent: { name: 'CwaComponentHtmlContent', props: ['iri'], template: '<div class="html-content">{{ iri }}</div>' },
+          },
+        },
+      })
+      await new Promise(resolve => setTimeout(resolve, 30))
+      await flushPromises()
+
+      const loaderIri = wrapper.findComponent({ name: 'ResourceLoader' }).props('iri')
+      expect(loaderIri).toBe(draftIri)
+      expect(wrapper.text()).not.toContain('has not been requested')
+      expect(wrapper.find('.html-content').text()).toBe(draftIri)
     })
   })
 })

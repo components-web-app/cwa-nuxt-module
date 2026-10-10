@@ -60,6 +60,7 @@ export default class ResourceStackManager {
   private focusWrapper: HTMLElement | undefined
   private focusProxy: ComponentPublicInstance | undefined
   private focusGeneration = 0
+  private isModuleSelect = false
   private focusDomElements: Ref<HTMLElement[]> | undefined
   private _currentStackItem: ComputedRef<undefined | ResourceStackItem> | undefined
   private _currentIri: ComputedRef<string | undefined> | undefined
@@ -254,8 +255,18 @@ export default class ResourceStackManager {
     return this._addToStack(event, isContext, resourceOps)
   }
 
+  public selectFromModule(dispatchClick: () => void) {
+    this.isModuleSelect = true
+    try {
+      dispatchClick()
+    }
+    finally {
+      this.isModuleSelect = false
+    }
+  }
+
   private _addToStack(event: AddToStackEvent | AddToStackWindowEvent, isContext?: boolean, resourceOps?: ManageableResourceOps) {
-    if (!isContext && this.hasActiveTextSelection()) {
+    if (!isContext && !this.isModuleSelect && this.hasActiveTextSelection()) {
       return
     }
 

@@ -202,55 +202,52 @@ export class ResourcesManager {
     }
 
     const currentIsDraft = getPublishedResourceState({ data: currentResource }) === false
-    let isPublishing = false
-    let existingLiveIri: string | null = null
+    const existingLiveIri = currentIsDraft && currentResource ? getPublishedResourceIri(currentResource) : null
 
-    // if we are publishing, then we are adding positions to refresh as well. Could possibly bypass this and adjust locally manually.
-    if (currentIsDraft) {
-      isPublishing = event.data.publishedAt <= new Date().toISOString()
-      if (isPublishing) {
-        existingLiveIri = currentResource ? getPublishedResourceIri(currentResource) : null
-        const currentLiveResource = existingLiveIri ? this.resourcesStore.getResource(existingLiveIri)?.data : undefined
-        // if we are publishing a resource, we can refresh all the components positions as well
-        if (currentLiveResource) {
-          // publishing a new resource here
-          const updatingResourcePositions = currentLiveResource.componentPositions
-          if (updatingResourcePositions) {
-            const existingRefreshEndpoints = event.refreshEndpoints || []
-            event.refreshEndpoints = [...existingRefreshEndpoints, ...updatingResourcePositions]
-          }
-        }
-      }
+    const publishedOverLiveResource = (response?: CwaResource) => {
+      return !!response
+        && response['@id'] === existingLiveIri
+        && getPublishedResourceState({ data: response }) === true
     }
 
-    const isPublishingAndOverwritingPreviousLiveResource = isPublishing && currentResource && existingLiveIri && existingLiveIri !== iri
-
-    const postRequestFn = () => {
-      // if we have just published a resource, remove the old draft and turn off edit mode
-      if (isPublishingAndOverwritingPreviousLiveResource) {
-        this.admin.emptyStack()
+    const postRequestFn = async (response?: CwaResource) => {
+      if (!publishedOverLiveResource(response)) {
+        return
       }
+      const livePositions = this.resourcesStore.getResource(existingLiveIri!)?.data?.componentPositions
+      if (livePositions?.length) {
+        await this.refreshEndpoints(livePositions)
+      }
+      this.admin.emptyStack()
     }
 
-    const postSaveFn = () => {
-      // if we have just published a resource, remove the old draft and turn off edit mode
-      if (isPublishingAndOverwritingPreviousLiveResource) {
-        // when we remove the resource we do not want to remove the component position or update it...
-        // position will  have a refresh request already in process
+    const postSaveFn = (response?: CwaResource) => {
+      if (publishedOverLiveResource(response)) {
         this.removeResource({ resource: event.endpoint, noCascade: true })
       }
     }
 
     const resource = await this.doResourceRequest(event, args, postRequestFn, postSaveFn)
 
-    // if we have just done an update that creates a new draft, we need to select the draft
     const responseId = resource?.['@id']
     if (responseId && responseId !== iri) {
-      // show a draft if draft is created - also unset if we have just published so we are not trying to view a draft
-      this.admin.resourceStackManager.forcePublishedVersion.value = isPublishing ? undefined : false
+      this.admin.resourceStackManager.forcePublishedVersion.value = publishedOverLiveResource(resource) ? undefined : false
     }
 
     return resource
+  }
+
+  private async refreshEndpoints(paths: string[]) {
+    try {
+      await this.fetcher.fetchBatch({ paths, shallowFetch: 'noexist' })
+    }
+    catch (err) {
+      // issues refreshing endpoints which are no longer found can be common
+      const fetchError = err as FetchError<any>
+      if (fetchError?.statusCode !== 404) {
+        throw err
+      }
+    }
   }
 
   private async doResourceRequest(event: ApiResourceEvent, args: [string, RequestOptions], postRequestFn?: (resource?: CwaResource) => void | Promise<void>, postSaveFn?: (resource?: CwaResource) => void | Promise<void>) {
@@ -275,20 +272,7 @@ export class ResourcesManager {
         // component groups should be added by the calling api
       }
       if (refreshEndpoints.length) {
-        const fetchBathEvent: { paths: string[], shallowFetch: 'noexist' } = {
-          paths: refreshEndpoints,
-          shallowFetch: 'noexist',
-        }
-        try {
-          await this.fetcher.fetchBatch(fetchBathEvent)
-        }
-        catch (err) {
-          // issues refreshing endpoints which are no longer found can be common
-          const fetchError = err as FetchError<any>
-          if (fetchError?.statusCode !== 404) {
-            throw err
-          }
-        }
+        await this.refreshEndpoints(refreshEndpoints)
       }
       if (postRequestFn) {
         await postRequestFn(resource as CwaResource | undefined)
@@ -597,7 +581,7 @@ export class ResourcesManager {
     }
 
     if (publish !== undefined) {
-      resource.publishedAt = publish ? new Date().toISOString() : null
+      resource.publishedAt = publish ? 'now' : null
     }
 
     const postData: Omit<CwaResource, '@id' | '@type'> = { ...resource, '@id': undefined, '@type': undefined }

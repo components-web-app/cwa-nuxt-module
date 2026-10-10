@@ -1,5 +1,5 @@
 // @vitest-environment nuxt
-import { describe, test, expect } from 'vitest'
+import { describe, test, expect, vi, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import RoutesTabView from './RoutesTabView.vue'
 import ModalInfo from '#cwa/templates/components/core/admin/form/ModalInfo.vue'
@@ -165,6 +165,21 @@ describe('RoutesTabView', () => {
       })
       expect(wrapper.find('[data-route-publication]').text()).toContain('Live')
       expect(wrapper.find('[data-parent-gated]').exists()).toBe(false)
+    })
+
+    describe('once the parent date has passed', () => {
+      afterEach(() => {
+        vi.useRealTimers()
+      })
+
+      test('reads as live with no parent note (#378)', () => {
+        vi.useFakeTimers().setSystemTime(new Date('2026-09-20T12:00:00.000Z'))
+        const wrapper = mountView({
+          resource: { path: '/topic-1', redirectedFrom: [], liveAt: '2026-09-01T07:05:00Z', _metadata: { persisted: true, effectiveLiveAt: '2026-09-01T07:07:00Z' } },
+        })
+        expect(wrapper.find('[data-route-publication]').text()).toBe('Live')
+        expect(wrapper.find('[data-parent-gated]').exists()).toBe(false)
+      })
     })
   })
 })

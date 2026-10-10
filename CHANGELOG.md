@@ -4,6 +4,15 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+## [2.0.0-alpha.10] - 2026-10-10
+
+- **Breaking:** immediate publishing (the Publish button, Publish now, a schedule time already past, and adding a component published) sends `"publishedAt": "now"` so the API publishes by its own clock; needs api-components-bundle 2.0.0-alpha.13 or later ([#381](https://github.com/components-web-app/cwa-nuxt-module/issues/381), [98659370](https://github.com/components-web-app/cwa-nuxt-module/commit/98659370))
+- `useCwaFile`, `withFile` and `useCwaFileField` expose `srcset`: each sized variant of the field (original and imagine filters), ascending by width with the endpoint's `?published=` query, for a responsive `<img>` ([#377](https://github.com/components-web-app/cwa-nuxt-module/issues/377), [797a8ff1](https://github.com/components-web-app/cwa-nuxt-module/commit/797a8ff1))
+- A component added with `instantAdd` is selected even while text in the previously selected component is still highlighted; a user click during a text selection is still ignored ([#379](https://github.com/components-web-app/cwa-nuxt-module/issues/379), [c5031fa4](https://github.com/components-web-app/cwa-nuxt-module/commit/c5031fa4))
+- A route whose parent's go-live date has already passed no longer says "A parent route holds this page back" in the Routes tab ([#378](https://github.com/components-web-app/cwa-nuxt-module/issues/378), [7e1e434f](https://github.com/components-web-app/cwa-nuxt-module/commit/7e1e434f))
+- Clicks inside the stranded component groups modal no longer reach the page behind it, which hid the manager and left draft view ([#380](https://github.com/components-web-app/cwa-nuxt-module/issues/380), [eb9940b1](https://github.com/components-web-app/cwa-nuxt-module/commit/eb9940b1))
+- Publishing a draft from a browser whose clock is ahead of the API no longer leaves the component showing "Resource … has not been requested": a publish is decided from the API's response, not the browser clock, so a draft the API saved as scheduled stays loaded ([#373](https://github.com/components-web-app/cwa-nuxt-module/issues/373), [9e25d3f3](https://github.com/components-web-app/cwa-nuxt-module/commit/9e25d3f3))
+
 ## [2.0.0-alpha.9] - 2026-10-10
 
 - Move up / Move down move a component one place even when its component group is on screen more than once: the reorder queue is held once per group instead of per mounted group, so each move is applied and sent once ([#374](https://github.com/components-web-app/cwa-nuxt-module/issues/374), [d2aa2579](https://github.com/components-web-app/cwa-nuxt-module/commit/d2aa2579))
@@ -68,7 +77,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 - First tagged release of `@cwa/nuxt`; releases are now published from `v*` tags ([7c61b7c](https://github.com/components-web-app/cwa-nuxt-module/commit/7c61b7ce331ec4a0cb8e76951a5de2ff806ed07a))
 
-[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.9...HEAD
+[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.10...HEAD
+[2.0.0-alpha.10]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.9...v2.0.0-alpha.10
 [2.0.0-alpha.9]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.8...v2.0.0-alpha.9
 [2.0.0-alpha.8]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.7...v2.0.0-alpha.8
 [2.0.0-alpha.7]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.6...v2.0.0-alpha.7

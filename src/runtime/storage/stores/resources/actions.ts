@@ -123,7 +123,11 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
         break
       }
       case CwaResourceTypes.COMPONENT: {
-        if (!resource.data || event.noCascade) {
+        if (event.noCascade) {
+          clearPublishableMapping(event.resource)
+          break
+        }
+        if (!resource.data) {
           break
         }
 

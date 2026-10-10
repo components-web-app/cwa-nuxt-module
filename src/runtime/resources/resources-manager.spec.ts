@@ -1,6 +1,11 @@
 import { describe, vi, test, expect, beforeEach, afterEach } from 'vitest'
 import { createConfirmDialog } from 'vuejs-confirm-dialog'
+import { createPinia, setActivePinia } from 'pinia'
 import { ResourcesManager } from './resources-manager'
+import { Resources } from './resources'
+import { ResourcesStore } from '#cwa/storage/stores/resources/resources-store'
+import { FetcherStore } from '#cwa/storage/stores/fetcher/fetcher-store'
+import { ErrorStore } from '#cwa/storage/stores/error/error-store'
 import type { CwaResource } from '#cwa/resources/resource-utils'
 
 vi.mock('#cwa/templates/components/core/ConfirmDialog.vue', () => ({ default: {} }))
@@ -506,9 +511,8 @@ describe('Resources manager', () => {
       })
     })
 
-    test('calls admin.emptyStack when publishing overwrites an existing live resource', async () => {
-      const { resourcesManager, cwaFetch, resourcesStoreActions, mockAdmin } = createResourcesManager({ includeAdmin: true })
-      resourcesStoreActions.getResource.mockImplementation((iri: string) => {
+    function publishableThings(livePositions: string[] = []) {
+      return (iri: string) => {
         if (iri === '/things/draft') {
           return {
             data: {
@@ -521,71 +525,101 @@ describe('Resources manager', () => {
           }
         }
         if (iri === '/things/live') {
-          return { data: { '@id': '/things/live', 'componentPositions': [] } }
+          return { data: { '@id': '/things/live', 'draftResource': '/things/draft', 'componentPositions': livePositions, '_metadata': { persisted: true, publishable: { published: true } } } }
         }
-      })
-      cwaFetch.fetch.mockResolvedValue({ '@id': '/things/draft' })
+      }
+    }
+
+    const publishedLiveResponse = { '@id': '/things/live', 'draftResource': null, '_metadata': { persisted: true, publishable: { published: true } } }
+    const stillDraftResponse = { '@id': '/things/draft', 'publishedResource': '/things/live', '_metadata': { persisted: true, publishable: { published: false } } }
+
+    test('calls admin.emptyStack when the response is the published live resource', async () => {
+      const { resourcesManager, cwaFetch, resourcesStoreActions, mockAdmin } = createResourcesManager({ includeAdmin: true })
+      resourcesStoreActions.getResource.mockImplementation(publishableThings())
+      cwaFetch.fetch.mockResolvedValue(publishedLiveResponse)
       vi.spyOn(resourcesManager, 'storeResource').mockImplementation(() => {})
-      const past = new Date(Date.now() - 1000).toISOString()
-      await resourcesManager.updateResource({ endpoint: '/things/draft', data: { publishedAt: past } })
+      await resourcesManager.updateResource({ endpoint: '/things/draft', data: { publishedAt: new Date().toISOString() } })
       expect(mockAdmin!.emptyStack).toHaveBeenCalled()
     })
 
-    test('removes the draft after publishing when response IRI matches original', async () => {
-      const { resourcesManager, cwaFetch, resourcesStoreActions } = createResourcesManager({ includeAdmin: true })
-      resourcesStoreActions.getResource.mockImplementation((iri: string) => {
-        if (iri === '/things/draft') {
-          return {
-            data: {
-              '@id': '/things/draft',
-              '@type': 'Thing',
-              'publishedResource': '/things/live',
-              'componentPositions': undefined,
-              '_metadata': { persisted: true, publishable: { published: false } },
-            },
-          }
-        }
-        if (iri === '/things/live') {
-          return { data: { '@id': '/things/live', 'componentPositions': [] } }
-        }
-      })
-      cwaFetch.fetch.mockResolvedValue({ '@id': '/things/draft' })
+    test('removes the draft only when the response is the published live resource (#373)', async () => {
+      const { resourcesManager, cwaFetch, resourcesStoreActions, mockAdmin } = createResourcesManager({ includeAdmin: true })
+      resourcesStoreActions.getResource.mockImplementation(publishableThings())
+      cwaFetch.fetch.mockResolvedValue(publishedLiveResponse)
       vi.spyOn(resourcesManager, 'storeResource').mockImplementation(() => {})
       const removeSpy = vi.spyOn(resourcesManager, 'removeResource')
-      const past = new Date(Date.now() - 1000).toISOString()
-      await resourcesManager.updateResource({ endpoint: '/things/draft', data: { publishedAt: past } })
+      await resourcesManager.updateResource({ endpoint: '/things/draft', data: { publishedAt: new Date().toISOString() } })
+      expect(removeSpy).toHaveBeenCalledWith({ resource: '/things/draft', noCascade: true })
+      expect(mockAdmin!.resourceStackManager.forcePublishedVersion.value).toBeUndefined()
+    })
+
+    test('refreshes the live resource\'s positions once the response is the published live resource', async () => {
+      const fetcher = { fetchBatch: vi.fn().mockResolvedValue(undefined) }
+      const { resourcesManager, cwaFetch, resourcesStoreActions } = createResourcesManager({ includeAdmin: true, fetcher })
+      resourcesStoreActions.getResource.mockImplementation(publishableThings(['/_/component_positions/1']))
+      cwaFetch.fetch.mockResolvedValue(publishedLiveResponse)
+      vi.spyOn(resourcesManager, 'storeResource').mockImplementation(() => {})
+      await resourcesManager.updateResource({ endpoint: '/things/draft', data: { publishedAt: new Date().toISOString() } })
+      expect(fetcher.fetchBatch).toHaveBeenCalledWith({ paths: ['/_/component_positions/1'], shallowFetch: 'noexist' })
+    })
+
+    test('a response that is still the draft is not a publish, whatever the browser clock says (#373)', async () => {
+      const fetcher = { fetchBatch: vi.fn().mockResolvedValue(undefined) }
+      const { resourcesManager, cwaFetch, resourcesStoreActions, mockAdmin } = createResourcesManager({ includeAdmin: true, fetcher })
+      resourcesStoreActions.getResource.mockImplementation(publishableThings(['/_/component_positions/1']))
+      cwaFetch.fetch.mockResolvedValue(stillDraftResponse)
+      vi.spyOn(resourcesManager, 'storeResource').mockImplementation(() => {})
+      const removeSpy = vi.spyOn(resourcesManager, 'removeResource')
+      await resourcesManager.updateResource({ endpoint: '/things/draft', data: { publishedAt: new Date(Date.now() - 1000).toISOString() } })
+      expect(cwaFetch.fetch).toHaveBeenCalledTimes(1)
+      expect(mockAdmin!.emptyStack).not.toHaveBeenCalled()
+      expect(removeSpy).not.toHaveBeenCalled()
+      expect(fetcher.fetchBatch).not.toHaveBeenCalled()
+    })
+
+    test('a server-published response is a publish even when the browser clock thought the time was ahead (#373)', async () => {
+      const { resourcesManager, cwaFetch, resourcesStoreActions, mockAdmin } = createResourcesManager({ includeAdmin: true })
+      resourcesStoreActions.getResource.mockImplementation(publishableThings())
+      cwaFetch.fetch.mockResolvedValue(publishedLiveResponse)
+      vi.spyOn(resourcesManager, 'storeResource').mockImplementation(() => {})
+      const removeSpy = vi.spyOn(resourcesManager, 'removeResource')
+      await resourcesManager.updateResource({ endpoint: '/things/draft', data: { publishedAt: new Date(Date.now() + 500).toISOString() } })
+      expect(mockAdmin!.emptyStack).toHaveBeenCalled()
       expect(removeSpy).toHaveBeenCalledWith({ resource: '/things/draft', noCascade: true })
     })
 
-    test('treats a publishedAt equal to the current instant as publishing', async () => {
-      vi.useFakeTimers()
-      vi.setSystemTime(new Date('2026-01-02T03:04:05.678Z'))
-      try {
-        const { resourcesManager, cwaFetch, resourcesStoreActions, mockAdmin } = createResourcesManager({ includeAdmin: true })
-        resourcesStoreActions.getResource.mockImplementation((iri: string) => {
-          if (iri === '/things/draft') {
-            return {
-              data: {
-                '@id': '/things/draft',
-                '@type': 'Thing',
-                'publishedResource': '/things/live',
-                'componentPositions': undefined,
-                '_metadata': { persisted: true, publishable: { published: false } },
-              },
-            }
-          }
-          if (iri === '/things/live') {
-            return { data: { '@id': '/things/live', 'componentPositions': [] } }
-          }
-        })
-        cwaFetch.fetch.mockResolvedValue({ '@id': '/things/draft' })
-        vi.spyOn(resourcesManager, 'storeResource').mockImplementation(() => {})
-        await resourcesManager.updateResource({ endpoint: '/things/draft', data: { publishedAt: '2026-01-02T03:04:05.678Z' } })
-        expect(mockAdmin!.emptyStack).toHaveBeenCalled()
-      }
-      finally {
-        vi.useRealTimers()
-      }
+    test('a published response under the draft\'s own IRI is not treated as replacing the live resource', async () => {
+      const { resourcesManager, cwaFetch, resourcesStoreActions, mockAdmin } = createResourcesManager({ includeAdmin: true })
+      resourcesStoreActions.getResource.mockImplementation(publishableThings())
+      cwaFetch.fetch.mockResolvedValue({ ...stillDraftResponse, _metadata: { persisted: true, publishable: { published: true } } })
+      vi.spyOn(resourcesManager, 'storeResource').mockImplementation(() => {})
+      const removeSpy = vi.spyOn(resourcesManager, 'removeResource')
+      await resourcesManager.updateResource({ endpoint: '/things/draft', data: { publishedAt: new Date().toISOString() } })
+      expect(mockAdmin!.emptyStack).not.toHaveBeenCalled()
+      expect(removeSpy).not.toHaveBeenCalled()
+    })
+
+    test('a response under the live IRI that is not published is not a publish', async () => {
+      const { resourcesManager, cwaFetch, resourcesStoreActions, mockAdmin } = createResourcesManager({ includeAdmin: true })
+      resourcesStoreActions.getResource.mockImplementation(publishableThings())
+      cwaFetch.fetch.mockResolvedValue({ ...publishedLiveResponse, _metadata: { persisted: true, publishable: { published: false } } })
+      vi.spyOn(resourcesManager, 'storeResource').mockImplementation(() => {})
+      const removeSpy = vi.spyOn(resourcesManager, 'removeResource')
+      await resourcesManager.updateResource({ endpoint: '/things/draft', data: { publishedAt: new Date().toISOString() } })
+      expect(mockAdmin!.emptyStack).not.toHaveBeenCalled()
+      expect(removeSpy).not.toHaveBeenCalled()
+    })
+
+    test('updating a live resource that comes back published does not remove it', async () => {
+      const { resourcesManager, cwaFetch, resourcesStoreActions, mockAdmin } = createResourcesManager({ includeAdmin: true })
+      resourcesStoreActions.getResource.mockImplementation(publishableThings())
+      cwaFetch.fetch.mockResolvedValue(publishedLiveResponse)
+      vi.spyOn(resourcesManager, 'storeResource').mockImplementation(() => {})
+      const removeSpy = vi.spyOn(resourcesManager, 'removeResource')
+      await resourcesManager.updateResource({ endpoint: '/things/live', data: { publishedAt: new Date().toISOString() } })
+      expect(cwaFetch.fetch).toHaveBeenCalledTimes(1)
+      expect(mockAdmin!.emptyStack).not.toHaveBeenCalled()
+      expect(removeSpy).not.toHaveBeenCalled()
     })
 
     test('a future publishedAt schedules the draft rather than publishing it (#320)', async () => {
@@ -907,17 +941,20 @@ describe('Resources manager', () => {
       expect(updateSpy).not.toHaveBeenCalled()
     })
 
-    test('sets publishedAt to the current instant as a UTC ISO string when publish=true', async () => {
+    test('posts publishedAt "now" when publish=true so the API publishes by its own clock (#381)', async () => {
       vi.useFakeTimers()
       vi.setSystemTime(new Date('2026-01-02T03:04:05.678Z'))
       const { resourcesManager, cwaFetch } = createResourcesManager({ includeAdmin: true })
       cwaFetch.fetch.mockResolvedValue({ '@id': '/component/1' })
       vi.spyOn(resourcesManager, 'storeResource').mockImplementation(() => {})
-      const { newResourceData } = setupStore(resourcesManager, {
+      setupStore(resourcesManager, {
         addEventOverrides: { targetIri: '/_/component_positions/p1', addAfter: null, closest: {} },
       })
       await resourcesManager.addResourceAction(true)
-      expect(newResourceData.publishedAt).toBe('2026-01-02T03:04:05.678Z')
+      expect(cwaFetch.fetch).toHaveBeenCalledWith('/component', expect.objectContaining({
+        method: 'POST',
+        body: expect.objectContaining({ publishedAt: 'now' }),
+      }))
     })
 
     test('sets publishedAt to null when publish=false', async () => {
@@ -929,6 +966,10 @@ describe('Resources manager', () => {
       })
       await resourcesManager.addResourceAction(false)
       expect(newResourceData.publishedAt).toBeNull()
+      expect(cwaFetch.fetch).toHaveBeenCalledWith('/component', expect.objectContaining({
+        method: 'POST',
+        body: expect.objectContaining({ publishedAt: null }),
+      }))
     })
 
     test('binds the new component on the page data at the target position\'s depth, not the routed page\'s', async () => {
@@ -1483,6 +1524,59 @@ describe('Resources manager', () => {
     test('groupResourcePositions getter returns undefined when groupResource is undefined (line 665)', () => {
       const { resourcesManager } = createResourcesManager({ includeAdmin: true })
       expect((resourcesManager as any).groupResourcePositions).toBeUndefined()
+    })
+  })
+
+  describe('publishing a draft while the browser clock is ahead of the API (#373)', () => {
+    const liveIri = '/component/html_contents/live'
+    const draftIri = '/component/html_contents/draft'
+    const positionIri = '/_/component_positions/p1'
+
+    function setup() {
+      setActivePinia(createPinia())
+      const resourcesStoreDef = new ResourcesStore('cwa')
+      const resources = new Resources(resourcesStoreDef, new FetcherStore('cwa'))
+      const cwaFetch = { fetch: vi.fn() }
+      const fetcher = { fetchBatch: vi.fn().mockResolvedValue(undefined) }
+      const admin = {
+        emptyStack: vi.fn(),
+        resourceStackManager: { forcePublishedVersion: { value: undefined } },
+      }
+      const resourcesManager = new ResourcesManager(
+        cwaFetch as never,
+        resourcesStoreDef,
+        { primaryFetchPath: undefined } as never,
+        new ErrorStore('cwa'),
+        fetcher as never,
+        admin as never,
+        resources,
+      )
+      const store = resourcesStoreDef.useStore()
+      store.saveResource({ resource: { '@id': liveIri, '@type': 'HtmlContent', 'draftResource': draftIri, 'componentPositions': [positionIri], '_metadata': { persisted: true, publishable: { published: true } } } as never })
+      store.saveResource({ resource: { '@id': draftIri, '@type': 'HtmlContent', 'publishedResource': liveIri, 'publishedAt': null, '_metadata': { persisted: true, publishable: { published: false } } } as never })
+      store.saveResource({ resource: { '@id': positionIri, '@type': 'ComponentPosition', 'component': liveIri, '_metadata': { persisted: true } } as never })
+      cwaFetch.fetch.mockResolvedValue({
+        '@id': draftIri,
+        '@type': 'HtmlContent',
+        'publishedResource': liveIri,
+        'publishedAt': new Date(Date.now() + 500).toISOString(),
+        '_metadata': { persisted: true, publishable: { published: false } },
+      })
+      return { resourcesManager, resources, store, cwaFetch, admin }
+    }
+
+    test('keeps the draft the API saved as scheduled, so the live resource\'s draft is still stored', async () => {
+      const { resourcesManager, resources, store, cwaFetch, admin } = setup()
+      expect(resources.findDraftComponentIri(liveIri).value).toBe(draftIri)
+
+      await resourcesManager.updateResource({ endpoint: draftIri, data: { publishedAt: new Date().toISOString() } })
+
+      expect(cwaFetch.fetch).toHaveBeenCalledTimes(1)
+      expect(store.current.byId[draftIri]?.data).toBeDefined()
+      const draftOfLive = resources.findDraftComponentIri(liveIri).value
+      expect(draftOfLive).toBe(draftIri)
+      expect(store.current.byId[draftOfLive!]?.data).toBeDefined()
+      expect(admin.emptyStack).not.toHaveBeenCalled()
     })
   })
 })

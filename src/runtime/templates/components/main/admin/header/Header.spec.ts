@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { describe, test, expect, vi, beforeEach } from 'vitest'
+import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
 import { ref, reactive, computed } from 'vue'
 import { flushPromises, mount } from '@vue/test-utils'
 import { mockNuxtImport } from '@nuxt/test-utils/runtime'
@@ -23,7 +23,7 @@ vi.mock('#cwa/templates/components/core/admin/StrandedComponentGroupsModal.vue',
     name: 'StrandedComponentGroupsModal',
     props: ['groups', 'targets'],
     emits: ['close'],
-    template: '<div class="stranded-modal-stub" />',
+    template: '<div class="stranded-modal-stub" data-testid="stranded-groups-modal" />',
   },
 }))
 
@@ -80,8 +80,9 @@ function mockCwa({
   return { res, adm }
 }
 
-function mountHeader() {
+function mountHeader(options: { stubs?: Record<string, any>, attachTo?: HTMLElement } = {}) {
   return mount(Header, {
+    attachTo: options.attachTo,
     global: {
       stubs: {
         PathSelector: { name: 'PathSelector', template: '<div class="path-selector-stub" />' },
@@ -119,6 +120,7 @@ function mountHeader() {
         IconData: { name: 'IconData', template: '<svg class="icon-data" />' },
         IconRoutes: { name: 'IconRoutes', template: '<svg class="icon-routes" />' },
         IconUsers: { name: 'IconUsers', template: '<svg class="icon-users" />' },
+        ...options.stubs,
       },
     },
   })
@@ -176,6 +178,34 @@ describe('Header', () => {
       modal.vm.$emit('close')
       await flushPromises()
       expect(wrapper.findComponent({ name: 'StrandedComponentGroupsModal' }).exists()).toBe(false)
+    })
+
+    describe('with the real overlay', () => {
+      let root: HTMLElement | undefined
+
+      afterEach(() => {
+        root?.remove()
+      })
+
+      test('a click inside the stranded groups modal does not reach the root layout (#380)', async () => {
+        strandedState.stranded = [strandedGroup]
+        mockCwa()
+        root = document.createElement('div')
+        const rootClick = vi.fn()
+        root.addEventListener('click', rootClick)
+        const mountPoint = document.createElement('div')
+        root.appendChild(mountPoint)
+        document.body.appendChild(root)
+        const wrapper = mountHeader({ stubs: { ResourceModalOverlayTemplate: false }, attachTo: mountPoint })
+        await wrapper.find('[data-testid="stranded-groups-warning"]').trigger('click')
+        await flushPromises()
+        rootClick.mockClear()
+        const modal = wrapper.find('[data-testid="stranded-groups-modal"]')
+        expect(modal.exists()).toBe(true)
+        await modal.trigger('click')
+        expect(rootClick).not.toHaveBeenCalled()
+        wrapper.unmount()
+      })
     })
   })
 

@@ -1,5 +1,5 @@
 // @vitest-environment nuxt
-import { describe, test, expect } from 'vitest'
+import { describe, test, expect, vi, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import RoutesTabManage from './RoutesTabManage.vue'
 import ModalInput from '#cwa/templates/components/core/admin/form/ModalInput.vue'
@@ -286,6 +286,19 @@ describe('RoutesTabManage', () => {
       await getStateSelect(wrapper).vm.$emit('update:modelValue', 'scheduled')
       await getLiveAtInput(wrapper).vm.$emit('update:modelValue', '3999-01-01T09:00:00.000Z')
       expect(wrapper.find('[data-effective-live-at]').exists()).toBe(false)
+    })
+
+    describe('once the parent date has passed', () => {
+      afterEach(() => {
+        vi.useRealTimers()
+      })
+
+      test('no longer says a parent route holds the page back (#378)', () => {
+        vi.useFakeTimers().setSystemTime(new Date('2026-09-20T12:00:00.000Z'))
+        const wrapper = mountManage({ liveAt: '2026-09-01T07:05:00Z', effectiveLiveAt: '2026-09-01T07:07:00Z' })
+        expect(wrapper.find('[data-effective-live-at]').exists()).toBe(false)
+        expect(wrapper.find('[data-live-since]').exists()).toBe(true)
+      })
     })
   })
 })

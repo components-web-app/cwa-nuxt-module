@@ -48,7 +48,7 @@ describe('when the page actually becomes reachable', () => {
     expect(getRouteLiveState(child, now)).toBe('scheduled')
     expect(routeLiveStateLabel(child, now)).toBe('Scheduled')
     expect(routeReachableAt(child)).toBe(future)
-    expect(isRouteGatedByAncestor(child)).toBe(true)
+    expect(isRouteGatedByAncestor(child, now)).toBe(true)
   })
 
   test('a draft ancestor holds the whole branch back however live the child is', () => {
@@ -58,22 +58,34 @@ describe('when the page actually becomes reachable', () => {
   test('a route with no ancestors gating it reports its own state', () => {
     const route = { liveAt: past, effectiveLiveAt: past }
     expect(getRouteLiveState(route, now)).toBe('live')
-    expect(isRouteGatedByAncestor(route)).toBe(false)
+    expect(isRouteGatedByAncestor(route, now)).toBe(false)
   })
 
   test('an effective date earlier than the route own date is not a parent gate', () => {
-    expect(isRouteGatedByAncestor({ liveAt: '3999-01-01T00:00:00+00:00', effectiveLiveAt: future })).toBe(false)
+    expect(isRouteGatedByAncestor({ liveAt: '3999-01-01T00:00:00+00:00', effectiveLiveAt: future }, now)).toBe(false)
   })
 
   test('the same instant written two ways is not mistaken for a parent gate', () => {
-    expect(isRouteGatedByAncestor({ liveAt: '2999-01-01T00:00:00+00:00', effectiveLiveAt: '2999-01-01T00:00:00.000Z' })).toBe(false)
+    expect(isRouteGatedByAncestor({ liveAt: '2999-01-01T00:00:00+00:00', effectiveLiveAt: '2999-01-01T00:00:00.000Z' }, now)).toBe(false)
   })
 
   test('a missing effective date is a route nobody can reach, never a route assumed live', () => {
     expect(getRouteLiveState({ liveAt: past }, now)).toBe('draft')
     expect(getRouteLiveState({ liveAt: future }, now)).toBe('draft')
     expect(routeReachableAt({ liveAt: past })).toBeUndefined()
-    expect(isRouteGatedByAncestor({ liveAt: past })).toBe(true)
+    expect(isRouteGatedByAncestor({ liveAt: past }, now)).toBe(true)
+  })
+
+  test('a parent date already passed no longer holds the page back', () => {
+    expect(isRouteGatedByAncestor({ liveAt: '2026-09-01T07:05:00Z', effectiveLiveAt: '2026-09-01T07:07:00Z' }, now)).toBe(false)
+  })
+
+  test('a parent date of exactly now is reachable', () => {
+    expect(isRouteGatedByAncestor({ liveAt: '2026-09-01T07:05:00Z', effectiveLiveAt: now.toISOString() }, now)).toBe(false)
+  })
+
+  test('a parent date still to come holds the page back', () => {
+    expect(isRouteGatedByAncestor({ liveAt: '2026-09-01T07:05:00Z', effectiveLiveAt: '2026-09-20T12:00:00.001Z' }, now)).toBe(true)
   })
 })
 
@@ -82,13 +94,13 @@ describe('reading the effective go-live date off a route resource', () => {
     const publication = routePublicationFromResource({ liveAt: past, _metadata: { persisted: true, effectiveLiveAt: future } })
     expect(routeReachableAt(publication)).toBe(future)
     expect(getRouteLiveState(publication, now)).toBe('scheduled')
-    expect(isRouteGatedByAncestor(publication)).toBe(true)
+    expect(isRouteGatedByAncestor(publication, now)).toBe(true)
   })
 
   test('a route no ancestor gates carries its own date as its effective date', () => {
     const publication = routePublicationFromResource({ liveAt: past, _metadata: { persisted: true, effectiveLiveAt: past } })
     expect(getRouteLiveState(publication, now)).toBe('live')
-    expect(isRouteGatedByAncestor(publication)).toBe(false)
+    expect(isRouteGatedByAncestor(publication, now)).toBe(false)
   })
 
   test('ignores a top level effective date, which the API no longer sends', () => {
@@ -100,13 +112,13 @@ describe('reading the effective go-live date off a route resource', () => {
   test('a null effective date in metadata is a draft ancestor', () => {
     const publication = routePublicationFromResource({ liveAt: past, _metadata: { persisted: true, effectiveLiveAt: null } })
     expect(getRouteLiveState(publication, now)).toBe('draft')
-    expect(isRouteGatedByAncestor(publication)).toBe(true)
+    expect(isRouteGatedByAncestor(publication, now)).toBe(true)
   })
 
   test('metadata without the key means the same, because the API omits a null it resolved', () => {
     const publication = routePublicationFromResource({ liveAt: past, _metadata: { persisted: true } })
     expect(getRouteLiveState(publication, now)).toBe('draft')
-    expect(isRouteGatedByAncestor(publication)).toBe(true)
+    expect(isRouteGatedByAncestor(publication, now)).toBe(true)
   })
 
   test('a route with no metadata at all is not live', () => {

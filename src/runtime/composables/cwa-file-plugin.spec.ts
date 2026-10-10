@@ -14,6 +14,7 @@ vi.mock('#cwa/composables/cwa-file', () => ({
   useCwaFile: vi.fn(() => ({
     contentUrl: computed(() => '/mock.jpg'),
     displayMedia: computed(() => undefined),
+    srcset: computed(() => '/mock-500.jpg 500w, /mock.jpg 1000w'),
     handleLoad: vi.fn(),
     loaded: ref(false),
   })),
@@ -33,6 +34,7 @@ describe('withFile', () => {
     vi.mocked(cwaFileModule.useCwaFile).mockReturnValue({
       contentUrl: computed(() => '/mock.jpg'),
       displayMedia: computed(() => undefined),
+      srcset: computed(() => '/mock-500.jpg 500w, /mock.jpg 1000w'),
       handleLoad: vi.fn(),
       loaded: ref(false),
     })
@@ -42,6 +44,11 @@ describe('withFile', () => {
     const { files } = withFile()(makeCtx())
     expect(Object.keys(files)).toEqual(['file'])
     expect(files.file!.contentUrl).toBe('/mock.jpg')
+  })
+
+  test('exposes srcset as a plain string, not a ref', () => {
+    const { files } = withFile()(makeCtx())
+    expect(files.file!.srcset).toBe('/mock-500.jpg 500w, /mock.jpg 1000w')
   })
 
   test('keys the entry by a custom fileProp', () => {

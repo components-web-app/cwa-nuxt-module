@@ -240,6 +240,42 @@ describe('Resources -> deleteResource', () => {
     expect(resourcesState.current.byId[positionIri]).toBeDefined()
   })
 
+  test('Deleting a draft COMPONENT with noCascade still clears its publishable mapping (#373)', () => {
+    const resourcesState = state()
+    const resourcesGetters = getters(resourcesState)
+    const resourcesActions = actions(resourcesState, resourcesGetters)
+
+    const liveIri = '/component/live-1'
+    const draftIri = '/component/draft-1'
+    resourcesState.current.byId[liveIri] = {
+      apiState: { status: undefined },
+      data: {
+        '@id': liveIri,
+        '@type': 'Component',
+        '_metadata': { persisted: true, publishable: { published: true } },
+        'draftResource': draftIri,
+      },
+    }
+    resourcesState.current.byId[draftIri] = {
+      apiState: { status: undefined },
+      data: {
+        '@id': draftIri,
+        '@type': 'Component',
+        '_metadata': { persisted: true, publishable: { published: false } },
+        'publishedResource': liveIri,
+      },
+    }
+    resourcesState.current.allIds.push(liveIri, draftIri)
+    resourcesState.current.publishableMapping.push({ publishedIri: liveIri, draftIri })
+    expect(resourcesGetters.publishedToDraftIris.value[liveIri]).toBe(draftIri)
+
+    resourcesActions.deleteResource({ resource: draftIri, noCascade: true })
+
+    expect(resourcesState.current.byId[draftIri]).toBeUndefined()
+    expect(resourcesGetters.publishedToDraftIris.value[liveIri]).toBeUndefined()
+    expect(resourcesGetters.findDraftComponentIri.value(liveIri)).toBeUndefined()
+  })
+
   test('Deleting a COMPONENT with alternative versions updates positions to other version', () => {
     const resourcesState = state()
     const resourcesGetters = getters(resourcesState)

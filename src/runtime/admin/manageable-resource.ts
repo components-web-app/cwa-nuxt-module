@@ -254,7 +254,7 @@ export default class ManageableResource {
       return
     }
     const clickEvent = new Event('click', { bubbles: true })
-    firstDomElement.dispatchEvent(clickEvent)
+    this.$cwa.admin.resourceStackManager.selectFromModule(() => firstDomElement.dispatchEvent(clickEvent))
   }
 
   private removeClickEventListeners() {

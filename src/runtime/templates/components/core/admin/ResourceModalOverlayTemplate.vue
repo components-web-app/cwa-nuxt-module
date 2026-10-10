@@ -3,6 +3,7 @@
     <div
       v-if="show"
       class="cwa:fixed cwa:z-dialog cwa:bg-dark/80 cwa:backdrop-blur-sm cwa:top-0 cwa:left-0 cwa:w-full cwa:h-full cwa:px-6 cwa:py-10 cwa:text-light cwa:flex cwa:justify-center cwa:items-center"
+      @click.stop
     >
       <slot />
     </div>
