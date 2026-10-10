@@ -4,6 +4,7 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+- **Breaking:** immediate publishing (the Publish button, Publish now, a schedule time already past, and adding a component published) sends `"publishedAt": "now"` so the API publishes by its own clock; needs api-components-bundle 2.0.0-alpha.13 or later ([#381](https://github.com/components-web-app/cwa-nuxt-module/issues/381), [98659370](https://github.com/components-web-app/cwa-nuxt-module/commit/98659370))
 - `useCwaFile`, `withFile` and `useCwaFileField` expose `srcset`: each sized variant of the field (original and imagine filters), ascending by width with the endpoint's `?published=` query, for a responsive `<img>` ([#377](https://github.com/components-web-app/cwa-nuxt-module/issues/377), [797a8ff1](https://github.com/components-web-app/cwa-nuxt-module/commit/797a8ff1))
 - A component added with `instantAdd` is selected even while text in the previously selected component is still highlighted; a user click during a text selection is still ignored ([#379](https://github.com/components-web-app/cwa-nuxt-module/issues/379), [c5031fa4](https://github.com/components-web-app/cwa-nuxt-module/commit/c5031fa4))
 - A route whose parent's go-live date has already passed no longer says "A parent route holds this page back" in the Routes tab ([#378](https://github.com/components-web-app/cwa-nuxt-module/issues/378), [7e1e434f](https://github.com/components-web-app/cwa-nuxt-module/commit/7e1e434f))
