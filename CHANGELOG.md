@@ -4,6 +4,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+## [2.0.0-alpha.9] - 2026-10-10
+
 - Move up / Move down move a component one place even when its component group is on screen more than once: the reorder queue is held once per group instead of per mounted group, so each move is applied and sent once ([#374](https://github.com/components-web-app/cwa-nuxt-module/issues/374), [d2aa2579](https://github.com/components-web-app/cwa-nuxt-module/commit/d2aa2579))
 - The orphaned files page lists **Invalid files**: files in use that break their upload field's current rules, each with a link to its resource, the field, path, adapter and every violation. They are report-only and never deleted, and the settings notice counts them. Needs api-components-bundle 2.0.0-alpha.11 or later ([#376](https://github.com/components-web-app/cwa-nuxt-module/issues/376), [09450e77](https://github.com/components-web-app/cwa-nuxt-module/commit/09450e77))
 - A failed background re-fetch (after a Mercure reconnect or an update message) no longer turns on-screen components into "Error loading resource … Unknown error" notices: a loaded resource keeps its last data unless the API answers 4xx ([#375](https://github.com/components-web-app/cwa-nuxt-module/issues/375), [d998476a](https://github.com/components-web-app/cwa-nuxt-module/commit/d998476a))
@@ -66,7 +68,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 - First tagged release of `@cwa/nuxt`; releases are now published from `v*` tags ([7c61b7c](https://github.com/components-web-app/cwa-nuxt-module/commit/7c61b7ce331ec4a0cb8e76951a5de2ff806ed07a))
 
-[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.8...HEAD
+[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.9...HEAD
+[2.0.0-alpha.9]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.8...v2.0.0-alpha.9
 [2.0.0-alpha.8]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.7...v2.0.0-alpha.8
 [2.0.0-alpha.7]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.6...v2.0.0-alpha.7
 [2.0.0-alpha.6]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.5...v2.0.0-alpha.6
