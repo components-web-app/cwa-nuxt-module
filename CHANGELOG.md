@@ -4,6 +4,7 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+- A failed background re-fetch (after a Mercure reconnect or an update message) no longer turns on-screen components into "Error loading resource … Unknown error" notices: a loaded resource keeps its last data unless the API answers 4xx ([#375](https://github.com/components-web-app/cwa-nuxt-module/issues/375), [d998476a](https://github.com/components-web-app/cwa-nuxt-module/commit/d998476a))
 - The manager's Info tab names the version a delete removes: **Delete Draft** for a draft and **Delete Live** for the live version of a publishable component; other resources still say **Delete** ([#371](https://github.com/components-web-app/cwa-nuxt-module/issues/371), [fd3b4d97](https://github.com/components-web-app/cwa-nuxt-module/commit/fd3b4d97))
 
 ## [2.0.0-alpha.8] - 2026-10-08
