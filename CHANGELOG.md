@@ -6,6 +6,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 - `useCwaFile`, `withFile` and `useCwaFileField` expose `srcset`: each sized variant of the field (original and imagine filters), ascending by width with the endpoint's `?published=` query, for a responsive `<img>` ([#377](https://github.com/components-web-app/cwa-nuxt-module/issues/377), [797a8ff1](https://github.com/components-web-app/cwa-nuxt-module/commit/797a8ff1))
 - A component added with `instantAdd` is selected even while text in the previously selected component is still highlighted; a user click during a text selection is still ignored ([#379](https://github.com/components-web-app/cwa-nuxt-module/issues/379), [c5031fa4](https://github.com/components-web-app/cwa-nuxt-module/commit/c5031fa4))
+- A route whose parent's go-live date has already passed no longer says "A parent route holds this page back" in the Routes tab ([#378](https://github.com/components-web-app/cwa-nuxt-module/issues/378), [7e1e434f](https://github.com/components-web-app/cwa-nuxt-module/commit/7e1e434f))
+- Clicks inside the stranded component groups modal no longer reach the page behind it, which hid the manager and left draft view ([#380](https://github.com/components-web-app/cwa-nuxt-module/issues/380), [eb9940b1](https://github.com/components-web-app/cwa-nuxt-module/commit/eb9940b1))
 
 ## [2.0.0-alpha.9] - 2026-10-10
 
