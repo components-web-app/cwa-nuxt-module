@@ -1,20 +1,24 @@
 // @vitest-environment happy-dom
 import { describe, expect, test, vi, beforeEach, afterEach } from 'vitest'
-import { computed, reactive } from 'vue'
+import { computed, nextTick, reactive, ref } from 'vue'
+import mitt from 'mitt'
 import { createPinia, setActivePinia } from 'pinia'
 import { useComponentGroupPositions } from './ComponentGroup.Util.Positions'
+import { ComponentGroupReorders } from '#cwa/admin/component-group-reorder'
 import { Resources } from '#cwa/resources/resources'
 import { ResourcesStore } from '#cwa/storage/stores/resources/resources-store'
 import { FetcherStore } from '#cwa/storage/stores/fetcher/fetcher-store'
 import type { CwaResource } from '#cwa/resources/resource-utils'
 import type { ReorderEvent } from '#cwa/admin/admin'
 
+const unmountHooks = vi.hoisted(() => [] as Array<() => void>)
+
 vi.mock('vue', async () => {
   const mod = await vi.importActual<typeof import('vue')>('vue')
   return {
     ...mod,
     onMounted: (fn: () => void) => fn(),
-    onBeforeUnmount: vi.fn(),
+    onBeforeUnmount: (fn: () => void) => { unmountHooks.push(fn) },
   }
 })
 
@@ -46,6 +50,7 @@ function buildCwa(positions: string[], resources: Record<string, any> = {}, iri 
     },
   }
 
+  mockCwa.componentGroupReorders = new ComponentGroupReorders(mockCwa.admin, mockCwa.resources, mockCwa.resourcesManager)
   return { mockCwa, getCapturedHandler: () => capturedHandler! }
 }
 
@@ -239,6 +244,7 @@ describe('useComponentGroupPositions', () => {
         },
       }
 
+      mockCwa.componentGroupReorders = new ComponentGroupReorders(mockCwa.admin, mockCwa.resources, mockCwa.resourcesManager)
       return { mockCwa, getCapturedHandler: () => capturedHandler! }
     }
 
@@ -321,56 +327,92 @@ describe('group reorder queue against the server', () => {
     }
   }
 
-  function createGroup(initial: Record<string, number>, options: { failRequests?: () => boolean } = {}) {
+  type GroupHarnessOptions = { failRequests?: () => boolean, holdRequests?: boolean }
+
+  function createGroups(groups: Record<string, Record<string, number>>, options: GroupHarnessOptions = {}) {
     setActivePinia(createPinia())
     const resourcesStoreDef = new ResourcesStore('cwa')
     const store = resourcesStoreDef.useStore()
     const resources = new Resources(resourcesStoreDef, new FetcherStore('cwa'))
-    const server: Record<string, number> = { ...initial }
-    const names = Object.keys(initial)
-    const serverOrder = () => [...names].sort((a, b) => server[a]! - server[b]!)
-    const toResource = (name: string, sortValue: number) => ({ '@id': positionIri(name), '@type': 'ComponentPosition', 'componentGroup': groupIri, sortValue, '_metadata': {} } as unknown as CwaResource)
-    store.saveResource({ resource: { '@id': groupIri, '@type': 'ComponentGroup', 'componentPositions': names.map(positionIri), '_metadata': {} } as unknown as CwaResource })
-    for (const name of names) {
-      store.saveResource({ resource: toResource(name, server[name]!) })
-    }
-    let handler: ((e: ReorderEvent) => void) | undefined
+    const server: Record<string, number> = {}
+    const groupOf: Record<string, string> = {}
     const requests: Array<[string, number]> = []
+    const heldRequests: Array<() => void> = []
+    let activeGroup = Object.keys(groups)[0]!
+    const toResource = (name: string, sortValue: number) => ({ '@id': positionIri(name), '@type': 'ComponentPosition', 'componentGroup': groupOf[name], sortValue, '_metadata': {} } as unknown as CwaResource)
+    for (const [group, initial] of Object.entries(groups)) {
+      const names = Object.keys(initial)
+      store.saveResource({ resource: { '@id': group, '@type': 'ComponentGroup', 'componentPositions': names.map(positionIri), '_metadata': {} } as unknown as CwaResource })
+      for (const name of names) {
+        server[name] = initial[name]!
+        groupOf[name] = group
+        store.saveResource({ resource: toResource(name, server[name]!) })
+      }
+    }
+    const serverValuesOf = (group: string) => Object.fromEntries(Object.keys(groups[group]!).map(name => [name, server[name]!]))
     const mockCwa: any = {
       admin: {
-        resourceStackManager: { getState: () => true, getClosestStackItemByType: () => groupIri },
-        eventBus: { on: (_e: string, h: any) => { handler = h }, off: vi.fn() },
+        resourceStackManager: { getState: () => true, getClosestStackItemByType: () => activeGroup },
+        eventBus: mitt(),
         emitRedraw: vi.fn(),
       },
       resources,
       resourcesManager: {
         storeResource: (event: any) => store.saveResource(event),
         updateResource: async (event: any) => {
-          requests.push([nameOf(event.endpoint), event.data.sortValue])
+          const name = nameOf(event.endpoint)
+          requests.push([name, event.data.sortValue])
+          if (options.holdRequests) {
+            await new Promise<void>(resolve => heldRequests.push(resolve))
+          }
           await Promise.resolve()
           if (options.failRequests?.()) {
             return undefined
           }
-          serverMove(server, nameOf(event.endpoint), event.data.sortValue)
-          const response = toResource(nameOf(event.endpoint), server[nameOf(event.endpoint)]!)
+          const groupServer = serverValuesOf(groupOf[name]!)
+          serverMove(groupServer, name, event.data.sortValue)
+          Object.assign(server, groupServer)
+          const response = toResource(name, server[name]!)
           store.saveResource({ resource: response })
           return response
         },
       },
     }
-    useComponentGroupPositions(computed(() => groupIri), mockCwa)
+    mockCwa.componentGroupReorders = new ComponentGroupReorders(mockCwa.admin, mockCwa.resources, mockCwa.resourcesManager)
+    const mount = (iri: { value: string | undefined } = computed(() => Object.keys(groups)[0])) => {
+      const hooksBefore = unmountHooks.length
+      useComponentGroupPositions(computed(() => iri.value), mockCwa)
+      const hooks = unmountHooks.slice(hooksBefore)
+      return { unmount: () => hooks.forEach(hook => hook()) }
+    }
+    const helpersFor = (group: string) => {
+      const names = Object.keys(groups[group]!)
+      return {
+        serverOrder: () => [...names].sort((a, b) => server[a]! - server[b]!),
+        move: (name: string, location: any) => {
+          activeGroup = group
+          mockCwa.admin.eventBus.emit('reorder', { positionIri: positionIri(name), location })
+        },
+        displayed: () => store.getOrderedPositionsForGroup(group)!.map(nameOf),
+        localValues: () => Object.fromEntries(names.map(name => [name, store.getResource(positionIri(name))?.data?.sortValue])),
+        displayNumbers: () => names.map(name => store.getResource(positionIri(name))?.data?._metadata.sortDisplayNumber),
+        stageServerValues: () => {
+          for (const name of names) {
+            store.saveResource({ resource: toResource(name, server[name]!), isNew: true, path: '/' })
+          }
+        },
+      }
+    }
     return {
       store,
       server,
       requests,
-      serverOrder,
-      move: (name: string, location: any) => handler!({ positionIri: positionIri(name), location }),
-      displayed: () => store.getOrderedPositionsForGroup(groupIri)!.map(nameOf),
-      localValues: () => Object.fromEntries(names.map(name => [name, store.getResource(positionIri(name))?.data?.sortValue])),
-      displayNumbers: () => names.map(name => store.getResource(positionIri(name))?.data?._metadata.sortDisplayNumber),
-      stageServerValues: () => {
-        for (const name of names) {
-          store.saveResource({ resource: toResource(name, server[name]!), isNew: true, path: '/' })
+      mount,
+      group: helpersFor,
+      releaseRequests: () => heldRequests.splice(0).forEach(resolve => resolve()),
+      flushMicrotasks: async () => {
+        for (let i = 0; i < 10; i++) {
+          await Promise.resolve()
         }
       },
       settle: async () => {
@@ -384,12 +426,19 @@ describe('group reorder queue against the server', () => {
     }
   }
 
+  function createGroup(initial: Record<string, number>, options: GroupHarnessOptions = {}) {
+    const harness = createGroups({ [groupIri]: initial }, options)
+    harness.mount()
+    return { ...harness, ...harness.group(groupIri) }
+  }
+
   beforeEach(() => {
     vi.useFakeTimers()
   })
 
   afterEach(() => {
     vi.useRealTimers()
+    unmountHooks.splice(0)
   })
 
   test('a single move sends one request and ends matching the server', async () => {
@@ -488,6 +537,109 @@ describe('group reorder queue against the server', () => {
     await group.settle()
     expect(group.displayNumbers()).toEqual([undefined, undefined, undefined])
     expect(group.requests).toEqual([])
+    expect(group.displayed()).toEqual(['a', 'b', 'c'])
+  })
+
+  describe('a group mounted more than once', () => {
+    test('Move up applies once and sends one request', async () => {
+      const harness = createGroups({ [groupIri]: { a: 0, b: 1, c: 2 } })
+      const group = harness.group(groupIri)
+      harness.mount()
+      harness.mount()
+      group.move('c', 'previous')
+      expect(group.displayed()).toEqual(['a', 'c', 'b'])
+      await harness.settle()
+      expect(harness.requests).toHaveLength(1)
+      expect(group.serverOrder()).toEqual(['a', 'c', 'b'])
+      expect(group.displayed()).toEqual(['a', 'c', 'b'])
+    })
+
+    test('Move down applies once and sends one request', async () => {
+      const harness = createGroups({ [groupIri]: { a: 0, b: 1, c: 2 } })
+      const group = harness.group(groupIri)
+      harness.mount()
+      harness.mount()
+      group.move('a', 'next')
+      expect(group.displayed()).toEqual(['b', 'a', 'c'])
+      await harness.settle()
+      expect(harness.requests).toHaveLength(1)
+      expect(group.serverOrder()).toEqual(['b', 'a', 'c'])
+      expect(group.displayed()).toEqual(['b', 'a', 'c'])
+    })
+
+    test('a numbered move sends one request', async () => {
+      const harness = createGroups({ [groupIri]: { a: 0, b: 1, c: 2 } })
+      const group = harness.group(groupIri)
+      harness.mount()
+      harness.mount()
+      group.move('c', 2)
+      expect(group.displayed()).toEqual(['a', 'c', 'b'])
+      await harness.settle()
+      expect(harness.requests).toHaveLength(1)
+      expect(group.serverOrder()).toEqual(['a', 'c', 'b'])
+      expect(group.displayed()).toEqual(['a', 'c', 'b'])
+    })
+
+    test('a move pending when the last instance unmounts is sent, and a later move waits for it', async () => {
+      const harness = createGroups({ [groupIri]: { a: 0, b: 1, c: 2, d: 3 } }, { holdRequests: true })
+      const group = harness.group(groupIri)
+      const first = harness.mount()
+      const second = harness.mount()
+      group.move('d', 1)
+      first.unmount()
+      second.unmount()
+      await harness.flushMicrotasks()
+      expect(harness.requests).toEqual([['d', 0]])
+      harness.mount()
+      group.move('a', 'next')
+      expect(group.displayed()).toEqual(['d', 'b', 'a', 'c'])
+      vi.advanceTimersByTime(1100)
+      await harness.flushMicrotasks()
+      expect(harness.requests).toHaveLength(1)
+      for (let i = 0; i < 5; i++) {
+        harness.releaseRequests()
+        await harness.settle()
+      }
+      expect(harness.requests).toHaveLength(2)
+      expect(group.serverOrder()).toEqual(['d', 'b', 'a', 'c'])
+      expect(group.displayed()).toEqual(['d', 'b', 'a', 'c'])
+      expect(group.displayNumbers()).toEqual([undefined, undefined, undefined, undefined])
+    })
+
+    test('a group whose IRI resolves after mounting handles each move once', async () => {
+      const harness = createGroups({ [groupIri]: { a: 0, b: 1, c: 2 } })
+      const group = harness.group(groupIri)
+      const lateIri = ref<string | undefined>(undefined)
+      harness.mount(lateIri)
+      group.move('c', 'previous')
+      expect(group.displayed()).toEqual(['a', 'b', 'c'])
+      lateIri.value = groupIri
+      await nextTick()
+      group.move('c', 'previous')
+      expect(group.displayed()).toEqual(['a', 'c', 'b'])
+      harness.mount()
+      group.move('a', 'next')
+      expect(group.displayed()).toEqual(['c', 'a', 'b'])
+      await harness.settle()
+      expect(harness.requests).toHaveLength(1)
+      expect(group.serverOrder()).toEqual(['c', 'a', 'b'])
+    })
+  })
+
+  test('moves in one group leave another mounted group untouched', async () => {
+    const otherGroupIri = '/_/component_groups/h'
+    const harness = createGroups({ [groupIri]: { a: 0, b: 1, c: 2 }, [otherGroupIri]: { x: 0, y: 1, z: 2 } })
+    const group = harness.group(groupIri)
+    const otherGroup = harness.group(otherGroupIri)
+    harness.mount()
+    harness.mount(computed(() => otherGroupIri))
+    otherGroup.move('z', 'previous')
+    expect(otherGroup.displayed()).toEqual(['x', 'z', 'y'])
+    expect(group.displayNumbers()).toEqual([undefined, undefined, undefined])
+    await harness.settle()
+    expect(harness.requests.map(([name]) => name)).toEqual(['z'])
+    expect(otherGroup.serverOrder()).toEqual(['x', 'z', 'y'])
+    expect(group.serverOrder()).toEqual(['a', 'b', 'c'])
     expect(group.displayed()).toEqual(['a', 'b', 'c'])
   })
 })
