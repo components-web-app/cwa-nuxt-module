@@ -17,10 +17,18 @@ const props = defineProps<{
 }>()
 
 const routePublication = computed(() => routePublicationFromResource(props.resource))
-const publicationState = computed(() => getRouteLiveState(routePublication.value))
-const publicationLabel = computed(() => routeLiveStateLabel(routePublication.value))
+const publicationStatus = computed(() => {
+  const now = new Date()
+  return {
+    state: getRouteLiveState(routePublication.value, now),
+    label: routeLiveStateLabel(routePublication.value, now),
+    gatedByAncestor: isRouteGatedByAncestor(routePublication.value, now),
+  }
+})
+const publicationState = computed(() => publicationStatus.value.state)
+const publicationLabel = computed(() => publicationStatus.value.label)
 const goesLiveAt = computed(() => formatDateTime(routeReachableAt(routePublication.value)))
-const gatedByAncestor = computed(() => isRouteGatedByAncestor(routePublication.value))
+const gatedByAncestor = computed(() => publicationStatus.value.gatedByAncestor)
 const publicationClass = computed(() => {
   if (publicationState.value === 'live') {
     return 'cwa:text-stone-300 cwa:border-stone-600'

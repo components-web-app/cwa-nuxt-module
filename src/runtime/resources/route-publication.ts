@@ -46,7 +46,7 @@ export function getRouteLiveState(resource?: CwaRouteLiveAt | null, now: Date = 
   return stateFromDate(routeReachableAt(resource), now)
 }
 
-export function isRouteGatedByAncestor(resource?: CwaRouteLiveAt | null): boolean {
+export function isRouteGatedByAncestor(resource?: CwaRouteLiveAt | null, now: Date = new Date()): boolean {
   if (!resource?.liveAt) {
     return false
   }
@@ -58,7 +58,7 @@ export function isRouteGatedByAncestor(resource?: CwaRouteLiveAt | null): boolea
   if (Number.isNaN(own) || Number.isNaN(effective)) {
     return false
   }
-  return effective > own
+  return effective > own && effective > now.getTime()
 }
 
 export function routeLiveStateLabel(resource?: CwaRouteLiveAt | null, now: Date = new Date()): string {
