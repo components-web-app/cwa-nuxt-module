@@ -4,6 +4,13 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+## [2.0.0-alpha.9] - 2026-10-10
+
+- Move up / Move down move a component one place even when its component group is on screen more than once: the reorder queue is held once per group instead of per mounted group, so each move is applied and sent once ([#374](https://github.com/components-web-app/cwa-nuxt-module/issues/374), [d2aa2579](https://github.com/components-web-app/cwa-nuxt-module/commit/d2aa2579))
+- The orphaned files page lists **Invalid files**: files in use that break their upload field's current rules, each with a link to its resource, the field, path, adapter and every violation. They are report-only and never deleted, and the settings notice counts them. Needs api-components-bundle 2.0.0-alpha.11 or later ([#376](https://github.com/components-web-app/cwa-nuxt-module/issues/376), [09450e77](https://github.com/components-web-app/cwa-nuxt-module/commit/09450e77))
+- A failed background re-fetch (after a Mercure reconnect or an update message) no longer turns on-screen components into "Error loading resource … Unknown error" notices: a loaded resource keeps its last data unless the API answers 4xx ([#375](https://github.com/components-web-app/cwa-nuxt-module/issues/375), [d998476a](https://github.com/components-web-app/cwa-nuxt-module/commit/d998476a))
+- The manager's Info tab names the version a delete removes: **Delete Draft** for a draft and **Delete Live** for the live version of a publishable component; other resources still say **Delete** ([#371](https://github.com/components-web-app/cwa-nuxt-module/issues/371), [fd3b4d97](https://github.com/components-web-app/cwa-nuxt-module/commit/fd3b4d97))
+
 ## [2.0.0-alpha.8] - 2026-10-08
 
 - Pages and page data have a **Public without a route** toggle in their settings, so a routeless page loaded by a custom fetch IRI can be read by visitors; it has no effect while the page has a route, and a flagged page shows as public (green) like a routed one. Needs api-components-bundle 2.0.0-alpha.9 or later ([#369](https://github.com/components-web-app/cwa-nuxt-module/issues/369), [5a919456](https://github.com/components-web-app/cwa-nuxt-module/commit/5a919456))
@@ -61,7 +68,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 - First tagged release of `@cwa/nuxt`; releases are now published from `v*` tags ([7c61b7c](https://github.com/components-web-app/cwa-nuxt-module/commit/7c61b7ce331ec4a0cb8e76951a5de2ff806ed07a))
 
-[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.8...HEAD
+[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.9...HEAD
+[2.0.0-alpha.9]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.8...v2.0.0-alpha.9
 [2.0.0-alpha.8]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.7...v2.0.0-alpha.8
 [2.0.0-alpha.7]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.6...v2.0.0-alpha.7
 [2.0.0-alpha.6]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.5...v2.0.0-alpha.6

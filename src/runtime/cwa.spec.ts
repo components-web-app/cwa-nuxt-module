@@ -15,6 +15,7 @@ import { Resources } from './resources/resources'
 import * as processComposables from './composables/process'
 import Admin from './admin/admin'
 import NavigationGuard from './admin/navigation-guard'
+import { ComponentGroupReorders } from './admin/component-group-reorder'
 import Auth from './api/auth'
 import SiteConfig from '#cwa/api/site-config'
 import OrphanedResources from '#cwa/api/orphaned-resources'
@@ -155,6 +156,7 @@ vi.mock('./admin/admin', function () {
     }),
   }
 })
+vi.mock('./admin/component-group-reorder')
 vi.mock('./admin/navigation-guard', function () {
   return {
     default: vi.fn(function () {
@@ -348,6 +350,12 @@ describe('Cwa class test', () => {
     const stores = Storage.mock.results[0].value.stores
     expect(Admin).toBeCalledWith(stores.admin, stores.resources, Resources.mock.results[0].value)
     expect($cwa.admin).toBe(Admin.mock.results[0].value)
+  })
+
+  test('one component group reorder registry is held per Cwa instance', () => {
+    const $cwa = createCwa({ storeName })
+    expect(ComponentGroupReorders).toBeCalledWith(Admin.mock.results[0].value, Resources.mock.results[0].value, ResourcesManager.mock.results[0].value)
+    expect($cwa.componentGroupReorders).toBe(vi.mocked(ComponentGroupReorders).mock.instances[0])
   })
 
   test('Admin navigation guard is initialised', () => {

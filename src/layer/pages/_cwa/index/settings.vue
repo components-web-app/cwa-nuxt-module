@@ -415,6 +415,7 @@ const {
   report: fileReport,
   orphanCount: fileOrphanCount,
   missingCount: missingFileCount,
+  invalidCount: invalidFileCount,
   scanError: fileScanError,
   scanning: scanningFiles,
   scanPending: fileScanPending,
@@ -434,6 +435,9 @@ const orphanNotice = computed(() => {
   }
   if (missingFileCount.value) {
     sentences.push(`${countLabel(missingFileCount.value, 'file')} ${missingFileCount.value === 1 ? 'is' : 'are'} missing from storage.`)
+  }
+  if (invalidFileCount.value) {
+    sentences.push(`${countLabel(invalidFileCount.value, 'file')} ${invalidFileCount.value === 1 ? 'no longer meets its' : 'no longer meet their'} upload rules.`)
   }
   return sentences.join(' ')
 })

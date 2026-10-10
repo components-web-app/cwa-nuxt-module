@@ -142,6 +142,7 @@ export default class Fetcher {
       token: startFetchResult.token,
       path: path,
       headers: this.createRequestHeaders(fetchEvent),
+      noSave,
     })
 
     if (!continueToFetchResource) {

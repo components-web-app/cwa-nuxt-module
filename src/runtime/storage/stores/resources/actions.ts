@@ -14,6 +14,7 @@ import type { CwaResourcesGettersInterface } from './getters'
 import type {
   CwaCurrentResourceInterface,
   CwaResourceApiStateGeneral,
+  CwaResourceApiStateSuccess,
   CwaResourcesStateInterface,
 } from './state'
 import { CwaResourceApiStatuses, NEW_RESOURCE_IRI } from './state'
@@ -49,6 +50,8 @@ export interface SetResourceResetStatusEvent {
 }
 declare type SetResourceStatusEvent = SetResourceInProgressStatusEvent | SetResourceCompletedStatusEvent | SetResourceResetStatusEvent
 
+export interface RestoreResourceApiStateEvent { iri: string, apiState: CwaResourceApiStateSuccess }
+
 export interface SetResourceFetchErrorEvent { iri: string, error?: CwaResourceError, isCurrent?: boolean, showErrorPage?: boolean, nuxtApp: NuxtApp }
 
 interface InitResourceEvent {
@@ -65,6 +68,7 @@ export interface CwaResourcesActionsInterface {
   evictResources (iris: string[]): void
   setResourceFetchStatus (event: SetResourceStatusEvent): void
   setResourceFetchError (event: SetResourceFetchErrorEvent): void
+  restoreResourceApiState (event: RestoreResourceApiStateEvent): void
   saveResource(event: SaveResourceEvent | SaveNewResourceEvent): void
   deleteResource(event: DeleteResourceEvent): void
   mergeNewResources(): void
@@ -549,6 +553,12 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
         newApiState.ssr = data.apiState.ssr
       }
       data.apiState = newApiState
+    },
+    restoreResourceApiState({ iri, apiState }: RestoreResourceApiStateEvent): void {
+      const resource = resourcesState.current.byId[iri]
+      if (resource) {
+        resource.apiState = apiState
+      }
     },
     async setResourceFetchError({ iri, error, isCurrent, showErrorPage, nuxtApp }: SetResourceFetchErrorEvent): Promise<void> {
       const data = initResource({

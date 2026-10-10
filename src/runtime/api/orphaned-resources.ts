@@ -31,11 +31,17 @@ export interface MissingFile extends OrphanedFile {
   resource: string
 }
 
+export interface InvalidFile extends MissingFile {
+  field: string
+  violations: string[]
+}
+
 export interface OrphanedFileReport {
   generatedAt: string
   orphanedFiles: OrphanedFile[]
   unknownFiles?: OrphanedFile[]
   missingFiles: MissingFile[]
+  invalidFiles?: InvalidFile[]
 }
 
 export type OrphanedFileDeletionRequest = { paths: string[], all?: never } | { all: true, paths?: never }

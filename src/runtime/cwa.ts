@@ -18,6 +18,7 @@ import Forms from './api/forms'
 import { useProcess } from './composables/process'
 import Admin from './admin/admin'
 import NavigationGuard from './admin/navigation-guard'
+import { ComponentGroupReorders } from './admin/component-group-reorder'
 import { ResourceTypeFromIri } from '#cwa/resources/resource-utils'
 import SiteConfig from '#cwa/api/site-config'
 import OrphanedResources from '#cwa/api/orphaned-resources'
@@ -54,6 +55,9 @@ export default class Cwa {
   public readonly admin: Admin
   private readonly adminNavGuard: NavigationGuard
 
+  /** @internal */
+  public readonly componentGroupReorders: ComponentGroupReorders
+
   public readonly currentModulePackageInfo: { version: string, name: string }
 
   constructor($router: Router, options: CwaModuleOptions, currentModulePackageInfo: { version: string, name: string }) {
@@ -78,6 +82,7 @@ export default class Cwa {
     this.resources = new Resources(this.storage.stores.resources, this.storage.stores.fetcher)
     this.admin = new Admin(this.storage.stores.admin, this.storage.stores.resources, this.resources)
     this.resourcesManager = new ResourcesManager(this.cwaFetch, this.storage.stores.resources, this.fetchStatusManager, this.storage.stores.error, this.fetcher, this.admin, this.resources)
+    this.componentGroupReorders = new ComponentGroupReorders(this.admin, this.resources, this.resourcesManager)
     this.auth = new Auth(
       this.cwaFetch,
       this.mercure,

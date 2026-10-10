@@ -16,6 +16,8 @@ const B_S3 = { adapter: 's3', path: 'files/b.png' }
 const MISSING = { resource: '/component/images/i1', adapter: 'local', path: 'files/gone.png' }
 const UNKNOWN = { adapter: 'local', path: 'files/logo.png' }
 const MISSING_PAGE_DATA = { resource: '/page_data/pd1', adapter: 's3', path: 'files/gone-too.png' }
+const INVALID = { resource: '/component/images/i2', field: 'file', adapter: 'local', path: 'files/huge.png', violations: ['The image is too large (45000000 pixels). Allowed maximum size is 40000000 pixels.'] }
+const INVALID_PUBLISHED = { ...INVALID, resource: '/component/images/i3' }
 
 function report(overrides: Record<string, any> = {}) {
   return {
@@ -23,6 +25,7 @@ function report(overrides: Record<string, any> = {}) {
     orphanedFiles: [A, B_LOCAL, B_S3],
     unknownFiles: [UNKNOWN],
     missingFiles: [MISSING, MISSING_PAGE_DATA],
+    invalidFiles: [INVALID],
     ...overrides,
   }
 }
@@ -115,6 +118,30 @@ describe('useOrphanedFiles', () => {
       mockFetchFileReport.mockResolvedValue(report({ unknownFiles: undefined }))
       const orphans = await loaded()
       expect(orphans.unknownFiles.rows).toEqual([])
+    })
+
+    test('invalid files are listed apart with the resource, field, path, adapter and every violation', async () => {
+      const invalid = { ...INVALID, violations: ['Too large.', 'Wrong type.'] }
+      mockFetchFileReport.mockResolvedValue(report({ invalidFiles: [invalid] }))
+      const orphans = await loaded()
+      expect(orphans.invalidFiles.rows.map(({ iri, field, path, adapter, violations }) => ({ iri, field, path, adapter, violations }))).toEqual([
+        { iri: invalid.resource, field: 'file', path: invalid.path, adapter: 'local', violations: ['Too large.', 'Wrong type.'] },
+      ])
+      expect(orphans.totalCount.value).toBe(3)
+    })
+
+    test('a draft and its published version sharing an invalid path are two rows with distinct keys', async () => {
+      mockFetchFileReport.mockResolvedValue(report({ invalidFiles: [INVALID, INVALID_PUBLISHED] }))
+      const orphans = await loaded()
+      expect(orphans.invalidFiles.rows.map(row => row.iri)).toEqual([INVALID.resource, INVALID_PUBLISHED.resource])
+      expect(new Set(orphans.invalidFiles.rows.map(row => row.key)).size).toBe(2)
+    })
+
+    test('a report from before invalid files existed lists none', async () => {
+      mockFetchFileReport.mockResolvedValue(report({ invalidFiles: undefined }))
+      const orphans = await loaded()
+      expect(orphans.loadError.value).toBeUndefined()
+      expect(orphans.invalidFiles.rows).toEqual([])
     })
 
     test('one path on two adapters is two rows with distinct keys', async () => {
@@ -211,7 +238,7 @@ describe('useOrphanedFiles', () => {
       await orphans.deleteAll()
       expect(mockReveal).toHaveBeenCalledWith({
         title: 'Delete all 3 orphaned files?',
-        content: '<p>Everything is checked again first. Whatever is still unused is permanently deleted from storage, including anything that has become unused since the last scan. Unknown files and missing files are never deleted. This cannot be undone.</p>',
+        content: '<p>Everything is checked again first. Whatever is still unused is permanently deleted from storage, including anything that has become unused since the last scan. Unknown files, missing files and invalid files are never deleted. This cannot be undone.</p>',
       })
       expect(mockDeleteOrphanedFiles).toHaveBeenCalledTimes(1)
       expect(mockDeleteOrphanedFiles).toHaveBeenCalledWith({ all: true })
@@ -241,6 +268,18 @@ describe('useOrphanedFiles', () => {
       const sent = mockDeleteOrphanedFiles.mock.calls[0]![0].paths
       expect(sent).not.toContain(MISSING.path)
       expect(sent).not.toContain(MISSING_PAGE_DATA.path)
+    })
+
+    test('an invalid file\'s path never enters a delete request', async () => {
+      const orphans = await loaded()
+      await orphans.deleteRow(orphans.orphanedFiles.rows[0]!)
+      await orphans.deleteSection()
+      await orphans.deleteAll()
+      const bodies = mockDeleteOrphanedFiles.mock.calls.map(call => call[0])
+      expect(bodies).toHaveLength(3)
+      for (const body of bodies) {
+        expect(body.paths ?? []).not.toContain(INVALID.path)
+      }
     })
 
     test('only delete everything asks for everything', async () => {

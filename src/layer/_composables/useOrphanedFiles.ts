@@ -1,5 +1,5 @@
 import { computed, reactive } from 'vue'
-import type { MissingFile, OrphanedFile, OrphanedFileDeletionRequest, OrphanedFileDeletionResult, OrphanedFileRejection } from '#cwa/api/orphaned-resources'
+import type { InvalidFile, MissingFile, OrphanedFile, OrphanedFileDeletionRequest, OrphanedFileDeletionResult, OrphanedFileRejection } from '#cwa/api/orphaned-resources'
 import { useCwa } from '#cwa/composables/cwa'
 import { useOrphanedFileReport } from './useOrphanReport'
 import { useOrphanDeletion, useOrphanView } from './useOrphanActions'
@@ -24,6 +24,13 @@ export interface MissingFileRow extends ViewableRow, OrphanedFile {
   key: string
 }
 
+export interface InvalidFileRow extends OrphanedFile {
+  key: string
+  iri: string
+  field: string
+  violations: string[]
+}
+
 export type OrphanedFileDeleteOutcome = OrphanDeleteOutcome<{ path: string, reason: string }>
 
 function fileKey({ adapter, path }: OrphanedFile) {
@@ -38,6 +45,10 @@ function createMissingRow(file: MissingFile): MissingFileRow {
   return { key: JSON.stringify([file.resource, file.adapter, file.path]), iri: file.resource, adapter: file.adapter, path: file.path, viewOpen: false, viewLoading: false }
 }
 
+function createInvalidRow(file: InvalidFile): InvalidFileRow {
+  return { key: JSON.stringify([file.resource, file.field, file.adapter, file.path]), iri: file.resource, field: file.field, adapter: file.adapter, path: file.path, violations: file.violations }
+}
+
 function filesLabel(count: number) {
   return `${count} ${count === 1 ? 'file' : 'files'}`
 }
@@ -48,12 +59,14 @@ export function useOrphanedFiles() {
   const orphanedFiles = reactive<{ rows: OrphanedFileRow[], error?: string }>({ rows: [] })
   const unknownFiles = reactive<{ rows: UnknownFileRow[] }>({ rows: [] })
   const missingFiles = reactive<{ rows: MissingFileRow[] }>({ rows: [] })
+  const invalidFiles = reactive<{ rows: InvalidFileRow[] }>({ rows: [] })
 
   const reportState = useOrphanedFileReport({
     onReport(report) {
       orphanedFiles.rows = (report.orphanedFiles || []).map(createOrphanedRow)
       unknownFiles.rows = (report.unknownFiles || []).map(file => ({ key: fileKey(file), adapter: file.adapter, path: file.path }))
       missingFiles.rows = (report.missingFiles || []).map(createMissingRow)
+      invalidFiles.rows = (report.invalidFiles || []).map(createInvalidRow)
     },
   })
   const { report, scanning } = reportState
@@ -136,7 +149,7 @@ export function useOrphanedFiles() {
     return deletion.run(
       [
         `Delete all ${totalCount.value} orphaned files?`,
-        '<p>Everything is checked again first. Whatever is still unused is permanently deleted from storage, including anything that has become unused since the last scan. Unknown files and missing files are never deleted. This cannot be undone.</p>',
+        '<p>Everything is checked again first. Whatever is still unused is permanently deleted from storage, including anything that has become unused since the last scan. Unknown files, missing files and invalid files are never deleted. This cannot be undone.</p>',
       ],
       { all: true },
       [...orphanedFiles.rows],
@@ -160,6 +173,7 @@ export function useOrphanedFiles() {
     orphanedFiles,
     unknownFiles,
     missingFiles,
+    invalidFiles,
     totalCount,
     loadReport: reportState.loadReport,
     scan,

@@ -15,6 +15,7 @@ import Fetcher from '#cwa/api/fetcher/fetcher'
 import { Resources } from '#cwa/resources/resources'
 import { ResourcesManager } from '#cwa/resources/resources-manager'
 import Admin from '#cwa/admin/admin'
+import { ComponentGroupReorders } from '#cwa/admin/component-group-reorder'
 import { useCwaResource } from '#cwa/composables/cwa-resource'
 import ComponentGroup from '#cwa/templates/components/main/ComponentGroup.vue'
 import ResourceManager from '#cwa/templates/components/main/admin/resource-manager/ResourceManager.vue'
@@ -146,6 +147,7 @@ function build(opts: { publishable?: boolean } = {}) {
     resources,
     resourcesManager,
     admin,
+    componentGroupReorders: new ComponentGroupReorders(admin, resources, resourcesManager),
     auth: { isAdmin: computed(() => true), signedIn: computed(() => true), user: { '@id': '/_api/users/admin' }, hasRole: () => true },
     resourcesConfig: { Title: { name: 'Title', instantAdd: true } },
     isStaticRender: false,
