@@ -26,6 +26,7 @@ export type MediaFile = {
 export type CwaFileReturnType = {
   contentUrl: ComputedRef<string | undefined>
   displayMedia: ComputedRef<MediaFile | undefined>
+  srcset: ComputedRef<string | undefined>
   handleLoad: () => void
   loaded: Ref<boolean>
 }
@@ -53,12 +54,37 @@ export const useCwaFile = (iri: Ref<string>, ops: FileOpsType): CwaFileReturnTyp
     return thumbnail?.[0] || fieldMediaObjects.value[0]
   })
 
+  function withQuery(mediaUrl: string) {
+    return `${mediaUrl}${query.value}`
+  }
+
   const contentUrl = computed(() => {
     const mediaUrl = displayMedia.value?.contentUrl
     if (!mediaUrl) {
       return
     }
-    return `${mediaUrl}${query.value}`
+    return withQuery(mediaUrl)
+  })
+
+  const srcset = computed(() => {
+    const byWidth = new Map<number, MediaFile>()
+    for (const media of fieldMediaObjects.value ?? []) {
+      const width = media.width ?? 0
+      if (width <= 0) {
+        continue
+      }
+      const existing = byWidth.get(width)
+      if (!existing || media.fileSize < existing.fileSize) {
+        byWidth.set(width, media)
+      }
+    }
+    if (byWidth.size < 2) {
+      return
+    }
+    return [...byWidth.entries()]
+      .sort(([a], [b]) => a - b)
+      .map(([width, media]) => `${withQuery(media.contentUrl)} ${width}w`)
+      .join(', ')
   })
 
   onMounted(() => {
@@ -78,6 +104,7 @@ export const useCwaFile = (iri: Ref<string>, ops: FileOpsType): CwaFileReturnTyp
   return {
     contentUrl,
     displayMedia,
+    srcset,
     handleLoad,
     loaded,
   }

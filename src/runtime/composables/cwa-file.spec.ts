@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
 import { describe, expect, test, vi, beforeEach } from 'vitest'
-import { ref, computed } from 'vue'
+import { ref, computed, reactive, type Ref } from 'vue'
 import { useCwaFile } from '#cwa/composables/cwa-file'
-import type { FileOpsType } from '#cwa/composables/cwa-file'
+import type { FileOpsType, MediaFile } from '#cwa/composables/cwa-file'
 
 const mockQuery = vi.hoisted(() => ({ value: '' }))
 
@@ -112,6 +112,72 @@ describe('useCwaFile', () => {
       const ops = makeOps({ mediaObjects: computed(() => ({ file: [media] })) })
       const { contentUrl } = useCwaFile(iri, ops)
       expect(contentUrl.value).toBe('/image.jpg?size=large')
+    })
+  })
+
+  describe('srcset', () => {
+    async function useWithQuery(query: Ref<string>, file: MediaFile[]) {
+      const { useCwaResourceEndpoint } = await import('#cwa/composables/cwa-resource-endpoint')
+      vi.mocked(useCwaResourceEndpoint).mockReturnValueOnce({ endpoint: ref('/my/resource'), query } as any)
+      const media = reactive<Record<string, MediaFile[]>>({ file })
+      return useCwaFile(iri, makeOps({ mediaObjects: computed(() => media) }))
+    }
+
+    function variant(contentUrl: string, width: number | null, fileSize = 1000, imagineFilter?: string): MediaFile {
+      return { contentUrl, width: width as number, height: width as number, fileSize, mimeType: 'image/jpeg', formattedFileSize: '', imagineFilter }
+    }
+
+    test('carries the endpoint query on every url and leaves the stored media objects unchanged', async () => {
+      const original = variant('/orig.jpg', 2400)
+      const general = variant('/general.jpg', 1200, 500, 'general')
+      const { srcset } = await useWithQuery(ref('?published=true'), [original, general])
+      expect(srcset.value).toBe('/general.jpg?published=true 1200w, /orig.jpg?published=true 2400w')
+      expect(original.contentUrl).toBe('/orig.jpg')
+      expect(general.contentUrl).toBe('/general.jpg')
+    })
+
+    test('follows a change of the endpoint query', async () => {
+      const query = ref('?published=true')
+      const { srcset } = await useWithQuery(query, [variant('/orig.jpg', 2400), variant('/general.jpg', 1200, 500, 'general')])
+      expect(srcset.value).toBe('/general.jpg?published=true 1200w, /orig.jpg?published=true 2400w')
+      query.value = '?published=false'
+      expect(srcset.value).toBe('/general.jpg?published=false 1200w, /orig.jpg?published=false 2400w')
+    })
+
+    test('is undefined before the resource has media metadata', () => {
+      const { srcset } = useCwaFile(iri, makeOps({ mediaObjects: computed(() => ({})) }))
+      expect(srcset.value).toBeUndefined()
+    })
+
+    test('lists variants by ascending width and skips those without a known width', async () => {
+      const { srcset } = await useWithQuery(ref(''), [
+        variant('/orig.jpg', 2400),
+        variant('/general.jpg', 1200, 500, 'general'),
+        variant('/thumb.jpg', 500, 100, 'thumbnail'),
+        variant('/no-info.jpg', -1, -1, 'hero'),
+        variant('/no-width.jpg', null, 100, 'other'),
+      ])
+      expect(srcset.value).toBe('/thumb.jpg 500w, /general.jpg 1200w, /orig.jpg 2400w')
+    })
+
+    test('keeps the smaller file when two variants share a width', async () => {
+      const { srcset } = await useWithQuery(ref(''), [
+        variant('/orig.jpg', 400, 900000),
+        variant('/thumb.jpg', 400, 60000, 'thumbnail'),
+        variant('/tiny.jpg', 100, 5000, 'tiny'),
+      ])
+      expect(srcset.value).toBe('/tiny.jpg 100w, /thumb.jpg 400w')
+    })
+
+    test('is undefined when only one variant has a known width', async () => {
+      const { srcset } = await useWithQuery(ref(''), [variant('/orig.jpg', 2400), variant('/no-info.jpg', -1, -1, 'general')])
+      expect(srcset.value).toBeUndefined()
+    })
+
+    test('is undefined for an SVG', async () => {
+      const svg = { ...variant('/logo.svg', 300), mimeType: 'image/svg+xml' }
+      const { srcset } = await useWithQuery(ref(''), [svg])
+      expect(srcset.value).toBeUndefined()
     })
   })
 
