@@ -4,6 +4,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+## [2.0.0-alpha.10] - 2026-10-10
+
 - **Breaking:** immediate publishing (the Publish button, Publish now, a schedule time already past, and adding a component published) sends `"publishedAt": "now"` so the API publishes by its own clock; needs api-components-bundle 2.0.0-alpha.13 or later ([#381](https://github.com/components-web-app/cwa-nuxt-module/issues/381), [98659370](https://github.com/components-web-app/cwa-nuxt-module/commit/98659370))
 - `useCwaFile`, `withFile` and `useCwaFileField` expose `srcset`: each sized variant of the field (original and imagine filters), ascending by width with the endpoint's `?published=` query, for a responsive `<img>` ([#377](https://github.com/components-web-app/cwa-nuxt-module/issues/377), [797a8ff1](https://github.com/components-web-app/cwa-nuxt-module/commit/797a8ff1))
 - A component added with `instantAdd` is selected even while text in the previously selected component is still highlighted; a user click during a text selection is still ignored ([#379](https://github.com/components-web-app/cwa-nuxt-module/issues/379), [c5031fa4](https://github.com/components-web-app/cwa-nuxt-module/commit/c5031fa4))
@@ -75,7 +77,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 - First tagged release of `@cwa/nuxt`; releases are now published from `v*` tags ([7c61b7c](https://github.com/components-web-app/cwa-nuxt-module/commit/7c61b7ce331ec4a0cb8e76951a5de2ff806ed07a))
 
-[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.9...HEAD
+[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.10...HEAD
+[2.0.0-alpha.10]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.9...v2.0.0-alpha.10
 [2.0.0-alpha.9]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.8...v2.0.0-alpha.9
 [2.0.0-alpha.8]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.7...v2.0.0-alpha.8
 [2.0.0-alpha.7]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.6...v2.0.0-alpha.7
