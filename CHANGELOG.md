@@ -4,6 +4,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+- `useCwaFile`, `withFile` and `useCwaFileField` expose `srcset`: each sized variant of the field (original and imagine filters), ascending by width with the endpoint's `?published=` query, for a responsive `<img>` ([#377](https://github.com/components-web-app/cwa-nuxt-module/issues/377), [797a8ff1](https://github.com/components-web-app/cwa-nuxt-module/commit/797a8ff1))
+
 ## [2.0.0-alpha.9] - 2026-10-10
 
 - Move up / Move down move a component one place even when its component group is on screen more than once: the reorder queue is held once per group instead of per mounted group, so each move is applied and sent once ([#374](https://github.com/components-web-app/cwa-nuxt-module/issues/374), [d2aa2579](https://github.com/components-web-app/cwa-nuxt-module/commit/d2aa2579))
