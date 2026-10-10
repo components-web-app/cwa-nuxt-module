@@ -48,6 +48,7 @@ const mockDeleteOrphanedFiles = vi.fn()
 const ORPHAN_FILE = { adapter: 'local', path: 'files/a.png' }
 const ORPHAN_FILE_S3 = { adapter: 's3', path: 'files/b.pdf' }
 const MISSING = { resource: '/component/images/i1', adapter: 'local', path: 'files/gone.png' }
+const INVALID = { resource: '/component/images/i2', field: 'imageFile', adapter: 's3', path: 'files/huge.png', violations: ['The image is too large.', 'The mime type is invalid.'] }
 
 function fileReport(overrides: Record<string, any> = {}) {
   return {
@@ -55,6 +56,7 @@ function fileReport(overrides: Record<string, any> = {}) {
     orphanedFiles: [ORPHAN_FILE, ORPHAN_FILE_S3],
     unknownFiles: [{ adapter: 'local', path: 'files/logo.png' }],
     missingFiles: [MISSING],
+    invalidFiles: [INVALID],
     ...overrides,
   }
 }
@@ -314,7 +316,7 @@ describe('Orphaned resources page', () => {
     test('lists orphaned files with their adapter and path, then missing files with the resource that points at them', async () => {
       const wrapper = await setup()
       const headings = block(wrapper).findAll('h3').map(el => el.text())
-      expect(headings).toEqual(['Orphaned files (2)', 'Unknown files (1)', 'Missing files (1)'])
+      expect(headings).toEqual(['Orphaned files (2)', 'Unknown files (1)', 'Missing files (1)', 'Invalid files (1)'])
       expect(fileRows(wrapper, 'orphaned')).toEqual([
         expect.stringContaining('files/a.png'),
         expect.stringContaining('files/b.pdf'),
@@ -350,6 +352,44 @@ describe('Orphaned resources page', () => {
       const wrapper = await setup()
       const section = wrapper.find('[data-testid="orphaned-files-section-missing"]')
       expect(section.findAll('button').map(b => b.text())).toEqual(['View'])
+    })
+
+    test('invalid files show a link to each resource in the admin, the field, path, adapter and every violation', async () => {
+      const second = { ...INVALID, resource: '/component/images/i3', violations: ['Too wide.'] }
+      mockFetchFileReport.mockResolvedValue(fileReport({ invalidFiles: [INVALID, second] }))
+      const wrapper = await setup()
+      const section = wrapper.find('[data-testid="orphaned-files-section-invalid"]')
+      expect(section.find('h3').text()).toBe('Invalid files (2)')
+      expect(section.text()).toContain('These files are in use but break their upload field\'s current rules, so they are never deleted from here. Open the resource and upload a replacement.')
+      const rows = section.findAll('[data-testid="orphaned-file-row"]')
+      expect(rows).toHaveLength(2)
+      const links = section.findAllComponents({ name: 'NuxtLink' })
+      expect(links.map(link => link.props('to'))).toEqual([
+        { name: '_cwa-resource-page', params: { cwaPage0: INVALID.resource } },
+        { name: '_cwa-resource-page', params: { cwaPage0: second.resource } },
+      ])
+      expect(links[0]!.text()).toBe(INVALID.resource)
+      const first = rows[0]!
+      expect(first.text()).toContain('imageFile')
+      expect(first.text()).toContain('files/huge.png')
+      expect(first.text()).toContain('s3')
+      expect(first.findAll('li').map(li => li.text())).toEqual(['The image is too large.', 'The mime type is invalid.'])
+      expect(rows[1]!.findAll('li').map(li => li.text())).toEqual(['Too wide.'])
+    })
+
+    test('invalid files offer neither Delete nor View', async () => {
+      const wrapper = await setup()
+      const section = wrapper.find('[data-testid="orphaned-files-section-invalid"]')
+      expect(section.findAll('[data-testid="orphaned-file-row"]')).toHaveLength(1)
+      expect(section.findAll('button')).toHaveLength(0)
+    })
+
+    test('no invalid files says so', async () => {
+      mockFetchFileReport.mockResolvedValue(fileReport({ invalidFiles: [] }))
+      const wrapper = await setup()
+      const section = wrapper.find('[data-testid="orphaned-files-section-invalid"]')
+      expect(section.find('h3').text()).toBe('Invalid files (0)')
+      expect(section.text()).toContain('No invalid files.')
     })
 
     test('view on a missing file shows the resource data', async () => {

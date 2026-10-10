@@ -693,6 +693,9 @@
 .cwa\:resize-none {
   resize: none;
 }
+.cwa\:list-disc {
+  list-style-type: disc;
+}
 .cwa\:list-none {
   list-style-type: none;
 }
@@ -1340,6 +1343,9 @@
 }
 .cwa\:pl-4 {
   padding-left: calc(var(--cwa-spacing) * 4);
+}
+.cwa\:pl-5 {
+  padding-left: calc(var(--cwa-spacing) * 5);
 }
 .cwa\:text-center {
   text-align: center;

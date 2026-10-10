@@ -167,5 +167,6 @@ export function useOrphanedFileReport(ops: OrphanReportOptions<OrphanedFileRepor
     count: report => report.orphanedFiles?.length || 0,
   }, ops)
   const missingCount = computed(() => state.report.value?.missingFiles?.length || 0)
-  return { ...state, missingCount }
+  const invalidCount = computed(() => state.report.value?.invalidFiles?.length || 0)
+  return { ...state, missingCount, invalidCount }
 }

@@ -324,4 +324,16 @@ describe('useOrphanedFileReport counts', () => {
     const files = await loadedWith(statusError(404))
     expect(files.missingCount.value).toBe(0)
   })
+
+  test('invalid files are counted apart from orphaned files, since they are in use', async () => {
+    const invalid = { resource: '/component/images/i1', field: 'file', adapter: 'local', path: 'files/huge.png', violations: ['Too large.'] }
+    const files = await loadedWith(fileReport({ orphanedFiles: [], invalidFiles: [invalid, { ...invalid, resource: '/component/images/i2' }] }))
+    expect(files.orphanCount.value).toBe(0)
+    expect(files.invalidCount.value).toBe(2)
+  })
+
+  test('a report from before invalid files existed counts none', async () => {
+    const files = await loadedWith(fileReport())
+    expect(files.invalidCount.value).toBe(0)
+  })
 })

@@ -624,6 +624,28 @@ describe('Site settings orphaned resources', () => {
       expect(notice(wrapper).findAll('a').find(a => a.text() === 'Review now')?.attributes('data-route-name')).toBe('_cwa-orphaned')
     })
 
+    test('the notice says how many files no longer meet their upload rules, after the missing files', async () => {
+      const invalid = { resource: '/component/images/i2', field: 'file', adapter: 'local', path: 'files/huge.png', violations: ['Too large.'] }
+      mockFetchFileReport.mockResolvedValue(fileReport({ invalidFiles: [invalid, { ...invalid, resource: '/component/images/i3' }] }))
+      const wrapper = await setup()
+      expect(notice(wrapper).text()).toContain('Orphaned resources discovered: 3 resources and 2 files are no longer used anywhere on the site. 1 file is missing from storage. 2 files no longer meet their upload rules.')
+    })
+
+    test('one invalid file alone shows the notice in the singular', async () => {
+      const invalid = { resource: '/component/images/i2', field: 'file', adapter: 'local', path: 'files/huge.png', violations: ['Too large.'] }
+      mockFetchOrphanReport.mockResolvedValue(orphanReport({ components: [], componentPositions: [] }))
+      mockFetchFileReport.mockResolvedValue(fileReport({ orphanedFiles: [], missingFiles: [], invalidFiles: [invalid] }))
+      const wrapper = await setup()
+      expect(notice(wrapper).text()).toContain('Orphaned resources discovered: 1 file no longer meets its upload rules.')
+    })
+
+    test('no invalid files leaves the upload rules out of the notice', async () => {
+      mockFetchFileReport.mockResolvedValue(fileReport({ invalidFiles: [] }))
+      const wrapper = await setup()
+      expect(notice(wrapper).text()).toContain('1 file is missing from storage.')
+      expect(notice(wrapper).text()).not.toContain('upload rules')
+    })
+
     test('a failed file report shows no error and leaves the resource count in the notice', async () => {
       mockFetchFileReport.mockRejectedValue(orphanStatusError(500))
       const wrapper = await setup()

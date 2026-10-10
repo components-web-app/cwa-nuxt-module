@@ -409,6 +409,44 @@
               </li>
             </ul>
           </div>
+          <div data-testid="orphaned-files-section-invalid">
+            <h3 class="cwa:text-xl cwa:mb-2">
+              Invalid files ({{ files.invalidFiles.rows.length }})
+            </h3>
+            <p class="cwa:text-sm cwa:text-stone-400 cwa:mb-4">
+              These files are in use but break their upload field's current rules, so they are never deleted from here. Open the resource and upload a replacement.
+            </p>
+            <p
+              v-if="!files.invalidFiles.rows.length"
+              class="cwa:text-sm cwa:text-stone-400"
+            >
+              No invalid files.
+            </p>
+            <ul v-else>
+              <li
+                v-for="row of files.invalidFiles.rows"
+                :key="row.key"
+                data-testid="orphaned-file-row"
+                class="cwa:border-b cwa:border-b-stone-700 cwa:py-4 cwa:flex cwa:flex-col cwa:gap-y-1"
+              >
+                <NuxtLink
+                  :to="getInternalResourceLink(row.iri)"
+                  class="cwa:font-mono cwa:text-sm cwa:break-all cwa:underline"
+                >{{ row.iri }}</NuxtLink>
+                <span class="cwa:text-xs cwa:text-stone-400">{{ row.field }}</span>
+                <span class="cwa:font-mono cwa:text-xs cwa:break-all">{{ row.path }}</span>
+                <span class="cwa:text-xs cwa:text-stone-400">{{ row.adapter }}</span>
+                <ul class="cwa:text-sm cwa:text-danger cwa:list-disc cwa:pl-5">
+                  <li
+                    v-for="(violation, index) of row.violations"
+                    :key="index"
+                  >
+                    {{ violation }}
+                  </li>
+                </ul>
+              </li>
+            </ul>
+          </div>
         </template>
       </section>
     </div>
@@ -423,7 +461,7 @@ import Spinner from '#cwa/templates/components/utils/Spinner.vue'
 import { formatDateTime } from '#cwa/resources/date-time-input'
 import { useOrphanedResources } from '#cwa-layer/_composables/useOrphanedResources'
 import { useOrphanedFiles } from '#cwa-layer/_composables/useOrphanedFiles'
-import { definePageMeta, useHead } from '#imports'
+import { definePageMeta, useCwaResourceRoute, useHead } from '#imports'
 
 useHead({
   title: 'Orphaned Resources',
@@ -456,6 +494,8 @@ const {
 } = useOrphanedResources()
 
 const files = useOrphanedFiles()
+
+const { getInternalResourceLink } = useCwaResourceRoute()
 
 onMounted(() => {
   loadReport()
