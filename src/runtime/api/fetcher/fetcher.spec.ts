@@ -256,6 +256,16 @@ describe('Fetcher -> fetchResource', () => {
     expect(result).toBeUndefined()
   })
 
+  test('noSave is forwarded to startFetchResource', async () => {
+    fetcher.fetch.mockImplementation(() => {
+      throw new TypeError('Load failed')
+    })
+
+    await fetcher.fetchResource({ path: '/new-path', token: 'any', noSave: true })
+
+    expect(FetchStatusManager.mock.instances[0].startFetchResource).toHaveBeenCalledWith(expect.objectContaining({ noSave: true }))
+  })
+
   test('finishFetchResource after fetch (with preload) is called if startFetch returns continue as true', async () => {
     vi.spyOn(fetcher, 'fetchAssociatedResources').mockImplementation(() => {})
     FetchStatusManager.mock.instances[0].finishFetchResource.mockImplementationOnce(() => ({ some: 'resource' }))

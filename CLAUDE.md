@@ -362,6 +362,8 @@ Replay is not trusted. On reconnect (`connected` going `false` → `true`; `unde
 
 **A page-data message re-fetches the on-screen dynamic positions bound to a property it changed.** The bundle publishes only the page data when an editor swaps the component a property holds — the position itself did not change, its component is resolved from the `path` — so without this the positions kept the old component until navigation. Each re-fetch carries its own depth's `path` header. (The Nuxt 2 module only re-fetched a position's own message, as `collectResourceActions` still does.)
 
+**A failed background (`noSave`) re-fetch of a loaded resource keeps its last good `apiState`** unless the API answered 4xx ([#375](https://github.com/components-web-app/cwa-nuxt-module/issues/375)). Trap: `startFetchResource` has already replaced SUCCESS with IN_PROGRESS (dropping `responseIri`), so `FetchStatusManager` restores a copy taken at the start, never a fresh SUCCESS.
+
 **The hub speaks Mercure 1.0** ([#364](https://github.com/components-web-app/cwa-nuxt-module/issues/364)): subscribe with `match=*` (`topic=` is a 400 outside compatibility mode) and reconnect with `last_event_id`. No 0.x fallback — breaking during the alpha by decision. The subscriber cookie (`__Secure-mercure_access_token`) is the bundle's; the module never reads it by name and relies on `withCredentials`. A 1.0 hub sends `event: mercure` only for its own subscription events, so `onmessage` still receives updates while the bundle publishes without a `type`.
 
 ## Composables

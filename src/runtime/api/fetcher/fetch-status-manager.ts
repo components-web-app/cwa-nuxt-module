@@ -19,6 +19,7 @@ import { createCwaResourceError } from '../../errors/cwa-resource-error'
 import { CwaResourceTypes, getResourceTypeFromIri, isCwaResource } from '../../resources/resource-utils'
 import type { CwaResource } from '../../resources/resource-utils'
 import { CwaResourceApiStatuses } from '../../storage/stores/resources/state'
+import type { CwaResourceApiStateSuccess } from '../../storage/stores/resources/state'
 import type { CwaFetchRequestHeaders, CwaFetchResponse } from './fetcher'
 import type { FetchAbortReason, FetchStatus, RouteCacheEntry } from '#cwa/storage/stores/fetcher/state'
 import { clearError, useError } from 'nuxt/app'
@@ -44,6 +45,10 @@ export interface FinishFetchResourceErrorEvent extends FinishFetchResourceEvent 
   error?: CwaResourceError
 }
 
+export interface StartFetchResourceEvent extends AddFetchResourceEvent {
+  noSave?: boolean
+}
+
 type _StartFetchEvent = Omit<StartFetchEvent, 'isCurrentSuccessResourcesResolved'>
 
 /**
@@ -58,6 +63,7 @@ export default class FetchStatusManager {
   private readonly routeCacheLimit: number
   private readonly nuxtApp: NuxtApp
   private readonly primaryFetchError: { handler?: () => void } = {}
+  private readonly backgroundFetchLastGoodStates = new Map<string, CwaResourceApiStateSuccess>()
 
   constructor(
     fetcherStoreDefinition: FetcherStore,
@@ -161,15 +167,31 @@ export default class FetchStatusManager {
     })
   }
 
-  public startFetchResource(event: AddFetchResourceEvent): boolean {
+  public startFetchResource({ noSave, ...event }: StartFetchResourceEvent): boolean {
     const addedToFetcherResources = this.fetcherStore.addFetchResource(event)
     if (addedToFetcherResources) {
+      const current = this.resourcesStore.current.byId?.[event.resource]
+      if (noSave && current?.apiState.status === CwaResourceApiStatuses.SUCCESS) {
+        this.backgroundFetchLastGoodStates.set(this.backgroundFetchKey(event.token, event.resource), { ...current.apiState })
+      }
       this.resourcesStore.setResourceFetchStatus({ iri: event.resource, isComplete: false, path: event.path, headers: event.headers })
     }
     return addedToFetcherResources
   }
 
+  private backgroundFetchKey(token: string, iri: string): string {
+    return JSON.stringify([token, iri])
+  }
+
+  private takeBackgroundFetchLastGoodState(token: string, iri: string): CwaResourceApiStateSuccess | undefined {
+    const key = this.backgroundFetchKey(token, iri)
+    const lastGoodState = this.backgroundFetchLastGoodStates.get(key)
+    this.backgroundFetchLastGoodStates.delete(key)
+    return lastGoodState
+  }
+
   public finishFetchResource(event: FinishFetchResourceSuccessEvent | FinishFetchResourceErrorEvent): CwaResource | undefined {
+    const lastGoodState = this.takeBackgroundFetchLastGoodState(event.token, event.resource)
     // if resource is already in success state, leave it alone, we may have already been fetching, we can set it as an error if token old and new one will save it.
     // What if order of api responses is different? Then it'd be a success already and skipped for error.
 
@@ -205,6 +227,13 @@ export default class FetchStatusManager {
     }
 
     if (!event.success) {
+      const statusCode = event.error?.statusCode
+      const isClientError = !!statusCode && statusCode >= 400 && statusCode < 500
+      if (lastGoodState && !isClientError && this.resourcesStore.current.byId?.[event.resource]?.data) {
+        logger.warn(`[CWA] A background re-fetch of '${event.resource}' failed. Keeping the last loaded data.`, event.error)
+        this.resourcesStore.restoreResourceApiState({ iri: event.resource, apiState: lastGoodState })
+        return
+      }
       setFinalResourceFetchError(event.error)
       return
     }
