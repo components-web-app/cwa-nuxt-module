@@ -15,13 +15,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, toRef, useTemplateRef, watchEffect } from 'vue'
+import { computed, defineAsyncComponent, ref, toRef, useTemplateRef, watchEffect } from 'vue'
 import ResourceLoader from './ResourceLoader.vue'
-import ComponentPlaceholder from './ComponentPlaceholder.vue'
 import { useCwa, useCwaResource, useCwaResourceManageable } from '#imports'
 import type { IriProp } from '#cwa/composables/cwa-resource'
 import type { ManageableResourceOps } from '#cwa/admin/manageable-resource'
 import { NEW_RESOURCE_IRI } from '#cwa/storage/stores/resources/state'
+
+const ComponentPlaceholder = defineAsyncComponent(() => import('./ComponentPlaceholder.vue'))
 
 const $cwa = useCwa()
 const props = defineProps<IriProp>()

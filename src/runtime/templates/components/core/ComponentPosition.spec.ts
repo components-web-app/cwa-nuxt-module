@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import { flushPromises, mount, shallowMount } from '@vue/test-utils'
-import { computed, ref } from 'vue'
+import { computed, defineComponent, h, ref } from 'vue'
 import { createPinia, setActivePinia } from 'pinia'
 import * as cwaComposable from '../../../composables/cwa'
 import * as cwaResourceComposables from '../../../composables/cwa-resource'
@@ -13,9 +13,23 @@ import { ResourcesStore } from '#cwa/storage/stores/resources/resources-store'
 import { FetcherStore } from '#cwa/storage/stores/fetcher/fetcher-store'
 import { ErrorStore } from '#cwa/storage/stores/error/error-store'
 
+const placeholderModule = vi.hoisted(() => ({ loads: 0 }))
+
+vi.mock('./ComponentPlaceholder.vue', () => {
+  placeholderModule.loads++
+  return {
+    __esModule: true,
+    default: defineComponent({
+      name: 'ComponentPlaceholder',
+      props: ['iri', 'name'],
+      setup: () => () => h('div', { class: 'placeholder' }),
+    }),
+  }
+})
+
 const mockComponentIri = 'test'
 
-function createWrapper({ isAdmin = false, positionData = { 'component': mockComponentIri, '@id': '/position-iri' } as any, resolvedComponentIri = positionData?.component as string | undefined } = {}) {
+function createWrapper({ isAdmin = false, positionData = { 'component': mockComponentIri, '@id': '/position-iri' } as any, resolvedComponentIri = positionData?.component as string | undefined, mountFn = shallowMount } = {}) {
   // @ts-expect-error
   vi.spyOn(cwaResourceComposables, 'useCwaResource').mockImplementation(() => ({
     getResource: vi.fn(() => ref({ data: positionData })),
@@ -40,7 +54,7 @@ function createWrapper({ isAdmin = false, positionData = { 'component': mockComp
     },
   }))
 
-  return shallowMount(ComponentPosition, {
+  return mountFn(ComponentPosition, {
     props: {
       iri: '/position-iri',
     },
@@ -48,6 +62,23 @@ function createWrapper({ isAdmin = false, positionData = { 'component': mockComp
 }
 
 describe('ComponentPosition', () => {
+  describe('the placeholder module', () => {
+    test('is not loaded by a visitor\'s position, so it stays out of the visitor\'s page chunks (#382)', async () => {
+      createWrapper({ isAdmin: false, positionData: { '@id': '/position-iri' } })
+      createWrapper({ isAdmin: false })
+      await flushPromises()
+      expect(placeholderModule.loads).toBe(0)
+    })
+
+    test('is loaded and rendered when an admin sees a position with no component', async () => {
+      const wrapper = createWrapper({ isAdmin: true, positionData: { '@id': '/position-iri' }, mountFn: mount })
+      await vi.dynamicImportSettled()
+      await flushPromises()
+      expect(placeholderModule.loads).toBe(1)
+      expect(wrapper.find('.placeholder').exists()).toBe(true)
+    })
+  })
+
   test('should display ResourceLoader component with componentIri', () => {
     const wrapper = createWrapper()
     const child = wrapper.findComponent({ name: 'ResourceLoader' })
