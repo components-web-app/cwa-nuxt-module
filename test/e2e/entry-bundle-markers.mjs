@@ -8,6 +8,8 @@ const outputDir = resolve(here, '../../playground/.output')
 const manifestPath = resolve(outputDir, 'server/chunks/virtual/precomputed.mjs')
 const chunkDir = resolve(outputDir, 'public/_nuxt')
 
+const gzipBudget = 159000
+
 const forbidden = [
   { marker: 'Invalid DateTime', source: 'luxon' },
   { marker: 'InvalidXml', source: 'fast-xml-parser' },
@@ -19,6 +21,7 @@ const forbidden = [
   { marker: 'last_event_id', source: 'api/mercure-client.ts' },
   { marker: 'orphaned_resources/delete', source: 'api/orphaned-resource-requests.ts' },
   { marker: 'The page cache warm stopped before it finished', source: 'api/page-cache-warm.ts' },
+  { marker: 'DialogsWrapper', source: 'vuejs-confirm-dialog' },
 ]
 
 async function readEntryChunks() {
@@ -48,7 +51,7 @@ function main() {
   return readEntryChunks().then((chunks) => {
     const raw = chunks.reduce((total, chunk) => total + chunk.size, 0)
     const gzip = chunks.reduce((total, chunk) => total + gzipSync(chunk.contents, { level: 9 }).length, 0)
-    console.log(`Entry modulepreload graph: ${chunks.length} chunks, ${raw} B raw, ${gzip} B gzip`)
+    console.log(`Entry modulepreload graph: ${chunks.length} chunks, ${raw} B raw, ${gzip} B gzip (budget ${gzipBudget} B)`)
 
     const found = []
     for (const { marker, source } of forbidden) {
@@ -67,7 +70,12 @@ function main() {
       process.exit(1)
     }
 
-    console.log('\nPASS: no admin-only, error-only or lazily loaded marker in the entry modulepreload graph.')
+    if (gzip > gzipBudget) {
+      console.error(`\nFAIL: the entry chunk graph is ${gzip} B gzip, over the ${gzipBudget} B budget (#382).`)
+      process.exit(1)
+    }
+
+    console.log('\nPASS: no admin-only, error-only or lazily loaded marker in the entry modulepreload graph, within budget.')
   })
 }
 

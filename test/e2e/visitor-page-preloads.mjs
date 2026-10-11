@@ -13,7 +13,7 @@ const serverEntry = resolve(outputDir, 'server/index.mjs')
 const chunkDir = resolve(outputDir, 'public/_nuxt')
 const appBase = `http://127.0.0.1:${appPort}`
 
-const gzipBudget = 184000
+const gzipBudget = 181700
 
 const required = [
   { marker: 'cwa-start', source: 'core/ComponentPosition.vue' },
@@ -22,6 +22,7 @@ const required = [
 const forbidden = [
   { marker: 'm5.69507059 20.3811012', source: 'core/assets/IconComponents.vue' },
   { marker: 'Manageable resource listener called to select component', source: 'admin/manageable-resource.ts' },
+  { marker: 'DialogsWrapper', source: 'vuejs-confirm-dialog' },
 ]
 
 let stub
@@ -172,7 +173,7 @@ async function main() {
   }
 
   if (failures.length) {
-    console.error('\nFAIL: an anonymous visitor\'s page preloads admin-only code (#382).')
+    console.error('\nFAIL: an anonymous visitor\'s page preloads admin-only code, or more than its budget (#382).')
     for (const failure of failures) {
       console.error(`  ${failure}`)
     }
