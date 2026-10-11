@@ -2,6 +2,13 @@ import { afterEach, describe, expect, test, vi } from 'vitest'
 import OrphanedResources, { orphanedResourceEndpoint } from '#cwa/api/orphaned-resources'
 import { ResourceTypeFromIri } from '#cwa/resources/resource-utils'
 
+const requestsModule = vi.hoisted(() => ({ loads: 0 }))
+
+vi.mock('#cwa/api/orphaned-resource-requests', async (importOriginal) => {
+  requestsModule.loads++
+  return await importOriginal()
+})
+
 function buildService() {
   const mockFetch = vi.fn().mockResolvedValue(undefined)
   const mockGetRequestOptions = vi.fn((method: string) => ({ method, headers: { accept: 'application/ld+json,application/json' } }))
@@ -12,6 +19,13 @@ function buildService() {
 describe('OrphanedResources', () => {
   afterEach(() => {
     ResourceTypeFromIri.setPathPrefix(undefined)
+  })
+
+  test('loads its requests only when the first one is made, so visitors never download them (#382)', async () => {
+    const { service } = buildService()
+    expect(requestsModule.loads).toBe(0)
+    await service.requestScan()
+    expect(requestsModule.loads).toBe(1)
   })
 
   test('fetches the stored report', async () => {

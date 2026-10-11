@@ -17,6 +17,8 @@ const forbidden = [
   { marker: 'OES_texture_half_float', source: 'ui/BackgroundParticles.vue' },
   { marker: 'CwaLayoutSecondary:[]', source: 'cwa-component-group-declarations' },
   { marker: 'last_event_id', source: 'api/mercure-client.ts' },
+  { marker: 'orphaned_resources/delete', source: 'api/orphaned-resource-requests.ts' },
+  { marker: 'The page cache warm stopped before it finished', source: 'api/page-cache-warm.ts' },
 ]
 
 async function readEntryChunks() {
