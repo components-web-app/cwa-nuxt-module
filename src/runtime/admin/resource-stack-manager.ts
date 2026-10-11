@@ -5,7 +5,6 @@ import { useNuxtApp } from '#imports'
 import { consola as logger } from 'consola'
 import type { App, ComponentPublicInstance, ComputedRef, Ref, ShallowRef } from 'vue'
 import { computed, createApp, nextTick, ref, shallowRef, watch } from 'vue'
-import { createConfirmDialog } from 'vuejs-confirm-dialog'
 import type { AdminStore, CwaAdminStoreInterface } from '../storage/stores/admin/admin-store'
 import type { CwaResourcesStoreInterface, ResourcesStore } from '../storage/stores/resources/resources-store'
 import type { ManageableResourceOps, StyleOptions } from './manageable-resource'
@@ -184,6 +183,7 @@ export default class ResourceStackManager {
     }
 
     const { default: ConfirmDialog } = await import('#cwa/templates/components/core/ConfirmDialog.vue')
+    const { createConfirmDialog } = await import('vuejs-confirm-dialog')
     // @ts-expect-error-next-line
     const dialog = createConfirmDialog(ConfirmDialog)
     const { isCanceled } = await dialog.reveal(alertData)

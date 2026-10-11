@@ -6,6 +6,12 @@ import SiteConfig from '#cwa/api/site-config'
 const mockUpdateSiteConfig = vi.hoisted(() => vi.fn())
 mockNuxtImport('updateSiteConfig', () => mockUpdateSiteConfig)
 
+const warmModule = vi.hoisted(() => ({ loads: 0 }))
+vi.mock('#cwa/api/page-cache-warm', async (importOriginal) => {
+  warmModule.loads++
+  return await importOriginal()
+})
+
 function buildSiteConfig(opts: {
   serverConfig?: Record<string, any> | null
   getConfig?: Record<string, any>
@@ -229,6 +235,11 @@ describe('SiteConfig', () => {
   })
 
   describe('warmPageCache', () => {
+    test('the stream reader is only loaded when a warm is started, so visitors never download it (#382)', () => {
+      buildSiteConfig()
+      expect(warmModule.loads).toBe(0)
+    })
+
     test('POSTs to the warm route as a stream and resolves with its summary', async () => {
       const { siteConfig, mockFetch } = buildSiteConfig()
       const encoder = new TextEncoder()
@@ -252,6 +263,7 @@ describe('SiteConfig', () => {
       expect(mockGlobalFetch).toHaveBeenCalledWith('/_cwa/page-cache/warm', { method: 'POST', responseType: 'stream' })
       expect(onProgress).toHaveBeenLastCalledWith({ completed: 1, total: 1 })
       expect(mockFetch).not.toHaveBeenCalled()
+      expect(warmModule.loads).toBe(1)
     })
   })
 

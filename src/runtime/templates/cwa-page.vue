@@ -88,5 +88,5 @@ defineOgImage('CwaDefault', {
   title: pageTitle,
   description: metaDescription,
   siteName: computed(() => $cwa.siteConfig.config.siteName),
-})
+}, { height: 630 })
 </script>

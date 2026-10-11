@@ -1,4 +1,5 @@
 import type CwaFetch from '#cwa/api/fetcher/cwa-fetch'
+import { lazyImport } from '#cwa/lazy-import'
 import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/resources/resource-utils'
 
 export interface OrphanedResourceReport {
@@ -56,62 +57,36 @@ export interface OrphanedFileDeletionResult {
   rejected: OrphanedFileRejection[]
 }
 
-function emptyDeletionResult(): OrphanedResourceDeletionResult {
-  return { deleted: { componentGroups: [], componentPositions: [], components: [] }, rejected: [] }
-}
-
-function deletionBody<K extends 'iris' | 'paths'>(key: K, selected: unknown, all: unknown): Record<K, string[]> | { all: true } | undefined {
-  if (Array.isArray(selected)) {
-    return selected.length ? { [key]: [...new Set<string>(selected)] } as Record<K, string[]> : undefined
-  }
-  return all === true ? { all: true } : undefined
-}
-
 export function orphanedResourceEndpoint(iri: string): string {
   return getResourceTypeFromIri(iri) === CwaResourceTypes.COMPONENT ? `${iri}?published=true` : iri
 }
 
 export default class OrphanedResources {
+  private readonly requests = lazyImport(() => import('#cwa/api/orphaned-resource-requests').then(({ default: OrphanedResourceRequests }) => new OrphanedResourceRequests(this.cwaFetch)))
+
   constructor(private readonly cwaFetch: CwaFetch) {}
 
-  public fetchReport(): Promise<OrphanedResourceReport> {
-    return this.cwaFetch.fetch<OrphanedResourceReport>('/_/orphaned_resources')
+  public async fetchReport(): Promise<OrphanedResourceReport> {
+    return (await this.requests.load()).fetchReport()
   }
 
   public async requestScan(): Promise<void> {
-    await this.post('/_/orphaned_resources/scan')
+    return (await this.requests.load()).requestScan()
   }
 
   public async deleteOrphans(request: OrphanedResourceDeletionRequest): Promise<OrphanedResourceDeletionResult> {
-    const body = deletionBody('iris', request.iris, request.all)
-    if (!body) {
-      return emptyDeletionResult()
-    }
-    return await this.post<OrphanedResourceDeletionResult>('/_/orphaned_resources/delete', body)
+    return (await this.requests.load()).deleteOrphans(request)
   }
 
-  public fetchFileReport(): Promise<OrphanedFileReport> {
-    return this.cwaFetch.fetch<OrphanedFileReport>('/_/orphaned_files')
+  public async fetchFileReport(): Promise<OrphanedFileReport> {
+    return (await this.requests.load()).fetchFileReport()
   }
 
   public async requestFileScan(): Promise<void> {
-    await this.post('/_/orphaned_files/scan')
+    return (await this.requests.load()).requestFileScan()
   }
 
   public async deleteOrphanedFiles(request: OrphanedFileDeletionRequest): Promise<OrphanedFileDeletionResult> {
-    const body = deletionBody('paths', request.paths, request.all)
-    if (!body) {
-      return { deleted: [], rejected: [] }
-    }
-    return await this.post<OrphanedFileDeletionResult>('/_/orphaned_files/delete', body)
-  }
-
-  private post<T>(path: string, body?: Record<string, unknown>): Promise<T> {
-    const { method, headers } = this.cwaFetch.getRequestOptions('POST')
-    return this.cwaFetch.fetch<T>(path, {
-      method,
-      headers: headers as Record<string, string>,
-      ...(body ? { body } : {}),
-    })
+    return (await this.requests.load()).deleteOrphanedFiles(request)
   }
 }

@@ -73,8 +73,9 @@ export default class Cwa {
     this.storage = new Storage(this.options.storeName)
     this.siteConfig = new SiteConfig(this.cwaFetch, this.storage.stores.siteConfig, this.options.siteConfig)
     this.apiDocumentation = new ApiDocumentation(this.cwaFetch, this.storage.stores.apiDocumentation)
-    this.mercure = new Mercure(this.storage.stores.mercure, this.storage.stores.resources, this.storage.stores.fetcher)
-    this.fetchStatusManager = new FetchStatusManager(this.storage.stores.fetcher, this.mercure, this.apiDocumentation, this.storage.stores.resources, this.options.routeCacheLimit, useNuxtApp())
+    const nuxtApp = useNuxtApp()
+    this.mercure = new Mercure(this.storage.stores.mercure, this.storage.stores.resources, this.storage.stores.fetcher, nuxtApp)
+    this.fetchStatusManager = new FetchStatusManager(this.storage.stores.fetcher, this.mercure, this.apiDocumentation, this.storage.stores.resources, this.options.routeCacheLimit, nuxtApp)
     this.fetchStatusManager.onPrimaryFetchError(() => this.cwaFetch.markUnstorable())
 
     this.fetcher = new Fetcher(this.cwaFetch, this.fetchStatusManager, $router, this.storage.stores.resources)

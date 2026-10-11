@@ -9,7 +9,6 @@ import type CwaFetch from '#cwa/api/fetcher/cwa-fetch'
 import { useCwaSiteConfig } from '#cwa/composables/useCwaSiteConfig'
 import type { SiteConfigParams } from '#cwa/types'
 import type { CwaResource } from '#cwa/resources/resource-utils'
-import { readWarmStream } from '#cwa/api/page-cache-warm'
 import type { PageCacheWarmProgress, PageCacheWarmSummary } from '#cwa/api/page-cache-warm'
 
 export default class SiteConfig {
@@ -186,6 +185,7 @@ export default class SiteConfig {
       method: 'POST',
       responseType: 'stream',
     })
+    const { readWarmStream } = await import('#cwa/api/page-cache-warm')
     return readWarmStream(stream, onProgress)
   }
 

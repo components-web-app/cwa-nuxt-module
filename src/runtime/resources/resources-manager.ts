@@ -5,7 +5,6 @@ import set from 'lodash-es/set'
 import unset from 'lodash-es/unset'
 import mergeWith from 'lodash-es/mergeWith'
 import isArray from 'lodash-es/isArray'
-import { createConfirmDialog } from 'vuejs-confirm-dialog'
 import type { CwaResourcesStoreInterface, ResourcesStore } from '../storage/stores/resources/resources-store'
 import type CwaFetch from '../api/fetcher/cwa-fetch'
 import type FetchStatusManager from '../api/fetcher/fetch-status-manager'
@@ -136,6 +135,7 @@ export class ResourcesManager {
       content: '<p>Are you sure you want to permanently delete this resource?</p>',
     }
     const { default: ConfirmDialog } = await import('#cwa/templates/components/core/ConfirmDialog.vue')
+    const { createConfirmDialog } = await import('vuejs-confirm-dialog')
     // @ts-expect-error-next-line
     const dialog = createConfirmDialog(ConfirmDialog)
     const { isCanceled } = await dialog.reveal(alertData)
@@ -439,6 +439,7 @@ export class ResourcesManager {
       content: '<p>Are you sure you want to discard your new resource. It will NOT be saved.</p>',
     }
     const { default: ConfirmDialog } = await import('#cwa/templates/components/core/ConfirmDialog.vue')
+    const { createConfirmDialog } = await import('vuejs-confirm-dialog')
     // @ts-expect-error-next-line
     const dialog = createConfirmDialog(ConfirmDialog)
     const { isCanceled } = await dialog.reveal(alertData)

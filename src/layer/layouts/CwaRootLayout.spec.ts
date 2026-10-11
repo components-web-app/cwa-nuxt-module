@@ -1,6 +1,6 @@
 // @vitest-environment nuxt
 import { describe, test, expect, vi, beforeEach } from 'vitest'
-import { computed, reactive } from 'vue'
+import { computed, defineComponent, h, reactive } from 'vue'
 import { flushPromises, mount } from '@vue/test-utils'
 import { mockNuxtImport } from '@nuxt/test-utils/runtime'
 import CwaRootLayout from './CwaRootLayout.vue'
@@ -9,6 +9,15 @@ import * as cwaComposable from '#cwa/composables/cwa'
 const headOptions: Record<string, any>[] = []
 const mockUseHead = vi.hoisted(() => vi.fn())
 mockNuxtImport('useHead', () => mockUseHead)
+
+const confirmDialogsModule = vi.hoisted(() => ({ loads: 0 }))
+vi.mock('#cwa/templates/components/core/admin/ConfirmDialogs.vue', () => {
+  confirmDialogsModule.loads++
+  return {
+    __esModule: true,
+    default: defineComponent({ name: 'ConfirmDialogs', setup: () => () => h('div', { class: 'confirm-dialogs' }) }),
+  }
+})
 
 vi.mock('vue-router', async (importOriginal) => {
   const actual = await importOriginal<typeof import('vue-router')>()
@@ -26,6 +35,7 @@ type SetupOpts = {
   registeredComponents?: string[]
   isAdmin?: boolean
   isEditing?: boolean
+  stubs?: Record<string, unknown>
 }
 
 function setup(opts: SetupOpts = {}) {
@@ -59,6 +69,7 @@ function setup(opts: SetupOpts = {}) {
       stubs: {
         ClientOnly: { template: '<div><slot /></div>' },
         teleport: true,
+        ...opts.stubs,
       },
     },
   })
@@ -66,6 +77,22 @@ function setup(opts: SetupOpts = {}) {
   const titleTemplate = headOptions.find(o => o.titleTemplate)?.titleTemplate
   return { wrapper, state, titleTemplate }
 }
+
+describe('CwaRootLayout confirm dialogs', () => {
+  test('are not loaded for a visitor, so the dialog library stays out of the visitor\'s page chunks (#382)', async () => {
+    setup({ isAdmin: false, stubs: { ConfirmDialogs: false } })
+    await flushPromises()
+    expect(confirmDialogsModule.loads).toBe(0)
+  })
+
+  test('are loaded and rendered for an admin', async () => {
+    const { wrapper } = setup({ isAdmin: true, stubs: { ConfirmDialogs: false } })
+    await vi.dynamicImportSettled()
+    await flushPromises()
+    expect(confirmDialogsModule.loads).toBe(1)
+    expect(wrapper.find('.confirm-dialogs').exists()).toBe(true)
+  })
+})
 
 describe('CwaRootLayout titleTemplate', () => {
   beforeEach(() => {

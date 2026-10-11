@@ -174,6 +174,11 @@ describe('CWA page', () => {
       expect(capturedOgImageArgs[0]).toBe('CwaDefault')
     })
 
+    test('renders the image at 630px high, the height CwaDefault is laid out for', () => {
+      mockCwaWithDepths([{ dataTitle: 'Events' }])
+      expect(defineOgImageSpy).toHaveBeenCalledWith('CwaDefault', expect.anything(), { height: 630 })
+    })
+
     test('passes pageTitle computed ref as title prop for flat page', () => {
       mockCwaWithDepths([{ dataTitle: 'Events' }])
       expect(capturedOgImageArgs[1].title.value).toBe('Events')

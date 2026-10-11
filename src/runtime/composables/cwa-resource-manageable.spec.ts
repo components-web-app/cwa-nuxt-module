@@ -1,6 +1,8 @@
 import { describe, expect, vi, test, beforeEach } from 'vitest'
 import * as vue from 'vue'
 import { ref } from 'vue'
+import { flushPromises } from '@vue/test-utils'
+import { consola } from 'consola'
 import ManageableResource from '../admin/manageable-resource'
 import * as cwaComposable from '#cwa/composables/cwa'
 import { useCwaResourceManageable } from '#cwa/composables/cwa-resource-manageable'
@@ -18,6 +20,24 @@ vi.mock('../admin/manageable-resource', () => {
     }),
   }
 })
+
+const lazy = vi.hoisted(() => ({
+  loaded: undefined as unknown,
+  load: undefined as unknown as ReturnType<typeof import('vitest')['vi']['fn']>,
+  importers: [] as (() => Promise<unknown>)[],
+}))
+
+vi.mock('../lazy-import', () => ({
+  lazyImport: (importer: () => Promise<unknown>) => {
+    lazy.importers.push(importer)
+    return {
+      get loaded() {
+        return lazy.loaded
+      },
+      load: (...args: unknown[]) => lazy.load(...args),
+    }
+  },
+}))
 
 vi.mock('vue', async () => {
   const mod = await vi.importActual<typeof import('vue')>('vue')
@@ -53,6 +73,114 @@ describe('CWA resource manageable composable', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.spyOn(cwaComposable, 'useCwa').mockReturnValue(mockCwa)
+    mockCwa.auth.isAdmin.value = true
+    lazy.loaded = ManageableResource
+    lazy.load = vi.fn(() => Promise.resolve(ManageableResource))
+  })
+
+  function deferredImport() {
+    let resolveImport: (value: unknown) => void = () => {}
+    lazy.loaded = undefined
+    lazy.load = vi.fn(() => new Promise((resolve) => {
+      resolveImport = (value) => {
+        lazy.loaded = value
+        resolve(value)
+      }
+    }))
+    return () => resolveImport(ManageableResource)
+  }
+
+  test('the manageable resource class is imported from the admin module', async () => {
+    expect(lazy.importers).toHaveLength(1)
+    expect(await lazy.importers[0]()).toBe(ManageableResource)
+  })
+
+  test('a visitor never loads or constructs a ManageableResource', async () => {
+    vi.spyOn(vue, 'getCurrentInstance').mockReturnValue({ proxy: { mock: 'proxy' } })
+    mockCwa.auth.isAdmin.value = false
+    deferredImport()
+
+    useCwaResourceManageable(mockIri)
+    await flushPromises()
+
+    expect(lazy.load).not.toHaveBeenCalled()
+    expect(ManageableResource).not.toHaveBeenCalled()
+  })
+
+  test('an admin constructs and inits the ManageableResource once its import resolves', async () => {
+    const mockProxy = { mock: 'proxy' }
+    vi.spyOn(vue, 'getCurrentInstance').mockReturnValue({ proxy: mockProxy })
+    vi.spyOn(vue, 'onBeforeUnmount').mockImplementationOnce(() => {})
+    const resolveImport = deferredImport()
+    const initSpy = vi.fn()
+    ManageableResource.mockImplementationOnce(function () {
+      return { init: initSpy, clear: vi.fn() }
+    })
+
+    const ops = ref({})
+    const { manager } = useCwaResourceManageable(mockIri, ops)
+
+    expect(lazy.load).toHaveBeenCalledOnce()
+    expect(ManageableResource).not.toHaveBeenCalled()
+    expect(mockCwa.admin.eventBus.emit).not.toHaveBeenCalledWith('componentMounted', mockIri.value)
+
+    resolveImport()
+    await flushPromises()
+
+    expect(ManageableResource).toHaveBeenCalledWith(mockProxy, mockCwa, ops)
+    expect(initSpy).toHaveBeenCalledWith(mockIri)
+    expect(mockCwa.admin.eventBus.emit).toHaveBeenCalledWith('componentMounted', mockIri.value)
+    expect(manager.value?.init).toBe(initSpy)
+  })
+
+  test('unmounting before the import resolves never constructs or inits a ManageableResource', async () => {
+    vi.spyOn(vue, 'getCurrentInstance').mockReturnValue({ proxy: { mock: 'proxy' } })
+    let unmount: () => void = () => {}
+    vi.spyOn(vue, 'onBeforeUnmount').mockImplementation((fn) => {
+      unmount = fn
+    })
+    const resolveImport = deferredImport()
+
+    useCwaResourceManageable(mockIri)
+    unmount()
+    resolveImport()
+    await flushPromises()
+
+    expect(lazy.load).toHaveBeenCalledOnce()
+    expect(ManageableResource).not.toHaveBeenCalled()
+    expect(mockCwa.admin.eventBus.emit).not.toHaveBeenCalledWith('componentMounted', mockIri.value)
+  })
+
+  test('losing admin before the import resolves never constructs or inits a ManageableResource', async () => {
+    vi.spyOn(vue, 'getCurrentInstance').mockReturnValue({ proxy: { mock: 'proxy' } })
+    let watchCallback: ((val: boolean, prev: boolean) => void) | undefined
+    vi.spyOn(vue, 'watch').mockImplementation((_source: any, cb: any) => {
+      watchCallback = cb
+      return vi.fn()
+    })
+    const resolveImport = deferredImport()
+
+    useCwaResourceManageable(mockIri)
+    watchCallback!(false, true)
+    resolveImport()
+    await flushPromises()
+
+    expect(ManageableResource).not.toHaveBeenCalled()
+  })
+
+  test('the import failing is logged and leaves the component unmanaged', async () => {
+    vi.spyOn(vue, 'getCurrentInstance').mockReturnValue({ proxy: { mock: 'proxy' } })
+    const errorSpy = vi.spyOn(consola, 'error').mockImplementation(() => {})
+    lazy.loaded = undefined
+    lazy.load = vi.fn(() => Promise.reject(new Error('chunk failed')))
+
+    const { manager } = useCwaResourceManageable(mockIri)
+    await flushPromises()
+
+    expect(ManageableResource).not.toHaveBeenCalled()
+    expect(manager.value).toBeUndefined()
+    expect(errorSpy).toHaveBeenCalled()
+    errorSpy.mockRestore()
   })
 
   test('should show message IF current instance does not have a proxy', () => {
@@ -130,7 +258,7 @@ describe('CWA resource manageable composable', () => {
 
     const result = useCwaResourceManageable(mockIri)
 
-    expect(result.manager).toEqual(mockReference)
+    expect(result.manager.value).toEqual(mockReference)
   })
 
   describe('onManageableComponentMounted listener', () => {
