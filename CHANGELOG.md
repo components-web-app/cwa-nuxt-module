@@ -4,6 +4,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+- The default OG image shows the CWA logo in white instead of black, and is rendered 630px high so the site name at the bottom is no longer cut off ([#372](https://github.com/components-web-app/cwa-nuxt-module/issues/372), [01e03ccb](https://github.com/components-web-app/cwa-nuxt-module/commit/01e03ccb))
+
 ## [2.0.0-alpha.10] - 2026-10-10
 
 - **Breaking:** immediate publishing (the Publish button, Publish now, a schedule time already past, and adding a component published) sends `"publishedAt": "now"` so the API publishes by its own clock; needs api-components-bundle 2.0.0-alpha.13 or later ([#381](https://github.com/components-web-app/cwa-nuxt-module/issues/381), [98659370](https://github.com/components-web-app/cwa-nuxt-module/commit/98659370))
