@@ -322,7 +322,7 @@ describe('Cwa class test', () => {
   test('Mercure instance created and accessible', () => {
     createCwa({ storeName })
     const stores = Storage.mock.results[0].value.stores
-    expect(Mercure).toBeCalledWith(stores.mercure, stores.resources, stores.fetcher)
+    expect(Mercure).toBeCalledWith(stores.mercure, stores.resources, stores.fetcher, requestNuxtApp)
     expect(Mercure.mock.results[0].value.setFetcher).toBeCalledWith(Fetcher.mock.results[0].value)
     expect(Mercure.mock.results[0].value.setRequestCount).toBeCalledWith(ResourcesManager.mock.results[0].value.requestCount)
   })
@@ -390,6 +390,18 @@ describe('Cwa delegation methods and getters', () => {
     const mockEvent = { path: '/test' }
     $cwa.fetch(mockEvent as any)
     expect(fetcherInstance.fetch).toHaveBeenCalledWith(mockEvent)
+  })
+
+  test('initClientSide resolves once auth is ready, without waiting for the Mercure client to load (#382)', async () => {
+    const $cwa = createCwa({ storeName })
+    const authInstance = vi.mocked(Auth).mock.results[0]!.value
+    authInstance.init = vi.fn(() => Promise.resolve())
+    const mercureInstance = vi.mocked(Mercure).mock.results[0]!.value
+    mercureInstance.init = vi.fn(() => new Promise(() => {}))
+
+    await expect($cwa.initClientSide()).resolves.toBeUndefined()
+    expect(authInstance.init).toHaveBeenCalledOnce()
+    expect(mercureInstance.init).toHaveBeenCalledOnce()
   })
 
   test('clearPrimaryFetch delegates to fetchStatusManager.clearPrimaryFetch', () => {

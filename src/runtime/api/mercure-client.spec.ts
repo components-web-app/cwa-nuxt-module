@@ -1,0 +1,836 @@
+// @vitest-environment happy-dom
+import { beforeEach, beforeAll, describe, expect, test, vi } from 'vitest'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
+import { consola as logger } from 'consola'
+import { computed, reactive } from 'vue'
+import { flushPromises } from '@vue/test-utils'
+import { MercureStore } from '../storage/stores/mercure/mercure-store'
+import { ResourcesStore } from '../storage/stores/resources/resources-store'
+import { CwaResourceApiStatuses } from '../storage/stores/resources/state'
+import * as ResourceUtils from '../resources/resource-utils'
+import { FetcherStore } from '../storage/stores/fetcher/fetcher-store'
+import * as processComposables from '../composables/process'
+import Mercure from './mercure-client'
+import Fetcher from './fetcher/fetcher'
+
+vi.mock('./fetcher/fetcher')
+
+const EventSource = vi.fn(function () {
+  return {
+    readyState: 0,
+    url: null,
+    onmessage: undefined,
+    close: vi.fn(),
+  }
+})
+vi.stubGlobal('EventSource', EventSource)
+
+const MessageEvent = vi.fn(function (eventId = 'abc') {
+  return {
+    data: null,
+    lastEventId: eventId,
+  }
+})
+vi.stubGlobal('MessageEvent', MessageEvent)
+
+let mercureStoreDef: MercureStore
+let resourcesStoreDef: ResourcesStore
+let fetcherStoreDef: FetcherStore
+function createMercure(): Mercure {
+  mercureStoreDef = new MercureStore('storeName')
+  resourcesStoreDef = new ResourcesStore('storeName')
+  fetcherStoreDef = new FetcherStore('storeName', resourcesStoreDef)
+  return new Mercure(mercureStoreDef, resourcesStoreDef, fetcherStoreDef)
+}
+
+beforeAll(() => {
+  logger.wrapAll()
+  logger.mockTypes(() => vi.fn())
+})
+
+describe('Mercure -> setFetcher', () => {
+  test('Set fetcher will set the fetcher property', () => {
+    const pinia = createTestingPinia({
+      createSpy: vi.fn,
+    })
+    setActivePinia(pinia)
+
+    const mercure = createMercure()
+    const fetcher = new Fetcher()
+    mercure.setFetcher(fetcher)
+    expect(mercure.fetcher).toBe(fetcher)
+  })
+})
+
+describe('Mercure -> init', () => {
+  let mercure: Mercure
+  beforeEach(() => {
+    const pinia = createTestingPinia({
+      createSpy: vi.fn,
+      initialState: {
+        'storeName.mercure': {
+          hub: 'http://hub-url',
+        },
+      },
+    })
+    setActivePinia(pinia)
+    vi.clearAllMocks()
+
+    mercure = createMercure()
+    vi.spyOn(mercure, 'hubUrl', 'get').mockImplementation(() => {
+      return vi.fn(() => {})
+    })
+    vi.spyOn(mercure, 'closeMercure').mockImplementation(() => {})
+  })
+
+  test('We do not initialise and log to the console if server-side request', () => {
+    vi.spyOn(processComposables, 'useProcess').mockImplementation(() => {
+      return {
+        isServer: true,
+        isClient: false,
+      }
+    })
+    mercure.init()
+    expect(logger.debug).toHaveBeenCalledWith('Mercure can only initialise on the client side')
+    expect(mercure.hubUrl).not.toHaveBeenCalled()
+  })
+
+  test('A warning is logged and request aborted if the hub url has not been set', () => {
+    vi.spyOn(processComposables, 'useProcess').mockImplementation(() => {
+      return {
+        isServer: false,
+        isClient: true,
+      }
+    })
+    vi.spyOn(mercure, 'hubUrl', 'get').mockImplementationOnce(() => {
+      return false
+    })
+    mercure.init()
+    expect(logger.warn).toHaveBeenCalledWith('Cannot initialize Mercure. Hub URL is not set.')
+    expect(mercure.closeMercure).toHaveBeenCalledTimes(1)
+  })
+
+  test('A debug console statement is logged and we will not re-initialise a ready event source with the same hub url', () => {
+    vi.spyOn(mercure, 'hubUrl', 'get').mockReturnValue('http://hub-url')
+    const eventSource = new EventSource()
+    eventSource.readyState = 1
+    eventSource.url = 'http://hub-url'
+    mercure.eventSource = eventSource
+    mercure.init()
+    expect(logger.debug).toHaveBeenCalledWith('Mercure already initialized \'http://hub-url\'')
+    expect(mercure.closeMercure).not.toHaveBeenCalled()
+  })
+
+  test('A new event source is created', () => {
+    vi.spyOn(mercure, 'hubUrl', 'get').mockReturnValue('http://hub-url')
+    vi.spyOn(mercure, 'handleMercureMessage').mockReturnValue('handleMercureMessageMock')
+    mercure.init()
+    expect(mercure.closeMercure).toHaveBeenCalledTimes(1)
+    expect(logger.info).toHaveBeenCalledWith('Initializing Mercure \'http://hub-url\'')
+    expect(EventSource).toHaveBeenCalledTimes(1)
+    expect(EventSource).toHaveBeenCalledWith('http://hub-url', { withCredentials: true })
+
+    expect(mercure.handleMercureMessage).not.toHaveBeenCalled()
+    const messageEvent = new MessageEvent()
+    const response = EventSource.mock.results[0].value.onmessage(messageEvent)
+    expect(mercure.handleMercureMessage).toHaveBeenCalledTimes(1)
+    expect(mercure.handleMercureMessage).toHaveBeenCalledWith(messageEvent)
+    expect(response).toBe('handleMercureMessageMock')
+  })
+})
+
+describe('Mercure -> connection loss and recovery (#286)', () => {
+  let mercure: Mercure
+
+  function setupConnected(currentIds: string[] = ['/_/routes//page']) {
+    const pinia = createTestingPinia({
+      createSpy: vi.fn,
+      initialState: {
+        'storeName.mercure': { hub: 'http://hub-url' },
+      },
+    })
+    setActivePinia(pinia)
+    vi.clearAllMocks()
+
+    mercure = createMercure()
+    vi.spyOn(mercure, 'hubUrl', 'get').mockReturnValue('http://hub-url')
+    vi.spyOn(mercure, 'closeMercure').mockImplementation(() => {})
+    vi.spyOn(processComposables, 'useProcess').mockImplementation(() => ({ isServer: false, isClient: true }))
+
+    const resourcesStore = resourcesStoreDef.useStore()
+    resourcesStore.current = reactive({ currentIds, byId: {}, allIds: [] })
+    resourcesStore.saveResource = vi.fn()
+
+    const fetcher = new Fetcher()
+    fetcher.fetchResource = vi.fn((event: any) => Promise.resolve({ '@id': event.path, 'updated': true }))
+    mercure.setFetcher(fetcher)
+    mercure.setRequestCount(computed(() => 0))
+
+    mercure.init()
+    return { eventSource: EventSource.mock.results[0].value, resourcesStore, fetcher }
+  }
+
+  test('an onerror handler is attached and records the connection as lost', () => {
+    const { eventSource } = setupConnected()
+    expect(eventSource.onerror).toBeTypeOf('function')
+
+    eventSource.onerror(new Event('error'))
+    expect(mercureStoreDef.useStore().connected).toBe(false)
+  })
+
+  test('an onopen handler is attached and records the connection as up', () => {
+    const { eventSource } = setupConnected()
+    expect(eventSource.onopen).toBeTypeOf('function')
+
+    eventSource.onopen(new Event('open'))
+    expect(mercureStoreDef.useStore().connected).toBe(true)
+  })
+
+  test('reconnecting after a drop revalidates the current resources, staging them as new', async () => {
+    const { eventSource, resourcesStore, fetcher } = setupConnected(['/_/routes//page', '/_/pages/uuid'])
+
+    eventSource.onopen(new Event('open'))
+    eventSource.onerror(new Event('error'))
+    eventSource.onopen(new Event('open'))
+    await flushPromises()
+
+    expect(fetcher.fetchResource).toHaveBeenCalledTimes(2)
+    expect(resourcesStore.saveResource).toHaveBeenCalledTimes(2)
+    for (const call of resourcesStore.saveResource.mock.calls) {
+      expect(call[0].isNew).toBe(true)
+    }
+  })
+
+  test('the FIRST connection does not revalidate - nothing has been missed yet', async () => {
+    const { eventSource, resourcesStore, fetcher } = setupConnected()
+
+    eventSource.onopen(new Event('open'))
+    await flushPromises()
+
+    expect(fetcher.fetchResource).not.toHaveBeenCalled()
+    expect(resourcesStore.saveResource).not.toHaveBeenCalled()
+  })
+
+  test('coming back online revalidates when the connection was lost', async () => {
+    const { eventSource, fetcher } = setupConnected()
+    eventSource.onopen(new Event('open'))
+    eventSource.onerror(new Event('error'))
+
+    window.dispatchEvent(new Event('online'))
+    await flushPromises()
+
+    expect(fetcher.fetchResource).toHaveBeenCalled()
+  })
+
+  test('coming back online while still connected does not refetch anything', async () => {
+    const { eventSource, fetcher } = setupConnected()
+    eventSource.onopen(new Event('open'))
+
+    window.dispatchEvent(new Event('online'))
+    await flushPromises()
+
+    expect(fetcher.fetchResource).not.toHaveBeenCalled()
+  })
+
+  test('revalidation with no current resources does nothing', async () => {
+    const { eventSource, fetcher } = setupConnected([])
+
+    eventSource.onopen(new Event('open'))
+    eventSource.onerror(new Event('error'))
+    eventSource.onopen(new Event('open'))
+    await flushPromises()
+
+    expect(fetcher.fetchResource).not.toHaveBeenCalled()
+  })
+})
+
+describe('Mercure -> closeMercure', () => {
+  let mercure: Mercure
+  beforeEach(() => {
+    vi.clearAllMocks()
+
+    mercure = createMercure()
+  })
+
+  test('We do not attempt to close an event source if it does not exist', () => {
+    mercure.closeMercure()
+    expect(logger.warn).toHaveBeenLastCalledWith('No Mercure Event Source exists to close')
+  })
+
+  test('We can close an event source and will output to the log', () => {
+    mercure.eventSource = new EventSource()
+    mercure.closeMercure()
+    expect(logger.info).toHaveBeenLastCalledWith('Mercure Event Source Closed')
+    expect(mercure.eventSource.close).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('Mercure -> hubUrl', () => {
+  let mercure: Mercure
+  beforeEach(() => {
+    const pinia = createTestingPinia({
+      createSpy: vi.fn,
+      initialState: {
+        'storeName.mercure': {
+          hub: 'http://hub-url',
+        },
+      },
+    })
+    setActivePinia(pinia)
+
+    vi.clearAllMocks()
+    mercure = createMercure()
+  })
+
+  test('Return undefined if there is no hub set', () => {
+    const pinia = createTestingPinia({
+      createSpy: vi.fn,
+      initialState: {
+        'storeName.mercure': {
+          hub: undefined,
+        },
+      },
+    })
+    setActivePinia(pinia)
+    mercure = createMercure()
+    expect(mercure.hubUrl).toBeUndefined()
+  })
+
+  test('A hub url subscribes to every topic with the Mercure 1.0 match-all', () => {
+    expect(mercure.hubUrl).toBe('http://hub-url/?match=*')
+  })
+
+  test('lastEventId is appended as the Mercure 1.0 last_event_id parameter if it exists', () => {
+    mercure.lastEventId = 'abcdefg'
+    expect(mercure.hubUrl).toBe('http://hub-url/?match=*&last_event_id=abcdefg')
+  })
+})
+
+describe('Mercure -> handleMercureMessage', () => {
+  let mercure: Mercure
+
+  function initMercure() {
+    mercure = createMercure()
+    vi.spyOn(mercure, 'isMessageForCurrentResource').mockImplementation(() => {
+      return true
+    })
+    vi.spyOn(mercure, 'addMercureMessageToQueue').mockImplementation(() => {})
+    vi.spyOn(mercure, 'processMessageQueue').mockImplementation(() => {})
+  }
+
+  beforeEach(() => {
+    const pinia = createTestingPinia({
+      createSpy: vi.fn,
+      initialState: {
+        'storeName.mercure': {
+          hub: 'http://hub-url',
+        },
+      },
+    })
+    setActivePinia(pinia)
+
+    vi.clearAllMocks()
+    initMercure()
+  })
+
+  test('Do not add to message queue if isMessageForCurrentResource returns false', () => {
+    vi.spyOn(mercure, 'isMessageForCurrentResource').mockImplementationOnce(() => {
+      return false
+    })
+    const event = new MessageEvent()
+    event.data = JSON.stringify({})
+    mercure.handleMercureMessage(event)
+    expect(mercure.isMessageForCurrentResource).toHaveBeenCalledWith({
+      event,
+      data: {},
+    })
+    expect(mercure.addMercureMessageToQueue).not.toHaveBeenCalled()
+  })
+
+  test('We will call to add the message to the queue and process immediately if resources API state is not pending', () => {
+    const event = new MessageEvent()
+    event.data = JSON.stringify({})
+    mercure.handleMercureMessage(event)
+    expect(mercure.addMercureMessageToQueue).toHaveBeenCalledWith({
+      event,
+      data: {},
+    })
+    expect(mercure.processMessageQueue).toHaveBeenCalledTimes(1)
+  })
+
+  test('We only call to process the message queue once no api resources are pending', async () => {
+    const current = {
+      byId: {
+        id: {
+          apiState: reactive({
+            status: CwaResourceApiStatuses.IN_PROGRESS,
+          }),
+        },
+      },
+      currentIds: ['id'],
+    }
+    const pinia = createTestingPinia({
+      createSpy: vi.fn,
+      initialState: {
+        'storeName.mercure': {
+          hub: 'http://hub-url',
+        },
+        'storeName.resources': {
+          current,
+        },
+      },
+    })
+    setActivePinia(pinia)
+    initMercure()
+
+    const event = new MessageEvent()
+    event.data = JSON.stringify({})
+    mercure.handleMercureMessage(event)
+    expect(mercure.addMercureMessageToQueue).toHaveBeenCalledWith({
+      event,
+      data: {},
+    })
+
+    expect(mercure.processMessageQueue).not.toHaveBeenCalled()
+
+    // update resource so not pending
+    current.byId.id.apiState.status = CwaResourceApiStatuses.SUCCESS
+    await flushPromises()
+    expect(mercure.processMessageQueue).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('Mercure -> isMessageForCurrentResource', () => {
+  let mercure: Mercure
+
+  beforeEach(() => {
+    const current = {
+      byId: {
+        id: {
+          apiState: reactive({
+            status: CwaResourceApiStatuses.IN_PROGRESS,
+          }),
+        },
+      },
+      currentIds: ['id'],
+    }
+    const pinia = createTestingPinia({
+      createSpy: vi.fn,
+      initialState: {
+        'storeName.resources': {
+          current,
+        },
+      },
+    })
+    setActivePinia(pinia)
+
+    vi.clearAllMocks()
+    mercure = createMercure()
+  })
+
+  test('If the resource exists in current IDs return true', () => {
+    const result = mercure.isMessageForCurrentResource({
+      event: undefined,
+      data: {
+        '@id': 'id',
+      },
+    })
+    expect(result).toBe(true)
+  })
+
+  test('returns false without throwing when data is null or has no @id', () => {
+    expect(mercure.isMessageForCurrentResource({ event: undefined, data: null as any })).toBe(false)
+    expect(mercure.isMessageForCurrentResource({ event: undefined, data: undefined as any })).toBe(false)
+    expect(mercure.isMessageForCurrentResource({ event: undefined, data: {} as any })).toBe(false)
+  })
+
+  test.each([
+    { publishedResourceIriResult: 'id', result: true },
+    { publishedResourceIriResult: undefined, result: false },
+    { publishedResourceIriResult: 'does-not-exist', result: false },
+  ])('If the resource does not exist in current IDs, but the result of getPublishedResourceIri is $publishedResourceIriResult, then return $result', ({
+    publishedResourceIriResult,
+    result,
+  }) => {
+    vi.spyOn(ResourceUtils, 'getPublishedResourceIri').mockImplementationOnce(() => {
+      return publishedResourceIriResult
+    })
+    const response = mercure.isMessageForCurrentResource({
+      event: undefined,
+      data: {
+        '@id': 'random',
+      },
+    })
+    expect(response).toBe(result)
+  })
+
+  test('If the resource does not exist return false', () => {
+    const result = mercure.isMessageForCurrentResource({
+      event: undefined,
+      data: {
+        '@id': 'random',
+        '@type': 'Something',
+        '_metadata': {
+          persisted: true,
+        },
+      },
+    })
+    expect(result).toBe(false)
+  })
+})
+
+describe('Mercure -> addMercureMessageToQueue', () => {
+  let mercure: Mercure
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mercure = createMercure()
+  })
+
+  test('When adding a message to the queue, existing messages with the same ID are replaced', () => {
+    mercure.mercureMessageQueue = [
+      {
+        event: undefined,
+        data: {
+          '@id': 'id1',
+          'key': 'value',
+        },
+      },
+      {
+        event: undefined,
+        data: {
+          '@id': 'id2',
+          'key': 'value',
+        },
+      },
+    ]
+    mercure.addMercureMessageToQueue({
+      event: undefined,
+      data: {
+        '@id': 'id1',
+        'somethingNew': 'my-value',
+      },
+    })
+    expect(mercure.mercureMessageQueue).toStrictEqual([
+      {
+        event: undefined,
+        data: {
+          '@id': 'id2',
+          'key': 'value',
+        },
+      },
+      {
+        event: undefined,
+        data: {
+          '@id': 'id1',
+          'somethingNew': 'my-value',
+        },
+      },
+    ])
+  })
+})
+
+describe('Mercure -> processMessageQueue', () => {
+  let mercure: Mercure
+
+  beforeEach(() => {
+    const pinia = createTestingPinia({
+      createSpy: vi.fn,
+      initialState: {
+        'storeName.resources': {
+          current: {},
+        },
+        'storeName.fetcher': {
+          primaryFetch: {
+            fetchingToken: 'token',
+          },
+          fetches: {
+            token: {
+              path: 'my-path',
+            },
+          },
+        },
+      },
+    })
+    setActivePinia(pinia)
+
+    vi.clearAllMocks()
+    mercure = createMercure()
+    vi.spyOn(mercure, 'collectResourceActions').mockImplementation(() => {
+      return {
+        toSave: [{ '@id': '/save-id' }, { '@id': '/to-delete-id' }],
+        toFetch: ['/to-fetch-id'],
+      }
+    })
+    vi.spyOn(mercure, 'fetch').mockImplementation(() => {
+      return [{ '@id': '/to-fetch-id' }]
+    })
+  })
+
+  test('Process message queue and call storage to delete/save resources', async () => {
+    const resourcesStore = resourcesStoreDef.useStore()
+    const fetcherStore = fetcherStoreDef.useStore()
+    const currentQueue = [
+      {
+        event: new MessageEvent(),
+        data: {
+          '@id': 'anything',
+        },
+      },
+    ]
+    mercure.mercureMessageQueue = currentQueue
+    await mercure.processMessageQueue()
+    expect(mercure.collectResourceActions).toHaveBeenCalledWith(currentQueue)
+    expect(mercure.mercureMessageQueue).toStrictEqual([])
+    expect(mercure.fetch).toHaveBeenCalledWith(['/to-fetch-id'])
+
+    expect(fetcherStore.primaryFetchPath).toBe('my-path')
+    expect(resourcesStore.saveResource).toBeCalledWith({
+      resource: {
+        '@id': '/save-id',
+      },
+      path: fetcherStore.primaryFetchPath,
+      isNew: true,
+    })
+    expect(resourcesStore.saveResource).toBeCalledWith({
+      resource: {
+        '@id': '/to-fetch-id',
+      },
+      path: fetcherStore.primaryFetchPath,
+      isNew: true,
+    })
+    expect(resourcesStore.saveResource).toBeCalledWith({
+      resource: {
+        '@id': '/to-delete-id',
+      },
+      path: fetcherStore.primaryFetchPath,
+      isNew: true,
+    })
+    expect(resourcesStore.saveResource).toBeCalledTimes(3)
+  })
+})
+
+describe('Mercure -> collectResourceActions', () => {
+  let mercure: Mercure
+
+  beforeEach(() => {
+    const pinia = createTestingPinia({
+      createSpy: vi.fn,
+      initialState: {
+        'storeName.resources': {
+          current: {},
+        },
+      },
+    })
+    setActivePinia(pinia)
+
+    vi.clearAllMocks()
+    mercure = createMercure()
+    vi.spyOn(mercure, 'isMessageForCurrentResource').mockImplementation((event) => {
+      return event.data['@id'] !== 'id-not-current'
+    })
+  })
+
+  test('collectResourceActions resolves the correct resources into categories', () => {
+    const messages = [
+      {
+        event: new MessageEvent(),
+        data: {
+          '@id': 'id-delete',
+        },
+      },
+      {
+        event: new MessageEvent(),
+        data: {
+          '@id': 'id1',
+          'key': 'value',
+        },
+      },
+      {
+        event: new MessageEvent(),
+        data: {
+          '@id': 'id-not-current',
+          'key': 'value',
+        },
+      },
+      {
+        event: new MessageEvent('final-event-id'),
+        data: {
+          '@id': 'id-position',
+          '@type': 'ComponentPosition',
+          'key': 'value',
+        },
+      },
+    ]
+    const result = mercure.collectResourceActions(messages)
+    expect(result).toStrictEqual({
+      toSave: [
+        {
+          '@id': 'id-delete',
+        },
+        {
+          '@id': 'id1',
+          'key': 'value',
+        },
+      ],
+      toFetch: ['id-position'],
+    })
+
+    expect(mercure.isMessageForCurrentResource).toHaveBeenCalledTimes(4)
+    expect(mercure.lastEventId).toBe('final-event-id')
+  })
+  describe('a page data message changing which component a property holds', () => {
+    function setup() {
+      const pinia = createTestingPinia({
+        createSpy: vi.fn,
+        initialState: {
+          'storeName.resources': {
+            current: {
+              currentIds: ['/page_data/article', '/_/component_positions/body', '/_/component_positions/image', '/_/component_positions/static'],
+              byId: {
+                '/page_data/article': { data: { '@id': '/page_data/article', 'htmlContent': '/component/html_contents/old', 'image': '/component/images/same' } },
+                '/_/component_positions/body': { data: { '@id': '/_/component_positions/body', 'pageDataProperty': 'htmlContent', 'component': '/component/html_contents/old' } },
+                '/_/component_positions/image': { data: { '@id': '/_/component_positions/image', 'pageDataProperty': 'image', 'component': '/component/images/same' } },
+                '/_/component_positions/static': { data: { '@id': '/_/component_positions/static', 'component': '/component/html_contents/old' } },
+              },
+            },
+          },
+        },
+      })
+      setActivePinia(pinia)
+      const mercure = createMercure()
+      vi.spyOn(mercure, 'isMessageForCurrentResource').mockReturnValue(true)
+      return mercure
+    }
+    const pageDataMessage = (data: Record<string, unknown>) => ({ event: new MessageEvent('message'), data: { '@id': '/page_data/article', ...data } })
+
+    test('re-fetches the on-screen dynamic positions bound to a changed property, for their own path', () => {
+      const mercure = setup()
+      const result = mercure.collectResourceActions([pageDataMessage({ htmlContent: '/component/html_contents/new', image: '/component/images/same' })])
+      expect(result.toFetch).toStrictEqual(['/_/component_positions/body'])
+      expect(result.toSave).toStrictEqual([{ '@id': '/page_data/article', 'htmlContent': '/component/html_contents/new', 'image': '/component/images/same' }])
+    })
+
+    test('re-fetches nothing when no bound property changed', () => {
+      const mercure = setup()
+      expect(mercure.collectResourceActions([pageDataMessage({ htmlContent: '/component/html_contents/old', image: '/component/images/same', title: 'Renamed' })]).toFetch).toStrictEqual([])
+    })
+
+    test('re-fetches a position once when its own message arrives too', () => {
+      const mercure = setup()
+      const result = mercure.collectResourceActions([
+        { event: new MessageEvent('message'), data: { '@id': '/_/component_positions/body', '@type': 'ComponentPosition' } },
+        pageDataMessage({ htmlContent: '/component/html_contents/new' }),
+      ])
+      expect(result.toFetch).toStrictEqual(['/_/component_positions/body'])
+    })
+  })
+
+  describe('a page data message seen by a visitor, who is not sent pageDataProperty', () => {
+    function setup() {
+      const pinia = createTestingPinia({
+        createSpy: vi.fn,
+        initialState: {
+          'storeName.resources': {
+            current: {
+              currentIds: ['/page_data/article', '/_/component_positions/body', '/_/component_positions/image', '/_/component_positions/static'],
+              byId: {
+                '/page_data/article': { data: { '@id': '/page_data/article', 'htmlContent': '/component/html_contents/old', 'image': null, 'title': 'Article' } },
+                '/_/component_positions/body': { data: { '@id': '/_/component_positions/body', 'component': '/component/html_contents/old', '_metadata': { isDynamicPosition: true } } },
+                '/_/component_positions/image': { data: { '@id': '/_/component_positions/image', '_metadata': { isDynamicPosition: true } } },
+                '/_/component_positions/static': { data: { '@id': '/_/component_positions/static', 'component': '/component/html_contents/old', '_metadata': { isDynamicPosition: false } } },
+              },
+            },
+          },
+        },
+      })
+      setActivePinia(pinia)
+      const mercure = createMercure()
+      vi.spyOn(mercure, 'isMessageForCurrentResource').mockReturnValue(true)
+      return mercure
+    }
+    const pageDataMessage = (data: Record<string, unknown>) => ({ event: new MessageEvent('message'), data: { '@id': '/page_data/article', ...data } })
+
+    test('re-fetches every on-screen dynamic position when a property holding a component changes', () => {
+      const mercure = setup()
+      expect(mercure.collectResourceActions([pageDataMessage({ htmlContent: '/component/html_contents/new' })]).toFetch).toStrictEqual(['/_/component_positions/body', '/_/component_positions/image'])
+    })
+
+    test('re-fetches when a property gains or loses its component', () => {
+      expect(setup().collectResourceActions([pageDataMessage({ image: '/component/images/new' })]).toFetch).toStrictEqual(['/_/component_positions/body', '/_/component_positions/image'])
+      expect(setup().collectResourceActions([pageDataMessage({ htmlContent: null })]).toFetch).toStrictEqual(['/_/component_positions/body', '/_/component_positions/image'])
+    })
+
+    test('re-fetches nothing when only a property that holds no component changes', () => {
+      const mercure = setup()
+      expect(mercure.collectResourceActions([pageDataMessage({ htmlContent: '/component/html_contents/old', title: 'Renamed' })]).toFetch).toStrictEqual([])
+    })
+  })
+})
+
+describe('Mercure -> fetch', () => {
+  let mercure: Mercure
+
+  beforeEach(() => {
+    const pinia = createTestingPinia({
+      createSpy: vi.fn,
+      initialState: {
+        'storeName.resources': {
+          current: {},
+        },
+      },
+    })
+    setActivePinia(pinia)
+
+    vi.clearAllMocks()
+    mercure = createMercure()
+    const fetcher = new Fetcher()
+    mercure.setFetcher(fetcher)
+  })
+
+  test('Fetcher fetchResource is called the correct number of times with the correct arguments', async () => {
+    const fetcher = Fetcher.mock.instances[0]
+    vi.spyOn(fetcher, 'fetchResource').mockReturnValue(new Promise((resolve) => {
+      resolve([{ '@id': '/abc' }])
+    }))
+    await mercure.fetch(['/to-fetch-1', '/to-fetch-2', '/no-resource'])
+    expect(fetcher.fetchResource).toHaveBeenCalledTimes(3)
+    expect(fetcher.fetchResource).toHaveBeenCalledWith({
+      path: '/to-fetch-1',
+      noSave: true,
+      shallowFetch: true,
+    })
+    expect(fetcher.fetchResource).toHaveBeenCalledWith({
+      path: '/to-fetch-2',
+      noSave: true,
+      shallowFetch: true,
+    })
+    expect(fetcher.fetchResource).toHaveBeenCalledWith({
+      path: '/no-resource',
+      noSave: true,
+      shallowFetch: true,
+    })
+  })
+
+  test('Fetcher promises are awaited and resources returned', async () => {
+    const fetcher = Fetcher.mock.instances[0]
+    vi.spyOn(fetcher, 'fetchResource').mockImplementation(({ path }) => {
+      return Promise.resolve(path === '/no-resource' ? undefined : { '@id': path })
+    })
+    const resources = await mercure.fetch(['/to-fetch-1', '/to-fetch-2', '/no-resource'])
+    expect(resources).toStrictEqual([
+      {
+        '@id': '/to-fetch-1',
+      },
+      {
+        '@id': '/to-fetch-2',
+      },
+    ])
+  })
+
+  test('An error is thrown if there is no fetcher set', async () => {
+    mercure.setFetcher(undefined)
+    await expect(mercure.fetch(['/to-fetch-1', '/to-fetch-2'])).rejects.toThrowError('Mercure cannot fetch resources. Fetcher is not set.')
+  })
+})

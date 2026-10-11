@@ -16,6 +16,7 @@ const forbidden = [
   { marker: 'preventOverflow', source: '@popperjs/core' },
   { marker: 'OES_texture_half_float', source: 'ui/BackgroundParticles.vue' },
   { marker: 'CwaLayoutSecondary:[]', source: 'cwa-component-group-declarations' },
+  { marker: 'last_event_id', source: 'api/mercure-client.ts' },
 ]
 
 async function readEntryChunks() {
@@ -57,14 +58,14 @@ function main() {
     }
 
     if (found.length) {
-      console.error('\nFAIL: admin-only or error-only code is in the entry chunk graph every visitor downloads (#331).')
+      console.error('\nFAIL: admin-only, error-only or lazily loaded code is in the entry chunk graph every visitor downloads (#331, #382).')
       for (const { source, hits } of found) {
         console.error(`  ${source} -> ${hits.join(', ')}`)
       }
       process.exit(1)
     }
 
-    console.log('\nPASS: no admin-only or error-only marker in the entry modulepreload graph.')
+    console.log('\nPASS: no admin-only, error-only or lazily loaded marker in the entry modulepreload graph.')
   })
 }
 
