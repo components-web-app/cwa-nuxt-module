@@ -4,6 +4,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+## [2.0.0-alpha.11] - 2026-10-12
+
 - The confirm dialog library is loaded only when a dialog is shown, not for every visitor ([#382](https://github.com/components-web-app/cwa-nuxt-module/issues/382), [6b3be663](https://github.com/components-web-app/cwa-nuxt-module/commit/6b3be663))
 - The orphan report requests and the page cache warm reader load on first use, out of every visitor's entry ([#382](https://github.com/components-web-app/cwa-nuxt-module/issues/382), [70d3fc5e](https://github.com/components-web-app/cwa-nuxt-module/commit/70d3fc5e))
 - The Mercure client loads once the page has hydrated instead of in every visitor's entry; visitors' live updates are unchanged ([#382](https://github.com/components-web-app/cwa-nuxt-module/issues/382), [bc72d93b](https://github.com/components-web-app/cwa-nuxt-module/commit/bc72d93b))
@@ -83,7 +85,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 - First tagged release of `@cwa/nuxt`; releases are now published from `v*` tags ([7c61b7c](https://github.com/components-web-app/cwa-nuxt-module/commit/7c61b7ce331ec4a0cb8e76951a5de2ff806ed07a))
 
-[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.10...HEAD
+[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.11...HEAD
+[2.0.0-alpha.11]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.10...v2.0.0-alpha.11
 [2.0.0-alpha.10]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.9...v2.0.0-alpha.10
 [2.0.0-alpha.9]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.8...v2.0.0-alpha.9
 [2.0.0-alpha.8]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.7...v2.0.0-alpha.8
