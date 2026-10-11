@@ -4,6 +4,10 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+- The confirm dialog library is loaded only when a dialog is shown, not for every visitor ([#382](https://github.com/components-web-app/cwa-nuxt-module/issues/382), [6b3be663](https://github.com/components-web-app/cwa-nuxt-module/commit/6b3be663))
+- The orphan report requests and the page cache warm reader load on first use, out of every visitor's entry ([#382](https://github.com/components-web-app/cwa-nuxt-module/issues/382), [70d3fc5e](https://github.com/components-web-app/cwa-nuxt-module/commit/70d3fc5e))
+- The Mercure client loads once the page has hydrated instead of in every visitor's entry; visitors' live updates are unchanged ([#382](https://github.com/components-web-app/cwa-nuxt-module/issues/382), [bc72d93b](https://github.com/components-web-app/cwa-nuxt-module/commit/bc72d93b))
+- Anonymous visitors' pages no longer preload the admin's per-component manager or the empty-position placeholder ([#382](https://github.com/components-web-app/cwa-nuxt-module/issues/382), [a6689f7d](https://github.com/components-web-app/cwa-nuxt-module/commit/a6689f7d))
 - The default OG image shows the CWA logo in white instead of black, and is rendered 630px high so the site name at the bottom is no longer cut off ([#372](https://github.com/components-web-app/cwa-nuxt-module/issues/372), [01e03ccb](https://github.com/components-web-app/cwa-nuxt-module/commit/01e03ccb))
 
 ## [2.0.0-alpha.10] - 2026-10-10
