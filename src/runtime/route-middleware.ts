@@ -70,6 +70,10 @@ export default defineNuxtRouteMiddleware(async (to: RouteLocationNormalized, fro
         await waitForMiddleware()
       }
       logger.info(`Handling route redirect to: '${resource.redirectPath}'`)
+      if (!isClient) {
+        const baseURL = nuxtApp.$config.app.baseURL.replace(/\/+$/, '')
+        return navigateTo(`${baseURL}${resource.redirectPath}`, { redirectCode: 308, external: true })
+      }
       return navigateTo(resource.redirectPath, { redirectCode: 308 })
       // this may be in place to help with multiple redirects on a client side... stop stop
       // infinite loop and crashing

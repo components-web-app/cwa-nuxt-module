@@ -112,6 +112,7 @@ Stores: `resources`, `fetcher`, `mercure`, `apiDocumentation`, `auth`, `admin`, 
 - `mercure.ts` — SSE `EventSource` for real-time resource updates via the API's Mercure hub
 - `auth.ts` — authentication flow
 - `api-documentation.ts` — reads JSON-LD API docs to discover component types and metadata
+- **SSR's request headers are a cross-repo contract with api-components-bundle#442.** The bundle's `warm-http-cache` command copies them in `HttpCache\Warm\ModuleRequestHeaders` so the API cache is warmed under the keys SSR asks for: `accept` (`cwa-fetch.ts`), `preload` (`preload-headers.ts`, one list per resource type joined with `,`; part of the key because Vulcain adds `Vary: Preload`) and `path` (`createRequestHeaders()` and `manifestDepthPath()`). A change to any of them must also be made in the bundle, or the warm fills entries SSR never reads.
 
 ### Resource types
 
@@ -258,6 +259,7 @@ Code kept only for an older API, or to work around someone else's bug, is logged
 - A redirect aborts its fetch with reason `'redirect'`; `finishFetch` then keeps the previous page instead of promoting a page-less route. Errors are never aborted, so they surface.
 - Rapid repeat redirect clicks are safe ([#245](https://github.com/components-web-app/cwa-nuxt-module/issues/245)): superseded clicks resolve `undefined` (correct), and the `middlewareToken` guard in `route-middleware.ts` is load-bearing. `waitForMiddleware` polls a real 10ms timer — tests need real time.
 - **Instant revisit** ([#257](https://github.com/components-web-app/cwa-nuxt-module/issues/257)): `routeCache` (`markRaw`) primes a fully-cached route on `startFetch`; the fetch still runs to revalidate. LRU by route count (`routeCacheLimit`, default 50, 0 = unbounded), ref-counted, never evicting current/in-flight resources.
+- **A server-side route redirect is an `external` `navigateTo` to `baseURL` + `redirectPath`** ([#389](https://github.com/components-web-app/cwa-nuxt-module/issues/389)): an internal one makes Nuxt load the whole target page before sending the 308. One hop is enough because the API's `redirectPath` is already the end of the chain. The client stays internal, because there `external` reloads the page.
 - **A resource IRI is a route param, never a path**: navigate with `getInternalResourceLink(iri)` (`_cwa-resource-page`, `cwaPage0`). `navigateTo(iri)` always 404s.
 - **CWA page routes are flat siblings with a constant `meta.key` (`'cwa-page'`)** ([#337](https://github.com/components-web-app/cwa-nuxt-module/issues/337)). Nested records stop `page:loading:end` firing; dropping the key remounts the page on every navigation. No generated route may declare `cwaPage0`.
 - **Scroll restore waits for content** only for `savedPosition` or a cross-page `#hash` ([#338](https://github.com/components-web-app/cwa-nuxt-module/issues/338)); `isLoading` alone is too early. `runtime/router.options.ts` reproduces Nuxt's `scrollBehavior` (re-read on Nuxt majors) and is **spliced at index 1** of `pages:routerOptions` so apps and layers still override it.
