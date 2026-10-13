@@ -363,9 +363,7 @@ CSS-first config in `src/tailwind/tailwind-cwa.css`; every class uses the `cwa:`
 
 ## Mercure ([#286](https://github.com/components-web-app/cwa-nuxt-module/issues/286))
 
-Replay is not trusted. On reconnect (`connected` going `false` → `true`; `undefined` until the first open) or an `online` event, on-screen resources are refetched with `isNew: true` — unchanged ones are discarded, changes surface like any other update.
-
-**Only an admin's updates wait for the outdated-content notice** ([#385](https://github.com/components-web-app/cwa-nuxt-module/issues/385)): for everyone else `MercureClient` merges them as soon as they are saved, so a visitor sees published changes live. `Mercure` hands it `nuxtApp.$cwa.auth.isAdmin` when the lazy client loads; absent means not an admin.
+Replay is not trusted. On reconnect (`connected` going `false` → `true`; `undefined` until the first open) or an `online` event, on-screen resources are refetched with `isNew: true` — unchanged ones are discarded, changes surface through the existing outdated-content notice.
 
 **A page-data message re-fetches the on-screen dynamic positions bound to a property it changed.** The bundle publishes only the page data when an editor swaps the component a property holds — the position itself did not change, its component is resolved from the `path` — so without this the positions kept the old component until navigation. Each re-fetch carries its own depth's `path` header. (The Nuxt 2 module only re-fetched a position's own message, as `collectResourceActions` still does.)
 
