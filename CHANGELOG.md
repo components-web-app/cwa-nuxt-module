@@ -6,6 +6,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [2.0.0-alpha.12] - 2026-10-13
 
+- Dependencies updated to their latest versions, including Nuxt 4.6.1, the Nuxt SEO modules and reka-ui 2.11; the optional `satori` peer now needs 0.33.5 or later, as nuxt-og-image 6.10 does ([ce2e5f24](https://github.com/components-web-app/cwa-nuxt-module/commit/ce2e5f24))
+- `@vueuse/core` 15, which drops Node.js 20 ([32b00703](https://github.com/components-web-app/cwa-nuxt-module/commit/32b00703))
 - The page admin saves a page's UI as the full `CwaPage<Name>` component name and selects it whether stored full or short, and the pages and layouts lists show the configured UI name ([#384](https://github.com/components-web-app/cwa-nuxt-module/issues/384), [12530643](https://github.com/components-web-app/cwa-nuxt-module/commit/12530643), [5db632cc](https://github.com/components-web-app/cwa-nuxt-module/commit/5db632cc))
 
 ## [2.0.0-alpha.11] - 2026-10-12
