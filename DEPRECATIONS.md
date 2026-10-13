@@ -160,3 +160,29 @@ cannot load:
 **Delete:** the IDs, once `@nuxt/devtools` depends on simple-git ≥ 4.0.1 and
 `@tailwindcss/typography` on postcss-selector-parser ≥ 7.1.6; check with
 `pnpm audit` after removing them.
+
+---
+
+## Remove when the module requires an API that stores page UI names in full
+
+### A page `uiComponent` stored without the `CwaPage` prefix
+
+Admin-made pages used to store `uiComponent` short (`PrimaryPageTemplate`). The
+admin now saves the full component name (`CwaPagePrimaryPageTemplate`), and
+api-components-bundle#431 prefixes a short value on every page write, with
+`silverback:api-components:prefix-page-ui-components` to fix stored rows
+([#384](https://github.com/components-web-app/cwa-nuxt-module/issues/384)).
+Until then a short value is still read in places.
+
+**Delete:**
+
+- `fullPageUiName` and the `pageUiComponentModel` computed in
+  `PageAdminModal.vue` and `PageResourceAdminModal.vue`, binding the Page UI
+  select straight to `localResourceData.uiComponent`, and their "stored short"
+  tests
+- the "still stored short" test in `src/layer/pages/_cwa/index/pages.spec.ts`
+- the short-name handling in `ResourceLoader.vue` (`resourceUiComponent`) and
+  `templateName()` in `admin/stranded-component-groups.ts`
+
+**Precondition:** the module requires an api-components-bundle release
+containing #431, and its upgrade notes tell sites to run the prefix command.
