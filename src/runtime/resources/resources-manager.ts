@@ -1,5 +1,5 @@
 import { computed, nextTick, reactive, ref, watch } from 'vue'
-import type { ComputedRef, Ref } from 'vue'
+import type { App, ComputedRef, Ref } from 'vue'
 import type { FetchError } from 'ofetch'
 import set from 'lodash-es/set'
 import unset from 'lodash-es/unset'
@@ -66,6 +66,7 @@ export class ResourcesManager {
     private readonly fetcher: Fetcher,
     private readonly admin: Admin,
     private readonly resources: Resources,
+    private readonly vueApp: App,
   ) {
     this.cwaFetch = cwaFetch
     this._resourcesStore = resourcesStoreDefinition.useStore()
@@ -135,9 +136,8 @@ export class ResourcesManager {
       content: '<p>Are you sure you want to permanently delete this resource?</p>',
     }
     const { default: ConfirmDialog } = await import('#cwa/templates/components/core/ConfirmDialog.vue')
-    const { createConfirmDialog } = await import('vuejs-confirm-dialog')
-    // @ts-expect-error-next-line
-    const dialog = createConfirmDialog(ConfirmDialog)
+    const { createConfirmDialog } = await import('../admin/confirm-dialog')
+    const dialog = await createConfirmDialog(this.vueApp, ConfirmDialog)
     const { isCanceled } = await dialog.reveal(alertData)
 
     return !isCanceled
@@ -439,9 +439,8 @@ export class ResourcesManager {
       content: '<p>Are you sure you want to discard your new resource. It will NOT be saved.</p>',
     }
     const { default: ConfirmDialog } = await import('#cwa/templates/components/core/ConfirmDialog.vue')
-    const { createConfirmDialog } = await import('vuejs-confirm-dialog')
-    // @ts-expect-error-next-line
-    const dialog = createConfirmDialog(ConfirmDialog)
+    const { createConfirmDialog } = await import('../admin/confirm-dialog')
+    const dialog = await createConfirmDialog(this.vueApp, ConfirmDialog)
     const { isCanceled } = await dialog.reveal(alertData)
 
     if (isCanceled) {

@@ -8,6 +8,7 @@ import { ResourceTypeFromIri } from '#cwa/resources/resource-utils'
 const { mockReveal } = vi.hoisted(() => ({ mockReveal: vi.fn() }))
 
 vi.mock('vuejs-confirm-dialog', () => ({
+  install: vi.fn(),
   createConfirmDialog: vi.fn(() => ({ reveal: mockReveal })),
 }))
 

@@ -1,5 +1,6 @@
 import { describe, expect, test, vi, beforeEach } from 'vitest'
 import type { Mock } from 'vitest'
+import type { App } from 'vue'
 import mitt from 'mitt'
 import { AdminStore } from '../storage/stores/admin/admin-store'
 import { ResourcesStore } from '../storage/stores/resources/resources-store'
@@ -61,8 +62,10 @@ vi.mock('mitt', () => {
   }
 })
 
+const vueApp = { name: 'VUE_APP' } as unknown as App
+
 function createAdmin() {
-  return new Admin(new AdminStore('storeName'), new ResourcesStore('storeName'), new Resources())
+  return new Admin(new AdminStore('storeName'), new ResourcesStore('storeName'), new Resources(), vueApp)
 }
 
 describe('Admin class', () => {
@@ -139,6 +142,6 @@ describe('Admin class', () => {
   test('should have component manager created', () => {
     admin = createAdmin()
 
-    expect(ResourceStackManager as Mock).toHaveBeenCalledWith(AdminStore.mock.results[0].value, ResourcesStore.mock.results[0].value, Resources.mock.results[0].value)
+    expect(ResourceStackManager as Mock).toHaveBeenCalledWith(AdminStore.mock.results[0].value, ResourcesStore.mock.results[0].value, Resources.mock.results[0].value, vueApp)
   })
 })

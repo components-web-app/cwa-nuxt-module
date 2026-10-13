@@ -11,6 +11,10 @@ const mockModuleUploadConfig = vi.hoisted(() => ({ value: undefined as undefined
 const mockDownscaleImageFile = vi.hoisted(() => vi.fn(async (file: File) => file))
 const mockBrowserDeps = vi.hoisted(() => ({ decode: () => undefined }))
 
+vi.mock('#app/nuxt', async importOriginal => ({
+  ...await importOriginal<typeof import('#app/nuxt')>(),
+  useNuxtApp: () => ({ vueApp: {} }),
+}))
 vi.mock('#cwa/composables/cwa', () => ({
   useCwa: () => ({
     resources: { getResource: mockGetResource },
@@ -39,6 +43,7 @@ vi.mock('#cwa/composables/cwa-resource-endpoint', () => ({
 }))
 
 vi.mock('vuejs-confirm-dialog', () => ({
+  install: vi.fn(),
   createConfirmDialog: vi.fn(() => ({
     reveal: vi.fn().mockResolvedValue({ isCanceled: false }),
   })),

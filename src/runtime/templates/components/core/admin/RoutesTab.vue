@@ -88,11 +88,11 @@
 
 <script lang="ts" setup>
 import { computed, ref, watch, watchEffect } from 'vue'
-import { createConfirmDialog } from 'vuejs-confirm-dialog'
 import type { CwaResource } from '#cwa/resources/resource-utils'
 import { useItemPage } from '#cwa-layer/_composables/useItemPage'
 import { routePublicationFromResource } from '#cwa/resources/route-publication'
-import { useCwa, navigateTo, useRoute } from '#imports'
+import { useCwa, navigateTo, useNuxtApp, useRoute } from '#imports'
+import { createConfirmDialog } from '#cwa/admin/confirm-dialog'
 import RoutesTabView from '#cwa/templates/components/core/admin/RoutesTabView.vue'
 import RoutesTabAddRedirect from '#cwa/templates/components/core/admin/RoutesTabAddRedirect.vue'
 import RoutesTabManage from '#cwa/templates/components/core/admin/RoutesTabManage.vue'
@@ -114,6 +114,7 @@ const emit = defineEmits<{
 }>()
 
 const $cwa = useCwa()
+const vueApp = useNuxtApp().vueApp
 const route = useRoute()
 const { getInternalResourceLink } = useCwaResourceRoute()
 
@@ -207,8 +208,7 @@ async function handleCreateRedirect(path: string) {
 }
 
 async function askCascadeChildPaths(): Promise<boolean> {
-  // @ts-expect-error
-  const dialog = createConfirmDialog(ConfirmDialog)
+  const dialog = await createConfirmDialog(vueApp, ConfirmDialog)
   const { isCanceled } = await dialog.reveal({
     title: 'Update child routes?',
     content: '<p>The route path has changed. If this page has child routes that share the old prefix, would you like to update them too? Routes using a different prefix will be unchanged.</p>',

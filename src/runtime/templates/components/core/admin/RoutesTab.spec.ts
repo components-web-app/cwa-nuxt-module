@@ -21,6 +21,7 @@ mockNuxtImport('navigateTo', () => mockNavigateTo)
 
 vi.mock('#cwa-layer/_composables/useItemPage', () => ({ useItemPage: mockUseItemPage }))
 vi.mock('vuejs-confirm-dialog', () => ({
+  install: vi.fn(),
   createConfirmDialog: vi.fn(() => ({ reveal: mockReveal })),
 }))
 
@@ -200,6 +201,7 @@ describe('RoutesTab', () => {
       const wrapper = mountTab()
       await wrapper.findComponent(RoutesTabView).vm.$emit('changePage', 'manage-route')
       await wrapper.findComponent(RoutesTabManage).vm.$emit('save')
+      await flushPromises()
       expect(mockReveal).not.toHaveBeenCalled()
       expect(saveResource).toHaveBeenCalled()
       expect((saveResource.mock.calls[0][0] as any)?.cascadeChildPaths).toBeUndefined()
@@ -212,6 +214,7 @@ describe('RoutesTab', () => {
       const wrapper = mountTab()
       await wrapper.findComponent(RoutesTabView).vm.$emit('changePage', 'manage-route')
       await wrapper.findComponent(RoutesTabManage).vm.$emit('save')
+      await flushPromises()
       expect(mockReveal).toHaveBeenCalledOnce()
     })
 

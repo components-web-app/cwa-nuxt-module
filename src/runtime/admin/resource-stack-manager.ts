@@ -66,7 +66,7 @@ export default class ResourceStackManager {
   private readonly _adminStore: CwaAdminStoreInterface
   private readonly _resourcesStore: CwaResourcesStoreInterface
 
-  constructor(private adminStoreDefinition: AdminStore, private readonly resourcesStoreDefinition: ResourcesStore, private readonly resources: Resources) {
+  constructor(private adminStoreDefinition: AdminStore, private readonly resourcesStoreDefinition: ResourcesStore, private readonly resources: Resources, private readonly vueApp: App) {
     this._adminStore = this.adminStoreDefinition.useStore()
     this._resourcesStore = this.resourcesStoreDefinition.useStore()
     watch(() => this.isEditing, this.listenEditModeChange.bind(this))
@@ -183,9 +183,8 @@ export default class ResourceStackManager {
     }
 
     const { default: ConfirmDialog } = await import('#cwa/templates/components/core/ConfirmDialog.vue')
-    const { createConfirmDialog } = await import('vuejs-confirm-dialog')
-    // @ts-expect-error-next-line
-    const dialog = createConfirmDialog(ConfirmDialog)
+    const { createConfirmDialog } = await import('./confirm-dialog')
+    const dialog = await createConfirmDialog(this.vueApp, ConfirmDialog)
     const { isCanceled } = await dialog.reveal(alertData)
     if (isCanceled) {
       if (fromContext) {

@@ -21,7 +21,7 @@ const forbidden = [
   { marker: 'last_event_id', source: 'api/mercure-client.ts' },
   { marker: 'orphaned_resources/delete', source: 'api/orphaned-resource-requests.ts' },
   { marker: 'The page cache warm stopped before it finished', source: 'api/page-cache-warm.ts' },
-  { marker: 'DialogsWrapper', source: 'vuejs-confirm-dialog' },
+  { marker: 'vuejs-confirm-dialog-root', source: 'vuejs-confirm-dialog' },
 ]
 
 async function readEntryChunks() {

@@ -1,4 +1,5 @@
 import { describe, vi, test, expect, beforeEach, afterEach } from 'vitest'
+import type { App } from 'vue'
 import { createConfirmDialog } from 'vuejs-confirm-dialog'
 import { createPinia, setActivePinia } from 'pinia'
 import { ResourcesManager } from './resources-manager'
@@ -10,6 +11,7 @@ import type { CwaResource } from '#cwa/resources/resource-utils'
 
 vi.mock('#cwa/templates/components/core/ConfirmDialog.vue', () => ({ default: {} }))
 vi.mock('vuejs-confirm-dialog', () => ({
+  install: vi.fn(),
   createConfirmDialog: vi.fn(() => ({
     reveal: vi.fn().mockResolvedValue({ isCanceled: false }),
   })),
@@ -71,6 +73,7 @@ function createResourcesManager(opts: { includeAdmin?: boolean, fetcher?: any, r
     opts.fetcher ?? undefined,
     mockAdmin,
     opts.resources ?? undefined,
+    {} as App,
   )
 
   return {

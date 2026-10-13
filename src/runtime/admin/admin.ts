@@ -1,6 +1,7 @@
 import mitt from 'mitt'
 import type { Emitter } from 'mitt'
 import { watch } from 'vue'
+import type { App } from 'vue'
 import throttle from 'lodash-es/throttle'
 import type { DebouncedFunc } from 'lodash-es/debounce'
 import type { AdminStore, CwaAdminStoreInterface } from '../storage/stores/admin/admin-store'
@@ -28,9 +29,9 @@ export default class Admin {
   private throttledRedrawEmitFn: undefined | DebouncedFunc<() => void>
   private readonly _adminStore: CwaAdminStoreInterface
 
-  public constructor(adminStoreDefinition: AdminStore, resourcesStoreDefinition: ResourcesStore, resources: Resources) {
+  public constructor(adminStoreDefinition: AdminStore, resourcesStoreDefinition: ResourcesStore, resources: Resources, vueApp: App) {
     this.emitter = mitt<Events>()
-    this.stackManagerInstance = new ResourceStackManager(adminStoreDefinition, resourcesStoreDefinition, resources)
+    this.stackManagerInstance = new ResourceStackManager(adminStoreDefinition, resourcesStoreDefinition, resources, vueApp)
     this.emitRedraw = this.emitRedraw.bind(this)
     this.redrawListen()
     this._adminStore = adminStoreDefinition.useStore()

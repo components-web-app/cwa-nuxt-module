@@ -13,7 +13,7 @@ vi.mock('vue', async () => {
   }
 })
 
-vi.mock('vuejs-confirm-dialog', () => ({ createConfirmDialog: vi.fn() }))
+vi.mock('vuejs-confirm-dialog', () => ({ install: vi.fn(), createConfirmDialog: vi.fn() }))
 vi.mock('#cwa/templates/components/core/ConfirmDialog.vue', () => ({ default: {} }))
 const mockComponentFocusRedraw = vi.hoisted(() => vi.fn())
 vi.mock('#cwa/templates/components/main/admin/resource-manager/ComponentFocus.vue', () => ({
@@ -40,7 +40,7 @@ function createResourceManager(mockStore?: any) {
     }),
   }
 
-  const manager = new ResourceStackManager(mockAdminStore, mockResourcesStore)
+  const manager = new ResourceStackManager(mockAdminStore, mockResourcesStore, {} as any, {} as any)
   return {
     manager,
     store: mockAdminStore,
@@ -411,7 +411,7 @@ describe('Resource Manager', () => {
           findDraftComponentIri: vi.fn((iri: string) => `draft:${iri}`),
         }),
       }
-      const manager = new ResourceStackManager(mockAdminStore as any, mockResourcesStore as any, {} as any)
+      const manager = new ResourceStackManager(mockAdminStore as any, mockResourcesStore as any, {} as any, {} as any)
       manager.showManager.value = true
       ;(manager as any).currentResourceStack.value = [{ iri: '/component/1', domElements: ref([]), childIris: ref([]) }]
       return manager
@@ -471,7 +471,7 @@ describe('Resource Manager', () => {
           isIriPublishableEquivalent: isEquivalentFn || vi.fn().mockReturnValue(false),
         }),
       }
-      const manager = new ResourceStackManager(mockAdminStore as any, mockResourcesStore as any, {} as any)
+      const manager = new ResourceStackManager(mockAdminStore as any, mockResourcesStore as any, {} as any, {} as any)
       return manager
     }
 
@@ -512,7 +512,7 @@ describe('Resource Manager', () => {
         isDataPage: ref(opts?.isDataPage ?? false),
         isPageDataResource: vi.fn((_iri: string) => ref(false)),
       }
-      const manager = new ResourceStackManager(mockAdminStore as any, mockResourcesStore as any, mockResources as any)
+      const manager = new ResourceStackManager(mockAdminStore as any, mockResourcesStore as any, mockResources as any, {} as any)
       if (opts?.isLayoutStack) {
         ;(manager as any).isLayoutStack.value = true
       }
@@ -578,7 +578,7 @@ describe('Resource Manager', () => {
         isDataPage: ref(opts?.isDataPage ?? false),
         isPageDataResource: vi.fn((iri: string) => ref(opts?.isPageDataResourceFn?.(iri) ?? false)),
       }
-      return new ResourceStackManager(mockAdminStore as any, mockResourcesStore as any, mockResources as any)
+      return new ResourceStackManager(mockAdminStore as any, mockResourcesStore as any, mockResources as any, {} as any)
     }
 
     function makeItem(iri: string) {
@@ -678,7 +678,7 @@ describe('Resource Manager', () => {
           isIriPublishableEquivalent: vi.fn().mockReturnValue(false),
         }),
       }
-      return new ResourceStackManager(mockAdminStore as any, mockResourcesStore as any, {} as any)
+      return new ResourceStackManager(mockAdminStore as any, mockResourcesStore as any, {} as any, {} as any)
     }
 
     test('returns early when not editing', async () => {
@@ -686,7 +686,7 @@ describe('Resource Manager', () => {
       const mockResourcesStore = {
         useStore: () => ({ state: reactive({}), isIriPublishableEquivalent: vi.fn().mockReturnValue(false) }),
       }
-      const manager = new ResourceStackManager(mockAdminStore as any, mockResourcesStore as any, {} as any)
+      const manager = new ResourceStackManager(mockAdminStore as any, mockResourcesStore as any, {} as any, {} as any)
       const item = { iri: '/test', domElements: ref([]), childIris: ref([]) }
       ;(manager as any).currentResourceStack.value = [item]
       manager.showManager.value = false
@@ -772,7 +772,7 @@ describe('Resource Manager', () => {
           findAllPublishableIris: vi.fn((iri: string) => [iri]),
         }),
       }
-      return new ResourceStackManager(mockAdminStore as any, mockResourcesStore as any, {} as any)
+      return new ResourceStackManager(mockAdminStore as any, mockResourcesStore as any, {} as any, {} as any)
     }
 
     function makeStackItem(iri: string, childIris: string[] = []) {
@@ -921,7 +921,7 @@ describe('Resource Manager', () => {
           findAllPublishableIris: vi.fn((iri: string) => [iri]),
         }),
       }
-      const manager = new ResourceStackManager(mockAdminStore as any, mockResourcesStore as any, {} as any)
+      const manager = new ResourceStackManager(mockAdminStore as any, mockResourcesStore as any, {} as any, {} as any)
       const existing = { iri: '/_/component_groups/grp1', domElements: ref([]), childIris: { value: undefined } as any }
       ;(manager as any).currentResourceStack.value = [existing]
       const child = { iri: '/component/child1', domElements: ref([]), childIris: ref([]) }
@@ -972,7 +972,7 @@ describe('Resource Manager', () => {
           isIriPublishableEquivalent: vi.fn().mockReturnValue(false),
         }),
       }
-      return new ResourceStackManager(mockAdminStore as any, mockResourcesStore as any, {} as any)
+      return new ResourceStackManager(mockAdminStore as any, mockResourcesStore as any, {} as any, {} as any)
     }
 
     beforeEach(() => {
@@ -1046,7 +1046,7 @@ describe('Resource Manager', () => {
           isIriPublishableEquivalent: vi.fn().mockReturnValue(false),
         }),
       }
-      const manager = new ResourceStackManager(mockAdminStore as any, mockResourcesStore as any, {} as any)
+      const manager = new ResourceStackManager(mockAdminStore as any, mockResourcesStore as any, {} as any, {} as any)
       manager.showManager.value = true
       return manager
     }
@@ -1120,7 +1120,7 @@ describe('Resource Manager', () => {
       const mockResourcesStore = {
         useStore: () => ({ state: reactive({}), isIriPublishableEquivalent: vi.fn().mockReturnValue(false) }),
       }
-      return new ResourceStackManager(mockAdminStore as any, mockResourcesStore as any, {} as any)
+      return new ResourceStackManager(mockAdminStore as any, mockResourcesStore as any, {} as any, {} as any)
     }
 
     test('returns true when element top is above the yOffset', () => {

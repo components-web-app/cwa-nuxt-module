@@ -7,8 +7,13 @@ import * as cwaComposable from '#cwa/composables/cwa'
 import { mergeComponentGroup } from '#cwa/admin/stranded-component-groups'
 import type { ShownComponentGroup, StrandedComponentGroup } from '#cwa/admin/stranded-component-groups'
 
+vi.mock('#app/nuxt', async importOriginal => ({
+  ...await importOriginal<typeof import('#app/nuxt')>(),
+  useNuxtApp: () => ({ vueApp: {} }),
+}))
 vi.mock('#cwa/templates/components/core/ConfirmDialog.vue', () => ({ default: {} }))
 vi.mock('vuejs-confirm-dialog', () => ({
+  install: vi.fn(),
   createConfirmDialog: vi.fn(),
 }))
 vi.mock('#cwa/admin/stranded-component-groups', () => ({

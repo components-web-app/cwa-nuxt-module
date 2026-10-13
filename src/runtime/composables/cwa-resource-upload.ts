@@ -1,8 +1,9 @@
 import { computed, ref, watch } from 'vue'
 import type { ComputedRef } from 'vue'
-import { createConfirmDialog } from 'vuejs-confirm-dialog'
 import { useCwaResourceEndpoint } from '#cwa/composables/cwa-resource-endpoint'
 import { useCwa } from '#cwa/composables/cwa'
+import { createConfirmDialog } from '#cwa/admin/confirm-dialog'
+import { useNuxtApp } from '#imports'
 import ConfirmDialog from '#cwa/templates/components/core/ConfirmDialog.vue'
 import { createBrowserImageDownscaleDeps, downscaleImageFile, resolveImageDownscaleOptions } from '#cwa/files/image-downscale'
 import type { ImageDownscaleOptions } from '#cwa/files/image-downscale'
@@ -22,6 +23,7 @@ export interface CwaResourceUploadBind {
 
 export const useCwaResourceUpload = (iri: ComputedRef<string | undefined>, filename: string = 'file', fileDisplayType: string = 'File', ops?: CwaResourceUploadOps) => {
   const $cwa = useCwa()
+  const vueApp = useNuxtApp().vueApp
   const resource = computed(() => iri.value ? $cwa.resources.getResource(iri.value).value : undefined)
 
   function getFilename() {
@@ -69,8 +71,7 @@ export const useCwaResourceUpload = (iri: ComputedRef<string | undefined>, filen
       title: `Delete this ${fileDisplayType.toLowerCase()}?`,
       content: `<p>Are you sure you want to permanently delete this ${fileDisplayType.toLowerCase()}?</p>`,
     }
-    // @ts-expect-error-next-line
-    const dialog = createConfirmDialog(ConfirmDialog)
+    const dialog = await createConfirmDialog(vueApp, ConfirmDialog)
     const { isCanceled } = await dialog.reveal(alertData)
 
     return !isCanceled

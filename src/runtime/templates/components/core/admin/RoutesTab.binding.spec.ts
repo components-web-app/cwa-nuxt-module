@@ -19,6 +19,7 @@ vi.mock('vue-router', async (importOriginal) => {
 })
 
 vi.mock('vuejs-confirm-dialog', () => ({
+  install: vi.fn(),
   createConfirmDialog: vi.fn(() => ({ reveal: vi.fn().mockResolvedValue({ isCanceled: true }) })),
 }))
 
