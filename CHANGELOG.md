@@ -4,6 +4,7 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+- A page's `<title>` skips the API's default `Unnamed Page`, so nested pages no longer show it and untitled page data falls back to its page's title ([#388](https://github.com/components-web-app/cwa-nuxt-module/issues/388), [4efeae0f](https://github.com/components-web-app/cwa-nuxt-module/commit/4efeae0f))
 - The admin's last unprefixed Tailwind classes are prefixed, so the manager panel stays fixed to the bottom of the viewport and admin spacing no longer depends on the host app's CSS ([#387](https://github.com/components-web-app/cwa-nuxt-module/issues/387), [2632d36e](https://github.com/components-web-app/cwa-nuxt-module/commit/2632d36e))
 
 ## [2.0.0-alpha.12] - 2026-10-13
