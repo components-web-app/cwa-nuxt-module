@@ -30,6 +30,7 @@ export default class MercureClient {
     mercureStoreDefinition: MercureStore,
     resourcesStoreDefinition: ResourcesStore,
     fetcherStoreDefinition: FetcherStore,
+    private readonly isAdmin?: ComputedRef<boolean>,
   ) {
     this._mercureStore = mercureStoreDefinition.useStore()
     this._resourcesStore = resourcesStoreDefinition.useStore()
@@ -111,14 +112,7 @@ export default class MercureClient {
         return
       }
       const path = this._fetcherStore.primaryFetchPath
-      const resources = await this.fetch(currentIds)
-      for (const resource of resources) {
-        this.resourcesStore.saveResource({
-          resource,
-          path,
-          isNew: true,
-        })
-      }
+      this.saveNewResources(await this.fetch(currentIds), path)
     }
 
     if (!this.requestsInProgress.value) {
@@ -204,13 +198,19 @@ export default class MercureClient {
     const path = this._fetcherStore.primaryFetchPath
     const resourceActions = this.collectResourceActions(messages)
     const fetchedResources = await this.fetch(resourceActions.toFetch)
-    const toSave = [...resourceActions.toSave, ...fetchedResources]
-    for (const resource of toSave) {
+    this.saveNewResources([...resourceActions.toSave, ...fetchedResources], path)
+  }
+
+  private saveNewResources(resources: CwaResource[], path: string | undefined) {
+    for (const resource of resources) {
       this.resourcesStore.saveResource({
         resource,
         path,
         isNew: true,
       })
+    }
+    if (!this.isAdmin?.value) {
+      this.resourcesStore.mergeNewResources()
     }
   }
 

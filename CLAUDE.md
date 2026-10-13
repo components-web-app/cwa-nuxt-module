@@ -229,6 +229,7 @@ Code kept only for an older API, or to work around someone else's bug, is logged
 - **Nested `ComputedRef` accesses are not unwrapped in templates** ([#260](https://github.com/components-web-app/cwa-nuxt-module/issues/260)). `$cwa.auth.isAdmin` in a template is an always-truthy object — use `.value`. `auth.user`/`auth.roles` and `Cwa.isStaticRender` are deliberately plain values; don't wrap them in `computed`. The same trap applies to `useCwaResourceUpload`'s `bind` — always destructure it.
 - **Never compare a server-issued time against the browser clock** ([#262](https://github.com/components-web-app/cwa-nuxt-module/issues/262)). Static-render detection is `payload.prerenderedAt` plus build-time `staticRender` (routeRules with `isr`/`swr`/`prerender`, or `cwa.staticRender`).
 - **Depth tracking (`iriDepths`, `depthPaths`) lives in the fetcher store**, so it survives SSR→client hydration and the depth-aware `path` header stays right on client re-fetches ([#261](https://github.com/components-web-app/cwa-nuxt-module/issues/261)).
+- **Hydration always rewrites an `<input>`'s `value`** from the client state, so a value the browser filled in before hydration is lost ([#386](https://github.com/components-web-app/cwa-nuxt-module/issues/386)). `onMounted` is too late to read it; the auth `InputField` reads it in a directive's `created` hook, which runs before the patch.
 - `ResourceLoader`'s SSR-4xx re-fetch is gated on `auth.user || isStaticRender` — an anonymous visitor would only get the same 4xx ([#334](https://github.com/components-web-app/cwa-nuxt-module/issues/334)).
 
 ## API URL and path prefix
@@ -362,7 +363,9 @@ CSS-first config in `src/tailwind/tailwind-cwa.css`; every class uses the `cwa:`
 
 ## Mercure ([#286](https://github.com/components-web-app/cwa-nuxt-module/issues/286))
 
-Replay is not trusted. On reconnect (`connected` going `false` → `true`; `undefined` until the first open) or an `online` event, on-screen resources are refetched with `isNew: true` — unchanged ones are discarded, changes surface through the existing outdated-content notice.
+Replay is not trusted. On reconnect (`connected` going `false` → `true`; `undefined` until the first open) or an `online` event, on-screen resources are refetched with `isNew: true` — unchanged ones are discarded, changes surface like any other update.
+
+**Only an admin's updates wait for the outdated-content notice** ([#385](https://github.com/components-web-app/cwa-nuxt-module/issues/385)): for everyone else `MercureClient` merges them as soon as they are saved, so a visitor sees published changes live. `Mercure` hands it `nuxtApp.$cwa.auth.isAdmin` when the lazy client loads; absent means not an admin.
 
 **A page-data message re-fetches the on-screen dynamic positions bound to a property it changed.** The bundle publishes only the page data when an editor swaps the component a property holds — the position itself did not change, its component is resolved from the `path` — so without this the positions kept the old component until navigation. Each re-fetch carries its own depth's `path` header. (The Nuxt 2 module only re-fetched a position's own message, as `collectResourceActions` still does.)
 

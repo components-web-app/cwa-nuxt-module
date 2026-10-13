@@ -7,6 +7,7 @@
     <div class="cwa:mt-2">
       <input
         :id="id"
+        v-keep-prefilled-value
         :name="props.name"
         :type="props.type"
         :autocomplete="props.autocomplete"
@@ -30,6 +31,7 @@
 
 <script setup lang="ts">
 import { useId } from 'vue'
+import type { Directive } from 'vue'
 
 const emit = defineEmits(['update:modelValue'])
 
@@ -50,6 +52,14 @@ const props = withDefaults(defineProps<{
 })
 
 const id = useId()
+
+const vKeepPrefilledValue: Directive<HTMLInputElement> = {
+  created(el) {
+    if (el.value && el.value !== props.modelValue) {
+      emit('update:modelValue', el.value)
+    }
+  },
+}
 
 function updateModelValue($event: Event) {
   if (!($event.target instanceof HTMLInputElement)) {

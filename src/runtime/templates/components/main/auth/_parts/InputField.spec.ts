@@ -1,6 +1,8 @@
 // @vitest-environment happy-dom
-import { describe, expect, test } from 'vitest'
-import { shallowMount } from '@vue/test-utils'
+import { afterEach, describe, expect, test } from 'vitest'
+import { flushPromises, shallowMount } from '@vue/test-utils'
+import { createSSRApp, defineComponent, h, ref } from 'vue'
+import { renderToString } from 'vue/server-renderer'
 import InputField from './InputField.vue'
 
 interface InputMeta {
@@ -38,7 +40,74 @@ function createWrapper({
   })
 }
 
+function inputParent(model: { value: string }) {
+  return defineComponent({
+    render: () => h(InputField, {
+      'name': 'username',
+      'label': 'Username',
+      'modelValue': model.value,
+      'onUpdate:modelValue': (value: string) => {
+        model.value = value
+      },
+    }),
+  })
+}
+
+async function hydrateWithValueFilledBeforeHydration(initialModel: string, filledValue: string) {
+  const container = document.createElement('div')
+  document.body.appendChild(container)
+  container.innerHTML = await renderToString(createSSRApp(inputParent({ value: initialModel })))
+  const input = container.querySelector('input') as HTMLInputElement
+  input.value = filledValue
+  const model = ref(initialModel)
+  createSSRApp(inputParent(model)).mount(container)
+  await flushPromises()
+  return { input, model }
+}
+
 describe('InputField', () => {
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  describe('a value filled into the server-rendered input before hydration', () => {
+    test('is kept in the input and written to the model, as a password manager autofill on /login needs', async () => {
+      const { input, model } = await hydrateWithValueFilledBeforeHydration('', 'autofilled-user')
+
+      expect(input.value).toBe('autofilled-user')
+      expect(model.value).toBe('autofilled-user')
+    })
+
+    test('does not emit when the input still holds the server-rendered value', async () => {
+      const emitted: string[] = []
+      const container = document.createElement('div')
+      document.body.appendChild(container)
+      container.innerHTML = await renderToString(createSSRApp(inputParent({ value: 'mock_user' })))
+      createSSRApp(inputParent({
+        get value() {
+          return 'mock_user'
+        },
+        set value(value: string) {
+          emitted.push(value)
+        },
+      })).mount(container)
+      await flushPromises()
+
+      expect(emitted).toEqual([])
+    })
+
+    test('a client-side mount does not overwrite the model with the empty new input', () => {
+      const wrapper = createWrapper({
+        name: 'login',
+        label: 'Login',
+        modelValue: 'mock_user',
+      })
+
+      expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+      expect(wrapper.find('input').element.value).toBe('mock_user')
+    })
+  })
+
   describe('emits', () => {
     test('should emit updated value', async () => {
       const mockNewValue = 'new input value'
