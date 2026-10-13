@@ -4,6 +4,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { consola as logger } from 'consola'
 import { computed, reactive } from 'vue'
+import type { ComputedRef } from 'vue'
 import { flushPromises } from '@vue/test-utils'
 import { MercureStore } from '../storage/stores/mercure/mercure-store'
 import { ResourcesStore } from '../storage/stores/resources/resources-store'
@@ -37,11 +38,11 @@ vi.stubGlobal('MessageEvent', MessageEvent)
 let mercureStoreDef: MercureStore
 let resourcesStoreDef: ResourcesStore
 let fetcherStoreDef: FetcherStore
-function createMercure(): Mercure {
+function createMercure(isAdmin?: ComputedRef<boolean>): Mercure {
   mercureStoreDef = new MercureStore('storeName')
   resourcesStoreDef = new ResourcesStore('storeName')
   fetcherStoreDef = new FetcherStore('storeName', resourcesStoreDef)
-  return new Mercure(mercureStoreDef, resourcesStoreDef, fetcherStoreDef)
+  return new Mercure(mercureStoreDef, resourcesStoreDef, fetcherStoreDef, isAdmin)
 }
 
 beforeAll(() => {
@@ -832,5 +833,75 @@ describe('Mercure -> fetch', () => {
   test('An error is thrown if there is no fetcher set', async () => {
     mercure.setFetcher(undefined)
     await expect(mercure.fetch(['/to-fetch-1', '/to-fetch-2'])).rejects.toThrowError('Mercure cannot fetch resources. Fetcher is not set.')
+  })
+})
+
+describe('Mercure -> a published change reaching a page on screen (#385)', () => {
+  const IRI = '/component/html_contents/abc'
+  const published = (html: string) => ({
+    '@context': '/contexts/HtmlContent',
+    '@id': IRI,
+    '@type': 'HtmlContent',
+    html,
+    '_metadata': { persisted: true, publishable: { published: true, publishedAt: '2026-10-01T09:00:00+00:00' } },
+  })
+
+  function setup(isAdmin: boolean) {
+    setActivePinia(createTestingPinia({ createSpy: vi.fn, stubActions: false, initialState: { 'storeName.mercure': { hub: 'http://hub-url' } } }))
+    vi.clearAllMocks()
+    vi.spyOn(processComposables, 'useProcess').mockImplementation(() => ({ isServer: false, isClient: true }))
+
+    const mercure = createMercure(computed(() => isAdmin))
+    const resourcesStore = resourcesStoreDef.useStore()
+    resourcesStore.current.byId[IRI] = { apiState: { status: CwaResourceApiStatuses.SUCCESS }, data: published('<p>Old</p>') }
+    resourcesStore.current.allIds.push(IRI)
+    resourcesStore.current.currentIds.push(IRI)
+
+    const fetcher = new Fetcher()
+    fetcher.fetchResource = vi.fn(() => Promise.resolve(published('<p>Changed while offline</p>')))
+    mercure.setFetcher(fetcher)
+    mercure.setRequestCount(computed(() => 0))
+    mercure.init()
+
+    const eventSource = EventSource.mock.results[0].value
+    const send = (data: object) => eventSource.onmessage({ data: JSON.stringify(data), lastEventId: 'event-1' })
+    return { eventSource, send, resourcesStore }
+  }
+
+  test('an anonymous visitor sees the change without reloading', async () => {
+    const { send, resourcesStore } = setup(false)
+    send(published('<p>New</p>'))
+    await flushPromises()
+
+    expect(resourcesStore.current.byId[IRI].data.html).toBe('<p>New</p>')
+    expect(resourcesStore.hasNewResources).toBe(false)
+  })
+
+  test('an anonymous visitor sees a component removed from the page', async () => {
+    const { send, resourcesStore } = setup(false)
+    send({ '@id': IRI })
+    await flushPromises()
+
+    expect(resourcesStore.current.byId[IRI]).toBeUndefined()
+    expect(resourcesStore.current.currentIds).not.toContain(IRI)
+  })
+
+  test('an anonymous visitor whose connection dropped sees what changed while it was down', async () => {
+    const { eventSource, resourcesStore } = setup(false)
+    eventSource.onopen(new Event('open'))
+    eventSource.onerror(new Event('error'))
+    eventSource.onopen(new Event('open'))
+    await flushPromises()
+
+    expect(resourcesStore.current.byId[IRI].data.html).toBe('<p>Changed while offline</p>')
+  })
+
+  test('an admin keeps the page they are editing and is shown the outdated-content notice instead', async () => {
+    const { send, resourcesStore } = setup(true)
+    send(published('<p>New</p>'))
+    await flushPromises()
+
+    expect(resourcesStore.current.byId[IRI].data.html).toBe('<p>Old</p>')
+    expect(resourcesStore.hasNewResources).toBe(true)
   })
 })

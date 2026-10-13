@@ -32,6 +32,7 @@ function createNuxtApp(isHydrating = false) {
   const hooks: Record<string, () => void> = {}
   return {
     isHydrating,
+    $cwa: { auth: { isAdmin: computed(() => false) } },
     hooks: {
       hookOnce: vi.fn((name: string, fn: () => void) => {
         hooks[name] = fn
@@ -108,12 +109,13 @@ describe('Mercure -> init loads the client lazily (#382)', () => {
     expect(MercureClient).not.toHaveBeenCalled()
   })
 
-  test('after hydration the client is loaded, given the stores, and initialised', async () => {
-    const mercure = createMercure()
+  test('after hydration the client is loaded, given the stores and whether the session is an admin, and initialised', async () => {
+    const nuxtApp = createNuxtApp()
+    const mercure = createMercure(nuxtApp)
     mercure.init(true)
     await flushPromises()
     expect(MercureClient).toHaveBeenCalledOnce()
-    expect(MercureClient).toHaveBeenCalledWith(mercureStoreDef, resourcesStoreDef, fetcherStoreDef)
+    expect(MercureClient).toHaveBeenCalledWith(mercureStoreDef, resourcesStoreDef, fetcherStoreDef, nuxtApp.$cwa.auth.isAdmin)
     expect(client().init).toHaveBeenCalledWith(true)
   })
 
