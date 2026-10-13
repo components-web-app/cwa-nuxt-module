@@ -10,6 +10,8 @@ import * as cwaComposable from '#cwa/composables/cwa'
 
 const mockNavigateTo = vi.hoisted(() => vi.fn())
 mockNuxtImport('navigateTo', () => mockNavigateTo)
+const mockRoute = vi.hoisted(() => ({ query: {} as Record<string, unknown> }))
+mockNuxtImport('useRoute', () => () => mockRoute)
 
 const { mockUseItemPage, mockUseDynamicPageLoader, mockUseParentPageLoader, mockUseParentPageDataLoader, mockUseDataType, mockUseDataList } = vi.hoisted(() => ({
   mockUseItemPage: vi.fn(),
@@ -201,6 +203,21 @@ function setupAdvanced(opts: {
 describe('PageDataAdminModal', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockRoute.query = {}
+  })
+
+  test('a link can open the add form with its parent page, parent page data and template filled in, never taking the list\'s page number as the template', () => {
+    mockRoute.query = { parentPage: '/_/pages/uuid-2', parentPageData: '/page_data/x/1', template: '/_/pages/template-1', page: '2', perPage: '10' }
+    setup()
+    expect(mockUseItemPage).toHaveBeenCalledWith(expect.objectContaining({
+      defaultResource: { parentPage: '/_/pages/uuid-2', parentPageData: '/page_data/x/1', page: '/_/pages/template-1' },
+    }))
+  })
+
+  test('the add form starts empty when the link carries no defaults', () => {
+    mockRoute.query = { page: '2', parentPage: ['/_/pages/a', '/_/pages/b'] }
+    setup()
+    expect(mockUseItemPage).toHaveBeenCalledWith(expect.objectContaining({ defaultResource: {} }))
   })
 
   describe('Parent picker tab radio', () => {

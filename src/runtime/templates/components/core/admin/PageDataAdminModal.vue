@@ -194,7 +194,7 @@
 <script setup lang="ts">
 import { useDataType } from '#cwa-layer/_composables/useDataType'
 import { computed, onMounted, ref, watch, watchEffect } from 'vue'
-import { navigateTo, useCwa } from '#imports'
+import { navigateTo, useCwa, useRoute } from '#imports'
 import { useParentPageLoader } from '#cwa-layer/_composables/useParentPageLoader'
 import { useParentPageDataLoader } from '#cwa-layer/_composables/useParentPageDataLoader'
 import ResourceModal from '#cwa/templates/components/core/admin/ResourceModal.vue'
@@ -280,12 +280,16 @@ const depthChain = computed(() => {
 })
 
 const createEndpoint = ref('')
+const route = useRoute()
+const linkDefaults = Object.fromEntries(
+  ([['parentPage', 'parentPage'], ['parentPageData', 'parentPageData'], ['template', 'page']] as const)
+    .flatMap(([queryKey, field]) => typeof route.query[queryKey] === 'string' ? [[field, route.query[queryKey]]] : []),
+)
 const { isAdding, isLoading, isUpdating, localResourceData, resource, formatDate, deleteResource, saveResource: _saveResource, saveTitle: _saveTitle, loadResource, getInternalResourceLink } = useItemPage({
   createEndpoint,
   emit,
   resourceType: props.resourceType,
-  defaultResource: {
-  },
+  defaultResource: linkDefaults,
   endpoint: displayIri,
   routeHashAfterAdd: computed(() => ('#routes')),
 })
