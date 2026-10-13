@@ -210,10 +210,15 @@ describe('Test route middleware', () => {
     expect(fetchRouteRedirectResolved).toBe(false)
   })
 
-  test('Server-side redirects', async () => {
+  test('Server-side redirects send the 308 at once to the base-URL path, without navigating to and loading the target page', async () => {
+    fetchRouteRedirectFn.mockImplementationOnce(async () => {
+      fetchRouteRedirectResolved = true
+      return { redirectPath: '/redirect-path?x=1' }
+    })
     vi.spyOn(nuxt, 'useNuxtApp').mockImplementationOnce(() => {
       return {
         payload: {},
+        $config: { app: { baseURL: '/base/' } },
         $cwa: { fetchRoute: fetchRouteRedirectFn, initClientSide, adminNavigationGuardFn, resourcesManager: { confirmDiscardAddingResource }, auth: { isAdmin: computed(() => false) }, siteConfig: { loadConfig: vi.fn(async () => {}) } },
       }
     })
@@ -225,10 +230,10 @@ describe('Test route middleware', () => {
     })
     const toRoute = createToRoute()
     await routeMiddleware(toRoute)
-    expect(nuxt.navigateTo).toHaveBeenCalledWith('/redirect-path', { redirectCode: 308 })
+    expect(nuxt.navigateTo).toHaveBeenCalledWith('/base/redirect-path?x=1', { redirectCode: 308, external: true })
   })
 
-  test('Client-side redirects', async () => {
+  test('Client-side redirects stay an internal navigation, so the browser does not reload the page', async () => {
     vi.spyOn(nuxt, 'useNuxtApp').mockImplementationOnce(() => {
       return {
         $cwa: { fetchRoute: fetchRouteRedirectFn, initClientSide, adminNavigationGuardFn, resourcesManager: { confirmDiscardAddingResource }, auth: { isAdmin: computed(() => false) }, admin: { isEditing: false } },
@@ -262,7 +267,8 @@ describe('Test route middleware', () => {
       }))
       vi.spyOn(processComposables, 'useProcess').mockImplementationOnce(() => ({ isClient: false, isServer: true }))
       await routeMiddleware(createToRoute())
-      expect(nuxt.navigateTo).not.toHaveBeenCalledWith('/redirect-path', { redirectCode: 308 })
+      expect(fetchRouteRedirectFn).toHaveBeenCalled()
+      expect(nuxt.navigateTo).not.toHaveBeenCalled()
     })
 
     test('client-side: does not redirect when admin is editing', async () => {
@@ -279,7 +285,8 @@ describe('Test route middleware', () => {
       vi.spyOn(processComposables, 'useProcess').mockImplementationOnce(() => ({ isClient: true, isServer: false }))
       await routeMiddleware(createToRoute())
       await flushPromises()
-      expect(nuxt.navigateTo).not.toHaveBeenCalledWith('/redirect-path', { redirectCode: 308 })
+      expect(fetchRouteRedirectFn).toHaveBeenCalled()
+      expect(nuxt.navigateTo).not.toHaveBeenCalled()
     })
   })
 })
