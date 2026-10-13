@@ -4,6 +4,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+- The page admin saves a page's UI as the full `CwaPage<Name>` component name and selects it whether stored full or short, and the pages and layouts lists show the configured UI name ([#384](https://github.com/components-web-app/cwa-nuxt-module/issues/384), [12530643](https://github.com/components-web-app/cwa-nuxt-module/commit/12530643), [5db632cc](https://github.com/components-web-app/cwa-nuxt-module/commit/5db632cc))
+
 ## [2.0.0-alpha.11] - 2026-10-12
 
 - The confirm dialog library is loaded only when a dialog is shown, not for every visitor ([#382](https://github.com/components-web-app/cwa-nuxt-module/issues/382), [6b3be663](https://github.com/components-web-app/cwa-nuxt-module/commit/6b3be663))
