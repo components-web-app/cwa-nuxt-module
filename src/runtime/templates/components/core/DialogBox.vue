@@ -33,7 +33,7 @@
           >
             <DialogPanel :class="panelClassName">
               <div class="cwa:sm:flex cwa:sm:items-start">
-                <div class="w-full">
+                <div class="cwa:w-full">
                   <DialogTitle
                     as="h3"
                     class="cwa:text-xl cwa:sm:text-4xl cwa:font-normal cwa:border-b cwa:border-stone-600 cwa:px-6 cwa:pb-4  cwa:dark-blur cwa:pt-5"

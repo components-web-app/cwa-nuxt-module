@@ -328,10 +328,10 @@
         </div>
         <hr class="cwa:my-8 cwa:text-stone-600">
         <div>
-          <h2 class="cwa:text-bas cwa:mb-4">
+          <h2 class="cwa:text-base cwa:mb-4">
             CWA Version Info
           </h2>
-          <div class="cwa:flex cwa:flex-col cwa:gap-y-2 text-sm">
+          <div class="cwa:flex cwa:flex-col cwa:gap-y-2 cwa:text-sm">
             <div>
               <MenuLink :to="moduleLink">
                 App: <span class="cwa:text-xs">{{ displayAppVersion }}</span>
@@ -350,7 +350,7 @@
         <hr class="cwa:my-8 cwa:text-stone-600">
       </div>
 
-      <div class="flex">
+      <div class="cwa:flex">
         <CwaUiFormButton
           :color="showSubmitErrorState ? 'error' : 'blue'"
           :disabled="submitDisabled"

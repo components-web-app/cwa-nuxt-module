@@ -2186,6 +2186,10 @@
     font-size: var(--cwa-text-sm);
     line-height: var(--tw-leading, var(--cwa-text-sm--line-height));
   }
+  .cwa\:sm\:text-xl\/8 {
+    font-size: var(--cwa-text-xl);
+    line-height: calc(var(--cwa-spacing) * 8);
+  }
   .cwa\:sm\:leading-6 {
     --tw-leading: calc(var(--cwa-spacing) * 6);
     line-height: calc(var(--cwa-spacing) * 6);

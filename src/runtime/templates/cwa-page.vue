@@ -51,12 +51,18 @@ const fallbackTitle = computed(() => {
   return lastSegment ? titleCase(lastSegment) : null
 })
 
+const API_DEFAULT_PAGE_TITLE = 'Unnamed Page'
+
+function ownTitle(title: unknown): string | undefined {
+  return typeof title === 'string' && title && title !== API_DEFAULT_PAGE_TITLE ? title : undefined
+}
+
 const pageTitle = computed(() => {
   const count = $cwa.resources.depthCount.value
   const titles: string[] = []
   for (let d = count - 1; d >= 0; d--) {
-    const t = $cwa.resources.pageDataAtDepth(d).value?.data?.title
-      || $cwa.resources.pageAtDepth(d).value?.data?.title
+    const t = ownTitle($cwa.resources.pageDataAtDepth(d).value?.data?.title)
+      || ownTitle($cwa.resources.pageAtDepth(d).value?.data?.title)
     if (t) titles.push(t)
   }
   return titles.length ? titles.join(' | ') : undefined

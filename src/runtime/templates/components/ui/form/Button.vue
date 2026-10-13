@@ -126,7 +126,7 @@ const [trigger, container] = usePopper(popperOps.value)
 <template>
   <Popover
     v-slot="{ open }"
-    class="cwa:flex cwa:gap-x-1.5 relative"
+    class="cwa:flex cwa:gap-x-1.5 cwa:relative"
   >
     <component
       :is="to ? CwaLink : 'button'"

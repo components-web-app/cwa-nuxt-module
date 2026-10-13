@@ -23,7 +23,7 @@
           <FilterSelect
             v-model="orderModel"
             :options="orderOptions"
-            class="flex-grow cwa:w-full"
+            class="cwa:grow cwa:w-full"
           />
         </FilterFormWrapper>
       </div>
