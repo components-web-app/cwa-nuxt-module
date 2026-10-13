@@ -6,7 +6,6 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [2.0.0-alpha.12] - 2026-10-13
 
-- Visitors see published changes live: Mercure updates are merged straight away for anyone who is not an admin, and admins keep the outdated-content notice ([#385](https://github.com/components-web-app/cwa-nuxt-module/issues/385), [8316a02b](https://github.com/components-web-app/cwa-nuxt-module/commit/8316a02b))
 - Login details a password manager fills in before the page hydrates are kept, where hydration used to clear them ([#386](https://github.com/components-web-app/cwa-nuxt-module/issues/386), [699326b1](https://github.com/components-web-app/cwa-nuxt-module/commit/699326b1))
 - Dependencies updated to their latest versions, including Nuxt 4.6.1, the Nuxt SEO modules and reka-ui 2.11; the optional `satori` peer now needs 0.33.5 or later, as nuxt-og-image 6.10 does ([ce2e5f24](https://github.com/components-web-app/cwa-nuxt-module/commit/ce2e5f24))
 - `@vueuse/core` 15, which drops Node.js 20 ([32b00703](https://github.com/components-web-app/cwa-nuxt-module/commit/32b00703))
