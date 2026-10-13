@@ -4,6 +4,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+- A route redirect rendered on the server no longer fetches the target page's resources in the background, which only loaded a cold API ([#389](https://github.com/components-web-app/cwa-nuxt-module/issues/389), [f420b74a](https://github.com/components-web-app/cwa-nuxt-module/commit/f420b74a))
+
 ## [2.0.0-alpha.14] - 2026-10-13
 
 - A route redirect rendered on the server sends its 308 at once, where it used to load the whole target page first ([#389](https://github.com/components-web-app/cwa-nuxt-module/issues/389), [0e56674e](https://github.com/components-web-app/cwa-nuxt-module/commit/0e56674e))
