@@ -112,7 +112,8 @@ function goToPage(page: string) {
 }
 
 function getDisplayPageUi(ui: string) {
-  return $cwa.pagesConfig?.[ui]?.name || ui
+  const cleanName = ui.replace(/^CwaPage/, '')
+  return $cwa.pagesConfig?.[cleanName]?.name || cleanName
 }
 
 useHead({
