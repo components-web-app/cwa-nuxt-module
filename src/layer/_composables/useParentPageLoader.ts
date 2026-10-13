@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 import type { CwaResource } from '#cwa/resources/resource-utils'
 import { useCwa } from '#imports'
+import { fetchAllMembers } from './fetchAllMembers'
 
 export const useParentPageLoader = () => {
   const $cwa = useCwa()
@@ -10,10 +11,9 @@ export const useParentPageLoader = () => {
   async function loadParentPageOptions() {
     const thisRequestId = currentRequestId.value + 1
     currentRequestId.value = thisRequestId
-    const { response } = $cwa.fetch({ path: '/_/pages', noQuery: true })
-    const { _data: data } = await response
+    const pages = await fetchAllMembers($cwa, '/_/pages')
     if (thisRequestId === currentRequestId.value) {
-      data && (parentPages.value = data['member'])
+      parentPages.value = pages
     }
     return parentPages
   }

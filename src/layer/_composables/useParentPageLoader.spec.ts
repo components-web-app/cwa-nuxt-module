@@ -22,13 +22,24 @@ describe('useParentPageLoader', () => {
     vi.clearAllMocks()
   })
 
-  test('fetches from /_/pages with noQuery: true', async () => {
+  test('fetches from /_/pages, 100 at a time, with noQuery: true', async () => {
     const fetchMock = vi.fn().mockReturnValue({ response: Promise.resolve({ _data: { member: [] } }) })
     // @ts-expect-error
     vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => ({ fetch: fetchMock }))
     const { loadParentPageOptions } = useParentPageLoader()
     await loadParentPageOptions()
-    expect(fetchMock).toHaveBeenCalledWith({ path: '/_/pages', noQuery: true })
+    expect(fetchMock).toHaveBeenCalledWith({ path: '/_/pages?perPage=100', noQuery: true })
+  })
+
+  test('lists pages beyond the collection\'s first page, so any page can be chosen as a parent', async () => {
+    const fetchMock = vi.fn()
+      .mockReturnValueOnce({ response: Promise.resolve({ _data: { member: [mockPages[0]], view: { next: '/_/pages?perPage=100&page=2' } } }) })
+      .mockReturnValueOnce({ response: Promise.resolve({ _data: { member: [mockPages[1]], view: {} } }) })
+    // @ts-expect-error
+    vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => ({ fetch: fetchMock }))
+    const { parentPages, loadParentPageOptions } = useParentPageLoader()
+    await loadParentPageOptions()
+    expect(parentPages.value).toEqual(mockPages)
   })
 
   test('populates parentPages from the API response', async () => {

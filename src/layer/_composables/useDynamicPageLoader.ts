@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 import type { CwaResource } from '#cwa/resources/resource-utils'
 import { useCwa } from '#imports'
+import { fetchAllMembers } from './fetchAllMembers'
 
 export const useDynamicPageLoader = () => {
   const $cwa = useCwa()
@@ -12,10 +13,9 @@ export const useDynamicPageLoader = () => {
     const thisRequestId = currentRequestId.value + 1
     currentRequestId.value = thisRequestId
     loadingDynamicPages.value = true
-    const { response } = $cwa.fetch({ path: '/_/pages?isTemplate=true', noQuery: true })
-    const { _data: data } = await response
+    const pages = await fetchAllMembers($cwa, '/_/pages?isTemplate=true')
     if (thisRequestId === currentRequestId.value) {
-      data && (dynamicPages.value = data['member'])
+      dynamicPages.value = pages
       loadingDynamicPages.value = false
     }
     return dynamicPages

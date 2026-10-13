@@ -2,6 +2,7 @@ import { ref } from 'vue'
 import { useCwa } from '#cwa/composables/cwa'
 import type { PageDataMetadataResource } from '#cwa/storage/stores/api-documentation/state'
 import type { CwaResource } from '#cwa/resources/resource-utils'
+import { fetchAllMembers } from './fetchAllMembers'
 
 export const useParentPageDataLoader = () => {
   const $cwa = useCwa()
@@ -40,10 +41,9 @@ export const useParentPageDataLoader = () => {
       }
       return
     }
-    const { response } = $cwa.fetch({ path: endpoint, noQuery: true })
-    const { _data: data } = await response
+    const instances = await fetchAllMembers($cwa, endpoint)
     if (thisRequestId === currentInstanceRequestId.value) {
-      dataInstances.value = data?.member ?? []
+      dataInstances.value = instances
     }
   }
 
