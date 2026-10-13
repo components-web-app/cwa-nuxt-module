@@ -1,7 +1,7 @@
 // @vitest-environment nuxt
 
 import { join } from 'path'
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest'
 import type { Mock } from 'vitest'
 import * as nuxtKit from '@nuxt/kit'
 import { scanComponentGroupDeclarations } from './component-group-declarations'
@@ -50,10 +50,17 @@ vi.mock('node:fs', () => {
   }
 })
 
+let moduleDefinitionCall: Parameters<typeof nuxtKit.defineNuxtModule>
+
+beforeAll(async () => {
+  await import('./module')
+  moduleDefinitionCall = (nuxtKit.defineNuxtModule as Mock).mock.lastCall as Parameters<typeof nuxtKit.defineNuxtModule>
+})
+
 async function prepareMockNuxt(options = {}, nuxt?: any) {
   await import('./module')
 
-  const [{ setup }] = (nuxtKit.defineNuxtModule as Mock).mock.lastCall
+  const [{ setup }] = moduleDefinitionCall
 
   const defaultOptions = {
     srcDir: 'app', sitemap: {}, runtimeConfig: { public: { cwa: {} } }, alias: {}, css: [], build: { transpile: [] }, dir: { app: '' },
@@ -70,7 +77,7 @@ describe('CWA module', () => {
     test('should be called with correct meta', async () => {
       await import('./module')
 
-      const [{ meta }] = (nuxtKit.defineNuxtModule as Mock).mock.lastCall
+      const [{ meta }] = moduleDefinitionCall
 
       expect(meta).toEqual({
         name: '@cwa/nuxt',
@@ -83,7 +90,7 @@ describe('CWA module', () => {
       await import('./module')
       const { dependencies } = await import('../package.json')
 
-      const [{ meta }] = (nuxtKit.defineNuxtModule as Mock).mock.lastCall
+      const [{ meta }] = moduleDefinitionCall
 
       expect(meta.compatibility.nuxt).toBe(`>=${dependencies['@nuxt/kit'].replace(/^\^/, '')}`)
     })
@@ -91,7 +98,7 @@ describe('CWA module', () => {
     test('should be called with correct defaults', async () => {
       await import('./module')
 
-      const [{ defaults }] = (nuxtKit.defineNuxtModule as Mock).mock.lastCall
+      const [{ defaults }] = moduleDefinitionCall
 
       expect(defaults).toEqual({
         storeName: 'cwa',
@@ -125,7 +132,7 @@ describe('CWA module', () => {
     test('should require correct dependent modules', async () => {
       await import('./module')
 
-      const [{ moduleDependencies }] = (nuxtKit.defineNuxtModule as Mock).mock.lastCall
+      const [{ moduleDependencies }] = moduleDefinitionCall
 
       expect(await moduleDependencies({ options: { modulesDir: ['/app/node_modules'] } })).toEqual({
         '@pinia/nuxt': {
@@ -169,7 +176,7 @@ describe('CWA module', () => {
     test('the sitemap options are defaults, so an app can still choose its own server-side cache', async () => {
       await import('./module')
 
-      const [{ moduleDependencies }] = (nuxtKit.defineNuxtModule as Mock).mock.lastCall
+      const [{ moduleDependencies }] = moduleDefinitionCall
       const sitemap = (await moduleDependencies({ options: { modulesDir: ['/app/node_modules'] } }))['@nuxtjs/sitemap']
 
       expect(sitemap.defaults).toEqual({
@@ -1200,7 +1207,7 @@ export const componentGroupDeclarations: ComponentGroupDeclarations = {
 
     async function getModuleDependencies(nuxt: any = { options: { modulesDir: ['/app/node_modules'] } }) {
       await import('./module')
-      const [{ moduleDependencies }] = (nuxtKit.defineNuxtModule as Mock).mock.lastCall
+      const [{ moduleDependencies }] = moduleDefinitionCall
       return moduleDependencies(nuxt)
     }
 

@@ -203,6 +203,7 @@ Tests use **vitest** with `happy-dom` and `vitest-environment-nuxt`, with the pl
 - **A mock never asserted on is not proven live** — assert it was called.
 - **When mocking a getter that returns `computed()`, the mock must be a real `computed`** — a plain value hides the #260 nested-ref trap.
 - A no-op mocked `watch` silently disables the code under test; spy with `vi.fn(mod.watch)`.
+- **Vitest 5 clears every mock's calls before each test.** A call made once at module load (e.g. `defineNuxtModule`) must be captured in `beforeAll`, as `module.spec.ts` does.
 - `mockImplementationOnce` queues survive `vi.clearAllMocks()` — reset in `afterEach`. Always `vi.useRealTimers()` in `afterEach`.
 - `vi.hoisted()` cannot use `ref()`/`reactive()`; make mock data `reactive()` so computeds re-evaluate.
 - `ResourceTypeFromIri.setPathPrefix` is a module singleton — reset it in `afterEach`.
