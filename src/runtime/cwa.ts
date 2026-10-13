@@ -81,8 +81,8 @@ export default class Cwa {
     this.fetcher = new Fetcher(this.cwaFetch, this.fetchStatusManager, $router, this.storage.stores.resources)
 
     this.resources = new Resources(this.storage.stores.resources, this.storage.stores.fetcher)
-    this.admin = new Admin(this.storage.stores.admin, this.storage.stores.resources, this.resources)
-    this.resourcesManager = new ResourcesManager(this.cwaFetch, this.storage.stores.resources, this.fetchStatusManager, this.storage.stores.error, this.fetcher, this.admin, this.resources)
+    this.admin = new Admin(this.storage.stores.admin, this.storage.stores.resources, this.resources, nuxtApp.vueApp)
+    this.resourcesManager = new ResourcesManager(this.cwaFetch, this.storage.stores.resources, this.fetchStatusManager, this.storage.stores.error, this.fetcher, this.admin, this.resources, nuxtApp.vueApp)
     this.componentGroupReorders = new ComponentGroupReorders(this.admin, this.resources, this.resourcesManager)
     this.auth = new Auth(
       this.cwaFetch,

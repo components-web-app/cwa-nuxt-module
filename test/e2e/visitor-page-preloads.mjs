@@ -22,7 +22,7 @@ const required = [
 const forbidden = [
   { marker: 'm5.69507059 20.3811012', source: 'core/assets/IconComponents.vue' },
   { marker: 'Manageable resource listener called to select component', source: 'admin/manageable-resource.ts' },
-  { marker: 'DialogsWrapper', source: 'vuejs-confirm-dialog' },
+  { marker: 'vuejs-confirm-dialog-root', source: 'vuejs-confirm-dialog' },
 ]
 
 let stub

@@ -7,6 +7,7 @@ import * as cwaComposable from '#cwa/composables/cwa'
 const { mockReveal } = vi.hoisted(() => ({ mockReveal: vi.fn() }))
 
 vi.mock('vuejs-confirm-dialog', () => ({
+  install: vi.fn(),
   createConfirmDialog: vi.fn(() => ({ reveal: mockReveal })),
 }))
 

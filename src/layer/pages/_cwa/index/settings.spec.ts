@@ -24,6 +24,7 @@ vi.mock('#build/cwa-options', () => ({
 }))
 
 vi.mock('vuejs-confirm-dialog', () => ({
+  install: vi.fn(),
   createConfirmDialog: vi.fn(() => ({ reveal: mockReveal })),
 }))
 

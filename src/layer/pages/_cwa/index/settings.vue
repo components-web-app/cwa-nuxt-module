@@ -383,14 +383,14 @@ import { watchDebounced } from '@vueuse/core'
 import isEqual from 'lodash-es/isEqual'
 import { asArray, parseRobotsTxt, validateRobots } from '#robots/util'
 import ListHeading from '#cwa/templates/components/core/admin/ListHeading.vue'
-import { definePageMeta, useCwa, useRequestURL, useHead } from '#imports'
+import { definePageMeta, useCwa, useNuxtApp, useRequestURL, useHead } from '#imports'
 import ListContainer from '#cwa/templates/components/core/admin/ListContainer.vue'
 import Spinner from '#cwa/templates/components/utils/Spinner.vue'
 import ModalInput from '#cwa/templates/components/core/admin/form/ModalInput.vue'
 import MenuLink from '#cwa/templates/components/main/admin/header/_parts/MenuLink.vue'
 import type { SiteConfigParams } from '#cwa/types'
 import CwaCode from '#cwa/templates/components/core/admin/CwaCode.vue'
-import { createConfirmDialog } from 'vuejs-confirm-dialog'
+import { createConfirmDialog } from '#cwa/admin/confirm-dialog'
 import ConfirmDialog from '#cwa/templates/components/core/ConfirmDialog.vue'
 import { resolvePageCacheOptions } from '#cwa/api/http-cache'
 import { PageCacheWarmInterruptedError } from '#cwa/api/page-cache-warm'
@@ -400,6 +400,7 @@ import { formatDateTime } from '#cwa/resources/date-time-input'
 import { useOrphanedFileReport, useOrphanedResourceReport } from '#cwa-layer/_composables/useOrphanReport'
 
 const $cwa = useCwa()
+const vueApp = useNuxtApp().vueApp
 
 const {
   report: orphanReport,
@@ -583,7 +584,7 @@ function purgePageCacheFailureMessage(error: unknown) {
 }
 
 async function purgePageCache() {
-  const dialog = createConfirmDialog(ConfirmDialog as Parameters<typeof createConfirmDialog>[0])
+  const dialog = await createConfirmDialog(vueApp, ConfirmDialog)
   const { isCanceled } = await dialog.reveal({
     title: 'Purge the page cache?',
     content: '<p>Every cached page will be dropped at once and rebuilt on its next visit, so the site may be slower for a short while. No content will be lost.</p>',
@@ -620,7 +621,7 @@ function purgeHttpCacheFailureMessage(error: unknown) {
 }
 
 async function purgeHttpCache() {
-  const dialog = createConfirmDialog(ConfirmDialog as Parameters<typeof createConfirmDialog>[0])
+  const dialog = await createConfirmDialog(vueApp, ConfirmDialog)
   const { isCanceled } = await dialog.reveal({
     title: 'Purge all cached data?',
     content: '<p>Everything the API has cached will be dropped at once, along with every cached page. Use this after data has been changed outside the admin — ordinary edits are purged for you. Pages will be slow until they have been rendered again, and no content will be lost.</p>',
@@ -686,7 +687,7 @@ function warmPageCacheFailureMessage(error: unknown) {
 }
 
 async function warmPageCache() {
-  const dialog = createConfirmDialog(ConfirmDialog as Parameters<typeof createConfirmDialog>[0])
+  const dialog = await createConfirmDialog(vueApp, ConfirmDialog)
   const { isCanceled } = await dialog.reveal({
     title: 'Warm the page cache?',
     content: '<p>Every public page will be loaded and stored in the page cache, so visitors get fast responses straight away. Pages are loaded a few at a time, which can take a few minutes on a large site. Keep this page open until it finishes.</p>',

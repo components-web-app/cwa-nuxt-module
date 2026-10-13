@@ -36,14 +36,13 @@
           :page="page"
           :layout="rootLayout"
         />
-        <ConfirmDialogs />
       </template>
     </ClientOnly>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, defineAsyncComponent, ref, getCurrentInstance, watch, nextTick } from 'vue'
+import { computed, ref, getCurrentInstance, watch, nextTick } from 'vue'
 import { consola as logger } from 'consola'
 import { useRouter } from 'vue-router'
 import { useWindowScroll } from '@vueuse/core'
@@ -51,8 +50,6 @@ import { useCwa, useHead } from '#imports'
 import { LazyCwaAdminHeader, LazyCwaAdminResourceManager, LazyCwaAdminResourceManagerLayoutPageOverlay, LazyCwaDefaultLayout } from '#components'
 import OutdatedContentNotice from '#cwa/templates/components/main/admin/header/_parts/OutdatedContentNotice.vue'
 import type { GlobalComponentNames } from '#cwa/types'
-
-const ConfirmDialogs = defineAsyncComponent(() => import('#cwa/templates/components/core/admin/ConfirmDialogs.vue'))
 
 const $cwa = useCwa()
 const currentRoute = useRouter().currentRoute

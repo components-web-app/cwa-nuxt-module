@@ -128,8 +128,8 @@ importers:
         specifier: ^2.2.1
         version: 2.2.1
       vuejs-confirm-dialog:
-        specifier: ^0.5.2
-        version: 0.5.2(vue@3.5.43(typescript@6.0.3))
+        specifier: ^1.0.1
+        version: 1.0.1(vue@3.5.43(typescript@6.0.3))
     devDependencies:
       '@eslint/eslintrc':
         specifier: ^3.3.7
@@ -3836,17 +3836,6 @@ packages:
     peerDependencies:
       vue: ^3.5.43
 
-  '@vueuse/core@7.7.1':
-    resolution: {integrity: sha512-PRRgbATMpoeUmkCEBtUeJgOwtew8s+4UsEd+Pm7MhkjL2ihCNrSqxNVtM6NFE4uP2sWnkGcZpCjPuNSxowJ1Ow==}
-    peerDependencies:
-      '@vue/composition-api': ^1.1.0
-      vue: ^3.5.43
-    peerDependenciesMeta:
-      '@vue/composition-api':
-        optional: true
-      vue:
-        optional: true
-
   '@vueuse/integrations@14.4.0':
     resolution: {integrity: sha512-oJz9qTgczvA7L1nXQFRU7h8tQbOCoiceqvMMhT9XYMyOGTqLJ2rEa09PON+nD2t48sZUfeOmg4eaWJXV4sZb/w==}
     peerDependencies:
@@ -3912,17 +3901,6 @@ packages:
     engines: {node: '>=22'}
     peerDependencies:
       vue: ^3.5.43
-
-  '@vueuse/shared@7.7.1':
-    resolution: {integrity: sha512-rN2qd22AUl7VdBxihagWyhUNHCyVk9IpvBTTfHoLH9G7rGE552X1f+zeCfehuno0zXif13jPw+icW/wn2a0rnQ==}
-    peerDependencies:
-      '@vue/composition-api': ^1.1.0
-      vue: ^3.5.43
-    peerDependenciesMeta:
-      '@vue/composition-api':
-        optional: true
-      vue:
-        optional: true
 
   abbrev@3.0.1:
     resolution: {integrity: sha512-AO2ac6pjRB3SJmGJo+v5/aK6Omggp6fsLrs6wN9bd35ulu4cCwaAU9+7ZhXjeqHVkaHThLuzH0nZr0YpCDhygg==}
@@ -8314,17 +8292,6 @@ packages:
   vue-component-type-helpers@3.3.12:
     resolution: {integrity: sha512-HwCqmgTfLFskQc4P5TRnbduCMyPat2Ezu0elLWOGn0dD/6BKHP15B5bxce6aDi+E4kblPtru8amIBQzu0Di3qQ==}
 
-  vue-demi@0.13.11:
-    resolution: {integrity: sha512-IR8HoEEGM65YY3ZJYAjMlKygDQn25D5ajNFNoKh9RSDMQtlzCxtfQjdQgv9jjK+m3377SsJXY8ysq8kLCZL25A==}
-    engines: {node: '>=12'}
-    hasBin: true
-    peerDependencies:
-      '@vue/composition-api': ^1.0.0-rc.1
-      vue: ^3.5.43
-    peerDependenciesMeta:
-      '@vue/composition-api':
-        optional: true
-
   vue-demi@0.14.10:
     resolution: {integrity: sha512-nMZBOwuzabUO0nLgIcc6rycZEebF6eeUfaiQx9+WSk8e29IbLvPU9feI6tqW4kTo3hvoYAJkMh8n8D0fuISphg==}
     engines: {node: '>=12'}
@@ -8401,14 +8368,10 @@ packages:
       typescript:
         optional: true
 
-  vuejs-confirm-dialog@0.5.2:
-    resolution: {integrity: sha512-MPOoRjukzcbnQgJtlQSKkuXoHgSl06j4WzqphDgSnyNP6qLW93bA8OdZYuJN3E8x4VoH7GwgBq6QqBejvFYuGQ==}
+  vuejs-confirm-dialog@1.0.1:
+    resolution: {integrity: sha512-ILQSKBR7KyRhM+8eWvfPEGIJo48ISfKU/TFK3YGpluB0ghv/+JA9iNn7zs1cZISmYnq3jUghshPyv0IM6BEl7g==}
     peerDependencies:
-      '@vue/composition-api': ^1.0.0
       vue: ^3.5.43
-    peerDependenciesMeta:
-      '@vue/composition-api':
-        optional: true
 
   w3c-keyname@2.2.8:
     resolution: {integrity: sha512-dpojBhNsCNN7T82Tm7k26A6G9ML3NkhDsnw9n/eoxSRlVBB4CEtIQ/KTCLI2Fwf3ataSXRhYFkQi3SlnFwPvPQ==}
@@ -12744,13 +12707,6 @@ snapshots:
       '@vueuse/shared': 15.0.0(vue@3.5.43(typescript@6.0.3))
       vue: 3.5.43(typescript@6.0.3)
 
-  '@vueuse/core@7.7.1(vue@3.5.43(typescript@6.0.3))':
-    dependencies:
-      '@vueuse/shared': 7.7.1(vue@3.5.43(typescript@6.0.3))
-      vue-demi: 0.13.11(vue@3.5.43(typescript@6.0.3))
-    optionalDependencies:
-      vue: 3.5.43(typescript@6.0.3)
-
   '@vueuse/integrations@14.4.0(change-case@5.4.4)(fuse.js@7.5.0)(jwt-decode@4.0.0)(vue@3.5.43(typescript@6.0.3))':
     dependencies:
       '@vueuse/core': 14.4.0(vue@3.5.43(typescript@6.0.3))
@@ -12780,12 +12736,6 @@ snapshots:
 
   '@vueuse/shared@15.0.0(vue@3.5.43(typescript@6.0.3))':
     dependencies:
-      vue: 3.5.43(typescript@6.0.3)
-
-  '@vueuse/shared@7.7.1(vue@3.5.43(typescript@6.0.3))':
-    dependencies:
-      vue-demi: 0.13.11(vue@3.5.43(typescript@6.0.3))
-    optionalDependencies:
       vue: 3.5.43(typescript@6.0.3)
 
   abbrev@3.0.1: {}
@@ -17914,10 +17864,6 @@ snapshots:
 
   vue-component-type-helpers@3.3.12: {}
 
-  vue-demi@0.13.11(vue@3.5.43(typescript@6.0.3)):
-    dependencies:
-      vue: 3.5.43(typescript@6.0.3)
-
   vue-demi@0.14.10(vue@3.5.43(typescript@6.0.3)):
     dependencies:
       vue: 3.5.43(typescript@6.0.3)
@@ -18002,11 +17948,10 @@ snapshots:
     optionalDependencies:
       typescript: 6.0.3
 
-  vuejs-confirm-dialog@0.5.2(vue@3.5.43(typescript@6.0.3)):
+  vuejs-confirm-dialog@1.0.1(vue@3.5.43(typescript@6.0.3)):
     dependencies:
-      '@vueuse/core': 7.7.1(vue@3.5.43(typescript@6.0.3))
+      '@vueuse/core': 15.0.0(vue@3.5.43(typescript@6.0.3))
       vue: 3.5.43(typescript@6.0.3)
-      vue-demi: 0.13.11(vue@3.5.43(typescript@6.0.3))
 
   w3c-keyname@2.2.8: {}
 

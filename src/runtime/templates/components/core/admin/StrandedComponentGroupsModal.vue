@@ -116,8 +116,9 @@
 <script setup lang="ts">
 import { reactive } from 'vue'
 import escape from 'lodash-es/escape'
-import { createConfirmDialog } from 'vuejs-confirm-dialog'
 import { useCwa } from '#cwa/composables/cwa'
+import { useNuxtApp } from '#imports'
+import { createConfirmDialog } from '#cwa/admin/confirm-dialog'
 import { mergeComponentGroup } from '#cwa/admin/stranded-component-groups'
 import type { ShownComponentGroup, StrandedComponentGroup } from '#cwa/admin/stranded-component-groups'
 
@@ -131,6 +132,7 @@ const emit = defineEmits<{
 }>()
 
 const $cwa = useCwa()
+const vueApp = useNuxtApp().vueApp
 
 const selectedTargets = reactive<Record<string, string | undefined>>({})
 const busy = reactive<Record<string, boolean>>({})
@@ -144,7 +146,7 @@ function targetOptions(group: StrandedComponentGroup) {
 
 async function confirmMerge(group: StrandedComponentGroup, target: ShownComponentGroup | undefined) {
   const { default: ConfirmDialog } = await import('#cwa/templates/components/core/ConfirmDialog.vue')
-  const dialog = createConfirmDialog(ConfirmDialog as Parameters<typeof createConfirmDialog>[0])
+  const dialog = await createConfirmDialog(vueApp, ConfirmDialog)
   const count = group.positions.length
   const { isCanceled } = await dialog.reveal({
     title: 'Merge component group?',

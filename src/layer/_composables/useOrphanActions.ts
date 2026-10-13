@@ -1,8 +1,9 @@
 import { computed, ref } from 'vue'
-import type { Ref } from 'vue'
-import { createConfirmDialog } from 'vuejs-confirm-dialog'
+import type { Ref, App } from 'vue'
 import { consola as logger } from 'consola'
 import { useCwa } from '#cwa/composables/cwa'
+import { createConfirmDialog } from '#cwa/admin/confirm-dialog'
+import { useNuxtApp } from '#imports'
 import ConfirmDialog from '#cwa/templates/components/core/ConfirmDialog.vue'
 import { orphanedResourceEndpoint } from '#cwa/api/orphaned-resources'
 import { isNotFound, statusLabel } from './useOrphanReport'
@@ -25,8 +26,8 @@ export interface OrphanDeleteOutcome<TRejected> {
   rejected: TRejected[]
 }
 
-export async function confirmDeletion(title: string, content: string) {
-  const dialog = createConfirmDialog(ConfirmDialog as Parameters<typeof createConfirmDialog>[0])
+export async function confirmDeletion(vueApp: App, title: string, content: string) {
+  const dialog = await createConfirmDialog(vueApp, ConfirmDialog)
   const { isCanceled } = await dialog.reveal({ title, content })
   return !isCanceled
 }
@@ -85,6 +86,7 @@ interface OrphanDeletionSource<TRequest, TResult, TRejected> {
 }
 
 export function useOrphanDeletion<TRequest, TResult, TRejected>(source: OrphanDeletionSource<TRequest, TResult, TRejected>) {
+  const vueApp = useNuxtApp().vueApp
   const deleting = ref(false)
   const deleteOutcome = ref<OrphanDeleteOutcome<TRejected>>() as Ref<OrphanDeleteOutcome<TRejected> | undefined>
   const deleteError = ref<string>()
@@ -137,7 +139,7 @@ export function useOrphanDeletion<TRequest, TResult, TRejected>(source: OrphanDe
     }
     deleting.value = true
     try {
-      if (!await confirmDeletion(...confirmation)) {
+      if (!await confirmDeletion(vueApp, ...confirmation)) {
         return
       }
       await send(request, rows, onError)
