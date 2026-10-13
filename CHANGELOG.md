@@ -4,6 +4,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+- A route redirect rendered on the server sends its 308 at once, where it used to load the whole target page first ([#389](https://github.com/components-web-app/cwa-nuxt-module/issues/389), [0e56674e](https://github.com/components-web-app/cwa-nuxt-module/commit/0e56674e))
+
 ## [2.0.0-alpha.13] - 2026-10-13
 
 - A page's `<title>` skips the API's default `Unnamed Page`, so nested pages no longer show it and untitled page data falls back to its page's title ([#388](https://github.com/components-web-app/cwa-nuxt-module/issues/388), [4efeae0f](https://github.com/components-web-app/cwa-nuxt-module/commit/4efeae0f))
