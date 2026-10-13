@@ -70,7 +70,7 @@ describe('useParentPageDataLoader', () => {
       mockCwa({ getApiDocumentation, fetch })
       const { loadDataInstances, dataInstances } = useParentPageDataLoader()
       await loadDataInstances('conferenceData')
-      expect(fetch).toHaveBeenCalledWith({ path: '/_/conference_datas', noQuery: true })
+      expect(fetch).toHaveBeenCalledWith({ path: '/_/conference_datas?perPage=100', noQuery: true })
       expect(dataInstances.value).toEqual(mockInstances)
     })
 

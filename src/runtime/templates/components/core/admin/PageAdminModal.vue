@@ -190,6 +190,7 @@ import ModalInput from '#cwa/templates/components/core/admin/form/ModalInput.vue
 import { useItemPage } from '#cwa-layer/_composables/useItemPage'
 import { useParentPageLoader } from '#cwa-layer/_composables/useParentPageLoader'
 import { useParentPageDataLoader } from '#cwa-layer/_composables/useParentPageDataLoader'
+import { fetchAllMembers } from '#cwa-layer/_composables/fetchAllMembers'
 import { componentNames } from '#components'
 import type { SelectOption } from '#cwa/composables/cwa-select-input'
 import { useCwa } from '#imports'
@@ -411,10 +412,9 @@ async function loadLayoutOptions() {
   const thisRequestId = currentRequestId.value + 1
   currentRequestId.value = thisRequestId
   isLoading.value = true
-  const { response } = $cwa.fetch({ path: '/_/layouts', noQuery: true })
-  const { _data: data } = await response
+  const allLayouts = await fetchAllMembers($cwa, '/_/layouts')
   if (thisRequestId === currentRequestId.value) {
-    data && (layouts.value = data['member'])
+    layouts.value = allLayouts
     isLoading.value = false
   }
   if (!layouts.value?.length) {
