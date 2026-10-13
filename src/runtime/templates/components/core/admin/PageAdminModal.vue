@@ -95,7 +95,7 @@
           <div class="cwa:flex cwa:gap-x-2">
             <div class="cwa:grow">
               <ModalSelect
-                v-model="localResourceData.uiComponent"
+                v-model="pageUiComponentModel"
                 label="Page UI"
                 :options="pageComponentOptions"
               />
@@ -291,16 +291,29 @@ function cleanUiName(componentName: string) {
   return componentName.replace(/^CwaPage/, '')
 }
 
+function fullPageUiName(uiComponent: string | null | undefined) {
+  return uiComponent ? 'CwaPage' + cleanUiName(uiComponent) : uiComponent
+}
+
 const pageComponentOptions = computed(() => {
   const options = []
   for (const componentName of pageComponentNames.value) {
     const cleanName = cleanUiName(componentName)
     options.push({
       label: $cwa.pagesConfig?.[cleanName]?.name || cleanName,
-      value: cleanName,
+      value: componentName,
     })
   }
   return options
+})
+
+const pageUiComponentModel = computed({
+  get: () => fullPageUiName(localResourceData.value?.uiComponent),
+  set: (value: string) => {
+    if (localResourceData.value) {
+      localResourceData.value.uiComponent = value
+    }
+  },
 })
 
 const pageStyleOptions = computed(() => {

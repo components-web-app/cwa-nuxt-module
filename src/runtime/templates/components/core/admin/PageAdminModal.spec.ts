@@ -4,6 +4,7 @@ import { nextTick, ref } from 'vue'
 import { mount, flushPromises } from '@vue/test-utils'
 import PageAdminModal from './PageAdminModal.vue'
 import * as cwaComposable from '#cwa/composables/cwa'
+import { componentNames } from '#components'
 
 const { mockUseItemPage, mockUseParentPageLoader, mockUseParentPageDataLoader } = vi.hoisted(() => ({
   mockUseItemPage: vi.fn(),
@@ -40,7 +41,7 @@ function setup(
     'title': '',
     'metaDescription': '',
     'layout': '/_/layouts/default',
-    'uiComponent': 'PrimaryPageTemplate',
+    'uiComponent': 'CwaPagePrimaryPageTemplate',
     'uiClassNames': null,
     'parentPage': null,
     'parentPageData': null,
@@ -272,7 +273,7 @@ function setupRich(opts: {
     'createdAt': '2026-01-01',
     'updatedAt': '2026-01-02',
     'layout': '/_/layouts/default',
-    'uiComponent': 'PrimaryPageTemplate',
+    'uiComponent': 'CwaPagePrimaryPageTemplate',
     'uiClassNames': null,
     'parentPage': null,
     'parentPageData': null,
@@ -598,5 +599,65 @@ describe('PageAdminModal public without a route', () => {
     const toggle = wrapper.findComponent({ name: 'ModalReachableToggle' })
     expect(toggle.exists()).toBe(true)
     expect(toggle.props('hasRoute')).toBe(false)
+  })
+})
+
+describe('Page UI select stores the full CwaPage component name (#384)', () => {
+  const pagesConfig = { PrimaryPageTemplate: { name: 'Primary Page Template' } }
+  const pageNames = componentNames.filter((n: string) => n.startsWith('CwaPage'))
+
+  function pageUiSelect(wrapper: ReturnType<typeof setupRich>['wrapper']) {
+    return wrapper.findAllComponents({ name: 'ModalSelect' }).find(s => s.props('label') === 'Page UI')!
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  test('the playground registers at least 2 page components (fixture sanity)', () => {
+    expect(pageNames).toContain('CwaPagePrimaryPageTemplate')
+    expect(pageNames).toContain('CwaPageNestedTopicTemplate')
+  })
+
+  test('lists every registered CwaPage component with its full name as the value, named from pagesConfig', () => {
+    const { wrapper } = setupRich({ pagesConfig })
+    expect(pageUiSelect(wrapper).props('options')).toEqual(pageNames.map((name: string) => {
+      const cleanName = name.replace(/^CwaPage/, '')
+      return { label: pagesConfig[cleanName as keyof typeof pagesConfig]?.name || cleanName, value: name }
+    }))
+  })
+
+  test('a page the API returned with the full name selects its option', () => {
+    const { wrapper } = setupRich({ pagesConfig, localDataOverrides: { uiComponent: 'CwaPagePrimaryPageTemplate' } })
+    const select = pageUiSelect(wrapper)
+    expect(select.props('modelValue')).toBe('CwaPagePrimaryPageTemplate')
+    expect((select.props('options') as Array<{ value: string }>).map(o => o.value)).toContain('CwaPagePrimaryPageTemplate')
+  })
+
+  test('a page stored short before the API prefixed it still selects its full-name option, without changing the resource', () => {
+    const { wrapper, localResourceData, saveResource } = setupRich({ pagesConfig, localDataOverrides: { uiComponent: 'PrimaryPageTemplate' } })
+    expect(pageUiSelect(wrapper).props('modelValue')).toBe('CwaPagePrimaryPageTemplate')
+    expect(localResourceData.value.uiComponent).toBe('PrimaryPageTemplate')
+    expect(saveResource).not.toHaveBeenCalled()
+  })
+
+  test('choosing an option stores the full component name', async () => {
+    const { wrapper, localResourceData } = setupRich({ pagesConfig })
+    await pageUiSelect(wrapper).vm.$emit('update:modelValue', 'CwaPageNestedTopicTemplate')
+    expect(localResourceData.value.uiComponent).toBe('CwaPageNestedTopicTemplate')
+  })
+
+  test('a new page defaults to the first CwaPage component\'s full name', () => {
+    setupRich({ pagesConfig, isAdding: true })
+    expect(mockUseItemPage.mock.calls.at(-1)![0].defaultResource.uiComponent).toBe(pageNames[0])
+  })
+
+  test('style options come from pagesConfig for a full-name uiComponent', () => {
+    const { wrapper } = setupRich({
+      pagesConfig: { PrimaryPageTemplate: { name: 'Primary', classes: { Wide: 'cwa:max-w-full' } } },
+      localDataOverrides: { uiComponent: 'CwaPagePrimaryPageTemplate' },
+    })
+    const styleSelect = wrapper.findAllComponents({ name: 'ModalSelect' }).find(s => s.props('label') === 'Style')
+    expect(styleSelect?.props('options')).toContainEqual({ label: 'Wide', value: 'cwa:max-w-full' })
   })
 })

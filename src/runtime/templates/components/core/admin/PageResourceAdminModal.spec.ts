@@ -7,6 +7,7 @@ import PageResourceAdminModal from './PageResourceAdminModal.vue'
 import ModalInput from '#cwa/templates/components/core/admin/form/ModalInput.vue'
 import ModalSelect from '#cwa/templates/components/core/admin/form/ModalSelect.vue'
 import * as cwaComposable from '#cwa/composables/cwa'
+import { componentNames } from '#components'
 
 const mockNavigateTo = vi.hoisted(() => vi.fn())
 mockNuxtImport('navigateTo', () => mockNavigateTo)
@@ -34,6 +35,7 @@ function setup(opts: {
   pageDataConfig?: any
   localDataOverrides?: Record<string, any>
   isAdding?: boolean
+  pagesConfig?: Record<string, any>
 } = {}) {
   const iri = opts.iri ?? '/_/pages/uuid-self'
   const localResourceData = ref<Record<string, any>>({
@@ -79,7 +81,7 @@ function setup(opts: {
       getResource: vi.fn(() => ref(null)),
     },
     fetch: vi.fn().mockReturnValue({ response: Promise.resolve({ _data: null }) }),
-    pagesConfig: {},
+    pagesConfig: opts.pagesConfig ?? {},
     admin: { toggleEdit: vi.fn() },
   }))
 
@@ -272,5 +274,46 @@ describe('PageResourceAdminModal public without a route', () => {
       localDataOverrides: { isTemplate: false },
     })
     expect(wrapper.findComponent({ name: 'ResourceModal' }).attributes('border-color-class')).toBe('cwa:border-b-blue-600')
+  })
+})
+
+describe('PageResourceAdminModal Page UI select stores the full CwaPage component name (#384)', () => {
+  const pagesConfig = { PrimaryPageTemplate: { name: 'Primary Page Template' } }
+  const pageNames = componentNames.filter((n: string) => n.startsWith('CwaPage'))
+
+  function pageUiSelect(wrapper: ReturnType<typeof setup>['wrapper']) {
+    return wrapper.findAllComponents(ModalSelect).find(s => s.props('label') === 'Page UI')!
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  test('lists every registered CwaPage component with its full name as the value, named from pagesConfig', () => {
+    const { wrapper } = setup({ pagesConfig })
+    expect(pageUiSelect(wrapper).props('options')).toEqual(pageNames.map((name: string) => {
+      const cleanName = name.replace(/^CwaPage/, '')
+      return { label: pagesConfig[cleanName as keyof typeof pagesConfig]?.name || cleanName, value: name }
+    }))
+  })
+
+  test('a page the API returned with the full name selects its option', () => {
+    const { wrapper } = setup({ pagesConfig, localDataOverrides: { uiComponent: 'CwaPagePrimaryPageTemplate' } })
+    const select = pageUiSelect(wrapper)
+    expect(select.props('modelValue')).toBe('CwaPagePrimaryPageTemplate')
+    expect((select.props('options') as Array<{ value: string }>).map(o => o.value)).toContain('CwaPagePrimaryPageTemplate')
+  })
+
+  test('a page stored short before the API prefixed it still selects its full-name option, without changing the resource', () => {
+    const { wrapper, localResourceData, handlers } = setup({ pagesConfig, localDataOverrides: { uiComponent: 'PrimaryPageTemplate' } })
+    expect(pageUiSelect(wrapper).props('modelValue')).toBe('CwaPagePrimaryPageTemplate')
+    expect(localResourceData.value.uiComponent).toBe('PrimaryPageTemplate')
+    expect(handlers.saveResource).not.toHaveBeenCalled()
+  })
+
+  test('choosing an option stores the full component name', async () => {
+    const { wrapper, localResourceData } = setup({ pagesConfig, localDataOverrides: { uiComponent: 'CwaPagePrimaryPageTemplate' } })
+    await pageUiSelect(wrapper).vm.$emit('update:modelValue', 'CwaPageNestedTopicTemplate')
+    expect(localResourceData.value.uiComponent).toBe('CwaPageNestedTopicTemplate')
   })
 })
