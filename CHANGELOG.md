@@ -4,6 +4,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+## [2.0.0-alpha.15] - 2026-10-13
+
 - A link can open the add page data form with its parent page or parent page data and its template filled in, through `?parentPage=`, `?parentPageData=` and `?template=` ([#390](https://github.com/components-web-app/cwa-nuxt-module/issues/390), [066433f6](https://github.com/components-web-app/cwa-nuxt-module/commit/066433f6))
 
 - The admin's parent page, template, layout and parent page data selects list every item, where they stopped at the API's first 30 ([#391](https://github.com/components-web-app/cwa-nuxt-module/issues/391), [810e17ee](https://github.com/components-web-app/cwa-nuxt-module/commit/810e17ee))
@@ -108,7 +110,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 - First tagged release of `@cwa/nuxt`; releases are now published from `v*` tags ([7c61b7c](https://github.com/components-web-app/cwa-nuxt-module/commit/7c61b7ce331ec4a0cb8e76951a5de2ff806ed07a))
 
-[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.14...HEAD
+[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.15...HEAD
+[2.0.0-alpha.15]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.14...v2.0.0-alpha.15
 [2.0.0-alpha.14]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.13...v2.0.0-alpha.14
 [2.0.0-alpha.13]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.12...v2.0.0-alpha.13
 [2.0.0-alpha.12]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.11...v2.0.0-alpha.12
