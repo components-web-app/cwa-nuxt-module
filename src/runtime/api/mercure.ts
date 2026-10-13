@@ -14,7 +14,7 @@ export default class Mercure {
   private requestCount?: ComputedRef<number>
   private readonly mercureStore: CwaMercureStoreInterface
   private readonly client = lazyImport(() => import('./mercure-client').then(({ default: MercureClient }) => {
-    const client = new MercureClient(this.mercureStoreDefinition, this.resourcesStoreDefinition, this.fetcherStoreDefinition, this.nuxtApp.$cwa.auth.isAdmin)
+    const client = new MercureClient(this.mercureStoreDefinition, this.resourcesStoreDefinition, this.fetcherStoreDefinition)
     this.fetcher && client.setFetcher(this.fetcher)
     this.requestCount && client.setRequestCount(this.requestCount)
     return client
