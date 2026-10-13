@@ -28,7 +28,8 @@ mockNuxtImport('useHead', () => (config: any) => {
   capturedHeadConfig = config
 })
 mockNuxtImport('useError', () => () => ref(null))
-mockNuxtImport('useRoute', () => () => ({ path: '/', meta: {} }))
+const mockRoute = vi.hoisted(() => ({ path: '/', meta: {} }))
+mockNuxtImport('useRoute', () => () => mockRoute)
 const defineOgImageSpy = vi.hoisted(() => vi.fn())
 mockNuxtImport('defineOgImage', () => (...args: any[]) => {
   defineOgImageSpy(...args)
@@ -80,6 +81,7 @@ describe('CWA page', () => {
   beforeEach(() => {
     defineOgImageSpy.mockClear()
     emitRedraw.mockClear()
+    mockRoute.path = '/'
     mockElementSize.width.value = 0
     mockElementSize.height.value = 0
   })
@@ -165,6 +167,22 @@ describe('CWA page', () => {
     test('returns null when no titles and fallback disabled', () => {
       mockCwaWithDepths([{}], false)
       expect(capturedHeadConfig!.title()).toBeNull()
+    })
+
+    test('skips the API default title at a depth', () => {
+      mockCwaWithDepths([{ dataTitle: 'Unnamed Page' }, { dataTitle: 'Who We Are' }])
+      expect(capturedHeadConfig!.title()).toBe('Who We Are')
+    })
+
+    test('falls back to page.title when page data has the API default title', () => {
+      mockCwaWithDepths([{ dataTitle: 'Unnamed Page', pageTitle: 'Events' }])
+      expect(capturedHeadConfig!.title()).toBe('Events')
+    })
+
+    test('uses the fallback title when every depth has the API default title', () => {
+      mockRoute.path = '/about/who-we-are'
+      mockCwaWithDepths([{ dataTitle: 'Unnamed Page', pageTitle: 'Unnamed Page' }, { pageTitle: 'Unnamed Page' }], true)
+      expect(capturedHeadConfig!.title()).toBe('Who We Are')
     })
   })
 

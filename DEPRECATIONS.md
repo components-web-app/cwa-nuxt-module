@@ -8,6 +8,23 @@ entry with no precondition is not a deprecation, it is a todo.
 
 ---
 
+## Remove when the bundle defaults a page's title to `null`
+
+### Skipping the `'Unnamed Page'` title
+
+`AbstractPage::$title` defaults to `'Unnamed Page'`, so a page or page data with
+no title stores that string. `cwa-page.vue` treats it as no title when it builds
+`<title>`, so it is not joined into nested titles and page data falls back to its
+page's title ([#388](https://github.com/components-web-app/cwa-nuxt-module/issues/388)).
+
+**Delete:** `API_DEFAULT_PAGE_TITLE` and `ownTitle` in `cwa-page.vue`, and the
+three `API default title` tests in `cwa-page.spec.ts`.
+
+**First:** an api-components-bundle release with a `null` default and a migration
+clearing stored `'Unnamed Page'` titles ([api-components-bundle#439](https://github.com/components-web-app/api-components-bundle/issues/439)).
+
+---
+
 ## Remove when applications declare a `search` parameter
 
 ### The per-field search parameters on admin lists
