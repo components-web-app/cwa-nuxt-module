@@ -112,6 +112,7 @@ Stores: `resources`, `fetcher`, `mercure`, `apiDocumentation`, `auth`, `admin`, 
 - `mercure.ts` — SSE `EventSource` for real-time resource updates via the API's Mercure hub
 - `auth.ts` — authentication flow
 - `api-documentation.ts` — reads JSON-LD API docs to discover component types and metadata
+- **SSR's request headers are a cross-repo contract with api-components-bundle#442.** The bundle's `warm-http-cache` command copies them in `HttpCache\Warm\ModuleRequestHeaders` so the API cache is warmed under the keys SSR asks for: `accept` (`cwa-fetch.ts`), `preload` (`preload-headers.ts`, one list per resource type joined with `,`; part of the key because Vulcain adds `Vary: Preload`) and `path` (`createRequestHeaders()` and `manifestDepthPath()`). A change to any of them must also be made in the bundle, or the warm fills entries SSR never reads.
 
 ### Resource types
 
