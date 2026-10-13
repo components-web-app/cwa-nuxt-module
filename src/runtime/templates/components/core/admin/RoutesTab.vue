@@ -28,7 +28,7 @@
     </div>
     <div
       v-else-if="!resource"
-      class="p-4"
+      class="cwa:p-4"
     >
       <CwaUiAlertWarning>
         Internal Error: No Route Resource Loaded.

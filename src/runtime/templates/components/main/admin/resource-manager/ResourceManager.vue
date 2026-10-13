@@ -162,12 +162,12 @@ defineExpose({
     v-if="showSpacer"
     id="cwa-manager-spacer"
     ref="spacer"
-    class="relative"
+    class="cwa:relative"
   />
   <Transition v-bind="slideUp">
     <div
       v-if="$cwa.admin.resourceStackManager.showManager.value"
-      class="fixed cwa:bottom-0 cwa:z-manager cwa:w-full cwa:text-white cwa:bg-dark/40"
+      class="cwa:fixed cwa:bottom-0 cwa:z-manager cwa:w-full cwa:text-white cwa:bg-dark/40"
       @click.stop
     >
       <div class="cwa:dark-blur">

@@ -133,7 +133,7 @@ onMounted(() => {
           <h1 class="cwa:mt-4 cwa:text-balance cwa:text-4xl cwa:font-semibold cwa:tracking-tight cwa:text-gray-900 cwa:dark:text-stone-100 cwa:sm:text-6xl">
             {{ statusMessage }}
           </h1>
-          <p class="cwa:mt-6 cwa:text-pretty cwa:text-lg cwa:font-medium cwa:text-stone-400 sm:text-xl/8">
+          <p class="cwa:mt-6 cwa:text-pretty cwa:text-lg cwa:font-medium cwa:text-stone-400 cwa:sm:text-xl/8">
             {{ statusMessage === description ? '' : description }}
           </p>
           <div

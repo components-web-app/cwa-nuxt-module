@@ -3,7 +3,7 @@
     <div class="cwa:bg-stone-800 cwa:text-white cwa:grow">
       <NuxtPage />
     </div>
-    <div class="cwa:text-stone-600 p-6 cwa:flex cwa:justify-center">
+    <div class="cwa:text-stone-600 cwa:p-6 cwa:flex cwa:justify-center">
       <NuxtLink
         to="https://cwa.rocks"
         target="_blank"
