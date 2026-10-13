@@ -4,6 +4,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+- The admin's last unprefixed Tailwind classes are prefixed, so the manager panel stays fixed to the bottom of the viewport and admin spacing no longer depends on the host app's CSS ([#387](https://github.com/components-web-app/cwa-nuxt-module/issues/387), [2632d36e](https://github.com/components-web-app/cwa-nuxt-module/commit/2632d36e))
+
 ## [2.0.0-alpha.12] - 2026-10-13
 
 - Login details a password manager fills in before the page hydrates are kept, where hydration used to clear them ([#386](https://github.com/components-web-app/cwa-nuxt-module/issues/386), [699326b1](https://github.com/components-web-app/cwa-nuxt-module/commit/699326b1))
