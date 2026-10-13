@@ -32,6 +32,7 @@ export interface FetchResourceEvent {
 export interface FetchManifestEvent {
   manifestPath: string
   token: string
+  routeChecked?: Promise<void>
 }
 
 export interface FetchEvent {
@@ -73,6 +74,7 @@ export default class Fetcher {
     private fetchStatusManager: FetchStatusManager,
     private router: Router,
     resourcesStoreDefinition: ResourcesStore,
+    private readonly isServer = false,
   ) {
     this._store = resourcesStoreDefinition.useStore()
   }
@@ -128,8 +130,14 @@ export default class Fetcher {
     }
 
     let manifestPromise: Promise<void> | undefined
+    let releaseManifest: (() => void) | undefined
     if (manifestPath) {
-      manifestPromise = this.fetchManifest({ token: startFetchResult.token, manifestPath })
+      const routeChecked = this.isServer && isPrimary && getResourceTypeFromIri(iri) === CwaResourceTypes.ROUTE
+        ? new Promise<void>((resolve) => {
+            releaseManifest = resolve
+          })
+        : undefined
+      manifestPromise = this.fetchManifest({ token: startFetchResult.token, manifestPath, routeChecked })
     }
 
     const fetchEvent = {
@@ -146,6 +154,7 @@ export default class Fetcher {
     })
 
     if (!continueToFetchResource) {
+      releaseManifest?.()
       return this.fetchStatusManager.getFetchedCurrentResource(path)
     }
 
@@ -188,7 +197,8 @@ export default class Fetcher {
     if (doRedirect) {
       this.fetchStatusManager.abortFetch(startFetchResult.token, 'redirect')
     }
-    else if (resource && shallowFetch !== true) {
+    releaseManifest?.()
+    if (!doRedirect && resource && shallowFetch !== true) {
       if (manifestPromise) {
         await manifestPromise
       }
@@ -209,6 +219,7 @@ export default class Fetcher {
         path: event.manifestPath,
       })
       const response = await result.response
+      await event.routeChecked
       const resourceTree: NestedJsonStructure[] = response._data?.resource_iris || []
       if (this.fetchStatusManager.isCurrentFetchingToken(event.token)) {
         this.fetchStatusManager.setManifestIrisByDepth({ token: event.token, resourceIris: resourceTree })

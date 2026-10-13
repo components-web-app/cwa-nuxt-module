@@ -299,10 +299,14 @@ describe('Cwa class test', () => {
     expect(nuxtApp.useNuxtApp).toHaveBeenCalled()
   })
 
-  test('Fetcher is initialised', () => {
+  test.each([
+    { isServer: true },
+    { isServer: false },
+  ])('Fetcher is initialised and told whether it runs on the server ($isServer)', ({ isServer }) => {
+    vi.spyOn(processComposables, 'useProcess').mockImplementation(() => ({ isClient: !isServer, isServer }))
     createCwa({ storeName })
     const stores = Storage.mock.results[0].value.stores
-    expect(Fetcher).toBeCalledWith(CwaFetch.mock.results[0].value, FetchStatusManager.mock.results[0].value, $router, stores.resources)
+    expect(Fetcher).toBeCalledWith(CwaFetch.mock.results[0].value, FetchStatusManager.mock.results[0].value, $router, stores.resources, isServer)
   })
 
   test('Resources is initialised and accessible', () => {

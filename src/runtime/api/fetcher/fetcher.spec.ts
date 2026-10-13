@@ -50,7 +50,7 @@ function delay(time: number, returnValue: any = undefined) {
   })
 }
 
-function createFetcher(query?: Record<string, string | null | (string | null)[]>): Fetcher {
+function createFetcher(query?: Record<string, string | null | (string | null)[]>, isServer?: boolean): Fetcher {
   const cwaFetch = new CwaFetch('https://api-url')
   const resourcesStore = new ResourcesStore()
   const statusManager = new FetchStatusManager(new FetcherStore(), new Mercure(), new ApiDocumentation(), resourcesStore)
@@ -64,7 +64,7 @@ function createFetcher(query?: Record<string, string | null | (string | null)[]>
     },
   }
 
-  return new Fetcher(cwaFetch, statusManager, vueRouter, resourcesStore)
+  return new Fetcher(cwaFetch, statusManager, vueRouter, resourcesStore, isServer)
 }
 
 const validCwaResource = {
@@ -647,6 +647,76 @@ describe('Fetcher -> fetchManifest', () => {
       type: FinishFetchManifestType.ERROR,
       error: createCwaResourceError(error),
     })
+  })
+})
+
+describe('Fetcher -> a route\'s manifest resources while it may redirect', () => {
+  const routePath = '/_/routes//topic-1'
+  let aborted: boolean
+
+  function setup({ isServer, path, redirectPath }: { isServer: boolean, path: string, redirectPath?: string }) {
+    const fetcher = createFetcher(undefined, isServer)
+    const manager = FetchStatusManager.mock.instances[0]
+    vi.spyOn(fetcher, 'fetchBatch').mockImplementation(() => Promise.resolve([]))
+    vi.spyOn(fetcher, 'fetchAssociatedResources').mockImplementation(() => undefined)
+    vi.spyOn(fetcher, 'fetch').mockImplementation((event) => {
+      if (event.path === '/my-manifest') {
+        return { response: delay(1, { _data: { resource_iris: [{ iri: '/target-page', children: [] }] } }) }
+      }
+      return { response: delay(5, { _data: {} }), headers: {} }
+    })
+    manager.startFetch.mockImplementation(() => ({ continue: true, token: 'token' }))
+    manager.startFetchResource.mockImplementation(() => true)
+    manager.finishFetchResource.mockImplementation(() => ({ '@id': path, redirectPath }))
+    manager.abortFetch.mockImplementation(() => {
+      aborted = true
+    })
+    manager.isCurrentFetchingToken.mockImplementation(() => !aborted)
+    vi.spyOn(manager, 'primaryFetchPath', 'get').mockReturnValue(path)
+    return { fetcher, manager }
+  }
+
+  beforeEach(() => {
+    aborted = false
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  test('on the server, a redirecting route never fetches its manifest\'s resources, even when the manifest answers first, because the 308 discards them', async () => {
+    const { fetcher, manager } = setup({ isServer: true, path: routePath, redirectPath: '/topic-1/chapter-one' })
+    await fetcher.fetchResource({ path: routePath, isPrimary: true, manifestPath: '/my-manifest' })
+    await delay(10)
+    expect(manager.abortFetch).toHaveBeenCalledWith('token', 'redirect')
+    expect(fetcher.fetchBatch).not.toHaveBeenCalled()
+    expect(manager.finishManifestFetch).toHaveBeenCalledWith({ token: 'token', type: FinishFetchManifestType.SUCCESS })
+  })
+
+  test('on the server, a route that does not redirect fetches its manifest\'s resources once the route has answered', async () => {
+    const { fetcher } = setup({ isServer: true, path: routePath })
+    const fetched = fetcher.fetchResource({ path: routePath, isPrimary: true, manifestPath: '/my-manifest' })
+    await delay(3)
+    expect(fetcher.fetchBatch).not.toHaveBeenCalled()
+    await fetched
+    expect(fetcher.fetchBatch).toHaveBeenCalledWith({ paths: ['/target-page'], token: 'token' })
+  })
+
+  test('on the server, a page fetch starts its manifest\'s resources as soon as the manifest answers, as a page cannot redirect', async () => {
+    const pagePath = '/_/pages/page-id'
+    const { fetcher } = setup({ isServer: true, path: pagePath })
+    const fetched = fetcher.fetchResource({ path: pagePath, isPrimary: true, manifestPath: '/my-manifest' })
+    await delay(3)
+    expect(fetcher.fetchBatch).toHaveBeenCalledWith({ paths: ['/target-page'], token: 'token' })
+    await fetched
+  })
+
+  test('in the browser, a redirecting route still fetches its manifest\'s resources, which are the target page\'s, so the redirect needs no second round trip', async () => {
+    const { fetcher, manager } = setup({ isServer: false, path: routePath, redirectPath: '/topic-1/chapter-one' })
+    await fetcher.fetchResource({ path: routePath, isPrimary: true, manifestPath: '/my-manifest' })
+    await delay(10)
+    expect(manager.abortFetch).toHaveBeenCalledWith('token', 'redirect')
+    expect(fetcher.fetchBatch).toHaveBeenCalledWith({ paths: ['/target-page'], token: 'token' })
   })
 })
 
