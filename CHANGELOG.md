@@ -4,6 +4,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+## [2.0.0-alpha.14] - 2026-10-13
+
 - A route redirect rendered on the server sends its 308 at once, where it used to load the whole target page first ([#389](https://github.com/components-web-app/cwa-nuxt-module/issues/389), [0e56674e](https://github.com/components-web-app/cwa-nuxt-module/commit/0e56674e))
 
 ## [2.0.0-alpha.13] - 2026-10-13
@@ -100,7 +102,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 - First tagged release of `@cwa/nuxt`; releases are now published from `v*` tags ([7c61b7c](https://github.com/components-web-app/cwa-nuxt-module/commit/7c61b7ce331ec4a0cb8e76951a5de2ff806ed07a))
 
-[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.13...HEAD
+[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.14...HEAD
+[2.0.0-alpha.14]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.13...v2.0.0-alpha.14
 [2.0.0-alpha.13]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.12...v2.0.0-alpha.13
 [2.0.0-alpha.12]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.11...v2.0.0-alpha.12
 [2.0.0-alpha.11]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.10...v2.0.0-alpha.11
