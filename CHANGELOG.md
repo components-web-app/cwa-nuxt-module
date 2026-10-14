@@ -4,6 +4,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+- Nuxt's loading bar and the scroll to top now wait until the new CWA page shows, where the page jumped to the top while the old one was still on screen. The new `<CwaLoadingIndicator>` wraps `<NuxtLoadingIndicator>` and shows CWA's page load percentage; put it in `app.vue` in place of `CwaUiProgressBar` ([#396](https://github.com/components-web-app/cwa-nuxt-module/issues/396), [1ed92548](https://github.com/components-web-app/cwa-nuxt-module/commit/1ed92548))
+
 - Publishing straight after typing publishes the last edit: Publish sends the editor's waiting save first, where the edit was lost ([#394](https://github.com/components-web-app/cwa-nuxt-module/issues/394), [4c10fb30](https://github.com/components-web-app/cwa-nuxt-module/commit/4c10fb30))
 
 - Publishing a draft that sits in its own position no longer leaves a "has not been requested" box in its place ([#395](https://github.com/components-web-app/cwa-nuxt-module/issues/395), [4c10fb30](https://github.com/components-web-app/cwa-nuxt-module/commit/4c10fb30))
