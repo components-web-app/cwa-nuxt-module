@@ -468,6 +468,11 @@ declare module 'vue-router' {
         src: resolve('./runtime/plugin'),
       })
 
+      addPlugin({
+        src: resolve('./runtime/plugin-page-loading.client'),
+        mode: 'client',
+      })
+
       nuxt.options.runtimeConfig.cwa = defu(nuxt.options.runtimeConfig.cwa, {
         apiUrl: '',
         readiness: { ...READINESS_DEFAULTS },

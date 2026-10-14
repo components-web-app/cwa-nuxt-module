@@ -391,6 +391,28 @@ describe('CWA module', () => {
       })
     })
 
+    test('holds page:loading:end from a plugin that runs in the browser only, after the cwa plugin (#396)', async () => {
+      ;(nuxtKit.addPlugin as Mock).mockClear()
+      await prepareMockNuxt({}, {
+        hook: vi.fn((hookName, callback) => {
+          if (hookName === 'modules:done') {
+            callback()
+          }
+        }),
+        options: {
+          runtimeConfig: { public: { cwa: {} } },
+          alias: {},
+          css: [],
+          build: { transpile: [] },
+          dir: { app: '' },
+          sitemap: {},
+        },
+      })
+      const sources = (nuxtKit.addPlugin as Mock).mock.calls.map(([plugin]) => plugin.src)
+      expect(nuxtKit.addPlugin as Mock).toHaveBeenCalledWith({ src: join('./runtime/plugin-page-loading.client'), mode: 'client' })
+      expect(sources.indexOf(join('./runtime/plugin-page-loading.client'))).toBeGreaterThan(sources.indexOf(join('./runtime/plugin')))
+    })
+
     test('should add template', async () => {
       const mockOptions = {
         mock: true,
