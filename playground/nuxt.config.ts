@@ -5,6 +5,8 @@ export default defineNuxtConfig({
   extends: [
     './../src/layer',
   ],
+  skewProtection: { enabled: false },
+  aiReady: { enabled: false },
   modules: [
     '@nuxt/ui',
     '@nuxt/image',

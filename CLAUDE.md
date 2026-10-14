@@ -321,6 +321,7 @@ On by default (`cwa.pageCache.enabled`; the `?? true` in `module.ts` and `resolv
 - **`typescript` held at `^6`** (TS 7 breaks `vue-tsc`) and **`vue-tsc` pinned to `3.3.11`** (3.3.12 adds `.value` to template bindings that are not refs, vuejs/language-tools#6267): `pnpm up --latest -r "!typescript" "!vue-tsc"`.
 - **`vite` pinned to `^8` by override** — a mixed vite 7/8 tree stops every test file starting.
 - `@pinia/nuxt ^1` is required by `moduleDependencies` (breaking for apps).
+- **Nuxt SEO v6** ([#392](https://github.com/components-web-app/cwa-nuxt-module/issues/392)): sitemap events are Nuxt's portable `RequestEvent`, not h3's `H3Event`, so server helpers that take one read only `context`. Registering `@nuxtjs/seo` 6 also switches on `nuxt-skew-protection` and `nuxt-ai-ready` (~5.5 KB gzip on every visitor's entry); the playground turns both off so the bundle guards measure the module. `h3` is a declared dependency: v5 used to bring it in.
 - Security overrides live in `pnpm-workspace.yaml`; move the match key as well as the floor, and add new versions to `minimumReleaseAgeExclude`.
 - **An advisory with no patched release is ignored by GHSA ID** (`auditConfig.ignoreGhsas`), only when its paths are build or dev tooling, and logged in `DEPRECATIONS.md`. Never lower the audit level. `pnpm audit`'s "Patched versions" column can name a version that does not exist; check `npm view <pkg> versions`.
 - After any dependency change: `dev:prepare`, `test`, `test:types`, `lint`, `build`, `dev:build`, boot `dev:http`.

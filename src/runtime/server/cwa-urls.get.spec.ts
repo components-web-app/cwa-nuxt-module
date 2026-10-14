@@ -5,7 +5,7 @@ import { describe, expect, test, vi, beforeEach } from 'vitest'
 const mockFetcher = vi.fn()
 const mockResolveConfigEventHandler = vi.fn()
 
-vi.mock('#sitemap/server/composables/defineSitemapEventHandler', () => ({
+vi.mock('#sitemap/server', () => ({
   defineSitemapEventHandler: (fn: any) => fn,
 }))
 

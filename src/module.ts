@@ -86,7 +86,7 @@ const OG_IMAGE_RENDERER_PACKAGES = ['satori', '@resvg/resvg-js'] as const
 
 const ogImageModuleDependency: ModuleDependencies = {
   'nuxt-og-image': {
-    version: '^6.0',
+    version: '^7.0',
   },
 }
 
@@ -96,10 +96,10 @@ const baseModuleDependencies: ModuleDependencies = {
     optional: false,
   },
   '@nuxtjs/robots': {
-    version: '^6.0',
+    version: '^7.0',
   },
   '@nuxtjs/sitemap': {
-    version: '^8.0',
+    version: '^9.0.1',
     optional: false,
     defaults: {
       cacheMaxAgeSeconds: 0,
@@ -112,16 +112,16 @@ const baseModuleDependencies: ModuleDependencies = {
     },
   },
   'nuxt-link-checker': {
-    version: '^5.0',
-  },
-  'nuxt-schema-org': {
     version: '^6.0',
   },
+  'nuxt-schema-org': {
+    version: '^7.0',
+  },
   'nuxt-seo-utils': {
-    version: '^8.1',
+    version: '^9.0',
   },
   'nuxt-site-config': {
-    version: '^4.0.8',
+    version: '^5.0.1',
   },
 }
 

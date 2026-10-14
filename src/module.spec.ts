@@ -140,10 +140,10 @@ describe('CWA module', () => {
           optional: false,
         },
         '@nuxtjs/robots': {
-          version: '^6.0',
+          version: '^7.0',
         },
         '@nuxtjs/sitemap': {
-          version: '^8.0',
+          version: '^9.0.1',
           optional: false,
           defaults: {
             cacheMaxAgeSeconds: 0,
@@ -156,19 +156,19 @@ describe('CWA module', () => {
           },
         },
         'nuxt-link-checker': {
-          version: '^5.0',
+          version: '^6.0',
         },
         'nuxt-og-image': {
-          version: '^6.0',
+          version: '^7.0',
         },
         'nuxt-schema-org': {
-          version: '^6.0',
+          version: '^7.0',
         },
         'nuxt-seo-utils': {
-          version: '^8.1',
+          version: '^9.0',
         },
         'nuxt-site-config': {
-          version: '^4.0.8',
+          version: '^5.0.1',
         },
       })
     })
@@ -1234,7 +1234,7 @@ export const componentGroupDeclarations: ComponentGroupDeclarations = {
     test('requires nuxt-og-image when both renderer packages resolve', async () => {
       const dependencies = await getModuleDependencies()
 
-      expect(dependencies['nuxt-og-image']).toEqual({ version: '^6.0' })
+      expect(dependencies['nuxt-og-image']).toEqual({ version: '^7.0' })
       expect(nuxtKit.tryResolveModule).toHaveBeenCalledWith('satori', ['/app/node_modules'])
       expect(nuxtKit.tryResolveModule).toHaveBeenCalledWith('@resvg/resvg-js', ['/app/node_modules'])
     })
