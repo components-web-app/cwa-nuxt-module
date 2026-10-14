@@ -13,7 +13,7 @@ const route = useRoute()
 
 const resourceType = computed(() => {
   const iri = Array.isArray(route.params.iri) ? route.params.iri[0] : route.params.iri
-  return getResourceTypeFromIri(iri || '') === CwaResourceTypes.PAGE ? 'Page' : 'PageData'
+  return getResourceTypeFromIri(iri || '') === CwaResourceTypes.PAGE ? 'Page' : undefined
 })
 
 definePageMeta({
