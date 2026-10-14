@@ -4,6 +4,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+- **Breaking:** the module now needs the Nuxt SEO v6 family (`@nuxtjs/sitemap` 9, `@nuxtjs/robots` 7, `nuxt-site-config` 5, `nuxt-seo-utils` 9, `nuxt-schema-org` 7, `nuxt-link-checker` 6, `nuxt-og-image` 7); the optional renderer peers now need `satori` 0.47.1 and `@resvg/resvg-js` 2.6.2 or later. An app that registers `@nuxtjs/sitemap` or `@nuxtjs/seo` itself must move to v9 / v6 too, and `@nuxtjs/seo` 6 also enables `nuxt-skew-protection` and `nuxt-ai-ready` (opt out with `skewProtection: { enabled: false }` and `aiReady: { enabled: false }`). `h3` is now a declared dependency ([#392](https://github.com/components-web-app/cwa-nuxt-module/issues/392), [2b694b80](https://github.com/components-web-app/cwa-nuxt-module/commit/2b694b80))
+
 ## [2.0.0-alpha.15] - 2026-10-13
 
 - A link can open the add page data form with its parent page or parent page data and its template filled in, through `?parentPage=`, `?parentPageData=` and `?template=` ([#390](https://github.com/components-web-app/cwa-nuxt-module/issues/390), [066433f6](https://github.com/components-web-app/cwa-nuxt-module/commit/066433f6))
