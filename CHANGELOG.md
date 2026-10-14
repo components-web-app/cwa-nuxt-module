@@ -4,6 +4,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+- View in the admin's Routes list opens a page data route's page data (and a redirect's target), where it did nothing ([#393](https://github.com/components-web-app/cwa-nuxt-module/issues/393), [2c02280d](https://github.com/components-web-app/cwa-nuxt-module/commit/2c02280d))
+
 - **Breaking:** the module now needs the Nuxt SEO v6 family (`@nuxtjs/sitemap` 9, `@nuxtjs/robots` 7, `nuxt-site-config` 5, `nuxt-seo-utils` 9, `nuxt-schema-org` 7, `nuxt-link-checker` 6, `nuxt-og-image` 7); the optional renderer peers now need `satori` 0.47.1 and `@resvg/resvg-js` 2.6.2 or later. An app that registers `@nuxtjs/sitemap` or `@nuxtjs/seo` itself must move to v9 / v6 too, and `@nuxtjs/seo` 6 also enables `nuxt-skew-protection` and `nuxt-ai-ready` (opt out with `skewProtection: { enabled: false }` and `aiReady: { enabled: false }`). `h3` is now a declared dependency ([#392](https://github.com/components-web-app/cwa-nuxt-module/issues/392), [2b694b80](https://github.com/components-web-app/cwa-nuxt-module/commit/2b694b80))
 
 ## [2.0.0-alpha.15] - 2026-10-13
