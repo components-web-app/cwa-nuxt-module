@@ -11,6 +11,11 @@ vi.mock('vue', async () => {
 const mockGetResource = vi.hoisted(() => vi.fn())
 const mockGetWaitForRequestPromise = vi.hoisted(() => vi.fn().mockResolvedValue(undefined))
 const mockUpdateResource = vi.hoisted(() => vi.fn().mockResolvedValue(undefined))
+const pendingUpdates = vi.hoisted(() => new Map<string, () => unknown>())
+const mockRegisterPendingUpdate = vi.hoisted(() => vi.fn((iri: string, flush: () => unknown) => {
+  pendingUpdates.set(iri, flush)
+  return () => pendingUpdates.delete(iri)
+}))
 
 vi.mock('#cwa/composables/cwa', () => ({
   useCwa: () => ({
@@ -18,6 +23,7 @@ vi.mock('#cwa/composables/cwa', () => ({
     resourcesManager: {
       getWaitForRequestPromise: mockGetWaitForRequestPromise,
       updateResource: mockUpdateResource,
+      registerPendingUpdate: mockRegisterPendingUpdate,
     },
   }),
 }))
@@ -36,6 +42,7 @@ describe('useCwaResourceModel', () => {
     iri.value = '/my/resource'
     mockEndpoint.value = '/my/resource'
     vi.clearAllMocks()
+    pendingUpdates.clear()
     mockGetResource.mockReturnValue(ref(undefined))
     mockUpdateResource.mockResolvedValue(undefined)
   })
@@ -262,6 +269,20 @@ describe('useCwaResourceModel', () => {
       model.value = 'New'
       await flushDebounceAndAsync()
       expect(localValueWithIri.value['/my/new-resource']).toBe('New')
+    })
+
+    test('a waiting save is sent at once when a publish asks for it, and only once (#394)', async () => {
+      mockGetResource.mockReturnValue(ref({ data: { title: 'Store' } }))
+      const { model } = useCwaResourceModel(iri, 'title')
+      model.value = 'Last keystroke'
+      await nextTick()
+      expect(mockRegisterPendingUpdate).toHaveBeenCalledWith('/my/resource', expect.any(Function))
+      await pendingUpdates.get('/my/resource')!()
+      expect(mockUpdateResource).toHaveBeenCalledOnce()
+      expect(mockUpdateResource).toHaveBeenCalledWith(expect.objectContaining({ data: { title: 'Last keystroke' } }))
+      expect(pendingUpdates.has('/my/resource')).toBe(false)
+      await flushDebounceAndAsync()
+      expect(mockUpdateResource).toHaveBeenCalledOnce()
     })
 
     test('sets isLongWait after longWaitThreshold when busy', async () => {

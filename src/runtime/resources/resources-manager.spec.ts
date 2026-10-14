@@ -514,7 +514,7 @@ describe('Resources manager', () => {
       })
     })
 
-    function publishableThings(livePositions: string[] = []) {
+    function publishableThings(livePositions: string[] = [], draftPositions?: string[]) {
       return (iri: string) => {
         if (iri === '/things/draft') {
           return {
@@ -522,7 +522,7 @@ describe('Resources manager', () => {
               '@id': '/things/draft',
               '@type': 'Thing',
               'publishedResource': '/things/live',
-              'componentPositions': undefined,
+              'componentPositions': draftPositions,
               '_metadata': { persisted: true, publishable: { published: false } },
             },
           }
@@ -564,6 +564,48 @@ describe('Resources manager', () => {
       vi.spyOn(resourcesManager, 'storeResource').mockImplementation(() => {})
       await resourcesManager.updateResource({ endpoint: '/things/draft', data: { publishedAt: new Date().toISOString() } })
       expect(fetcher.fetchBatch).toHaveBeenCalledWith({ paths: ['/_/component_positions/1'], shallowFetch: 'noexist' })
+    })
+
+    test('publishing a draft that sits in its own position also refreshes that position, which the API empties when it deletes the draft (#395)', async () => {
+      const fetcher = { fetchBatch: vi.fn().mockResolvedValue(undefined) }
+      const { resourcesManager, cwaFetch, resourcesStoreActions } = createResourcesManager({ includeAdmin: true, fetcher })
+      resourcesStoreActions.getResource.mockImplementation(publishableThings(['/_/component_positions/1'], ['/_/component_positions/draft']))
+      cwaFetch.fetch.mockResolvedValue(publishedLiveResponse)
+      vi.spyOn(resourcesManager, 'storeResource').mockImplementation(() => {})
+      await resourcesManager.updateResource({ endpoint: '/things/draft', data: { publishedAt: 'now' } })
+      expect(fetcher.fetchBatch).toHaveBeenCalledWith({ paths: ['/_/component_positions/1', '/_/component_positions/draft'], shallowFetch: 'noexist' })
+    })
+
+    test('publishing a draft first sends the edit still waiting to be saved, so what the editor shows is what is published (#394)', async () => {
+      const { resourcesManager, cwaFetch, resourcesStoreActions } = createResourcesManager({ includeAdmin: true })
+      resourcesStoreActions.getResource.mockImplementation(publishableThings())
+      cwaFetch.fetch.mockResolvedValue(stillDraftResponse)
+      vi.spyOn(resourcesManager, 'storeResource').mockImplementation(() => {})
+      const flush = vi.fn(() => resourcesManager.updateResource({ endpoint: '/things/draft?published=false', data: { html: 'last keystroke' } }))
+      const otherFlush = vi.fn()
+      resourcesManager.registerPendingUpdate('/things/draft', flush)
+      resourcesManager.registerPendingUpdate('/things/other', otherFlush)
+      await resourcesManager.updateResource({ endpoint: '/things/draft', data: { publishedAt: 'now' } })
+      expect(flush).toHaveBeenCalledOnce()
+      expect(otherFlush).not.toHaveBeenCalled()
+      expect(cwaFetch.fetch.mock.calls.map(call => call[1].body)).toEqual([{ html: 'last keystroke' }, { publishedAt: 'now' }])
+    })
+
+    test('publishing waits for a save of the same resource already in flight (#394)', async () => {
+      const { resourcesManager, cwaFetch, resourcesStoreActions } = createResourcesManager({ includeAdmin: true })
+      resourcesStoreActions.getResource.mockImplementation(publishableThings())
+      let resolveSave: (value: unknown) => void = () => {}
+      cwaFetch.fetch
+        .mockImplementationOnce(() => new Promise((resolve) => { resolveSave = resolve }))
+        .mockResolvedValue(stillDraftResponse)
+      vi.spyOn(resourcesManager, 'storeResource').mockImplementation(() => {})
+      const saving = resourcesManager.updateResource({ endpoint: '/things/draft?published=false', data: { html: 'last keystroke' }, source: 'input_1' })
+      const publishing = resourcesManager.updateResource({ endpoint: '/things/draft', data: { publishedAt: 'now' } })
+      await new Promise(resolve => setTimeout(resolve, 0))
+      expect(cwaFetch.fetch).toHaveBeenCalledTimes(1)
+      resolveSave(stillDraftResponse)
+      await Promise.all([saving, publishing])
+      expect(cwaFetch.fetch.mock.calls.map(call => call[1].body)).toEqual([{ html: 'last keystroke' }, { publishedAt: 'now' }])
     })
 
     test('a response that is still the draft is not a publish, whatever the browser clock says (#373)', async () => {

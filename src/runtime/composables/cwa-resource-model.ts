@@ -52,6 +52,7 @@ export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: s
   const longWaitThreshold = ops?.longWaitThreshold || 5000
   const debounceTime = ops?.debounceTime !== undefined ? ops.debounceTime : 250
   let debounced: any
+  let untrackPendingUpdate: (() => void) | undefined
 
   const isBusy = computed(() => pendingSubmit.value || isSubmitting.value)
   const isSubmitting = ref(false)
@@ -155,9 +156,15 @@ export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: s
     if (debounced) {
       debounced.cancel()
     }
+    untrackPendingUpdate?.()
     pendingSubmit.value = true
-    debounced = debounce(() => updateResource(newLocalValue), debounceTime)
-    debounced()
+    const submit = debounce(() => {
+      untrackPendingUpdate?.()
+      return updateResource(newLocalValue)
+    }, debounceTime)
+    debounced = submit
+    untrackPendingUpdate = iri.value ? $cwa.resourcesManager.registerPendingUpdate(iri.value, () => submit.flush()) : undefined
+    submit()
   })
 
   let longWaitTimeoutFn: ReturnType<typeof setTimeout> | undefined
