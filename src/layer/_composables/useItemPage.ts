@@ -16,7 +16,7 @@ type StartsWithHash = `#${string}`
 type UseItemOps = {
   createEndpoint: string | Ref<string>
   emit: ((evt: 'close') => void) & ((evt: 'reload') => void)
-  resourceType: string
+  resourceType?: string
   defaultResource: MaybeRefOrGetter<Omit<TempCwaResource, '@type'>>
   validate?: (data: any) => boolean | string
   endpoint?: Ref<string | undefined>

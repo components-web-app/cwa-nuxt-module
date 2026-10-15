@@ -259,7 +259,7 @@ const emit = defineEmits<{
   close: []
   reload: []
 }>()
-const props = defineProps<{ iri?: string, hideViewLink?: boolean, resourceType: string }>()
+const props = defineProps<{ iri?: string, hideViewLink?: boolean, resourceType?: string }>()
 
 const $cwa = useCwa()
 const { parentPages, loadParentPageOptions } = useParentPageLoader()

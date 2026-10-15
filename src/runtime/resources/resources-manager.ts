@@ -51,6 +51,7 @@ interface RequestOptions {
 export class ResourcesManager {
   private readonly cwaFetch: CwaFetch
   private readonly fetchStatusManager: FetchStatusManager
+  private readonly pendingUpdates = new Map<string, Set<() => unknown>>()
   private requestsInProgress = reactive<{ [source: string]: { [id: string]: { event: ApiResourceEvent, args: [string, RequestOptions] } } }>({})
   private readonly reqCount = ref(0)
   private readonly _addResourceEvent: Ref<undefined | AddResourceEvent> = ref()
@@ -122,6 +123,38 @@ export class ResourcesManager {
     })
   }
 
+  // @internal
+  public registerPendingUpdate(iri: string, flush: () => unknown) {
+    const flushes = this.pendingUpdates.get(iri) ?? new Set()
+    flushes.add(flush)
+    this.pendingUpdates.set(iri, flushes)
+    return () => {
+      flushes.delete(flush)
+      if (!flushes.size && this.pendingUpdates.get(iri) === flushes) {
+        this.pendingUpdates.delete(iri)
+      }
+    }
+  }
+
+  private async settleUpdates(iri: string) {
+    await Promise.all([...(this.pendingUpdates.get(iri) ?? [])].map(flush => flush()))
+    const hasRequestInProgress = () => Object.values(this.requestsInProgress).some(sourceReqs =>
+      Object.values(sourceReqs).some(req => (req.event.iri || req.event.endpoint).split('?')[0] === iri),
+    )
+    if (!hasRequestInProgress()) {
+      return
+    }
+    await new Promise<void>((resolve) => {
+      const unwatch = watch(this.requestsInProgress, () => {
+        if (hasRequestInProgress()) {
+          return
+        }
+        unwatch()
+        resolve()
+      }, { deep: true })
+    })
+  }
+
   public createResource(event: DataApiResourceEvent) {
     const args: [string, RequestOptions] = [
       event.endpoint,
@@ -173,6 +206,10 @@ export class ResourcesManager {
     // more postfixes for upload/download, so instead of endless complicated normalization, if the endpoint is getting complete we just provide the IRI so we can do comparisons on returned IRI and other features
     const iri = (event.iri || event.endpoint).split('?')[0] as string
 
+    if (!(event.data instanceof FormData) && event.data && 'publishedAt' in event.data) {
+      await this.settleUpdates(iri)
+    }
+
     const currentResource = this.resourcesStore.getResource(iri)?.data
 
     const reqOps = {
@@ -214,9 +251,12 @@ export class ResourcesManager {
       if (!publishedOverLiveResource(response)) {
         return
       }
-      const livePositions = this.resourcesStore.getResource(existingLiveIri!)?.data?.componentPositions
-      if (livePositions?.length) {
-        await this.refreshEndpoints(livePositions)
+      const positions = [
+        ...(this.resourcesStore.getResource(existingLiveIri!)?.data?.componentPositions ?? []),
+        ...(currentResource?.componentPositions ?? []),
+      ]
+      if (positions.length) {
+        await this.refreshEndpoints([...new Set(positions)])
       }
       this.admin.emptyStack()
     }

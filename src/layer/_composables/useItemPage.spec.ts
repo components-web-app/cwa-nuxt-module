@@ -16,7 +16,7 @@ vi.mock('vue-router', async (importOriginal) => {
 
 const layoutIri = '/_/layouts/layout-uuid'
 
-function setup(stored: Record<string, any>, ops: { excludeFields?: string[] } = {}) {
+function setup(stored: Record<string, any>, ops: { excludeFields?: string[], resourceType?: string | null } = {}) {
   const store = reactive<Record<string, any>>({
     [layoutIri]: { data: stored, apiState: { status: 'SUCCESS' } },
   })
@@ -35,7 +35,7 @@ function setup(stored: Record<string, any>, ops: { excludeFields?: string[] } = 
       itemPage = useItemPage({
         createEndpoint: '/_/layouts',
         emit,
-        resourceType: 'Layout',
+        resourceType: ops.resourceType === null ? undefined : (ops.resourceType ?? 'Layout'),
         defaultResource: {},
         endpoint: ref(layoutIri),
         excludeFields: ops.excludeFields,
@@ -135,5 +135,19 @@ describe('useItemPage update body', () => {
     expect(result).toStrictEqual(stored)
     expect(emit).toHaveBeenCalledWith('close')
     expect(itemPage.isUpdating.value).toBe(false)
+  })
+})
+
+describe('useItemPage resource type check', () => {
+  test('a resource whose @type is not the expected type closes the modal', async () => {
+    const { emit } = setup({ ...layout, '@type': 'Page' })
+    await flushPromises()
+    expect(emit).toHaveBeenCalledWith('close')
+  })
+
+  test('without an expected type, a resource of any @type stays open', async () => {
+    const { emit } = setup({ ...layout, '@type': 'BlogArticleData' }, { resourceType: null })
+    await flushPromises()
+    expect(emit).not.toHaveBeenCalledWith('close')
   })
 })

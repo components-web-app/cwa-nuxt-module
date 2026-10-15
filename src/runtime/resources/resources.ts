@@ -13,7 +13,7 @@ import {
 import type { CwaResource } from './resource-utils'
 import type { AddResourceEvent } from '#cwa/admin/resource-stack-manager'
 
-interface PageLoadStatus {
+export interface PageLoadStatus {
   resources: (string | undefined)[]
   total: number
   complete: number

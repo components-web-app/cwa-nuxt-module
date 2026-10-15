@@ -66,6 +66,7 @@ export default defineNuxtConfig({
   typescript: {
     typeCheck: false,
   },
+  aiReady: { enabled: false },
   cwa: {
     resources: {
       Form: {
@@ -235,6 +236,7 @@ export default defineNuxtConfig({
   sitemap: {
     debug: true,
   },
+  skewProtection: { enabled: false },
   svgo: {
     autoImportPath: './assets/svg/',
   },

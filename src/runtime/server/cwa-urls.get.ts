@@ -1,4 +1,4 @@
-import { defineSitemapEventHandler } from '#sitemap/server/composables/defineSitemapEventHandler'
+import { defineSitemapEventHandler } from '#sitemap/server'
 import { resolveConfigEventHandler } from './useFetcher'
 import { fetchCwaPagePaths } from './cwa-page-paths'
 import type { SitemapUrlInput } from '#sitemap/types'

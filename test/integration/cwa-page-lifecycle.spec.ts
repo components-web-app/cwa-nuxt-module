@@ -1,5 +1,5 @@
 // @vitest-environment nuxt
-import { beforeAll, describe, expect, test } from 'vitest'
+import { beforeAll, describe, expect, test, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { defineComponent, h, nextTick } from 'vue'
 import type { Router } from 'vue-router'
@@ -12,6 +12,12 @@ const Host = defineComponent({
 
 async function settle() {
   await nextTick()
+  const pageLoadProgress = useNuxtApp().$cwa.resources.pageLoadProgress
+  await vi.waitFor(() => {
+    if (pageLoadProgress.value.percent < 100) {
+      throw new Error('the CWA page load holds page:loading:end until it finishes (#396)')
+    }
+  }, { timeout: 4000, interval: 20 })
   await new Promise(resolve => setTimeout(resolve, 150))
 }
 

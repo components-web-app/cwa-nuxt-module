@@ -1,4 +1,3 @@
-import type { H3Event } from 'h3'
 import { $fetch } from 'ofetch'
 import { consola } from 'consola'
 import { useRuntimeConfig } from '#imports'
@@ -26,7 +25,7 @@ export const useFetcher = () => {
   }
 }
 
-export const resolveConfigEventHandler = async (e?: H3Event) => {
+export const resolveConfigEventHandler = async (e?: { context: Record<string, any> }) => {
   if (e?.context.cwaSiteConfig) {
     return e.context.cwaSiteConfig
   }
