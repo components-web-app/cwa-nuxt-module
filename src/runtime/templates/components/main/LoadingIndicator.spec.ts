@@ -2,10 +2,12 @@
 import { describe, expect, test, vi } from 'vitest'
 import { defineComponent } from 'vue'
 import { shallowMount } from '@vue/test-utils'
+import { createHooks } from 'hookable'
 import LoadingIndicator from './LoadingIndicator.vue'
 
 const progress = vi.hoisted(() => ({ state: { resources: [] as string[], percent: 100 } }))
 const currentRoute = vi.hoisted(() => ({ value: { meta: {} as Record<string, any> } }))
+const hooks = createHooks<Record<string, () => any>>()
 
 vi.mock('#cwa/composables/cwa', async () => {
   const { computed, reactive } = await vi.importActual<typeof import('vue')>('vue')
@@ -17,6 +19,10 @@ vi.mock('#cwa/composables/cwa', async () => {
 
 vi.mock('#app/composables/router', () => ({
   useRouter: () => ({ currentRoute }),
+}))
+
+vi.mock('#app/nuxt', () => ({
+  useNuxtApp: () => ({ hook: hooks.hook }),
 }))
 
 const NuxtLoadingIndicator = defineComponent({
@@ -60,6 +66,30 @@ describe('CwaLoadingIndicator', () => {
     progress.state.resources = ['/_/routes/a']
     progress.state.percent = 0
     expect(estimatedProgress(2000, 1000)).toBeCloseTo(nuxtCurve(2000, 1000))
+  })
+
+  test('the bar never goes back during a navigation when the page load finds more resources (#397)', () => {
+    currentRoute.value = { meta: {} }
+    const { estimatedProgress } = mountIndicator()
+    progress.state.resources = ['/_/routes/a', '/_/pages/a', '/_/layouts/a']
+    progress.state.percent = 67
+    expect(estimatedProgress(2000, 100)).toBe(67)
+    progress.state.resources = ['/_/routes/a', '/_/pages/a', '/_/layouts/a', '/page_data/a']
+    progress.state.percent = 50
+    expect(estimatedProgress(2000, 200)).toBe(67)
+    progress.state.percent = 75
+    expect(estimatedProgress(2000, 300)).toBe(75)
+  })
+
+  test('a new navigation starts the bar again from CWA\'s percentage', async () => {
+    currentRoute.value = { meta: {} }
+    const { estimatedProgress } = mountIndicator()
+    progress.state.resources = ['/_/routes/a', '/_/pages/a', '/_/layouts/a']
+    progress.state.percent = 67
+    estimatedProgress(2000, 100)
+    await hooks.callHook('page:loading:start')
+    progress.state.percent = 33
+    expect(estimatedProgress(2000, 100)).toBe(33)
   })
 
   test('forwards its other props to NuxtLoadingIndicator', () => {
