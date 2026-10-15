@@ -4,6 +4,10 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+## [2.0.0-alpha.17] - 2026-10-15
+
+- `<CwaLoadingIndicator>`'s bar no longer goes back when the page load finds more resources, such as a route's page data ([#397](https://github.com/components-web-app/cwa-nuxt-module/issues/397), [994b87a7](https://github.com/components-web-app/cwa-nuxt-module/commit/994b87a7))
+
 ## [2.0.0-alpha.16] - 2026-10-15
 
 - Nuxt's loading bar and the scroll to top now wait until the new CWA page shows, where the page jumped to the top while the old one was still on screen. The new `<CwaLoadingIndicator>` wraps `<NuxtLoadingIndicator>` and shows CWA's page load percentage; put it in `app.vue` in place of `CwaUiProgressBar` ([#396](https://github.com/components-web-app/cwa-nuxt-module/issues/396), [1ed92548](https://github.com/components-web-app/cwa-nuxt-module/commit/1ed92548))
@@ -122,7 +126,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 - First tagged release of `@cwa/nuxt`; releases are now published from `v*` tags ([7c61b7c](https://github.com/components-web-app/cwa-nuxt-module/commit/7c61b7ce331ec4a0cb8e76951a5de2ff806ed07a))
 
-[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.16...HEAD
+[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.17...HEAD
+[2.0.0-alpha.17]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.16...v2.0.0-alpha.17
 [2.0.0-alpha.16]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.15...v2.0.0-alpha.16
 [2.0.0-alpha.15]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.14...v2.0.0-alpha.15
 [2.0.0-alpha.14]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.13...v2.0.0-alpha.14
