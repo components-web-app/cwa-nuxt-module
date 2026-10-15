@@ -4,6 +4,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+- `<CwaLoadingIndicator>`'s bar no longer goes back when the page load finds more resources, such as a route's page data ([#397](https://github.com/components-web-app/cwa-nuxt-module/issues/397), [994b87a7](https://github.com/components-web-app/cwa-nuxt-module/commit/994b87a7))
+
 ## [2.0.0-alpha.16] - 2026-10-15
 
 - Nuxt's loading bar and the scroll to top now wait until the new CWA page shows, where the page jumped to the top while the old one was still on screen. The new `<CwaLoadingIndicator>` wraps `<NuxtLoadingIndicator>` and shows CWA's page load percentage; put it in `app.vue` in place of `CwaUiProgressBar` ([#396](https://github.com/components-web-app/cwa-nuxt-module/issues/396), [1ed92548](https://github.com/components-web-app/cwa-nuxt-module/commit/1ed92548))
