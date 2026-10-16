@@ -1374,6 +1374,16 @@ describe('Resources manager', () => {
       expect(newResourceData).not.toHaveProperty('sortValue')
     })
 
+    test('a position in the order after an insert that the module does not hold yet is fetched with the group', async () => {
+      const { resourcesManager, mockFetcher } = setupInsert(
+        { targetIri: '/component/c1', addAfter: true, closest: { group: groupIri, position: p1 } },
+        { orderResponse: { componentGroup: groupIri, sortValues: { [p1]: 0, '/_/component_positions/n': 1, [p2]: 2 } } },
+      )
+      await resourcesManager.addResourceAction()
+      const reconcile = mockFetcher.fetchBatch.mock.calls.at(-1)![0]
+      expect(reconcile.paths).toEqual([groupIri, '/_/component_positions/n'])
+    })
+
     test('after the POST one GET of the group\'s order stores every position\'s sortValue (case 2)', async () => {
       const { resourcesManager, cwaFetch, stored } = setupInsert(
         { targetIri: '/component/c1', addAfter: true, closest: { group: groupIri, position: p1 } },
@@ -1425,8 +1435,10 @@ describe('Resources manager', () => {
     const c = '/_/component_positions/c'
 
     function setupOrder() {
-      const created = createResourcesManager()
+      const mockFetcher = { fetchBatch: vi.fn().mockResolvedValue(undefined) }
+      const created = createResourcesManager({ fetcher: mockFetcher })
       const stored: Record<string, any> = {
+        [groupIri]: { '@id': groupIri, 'componentPositions': [a, b, c] },
         [a]: { '@id': a, 'sortValue': 0, '_metadata': { sortDisplayNumber: 2 } },
         [b]: { '@id': b, 'sortValue': 10, '_metadata': { sortDisplayNumber: 1 } },
         [c]: { '@id': c, 'sortValue': 20, '_metadata': {} },
@@ -1436,40 +1448,63 @@ describe('Resources manager', () => {
       store.saveResource = vi.fn(({ resource }: any) => {
         stored[resource['@id']] = resource
       })
-      return { ...created, stored }
+      return { ...created, stored, mockFetcher }
     }
 
-    test('PUTs the listed order as JSON-LD and stores the returned sortValues, keeping display numbers (case 11)', async () => {
+    test('PATCHes the listed order as a merge patch and stores the returned sortValues, keeping display numbers (case 11)', async () => {
       const { resourcesManager, cwaFetch, stored } = setupOrder()
       cwaFetch.fetch.mockResolvedValue({ componentGroup: groupIri, sortValues: { [b]: 10, [a]: 11, [c]: 20 } })
       const result = await resourcesManager.orderComponentGroup(groupIri, [b, a, c])
       expect(result).toBe(true)
       expect(cwaFetch.fetch).toHaveBeenCalledWith(`${groupIri}/order`, {
-        method: 'PUT',
-        headers: { 'accept': 'application/ld+json,application/json', 'content-type': 'application/ld+json' },
+        method: 'PATCH',
+        headers: { 'accept': 'application/ld+json,application/json', 'content-type': 'application/merge-patch+json' },
         body: { componentPositions: [b, a, c] },
       })
       expect([stored[a].sortValue, stored[b].sortValue, stored[c].sortValue]).toEqual([11, 10, 20])
       expect(stored[a]._metadata.sortDisplayNumber).toBe(2)
     })
 
-    test('a returned position the module does not hold is not stored', async () => {
-      const { resourcesManager, cwaFetch, stored } = setupOrder()
-      cwaFetch.fetch.mockResolvedValue({ componentGroup: groupIri, sortValues: { [a]: 0, '/_/component_positions/hidden': 5 } })
-      await resourcesManager.orderComponentGroup(groupIri, [a])
-      const store = (resourcesManager as any)._resourcesStore
-      expect(store.saveResource).toHaveBeenCalledTimes(1)
-      expect(Object.keys(stored)).toEqual([a, b, '/_/component_positions/c'])
+    test('a complete response matching the positions the module holds re-fetches nothing', async () => {
+      const { resourcesManager, cwaFetch, mockFetcher } = setupOrder()
+      cwaFetch.fetch.mockResolvedValue({ componentGroup: groupIri, sortValues: { [b]: 10, [a]: 11, [c]: 20 } })
+      await resourcesManager.orderComponentGroup(groupIri, [b, a, c])
+      expect(mockFetcher.fetchBatch).not.toHaveBeenCalled()
     })
 
-    test('a failed order request is reported as an error and returns false', async () => {
+    test('a position another editor added since is fetched with the group, so it shows in the server\'s order', async () => {
+      const added = '/_/component_positions/added'
+      const { resourcesManager, cwaFetch, stored, mockFetcher } = setupOrder()
+      cwaFetch.fetch.mockResolvedValue({ componentGroup: groupIri, sortValues: { [b]: 10, [a]: 11, [added]: 15, [c]: 20 } })
+      await resourcesManager.orderComponentGroup(groupIri, [b, a, c])
+      expect(mockFetcher.fetchBatch).toHaveBeenCalledTimes(1)
+      expect(mockFetcher.fetchBatch.mock.calls[0]![0].paths).toEqual([groupIri, added])
+      expect(stored).not.toHaveProperty(added)
+      expect(stored[a].sortValue).toBe(11)
+    })
+
+    test('a position another editor deleted is dropped by re-fetching the group', async () => {
+      const { resourcesManager, cwaFetch, mockFetcher } = setupOrder()
+      cwaFetch.fetch.mockResolvedValue({ componentGroup: groupIri, sortValues: { [b]: 10, [a]: 11 } })
+      await resourcesManager.orderComponentGroup(groupIri, [b, a, c])
+      expect(mockFetcher.fetchBatch).toHaveBeenCalledTimes(1)
+      expect(mockFetcher.fetchBatch.mock.calls[0]![0].paths).toEqual([groupIri])
+    })
+
+    test('a failed order request is reported, returns false, and re-reads the order in case the server saved it', async () => {
       const { resourcesManager, cwaFetch, errorStoreActions, stored } = setupOrder()
-      const err = new Error('500')
-      cwaFetch.fetch.mockRejectedValue(err)
+      const err = new Error('timeout')
+      cwaFetch.fetch.mockImplementation(async (_path: string, options: any) => {
+        if (options.method === 'PATCH') {
+          throw err
+        }
+        return { componentGroup: groupIri, sortValues: { [b]: 10, [a]: 11, [c]: 20 } }
+      })
       const result = await resourcesManager.orderComponentGroup(groupIri, [b, a, c])
       expect(result).toBe(false)
       expect(errorStoreActions.error).toHaveBeenCalledWith(expect.objectContaining({ endpoint: `${groupIri}/order` }), err)
-      expect(stored[a].sortValue).toBe(0)
+      expect(cwaFetch.fetch).toHaveBeenLastCalledWith(`${groupIri}/order`, expect.objectContaining({ method: 'GET' }))
+      expect([stored[a].sortValue, stored[b].sortValue, stored[c].sortValue]).toEqual([11, 10, 20])
     })
 
     test('an order request counts as a request in progress', async () => {
@@ -1487,7 +1522,7 @@ describe('Resources manager', () => {
 
     test('refreshing the order GETs it and stores the values; a failure stores nothing and does not throw', async () => {
       const { resourcesManager, cwaFetch, stored } = setupOrder()
-      cwaFetch.fetch.mockResolvedValueOnce({ componentGroup: groupIri, sortValues: { [a]: 1, [b]: 2 } })
+      cwaFetch.fetch.mockResolvedValueOnce({ componentGroup: groupIri, sortValues: { [a]: 1, [b]: 2, [c]: 3 } })
       await resourcesManager.refreshComponentGroupOrder(groupIri)
       expect(cwaFetch.fetch).toHaveBeenCalledWith(`${groupIri}/order`, expect.objectContaining({ method: 'GET' }))
       expect([stored[a].sortValue, stored[b].sortValue]).toEqual([1, 2])

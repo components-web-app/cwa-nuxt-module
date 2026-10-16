@@ -49,7 +49,7 @@ interface ComponentGroupOrder {
 
 interface RequestOptions {
   headers: RequestHeaders
-  method: 'POST' | 'PATCH' | 'PUT' | 'DELETE' | 'GET'
+  method: 'POST' | 'PATCH' | 'DELETE' | 'GET'
   body?: any
 }
 
@@ -375,7 +375,7 @@ export class ResourcesManager {
     return this.resourcesStore.saveResource(event)
   }
 
-  private requestOptions(method: 'POST' | 'PATCH' | 'PUT' | 'DELETE' | 'GET'): RequestOptions {
+  private requestOptions(method: 'POST' | 'PATCH' | 'DELETE' | 'GET'): RequestOptions {
     const headers: {
       'accept': string
       'path'?: string
@@ -624,16 +624,17 @@ export class ResourcesManager {
     const endpoint = `${groupIri}/order`
     const event = { endpoint, source: 'component-group-order' }
     const id = ++this.reqCount.value
-    const args: [string, RequestOptions] = [endpoint, { ...this.requestOptions('PUT'), body: { componentPositions: positionIris } }]
+    const args: [string, RequestOptions] = [endpoint, { ...this.requestOptions('PATCH'), body: { componentPositions: positionIris } }]
     set(this.requestsInProgress, [event.source, id], { event, args })
     this.errorStore.removeByEndpoint(endpoint)
     try {
       const response = await this.cwaFetch.fetch<ComponentGroupOrder>(...args)
-      this.storeSortValues(response)
+      await this.reconcileOrder(groupIri, response)
       return true
     }
     catch (err) {
       this.errorStore.error(event, err as FetchError<any>)
+      await this.refreshComponentGroupOrder(groupIri)
       return false
     }
     finally {
@@ -643,15 +644,26 @@ export class ResourcesManager {
 
   public async refreshComponentGroupOrder(groupIri: string): Promise<void> {
     const response = await this.cwaFetch.fetch<ComponentGroupOrder>(`${groupIri}/order`, this.requestOptions('GET')).catch(() => undefined)
-    this.storeSortValues(response)
+    await this.reconcileOrder(groupIri, response)
   }
 
-  private storeSortValues(order: ComponentGroupOrder | undefined) {
-    for (const [positionIri, sortValue] of Object.entries(order?.sortValues ?? {})) {
+  private async reconcileOrder(groupIri: string, order: ComponentGroupOrder | undefined) {
+    if (!order?.sortValues) {
+      return
+    }
+    const returned = Object.keys(order.sortValues)
+    for (const [positionIri, sortValue] of Object.entries(order.sortValues)) {
       const position = this.resourcesStore.getResource(positionIri)?.data
       if (position) {
         this.storeResource({ resource: { ...position, sortValue } })
       }
+    }
+    const held: string[] = (this.resourcesStore.getResource(groupIri)?.data?.componentPositions ?? [])
+      .filter((iri: string) => !iri.endsWith(NEW_RESOURCE_IRI))
+    const added = returned.filter(iri => !held.includes(iri))
+    const removed = held.filter(iri => !returned.includes(iri))
+    if (added.length || removed.length) {
+      await this.refreshEndpoints([groupIri, ...added]).catch(() => undefined)
     }
   }
 
