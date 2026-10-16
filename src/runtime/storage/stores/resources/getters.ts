@@ -19,6 +19,7 @@ import {
 import type { CwaCurrentResourceInterface, CwaResourcesStateInterface } from './state'
 import { ResourcesGetterUtils } from './getter-utils'
 import type { AddResourceEvent } from '#cwa/admin/resource-stack-manager'
+import { compareSortValues } from '#cwa/resources/component-position-order'
 
 export interface ResourcesLoadStatusInterface {
   pending: number
@@ -103,11 +104,7 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
       }
 
       const orderedWithoutTemp = resourcesThatExist
-        .sort((a: CwaResource, b: CwaResource) => {
-          const sortA = getSortNumber(a)
-          const sortB = getSortNumber(b)
-          return sortA === sortB ? 0 : (sortA > sortB ? 1 : -1)
-        })
+        .sort((a: CwaResource, b: CwaResource) => compareSortValues(getSortNumber(a), a['@id'], getSortNumber(b), b['@id']))
         .map((resource: CwaResource) => {
           return resource['@id']
         })

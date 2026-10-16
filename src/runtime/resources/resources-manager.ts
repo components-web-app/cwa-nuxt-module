@@ -42,9 +42,14 @@ export type ApiResourceEvent = DataApiResourceEvent | DeleteApiResourceEvent
 
 type RequestHeaders = Record<string, string>
 
+interface ComponentGroupOrder {
+  componentGroup: string
+  sortValues: Record<string, number>
+}
+
 interface RequestOptions {
   headers: RequestHeaders
-  method: 'POST' | 'PATCH' | 'DELETE'
+  method: 'POST' | 'PATCH' | 'PUT' | 'DELETE' | 'GET'
   body?: any
 }
 
@@ -52,6 +57,7 @@ export class ResourcesManager {
   private readonly cwaFetch: CwaFetch
   private readonly fetchStatusManager: FetchStatusManager
   private readonly pendingUpdates = new Map<string, Set<() => unknown>>()
+  private readonly groupWrites = new Map<string, Promise<void>>()
   private requestsInProgress = reactive<{ [source: string]: { [id: string]: { event: ApiResourceEvent, args: [string, RequestOptions] } } }>({})
   private readonly reqCount = ref(0)
   private readonly _addResourceEvent: Ref<undefined | AddResourceEvent> = ref()
@@ -369,7 +375,7 @@ export class ResourcesManager {
     return this.resourcesStore.saveResource(event)
   }
 
-  private requestOptions(method: 'POST' | 'PATCH' | 'DELETE'): RequestOptions {
+  private requestOptions(method: 'POST' | 'PATCH' | 'PUT' | 'DELETE' | 'GET'): RequestOptions {
     const headers: {
       'accept': string
       'path'?: string
@@ -380,7 +386,9 @@ export class ResourcesManager {
     if (this.fetchStatusManager.primaryFetchPath) {
       headers.path = this.fetchStatusManager.primaryFetchPath
     }
-    headers['content-type'] = method === 'PATCH' ? 'application/merge-patch+json' : 'application/ld+json'
+    if (method !== 'GET') {
+      headers['content-type'] = method === 'PATCH' ? 'application/merge-patch+json' : 'application/ld+json'
+    }
     return {
       method,
       headers,
@@ -506,109 +514,36 @@ export class ResourcesManager {
     }
 
     const refreshEndpoints: string[] = []
-
-    const shiftGroupIri = getResourceTypeFromIri(addEvent.targetIri) === CwaResourceTypes.COMPONENT_GROUP
+    const groupIri = getResourceTypeFromIri(addEvent.targetIri) === CwaResourceTypes.COMPONENT_GROUP
       ? addEvent.targetIri
       : addEvent.closest.group
 
-    let capturedSortValue: number | undefined
-
     if (addEvent.addAfter !== null) {
-      (() => {
-        addEvent.closest.group && refreshEndpoints.push(addEvent.closest.group)
+      addEvent.closest.group && refreshEndpoints.push(addEvent.closest.group)
+      const anchor = this.findInsertAnchor(addEvent)
 
-        const getPositionSortValue = () => {
-          let existingSortValue: number | undefined
-
-          if (getResourceTypeFromIri(addEvent.targetIri) === CwaResourceTypes.COMPONENT_GROUP) {
-            // we are adding to start or end of group
-            const groupIri = addEvent.targetIri
-            const groupResource = this.resourcesStore.getResource(groupIri)?.data
-            if (!groupResource?.componentPositions || groupResource?.componentPositions.length === 0) {
-              return 0
-            }
-
-            const positionsWithoutNew = groupResource.componentPositions.filter((iri: string) => !iri.endsWith(NEW_RESOURCE_IRI))
-            if (positionsWithoutNew.length === 0) {
-              // new is the only resource in the group
-              return 0
-            }
-
-            const targetPosition: string | undefined = addEvent.addAfter ? positionsWithoutNew[positionsWithoutNew.length - 1] : positionsWithoutNew[0]
-            if (!targetPosition) {
-              return 0
-            }
-
-            existingSortValue = this.resourcesStore.getResource(targetPosition)?.data?.sortValue
-          }
-          else {
-            // adding before or after a resource
-            if (!addEvent.closest.position) {
-              return 0
-            }
-            const positionResource = this.resourcesStore.getResource(addEvent.closest.position)?.data
-            if (!positionResource) {
-              return 0
-            }
-            existingSortValue = positionResource.sortValue
-          }
-
-          return existingSortValue !== undefined ? (addEvent.addAfter ? existingSortValue + 1 : existingSortValue) : 0
-        }
-
-        const newSortValue = getPositionSortValue()
-        capturedSortValue = newSortValue
-
-        const positionIri = this.resourcesStore.adding.position
-        if (!positionIri) {
-          resource.sortValue = newSortValue
-          refreshEndpoints.push(...this.getRefreshPositions(this.resourcesStore.adding.resource))
-          return
-        }
-
+      const positionIri = this.resourcesStore.adding.position
+      if (!positionIri) {
+        Object.assign(resource, anchor)
+      }
+      else {
         const positionData = this.resourcesStore.getResource(positionIri)?.data
         if (!positionData) {
           throw new Error('Position resource being added not found')
         }
 
+        const { sortValue: _sortValue, ...positionWithoutSortValue } = positionData
         const positionPostData: Omit<CwaResource, '@id' | '@type'> = {
-          ...this.resourcesStore.getResource(positionIri)?.data,
+          ...positionWithoutSortValue,
           '@id': undefined,
           '@type': undefined,
           'component': undefined,
-          'sortValue': newSortValue,
+          ...anchor,
         }
 
         resource.componentPositions = [
           positionPostData,
         ]
-
-        refreshEndpoints.push(...this.getRefreshPositions(positionIri))
-      })()
-
-      if (shiftGroupIri && capturedSortValue !== undefined) {
-        const groupData = this.resourcesStore.getResource(shiftGroupIri)?.data
-        if (groupData?.componentPositions) {
-          const threshold = capturedSortValue
-          const positionsToShift = (groupData.componentPositions as string[])
-            .filter(iri => !iri.endsWith(NEW_RESOURCE_IRI))
-            .reduce<Array<{ id: string, sortValue: number }>>((acc, iri) => {
-              const pos = this.resourcesStore.getResource(iri)?.data
-              if (pos && pos['@id'] && typeof pos.sortValue === 'number' && pos.sortValue >= threshold) {
-                acc.push({ id: pos['@id'], sortValue: pos.sortValue })
-              }
-              return acc
-            }, [])
-            .sort((a, b) => b.sortValue - a.sortValue)
-
-          for (const pos of positionsToShift) {
-            await this.updateResource({
-              endpoint: pos.id,
-              data: { sortValue: pos.sortValue + 1 },
-              refreshEndpoints: [],
-            })
-          }
-        }
       }
     }
     else if (!addEvent.pageDataProperty) {
@@ -635,7 +570,16 @@ export class ResourcesManager {
       requestCompleteFn,
     }
 
-    const newResource = await this.createResource(createResourceEvent)
+    const newResource = groupIri && addEvent.addAfter !== null
+      ? await this.queueComponentGroupWrite(groupIri, async () => {
+          const created = await this.createResource(createResourceEvent)
+          if (!created) {
+            await this.refreshEndpoints([groupIri])
+          }
+          await this.refreshComponentGroupOrder(groupIri)
+          return created
+        })
+      : await this.createResource(createResourceEvent)
 
     const pageDataIri = addEvent.pageDataProperty ? this.resources.pageDataIriOf(addEvent.targetIri).value : undefined
     if (newResource && addEvent.pageDataProperty && pageDataIri) {
@@ -650,39 +594,65 @@ export class ResourcesManager {
     return newResource
   }
 
-  private getRefreshPositions(positionIri?: string): string[] {
-    const refreshPositions: string[] = []
-    if (!positionIri) {
-      return refreshPositions
+  private findInsertAnchor(addEvent: AddResourceEvent): { after?: string, before?: string } {
+    if (getResourceTypeFromIri(addEvent.targetIri) === CwaResourceTypes.COMPONENT_GROUP) {
+      if (addEvent.addAfter) {
+        return {}
+      }
+      const firstPosition = this.resourcesStore.getOrderedPositionsForGroup(addEvent.targetIri, false)?.[0]
+      return firstPosition ? { before: firstPosition } : {}
     }
-    const groupPositions = this.groupResourcePositions
-    if (groupPositions) {
-      const currentPositions: string[] | undefined = groupPositions
-      if (currentPositions) {
-        const index = currentPositions.indexOf(positionIri)
-        if (index !== -1) {
-          const positionsAfterInsert = groupPositions.slice(index)
-          if (positionsAfterInsert && positionsAfterInsert.length) {
-            refreshPositions.push(...positionsAfterInsert.filter((iri: string) => !iri.endsWith(NEW_RESOURCE_IRI)))
-          }
-        }
+    if (!addEvent.closest.position) {
+      return {}
+    }
+    return addEvent.addAfter ? { after: addEvent.closest.position } : { before: addEvent.closest.position }
+  }
+
+  public queueComponentGroupWrite<T>(groupIri: string, write: () => Promise<T>): Promise<T> {
+    const next = (this.groupWrites.get(groupIri) ?? Promise.resolve()).then(write)
+    const settled = next.then(() => undefined, () => undefined)
+    this.groupWrites.set(groupIri, settled)
+    settled.then(() => {
+      if (this.groupWrites.get(groupIri) === settled) {
+        this.groupWrites.delete(groupIri)
+      }
+    })
+    return next
+  }
+
+  public async orderComponentGroup(groupIri: string, positionIris: string[]): Promise<boolean> {
+    const endpoint = `${groupIri}/order`
+    const event = { endpoint, source: 'component-group-order' }
+    const id = ++this.reqCount.value
+    const args: [string, RequestOptions] = [endpoint, { ...this.requestOptions('PUT'), body: { componentPositions: positionIris } }]
+    set(this.requestsInProgress, [event.source, id], { event, args })
+    this.errorStore.removeByEndpoint(endpoint)
+    try {
+      const response = await this.cwaFetch.fetch<ComponentGroupOrder>(...args)
+      this.storeSortValues(response)
+      return true
+    }
+    catch (err) {
+      this.errorStore.error(event, err as FetchError<any>)
+      return false
+    }
+    finally {
+      unset(this.requestsInProgress, [event.source, id])
+    }
+  }
+
+  public async refreshComponentGroupOrder(groupIri: string): Promise<void> {
+    const response = await this.cwaFetch.fetch<ComponentGroupOrder>(`${groupIri}/order`, this.requestOptions('GET')).catch(() => undefined)
+    this.storeSortValues(response)
+  }
+
+  private storeSortValues(order: ComponentGroupOrder | undefined) {
+    for (const [positionIri, sortValue] of Object.entries(order?.sortValues ?? {})) {
+      const position = this.resourcesStore.getResource(positionIri)?.data
+      if (position) {
+        this.storeResource({ resource: { ...position, sortValue } })
       }
     }
-    return refreshPositions
-  }
-
-  private get groupResource() {
-    if (!this._addResourceEvent.value || !this._addResourceEvent.value.closest.group) {
-      return
-    }
-    return this.resourcesStore.getResource(this._addResourceEvent.value.closest.group)
-  }
-
-  private get groupResourcePositions() {
-    if (!this.groupResource) {
-      return
-    }
-    return this.groupResource.data?.componentPositions
   }
 
   private get resourcesStore(): CwaResourcesStoreInterface {
