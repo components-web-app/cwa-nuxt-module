@@ -1,6 +1,6 @@
-import debounce from 'lodash-es/debounce'
 import { CwaResourceTypes } from '#cwa/resources/resource-utils'
 import type { CwaResource } from '#cwa/resources/resource-utils'
+import { compareSortValues } from '#cwa/resources/component-position-order'
 import { NEW_RESOURCE_IRI } from '#cwa/storage/stores/resources/state'
 import type { Resources } from '#cwa/resources/resources'
 import type { ResourcesManager } from '#cwa/resources/resources-manager'
@@ -16,31 +16,6 @@ const moveElement = (array: string[], fromIndex: number, toIndex: number) => {
     const [item] = array.splice(fromIndex, 1)
     if (item) array.splice(endIndex, 0, item)
   }
-}
-
-const unmovedSubsequence = (baseIndexes: number[], preferMove: boolean[]): Set<number> => {
-  const weight = (index: number) => baseIndexes.length + 1 + (preferMove[index] ? 0 : 1)
-  const scores: number[] = []
-  const previous: number[] = []
-  let best = -1
-  for (let i = 0; i < baseIndexes.length; i++) {
-    scores[i] = weight(i)
-    previous[i] = -1
-    for (let j = 0; j < i; j++) {
-      if (baseIndexes[j]! < baseIndexes[i]! && scores[j]! + weight(i) > scores[i]!) {
-        scores[i] = scores[j]! + weight(i)
-        previous[i] = j
-      }
-    }
-    if (best === -1 || scores[i]! > scores[best]!) {
-      best = i
-    }
-  }
-  const kept = new Set<number>()
-  for (let i = best; i !== -1; i = previous[i]!) {
-    kept.add(i)
-  }
-  return kept
 }
 
 const resolveNewIndex = (location: ReorderEvent['location'], currentIndex: number): number | undefined => {
@@ -61,12 +36,9 @@ type PendingPosition = { positionIri: string, resource: CwaResource, path?: stri
 
 class GroupReorder {
   public mounts = 0
-  private reorderGeneration = 0
-  private movedIris = new Set<string>()
+  private syncing = false
+  private changedWhileSyncing = false
   private syncQueue: Promise<void> = Promise.resolve()
-  private readonly scheduleSync = debounce(() => {
-    this.syncQueue = this.syncQueue.then(() => this.syncGroupOrder()).catch(() => this.clearDisplayNumbers())
-  }, 1000)
 
   public constructor(
     private readonly iri: string,
@@ -78,7 +50,6 @@ class GroupReorder {
   }
 
   public flush(): Promise<void> {
-    this.scheduleSync.flush()
     return this.syncQueue
   }
 
@@ -116,9 +87,18 @@ class GroupReorder {
 
     this.admin.emitRedraw()
 
-    this.reorderGeneration++
-    this.movedIris.add(event.positionIri)
-    this.scheduleSync()
+    this.requestSync()
+  }
+
+  private requestSync() {
+    if (this.syncing) {
+      this.changedWhileSyncing = true
+      return
+    }
+    this.syncing = true
+    this.syncQueue = this.syncGroupOrder().finally(() => {
+      this.syncing = false
+    })
   }
 
   private isReordering() {
@@ -144,8 +124,8 @@ class GroupReorder {
     })
   }
 
-  private sortValueOrder(positionIris: string[]): string[] {
-    return [...positionIris].sort((a, b) => this.sortValueOf(a) - this.sortValueOf(b))
+  private serverOrder(positionIris: string[]): string[] {
+    return [...positionIris].sort((a, b) => compareSortValues(this.sortValueOf(a), a, this.sortValueOf(b), b))
   }
 
   private storeSortValue(positionIri: string, sortValue: number) {
@@ -200,100 +180,19 @@ class GroupReorder {
     }
   }
 
-  private mirrorServerMove(movedIri: string, originalSortValue: number, moveTo: number) {
-    if (moveTo === originalSortValue) {
-      return
-    }
-    for (const positionIri of this.persistedPositions()) {
-      if (positionIri === movedIri) {
-        continue
-      }
-      const sortValue = this.sortValueOf(positionIri)
-      if (moveTo > originalSortValue && sortValue > originalSortValue && sortValue <= moveTo) {
-        this.storeSortValue(positionIri, sortValue - 1)
-      }
-      else if (moveTo < originalSortValue && sortValue < originalSortValue && sortValue >= moveTo) {
-        this.storeSortValue(positionIri, sortValue + 1)
-      }
-    }
-  }
-
-  private async sendMove(positionIri: string, moveTo: number): Promise<boolean> {
-    const originalSortValue = this.sortValueOf(positionIri)
-    const response = await this.resourcesManager.updateResource({
-      endpoint: positionIri,
-      data: {
-        sortValue: moveTo,
-      },
-    })
-    if (!response) {
-      return false
-    }
-    this.storeSortValue(positionIri, moveTo)
-    this.mirrorServerMove(positionIri, originalSortValue, moveTo)
-    return true
-  }
-
-  private async repairDuplicateSortValues(positionIris: string[]): Promise<boolean> {
-    const repairs: Array<[string, number]> = []
-    let previousSortValue: number | undefined
-    for (const positionIri of this.sortValueOrder(positionIris)) {
-      const sortValue = this.sortValueOf(positionIri)
-      const repairedSortValue = previousSortValue === undefined || sortValue > previousSortValue ? sortValue : previousSortValue + 1
-      if (repairedSortValue !== sortValue) {
-        repairs.push([positionIri, repairedSortValue])
-      }
-      previousSortValue = repairedSortValue
-    }
-    for (const [positionIri, repairedSortValue] of repairs.reverse()) {
-      if (!await this.sendMove(positionIri, repairedSortValue)) {
-        return false
-      }
-    }
-    return true
-  }
-
-  private async sendMoves(desiredOrder: string[], moved: Set<string>): Promise<boolean> {
-    let workingOrder = this.sortValueOrder(desiredOrder)
-    const kept = unmovedSubsequence(
-      desiredOrder.map(positionIri => workingOrder.indexOf(positionIri)),
-      desiredOrder.map(positionIri => moved.has(positionIri)),
-    )
-    for (const [index, positionIri] of desiredOrder.entries()) {
-      if (kept.has(index)) {
-        continue
-      }
-      const withoutPosition = workingOrder.filter(workingIri => workingIri !== positionIri)
-      const targetIndex = index === 0 ? 0 : withoutPosition.indexOf(desiredOrder[index - 1]!) + 1
-      const displacedIri = workingOrder[targetIndex]
-      if (!displacedIri || displacedIri === positionIri) {
-        continue
-      }
-      if (!await this.sendMove(positionIri, this.sortValueOf(displacedIri))) {
-        return false
-      }
-      withoutPosition.splice(targetIndex, 0, positionIri)
-      workingOrder = withoutPosition
-    }
-    return true
-  }
-
   private async syncGroupOrder() {
-    const startGeneration = this.reorderGeneration
-    const moved = this.movedIris
-    this.movedIris = new Set()
-    const desiredOrder = this.persistedPositions()
-    this.applyPendingSortValues(this.collectPendingPositions(desiredOrder))
-    const synced = await this.repairDuplicateSortValues(desiredOrder) && await this.sendMoves(desiredOrder, moved)
-    if (!synced) {
-      this.scheduleSync.cancel()
-      this.movedIris = new Set()
-      this.clearDisplayNumbers()
-      return
-    }
-    if (startGeneration === this.reorderGeneration) {
-      this.clearDisplayNumbers()
-    }
+    do {
+      this.changedWhileSyncing = false
+      await this.resourcesManager.queueComponentGroupWrite(this.iri, async () => {
+        const desiredOrder = this.persistedPositions()
+        this.applyPendingSortValues(this.collectPendingPositions(desiredOrder))
+        if (desiredOrder.join() === this.serverOrder(desiredOrder).join()) {
+          return
+        }
+        await this.resourcesManager.orderComponentGroup(this.iri, desiredOrder)
+      })
+    } while (this.changedWhileSyncing)
+    this.clearDisplayNumbers()
   }
 }
 

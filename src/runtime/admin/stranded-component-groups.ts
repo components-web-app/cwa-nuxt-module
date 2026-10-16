@@ -206,34 +206,25 @@ export function useStrandedComponentGroups() {
   }
 }
 
-function endSortValue($cwa: Cwa, groupIri: string): number {
-  const sortValues = orderedPositionIris($cwa, groupIri)
-    .map(iri => $cwa.resources.getResource(iri).value?.data?.sortValue)
-    .filter((sortValue): sortValue is number => typeof sortValue === 'number')
-  if (!sortValues.length) {
-    return 0
-  }
-  return Math.max(Math.max(...sortValues), Math.min(...sortValues) + sortValues.length - 1) + 1
-}
-
 export async function mergeComponentGroup($cwa: Cwa, sourceIri: string, targetIri: string): Promise<{ failed: string[], sourceDeleted: boolean }> {
   if (sourceIri === targetIri) {
     return { failed: [], sourceDeleted: false }
   }
   const failed: string[] = []
-  let sortValue = endSortValue($cwa, targetIri)
+  let after = orderedPositionIris($cwa, targetIri).at(-1)
   for (const positionIri of orderedPositionIris($cwa, sourceIri)) {
     const moved = await $cwa.resourcesManager.updateResource({
       endpoint: positionIri,
-      data: { componentGroup: targetIri, sortValue },
+      data: after ? { componentGroup: targetIri, after } : { componentGroup: targetIri },
       refreshEndpoints: [targetIri, sourceIri],
     })
     if (!moved) {
       failed.push(positionIri)
       continue
     }
-    sortValue++
+    after = positionIri
   }
+  await $cwa.resourcesManager.refreshComponentGroupOrder(targetIri)
   if (failed.length) {
     return { failed, sourceDeleted: false }
   }

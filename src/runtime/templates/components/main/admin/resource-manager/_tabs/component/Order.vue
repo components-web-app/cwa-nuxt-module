@@ -59,7 +59,7 @@ function moveDown() {
       />
       <div
         class="cwa:flex cwa:gap-x-4"
-        :class="{ 'cwa:pointer-events-none cwa:opacity-30': !reordering || $cwa.resourcesManager.requestCount.value }"
+        :class="{ 'cwa:pointer-events-none cwa:opacity-30': !reordering }"
       >
         <div class="cwa:max-w-[100px]">
           <CwaUiFormInput
