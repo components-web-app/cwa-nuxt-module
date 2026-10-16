@@ -85,7 +85,7 @@ function createGroupSynchronizer() {
   }
 }
 
-function createSyncWatcher(groupSynchronizer: ComponentGroupUtilSynchronizer, ops?: { resource: any, allowedComponents?: null | string[], location?: string, fullReference?: string }) {
+function createSyncWatcher(groupSynchronizer: ComponentGroupUtilSynchronizer, ops?: { resource: any, allowedComponents?: null | string[], maxComponents?: null | number, location?: string, fullReference?: string }) {
   const mockResource = computed(() => {
     return (ops?.resource !== undefined ? ops.resource : { data: {} })
   })
@@ -97,6 +97,7 @@ function createSyncWatcher(groupSynchronizer: ComponentGroupUtilSynchronizer, op
     location: mockLocation,
     fullReference: mockReference,
     allowedComponents: ops && 'allowedComponents' in ops ? ops.allowedComponents : ['/component/a', '/component/b', '/component/c'],
+    maxComponents: ops?.maxComponents,
   }
   groupSynchronizer.createSyncWatcher(syncWatcherOps)
   return syncWatcherOps
@@ -836,6 +837,141 @@ describe('Group synchronizer', () => {
       expect(resourcesManager.removeError).not.toHaveBeenCalled()
       expect(fetchResource).toHaveBeenCalledTimes(1)
       expect(resourcesManager.updateResource).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('maxComponents (#398)', () => {
+    function loadedGroup(data: Record<string, any> = {}) {
+      return {
+        data: {
+          '@id': '/test',
+          'allowedComponents': ['/component/a', '/component/b', '/component/c'],
+          ...data,
+        },
+        apiState: { status: CwaResourceApiStatuses.SUCCESS },
+      }
+    }
+
+    test('creates the group with maxComponents when the prop is set', async () => {
+      const { auth, groupSynchronizer, resourcesManager } = createGroupSynchronizer()
+      const syncWatcherOps = createSyncWatcher(groupSynchronizer, { resource: null, maxComponents: 1 })
+
+      auth.signedIn.value = true
+      await flushPromises()
+
+      expect(resourcesManager.createResource).toHaveBeenCalledWith({
+        endpoint: '/_/component_groups',
+        data: {
+          reference: syncWatcherOps.fullReference.value,
+          location: syncWatcherOps.location,
+          allowedComponents: syncWatcherOps.allowedComponents,
+          maxComponents: 1,
+          components: [syncWatcherOps.location],
+        },
+      })
+    })
+
+    test('PATCHes maxComponents when the group\'s value differs', async () => {
+      const { auth, groupSynchronizer, resourcesManager } = createGroupSynchronizer()
+      createSyncWatcher(groupSynchronizer, { resource: loadedGroup({ maxComponents: 3 }), maxComponents: 1 })
+
+      auth.signedIn.value = true
+      await flushPromises()
+
+      expect(resourcesManager.updateResource).toHaveBeenCalledTimes(1)
+      expect(resourcesManager.updateResource).toHaveBeenCalledWith({
+        endpoint: '/test',
+        data: { maxComponents: 1 },
+      })
+    })
+
+    test('PATCHes a stored maxComponents to null when the prop is null', async () => {
+      const { auth, groupSynchronizer, resourcesManager } = createGroupSynchronizer()
+      createSyncWatcher(groupSynchronizer, { resource: loadedGroup({ maxComponents: 3 }), maxComponents: null })
+
+      auth.signedIn.value = true
+      await flushPromises()
+
+      expect(resourcesManager.updateResource).toHaveBeenCalledWith({
+        endpoint: '/test',
+        data: { maxComponents: null },
+      })
+    })
+
+    test.each([
+      ['a matching value', { maxComponents: 2 }, 2],
+      ['a missing key for a null prop', {}, null],
+    ])('does not PATCH for %s', async (_label, stored, prop) => {
+      const { auth, groupSynchronizer, resourcesManager } = createGroupSynchronizer()
+      createSyncWatcher(groupSynchronizer, { resource: loadedGroup(stored), maxComponents: prop })
+
+      auth.signedIn.value = true
+      await flushPromises()
+
+      expect(resourcesManager.updateResource).not.toHaveBeenCalled()
+    })
+
+    test('leaves maxComponents alone when the prop is omitted', async () => {
+      const { auth, groupSynchronizer, resourcesManager } = createGroupSynchronizer()
+      createSyncWatcher(groupSynchronizer, { resource: loadedGroup({ maxComponents: 3 }) })
+
+      auth.signedIn.value = true
+      await flushPromises()
+
+      expect(resourcesManager.updateResource).not.toHaveBeenCalled()
+    })
+
+    test('sends one PATCH when allowedComponents and maxComponents both differ', async () => {
+      const { auth, groupSynchronizer, resourcesManager } = createGroupSynchronizer()
+      createSyncWatcher(groupSynchronizer, {
+        resource: loadedGroup({ allowedComponents: ['/component/a'] }),
+        allowedComponents: ['/component/b'],
+        maxComponents: 1,
+      })
+
+      auth.signedIn.value = true
+      await flushPromises()
+
+      expect(resourcesManager.updateResource).toHaveBeenCalledTimes(1)
+      expect(resourcesManager.updateResource).toHaveBeenCalledWith({
+        endpoint: '/test',
+        data: { allowedComponents: ['/component/b'], maxComponents: 1 },
+      })
+    })
+
+    test.each([0, -1, 1.5])('warns and does not sync a maxComponents of %s, still syncing allowedComponents', async (invalid) => {
+      const warn = vi.spyOn(consola, 'warn').mockImplementation(() => {})
+      const { auth, groupSynchronizer, resourcesManager } = createGroupSynchronizer()
+      createSyncWatcher(groupSynchronizer, {
+        resource: loadedGroup({ allowedComponents: ['/component/a'], maxComponents: 3 }),
+        allowedComponents: ['/component/b'],
+        maxComponents: invalid,
+      })
+
+      auth.signedIn.value = true
+      await flushPromises()
+
+      expect(resourcesManager.updateResource).toHaveBeenCalledTimes(1)
+      expect(resourcesManager.updateResource).toHaveBeenCalledWith({
+        endpoint: '/test',
+        data: { allowedComponents: ['/component/b'] },
+      })
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining(`maxComponents was not synced: ${invalid}`))
+      warn.mockRestore()
+    })
+
+    test('creates the group without an invalid maxComponents', async () => {
+      const warn = vi.spyOn(consola, 'warn').mockImplementation(() => {})
+      const { auth, groupSynchronizer, resourcesManager } = createGroupSynchronizer()
+      createSyncWatcher(groupSynchronizer, { resource: null, maxComponents: 0 })
+
+      auth.signedIn.value = true
+      await flushPromises()
+
+      expect(resourcesManager.createResource).toHaveBeenCalledTimes(1)
+      expect(resourcesManager.createResource.mock.calls[0]![0].data).not.toHaveProperty('maxComponents')
+      expect(warn).toHaveBeenCalled()
+      warn.mockRestore()
     })
   })
 

@@ -57,6 +57,7 @@ function createWrapper(ops: {
   reference?: string
   location?: string
   allowedComponents?: string[] | null
+  maxComponents?: number | null
   signedIn?: boolean
   isEditing?: boolean
 } = {}) {
@@ -104,6 +105,7 @@ function createWrapper(ops: {
       reference,
       location,
       allowedComponents,
+      ...('maxComponents' in ops ? { maxComponents: ops.maxComponents } : {}),
     },
     shallow: true,
   })
@@ -400,6 +402,25 @@ describe('ComponentGroup', () => {
 
       expect(createSyncWatcher).toHaveBeenCalledTimes(1)
       expect(createSyncWatcher.mock.calls[0][0].allowedComponents).toBeNull()
+    })
+
+    test.each([
+      [1, 1],
+      [null, null],
+    ])('passes maxComponents %s to the synchronizer (#398)', (prop, expected) => {
+      const createSyncWatcher = mockSynchronizer()
+
+      createWrapper({ maxComponents: prop })
+
+      expect(createSyncWatcher.mock.calls[0][0]).toHaveProperty('maxComponents', expected)
+    })
+
+    test('passes maxComponents undefined WHEN the prop is omitted (#398)', () => {
+      const createSyncWatcher = mockSynchronizer()
+
+      createWrapper()
+
+      expect(createSyncWatcher.mock.calls[0][0]).toHaveProperty('maxComponents', undefined)
     })
   })
 

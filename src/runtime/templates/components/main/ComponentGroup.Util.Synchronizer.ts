@@ -29,6 +29,7 @@ interface SyncWatcherOps {
   location: string
   fullReference: ComputedRef<string>
   allowedComponents: string[] | null | undefined
+  maxComponents?: number | null
 }
 
 const UNRESOLVED = Symbol('unresolved')
@@ -49,7 +50,7 @@ export class ComponentGroupUtilSynchronizer {
   }
 
   private async createComponentGroupWatchHandler(
-    { allowedComponents, location, fullReference }: SyncWatcherOps,
+    { allowedComponents, maxComponents, location, fullReference }: SyncWatcherOps,
     [signedIn, componentGroupResource]: [boolean, CwaCurrentResourceInterface | undefined],
   ) {
     // not signed in? we shouldn't have permissions anyway to do anything in creating new component groups
@@ -59,7 +60,7 @@ export class ComponentGroupUtilSynchronizer {
     // if the component groups exists, we can check if the allowed components are in sync
     if (componentGroupResource) {
       if (componentGroupResource.apiState.status === CwaResourceApiStatuses.SUCCESS) {
-        await this.updateAllowedComponents(allowedComponents, componentGroupResource)
+        await this.updateComponentGroup(allowedComponents, maxComponents, componentGroupResource)
       }
       return
     }
@@ -91,7 +92,7 @@ export class ComponentGroupUtilSynchronizer {
       return
     }
 
-    const created = await this.createComponentGroup(location, locationProperty, fullReference, allowedComponents)
+    const created = await this.createComponentGroup(location, locationProperty, fullReference, allowedComponents, maxComponents)
     if (created !== undefined) {
       return
     }
@@ -162,11 +163,12 @@ export class ComponentGroupUtilSynchronizer {
     return resourceTypeProperty[locationResourceType as keyof typeof resourceTypeProperty]
   }
 
-  private async createComponentGroup(iri: string, locationProperty: LocationProperty, fullReference: ComputedRef<string | undefined>, allowedComponents: string[] | null | undefined) {
+  private async createComponentGroup(iri: string, locationProperty: LocationProperty, fullReference: ComputedRef<string | undefined>, allowedComponents: string[] | null | undefined, maxComponents: number | null | undefined) {
     const resolvedAllowedComponents = await this.resolveAllowedComponents(allowedComponents)
     if (resolvedAllowedComponents === UNRESOLVED) {
       return
     }
+    const resolvedMaxComponents = this.resolveMaxComponents(maxComponents)
 
     return this.resourcesManager.createResource({
       endpoint: COMPONENT_GROUPS_ENDPOINT,
@@ -174,9 +176,19 @@ export class ComponentGroupUtilSynchronizer {
         reference: fullReference.value,
         location: iri,
         allowedComponents: resolvedAllowedComponents,
+        ...(resolvedMaxComponents === UNRESOLVED || resolvedMaxComponents === undefined ? {} : { maxComponents: resolvedMaxComponents }),
         [locationProperty]: [iri],
       },
     })
+  }
+
+  private resolveMaxComponents(maxComponents: number | null | undefined): number | null | undefined | typeof UNRESOLVED {
+    if (maxComponents === undefined || maxComponents === null) return maxComponents
+    if (!Number.isInteger(maxComponents) || maxComponents < 1) {
+      logger.warn(`[CWA] maxComponents was not synced: ${maxComponents} is not a positive whole number.`)
+      return UNRESOLVED
+    }
+    return maxComponents
   }
 
   private toLocationIris(locations: unknown): string[] {
@@ -223,19 +235,28 @@ export class ComponentGroupUtilSynchronizer {
     return iris.map(iri => iri.startsWith(prefix) ? iri : `${prefix}${iri}`)
   }
 
-  private async updateAllowedComponents(allowedComponents: string[] | null | undefined, resource: any) {
-    if (allowedComponents === undefined) return
-    const stored = resource?.data?.allowedComponents
-    const normalized = await this.resolveAllowedComponents(allowedComponents)
-    if (normalized === UNRESOLVED || isEqual(normalized, stored ?? null)) {
+  private async updateComponentGroup(allowedComponents: string[] | null | undefined, maxComponents: number | null | undefined, resource: any) {
+    const data: { allowedComponents?: string[] | null, maxComponents?: number | null } = {}
+
+    if (allowedComponents !== undefined) {
+      const normalized = await this.resolveAllowedComponents(allowedComponents)
+      if (normalized !== UNRESOLVED && !isEqual(normalized, resource?.data?.allowedComponents ?? null)) {
+        data.allowedComponents = normalized
+      }
+    }
+
+    const resolvedMaxComponents = this.resolveMaxComponents(maxComponents)
+    if (resolvedMaxComponents !== undefined && resolvedMaxComponents !== UNRESOLVED && resolvedMaxComponents !== (resource?.data?.maxComponents ?? null)) {
+      data.maxComponents = resolvedMaxComponents
+    }
+
+    if (!Object.keys(data).length) {
       return
     }
 
     await this.resourcesManager.updateResource({
       endpoint: resource?.data['@id'],
-      data: {
-        allowedComponents: normalized,
-      },
+      data,
     })
   }
 }
