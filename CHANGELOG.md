@@ -4,6 +4,7 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+- `<CwaComponentGroup>` takes a `max-components` prop that limits how many components a group holds: the admin offers no add for a full group and warns about one over its limit, removing nothing. Needs an api-components-bundle release with [#467](https://github.com/components-web-app/api-components-bundle/pull/467) ([#398](https://github.com/components-web-app/cwa-nuxt-module/issues/398), [6789579f](https://github.com/components-web-app/cwa-nuxt-module/commit/6789579f))
 - The component group sync no longer tries to create a group that already exists when a navigation is interrupted, e.g. by Back ("reference already exists"); a create rejected as a duplicate attaches the existing group without showing an error ([#399](https://github.com/components-web-app/cwa-nuxt-module/issues/399), [0af4ec09](https://github.com/components-web-app/cwa-nuxt-module/commit/0af4ec09))
 
 ## [2.0.0-alpha.17] - 2026-10-15
