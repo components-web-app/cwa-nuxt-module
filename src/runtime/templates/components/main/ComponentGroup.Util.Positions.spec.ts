@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, expect, test, vi, beforeEach, afterEach } from 'vitest'
-import { computed, nextTick, reactive, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import mitt from 'mitt'
 import { createPinia, setActivePinia } from 'pinia'
 import { useComponentGroupPositions } from './ComponentGroup.Util.Positions'
@@ -46,7 +46,8 @@ function buildCwa(positions: string[], resources: Record<string, any> = {}, iri 
     },
     resourcesManager: {
       storeResource: vi.fn(),
-      updateResource: vi.fn().mockResolvedValue(undefined),
+      queueComponentGroupWrite: vi.fn((_group: string, write: () => Promise<unknown>) => write()),
+      orderComponentGroup: vi.fn().mockResolvedValue(true),
     },
   }
 
@@ -195,139 +196,121 @@ describe('useComponentGroupPositions', () => {
       expect(mockCwa.resourcesManager.storeResource).toHaveBeenCalledTimes(2)
     })
   })
+})
 
-  describe('sendUpdatePositionRequest (via debounce)', () => {
-    beforeEach(() => {
-      vi.useFakeTimers()
-    })
-
-    afterEach(() => {
-      vi.useRealTimers()
-    })
-
-    function buildDynamicCwa(initialPositions: string[], initialResources: Record<string, any>) {
-      const positionResources = reactive(JSON.parse(JSON.stringify(initialResources)))
-
-      let capturedHandler: ((e: ReorderEvent) => void) | undefined
-      const iri = '/_/component_groups/1'
-
-      const mockCwa: any = {
-        admin: {
-          resourceStackManager: {
-            getState: vi.fn().mockReturnValue(true),
-            getClosestStackItemByType: vi.fn().mockReturnValue(iri),
-          },
-          eventBus: {
-            on: vi.fn((_event: string, handler: any) => { capturedHandler = handler }),
-            off: vi.fn(),
-          },
-          emitRedraw: vi.fn(),
-        },
-        resources: {
-          getOrderedPositionsForGroup: vi.fn(() => {
-            return [...initialPositions].sort((a, b) => {
-              const aNum = positionResources[a]?._metadata?.sortDisplayNumber ?? positionResources[a]?.sortValue ?? 0
-              const bNum = positionResources[b]?._metadata?.sortDisplayNumber ?? positionResources[b]?.sortValue ?? 0
-              return aNum - bNum
-            })
-          }),
-          getResource: vi.fn((posIri: string) => ({
-            value: positionResources[posIri] ? { data: positionResources[posIri] } : undefined,
-          })),
-          getPendingResource: vi.fn(),
-        },
-        resourcesManager: {
-          storeResource: vi.fn(({ resource }) => {
-            positionResources[resource['@id']] = { ...resource, _metadata: { ...resource._metadata } }
-          }),
-          updateResource: vi.fn().mockResolvedValue(undefined),
-        },
-      }
-
-      mockCwa.componentGroupReorders = new ComponentGroupReorders(mockCwa.admin, mockCwa.resources, mockCwa.resourcesManager)
-      return { mockCwa, getCapturedHandler: () => capturedHandler! }
+function orderServerValues(values: Record<string, number | undefined>, order: string[]): Record<string, number> {
+  const offsets = order.map((name, index) => {
+    const value = values[name]
+    return value === undefined || value - index < 0 ? undefined : value - index
+  })
+  const lengths: number[] = []
+  const previous: number[] = []
+  let best = -1
+  for (let i = 0; i < order.length; i++) {
+    lengths[i] = 0
+    previous[i] = -1
+    if (offsets[i] === undefined) {
+      continue
     }
-
-    test('calls updateResource after debounce fires', async () => {
-      const { nextTick } = await import('vue')
-      const initialResources: Record<string, any> = {
-        '/_/component_positions/a': { '@id': '/_/component_positions/a', 'sortValue': 1, '_metadata': {} },
-        '/_/component_positions/b': { '@id': '/_/component_positions/b', 'sortValue': 2, '_metadata': {} },
-        '/_/component_positions/c': { '@id': '/_/component_positions/c', 'sortValue': 3, '_metadata': {} },
+    lengths[i] = 1
+    for (let j = 0; j < i; j++) {
+      if (offsets[j] !== undefined && offsets[j]! <= offsets[i]! && lengths[j]! + 1 > lengths[i]!) {
+        lengths[i] = lengths[j]! + 1
+        previous[i] = j
       }
-      const initialPositions = ['/_/component_positions/a', '/_/component_positions/b', '/_/component_positions/c']
-      const { mockCwa, getCapturedHandler } = buildDynamicCwa(initialPositions, initialResources)
-      useComponentGroupPositions(iriRef, mockCwa)
-      getCapturedHandler()({ positionIri: '/_/component_positions/a', location: 'next' })
-      vi.advanceTimersByTime(1100)
-      await nextTick()
-      await nextTick()
-      expect(mockCwa.resourcesManager.updateResource).toHaveBeenCalledWith(expect.objectContaining({
-        endpoint: '/_/component_positions/a',
-        data: expect.objectContaining({ sortValue: expect.any(Number) }),
-      }))
+    }
+    if (best === -1 || lengths[i]! > lengths[best]!) {
+      best = i
+    }
+  }
+  const kept = new Set<number>()
+  for (let i = best; i !== -1; i = previous[i]!) {
+    kept.add(i)
+  }
+  const result: Record<string, number> = {}
+  const keptIndexes = [...kept].sort((a, b) => a - b)
+  if (!keptIndexes.length) {
+    order.forEach((name, index) => {
+      result[name] = index
     })
+    return result
+  }
+  const first = keptIndexes[0]!
+  for (let i = 0; i < first; i++) {
+    result[order[i]!] = values[order[first]!]! - (first - i)
+  }
+  let last = first
+  for (const index of keptIndexes) {
+    result[order[index]!] = values[order[index]!]!
+    for (let i = last + 1; i < index; i++) {
+      result[order[i]!] = values[order[last]!]! + (i - last)
+    }
+    last = index
+  }
+  for (let i = last + 1; i < order.length; i++) {
+    result[order[i]!] = values[order[last]!]! + (i - last)
+  }
+  return result
+}
 
-    test('does not call updateResource when position index did not change', async () => {
-      const { nextTick } = await import('vue')
-      const initialResources: Record<string, any> = {
-        '/_/component_positions/a': { '@id': '/_/component_positions/a', 'sortValue': 1, '_metadata': {} },
-        '/_/component_positions/b': { '@id': '/_/component_positions/b', 'sortValue': 2, '_metadata': {} },
-      }
-      const initialPositions = ['/_/component_positions/a', '/_/component_positions/b']
-      const { mockCwa, getCapturedHandler } = buildDynamicCwa(initialPositions, initialResources)
-      useComponentGroupPositions(iriRef, mockCwa)
-      getCapturedHandler()({ positionIri: '/_/component_positions/a', location: 'previous' })
-      vi.advanceTimersByTime(1100)
-      await nextTick()
-      await nextTick()
-      expect(mockCwa.resourcesManager.updateResource).not.toHaveBeenCalled()
-    })
+const byServerOrder = (values: Record<string, number>) => (a: string, b: string) => values[a]! === values[b]! ? (a < b ? -1 : 1) : values[a]! - values[b]!
 
-    test('cancels previous debounce when same position reordered again', async () => {
-      const { nextTick } = await import('vue')
-      const initialResources: Record<string, any> = {
-        '/_/component_positions/a': { '@id': '/_/component_positions/a', 'sortValue': 1, '_metadata': {} },
-        '/_/component_positions/b': { '@id': '/_/component_positions/b', 'sortValue': 2, '_metadata': {} },
-        '/_/component_positions/c': { '@id': '/_/component_positions/c', 'sortValue': 3, '_metadata': {} },
-      }
-      const initialPositions = ['/_/component_positions/a', '/_/component_positions/b', '/_/component_positions/c']
-      const { mockCwa, getCapturedHandler } = buildDynamicCwa(initialPositions, initialResources)
-      useComponentGroupPositions(iriRef, mockCwa)
-      getCapturedHandler()({ positionIri: '/_/component_positions/a', location: 'next' })
-      vi.advanceTimersByTime(500)
-      getCapturedHandler()({ positionIri: '/_/component_positions/a', location: 'next' })
-      vi.advanceTimersByTime(1100)
-      await nextTick()
-      await nextTick()
-      expect(mockCwa.resourcesManager.updateResource).toHaveBeenCalledTimes(1)
-    })
+function serverOrderRequest(values: Record<string, number>, listed: string[]): Record<string, number> {
+  const current = Object.keys(values).sort(byServerOrder(values))
+  const present = listed.filter(name => name in values)
+  const order = [...present]
+  for (const [index, name] of current.entries()) {
+    if (present.includes(name)) {
+      continue
+    }
+    const predecessor = current.slice(0, index).reverse().find(other => order.includes(other))
+    order.splice(predecessor === undefined ? 0 : order.indexOf(predecessor) + 1, 0, name)
+  }
+  return orderServerValues(values, order)
+}
+
+describe('the fake server orders as api-components-bundle#475 specifies', () => {
+  const values = (spec: string) => Object.fromEntries(spec.split(' ').map(entry => [entry[0]!, Number(entry.slice(1))]))
+  const insert = (start: string, anchor: { after?: string, before?: string }) => {
+    const current = values(start)
+    const order = Object.keys(current).sort(byServerOrder(current))
+    const at = anchor.after ? order.indexOf(anchor.after) + 1 : anchor.before ? order.indexOf(anchor.before) : order.length
+    order.splice(at, 0, 'N')
+    return orderServerValues(current, order)
+  }
+
+  test.each([
+    ['1', 'A0 B10 C20', { after: 'A' }, { A: 0, N: 1, B: 10, C: 20 }],
+    ['2', 'A0 B1 C2', { after: 'A' }, { A: 0, N: 1, B: 2, C: 3 }],
+    ['3', 'A0 B1 C2 D10', { after: 'A' }, { A: 0, N: 1, B: 2, C: 3, D: 10 }],
+    ['4', 'A0 B1', { before: 'A' }, { N: 0, A: 1, B: 2 }],
+    ['5', 'A0 B10', {}, { A: 0, B: 10, N: 11 }],
+    ['6', 'A5 B5', { after: 'A' }, { A: 5, N: 6, B: 7 }],
+    ['7', 'A5 B5', { before: 'B' }, { A: 5, N: 6, B: 7 }],
+  ])('insert case %s', (_case, start, anchor, expected) => {
+    expect(insert(start, anchor)).toEqual(expected)
+  })
+
+  test.each([
+    ['11', 'A0 B10 C20', ['B', 'A', 'C'], { B: 10, A: 11, C: 20 }],
+    ['12', 'A0 B1 C2', ['C', 'A', 'B'], { C: 2, A: 3, B: 4 }],
+    ['13', 'A5 B5 C5', ['A', 'B', 'C'], { A: 5, B: 6, C: 7 }],
+  ])('order case %s', (_case, start, order, expected) => {
+    expect(serverOrderRequest(values(start), order)).toEqual(expected)
+  })
+
+  test('case 14: an unlisted position keeps following its predecessor', () => {
+    const result = serverOrderRequest(values('A0 H10 B20'), ['B', 'A'])
+    expect(Object.keys(result).sort(byServerOrder(result))).toEqual(['B', 'A', 'H'])
   })
 })
 
-describe('group reorder queue against the server', () => {
+describe('group reorder queue against the server (#400, api-components-bundle#475)', () => {
   const groupIri = '/_/component_groups/g'
   const positionIri = (name: string) => `/_/component_positions/${name}`
   const nameOf = (iri: string) => iri.split('/').pop()!
 
-  function serverMove(values: Record<string, number>, moved: string, moveTo: number) {
-    const original = values[moved]!
-    values[moved] = moveTo
-    for (const name of Object.keys(values)) {
-      if (name === moved) {
-        continue
-      }
-      const value = values[name]!
-      if (moveTo > original && value > original && value <= moveTo) {
-        values[name] = value - 1
-      }
-      if (moveTo < original && value < original && value >= moveTo) {
-        values[name] = value + 1
-      }
-    }
-  }
-
-  type GroupHarnessOptions = { failRequests?: () => boolean, holdRequests?: boolean }
+  type GroupHarnessOptions = { failRequests?: () => boolean, holdRequests?: boolean, hidden?: string[] }
 
   function createGroups(groups: Record<string, Record<string, number>>, options: GroupHarnessOptions = {}) {
     setActivePinia(createPinia())
@@ -336,20 +319,24 @@ describe('group reorder queue against the server', () => {
     const resources = new Resources(resourcesStoreDef, new FetcherStore('cwa'))
     const server: Record<string, number> = {}
     const groupOf: Record<string, string> = {}
-    const requests: Array<[string, number]> = []
+    const requests: Array<[string, string[]]> = []
     const heldRequests: Array<() => void> = []
+    const groupWrites: Record<string, Promise<unknown>> = {}
     let activeGroup = Object.keys(groups)[0]!
     const toResource = (name: string, sortValue: number) => ({ '@id': positionIri(name), '@type': 'ComponentPosition', 'componentGroup': groupOf[name], sortValue, '_metadata': {} } as unknown as CwaResource)
     for (const [group, initial] of Object.entries(groups)) {
       const names = Object.keys(initial)
-      store.saveResource({ resource: { '@id': group, '@type': 'ComponentGroup', 'componentPositions': names.map(positionIri), '_metadata': {} } as unknown as CwaResource })
+      store.saveResource({ resource: { '@id': group, '@type': 'ComponentGroup', 'componentPositions': names.filter(name => !options.hidden?.includes(name)).map(positionIri), '_metadata': {} } as unknown as CwaResource })
       for (const name of names) {
         server[name] = initial[name]!
         groupOf[name] = group
-        store.saveResource({ resource: toResource(name, server[name]!) })
+        if (!options.hidden?.includes(name)) {
+          store.saveResource({ resource: toResource(name, server[name]!) })
+        }
       }
     }
-    const serverValuesOf = (group: string) => Object.fromEntries(Object.keys(groups[group]!).map(name => [name, server[name]!]))
+    const namesOf = (group: string) => Object.keys(groups[group]!)
+    const serverValuesOf = (group: string) => Object.fromEntries(namesOf(group).map(name => [name, server[name]!]))
     const mockCwa: any = {
       admin: {
         resourceStackManager: { getState: () => true, getClosestStackItemByType: () => activeGroup },
@@ -359,22 +346,29 @@ describe('group reorder queue against the server', () => {
       resources,
       resourcesManager: {
         storeResource: (event: any) => store.saveResource(event),
-        updateResource: async (event: any) => {
-          const name = nameOf(event.endpoint)
-          requests.push([name, event.data.sortValue])
+        queueComponentGroupWrite: (group: string, write: () => Promise<unknown>) => {
+          const next = (groupWrites[group] ?? Promise.resolve()).then(write)
+          groupWrites[group] = next.catch(() => undefined)
+          return next
+        },
+        orderComponentGroup: async (group: string, iris: string[]) => {
+          const listed = iris.map(nameOf)
+          requests.push([group, listed])
           if (options.holdRequests) {
             await new Promise<void>(resolve => heldRequests.push(resolve))
           }
           await Promise.resolve()
           if (options.failRequests?.()) {
-            return undefined
+            return false
           }
-          const groupServer = serverValuesOf(groupOf[name]!)
-          serverMove(groupServer, name, event.data.sortValue)
-          Object.assign(server, groupServer)
-          const response = toResource(name, server[name]!)
-          store.saveResource({ resource: response })
-          return response
+          Object.assign(server, serverOrderRequest(serverValuesOf(group), listed))
+          for (const name of listed) {
+            const stored = store.getResource(positionIri(name))?.data
+            if (stored) {
+              store.saveResource({ resource: { ...stored, sortValue: server[name]! } })
+            }
+          }
+          return true
         },
       },
     }
@@ -386,15 +380,16 @@ describe('group reorder queue against the server', () => {
       return { unmount: () => hooks.forEach(hook => hook()) }
     }
     const helpersFor = (group: string) => {
-      const names = Object.keys(groups[group]!)
+      const names = namesOf(group).filter(name => !options.hidden?.includes(name))
       return {
-        serverOrder: () => [...names].sort((a, b) => server[a]! - server[b]!),
+        serverOrder: () => namesOf(group).sort(byServerOrder(server)),
         move: (name: string, location: any) => {
           activeGroup = group
           mockCwa.admin.eventBus.emit('reorder', { positionIri: positionIri(name), location })
         },
         displayed: () => store.getOrderedPositionsForGroup(group)!.map(nameOf),
         localValues: () => Object.fromEntries(names.map(name => [name, store.getResource(positionIri(name))?.data?.sortValue])),
+        serverValues: () => Object.fromEntries(names.map(name => [name, server[name]])),
         displayNumbers: () => names.map(name => store.getResource(positionIri(name))?.data?._metadata.sortDisplayNumber),
         stageServerValues: () => {
           for (const name of names) {
@@ -409,17 +404,10 @@ describe('group reorder queue against the server', () => {
       requests,
       mount,
       group: helpersFor,
+      queueWrite: (group: string, write: () => Promise<unknown>) => mockCwa.resourcesManager.queueComponentGroupWrite(group, write),
       releaseRequests: () => heldRequests.splice(0).forEach(resolve => resolve()),
-      flushMicrotasks: async () => {
-        for (let i = 0; i < 10; i++) {
-          await Promise.resolve()
-        }
-      },
       settle: async () => {
-        for (let i = 0; i < 20; i++) {
-          vi.advanceTimersByTime(1100)
-          await Promise.resolve()
-          await Promise.resolve()
+        for (let i = 0; i < 30; i++) {
           await Promise.resolve()
         }
       },
@@ -432,16 +420,11 @@ describe('group reorder queue against the server', () => {
     return { ...harness, ...harness.group(groupIri) }
   }
 
-  beforeEach(() => {
-    vi.useFakeTimers()
-  })
-
   afterEach(() => {
-    vi.useRealTimers()
     unmountHooks.splice(0)
   })
 
-  test('a single move sends one request and ends matching the server', async () => {
+  test('every single move sends one order request at once and ends with the server\'s values and order', async () => {
     const failures: string[] = []
     for (let from = 0; from < 5; from++) {
       for (let to = 1; to <= 5; to++) {
@@ -450,10 +433,9 @@ describe('group reorder queue against the server', () => {
         group.move(moved, to)
         const shown = group.displayed()
         await group.settle()
-        group.stageServerValues()
         const expectedRequests = from === to - 1 ? 0 : 1
-        const result = { requests: group.requests.length, endpoint: group.requests[0]?.[0] ?? moved, displayed: group.displayed(), server: group.serverOrder(), pending: group.store.new.allIds.length }
-        const expected = { requests: expectedRequests, endpoint: moved, displayed: shown, server: shown, pending: 0 }
+        const result = { requests: group.requests.length, listed: group.requests[0]?.[1] ?? shown, displayed: group.displayed(), server: group.serverOrder(), values: group.localValues() }
+        const expected = { requests: expectedRequests, listed: shown, displayed: shown, server: shown, values: group.serverValues() }
         if (JSON.stringify(result) !== JSON.stringify(expected)) {
           failures.push(`${from}->${to}: ${JSON.stringify(result)}`)
         }
@@ -462,18 +444,67 @@ describe('group reorder queue against the server', () => {
     expect(failures).toEqual([])
   })
 
-  test('two positions moved within one window are both sent and land where displayed', async () => {
-    const group = createGroup({ a: 0, b: 1, c: 2, d: 3, e: 4 })
-    group.move('b', 'next')
-    vi.advanceTimersByTime(300)
-    group.move('e', 1)
+  test('case 11: the stored values are the server\'s, changing only the moved position', async () => {
+    const group = createGroup({ a: 0, b: 10, c: 20 })
+    group.move('b', 1)
     await group.settle()
-    expect(group.requests).toHaveLength(2)
-    expect(group.serverOrder()).toEqual(['e', 'a', 'c', 'b', 'd'])
-    expect(group.displayed()).toEqual(['e', 'a', 'c', 'b', 'd'])
+    expect(group.requests).toEqual([[groupIri, ['b', 'a', 'c']]])
+    expect(group.localValues()).toEqual({ a: 11, b: 10, c: 20 })
+    expect(group.displayed()).toEqual(['b', 'a', 'c'])
   })
 
-  test('a failed reorder request leaves local sortValues untouched and the next move lands correctly', async () => {
+  test('moves made while a request is in flight go in one more request with the newest order', async () => {
+    const group = createGroup({ a: 0, b: 1, c: 2, d: 3 }, { holdRequests: true })
+    group.move('d', 1)
+    await group.settle()
+    group.move('c', 1)
+    group.move('a', 'next')
+    expect(group.displayed()).toEqual(['c', 'd', 'b', 'a'])
+    await group.settle()
+    expect(group.requests).toEqual([[groupIri, ['d', 'a', 'b', 'c']]])
+    group.releaseRequests()
+    await group.settle()
+    expect(group.requests).toEqual([
+      [groupIri, ['d', 'a', 'b', 'c']],
+      [groupIri, ['c', 'd', 'b', 'a']],
+    ])
+    group.releaseRequests()
+    await group.settle()
+    expect(group.serverOrder()).toEqual(['c', 'd', 'b', 'a'])
+    expect(group.displayed()).toEqual(['c', 'd', 'b', 'a'])
+    expect(group.displayNumbers()).toEqual([undefined, undefined, undefined, undefined])
+  })
+
+  test('the screen keeps the editor\'s newest order while an older order\'s response is stored', async () => {
+    const group = createGroup({ a: 0, b: 1, c: 2 }, { holdRequests: true })
+    group.move('c', 1)
+    await group.settle()
+    group.move('a', 3)
+    group.releaseRequests()
+    await group.settle()
+    expect(group.serverOrder()).toEqual(['c', 'a', 'b'])
+    expect(group.displayed()).toEqual(['c', 'b', 'a'])
+    group.releaseRequests()
+    await group.settle()
+    expect(group.displayed()).toEqual(['c', 'b', 'a'])
+    expect(group.serverOrder()).toEqual(['c', 'b', 'a'])
+  })
+
+  test('an order request waits for another write to the group, such as an insert, to finish', async () => {
+    const group = createGroup({ a: 0, b: 1, c: 2 })
+    let finishInsert!: () => void
+    group.queueWrite(groupIri, () => new Promise<void>((resolve) => {
+      finishInsert = resolve
+    }))
+    group.move('c', 1)
+    await group.settle()
+    expect(group.requests).toEqual([])
+    finishInsert()
+    await group.settle()
+    expect(group.requests).toEqual([[groupIri, ['c', 'a', 'b']]])
+  })
+
+  test('a failed order request shows the server\'s order again, and the next move still works', async () => {
     let fail = true
     const group = createGroup({ a: 0, b: 1, c: 2, d: 3 }, { failRequests: () => fail })
     group.move('d', 2)
@@ -487,10 +518,23 @@ describe('group reorder queue against the server', () => {
     expect(group.displayed()).toEqual(['b', 'c', 'a', 'd'])
   })
 
-  test('a reorder that sends no request clears every display number', async () => {
-    const group = createGroup({ a: 0, b: 1, c: 2 })
+  test('a move undone while its request is in flight sends the original order back and clears every display number', async () => {
+    const group = createGroup({ a: 0, b: 1, c: 2 }, { holdRequests: true })
     group.move('b', 'next')
+    await group.settle()
     group.move('b', 'previous')
+    group.releaseRequests()
+    await group.settle()
+    group.releaseRequests()
+    await group.settle()
+    expect(group.requests).toEqual([[groupIri, ['a', 'c', 'b']], [groupIri, ['a', 'b', 'c']]])
+    expect(group.displayNumbers()).toEqual([undefined, undefined, undefined])
+    expect(group.displayed()).toEqual(['a', 'b', 'c'])
+  })
+
+  test('a move that changes nothing sends no request', async () => {
+    const group = createGroup({ a: 0, b: 1, c: 2 })
+    group.move('a', 'previous')
     await group.settle()
     expect(group.requests).toEqual([])
     expect(group.displayNumbers()).toEqual([undefined, undefined, undefined])
@@ -506,28 +550,26 @@ describe('group reorder queue against the server', () => {
     expect(shown).toEqual(['a', 'c', 'b', 'd'])
     expect(group.serverOrder()).toEqual(shown)
     expect(group.displayed()).toEqual(shown)
-    expect(group.localValues()).toEqual(group.server)
+    expect(group.localValues()).toEqual(group.serverValues())
   })
 
-  test('a move in a group holding duplicate sortValues lands where displayed', async () => {
-    const group = createGroup({ a: 0, b: 1, c: 1, d: 2 })
+  test('a group holding duplicate sortValues is shown in the server\'s tie order and a move lands where displayed', async () => {
+    const group = createGroup({ a: 0, c: 1, b: 1, d: 2 })
+    expect(group.displayed()).toEqual(['a', 'b', 'c', 'd'])
     group.move('d', 3)
     await group.settle()
     expect(group.serverOrder()).toEqual(['a', 'b', 'd', 'c'])
     expect(group.displayed()).toEqual(['a', 'b', 'd', 'c'])
     expect(new Set(Object.values(group.server)).size).toBe(4)
-    expect(group.requests.map(([name]) => name).filter(name => name === 'a' || name === 'b')).toEqual([])
   })
 
-  test('local sortValues after moves equal the server\'s with gapped values', async () => {
-    const group = createGroup({ a: 0, b: 3, c: 4, d: 10, e: 11 })
-    group.move('e', 2)
+  test('case 14: a position hidden from the module is not listed and keeps its place on the server', async () => {
+    const group = createGroup({ a: 0, h: 10, b: 20 }, { hidden: ['h'] })
+    group.move('b', 1)
     await group.settle()
-    group.move('b', 5)
-    await group.settle()
-    group.move('a', 'next')
-    await group.settle()
-    expect(group.localValues()).toEqual(group.server)
+    expect(group.requests).toEqual([[groupIri, ['b', 'a']]])
+    expect(group.serverOrder()).toEqual(['b', 'a', 'h'])
+    expect(group.displayed()).toEqual(['b', 'a'])
   })
 
   test('an empty or non-numeric location is ignored', async () => {
@@ -541,46 +583,24 @@ describe('group reorder queue against the server', () => {
   })
 
   describe('a group mounted more than once', () => {
-    test('Move up applies once and sends one request', async () => {
+    test.each([
+      ['Move up', 'c', 'previous', ['a', 'c', 'b']],
+      ['Move down', 'a', 'next', ['b', 'a', 'c']],
+      ['a numbered move', 'c', 2, ['a', 'c', 'b']],
+    ])('%s applies once and sends one request', async (_label, name, location, expected) => {
       const harness = createGroups({ [groupIri]: { a: 0, b: 1, c: 2 } })
       const group = harness.group(groupIri)
       harness.mount()
       harness.mount()
-      group.move('c', 'previous')
-      expect(group.displayed()).toEqual(['a', 'c', 'b'])
+      group.move(name, location)
+      expect(group.displayed()).toEqual(expected)
       await harness.settle()
       expect(harness.requests).toHaveLength(1)
-      expect(group.serverOrder()).toEqual(['a', 'c', 'b'])
-      expect(group.displayed()).toEqual(['a', 'c', 'b'])
+      expect(group.serverOrder()).toEqual(expected)
+      expect(group.displayed()).toEqual(expected)
     })
 
-    test('Move down applies once and sends one request', async () => {
-      const harness = createGroups({ [groupIri]: { a: 0, b: 1, c: 2 } })
-      const group = harness.group(groupIri)
-      harness.mount()
-      harness.mount()
-      group.move('a', 'next')
-      expect(group.displayed()).toEqual(['b', 'a', 'c'])
-      await harness.settle()
-      expect(harness.requests).toHaveLength(1)
-      expect(group.serverOrder()).toEqual(['b', 'a', 'c'])
-      expect(group.displayed()).toEqual(['b', 'a', 'c'])
-    })
-
-    test('a numbered move sends one request', async () => {
-      const harness = createGroups({ [groupIri]: { a: 0, b: 1, c: 2 } })
-      const group = harness.group(groupIri)
-      harness.mount()
-      harness.mount()
-      group.move('c', 2)
-      expect(group.displayed()).toEqual(['a', 'c', 'b'])
-      await harness.settle()
-      expect(harness.requests).toHaveLength(1)
-      expect(group.serverOrder()).toEqual(['a', 'c', 'b'])
-      expect(group.displayed()).toEqual(['a', 'c', 'b'])
-    })
-
-    test('a move pending when the last instance unmounts is sent, and a later move waits for it', async () => {
+    test('a move in flight when the last instance unmounts still lands, and a later move follows it', async () => {
       const harness = createGroups({ [groupIri]: { a: 0, b: 1, c: 2, d: 3 } }, { holdRequests: true })
       const group = harness.group(groupIri)
       const first = harness.mount()
@@ -588,14 +608,11 @@ describe('group reorder queue against the server', () => {
       group.move('d', 1)
       first.unmount()
       second.unmount()
-      await harness.flushMicrotasks()
-      expect(harness.requests).toEqual([['d', 0]])
+      await harness.settle()
+      expect(harness.requests).toEqual([[groupIri, ['d', 'a', 'b', 'c']]])
       harness.mount()
       group.move('a', 'next')
       expect(group.displayed()).toEqual(['d', 'b', 'a', 'c'])
-      vi.advanceTimersByTime(1100)
-      await harness.flushMicrotasks()
-      expect(harness.requests).toHaveLength(1)
       for (let i = 0; i < 5; i++) {
         harness.releaseRequests()
         await harness.settle()
@@ -607,7 +624,7 @@ describe('group reorder queue against the server', () => {
     })
 
     test('a group whose IRI resolves after mounting handles each move once', async () => {
-      const harness = createGroups({ [groupIri]: { a: 0, b: 1, c: 2 } })
+      const harness = createGroups({ [groupIri]: { a: 0, b: 1, c: 2 } }, { holdRequests: true })
       const group = harness.group(groupIri)
       const lateIri = ref<string | undefined>(undefined)
       harness.mount(lateIri)
@@ -620,8 +637,11 @@ describe('group reorder queue against the server', () => {
       harness.mount()
       group.move('a', 'next')
       expect(group.displayed()).toEqual(['c', 'a', 'b'])
-      await harness.settle()
-      expect(harness.requests).toHaveLength(1)
+      for (let i = 0; i < 5; i++) {
+        harness.releaseRequests()
+        await harness.settle()
+      }
+      expect(harness.requests).toEqual([[groupIri, ['c', 'a', 'b']]])
       expect(group.serverOrder()).toEqual(['c', 'a', 'b'])
     })
   })
@@ -637,7 +657,7 @@ describe('group reorder queue against the server', () => {
     expect(otherGroup.displayed()).toEqual(['x', 'z', 'y'])
     expect(group.displayNumbers()).toEqual([undefined, undefined, undefined])
     await harness.settle()
-    expect(harness.requests.map(([name]) => name)).toEqual(['z'])
+    expect(harness.requests).toEqual([[otherGroupIri, ['x', 'z', 'y']]])
     expect(otherGroup.serverOrder()).toEqual(['x', 'z', 'y'])
     expect(group.serverOrder()).toEqual(['a', 'b', 'c'])
     expect(group.displayed()).toEqual(['a', 'b', 'c'])

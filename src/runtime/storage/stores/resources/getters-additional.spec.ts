@@ -274,6 +274,22 @@ describe('getters -> getOrderedPositionsForGroup', () => {
     expect(result).toEqual(['/_/component_positions/a', '/_/component_positions/b'])
   })
 
+  test('positions sharing a sortValue are ordered by IRI, as the API orders them by id (#400)', () => {
+    const iris = ['/_/component_positions/c3', '/_/component_positions/a1', '/_/component_positions/b2']
+    state.current.byId['/_/component_groups/1'] = {
+      apiState: { status: CwaResourceApiStatuses.SUCCESS },
+      data: { '@id': '/_/component_groups/1', 'componentPositions': iris },
+    }
+    for (const iri of iris) {
+      state.current.byId[iri] = {
+        apiState: { status: CwaResourceApiStatuses.SUCCESS },
+        data: { '@id': iri, 'sortValue': 5, '_metadata': {} },
+      }
+    }
+    const result = getterFns.getOrderedPositionsForGroup.value('/_/component_groups/1')
+    expect(result).toEqual(['/_/component_positions/a1', '/_/component_positions/b2', '/_/component_positions/c3'])
+  })
+
   test('positions sorted by _metadata.sortDisplayNumber take precedence over sortValue', () => {
     state.current.byId['/_/component_groups/1'] = {
       apiState: { status: CwaResourceApiStatuses.SUCCESS },

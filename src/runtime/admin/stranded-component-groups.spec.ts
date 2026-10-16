@@ -21,6 +21,7 @@ const state = reactive({
 })
 
 const updateResource = vi.fn()
+const refreshComponentGroupOrder = vi.fn()
 const deleteResource = vi.fn()
 
 function orderedPositions(groupIri: string) {
@@ -62,7 +63,7 @@ const $cwa = {
       return data.publishedResource ?? (data.draft ? undefined : iri)
     }),
   },
-  resourcesManager: { updateResource, deleteResource },
+  resourcesManager: { updateResource, deleteResource, refreshComponentGroupOrder },
 }
 
 function put(iri: string, data: Record<string, any> = {}) {
@@ -343,6 +344,7 @@ describe('mergeComponentGroup', () => {
     }
     updateResource.mockReset()
     deleteResource.mockReset()
+    refreshComponentGroupOrder.mockReset()
   })
 
   function sourceAndTarget(targetSortValues: number[]) {
@@ -358,8 +360,8 @@ describe('mergeComponentGroup', () => {
     sourceAndTarget([0, 1, 2])
     const result = await mergeComponentGroup($cwa as any, '/_/component_groups/top', '/_/component_groups/hero')
     expect(updateResource.mock.calls.map(([event]) => [event.endpoint, event.data])).toEqual([
-      ['/_/component_positions/s-early', { componentGroup: '/_/component_groups/hero', sortValue: 3 }],
-      ['/_/component_positions/s-late', { componentGroup: '/_/component_groups/hero', sortValue: 4 }],
+      ['/_/component_positions/s-early', { componentGroup: '/_/component_groups/hero', after: '/_/component_positions/t2' }],
+      ['/_/component_positions/s-late', { componentGroup: '/_/component_groups/hero', after: '/_/component_positions/s-early' }],
     ])
     expect(updateResource.mock.calls[0]![0].refreshEndpoints).toEqual(['/_/component_groups/hero', '/_/component_groups/top'])
     expect(deleteResource).toHaveBeenCalledTimes(1)
@@ -368,31 +370,30 @@ describe('mergeComponentGroup', () => {
     expect(result).toEqual({ failed: [], sourceDeleted: true })
   })
 
-  test('places the first move past every value the API can renumber the target to, even with duplicate sort values', async () => {
-    sourceAndTarget([4, 4, 5])
+  test('re-reads the target\'s order once after the moves, since a move can renumber its other positions (#400)', async () => {
+    sourceAndTarget([0, 1, 2])
     await mergeComponentGroup($cwa as any, '/_/component_groups/top', '/_/component_groups/hero')
-    expect(updateResource.mock.calls.map(([event]) => event.data.sortValue)).toEqual([7, 8])
+    expect(refreshComponentGroupOrder).toHaveBeenCalledTimes(1)
+    expect(refreshComponentGroupOrder).toHaveBeenCalledWith('/_/component_groups/hero')
+    expect(refreshComponentGroupOrder.mock.invocationCallOrder[0]).toBeGreaterThan(updateResource.mock.invocationCallOrder[1]!)
   })
 
-  test('places the first move past the highest sort value when the target has gaps', async () => {
-    sourceAndTarget([0, 10])
-    await mergeComponentGroup($cwa as any, '/_/component_groups/top', '/_/component_groups/hero')
-    expect(updateResource.mock.calls.map(([event]) => event.data.sortValue)).toEqual([11, 12])
-  })
-
-  test('starts an empty target at zero', async () => {
+  test('moves into an empty target with no anchor first, so it goes to the end', async () => {
     sourceAndTarget([])
     await mergeComponentGroup($cwa as any, '/_/component_groups/top', '/_/component_groups/hero')
-    expect(updateResource.mock.calls.map(([event]) => event.data.sortValue)).toEqual([0, 1])
+    expect(updateResource.mock.calls.map(([event]) => event.data)).toEqual([
+      { componentGroup: '/_/component_groups/hero' },
+      { componentGroup: '/_/component_groups/hero', after: '/_/component_positions/s-early' },
+    ])
   })
 
   test('keeps the source group and reports the position when a move fails, still moving the rest in order', async () => {
     sourceAndTarget([0])
     updateResource.mockImplementationOnce(async () => undefined)
     const result = await mergeComponentGroup($cwa as any, '/_/component_groups/top', '/_/component_groups/hero')
-    expect(updateResource.mock.calls.map(([event]) => [event.endpoint, event.data.sortValue])).toEqual([
-      ['/_/component_positions/s-early', 1],
-      ['/_/component_positions/s-late', 1],
+    expect(updateResource.mock.calls.map(([event]) => [event.endpoint, event.data.after])).toEqual([
+      ['/_/component_positions/s-early', '/_/component_positions/t0'],
+      ['/_/component_positions/s-late', '/_/component_positions/t0'],
     ])
     expect(deleteResource).not.toHaveBeenCalled()
     expect(result).toEqual({ failed: ['/_/component_positions/s-early'], sourceDeleted: false })

@@ -896,96 +896,6 @@ describe('Resources manager', () => {
       await expect(resourcesManager.addResourceAction()).rejects.toThrow('Only to component positions')
     })
 
-    test('sets sortValue from group last position when addAfter=true and targetIri is a COMPONENT_GROUP', async () => {
-      const { resourcesManager, cwaFetch } = createResourcesManager({ includeAdmin: true })
-      cwaFetch.fetch.mockResolvedValue({ '@id': '/component/1' })
-      vi.spyOn(resourcesManager, 'storeResource').mockImplementation(() => {})
-      const { newResourceData } = setupStore(resourcesManager, {
-        addEventOverrides: {
-          targetIri: '/_/component_groups/g1',
-          addAfter: true,
-          closest: { group: '/_/component_groups/g1' },
-        },
-        extraGetResource: (iri: string) => {
-          if (iri === '/_/component_groups/g1') {
-            return { data: { componentPositions: ['/_/component_positions/p1', '/_/component_positions/p2'] } }
-          }
-          if (iri === '/_/component_positions/p2') return { data: { sortValue: 5 } }
-        },
-      })
-      await resourcesManager.addResourceAction()
-      expect(newResourceData.sortValue).toBe(6)
-    })
-
-    test('sets sortValue from group first position when addAfter=false and targetIri is a COMPONENT_GROUP', async () => {
-      const { resourcesManager, cwaFetch } = createResourcesManager({ includeAdmin: true })
-      cwaFetch.fetch.mockResolvedValue({ '@id': '/component/1' })
-      vi.spyOn(resourcesManager, 'storeResource').mockImplementation(() => {})
-      const { newResourceData } = setupStore(resourcesManager, {
-        addEventOverrides: {
-          targetIri: '/_/component_groups/g1',
-          addAfter: false,
-          closest: { group: '/_/component_groups/g1' },
-        },
-        extraGetResource: (iri: string) => {
-          if (iri === '/_/component_groups/g1') {
-            return { data: { componentPositions: ['/_/component_positions/p1', '/_/component_positions/p2'] } }
-          }
-          if (iri === '/_/component_positions/p1') return { data: { '@id': '/_/component_positions/p1', 'sortValue': 3, '_metadata': {} } }
-          if (iri === '/_/component_positions/p2') return { data: { '@id': '/_/component_positions/p2', 'sortValue': 4, '_metadata': {} } }
-        },
-      })
-      await resourcesManager.addResourceAction()
-      expect(newResourceData.sortValue).toBe(3)
-    })
-
-    test('shifts existing positions up before inserting to avoid sort value collisions', async () => {
-      const { resourcesManager, cwaFetch } = createResourcesManager({ includeAdmin: true })
-      cwaFetch.fetch.mockResolvedValue({ '@id': '/component/1' })
-      vi.spyOn(resourcesManager, 'storeResource').mockImplementation(() => {})
-      const updateSpy = vi.spyOn(resourcesManager, 'updateResource').mockResolvedValue(undefined)
-      setupStore(resourcesManager, {
-        addEventOverrides: {
-          targetIri: '/_/component_groups/g1',
-          addAfter: false,
-          closest: { group: '/_/component_groups/g1' },
-        },
-        extraGetResource: (iri: string) => {
-          if (iri === '/_/component_groups/g1') {
-            return { data: { componentPositions: ['/_/component_positions/p1', '/_/component_positions/p2'] } }
-          }
-          if (iri === '/_/component_positions/p1') return { data: { '@id': '/_/component_positions/p1', 'sortValue': 3, '_metadata': {} } }
-          if (iri === '/_/component_positions/p2') return { data: { '@id': '/_/component_positions/p2', 'sortValue': 4, '_metadata': {} } }
-        },
-      })
-      await resourcesManager.addResourceAction()
-      expect(updateSpy).toHaveBeenNthCalledWith(1, expect.objectContaining({ endpoint: '/_/component_positions/p2', data: { sortValue: 5 }, refreshEndpoints: [] }))
-      expect(updateSpy).toHaveBeenNthCalledWith(2, expect.objectContaining({ endpoint: '/_/component_positions/p1', data: { sortValue: 4 }, refreshEndpoints: [] }))
-    })
-
-    test('does not shift when adding to end of group (add after last position)', async () => {
-      const { resourcesManager, cwaFetch } = createResourcesManager({ includeAdmin: true })
-      cwaFetch.fetch.mockResolvedValue({ '@id': '/component/1' })
-      vi.spyOn(resourcesManager, 'storeResource').mockImplementation(() => {})
-      const updateSpy = vi.spyOn(resourcesManager, 'updateResource').mockResolvedValue(undefined)
-      const { newResourceData } = setupStore(resourcesManager, {
-        addEventOverrides: {
-          targetIri: '/_/component_groups/g1',
-          addAfter: true,
-          closest: { group: '/_/component_groups/g1' },
-        },
-        extraGetResource: (iri: string) => {
-          if (iri === '/_/component_groups/g1') {
-            return { data: { componentPositions: ['/_/component_positions/p1'] } }
-          }
-          if (iri === '/_/component_positions/p1') return { data: { '@id': '/_/component_positions/p1', 'sortValue': 2, '_metadata': {} } }
-        },
-      })
-      await resourcesManager.addResourceAction()
-      expect(newResourceData.sortValue).toBe(3)
-      expect(updateSpy).not.toHaveBeenCalled()
-    })
-
     test('posts publishedAt "now" when publish=true so the API publishes by its own clock (#381)', async () => {
       vi.useFakeTimers()
       vi.setSystemTime(new Date('2026-01-02T03:04:05.678Z'))
@@ -1308,144 +1218,6 @@ describe('Resources manager', () => {
     })
   })
 
-  describe('addResourceAction getPositionSortValue branches', () => {
-    function setupAddingStore(resourcesManager: ResourcesManager, opts: {
-      addEventOverrides?: any
-      storeAddingPosition?: string
-      extraGetResource?: (iri: string) => any
-    } = {}) {
-      const newResourceIri = '/_/new-resource'
-      const newResourceData = {
-        '@id': newResourceIri,
-        '@type': 'Component',
-        '_metadata': {
-          persisted: true,
-          adding: { endpoint: '/component', isPublishable: false, instantAdd: false },
-        },
-      } as any
-      const store = (resourcesManager as any)._resourcesStore
-      store.adding = { resource: newResourceIri, position: opts.storeAddingPosition }
-      store.getResource = vi.fn().mockImplementation((iri: string) => {
-        if (iri === newResourceIri) return { data: newResourceData }
-        return opts.extraGetResource?.(iri) ?? undefined
-      })
-      resourcesManager.addResourceEvent.value = {
-        targetIri: '/_/component_positions/p1',
-        addAfter: null,
-        closest: {},
-        ...opts.addEventOverrides,
-      } as any
-      return { newResourceData, store }
-    }
-
-    test('sortValue defaults to 0 when target group has no componentPositions (line 507)', async () => {
-      const { resourcesManager, cwaFetch } = createResourcesManager({ includeAdmin: true })
-      cwaFetch.fetch.mockResolvedValue({ '@id': '/component/1' })
-      vi.spyOn(resourcesManager, 'storeResource').mockImplementation(() => {})
-      const { newResourceData } = setupAddingStore(resourcesManager, {
-        addEventOverrides: {
-          targetIri: '/_/component_groups/g1',
-          addAfter: true,
-          closest: { group: '/_/component_groups/g1' },
-        },
-        extraGetResource: (iri: string) => {
-          if (iri === '/_/component_groups/g1') return { data: { componentPositions: [] } }
-        },
-      })
-      await resourcesManager.addResourceAction()
-      expect(newResourceData.sortValue).toBe(0)
-    })
-
-    test('sortValue defaults to 0 when only the new resource is in the group (line 513)', async () => {
-      const { resourcesManager, cwaFetch } = createResourcesManager({ includeAdmin: true })
-      cwaFetch.fetch.mockResolvedValue({ '@id': '/component/1' })
-      vi.spyOn(resourcesManager, 'storeResource').mockImplementation(() => {})
-      const { newResourceData } = setupAddingStore(resourcesManager, {
-        addEventOverrides: {
-          targetIri: '/_/component_groups/g1',
-          addAfter: true,
-          closest: { group: '/_/component_groups/g1' },
-        },
-        extraGetResource: (iri: string) => {
-          if (iri === '/_/component_groups/g1') {
-            return { data: { componentPositions: ['/_/component_positions/__new__'] } }
-          }
-        },
-      })
-      await resourcesManager.addResourceAction()
-      expect(newResourceData.sortValue).toBe(0)
-    })
-
-    test('sortValue defaults to 0 when target position cannot be resolved (line 518)', async () => {
-      const { resourcesManager, cwaFetch } = createResourcesManager({ includeAdmin: true })
-      cwaFetch.fetch.mockResolvedValue({ '@id': '/component/1' })
-      vi.spyOn(resourcesManager, 'storeResource').mockImplementation(() => {})
-      const { newResourceData } = setupAddingStore(resourcesManager, {
-        addEventOverrides: {
-          targetIri: '/_/component_groups/g1',
-          addAfter: false,
-          closest: { group: '/_/component_groups/g1' },
-        },
-        extraGetResource: (iri: string) => {
-          if (iri === '/_/component_groups/g1') {
-            return { data: { componentPositions: [''] } }
-          }
-        },
-      })
-      await resourcesManager.addResourceAction()
-      expect(newResourceData.sortValue).toBe(0)
-    })
-
-    test('sortValue defaults to 0 when adding before/after a resource with no closest position (lines 525-526)', async () => {
-      const { resourcesManager, cwaFetch } = createResourcesManager({ includeAdmin: true })
-      cwaFetch.fetch.mockResolvedValue({ '@id': '/component/1' })
-      vi.spyOn(resourcesManager, 'storeResource').mockImplementation(() => {})
-      const { newResourceData } = setupAddingStore(resourcesManager, {
-        addEventOverrides: {
-          targetIri: '/_/component_positions/p1',
-          addAfter: true,
-          closest: {},
-        },
-      })
-      await resourcesManager.addResourceAction()
-      expect(newResourceData.sortValue).toBe(0)
-    })
-
-    test('sortValue defaults to 0 when closest position resource is not found (lines 528-530)', async () => {
-      const { resourcesManager, cwaFetch } = createResourcesManager({ includeAdmin: true })
-      cwaFetch.fetch.mockResolvedValue({ '@id': '/component/1' })
-      vi.spyOn(resourcesManager, 'storeResource').mockImplementation(() => {})
-      const { newResourceData } = setupAddingStore(resourcesManager, {
-        addEventOverrides: {
-          targetIri: '/_/component_positions/p1',
-          addAfter: true,
-          closest: { position: '/_/component_positions/missing' },
-        },
-      })
-      await resourcesManager.addResourceAction()
-      expect(newResourceData.sortValue).toBe(0)
-    })
-
-    test('uses the closest position sortValue when adding after a resource (line 532)', async () => {
-      const { resourcesManager, cwaFetch } = createResourcesManager({ includeAdmin: true })
-      cwaFetch.fetch.mockResolvedValue({ '@id': '/component/1' })
-      vi.spyOn(resourcesManager, 'storeResource').mockImplementation(() => {})
-      const { newResourceData } = setupAddingStore(resourcesManager, {
-        storeAddingPosition: undefined,
-        addEventOverrides: {
-          targetIri: '/_/component_positions/p1',
-          addAfter: true,
-          closest: { position: '/_/component_positions/p1' },
-        },
-        extraGetResource: (iri: string) => {
-          if (iri === '/_/component_positions/p1') return { data: { '@id': '/_/component_positions/p1', 'sortValue': 7 } }
-        },
-      })
-      await resourcesManager.addResourceAction()
-      expect(newResourceData.sortValue).toBe(8)
-    })
-  })
-
   describe('addResourceAction position post data (lines 548, 550, 553)', () => {
     function setupAddingStoreWithPosition(resourcesManager: ResourcesManager, opts: {
       positionIri?: string
@@ -1493,7 +1265,7 @@ describe('Resources manager', () => {
       await expect(resourcesManager.addResourceAction()).rejects.toThrow('Position resource being added not found')
     })
 
-    test('builds componentPositions post data stripping @id/@type/component and setting sortValue (line 553)', async () => {
+    test('builds componentPositions post data stripping @id/@type/component/sortValue and anchoring it (#400)', async () => {
       const { resourcesManager, cwaFetch } = createResourcesManager({ includeAdmin: true })
       cwaFetch.fetch.mockResolvedValue({ '@id': '/component/1' })
       vi.spyOn(resourcesManager, 'storeResource').mockImplementation(() => {})
@@ -1519,56 +1291,273 @@ describe('Resources manager', () => {
       expect(positionPostData['@type']).toBeUndefined()
       expect(positionPostData.component).toBeUndefined()
       expect(positionPostData.extra).toBe('keep-me')
-      expect(positionPostData.sortValue).toBe(0)
+      expect(positionPostData).not.toHaveProperty('sortValue')
+      expect(positionPostData.after).toBe('/_/component_positions/p1')
     })
   })
 
-  describe('getRefreshPositions and group getters (lines 638, 646-648, 658, 665)', () => {
-    test('returns empty refresh positions when no positionIri provided (line 638)', () => {
-      const { resourcesManager } = createResourcesManager({ includeAdmin: true })
-      const result = (resourcesManager as any).getRefreshPositions(undefined)
-      expect(result).toEqual([])
-    })
+  describe('adding places the new position by anchor, never by sortValue (#400, api-components-bundle#475)', () => {
+    const groupIri = '/_/component_groups/g1'
+    const p1 = '/_/component_positions/p1'
+    const p2 = '/_/component_positions/p2'
+    const newPositionIri = '/_/component_positions/__new__'
 
-    test('returns positions from the insertion index onward, excluding NEW (lines 646-648)', () => {
-      const { resourcesManager } = createResourcesManager({ includeAdmin: true })
+    function setupInsert(addEvent: Record<string, any>, opts: { groupPositions?: string[], newResourceIsPosition?: boolean, createResponse?: any, orderResponse?: any } = {}) {
+      const mockFetcher = { fetchBatch: vi.fn().mockResolvedValue(undefined) }
+      const created = createResourcesManager({ includeAdmin: true, fetcher: mockFetcher })
+      const { resourcesManager, cwaFetch } = created
+      const stored: Record<string, any> = {
+        [p1]: { '@id': p1, 'sortValue': 0, '_metadata': { persisted: true } },
+        [p2]: { '@id': p2, 'sortValue': 1, '_metadata': { persisted: true } },
+        [groupIri]: { '@id': groupIri, 'componentPositions': opts.groupPositions ?? [p1, p2, newPositionIri] },
+      }
+      const newResourceData: any = {
+        '@id': '/_/new-resource',
+        '@type': opts.newResourceIsPosition ? 'ComponentPosition' : 'Component',
+        '_metadata': { persisted: true, adding: { endpoint: opts.newResourceIsPosition ? '/_/component_positions' : '/component', isPublishable: false, instantAdd: false } },
+      }
       const store = (resourcesManager as any)._resourcesStore
-      store.getResource = vi.fn().mockImplementation((iri: string) => {
-        if (iri === '/_/component_groups/g1') {
-          return {
-            data: {
-              componentPositions: [
-                '/_/component_positions/p1',
-                '/_/component_positions/p2',
-                '/_/component_positions/p3',
-                '/_/component_positions/__new__',
-              ],
-            },
+      store.adding = { resource: '/_/new-resource', position: opts.newResourceIsPosition ? undefined : newPositionIri }
+      stored[newPositionIri] = { '@id': newPositionIri, '@type': 'ComponentPosition', 'componentGroup': groupIri, 'sortValue': 1, '_metadata': { persisted: false } }
+      store.getResource = vi.fn((iri: string) => iri === '/_/new-resource' ? { data: newResourceData } : (stored[iri] ? { data: stored[iri] } : undefined))
+      store.saveResource = vi.fn(({ resource }: any) => {
+        stored[resource['@id']] = resource
+      })
+      store.getOrderedPositionsForGroup = vi.fn((iri: string) => stored[iri]?.componentPositions.filter((position: string) => position !== newPositionIri))
+      resourcesManager.addResourceEvent.value = { closest: { group: groupIri }, ...addEvent } as any
+      cwaFetch.fetch.mockImplementation(async (path: string, options: any) => {
+        if (options?.method === 'POST') {
+          if (opts.createResponse instanceof Error) {
+            throw opts.createResponse
           }
+          return opts.createResponse ?? { '@id': '/component/1', 'componentPositions': ['/_/component_positions/n'] }
+        }
+        if (path === `${groupIri}/order`) {
+          return opts.orderResponse ?? { componentGroup: groupIri, sortValues: { [p1]: 0, '/_/component_positions/n': 1, [p2]: 2 } }
         }
       })
-      resourcesManager.addResourceEvent.value = {
-        targetIri: '/_/component_positions/p2',
-        addAfter: null,
-        closest: { group: '/_/component_groups/g1' },
-      } as any
-      const result = (resourcesManager as any).getRefreshPositions('/_/component_positions/p2')
-      expect(result).toEqual([
-        '/_/component_positions/p2',
-        '/_/component_positions/p3',
-      ])
+      const updateSpy = vi.spyOn(resourcesManager, 'updateResource')
+      return { ...created, mockFetcher, newResourceData, stored, updateSpy }
+    }
+
+    const postedPosition = (cwaFetch: any) => cwaFetch.fetch.mock.calls.find(([, options]: any) => options?.method === 'POST')![1].body.componentPositions[0]
+
+    test.each([
+      ['Add After a component', { targetIri: '/component/c1', addAfter: true, closest: { group: groupIri, position: p1 } }, { after: p1 }],
+      ['Add Before a component', { targetIri: '/component/c1', addAfter: false, closest: { group: groupIri, position: p2 } }, { before: p2 }],
+      ['Add to Start', { targetIri: groupIri, addAfter: false }, { before: p1 }],
+      ['Add to End', { targetIri: groupIri, addAfter: true }, {}],
+      ['Add After with no closest position', { targetIri: '/component/c1', addAfter: true, closest: { group: groupIri } }, {}],
+    ])('%s sends the anchor and no sortValue, and PATCHes no other position', async (_label, addEvent, anchor) => {
+      const { resourcesManager, cwaFetch, updateSpy } = setupInsert(addEvent)
+      await resourcesManager.addResourceAction()
+      const position = postedPosition(cwaFetch)
+      expect(position).not.toHaveProperty('sortValue')
+      expect({ after: position.after, before: position.before }).toEqual({ after: undefined, before: undefined, ...anchor })
+      expect(updateSpy).not.toHaveBeenCalled()
     })
 
-    test('groupResource getter returns undefined when no addResourceEvent group (line 658)', () => {
-      const { resourcesManager } = createResourcesManager({ includeAdmin: true })
-      expect((resourcesManager as any).groupResource).toBeUndefined()
-      resourcesManager.addResourceEvent.value = { targetIri: '/x', addAfter: null, closest: {} } as any
-      expect((resourcesManager as any).groupResource).toBeUndefined()
+    test('Add to Start on a group holding only the new position sends no anchor', async () => {
+      const { resourcesManager, cwaFetch } = setupInsert({ targetIri: groupIri, addAfter: false }, { groupPositions: [newPositionIri] })
+      await resourcesManager.addResourceAction()
+      const position = postedPosition(cwaFetch)
+      expect(position.before).toBeUndefined()
+      expect(position.after).toBeUndefined()
     })
 
-    test('groupResourcePositions getter returns undefined when groupResource is undefined (line 665)', () => {
-      const { resourcesManager } = createResourcesManager({ includeAdmin: true })
-      expect((resourcesManager as any).groupResourcePositions).toBeUndefined()
+    test('a new position added on its own carries the anchor at the top level and no sortValue', async () => {
+      const { resourcesManager, cwaFetch, newResourceData } = setupInsert({ targetIri: '/component/c1', addAfter: true, closest: { group: groupIri, position: p1 } }, { newResourceIsPosition: true })
+      await resourcesManager.addResourceAction()
+      const body = cwaFetch.fetch.mock.calls.find(([, options]: any) => options?.method === 'POST')![1].body
+      expect(body.after).toBe(p1)
+      expect(body).not.toHaveProperty('sortValue')
+      expect(newResourceData).not.toHaveProperty('sortValue')
+    })
+
+    test('a position in the order after an insert that the module does not hold yet is fetched with the group', async () => {
+      const { resourcesManager, mockFetcher } = setupInsert(
+        { targetIri: '/component/c1', addAfter: true, closest: { group: groupIri, position: p1 } },
+        { orderResponse: { componentGroup: groupIri, sortValues: { [p1]: 0, '/_/component_positions/n': 1, [p2]: 2 } } },
+      )
+      await resourcesManager.addResourceAction()
+      const reconcile = mockFetcher.fetchBatch.mock.calls.at(-1)![0]
+      expect(reconcile.paths).toEqual([groupIri, '/_/component_positions/n'])
+    })
+
+    test('after the POST one GET of the group\'s order stores every position\'s sortValue (case 2)', async () => {
+      const { resourcesManager, cwaFetch, stored } = setupInsert(
+        { targetIri: '/component/c1', addAfter: true, closest: { group: groupIri, position: p1 } },
+        { orderResponse: { componentGroup: groupIri, sortValues: { [p1]: 0, '/_/component_positions/n': 1, [p2]: 2 } } },
+      )
+      await resourcesManager.addResourceAction()
+      const orderCalls = cwaFetch.fetch.mock.calls.filter(([path]: any) => path === `${groupIri}/order`)
+      expect(orderCalls).toHaveLength(1)
+      expect(orderCalls[0]![1].method).toBe('GET')
+      expect(stored[p1].sortValue).toBe(0)
+      expect(stored[p2].sortValue).toBe(2)
+      expect(stored[p2]._metadata).toEqual({ persisted: true })
+    })
+
+    test('a failed create, such as one rejected on its anchor, re-fetches the group and its order, keeping the error and the new component', async () => {
+      const violation = Object.assign(new Error('422'), { statusCode: 422, data: { violations: [{ propertyPath: 'componentPositions[0].after', message: 'gone' }] } })
+      const { resourcesManager, cwaFetch, mockFetcher, errorStoreActions } = setupInsert(
+        { targetIri: '/component/c1', addAfter: true, closest: { group: groupIri, position: p1 } },
+        { createResponse: violation },
+      )
+      const clearSpy = vi.spyOn(resourcesManager, 'clearAddResource')
+      await resourcesManager.addResourceAction()
+      expect(errorStoreActions.error).toHaveBeenCalled()
+      expect(errorStoreActions.removeById).not.toHaveBeenCalled()
+      expect(clearSpy).not.toHaveBeenCalled()
+      expect(mockFetcher.fetchBatch).toHaveBeenCalledWith(expect.objectContaining({ paths: [groupIri] }))
+      expect(cwaFetch.fetch.mock.calls.filter(([path]: any) => path === `${groupIri}/order`)).toHaveLength(1)
+    })
+
+    test('the insert is a write to its group, so it waits for an order request in flight', async () => {
+      const { resourcesManager, cwaFetch } = setupInsert({ targetIri: groupIri, addAfter: true })
+      let finishOrder!: () => void
+      resourcesManager.queueComponentGroupWrite(groupIri, () => new Promise<void>((resolve) => {
+        finishOrder = resolve
+      }))
+      const adding = resourcesManager.addResourceAction()
+      await new Promise(resolve => setTimeout(resolve, 0))
+      expect(cwaFetch.fetch).not.toHaveBeenCalled()
+      finishOrder()
+      await adding
+      expect(cwaFetch.fetch.mock.calls.some(([, options]: any) => options?.method === 'POST')).toBe(true)
+    })
+  })
+
+  describe('component group order requests (#400, api-components-bundle#475)', () => {
+    const groupIri = '/_/component_groups/g1'
+    const a = '/_/component_positions/a'
+    const b = '/_/component_positions/b'
+    const c = '/_/component_positions/c'
+
+    function setupOrder() {
+      const mockFetcher = { fetchBatch: vi.fn().mockResolvedValue(undefined) }
+      const created = createResourcesManager({ fetcher: mockFetcher })
+      const stored: Record<string, any> = {
+        [groupIri]: { '@id': groupIri, 'componentPositions': [a, b, c] },
+        [a]: { '@id': a, 'sortValue': 0, '_metadata': { sortDisplayNumber: 2 } },
+        [b]: { '@id': b, 'sortValue': 10, '_metadata': { sortDisplayNumber: 1 } },
+        [c]: { '@id': c, 'sortValue': 20, '_metadata': {} },
+      }
+      const store = (created.resourcesManager as any)._resourcesStore
+      store.getResource = vi.fn((iri: string) => stored[iri] ? { data: stored[iri] } : undefined)
+      store.saveResource = vi.fn(({ resource }: any) => {
+        stored[resource['@id']] = resource
+      })
+      return { ...created, stored, mockFetcher }
+    }
+
+    test('PATCHes the listed order as a merge patch and stores the returned sortValues, keeping display numbers (case 11)', async () => {
+      const { resourcesManager, cwaFetch, stored } = setupOrder()
+      cwaFetch.fetch.mockResolvedValue({ componentGroup: groupIri, sortValues: { [b]: 10, [a]: 11, [c]: 20 } })
+      const result = await resourcesManager.orderComponentGroup(groupIri, [b, a, c])
+      expect(result).toBe(true)
+      expect(cwaFetch.fetch).toHaveBeenCalledWith(`${groupIri}/order`, {
+        method: 'PATCH',
+        headers: { 'accept': 'application/ld+json,application/json', 'content-type': 'application/merge-patch+json' },
+        body: { componentPositions: [b, a, c] },
+      })
+      expect([stored[a].sortValue, stored[b].sortValue, stored[c].sortValue]).toEqual([11, 10, 20])
+      expect(stored[a]._metadata.sortDisplayNumber).toBe(2)
+    })
+
+    test('a complete response matching the positions the module holds re-fetches nothing', async () => {
+      const { resourcesManager, cwaFetch, mockFetcher } = setupOrder()
+      cwaFetch.fetch.mockResolvedValue({ componentGroup: groupIri, sortValues: { [b]: 10, [a]: 11, [c]: 20 } })
+      await resourcesManager.orderComponentGroup(groupIri, [b, a, c])
+      expect(mockFetcher.fetchBatch).not.toHaveBeenCalled()
+    })
+
+    test('a position another editor added since is fetched with the group, so it shows in the server\'s order', async () => {
+      const added = '/_/component_positions/added'
+      const { resourcesManager, cwaFetch, stored, mockFetcher } = setupOrder()
+      cwaFetch.fetch.mockResolvedValue({ componentGroup: groupIri, sortValues: { [b]: 10, [a]: 11, [added]: 15, [c]: 20 } })
+      await resourcesManager.orderComponentGroup(groupIri, [b, a, c])
+      expect(mockFetcher.fetchBatch).toHaveBeenCalledTimes(1)
+      expect(mockFetcher.fetchBatch.mock.calls[0]![0].paths).toEqual([groupIri, added])
+      expect(stored).not.toHaveProperty(added)
+      expect(stored[a].sortValue).toBe(11)
+    })
+
+    test('a position another editor deleted is dropped by re-fetching the group', async () => {
+      const { resourcesManager, cwaFetch, mockFetcher } = setupOrder()
+      cwaFetch.fetch.mockResolvedValue({ componentGroup: groupIri, sortValues: { [b]: 10, [a]: 11 } })
+      await resourcesManager.orderComponentGroup(groupIri, [b, a, c])
+      expect(mockFetcher.fetchBatch).toHaveBeenCalledTimes(1)
+      expect(mockFetcher.fetchBatch.mock.calls[0]![0].paths).toEqual([groupIri])
+    })
+
+    test('a failed order request is reported, returns false, and re-reads the order in case the server saved it', async () => {
+      const { resourcesManager, cwaFetch, errorStoreActions, stored } = setupOrder()
+      const err = new Error('timeout')
+      cwaFetch.fetch.mockImplementation(async (_path: string, options: any) => {
+        if (options.method === 'PATCH') {
+          throw err
+        }
+        return { componentGroup: groupIri, sortValues: { [b]: 10, [a]: 11, [c]: 20 } }
+      })
+      const result = await resourcesManager.orderComponentGroup(groupIri, [b, a, c])
+      expect(result).toBe(false)
+      expect(errorStoreActions.error).toHaveBeenCalledWith(expect.objectContaining({ endpoint: `${groupIri}/order` }), err)
+      expect(cwaFetch.fetch).toHaveBeenLastCalledWith(`${groupIri}/order`, expect.objectContaining({ method: 'GET' }))
+      expect([stored[a].sortValue, stored[b].sortValue, stored[c].sortValue]).toEqual([11, 10, 20])
+    })
+
+    test('an order request counts as a request in progress', async () => {
+      const { resourcesManager, cwaFetch } = setupOrder()
+      let respond!: (value: any) => void
+      cwaFetch.fetch.mockReturnValue(new Promise((resolve) => {
+        respond = resolve
+      }))
+      const ordering = resourcesManager.orderComponentGroup(groupIri, [a])
+      expect(resourcesManager.requestCount.value).toBe(1)
+      respond({ componentGroup: groupIri, sortValues: {} })
+      await ordering
+      expect(resourcesManager.requestCount.value).toBe(0)
+    })
+
+    test('refreshing the order GETs it and stores the values; a failure stores nothing and does not throw', async () => {
+      const { resourcesManager, cwaFetch, stored } = setupOrder()
+      cwaFetch.fetch.mockResolvedValueOnce({ componentGroup: groupIri, sortValues: { [a]: 1, [b]: 2, [c]: 3 } })
+      await resourcesManager.refreshComponentGroupOrder(groupIri)
+      expect(cwaFetch.fetch).toHaveBeenCalledWith(`${groupIri}/order`, expect.objectContaining({ method: 'GET' }))
+      expect([stored[a].sortValue, stored[b].sortValue]).toEqual([1, 2])
+      cwaFetch.fetch.mockRejectedValueOnce(new Error('500'))
+      await expect(resourcesManager.refreshComponentGroupOrder(groupIri)).resolves.toBeUndefined()
+      expect([stored[a].sortValue, stored[b].sortValue]).toEqual([1, 2])
+    })
+
+    test('writes to one group run one at a time, a failed write does not block the next, and other groups do not wait', async () => {
+      const { resourcesManager } = setupOrder()
+      const events: string[] = []
+      let finishFirst!: () => void
+      const first = resourcesManager.queueComponentGroupWrite(groupIri, () => new Promise<void>((resolve) => {
+        finishFirst = () => {
+          events.push('first')
+          resolve()
+        }
+      }))
+      const failing = resourcesManager.queueComponentGroupWrite(groupIri, async () => {
+        events.push('failing')
+        throw new Error('x')
+      })
+      const third = resourcesManager.queueComponentGroupWrite(groupIri, async () => {
+        events.push('third')
+      })
+      const other = resourcesManager.queueComponentGroupWrite('/_/component_groups/other', async () => {
+        events.push('other')
+      })
+      await other
+      expect(events).toEqual(['other'])
+      finishFirst()
+      await first
+      await expect(failing).rejects.toThrow('x')
+      await third
+      expect(events).toEqual(['other', 'first', 'failing', 'third'])
     })
   })
 
