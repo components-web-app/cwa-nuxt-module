@@ -32,10 +32,16 @@ function createGroupSynchronizer() {
   const mockResourcesManager = {
     createResource: vi.fn(),
     updateResource: vi.fn(),
+    removeError: vi.fn(),
+    errors: [] as any[],
   }
+  const lookupState = { value: { apiState: { status: CwaResourceApiStatuses.ERROR, error: { statusCode: 404 } } } as any }
   const mockResources = {
     isLoading: ref(false),
     getResource: vi.fn((iri) => {
+      if (iri.startsWith('/_/component_groups/')) {
+        return lookupState
+      }
       return {
         value: {
           data: {
@@ -75,10 +81,11 @@ function createGroupSynchronizer() {
     auth: mockAuth,
     fetchResource: mockFetchResource,
     getComponentMetadata: mockGetComponentMetadata,
+    lookupState,
   }
 }
 
-function createSyncWatcher(groupSynchronizer: ComponentGroupUtilSynchronizer, ops?: { resource: any, allowedComponents?: null | string[], location?: string, fullReference?: string }) {
+function createSyncWatcher(groupSynchronizer: ComponentGroupUtilSynchronizer, ops?: { resource: any, allowedComponents?: null | string[], maxComponents?: null | number, location?: string, fullReference?: string }) {
   const mockResource = computed(() => {
     return (ops?.resource !== undefined ? ops.resource : { data: {} })
   })
@@ -90,6 +97,7 @@ function createSyncWatcher(groupSynchronizer: ComponentGroupUtilSynchronizer, op
     location: mockLocation,
     fullReference: mockReference,
     allowedComponents: ops && 'allowedComponents' in ops ? ops.allowedComponents : ['/component/a', '/component/b', '/component/c'],
+    maxComponents: ops?.maxComponents,
   }
   groupSynchronizer.createSyncWatcher(syncWatcherOps)
   return syncWatcherOps
@@ -714,6 +722,256 @@ describe('Group synchronizer', () => {
         endpoint: GROUP,
         data: { layouts: [LAYOUT] },
       })
+    })
+  })
+
+  describe('a lookup by reference that did not answer "not found" (#399)', () => {
+    const LAYOUT = '/_api/_/layouts/c7e086b5'
+    const GROUP = '/_api/_/component_groups/49552a4f'
+    const REFERENCE = `headerButton_${LAYOUT}`
+
+    afterEach(() => {
+      vi.mocked(ResourceUtils.getResourceTypeFromIri).mockReset()
+    })
+
+    function syncMissingLayoutGroup() {
+      const context = createGroupSynchronizer()
+      vi.mocked(ResourceUtils.getResourceTypeFromIri).mockReturnValue(CwaResourceTypes.LAYOUT)
+      return {
+        ...context,
+        start() {
+          createSyncWatcher(context.groupSynchronizer, {
+            resource: null,
+            allowedComponents: undefined,
+            location: LAYOUT,
+            fullReference: REFERENCE,
+          })
+          context.auth.signedIn.value = true
+        },
+      }
+    }
+
+    test('does not create a group when the lookup by reference was aborted, e.g. by Back during a navigation', async () => {
+      const { resourcesManager, fetchResource, lookupState, start } = syncMissingLayoutGroup()
+      fetchResource.mockResolvedValue(undefined)
+      lookupState.value = { apiState: { status: CwaResourceApiStatuses.IN_PROGRESS } }
+      start()
+
+      await flushPromises()
+
+      expect(fetchResource).toHaveBeenCalledWith({ path: `/_/component_groups/${REFERENCE}` })
+      expect(resourcesManager.createResource).not.toHaveBeenCalled()
+    })
+
+    test('does not create a group when the lookup by reference failed with a server error', async () => {
+      const { resourcesManager, fetchResource, lookupState, start } = syncMissingLayoutGroup()
+      fetchResource.mockResolvedValue(undefined)
+      lookupState.value = { apiState: { status: CwaResourceApiStatuses.ERROR, error: { statusCode: 500 } } }
+      start()
+
+      await flushPromises()
+
+      expect(fetchResource).toHaveBeenCalled()
+      expect(resourcesManager.createResource).not.toHaveBeenCalled()
+    })
+
+    test('creates the group after the lookup by reference 404s', async () => {
+      const { resourcesManager, fetchResource, start } = syncMissingLayoutGroup()
+      fetchResource.mockResolvedValue(undefined)
+      start()
+
+      await flushPromises()
+
+      expect(resourcesManager.createResource).toHaveBeenCalledWith({
+        endpoint: '/_/component_groups',
+        data: {
+          reference: REFERENCE,
+          location: LAYOUT,
+          allowedComponents: undefined,
+          layouts: [LAYOUT],
+        },
+      })
+    })
+
+    test('a create rejected because the reference already exists attaches the existing group, and shows no error', async () => {
+      const { resourcesManager, fetchResource, start } = syncMissingLayoutGroup()
+      fetchResource
+        .mockResolvedValueOnce(undefined)
+        .mockResolvedValueOnce({ '@id': GROUP, 'reference': REFERENCE, 'layouts': [] })
+      const duplicateError = {
+        event: { endpoint: '/_/component_groups' },
+        violations: [{ property: 'reference', message: 'There is already a ComponentGroup resource with that reference.' }],
+        timestamp: 1760620000000,
+      }
+      resourcesManager.createResource.mockImplementation(async () => {
+        resourcesManager.errors.push(duplicateError)
+        return undefined
+      })
+      start()
+
+      await flushPromises()
+
+      expect(resourcesManager.removeError).toHaveBeenCalledWith(duplicateError.timestamp)
+      expect(fetchResource).toHaveBeenCalledTimes(2)
+      expect(resourcesManager.updateResource).toHaveBeenCalledWith({
+        endpoint: GROUP,
+        data: { layouts: [LAYOUT] },
+      })
+    })
+
+    test('a create rejected for another reason keeps its error for the editor', async () => {
+      const { resourcesManager, fetchResource, start } = syncMissingLayoutGroup()
+      fetchResource.mockResolvedValue(undefined)
+      resourcesManager.createResource.mockImplementation(async () => {
+        resourcesManager.errors.push({
+          event: { endpoint: '/_/component_groups' },
+          violations: [{ property: 'allowedComponents', message: 'Not valid.' }],
+          timestamp: 1760620000001,
+        })
+        return undefined
+      })
+      start()
+
+      await flushPromises()
+
+      expect(resourcesManager.removeError).not.toHaveBeenCalled()
+      expect(fetchResource).toHaveBeenCalledTimes(1)
+      expect(resourcesManager.updateResource).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('maxComponents (#398)', () => {
+    function loadedGroup(data: Record<string, any> = {}) {
+      return {
+        data: {
+          '@id': '/test',
+          'allowedComponents': ['/component/a', '/component/b', '/component/c'],
+          ...data,
+        },
+        apiState: { status: CwaResourceApiStatuses.SUCCESS },
+      }
+    }
+
+    test('creates the group with maxComponents when the prop is set', async () => {
+      const { auth, groupSynchronizer, resourcesManager } = createGroupSynchronizer()
+      const syncWatcherOps = createSyncWatcher(groupSynchronizer, { resource: null, maxComponents: 1 })
+
+      auth.signedIn.value = true
+      await flushPromises()
+
+      expect(resourcesManager.createResource).toHaveBeenCalledWith({
+        endpoint: '/_/component_groups',
+        data: {
+          reference: syncWatcherOps.fullReference.value,
+          location: syncWatcherOps.location,
+          allowedComponents: syncWatcherOps.allowedComponents,
+          maxComponents: 1,
+          components: [syncWatcherOps.location],
+        },
+      })
+    })
+
+    test('PATCHes maxComponents when the group\'s value differs', async () => {
+      const { auth, groupSynchronizer, resourcesManager } = createGroupSynchronizer()
+      createSyncWatcher(groupSynchronizer, { resource: loadedGroup({ maxComponents: 3 }), maxComponents: 1 })
+
+      auth.signedIn.value = true
+      await flushPromises()
+
+      expect(resourcesManager.updateResource).toHaveBeenCalledTimes(1)
+      expect(resourcesManager.updateResource).toHaveBeenCalledWith({
+        endpoint: '/test',
+        data: { maxComponents: 1 },
+      })
+    })
+
+    test('PATCHes a stored maxComponents to null when the prop is null', async () => {
+      const { auth, groupSynchronizer, resourcesManager } = createGroupSynchronizer()
+      createSyncWatcher(groupSynchronizer, { resource: loadedGroup({ maxComponents: 3 }), maxComponents: null })
+
+      auth.signedIn.value = true
+      await flushPromises()
+
+      expect(resourcesManager.updateResource).toHaveBeenCalledWith({
+        endpoint: '/test',
+        data: { maxComponents: null },
+      })
+    })
+
+    test.each([
+      ['a matching value', { maxComponents: 2 }, 2],
+      ['a missing key for a null prop', {}, null],
+    ])('does not PATCH for %s', async (_label, stored, prop) => {
+      const { auth, groupSynchronizer, resourcesManager } = createGroupSynchronizer()
+      createSyncWatcher(groupSynchronizer, { resource: loadedGroup(stored), maxComponents: prop })
+
+      auth.signedIn.value = true
+      await flushPromises()
+
+      expect(resourcesManager.updateResource).not.toHaveBeenCalled()
+    })
+
+    test('leaves maxComponents alone when the prop is omitted', async () => {
+      const { auth, groupSynchronizer, resourcesManager } = createGroupSynchronizer()
+      createSyncWatcher(groupSynchronizer, { resource: loadedGroup({ maxComponents: 3 }) })
+
+      auth.signedIn.value = true
+      await flushPromises()
+
+      expect(resourcesManager.updateResource).not.toHaveBeenCalled()
+    })
+
+    test('sends one PATCH when allowedComponents and maxComponents both differ', async () => {
+      const { auth, groupSynchronizer, resourcesManager } = createGroupSynchronizer()
+      createSyncWatcher(groupSynchronizer, {
+        resource: loadedGroup({ allowedComponents: ['/component/a'] }),
+        allowedComponents: ['/component/b'],
+        maxComponents: 1,
+      })
+
+      auth.signedIn.value = true
+      await flushPromises()
+
+      expect(resourcesManager.updateResource).toHaveBeenCalledTimes(1)
+      expect(resourcesManager.updateResource).toHaveBeenCalledWith({
+        endpoint: '/test',
+        data: { allowedComponents: ['/component/b'], maxComponents: 1 },
+      })
+    })
+
+    test.each([0, -1, 1.5])('warns and does not sync a maxComponents of %s, still syncing allowedComponents', async (invalid) => {
+      const warn = vi.spyOn(consola, 'warn').mockImplementation(() => {})
+      const { auth, groupSynchronizer, resourcesManager } = createGroupSynchronizer()
+      createSyncWatcher(groupSynchronizer, {
+        resource: loadedGroup({ allowedComponents: ['/component/a'], maxComponents: 3 }),
+        allowedComponents: ['/component/b'],
+        maxComponents: invalid,
+      })
+
+      auth.signedIn.value = true
+      await flushPromises()
+
+      expect(resourcesManager.updateResource).toHaveBeenCalledTimes(1)
+      expect(resourcesManager.updateResource).toHaveBeenCalledWith({
+        endpoint: '/test',
+        data: { allowedComponents: ['/component/b'] },
+      })
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining(`maxComponents was not synced: ${invalid}`))
+      warn.mockRestore()
+    })
+
+    test('creates the group without an invalid maxComponents', async () => {
+      const warn = vi.spyOn(consola, 'warn').mockImplementation(() => {})
+      const { auth, groupSynchronizer, resourcesManager } = createGroupSynchronizer()
+      createSyncWatcher(groupSynchronizer, { resource: null, maxComponents: 0 })
+
+      auth.signedIn.value = true
+      await flushPromises()
+
+      expect(resourcesManager.createResource).toHaveBeenCalledTimes(1)
+      expect(resourcesManager.createResource.mock.calls[0]![0].data).not.toHaveProperty('maxComponents')
+      expect(warn).toHaveBeenCalled()
+      warn.mockRestore()
     })
   })
 

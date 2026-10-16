@@ -8,6 +8,7 @@ import {
 } from '#cwa/resources/resource-utils'
 import type { CwaResource } from '#cwa/resources/resource-utils'
 import { useCwa } from '#cwa/composables/cwa'
+import { componentGroupCapacity } from '#cwa/resources/component-group-capacity'
 import type { ButtonOption, ModelValue } from '#cwa/templates/components/ui/form/Button.vue'
 
 const props = defineProps<{
@@ -37,8 +38,25 @@ const buttonLabel = computed<'Publish' | undefined>(() => {
   return 'Publish'
 })
 
+const targetGroupIri = computed(() => {
+  if (resourceType.value === CwaResourceTypes.COMPONENT_GROUP) {
+    return props.currentIri
+  }
+  return $cwa.admin.resourceStackManager.resourceStack.value.find(item => getResourceTypeFromIri(item.iri) === CwaResourceTypes.COMPONENT_GROUP)?.iri
+})
+
+const targetGroupFull = computed(() => {
+  if (!targetGroupIri.value) {
+    return false
+  }
+  return componentGroupCapacity($cwa.resources.getResource(targetGroupIri.value).value?.data).full
+})
+
 const buttonOptions = computed(() => {
   const ops: (ButtonOption | ButtonOption[])[] = []
+  if (targetGroupFull.value) {
+    return ops
+  }
 
   // this check wasn't really making sense, we can still add resources on data pages
   // if (!$cwa.resources.isDataPage.value || $cwa.admin.resourceStackManager.isEditingLayout.value) {

@@ -21,7 +21,11 @@ vi.mock('#cwa/admin/stranded-component-groups', () => ({
 }))
 
 const deleteResource = vi.fn()
-const $cwa = { resourcesManager: { deleteResource } }
+const groupData: Record<string, any> = {}
+const $cwa = {
+  resourcesManager: { deleteResource },
+  resources: { getResource: vi.fn((iri: string) => ({ value: groupData[iri] ? { data: groupData[iri] } : undefined })) },
+}
 
 const groups: StrandedComponentGroup[] = [
   {
@@ -95,6 +99,9 @@ describe('StrandedComponentGroupsModal', () => {
     vi.mocked(createConfirmDialog).mockReset()
     vi.mocked(mergeComponentGroup).mockReset()
     deleteResource.mockReset()
+    for (const iri of Object.keys(groupData)) {
+      delete groupData[iri]
+    }
     vi.restoreAllMocks()
   })
 
@@ -112,6 +119,18 @@ describe('StrandedComponentGroupsModal', () => {
     const wrapper = mountModal()
     const options = section(wrapper, 0).findComponent({ name: 'CwaUiFormSelect' }).props('options')
     expect(options).toEqual([{ label: 'hero', value: '/_/component_groups/hero' }])
+  })
+
+  test.each([
+    ['room for every component', { maxComponents: 3, componentPositions: ['/_/component_positions/h1'] }, true],
+    ['no limit', { componentPositions: ['/_/component_positions/h1'] }, true],
+    ['too little room for every component', { maxComponents: 2, componentPositions: ['/_/component_positions/h1'] }, false],
+    ['a full group', { maxComponents: 1, componentPositions: ['/_/component_positions/h1'] }, false],
+  ])('offers a target with %s only when it can take them all (#398)', (_label, data, offered) => {
+    groupData['/_/component_groups/hero'] = data
+    const wrapper = mountModal()
+    const options = section(wrapper, 0).findComponent({ name: 'CwaUiFormSelect' }).props('options')
+    expect(options).toEqual(offered ? [{ label: 'hero', value: '/_/component_groups/hero' }] : [])
   })
 
   test('cannot merge before a target is chosen, or an empty group at all', async () => {

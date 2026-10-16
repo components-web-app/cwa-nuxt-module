@@ -8,6 +8,7 @@ import { CwaResourceTypes, ResourceTypeFromIri, getResourceTypeFromIri } from '.
 import type { Resources } from '../../../resources/resources'
 import type Auth from '../../../api/auth'
 import type { CwaCurrentResourceInterface } from '../../../storage/stores/resources/state'
+import type { CwaResource } from '../../../resources/resource-utils'
 import { CwaResourceApiStatuses } from '../../../storage/stores/resources/state'
 import { useCwa } from '../../../composables/cwa'
 
@@ -28,9 +29,11 @@ interface SyncWatcherOps {
   location: string
   fullReference: ComputedRef<string>
   allowedComponents: string[] | null | undefined
+  maxComponents?: number | null
 }
 
 const UNRESOLVED = Symbol('unresolved')
+const COMPONENT_GROUPS_ENDPOINT = '/_/component_groups'
 
 export class ComponentGroupUtilSynchronizer {
   private readonly resourcesManager: ResourcesManager
@@ -47,7 +50,7 @@ export class ComponentGroupUtilSynchronizer {
   }
 
   private async createComponentGroupWatchHandler(
-    { allowedComponents, location, fullReference }: SyncWatcherOps,
+    { allowedComponents, maxComponents, location, fullReference }: SyncWatcherOps,
     [signedIn, componentGroupResource]: [boolean, CwaCurrentResourceInterface | undefined],
   ) {
     // not signed in? we shouldn't have permissions anyway to do anything in creating new component groups
@@ -57,7 +60,7 @@ export class ComponentGroupUtilSynchronizer {
     // if the component groups exists, we can check if the allowed components are in sync
     if (componentGroupResource) {
       if (componentGroupResource.apiState.status === CwaResourceApiStatuses.SUCCESS) {
-        await this.updateAllowedComponents(allowedComponents, componentGroupResource)
+        await this.updateComponentGroup(allowedComponents, maxComponents, componentGroupResource)
       }
       return
     }
@@ -77,29 +80,53 @@ export class ComponentGroupUtilSynchronizer {
 
     // at this point we are going to be performing an API request to update or create resources.
     // Check if the resource reference already exists, may not be assigned to this location yet
-    const resourceByRef = await this.$cwa.fetchResource({
-      path: `/_/component_groups/${fullReference.value}`,
-    })
+    const lookupPath = `/_/component_groups/${fullReference.value}`
+    const resourceByRef = await this.$cwa.fetchResource({ path: lookupPath })
 
     if (resourceByRef) {
-      // simpler to update the location resource, except for when there are multiple simultaneous requests which can happen.
-      // then we could lose data of a component group being added. Safer to update the component group as it's less
-      // common for there to be another simultaneous update call
-      const locationIri = locationResource.value.data['@id']
-      const existingLocations = this.toLocationIris(resourceByRef[locationProperty])
-      if (existingLocations.includes(locationIri)) {
-        return
-      }
-      await this.resourcesManager.updateResource({
-        endpoint: resourceByRef['@id'],
-        data: {
-          [locationProperty]: [...existingLocations, locationIri],
-        },
-      })
+      await this.attachLocation(resourceByRef, locationProperty, locationResource.value.data['@id'])
       return
     }
 
-    await this.createComponentGroup(location, locationProperty, fullReference, allowedComponents)
+    if (!this.isNotFound(lookupPath)) {
+      return
+    }
+
+    const created = await this.createComponentGroup(location, locationProperty, fullReference, allowedComponents, maxComponents)
+    if (created !== undefined) {
+      return
+    }
+
+    const duplicateReference = this.resourcesManager.errors.find(error => error.event?.endpoint === COMPONENT_GROUPS_ENDPOINT && error.violations?.some(violation => violation.property === 'reference'))
+    if (!duplicateReference) {
+      return
+    }
+    this.resourcesManager.removeError(duplicateReference.timestamp)
+    const existing = await this.$cwa.fetchResource({ path: lookupPath })
+    if (existing) {
+      await this.attachLocation(existing, locationProperty, locationResource.value.data['@id'])
+    }
+  }
+
+  private async attachLocation(componentGroup: CwaResource, locationProperty: LocationProperty, locationIri: string) {
+    // simpler to update the location resource, except for when there are multiple simultaneous requests which can happen.
+    // then we could lose data of a component group being added. Safer to update the component group as it's less
+    // common for there to be another simultaneous update call
+    const existingLocations = this.toLocationIris(componentGroup[locationProperty])
+    if (existingLocations.includes(locationIri)) {
+      return
+    }
+    await this.resourcesManager.updateResource({
+      endpoint: componentGroup['@id'],
+      data: {
+        [locationProperty]: [...existingLocations, locationIri],
+      },
+    })
+  }
+
+  private isNotFound(iri: string) {
+    const apiState = this.resources.getResource(iri).value?.apiState
+    return apiState?.status === CwaResourceApiStatuses.ERROR && apiState.error?.statusCode === 404
   }
 
   public createSyncWatcher(ops: SyncWatcherOps) {
@@ -136,21 +163,32 @@ export class ComponentGroupUtilSynchronizer {
     return resourceTypeProperty[locationResourceType as keyof typeof resourceTypeProperty]
   }
 
-  private async createComponentGroup(iri: string, locationProperty: LocationProperty, fullReference: ComputedRef<string | undefined>, allowedComponents: string[] | null | undefined) {
+  private async createComponentGroup(iri: string, locationProperty: LocationProperty, fullReference: ComputedRef<string | undefined>, allowedComponents: string[] | null | undefined, maxComponents: number | null | undefined) {
     const resolvedAllowedComponents = await this.resolveAllowedComponents(allowedComponents)
     if (resolvedAllowedComponents === UNRESOLVED) {
       return
     }
+    const resolvedMaxComponents = this.resolveMaxComponents(maxComponents)
 
-    await this.resourcesManager.createResource({
-      endpoint: '/_/component_groups',
+    return this.resourcesManager.createResource({
+      endpoint: COMPONENT_GROUPS_ENDPOINT,
       data: {
         reference: fullReference.value,
         location: iri,
         allowedComponents: resolvedAllowedComponents,
+        ...(resolvedMaxComponents === UNRESOLVED || resolvedMaxComponents === undefined ? {} : { maxComponents: resolvedMaxComponents }),
         [locationProperty]: [iri],
       },
     })
+  }
+
+  private resolveMaxComponents(maxComponents: number | null | undefined): number | null | undefined | typeof UNRESOLVED {
+    if (maxComponents === undefined || maxComponents === null) return maxComponents
+    if (!Number.isInteger(maxComponents) || maxComponents < 1) {
+      logger.warn(`[CWA] maxComponents was not synced: ${maxComponents} is not a positive whole number.`)
+      return UNRESOLVED
+    }
+    return maxComponents
   }
 
   private toLocationIris(locations: unknown): string[] {
@@ -197,19 +235,28 @@ export class ComponentGroupUtilSynchronizer {
     return iris.map(iri => iri.startsWith(prefix) ? iri : `${prefix}${iri}`)
   }
 
-  private async updateAllowedComponents(allowedComponents: string[] | null | undefined, resource: any) {
-    if (allowedComponents === undefined) return
-    const stored = resource?.data?.allowedComponents
-    const normalized = await this.resolveAllowedComponents(allowedComponents)
-    if (normalized === UNRESOLVED || isEqual(normalized, stored ?? null)) {
+  private async updateComponentGroup(allowedComponents: string[] | null | undefined, maxComponents: number | null | undefined, resource: any) {
+    const data: { allowedComponents?: string[] | null, maxComponents?: number | null } = {}
+
+    if (allowedComponents !== undefined) {
+      const normalized = await this.resolveAllowedComponents(allowedComponents)
+      if (normalized !== UNRESOLVED && !isEqual(normalized, resource?.data?.allowedComponents ?? null)) {
+        data.allowedComponents = normalized
+      }
+    }
+
+    const resolvedMaxComponents = this.resolveMaxComponents(maxComponents)
+    if (resolvedMaxComponents !== undefined && resolvedMaxComponents !== UNRESOLVED && resolvedMaxComponents !== (resource?.data?.maxComponents ?? null)) {
+      data.maxComponents = resolvedMaxComponents
+    }
+
+    if (!Object.keys(data).length) {
       return
     }
 
     await this.resourcesManager.updateResource({
       endpoint: resource?.data['@id'],
-      data: {
-        allowedComponents: normalized,
-      },
+      data,
     })
   }
 }

@@ -120,6 +120,7 @@ import { useCwa } from '#cwa/composables/cwa'
 import { useNuxtApp } from '#imports'
 import { createConfirmDialog } from '#cwa/admin/confirm-dialog'
 import { mergeComponentGroup } from '#cwa/admin/stranded-component-groups'
+import { componentGroupCapacity } from '#cwa/resources/component-group-capacity'
 import type { ShownComponentGroup, StrandedComponentGroup } from '#cwa/admin/stranded-component-groups'
 
 const props = defineProps<{
@@ -138,9 +139,14 @@ const selectedTargets = reactive<Record<string, string | undefined>>({})
 const busy = reactive<Record<string, boolean>>({})
 const outcomes = reactive<Record<string, string[] | undefined>>({})
 
+function hasRoomFor(target: ShownComponentGroup, group: StrandedComponentGroup) {
+  const { max, count } = componentGroupCapacity($cwa.resources.getResource(target.iri).value?.data)
+  return max === null || count + group.positions.length <= max
+}
+
 function targetOptions(group: StrandedComponentGroup) {
   return props.targets
-    .filter(target => target.iri !== group.iri)
+    .filter(target => target.iri !== group.iri && hasRoomFor(target, group))
     .map(target => ({ label: target.reference, value: target.iri }))
 }
 

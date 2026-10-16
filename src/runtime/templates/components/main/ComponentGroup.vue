@@ -88,7 +88,7 @@ const $cwa = useCwa()
 
 useCwaResourceManageable(iri)
 
-type PropsType = { reference: string, locationReference?: string, location?: string, allowedComponents?: CwaAllowedComponent[] | null }
+type PropsType = { reference: string, locationReference?: string, location?: string, allowedComponents?: CwaAllowedComponent[] | null, maxComponents?: number | null }
 const props = defineProps<PropsType>()
 
 const hasLocation = computed(() => props.location !== undefined)
@@ -182,6 +182,7 @@ onMounted(() => {
       location,
       fullReference,
       allowedComponents: props.allowedComponents,
+      maxComponents: props.maxComponents,
     })
   }, { immediate: true })
 })

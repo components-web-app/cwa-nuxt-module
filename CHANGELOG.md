@@ -4,6 +4,11 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+## [2.0.0-alpha.18] - 2026-10-16
+
+- `<CwaComponentGroup>` takes a `max-components` prop that limits how many components a group holds: the admin offers no add for a full group and warns about one over its limit, removing nothing. Needs an api-components-bundle release with [#467](https://github.com/components-web-app/api-components-bundle/pull/467) ([#398](https://github.com/components-web-app/cwa-nuxt-module/issues/398), [6789579f](https://github.com/components-web-app/cwa-nuxt-module/commit/6789579f))
+- The component group sync no longer tries to create a group that already exists when a navigation is interrupted, e.g. by Back ("reference already exists"); a create rejected as a duplicate attaches the existing group without showing an error ([#399](https://github.com/components-web-app/cwa-nuxt-module/issues/399), [0af4ec09](https://github.com/components-web-app/cwa-nuxt-module/commit/0af4ec09))
+
 ## [2.0.0-alpha.17] - 2026-10-15
 
 - `<CwaLoadingIndicator>`'s bar no longer goes back when the page load finds more resources, such as a route's page data ([#397](https://github.com/components-web-app/cwa-nuxt-module/issues/397), [994b87a7](https://github.com/components-web-app/cwa-nuxt-module/commit/994b87a7))
@@ -126,7 +131,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 - First tagged release of `@cwa/nuxt`; releases are now published from `v*` tags ([7c61b7c](https://github.com/components-web-app/cwa-nuxt-module/commit/7c61b7ce331ec4a0cb8e76951a5de2ff806ed07a))
 
-[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.17...HEAD
+[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.18...HEAD
+[2.0.0-alpha.18]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.17...v2.0.0-alpha.18
 [2.0.0-alpha.17]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.16...v2.0.0-alpha.17
 [2.0.0-alpha.16]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.15...v2.0.0-alpha.16
 [2.0.0-alpha.15]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.14...v2.0.0-alpha.15
