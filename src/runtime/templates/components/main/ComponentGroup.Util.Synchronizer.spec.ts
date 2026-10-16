@@ -32,10 +32,16 @@ function createGroupSynchronizer() {
   const mockResourcesManager = {
     createResource: vi.fn(),
     updateResource: vi.fn(),
+    removeError: vi.fn(),
+    errors: [] as any[],
   }
+  const lookupState = { value: { apiState: { status: CwaResourceApiStatuses.ERROR, error: { statusCode: 404 } } } as any }
   const mockResources = {
     isLoading: ref(false),
     getResource: vi.fn((iri) => {
+      if (iri.startsWith('/_/component_groups/')) {
+        return lookupState
+      }
       return {
         value: {
           data: {
@@ -75,6 +81,7 @@ function createGroupSynchronizer() {
     auth: mockAuth,
     fetchResource: mockFetchResource,
     getComponentMetadata: mockGetComponentMetadata,
+    lookupState,
   }
 }
 
@@ -714,6 +721,121 @@ describe('Group synchronizer', () => {
         endpoint: GROUP,
         data: { layouts: [LAYOUT] },
       })
+    })
+  })
+
+  describe('a lookup by reference that did not answer "not found" (#399)', () => {
+    const LAYOUT = '/_api/_/layouts/c7e086b5'
+    const GROUP = '/_api/_/component_groups/49552a4f'
+    const REFERENCE = `headerButton_${LAYOUT}`
+
+    afterEach(() => {
+      vi.mocked(ResourceUtils.getResourceTypeFromIri).mockReset()
+    })
+
+    function syncMissingLayoutGroup() {
+      const context = createGroupSynchronizer()
+      vi.mocked(ResourceUtils.getResourceTypeFromIri).mockReturnValue(CwaResourceTypes.LAYOUT)
+      return {
+        ...context,
+        start() {
+          createSyncWatcher(context.groupSynchronizer, {
+            resource: null,
+            allowedComponents: undefined,
+            location: LAYOUT,
+            fullReference: REFERENCE,
+          })
+          context.auth.signedIn.value = true
+        },
+      }
+    }
+
+    test('does not create a group when the lookup by reference was aborted, e.g. by Back during a navigation', async () => {
+      const { resourcesManager, fetchResource, lookupState, start } = syncMissingLayoutGroup()
+      fetchResource.mockResolvedValue(undefined)
+      lookupState.value = { apiState: { status: CwaResourceApiStatuses.IN_PROGRESS } }
+      start()
+
+      await flushPromises()
+
+      expect(fetchResource).toHaveBeenCalledWith({ path: `/_/component_groups/${REFERENCE}` })
+      expect(resourcesManager.createResource).not.toHaveBeenCalled()
+    })
+
+    test('does not create a group when the lookup by reference failed with a server error', async () => {
+      const { resourcesManager, fetchResource, lookupState, start } = syncMissingLayoutGroup()
+      fetchResource.mockResolvedValue(undefined)
+      lookupState.value = { apiState: { status: CwaResourceApiStatuses.ERROR, error: { statusCode: 500 } } }
+      start()
+
+      await flushPromises()
+
+      expect(fetchResource).toHaveBeenCalled()
+      expect(resourcesManager.createResource).not.toHaveBeenCalled()
+    })
+
+    test('creates the group after the lookup by reference 404s', async () => {
+      const { resourcesManager, fetchResource, start } = syncMissingLayoutGroup()
+      fetchResource.mockResolvedValue(undefined)
+      start()
+
+      await flushPromises()
+
+      expect(resourcesManager.createResource).toHaveBeenCalledWith({
+        endpoint: '/_/component_groups',
+        data: {
+          reference: REFERENCE,
+          location: LAYOUT,
+          allowedComponents: undefined,
+          layouts: [LAYOUT],
+        },
+      })
+    })
+
+    test('a create rejected because the reference already exists attaches the existing group, and shows no error', async () => {
+      const { resourcesManager, fetchResource, start } = syncMissingLayoutGroup()
+      fetchResource
+        .mockResolvedValueOnce(undefined)
+        .mockResolvedValueOnce({ '@id': GROUP, 'reference': REFERENCE, 'layouts': [] })
+      const duplicateError = {
+        event: { endpoint: '/_/component_groups' },
+        violations: [{ property: 'reference', message: 'There is already a ComponentGroup resource with that reference.' }],
+        timestamp: 1760620000000,
+      }
+      resourcesManager.createResource.mockImplementation(async () => {
+        resourcesManager.errors.push(duplicateError)
+        return undefined
+      })
+      start()
+
+      await flushPromises()
+
+      expect(resourcesManager.removeError).toHaveBeenCalledWith(duplicateError.timestamp)
+      expect(fetchResource).toHaveBeenCalledTimes(2)
+      expect(resourcesManager.updateResource).toHaveBeenCalledWith({
+        endpoint: GROUP,
+        data: { layouts: [LAYOUT] },
+      })
+    })
+
+    test('a create rejected for another reason keeps its error for the editor', async () => {
+      const { resourcesManager, fetchResource, start } = syncMissingLayoutGroup()
+      fetchResource.mockResolvedValue(undefined)
+      resourcesManager.createResource.mockImplementation(async () => {
+        resourcesManager.errors.push({
+          event: { endpoint: '/_/component_groups' },
+          violations: [{ property: 'allowedComponents', message: 'Not valid.' }],
+          timestamp: 1760620000001,
+        })
+        return undefined
+      })
+      start()
+
+      await flushPromises()
+
+      expect(resourcesManager.removeError).not.toHaveBeenCalled()
+      expect(fetchResource).toHaveBeenCalledTimes(1)
+      expect(resourcesManager.updateResource).not.toHaveBeenCalled()
     })
   })
 

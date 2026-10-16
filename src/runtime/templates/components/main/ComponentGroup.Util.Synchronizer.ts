@@ -8,6 +8,7 @@ import { CwaResourceTypes, ResourceTypeFromIri, getResourceTypeFromIri } from '.
 import type { Resources } from '../../../resources/resources'
 import type Auth from '../../../api/auth'
 import type { CwaCurrentResourceInterface } from '../../../storage/stores/resources/state'
+import type { CwaResource } from '../../../resources/resource-utils'
 import { CwaResourceApiStatuses } from '../../../storage/stores/resources/state'
 import { useCwa } from '../../../composables/cwa'
 
@@ -31,6 +32,7 @@ interface SyncWatcherOps {
 }
 
 const UNRESOLVED = Symbol('unresolved')
+const COMPONENT_GROUPS_ENDPOINT = '/_/component_groups'
 
 export class ComponentGroupUtilSynchronizer {
   private readonly resourcesManager: ResourcesManager
@@ -77,29 +79,53 @@ export class ComponentGroupUtilSynchronizer {
 
     // at this point we are going to be performing an API request to update or create resources.
     // Check if the resource reference already exists, may not be assigned to this location yet
-    const resourceByRef = await this.$cwa.fetchResource({
-      path: `/_/component_groups/${fullReference.value}`,
-    })
+    const lookupPath = `/_/component_groups/${fullReference.value}`
+    const resourceByRef = await this.$cwa.fetchResource({ path: lookupPath })
 
     if (resourceByRef) {
-      // simpler to update the location resource, except for when there are multiple simultaneous requests which can happen.
-      // then we could lose data of a component group being added. Safer to update the component group as it's less
-      // common for there to be another simultaneous update call
-      const locationIri = locationResource.value.data['@id']
-      const existingLocations = this.toLocationIris(resourceByRef[locationProperty])
-      if (existingLocations.includes(locationIri)) {
-        return
-      }
-      await this.resourcesManager.updateResource({
-        endpoint: resourceByRef['@id'],
-        data: {
-          [locationProperty]: [...existingLocations, locationIri],
-        },
-      })
+      await this.attachLocation(resourceByRef, locationProperty, locationResource.value.data['@id'])
       return
     }
 
-    await this.createComponentGroup(location, locationProperty, fullReference, allowedComponents)
+    if (!this.isNotFound(lookupPath)) {
+      return
+    }
+
+    const created = await this.createComponentGroup(location, locationProperty, fullReference, allowedComponents)
+    if (created !== undefined) {
+      return
+    }
+
+    const duplicateReference = this.resourcesManager.errors.find(error => error.event?.endpoint === COMPONENT_GROUPS_ENDPOINT && error.violations?.some(violation => violation.property === 'reference'))
+    if (!duplicateReference) {
+      return
+    }
+    this.resourcesManager.removeError(duplicateReference.timestamp)
+    const existing = await this.$cwa.fetchResource({ path: lookupPath })
+    if (existing) {
+      await this.attachLocation(existing, locationProperty, locationResource.value.data['@id'])
+    }
+  }
+
+  private async attachLocation(componentGroup: CwaResource, locationProperty: LocationProperty, locationIri: string) {
+    // simpler to update the location resource, except for when there are multiple simultaneous requests which can happen.
+    // then we could lose data of a component group being added. Safer to update the component group as it's less
+    // common for there to be another simultaneous update call
+    const existingLocations = this.toLocationIris(componentGroup[locationProperty])
+    if (existingLocations.includes(locationIri)) {
+      return
+    }
+    await this.resourcesManager.updateResource({
+      endpoint: componentGroup['@id'],
+      data: {
+        [locationProperty]: [...existingLocations, locationIri],
+      },
+    })
+  }
+
+  private isNotFound(iri: string) {
+    const apiState = this.resources.getResource(iri).value?.apiState
+    return apiState?.status === CwaResourceApiStatuses.ERROR && apiState.error?.statusCode === 404
   }
 
   public createSyncWatcher(ops: SyncWatcherOps) {
@@ -142,8 +168,8 @@ export class ComponentGroupUtilSynchronizer {
       return
     }
 
-    await this.resourcesManager.createResource({
-      endpoint: '/_/component_groups',
+    return this.resourcesManager.createResource({
+      endpoint: COMPONENT_GROUPS_ENDPOINT,
       data: {
         reference: fullReference.value,
         location: iri,
