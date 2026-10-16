@@ -4,6 +4,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+- The component group sync no longer tries to create a group that already exists when a navigation is interrupted, e.g. by Back ("reference already exists"); a create rejected as a duplicate attaches the existing group without showing an error ([#399](https://github.com/components-web-app/cwa-nuxt-module/issues/399), [0af4ec09](https://github.com/components-web-app/cwa-nuxt-module/commit/0af4ec09))
+
 ## [2.0.0-alpha.17] - 2026-10-15
 
 - `<CwaLoadingIndicator>`'s bar no longer goes back when the page load finds more resources, such as a route's page data ([#397](https://github.com/components-web-app/cwa-nuxt-module/issues/397), [994b87a7](https://github.com/components-web-app/cwa-nuxt-module/commit/994b87a7))
