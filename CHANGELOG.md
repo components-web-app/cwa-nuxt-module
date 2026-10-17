@@ -4,6 +4,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+- A server render is no longer cached when a component fetch still fails with a 5xx or a network error after its retry, or the wait for a resource times out: the page went out with components missing and a long `s-maxage` during a cold-cache load ([#401](https://github.com/components-web-app/cwa-nuxt-module/issues/401), [98767885](https://github.com/components-web-app/cwa-nuxt-module/commit/98767885))
+
 ## [2.0.0-alpha.19] - 2026-10-17
 
 - **Breaking: needs api-components-bundle [2.0.0-alpha.24](https://github.com/components-web-app/api-components-bundle/releases/tag/2.0.0-alpha.24) (#475), and that bundle needs this release; do not pair it with an older bundle, or bundle alpha.24 with an older module.** The API now orders component positions: adding a component sends `after`/`before` the position it was placed next to instead of a sort value, and a reorder is one `PATCH <group>/order` with the new order instead of one request per moved position. Moves show at once and the Order controls are no longer disabled while requests run; the order is reconciled from the API's complete response, so it never depends on Mercure ([#400](https://github.com/components-web-app/cwa-nuxt-module/issues/400), [4e4a769f](https://github.com/components-web-app/cwa-nuxt-module/commit/4e4a769f), [73219b19](https://github.com/components-web-app/cwa-nuxt-module/commit/73219b19))
