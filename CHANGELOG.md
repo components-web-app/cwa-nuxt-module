@@ -4,6 +4,7 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+- **Needs api-components-bundle 2.0.0-alpha.25 ([#484](https://github.com/components-web-app/api-components-bundle/issues/484)); do not pair it with an older bundle, which ignores the request body and flushes everything.** The page settings modal's Info tab can purge the cache of the page on screen alone: its route, every resource it is built from, and its manifest, in one request. Purging all cached data is now presented as a last resort ([cdcd3c82](https://github.com/components-web-app/cwa-nuxt-module/commit/cdcd3c82))
 - A server render is no longer cached when a component fetch still fails with a 5xx or a network error after its retry, or the wait for a resource times out: the page went out with components missing and a long `s-maxage` during a cold-cache load ([#401](https://github.com/components-web-app/cwa-nuxt-module/issues/401), [98767885](https://github.com/components-web-app/cwa-nuxt-module/commit/98767885))
 
 ## [2.0.0-alpha.19] - 2026-10-17
