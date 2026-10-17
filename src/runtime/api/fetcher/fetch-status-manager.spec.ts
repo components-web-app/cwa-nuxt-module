@@ -919,14 +919,14 @@ describe('FetchStatusManager -> isCurrentSuccessResourcesResolved', () => {
   })
 })
 
-describe('FetchStatusManager -> onPrimaryFetchError (#340)', () => {
+describe('FetchStatusManager -> onIncompleteRender (#340, #401)', () => {
   let fetchStatusManager: FetchStatusManager
   let markUnstorable: ReturnType<typeof vi.fn>
 
   beforeEach(() => {
     fetchStatusManager = createFetchStatusManager()
     markUnstorable = vi.fn()
-    fetchStatusManager.onPrimaryFetchError(markUnstorable)
+    fetchStatusManager.onIncompleteRender(markUnstorable)
   })
 
   afterEach(() => {
@@ -946,7 +946,7 @@ describe('FetchStatusManager -> onPrimaryFetchError (#340)', () => {
     expect(markUnstorable).toHaveBeenCalledTimes(1)
   })
 
-  test('does not notify when a nested resource failed but the page still renders', () => {
+  test('does not notify when a nested resource is a 404, which the page renders without', () => {
     vi.spyOn(fetchStatusManager, 'finishFetchShowError').mockReturnValue(false)
 
     fetchStatusManager.finishFetchResource({
@@ -955,6 +955,80 @@ describe('FetchStatusManager -> onPrimaryFetchError (#340)', () => {
       token: 'a-token',
       error: createCwaResourceError({ statusCode: 404 }),
     })
+
+    expect(markUnstorable).not.toHaveBeenCalled()
+  })
+
+  test('notifies when a nested resource finally failed with a load-shedding 503, so the page renders with it missing', () => {
+    vi.spyOn(fetchStatusManager, 'finishFetchShowError').mockReturnValue(false)
+
+    fetchStatusManager.finishFetchResource({
+      resource: '/component/html_contents/abc',
+      success: false,
+      token: 'a-token',
+      error: createCwaResourceError({ statusCode: 503 }),
+    })
+
+    expect(markUnstorable).toHaveBeenCalledTimes(1)
+  })
+
+  test('notifies when a nested resource failed with no status, as a network error does', () => {
+    vi.spyOn(fetchStatusManager, 'finishFetchShowError').mockReturnValue(false)
+
+    fetchStatusManager.finishFetchResource({
+      resource: '/component/html_contents/abc',
+      success: false,
+      token: 'a-token',
+      error: createCwaResourceError(new Error('fetch failed')),
+    })
+
+    expect(markUnstorable).toHaveBeenCalledTimes(1)
+  })
+
+  test('does not notify when a failed background re-fetch keeps the last loaded data', () => {
+    const resourcesStore = ResourcesStore.mock.results[0].value.useStore.mock.results[0].value
+    resourcesStore.restoreResourceApiState = vi.fn()
+    resourcesStore.current.byId['/component/html_contents/abc'] = {
+      apiState: { status: CwaResourceApiStatuses.SUCCESS, path: '/component/html_contents/abc' },
+      data: { '@id': '/component/html_contents/abc' },
+    }
+    fetchStatusManager._fetcherStore.fetches['bg-token'] = {}
+    fetchStatusManager._fetcherStore.addFetchResource = vi.fn(() => true)
+    fetchStatusManager.startFetchResource({ resource: '/component/html_contents/abc', token: 'bg-token', path: '/component/html_contents/abc', noSave: true })
+    resourcesStore.current.byId['/component/html_contents/abc'].apiState = { status: CwaResourceApiStatuses.IN_PROGRESS }
+
+    fetchStatusManager.finishFetchResource({
+      resource: '/component/html_contents/abc',
+      success: false,
+      token: 'bg-token',
+      path: '/component/html_contents/abc',
+      error: createCwaResourceError({ statusCode: 503 }),
+    })
+
+    expect(resourcesStore.restoreResourceApiState).toHaveBeenCalled()
+    expect(markUnstorable).not.toHaveBeenCalled()
+  })
+
+  test('notifies when the wait for a resource being fetched times out, so the page renders without it', async () => {
+    storeToRefs.mockImplementation(() => ({
+      current: { value: { byId: reactive({ '/pending': reactive({ apiState: { status: CwaResourceApiStatuses.IN_PROGRESS }, data: undefined }) }) } },
+    }))
+
+    await fetchStatusManager.getFetchedCurrentResource('/pending', 5)
+
+    expect(markUnstorable).toHaveBeenCalledTimes(1)
+  })
+
+  test('does not notify when the resource being waited for resolves in time', async () => {
+    const pending = reactive({ apiState: { status: CwaResourceApiStatuses.IN_PROGRESS }, data: undefined as unknown })
+    storeToRefs.mockImplementation(() => ({
+      current: { value: { byId: reactive({ '/pending': pending }) } },
+    }))
+
+    const promise = fetchStatusManager.getFetchedCurrentResource('/pending', 1000)
+    pending.data = { '@id': '/pending' }
+    pending.apiState = { status: CwaResourceApiStatuses.SUCCESS }
+    await promise
 
     expect(markUnstorable).not.toHaveBeenCalled()
   })

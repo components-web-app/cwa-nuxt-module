@@ -389,8 +389,13 @@ describe('Site settings full cache purge', () => {
     await clickPurgeAll(wrapper)
     expect(mockReveal).toHaveBeenCalledWith({
       title: 'Purge all cached data?',
-      content: '<p>Everything the API has cached will be dropped at once, along with every cached page. Use this after data has been changed outside the admin — ordinary edits are purged for you. Pages will be slow until they have been rendered again, and no content will be lost.</p>',
+      content: '<p>Everything the API has cached will be dropped at once, along with every cached page, and every page will be slow until it has been rendered again. To refresh one page, use Purge this page\'s cache in that page\'s settings instead. Ordinary edits are purged for you, and no content will be lost.</p>',
     })
+  })
+
+  test('#484 presents purging everything as a last resort and points to purging one page', async () => {
+    const wrapper = await setup()
+    expect(wrapper.text()).toContain('Purging all cached data is a last resort: every page is slow until it has been rendered again. After data has been changed outside the admin, purge the pages it affects from each page\'s settings instead.')
   })
 
   test('does not purge anything when the confirmation is cancelled', async () => {

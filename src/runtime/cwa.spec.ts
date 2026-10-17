@@ -121,7 +121,7 @@ vi.mock('./api/fetcher/fetch-status-manager', function () {
     default: vi.fn(function () {
       return {
         clearPrimaryFetch: vi.fn(),
-        onPrimaryFetchError: vi.fn(),
+        onIncompleteRender: vi.fn(),
       }
     }),
   }
@@ -462,13 +462,13 @@ describe('Cwa delegation methods and getters', () => {
     expect($cwa.config).toBe(SiteConfig.mock.results[0].value.config)
   })
 
-  test('#340 a failed primary fetch marks the fetch instance unstorable', () => {
+  test('#340 #401 an incomplete render marks the fetch instance unstorable', () => {
     createCwa({ storeName })
     const fsmInstance = FetchStatusManager.mock.results[0].value
     const cwaFetchInstance = CwaFetch.mock.results[0].value
 
-    expect(fsmInstance.onPrimaryFetchError).toHaveBeenCalledOnce()
-    fsmInstance.onPrimaryFetchError.mock.calls[0][0]()
+    expect(fsmInstance.onIncompleteRender).toHaveBeenCalledOnce()
+    fsmInstance.onIncompleteRender.mock.calls[0][0]()
 
     expect(cwaFetchInstance.markUnstorable).toHaveBeenCalledOnce()
   })

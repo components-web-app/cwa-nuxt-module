@@ -4,9 +4,14 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+## [2.0.0-alpha.20] - 2026-10-17
+
+- **Needs api-components-bundle [2.0.0-alpha.25](https://github.com/components-web-app/api-components-bundle/releases/tag/2.0.0-alpha.25) ([#484](https://github.com/components-web-app/api-components-bundle/issues/484)); do not pair it with an older bundle, which ignores the request body and flushes everything.** The page settings modal's Info tab can purge the cache of the page on screen alone: its route, every resource it is built from, and its manifest, in one request. Purging all cached data is now presented as a last resort ([cdcd3c82](https://github.com/components-web-app/cwa-nuxt-module/commit/cdcd3c82))
+- A server render is no longer cached when a component fetch still fails with a 5xx or a network error after its retry, or the wait for a resource times out: the page went out with components missing and a long `s-maxage` during a cold-cache load ([#401](https://github.com/components-web-app/cwa-nuxt-module/issues/401), [98767885](https://github.com/components-web-app/cwa-nuxt-module/commit/98767885))
+
 ## [2.0.0-alpha.19] - 2026-10-17
 
-- **Breaking: needs the api-components-bundle release with [#480](https://github.com/components-web-app/api-components-bundle/pull/480) (#475), and that bundle needs this release.** The API now orders component positions: adding a component sends `after`/`before` the position it was placed next to instead of a sort value, and a reorder is one `PATCH <group>/order` with the new order instead of one request per moved position. Moves show at once and the Order controls are no longer disabled while requests run; the order is reconciled from the API's complete response, so it never depends on Mercure ([#400](https://github.com/components-web-app/cwa-nuxt-module/issues/400), [4e4a769f](https://github.com/components-web-app/cwa-nuxt-module/commit/4e4a769f), [73219b19](https://github.com/components-web-app/cwa-nuxt-module/commit/73219b19))
+- **Breaking: needs api-components-bundle [2.0.0-alpha.24](https://github.com/components-web-app/api-components-bundle/releases/tag/2.0.0-alpha.24) (#475), and that bundle needs this release; do not pair it with an older bundle, or bundle alpha.24 with an older module.** The API now orders component positions: adding a component sends `after`/`before` the position it was placed next to instead of a sort value, and a reorder is one `PATCH <group>/order` with the new order instead of one request per moved position. Moves show at once and the Order controls are no longer disabled while requests run; the order is reconciled from the API's complete response, so it never depends on Mercure ([#400](https://github.com/components-web-app/cwa-nuxt-module/issues/400), [4e4a769f](https://github.com/components-web-app/cwa-nuxt-module/commit/4e4a769f), [73219b19](https://github.com/components-web-app/cwa-nuxt-module/commit/73219b19))
 ## [2.0.0-alpha.18] - 2026-10-16
 
 - `<CwaComponentGroup>` takes a `max-components` prop that limits how many components a group holds: the admin offers no add for a full group and warns about one over its limit, removing nothing. Needs an api-components-bundle release with [#467](https://github.com/components-web-app/api-components-bundle/pull/467) ([#398](https://github.com/components-web-app/cwa-nuxt-module/issues/398), [6789579f](https://github.com/components-web-app/cwa-nuxt-module/commit/6789579f))
@@ -134,7 +139,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 - First tagged release of `@cwa/nuxt`; releases are now published from `v*` tags ([7c61b7c](https://github.com/components-web-app/cwa-nuxt-module/commit/7c61b7ce331ec4a0cb8e76951a5de2ff806ed07a))
 
-[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.19...HEAD
+[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.20...HEAD
+[2.0.0-alpha.20]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.19...v2.0.0-alpha.20
 [2.0.0-alpha.19]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.18...v2.0.0-alpha.19
 [2.0.0-alpha.18]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.17...v2.0.0-alpha.18
 [2.0.0-alpha.17]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.16...v2.0.0-alpha.17
