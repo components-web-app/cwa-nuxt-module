@@ -1869,4 +1869,15 @@ describe('Resources', () => {
       expect(resources.getPageIriByFetchStatus({ path: '/_/pages/1' } as any)).toBe('/_/pages/2')
     })
   })
+
+  describe('displayResourceTree (#484)', () => {
+    test('is the displayed page\'s manifest tree, or undefined without one', () => {
+      const { resources } = createResources()
+      const tree = [{ iri: '/_/routes//about', children: [] }]
+      const spy = vi.spyOn(resources, 'displayFetchStatus', 'get').mockReturnValue({ path: '/_/routes//about', isPrimary: true, manifest: { path: '/_/resource_manifest//about', resourceTree: tree } } as any)
+      expect(resources.displayResourceTree).toBe(tree)
+      spy.mockReturnValue({ path: '/_/routes//about', isPrimary: true } as any)
+      expect(resources.displayResourceTree).toBeUndefined()
+    })
+  })
 })

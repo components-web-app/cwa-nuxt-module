@@ -172,11 +172,12 @@ export default class SiteConfig {
     })
   }
 
-  public async purgeHttpCache(): Promise<void> {
+  public async purgeHttpCache(body?: { paths?: string[], tags?: string[] }): Promise<void> {
     const { method, headers } = this.cwaFetch.getRequestOptions('POST')
     await this.cwaFetch.fetch('/_/http_cache/purge', {
       method,
       headers: headers as Record<string, string>,
+      body,
     })
   }
 
