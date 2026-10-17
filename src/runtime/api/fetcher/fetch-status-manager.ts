@@ -51,6 +51,10 @@ export interface StartFetchResourceEvent extends AddFetchResourceEvent {
 
 type _StartFetchEvent = Omit<StartFetchEvent, 'isCurrentSuccessResourcesResolved'>
 
+function isClientErrorStatus(statusCode: number | undefined): boolean {
+  return !!statusCode && statusCode >= 400 && statusCode < 500
+}
+
 /**
  * This class manages the state across the fetcher store, resources store and additional services for API Documentation and Mercure
  */
@@ -62,7 +66,7 @@ export default class FetchStatusManager {
 
   private readonly routeCacheLimit: number
   private readonly nuxtApp: NuxtApp
-  private readonly primaryFetchError: { handler?: () => void } = {}
+  private readonly incompleteRender: { handler?: () => void } = {}
   private readonly backgroundFetchLastGoodStates = new Map<string, CwaResourceApiStateSuccess>()
 
   constructor(
@@ -81,8 +85,8 @@ export default class FetchStatusManager {
     this.nuxtApp = nuxtApp
   }
 
-  public onPrimaryFetchError(handler: () => void) {
-    this.primaryFetchError.handler = handler
+  public onIncompleteRender(handler: () => void) {
+    this.incompleteRender.handler = handler
   }
 
   public async getFetchedCurrentResource(iri: string, timeout?: number): Promise<CwaResource | undefined> {
@@ -97,6 +101,7 @@ export default class FetchStatusManager {
     const getResolvedResource = new Promise<CwaResource | undefined>((resolve) => {
       const tooLongTimeout = setTimeout(() => {
         logger.warn(`Timed out ${timeout}ms waiting to fetch current resource '${iri}' in pending API state.`)
+        this.incompleteRender.handler?.()
         resolve(undefined)
       }, timeout)
 
@@ -214,8 +219,8 @@ export default class FetchStatusManager {
     const showErrorPage = this.finishFetchShowError(fetchStatus, event.resource)
 
     const setFinalResourceFetchError = (error: CwaResourceError | undefined) => {
-      if (showErrorPage) {
-        this.primaryFetchError.handler?.()
+      if (showErrorPage || !isClientErrorStatus(error?.statusCode)) {
+        this.incompleteRender.handler?.()
       }
       this.resourcesStore.setResourceFetchError({
         iri: event.resource,
@@ -227,9 +232,7 @@ export default class FetchStatusManager {
     }
 
     if (!event.success) {
-      const statusCode = event.error?.statusCode
-      const isClientError = !!statusCode && statusCode >= 400 && statusCode < 500
-      if (lastGoodState && !isClientError && this.resourcesStore.current.byId?.[event.resource]?.data) {
+      if (lastGoodState && !isClientErrorStatus(event.error?.statusCode) && this.resourcesStore.current.byId?.[event.resource]?.data) {
         logger.warn(`[CWA] A background re-fetch of '${event.resource}' failed. Keeping the last loaded data.`, event.error)
         this.resourcesStore.restoreResourceApiState({ iri: event.resource, apiState: lastGoodState })
         return
