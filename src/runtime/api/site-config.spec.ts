@@ -291,8 +291,7 @@ describe('SiteConfig', () => {
       await siteConfig.purgeHttpCache()
       expect(mockGetRequestOptions).toHaveBeenCalledWith('POST')
       expect(mockFetch).toHaveBeenCalledTimes(1)
-      expect(mockFetch).toHaveBeenCalledWith('/_/http_cache/purge', { method: 'POST', headers: {} })
-      expect(mockFetch.mock.calls[0]![1]).not.toHaveProperty('body')
+      expect(mockFetch).toHaveBeenCalledWith('/_/http_cache/purge', { method: 'POST', headers: {}, body: undefined })
     })
 
     test('rejects with the fetch error', async () => {
@@ -300,6 +299,18 @@ describe('SiteConfig', () => {
       const error = Object.assign(new Error('Not Implemented'), { statusCode: 501 })
       mockFetch.mockRejectedValueOnce(error)
       await expect(siteConfig.purgeHttpCache()).rejects.toBe(error)
+    })
+  })
+
+  describe('purgeHttpCache with a body (#484)', () => {
+    test('POSTs the paths and tags to the HTTP cache purge operation', async () => {
+      const { siteConfig, mockFetch } = buildSiteConfig()
+      await siteConfig.purgeHttpCache({ paths: ['/about'], tags: ['/_/routes//about', 'manifest:/_/pages/about'] })
+      expect(mockFetch).toHaveBeenCalledWith('/_/http_cache/purge', {
+        method: 'POST',
+        headers: {},
+        body: { paths: ['/about'], tags: ['/_/routes//about', 'manifest:/_/pages/about'] },
+      })
     })
   })
 })

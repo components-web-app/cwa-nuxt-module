@@ -216,6 +216,10 @@
               :content="localResourceData['@id']"
             />
           </div>
+          <PagePurgeCache
+            v-if="isDisplayedPage"
+            class="cwa:pt-6"
+          />
           <div class="cwa:flex cwa:justify-start cwa:pt-6">
             <div>
               <CwaUiFormButton
@@ -246,6 +250,7 @@ import ModalRadioTabs from '#cwa/templates/components/core/admin/form/ModalRadio
 import ModalReachableToggle from '#cwa/templates/components/core/admin/form/ModalReachableToggle.vue'
 import PageTypeSelect from '#cwa/templates/components/core/admin/form/PageTypeSelect.vue'
 import RoutesTab from '#cwa/templates/components/core/admin/RoutesTab.vue'
+import PagePurgeCache from '#cwa/templates/components/core/admin/PagePurgeCache.vue'
 import type { SelectOption } from '#cwa/composables/cwa-select-input'
 import type { CwaResource } from '#cwa/resources/resource-utils'
 import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/resources/resource-utils'
@@ -382,7 +387,7 @@ function saveTitle() {
   return saveResource()
 }
 
-const isDeletingDisplayedPage = computed(() => !!props.iri && props.iri === $cwa.resources.displayPageIri.value)
+const isDisplayedPage = computed(() => !!props.iri && props.iri === $cwa.resources.displayPageIri.value)
 
 const adminListingLink = computed(() => {
   if (isDisplayingPage.value) {
@@ -395,7 +400,7 @@ const adminListingLink = computed(() => {
 })
 
 function handleDeleteClick() {
-  if (!isDeletingDisplayedPage.value) {
+  if (!isDisplayedPage.value) {
     return deleteResource()
   }
   const destination = adminListingLink.value

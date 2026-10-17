@@ -239,7 +239,7 @@
               </p>
             </template>
             <p class="cwa:text-sm cwa:text-stone-400">
-              <span>Purging all cached data also drops everything the API has cached, for use after data has been changed outside the admin.</span>
+              <span>Purging all cached data is a last resort: every page is slow until it has been rendered again. After data has been changed outside the admin, purge the pages it affects from each page's settings instead.</span>
               <span v-if="!pageCacheEnabled">&nbsp;Pages are rendered fresh on every visit in this configuration, so this purges the API cache only.</span>
             </p>
             <div class="cwa:flex cwa:flex-wrap cwa:gap-4">
@@ -624,7 +624,7 @@ async function purgeHttpCache() {
   const dialog = await createConfirmDialog(vueApp, ConfirmDialog)
   const { isCanceled } = await dialog.reveal({
     title: 'Purge all cached data?',
-    content: '<p>Everything the API has cached will be dropped at once, along with every cached page. Use this after data has been changed outside the admin — ordinary edits are purged for you. Pages will be slow until they have been rendered again, and no content will be lost.</p>',
+    content: '<p>Everything the API has cached will be dropped at once, along with every cached page, and every page will be slow until it has been rendered again. To refresh one page, use Purge this page\'s cache in that page\'s settings instead. Ordinary edits are purged for you, and no content will be lost.</p>',
   })
   if (isCanceled) {
     return

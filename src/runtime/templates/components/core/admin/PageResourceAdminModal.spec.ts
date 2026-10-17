@@ -317,3 +317,19 @@ describe('PageResourceAdminModal Page UI select stores the full CwaPage componen
     expect(localResourceData.value.uiComponent).toBe('CwaPageNestedTopicTemplate')
   })
 })
+
+describe('PageResourceAdminModal page cache purge (#484)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  test('offers purging the page\'s cache when the modal is open for the page on screen', () => {
+    const { wrapper } = setup({ displayPageIri: '/_/pages/uuid-self' })
+    expect(wrapper.findComponent({ name: 'PagePurgeCache' }).exists()).toBe(true)
+  })
+
+  test('does not offer it for a page that is not on screen, whose manifest is not loaded', () => {
+    const { wrapper } = setup({ displayPageIri: '/_/pages/another' })
+    expect(wrapper.findComponent({ name: 'PagePurgeCache' }).exists()).toBe(false)
+  })
+})

@@ -4,7 +4,7 @@ import type { CwaResourcesStoreInterface, ResourcesStore } from '../storage/stor
 import { CwaResourceApiStatuses, NEW_RESOURCE_IRI } from '../storage/stores/resources/state'
 import type { CwaCurrentResourceInterface } from '../storage/stores/resources/state'
 import type { CwaFetcherStoreInterface, FetcherStore } from '../storage/stores/fetcher/fetcher-store'
-import type { FetchStatus } from '../storage/stores/fetcher/state'
+import type { FetchStatus, NestedJsonStructure } from '../storage/stores/fetcher/state'
 import { findManifestNode, manifestDepthPath } from '../storage/stores/fetcher/manifest-utils'
 import {
   CwaResourceTypes,
@@ -387,6 +387,10 @@ export class Resources {
       }
       return this.getResource(pageIri).value
     })
+  }
+
+  public get displayResourceTree(): NestedJsonStructure[] | undefined {
+    return this.displayFetchStatus?.manifest?.resourceTree
   }
 
   public get displayPageIri() {
