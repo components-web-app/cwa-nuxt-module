@@ -23,6 +23,10 @@ export class ResourcesGetterUtils {
     return false
   }
 
+  public get currentResourcesPending(): boolean {
+    return this.resourcesState.current.currentIds.some(id => this.resourcesState.current.byId[id]?.apiState.status === CwaResourceApiStatuses.IN_PROGRESS)
+  }
+
   public get totalResourcesPending(): number {
     return this.resourcesState.current.currentIds.reduce((count, id) => {
       if (this.resourcesState.current.byId[id]?.apiState.status === CwaResourceApiStatuses.IN_PROGRESS) {

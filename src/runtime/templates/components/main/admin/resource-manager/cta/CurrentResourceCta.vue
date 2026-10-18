@@ -8,6 +8,7 @@ import {
 } from '#cwa/resources/resource-utils'
 import type { CwaResource } from '#cwa/resources/resource-utils'
 import { useCwa } from '#cwa/composables/cwa'
+import { useCloneMode } from '#cwa/admin/clone-mode'
 import { componentGroupCapacity } from '#cwa/resources/component-group-capacity'
 import type { ButtonOption, ModelValue } from '#cwa/templates/components/ui/form/Button.vue'
 
@@ -52,43 +53,43 @@ const targetGroupFull = computed(() => {
   return componentGroupCapacity($cwa.resources.getResource(targetGroupIri.value).value?.data).full
 })
 
+const isPersistedComponent = computed(() => {
+  return resourceType.value === CwaResourceTypes.COMPONENT && props.resource?._metadata?.persisted !== false
+})
+
 const buttonOptions = computed(() => {
   const ops: (ButtonOption | ButtonOption[])[] = []
-  if (targetGroupFull.value) {
-    return ops
+
+  if (!targetGroupFull.value) {
+    if (resourceType.value === CwaResourceTypes.COMPONENT_POSITION || resourceType.value === CwaResourceTypes.COMPONENT) {
+      ops.push([
+        {
+          label: 'Add Before',
+          value: 'add-before',
+        },
+        {
+          label: 'Add After',
+          value: 'add-after',
+        },
+      ])
+    }
+    else if (resourceType.value === CwaResourceTypes.COMPONENT_GROUP) {
+      ops.push([
+        {
+          label: 'Add to Start',
+          value: 'add-before',
+        },
+        {
+          label: 'Add to End',
+          value: 'add-after',
+        },
+      ])
+    }
   }
 
-  // this check wasn't really making sense, we can still add resources on data pages
-  // if (!$cwa.resources.isDataPage.value || $cwa.admin.resourceStackManager.isEditingLayout.value) {
-  if (resourceType.value === CwaResourceTypes.COMPONENT_POSITION || resourceType.value === CwaResourceTypes.COMPONENT) {
-    ops.push([
-      {
-        label: 'Add Before',
-        value: 'add-before',
-      },
-      {
-        label: 'Add After',
-        value: 'add-after',
-      },
-    ])
+  if (isPersistedComponent.value) {
+    ops.push({ label: 'Clone', value: 'clone' })
   }
-  else if (resourceType.value === CwaResourceTypes.COMPONENT_GROUP) {
-    ops.push([
-      {
-        label: 'Add to Start',
-        value: 'add-before',
-      },
-      {
-        label: 'Add to End',
-        value: 'add-after',
-      },
-    ])
-  }
-  // }
-
-  // if (resourceType.value === CwaResourceTypes.COMPONENT) {
-  //   ops.push({ label: 'Clone', value: 'clone' })
-  // }
 
   return ops
 })
@@ -117,7 +118,8 @@ function handleManagerCtaClick(value?: ModelValue) {
     }
 
     if (value === 'clone') {
-      // todo: handle clone
+      useCloneMode($cwa).start(props.currentIri, $cwa.admin.resourceStackManager.currentStackItem.value?.displayName)
+      $cwa.admin.emptyStack()
     }
   }
 }

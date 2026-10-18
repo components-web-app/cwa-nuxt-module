@@ -4,6 +4,23 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+## [2.0.0-alpha.22] - 2026-10-18
+
+- The route cache keeps 200 routes by default instead of 50, so more pages revisit instantly; set `cwa.routeCacheLimit` to change it ([#259](https://github.com/components-web-app/cwa-nuxt-module/issues/259), [2c125fcb](https://github.com/components-web-app/cwa-nuxt-module/commit/2c125fcb))
+- Each `<CwaComponentGroup>` finds its group by reference in constant time, instead of the lookup being rebuilt over every stored group whenever a group is saved, so a navigation no longer slows down as more pages are cached. The resources store's `componentGroupByReference` getter is now a function of the reference rather than a `Map`; `$cwa.resources.getComponentGroupByReference` is unchanged ([#259](https://github.com/components-web-app/cwa-nuxt-module/issues/259), [a8529041](https://github.com/components-web-app/cwa-nuxt-module/commit/a8529041))
+- Storing a resource the store has not seen yet no longer slows down as the store grows: the store checks its list of IRIs through a `Set` ([#259](https://github.com/components-web-app/cwa-nuxt-module/issues/259), [37b94f16](https://github.com/components-web-app/cwa-nuxt-module/commit/37b94f16))
+- Evicting a route from the route cache costs only the resources it evicts: each resource counts the cached routes that list it, so a `routeCacheLimit` of about 200 stays fast ([#259](https://github.com/components-web-app/cwa-nuxt-module/issues/259), [e5abadbe](https://github.com/components-web-app/cwa-nuxt-module/commit/e5abadbe))
+- **Clone a component** ([#157](https://github.com/components-web-app/cwa-nuxt-module/issues/157)): the same component, with the same IRI, shown in another position, so an edit or a publish applies everywhere. The manager bar's dots menu offers **Clone** for a saved component, even when its own group is full ([4b2bfceb](https://github.com/components-web-app/cwa-nuxt-module/commit/4b2bfceb))
+- Clone mode shows a "Cloning" bar with Cancel under the admin header, and the header's Enable Navigation toggle; it stays on across navigation, and ends on Cancel, Escape, leaving edit mode or signing out ([#157](https://github.com/components-web-app/cwa-nuxt-module/issues/157), [07b39ad1](https://github.com/components-web-app/cwa-nuxt-module/commit/07b39ad1))
+- Every on-screen instance of a selected component is outlined, and in clone mode every instance of the component being cloned is highlighted ([#157](https://github.com/components-web-app/cwa-nuxt-module/issues/157), [a3c96253](https://github.com/components-web-app/cwa-nuxt-module/commit/a3c96253), [12fa5c38](https://github.com/components-web-app/cwa-nuxt-module/commit/12fa5c38))
+- In clone mode a click opens a dialog offering what adding a component offers there (Add before/after, Add to Start/End, Add here, Use here on a page-data slot), with every refused option disabled and its reasons, and names the layout or page scope. A container can't be offered inside itself; the server-side refusal of cycles needs api-components-bundle [#502](https://github.com/components-web-app/api-components-bundle/issues/502), and cloning works without it ([#157](https://github.com/components-web-app/cwa-nuxt-module/issues/157), [048dacbe](https://github.com/components-web-app/cwa-nuxt-module/commit/048dacbe), [12fa5c38](https://github.com/components-web-app/cwa-nuxt-module/commit/12fa5c38))
+- A clone posts the position through the group's write queue and reads the group order once; a refusal (422) is shown and keeps clone mode on, and a source that no longer exists ends it ([#157](https://github.com/components-web-app/cwa-nuxt-module/issues/157), [82d6f222](https://github.com/components-web-app/cwa-nuxt-module/commit/82d6f222), [12fa5c38](https://github.com/components-web-app/cwa-nuxt-module/commit/12fa5c38))
+- Deleting a component used in several locations asks whether to delete it from all of them or remove it from this location only, and the Info tab shows "Used in X locations" ([#157](https://github.com/components-web-app/cwa-nuxt-module/issues/157), [1619af74](https://github.com/components-web-app/cwa-nuxt-module/commit/1619af74))
+- The resources store's `resourcesByType` getter is removed; nothing read it but a position delete, which now falls back to the component groups index ([#259](https://github.com/components-web-app/cwa-nuxt-module/issues/259), [acd9c97e](https://github.com/components-web-app/cwa-nuxt-module/commit/acd9c97e))
+- A Mercure update that arrives during a navigation no longer slows it down as more pages are cached: it waits only for the resources on screen, not every stored one ([#259](https://github.com/components-web-app/cwa-nuxt-module/issues/259), [4dfac773](https://github.com/components-web-app/cwa-nuxt-module/commit/4dfac773))
+- Each `<CwaComponentGroup>` finds its group without scanning every stored resource on each response, and deleting a position edits only its own group ([#259](https://github.com/components-web-app/cwa-nuxt-module/issues/259), [19940eb7](https://github.com/components-web-app/cwa-nuxt-module/commit/19940eb7))
+- Resources are stored without the JSON-LD `@context` embedded in their `_metadata`, about a fifth smaller in memory and in the SSR payload ([#259](https://github.com/components-web-app/cwa-nuxt-module/issues/259), [3b5ac5be](https://github.com/components-web-app/cwa-nuxt-module/commit/3b5ac5be))
+
 ## [2.0.0-alpha.21] - 2026-10-18
 
 - Dependencies updated to Nuxt 4.6.2 and Vue 3.5.44; `@nuxt/kit` and `@nuxt/schema` still accept 4.6.0 or later ([4eb12643](https://github.com/components-web-app/cwa-nuxt-module/commit/4eb12643))
@@ -145,7 +162,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 - First tagged release of `@cwa/nuxt`; releases are now published from `v*` tags ([7c61b7c](https://github.com/components-web-app/cwa-nuxt-module/commit/7c61b7ce331ec4a0cb8e76951a5de2ff806ed07a))
 
-[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.21...HEAD
+[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.22...HEAD
+[2.0.0-alpha.22]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.21...v2.0.0-alpha.22
 [2.0.0-alpha.21]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.20...v2.0.0-alpha.21
 [2.0.0-alpha.20]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.19...v2.0.0-alpha.20
 [2.0.0-alpha.19]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.18...v2.0.0-alpha.19

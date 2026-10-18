@@ -107,9 +107,8 @@
               <span>{{ strandedGroups.length }}</span>
               <span class="cwa:sr-only">component groups attached to this page are not shown on it</span>
             </button>
-            <!-- this will be used when cloning a component only -->
             <CwaUiFormToggle
-              v-if="false && $cwa.admin.isEditing"
+              v-if="cloneSource && $cwa.admin.isEditing"
               v-model="isNavEnabled"
               label="Enable Navigation"
             />
@@ -132,6 +131,8 @@
         </div>
       </div>
       <OutdatedContentNotice class="cwa:absolute cwa:top-full cwa:mt-1.5 cwa:left-1/2 cwa:-translate-x-1/2 cwa:z-notifications" />
+      <CloneModeBar class="cwa:absolute cwa:top-full cwa:mt-1.5 cwa:left-4 cwa:z-notifications" />
+      <CloneHighlight v-if="cloneSource" />
       <ResourceLoadingIndicator class="cwa:absolute cwa:top-full cwa:left-0 cwa:z-notifications" />
     </div>
     <RequestErrors />
@@ -163,6 +164,7 @@ import SpinnerTick from '../../../utils/SpinnerTick.vue'
 import PathSelector from './_parts/PathSelector.vue'
 import RequestErrors from './_parts/RequestErrors.vue'
 import Menu from './_parts/Menu.vue'
+import CloneModeBar from './_parts/CloneModeBar.vue'
 import { useCwa, useError, useRoute, useRouter } from '#imports'
 import OutdatedContentNotice from '#cwa/templates/components/main/admin/header/_parts/OutdatedContentNotice.vue'
 import IconPages from '#cwa/templates/components/core/assets/IconPages.vue'
@@ -173,7 +175,9 @@ import PageResourceAdminModal from '#cwa/templates/components/core/admin/PageRes
 import IconRoutes from '#cwa/templates/components/core/assets/IconRoutes.vue'
 import IconData from '#cwa/templates/components/core/assets/IconData.vue'
 import { useStrandedComponentGroups } from '#cwa/admin/stranded-component-groups'
+import { useCloneMode } from '#cwa/admin/clone-mode'
 
+const CloneHighlight = defineAsyncComponent(() => import('../resource-manager/CloneHighlight.vue').then(module => module.default))
 const StrandedComponentGroupsModal = defineAsyncComponent(() => import('#cwa/templates/components/core/admin/StrandedComponentGroupsModal.vue').then(module => module.default))
 
 const $cwa = useCwa()
@@ -184,6 +188,7 @@ const header = useTemplateRef<undefined | HTMLElement>('header')
 const spacer = useTemplateRef<undefined | HTMLElement>('spacer')
 
 const error = useError()
+const { source: cloneSource } = useCloneMode($cwa)
 
 const pageIsAdmin = computed(() => route.meta.cwa?.admin)
 const isErrorPage = computed(() => !!error.value)

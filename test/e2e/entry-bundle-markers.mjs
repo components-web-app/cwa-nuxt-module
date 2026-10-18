@@ -8,7 +8,7 @@ const outputDir = resolve(here, '../../playground/.output')
 const manifestPath = resolve(outputDir, 'server/chunks/virtual/precomputed.mjs')
 const chunkDir = resolve(outputDir, 'public/_nuxt')
 
-const gzipBudget = 162830
+const gzipBudget = 163130
 
 const forbidden = [
   { marker: 'Invalid DateTime', source: 'luxon' },
@@ -22,6 +22,7 @@ const forbidden = [
   { marker: 'orphaned_resources/delete', source: 'api/orphaned-resource-requests.ts' },
   { marker: 'The page cache warm stopped before it finished', source: 'api/page-cache-warm.ts' },
   { marker: 'vuejs-confirm-dialog-root', source: 'vuejs-confirm-dialog' },
+  { marker: 'The component being cloned no longer exists', source: 'admin/clone-component.ts' },
 ]
 
 async function readEntryChunks() {

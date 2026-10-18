@@ -14,8 +14,11 @@ import {
 } from 'vue'
 import type { ComponentPublicInstance, Ref, WatchStopHandle, ComputedRef } from 'vue'
 import type Cwa from '../cwa'
+import { lazyImport } from '../lazy-import'
 import ManagerTabsResolver from './manager-tabs-resolver'
 import type { CwaCurrentResourceInterface } from '#cwa/storage/stores/resources/state'
+
+const manageableInstances = lazyImport(() => import('./manageable-instances'))
 
 export type StyleOptions = {
   multiple?: boolean
@@ -35,6 +38,7 @@ export default class ManageableResource {
   private isIriInit: boolean = false
   private pendingChildMountedReInit: boolean = false
   private throttledRefreshFn: undefined | DebouncedFunc<() => void>
+  private registeredIri: string | undefined
 
   constructor(
     private readonly component: ComponentPublicInstance,
@@ -106,6 +110,7 @@ export default class ManageableResource {
 
   public clear(soft: boolean = false) {
     this.throttledRefreshFn?.cancel()
+    this.unregister()
     if (!this.isIriInit) {
       return
     }
@@ -224,8 +229,36 @@ export default class ManageableResource {
     return allSiblings
   }
 
+  private unregister() {
+    if (this.registeredIri === undefined) {
+      return
+    }
+    manageableInstances.loaded?.unregisterInstance(this.$cwa, this.registeredIri, this.domElements)
+    this.registeredIri = undefined
+  }
+
+  private register() {
+    const iri = this.currentIri?.value
+    this.unregister()
+    if (!iri) {
+      return
+    }
+    this.registeredIri = iri
+    const loaded = manageableInstances.loaded
+    if (loaded) {
+      loaded.registerInstance(this.$cwa, iri, this.domElements)
+      return
+    }
+    void manageableInstances.load().then((module) => {
+      if (this.registeredIri === iri) {
+        module.registerInstance(this.$cwa, iri, this.domElements)
+      }
+    })
+  }
+
   private addClickEventListeners() {
     this.domElements.value = this.getAllEls()
+    this.register()
     for (const el of this.domElements.value) {
       el.addEventListener('click', this.clickListener, false)
       el.addEventListener('contextmenu', this.clickListener, false)

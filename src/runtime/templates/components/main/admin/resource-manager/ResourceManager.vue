@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, toRaw, useTemplateRef, watch } from 'vue'
+import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, toRaw, useTemplateRef, watch } from 'vue'
 import ResourceLoadingIndicator
   from '../_common/ResourceLoadingIndicator.vue'
 import ManagerTabs from './_parts/ManagerTabs.vue'
@@ -14,6 +14,9 @@ import ResourceManagerCtaButton
 import AddComponentDialog
   from '#cwa/templates/components/main/admin/resource-manager/_parts/AddComponentDialog.vue'
 import { useDataResolver } from '#cwa/templates/components/core/useDataResolver'
+import { useCloneMode } from '#cwa/admin/clone-mode'
+
+const CloneTargetDialog = defineAsyncComponent(() => import('#cwa/templates/components/main/admin/resource-manager/_parts/CloneTargetDialog.vue'))
 
 const $cwa = useCwa()
 const { slideUp } = useTransitions()
@@ -28,6 +31,8 @@ const managerTabs = useTemplateRef<typeof ManagerTabs | null>('managerTabs')
 const currentManagerTabs = ref<ManagerTab[] | undefined>()
 const cachedPosition = { top: 0, left: 0 }
 let mousedownTarget: null | EventTarget = null
+const cloneMode = useCloneMode($cwa)
+const cloneTarget = shallowRef<{ stack: { iri: string }[], type: 'page' | 'layout' }>()
 
 type ContextPosition = {
   top: number
@@ -83,6 +88,13 @@ function clickHandler(e: MouseEvent, type: 'page' | 'layout') {
     return
   }
   completeStack(e, type)
+  if (cloneMode.source.value && !$cwa.admin.navigationGuardDisabled) {
+    const stack = $cwa.admin.resourceStackManager.resourceStack.value
+    if (stack.length) {
+      cloneTarget.value = { stack: [...stack], type }
+    }
+    return
+  }
   $cwa.admin.resourceStackManager.selectStackIndex(0, false)
 }
 
@@ -209,4 +221,10 @@ defineExpose({
     :virtual-element="virtualElement"
   />
   <AddComponentDialog />
+  <CloneTargetDialog
+    v-if="cloneTarget"
+    :stack="cloneTarget.stack"
+    :type="cloneTarget.type"
+    @close="cloneTarget = undefined"
+  />
 </template>
