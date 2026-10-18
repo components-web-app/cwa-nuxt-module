@@ -389,7 +389,11 @@ describe('ManageableResource Class', () => {
 
   describe('instance registry', () => {
     beforeAll(async () => {
+      const { instance } = createManageableResource()
+      instance.currentIri = ref('/component/warm')
+      instance._initNewIri('/component/warm')
       await flushPromises()
+      instance.clear()
     })
 
     test('registers its elements when click listeners are added and unregisters on clear', () => {

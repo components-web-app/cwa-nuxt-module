@@ -47,6 +47,9 @@ function buildCwa(ops: { published?: Record<string, string | undefined>, pageDat
     refreshComponentGroupOrder: vi.fn(async (_groupIri: string) => {
       order.push('refreshComponentGroupOrder')
     }),
+    refreshEndpoints: vi.fn(async (_paths: string[]) => {
+      order.push('refreshEndpoints')
+    }),
     addError: vi.fn((error: CwaErrorEvent) => {
       errors.push(error)
     }),
@@ -114,6 +117,7 @@ describe('cloneComponent', () => {
       refreshEndpoints: [GROUP_IRI],
     })
     expect(order).toEqual(['queue:start', 'createResource', 'refreshComponentGroupOrder', 'queue:end'])
+    expect(resourcesManager.refreshEndpoints).not.toHaveBeenCalled()
     expect(resourcesManager.updateResource).not.toHaveBeenCalled()
   })
 
@@ -236,6 +240,19 @@ describe('cloneComponent', () => {
     expect(errors.map(error => error.detail)).toEqual(['This component cannot be placed inside itself.', 'Unrelated'])
     expect(resourcesManager.addError).not.toHaveBeenCalled()
     expect(resourcesManager.removeError).not.toHaveBeenCalled()
+  })
+
+  test('a refused insert re-reads the group before reading its order once, as add-component does', async () => {
+    const { $cwa, resourcesManager, errors, order } = buildCwa()
+    resourcesManager.createResource.mockImplementationOnce(failWith(errors, '/_/component_positions', 422, 'This group is full.'))
+    await cloneComponent($cwa, {
+      sourceIri: PUBLISHED_IRI,
+      target: { kind: 'position', groupIri: GROUP_IRI, anchor: {} },
+    })
+    expect(resourcesManager.refreshEndpoints).toHaveBeenCalledTimes(1)
+    expect(resourcesManager.refreshEndpoints).toHaveBeenCalledWith([GROUP_IRI])
+    expect(resourcesManager.refreshComponentGroupOrder).toHaveBeenCalledTimes(1)
+    expect(order).toEqual(['queue:start', 'refreshEndpoints', 'refreshComponentGroupOrder', 'queue:end'])
   })
 
   test('a server error keeps clone mode on and leaves the API error shown', async () => {

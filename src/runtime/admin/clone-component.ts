@@ -22,6 +22,9 @@ function addPosition($cwa: Cwa, iri: string, groupIri: string, anchor: CloneAnch
       data: { componentGroup: groupIri, component: iri, ...anchor },
       refreshEndpoints: [groupIri],
     })
+    if (!created) {
+      await manager.refreshEndpoints([groupIri])
+    }
     await manager.refreshComponentGroupOrder(groupIri)
     return created
   })

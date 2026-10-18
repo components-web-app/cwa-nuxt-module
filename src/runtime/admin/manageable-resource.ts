@@ -14,14 +14,11 @@ import {
 } from 'vue'
 import type { ComponentPublicInstance, Ref, WatchStopHandle, ComputedRef } from 'vue'
 import type Cwa from '../cwa'
+import { lazyImport } from '../lazy-import'
 import ManagerTabsResolver from './manager-tabs-resolver'
 import type { CwaCurrentResourceInterface } from '#cwa/storage/stores/resources/state'
 
-let manageableInstances: typeof import('./manageable-instances') | undefined
-const manageableInstancesLoad = import('./manageable-instances').then((module) => {
-  manageableInstances = module
-  return module
-})
+const manageableInstances = lazyImport(() => import('./manageable-instances'))
 
 export type StyleOptions = {
   multiple?: boolean
@@ -236,7 +233,7 @@ export default class ManageableResource {
     if (this.registeredIri === undefined) {
       return
     }
-    manageableInstances?.unregisterInstance(this.$cwa, this.registeredIri, this.domElements)
+    manageableInstances.loaded?.unregisterInstance(this.$cwa, this.registeredIri, this.domElements)
     this.registeredIri = undefined
   }
 
@@ -247,11 +244,12 @@ export default class ManageableResource {
       return
     }
     this.registeredIri = iri
-    if (manageableInstances) {
-      manageableInstances.registerInstance(this.$cwa, iri, this.domElements)
+    const loaded = manageableInstances.loaded
+    if (loaded) {
+      loaded.registerInstance(this.$cwa, iri, this.domElements)
       return
     }
-    void manageableInstancesLoad.then((module) => {
+    void manageableInstances.load().then((module) => {
       if (this.registeredIri === iri) {
         module.registerInstance(this.$cwa, iri, this.domElements)
       }

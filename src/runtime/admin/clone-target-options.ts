@@ -118,7 +118,8 @@ function pageDataOptions(input: CloneTargetOptionsInput, typeName: string | unde
   if (!input.isDataPage) {
     return []
   }
-  const positionIndex = indexOfType(input.stack, CwaResourceTypes.COMPONENT_POSITION)
+  const groupIndex = indexOfType(input.stack, CwaResourceTypes.COMPONENT_GROUP)
+  const positionIndex = indexOfType(groupIndex === -1 ? input.stack : input.stack.slice(0, groupIndex), CwaResourceTypes.COMPONENT_POSITION)
   if (positionIndex === -1) {
     return []
   }
@@ -142,8 +143,7 @@ function pageDataOptions(input: CloneTargetOptionsInput, typeName: string | unde
 
 export function cloneTargetOptions(input: CloneTargetOptionsInput): CloneTargetOptions {
   const typeName = resolveSourceType(input)
-  const hasGroup = indexOfType(input.stack, CwaResourceTypes.COMPONENT_GROUP) !== -1
-  const options = hasGroup ? groupOptions(input, typeName) : pageDataOptions(input, typeName)
+  const options = [...groupOptions(input, typeName), ...pageDataOptions(input, typeName)]
   const result: CloneTargetOptions = { options }
   if ((input.type === 'layout') !== input.isEditingLayout) {
     result.scope = input.type

@@ -131,7 +131,7 @@ describe('cloneTargetOptions', () => {
 
   test('a page-data slot offers Use here when the field holds the source\'s type', () => {
     const result = cloneTargetOptions(input({
-      stack: stackOf(DYNAMIC_POSITION),
+      stack: stackOf(COMPONENT, DYNAMIC_POSITION, PAGE),
       resources: buildResources(dataPageStore),
       isDataPage: true,
     }))
@@ -142,7 +142,7 @@ describe('cloneTargetOptions', () => {
 
   test('Use here is disabled with a reason when the field holds another type', () => {
     const result = cloneTargetOptions(input({
-      stack: stackOf(DYNAMIC_POSITION),
+      stack: stackOf(DYNAMIC_POSITION, PAGE),
       resources: buildResources({ ...dataPageStore, [DYNAMIC_POSITION]: { pageDataProperty: 'banner' } }),
       isDataPage: true,
     }))
@@ -151,9 +151,31 @@ describe('cloneTargetOptions', () => {
     ])
   })
 
+  test('a page-data slot whose group is still in the stack offers Use here beside the group\'s options', () => {
+    const result = cloneTargetOptions(input({
+      stack: stackOf(COMPONENT, DYNAMIC_POSITION, GROUP, PAGE),
+      resources: buildResources(dataPageStore),
+      isDataPage: true,
+    }))
+    expect(result.options).toEqual([
+      { label: 'Add before', value: { kind: 'position', groupIri: GROUP, anchor: { before: DYNAMIC_POSITION } }, ...ENABLED },
+      { label: 'Add after', value: { kind: 'position', groupIri: GROUP, anchor: { after: DYNAMIC_POSITION } }, ...ENABLED },
+      { label: 'Use here', value: { kind: 'page-data', positionIri: DYNAMIC_POSITION, property: 'hero' }, ...ENABLED },
+    ])
+  })
+
+  test('a page-data slot outside the clicked group is not offered', () => {
+    const result = cloneTargetOptions(input({
+      stack: stackOf(CONTAINER_GROUP, INNER_CONTAINER, DYNAMIC_POSITION, PAGE),
+      resources: buildResources(dataPageStore),
+      isDataPage: true,
+    }))
+    expect(result.options.map(item => item.label)).toEqual(['Add here'])
+  })
+
   test('a page-data slot is only offered on a data page', () => {
     const result = cloneTargetOptions(input({
-      stack: stackOf(DYNAMIC_POSITION),
+      stack: stackOf(DYNAMIC_POSITION, PAGE),
       resources: buildResources(dataPageStore),
       isDataPage: false,
     }))
@@ -162,7 +184,7 @@ describe('cloneTargetOptions', () => {
 
   test('offers nothing where add-component offers nothing on a data page', () => {
     const result = cloneTargetOptions(input({
-      stack: stackOf(COMPONENT, POSITION),
+      stack: stackOf(COMPONENT, POSITION, PAGE),
       resources: buildResources(dataPageStore),
       isDataPage: true,
     }))
