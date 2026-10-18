@@ -529,15 +529,16 @@ describe('Header', () => {
       expect(bar.find('button').text()).toBe('Cancel')
     })
 
-    test('the Cloning bar sits below the header so the header height does not change', async () => {
+    test('the Cloning bar sits in the header row beside Enable Navigation, never over the layout below the header', async () => {
       const { cwa } = mockCwa({ admin: buildAdmin({ isEditing: true }) })
       useCloneMode(cwa).start(SOURCE_IRI, 'Hero text')
       const wrapper = mountHeader()
+      await flushPromises()
       const refs = wrapper.vm.$refs as Record<string, HTMLElement>
       const bar = refs.header.querySelector('[data-testid="clone-mode-bar"]')!
-      expect(bar.parentElement).toBe(refs.header)
-      expect(bar.className).toContain('cwa:absolute')
-      expect(bar.className).toContain('cwa:top-full')
+      expect(bar.className).not.toContain('cwa:top-full')
+      expect(bar.className).not.toContain('cwa:absolute')
+      expect(bar.parentElement!.querySelector('.toggle-stub')).not.toBeNull()
     })
 
     test('mounts the clone highlight only while cloning', async () => {

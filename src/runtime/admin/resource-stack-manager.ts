@@ -175,6 +175,11 @@ export default class ResourceStackManager {
     }
   }
 
+  public restorePreviousStack() {
+    this.currentClickTarget.value = null
+    this.currentResourceStack.value = this.previousResourceStack.value
+  }
+
   private async confirmStackChange(alertData: { title: string, content: string }, fromContext?: boolean) {
     let cachedNewStack: ResourceStackItem[] | undefined
     if (!fromContext) {

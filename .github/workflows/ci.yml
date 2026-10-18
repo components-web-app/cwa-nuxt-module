@@ -84,6 +84,14 @@ jobs:
         env:
           CI: true
 
+      - name: Install Chromium for the admin browser tests
+        if: matrix.lint
+        run: pnpm exec playwright-core install --with-deps chromium
+
+      - name: Admin browser tests
+        if: matrix.lint
+        run: node test/e2e/admin-clone.mjs
+
       - name: Upload test artifacts
         if: matrix.coverage
         uses: actions/upload-artifact@v6

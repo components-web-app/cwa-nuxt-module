@@ -112,6 +112,7 @@
               v-model="isNavEnabled"
               label="Enable Navigation"
             />
+            <CloneModeBar />
           </template>
         </div>
         <div
@@ -131,7 +132,6 @@
         </div>
       </div>
       <OutdatedContentNotice class="cwa:absolute cwa:top-full cwa:mt-1.5 cwa:left-1/2 cwa:-translate-x-1/2 cwa:z-notifications" />
-      <CloneModeBar class="cwa:absolute cwa:top-full cwa:mt-1.5 cwa:left-4 cwa:z-notifications" />
       <CloneHighlight v-if="cloneSource" />
       <ResourceLoadingIndicator class="cwa:absolute cwa:top-full cwa:left-0 cwa:z-notifications" />
     </div>

@@ -4,6 +4,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+- Clone mode: with Enable Navigation on, a click only navigates (no "switch and edit the layout?" confirm), route redirects are followed, the page and layout are no longer blurred, a target in the other scope is confirmed first, the Cloning bar sits in the header, highlights from the previous page are cleared, and removing a position no longer sends `?published=true`; covered by browser tests ([#PR_NUMBER](https://github.com/components-web-app/cwa-nuxt-module/pull/PR_NUMBER), [#157](https://github.com/components-web-app/cwa-nuxt-module/issues/157))
+
 ## [2.0.0-alpha.22] - 2026-10-18
 
 - The route cache keeps 200 routes by default instead of 50, so more pages revisit instantly; set `cwa.routeCacheLimit` to change it ([#259](https://github.com/components-web-app/cwa-nuxt-module/issues/259), [2c125fcb](https://github.com/components-web-app/cwa-nuxt-module/commit/2c125fcb))

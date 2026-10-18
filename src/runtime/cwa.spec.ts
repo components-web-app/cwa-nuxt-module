@@ -306,7 +306,17 @@ describe('Cwa class test', () => {
     vi.spyOn(processComposables, 'useProcess').mockImplementation(() => ({ isClient: !isServer, isServer }))
     createCwa({ storeName })
     const stores = Storage.mock.results[0].value.stores
-    expect(Fetcher).toBeCalledWith(CwaFetch.mock.results[0].value, FetchStatusManager.mock.results[0].value, $router, stores.resources, isServer)
+    expect(Fetcher).toBeCalledWith(CwaFetch.mock.results[0].value, FetchStatusManager.mock.results[0].value, $router, stores.resources, isServer, expect.any(Function))
+  })
+
+  test.each([
+    { navigationDisabled: true, follows: false },
+    { navigationDisabled: false, follows: true },
+  ])('Fetcher follows a route redirect only when navigation is enabled (navigationDisabled: $navigationDisabled)', ({ navigationDisabled, follows }) => {
+    const $cwa = createCwa({ storeName })
+    Object.defineProperty($cwa.adminNavGuard, 'navigationDisabled', { value: navigationDisabled })
+    const followsRedirects = Fetcher.mock.calls[0][5]
+    expect(followsRedirects()).toBe(follows)
   })
 
   test('Resources is initialised and accessible', () => {

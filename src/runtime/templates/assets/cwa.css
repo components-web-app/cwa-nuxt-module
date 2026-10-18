@@ -1029,6 +1029,12 @@
 .cwa\:bg-indigo-600 {
   background-color: var(--cwa-color-indigo-600);
 }
+.cwa\:bg-light\/10 {
+  background-color: var(--cwa-color-light);
+  @supports (color: color-mix(in lab, red, red)) {
+    background-color: color-mix(in oklab, var(--cwa-color-light) 10%, transparent);
+  }
+}
 .cwa\:bg-light\/30 {
   background-color: var(--cwa-color-light);
   @supports (color: color-mix(in lab, red, red)) {

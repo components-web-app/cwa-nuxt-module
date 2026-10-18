@@ -56,6 +56,7 @@ function mockCwa() {
 function elementAt(rect: { top: number, left: number, right: number, bottom: number }) {
   const element = document.createElement('div')
   element.getBoundingClientRect = vi.fn(() => ({ ...rect, width: rect.right - rect.left, height: rect.bottom - rect.top }) as DOMRect)
+  document.body.appendChild(element)
   return element
 }
 
@@ -75,6 +76,22 @@ afterEach(() => {
 })
 
 describe('CloneHighlight', () => {
+  test('leaves out an instance whose elements have left the page, so navigating away leaves no highlight behind', async () => {
+    const { cwa } = mockCwa()
+    const detached = elementAt({ top: 10, left: 20, right: 120, bottom: 60 })
+    detached.remove()
+    registerInstance(cwa, SOURCE_IRI, ref([detached]))
+    registerInstance(cwa, SOURCE_IRI, ref([elementAt({ top: 300, left: 40, right: 240, bottom: 380 })]))
+    useCloneMode(cwa).start(SOURCE_IRI, 'Html Content')
+
+    const wrapper = mountHighlight()
+    await flushPromises()
+
+    const highlights = wrapper.findAll('[data-testid="clone-highlight"]')
+    expect(highlights).toHaveLength(1)
+    expect(highlights[0].attributes('style')).toBe('top: 300px; left: 40px; width: 200px; height: 80px;')
+  })
+
   test('highlights every on-screen instance of the clone source', async () => {
     const { cwa } = mockCwa()
     registerInstance(cwa, SOURCE_IRI, ref([elementAt({ top: 10, left: 20, right: 120, bottom: 60 })]))

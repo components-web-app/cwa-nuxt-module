@@ -18,7 +18,7 @@ function boundsOf(elements: HTMLElement[]) {
   let right = -Infinity
   let bottom = -Infinity
   for (const element of elements) {
-    if (element.nodeType !== 1) {
+    if (element.nodeType !== 1 || !element.isConnected) {
       continue
     }
     const rect = element.getBoundingClientRect()

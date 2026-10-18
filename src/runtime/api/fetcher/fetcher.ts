@@ -75,6 +75,7 @@ export default class Fetcher {
     private router: Router,
     resourcesStoreDefinition: ResourcesStore,
     private readonly isServer = false,
+    private readonly followsRedirects: () => boolean = () => true,
   ) {
     this._store = resourcesStoreDefinition.useStore()
   }
@@ -193,6 +194,7 @@ export default class Fetcher {
     const doRedirect = this.fetchStatusManager.primaryFetchPath === path
       && getResourceTypeFromIri(iri) === CwaResourceTypes.ROUTE
       && resource?.redirectPath
+      && this.followsRedirects()
 
     if (doRedirect) {
       this.fetchStatusManager.abortFetch(startFetchResult.token, 'redirect')

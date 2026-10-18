@@ -1166,4 +1166,19 @@ describe('Resource Manager', () => {
       expect((manager as any).isElementOutsideViewport(el)).toBe(true)
     })
   })
+  describe('clone mode clicks (#157)', () => {
+    test('restorePreviousStack puts back the selection from before the click and ends populating', () => {
+      const { manager } = createResourceManager()
+      const previous = [{ iri: '/component/selected', domElements: ref([]), childIris: ref([]) }]
+      const clicked = [{ iri: '/component/clicked', domElements: ref([]), childIris: ref([]) }]
+      ;(manager as any).previousResourceStack.value = previous
+      ;(manager as any).currentResourceStack.value = clicked
+      ;(manager as any).currentClickTarget.value = document.createElement('div')
+
+      manager.restorePreviousStack()
+
+      expect((manager as any).currentResourceStack.value).toBe(previous)
+      expect(manager.isPopulating.value).toBe(false)
+    })
+  })
 })

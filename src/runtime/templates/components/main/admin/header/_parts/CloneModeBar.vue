@@ -9,7 +9,7 @@ const { source, end } = useCloneMode(useCwa())
   <div
     v-if="source"
     data-testid="clone-mode-bar"
-    class="cwa:dark-blur cwa:py-2 cwa:px-3 cwa:rounded-full cwa:flex cwa:gap-x-1.5 cwa:items-center"
+    class="cwa:py-1 cwa:px-3 cwa:rounded-full cwa:bg-light/10 cwa:text-sm cwa:flex cwa:gap-x-1.5 cwa:items-center"
   >
     <span class="cwa:text-stone-300">Cloning: {{ source.name || source.iri }}</span>
     <button

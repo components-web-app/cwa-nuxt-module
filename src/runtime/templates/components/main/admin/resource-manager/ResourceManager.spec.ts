@@ -32,6 +32,19 @@ vi.mock('#cwa/composables/transitions', () => ({
   useTransitions: () => ({ slideUp: {} }),
 }))
 
+const confirmState = vi.hoisted(() => ({ reveal: vi.fn(async () => ({ isCanceled: false })) }))
+
+vi.mock('#cwa/admin/confirm-dialog', () => ({
+  createConfirmDialog: vi.fn(async () => ({ reveal: confirmState.reveal })),
+}))
+
+vi.mock('#cwa/templates/components/core/ConfirmDialog.vue', () => ({ default: {} }))
+
+vi.mock('#app/nuxt', async importOriginal => ({
+  ...await importOriginal<typeof import('#app/nuxt')>(),
+  useNuxtApp: () => ({ vueApp: {} }),
+}))
+
 const cwaState = vi.hoisted(() => ({ cwa: null as any }))
 
 const { useCwa } = vi.hoisted(() => ({
@@ -48,6 +61,8 @@ function makeStackManager(overrides: Record<string, any> = {}) {
     isPopulating: ref(false),
     completeStack: vi.fn(),
     selectStackIndex: vi.fn(),
+    restorePreviousStack: vi.fn(),
+    isEditingLayout: ref(false),
     resourceStack: ref<{ iri: string }[]>([]),
     resetTabs: vi.fn(),
     ...overrides,
@@ -259,20 +274,47 @@ describe('ResourceManager', () => {
       return { wrapper, stackManager }
     }
 
-    test('in clone mode a click opens the clone target dialog instead of selecting', async () => {
+    test('in clone mode a click opens the clone target dialog instead of selecting, keeping the selection', async () => {
       const { wrapper, stackManager } = await clickInCloneMode()
 
       expect(stackManager.completeStack).toHaveBeenCalledWith({ clickTarget: expect.any(HTMLElement) }, false, 'layout')
       expect(stackManager.selectStackIndex).not.toHaveBeenCalled()
+      expect(stackManager.restorePreviousStack).toHaveBeenCalled()
+      expect(confirmState.reveal).toHaveBeenCalledWith(expect.objectContaining({ content: expect.stringContaining('switch and edit the layout') }))
+      expect(stackManager.isEditingLayout.value).toBe(true)
       const dialog = wrapper.findComponent({ name: 'CloneTargetDialog' })
       expect(dialog.exists()).toBe(true)
       expect(dialog.props()).toEqual({ stack: clonedStack, type: 'layout' })
     })
 
-    test('in clone mode with navigation enabled a click does not open the target dialog', async () => {
+    test('in clone mode a click in the scope already being edited opens the target dialog without a confirm', async () => {
+      const stackManager = makeStackManager({ isPopulating: ref(true), resourceStack: ref(clonedStack), isEditingLayout: ref(true) })
+      cwaState.cwa = makeCwa({ isEditing: true, stackManager })
+      useCloneMode(cwaState.cwa as Cwa).start('/component/source', 'Source')
+      const wrapper = await mountManager()
+      ;(wrapper.vm as any).clickHandler({ target: document.createElement('span') } as unknown as MouseEvent, 'layout')
+      await flushPromises()
+
+      expect(confirmState.reveal).not.toHaveBeenCalled()
+      expect(wrapper.findComponent({ name: 'CloneTargetDialog' }).exists()).toBe(true)
+    })
+
+    test('in clone mode a click in the other scope that is not confirmed opens no dialog and keeps the scope', async () => {
+      confirmState.reveal.mockResolvedValueOnce({ isCanceled: true })
+      const { wrapper, stackManager } = await clickInCloneMode()
+
+      expect(confirmState.reveal).toHaveBeenCalled()
+      expect(stackManager.isEditingLayout.value).toBe(false)
+      expect(stackManager.selectStackIndex).not.toHaveBeenCalled()
+      expect(wrapper.findComponent({ name: 'CloneTargetDialog' }).exists()).toBe(false)
+    })
+
+    test('in clone mode with navigation enabled a click only navigates: no selection, confirm or dialog', async () => {
       const { wrapper, stackManager } = await clickInCloneMode({ navigationGuardDisabled: true })
 
-      expect(stackManager.selectStackIndex).toHaveBeenCalledWith(0, false)
+      expect(stackManager.selectStackIndex).not.toHaveBeenCalled()
+      expect(confirmState.reveal).not.toHaveBeenCalled()
+      expect(stackManager.restorePreviousStack).toHaveBeenCalled()
       expect(wrapper.findComponent({ name: 'CloneTargetDialog' }).exists()).toBe(false)
     })
 
