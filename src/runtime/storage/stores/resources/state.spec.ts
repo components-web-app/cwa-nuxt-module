@@ -12,6 +12,7 @@ describe('Resources State context', () => {
         currentIds: [],
         positionsByComponent: {},
         publishableMapping: [],
+        componentGroupIds: [],
       }),
       new: reactive({
         byId: {},

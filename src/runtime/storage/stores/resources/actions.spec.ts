@@ -11,6 +11,7 @@ import state, { CwaResourceApiStatuses } from './state'
 import getters from './getters'
 import * as app from 'nuxt/app'
 import { createError } from 'h3'
+import { toRaw } from 'vue'
 import * as processComposables from '../../../composables/process'
 
 vi.mock('../../../resources/resource-utils', async (importOriginal) => {
@@ -1114,6 +1115,186 @@ describe('resources action -> clearResources', () => {
     expect(resourcesState.current.positionsByComponent).toEqual({})
     expect(resourcesState.new.byId).toEqual({})
     expect(resourcesState.new.allIds).toEqual([])
+  })
+})
+
+describe('resources action -> saveResource drops the embedded JSON-LD context (#259)', () => {
+  function apiResource() {
+    return {
+      '@context': '/_api/contexts/HeroSection',
+      '@id': '/component/hero_sections/1',
+      '@type': 'HeroSection',
+      'title': 'Hero',
+      '_metadata': {
+        '@context': { '@vocab': '/_api/docs.jsonld#', 'hydra': 'http://www.w3.org/ns/hydra/core#' },
+        '@type': 'ComponentMetadata',
+        '@id': '/.well-known/genid/1',
+        'persisted': true,
+        'publishable': { published: true, publishedAt: null },
+      },
+    }
+  }
+  const expectedMetadata = {
+    '@type': 'ComponentMetadata',
+    '@id': '/.well-known/genid/1',
+    'persisted': true,
+    'publishable': { published: true, publishedAt: null },
+  }
+
+  function setup() {
+    const resourcesState = state()
+    const resourcesActions = actions(resourcesState, getters(resourcesState))
+    return { resourcesState, resourcesActions }
+  }
+
+  test('a saved resource keeps every _metadata field but @context, and its own top-level @context', () => {
+    const { resourcesState, resourcesActions } = setup()
+    resourcesActions.saveResource({ resource: apiResource() })
+    const saved = resourcesState.current.byId['/component/hero_sections/1']?.data
+    expect(saved?._metadata).toStrictEqual(expectedMetadata)
+    expect(saved?.['@context']).toBe('/_api/contexts/HeroSection')
+    expect(saved?.title).toBe('Hero')
+  })
+
+  test('a resource staged as new, as Mercure and revalidation save it, is staged and merged without its _metadata @context', () => {
+    const { resourcesState, resourcesActions } = setup()
+    resourcesActions.saveResource({ resource: apiResource(), isNew: true, path: '/' })
+    expect(resourcesState.new.byId['/component/hero_sections/1']?.resource._metadata).toStrictEqual(expectedMetadata)
+    resourcesActions.mergeNewResources()
+    expect(resourcesState.current.byId['/component/hero_sections/1']?.data?._metadata).toStrictEqual(expectedMetadata)
+  })
+
+  test('the object the caller passed is left unchanged', () => {
+    const { resourcesActions } = setup()
+    const resource = apiResource()
+    resourcesActions.saveResource({ resource })
+    resourcesActions.saveResource({ resource, isNew: true, path: '/' })
+    expect(resource).toStrictEqual(apiResource())
+  })
+
+  test('a resource with no embedded context is stored as given', () => {
+    const { resourcesState, resourcesActions } = setup()
+    const resource = { '@id': '/component/hero_sections/2', '@type': 'HeroSection', '_metadata': { persisted: true } }
+    resourcesActions.saveResource({ resource })
+    expect(toRaw(resourcesState.current.byId['/component/hero_sections/2']?.data)).toBe(resource)
+  })
+})
+
+describe('resources action -> deleteResource of a position (#259)', () => {
+  const positionIri = '/_/component_positions/to-delete'
+  const ownGroupIri = '/_/component_groups/own'
+  const otherGroupIri = '/_/component_groups/other'
+
+  function setup(withOwnGroup: boolean) {
+    const resourcesState = state()
+    const resourcesGetters = getters(resourcesState)
+    const resourcesActions = actions(resourcesState, resourcesGetters)
+    resourcesActions.saveResource({ resource: { '@id': positionIri, '@type': 'ComponentPosition', 'componentGroup': ownGroupIri, '_metadata': { persisted: true } } })
+    if (withOwnGroup) {
+      resourcesActions.saveResource({ resource: { '@id': ownGroupIri, '@type': 'ComponentGroup', 'componentPositions': [positionIri, '/_/component_positions/keep'], '_metadata': { persisted: true } } })
+    }
+    resourcesActions.saveResource({ resource: { '@id': otherGroupIri, '@type': 'ComponentGroup', 'componentPositions': ['/_/component_positions/other', positionIri], '_metadata': { persisted: true } } })
+    return { resourcesState, resourcesGetters, resourcesActions }
+  }
+
+  test('deleting a position removes it from the group named by its componentGroup', () => {
+    const { resourcesState, resourcesActions } = setup(true)
+    resourcesActions.deleteResource({ resource: positionIri })
+    expect(resourcesState.current.byId[ownGroupIri]?.data?.componentPositions).toEqual(['/_/component_positions/keep'])
+    expect(resourcesState.current.byId[positionIri]).toBeUndefined()
+  })
+
+  test('deleting a position whose group is stored does not read resourcesByType', () => {
+    const { resourcesGetters, resourcesActions, resourcesState } = setup(true)
+    const byType = vi.spyOn(resourcesGetters.resourcesByType, 'value', 'get')
+    resourcesActions.deleteResource({ resource: positionIri })
+    expect(byType).not.toHaveBeenCalled()
+    expect(resourcesState.current.byId[otherGroupIri]?.data?.componentPositions).toEqual(['/_/component_positions/other', positionIri])
+  })
+
+  test('deleting a position whose group is not stored still removes it from every group that lists it', () => {
+    const { resourcesGetters, resourcesActions, resourcesState } = setup(false)
+    const byType = vi.spyOn(resourcesGetters.resourcesByType, 'value', 'get')
+    resourcesActions.deleteResource({ resource: positionIri })
+    expect(byType).toHaveBeenCalled()
+    expect(resourcesState.current.byId[otherGroupIri]?.data?.componentPositions).toEqual(['/_/component_positions/other'])
+  })
+
+  test('deleting a position only rewrites the component mappings that list it', () => {
+    const { resourcesActions, resourcesState } = setup(true)
+    resourcesState.current.positionsByComponent = {
+      '/component/with': ['/_/component_positions/keep', positionIri],
+      '/component/without': ['/_/component_positions/keep'],
+    }
+    const untouched = resourcesState.current.positionsByComponent['/component/without']
+    resourcesActions.deleteResource({ resource: positionIri })
+    expect(resourcesState.current.positionsByComponent['/component/with']).toEqual(['/_/component_positions/keep'])
+    expect(resourcesState.current.positionsByComponent['/component/without']).toBe(untouched)
+  })
+})
+
+describe('resources action -> componentGroupIds, the component groups index (#259)', () => {
+  const groupIri = '/_/component_groups/group'
+  const groupResource = { '@id': groupIri, '@type': 'ComponentGroup', 'reference': 'ref', 'componentPositions': [], '_metadata': { persisted: true } }
+
+  function setup() {
+    const resourcesState = state()
+    const resourcesActions = actions(resourcesState, getters(resourcesState))
+    return { resourcesState, resourcesActions }
+  }
+
+  test('a group is listed once when it is fetched and saved, and other resources are never listed', () => {
+    const { resourcesState, resourcesActions } = setup()
+    resourcesActions.setResourceFetchStatus({ iri: groupIri, isComplete: false, path: groupIri })
+    resourcesActions.saveResource({ resource: groupResource })
+    resourcesActions.setResourceFetchStatus({ iri: groupIri, isComplete: true, path: groupIri, headers: {} })
+    resourcesActions.saveResource({ resource: { '@id': '/component/a', '@type': 'Component', '_metadata': { persisted: true } } })
+    resourcesActions.saveResource({ resource: { '@id': '/_/component_positions/a', '@type': 'ComponentPosition', '_metadata': { persisted: true } } })
+    expect(resourcesState.current.componentGroupIds).toEqual([groupIri])
+  })
+
+  test('a group fetched by its reference is found by that reference under the IRI the API returned', () => {
+    const resourcesState = state()
+    const resourcesGetters = getters(resourcesState)
+    const resourcesActions = actions(resourcesState, resourcesGetters)
+    const lookupPath = '/_/component_groups/ref'
+    resourcesActions.setResourceFetchStatus({ iri: lookupPath, isComplete: false, path: lookupPath })
+    resourcesActions.saveResource({ resource: groupResource })
+    resourcesActions.setResourceFetchStatus({ iri: lookupPath, isComplete: true, path: lookupPath, headers: {}, responseIri: groupIri })
+    expect(resourcesState.current.componentGroupIds).toEqual([lookupPath, groupIri])
+    expect(resourcesGetters.componentGroupByReference.value.get('ref')).toBe(resourcesState.current.byId[groupIri])
+  })
+
+  test('a group is no longer listed after it is deleted', () => {
+    const { resourcesState, resourcesActions } = setup()
+    resourcesActions.saveResource({ resource: groupResource })
+    resourcesActions.deleteResource({ resource: groupIri })
+    expect(resourcesState.current.componentGroupIds).toEqual([])
+  })
+
+  test('a group is no longer listed after it is evicted, and is listed once when saved again', () => {
+    const { resourcesState, resourcesActions } = setup()
+    resourcesActions.saveResource({ resource: groupResource })
+    resourcesActions.evictResources([groupIri])
+    expect(resourcesState.current.componentGroupIds).toEqual([])
+    resourcesActions.saveResource({ resource: groupResource })
+    expect(resourcesState.current.componentGroupIds).toEqual([groupIri])
+  })
+
+  test('no group is listed after the resources are cleared', () => {
+    const { resourcesState, resourcesActions } = setup()
+    resourcesActions.saveResource({ resource: groupResource })
+    resourcesActions.clearResources()
+    expect(resourcesState.current.componentGroupIds).toEqual([])
+  })
+
+  test('a group added by merging new resources is listed once', () => {
+    const { resourcesState, resourcesActions } = setup()
+    resourcesActions.saveResource({ resource: groupResource, isNew: true, path: '/' })
+    resourcesActions.mergeNewResources()
+    resourcesActions.saveResource({ resource: groupResource, isNew: true, path: '/' })
+    resourcesActions.mergeNewResources()
+    expect(resourcesState.current.componentGroupIds).toEqual([groupIri])
   })
 })
 

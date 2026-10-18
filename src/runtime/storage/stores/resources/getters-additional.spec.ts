@@ -13,6 +13,7 @@ function createState(): CwaResourcesStateInterface {
       allIds: [],
       currentIds: [],
       publishableMapping: [],
+      componentGroupIds: [],
     }),
     new: reactive({
       byId: {},
@@ -501,5 +502,96 @@ describe('getters -> getChildIris', () => {
     }
     const result = getterFns.getChildIris.value('/_/component_positions/1', addResourceEvent)
     expect(result).not.toContain(NEW_RESOURCE_IRI)
+  })
+})
+
+describe('getters -> currentResourcesApiStateIsPending (#259)', () => {
+  let state: CwaResourcesStateInterface
+  let getterFns: CwaResourcesGettersInterface
+
+  beforeEach(() => {
+    state = createState()
+    getterFns = getters(state)
+    state.current.byId['/component/on-screen'] = { apiState: { status: CwaResourceApiStatuses.SUCCESS }, data: { '@id': '/component/on-screen' } }
+    state.current.allIds = ['/component/on-screen', '/component/off-screen']
+    state.current.currentIds = ['/component/on-screen']
+  })
+
+  test('currentResourcesApiStateIsPending is true when a current resource is in progress', () => {
+    state.current.byId['/component/on-screen'].apiState = { status: CwaResourceApiStatuses.IN_PROGRESS }
+    state.current.byId['/component/off-screen'] = { apiState: { status: CwaResourceApiStatuses.SUCCESS } }
+    expect(getterFns.currentResourcesApiStateIsPending.value).toBe(true)
+  })
+
+  test('currentResourcesApiStateIsPending is false when only a resource that is not current is in progress', () => {
+    state.current.byId['/component/off-screen'] = { apiState: { status: CwaResourceApiStatuses.IN_PROGRESS } }
+    expect(getterFns.currentResourcesApiStateIsPending.value).toBe(false)
+  })
+
+  test('currentResourcesApiStateIsPending does not read the api state of resources that are not current', () => {
+    let reads = 0
+    state.current.byId['/component/off-screen'] = {
+      get apiState() {
+        reads++
+        return { status: CwaResourceApiStatuses.SUCCESS }
+      },
+    }
+    void getterFns.currentResourcesApiStateIsPending.value
+    expect(reads).toBe(0)
+  })
+
+  test('currentResourcesApiStateIsPending is false, and does not throw, for a current IRI that is not stored', () => {
+    state.current.currentIds = ['/component/on-screen', '/component/not-stored']
+    expect(getterFns.currentResourcesApiStateIsPending.value).toBe(false)
+  })
+})
+
+describe('getters -> componentGroupByReference (#259)', () => {
+  let state: CwaResourcesStateInterface
+  let getterFns: CwaResourcesGettersInterface
+  const group = (iri: string, reference?: string) => ({ apiState: { status: CwaResourceApiStatuses.SUCCESS }, data: { '@id': iri, '@type': 'ComponentGroup', reference } })
+
+  beforeEach(() => {
+    state = createState()
+    getterFns = getters(state)
+  })
+
+  test('maps the reference of each listed group to its resource, skipping a group stored by reference with no data', () => {
+    state.current.byId = {
+      '/_/component_groups/a': group('/_/component_groups/a', 'ref-a'),
+      '/_/component_groups/b': group('/_/component_groups/b', 'ref-b'),
+      '/_/component_groups/ref-a': { apiState: { status: CwaResourceApiStatuses.SUCCESS } },
+    }
+    state.current.componentGroupIds = ['/_/component_groups/ref-a', '/_/component_groups/a', '/_/component_groups/b']
+    expect(getterFns.componentGroupByReference.value.get('ref-a')).toBe(state.current.byId['/_/component_groups/a'])
+    expect(getterFns.componentGroupByReference.value.get('ref-b')).toBe(state.current.byId['/_/component_groups/b'])
+    expect(getterFns.componentGroupByReference.value.size).toBe(2)
+  })
+
+  test('the first listed group wins when two share a reference', () => {
+    state.current.byId = {
+      '/_/component_groups/a': group('/_/component_groups/a', 'ref'),
+      '/_/component_groups/b': group('/_/component_groups/b', 'ref'),
+    }
+    state.current.componentGroupIds = ['/_/component_groups/a', '/_/component_groups/b']
+    expect(getterFns.componentGroupByReference.value.get('ref')).toBe(state.current.byId['/_/component_groups/a'])
+  })
+
+  test('updates when a listed group\'s data arrives', () => {
+    state.current.byId = { '/_/component_groups/a': { apiState: { status: CwaResourceApiStatuses.IN_PROGRESS } } }
+    state.current.componentGroupIds = ['/_/component_groups/a']
+    expect(getterFns.componentGroupByReference.value.get('ref-a')).toBeUndefined()
+    state.current.byId['/_/component_groups/a'].data = { '@id': '/_/component_groups/a', '@type': 'ComponentGroup', 'reference': 'ref-a' }
+    expect(getterFns.componentGroupByReference.value.get('ref-a')).toBe(state.current.byId['/_/component_groups/a'])
+  })
+
+  test('is not rebuilt when a resource that is not a group is stored', () => {
+    state.current.byId = { '/_/component_groups/a': group('/_/component_groups/a', 'ref-a') }
+    state.current.allIds = ['/_/component_groups/a']
+    state.current.componentGroupIds = ['/_/component_groups/a']
+    const first = getterFns.componentGroupByReference.value
+    state.current.byId['/component/new'] = { apiState: { status: CwaResourceApiStatuses.SUCCESS }, data: { '@id': '/component/new' } }
+    state.current.allIds.push('/component/new')
+    expect(getterFns.componentGroupByReference.value).toBe(first)
   })
 })

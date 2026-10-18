@@ -59,10 +59,7 @@ export class Resources {
   }
 
   public getComponentGroupByReference(reference: string) {
-    const componentGroups = this.resourcesStore.resourcesByType[CwaResourceTypes.COMPONENT_GROUP]
-    return componentGroups.find((componentGroupResource) => {
-      return componentGroupResource.data?.reference === reference
-    })
+    return this.resourcesStore.componentGroupByReference.get(reference)
   }
 
   public get currentResources() {

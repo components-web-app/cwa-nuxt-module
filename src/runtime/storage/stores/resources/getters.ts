@@ -49,6 +49,7 @@ export interface CwaResourcesGettersInterface {
   isIriPublishableEquivalent: ComputedRef<(oldIri: string, newIri: string) => boolean>
   findAllPublishableIris: ComputedRef<(iri: string) => string[]>
   resourcesByType: ComputedRef<ResourcesByTypeInterface>
+  componentGroupByReference: ComputedRef<Map<string, CwaCurrentResourceInterface>>
   totalResourcesPending: ComputedRef<number>
   currentResourcesApiStateIsPending: ComputedRef<boolean>
   resourcesApiStateIsPending: ComputedRef<(resources: string[]) => boolean>
@@ -270,6 +271,17 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
       }
     }),
     findAllPublishableIris,
+    componentGroupByReference: computed(() => {
+      const byReference = new Map<string, CwaCurrentResourceInterface>()
+      for (const iri of resourcesState.current.componentGroupIds) {
+        const resource = resourcesState.current.byId[iri]
+        const reference = resource?.data?.reference
+        if (resource && typeof reference === 'string' && !byReference.has(reference)) {
+          byReference.set(reference, resource)
+        }
+      }
+      return byReference
+    }),
     resourcesByType: computed<ResourcesByTypeInterface>(() => {
       const resources: ResourcesByTypeInterface = {
         [CwaResourceTypes.ROUTE]: [],
@@ -291,9 +303,7 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
       return resources
     }),
     totalResourcesPending: computed<number>(() => utils.totalResourcesPending),
-    currentResourcesApiStateIsPending: computed<boolean>(() => {
-      return utils.resourcesApiStateIsPending(Object.keys(resourcesState.current.byId))
-    }),
+    currentResourcesApiStateIsPending: computed<boolean>(() => utils.currentResourcesPending),
     resourcesApiStateIsPending: computed(() => {
       return (resources: string[]) => utils.resourcesApiStateIsPending(resources)
     }),
