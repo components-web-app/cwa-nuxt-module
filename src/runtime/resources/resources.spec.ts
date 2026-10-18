@@ -1131,7 +1131,7 @@ describe('Resources', () => {
     test('Returns the group stored with the reference from the store\'s index (#259)', () => {
       const component = { data: { any: 'thing', reference: 'ref' } }
       const mockResourcesStore = {
-        componentGroupByReference: new Map([['ref', component]]),
+        componentGroupByReference: (reference: string) => (reference === 'ref' ? component : undefined),
       }
       // @ts-expect-error
       const { resources } = createResources(undefined, mockResourcesStore)

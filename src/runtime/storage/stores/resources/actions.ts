@@ -76,6 +76,23 @@ export interface CwaResourcesActionsInterface {
 }
 
 export default function (resourcesState: CwaResourcesStateInterface, resourcesGetters: CwaResourcesGettersInterface): CwaResourcesActionsInterface {
+  function indexComponentGroup(iri: string) {
+    if (getResourceTypeFromIri(iri) === CwaResourceTypes.COMPONENT_GROUP && !resourcesState.current.componentGroupIds.includes(iri)) {
+      resourcesState.current.componentGroupIds.push(iri)
+    }
+  }
+
+  function indexGroup(iri: string, from: unknown, to?: unknown) {
+    const index = resourcesState.current.groupIrisByReference
+    if (from !== to && typeof from === 'string' && index[from]?.includes(iri)) {
+      index[from] = index[from].filter(groupIri => groupIri !== iri)
+    }
+    if (typeof to === 'string' && getResourceTypeFromIri(iri) === CwaResourceTypes.COMPONENT_GROUP && !index[to]?.includes(iri)) {
+      const order = toRaw(resourcesState.current.componentGroupIds)
+      index[to] = [...(index[to] || []), iri].sort((a, b) => order.indexOf(a) - order.indexOf(b))
+    }
+  }
+
   function initResource({ iri, resourcesState, isCurrent }: InitResourceEvent): CwaCurrentResourceInterface {
     if (!resourcesState.current.byId[iri]) {
       resourcesState.current.byId[iri] = {
@@ -92,12 +109,6 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
       resourcesState.current.currentIds.push(iri)
     }
     return resourcesState.current.byId[iri]
-  }
-
-  function indexComponentGroup(iri: string) {
-    if (getResourceTypeFromIri(iri) === CwaResourceTypes.COMPONENT_GROUP && !resourcesState.current.componentGroupIds.includes(iri)) {
-      resourcesState.current.componentGroupIds.push(iri)
-    }
   }
 
   function removeFromList(list: string[], iri: string) {
@@ -190,6 +201,7 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
     if (resourcesState.current.allIds.includes(event.resource)) {
       resourcesState.current.allIds = toRaw(resourcesState.current.allIds).filter(iri => iri !== event.resource)
     }
+    indexGroup(event.resource, resource.data?.reference)
     removeFromList(resourcesState.current.currentIds, event.resource)
     removeFromList(resourcesState.current.componentGroupIds, event.resource)
     delete resourcesState.current.byId[event.resource]
@@ -303,7 +315,9 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
       isCurrent: resourcesState.current.currentIds.includes(iri),
     })
 
+    const previous = data.data
     data.data = event.resource
+    indexGroup(iri, previous?.reference, event.resource.reference)
 
     clearExistingNewResource()
 
@@ -461,6 +475,7 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
           continue
         }
 
+        const previous = resourcesState.current.byId[newId]?.data
         // save/replace new resource
         resourcesState.current.byId[newId] = {
           apiState: {
@@ -478,6 +493,7 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
           resourcesState.current.allIds.push(newId)
           indexComponentGroup(newId)
         }
+        indexGroup(newId, previous?.reference, newResource.resource.reference)
         if (!resourcesState.current.currentIds.includes(newId)) {
           resourcesState.current.currentIds.push(newId)
         }
@@ -523,6 +539,7 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
       resourcesState.current.publishableMapping = []
       resourcesState.current.positionsByComponent = {}
       resourcesState.current.componentGroupIds = []
+      resourcesState.current.groupIrisByReference = {}
       resourcesState.new.byId = {}
       resourcesState.new.allIds = []
     },
@@ -532,6 +549,7 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
       }
       const evictSet = new Set(iris)
       for (const iri of iris) {
+        indexGroup(iri, resourcesState.current.byId[iri]?.data?.reference)
         delete resourcesState.current.byId[iri]
         if (resourcesState.current.positionsByComponent[iri]) {
           delete resourcesState.current.positionsByComponent[iri]

@@ -1259,7 +1259,7 @@ describe('resources action -> componentGroupIds, the component groups index (#25
     resourcesActions.saveResource({ resource: groupResource })
     resourcesActions.setResourceFetchStatus({ iri: lookupPath, isComplete: true, path: lookupPath, headers: {}, responseIri: groupIri })
     expect(resourcesState.current.componentGroupIds).toEqual([lookupPath, groupIri])
-    expect(resourcesGetters.componentGroupByReference.value.get('ref')).toBe(resourcesState.current.byId[groupIri])
+    expect(resourcesGetters.componentGroupByReference.value('ref')).toBe(resourcesState.current.byId[groupIri])
   })
 
   test('a group is no longer listed after it is deleted', () => {

@@ -59,7 +59,7 @@ export class Resources {
   }
 
   public getComponentGroupByReference(reference: string) {
-    return this.resourcesStore.componentGroupByReference.get(reference)
+    return this.resourcesStore.componentGroupByReference(reference)
   }
 
   public get currentResources() {
