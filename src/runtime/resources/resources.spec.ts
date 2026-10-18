@@ -1128,21 +1128,18 @@ describe('Resources', () => {
   })
 
   describe('getComponentGroupByReference', () => {
-    test('Returns a component if it exists with the same reference', () => {
+    test('Returns the group stored with the reference from the store\'s index, without reading resourcesByType (#259)', () => {
       const component = { data: { any: 'thing', reference: 'ref' } }
-      // @ts-expect-error
       const mockResourcesStore = {
-        resourcesByType: {
-          [utils.CwaResourceTypes.COMPONENT_GROUP]: [component, {}, {
-            data: {
-              some: 'dupe-not-to-return',
-              reference: 'ref',
-            },
-          }],
+        componentGroupByReference: new Map([['ref', component]]),
+        get resourcesByType() {
+          throw new Error('resourcesByType must not be read')
         },
       }
+      // @ts-expect-error
       const { resources } = createResources(undefined, mockResourcesStore)
-      expect(resources.getComponentGroupByReference('ref')).toEqual(component)
+      expect(resources.getComponentGroupByReference('ref')).toBe(component)
+      expect(resources.getComponentGroupByReference('other')).toBeUndefined()
     })
   })
 

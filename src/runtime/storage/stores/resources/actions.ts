@@ -1,4 +1,5 @@
 import { consola } from 'consola'
+import { toRaw } from 'vue'
 import type { CwaFetchRequestHeaders } from '#cwa/api/fetcher/fetcher'
 import type { CwaResourceError } from '#cwa/errors/cwa-resource-error'
 import { isApiUnreachable } from '#cwa/errors/api-unreachable'
@@ -85,11 +86,34 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
     }
     if (!resourcesState.current.allIds.includes(iri)) {
       resourcesState.current.allIds.push(iri)
+      indexComponentGroup(iri)
     }
     if (isCurrent && !resourcesState.current.currentIds.includes(iri)) {
       resourcesState.current.currentIds.push(iri)
     }
     return resourcesState.current.byId[iri]
+  }
+
+  function indexComponentGroup(iri: string) {
+    if (getResourceTypeFromIri(iri) === CwaResourceTypes.COMPONENT_GROUP && !resourcesState.current.componentGroupIds.includes(iri)) {
+      resourcesState.current.componentGroupIds.push(iri)
+    }
+  }
+
+  function removeFromList(list: string[], iri: string) {
+    const index = list.indexOf(iri)
+    index !== -1 && list.splice(index, 1)
+  }
+
+  function removePositionFromGroups(positionIri: string, groupIri: string | undefined) {
+    const ownGroup = groupIri ? resourcesState.current.byId[groupIri]?.data : undefined
+    const groups = ownGroup
+      ? [ownGroup]
+      : resourcesGetters.resourcesByType.value[CwaResourceTypes.COMPONENT_GROUP].map(componentGroup => componentGroup.data)
+    for (const group of groups) {
+      const componentPositions = group?.componentPositions
+      componentPositions && removeFromList(componentPositions, positionIri)
+    }
   }
 
   function deleteResource(event: DeleteResourceEvent): void {
@@ -108,17 +132,7 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
         if (event.noCascade) {
           break
         }
-        // remove a component position from all component groups
-        const componentGroups = resourcesGetters.resourcesByType.value[CwaResourceTypes.COMPONENT_GROUP]
-        for (const componentGroup of Object.values(componentGroups)) {
-          // component groups can be fetched by reference. If so the returned IRI will be saved and the reference will not have any data.
-          const componentPositions = componentGroup.data?.componentPositions
-          if (!componentPositions) continue
-          const positionIndex = componentPositions.indexOf(event.resource)
-          if (positionIndex !== -1) {
-            componentPositions.splice(positionIndex, 1)
-          }
-        }
+        removePositionFromGroups(event.resource, resource.data?.componentGroup)
         clearPositionToComponentMapping(event.resource)
         break
       }
@@ -173,12 +187,11 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
       }
     }
 
-    const allIdsIndex = resourcesState.current.allIds.indexOf(event.resource)
-
-    allIdsIndex !== -1 && resourcesState.current.allIds.splice(allIdsIndex, 1)
-    const currentIdsIndex = resourcesState.current.currentIds.indexOf(event.resource)
-
-    currentIdsIndex !== -1 && resourcesState.current.currentIds.splice(currentIdsIndex, 1)
+    if (resourcesState.current.allIds.includes(event.resource)) {
+      resourcesState.current.allIds = toRaw(resourcesState.current.allIds).filter(iri => iri !== event.resource)
+    }
+    removeFromList(resourcesState.current.currentIds, event.resource)
+    removeFromList(resourcesState.current.componentGroupIds, event.resource)
     delete resourcesState.current.byId[event.resource]
   }
 
@@ -233,9 +246,11 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
   function clearPositionToComponentMapping(iri: string) {
     const resourceType = getResourceTypeFromIri(iri)
     if (resourceType === CwaResourceTypes.COMPONENT_POSITION) {
-      const entries = Object.entries(resourcesState.current.positionsByComponent)
+      const entries = Object.entries(toRaw(resourcesState.current.positionsByComponent))
       for (const [componentIri, positionIris] of entries) {
-        resourcesState.current.positionsByComponent[componentIri] = positionIris.filter(pIri => (iri !== pIri))
+        if (toRaw(positionIris).includes(iri)) {
+          resourcesState.current.positionsByComponent[componentIri] = positionIris.filter(pIri => (iri !== pIri))
+        }
       }
       return
     }
@@ -452,6 +467,7 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
         // if a new resource, we should populate into allIds and currentIds
         if (!resourcesState.current.allIds.includes(newId)) {
           resourcesState.current.allIds.push(newId)
+          indexComponentGroup(newId)
         }
         if (!resourcesState.current.currentIds.includes(newId)) {
           resourcesState.current.currentIds.push(newId)
@@ -497,6 +513,7 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
       // todo: test mapping clears
       resourcesState.current.publishableMapping = []
       resourcesState.current.positionsByComponent = {}
+      resourcesState.current.componentGroupIds = []
       resourcesState.new.byId = {}
       resourcesState.new.allIds = []
     },
@@ -512,6 +529,7 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
         }
       }
       resourcesState.current.allIds = resourcesState.current.allIds.filter(id => !evictSet.has(id))
+      resourcesState.current.componentGroupIds = resourcesState.current.componentGroupIds.filter(id => !evictSet.has(id))
       resourcesState.current.publishableMapping = resourcesState.current.publishableMapping.filter(
         mapping => !evictSet.has(mapping.draftIri) && !evictSet.has(mapping.publishedIri),
       )

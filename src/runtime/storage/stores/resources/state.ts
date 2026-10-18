@@ -57,6 +57,7 @@ export interface CwaResourcesStateInterface {
     currentIds: Array<string>
     publishableMapping: Array<PublishableMapping>
     positionsByComponent: { [componentIri: string]: string[] }
+    componentGroupIds: Array<string>
   }
   new: {
     byId: {
@@ -81,6 +82,7 @@ export default function (): CwaResourcesStateInterface {
       currentIds: [],
       publishableMapping: [],
       positionsByComponent: {},
+      componentGroupIds: [],
     }),
     new: reactive({
       byId: {},
