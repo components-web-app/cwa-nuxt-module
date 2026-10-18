@@ -4,6 +4,7 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+- The route cache keeps 200 routes by default instead of 50, so more pages revisit instantly; set `cwa.routeCacheLimit` to change it ([#259](https://github.com/components-web-app/cwa-nuxt-module/issues/259), [2c125fcb](https://github.com/components-web-app/cwa-nuxt-module/commit/2c125fcb))
 - Each `<CwaComponentGroup>` finds its group by reference in constant time, instead of the lookup being rebuilt over every stored group whenever a group is saved, so a navigation no longer slows down as more pages are cached. The resources store's `componentGroupByReference` getter is now a function of the reference rather than a `Map`; `$cwa.resources.getComponentGroupByReference` is unchanged ([#259](https://github.com/components-web-app/cwa-nuxt-module/issues/259), [a8529041](https://github.com/components-web-app/cwa-nuxt-module/commit/a8529041))
 - Storing a resource the store has not seen yet no longer slows down as the store grows: the store checks its list of IRIs through a `Set` ([#259](https://github.com/components-web-app/cwa-nuxt-module/issues/259), [37b94f16](https://github.com/components-web-app/cwa-nuxt-module/commit/37b94f16))
 - Evicting a route from the route cache costs only the resources it evicts: each resource counts the cached routes that list it, so a `routeCacheLimit` of about 200 stays fast ([#259](https://github.com/components-web-app/cwa-nuxt-module/issues/259), [e5abadbe](https://github.com/components-web-app/cwa-nuxt-module/commit/e5abadbe))
