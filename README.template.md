@@ -1,4 +1,4 @@
-# CWA Nuxt 3 Module
+# CWA Nuxt Module
 
 [![codecov](https://codecov.io/github/components-web-app/cwa-nuxt-module/branch/{{ current.branch }}/graph/badge.svg?token=Z6GQJN413O)](https://app.codecov.io/gh/components-web-app/cwa-nuxt-module/tree/{{ current.branch }})
 

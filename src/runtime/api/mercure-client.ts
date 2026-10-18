@@ -204,7 +204,8 @@ export default class MercureClient {
     const path = this._fetcherStore.primaryFetchPath
     const resourceActions = this.collectResourceActions(messages)
     const fetchedResources = await this.fetch(resourceActions.toFetch)
-    const toSave = [...resourceActions.toSave, ...fetchedResources]
+    const fetchedComponents = await this.fetch(this.unheldPositionComponents(fetchedResources))
+    const toSave = [...resourceActions.toSave, ...fetchedResources, ...fetchedComponents]
     for (const resource of toSave) {
       this.resourcesStore.saveResource({
         resource,
@@ -241,6 +242,14 @@ export default class MercureClient {
       toSave,
       toFetch: [...new Set(toFetch)],
     }
+  }
+
+  private unheldPositionComponents(resources: CwaResource[]) {
+    const components = resources
+      .filter(resource => getResourceTypeFromIri(resource['@id']) === CwaResourceTypes.COMPONENT_POSITION)
+      .map(position => position.component)
+      .filter((iri): iri is string => typeof iri === 'string' && !this.resourcesStore.current.byId[iri]?.data)
+    return [...new Set(components)]
   }
 
   private positionsBoundToChangedPageData(pageData: CwaResource) {

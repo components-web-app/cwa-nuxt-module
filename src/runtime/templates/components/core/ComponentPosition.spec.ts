@@ -7,11 +7,13 @@ import * as cwaComposable from '../../../composables/cwa'
 import * as cwaResourceComposables from '../../../composables/cwa-resource'
 import * as cwaResourceManageableComposable from '../../../composables/cwa-resource-manageable'
 import ComponentPosition from './ComponentPosition.vue'
+import ResourceLoader from './ResourceLoader.vue'
 import { ResourcesManager } from '#cwa/resources/resources-manager'
 import { Resources } from '#cwa/resources/resources'
 import { ResourcesStore } from '#cwa/storage/stores/resources/resources-store'
 import { FetcherStore } from '#cwa/storage/stores/fetcher/fetcher-store'
 import { ErrorStore } from '#cwa/storage/stores/error/error-store'
+import { CwaResourceApiStatuses } from '#cwa/storage/stores/resources/state'
 
 const placeholderModule = vi.hoisted(() => ({ loads: 0 }))
 
@@ -121,6 +123,63 @@ describe('ComponentPosition', () => {
     test('should match snapshot with ResourceLoader component with componentIri', () => {
       const wrapper = createWrapper()
       expect(wrapper.element).toMatchSnapshot()
+    })
+  })
+
+  describe('a static position whose component the API leaves out for a visitor (#492)', () => {
+    const positionIri = '/_/component_positions/p1'
+
+    afterEach(() => {
+      vi.restoreAllMocks()
+    })
+
+    async function renderThroughGroupLoader(isAdmin: boolean) {
+      setActivePinia(createPinia())
+      const resourcesStoreDef = new ResourcesStore('cwa')
+      const resources = new Resources(resourcesStoreDef, new FetcherStore('cwa'))
+      const store = resourcesStoreDef.useStore()
+      store.saveResource({ resource: { '@id': positionIri, '@type': 'ComponentPosition', '_metadata': { persisted: true } } as never })
+      store.setResourceFetchStatus({ iri: positionIri, isComplete: true })
+      expect(store.current.byId[positionIri]?.apiState.status).toBe(CwaResourceApiStatuses.SUCCESS)
+      // @ts-expect-error
+      vi.spyOn(cwaResourceComposables, 'useCwaResource').mockImplementation(() => ({
+        getResource: vi.fn(() => computed(() => store.current.byId[positionIri])),
+      }))
+      vi.spyOn(cwaResourceManageableComposable, 'useCwaResourceManageable').mockImplementation(() => ({}) as never)
+      vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => ({
+        auth: { isAdmin: computed(() => isAdmin), user: isAdmin ? { roles: [] } : undefined, signedIn: ref(isAdmin) },
+        admin: { isEditing: false, resourceStackManager: { currentIri: ref(undefined) } },
+        resources,
+        resourcesManager: { addResourceEvent: ref(undefined) },
+        fetchResource: vi.fn(),
+        isStaticRender: false,
+      }) as never)
+      const warn = vi.spyOn(console, 'warn')
+
+      const wrapper = mount(defineComponent({
+        setup: () => () => h(ResourceLoader, { 'iri': positionIri, 'uiComponent': ComponentPosition, 'class': 'nested', 'data-sort-value': 1 }),
+      }))
+      await new Promise(resolve => setTimeout(resolve, 30))
+      await vi.dynamicImportSettled()
+      await flushPromises()
+      return { wrapper, warn }
+    }
+
+    test('renders only its comment anchors for a non-admin: no loader, spinner, placeholder or Vue warning', async () => {
+      const { wrapper, warn } = await renderThroughGroupLoader(false)
+
+      expect(wrapper.findComponent(ComponentPosition).exists()).toBe(true)
+      expect(wrapper.findAllComponents(ResourceLoader)).toHaveLength(1)
+      expect(wrapper.find('.placeholder').exists()).toBe(false)
+      expect(wrapper.html().replace(/<!--[\s\S]*?-->/g, '').trim()).toBe('')
+      expect(warn).not.toHaveBeenCalled()
+    })
+
+    test('still renders the placeholder for an admin', async () => {
+      const { wrapper } = await renderThroughGroupLoader(true)
+
+      expect(wrapper.findAllComponents(ResourceLoader)).toHaveLength(1)
+      expect(wrapper.find('.placeholder').exists()).toBe(true)
     })
   })
 

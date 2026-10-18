@@ -563,8 +563,8 @@ describe('Mercure -> processMessageQueue', () => {
         toFetch: ['/to-fetch-id'],
       }
     })
-    vi.spyOn(mercure, 'fetch').mockImplementation(() => {
-      return [{ '@id': '/to-fetch-id' }]
+    vi.spyOn(mercure, 'fetch').mockImplementation((paths: string[]) => {
+      return paths.includes('/to-fetch-id') ? [{ '@id': '/to-fetch-id' }] : []
     })
   })
 
@@ -584,6 +584,7 @@ describe('Mercure -> processMessageQueue', () => {
     expect(mercure.collectResourceActions).toHaveBeenCalledWith(currentQueue)
     expect(mercure.mercureMessageQueue).toStrictEqual([])
     expect(mercure.fetch).toHaveBeenCalledWith(['/to-fetch-id'])
+    expect(mercure.fetch).toHaveBeenCalledWith([])
 
     expect(fetcherStore.primaryFetchPath).toBe('my-path')
     expect(resourcesStore.saveResource).toBeCalledWith({
