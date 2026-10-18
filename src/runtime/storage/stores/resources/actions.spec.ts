@@ -9,6 +9,8 @@ import actions from './actions'
 import type { CwaResourcesStateInterface } from './state'
 import state, { CwaResourceApiStatuses } from './state'
 import getters from './getters'
+import { ResourcesStore } from './resources-store'
+import { createPinia, setActivePinia } from 'pinia'
 import * as app from 'nuxt/app'
 import { createError } from 'h3'
 import { toRaw } from 'vue'
@@ -1570,5 +1572,119 @@ describe('resources action -> initNewResource', () => {
     const newResource = resourcesState.current.byId['__new__']
     expect(newResource?.data?.['@type']).toBe('ComponentPosition')
     expect(newResource?.data?.componentGroup).toBe('/_/component_groups/group-1')
+  })
+})
+
+function countingList(iris: string[]) {
+  const counter = { reads: 0 }
+  const listed = iris.length
+  const list = new Proxy(iris, {
+    get(target, key, receiver) {
+      if (typeof key === 'string' && /^\d+$/.test(key) && Number(key) < listed) {
+        counter.reads++
+      }
+      return Reflect.get(target, key, receiver)
+    },
+  })
+  return { list, counter }
+}
+
+describe('resources action -> allIds index (#259)', () => {
+  const a = '/component/a'
+  const b = '/component/b'
+  const c = '/component/c'
+  const d = '/component/d'
+  const e = '/component/e'
+
+  function component(iri: string, extra: Record<string, unknown> = {}) {
+    return { '@id': iri, '@type': 'Component', '_metadata': { persisted: true }, ...extra }
+  }
+
+  function setup() {
+    const resourcesState = state()
+    return { resourcesState, resourcesActions: actions(resourcesState, getters(resourcesState)) }
+  }
+
+  test('allIds never lists an IRI twice after it is saved, evicted and saved again', () => {
+    const { resourcesState, resourcesActions } = setup()
+    resourcesActions.saveResource({ resource: component(a) })
+    resourcesActions.saveResource({ resource: component(b) })
+    resourcesActions.setResourceFetchStatus({ iri: a, isComplete: false, path: a })
+    resourcesActions.evictResources([a])
+    resourcesActions.setResourceFetchStatus({ iri: a, isComplete: false, path: a })
+    resourcesActions.saveResource({ resource: component(a) })
+    resourcesActions.setResourceFetchStatus({ iri: a, isComplete: true, path: a, headers: {} })
+    resourcesActions.saveResource({ resource: component(a) })
+    expect(resourcesState.current.allIds).toEqual([b, a])
+  })
+
+  test('allIds and byId hold the same IRIs after delete, evict, clear and merge', () => {
+    const { resourcesState, resourcesActions } = setup()
+    const expectInStep = (iris: string[]) => {
+      expect(resourcesState.current.allIds).toEqual(iris)
+      expect(Object.keys(resourcesState.current.byId).sort()).toEqual([...iris].sort())
+    }
+    for (const iri of [a, b, c, d]) {
+      resourcesActions.saveResource({ resource: component(iri) })
+    }
+    expectInStep([a, b, c, d])
+    resourcesActions.deleteResource({ resource: b })
+    expectInStep([a, c, d])
+    resourcesActions.evictResources([c])
+    expectInStep([a, d])
+    resourcesActions.saveResource({ resource: component(e), isNew: true, path: '/' })
+    resourcesActions.saveResource({ resource: component(d, { title: 'changed' }), isNew: true, path: '/' })
+    resourcesActions.mergeNewResources()
+    expectInStep([a, d, e])
+    resourcesActions.clearResources()
+    expectInStep([])
+    resourcesActions.saveResource({ resource: component(a) })
+    resourcesActions.saveResource({ resource: component(a) })
+    expectInStep([a])
+  })
+
+  test('an IRI is listed once when it is saved after allIds is replaced with a list of the same length', () => {
+    const { resourcesState, resourcesActions } = setup()
+    resourcesActions.saveResource({ resource: component(a) })
+    resourcesActions.saveResource({ resource: component(b) })
+    resourcesState.current.allIds = [a, c]
+    resourcesActions.saveResource({ resource: component(b) })
+    resourcesActions.saveResource({ resource: component(c) })
+    expect(resourcesState.current.allIds).toEqual([a, c, b])
+  })
+
+  test('an IRI removed from allIds in place is listed again when it is saved', () => {
+    const { resourcesState, resourcesActions } = setup()
+    resourcesActions.saveResource({ resource: component(a) })
+    resourcesActions.saveResource({ resource: component(b) })
+    resourcesState.current.allIds.splice(0, 1)
+    resourcesActions.saveResource({ resource: component(a) })
+    expect(resourcesState.current.allIds).toEqual([b, a])
+  })
+
+  test('allIds never lists a hydrated IRI twice when it is saved again', () => {
+    setActivePinia(createPinia())
+    const server = new ResourcesStore('ssr').useStore()
+    server.saveResource({ resource: component(a) })
+    server.saveResource({ resource: component(b) })
+    const pinia = createPinia()
+    pinia.state.value['client.resources'] = JSON.parse(JSON.stringify(server.$state))
+    setActivePinia(pinia)
+    const client = new ResourcesStore('client').useStore()
+    client.saveResource({ resource: component(a) })
+    client.saveResource({ resource: component(c) })
+    expect(client.current.allIds).toEqual([a, b, c])
+  })
+
+  test('saving a new IRI does not read the IRIs already in allIds', () => {
+    const { resourcesState, resourcesActions } = setup()
+    const { list, counter } = countingList(Array.from({ length: 50 }, (_, i) => `/component/listed-${i}`))
+    resourcesState.current.allIds = list
+    resourcesActions.saveResource({ resource: component(a) })
+    counter.reads = 0
+    resourcesActions.saveResource({ resource: component(b) })
+    resourcesActions.setResourceFetchStatus({ iri: c, isComplete: false, path: c })
+    expect(counter.reads).toBe(0)
+    expect(resourcesState.current.allIds.slice(-3)).toEqual([a, b, c])
   })
 })

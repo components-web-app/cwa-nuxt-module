@@ -76,7 +76,24 @@ export interface CwaResourcesActionsInterface {
 }
 
 export default function (resourcesState: CwaResourcesStateInterface, resourcesGetters: CwaResourcesGettersInterface): CwaResourcesActionsInterface {
-  function indexComponentGroup(iri: string) {
+  let idIndex = new Set<string>()
+  let indexedIds: string[] | undefined
+
+  function hasId(iri: string) {
+    const ids = toRaw(resourcesState.current.allIds)
+    if (ids !== indexedIds || idIndex.size !== ids.length) {
+      idIndex = new Set(ids)
+      indexedIds = ids
+    }
+    return idIndex.has(iri)
+  }
+
+  function addId(iri: string) {
+    if (hasId(iri)) {
+      return
+    }
+    resourcesState.current.allIds.push(iri)
+    idIndex.add(iri)
     if (getResourceTypeFromIri(iri) === CwaResourceTypes.COMPONENT_GROUP && !resourcesState.current.componentGroupIds.includes(iri)) {
       resourcesState.current.componentGroupIds.push(iri)
     }
@@ -101,10 +118,7 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
         },
       }
     }
-    if (!resourcesState.current.allIds.includes(iri)) {
-      resourcesState.current.allIds.push(iri)
-      indexComponentGroup(iri)
-    }
+    addId(iri)
     if (isCurrent && !resourcesState.current.currentIds.includes(iri)) {
       resourcesState.current.currentIds.push(iri)
     }
@@ -198,7 +212,7 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
       }
     }
 
-    if (resourcesState.current.allIds.includes(event.resource)) {
+    if (hasId(event.resource)) {
       resourcesState.current.allIds = toRaw(resourcesState.current.allIds).filter(iri => iri !== event.resource)
     }
     indexGroup(event.resource, resource.data?.reference)
@@ -489,10 +503,7 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
         }
 
         // if a new resource, we should populate into allIds and currentIds
-        if (!resourcesState.current.allIds.includes(newId)) {
-          resourcesState.current.allIds.push(newId)
-          indexComponentGroup(newId)
-        }
+        addId(newId)
         indexGroup(newId, previous?.reference, newResource.resource.reference)
         if (!resourcesState.current.currentIds.includes(newId)) {
           resourcesState.current.currentIds.push(newId)
@@ -555,7 +566,7 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
           delete resourcesState.current.positionsByComponent[iri]
         }
       }
-      resourcesState.current.allIds = resourcesState.current.allIds.filter(id => !evictSet.has(id))
+      resourcesState.current.allIds = toRaw(resourcesState.current.allIds).filter(id => !evictSet.has(id))
       resourcesState.current.componentGroupIds = resourcesState.current.componentGroupIds.filter(id => !evictSet.has(id))
       resourcesState.current.publishableMapping = resourcesState.current.publishableMapping.filter(
         mapping => !evictSet.has(mapping.draftIri) && !evictSet.has(mapping.publishedIri),
