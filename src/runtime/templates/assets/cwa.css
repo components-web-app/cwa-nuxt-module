@@ -199,6 +199,9 @@
 .cwa\:left-2 {
   left: calc(var(--cwa-spacing) * 2);
 }
+.cwa\:left-4 {
+  left: calc(var(--cwa-spacing) * 4);
+}
 .cwa\:-z-10 {
   z-index: calc(10 * -1);
 }
@@ -1764,6 +1767,10 @@
   --tw-ease: var(--cwa-ease-out);
   transition-timing-function: var(--cwa-ease-out);
 }
+.cwa\:outline-dashed {
+  --tw-outline-style: dashed;
+  outline-style: dashed;
+}
 .cwa\:outline-dotted {
   --tw-outline-style: dotted;
   outline-style: dotted;
@@ -2011,6 +2018,14 @@
 }
 .cwa\:focus-visible\:\[outline-style\:solid\]:focus-visible {
   outline-style: solid;
+}
+@media (hover: hover) {
+  .cwa\:enabled\:hover\:bg-stone-700:enabled:hover {
+    background-color: var(--cwa-color-stone-700);
+  }
+  .cwa\:enabled\:hover\:text-white:enabled:hover {
+    color: var(--cwa-color-white);
+  }
 }
 .cwa\:disabled\:pointer-events-none:disabled {
   pointer-events: none;

@@ -283,7 +283,8 @@ export class ResourcesManager {
     return resource
   }
 
-  private async refreshEndpoints(paths: string[]) {
+  /** @internal */
+  public async refreshEndpoints(paths: string[]) {
     try {
       await this.fetcher.fetchBatch({ paths, shallowFetch: 'noexist' })
     }

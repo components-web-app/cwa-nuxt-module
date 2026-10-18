@@ -22,6 +22,7 @@ const forbidden = [
   { marker: 'orphaned_resources/delete', source: 'api/orphaned-resource-requests.ts' },
   { marker: 'The page cache warm stopped before it finished', source: 'api/page-cache-warm.ts' },
   { marker: 'vuejs-confirm-dialog-root', source: 'vuejs-confirm-dialog' },
+  { marker: 'The component being cloned no longer exists', source: 'admin/clone-component.ts' },
 ]
 
 async function readEntryChunks() {

@@ -1,9 +1,20 @@
 // @vitest-environment happy-dom
-import { describe, test, expect, vi, beforeEach } from 'vitest'
+import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
 import { ref, nextTick } from 'vue'
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { mockNuxtImport } from '@nuxt/test-utils/runtime'
 import { CwaUserRoles } from '#cwa/storage/stores/auth/state'
+import { useCloneMode } from '#cwa/admin/clone-mode'
+import type Cwa from '#cwa/cwa'
+
+vi.mock('#cwa/templates/components/main/admin/resource-manager/_parts/CloneTargetDialog.vue', () => ({
+  __esModule: true,
+  default: {
+    name: 'CloneTargetDialog',
+    props: ['stack', 'type'],
+    template: '<div class="clone-target-dialog-stub" />',
+  },
+}))
 
 const resolverState = vi.hoisted(() => ({
   allMeta: null as any,
@@ -37,6 +48,7 @@ function makeStackManager(overrides: Record<string, any> = {}) {
     isPopulating: ref(false),
     completeStack: vi.fn(),
     selectStackIndex: vi.fn(),
+    resourceStack: ref<{ iri: string }[]>([]),
     resetTabs: vi.fn(),
     ...overrides,
   }
@@ -45,16 +57,20 @@ function makeStackManager(overrides: Record<string, any> = {}) {
 function makeCwa(opts: {
   isEditing?: boolean
   hasRole?: boolean
+  navigationGuardDisabled?: boolean
   stackManager?: ReturnType<typeof makeStackManager>
 } = {}) {
   const stackManager = opts.stackManager ?? makeStackManager()
   return {
     admin: {
       isEditing: opts.isEditing ?? false,
+      navigationGuardDisabled: opts.navigationGuardDisabled ?? false,
+      setNavigationGuardDisabled: vi.fn(),
       resourceStackManager: stackManager,
       emitRedraw: vi.fn(),
     },
     auth: {
+      user: { '@id': '/_/users/admin' },
       hasRole: vi.fn((role: string) => (opts.hasRole ?? false) && role === CwaUserRoles.ADMIN),
     },
     resources: {
@@ -93,6 +109,10 @@ describe('ResourceManager', () => {
     vi.clearAllMocks()
     resolverState.allMeta = null
     resolverState.ops = null
+  })
+
+  afterEach(() => {
+    cwaState.cwa && useCloneMode(cwaState.cwa as Cwa).end()
   })
 
   describe('showSpacer / showManager rendering', () => {
@@ -225,6 +245,51 @@ describe('ResourceManager', () => {
 
       expect(stackManager.completeStack).toHaveBeenCalledWith({ clickTarget: evt.target }, false, 'layout')
       expect(stackManager.selectStackIndex).toHaveBeenCalledWith(0, false)
+    })
+
+    const clonedStack = [{ iri: '/component/target' }, { iri: '/_/component_positions/p1' }, { iri: '/_/component_groups/g1' }]
+
+    async function clickInCloneMode(opts: { navigationGuardDisabled?: boolean, stack?: { iri: string }[] } = {}) {
+      const stackManager = makeStackManager({ isPopulating: ref(true), resourceStack: ref(opts.stack ?? clonedStack) })
+      cwaState.cwa = makeCwa({ isEditing: true, stackManager, navigationGuardDisabled: opts.navigationGuardDisabled })
+      useCloneMode(cwaState.cwa as Cwa).start('/component/source', 'Source')
+      const wrapper = await mountManager()
+      ;(wrapper.vm as any).clickHandler({ target: document.createElement('span') } as unknown as MouseEvent, 'layout')
+      await flushPromises()
+      return { wrapper, stackManager }
+    }
+
+    test('in clone mode a click opens the clone target dialog instead of selecting', async () => {
+      const { wrapper, stackManager } = await clickInCloneMode()
+
+      expect(stackManager.completeStack).toHaveBeenCalledWith({ clickTarget: expect.any(HTMLElement) }, false, 'layout')
+      expect(stackManager.selectStackIndex).not.toHaveBeenCalled()
+      const dialog = wrapper.findComponent({ name: 'CloneTargetDialog' })
+      expect(dialog.exists()).toBe(true)
+      expect(dialog.props()).toEqual({ stack: clonedStack, type: 'layout' })
+    })
+
+    test('in clone mode with navigation enabled a click does not open the target dialog', async () => {
+      const { wrapper, stackManager } = await clickInCloneMode({ navigationGuardDisabled: true })
+
+      expect(stackManager.selectStackIndex).toHaveBeenCalledWith(0, false)
+      expect(wrapper.findComponent({ name: 'CloneTargetDialog' }).exists()).toBe(false)
+    })
+
+    test('in clone mode a click on nothing opens no dialog and selects nothing', async () => {
+      const { wrapper, stackManager } = await clickInCloneMode({ stack: [] })
+
+      expect(stackManager.selectStackIndex).not.toHaveBeenCalled()
+      expect(wrapper.findComponent({ name: 'CloneTargetDialog' }).exists()).toBe(false)
+    })
+
+    test('closing the clone target dialog removes it', async () => {
+      const { wrapper } = await clickInCloneMode()
+
+      wrapper.findComponent({ name: 'CloneTargetDialog' }).vm.$emit('close')
+      await flushPromises()
+
+      expect(wrapper.findComponent({ name: 'CloneTargetDialog' }).exists()).toBe(false)
     })
   })
 
