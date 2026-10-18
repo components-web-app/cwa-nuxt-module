@@ -4,6 +4,8 @@ import { ref, reactive, computed } from 'vue'
 import { flushPromises, mount } from '@vue/test-utils'
 import { mockNuxtImport } from '@nuxt/test-utils/runtime'
 import Header from './Header.vue'
+import { useCloneMode } from '#cwa/admin/clone-mode'
+import type Cwa from '#cwa/cwa'
 import * as cwaComposable from '#cwa/composables/cwa'
 
 const strandedState = reactive({
@@ -71,14 +73,18 @@ function mockCwa({
 } = {}) {
   const res = resources ?? buildResources()
   const adm = admin ?? buildAdmin()
-  // @ts-expect-error partial mock
-  vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => ({
+  const cwa = {
     resources: res,
     admin: adm,
+    auth: reactive({ user: { '@id': '/_/users/admin' } }),
     resourcesManager: { requestCount: { value: requestCount } },
-  }))
-  return { res, adm }
+  } as unknown as Cwa
+  vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => cwa)
+  mockedCwas.push(cwa)
+  return { res, adm, cwa }
 }
+
+const mockedCwas: Cwa[] = []
 
 function mountHeader(options: { stubs?: Record<string, any>, attachTo?: HTMLElement } = {}) {
   return mount(Header, {
@@ -127,6 +133,11 @@ function mountHeader(options: { stubs?: Record<string, any>, attachTo?: HTMLElem
 }
 
 describe('Header', () => {
+  afterEach(() => {
+    mockedCwas.forEach(cwa => useCloneMode(cwa).end())
+    mockedCwas.length = 0
+  })
+
   beforeEach(() => {
     vi.clearAllMocks()
     errorRef.value = null
@@ -499,6 +510,67 @@ describe('Header', () => {
       expect(vm.isNavEnabled).toBe(true)
       vm.isNavEnabled = false
       expect(adm.setNavigationGuardDisabled).toHaveBeenCalledWith(false)
+    })
+  })
+
+  describe('clone mode', () => {
+    const SOURCE_IRI = '/component/html_contents/source-uuid'
+
+    test('shows the Cloning bar with the source name and Cancel while cloning', async () => {
+      const { cwa } = mockCwa({ admin: buildAdmin({ isEditing: true }) })
+      const wrapper = mountHeader()
+      expect(wrapper.find('[data-testid="clone-mode-bar"]').exists()).toBe(false)
+      useCloneMode(cwa).start(SOURCE_IRI, 'Hero text')
+      await flushPromises()
+      const bar = wrapper.find('[data-testid="clone-mode-bar"]')
+      expect(bar.exists()).toBe(true)
+      expect(bar.text()).toContain('Cloning: Hero text')
+      expect(bar.find('button').text()).toBe('Cancel')
+    })
+
+    test('the Cloning bar sits below the header so the header height does not change', async () => {
+      const { cwa } = mockCwa({ admin: buildAdmin({ isEditing: true }) })
+      useCloneMode(cwa).start(SOURCE_IRI, 'Hero text')
+      const wrapper = mountHeader()
+      const refs = wrapper.vm.$refs as Record<string, HTMLElement>
+      const bar = refs.header.querySelector('[data-testid="clone-mode-bar"]')!
+      expect(bar.parentElement).toBe(refs.header)
+      expect(bar.className).toContain('cwa:absolute')
+      expect(bar.className).toContain('cwa:top-full')
+    })
+
+    test('Cancel in the Cloning bar ends clone mode', async () => {
+      const { cwa, adm } = mockCwa({ admin: buildAdmin({ isEditing: true }) })
+      useCloneMode(cwa).start(SOURCE_IRI, 'Hero text')
+      const wrapper = mountHeader()
+      await wrapper.find('[data-testid="clone-mode-bar"] button').trigger('click')
+      expect(useCloneMode(cwa).source.value).toBeUndefined()
+      expect(adm.setNavigationGuardDisabled).toHaveBeenCalledWith(false)
+      expect(wrapper.find('[data-testid="clone-mode-bar"]').exists()).toBe(false)
+    })
+
+    test('shows the Enable Navigation toggle only while cloning in edit mode', async () => {
+      const { cwa, adm } = mockCwa({ admin: buildAdmin({ isEditing: true }) })
+      const wrapper = mountHeader()
+      expect(wrapper.findComponent({ name: 'CwaUiFormToggle' }).exists()).toBe(false)
+      useCloneMode(cwa).start(SOURCE_IRI, 'Hero text')
+      await flushPromises()
+      const toggle = wrapper.findComponent({ name: 'CwaUiFormToggle' })
+      expect(toggle.exists()).toBe(true)
+      expect(toggle.props('label')).toBe('Enable Navigation')
+      adm.isEditing = false
+      await flushPromises()
+      expect(wrapper.findComponent({ name: 'CwaUiFormToggle' }).exists()).toBe(false)
+    })
+
+    test('the Enable Navigation toggle sets navigationGuardDisabled', async () => {
+      const { cwa, adm } = mockCwa({ admin: buildAdmin({ isEditing: true }) })
+      useCloneMode(cwa).start(SOURCE_IRI, 'Hero text')
+      const wrapper = mountHeader()
+      const toggle = wrapper.findComponent({ name: 'CwaUiFormToggle' })
+      expect(toggle.props('modelValue')).toBe(false)
+      toggle.vm.$emit('update:modelValue', true)
+      expect(adm.setNavigationGuardDisabled).toHaveBeenCalledWith(true)
     })
   })
 
