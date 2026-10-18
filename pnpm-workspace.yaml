@@ -57,8 +57,8 @@ overrides:
   source-map-js@<1.2.2: ^1.2.2
   postcss-selector-parser@>=7.0.0 <7.1.6: ^7.1.6
   fflate@>=0.7.0 <0.7.5: ^0.7.5
+  '@tailwindcss/typography>postcss-selector-parser': ^7.1.6
 auditConfig:
   ignoreGhsas:
     - GHSA-86w9-cpqp-85rv
     - GHSA-vfj7-8cjw-p6xm
-    - GHSA-rj75-hqrm-r3gf

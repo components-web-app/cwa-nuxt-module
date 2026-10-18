@@ -160,16 +160,15 @@ lowering the audit level, so any new advisory still fails CI.
 
 ## Remove when `@tailwindcss/typography` takes the fixed major
 
-### One more ignored audit advisory in `pnpm-workspace.yaml`
+### The `@tailwindcss/typography>postcss-selector-parser` override in `pnpm-workspace.yaml`
 
-It has a patched release, but only in a major the package that pins it cannot
-load:
+`@tailwindcss/typography` 0.5.20 (the playground's dependency, the latest
+release) pins postcss-selector-parser 6.0.10 exactly, which has
+`GHSA-rj75-hqrm-r3gf`. The fix is only in 7.1.6, so the override moves
+typography's copy to `^7.1.6`. The playground's compiled CSS was byte-identical
+with the override.
 
-- `GHSA-rj75-hqrm-r3gf`: postcss-selector-parser 6.0.10, pinned exactly by
-  `@tailwindcss/typography` 0.5.20 (the playground's dependency). The 7.x copies
-  are overridden to `^7.1.6`.
-
-**Delete:** the ID, once `@tailwindcss/typography` depends on
+**Delete:** the override, once `@tailwindcss/typography` depends on
 postcss-selector-parser ≥ 7.1.6; check with `pnpm audit` after removing it.
 
 ---
