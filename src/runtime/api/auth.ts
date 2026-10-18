@@ -345,6 +345,9 @@ export default class Auth {
       return processing
     }
     if (isProcessingMiddleware()) {
+      if (sessionEnded) {
+        this.mercure.init(true)
+      }
       return
     }
     this.mercure.init(true)
