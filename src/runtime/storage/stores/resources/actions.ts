@@ -109,7 +109,7 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
     const ownGroup = groupIri ? resourcesState.current.byId[groupIri]?.data : undefined
     const groups = ownGroup
       ? [ownGroup]
-      : resourcesGetters.resourcesByType.value[CwaResourceTypes.COMPONENT_GROUP].map(componentGroup => componentGroup.data)
+      : resourcesState.current.componentGroupIds.map(iri => resourcesState.current.byId[iri]?.data)
     for (const group of groups) {
       const componentPositions = group?.componentPositions
       componentPositions && removeFromList(componentPositions, positionIri)

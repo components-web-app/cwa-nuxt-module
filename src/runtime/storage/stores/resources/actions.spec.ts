@@ -113,6 +113,7 @@ describe('Resources -> deleteResource', () => {
     }
     resourcesState.current.currentIds = ['/_/component_positions/to-delete', '/_/component_groups/group']
     resourcesState.current.allIds = ['/_/component_positions/to-delete', '/_/component_groups/group']
+    resourcesState.current.componentGroupIds = ['/_/component_groups/group']
     resourcesActions.deleteResource({
       resource: '/_/component_positions/to-delete',
     })
@@ -1204,19 +1205,15 @@ describe('resources action -> deleteResource of a position (#259)', () => {
     expect(resourcesState.current.byId[positionIri]).toBeUndefined()
   })
 
-  test('deleting a position whose group is stored does not read resourcesByType', () => {
-    const { resourcesGetters, resourcesActions, resourcesState } = setup(true)
-    const byType = vi.spyOn(resourcesGetters.resourcesByType, 'value', 'get')
+  test('deleting a position whose group is stored leaves every other group untouched', () => {
+    const { resourcesActions, resourcesState } = setup(true)
     resourcesActions.deleteResource({ resource: positionIri })
-    expect(byType).not.toHaveBeenCalled()
     expect(resourcesState.current.byId[otherGroupIri]?.data?.componentPositions).toEqual(['/_/component_positions/other', positionIri])
   })
 
   test('deleting a position whose group is not stored still removes it from every group that lists it', () => {
-    const { resourcesGetters, resourcesActions, resourcesState } = setup(false)
-    const byType = vi.spyOn(resourcesGetters.resourcesByType, 'value', 'get')
+    const { resourcesActions, resourcesState } = setup(false)
     resourcesActions.deleteResource({ resource: positionIri })
-    expect(byType).toHaveBeenCalled()
     expect(resourcesState.current.byId[otherGroupIri]?.data?.componentPositions).toEqual(['/_/component_positions/other'])
   })
 

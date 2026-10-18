@@ -1128,13 +1128,10 @@ describe('Resources', () => {
   })
 
   describe('getComponentGroupByReference', () => {
-    test('Returns the group stored with the reference from the store\'s index, without reading resourcesByType (#259)', () => {
+    test('Returns the group stored with the reference from the store\'s index (#259)', () => {
       const component = { data: { any: 'thing', reference: 'ref' } }
       const mockResourcesStore = {
         componentGroupByReference: new Map([['ref', component]]),
-        get resourcesByType() {
-          throw new Error('resourcesByType must not be read')
-        },
       }
       // @ts-expect-error
       const { resources } = createResources(undefined, mockResourcesStore)

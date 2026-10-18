@@ -50,52 +50,6 @@ function createManageableResource($el?: DummyDom) {
   }
 }
 
-describe('ResourcesStore Getters -> resourcesByType', () => {
-  let state: CwaResourcesStateInterface
-  let getterFns: CwaResourcesGettersInterface
-
-  beforeEach(() => {
-    state = createState()
-    getterFns = getters(state)
-  })
-
-  afterEach(() => {
-    vi.clearAllMocks()
-  })
-
-  test('returns current resources with their type as the object key', () => {
-    state.current.allIds = ['/_/routes/id', '/random-to-exclude']
-    const routeResource = {
-      apiState: {
-        status: CwaResourceApiStatuses.IN_PROGRESS,
-      },
-      data: {
-        '@id': '/_/routes/id',
-      },
-    }
-    state.current.byId = {
-      '/_/routes/id': routeResource,
-      '/random-to-exclude': {
-        apiState: {
-          status: CwaResourceApiStatuses.IN_PROGRESS,
-        },
-        data: {
-          '@id': '/random-to-exclude',
-        },
-      },
-    }
-    expect(getterFns.resourcesByType.value).toStrictEqual({
-      [CwaResourceTypes.ROUTE]: [routeResource],
-      [CwaResourceTypes.PAGE]: [],
-      [CwaResourceTypes.PAGE_DATA]: [],
-      [CwaResourceTypes.LAYOUT]: [],
-      [CwaResourceTypes.COMPONENT_GROUP]: [],
-      [CwaResourceTypes.COMPONENT_POSITION]: [],
-      [CwaResourceTypes.COMPONENT]: [],
-    })
-  })
-})
-
 describe('ResourcesStore Getters -> totalResourcesPending', () => {
   let state: CwaResourcesStateInterface
   let getterFns: CwaResourcesGettersInterface
