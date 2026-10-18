@@ -841,6 +841,7 @@ describe('Auth', () => {
         cookie,
       } = createAuth()
 
+      cookie.value = '0'
       nuxtMockState.enabled = true
       nuxtMockState.nuxtApp = { _processingMiddleware: true }
 
@@ -856,6 +857,40 @@ describe('Auth', () => {
       expect(fetcher.fetchRoute).not.toHaveBeenCalled()
     })
 
+    test('reconnects Mercure while processing middleware when a session ended, so a signed-out browser never keeps a connection authorised with the old grants', async () => {
+      const {
+        auth,
+        mercure,
+        fetcherStore,
+        resourcesStore,
+        fetcher,
+        cookie,
+      } = createAuth()
+
+      cookie.value = '1'
+      nuxtMockState.enabled = true
+      nuxtMockState.nuxtApp = { _processingMiddleware: true }
+
+      await auth.clearSession()
+
+      expect(mercure.init).toHaveBeenCalledWith(true)
+      expect(fetcherStore.useStore().clearFetches).not.toHaveBeenCalled()
+      expect(resourcesStore.useStore().clearResources).not.toHaveBeenCalled()
+      expect(fetcher.fetchRoute).not.toHaveBeenCalled()
+    })
+
+    test('does not reconnect Mercure while processing middleware when no session ended, so an anonymous visitor\'s first /me does not restart the connection', async () => {
+      const { auth, mercure, cookie } = createAuth()
+
+      cookie.value = '0'
+      nuxtMockState.enabled = true
+      nuxtMockState.nuxtApp = { _processingMiddleware: true }
+
+      await auth.clearSession()
+
+      expect(mercure.init).not.toHaveBeenCalled()
+    })
+
     test('should treat throwing useNuxtApp as processing middleware AND return early', async () => {
       const {
         auth,
@@ -863,8 +898,10 @@ describe('Auth', () => {
         fetcherStore,
         resourcesStore,
         fetcher,
+        cookie,
       } = createAuth()
 
+      cookie.value = '0'
       nuxtMockState.enabled = true
       nuxtMockState.nuxtAppThrows = true
 
@@ -929,7 +966,8 @@ describe('Auth', () => {
 
     test('returns early when the captured app is processing middleware and another app is not', async () => {
       const capturedApp = createCapturedApp(true)
-      const { auth, mercure, fetcher } = createAuthWithCapturedApp(capturedApp, { _processingMiddleware: false })
+      const { auth, mercure, fetcher, cookie } = createAuthWithCapturedApp(capturedApp, { _processingMiddleware: false })
+      cookie.value = '0'
 
       await auth.clearSession()
 
@@ -996,7 +1034,7 @@ describe('Auth session end handler', () => {
   })
 
   test('the handler is called while middleware is processing, before the early return', async () => {
-    const { auth, cookie, handler, mercure } = createAuthWithHandler()
+    const { auth, cookie, handler, fetcher } = createAuthWithHandler()
     cookie.value = '1'
     nuxtMockState.enabled = true
     nuxtMockState.nuxtApp = { _processingMiddleware: true }
@@ -1004,7 +1042,7 @@ describe('Auth session end handler', () => {
     await auth.clearSession()
 
     expect(handler).toHaveBeenCalledTimes(1)
-    expect(mercure.init).not.toHaveBeenCalled()
+    expect(fetcher.fetchRoute).not.toHaveBeenCalled()
   })
 
   test('a handler that throws never fails sign-out', async () => {

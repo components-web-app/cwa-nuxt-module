@@ -386,6 +386,8 @@ Replay is not trusted. On reconnect (`connected` going `false` → `true`; `unde
 
 **The hub speaks Mercure 1.0** ([#364](https://github.com/components-web-app/cwa-nuxt-module/issues/364)): subscribe with `match=*` (`topic=` is a 400 outside compatibility mode) and reconnect with `last_event_id`. No 0.x fallback — breaking during the alpha by decision. The subscriber cookie (`__Secure-mercure_access_token`) is the bundle's; the module never reads it by name and relies on `withCredentials`. A 1.0 hub sends `event: mercure` only for its own subscription events, so `onmessage` still receives updates while the bundle publishes without a `type`.
 
+**A session end must reconnect Mercure** ([api-components-bundle#494](https://github.com/components-web-app/api-components-bundle/issues/494)): the hub authorises a subscriber only when it connects and the bundle's Mercure JWT has no `exp`, so an open connection keeps its grants until it closes. `clearSession()` calls `mercure.init(true)` even on its route-middleware early return (an expired admin's `/me` fails during navigation), but only when a session ended (the auth cookie was `'1'`). Trap: every visitor's first `/me` 401s through that path, so reconnecting regardless drops the connection each visitor is still opening. `initClientSide`'s later `init()` never helps: it skips an open connection to the same URL.
+
 ## Composables
 
 - **`useCwaComponent(props, plugins?, ops?)`** is the recommended entry point (#238/#239): returns `resource`, `exposeMeta` plus merged plugin results; `defineExpose(exposeMeta)` is still required. Plugins: `withCollection()`, `withFile(fileOps?)` (exposes a `files` map keyed by `fileProp`; the merge accumulates `files`).
