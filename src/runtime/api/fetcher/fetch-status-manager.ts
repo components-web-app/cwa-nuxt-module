@@ -81,7 +81,7 @@ export default class FetchStatusManager {
     this.apiDocumentation = apiDocumentation
     this._fetcherStore = fetcherStoreDefinition.useStore()
     this._resourcesStore = resourcesStoreDefinition.useStore()
-    this.routeCacheLimit = routeCacheLimit ?? 50
+    this.routeCacheLimit = routeCacheLimit ?? 200
     this.nuxtApp = nuxtApp
   }
 

@@ -291,6 +291,36 @@ describe('#256 navigation retention', () => {
     expect(resources.getResource(pages[2].pageIri).value?.data).toBeTruthy()
   })
 
+  test('#259: with no routeCacheLimit set, the route cache keeps 200 routes and evicts the oldest when the 201st is cached', async () => {
+    const pages = Array.from({ length: 201 }, (_, index) => buildPage(`default-${index}`))
+
+    for (const p of pages.slice(0, 200)) {
+      const token = startPrimary(p.routeIri, `${p.routeIri}/manifest`)
+      deliverManifest(token, p.tree)
+      for (const r of p.resourcesList) {
+        beginResource(token, r['@id'])
+        resolveResource(r)
+      }
+      await manager.finishFetch({ token })
+    }
+    expect(fetcherStore.routeCache.size).toBe(200)
+    expect(fetcherStore.routeCache.has(pages[0]!.routeIri)).toBe(true)
+
+    const last = pages[200]!
+    const token = startPrimary(last.routeIri, `${last.routeIri}/manifest`)
+    deliverManifest(token, last.tree)
+    for (const r of last.resourcesList) {
+      beginResource(token, r['@id'])
+      resolveResource(r)
+    }
+    await manager.finishFetch({ token })
+
+    expect(fetcherStore.routeCache.size).toBe(200)
+    expect(fetcherStore.routeCache.has(pages[0]!.routeIri)).toBe(false)
+    expect(fetcherStore.routeCache.has(pages[1]!.routeIri)).toBe(true)
+    expect(fetcherStore.routeCache.has(last.routeIri)).toBe(true)
+  })
+
   test('#257: LRU eviction is reference-counted — a shared resource survives while another route needs it', async () => {
     const parent = buildPage('shared-parent')
     const child1 = buildPage('child1')
