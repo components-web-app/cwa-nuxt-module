@@ -199,6 +199,9 @@
 .cwa\:left-2 {
   left: calc(var(--cwa-spacing) * 2);
 }
+.cwa\:left-4 {
+  left: calc(var(--cwa-spacing) * 4);
+}
 .cwa\:-z-10 {
   z-index: calc(10 * -1);
 }
@@ -1763,6 +1766,10 @@
 .cwa\:ease-out {
   --tw-ease: var(--cwa-ease-out);
   transition-timing-function: var(--cwa-ease-out);
+}
+.cwa\:outline-dashed {
+  --tw-outline-style: dashed;
+  outline-style: dashed;
 }
 .cwa\:outline-dotted {
   --tw-outline-style: dotted;

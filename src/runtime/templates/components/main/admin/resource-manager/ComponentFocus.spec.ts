@@ -1,11 +1,28 @@
 // @vitest-environment happy-dom
-import { describe, test, expect, vi, beforeEach } from 'vitest'
+import { describe, test, expect, vi, beforeAll, beforeEach } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
-import { mount } from '@vue/test-utils'
+import type { Ref } from 'vue'
+import { flushPromises, mount } from '@vue/test-utils'
 import ComponentFocus from './ComponentFocus.vue'
 import * as cwaComposable from '#cwa/composables/cwa'
+import { registerInstance, unregisterInstance } from '#cwa/admin/manageable-instances'
+import type Cwa from '#cwa/cwa'
 
 vi.mock('uuid', () => ({ v4: vi.fn(() => 'mock-reorder-id') }))
+
+const { instanceListenerStops } = vi.hoisted(() => ({ instanceListenerStops: [] as Array<ReturnType<typeof vi.fn>> }))
+
+vi.mock('#cwa/admin/manageable-instances', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('#cwa/admin/manageable-instances')>()
+  return {
+    ...actual,
+    onInstancesChange: vi.fn((...args: Parameters<typeof actual.onInstancesChange>) => {
+      const stop = vi.fn(actual.onInstancesChange(...args))
+      instanceListenerStops.push(stop)
+      return stop
+    }),
+  }
+})
 
 const { elementSizeInstances, windowSizeRef } = vi.hoisted(() => ({
   elementSizeInstances: [] as Array<{ width: any, height: any, stop: any }>,
@@ -45,14 +62,18 @@ let getResourceMock: ReturnType<typeof vi.fn>
 function mockCwa(getResourceImpl: (iri: string) => any = () => ref(undefined)) {
   emitRedraw = vi.fn()
   getResourceMock = vi.fn(getResourceImpl)
-  // @ts-expect-error partial mock
-  vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => ({
+  const cwa = {
     admin: {
       eventBus: makeEventBus(),
       emitRedraw,
     },
-    resources: { getResource: getResourceMock },
-  }))
+    resources: {
+      getResource: getResourceMock,
+      findAllPublishableIris: vi.fn((iri: string) => [iri]),
+    },
+  } as unknown as Cwa
+  vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => cwa)
+  return cwa
 }
 
 function makeEl(rect: Partial<DOMRect>, nodeType = 1) {
@@ -73,9 +94,10 @@ function makeEl(rect: Partial<DOMRect>, nodeType = 1) {
 function mountFocus({
   iri = '/component/foo',
   els = [makeEl({ top: 10, left: 20, right: 120, bottom: 60 })],
-}: { iri?: string | undefined, els?: HTMLElement[] } = {}) {
+  domElements,
+}: { iri?: string | undefined, els?: HTMLElement[], domElements?: Ref<HTMLElement[]> } = {}) {
   const iriRef = ref<string | undefined>(iri)
-  const domElementsRef = computed(() => els)
+  const domElementsRef = domElements ?? computed(() => els)
   const wrapper = mount(ComponentFocus, {
     props: {
       iri: iriRef,
@@ -90,8 +112,13 @@ function mountFocus({
   return { wrapper, iriRef, domElementsRef }
 }
 
+beforeAll(async () => {
+  await import('#cwa/admin/manageable-resource')
+})
+
 beforeEach(() => {
   vi.clearAllMocks()
+  instanceListenerStops.length = 0
   elementSizeInstances.length = 0
   for (const k of Object.keys(eventHandlers)) delete eventHandlers[k]
   if (windowSizeRef.width) windowSizeRef.width.value = 1024
@@ -142,6 +169,100 @@ describe('ComponentFocus', () => {
       const style = wrapper.find('div.cwa\\:animate-pulse').attributes('style') ?? ''
       expect(style).toContain('width: 0px')
       expect(style).toContain('height: 0px')
+    })
+  })
+
+  describe('every on-screen instance', () => {
+    test('selecting one instance outlines every on-screen instance of the component', async () => {
+      const cwa = mockCwa()
+      const clicked = ref([makeEl({ top: 10, left: 20, right: 120, bottom: 60 })])
+      const other = ref([makeEl({ top: 300, left: 40, right: 240, bottom: 380 })])
+      const unrelated = ref([makeEl({ top: 500, left: 0, right: 10, bottom: 510 })])
+      registerInstance(cwa, '/component/foo', clicked)
+      registerInstance(cwa, '/component/foo', other)
+      registerInstance(cwa, '/component/bar', unrelated)
+
+      const { wrapper } = mountFocus({ domElements: clicked })
+      await flushPromises()
+
+      const outlines = wrapper.findAll('div.cwa\\:outline')
+      expect(outlines).toHaveLength(2)
+      const styles = outlines.map(outline => outline.attributes('style') ?? '')
+      expect(styles[0]).toContain('top: 10px')
+      expect(styles[0]).toContain('width: 100px')
+      expect(styles[1]).toContain('top: 300px')
+      expect(styles[1]).toContain('left: 40px')
+      expect(styles[1]).toContain('width: 200px')
+      expect(styles[1]).toContain('height: 80px')
+    })
+
+    test('outlines an instance that mounts while the component is selected, and drops one that unmounts', async () => {
+      const cwa = mockCwa()
+      const clicked = ref([makeEl({ top: 10, left: 20, right: 120, bottom: 60 })])
+      registerInstance(cwa, '/component/foo', clicked)
+      const { wrapper } = mountFocus({ domElements: clicked })
+      await flushPromises()
+      expect(wrapper.findAll('div.cwa\\:outline')).toHaveLength(1)
+
+      const later = ref([makeEl({ top: 300, left: 40, right: 240, bottom: 380 })])
+      registerInstance(cwa, '/component/foo', later)
+      await nextTick()
+      expect(wrapper.findAll('div.cwa\\:outline')).toHaveLength(2)
+
+      unregisterInstance(cwa, '/component/foo', later)
+      await nextTick()
+      expect(wrapper.findAll('div.cwa\\:outline')).toHaveLength(1)
+    })
+
+    test('stops following the instances once unmounted', async () => {
+      mockCwa()
+      const { wrapper } = mountFocus()
+      await flushPromises()
+      expect(instanceListenerStops).toHaveLength(1)
+
+      wrapper.unmount()
+
+      expect(instanceListenerStops[0]).toHaveBeenCalled()
+    })
+
+    test('does not follow the instances when unmounted before they load', async () => {
+      mockCwa()
+      const { wrapper } = mountFocus()
+      wrapper.unmount()
+
+      await flushPromises()
+
+      expect(instanceListenerStops).toHaveLength(0)
+    })
+
+    test('cuts every instance out of the canvas', async () => {
+      const cwa = mockCwa()
+      const clicked = ref([makeEl({ top: 10, left: 20, right: 120, bottom: 60 })])
+      registerInstance(cwa, '/component/foo', clicked)
+      registerInstance(cwa, '/component/foo', ref([makeEl({ top: 300, left: 40, right: 240, bottom: 380 })]))
+      const ctx = { reset: vi.fn(), beginPath: vi.fn(), rect: vi.fn(), fill: vi.fn(), moveTo: vi.fn(), arcTo: vi.fn(), fillStyle: '' }
+      const getContextSpy = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx as any)
+
+      const { wrapper } = mountFocus({ domElements: clicked })
+      await flushPromises()
+      ;(wrapper.vm as any).redraw()
+
+      expect(ctx.moveTo).toHaveBeenCalledTimes(2)
+      expect(ctx.moveTo).toHaveBeenCalledWith(13, 11)
+      expect(ctx.moveTo).toHaveBeenCalledWith(33, 301)
+      getContextSpy.mockRestore()
+    })
+
+    test('measures the size of every instance\'s elements', async () => {
+      const cwa = mockCwa()
+      const clicked = ref([makeEl({ top: 10, left: 20, right: 120, bottom: 60 })])
+      registerInstance(cwa, '/component/foo', clicked)
+      registerInstance(cwa, '/component/foo', ref([makeEl({ top: 300, left: 40, right: 240, bottom: 380 })]))
+
+      mountFocus({ domElements: clicked })
+      await flushPromises()
+
+      expect(elementSizeInstances.filter(instance => !instance.stop.mock.calls.length)).toHaveLength(2)
     })
   })
 

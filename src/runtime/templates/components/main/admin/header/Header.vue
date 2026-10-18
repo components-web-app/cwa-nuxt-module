@@ -132,6 +132,7 @@
       </div>
       <OutdatedContentNotice class="cwa:absolute cwa:top-full cwa:mt-1.5 cwa:left-1/2 cwa:-translate-x-1/2 cwa:z-notifications" />
       <CloneModeBar class="cwa:absolute cwa:top-full cwa:mt-1.5 cwa:left-4 cwa:z-notifications" />
+      <CloneHighlight v-if="cloneSource" />
       <ResourceLoadingIndicator class="cwa:absolute cwa:top-full cwa:left-0 cwa:z-notifications" />
     </div>
     <RequestErrors />
@@ -176,6 +177,7 @@ import IconData from '#cwa/templates/components/core/assets/IconData.vue'
 import { useStrandedComponentGroups } from '#cwa/admin/stranded-component-groups'
 import { useCloneMode } from '#cwa/admin/clone-mode'
 
+const CloneHighlight = defineAsyncComponent(() => import('../resource-manager/CloneHighlight.vue').then(module => module.default))
 const StrandedComponentGroupsModal = defineAsyncComponent(() => import('#cwa/templates/components/core/admin/StrandedComponentGroupsModal.vue').then(module => module.default))
 
 const $cwa = useCwa()

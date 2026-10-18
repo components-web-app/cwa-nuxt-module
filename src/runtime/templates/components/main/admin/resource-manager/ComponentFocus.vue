@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, toRef, useTemplateRef, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, toRef, useTemplateRef, watch } from 'vue'
 import type { ComputedRef, Ref } from 'vue'
 import { useElementSize, useWindowSize } from '@vueuse/core'
 import { v4 as uuidv4 } from 'uuid'
@@ -18,8 +18,26 @@ const canvas = useTemplateRef<HTMLCanvasElement | undefined>('canvas')
 const windowSize = useWindowSize()
 const elementSizeInstances = ref<ReturnType<typeof useElementSize>[]>([])
 const reorderId = ref<string>()
+const manageableInstances = shallowRef<typeof import('#cwa/admin/manageable-instances')>()
+const instancesVersion = ref(0)
+let isUnmounted = false
+let stopInstances: (() => void) | undefined
+import('#cwa/admin/manageable-instances').then((module) => {
+  if (isUnmounted) {
+    return
+  }
+  manageableInstances.value = module
+  stopInstances = module.onInstancesChange($cwa, () => {
+    instancesVersion.value++
+  })
+})
+const instances = computed(() => {
+  void instancesVersion.value
+  return manageableInstances.value?.instancesOf($cwa, iri.value) ?? []
+})
+const otherInstances = computed(() => instances.value.filter(instance => instance !== props.domElements))
 
-watch(props.domElements, (newDomElements) => {
+watch(() => [...domElements.value, ...otherInstances.value.flatMap(instance => instance.value)], (newDomElements) => {
   for (const esInstance of elementSizeInstances.value) {
     esInstance.stop()
   }
@@ -48,12 +66,14 @@ const resource = computed(() => {
   return $cwa.resources.getResource(iri.value).value
 })
 
-const position = computed((): {
+type FocusPosition = {
   top: number
   left: number
   width: number
   height: number
-} => {
+}
+
+function boundsOf(elements: HTMLElement[]): FocusPosition {
   const clearCoords = {
     top: 999999999999,
     left: 99999999999,
@@ -67,7 +87,7 @@ const position = computed((): {
     reorderId: reorderId.value,
   }
 
-  for (const domElement of domElements.value) {
+  for (const domElement of elements) {
     if (domElement.nodeType !== 1) {
       continue
     }
@@ -90,16 +110,22 @@ const position = computed((): {
     width: clearCoords.width,
     height: clearCoords.height,
   }
-})
+}
 
-const cssStyle = computed(() => {
+const position = computed(() => boundsOf(domElements.value))
+const otherPositions = computed(() => otherInstances.value.map(instance => boundsOf(instance.value)))
+
+function styleOf(focusPosition: FocusPosition) {
   return {
-    top: `${position.value.top}px`,
-    left: `${position.value.left}px`,
-    width: `${position.value.width}px`,
-    height: `${position.value.height}px`,
+    top: `${focusPosition.top}px`,
+    left: `${focusPosition.left}px`,
+    width: `${focusPosition.width}px`,
+    height: `${focusPosition.height}px`,
   }
-})
+}
+
+const cssStyle = computed(() => styleOf(position.value))
+const otherCssStyles = computed(() => otherPositions.value.map(styleOf))
 
 const borderColor = computed(() => {
   if (!resource.value) {
@@ -138,7 +164,9 @@ function drawCanvas() {
   ctx.fillStyle = 'rgba(0,0,0,0.4)'
   ctx.beginPath()
   ctx.rect(0, 0, width, height)
-  drawRoundedRect(ctx, position.value.left - offset, position.value.top - offset, position.value.width + (offset * 2), position.value.height + (offset * 2), 8)
+  for (const cutOut of [position.value, ...otherPositions.value]) {
+    drawRoundedRect(ctx, cutOut.left - offset, cutOut.top - offset, cutOut.width + (offset * 2), cutOut.height + (offset * 2), 8)
+  }
   ctx.fill()
 }
 
@@ -157,7 +185,7 @@ function assignReorderId() {
 onMounted(() => {
   $cwa.admin.eventBus.on('redrawFocus', redraw)
   $cwa.admin.eventBus.on('reorder', assignReorderId)
-  watch([totalWidthAndHeight, position], $cwa.admin.emitRedraw)
+  watch([totalWidthAndHeight, position, otherPositions], $cwa.admin.emitRedraw)
   watch(canvas, newCanvas => newCanvas && redraw())
   watch(() => resource.value?.data, async () => {
     await nextTick()
@@ -166,6 +194,8 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  isUnmounted = true
+  stopInstances?.()
   $cwa.admin.eventBus.off('redrawFocus', redraw)
   $cwa.admin.eventBus.off('reorder', assignReorderId)
 })
@@ -184,6 +214,13 @@ defineExpose({
     <div
       :class="[borderColor]"
       :style="cssStyle"
+      class="cwa:animate-pulse cwa:absolute cwa:outline-2 cwa:outline-offset-4 cwa:pointer-events-none cwa:outline cwa:rounded-[1px]"
+    />
+    <div
+      v-for="(otherCssStyle, index) of otherCssStyles"
+      :key="index"
+      :class="[borderColor]"
+      :style="otherCssStyle"
       class="cwa:animate-pulse cwa:absolute cwa:outline-2 cwa:outline-offset-4 cwa:pointer-events-none cwa:outline cwa:rounded-[1px]"
     />
   </client-only>

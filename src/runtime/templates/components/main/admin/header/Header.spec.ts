@@ -96,6 +96,7 @@ function mountHeader(options: { stubs?: Record<string, any>, attachTo?: HTMLElem
         Menu: { name: 'Menu', template: '<div class="menu-stub" />' },
         SpinnerTick: { name: 'SpinnerTick', props: ['isLoading', 'isPending'], template: '<div class="spinner-tick-stub" />' },
         OutdatedContentNotice: { name: 'OutdatedContentNotice', template: '<div class="outdated-stub" />' },
+        CloneHighlight: { name: 'CloneHighlight', template: '<div class="clone-highlight-stub" />' },
         ResourceLoadingIndicator: { name: 'ResourceLoadingIndicator', template: '<div class="loading-indicator-stub" />' },
         ResourceModalOverlayTemplate: {
           name: 'ResourceModalOverlayTemplate',
@@ -537,6 +538,15 @@ describe('Header', () => {
       expect(bar.parentElement).toBe(refs.header)
       expect(bar.className).toContain('cwa:absolute')
       expect(bar.className).toContain('cwa:top-full')
+    })
+
+    test('mounts the clone highlight only while cloning', async () => {
+      const { cwa } = mockCwa({ admin: buildAdmin({ isEditing: true }) })
+      const wrapper = mountHeader()
+      expect(wrapper.findComponent({ name: 'CloneHighlight' }).exists()).toBe(false)
+      useCloneMode(cwa).start(SOURCE_IRI, 'Hero text')
+      await flushPromises()
+      expect(wrapper.findComponent({ name: 'CloneHighlight' }).exists()).toBe(true)
     })
 
     test('Cancel in the Cloning bar ends clone mode', async () => {

@@ -1,12 +1,14 @@
 // @vitest-environment happy-dom
 
-import { describe, test, vi, expect, afterEach } from 'vitest'
+import { describe, test, vi, expect, afterEach, beforeAll } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
 import type { Mock } from '@vitest/spy'
 import * as vue from 'vue'
 import Cwa from '../cwa'
 import ManageableResource from './manageable-resource'
 import * as ManagerTabsResolver from './manager-tabs-resolver'
+import { flushPromises } from '@vue/test-utils'
+import { instancesOf } from './manageable-instances'
 import { getResourceTypeFromIri } from '#cwa/resources/resource-utils'
 
 const Node = {
@@ -137,6 +139,14 @@ function createManageableResource($el?: DummyDom) {
   return {
     instance: new ManageableResource(component, $cwa, ref({ styles: { name: ['style'] } })),
     $cwa,
+  }
+}
+
+function instanceElements($cwa: Cwa, iri: string) {
+  return {
+    get value() {
+      return instancesOf($cwa, iri)
+    },
   }
 }
 
@@ -375,6 +385,74 @@ describe('ManageableResource Class', () => {
     instance.removeClickEventListeners()
     expect(els[0].removeEventListener).toHaveBeenCalledWith('click', instance.clickListener)
     expect(els[1].removeEventListener).toHaveBeenCalledWith('click', instance.clickListener)
+  })
+
+  describe('instance registry', () => {
+    beforeAll(async () => {
+      await flushPromises()
+    })
+
+    test('registers its elements when click listeners are added and unregisters on clear', () => {
+      const { instance, $cwa } = createManageableResource()
+      const instances = instanceElements($cwa, '/component/a')
+      instance.currentIri = ref('/component/a')
+      instance.isIriInit = true
+
+      instance.addClickEventListeners()
+      expect(instances.value).toHaveLength(1)
+      expect(instances.value[0]).toBe(instance.elements)
+
+      instance.clear()
+      expect(instances.value).toEqual([])
+    })
+
+    test('re-registers under the new IRI when its IRI changes', () => {
+      const { instance, $cwa } = createManageableResource()
+      const oldInstances = instanceElements($cwa, '/component/a')
+      const newInstances = instanceElements($cwa, '/component/b')
+      const iri = ref('/component/a')
+      instance.currentIri = iri
+      instance._initNewIri(iri.value)
+      expect(oldInstances.value).toHaveLength(1)
+
+      iri.value = '/component/b'
+      instance._initNewIri(iri.value)
+
+      expect(oldInstances.value).toEqual([])
+      expect(newInstances.value).toHaveLength(1)
+      expect(newInstances.value[0]).toBe(instance.elements)
+    })
+
+    test.each([
+      { clearBeforeLoad: false, registered: 1 },
+      { clearBeforeLoad: true, registered: 0 },
+    ])('registers once the registry has loaded unless it was cleared first ($clearBeforeLoad)', async ({ clearBeforeLoad, registered }) => {
+      vi.resetModules()
+      const { default: FreshManageableResource } = await import('./manageable-resource')
+      const $cwa = new Cwa()
+      const instance = new FreshManageableResource({ $el: createDomElement(1) }, $cwa, ref({})) as any
+      instance.currentIri = ref('/component/a')
+      instance._initNewIri('/component/a')
+      if (clearBeforeLoad) {
+        instance.clear()
+      }
+      const fresh = await import('./manageable-instances')
+
+      await flushPromises()
+
+      expect(fresh.instancesOf($cwa, '/component/a')).toHaveLength(registered)
+    })
+
+    test('stays registered once while its elements are refreshed', () => {
+      const { instance, $cwa } = createManageableResource()
+      const instances = instanceElements($cwa, '/component/a')
+      instance.currentIri = ref('/component/a')
+      instance._initNewIri('/component/a')
+
+      instance.mockChildMounted()
+
+      expect(instances.value).toHaveLength(1)
+    })
   })
 
   describe('clickListener', () => {
