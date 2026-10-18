@@ -44,7 +44,7 @@ export interface CwaResourcesGettersInterface {
   draftToPublishedIris: ComputedRef<PublishableMapping>
   isIriPublishableEquivalent: ComputedRef<(oldIri: string, newIri: string) => boolean>
   findAllPublishableIris: ComputedRef<(iri: string) => string[]>
-  componentGroupByReference: ComputedRef<Map<string, CwaCurrentResourceInterface>>
+  componentGroupByReference: ComputedRef<(reference: string) => CwaCurrentResourceInterface | undefined>
   totalResourcesPending: ComputedRef<number>
   currentResourcesApiStateIsPending: ComputedRef<boolean>
   resourcesApiStateIsPending: ComputedRef<(resources: string[]) => boolean>
@@ -70,7 +70,7 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
   ))
 
   function findIsPublishedByIri(iri: string) {
-    const resource = resourcesState.current.byId?.[iri]
+    const resource = resourcesState.current.byId[iri]
     if (!resource) {
       return false
     }
@@ -80,7 +80,7 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
 
   const getOrderedPositionsForGroup = computed(() => {
     return (groupIri: string, includeNewIri: boolean = true) => {
-      const groupResource = resourcesState.current.byId?.[groupIri]
+      const groupResource = resourcesState.current.byId[groupIri]
       const positions: string[] | undefined = groupResource?.data?.componentPositions
       if (!positions) {
         return
@@ -88,7 +88,7 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
       // remove the temporary resource
       const positionResources = positions
         .filter((iri: string) => !iri.endsWith(NEW_RESOURCE_IRI))
-        .map((iri: string) => resourcesState.current.byId?.[iri]?.data)
+        .map((iri: string) => resourcesState.current.byId[iri]?.data)
 
       const resourcesThatExist: CwaResource[] = positionResources.filter((resource: CwaResource | undefined) => resource !== undefined)
 
@@ -106,12 +106,10 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
         })
       if (includeNewIri) {
         const newIriPositions = positions.filter((iri: string) => iri.endsWith(NEW_RESOURCE_IRI))
-        if (newIriPositions.length) {
-          for (const newIriPosition of newIriPositions) {
-            const newPositionSortNumber = resourcesState.current.byId?.[newIriPosition]?.data?._metadata?.sortDisplayNumber
+        for (const newIriPosition of newIriPositions) {
+          const newPositionSortNumber = resourcesState.current.byId[newIriPosition]?.data?._metadata?.sortDisplayNumber
 
-            newPositionSortNumber !== undefined && orderedWithoutTemp.splice(newPositionSortNumber - 1, 0, newIriPosition)
-          }
+          newPositionSortNumber !== undefined && orderedWithoutTemp.splice(newPositionSortNumber - 1, 0, newIriPosition)
         }
       }
       return orderedWithoutTemp
@@ -127,7 +125,7 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
       }
 
       // No resource, no children
-      const resource = resourcesState.current.byId?.[iri]
+      const resource = resourcesState.current.byId[iri]
 
       if (!resource) {
         // resource may not be found if just deleted...
@@ -207,7 +205,7 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
     getOrderedPositionsForGroup,
     getPositionSortDisplayNumber: computed(() => {
       return (positionIri: string, includeNewIri: boolean = true) => {
-        const positionResource = resourcesState.current.byId?.[positionIri]?.data
+        const positionResource = resourcesState.current.byId[positionIri]?.data
         if (!positionResource) {
           return
         }
@@ -229,7 +227,7 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
     getResource: computed(() => {
       // todo: should we consider making this into a promise if there is a request in progress to update the resource?
       return (id: string) => {
-        return resourcesState.current.byId?.[id]
+        return resourcesState.current.byId[id]
       }
     }),
     getChildIris,
@@ -237,9 +235,6 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
     findPublishedComponentIri: computed(() => {
       return (iri: string) => {
         const isPublished = findIsPublishedByIri(iri)
-        if (isPublished === undefined) {
-          return
-        }
         if (isPublished) {
           return iri
         }
@@ -249,9 +244,6 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
     findDraftComponentIri: computed(() => {
       return (iri: string) => {
         const isPublished = findIsPublishedByIri(iri)
-        if (isPublished === undefined) {
-          return
-        }
         if (!isPublished) {
           return iri
         }
@@ -266,16 +258,9 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
       }
     }),
     findAllPublishableIris,
-    componentGroupByReference: computed(() => {
-      const byReference = new Map<string, CwaCurrentResourceInterface>()
-      for (const iri of resourcesState.current.componentGroupIds) {
-        const resource = resourcesState.current.byId[iri]
-        const reference = resource?.data?.reference
-        if (resource && typeof reference === 'string' && !byReference.has(reference)) {
-          byReference.set(reference, resource)
-        }
-      }
-      return byReference
+    componentGroupByReference: computed(() => (reference: string) => {
+      const iri = resourcesState.current.groupIrisByReference[reference]?.[0]
+      return iri ? resourcesState.current.byId[iri] : undefined
     }),
     totalResourcesPending: computed<number>(() => utils.totalResourcesPending),
     currentResourcesApiStateIsPending: computed<boolean>(() => utils.currentResourcesPending),

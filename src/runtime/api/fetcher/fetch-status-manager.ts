@@ -304,15 +304,14 @@ export default class FetchStatusManager {
       .filter(([path]) => !protectedPaths.has(path))
       .sort((a, b) => a[1].lastAccessed - b[1].lastAccessed)
 
+    const protectedIris = new Set([
+      ...this.resourcesStore.current.currentIds,
+      ...Object.values(this.fetcherStore.fetches).flatMap(fetchStatus => fetchStatus.resources),
+    ])
+
     while (routeCache.size > this.routeCacheLimit && evictionQueue.length) {
-      const next = evictionQueue.shift()
-      if (!next) {
-        break
-      }
-      const [path, entry] = next
-      routeCache.delete(path)
-      const droppable = entry.resourceIris.filter(iri => !this.isResourceReferencedByCache(iri) && !this.isResourceProtectedFromEviction(iri))
-      this.resourcesStore.evictResources(droppable)
+      const [path] = evictionQueue.shift()!
+      this.resourcesStore.evictResources(this.fetcherStore.uncacheRoute(path).filter(iri => !protectedIris.has(iri)))
     }
   }
 
@@ -326,27 +325,6 @@ export default class FetchStatusManager {
       }
     }
     return paths
-  }
-
-  private isResourceReferencedByCache(iri: string): boolean {
-    for (const entry of this.fetcherStore.routeCache.values()) {
-      if (entry.resourceIris.includes(iri)) {
-        return true
-      }
-    }
-    return false
-  }
-
-  private isResourceProtectedFromEviction(iri: string): boolean {
-    if (this.resourcesStore.current.currentIds.includes(iri)) {
-      return true
-    }
-    for (const fetchStatus of Object.values(this.fetcherStore.fetches)) {
-      if (fetchStatus.resources.includes(iri)) {
-        return true
-      }
-    }
-    return false
   }
 
   private finishFetchShowError(fetchStatus: FetchStatus | undefined, eventResource: string) {

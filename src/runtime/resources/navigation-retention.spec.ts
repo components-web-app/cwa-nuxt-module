@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 
-import { describe, test, expect, beforeEach, vi } from 'vitest'
+import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import * as app from 'nuxt/app'
 import { createCwaResourceError } from '#cwa/errors/cwa-resource-error'
@@ -367,6 +367,101 @@ describe('#256 navigation retention', () => {
     }
     fetcherStore.finishFetch({ token })
     expect(resources.pageIriAtDepth(0).value).toBe(a.pageIri)
+  })
+})
+
+describe('#259 route cache eviction is reference-counted', () => {
+  const sharedIri = '/component/html_contents/shared'
+  const shared = res(sharedIri, { html: '<p>shared</p>' })
+  let now = 1_000
+
+  function pageWithShared(id: string) {
+    const page = buildPage(id)
+    const tree: NestedJsonStructure[] = [node(page.routeIri, [node(page.pageDataIri, [node(page.pageIri, [...page.tree[0].children[0].children[0].children, node(sharedIri)])])])]
+    return { ...page, tree, resourcesList: [...page.resourcesList, shared] }
+  }
+
+  async function load(page: { routeIri: string, tree: NestedJsonStructure[], resourcesList: CwaResource[] }) {
+    vi.setSystemTime(now += 1_000)
+    const token = startPrimary(page.routeIri, `${page.routeIri}/manifest`)
+    deliverManifest(token, page.tree)
+    for (const r of page.resourcesList) {
+      beginResource(token, r['@id'])
+      resolveResource(r)
+    }
+    await manager.finishFetch({ token })
+  }
+
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    manager = new FetchStatusManager(fetcherStoreDef, {} as never, {} as never, resourcesStoreDef, 2, { runWithContext: (fn: () => unknown) => fn() } as never)
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  test('a resource listed by two cached routes survives evicting one of them', async () => {
+    const a = pageWithShared('ra')
+    const b = pageWithShared('rb')
+    await load(a)
+    await load(b)
+    await load(buildPage('rc'))
+    expect(fetcherStore.routeCache.has(a.routeIri)).toBe(false)
+    expect(resources.getResource(a.pageIri).value?.data).toBeFalsy()
+    expect(resourcesStore.current.currentIds).not.toContain(sharedIri)
+    expect(resources.getResource(sharedIri).value?.data).toBeTruthy()
+  })
+
+  test('a resource is evicted when the last cached route listing it is evicted', async () => {
+    await load(pageWithShared('ra'))
+    await load(pageWithShared('rb'))
+    await load(buildPage('rc'))
+    await load(buildPage('rd'))
+    expect(resources.getResource(sharedIri).value).toBeUndefined()
+    expect(resourcesStore.current.allIds).not.toContain(sharedIri)
+  })
+
+  test('a route cached again on a revisit is counted once, so its resources are evicted with it', async () => {
+    const a = buildPage('ra')
+    await load(a)
+    await load(buildPage('rb'))
+    await load(a)
+    await load(buildPage('rc'))
+    expect(fetcherStore.routeCache.has(a.routeIri)).toBe(true)
+    await load(buildPage('rd'))
+    expect(fetcherStore.routeCache.has(a.routeIri)).toBe(false)
+    expect(resources.getResource(a.pageIri).value).toBeUndefined()
+    expect(resources.getResource(a.compIri).value).toBeUndefined()
+  })
+
+  test('a resource fetched for the page on screen is not evicted with the last cached route listing it', async () => {
+    await load(pageWithShared('ra'))
+    await load(buildPage('rb'))
+    const c = buildPage('rc')
+    await load({ ...c, resourcesList: [...c.resourcesList, shared] })
+    expect(fetcherStore.routeCache.has(pageWithShared('ra').routeIri)).toBe(false)
+    expect(resourcesStore.current.currentIds).toContain(sharedIri)
+    expect(resources.getResource(sharedIri).value?.data).toBeTruthy()
+  })
+
+  test('evicting a route does not read the resources listed by the other cached routes', async () => {
+    await load(buildPage('ra'))
+    const b = buildPage('rb')
+    await load(b)
+    const entry = fetcherStore.routeCache.get(b.routeIri)!
+    let reads = 0
+    entry.resourceIris = new Proxy(entry.resourceIris, {
+      get(target, key, receiver) {
+        if (typeof key === 'string' && /^\d+$/.test(key)) {
+          reads++
+        }
+        return Reflect.get(target, key, receiver)
+      },
+    })
+    await load(buildPage('rc'))
+    expect(fetcherStore.routeCache.has(b.routeIri)).toBe(true)
+    expect(reads).toBe(0)
   })
 })
 

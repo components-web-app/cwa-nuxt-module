@@ -10,8 +10,12 @@ import ManageableResource from '../../../admin/manageable-resource'
 import type { CwaResourcesGettersInterface } from './getters'
 import getters from './getters'
 import type { CwaResourcesStateInterface } from './state'
-import { CwaResourceApiStatuses } from './state'
+import createResourcesState, { CwaResourceApiStatuses } from './state'
 import { ResourcesGetterUtils } from './getter-utils'
+import type { CwaResourcesActionsInterface } from './actions'
+import actions from './actions'
+import { ResourcesStore } from './resources-store'
+import { createPinia, setActivePinia } from 'pinia'
 
 vi.mock('./getter-utils', () => {
   return {
@@ -610,5 +614,98 @@ describe('ResourcesStore Getters -> findPublishedComponentIri', () => {
     expect(getterFns.findPublishedComponentIri.value(newDraftIri)).toBeUndefined()
     state.current.publishableMapping.push({ publishedIri, draftIri: newDraftIri })
     expect(getterFns.findPublishedComponentIri.value(newDraftIri)).toBe(publishedIri)
+  })
+})
+
+describe('ResourcesStore Getters -> componentGroupByReference (#259)', () => {
+  const groupA = '/_/component_groups/a'
+  const groupB = '/_/component_groups/b'
+  let state: CwaResourcesStateInterface
+  let getterFns: CwaResourcesGettersInterface
+  let storeActions: CwaResourcesActionsInterface
+
+  function group(iri: string, reference: string) {
+    return { '@id': iri, '@type': 'ComponentGroup', reference, 'componentPositions': [], '_metadata': { persisted: true } }
+  }
+
+  function lookup(reference: string) {
+    return getterFns.componentGroupByReference.value(reference)
+  }
+
+  beforeEach(() => {
+    state = createResourcesState()
+    getterFns = getters(state)
+    storeActions = actions(state, getterFns)
+  })
+
+  test('a group is found by its reference after it is saved', () => {
+    expect(lookup('ref-a')).toBeUndefined()
+    storeActions.saveResource({ resource: group(groupA, 'ref-a') })
+    expect(lookup('ref-a')).toBe(state.current.byId[groupA])
+    expect(lookup('ref-a')?.data?.reference).toBe('ref-a')
+  })
+
+  test('a group is no longer found by its old reference after its reference changes', () => {
+    storeActions.saveResource({ resource: group(groupA, 'old') })
+    storeActions.saveResource({ resource: group(groupA, 'new') })
+    expect(lookup('old')).toBeUndefined()
+    expect(lookup('new')).toBe(state.current.byId[groupA])
+  })
+
+  test.each([
+    ['deleted', () => storeActions.deleteResource({ resource: groupA })],
+    ['evicted', () => storeActions.evictResources([groupA])],
+    ['cleared', () => storeActions.clearResources()],
+  ])('a group is no longer found by reference after it is %s', (_, remove) => {
+    storeActions.saveResource({ resource: group(groupA, 'ref-a') })
+    remove()
+    expect(lookup('ref-a')).toBeUndefined()
+  })
+
+  test('saving a group does not re-run a lookup for a different reference', () => {
+    storeActions.saveResource({ resource: group(groupA, 'ref-a') })
+    storeActions.saveResource({ resource: group(groupB, 'ref-b') })
+    let runs = 0
+    const lookupB = computed(() => {
+      runs++
+      return lookup('ref-b')
+    })
+    expect(lookupB.value?.data?.['@id']).toBe(groupB)
+    storeActions.saveResource({ resource: { ...group(groupA, 'ref-a'), componentPositions: ['/_/component_positions/p'] } })
+    storeActions.saveResource({ resource: group('/_/component_groups/c', 'ref-c') })
+    expect(lookupB.value?.data?.['@id']).toBe(groupB)
+    expect(runs).toBe(1)
+  })
+
+  test('the first listed group wins when two share a reference, and the next is found once it is removed', () => {
+    storeActions.setResourceFetchStatus({ iri: groupB, isComplete: false, path: groupB })
+    storeActions.saveResource({ resource: group(groupA, 'shared') })
+    expect(lookup('shared')).toBe(state.current.byId[groupA])
+    storeActions.saveResource({ resource: group(groupB, 'shared') })
+    expect(state.current.componentGroupIds).toEqual([groupB, groupA])
+    expect(lookup('shared')).toBe(state.current.byId[groupB])
+    storeActions.deleteResource({ resource: groupB })
+    expect(lookup('shared')).toBe(state.current.byId[groupA])
+  })
+
+  test('a group merged from new resources is found by its reference', () => {
+    storeActions.saveResource({ resource: group(groupA, 'old') })
+    storeActions.saveResource({ resource: group(groupA, 'merged'), isNew: true, path: '/' })
+    storeActions.mergeNewResources()
+    expect(lookup('old')).toBeUndefined()
+    expect(lookup('merged')).toBe(state.current.byId[groupA])
+  })
+
+  test('a group is found by its reference after the store is hydrated', () => {
+    setActivePinia(createPinia())
+    const server = new ResourcesStore('ssr').useStore()
+    server.saveResource({ resource: group(groupA, 'ref-a') })
+    const payload = JSON.parse(JSON.stringify(server.$state))
+
+    const pinia = createPinia()
+    pinia.state.value['client.resources'] = payload
+    setActivePinia(pinia)
+    const client = new ResourcesStore('client').useStore()
+    expect(client.componentGroupByReference('ref-a')?.data?.['@id']).toBe(groupA)
   })
 })

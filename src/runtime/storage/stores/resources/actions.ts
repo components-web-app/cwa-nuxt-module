@@ -76,6 +76,57 @@ export interface CwaResourcesActionsInterface {
 }
 
 export default function (resourcesState: CwaResourcesStateInterface, resourcesGetters: CwaResourcesGettersInterface): CwaResourcesActionsInterface {
+  let idIndex = new Set<string>()
+  let indexedIds: string[] | undefined
+  let componentsByPosition = new Map<string, Set<string>>()
+  let indexedPositions: object | undefined
+
+  function hasId(iri: string) {
+    const ids = toRaw(resourcesState.current.allIds)
+    if (ids !== indexedIds || idIndex.size !== ids.length) {
+      idIndex = new Set(ids)
+      indexedIds = ids
+    }
+    return idIndex.has(iri)
+  }
+
+  function addId(iri: string) {
+    if (hasId(iri)) {
+      return
+    }
+    resourcesState.current.allIds.push(iri)
+    idIndex.add(iri)
+    if (getResourceTypeFromIri(iri) === CwaResourceTypes.COMPONENT_GROUP && !resourcesState.current.componentGroupIds.includes(iri)) {
+      resourcesState.current.componentGroupIds.push(iri)
+    }
+  }
+
+  function syncPositionIndex() {
+    const byComponent = toRaw(resourcesState.current.positionsByComponent)
+    if (byComponent !== indexedPositions) {
+      componentsByPosition = new Map()
+      indexedPositions = byComponent
+      for (const componentIri in byComponent) {
+        byComponent[componentIri]!.forEach(positionIri => indexPosition(positionIri, componentIri))
+      }
+    }
+  }
+
+  function indexPosition(positionIri: string, componentIri: string) {
+    componentsByPosition.get(positionIri)?.add(componentIri) ?? componentsByPosition.set(positionIri, new Set([componentIri]))
+  }
+
+  function indexGroup(iri: string, from: unknown, to?: unknown) {
+    const index = resourcesState.current.groupIrisByReference
+    if (from !== to && typeof from === 'string' && index[from]?.includes(iri)) {
+      index[from] = index[from].filter(groupIri => groupIri !== iri)
+    }
+    if (typeof to === 'string' && getResourceTypeFromIri(iri) === CwaResourceTypes.COMPONENT_GROUP && !index[to]?.includes(iri)) {
+      const order = toRaw(resourcesState.current.componentGroupIds)
+      index[to] = [...(index[to] || []), iri].sort((a, b) => order.indexOf(a) - order.indexOf(b))
+    }
+  }
+
   function initResource({ iri, resourcesState, isCurrent }: InitResourceEvent): CwaCurrentResourceInterface {
     if (!resourcesState.current.byId[iri]) {
       resourcesState.current.byId[iri] = {
@@ -84,20 +135,11 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
         },
       }
     }
-    if (!resourcesState.current.allIds.includes(iri)) {
-      resourcesState.current.allIds.push(iri)
-      indexComponentGroup(iri)
-    }
+    addId(iri)
     if (isCurrent && !resourcesState.current.currentIds.includes(iri)) {
       resourcesState.current.currentIds.push(iri)
     }
     return resourcesState.current.byId[iri]
-  }
-
-  function indexComponentGroup(iri: string) {
-    if (getResourceTypeFromIri(iri) === CwaResourceTypes.COMPONENT_GROUP && !resourcesState.current.componentGroupIds.includes(iri)) {
-      resourcesState.current.componentGroupIds.push(iri)
-    }
   }
 
   function removeFromList(list: string[], iri: string) {
@@ -124,10 +166,6 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
     const resourceType = getResourceTypeFromIri(event.resource)
 
     switch (resourceType) {
-      case CwaResourceTypes.PAGE_DATA: {
-        // if a page data is deleted, we should also check for its existence in collections
-        break
-      }
       case CwaResourceTypes.COMPONENT_POSITION: {
         if (event.noCascade) {
           break
@@ -187,9 +225,10 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
       }
     }
 
-    if (resourcesState.current.allIds.includes(event.resource)) {
+    if (hasId(event.resource)) {
       resourcesState.current.allIds = toRaw(resourcesState.current.allIds).filter(iri => iri !== event.resource)
     }
+    indexGroup(event.resource, resource.data?.reference)
     removeFromList(resourcesState.current.currentIds, event.resource)
     removeFromList(resourcesState.current.componentGroupIds, event.resource)
     delete resourcesState.current.byId[event.resource]
@@ -241,17 +280,20 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
 
     existingPositions.includes(resource['@id']) === false && existingPositions.push(resource['@id'])
     resourcesState.current.positionsByComponent[resource.component] = existingPositions
+    indexPosition(resource['@id'], resource.component)
   }
 
   function clearPositionToComponentMapping(iri: string) {
     const resourceType = getResourceTypeFromIri(iri)
     if (resourceType === CwaResourceTypes.COMPONENT_POSITION) {
-      const entries = Object.entries(toRaw(resourcesState.current.positionsByComponent))
-      for (const [componentIri, positionIris] of entries) {
-        if (toRaw(positionIris).includes(iri)) {
+      syncPositionIndex()
+      for (const componentIri of componentsByPosition.get(iri) || []) {
+        const positionIris = resourcesState.current.positionsByComponent[componentIri]
+        if (positionIris?.includes(iri)) {
           resourcesState.current.positionsByComponent[componentIri] = positionIris.filter(pIri => (iri !== pIri))
         }
       }
+      componentsByPosition.delete(iri)
       return
     }
     if (resourceType === CwaResourceTypes.COMPONENT) {
@@ -303,7 +345,9 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
       isCurrent: resourcesState.current.currentIds.includes(iri),
     })
 
+    const previous = data.data
     data.data = event.resource
+    indexGroup(iri, previous?.reference, event.resource.reference)
 
     clearExistingNewResource()
 
@@ -461,6 +505,7 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
           continue
         }
 
+        const previous = resourcesState.current.byId[newId]?.data
         // save/replace new resource
         resourcesState.current.byId[newId] = {
           apiState: {
@@ -474,10 +519,8 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
         }
 
         // if a new resource, we should populate into allIds and currentIds
-        if (!resourcesState.current.allIds.includes(newId)) {
-          resourcesState.current.allIds.push(newId)
-          indexComponentGroup(newId)
-        }
+        addId(newId)
+        indexGroup(newId, previous?.reference, newResource.resource.reference)
         if (!resourcesState.current.currentIds.includes(newId)) {
           resourcesState.current.currentIds.push(newId)
         }
@@ -523,6 +566,7 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
       resourcesState.current.publishableMapping = []
       resourcesState.current.positionsByComponent = {}
       resourcesState.current.componentGroupIds = []
+      resourcesState.current.groupIrisByReference = {}
       resourcesState.new.byId = {}
       resourcesState.new.allIds = []
     },
@@ -532,22 +576,15 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
       }
       const evictSet = new Set(iris)
       for (const iri of iris) {
+        indexGroup(iri, resourcesState.current.byId[iri]?.data?.reference)
         delete resourcesState.current.byId[iri]
-        if (resourcesState.current.positionsByComponent[iri]) {
-          delete resourcesState.current.positionsByComponent[iri]
-        }
+        clearPositionToComponentMapping(iri)
       }
-      resourcesState.current.allIds = resourcesState.current.allIds.filter(id => !evictSet.has(id))
+      resourcesState.current.allIds = toRaw(resourcesState.current.allIds).filter(id => !evictSet.has(id))
       resourcesState.current.componentGroupIds = resourcesState.current.componentGroupIds.filter(id => !evictSet.has(id))
       resourcesState.current.publishableMapping = resourcesState.current.publishableMapping.filter(
         mapping => !evictSet.has(mapping.draftIri) && !evictSet.has(mapping.publishedIri),
       )
-      for (const componentIri of Object.keys(resourcesState.current.positionsByComponent)) {
-        const positions = resourcesState.current.positionsByComponent[componentIri]
-        if (positions) {
-          resourcesState.current.positionsByComponent[componentIri] = positions.filter(positionIri => !evictSet.has(positionIri))
-        }
-      }
     },
     setResourceFetchStatus(event: SetResourceStatusEvent): void {
       const data = initResource({
