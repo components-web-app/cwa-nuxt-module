@@ -1,7 +1,7 @@
 <!---
 This file is auto-generate by a github hook please modify README.template.md if you don't want to lose your work
 -->
-# CWA Nuxt 3 Module (in development)
+# CWA Nuxt Module (in development)
 
 [![codecov](https://codecov.io/github/components-web-app/cwa-nuxt-module/branch/feat/manager-tabs/graph/badge.svg?token=Z6GQJN413O)](https://app.codecov.io/gh/components-web-app/cwa-nuxt-module/tree/feat/manager-tabs)
 
