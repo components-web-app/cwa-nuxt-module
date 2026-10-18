@@ -166,10 +166,6 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
     const resourceType = getResourceTypeFromIri(event.resource)
 
     switch (resourceType) {
-      case CwaResourceTypes.PAGE_DATA: {
-        // if a page data is deleted, we should also check for its existence in collections
-        break
-      }
       case CwaResourceTypes.COMPONENT_POSITION: {
         if (event.noCascade) {
           break
