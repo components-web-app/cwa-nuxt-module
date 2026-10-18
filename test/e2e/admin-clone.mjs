@@ -1,9 +1,13 @@
+import { mkdirSync } from 'node:fs'
 import { iris, texts } from './admin-stub-api.mjs'
 import { newAdminPage, startAdminStack } from './admin-harness.mjs'
 
 const apiPort = Number(process.env.E2E_API_PORT || 18321)
 const appPort = Number(process.env.E2E_APP_PORT || 3321)
 const only = process.env.E2E_ONLY
+const shots = process.env.E2E_SHOTS
+
+const notFoundResource = /^Failed to load resource: the server responded with a status of 404/
 
 class AssertionError extends Error {}
 
@@ -33,17 +37,24 @@ async function eventually(check, message, timeout = 5000) {
   }
 }
 
-async function openEditMode(page, base, path = '/') {
-  await page.goto(`${base}${path}`, { waitUntil: 'networkidle' })
+async function openEditMode({ page, base, settle }, path = '/') {
+  await page.goto(`${base}${path}`)
+  await page.getByRole('button', { name: 'Edit', exact: true }).waitFor()
+  await settle()
   await page.getByRole('button', { name: 'Edit', exact: true }).click()
-  await eventually(() => page.getByRole('button', { name: 'Done', exact: true }).isVisible(), 'Edit mode did not start')
+  await page.getByRole('button', { name: 'Done', exact: true }).waitFor()
+}
+
+async function select(page, text) {
+  await page.getByText(text, { exact: true }).first().click()
+  await page.getByTestId('component-menu').waitFor()
 }
 
 async function startClone(page) {
-  await page.getByText(texts.source, { exact: true }).first().click()
-  await page.locator('[id^="headlessui-popover-button"]').last().click()
-  await page.getByRole('button', { name: 'Clone', exact: true }).click()
-  await eventually(() => page.getByTestId('clone-mode-bar').isVisible(), 'Clone mode bar did not appear')
+  await select(page, texts.source)
+  await page.getByTestId('component-menu').getByTestId('button-options').click()
+  await page.getByTestId('component-menu-clone').click()
+  await page.getByTestId('clone-mode-bar').waitFor()
 }
 
 async function setNavigation(page, enabled) {
@@ -63,12 +74,12 @@ function dialogWith(page, text) {
   return page.getByRole('dialog').filter({ hasText: text })
 }
 
-function isShown(dialog, text) {
-  return dialog.getByText(text).first().isVisible()
+async function dialogTexts(page) {
+  return (await page.getByRole('dialog').allInnerTexts()).join(' | ')
 }
 
-async function dialogCount(page) {
-  return page.getByRole('dialog').count()
+async function waitForNoDialog(page, message) {
+  await eventually(async () => (await page.getByRole('dialog').count()) === 0, `${message}: ${await dialogTexts(page)}`)
 }
 
 async function visibleHighlights(page) {
@@ -78,8 +89,8 @@ async function visibleHighlights(page) {
   }).filter(r => r.width > 0 && r.height > 0))
 }
 
-async function sourceBoxes(page) {
-  return page.getByText(texts.source, { exact: true }).evaluateAll(els => els.map((el) => {
+async function boxesOf(page, text) {
+  return page.getByText(text, { exact: true }).evaluateAll(els => els.map((el) => {
     const r = el.getBoundingClientRect()
     return { top: r.top, left: r.left, width: r.width, height: r.height }
   }))
@@ -94,68 +105,93 @@ function covers(highlight, box) {
 
 async function assertEveryInstanceHighlighted(page, label) {
   await eventually(async () => {
-    const boxes = await sourceBoxes(page)
+    const boxes = await boxesOf(page, texts.source)
     const highlights = await visibleHighlights(page)
     return boxes.length > 0 && boxes.every(box => highlights.some(h => covers(h, box)))
   }, `${label}: not every instance of the source is highlighted`)
 }
 
-async function assertOnSecondPage(page, base) {
+async function assertOnSecondPage({ page, base, settle }) {
   await eventually(() => page.url() === `${base}/second`, `Expected to be on /second, at ${page.url()}`)
-  await eventually(() => page.getByText(texts.pageBOther, { exact: true }).isVisible(), 'The second page\'s content did not render')
+  await page.getByText(texts.pageBOther, { exact: true }).waitFor()
+  await settle()
+}
+
+async function assertCloneModeEnded(page, message) {
+  await page.getByTestId('clone-mode-bar').waitFor({ state: 'detached' }).catch(() => {
+    throw new AssertionError(message)
+  })
+}
+
+async function sourceAbove(page, otherText) {
+  const [source] = await boxesOf(page, texts.source)
+  const [other] = await boxesOf(page, otherText)
+  return source && other ? source.top < other.top : undefined
 }
 
 const scenarios = [
-  ['1. with Enable Navigation on, a layout link navigates and clone mode, the bar and the highlight survive', async ({ page, base }) => {
-    await openEditMode(page, base)
+  ['1. with Enable Navigation on, a layout link navigates and clone mode, the bar and the highlight survive', async (t) => {
+    const { page, state } = t
+    await openEditMode(t)
+    assert(state.mercureSubscriptions > 0, 'The admin never subscribed to Mercure: the API\'s Link header was not read')
     await startClone(page)
     await setNavigation(page, true)
     await layoutLink(page, 'Second').click()
-    await assertOnSecondPage(page, base)
+    await assertOnSecondPage(t)
     assert(await page.getByTestId('clone-mode-bar').isVisible(), 'The clone mode bar was lost on navigation')
     await assertEveryInstanceHighlighted(page, 'After navigating')
   }],
-  ['2. with Enable Navigation off, a layout link click does not navigate and leads to the target dialog', async ({ page, base }) => {
-    await openEditMode(page, base)
+  ['2. with Enable Navigation off, a layout click while page-scoped confirms, stays put, warns of the layout scope, and a Cancel there leaves the page scope', async (t) => {
+    const { page, base, settle } = t
+    await openEditMode(t)
     await startClone(page)
     await layoutLink(page, 'Second').click()
-    await page.waitForTimeout(800)
-    assert(page.url() === `${base}/`, `Navigated to ${page.url()}`)
     const confirm = dialogWith(page, 'switch and edit the layout')
-    if (await confirm.count()) {
-      await confirm.getByRole('button', { name: 'Ok', exact: true }).click()
-    }
-    await eventually(() => isShown(dialogWith(page, 'Clone Here'), 'Clone Here'), 'The target dialog did not open')
+    await confirm.getByText('switch and edit the layout').waitFor()
+    assert(page.url() === `${base}/`, `Navigated to ${page.url()}`)
+    await confirm.getByRole('button', { name: 'Ok', exact: true }).click()
+    const dialog = dialogWith(page, 'Clone Here')
+    await dialog.getByTestId('clone-scope').waitFor()
+    assert((await dialog.getByTestId('clone-scope').innerText()).includes('it will appear on every page using it'), 'The layout scope warning is missing')
+    assert(page.url() === `${base}/`, `Navigated to ${page.url()}`)
+    await dialog.getByRole('button', { name: 'Cancel', exact: true }).click()
+    await waitForNoDialog(page, 'Cancel did not close the target dialog')
+    await settle()
+    await page.getByText(texts.pageAOther, { exact: true }).click()
+    await dialogWith(page, 'Clone Here').getByTestId('clone-option').first().waitFor()
+    assert(!(await dialogWith(page, 'switch and edit').count()), 'A page click after cancelling asked to switch scope: the scope had been switched to the layout')
   }],
-  ['3. after navigating, a page click opens the target dialog and Add after clones the published IRI there', async ({ page, base, state }) => {
-    await openEditMode(page, base)
+  ['3. after navigating, a page click opens the target dialog and Add after clones the published IRI there', async (t) => {
+    const { page, state } = t
+    await openEditMode(t)
     await startClone(page)
     await setNavigation(page, true)
     await layoutLink(page, 'Second').click()
-    await assertOnSecondPage(page, base)
+    await assertOnSecondPage(t)
     await setNavigation(page, false)
     await page.getByText(texts.pageBOther, { exact: true }).click()
     const dialog = dialogWith(page, 'Clone Here')
-    await eventually(() => isShown(dialog, 'Clone Here'), 'The target dialog did not open')
     await dialog.getByRole('button', { name: 'Add after', exact: true }).click()
     const post = await eventually(() => state.writes.find(w => w.method === 'POST' && w.path.endsWith('/_/component_positions')), 'No position was POSTed')
     assert(post.body.componentGroup === iris.pageBGroup, `POSTed to ${post.body.componentGroup}`)
     assert(post.body.component === iris.source, `POSTed component ${post.body.component}`)
     assert(post.body.after === '/_api/_/component_positions/b-other', `POSTed after ${post.body.after}`)
-    await eventually(async () => !(await page.getByTestId('clone-mode-bar').count()), 'Clone mode did not end')
+    await assertCloneModeEnded(page, 'Clone mode did not end')
     await eventually(async () => (await page.getByText(texts.source, { exact: true }).count()) === 2, 'The new instance did not render')
   }],
-  ['4. every on-screen instance of the source is highlighted, on each page', async ({ page, base }) => {
-    await openEditMode(page, base)
+  ['4. every on-screen instance of the source is highlighted, on each page', async (t) => {
+    const { page } = t
+    await openEditMode(t)
     await startClone(page)
     await assertEveryInstanceHighlighted(page, 'On the first page')
     await setNavigation(page, true)
     await layoutLink(page, 'Second').click()
-    await assertOnSecondPage(page, base)
+    await assertOnSecondPage(t)
     await assertEveryInstanceHighlighted(page, 'On the second page')
   }],
-  ['5. Escape and Cancel end clone mode, turn Enable Navigation off and clear the highlight', async ({ page, base }) => {
-    await openEditMode(page, base)
+  ['5. Escape and Cancel end clone mode, turn Enable Navigation off and clear the highlight', async (t) => {
+    const { page, base } = t
+    await openEditMode(t)
     for (const end of ['Escape', 'Cancel']) {
       await startClone(page)
       await setNavigation(page, true)
@@ -165,109 +201,164 @@ const scenarios = [
       else {
         await page.getByTestId('clone-mode-bar').getByRole('button', { name: 'Cancel', exact: true }).click()
       }
-      await eventually(async () => !(await page.getByTestId('clone-mode-bar').count()), `${end} did not end clone mode`)
+      await assertCloneModeEnded(page, `${end} did not end clone mode`)
       assert(!(await page.getByRole('switch', { name: 'Enable Navigation' }).count()), `${end} left Enable Navigation showing`)
-      assert((await visibleHighlights(page)).length === 0, `${end} left a highlight`)
+      await eventually(async () => (await visibleHighlights(page)).length === 0, `${end} left a highlight`)
       await layoutLink(page, 'Second').click()
-      await page.waitForTimeout(800)
+      const confirm = dialogWith(page, 'switch and edit the layout')
+      await confirm.getByText('switch and edit the layout').waitFor()
       assert(page.url() === `${base}/`, `${end} left navigation enabled: navigated to ${page.url()}`)
-      for (let i = 0; i < 2 && await dialogCount(page); i++) {
-        await page.getByRole('dialog').getByRole('button', { name: 'Cancel', exact: true }).first().click()
-        await page.waitForTimeout(300)
-      }
-      await page.keyboard.press('Escape')
+      await confirm.getByRole('button', { name: 'Cancel', exact: true }).click()
+      await waitForNoDialog(page, 'Cancel did not close the confirm')
     }
   }],
-  ['6. leaving edit mode during cloning, on either page, ends clone mode', async ({ page, base }) => {
-    await openEditMode(page, base)
+  ['6. leaving edit mode during cloning, on either page, ends clone mode', async (t) => {
+    const { page } = t
+    await openEditMode(t)
     await startClone(page)
     await page.getByRole('button', { name: 'Done', exact: true }).click()
-    await eventually(async () => !(await page.getByTestId('clone-mode-bar').count()), 'Done on the first page did not end clone mode')
+    await assertCloneModeEnded(page, 'Done on the first page did not end clone mode')
     await page.getByRole('button', { name: 'Edit', exact: true }).click()
     await startClone(page)
     await setNavigation(page, true)
     await layoutLink(page, 'Second').click()
-    await assertOnSecondPage(page, base)
+    await assertOnSecondPage(t)
     await page.getByRole('button', { name: 'Done', exact: true }).click()
-    await eventually(async () => !(await page.getByTestId('clone-mode-bar').count()), 'Done on the second page did not end clone mode')
+    await assertCloneModeEnded(page, 'Done on the second page did not end clone mode')
   }],
-  ['7. with Enable Navigation on, a layout link click shows no dialog or confirm and navigates', async ({ page, base }) => {
-    await openEditMode(page, base)
+  ['7. with Enable Navigation on, a layout link click shows no dialog or confirm and navigates', async (t) => {
+    const { page, base, settle } = t
+    await openEditMode(t)
     await startClone(page)
     await setNavigation(page, true)
     await layoutLink(page, 'Third').click()
     await eventually(() => page.url() === `${base}/third`, `Expected /third, at ${page.url()}`)
-    await page.waitForTimeout(800)
-    assert(await dialogCount(page) === 0, `A dialog opened: ${(await page.getByRole('dialog').allInnerTexts()).join(' | ')}`)
-    await eventually(() => page.getByText(texts.third, { exact: true }).isVisible(), 'The third page did not render')
+    await page.getByText(texts.third, { exact: true }).waitFor()
+    await settle()
+    assert(await page.getByRole('dialog').count() === 0, `A dialog opened: ${await dialogTexts(page)}`)
   }],
-  ['8. a redirect route in clone mode lands on the target page and renders its content', async ({ page, base }) => {
-    await openEditMode(page, base)
+  ['8. a redirect route in clone mode lands on the target page and renders its content', async (t) => {
+    const { page } = t
+    await openEditMode(t)
     await startClone(page)
     await setNavigation(page, true)
     await layoutLink(page, 'Redirect').click()
-    await assertOnSecondPage(page, base)
+    await assertOnSecondPage(t)
   }],
-  ['9. in clone mode the page and layout are not blurred or hatched', async ({ page, base }) => {
-    await openEditMode(page, base)
+  ['9. in clone mode the page and layout are not blurred or hatched', async (t) => {
+    const { page, settle } = t
+    await openEditMode(t)
+    await page.locator('div#cwa-layout-page-overlay').waitFor({ state: 'attached' })
     await startClone(page)
     for (const enabled of [false, true]) {
       await setNavigation(page, enabled)
-      await page.waitForTimeout(300)
-      assert(!(await page.locator('#cwa-layout-page-overlay').count()), `The layout/page overlay is shown with navigation ${enabled ? 'on' : 'off'}`)
+      await settle()
+      assert(!(await page.locator('div#cwa-layout-page-overlay').count()), `The layout/page overlay is shown with navigation ${enabled ? 'on' : 'off'}`)
     }
   }],
-  ['10. with navigation off, a layout click while page-scoped confirms first; Cancel opens nothing, Ok opens the layout\'s options', async ({ page, base }) => {
-    await openEditMode(page, base)
+  ['10. with navigation off, a layout click while page-scoped confirms first; Cancel opens nothing, Ok opens the layout\'s options', async (t) => {
+    const { page, base, settle } = t
+    await openEditMode(t)
     await startClone(page)
     const confirm = dialogWith(page, 'switch and edit the layout')
     await layoutLink(page, 'Third').click()
-    await eventually(() => isShown(confirm, 'switch and edit the layout'), 'No confirm before a layout target')
+    await confirm.getByText('switch and edit the layout').waitFor()
     await confirm.getByRole('button', { name: 'Cancel', exact: true }).click()
-    await page.waitForTimeout(500)
-    assert(await dialogCount(page) === 0, 'Cancel still opened a dialog')
+    await waitForNoDialog(page, 'Cancel did not close the confirm')
+    await settle()
+    assert(await page.getByRole('dialog').count() === 0, `Cancel still opened a dialog: ${await dialogTexts(page)}`)
     assert(page.url() === `${base}/`, `Navigated to ${page.url()}`)
     await layoutLink(page, 'Third').click()
-    await eventually(() => isShown(confirm, 'switch and edit the layout'), 'No confirm the second time')
+    await confirm.getByText('switch and edit the layout').waitFor()
     await confirm.getByRole('button', { name: 'Ok', exact: true }).click()
-    const dialog = dialogWith(page, 'Clone Here')
-    await eventually(() => isShown(dialog, 'Clone Here'), 'Ok did not open the target dialog')
-    const option = dialog.getByTestId('clone-option').first()
+    const option = dialogWith(page, 'Clone Here').getByTestId('clone-option').first()
+    await option.waitFor()
     assert(await option.isDisabled(), 'A layout option that does not allow the source is enabled')
-    assert((await dialog.innerText()).includes('does not allow HtmlContent'), 'The disabled reason is not shown')
+    assert((await dialogWith(page, 'Clone Here').innerText()).includes('does not allow HtmlContent'), 'The disabled reason is not shown')
   }],
-  ['11. no highlight remains on a page that does not contain the source', async ({ page, base }) => {
-    await openEditMode(page, base)
+  ['11. no highlight remains on a page that does not contain the source', async (t) => {
+    const { page, settle } = t
+    await openEditMode(t)
     await startClone(page)
     await setNavigation(page, true)
     await layoutLink(page, 'Third').click()
-    await eventually(() => page.getByText(texts.third, { exact: true }).isVisible(), 'The third page did not render')
-    await page.waitForTimeout(500)
-    const count = await page.getByTestId('clone-highlight').count()
-    assert(count === 0, `${count} highlight element(s) remain`)
+    await page.getByText(texts.third, { exact: true }).waitFor()
+    await settle()
+    await eventually(async () => (await page.getByTestId('clone-highlight').count()) === 0, `${await page.getByTestId('clone-highlight').count()} highlight element(s) remain`)
   }],
+  ['12. Move Up in the Order tab PATCHes the group order and the page keeps the new order, also after a reload', async (t) => {
+    const { page, state, settle } = t
+    await openEditMode(t)
+    await eventually(async () => await sourceAbove(page, texts.pageAOther) === true, 'The fixture order is wrong')
+    await select(page, texts.pageAOther)
+    await page.getByRole('button', { name: 'Order', exact: true }).click()
+    await page.getByRole('switch', { name: 'Enable reordering' }).click()
+    await page.getByRole('button', { name: 'Move Up', exact: true }).click()
+    const patch = await eventually(() => state.writes.find(w => w.method === 'PATCH' && w.path === `${iris.pageAGroup}/order`), 'No PATCH to the group order')
+    assert(JSON.stringify(patch.body.componentPositions) === JSON.stringify(['/_api/_/component_positions/a-other', '/_api/_/component_positions/a-source']), `PATCHed ${JSON.stringify(patch.body)}`)
+    await settle()
+    assert(await sourceAbove(page, texts.pageAOther) === false, 'The order snapped back after the order response')
+    await page.reload()
+    await page.getByText(texts.pageAOther, { exact: true }).waitFor()
+    await settle()
+    assert(await sourceAbove(page, texts.pageAOther) === false, 'The new order did not persist')
+  }],
+  ['13. removing a component from one location DELETEs its position without ?published=', async (t) => {
+    const { page, state, settle } = t
+    await openEditMode(t)
+    await select(page, texts.source)
+    await page.getByRole('button', { name: 'Info', exact: true }).click()
+    await page.getByTestId('component-delete').getByRole('button', { name: 'Delete', exact: true }).click()
+    const dialog = dialogWith(page, 'Delete this component?')
+    await dialog.getByRole('button', { name: 'Remove from this location only', exact: true }).click()
+    const del = await eventually(() => state.writes.find(w => w.method === 'DELETE'), 'Nothing was DELETEd')
+    assert(del.path === '/_api/_/component_positions/a-source', `DELETEd ${del.path}`)
+    await eventually(async () => (await page.getByText(texts.source, { exact: true }).count()) === 0, 'The removed instance is still on the page')
+    await settle()
+    assert(await page.getByText(texts.pageAOther, { exact: true }).isVisible(), 'The other component went too')
+    assert(state.resources.has(iris.source), 'The component itself was deleted')
+  }],
+  ['14. a clone whose source was deleted elsewhere ends clone mode with the source-gone message', async (t) => {
+    const { page, state } = t
+    await openEditMode(t)
+    await startClone(page)
+    state.resources.delete(iris.source)
+    await page.getByText(texts.pageAOther, { exact: true }).click()
+    await dialogWith(page, 'Clone Here').getByRole('button', { name: 'Add after', exact: true }).click()
+    await assertCloneModeEnded(page, 'Clone mode did not end when the API answered 404')
+    await page.getByText('The component being cloned no longer exists').first().waitFor()
+  }, [notFoundResource]],
 ]
 
+function unexpectedConsoleErrors(messages, allowed) {
+  return messages.filter(message => !allowed.some(pattern => pattern.test(message)))
+}
+
 async function main() {
+  if (shots) {
+    mkdirSync(shots, { recursive: true })
+  }
   const stack = await startAdminStack({ apiPort, appPort })
   let failures = 0
   try {
-    for (const [name, run] of scenarios) {
-      if (only && !name.startsWith(`${only}.`)) {
+    for (const [name, run, allowedConsoleErrors = []] of scenarios) {
+      if (only && !only.split(',').some(n => name.startsWith(`${n}.`))) {
         continue
       }
       stack.reset()
-      const { context, page, errors } = await newAdminPage(stack)
+      const { context, page, errors, consoleErrors, settle } = await newAdminPage(stack)
       try {
-        await run({ page, base: stack.appBase, state: stack.state })
+        await run({ page, base: stack.appBase, state: stack.state, settle })
         assert(errors.length === 0, `Uncaught page errors: ${errors.join(' | ')}`)
+        const unexpected = unexpectedConsoleErrors(consoleErrors, allowedConsoleErrors)
+        assert(unexpected.length === 0, `Console errors: ${unexpected.join(' | ')}`)
         console.log(`ok    ${name}`)
       }
       catch (error) {
         failures++
         console.log(`FAIL  ${name}\n      ${error.message.split('\n')[0]}`)
-        if (process.env.E2E_SHOTS) {
-          await page.screenshot({ path: `${process.env.E2E_SHOTS}/${name.split('.')[0]}.png` }).catch(() => undefined)
+        if (shots) {
+          await page.screenshot({ path: `${shots}/${name.split('.')[0]}.png`, fullPage: true }).catch(() => undefined)
         }
       }
       finally {
@@ -279,10 +370,10 @@ async function main() {
     await stack.stop()
   }
   if (failures) {
-    console.error(`\nFAIL: ${failures} clone scenario(s) failed.`)
+    console.error(`\nFAIL: ${failures} admin browser scenario(s) failed.`)
     process.exit(1)
   }
-  console.log('\nPASS: every clone scenario passed.')
+  console.log('\nPASS: every admin browser scenario passed.')
 }
 
 main().catch((error) => {

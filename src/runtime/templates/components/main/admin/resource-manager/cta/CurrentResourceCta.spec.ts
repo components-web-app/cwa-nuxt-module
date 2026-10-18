@@ -142,7 +142,7 @@ describe('CurrentResourceCta', () => {
     test('offers Clone for a persisted component', () => {
       const { options } = mountClone('/component/c1')
 
-      expect(options).toContainEqual({ label: 'Clone', value: 'clone' })
+      expect(options).toContainEqual({ label: 'Clone', value: 'clone', testId: 'component-menu-clone' })
     })
 
     test.each([

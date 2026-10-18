@@ -20,6 +20,7 @@ export type ModelValue = undefined | string | number | boolean | object | null |
 export interface ButtonOption {
   label: string
   value: ModelValue
+  testId?: string
 }
 
 export type ButtonColor = 'blue' | 'grey' | 'dark' | 'error'
@@ -150,6 +151,7 @@ const [trigger, container] = usePopper(popperOps.value)
     <template v-if="hasOptions">
       <PopoverButton
         ref="trigger"
+        data-testid="button-options"
         :class="buttonBaseClass"
         class="cwa:relative"
         :disabled="disabled || loading"

@@ -189,6 +189,7 @@ function orderOf(resources, groupIri) {
   const group = resources.get(groupIri)
   return {
     '@id': `${groupIri}/order`,
+    'componentGroup': groupIri,
     'sortValues': Object.fromEntries(group.componentPositions.map(iri => [iri, resources.get(iri).sortValue])),
   }
 }
@@ -199,9 +200,28 @@ function renumber(resources, group) {
   })
 }
 
+function isPublishable(resource) {
+  return !!resource?._metadata?.publishable
+}
+
+function applyOrder(resources, group, ordered) {
+  const slots = group.componentPositions
+    .map((iri, index) => (ordered.includes(iri) ? index : -1))
+    .filter(index => index !== -1)
+  const next = [...group.componentPositions]
+  slots.forEach((slot, i) => {
+    next[slot] = ordered[i]
+  })
+  group.componentPositions = next
+  renumber(resources, group)
+}
+
+export const mercurePath = '/.well-known/mercure'
+
 export function startAdminStubApi(port) {
-  const state = { resources: buildResources(), writes: [] }
+  const state = { resources: buildResources(), writes: [], mercureSubscriptions: 0 }
   const origin = `http://127.0.0.1:${port}`
+  const link = `<${prefix}/docs.jsonld>; rel="http://www.w3.org/ns/hydra/core#apiDocumentation",<${origin}${mercurePath}>; rel="mercure"`
 
   const server = http.createServer((req, res) => {
     const url = new URL(req.url, 'http://stub')
@@ -214,6 +234,7 @@ export function startAdminStubApi(port) {
       'access-control-allow-headers': 'content-type, accept, path, preload',
       'access-control-allow-methods': 'GET, POST, PATCH, PUT, DELETE, OPTIONS',
       'access-control-expose-headers': 'link',
+      link,
     }
     const send = (status, body, extra = {}) => {
       res.writeHead(status, { ...headers, ...extra })
@@ -221,6 +242,12 @@ export function startAdminStubApi(port) {
     }
     if (req.method === 'OPTIONS') {
       send(204)
+      return
+    }
+    if (path === mercurePath) {
+      state.mercureSubscriptions++
+      res.writeHead(200, { ...headers, 'content-type': 'text/event-stream', 'cache-control': 'no-cache' })
+      res.write(':\n\n')
       return
     }
     let raw = ''
@@ -235,7 +262,7 @@ export function startAdminStubApi(port) {
       const { resources } = state
 
       if (path === `${prefix}/me`) {
-        send(200, adminUser, { link: `<${origin}${prefix}/docs.jsonld>; rel="http://www.w3.org/ns/hydra/core#apiDocumentation"` })
+        send(200, adminUser)
         return
       }
       if (path === `${prefix}/login` || path === `${prefix}/logout`) {
@@ -259,7 +286,7 @@ export function startAdminStubApi(port) {
         manifest ? send(200, manifest) : send(404, { status: 404 })
         return
       }
-      if (path.endsWith('/usage')) {
+      if (req.method === 'GET' && path.endsWith('/usage')) {
         const iri = path.slice(0, -'/usage'.length)
         const positionCount = [...resources.values()].filter(r => r['@type'] === 'ComponentPosition' && r.component === iri).length
         send(200, { positionCount, pageDataCount: 0, total: positionCount })
@@ -267,8 +294,21 @@ export function startAdminStubApi(port) {
       }
       if (path.endsWith('/order')) {
         const groupIri = path.slice(0, -'/order'.length)
-        if (!resources.has(groupIri)) {
+        const group = resources.get(groupIri)
+        if (!group) {
           send(404, { status: 404 })
+          return
+        }
+        if (req.method === 'PATCH') {
+          const ordered = body?.componentPositions
+          if (!Array.isArray(ordered) || ordered.some(iri => !group.componentPositions.includes(iri))) {
+            send(422, { violations: [{ propertyPath: 'componentPositions', message: 'Invalid' }] })
+            return
+          }
+          applyOrder(resources, group, ordered)
+        }
+        else if (req.method !== 'GET') {
+          send(405, { status: 405 })
           return
         }
         send(200, orderOf(resources, groupIri))
@@ -276,8 +316,13 @@ export function startAdminStubApi(port) {
       }
       if (req.method === 'POST' && path === positionEndpoint) {
         const group = resources.get(body.componentGroup)
-        if (!group || !resources.has(body.component)) {
-          send(422, { violations: [{ propertyPath: 'component', message: 'Invalid' }] })
+        if (!resources.has(body.component)) {
+          send(404, { '@type': 'hydra:Error', 'status': 404 })
+          return
+        }
+        const anchor = body.after ?? body.before
+        if (!group || (anchor && !group.componentPositions.includes(anchor))) {
+          send(422, { violations: [{ propertyPath: group ? (body.after ? 'after' : 'before') : 'componentGroup', message: 'Invalid' }] })
           return
         }
         const iri = `${positionEndpoint}/${randomUUID()}`
@@ -294,6 +339,10 @@ export function startAdminStubApi(port) {
         const resource = resources.get(path)
         if (!resource) {
           send(404, { status: 404 })
+          return
+        }
+        if (url.searchParams.has('published') && !isPublishable(resource)) {
+          send(400, { '@type': 'hydra:Error', 'status': 400, 'detail': `${resource['@type']} is not publishable` })
           return
         }
         resources.delete(path)

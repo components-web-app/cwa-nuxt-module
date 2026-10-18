@@ -4,7 +4,7 @@ import net from 'node:net'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { chromium } from 'playwright-core'
-import { startAdminStubApi } from './admin-stub-api.mjs'
+import { mercurePath, startAdminStubApi } from './admin-stub-api.mjs'
 
 const serverEntry = resolve(dirname(fileURLToPath(import.meta.url)), '../../playground/.output/server/index.mjs')
 
@@ -83,11 +83,51 @@ export async function startAdminStack({ apiPort, appPort }) {
   return { appBase, browser, state, reset, stop, appLog: () => appLog }
 }
 
+const quietMs = 300
+
 export async function newAdminPage(stack) {
-  const context = await stack.browser.newContext({ viewport: { width: 1400, height: 1000 } })
+  const context = await stack.browser.newContext({ viewport: { width: 1400, height: 1000 }, serviceWorkers: 'block' })
   await context.addCookies([{ name: 'cwa_auth', value: '1', url: stack.appBase }])
+  context.setDefaultTimeout(10000)
   const page = await context.newPage()
   const errors = []
+  const consoleErrors = []
+  const inFlight = new Set()
+  let lastActivity = Date.now()
   page.on('pageerror', error => errors.push(error.message))
-  return { context, page, errors }
+  page.on('console', (message) => {
+    if (message.type() === 'error') {
+      consoleErrors.push(message.text())
+    }
+  })
+  const track = (request) => {
+    if (!request.url().includes(mercurePath)) {
+      inFlight.add(request)
+      lastActivity = Date.now()
+    }
+  }
+  const untrack = (request) => {
+    if (inFlight.delete(request)) {
+      lastActivity = Date.now()
+    }
+  }
+  page.on('request', track)
+  page.on('requestfinished', untrack)
+  page.on('requestfailed', untrack)
+
+  async function settle(timeout = 10000) {
+    const deadline = Date.now() + timeout
+    for (;;) {
+      await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))).catch(() => undefined)
+      if (!inFlight.size && Date.now() - lastActivity >= quietMs) {
+        return
+      }
+      if (Date.now() > deadline) {
+        throw new Error(`The page did not settle: ${[...inFlight].map(r => r.url()).join(', ')}`)
+      }
+      await page.waitForEvent('requestfinished', { timeout: quietMs }).catch(() => undefined)
+    }
+  }
+
+  return { context, page, errors, consoleErrors, settle }
 }

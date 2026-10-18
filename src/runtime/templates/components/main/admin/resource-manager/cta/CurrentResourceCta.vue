@@ -88,7 +88,7 @@ const buttonOptions = computed(() => {
   }
 
   if (isPersistedComponent.value) {
-    ops.push({ label: 'Clone', value: 'clone' })
+    ops.push({ label: 'Clone', value: 'clone', testId: 'component-menu-clone' })
   }
 
   return ops
@@ -129,6 +129,7 @@ function handleManagerCtaClick(value?: ModelValue) {
   <CwaUiFormButton
     color="grey"
     button-class="cwa:min-w-[100px]"
+    data-testid="component-menu"
     :options="buttonOptions"
     :disabled="publishing"
     @click="handleManagerCtaClick"
