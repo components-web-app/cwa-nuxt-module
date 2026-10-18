@@ -78,6 +78,8 @@ export interface CwaResourcesActionsInterface {
 export default function (resourcesState: CwaResourcesStateInterface, resourcesGetters: CwaResourcesGettersInterface): CwaResourcesActionsInterface {
   let idIndex = new Set<string>()
   let indexedIds: string[] | undefined
+  let componentsByPosition = new Map<string, Set<string>>()
+  let indexedPositions: object | undefined
 
   function hasId(iri: string) {
     const ids = toRaw(resourcesState.current.allIds)
@@ -97,6 +99,21 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
     if (getResourceTypeFromIri(iri) === CwaResourceTypes.COMPONENT_GROUP && !resourcesState.current.componentGroupIds.includes(iri)) {
       resourcesState.current.componentGroupIds.push(iri)
     }
+  }
+
+  function syncPositionIndex() {
+    const byComponent = toRaw(resourcesState.current.positionsByComponent)
+    if (byComponent !== indexedPositions) {
+      componentsByPosition = new Map()
+      indexedPositions = byComponent
+      for (const componentIri in byComponent) {
+        byComponent[componentIri]!.forEach(positionIri => indexPosition(positionIri, componentIri))
+      }
+    }
+  }
+
+  function indexPosition(positionIri: string, componentIri: string) {
+    componentsByPosition.get(positionIri)?.add(componentIri) ?? componentsByPosition.set(positionIri, new Set([componentIri]))
   }
 
   function indexGroup(iri: string, from: unknown, to?: unknown) {
@@ -267,17 +284,20 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
 
     existingPositions.includes(resource['@id']) === false && existingPositions.push(resource['@id'])
     resourcesState.current.positionsByComponent[resource.component] = existingPositions
+    indexPosition(resource['@id'], resource.component)
   }
 
   function clearPositionToComponentMapping(iri: string) {
     const resourceType = getResourceTypeFromIri(iri)
     if (resourceType === CwaResourceTypes.COMPONENT_POSITION) {
-      const entries = Object.entries(toRaw(resourcesState.current.positionsByComponent))
-      for (const [componentIri, positionIris] of entries) {
-        if (toRaw(positionIris).includes(iri)) {
+      syncPositionIndex()
+      for (const componentIri of componentsByPosition.get(iri) || []) {
+        const positionIris = resourcesState.current.positionsByComponent[componentIri]
+        if (positionIris?.includes(iri)) {
           resourcesState.current.positionsByComponent[componentIri] = positionIris.filter(pIri => (iri !== pIri))
         }
       }
+      componentsByPosition.delete(iri)
       return
     }
     if (resourceType === CwaResourceTypes.COMPONENT) {
@@ -562,21 +582,13 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
       for (const iri of iris) {
         indexGroup(iri, resourcesState.current.byId[iri]?.data?.reference)
         delete resourcesState.current.byId[iri]
-        if (resourcesState.current.positionsByComponent[iri]) {
-          delete resourcesState.current.positionsByComponent[iri]
-        }
+        clearPositionToComponentMapping(iri)
       }
       resourcesState.current.allIds = toRaw(resourcesState.current.allIds).filter(id => !evictSet.has(id))
       resourcesState.current.componentGroupIds = resourcesState.current.componentGroupIds.filter(id => !evictSet.has(id))
       resourcesState.current.publishableMapping = resourcesState.current.publishableMapping.filter(
         mapping => !evictSet.has(mapping.draftIri) && !evictSet.has(mapping.publishedIri),
       )
-      for (const componentIri of Object.keys(resourcesState.current.positionsByComponent)) {
-        const positions = resourcesState.current.positionsByComponent[componentIri]
-        if (positions) {
-          resourcesState.current.positionsByComponent[componentIri] = positions.filter(positionIri => !evictSet.has(positionIri))
-        }
-      }
     },
     setResourceFetchStatus(event: SetResourceStatusEvent): void {
       const data = initResource({

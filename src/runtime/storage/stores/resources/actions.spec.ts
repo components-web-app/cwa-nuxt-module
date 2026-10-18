@@ -1688,3 +1688,42 @@ describe('resources action -> allIds index (#259)', () => {
     expect(resourcesState.current.allIds.slice(-3)).toEqual([a, b, c])
   })
 })
+
+describe('resources action -> evictResources without scanning every component (#259)', () => {
+  const p = '/_/component_positions/p'
+  const q = '/_/component_positions/q'
+  const c1 = '/component/c1'
+  const c2 = '/component/c2'
+
+  function position(iri: string, componentIri: string) {
+    return { '@id': iri, '@type': 'ComponentPosition', 'component': componentIri, '_metadata': { persisted: true } }
+  }
+
+  function setup() {
+    const resourcesState = state()
+    return { resourcesState, resourcesActions: actions(resourcesState, getters(resourcesState)) }
+  }
+
+  test('evicting a position removes it from every component that lists it, including a component it no longer holds', () => {
+    const { resourcesState, resourcesActions } = setup()
+    resourcesActions.saveResource({ resource: position(p, c1) })
+    resourcesActions.saveResource({ resource: position(p, c2) })
+    resourcesActions.saveResource({ resource: position(q, c1) })
+    expect(resourcesState.current.positionsByComponent).toEqual({ [c1]: [p, q], [c2]: [p] })
+    resourcesActions.evictResources([p])
+    expect(resourcesState.current.positionsByComponent).toEqual({ [c1]: [q], [c2]: [] })
+  })
+
+  test('evicting a position does not read the positions of components that do not list it', () => {
+    const { resourcesState, resourcesActions } = setup()
+    resourcesActions.saveResource({ resource: position(p, c1) })
+    resourcesActions.saveResource({ resource: position(q, c1) })
+    resourcesActions.evictResources([q])
+    const { list, counter } = countingList(Array.from({ length: 50 }, (_, i) => `/_/component_positions/other-${i}`))
+    resourcesState.current.positionsByComponent[c2] = list
+    counter.reads = 0
+    resourcesActions.evictResources([p])
+    expect(counter.reads).toBe(0)
+    expect(resourcesState.current.positionsByComponent[c1]).toEqual([])
+  })
+})

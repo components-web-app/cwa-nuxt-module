@@ -74,6 +74,7 @@ export interface CwaFetcherActionsInterface {
   finishFetch (event: FinishFetchEvent): void
   addFetchResource (event: AddFetchResourceEvent): boolean
   clearFetches (): void
+  uncacheRoute (path: string): string[]
 }
 
 export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters: CwaFetcherGettersInterface): CwaFetcherActionsInterface {
@@ -105,11 +106,27 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
     }
   }
 
+  const routeCacheCounts = new Map<string, number>()
+
+  function countRouteResources(path: string, step: number) {
+    return (fetcherState.routeCache.get(path)?.resourceIris || []).filter((iri) => {
+      const count = (routeCacheCounts.get(iri) || 0) + step
+      if (count > 0) {
+        routeCacheCounts.set(iri, count)
+      }
+      else {
+        routeCacheCounts.delete(iri)
+      }
+      return count === 0
+    })
+  }
+
   function cacheRoute(fetchStatus: FetchStatus) {
     const manifest = fetchStatus.manifest
     if (!manifest?.resourceTree || !manifest.irisByDepth) {
       return
     }
+    countRouteResources(fetchStatus.path, -1)
     fetcherState.routeCache.set(fetchStatus.path, {
       resourceTree: manifest.resourceTree,
       irisByDepth: manifest.irisByDepth,
@@ -117,9 +134,15 @@ export default function (fetcherState: CwaFetcherStateInterface, fetcherGetters:
       cachedAt: (new Date()).getTime(),
       lastAccessed: (new Date()).getTime(),
     })
+    countRouteResources(fetchStatus.path, 1)
   }
 
   return {
+    uncacheRoute(path: string) {
+      const released = countRouteResources(path, -1)
+      fetcherState.routeCache.delete(path)
+      return released
+    },
     abortFetch(event: AbortFetchEvent) {
       const fetchStatus = getFetchStatusFromToken(event.token)
       fetchStatus.abort = true
