@@ -4,7 +4,7 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
-- Clone mode: with Enable Navigation on, a click only navigates (no "switch and edit the layout?" confirm), route redirects are followed, the page and layout are no longer blurred, a target in the other scope is confirmed first, the Cloning bar sits in the header, highlights from the previous page are cleared, and removing a position no longer sends `?published=true`; covered by browser tests ([#410](https://github.com/components-web-app/cwa-nuxt-module/pull/410), [#157](https://github.com/components-web-app/cwa-nuxt-module/issues/157))
+- Clone mode: fixes to navigation, redirects, the scope confirm, right-clicks, the overlay and highlights; no `?published=` when deleting a resource that is not publishable; a confirm closed with Escape counts as Cancel ([#410](https://github.com/components-web-app/cwa-nuxt-module/pull/410), [#157](https://github.com/components-web-app/cwa-nuxt-module/issues/157))
 
 ## [2.0.0-alpha.22] - 2026-10-18
 
