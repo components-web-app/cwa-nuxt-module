@@ -45,6 +45,23 @@ const publicResources: Record<string, unknown> = {
   },
 }
 
+const hiddenComponentResources: Record<string, unknown> = {
+  ...publicResources,
+  [POSITION]: { '@id': POSITION, '@type': 'ComponentPosition', '_metadata': { persisted: true } },
+  [`${API_PREFIX}/_/resource_manifest//`]: {
+    resource_iris: [{
+      iri: ROUTE,
+      children: [{
+        iri: PAGE,
+        children: [
+          { iri: LAYOUT, children: [] },
+          { iri: GROUP, children: [{ iri: POSITION, children: [] }] },
+        ],
+      }],
+    }],
+  },
+}
+
 let server: http.Server
 let apiUrl: string
 
@@ -71,11 +88,11 @@ function buildAnonymousRender() {
   }
 }
 
-describe('#324 an anonymous render of a page placing an unpublished component', () => {
+describe('#324 #492 an anonymous render of a page placing an unpublished component', () => {
   beforeAll(async () => {
     server = http.createServer((request, response) => {
       const path = new URL(request.url as string, 'http://api').pathname
-      const body = publicResources[path]
+      const body = hiddenComponentResources[path]
       if (body) {
         response.writeHead(200, { 'content-type': 'application/ld+json', 'cache-control': 'public, max-age=0, s-maxage=600' })
         response.end(JSON.stringify(body))
@@ -100,7 +117,7 @@ describe('#324 an anonymous render of a page placing an unpublished component', 
     ResourceTypeFromIri.setPathPrefix(undefined)
   })
 
-  test('is cached and tagged with the unpublished component IRI, so publishing it purges the page', async () => {
+  test('is cached and tagged with the position IRI and not the hidden component\'s, which the bundle purges when the component is published', async () => {
     const { cwaFetch, resources, fetchHomePage } = buildAnonymousRender()
 
     await fetchHomePage()
@@ -112,7 +129,66 @@ describe('#324 an anonymous render of a page placing an unpublished component', 
     })
 
     expect(decision.cacheControl).toBe('public, max-age=0, s-maxage=600')
-    expect(decision.surrogateKey?.split(', ')).toContain(DRAFT_COMPONENT)
+    expect(decision.surrogateKey?.split(', ')).toContain(POSITION)
+    expect(decision.surrogateKey?.split(', ')).not.toContain(DRAFT_COMPONENT)
+  })
+})
+
+describe('#325 #492 an anonymous render of a page placing a component scheduled to go live', () => {
+  const MANIFEST = `${API_PREFIX}/_/resource_manifest//`
+  const SECONDS_TO_GO_LIVE = 120
+  let expiringPath: string
+
+  beforeAll(async () => {
+    server = http.createServer((request, response) => {
+      const path = new URL(request.url as string, 'http://api').pathname
+      const body = hiddenComponentResources[path]
+      if (body) {
+        const date = Math.floor(Date.now() / 1000) * 1000
+        response.writeHead(200, {
+          'content-type': 'application/ld+json',
+          'cache-control': 'public, max-age=0, s-maxage=600',
+          'date': new Date(date).toUTCString(),
+          ...(path === expiringPath ? { expires: new Date(date + SECONDS_TO_GO_LIVE * 1000).toUTCString() } : {}),
+        })
+        response.end(JSON.stringify(body))
+        return
+      }
+      response.writeHead(404, { 'content-type': 'application/ld+json', 'cache-control': 'no-cache, private' })
+      response.end(JSON.stringify({ '@type': 'hydra:Error', 'status': 404 }))
+    })
+    await new Promise<void>(resolve => server.listen(0, '127.0.0.1', () => resolve()))
+    apiUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}${API_PREFIX}`
+  })
+
+  afterAll(() => {
+    server.close()
+  })
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  afterEach(() => {
+    ResourceTypeFromIri.setPathPrefix(undefined)
+  })
+
+  test.each([
+    ['the position', POSITION],
+    ['the manifest', MANIFEST],
+  ])('expires at go-live when %s carries Expires, because nothing purges the page then', async (_name, path) => {
+    expiringPath = path
+    const { cwaFetch, resources, fetchHomePage } = buildAnonymousRender()
+
+    await fetchHomePage()
+
+    const decision = buildPageCacheHeaders({
+      ids: resources.allIds,
+      api: cwaFetch.httpCacheState,
+      options: { enabled: true, sharedMaxAge: 3600, staleWhileRevalidate: 0 },
+    })
+
+    expect(decision.cacheControl).toBe(`public, max-age=0, s-maxage=${SECONDS_TO_GO_LIVE}`)
   })
 })
 
