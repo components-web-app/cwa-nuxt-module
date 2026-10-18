@@ -2019,6 +2019,14 @@
 .cwa\:focus-visible\:\[outline-style\:solid\]:focus-visible {
   outline-style: solid;
 }
+@media (hover: hover) {
+  .cwa\:enabled\:hover\:bg-stone-700:enabled:hover {
+    background-color: var(--cwa-color-stone-700);
+  }
+  .cwa\:enabled\:hover\:text-white:enabled:hover {
+    color: var(--cwa-color-white);
+  }
+}
 .cwa\:disabled\:pointer-events-none:disabled {
   pointer-events: none;
 }
