@@ -4,6 +4,7 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+- Dependencies updated to Nuxt 4.6.2 and Vue 3.5.44; `@nuxt/kit` and `@nuxt/schema` still accept 4.6.0 or later ([4eb12643](https://github.com/components-web-app/cwa-nuxt-module/commit/4eb12643))
 - **For api-components-bundle (next alpha, 2.0.0-alpha.27, [#492](https://github.com/components-web-app/api-components-bundle/issues/492)); also safe with older bundles.** A visitor sees a component appear live when it is published into a static position: the position's Mercure update now also fetches the component it points to ([#402](https://github.com/components-web-app/cwa-nuxt-module/pull/402))
 - A browser whose admin session expires during a navigation reconnects Mercure, so it no longer keeps a connection authorised with the admin's grants while signed out. Safe with any bundle version; the full fix needs the api-components-bundle release that expires the Mercure cookie on logout and on a failed `/me` (until then the reconnect re-sends the same cookie, so nothing gets worse) ([api-components-bundle#494](https://github.com/components-web-app/api-components-bundle/issues/494), [be1d52e9](https://github.com/components-web-app/cwa-nuxt-module/commit/be1d52e9))
 
