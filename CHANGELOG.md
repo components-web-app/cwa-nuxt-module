@@ -4,6 +4,7 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+- The resources store's `resourcesByType` getter is removed; nothing read it but a position delete, which now falls back to the component groups index ([#259](https://github.com/components-web-app/cwa-nuxt-module/issues/259), [acd9c97e](https://github.com/components-web-app/cwa-nuxt-module/commit/acd9c97e))
 - A Mercure update that arrives during a navigation no longer slows it down as more pages are cached: it waits only for the resources on screen, not every stored one ([#259](https://github.com/components-web-app/cwa-nuxt-module/issues/259), [4dfac773](https://github.com/components-web-app/cwa-nuxt-module/commit/4dfac773))
 - Each `<CwaComponentGroup>` finds its group without scanning every stored resource on each response, and deleting a position edits only its own group ([#259](https://github.com/components-web-app/cwa-nuxt-module/issues/259), [19940eb7](https://github.com/components-web-app/cwa-nuxt-module/commit/19940eb7))
 - Resources are stored without the JSON-LD `@context` embedded in their `_metadata`, about a fifth smaller in memory and in the SSR payload ([#259](https://github.com/components-web-app/cwa-nuxt-module/issues/259), [3b5ac5be](https://github.com/components-web-app/cwa-nuxt-module/commit/3b5ac5be))
