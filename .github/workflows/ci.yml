@@ -34,6 +34,9 @@ jobs:
             pnpm: latest
             coverage: true
             lint: true
+          - node: lts/*
+            pnpm: latest
+            e2e: true
       fail-fast: false
     steps:
       - name: Checkout
@@ -84,13 +87,36 @@ jobs:
         env:
           CI: true
 
-      - name: Install Chromium for the admin browser tests
-        if: matrix.lint
-        run: pnpm exec playwright-core install --with-deps chromium
+      - name: Read the Playwright version
+        if: matrix.e2e
+        id: playwright
+        run: echo "version=$(node -p "require('playwright-core/package.json').version")" >> "$GITHUB_OUTPUT"
 
-      - name: Admin browser tests
-        if: matrix.lint
-        run: node test/e2e/admin-clone.mjs
+      - name: Cache Chromium headless shell
+        if: matrix.e2e
+        id: playwright-cache
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: chromium-headless-shell-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+
+      - name: Install Chromium headless shell
+        if: matrix.e2e && steps.playwright-cache.outputs.cache-hit != 'true'
+        run: pnpm exec playwright-core install --only-shell chromium
+
+      - name: E2E guards and admin browser tests
+        if: matrix.e2e
+        run: pnpm run test:e2e:guards
+        env:
+          E2E_SHOTS: ${{ runner.temp }}/admin-e2e-screenshots
+
+      - name: Upload admin browser test screenshots
+        if: failure() && matrix.e2e
+        uses: actions/upload-artifact@v6
+        with:
+          name: admin-e2e-screenshots
+          path: ${{ runner.temp }}/admin-e2e-screenshots
+          if-no-files-found: ignore
 
       - name: Upload test artifacts
         if: matrix.coverage
