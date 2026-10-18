@@ -19,6 +19,7 @@ vi.mock('./getter-utils', () => {
       return {
         resourcesApiStateIsPending: vi.fn(),
         totalResourcesPending: vi.fn(),
+        currentResourcesPending: vi.fn(),
       }
     }),
   }
@@ -129,18 +130,11 @@ describe('ResourcesStore Getters -> currentResourcesApiStateIsPending', () => {
     vi.clearAllMocks()
   })
 
-  test('Returns the result of utils resourcesApiStateIsPending with current ids', () => {
-    state.current.byId = {
-      id: {},
-    }
-    vi.spyOn(ResourcesGetterUtils.mock.results[0].value, 'resourcesApiStateIsPending').mockImplementationOnce(() => {
-      return false
-    })
-    const result = getterFns.currentResourcesApiStateIsPending.value
-    const spy = ResourcesGetterUtils.mock.results[0].value.resourcesApiStateIsPending
-    expect(result).toBe(spy.mock.results[0].value)
+  test.each([false, true])('returns %s from the utils\' check of the current resources only (#259)', (pending) => {
+    const spy = vi.spyOn(ResourcesGetterUtils.mock.results[0].value, 'currentResourcesPending', 'get').mockImplementationOnce(() => pending)
+    expect(getterFns.currentResourcesApiStateIsPending.value).toBe(pending)
     expect(spy).toHaveBeenCalledOnce()
-    expect(spy).toHaveBeenCalledWith(['id'])
+    expect(ResourcesGetterUtils.mock.results[0].value.resourcesApiStateIsPending).not.toHaveBeenCalled()
   })
 })
 

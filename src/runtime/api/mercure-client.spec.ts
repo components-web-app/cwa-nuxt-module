@@ -3,7 +3,7 @@ import { beforeEach, beforeAll, describe, expect, test, vi } from 'vitest'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { consola as logger } from 'consola'
-import { computed, reactive } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { flushPromises } from '@vue/test-utils'
 import { MercureStore } from '../storage/stores/mercure/mercure-store'
 import { ResourcesStore } from '../storage/stores/resources/resources-store'
@@ -398,6 +398,60 @@ describe('Mercure -> handleMercureMessage', () => {
     current.byId.id.apiState.status = CwaResourceApiStatuses.SUCCESS
     await flushPromises()
     expect(mercure.processMessageQueue).toHaveBeenCalledTimes(1)
+  })
+
+  describe('while a resource that is not on screen is in progress (#259)', () => {
+    function setupWithOffScreenInProgress() {
+      const current = {
+        byId: {
+          '/component/on-screen': { apiState: { status: CwaResourceApiStatuses.SUCCESS }, data: { '@id': '/component/on-screen' } },
+          '/component/off-screen': { apiState: { status: CwaResourceApiStatuses.IN_PROGRESS }, data: { '@id': '/component/off-screen' } },
+        },
+        allIds: ['/component/on-screen', '/component/off-screen'],
+        currentIds: ['/component/on-screen'],
+      }
+      setActivePinia(createTestingPinia({
+        createSpy: vi.fn,
+        initialState: {
+          'storeName.mercure': { hub: 'http://hub-url' },
+          'storeName.resources': { current },
+        },
+      }))
+      initMercure()
+    }
+
+    function messageFor(iri: string) {
+      const event = new MessageEvent()
+      event.data = JSON.stringify({ '@id': iri })
+      return event
+    }
+
+    test('a message received while only an off-screen resource is in progress is processed immediately', () => {
+      setupWithOffScreenInProgress()
+      mercure.handleMercureMessage(messageFor('/component/on-screen'))
+      expect(mercure.addMercureMessageToQueue).toHaveBeenCalledOnce()
+      expect(mercure.processMessageQueue).toHaveBeenCalledOnce()
+    })
+
+    test('a message for the off-screen resource itself is still dropped', () => {
+      setupWithOffScreenInProgress()
+      vi.mocked(mercure.isMessageForCurrentResource).mockRestore()
+      mercure.handleMercureMessage(messageFor('/component/off-screen'))
+      expect(mercure.addMercureMessageToQueue).not.toHaveBeenCalled()
+      expect(mercure.processMessageQueue).not.toHaveBeenCalled()
+    })
+
+    test('a message still waits for the resources manager\'s requests in progress', async () => {
+      setupWithOffScreenInProgress()
+      const requestCount = ref(1)
+      mercure.setRequestCount(computed(() => requestCount.value))
+      mercure.handleMercureMessage(messageFor('/component/on-screen'))
+      expect(mercure.addMercureMessageToQueue).toHaveBeenCalledOnce()
+      expect(mercure.processMessageQueue).not.toHaveBeenCalled()
+      requestCount.value = 0
+      await flushPromises()
+      expect(mercure.processMessageQueue).toHaveBeenCalledOnce()
+    })
   })
 })
 

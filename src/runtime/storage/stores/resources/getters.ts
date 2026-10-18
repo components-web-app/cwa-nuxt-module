@@ -291,9 +291,7 @@ export default function (resourcesState: CwaResourcesStateInterface): CwaResourc
       return resources
     }),
     totalResourcesPending: computed<number>(() => utils.totalResourcesPending),
-    currentResourcesApiStateIsPending: computed<boolean>(() => {
-      return utils.resourcesApiStateIsPending(Object.keys(resourcesState.current.byId))
-    }),
+    currentResourcesApiStateIsPending: computed<boolean>(() => utils.currentResourcesPending),
     resourcesApiStateIsPending: computed(() => {
       return (resources: string[]) => utils.resourcesApiStateIsPending(resources)
     }),
