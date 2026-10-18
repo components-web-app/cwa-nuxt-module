@@ -11,6 +11,7 @@ import state, { CwaResourceApiStatuses } from './state'
 import getters from './getters'
 import * as app from 'nuxt/app'
 import { createError } from 'h3'
+import { toRaw } from 'vue'
 import * as processComposables from '../../../composables/process'
 
 vi.mock('../../../resources/resource-utils', async (importOriginal) => {
@@ -1114,6 +1115,68 @@ describe('resources action -> clearResources', () => {
     expect(resourcesState.current.positionsByComponent).toEqual({})
     expect(resourcesState.new.byId).toEqual({})
     expect(resourcesState.new.allIds).toEqual([])
+  })
+})
+
+describe('resources action -> saveResource drops the embedded JSON-LD context (#259)', () => {
+  function apiResource() {
+    return {
+      '@context': '/_api/contexts/HeroSection',
+      '@id': '/component/hero_sections/1',
+      '@type': 'HeroSection',
+      'title': 'Hero',
+      '_metadata': {
+        '@context': { '@vocab': '/_api/docs.jsonld#', 'hydra': 'http://www.w3.org/ns/hydra/core#' },
+        '@type': 'ComponentMetadata',
+        '@id': '/.well-known/genid/1',
+        'persisted': true,
+        'publishable': { published: true, publishedAt: null },
+      },
+    }
+  }
+  const expectedMetadata = {
+    '@type': 'ComponentMetadata',
+    '@id': '/.well-known/genid/1',
+    'persisted': true,
+    'publishable': { published: true, publishedAt: null },
+  }
+
+  function setup() {
+    const resourcesState = state()
+    const resourcesActions = actions(resourcesState, getters(resourcesState))
+    return { resourcesState, resourcesActions }
+  }
+
+  test('a saved resource keeps every _metadata field but @context, and its own top-level @context', () => {
+    const { resourcesState, resourcesActions } = setup()
+    resourcesActions.saveResource({ resource: apiResource() })
+    const saved = resourcesState.current.byId['/component/hero_sections/1']?.data
+    expect(saved?._metadata).toStrictEqual(expectedMetadata)
+    expect(saved?.['@context']).toBe('/_api/contexts/HeroSection')
+    expect(saved?.title).toBe('Hero')
+  })
+
+  test('a resource staged as new, as Mercure and revalidation save it, is staged and merged without its _metadata @context', () => {
+    const { resourcesState, resourcesActions } = setup()
+    resourcesActions.saveResource({ resource: apiResource(), isNew: true, path: '/' })
+    expect(resourcesState.new.byId['/component/hero_sections/1']?.resource._metadata).toStrictEqual(expectedMetadata)
+    resourcesActions.mergeNewResources()
+    expect(resourcesState.current.byId['/component/hero_sections/1']?.data?._metadata).toStrictEqual(expectedMetadata)
+  })
+
+  test('the object the caller passed is left unchanged', () => {
+    const { resourcesActions } = setup()
+    const resource = apiResource()
+    resourcesActions.saveResource({ resource })
+    resourcesActions.saveResource({ resource, isNew: true, path: '/' })
+    expect(resource).toStrictEqual(apiResource())
+  })
+
+  test('a resource with no embedded context is stored as given', () => {
+    const { resourcesState, resourcesActions } = setup()
+    const resource = { '@id': '/component/hero_sections/2', '@type': 'HeroSection', '_metadata': { persisted: true } }
+    resourcesActions.saveResource({ resource })
+    expect(toRaw(resourcesState.current.byId['/component/hero_sections/2']?.data)).toBe(resource)
   })
 })
 

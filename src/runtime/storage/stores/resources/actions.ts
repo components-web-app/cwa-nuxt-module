@@ -261,7 +261,16 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
     }
   }
 
-  function saveResource(event: SaveResourceEvent | SaveNewResourceEvent): void {
+  function withoutMetadataContext(resource: CwaResource): CwaResource {
+    if (!resource._metadata || !('@context' in resource._metadata)) {
+      return resource
+    }
+    const { '@context': _context, ...metadata } = resource._metadata
+    return { ...resource, _metadata: metadata }
+  }
+
+  function saveResource(saveEvent: SaveResourceEvent | SaveNewResourceEvent): void {
+    const event = { ...saveEvent, resource: withoutMetadataContext(saveEvent.resource) }
     const clearExistingNewResource = () => {
       // todo: test we clear off any pending new resources awaiting merge
       const allIdsIndex = resourcesState.new.allIds.indexOf(iri)
