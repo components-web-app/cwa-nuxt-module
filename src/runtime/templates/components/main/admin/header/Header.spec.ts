@@ -541,6 +541,25 @@ describe('Header', () => {
       expect(bar.parentElement!.querySelector('.toggle-stub')).not.toBeNull()
     })
 
+    test.each([
+      ['an error page', () => {
+        errorRef.value = { statusCode: 404 }
+      }],
+      ['an admin page', () => {
+        mockRouteMeta.cwa = { admin: true }
+      }],
+    ])('on %s, reached with Enable Navigation on, the Cloning bar and its Cancel still show while clone mode is on', async (_label, arrive) => {
+      arrive()
+      const { cwa } = mockCwa({ admin: buildAdmin({ isEditing: true }) })
+      useCloneMode(cwa).start(SOURCE_IRI, 'Hero text')
+      const wrapper = mountHeader()
+      await flushPromises()
+      const bar = wrapper.find('[data-testid="clone-mode-bar"]')
+      expect(bar.exists()).toBe(true)
+      await bar.find('button').trigger('click')
+      expect(useCloneMode(cwa).source.value).toBeUndefined()
+    })
+
     test('mounts the clone highlight only while cloning', async () => {
       const { cwa } = mockCwa({ admin: buildAdmin({ isEditing: true }) })
       const wrapper = mountHeader()

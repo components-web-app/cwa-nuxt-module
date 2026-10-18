@@ -112,8 +112,8 @@
               v-model="isNavEnabled"
               label="Enable Navigation"
             />
-            <CloneModeBar />
           </template>
+          <CloneModeBar />
         </div>
         <div
           v-if="$cwa.admin.isEditing"

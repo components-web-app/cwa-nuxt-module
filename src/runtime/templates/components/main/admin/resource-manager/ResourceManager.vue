@@ -62,6 +62,11 @@ function openContext({ top, left }: ContextPosition) {
 }
 
 function contextMenuHandler(e: MouseEvent, type: 'page' | 'layout') {
+  if (cloneMode.source.value) {
+    isOpen.value = false
+    $cwa.admin.resourceStackManager.resetStack(true)
+    return
+  }
   const pos: ContextPosition = {
     top: e.clientY,
     left: e.clientX,
@@ -104,26 +109,20 @@ async function chooseCloneTarget(type: 'page' | 'layout') {
   if ($cwa.admin.navigationGuardDisabled || !stack.length) {
     return
   }
-  if (await confirmScopeChange(type)) {
+  if (await confirmScopeChange(type) && cloneMode.source.value) {
     cloneTarget.value = { stack, type }
   }
 }
 
 async function confirmScopeChange(type: 'page' | 'layout') {
-  const isEditingLayout = $cwa.admin.resourceStackManager.isEditingLayout
-  const toLayout = type === 'layout'
-  if (isEditingLayout.value === toLayout) {
+  if ($cwa.admin.resourceStackManager.isEditingLayout.value === (type === 'layout')) {
     return true
   }
   const { default: ConfirmDialog } = await import('#cwa/templates/components/core/ConfirmDialog.vue')
   const { createConfirmDialog } = await import('#cwa/admin/confirm-dialog')
   const dialog = await createConfirmDialog(vueApp, ConfirmDialog)
   const { isCanceled } = await dialog.reveal({ title: 'Are you sure?', content: `<p>Are you sure you want to switch and edit the ${type}?</p>` })
-  if (isCanceled) {
-    return false
-  }
-  isEditingLayout.value = toLayout
-  return true
+  return !isCanceled
 }
 
 function completeStack(e: MouseEvent, type: undefined | 'page' | 'layout', isContext: boolean = false) {

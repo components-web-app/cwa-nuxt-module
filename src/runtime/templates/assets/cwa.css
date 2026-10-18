@@ -199,9 +199,6 @@
 .cwa\:left-2 {
   left: calc(var(--cwa-spacing) * 2);
 }
-.cwa\:left-4 {
-  left: calc(var(--cwa-spacing) * 4);
-}
 .cwa\:-z-10 {
   z-index: calc(10 * -1);
 }

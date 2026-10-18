@@ -312,10 +312,6 @@ export default class ResourceStackManager {
   private finishStack(isContext: boolean) {
     this.filterDisabledStackItems(isContext)
     this.getCurrentTarget(isContext).value = null
-
-    if (this.currentResourceStack.value.length === 0) {
-      this.previousResourceStack.value = []
-    }
   }
 
   public isComponentGroupDisabled(iri: string, location?: string): boolean {

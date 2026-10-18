@@ -62,6 +62,7 @@ function makeStackManager(overrides: Record<string, any> = {}) {
     completeStack: vi.fn(),
     selectStackIndex: vi.fn(),
     restorePreviousStack: vi.fn(),
+    resetStack: vi.fn(),
     isEditingLayout: ref(false),
     resourceStack: ref<{ iri: string }[]>([]),
     resetTabs: vi.fn(),
@@ -274,14 +275,14 @@ describe('ResourceManager', () => {
       return { wrapper, stackManager }
     }
 
-    test('in clone mode a click opens the clone target dialog instead of selecting, keeping the selection', async () => {
+    test('in clone mode a click opens the clone target dialog instead of selecting, keeping the selection and the scope until a target is chosen, so the dialog can warn about the scope and a Cancel there leaves it unswitched', async () => {
       const { wrapper, stackManager } = await clickInCloneMode()
 
       expect(stackManager.completeStack).toHaveBeenCalledWith({ clickTarget: expect.any(HTMLElement) }, false, 'layout')
       expect(stackManager.selectStackIndex).not.toHaveBeenCalled()
       expect(stackManager.restorePreviousStack).toHaveBeenCalled()
       expect(confirmState.reveal).toHaveBeenCalledWith(expect.objectContaining({ content: expect.stringContaining('switch and edit the layout') }))
-      expect(stackManager.isEditingLayout.value).toBe(true)
+      expect(stackManager.isEditingLayout.value).toBe(false)
       const dialog = wrapper.findComponent({ name: 'CloneTargetDialog' })
       expect(dialog.exists()).toBe(true)
       expect(dialog.props()).toEqual({ stack: clonedStack, type: 'layout' })
@@ -307,6 +308,22 @@ describe('ResourceManager', () => {
       expect(stackManager.isEditingLayout.value).toBe(false)
       expect(stackManager.selectStackIndex).not.toHaveBeenCalled()
       expect(wrapper.findComponent({ name: 'CloneTargetDialog' }).exists()).toBe(false)
+    })
+
+    test('in clone mode a scope confirm answered Ok after clone mode ended opens no target dialog', async () => {
+      let answer!: (value: { isCanceled: boolean }) => void
+      confirmState.reveal.mockImplementationOnce(() => new Promise((resolve) => {
+        answer = resolve
+      }))
+      const { wrapper, stackManager } = await clickInCloneMode()
+      expect(confirmState.reveal).toHaveBeenCalled()
+
+      useCloneMode(cwaState.cwa as Cwa).end()
+      answer({ isCanceled: false })
+      await flushPromises()
+
+      expect(wrapper.findComponent({ name: 'CloneTargetDialog' }).exists()).toBe(false)
+      expect(stackManager.isEditingLayout.value).toBe(false)
     })
 
     test('in clone mode with navigation enabled a click only navigates: no selection, confirm or dialog', async () => {
@@ -390,6 +407,26 @@ describe('ResourceManager', () => {
       const evt2 = { clientX: 22, clientY: 31, preventDefault: vi.fn(), target: document.createElement('div') } as unknown as MouseEvent
       ;(wrapper.vm as any).contextMenuHandler(evt2, 'page')
       await nextTick()
+      expect(wrapper.findComponent({ name: 'CwaAdminResourceManagerContextMenu' }).props('modelValue')).toBe(false)
+    })
+  })
+
+  describe('contextMenuHandler in clone mode', () => {
+    test.each([false, true])('a right-click never selects or opens the CWA menu, and leaves the browser menu (navigation enabled: %s)', async (navigationGuardDisabled) => {
+      const stackManager = makeStackManager({ isContextPopulating: ref(true) })
+      cwaState.cwa = makeCwa({ isEditing: true, hasRole: true, stackManager, navigationGuardDisabled })
+      useCloneMode(cwaState.cwa as Cwa).start('/component/source', 'Source')
+      const wrapper = await mountManager()
+
+      const preventDefault = vi.fn()
+      const evt = { clientX: 20, clientY: 30, preventDefault, target: document.createElement('div') } as unknown as MouseEvent
+      ;(wrapper.vm as any).contextMenuHandler(evt, 'layout')
+      await nextTick()
+
+      expect(preventDefault).not.toHaveBeenCalled()
+      expect(stackManager.completeStack).not.toHaveBeenCalled()
+      expect(stackManager.resetStack).toHaveBeenCalledWith(true)
+      expect(stackManager.selectStackIndex).not.toHaveBeenCalled()
       expect(wrapper.findComponent({ name: 'CwaAdminResourceManagerContextMenu' }).props('modelValue')).toBe(false)
     })
   })

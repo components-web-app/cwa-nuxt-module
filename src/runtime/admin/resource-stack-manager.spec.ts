@@ -1180,5 +1180,18 @@ describe('Resource Manager', () => {
       expect((manager as any).currentResourceStack.value).toBe(previous)
       expect(manager.isPopulating.value).toBe(false)
     })
+
+    test('restorePreviousStack keeps the selection after a click that hits no resource (empty space, or a link outside any resource)', () => {
+      const { manager } = createResourceManager({ state: reactive({ isEditing: true }) })
+      const selected = [{ iri: '/component/selected', domElements: ref([]), childIris: ref([]) }]
+      ;(manager as any).currentResourceStack.value = selected
+
+      manager.completeStack({ clickTarget: document.createElement('div') }, false, 'page')
+      expect(manager.resourceStack.value).toEqual([])
+
+      manager.restorePreviousStack()
+
+      expect(manager.resourceStack.value).toBe(selected)
+    })
   })
 })
