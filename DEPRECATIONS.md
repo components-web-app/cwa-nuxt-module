@@ -158,25 +158,19 @@ lowering the audit level, so any new advisory still fails CI.
 
 ---
 
-## Remove when `@nuxt/devtools` and `@tailwindcss/typography` take the fixed majors
+## Remove when `@tailwindcss/typography` takes the fixed major
 
-### More ignored audit advisories in `pnpm-workspace.yaml`
+### One more ignored audit advisory in `pnpm-workspace.yaml`
 
-These have patched releases, but only in a major the package that pins them
-cannot load:
+It has a patched release, but only in a major the package that pins it cannot
+load:
 
-- `GHSA-v5rq-49vh-5v5c`, `GHSA-x6jw-m9v5-85vh`, `GHSA-g4wm-2vf7-vfgr`,
-  `GHSA-858h-whjf-mvg5`: simple-git 3.36.0 and `@simple-git/argv-parser` 1.x.
-  Fixed only in simple-git 4, which dropped the default export that
-  `@nuxt/devtools` 3.4.2 imports, so an override breaks `dev:prepare`. Reached
-  only through devtools, which runs in development only.
 - `GHSA-rj75-hqrm-r3gf`: postcss-selector-parser 6.0.10, pinned exactly by
   `@tailwindcss/typography` 0.5.20 (the playground's dependency). The 7.x copies
   are overridden to `^7.1.6`.
 
-**Delete:** the IDs, once `@nuxt/devtools` depends on simple-git ≥ 4.0.1 and
-`@tailwindcss/typography` on postcss-selector-parser ≥ 7.1.6; check with
-`pnpm audit` after removing them.
+**Delete:** the ID, once `@tailwindcss/typography` depends on
+postcss-selector-parser ≥ 7.1.6; check with `pnpm audit` after removing it.
 
 ---
 
