@@ -4,9 +4,11 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+## [2.0.0-alpha.21] - 2026-10-18
+
 - Dependencies updated to Nuxt 4.6.2 and Vue 3.5.44; `@nuxt/kit` and `@nuxt/schema` still accept 4.6.0 or later ([4eb12643](https://github.com/components-web-app/cwa-nuxt-module/commit/4eb12643))
-- **For api-components-bundle (next alpha, 2.0.0-alpha.27, [#492](https://github.com/components-web-app/api-components-bundle/issues/492)); also safe with older bundles.** A visitor sees a component appear live when it is published into a static position: the position's Mercure update now also fetches the component it points to ([#402](https://github.com/components-web-app/cwa-nuxt-module/pull/402))
-- A browser whose admin session expires during a navigation reconnects Mercure, so it no longer keeps a connection authorised with the admin's grants while signed out. Safe with any bundle version; the full fix needs the api-components-bundle release that expires the Mercure cookie on logout and on a failed `/me` (until then the reconnect re-sends the same cookie, so nothing gets worse) ([api-components-bundle#494](https://github.com/components-web-app/api-components-bundle/issues/494), [be1d52e9](https://github.com/components-web-app/cwa-nuxt-module/commit/be1d52e9))
+- **For api-components-bundle [2.0.0-alpha.27](https://github.com/components-web-app/api-components-bundle/releases/tag/2.0.0-alpha.27) ([#492](https://github.com/components-web-app/api-components-bundle/issues/492)); also safe with older bundles.** A visitor sees a component appear live when it is published into a static position: the position's Mercure update now also fetches the component it points to ([#402](https://github.com/components-web-app/cwa-nuxt-module/pull/402))
+- A browser whose admin session expires during a navigation reconnects Mercure, so it no longer keeps a connection authorised with the admin's grants while signed out. Safe with any bundle version; the full fix needs api-components-bundle [2.0.0-alpha.27](https://github.com/components-web-app/api-components-bundle/releases/tag/2.0.0-alpha.27), which expires the Mercure cookie on logout and on a failed `/me` (with an older bundle the reconnect re-sends the same cookie, so nothing gets worse) ([api-components-bundle#494](https://github.com/components-web-app/api-components-bundle/issues/494), [be1d52e9](https://github.com/components-web-app/cwa-nuxt-module/commit/be1d52e9))
 
 ## [2.0.0-alpha.20] - 2026-10-17
 
@@ -143,7 +145,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 - First tagged release of `@cwa/nuxt`; releases are now published from `v*` tags ([7c61b7c](https://github.com/components-web-app/cwa-nuxt-module/commit/7c61b7ce331ec4a0cb8e76951a5de2ff806ed07a))
 
-[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.20...HEAD
+[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.21...HEAD
+[2.0.0-alpha.21]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.20...v2.0.0-alpha.21
 [2.0.0-alpha.20]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.19...v2.0.0-alpha.20
 [2.0.0-alpha.19]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.18...v2.0.0-alpha.19
 [2.0.0-alpha.18]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.17...v2.0.0-alpha.18
