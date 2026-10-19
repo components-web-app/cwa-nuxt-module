@@ -1,11 +1,12 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, test, vi } from 'vitest'
-import { computed, reactive } from 'vue'
+import { computed, nextTick, reactive, ref } from 'vue'
 import { ResourceTypeFromIri } from '../resources/resource-utils'
 import { ErrorType } from '../storage/stores/error/state'
 import type { CwaErrorEvent } from '../storage/stores/error/state'
 import { useCloneMode } from './clone-mode'
 import { cloneComponent, moveComponent } from './clone-component'
+import { registerInstance } from './manageable-instances'
 import type Cwa from '#cwa/cwa'
 
 const DRAFT_IRI = '/component/html_contents/draft-uuid'
@@ -26,6 +27,7 @@ function buildCwa(ops: { published?: Record<string, string | undefined>, pageDat
   const admin = reactive({
     isEditing: true,
     setNavigationGuardDisabled: vi.fn(),
+    eventBus: { emit: vi.fn() },
   })
   const auth = reactive({ user: { '@id': '/_/users/admin' } as Record<string, any> | undefined })
   const resourcesManager = {
@@ -65,10 +67,11 @@ function buildCwa(ops: { published?: Record<string, string | undefined>, pageDat
     getResource: vi.fn((iri: string) => computed(() => iri === SOURCE_POSITION_IRI ? { data: { componentGroup: ops.sourceGroup ?? SOURCE_GROUP_IRI } } : undefined)),
     findPublishedComponentIri: vi.fn((iri: string) => computed(() => ops.published ? ops.published[iri] : iri)),
     pageDataIriOf: vi.fn((iri: string) => computed(() => (ops.pageData ?? { [DYNAMIC_POSITION_IRI]: PAGE_DATA_IRI })[iri])),
+    findAllPublishableIris: vi.fn((iri: string) => [iri]),
   }
   const $cwa = { admin, auth, resourcesManager, resources } as unknown as Cwa
   cwas.push($cwa)
-  return { $cwa, resourcesManager, resources, errors, order }
+  return { $cwa, admin, resourcesManager, resources, errors, order }
 }
 
 function failWith(errors: CwaErrorEvent[], endpoint: string, statusCode: number, detail: string) {
@@ -370,5 +373,69 @@ describe('moveComponent', () => {
     expect(result).toBe('source-gone')
     expect(errors.map(error => error.detail)).toEqual(['The component being moved no longer exists'])
     expect(useCloneMode($cwa).source.value).toBeUndefined()
+  })
+})
+
+describe('showing what was placed', () => {
+  afterEach(() => {
+    cwas.forEach($cwa => useCloneMode($cwa).end())
+    cwas.length = 0
+    vi.useRealTimers()
+  })
+
+  async function shown($cwa: Cwa, positionIri: string) {
+    registerInstance($cwa, positionIri, ref([document.createElement('div')]))
+    await nextTick()
+  }
+
+  test.each([
+    ['a clone into a group', () => ({ sourceIri: PUBLISHED_IRI, target: { kind: 'position', groupIri: GROUP_IRI, anchor: {} } }), CREATED_POSITION['@id']],
+    ['a clone into a page-data slot', () => ({ sourceIri: PUBLISHED_IRI, target: { kind: 'page-data', positionIri: DYNAMIC_POSITION_IRI, property: 'heroComponent' } }), DYNAMIC_POSITION_IRI],
+  ] as const)('%s flashes and, once it is on screen, selects the new instance', async (_label, args, placedIri) => {
+    const { $cwa, admin } = buildCwa()
+    useCloneMode($cwa).start(PUBLISHED_IRI, 'Hero')
+    expect(await cloneComponent($cwa, args() as any)).toBe('added')
+    expect(useCloneMode($cwa).placed.value).toBe(placedIri)
+    await nextTick()
+    expect(admin.eventBus.emit).not.toHaveBeenCalled()
+    await shown($cwa, placedIri)
+    expect(admin.eventBus.emit).toHaveBeenCalledTimes(1)
+    expect(admin.eventBus.emit).toHaveBeenCalledWith('selectResource', placedIri)
+    await shown($cwa, '/_/component_positions/later')
+    await shown($cwa, placedIri)
+    expect(admin.eventBus.emit).toHaveBeenCalledTimes(1)
+  })
+
+  test('a move flashes and selects the moved position, which is already on screen', async () => {
+    const { $cwa, admin } = buildCwa()
+    registerInstance($cwa, SOURCE_POSITION_IRI, ref([document.createElement('div')]))
+    useCloneMode($cwa).start(PUBLISHED_IRI, 'Hero', { positionIri: SOURCE_POSITION_IRI, fromLayout: false })
+    expect(await moveComponent($cwa, { positionIri: SOURCE_POSITION_IRI, target: { kind: 'position', groupIri: GROUP_IRI, anchor: {} } })).toBe('added')
+    expect(useCloneMode($cwa).placed.value).toBe(SOURCE_POSITION_IRI)
+    await nextTick()
+    expect(admin.eventBus.emit).toHaveBeenCalledWith('selectResource', SOURCE_POSITION_IRI)
+  })
+
+  test('selects nothing when the placed instance never appears', async () => {
+    vi.useFakeTimers()
+    const { $cwa, admin } = buildCwa()
+    await cloneComponent($cwa, { sourceIri: PUBLISHED_IRI, target: { kind: 'position', groupIri: GROUP_IRI, anchor: {} } })
+    await nextTick()
+    vi.advanceTimersByTime(5000)
+    await shown($cwa, CREATED_POSITION['@id'])
+    expect(admin.eventBus.emit).not.toHaveBeenCalled()
+  })
+
+  test('a refused or source-gone write places and selects nothing', async () => {
+    const { $cwa, admin, resourcesManager, errors } = buildCwa()
+    resourcesManager.createResource.mockImplementationOnce(failWith(errors, '/_/component_positions', 422, 'Refused'))
+    resourcesManager.createResource.mockImplementationOnce(failWith(errors, '/_/component_positions', 404, 'Not Found'))
+    for (const outcome of ['refused', 'source-gone']) {
+      useCloneMode($cwa).start(PUBLISHED_IRI, 'Hero')
+      expect(await cloneComponent($cwa, { sourceIri: PUBLISHED_IRI, target: { kind: 'position', groupIri: GROUP_IRI, anchor: {} } })).toBe(outcome)
+    }
+    await shown($cwa, CREATED_POSITION['@id'])
+    expect(useCloneMode($cwa).placed.value).toBeUndefined()
+    expect(admin.eventBus.emit).not.toHaveBeenCalled()
   })
 })

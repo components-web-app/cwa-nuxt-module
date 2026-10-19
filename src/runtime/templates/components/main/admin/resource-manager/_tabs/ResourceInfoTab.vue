@@ -52,10 +52,13 @@ function removeFromLocation(positionIri: string, groupIri?: string) {
       refreshEndpoints: [positionIri],
     })
   }
-  return $cwa.resourcesManager.deleteResource({
+  if (!groupIri) {
+    return $cwa.resourcesManager.deleteResource({ endpoint: positionIri, refreshEndpoints: [] }, true)
+  }
+  return $cwa.resourcesManager.queueComponentGroupWrite(groupIri, () => $cwa.resourcesManager.deleteResource({
     endpoint: positionIri,
-    refreshEndpoints: groupIri ? [groupIri] : [],
-  }, true)
+    refreshEndpoints: [groupIri],
+  }, true))
 }
 
 async function deleteSelected(componentIri: string) {

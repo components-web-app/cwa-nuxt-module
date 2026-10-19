@@ -13,6 +13,7 @@ export interface CloneTargetOption {
   value: CloneTarget
   disabled: boolean
   reasons: string[]
+  warning?: string
 }
 
 export interface CloneTargetOptionsInput {
@@ -25,6 +26,7 @@ export interface CloneTargetOptionsInput {
   isEditingLayout: boolean
   type: CloneScope
   move?: CloneMove
+  resourcesConfig?: Record<string, { name?: string } | undefined>
 }
 
 export interface CloneTargetOptions {
@@ -44,6 +46,10 @@ function resolveSourceType({ sourceIri, sourceType, componentMetadata }: CloneTa
   }
   const path = withoutPrefix(sourceIri)
   return Object.keys(componentMetadata).find(name => path.startsWith(`${componentMetadata[name]!.endpoint}/`))
+}
+
+function displayName(input: CloneTargetOptionsInput, type: string) {
+  return input.resourcesConfig?.[type]?.name || type
 }
 
 function indexOfType(stack: { iri: string }[], type: CwaResourceTypes) {
@@ -74,7 +80,7 @@ function groupReasons(input: CloneTargetOptionsInput, groupIndex: number, typeNa
   else {
     const allowed: string[] | null | undefined = group?.allowedComponents
     if (!isComponentAllowedInGroup(meta, allowed?.map(withoutPrefix))) {
-      reasons.push(`This group does not allow ${typeName}`)
+      reasons.push(`This group does not allow ${displayName(input, typeName!)}`)
     }
   }
   if (isInsideSource(input, groupIndex)) {
@@ -149,12 +155,39 @@ function pageDataOptions(input: CloneTargetOptionsInput, typeName: string | unde
     return [option('Use here', { kind: 'page-data', positionIri, property }, ['Moving into a page-data slot is not supported yet'])]
   }
   if (!typeName || fieldType !== typeName) {
-    reasons.push(`This field takes ${fieldType ?? 'another type'}, not ${typeName ?? 'this component'}`)
+    reasons.push(`This field takes ${fieldType ? displayName(input, fieldType) : 'another type'}, not ${typeName ? displayName(input, typeName) : 'this component'}`)
   }
   if (isInsideSource(input, positionIndex)) {
     reasons.push(insideSourceReason(input))
   }
-  return [option('Use here', { kind: 'page-data', positionIri, property }, reasons)]
+  const useHere = option('Use here', { kind: 'page-data', positionIri, property }, reasons)
+  const warning = pageDataIri ? replaceWarning(input, input.resources.getResource(pageDataIri).value?.data?.[property]) : undefined
+  return [warning ? { ...useHere, warning } : useHere]
+}
+
+function replaceWarning(input: CloneTargetOptionsInput, occupantIri: unknown) {
+  if (typeof occupantIri !== 'string' || !occupantIri || [input.sourceIri, ...input.resources.findAllPublishableIris(input.sourceIri)].includes(occupantIri)) {
+    return
+  }
+  const type: string | undefined = input.resources.getResource(occupantIri).value?.data?.['@type']
+  return `This replaces ${type ? displayName(input, type) : 'another component'}`
+}
+
+export function sharedReasons(options: CloneTargetOption[]): string[] {
+  const [first, ...rest] = options
+  if (!first) {
+    return []
+  }
+  return first.reasons.filter(reason => rest.every(item => item.reasons.includes(reason)))
+}
+
+export function cloneAnchorIndex(stack: { iri: string }[]): number | undefined {
+  const groupIndex = indexOfType(stack, CwaResourceTypes.COMPONENT_GROUP)
+  if (groupIndex === -1) {
+    return
+  }
+  const positionIndex = indexOfType(stack.slice(0, groupIndex), CwaResourceTypes.COMPONENT_POSITION)
+  return positionIndex === -1 ? undefined : positionIndex
 }
 
 export function cloneTargetOptions(input: CloneTargetOptionsInput): CloneTargetOptions {

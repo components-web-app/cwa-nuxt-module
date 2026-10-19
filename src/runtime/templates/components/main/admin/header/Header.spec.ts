@@ -529,6 +529,25 @@ describe('Header', () => {
       expect(bar.find('button').text()).toBe('Cancel')
     })
 
+    test.each([
+      ['a clone', undefined, 'Cloning: Body Text — “Shared source component”'],
+      ['a move', { positionIri: '/_/component_positions/p1', fromLayout: false }, 'Moving: Body Text — “Shared source component”'],
+    ] as const)('in %s the bar names the content as well as its type', async (_label, move, expected) => {
+      const { cwa } = mockCwa({ admin: buildAdmin({ isEditing: true }) })
+      useCloneMode(cwa).start(SOURCE_IRI, 'Body Text', move, { excerpt: 'Shared source component' })
+      const wrapper = mountHeader()
+      await flushPromises()
+      expect(wrapper.find('[data-testid="clone-mode-source"]').text()).toBe(expected)
+    })
+
+    test('with no excerpt, as for an image, the bar names only the type', async () => {
+      const { cwa } = mockCwa({ admin: buildAdmin({ isEditing: true }) })
+      useCloneMode(cwa).start(SOURCE_IRI, 'Image')
+      const wrapper = mountHeader()
+      await flushPromises()
+      expect(wrapper.find('[data-testid="clone-mode-source"]').text()).toBe('Cloning: Image')
+    })
+
     test('a move says Moving in the bar', async () => {
       const { cwa } = mockCwa({ admin: buildAdmin({ isEditing: true }) })
       useCloneMode(cwa).start(SOURCE_IRI, 'Hero text', { positionIri: '/_/component_positions/p1', fromLayout: false })
@@ -580,13 +599,21 @@ describe('Header', () => {
       expect(wrapper.find('[data-testid="clone-mode-hint"]').text()).toBe(hint)
     })
 
-    test('mounts the clone highlight only while cloning', async () => {
+    test('mounts the clone highlight only while cloning or flashing what was placed', async () => {
       const { cwa } = mockCwa({ admin: buildAdmin({ isEditing: true }) })
       const wrapper = mountHeader()
       expect(wrapper.findComponent({ name: 'CloneHighlight' }).exists()).toBe(false)
       useCloneMode(cwa).start(SOURCE_IRI, 'Hero text')
       await flushPromises()
       expect(wrapper.findComponent({ name: 'CloneHighlight' }).exists()).toBe(true)
+      useCloneMode(cwa).end()
+      useCloneMode(cwa).showPlaced('/_/component_positions/new')
+      await flushPromises()
+      expect(wrapper.findComponent({ name: 'CloneHighlight' }).exists()).toBe(true)
+      useCloneMode(cwa).start(SOURCE_IRI, 'Hero text')
+      useCloneMode(cwa).end()
+      await flushPromises()
+      expect(wrapper.findComponent({ name: 'CloneHighlight' }).exists()).toBe(false)
     })
 
     test('Cancel in the Cloning bar ends clone mode', async () => {

@@ -1,7 +1,7 @@
 <template>
   <DialogBox
     v-model="open"
-    :title="source?.move ? 'Move Here' : 'Clone Here'"
+    :title="title"
     :buttons="buttons"
     :is-loading="adding"
   >
@@ -12,6 +12,12 @@
     <CwaUiAlertWarning v-else-if="loadError">
       Could not load the available components
     </CwaUiAlertWarning>
+    <p
+      v-else-if="confirming && result?.scope"
+      data-testid="clone-confirm-scope"
+    >
+      {{ confirmMessages[result.scope.type].text }}
+    </p>
     <template v-else-if="result">
       <p
         v-if="scopeNote"
@@ -33,6 +39,18 @@
       >
         A component cannot be added here.
       </p>
+      <ul
+        v-if="shared.length"
+        class="cwa:mb-4 cwa:text-sm cwa:text-stone-300"
+        data-testid="clone-reasons"
+      >
+        <li
+          v-for="reason of shared"
+          :key="reason"
+        >
+          {{ reason }}
+        </li>
+      </ul>
       <div class="cwa:flex cwa:flex-col cwa:gap-y-3">
         <div
           v-for="option of result.options"
@@ -40,19 +58,26 @@
         >
           <button
             type="button"
-            :class="buttonClass"
+            :class="[buttonClass, option.disabled ? disabledButtonClass : enabledButtonClass]"
             :disabled="option.disabled || adding"
             data-testid="clone-option"
             @click="choose(option)"
           >
             {{ option.label }}
           </button>
+          <p
+            v-if="option.warning"
+            class="cwa:mt-1 cwa:text-sm cwa:text-yellow"
+            data-testid="clone-option-warning"
+          >
+            {{ option.warning }}
+          </p>
           <ul
-            v-if="option.reasons.length"
+            v-if="ownReasons(option).length"
             class="cwa:mt-1 cwa:text-sm cwa:text-stone-400"
           >
             <li
-              v-for="reason of option.reasons"
+              v-for="reason of ownReasons(option)"
               :key="reason"
             >
               {{ reason }}
@@ -66,18 +91,25 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, shallowRef, watch } from 'vue'
+import type { Ref } from 'vue'
 import DialogBox from '#cwa/templates/components/core/DialogBox.vue'
 import type { ActionButton } from '#cwa/templates/components/core/DialogBox.vue'
 import Spinner from '#cwa/templates/components/utils/Spinner.vue'
 import { useCwa } from '#cwa/composables/cwa'
-import { useCloneMode } from '#cwa/admin/clone-mode'
+import { excerptOf, useCloneMode } from '#cwa/admin/clone-mode'
 import { cloneComponent, moveComponent } from '#cwa/admin/clone-component'
-import { cloneTargetOptions } from '#cwa/admin/clone-target-options'
+import { cloneAnchorIndex, cloneTargetOptions, sharedReasons } from '#cwa/admin/clone-target-options'
 import type { CloneScope, CloneTargetOption } from '#cwa/admin/clone-target-options'
 import type { ApiDocumentationComponentMetadataCollection } from '#cwa/api/api-documentation'
 
+interface CloneStackItem {
+  iri: string
+  displayName?: string
+  domElements?: Ref<HTMLElement[]>
+}
+
 const props = defineProps<{
-  stack: { iri: string }[]
+  stack: CloneStackItem[]
   type: CloneScope
 }>()
 
@@ -90,7 +122,14 @@ const scopeMessages: Record<CloneScope, string> = {
   page: 'This is in the page: it will not appear on other pages using the layout',
 }
 
-const buttonClass = 'cwa:w-full cwa:rounded-lg cwa:py-3 cwa:px-4 cwa:text-white/70 cwa:bg-stone-800 cwa:enabled:hover:bg-stone-700 cwa:enabled:hover:text-white cwa:transition cwa:border cwa:border-solid cwa:border-stone-700 cwa:cursor-pointer cwa:disabled:cursor-not-allowed cwa:disabled:opacity-50'
+const confirmMessages: Record<CloneScope, { title: string, text: string, button: string }> = {
+  layout: { title: 'Edit the shared layout?', text: 'It will appear on every page that uses this layout.', button: 'Edit layout' },
+  page: { title: 'Edit the page?', text: 'It will appear on this page only, not on other pages using the layout.', button: 'Edit page' },
+}
+
+const buttonClass = 'cwa:w-full cwa:rounded-lg cwa:py-3 cwa:px-4 cwa:transition cwa:border cwa:border-solid'
+const enabledButtonClass = 'cwa:text-white cwa:bg-stone-700 cwa:border-stone-400 cwa:hover:bg-stone-600 cwa:cursor-pointer'
+const disabledButtonClass = 'cwa:text-stone-400 cwa:bg-transparent cwa:border-dashed cwa:border-stone-700 cwa:cursor-not-allowed'
 
 const $cwa = useCwa()
 const { source } = useCloneMode($cwa)
@@ -100,9 +139,8 @@ const open = ref(true)
 const loading = ref(true)
 const loadError = ref(false)
 const adding = ref(false)
+const confirmed = ref(false)
 const componentMetadata = shallowRef<ApiDocumentationComponentMetadataCollection>()
-
-const buttons: ActionButton[] = [{ label: 'Cancel', color: 'grey' }]
 
 const result = computed(() => {
   if (!source.value || !componentMetadata.value) {
@@ -118,7 +156,48 @@ const result = computed(() => {
     isEditingLayout: resourceStackManager.isEditingLayout.value,
     type: props.type,
     move: source.value.move,
+    resourcesConfig: $cwa.resourcesConfig,
   })
+})
+
+const confirming = computed(() => {
+  return !confirmed.value && !!result.value?.scope?.switching && result.value.options.some(option => !option.disabled)
+})
+
+const shared = computed(() => result.value ? sharedReasons(result.value.options) : [])
+
+function ownReasons(option: CloneTargetOption) {
+  return option.reasons.filter(reason => !shared.value.includes(reason))
+}
+
+const anchorName = computed(() => {
+  const index = cloneAnchorIndex(props.stack)
+  if (index === undefined) {
+    return
+  }
+  const position = props.stack[index]!
+  const component = props.stack[index - 1]
+  const excerpt = excerptOf(position.domElements?.value ?? component?.domElements?.value ?? [])
+  return excerpt ? `“${excerpt}”` : component?.displayName
+})
+
+const title = computed(() => {
+  if (confirming.value && result.value?.scope) {
+    return confirmMessages[result.value.scope.type].title
+  }
+  const verb = source.value?.move ? 'Move' : 'Clone'
+  return anchorName.value ? `${verb} next to ${anchorName.value}` : `${verb} Here`
+})
+
+const buttons = computed<ActionButton[]>(() => {
+  const cancel: ActionButton = { label: 'Cancel', color: 'grey' }
+  if (!confirming.value || !result.value?.scope) {
+    return [cancel]
+  }
+  return [
+    { label: confirmMessages[result.value.scope.type].button, color: 'blue', callbackFn: () => (confirmed.value = true) },
+    cancel,
+  ]
 })
 
 const scopeNote = computed(() => {

@@ -152,6 +152,7 @@ const [trigger, container] = usePopper(popperOps.value)
       <PopoverButton
         ref="trigger"
         data-testid="button-options"
+        aria-label="More actions"
         :class="buttonBaseClass"
         class="cwa:relative"
         :disabled="disabled || loading"

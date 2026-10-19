@@ -5,7 +5,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import CloneHighlight from './CloneHighlight.vue'
 import * as cwaComposable from '#cwa/composables/cwa'
 import { registerInstance, unregisterInstance } from '#cwa/admin/manageable-instances'
-import { useCloneMode } from '#cwa/admin/clone-mode'
+import { PLACED_FLASH_MS, useCloneMode } from '#cwa/admin/clone-mode'
 import type Cwa from '#cwa/cwa'
 
 const SOURCE_IRI = '/component/html_contents/source'
@@ -162,6 +162,72 @@ describe('CloneHighlight', () => {
     expect(classes).not.toContain('cwa:outline-green')
     expect(classes).not.toContain('cwa:outline-orange')
     expect(classes).not.toContain('cwa:outline-magenta')
+  })
+
+  test.each([
+    ['a clone', undefined],
+    ['a move', { positionIri: '/_/component_positions/from', fromLayout: false }],
+  ] as const)('in %s the instance the editor started from is outlined solid, the others dashed', async (_label, move) => {
+    const { cwa } = mockCwa()
+    const origin = elementAt({ top: 10, left: 20, right: 120, bottom: 60 })
+    registerInstance(cwa, SOURCE_IRI, ref([elementAt({ top: 300, left: 40, right: 240, bottom: 380 })]))
+    registerInstance(cwa, SOURCE_IRI, ref([origin]))
+    registerInstance(cwa, '/_/component_positions/from', ref([origin]))
+    useCloneMode(cwa).start(SOURCE_IRI, 'Body Text', move, { positionIri: '/_/component_positions/from' })
+
+    const wrapper = mountHighlight()
+    await flushPromises()
+
+    const highlights = wrapper.findAll('[data-testid="clone-highlight"]')
+    expect(highlights).toHaveLength(2)
+    const [other, from] = highlights
+    expect(from!.attributes('style')).toBe('top: 10px; left: 20px; width: 100px; height: 50px;')
+    expect(from!.attributes('data-origin')).toBe('true')
+    expect(from!.classes()).toContain('cwa:outline-solid')
+    expect(from!.classes()).not.toContain('cwa:outline-dashed')
+    expect(other!.attributes('data-origin')).toBeUndefined()
+    expect(other!.classes()).toContain('cwa:outline-dashed')
+    expect(other!.classes()).not.toContain('cwa:outline-solid')
+  })
+
+  test('an instance whose elements sit inside the starting position counts as the one started from', async () => {
+    const { cwa } = mockCwa()
+    const position = elementAt({ top: 10, left: 20, right: 120, bottom: 60 })
+    const inner = document.createElement('p')
+    inner.getBoundingClientRect = vi.fn(() => ({ top: 10, left: 20, right: 120, bottom: 60, width: 100, height: 50 }) as DOMRect)
+    position.appendChild(inner)
+    registerInstance(cwa, SOURCE_IRI, ref([inner]))
+    registerInstance(cwa, '/_/component_positions/from', ref([position]))
+    useCloneMode(cwa).start(SOURCE_IRI, 'Body Text', undefined, { positionIri: '/_/component_positions/from' })
+
+    const wrapper = mountHighlight()
+    await flushPromises()
+
+    expect(wrapper.get('[data-testid="clone-highlight"]').attributes('data-origin')).toBe('true')
+  })
+
+  test('the placed instance flashes after clone mode ends, until the flash is over', async () => {
+    vi.useFakeTimers()
+    try {
+      const { cwa } = mockCwa()
+      registerInstance(cwa, '/_/component_positions/new', ref([elementAt({ top: 5, left: 6, right: 16, bottom: 25 })]))
+      const cloneMode = useCloneMode(cwa)
+      const wrapper = mountHighlight()
+      cloneMode.showPlaced('/_/component_positions/new')
+      await nextTick()
+
+      const placed = wrapper.get('[data-testid="clone-placed"]')
+      expect(placed.attributes('style')).toBe('top: 5px; left: 6px; width: 10px; height: 20px;')
+      expect(placed.classes()).toContain('cwa:animate-clone-placed')
+      expect(wrapper.findAll('[data-testid="clone-highlight"]')).toHaveLength(0)
+
+      vi.advanceTimersByTime(PLACED_FLASH_MS)
+      await nextTick()
+      expect(wrapper.find('[data-testid="clone-placed"]').exists()).toBe(false)
+    }
+    finally {
+      vi.useRealTimers()
+    }
   })
 
   test.each(['redrawFocus', 'resize'])('redraws on %s', async (trigger) => {
