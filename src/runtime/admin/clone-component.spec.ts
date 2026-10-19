@@ -297,6 +297,39 @@ describe('cloneComponent', () => {
   })
 })
 
+describe('cloneComponent when the API refuses the source as an unknown IRI (#411)', () => {
+  afterEach(() => {
+    cwas.forEach($cwa => useCloneMode($cwa).end())
+    cwas.length = 0
+  })
+
+  test.each([
+    ['position', '/_/component_positions', { kind: 'position', groupIri: GROUP_IRI, anchor: {} }, 'createResource'],
+    ['page-data', PAGE_DATA_IRI, { kind: 'page-data', positionIri: DYNAMIC_POSITION_IRI, property: 'heroComponent' }, 'updateResource'],
+  ] as const)('a 400 "Item not found" naming the source shows that it no longer exists and ends clone mode: %s', async (_kind, endpoint, target, request) => {
+    const { $cwa, resourcesManager, errors } = buildCwa()
+    resourcesManager[request].mockImplementationOnce(failWith(errors, endpoint, 400, `Item not found for "${PUBLISHED_IRI}".`))
+    useCloneMode($cwa).start(PUBLISHED_IRI, 'Hero')
+    const result = await cloneComponent($cwa, { sourceIri: PUBLISHED_IRI, target })
+    expect(result).toBe('source-gone')
+    expect(useCloneMode($cwa).source.value).toBeUndefined()
+    expect(errors.map(error => error.detail)).toEqual(['The component being cloned no longer exists'])
+  })
+
+  test.each([
+    ['names another resource', `Item not found for "${GROUP_IRI}".`],
+    ['is another bad request', 'Invalid IRI'],
+  ])('a 400 that %s keeps clone mode on and leaves the API error shown', async (_label, detail) => {
+    const { $cwa, resourcesManager, errors } = buildCwa()
+    resourcesManager.createResource.mockImplementationOnce(failWith(errors, '/_/component_positions', 400, detail))
+    useCloneMode($cwa).start(PUBLISHED_IRI, 'Hero')
+    const result = await cloneComponent($cwa, { sourceIri: PUBLISHED_IRI, target: { kind: 'position', groupIri: GROUP_IRI, anchor: {} } })
+    expect(result).toBe('refused')
+    expect(useCloneMode($cwa).source.value).toBeDefined()
+    expect(errors.map(error => error.detail)).toEqual([detail])
+  })
+})
+
 describe('moveComponent', () => {
   afterEach(() => {
     cwas.forEach($cwa => useCloneMode($cwa).end())

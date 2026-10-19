@@ -22,6 +22,7 @@ interface SentWrite {
   endpoint: string
   request: Promise<unknown>
   placedIri: (result: any) => string | undefined
+  componentIri?: string
 }
 
 function addPosition($cwa: Cwa, iri: string, groupIri: string, anchor: CloneAnchor) {
@@ -39,7 +40,7 @@ function addPosition($cwa: Cwa, iri: string, groupIri: string, anchor: CloneAnch
     await manager.refreshComponentGroupOrder(groupIri)
     return created
   })
-  return { endpoint, request, placedIri: (created: any) => created?.['@id'] }
+  return { endpoint, request, placedIri: (created: any) => created?.['@id'], componentIri: iri }
 }
 
 function usePageDataSlot($cwa: Cwa, iri: string, positionIri: string, property: string) {
@@ -52,7 +53,7 @@ function usePageDataSlot($cwa: Cwa, iri: string, positionIri: string, property: 
     data: { [property]: iri },
     refreshEndpoints: [positionIri],
   })
-  return { endpoint, request, placedIri: () => positionIri }
+  return { endpoint, request, placedIri: () => positionIri, componentIri: iri }
 }
 
 function movePosition($cwa: Cwa, positionIri: string, groupIri: string, anchor: CloneAnchor) {
@@ -113,7 +114,8 @@ async function finish($cwa: Cwa, sent: SentWrite | undefined, sourceGoneMessage:
   }
 
   const error = $cwa.resourcesManager.errors.filter(error => error.event?.endpoint === sent.endpoint).at(-1)
-  if (error?.statusCode !== 404) {
+  const unknownSource = error?.statusCode === 400 && !!sent.componentIri && !!error.detail?.startsWith(`Item not found for "${sent.componentIri}"`)
+  if (!error || (error.statusCode !== 404 && !unknownSource)) {
     return 'refused'
   }
 
