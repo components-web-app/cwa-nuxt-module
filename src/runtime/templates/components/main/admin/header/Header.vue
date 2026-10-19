@@ -132,7 +132,7 @@
         </div>
       </div>
       <OutdatedContentNotice class="cwa:absolute cwa:top-full cwa:mt-1.5 cwa:left-1/2 cwa:-translate-x-1/2 cwa:z-notifications" />
-      <CloneHighlight v-if="cloneSource" />
+      <CloneHighlight v-if="cloneSource || clonePlaced" />
       <ResourceLoadingIndicator class="cwa:absolute cwa:top-full cwa:left-0 cwa:z-notifications" />
     </div>
     <RequestErrors />
@@ -188,7 +188,7 @@ const header = useTemplateRef<undefined | HTMLElement>('header')
 const spacer = useTemplateRef<undefined | HTMLElement>('spacer')
 
 const error = useError()
-const { source: cloneSource } = useCloneMode($cwa)
+const { source: cloneSource, placed: clonePlaced } = useCloneMode($cwa)
 
 const pageIsAdmin = computed(() => route.meta.cwa?.admin)
 const isErrorPage = computed(() => !!error.value)

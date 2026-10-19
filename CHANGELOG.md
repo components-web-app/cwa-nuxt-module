@@ -4,6 +4,15 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+## [2.0.0-alpha.24] - 2026-10-19
+
+- No more "No Mercure rel in link header" error for resource manifest responses, which never carry one; a hub that is never found is still reported when Mercure starts ([3cf6de94](https://github.com/components-web-app/cwa-nuxt-module/commit/3cf6de94))
+- Clicking **Shared · N places** lists where the component is used: the layout, or each page it shows on, linked (marking this page), with "and N more"; links work while editing. Needs api-components-bundle 2.0.0-alpha.32 or later (api-components-bundle [#531](https://github.com/components-web-app/api-components-bundle/issues/531)); before it the badge stays a count ([#420](https://github.com/components-web-app/cwa-nuxt-module/pull/420), [#416](https://github.com/components-web-app/cwa-nuxt-module/issues/416))
+- Move goes through the API's atomic `POST {component}/move`, also into an empty page-data slot, out of one, and into the same slot on another page-data page; an occupied slot is a disabled target. **Move now needs api-components-bundle 2.0.0-alpha.32 or later** (#526) ([#421](https://github.com/components-web-app/cwa-nuxt-module/pull/421), [#415](https://github.com/components-web-app/cwa-nuxt-module/issues/415))
+- A shared component shows **Shared · N places** beside the publish button, and its other copies on the page get a faint outline while it is selected ([#418](https://github.com/components-web-app/cwa-nuxt-module/pull/418), [#416](https://github.com/components-web-app/cwa-nuxt-module/issues/416))
+- Cloning a component deleted elsewhere now ends clone mode with "no longer exists" when the API answers 400 "Item not found", as it does, not only 404 ([cdd23c41](https://github.com/components-web-app/cwa-nuxt-module/commit/cdd23c41), [#411](https://github.com/components-web-app/cwa-nuxt-module/issues/411))
+- Clone and Move: the placed instance flashes and is selected; the instance started from is outlined solid; the dialog names the anchor and the bar names the content; the scope question ("Edit the shared layout?" / Edit layout) is asked only when something can be placed, and shared reasons are said once by display name; enabled options look different from disabled ones; the ⋮ button is named "More actions"; "Use here" on an occupied page-data slot warns "This replaces …"; "Remove from this location only" deletes through the group's write queue ([#417](https://github.com/components-web-app/cwa-nuxt-module/pull/417), [#414](https://github.com/components-web-app/cwa-nuxt-module/issues/414), [#415](https://github.com/components-web-app/cwa-nuxt-module/issues/415))
+
 ## [2.0.0-alpha.23] - 2026-10-19
 
 - Move: a component's ⋮ menu offers Move, which works like Clone but relocates the clicked instance's position (`PATCH` with `componentGroup` and `after`/`before`); page-data slots are not supported yet ([#413](https://github.com/components-web-app/cwa-nuxt-module/pull/413), [#409](https://github.com/components-web-app/cwa-nuxt-module/issues/409))
@@ -167,7 +176,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 - First tagged release of `@cwa/nuxt`; releases are now published from `v*` tags ([7c61b7c](https://github.com/components-web-app/cwa-nuxt-module/commit/7c61b7ce331ec4a0cb8e76951a5de2ff806ed07a))
 
-[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.23...HEAD
+[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.24...HEAD
+[2.0.0-alpha.24]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.23...v2.0.0-alpha.24
 [2.0.0-alpha.23]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.22...v2.0.0-alpha.23
 [2.0.0-alpha.22]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.21...v2.0.0-alpha.22
 [2.0.0-alpha.21]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.20...v2.0.0-alpha.21

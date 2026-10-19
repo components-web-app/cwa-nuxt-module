@@ -13,6 +13,7 @@ export interface CloneTargetOption {
   value: CloneTarget
   disabled: boolean
   reasons: string[]
+  warning?: string
 }
 
 export interface CloneTargetOptionsInput {
@@ -25,6 +26,7 @@ export interface CloneTargetOptionsInput {
   isEditingLayout: boolean
   type: CloneScope
   move?: CloneMove
+  resourcesConfig?: Record<string, { name?: string } | undefined>
 }
 
 export interface CloneTargetOptions {
@@ -46,6 +48,10 @@ function resolveSourceType({ sourceIri, sourceType, componentMetadata }: CloneTa
   return Object.keys(componentMetadata).find(name => path.startsWith(`${componentMetadata[name]!.endpoint}/`))
 }
 
+function displayName(input: CloneTargetOptionsInput, type: string) {
+  return input.resourcesConfig?.[type]?.name || type
+}
+
 function indexOfType(stack: { iri: string }[], type: CwaResourceTypes) {
   return stack.findIndex(item => getResourceTypeFromIri(item.iri) === type)
 }
@@ -59,11 +65,17 @@ function isInsideSource(input: CloneTargetOptionsInput, containerIndex: number) 
   return sourceIris.some(iri => input.resources.getChildIris(iri, undefined).includes(containerIri))
 }
 
+function movingPositionIri(input: CloneTargetOptionsInput) {
+  const from = input.move?.from
+  return from && 'componentPosition' in from ? from.componentPosition : undefined
+}
+
 function groupReasons(input: CloneTargetOptionsInput, groupIndex: number, typeName: string | undefined) {
   const groupIri = input.stack[groupIndex]!.iri
   const group = input.resources.getResource(groupIri).value?.data
   const reasons: string[] = []
-  const movingWithinGroup = !!input.move && input.resources.getResource(input.move.positionIri).value?.data?.componentGroup === groupIri
+  const movingIri = movingPositionIri(input)
+  const movingWithinGroup = !!movingIri && input.resources.getResource(movingIri).value?.data?.componentGroup === groupIri
   if (componentGroupCapacity(group).full && !movingWithinGroup) {
     reasons.push('This group is full')
   }
@@ -74,7 +86,7 @@ function groupReasons(input: CloneTargetOptionsInput, groupIndex: number, typeNa
   else {
     const allowed: string[] | null | undefined = group?.allowedComponents
     if (!isComponentAllowedInGroup(meta, allowed?.map(withoutPrefix))) {
-      reasons.push(`This group does not allow ${typeName}`)
+      reasons.push(`This group does not allow ${displayName(input, typeName!)}`)
     }
   }
   if (isInsideSource(input, groupIndex)) {
@@ -87,9 +99,11 @@ function insideSourceReason(input: CloneTargetOptionsInput) {
   return `This is inside the component being ${input.move ? 'moved' : 'cloned'}`
 }
 
+const ALREADY_HERE = 'This is where it already is'
+
 function anchorReasons(input: CloneTargetOptionsInput, reasons: string[], anchor: CloneAnchor) {
   const anchorIri = 'after' in anchor ? anchor.after : 'before' in anchor ? anchor.before : undefined
-  return input.move && anchorIri === input.move.positionIri ? [...reasons, 'This is where it already is'] : reasons
+  return anchorIri && anchorIri === movingPositionIri(input) ? [...reasons, ALREADY_HERE] : reasons
 }
 
 function option(label: string, value: CloneTarget, reasons: string[]): CloneTargetOption {
@@ -145,16 +159,55 @@ function pageDataOptions(input: CloneTargetOptionsInput, typeName: string | unde
   const properties: { property: string, componentShortName: string }[] = (pageDataIri && input.resources.getResource(pageDataIri).value?.data?._metadata?.pageDataMetadata?.properties) || []
   const fieldType = properties.find(item => item.property === property)?.componentShortName
   const reasons: string[] = []
-  if (input.move) {
-    return [option('Use here', { kind: 'page-data', positionIri, property }, ['Moving into a page-data slot is not supported yet'])]
-  }
   if (!typeName || fieldType !== typeName) {
-    reasons.push(`This field takes ${fieldType ?? 'another type'}, not ${typeName ?? 'this component'}`)
+    reasons.push(`This field takes ${fieldType ? displayName(input, fieldType) : 'another type'}, not ${typeName ? displayName(input, typeName) : 'this component'}`)
   }
   if (isInsideSource(input, positionIndex)) {
     reasons.push(insideSourceReason(input))
   }
-  return [option('Use here', { kind: 'page-data', positionIri, property }, reasons)]
+  const occupantIri = pageDataIri ? input.resources.getResource(pageDataIri).value?.data?.[property] : undefined
+  if (input.move) {
+    const from = input.move.from
+    if ('pageData' in from && from.pageData === pageDataIri && from.property === property) {
+      return [option('Use here', { kind: 'page-data', positionIri, property }, [ALREADY_HERE])]
+    }
+    if (typeof occupantIri === 'string' && occupantIri) {
+      reasons.push(`This field already holds ${occupantName(input, occupantIri)}: a move cannot replace it`)
+    }
+    return [option('Use here', { kind: 'page-data', positionIri, property }, reasons)]
+  }
+  const useHere = option('Use here', { kind: 'page-data', positionIri, property }, reasons)
+  const warning = replaceWarning(input, occupantIri)
+  return [warning ? { ...useHere, warning } : useHere]
+}
+
+function occupantName(input: CloneTargetOptionsInput, occupantIri: string) {
+  const type: string | undefined = input.resources.getResource(occupantIri).value?.data?.['@type']
+  return type ? displayName(input, type) : 'another component'
+}
+
+function replaceWarning(input: CloneTargetOptionsInput, occupantIri: unknown) {
+  if (typeof occupantIri !== 'string' || !occupantIri || [input.sourceIri, ...input.resources.findAllPublishableIris(input.sourceIri)].includes(occupantIri)) {
+    return
+  }
+  return `This replaces ${occupantName(input, occupantIri)}`
+}
+
+export function sharedReasons(options: CloneTargetOption[]): string[] {
+  const [first, ...rest] = options
+  if (!first) {
+    return []
+  }
+  return first.reasons.filter(reason => rest.every(item => item.reasons.includes(reason)))
+}
+
+export function cloneAnchorIndex(stack: { iri: string }[]): number | undefined {
+  const groupIndex = indexOfType(stack, CwaResourceTypes.COMPONENT_GROUP)
+  if (groupIndex === -1) {
+    return
+  }
+  const positionIndex = indexOfType(stack.slice(0, groupIndex), CwaResourceTypes.COMPONENT_POSITION)
+  return positionIndex === -1 ? undefined : positionIndex
 }
 
 export function cloneTargetOptions(input: CloneTargetOptionsInput): CloneTargetOptions {

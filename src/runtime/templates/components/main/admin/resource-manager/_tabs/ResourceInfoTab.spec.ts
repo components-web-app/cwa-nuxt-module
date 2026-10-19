@@ -34,6 +34,7 @@ const mockCwa = {
   resourcesManager: {
     deleteResource: vi.fn(async () => undefined),
     updateResource: vi.fn(async () => undefined),
+    queueComponentGroupWrite: vi.fn(async (_groupIri: string, write: () => Promise<unknown>) => write()),
   },
   admin: {
     emptyStack: vi.fn(),
@@ -271,6 +272,42 @@ describe('Info tab — a component in several locations', () => {
     expect(mockCwa.admin.emptyStack).toHaveBeenCalled()
   })
 
+  test('Remove from this location only deletes the position through its group\'s write queue, so it cannot race an insert or reorder there (#415)', async () => {
+    inLocations(3)
+    inStackPosition('/_/component_positions/p2', '/_/component_groups/g2')
+    revealChoosing('here')
+    let deletedInQueue = false
+    mockCwa.resourcesManager.queueComponentGroupWrite.mockImplementationOnce(async (_groupIri, write) => {
+      const result = await write()
+      deletedInQueue = mockCwa.resourcesManager.deleteResource.mock.calls.length === 1
+      return result
+    })
+    const wrapper = mountInfoTab()
+    await flushPromises()
+
+    await wrapper.find('button').trigger('click')
+    await flushPromises()
+
+    expect(mockCwa.resourcesManager.queueComponentGroupWrite).toHaveBeenCalledTimes(1)
+    expect(mockCwa.resourcesManager.queueComponentGroupWrite).toHaveBeenCalledWith('/_/component_groups/g2', expect.any(Function))
+    expect(deletedInQueue).toBe(true)
+  })
+
+  test('Remove from this location only with no group in the stack deletes the position directly', async () => {
+    inLocations(3)
+    inStackPosition('/_/component_positions/p2')
+    closestStackItems.delete(CwaResourceTypes.COMPONENT_GROUP)
+    revealChoosing('here')
+    const wrapper = mountInfoTab()
+    await flushPromises()
+
+    await wrapper.find('button').trigger('click')
+    await flushPromises()
+
+    expect(mockCwa.resourcesManager.deleteResource).toHaveBeenCalledWith({ endpoint: '/_/component_positions/p2', refreshEndpoints: [] }, true)
+    expect(mockCwa.resourcesManager.queueComponentGroupWrite).not.toHaveBeenCalled()
+  })
+
   test('Remove from this location only empties a page-data slot instead of deleting its position', async () => {
     inLocations(3)
     inStackPosition('/_/component_positions/dynamic', '/_/component_groups/g2')
@@ -288,6 +325,7 @@ describe('Info tab — a component in several locations', () => {
       refreshEndpoints: ['/_/component_positions/dynamic'],
     })
     expect(mockCwa.resourcesManager.deleteResource).not.toHaveBeenCalled()
+    expect(mockCwa.resourcesManager.queueComponentGroupWrite).not.toHaveBeenCalled()
     expect(mockCwa.admin.emptyStack).toHaveBeenCalled()
   })
 

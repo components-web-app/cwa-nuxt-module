@@ -8,7 +8,8 @@ import {
 } from '#cwa/resources/resource-utils'
 import type { CwaResource } from '#cwa/resources/resource-utils'
 import { useCwa } from '#cwa/composables/cwa'
-import { useCloneMode } from '#cwa/admin/clone-mode'
+import { excerptOf, useCloneMode } from '#cwa/admin/clone-mode'
+import type { MoveFrom } from '#cwa/admin/clone-mode'
 import { componentGroupCapacity } from '#cwa/resources/component-group-capacity'
 import type { ButtonOption, ModelValue } from '#cwa/templates/components/ui/form/Button.vue'
 
@@ -57,16 +58,26 @@ const isPersistedComponent = computed(() => {
   return resourceType.value === CwaResourceTypes.COMPONENT && props.resource?._metadata?.persisted !== false
 })
 
-const movablePositionIri = computed(() => {
-  if (!isPersistedComponent.value) {
+const closestPositionIri = computed(() => {
+  return $cwa.admin.resourceStackManager.resourceStack.value.find(item => getResourceTypeFromIri(item.iri) === CwaResourceTypes.COMPONENT_POSITION)?.iri
+})
+
+const moveFrom = computed<MoveFrom | undefined>(() => {
+  const positionIri = closestPositionIri.value
+  if (!isPersistedComponent.value || !positionIri) {
     return
   }
-  const positionIri = $cwa.admin.resourceStackManager.resourceStack.value.find(item => getResourceTypeFromIri(item.iri) === CwaResourceTypes.COMPONENT_POSITION)?.iri
-  const position = positionIri ? $cwa.resources.getResource(positionIri).value?.data : undefined
-  if (!positionIri || position?.pageDataProperty || position?._metadata?.isDynamicPosition) {
+  const position = $cwa.resources.getResource(positionIri).value?.data
+  const property: string | undefined = position?.pageDataProperty
+  if (!property) {
+    return position?._metadata?.isDynamicPosition ? undefined : { componentPosition: positionIri }
+  }
+  const pageData = $cwa.resources.pageDataIriOf(positionIri).value
+  const held = pageData ? $cwa.resources.getResource(pageData).value?.data?.[property] : undefined
+  if (!pageData || !held || !$cwa.resources.findAllPublishableIris(props.currentIri).includes(held)) {
     return
   }
-  return positionIri
+  return { pageData, property }
 })
 
 const buttonOptions = computed(() => {
@@ -102,7 +113,7 @@ const buttonOptions = computed(() => {
   if (isPersistedComponent.value) {
     ops.push({ label: 'Clone', value: 'clone', testId: 'component-menu-clone' })
   }
-  if (movablePositionIri.value) {
+  if (moveFrom.value) {
     ops.push({ label: 'Move', value: 'move', testId: 'component-menu-move' })
   }
 
@@ -132,16 +143,20 @@ function handleManagerCtaClick(value?: ModelValue) {
       $cwa.resourcesManager.initAddResource(props.currentIri, addAfter, $cwa.admin.resourceStackManager.resourceStack.value)
     }
 
+    const stackItem = $cwa.admin.resourceStackManager.currentStackItem.value
+    const origin = { positionIri: closestPositionIri.value, excerpt: excerptOf(stackItem?.domElements.value ?? []) }
+
     if (value === 'clone') {
-      useCloneMode($cwa).start(props.currentIri, $cwa.admin.resourceStackManager.currentStackItem.value?.displayName)
+      useCloneMode($cwa).start(props.currentIri, stackItem?.displayName, undefined, origin)
       $cwa.admin.emptyStack()
     }
 
-    if (value === 'move' && movablePositionIri.value) {
-      useCloneMode($cwa).start(props.currentIri, $cwa.admin.resourceStackManager.currentStackItem.value?.displayName, {
-        positionIri: movablePositionIri.value,
+    if (value === 'move' && moveFrom.value && closestPositionIri.value) {
+      useCloneMode($cwa).start(props.currentIri, stackItem?.displayName, {
+        positionIri: closestPositionIri.value,
         fromLayout: $cwa.admin.resourceStackManager.isEditingLayout.value,
-      })
+        from: moveFrom.value,
+      }, origin)
       $cwa.admin.emptyStack()
     }
   }

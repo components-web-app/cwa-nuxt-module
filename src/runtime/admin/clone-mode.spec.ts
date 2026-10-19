@@ -6,7 +6,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import type { Pinia } from 'pinia'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import { AdminStore } from '../storage/stores/admin/admin-store'
-import { useCloneMode } from './clone-mode'
+import { excerptOf, PLACED_FLASH_MS, useCloneMode } from './clone-mode'
 import type Cwa from '#cwa/cwa'
 
 const SOURCE_IRI = '/component/html_contents/source-uuid'
@@ -84,8 +84,17 @@ describe('clone mode', () => {
   test('a move holds the position being moved and whether it started in the layout', () => {
     const { $cwa } = buildCwa()
     const mode = cloneModeOf($cwa)
-    mode.start(SOURCE_IRI, 'Hero text', { positionIri: '/_/component_positions/source', fromLayout: true })
-    expect(mode.source.value).toEqual({ iri: SOURCE_IRI, name: 'Hero text', move: { positionIri: '/_/component_positions/source', fromLayout: true } })
+    mode.start(SOURCE_IRI, 'Hero text', { positionIri: '/_/component_positions/source', fromLayout: true, from: { componentPosition: '/_/component_positions/source' } })
+    expect(mode.source.value).toEqual({ iri: SOURCE_IRI, name: 'Hero text', move: { positionIri: '/_/component_positions/source', fromLayout: true, from: { componentPosition: '/_/component_positions/source' } } })
+  })
+
+  test('start holds the position the editor started from and an excerpt of its content, for a clone and a move', () => {
+    const { $cwa } = buildCwa()
+    const mode = cloneModeOf($cwa)
+    mode.start(SOURCE_IRI, 'Body Text', undefined, { positionIri: '/_/component_positions/from', excerpt: 'Shared source' })
+    expect(mode.source.value).toEqual({ iri: SOURCE_IRI, name: 'Body Text', positionIri: '/_/component_positions/from', excerpt: 'Shared source' })
+    mode.start(SOURCE_IRI, 'Body Text', { positionIri: '/_/component_positions/from', fromLayout: false, from: { componentPosition: '/_/component_positions/from' } }, { positionIri: '/_/component_positions/from', excerpt: 'Shared source' })
+    expect(mode.source.value).toEqual({ iri: SOURCE_IRI, name: 'Body Text', positionIri: '/_/component_positions/from', excerpt: 'Shared source', move: { positionIri: '/_/component_positions/from', fromLayout: false, from: { componentPosition: '/_/component_positions/from' } } })
   })
 
   test('two Cwa instances hold separate clone sources', () => {
@@ -302,5 +311,66 @@ describe('clone mode', () => {
     admin.toggleEdit(false)
     await nextTick()
     expect(useCloneMode($cwa).source.value).toBeUndefined()
+  })
+
+  test('showPlaced marks the placed position for a short flash, then clears it', () => {
+    vi.useFakeTimers()
+    const { $cwa } = buildCwa()
+    const mode = cloneModeOf($cwa)
+    mode.showPlaced('/_/component_positions/new')
+    expect(mode.placed.value).toBe('/_/component_positions/new')
+    vi.advanceTimersByTime(PLACED_FLASH_MS - 1)
+    expect(mode.placed.value).toBe('/_/component_positions/new')
+    vi.advanceTimersByTime(1)
+    expect(mode.placed.value).toBeUndefined()
+  })
+
+  test('a second showPlaced restarts the flash for the new position', () => {
+    vi.useFakeTimers()
+    const { $cwa } = buildCwa()
+    const mode = cloneModeOf($cwa)
+    mode.showPlaced('/_/component_positions/first')
+    vi.advanceTimersByTime(PLACED_FLASH_MS - 10)
+    mode.showPlaced('/_/component_positions/second')
+    vi.advanceTimersByTime(PLACED_FLASH_MS - 1)
+    expect(mode.placed.value).toBe('/_/component_positions/second')
+    vi.advanceTimersByTime(1)
+    expect(mode.placed.value).toBeUndefined()
+  })
+
+  test('starting clone mode again clears a flash still showing', () => {
+    vi.useFakeTimers()
+    const { $cwa } = buildCwa()
+    const mode = cloneModeOf($cwa)
+    mode.showPlaced('/_/component_positions/new')
+    mode.start(SOURCE_IRI, 'Body Text')
+    expect(mode.placed.value).toBeUndefined()
+  })
+})
+
+describe('excerptOf', () => {
+  function elements(...htmls: string[]) {
+    return htmls.map((html) => {
+      const el = document.createElement('div')
+      el.innerHTML = html
+      return el
+    })
+  }
+
+  test('joins the text of every element with its whitespace collapsed', () => {
+    expect(excerptOf(elements('<p>  Shared\n source </p>', '<span>text</span>'))).toBe('Shared source text')
+  })
+
+  test('cuts a long text at a word and ends it with an ellipsis', () => {
+    expect(excerptOf(elements('<p>Shared source component with a long body</p>'))).toBe('Shared source component…')
+  })
+
+  test('cuts a single long word at the limit', () => {
+    expect(excerptOf(elements('<p>Supercalifragilisticexpialidocious</p>'))).toBe('Supercalifragilisticexpi…')
+  })
+
+  test('gives nothing for an element with no text, such as an image', () => {
+    expect(excerptOf(elements('<img src="a.png">'))).toBeUndefined()
+    expect(excerptOf([])).toBeUndefined()
   })
 })

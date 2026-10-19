@@ -114,6 +114,8 @@ async function mountManager() {
           template: '<div class="context-menu-stub" />',
         },
         ResourceManagerCtaButton: { template: '<div class="cta-stub" />' },
+        ComponentUsageBadge: { template: '<span class="usage-badge-stub" />' },
+        SharedInstancesHighlight: { template: '<div class="shared-instances-stub" />' },
         AddComponentDialog: { template: '<div class="add-dialog-stub" />' },
         Transition: false,
       },
@@ -175,6 +177,40 @@ describe('ResourceManager', () => {
 
       expect(wrapper.findComponent({ name: 'ManagerTabs' }).exists()).toBe(true)
       expect(wrapper.findComponent({ name: 'ManagerTabs' }).props('tabs')).toHaveLength(1)
+    })
+
+    test('shows the usage badge directly to the left of the CTA, in the same row', async () => {
+      const stackManager = makeStackManager({
+        showManager: ref(true),
+        currentStackItem: ref({ iri: '/component/1', managerTabs: [] }),
+      })
+      cwaState.cwa = makeCwa({ stackManager })
+      const wrapper = await mountManager()
+
+      resolverState.allMeta.value = [{ component: 'Tab1' }]
+      await nextTick()
+
+      const badge = wrapper.find('.usage-badge-stub')
+      expect(badge.exists()).toBe(true)
+      expect(badge.element.nextElementSibling?.classList.contains('cta-stub')).toBe(true)
+    })
+
+    test.each([
+      ['a component', '/component/1', false, true],
+      ['a position', '/_/component_positions/1', false, false],
+      ['a component while cloning', '/component/1', true, false],
+    ])('outlines the other copies of the selection only for %s outside clone mode', async (_label, iri, cloning, shown) => {
+      const stackManager = makeStackManager({
+        showManager: ref(true),
+        currentStackItem: ref({ iri, managerTabs: [] }),
+      })
+      cwaState.cwa = makeCwa({ stackManager })
+      cloning && useCloneMode(cwaState.cwa).start('/component/source')
+      const wrapper = await mountManager()
+      await flushPromises()
+
+      expect(wrapper.find('.shared-instances-stub').exists()).toBe(shown)
+      cloning && useCloneMode(cwaState.cwa).end()
     })
 
     test('does not render the holder when allTabsMeta is empty', async () => {
@@ -276,55 +312,17 @@ describe('ResourceManager', () => {
       return { wrapper, stackManager }
     }
 
-    test('in clone mode a click opens the clone target dialog instead of selecting, keeping the selection and the scope until a target is chosen, so the dialog can warn about the scope and a Cancel there leaves it unswitched', async () => {
+    test('in clone mode a click opens the clone target dialog instead of selecting, keeping the selection and the scope, so the dialog decides whether to ask about switching scope', async () => {
       const { wrapper, stackManager } = await clickInCloneMode()
 
       expect(stackManager.completeStack).toHaveBeenCalledWith({ clickTarget: expect.any(HTMLElement) }, false, 'layout')
       expect(stackManager.selectStackIndex).not.toHaveBeenCalled()
       expect(stackManager.restorePreviousStack).toHaveBeenCalled()
-      expect(confirmState.reveal).toHaveBeenCalledWith(expect.objectContaining({ content: expect.stringContaining('switch and edit the layout') }))
+      expect(confirmState.reveal).not.toHaveBeenCalled()
       expect(stackManager.isEditingLayout.value).toBe(false)
       const dialog = wrapper.findComponent({ name: 'CloneTargetDialog' })
       expect(dialog.exists()).toBe(true)
       expect(dialog.props()).toEqual({ stack: clonedStack, type: 'layout' })
-    })
-
-    test('in clone mode a click in the scope already being edited opens the target dialog without a confirm', async () => {
-      const stackManager = makeStackManager({ isPopulating: ref(true), resourceStack: ref(clonedStack), isEditingLayout: ref(true) })
-      cwaState.cwa = makeCwa({ isEditing: true, stackManager })
-      useCloneMode(cwaState.cwa as Cwa).start('/component/source', 'Source')
-      const wrapper = await mountManager()
-      ;(wrapper.vm as any).clickHandler({ target: document.createElement('span') } as unknown as MouseEvent, 'layout')
-      await flushPromises()
-
-      expect(confirmState.reveal).not.toHaveBeenCalled()
-      expect(wrapper.findComponent({ name: 'CloneTargetDialog' }).exists()).toBe(true)
-    })
-
-    test('in clone mode a click in the other scope that is not confirmed opens no dialog and keeps the scope', async () => {
-      confirmState.reveal.mockResolvedValueOnce({ isCanceled: true })
-      const { wrapper, stackManager } = await clickInCloneMode()
-
-      expect(confirmState.reveal).toHaveBeenCalled()
-      expect(stackManager.isEditingLayout.value).toBe(false)
-      expect(stackManager.selectStackIndex).not.toHaveBeenCalled()
-      expect(wrapper.findComponent({ name: 'CloneTargetDialog' }).exists()).toBe(false)
-    })
-
-    test('in clone mode a scope confirm answered Ok after clone mode ended opens no target dialog', async () => {
-      let answer!: (value: { isCanceled: boolean }) => void
-      confirmState.reveal.mockImplementationOnce(() => new Promise((resolve) => {
-        answer = resolve
-      }))
-      const { wrapper, stackManager } = await clickInCloneMode()
-      expect(confirmState.reveal).toHaveBeenCalled()
-
-      useCloneMode(cwaState.cwa as Cwa).end()
-      answer({ isCanceled: false })
-      await flushPromises()
-
-      expect(wrapper.findComponent({ name: 'CloneTargetDialog' }).exists()).toBe(false)
-      expect(stackManager.isEditingLayout.value).toBe(false)
     })
 
     test('in clone mode with navigation enabled a click only navigates: no selection, confirm or dialog', async () => {

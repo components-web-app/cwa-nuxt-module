@@ -14,6 +14,18 @@
     }
   }
 
+  @keyframes cwa-clone-placed {
+    0%, 40% {
+      opacity: 1;
+    }
+    20%, 60% {
+      opacity: 0.2;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
+
   --cwa-color-*: initial;
   --color-stone-100: #f5f5f4;
   --color-stone-300: #d6d3d1;
@@ -54,6 +66,7 @@
   --color-medium: #a8a29e;
 
   --animate-admin-spinner: cwa-spin 1s linear infinite;
+  --animate-clone-placed: cwa-clone-placed 1.5s ease-out forwards;
 
   --backdrop-blur-xs: 3px;
 

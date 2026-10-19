@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, test } from 'vitest'
 import { computed } from 'vue'
 import { ResourceTypeFromIri } from '../resources/resource-utils'
-import { cloneTargetOptions } from './clone-target-options'
+import { cloneAnchorIndex, cloneTargetOptions, sharedReasons } from './clone-target-options'
 import type { CloneTargetOptionsInput } from './clone-target-options'
 import type { ApiDocumentationComponentMetadataCollection } from '#cwa/api/api-documentation'
 
@@ -355,7 +355,7 @@ describe('cloneTargetOptions', () => {
   })
 
   describe('a move', () => {
-    const move = (positionIri: string, fromLayout = false) => ({ positionIri, fromLayout })
+    const move = (positionIri: string, fromLayout = false) => ({ positionIri, fromLayout, from: { componentPosition: positionIri } })
 
     test('is not offered next to the position being moved, as it is already there', () => {
       const resources = buildResources({ ...pageStore, [POSITION]: { component: SOURCE, componentGroup: GROUP } })
@@ -386,16 +386,71 @@ describe('cloneTargetOptions', () => {
       expect(result.options.every(option => option.reasons.includes('This is inside the component being moved'))).toBe(true)
     })
 
-    test('into a page-data slot is disabled with the reason', () => {
-      const result = cloneTargetOptions(input({
-        stack: stackOf(COMPONENT, DYNAMIC_POSITION, PAGE),
-        resources: buildResources(dataPageStore),
-        isDataPage: true,
-        move: move(POSITION),
-      }))
-      expect(summary(result)).toEqual([
-        { label: 'Use here', disabled: true, reasons: ['Moving into a page-data slot is not supported yet'] },
-      ])
+    describe('and page-data slots (#415)', () => {
+      const OCCUPANT = '/component/html_contents/occupant'
+      const OTHER_PAGE_DATA = '/page_data/other-article'
+      const fromSlot = (pageData: string, property = 'hero') => ({ positionIri: DYNAMIC_POSITION, fromLayout: false, from: { pageData, property } })
+      function slotHolding(value: string | null, extra: Record<string, Data> = {}) {
+        return buildResources({
+          ...dataPageStore,
+          [PAGE_DATA]: { ...dataPageStore[PAGE_DATA], hero: value },
+          [OCCUPANT]: { '@type': 'HtmlContent' },
+          ...extra,
+        })
+      }
+      function useHere(resources: CloneTargetOptionsInput['resources'], moving: CloneTargetOptionsInput['move'], overrides: Partial<CloneTargetOptionsInput> = {}) {
+        return cloneTargetOptions(input({ stack: stackOf(DYNAMIC_POSITION, PAGE), resources, isDataPage: true, move: moving, ...overrides }))
+      }
+
+      test('a position into an empty slot whose field takes its type is enabled', () => {
+        expect(summary(useHere(slotHolding(null), move(POSITION)))).toEqual([
+          { label: 'Use here', ...ENABLED },
+        ])
+      })
+
+      test('a position into an occupied slot is disabled with the reason, and gives no replace warning', () => {
+        const [option] = useHere(slotHolding(OCCUPANT), move(POSITION), { resourcesConfig: { HtmlContent: { name: 'Body Text' } } }).options
+        expect(option).toMatchObject({ disabled: true, reasons: ['This field already holds Body Text: a move cannot replace it'] })
+        expect(option!.warning).toBeUndefined()
+      })
+
+      test('a position into a slot of another type is disabled with the field\'s type', () => {
+        const resources = buildResources({ ...dataPageStore, [DYNAMIC_POSITION]: { pageDataProperty: 'banner' } })
+        expect(summary(useHere(resources, move(POSITION)))).toEqual([
+          { label: 'Use here', disabled: true, reasons: ['This field takes Container, not HtmlContent'] },
+        ])
+      })
+
+      test('a slot back into itself on the same page data is where it already is', () => {
+        expect(summary(useHere(slotHolding(SOURCE), fromSlot(PAGE_DATA)))).toEqual([
+          { label: 'Use here', disabled: true, reasons: ['This is where it already is'] },
+        ])
+      })
+
+      test('a slot into the same empty slot on another page-data page is allowed', () => {
+        expect(summary(useHere(slotHolding(null), fromSlot(OTHER_PAGE_DATA)))).toEqual([
+          { label: 'Use here', ...ENABLED },
+        ])
+      })
+
+      test('a slot into the same slot on another page-data page that holds a component is disabled as occupied', () => {
+        expect(summary(useHere(slotHolding(OCCUPANT), fromSlot(OTHER_PAGE_DATA)))[0]!.reasons).toEqual(['This field already holds HtmlContent: a move cannot replace it'])
+      })
+
+      test('a slot can be placed before or after its own slot\'s position, as that adds a position', () => {
+        const resources = buildResources({ ...dataPageStore, [GROUP]: { componentPositions: [DYNAMIC_POSITION] }, [DYNAMIC_POSITION]: { pageDataProperty: 'hero', componentGroup: GROUP } })
+        const result = cloneTargetOptions(input({ stack: stackOf(COMPONENT, DYNAMIC_POSITION, GROUP, PAGE), resources, isDataPage: true, move: fromSlot(OTHER_PAGE_DATA) }))
+        expect(summary(result).slice(0, 2)).toEqual([
+          { label: 'Add before', ...ENABLED },
+          { label: 'Add after', ...ENABLED },
+        ])
+      })
+
+      test('a slot into the full group holding its own slot\'s position is disabled, as that adds a position', () => {
+        const resources = buildResources({ ...dataPageStore, [GROUP]: { componentPositions: [DYNAMIC_POSITION], maxComponents: 1 }, [DYNAMIC_POSITION]: { pageDataProperty: 'hero', componentGroup: GROUP } })
+        const result = cloneTargetOptions(input({ stack: stackOf(COMPONENT, DYNAMIC_POSITION, GROUP, PAGE), resources, isDataPage: true, move: fromSlot(OTHER_PAGE_DATA) }))
+        expect(summary(result).slice(0, 2).map(option => option.reasons)).toEqual([['This group is full'], ['This group is full']])
+      })
     })
 
     test('from the layout into the page says it will leave every other page', () => {
@@ -412,5 +467,101 @@ describe('cloneTargetOptions', () => {
       { label: 'Add before', disabled: true, reasons: ['This component type is not known'] },
       { label: 'Add after', disabled: true, reasons: ['This component type is not known'] },
     ])
+  })
+})
+
+describe('display names in reasons (#414)', () => {
+  const resourcesConfig = { HtmlContent: { name: 'Body Text' }, Container: { name: 'Container Block' } }
+
+  test('a group that does not allow the type names it by its display name', () => {
+    const resources = buildResources({ ...pageStore, [GROUP]: { ...pageStore[GROUP], allowedComponents: ['/component/containers'] } })
+    expect(summary(cloneTargetOptions(input({ resources, resourcesConfig })))[0]!.reasons).toEqual(['This group does not allow Body Text'])
+  })
+
+  test('a page-data field of another type names both types by their display names', () => {
+    const result = cloneTargetOptions(input({
+      stack: stackOf(DYNAMIC_POSITION, PAGE),
+      resources: buildResources({
+        ...pageStore,
+        [DYNAMIC_POSITION]: { pageDataProperty: 'banner' },
+        [PAGE_DATA]: { _metadata: { pageDataMetadata: { properties: [{ property: 'banner', componentShortName: 'Container' }] } } },
+      }),
+      isDataPage: true,
+      resourcesConfig,
+    }))
+    expect(summary(result)[0]!.reasons).toEqual(['This field takes Container Block, not Body Text'])
+  })
+
+  test('a type with no configured name keeps its type name', () => {
+    const resources = buildResources({ ...pageStore, [GROUP]: { ...pageStore[GROUP], allowedComponents: ['/component/containers'] } })
+    expect(summary(cloneTargetOptions(input({ resources, resourcesConfig: {} })))[0]!.reasons).toEqual(['This group does not allow HtmlContent'])
+  })
+})
+
+describe('a clone into an occupied page-data slot (#415)', () => {
+  const OCCUPANT = '/component/html_contents/occupant'
+  const DRAFT = '/component/html_contents/source-draft'
+  function slotWith(value: string | null | undefined) {
+    return buildResources({
+      ...pageStore,
+      [DYNAMIC_POSITION]: { pageDataProperty: 'hero' },
+      [PAGE_DATA]: { hero: value, _metadata: { pageDataMetadata: { properties: [{ property: 'hero', componentShortName: 'HtmlContent' }] } } },
+      [OCCUPANT]: { '@type': 'HtmlContent' },
+    }, [[SOURCE, DRAFT]])
+  }
+  function useHere(resources: CloneTargetOptionsInput['resources'], overrides: Partial<CloneTargetOptionsInput> = {}) {
+    return cloneTargetOptions(input({ stack: stackOf(DYNAMIC_POSITION, PAGE), resources, isDataPage: true, ...overrides })).options[0]!
+  }
+
+  test('warns that it replaces the component the slot holds, by its display name', () => {
+    const option = useHere(slotWith(OCCUPANT), { resourcesConfig: { HtmlContent: { name: 'Body Text' } } })
+    expect(option.warning).toBe('This replaces Body Text')
+    expect(option.disabled).toBe(false)
+  })
+
+  test('falls back to the @type of the component it replaces', () => {
+    expect(useHere(slotWith(OCCUPANT)).warning).toBe('This replaces HtmlContent')
+  })
+
+  test.each([
+    ['empty', null],
+    ['unset', undefined],
+    ['holding the source', SOURCE],
+    ['holding the draft of the source', DRAFT],
+  ])('gives no warning when the slot is %s', (_label, value) => {
+    expect(useHere(slotWith(value)).warning).toBeUndefined()
+  })
+
+  test('a group option gives no replace warning', () => {
+    const result = cloneTargetOptions(input({ resources: slotWith(OCCUPANT) }))
+    expect(result.options.every(option => option.warning === undefined)).toBe(true)
+  })
+})
+
+describe('sharedReasons', () => {
+  const disabled = (...reasons: string[]) => ({ label: 'x', value: { kind: 'position', groupIri: GROUP, anchor: {} } as const, disabled: true, reasons })
+
+  test('gives the reasons every option shares, so they are said once', () => {
+    expect(sharedReasons([disabled('This group is full', 'This is where it already is'), disabled('This group is full')])).toEqual(['This group is full'])
+  })
+
+  test('gives nothing when any option is enabled', () => {
+    expect(sharedReasons([disabled('This group is full'), { ...disabled(), disabled: false }])).toEqual([])
+  })
+
+  test('gives nothing for no options', () => {
+    expect(sharedReasons([])).toEqual([])
+  })
+})
+
+describe('cloneAnchorIndex', () => {
+  test('is the position the options anchor before or after, beneath the clicked group', () => {
+    expect(cloneAnchorIndex(stackOf(COMPONENT, POSITION, GROUP, PAGE))).toBe(1)
+    expect(cloneAnchorIndex(stackOf(INNER_COMPONENT, INNER_POSITION, CONTAINER_GROUP, INNER_CONTAINER, POSITION, GROUP, PAGE))).toBe(1)
+  })
+
+  test('is nothing when the group itself was clicked, or no group was', () => {
+    expect(cloneAnchorIndex(stackOf(GROUP, PAGE))).toBeUndefined()
+    expect(cloneAnchorIndex(stackOf(COMPONENT, DYNAMIC_POSITION, PAGE))).toBeUndefined()
   })
 })

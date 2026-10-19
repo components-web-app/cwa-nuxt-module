@@ -15,8 +15,10 @@ import AddComponentDialog
   from '#cwa/templates/components/main/admin/resource-manager/_parts/AddComponentDialog.vue'
 import { useDataResolver } from '#cwa/templates/components/core/useDataResolver'
 import { useCloneMode } from '#cwa/admin/clone-mode'
-import { useNuxtApp } from '#app/nuxt'
+import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/resources/resource-utils'
 
+const ComponentUsageBadge = defineAsyncComponent(() => import('#cwa/templates/components/main/admin/resource-manager/cta/ComponentUsageBadge.vue'))
+const SharedInstancesHighlight = defineAsyncComponent(() => import('#cwa/templates/components/main/admin/resource-manager/SharedInstancesHighlight.vue'))
 const CloneTargetDialog = defineAsyncComponent(() => import('#cwa/templates/components/main/admin/resource-manager/_parts/CloneTargetDialog.vue'))
 
 const $cwa = useCwa()
@@ -33,7 +35,6 @@ const currentManagerTabs = ref<ManagerTab[] | undefined>()
 const cachedPosition = { top: 0, left: 0 }
 let mousedownTarget: null | EventTarget = null
 const cloneMode = useCloneMode($cwa)
-const { vueApp } = useNuxtApp()
 const cloneTarget = shallowRef<{ stack: { iri: string }[], type: 'page' | 'layout' }>()
 
 type ContextPosition = {
@@ -102,27 +103,14 @@ function clickHandler(e: MouseEvent, type: 'page' | 'layout') {
   $cwa.admin.resourceStackManager.selectStackIndex(0, false)
 }
 
-async function chooseCloneTarget(type: 'page' | 'layout') {
+function chooseCloneTarget(type: 'page' | 'layout') {
   const stackManager = $cwa.admin.resourceStackManager
   const stack = [...stackManager.resourceStack.value]
   stackManager.restorePreviousStack()
   if ($cwa.admin.navigationGuardDisabled || !stack.length) {
     return
   }
-  if (await confirmScopeChange(type) && cloneMode.source.value) {
-    cloneTarget.value = { stack, type }
-  }
-}
-
-async function confirmScopeChange(type: 'page' | 'layout') {
-  if ($cwa.admin.resourceStackManager.isEditingLayout.value === (type === 'layout')) {
-    return true
-  }
-  const { default: ConfirmDialog } = await import('#cwa/templates/components/core/ConfirmDialog.vue')
-  const { createConfirmDialog } = await import('#cwa/admin/confirm-dialog')
-  const dialog = await createConfirmDialog(vueApp, ConfirmDialog)
-  const { isCanceled } = await dialog.reveal({ title: 'Are you sure?', content: `<p>Are you sure you want to switch and edit the ${type}?</p>` })
-  return !isCanceled
+  cloneTarget.value = { stack, type }
 }
 
 function completeStack(e: MouseEvent, type: undefined | 'page' | 'layout', isContext: boolean = false) {
@@ -132,6 +120,14 @@ function completeStack(e: MouseEvent, type: undefined | 'page' | 'layout', isCon
 function selectTab(index: number) {
   selectedIndex.value = index
 }
+
+const showSharedInstances = computed(() => {
+  const iri = currentStackItem.value?.iri
+  return !!iri
+    && $cwa.admin.resourceStackManager.showManager.value
+    && !cloneMode.source.value
+    && getResourceTypeFromIri(iri) === CwaResourceTypes.COMPONENT
+})
 
 const showAdmin = computed(() => {
   return $cwa.auth.hasRole(CwaUserRoles.ADMIN)
@@ -225,7 +221,8 @@ defineExpose({
                     @click="selectTab"
                   />
                 </div>
-                <div class="cwa:flex cwa:light cwa:items-center cwa:content-center cwa:justify-center">
+                <div class="cwa:flex cwa:light cwa:items-center cwa:content-center cwa:justify-center cwa:gap-x-3">
+                  <ComponentUsageBadge />
                   <ResourceManagerCtaButton />
                 </div>
               </div>
@@ -248,6 +245,7 @@ defineExpose({
     :virtual-element="virtualElement"
   />
   <AddComponentDialog />
+  <SharedInstancesHighlight v-if="showSharedInstances" />
   <CloneTargetDialog
     v-if="cloneTarget"
     :stack="cloneTarget.stack"
