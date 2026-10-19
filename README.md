@@ -73,6 +73,7 @@ Rules:
 - **One proxy sees everything.** The proxy (`test/browser/rehearsal.mjs`) sits between the playground and the API, so it sees server-side and browser requests alike. It serves Mercure itself as a silent stream, so recordings are deterministic.
 - **Defaults:** the template's Caddy root CA and the bundle version are read from the `components-web-app-php-1` container. Override them with `REHEARSAL_CA`, `REHEARSAL_BUNDLE`, `REHEARSAL_PHP_CONTAINER` or `REHEARSAL_API`.
 - **No sleeps.** A console error or page error fails a scenario unless the scenario allows it. Wait for a positive signal, never a fixed delay.
+- **The recorder is tested too.** `test/browser/rehearsal.spec.ts` (part of `pnpm run test`) records against a fake API and replays with it stopped. It covers: the answer after a write, unrecorded requests failing, the `path` fallback, origin and Mercure rewriting, cookie redaction, and CORS.
 
 #### 4. Before you push
 
