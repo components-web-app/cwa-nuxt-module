@@ -75,10 +75,14 @@ describe('Mercure -> setMercureHubFromLinkHeader', () => {
     expect(MercureClient).not.toHaveBeenCalled()
   })
 
-  test('an invalid link header is handled', () => {
+  test.each([
+    ['an invalid link header', invalidLinkHeader],
+    ['a resource manifest\'s link header, which never carries a Mercure rel', '<https://some-domain/docs.jsonld>; rel="http://www.w3.org/ns/hydra/core#apiDocumentation"'],
+  ])('%s sets no hub and logs no error, as the hub comes from another response', (_label, linkHeader) => {
     const mercure = createMercure()
-    mercure.setMercureHubFromLinkHeader(invalidLinkHeader)
-    expect(logger.error).toHaveBeenCalledWith('No Mercure rel in link header.')
+    mercure.setMercureHubFromLinkHeader(linkHeader)
+    expect(logger.error).not.toHaveBeenCalled()
+    expect(logger.debug).toHaveBeenCalledWith('No Mercure rel in link header.')
     expect(mercureStoreDef.useStore().hub).toBeNull()
   })
 
