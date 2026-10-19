@@ -1626,7 +1626,7 @@ describe('Resources manager', () => {
     })
   })
 
-  describe('moving a component (#415, api-components-bundle#526)', () => {
+  describe('sending a move to a component (#415, api-components-bundle#526)', () => {
     const componentIri = '/component/html_contents/published'
     const body = {
       from: { componentPosition: '/_/component_positions/from' },
@@ -1637,7 +1637,7 @@ describe('Resources manager', () => {
       const { resourcesManager, cwaFetch, resourcesStoreActions, errorStoreActions } = createResourcesManager()
       const move = { '@type': 'ComponentMove', ...body, 'componentPosition': '/_/component_positions/from' }
       cwaFetch.fetch.mockResolvedValue(move)
-      expect(await resourcesManager.moveComponent(componentIri, body)).toEqual(move)
+      expect(await resourcesManager.send(`${componentIri}/move`, 'POST', body)).toEqual(move)
       expect(cwaFetch.fetch).toHaveBeenCalledTimes(1)
       expect(cwaFetch.fetch).toHaveBeenCalledWith(`${componentIri}/move`, {
         method: 'POST',
@@ -1652,7 +1652,7 @@ describe('Resources manager', () => {
       const { resourcesManager, cwaFetch, errorStoreActions } = createResourcesManager()
       const err = new Error('422')
       cwaFetch.fetch.mockRejectedValue(err)
-      expect(await resourcesManager.moveComponent(componentIri, body)).toBeUndefined()
+      expect(await resourcesManager.send(`${componentIri}/move`, 'POST', body)).toBeUndefined()
       expect(errorStoreActions.error).toHaveBeenCalledWith(expect.objectContaining({ endpoint: `${componentIri}/move` }), err)
     })
 
@@ -1662,7 +1662,7 @@ describe('Resources manager', () => {
       cwaFetch.fetch.mockReturnValue(new Promise((resolve) => {
         respond = resolve
       }))
-      const moving = resourcesManager.moveComponent(componentIri, body)
+      const moving = resourcesManager.send(`${componentIri}/move`, 'POST', body)
       expect(resourcesManager.requestCount.value).toBe(1)
       respond({ componentPosition: null })
       await moving

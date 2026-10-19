@@ -92,7 +92,7 @@ function sendMove($cwa: Cwa, sourceIri: string, { positionIri, from }: CloneMove
   ])
 
   const write = async () => {
-    const moved = await manager.moveComponent(iri, { from, to })
+    const moved = await manager.send<{ componentPosition: string | null }>(`${iri}/move`, 'POST', { from, to })
     if (moved) {
       if (fromPosition && !toGroup) {
         manager.removeResource({ resource: fromPosition })

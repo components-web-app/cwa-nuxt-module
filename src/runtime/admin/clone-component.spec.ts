@@ -54,8 +54,8 @@ function buildCwa(ops: { published?: Record<string, string | undefined>, pageDat
     refreshEndpoints: vi.fn(async (_paths: string[]) => {
       order.push('refreshEndpoints')
     }),
-    moveComponent: vi.fn(async (_iri: string, _body: any): Promise<{ componentPosition: string | null } | undefined> => {
-      order.push('moveComponent')
+    send: vi.fn(async (_endpoint: string, _method: string, _body: any): Promise<{ componentPosition: string | null } | undefined> => {
+      order.push('send')
       return { componentPosition: SOURCE_POSITION_IRI }
     }),
     removeResource: vi.fn(),
@@ -370,14 +370,14 @@ describe('moveComponent (#415, api-components-bundle#526)', () => {
     expect(result).toBe('added')
     expect(resourcesManager.queueComponentGroupWrite).toHaveBeenCalledTimes(1)
     expect(resourcesManager.queueComponentGroupWrite).toHaveBeenCalledWith(GROUP_IRI, expect.any(Function))
-    expect(resourcesManager.moveComponent).toHaveBeenCalledTimes(1)
-    expect(resourcesManager.moveComponent).toHaveBeenCalledWith(PUBLISHED_IRI, {
+    expect(resourcesManager.send).toHaveBeenCalledTimes(1)
+    expect(resourcesManager.send).toHaveBeenCalledWith(`${PUBLISHED_IRI}/move`, 'POST', {
       from: { componentPosition: SOURCE_POSITION_IRI },
       to: { componentGroup: GROUP_IRI, after: POSITION_IRI },
     })
     expect(resourcesManager.refreshEndpoints.mock.calls).toEqual([[[SOURCE_POSITION_IRI, GROUP_IRI, SOURCE_GROUP_IRI]]])
     expect(resourcesManager.refreshComponentGroupOrder.mock.calls).toEqual([[GROUP_IRI], [SOURCE_GROUP_IRI]])
-    expect(order).toEqual(['queue:start', 'moveComponent', 'refreshEndpoints', 'refreshComponentGroupOrder', 'refreshComponentGroupOrder', 'queue:end'])
+    expect(order).toEqual(['queue:start', 'send', 'refreshEndpoints', 'refreshComponentGroupOrder', 'refreshComponentGroupOrder', 'queue:end'])
     expect(resourcesManager.updateResource).not.toHaveBeenCalled()
     expect(resourcesManager.createResource).not.toHaveBeenCalled()
     expect(resourcesManager.removeResource).not.toHaveBeenCalled()
@@ -387,7 +387,7 @@ describe('moveComponent (#415, api-components-bundle#526)', () => {
   test('a move within its own group re-reads that group\'s order once', async () => {
     const { $cwa, resourcesManager } = buildCwa({ sourceGroup: GROUP_IRI })
     await moveComponent($cwa, { sourceIri: PUBLISHED_IRI, move: fromPosition, target: { kind: 'position', groupIri: GROUP_IRI, anchor: { before: POSITION_IRI } } })
-    expect(resourcesManager.moveComponent).toHaveBeenCalledWith(PUBLISHED_IRI, {
+    expect(resourcesManager.send).toHaveBeenCalledWith(`${PUBLISHED_IRI}/move`, 'POST', {
       from: { componentPosition: SOURCE_POSITION_IRI },
       to: { componentGroup: GROUP_IRI, before: POSITION_IRI },
     })
@@ -396,14 +396,14 @@ describe('moveComponent (#415, api-components-bundle#526)', () => {
 
   test('a position into a page-data slot moves it into the page data at the slot\'s depth through the source group\'s write queue, and drops the deleted position', async () => {
     const { $cwa, resourcesManager, resources, order } = buildCwa()
-    resourcesManager.moveComponent.mockImplementationOnce(async () => {
-      order.push('moveComponent')
+    resourcesManager.send.mockImplementationOnce(async () => {
+      order.push('send')
       return { componentPosition: null }
     })
     const result = await moveComponent($cwa, { sourceIri: PUBLISHED_IRI, move: fromPosition, target: toSlot })
     expect(result).toBe('added')
     expect(resources.pageDataIriOf).toHaveBeenCalledWith(DYNAMIC_POSITION_IRI)
-    expect(resourcesManager.moveComponent).toHaveBeenCalledWith(PUBLISHED_IRI, {
+    expect(resourcesManager.send).toHaveBeenCalledWith(`${PUBLISHED_IRI}/move`, 'POST', {
       from: { componentPosition: SOURCE_POSITION_IRI },
       to: { pageData: PAGE_DATA_IRI, property: 'heroComponent' },
     })
@@ -416,10 +416,10 @@ describe('moveComponent (#415, api-components-bundle#526)', () => {
 
   test('a slot sends the page data and property recorded when Move started, never the page data on screen now', async () => {
     const { $cwa, resourcesManager } = buildCwa()
-    resourcesManager.moveComponent.mockResolvedValueOnce({ componentPosition: MOVED_POSITION_IRI })
+    resourcesManager.send.mockResolvedValueOnce({ componentPosition: MOVED_POSITION_IRI })
     const result = await moveComponent($cwa, { sourceIri: PUBLISHED_IRI, move: fromSlot, target: toGroup })
     expect(result).toBe('added')
-    expect(resourcesManager.moveComponent).toHaveBeenCalledWith(PUBLISHED_IRI, {
+    expect(resourcesManager.send).toHaveBeenCalledWith(`${PUBLISHED_IRI}/move`, 'POST', {
       from: { pageData: OTHER_PAGE_DATA_IRI, property: 'heroComponent' },
       to: { componentGroup: GROUP_IRI, after: POSITION_IRI },
     })
@@ -431,17 +431,17 @@ describe('moveComponent (#415, api-components-bundle#526)', () => {
 
   test('a slot on screen re-reads its page data and position after the move', async () => {
     const { $cwa, resourcesManager } = buildCwa({ currentIds: [OTHER_PAGE_DATA_IRI, DYNAMIC_POSITION_IRI] })
-    resourcesManager.moveComponent.mockResolvedValueOnce({ componentPosition: MOVED_POSITION_IRI })
+    resourcesManager.send.mockResolvedValueOnce({ componentPosition: MOVED_POSITION_IRI })
     await moveComponent($cwa, { sourceIri: PUBLISHED_IRI, move: fromSlot, target: toGroup })
     expect(resourcesManager.refreshEndpoints.mock.calls).toEqual([[[OTHER_PAGE_DATA_IRI, DYNAMIC_POSITION_IRI, GROUP_IRI]]])
   })
 
   test('the same slot on another page-data page moves from the recorded page data to the one on screen, with no group write', async () => {
     const { $cwa, resourcesManager } = buildCwa()
-    resourcesManager.moveComponent.mockResolvedValueOnce({ componentPosition: null })
+    resourcesManager.send.mockResolvedValueOnce({ componentPosition: null })
     const result = await moveComponent($cwa, { sourceIri: PUBLISHED_IRI, move: fromSlot, target: toSlot })
     expect(result).toBe('added')
-    expect(resourcesManager.moveComponent).toHaveBeenCalledWith(PUBLISHED_IRI, {
+    expect(resourcesManager.send).toHaveBeenCalledWith(`${PUBLISHED_IRI}/move`, 'POST', {
       from: { pageData: OTHER_PAGE_DATA_IRI, property: 'heroComponent' },
       to: { pageData: PAGE_DATA_IRI, property: 'heroComponent' },
     })
@@ -454,7 +454,7 @@ describe('moveComponent (#415, api-components-bundle#526)', () => {
     const { $cwa, resourcesManager } = buildCwa({ pageData: {} })
     useCloneMode($cwa).start(PUBLISHED_IRI, 'Hero', fromPosition)
     expect(await moveComponent($cwa, { sourceIri: PUBLISHED_IRI, move: fromPosition, target: toSlot })).toBe('refused')
-    expect(resourcesManager.moveComponent).not.toHaveBeenCalled()
+    expect(resourcesManager.send).not.toHaveBeenCalled()
     expect(useCloneMode($cwa).source.value).toBeDefined()
   })
 
@@ -466,7 +466,7 @@ describe('moveComponent (#415, api-components-bundle#526)', () => {
   ])('a 422 on %s says the component being moved no longer exists and ends move mode', async (property) => {
     const { $cwa, resourcesManager, errors } = buildCwa()
     errors.push(unrelatedNotFound())
-    resourcesManager.moveComponent.mockImplementationOnce(refuseMove(errors, 422, property, 'This component position does not hold the component.'))
+    resourcesManager.send.mockImplementationOnce(refuseMove(errors, 422, property, 'This component position does not hold the component.'))
     useCloneMode($cwa).start(PUBLISHED_IRI, 'Hero', fromPosition)
     const result = await moveComponent($cwa, { sourceIri: PUBLISHED_IRI, move: fromPosition, target: toGroup })
     expect(result).toBe('source-gone')
@@ -476,7 +476,7 @@ describe('moveComponent (#415, api-components-bundle#526)', () => {
 
   test('a 404 for the component says the component being moved no longer exists and ends move mode', async () => {
     const { $cwa, resourcesManager, errors } = buildCwa()
-    resourcesManager.moveComponent.mockImplementationOnce(refuseMove(errors, 404, undefined, 'Not Found'))
+    resourcesManager.send.mockImplementationOnce(refuseMove(errors, 404, undefined, 'Not Found'))
     useCloneMode($cwa).start(PUBLISHED_IRI, 'Hero', fromPosition)
     expect(await moveComponent($cwa, { sourceIri: PUBLISHED_IRI, move: fromPosition, target: toGroup })).toBe('source-gone')
     expect(errors.map(error => error.detail)).toEqual(['The component being moved no longer exists'])
@@ -491,7 +491,7 @@ describe('moveComponent (#415, api-components-bundle#526)', () => {
     ['a 400 naming from.componentPosition', 400, 'from.componentPosition', 'Malformed.'],
   ])('%s keeps move mode on and leaves the API error shown', async (_label, statusCode, property, detail) => {
     const { $cwa, resourcesManager, errors } = buildCwa()
-    resourcesManager.moveComponent.mockImplementationOnce(refuseMove(errors, statusCode, property, detail))
+    resourcesManager.send.mockImplementationOnce(refuseMove(errors, statusCode, property, detail))
     useCloneMode($cwa).start(PUBLISHED_IRI, 'Hero', fromPosition)
     const result = await moveComponent($cwa, { sourceIri: PUBLISHED_IRI, move: fromPosition, target: toGroup })
     expect(result).toBe('refused')
@@ -503,7 +503,7 @@ describe('moveComponent (#415, api-components-bundle#526)', () => {
 
   test('a refused move re-reads the groups\' order in case the server moved it, but nothing else', async () => {
     const { $cwa, resourcesManager, errors } = buildCwa({ currentIds: [SOURCE_POSITION_IRI] })
-    resourcesManager.moveComponent.mockImplementationOnce(refuseMove(errors, 422, 'to.componentGroup', 'Full'))
+    resourcesManager.send.mockImplementationOnce(refuseMove(errors, 422, 'to.componentGroup', 'Full'))
     await moveComponent($cwa, { sourceIri: PUBLISHED_IRI, move: fromPosition, target: toGroup })
     expect(resourcesManager.refreshEndpoints).not.toHaveBeenCalled()
     expect(resourcesManager.refreshComponentGroupOrder.mock.calls).toEqual([[GROUP_IRI], [SOURCE_GROUP_IRI]])
@@ -555,7 +555,7 @@ describe('showing what was placed', () => {
     const { $cwa, admin, resourcesManager } = buildCwa()
     const created = '/_/component_positions/created-by-move'
     const move = { positionIri: DYNAMIC_POSITION_IRI, fromLayout: false, from: { pageData: PAGE_DATA_IRI, property: 'heroComponent' } }
-    resourcesManager.moveComponent.mockResolvedValueOnce({ componentPosition: created })
+    resourcesManager.send.mockResolvedValueOnce({ componentPosition: created })
     useCloneMode($cwa).start(PUBLISHED_IRI, 'Hero', move)
     expect(await moveComponent($cwa, { sourceIri: PUBLISHED_IRI, move, target: { kind: 'position', groupIri: GROUP_IRI, anchor: {} } })).toBe('added')
     expect(useCloneMode($cwa).placed.value).toBe(created)

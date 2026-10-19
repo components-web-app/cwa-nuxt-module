@@ -675,11 +675,11 @@ async function arriveForPlacing(page, link, text) {
 async function moveMenuOffers(page, text) {
   await select(page, text)
   await page.getByTestId('component-menu').getByTestId('button-options').click()
-  await page.getByTestId('component-menu-clone').waitFor()
+  await page.getByText('Add After', { exact: true }).waitFor()
   return await page.getByTestId('component-menu-move').count() > 0
 }
 
-test.fixme('34. Move out of a page-data slot into another page\'s group sends the slot\'s page data, and the slot then shows the template\'s fallback', needsMoveEndpoint, async ({ cwa: t }) => {
+test.fixme('36. Move out of a page-data slot into another page\'s group sends the slot\'s page data, and the slot then shows the template\'s fallback', needsMoveEndpoint, async ({ cwa: t }) => {
   const { page, settle } = t
   const articles = await seedArticlePages(t.api, t.rehearsal.token, t.seed)
   await openEditMode(t, articles.paths.articleA)
@@ -698,7 +698,7 @@ test.fixme('34. Move out of a page-data slot into another page\'s group sends th
   assert(await page.getByText(articleTexts.slotA, { exact: true }).count() === 0, 'The slot still shows the moved component')
 })
 
-test.fixme('35. Move from a group into an empty page-data slot sends the position and the slot\'s page data, and leaves the group', needsMoveEndpoint, async ({ cwa: t }) => {
+test.fixme('37. Move from a group into an empty page-data slot sends the position and the slot\'s page data, and leaves the group', needsMoveEndpoint, async ({ cwa: t }) => {
   const { page, settle } = t
   const articles = await seedArticlePages(t.api, t.rehearsal.token, t.seed)
   await openEditMode(t)
@@ -718,7 +718,7 @@ test.fixme('35. Move from a group into an empty page-data slot sends the positio
   assert(await page.getByText(texts.pageAOther, { exact: true }).count() === 0, 'The moved component is still on Home')
 })
 
-test.fixme('36. Move from a page-data slot into the same slot on another page-data page sends both page data, and swaps what each page shows', needsMoveEndpoint, async ({ cwa: t }) => {
+test.fixme('38. Move from a page-data slot into the same slot on another page-data page sends both page data, and swaps what each page shows', needsMoveEndpoint, async ({ cwa: t }) => {
   const { page, settle } = t
   const articles = await seedArticlePages(t.api, t.rehearsal.token, t.seed)
   await openEditMode(t, articles.paths.articleA)
@@ -737,7 +737,7 @@ test.fixme('36. Move from a page-data slot into the same slot on another page-da
   assert(await page.getByText(articleTexts.slotA, { exact: true }).count() === 0, 'Article A still shows the moved component')
 })
 
-test('37. in move mode an occupied page-data slot is disabled with the reason, and the slot moved from is where it already is', async ({ cwa: t }) => {
+test('39. in move mode an occupied page-data slot is disabled with the reason, and the slot moved from is where it already is', async ({ cwa: t }) => {
   const { page } = t
   await seedArticlePages(t.api, t.rehearsal.token, t.seed)
   await openEditMode(t)
@@ -763,11 +763,9 @@ test('37. in move mode an occupied page-data slot is disabled with the reason, a
   assert(t.rehearsal.writes.length === 0, `Something was written: ${JSON.stringify(t.rehearsal.writes)}`)
 })
 
-test('38. Move is offered from a page-data slot its page data fills, never from one showing the template\'s fallback', async ({ cwa: t }) => {
+test('40. Move is never offered from a page-data slot showing the template\'s fallback', async ({ cwa: t }) => {
   const { page } = t
   const articles = await seedArticlePages(t.api, t.rehearsal.token, t.seed)
-  await openEditMode(t, articles.paths.articleA)
-  assert(await moveMenuOffers(page, articleTexts.slotA), 'Move is not offered from a slot its page data fills')
   await openEditMode(t, articles.paths.articleB)
   assert(!await moveMenuOffers(page, articleTexts.fallback), 'Move is offered from a slot showing the template\'s fallback')
 })

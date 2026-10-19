@@ -623,8 +623,9 @@ export class ResourcesManager {
     return next
   }
 
-  private async sendRequest<T>(endpoint: string, method: 'POST' | 'PATCH', body: unknown): Promise<T | undefined> {
-    const event = { endpoint, source: endpoint }
+  /** @internal */
+  public async send<T>(endpoint: string, method: 'POST' | 'PATCH', body: unknown): Promise<T | undefined> {
+    const event = { endpoint }
     const id = ++this.reqCount.value
     const args: [string, RequestOptions] = [endpoint, { ...this.requestOptions(method), body }]
     set(this.requestsInProgress, [endpoint, id], { event, args })
@@ -641,13 +642,9 @@ export class ResourcesManager {
   }
 
   public async orderComponentGroup(groupIri: string, positionIris: string[]): Promise<boolean> {
-    const response = await this.sendRequest<ComponentGroupOrder>(`${groupIri}/order`, 'PATCH', { componentPositions: positionIris })
+    const response = await this.send<ComponentGroupOrder>(`${groupIri}/order`, 'PATCH', { componentPositions: positionIris })
     await (response ? this.reconcileOrder(groupIri, response) : this.refreshComponentGroupOrder(groupIri))
     return !!response
-  }
-
-  public moveComponent(componentIri: string, body: { from: object, to: object }) {
-    return this.sendRequest<{ componentPosition: string | null }>(`${componentIri}/move`, 'POST', body)
   }
 
   public async refreshComponentGroupOrder(groupIri: string): Promise<void> {
