@@ -114,6 +114,8 @@ async function mountManager() {
           template: '<div class="context-menu-stub" />',
         },
         ResourceManagerCtaButton: { template: '<div class="cta-stub" />' },
+        ComponentUsageBadge: { template: '<span class="usage-badge-stub" />' },
+        SharedInstancesHighlight: { template: '<div class="shared-instances-stub" />' },
         AddComponentDialog: { template: '<div class="add-dialog-stub" />' },
         Transition: false,
       },
@@ -175,6 +177,40 @@ describe('ResourceManager', () => {
 
       expect(wrapper.findComponent({ name: 'ManagerTabs' }).exists()).toBe(true)
       expect(wrapper.findComponent({ name: 'ManagerTabs' }).props('tabs')).toHaveLength(1)
+    })
+
+    test('shows the usage badge directly to the left of the CTA, in the same row', async () => {
+      const stackManager = makeStackManager({
+        showManager: ref(true),
+        currentStackItem: ref({ iri: '/component/1', managerTabs: [] }),
+      })
+      cwaState.cwa = makeCwa({ stackManager })
+      const wrapper = await mountManager()
+
+      resolverState.allMeta.value = [{ component: 'Tab1' }]
+      await nextTick()
+
+      const badge = wrapper.find('.usage-badge-stub')
+      expect(badge.exists()).toBe(true)
+      expect(badge.element.nextElementSibling?.classList.contains('cta-stub')).toBe(true)
+    })
+
+    test.each([
+      ['a component', '/component/1', false, true],
+      ['a position', '/_/component_positions/1', false, false],
+      ['a component while cloning', '/component/1', true, false],
+    ])('outlines the other copies of the selection only for %s outside clone mode', async (_label, iri, cloning, shown) => {
+      const stackManager = makeStackManager({
+        showManager: ref(true),
+        currentStackItem: ref({ iri, managerTabs: [] }),
+      })
+      cwaState.cwa = makeCwa({ stackManager })
+      cloning && useCloneMode(cwaState.cwa).start('/component/source')
+      const wrapper = await mountManager()
+      await flushPromises()
+
+      expect(wrapper.find('.shared-instances-stub').exists()).toBe(shown)
+      cloning && useCloneMode(cwaState.cwa).end()
     })
 
     test('does not render the holder when allTabsMeta is empty', async () => {
