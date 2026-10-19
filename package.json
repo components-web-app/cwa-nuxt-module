@@ -54,7 +54,7 @@
     "lint:fix": "eslint --fix .",
     "test": "vitest --run --reporter=verbose",
     "test:e2e": "pnpm run dev:build && pnpm run test:e2e:guards",
-    "test:e2e:guards": "node test/e2e/entry-bundle-markers.mjs && node test/e2e/prefetch-hints.mjs && node test/e2e/visitor-page-preloads.mjs && node test/e2e/ssr-concurrent-status.mjs && node test/e2e/page-cache-error-headers.mjs && node test/e2e/api-url-not-published.mjs && node test/e2e/sitemap-cache-headers.mjs && node test/e2e/admin-clone.mjs",
+    "test:e2e:guards": "node test/e2e/entry-bundle-markers.mjs && node test/e2e/prefetch-hints.mjs && node test/e2e/visitor-page-preloads.mjs && node test/e2e/ssr-concurrent-status.mjs && node test/e2e/page-cache-error-headers.mjs && node test/e2e/api-url-not-published.mjs && node test/e2e/sitemap-cache-headers.mjs",
     "test:watch": "vitest --watch --reporter=verbose",
     "test:watch:coverage": "vitest --watch --coverage --reporter=verbose",
     "test:coverage": "vitest --run --coverage --reporter=verbose",
@@ -65,7 +65,9 @@
     "tailwind:main": "postcss src/tailwind/tailwind-cwa.css -o ./src/runtime/templates/assets/cwa.css",
     "tailwind:base": "postcss src/tailwind/tailwind-base.css -o ./src/runtime/templates/assets/base.css",
     "tailwind:watch": "postcss src/tailwind/tailwind-cwa.css -o ./src/runtime/templates/assets/cwa.css --watch",
-    "test:fresh-install": "node test/e2e/fresh-install.mjs"
+    "test:fresh-install": "node test/e2e/fresh-install.mjs",
+    "test:browser": "playwright test -c test/browser/playwright.config.mjs",
+    "test:browser:rehearse": "node test/browser/rehearse.mjs"
   },
   "dependencies": {
     "@headlessui/vue": "^1.7.23",
@@ -123,6 +125,7 @@
     "@oxc-parser/binding-darwin-arm64": "^0.153.0",
     "@oxc-transform/binding-darwin-arm64": "^0.153.0",
     "@pinia/testing": "^2.0.1",
+    "@playwright/test": "1.64.0",
     "@stryker-mutator/core": "^10.0.0",
     "@stryker-mutator/vitest-runner": "^10.0.0",
     "@tailwindcss/forms": "^0.5.11",
@@ -141,7 +144,7 @@
     "happy-dom": "^21.0.1",
     "nuxt": "^4.6.2",
     "pathe": "^2.0.3",
-    "playwright-core": "^1.64.0",
+    "playwright-core": "1.64.0",
     "postcss": "^8.5.29",
     "postcss-cli": "^12.0.0",
     "satori": "^0.47.1",
