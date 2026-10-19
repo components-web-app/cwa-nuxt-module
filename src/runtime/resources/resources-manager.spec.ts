@@ -1625,4 +1625,48 @@ describe('Resources manager', () => {
       expect(admin.emptyStack).not.toHaveBeenCalled()
     })
   })
+
+  describe('moving a component (#415, api-components-bundle#526)', () => {
+    const componentIri = '/component/html_contents/published'
+    const body = {
+      from: { componentPosition: '/_/component_positions/from' },
+      to: { componentGroup: '/_/component_groups/to', after: '/_/component_positions/anchor' },
+    }
+
+    test('POSTs from and to to the component\'s move endpoint and returns the move without storing it', async () => {
+      const { resourcesManager, cwaFetch, resourcesStoreActions, errorStoreActions } = createResourcesManager()
+      const move = { '@type': 'ComponentMove', ...body, 'componentPosition': '/_/component_positions/from' }
+      cwaFetch.fetch.mockResolvedValue(move)
+      expect(await resourcesManager.moveComponent(componentIri, body)).toEqual(move)
+      expect(cwaFetch.fetch).toHaveBeenCalledTimes(1)
+      expect(cwaFetch.fetch).toHaveBeenCalledWith(`${componentIri}/move`, {
+        method: 'POST',
+        headers: { 'accept': 'application/ld+json,application/json', 'content-type': 'application/ld+json' },
+        body,
+      })
+      expect(errorStoreActions.removeByEndpoint).toHaveBeenCalledWith(`${componentIri}/move`)
+      expect(resourcesStoreActions.saveResource).not.toHaveBeenCalled()
+    })
+
+    test('a refused move is reported against the move endpoint and returns nothing', async () => {
+      const { resourcesManager, cwaFetch, errorStoreActions } = createResourcesManager()
+      const err = new Error('422')
+      cwaFetch.fetch.mockRejectedValue(err)
+      expect(await resourcesManager.moveComponent(componentIri, body)).toBeUndefined()
+      expect(errorStoreActions.error).toHaveBeenCalledWith(expect.objectContaining({ endpoint: `${componentIri}/move` }), err)
+    })
+
+    test('a move counts as a request in progress', async () => {
+      const { resourcesManager, cwaFetch } = createResourcesManager()
+      let respond!: (value: any) => void
+      cwaFetch.fetch.mockReturnValue(new Promise((resolve) => {
+        respond = resolve
+      }))
+      const moving = resourcesManager.moveComponent(componentIri, body)
+      expect(resourcesManager.requestCount.value).toBe(1)
+      respond({ componentPosition: null })
+      await moving
+      expect(resourcesManager.requestCount.value).toBe(0)
+    })
+  })
 })

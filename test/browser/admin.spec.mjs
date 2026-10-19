@@ -1,8 +1,10 @@
 import { test } from './fixtures.mjs'
-import { texts } from './seed.mjs'
+import { articleTexts, seedArticlePages, texts } from './seed.mjs'
 
 const notFoundResource = /^Failed to load resource: the server responded with a status of 404/
 const unknownResource = /^Failed to load resource: the server responded with a status of (400|404)/
+const refusedResource = /^Failed to load resource: the server responded with a status of 422/
+const needsMoveEndpoint = { annotation: { type: 'fixme', description: 'needs the api-components-bundle release with #526 in the template' } }
 
 class AssertionError extends Error {}
 
@@ -50,6 +52,15 @@ async function startClone(page) {
   await page.getByTestId('component-menu').getByTestId('button-options').click()
   await page.getByTestId('component-menu-clone').click()
   await page.getByTestId('clone-mode-bar').waitFor()
+}
+
+function moveWrite(t) {
+  return eventually(() => t.rehearsal.writes.find(w => w.method === 'POST' && w.path.endsWith('/move')), 'No move was POSTed')
+}
+
+function assertMove(write, componentIri, body) {
+  assert(write.path === `${componentIri}/move`, `POSTed the move to ${write.path}`)
+  assert(JSON.stringify(write.body) === JSON.stringify(body), `POSTed ${JSON.stringify(write.body)}`)
 }
 
 async function startMove(page, text = texts.source) {
@@ -443,7 +454,7 @@ test('22. a link to a page already visited, shown at once from the route cache, 
   assert(await page.getByRole('dialog').count() === 0, `A dialog opened: ${await dialogTexts(page)}`)
 })
 
-test('23. Move within a group PATCHes the clicked position after its new neighbour, and the new order survives a reload', async ({ cwa: t }) => {
+test.fixme('23. Move within a group POSTs the clicked position\'s move after its new neighbour, and the new order survives a reload', needsMoveEndpoint, async ({ cwa: t }) => {
   const { page, settle } = t
   await openEditMode(t)
   await eventually(async () => await sourceAbove(page, texts.pageAOther) === true, 'The fixture order is wrong')
@@ -453,9 +464,8 @@ test('23. Move within a group PATCHes the clicked position after its new neighbo
   await page.getByText(texts.pageAOther, { exact: true }).click()
   const dialog = moveDialog(page)
   await dialog.getByRole('button', { name: 'Add after', exact: true }).click()
-  const patch = await eventually(() => t.rehearsal.writes.find(w => w.method === 'PATCH' && w.path === t.seed.positions.aSource), 'The position was not PATCHed')
-  assert(JSON.stringify(patch.body) === JSON.stringify({ componentGroup: t.seed.iris.pageAGroup, after: t.seed.positions.aOther }), `PATCHed ${JSON.stringify(patch.body)}`)
-  assert(!t.rehearsal.writes.some(w => w.method === 'POST' || w.method === 'DELETE'), 'A move created or deleted something')
+  assertMove(await moveWrite(t), t.seed.iris.source, { from: { componentPosition: t.seed.positions.aSource }, to: { componentGroup: t.seed.iris.pageAGroup, after: t.seed.positions.aOther } })
+  assert(t.rehearsal.writes.length === 1, `A move wrote more than once: ${JSON.stringify(t.rehearsal.writes)}`)
   await assertCloneModeEnded(page, 'Move mode did not end')
   await settle()
   assert(await sourceAbove(page, texts.pageAOther) === false, 'The page did not show the new order')
@@ -465,7 +475,7 @@ test('23. Move within a group PATCHes the clicked position after its new neighbo
   assert(await sourceAbove(page, texts.pageAOther) === false, 'The new order did not persist')
 })
 
-test('24. Move to another page relocates only the clicked instance: it leaves Home, arrives on Third, and Second keeps its own', async ({ cwa: t }) => {
+test.fixme('24. Move to another page relocates only the clicked instance: it leaves Home, arrives on Third, and Second keeps its own', needsMoveEndpoint, async ({ cwa: t }) => {
   const { page, base, settle } = t
   await openEditMode(t)
   await startMove(page)
@@ -474,8 +484,7 @@ test('24. Move to another page relocates only the clicked instance: it leaves Ho
   await eventually(async () => await page.getByRole('switch', { name: 'Enable Navigation' }).getAttribute('aria-checked') === 'false', 'Enable Navigation stayed on after arriving')
   await page.getByText(texts.third, { exact: true }).click()
   await moveDialog(page).getByRole('button', { name: 'Add after', exact: true }).click()
-  const patch = await eventually(() => t.rehearsal.writes.find(w => w.method === 'PATCH' && w.path === t.seed.positions.aSource), 'The position was not PATCHed')
-  assert(JSON.stringify(patch.body) === JSON.stringify({ componentGroup: t.seed.iris.pageCGroup, after: t.seed.positions.cThird }), `PATCHed ${JSON.stringify(patch.body)}`)
+  assertMove(await moveWrite(t), t.seed.iris.source, { from: { componentPosition: t.seed.positions.aSource }, to: { componentGroup: t.seed.iris.pageCGroup, after: t.seed.positions.cThird } })
   await assertCloneModeEnded(page, 'Move mode did not end')
   await eventually(async () => (await page.getByText(texts.source, { exact: true }).count()) === 1, 'The moved component is not on Third')
   await settle()
@@ -520,16 +529,16 @@ test('26. moving a layout component into the page warns that it will leave every
   assert((await note.innerText()).includes('no longer appear on other pages'), `The note is "${await note.innerText()}"`)
 })
 
-test('27. a move whose position was deleted elsewhere ends move mode with the source-gone message', async ({ cwa: t }) => {
+test.fixme('27. a move whose position was deleted elsewhere ends move mode with the source-gone message', needsMoveEndpoint, async ({ cwa: t }) => {
   const { page } = t
-  t.allowConsoleErrors(notFoundResource)
+  t.allowConsoleErrors(notFoundResource, refusedResource)
   await openEditMode(t)
   await startMove(page)
   await setNavigation(page, false)
   await t.api.remove(t.seed.positions.aSource)
   await page.getByText(texts.pageAOther, { exact: true }).click()
   await moveDialog(page).getByRole('button', { name: 'Add after', exact: true }).click()
-  await assertCloneModeEnded(page, 'Move mode did not end when the API answered 404')
+  await assertCloneModeEnded(page, 'Move mode did not end when the API refused the deleted position')
   await page.getByText('The component being moved no longer exists').first().waitFor()
 })
 
@@ -564,14 +573,14 @@ test('28. after a clone the new instance is selected and its outline flashes, an
   await eventually(async () => (await page.getByTestId('clone-placed').count()) === 0, 'The flash did not go', 4000)
 })
 
-test('29. after a move the moved instance is selected and its outline flashes', async ({ cwa: t }) => {
+test.fixme('29. after a move the moved instance is selected and its outline flashes', needsMoveEndpoint, async ({ cwa: t }) => {
   const { page } = t
   await openEditMode(t)
   await startMove(page)
   await setNavigation(page, false)
   await page.getByText(texts.pageAOther, { exact: true }).click()
   await moveDialog(page).getByRole('button', { name: 'Add after', exact: true }).click()
-  await eventually(() => t.rehearsal.writes.find(w => w.method === 'PATCH' && w.path === t.seed.positions.aSource), 'The position was not PATCHed')
+  await moveWrite(t)
   await assertCloneModeEnded(page, 'Move mode did not end')
   await eventually(async () => {
     const [moved] = await boxesOf(page, texts.source)
@@ -655,6 +664,112 @@ test('33. the options button is named More actions', async ({ cwa: t }) => {
   await select(page, texts.source)
   await page.getByTestId('component-menu').getByRole('button', { name: 'More actions', exact: true }).click()
   await page.getByTestId('component-menu-clone').waitFor()
+})
+
+async function arriveForPlacing(page, link, text) {
+  await layoutLink(page, link).click()
+  await page.getByText(text, { exact: true }).waitFor()
+  await eventually(async () => await page.getByRole('switch', { name: 'Enable Navigation' }).getAttribute('aria-checked') === 'false', `Enable Navigation stayed on after arriving on ${link}`)
+}
+
+async function moveMenuOffers(page, text) {
+  await select(page, text)
+  await page.getByTestId('component-menu').getByTestId('button-options').click()
+  await page.getByTestId('component-menu-clone').waitFor()
+  return await page.getByTestId('component-menu-move').count() > 0
+}
+
+test.fixme('34. Move out of a page-data slot into another page\'s group sends the slot\'s page data, and the slot then shows the template\'s fallback', needsMoveEndpoint, async ({ cwa: t }) => {
+  const { page, settle } = t
+  const articles = await seedArticlePages(t.api, t.rehearsal.token, t.seed)
+  await openEditMode(t, articles.paths.articleA)
+  await startMove(page, articleTexts.slotA)
+  await arriveForPlacing(page, 'Home', texts.pageAOther)
+  await page.getByText(texts.pageAOther, { exact: true }).click()
+  await moveDialog(page).getByRole('button', { name: 'Add after', exact: true }).click()
+  assertMove(await moveWrite(t), articles.iris.slotA, { from: { pageData: articles.iris.articleA, property: 'htmlContent' }, to: { componentGroup: t.seed.iris.pageAGroup, after: t.seed.positions.aOther } })
+  await assertCloneModeEnded(page, 'Move mode did not end')
+  await page.getByText(articleTexts.slotA, { exact: true }).waitFor()
+  await settle()
+  await page.getByRole('button', { name: 'Done', exact: true }).click()
+  await layoutLink(page, 'Article A').click()
+  await page.getByText(articleTexts.fallback, { exact: true }).waitFor()
+  await settle()
+  assert(await page.getByText(articleTexts.slotA, { exact: true }).count() === 0, 'The slot still shows the moved component')
+})
+
+test.fixme('35. Move from a group into an empty page-data slot sends the position and the slot\'s page data, and leaves the group', needsMoveEndpoint, async ({ cwa: t }) => {
+  const { page, settle } = t
+  const articles = await seedArticlePages(t.api, t.rehearsal.token, t.seed)
+  await openEditMode(t)
+  await startMove(page, texts.pageAOther)
+  await arriveForPlacing(page, 'Article B', articleTexts.fallback)
+  await page.getByText(articleTexts.fallback, { exact: true }).click()
+  await moveDialog(page).getByRole('button', { name: 'Use here', exact: true }).click()
+  assertMove(await moveWrite(t), t.seed.iris.pageAOther, { from: { componentPosition: t.seed.positions.aOther }, to: { pageData: articles.iris.articleB, property: 'htmlContent' } })
+  await assertCloneModeEnded(page, 'Move mode did not end')
+  await page.getByText(texts.pageAOther, { exact: true }).waitFor()
+  await settle()
+  assert(await page.getByText(articleTexts.fallback, { exact: true }).count() === 0, 'The slot still shows the template\'s fallback')
+  await page.getByRole('button', { name: 'Done', exact: true }).click()
+  await layoutLink(page, 'Home').click()
+  await page.getByText(texts.source, { exact: true }).waitFor()
+  await settle()
+  assert(await page.getByText(texts.pageAOther, { exact: true }).count() === 0, 'The moved component is still on Home')
+})
+
+test.fixme('36. Move from a page-data slot into the same slot on another page-data page sends both page data, and swaps what each page shows', needsMoveEndpoint, async ({ cwa: t }) => {
+  const { page, settle } = t
+  const articles = await seedArticlePages(t.api, t.rehearsal.token, t.seed)
+  await openEditMode(t, articles.paths.articleA)
+  await startMove(page, articleTexts.slotA)
+  await arriveForPlacing(page, 'Article B', articleTexts.fallback)
+  await page.getByText(articleTexts.fallback, { exact: true }).click()
+  await moveDialog(page).getByRole('button', { name: 'Use here', exact: true }).click()
+  assertMove(await moveWrite(t), articles.iris.slotA, { from: { pageData: articles.iris.articleA, property: 'htmlContent' }, to: { pageData: articles.iris.articleB, property: 'htmlContent' } })
+  await assertCloneModeEnded(page, 'Move mode did not end')
+  await page.getByText(articleTexts.slotA, { exact: true }).waitFor()
+  await settle()
+  await page.getByRole('button', { name: 'Done', exact: true }).click()
+  await layoutLink(page, 'Article A').click()
+  await page.getByText(articleTexts.fallback, { exact: true }).waitFor()
+  await settle()
+  assert(await page.getByText(articleTexts.slotA, { exact: true }).count() === 0, 'Article A still shows the moved component')
+})
+
+test('37. in move mode an occupied page-data slot is disabled with the reason, and the slot moved from is where it already is', async ({ cwa: t }) => {
+  const { page } = t
+  await seedArticlePages(t.api, t.rehearsal.token, t.seed)
+  await openEditMode(t)
+  await startMove(page, texts.pageAOther)
+  await arriveForPlacing(page, 'Article A', articleTexts.slotA)
+  await page.getByText(articleTexts.slotA, { exact: true }).click()
+  const occupied = moveDialog(page)
+  await occupied.getByRole('button', { name: 'Use here', exact: true }).waitFor()
+  assert(await occupied.getByRole('button', { name: 'Use here', exact: true }).isDisabled(), 'Use here is enabled on an occupied slot')
+  assert((await occupied.innerText()).includes('This field already holds Body Text: a move cannot replace it'), `The reason is not shown: ${await dialogTexts(page)}`)
+  await occupied.getByRole('button', { name: 'Cancel', exact: true }).click()
+  await waitForNoDialog(page, 'Cancel did not close the move dialog')
+  await page.keyboard.press('Escape')
+  await assertCloneModeEnded(page, 'Escape did not end move mode')
+
+  await startMove(page, articleTexts.slotA)
+  await setNavigation(page, false)
+  await page.getByText(articleTexts.slotA, { exact: true }).click()
+  const itself = moveDialog(page)
+  await itself.getByRole('button', { name: 'Use here', exact: true }).waitFor()
+  assert(await itself.getByRole('button', { name: 'Use here', exact: true }).isDisabled(), 'Use here is enabled on the slot moved from')
+  assert((await itself.innerText()).includes('This is where it already is'), `The reason is not shown: ${await dialogTexts(page)}`)
+  assert(t.rehearsal.writes.length === 0, `Something was written: ${JSON.stringify(t.rehearsal.writes)}`)
+})
+
+test('38. Move is offered from a page-data slot its page data fills, never from one showing the template\'s fallback', async ({ cwa: t }) => {
+  const { page } = t
+  const articles = await seedArticlePages(t.api, t.rehearsal.token, t.seed)
+  await openEditMode(t, articles.paths.articleA)
+  assert(await moveMenuOffers(page, articleTexts.slotA), 'Move is not offered from a slot its page data fills')
+  await openEditMode(t, articles.paths.articleB)
+  assert(!await moveMenuOffers(page, articleTexts.fallback), 'Move is offered from a slot showing the template\'s fallback')
 })
 
 test('19. Escape on the shared delete dialog cancels it and Delete works again', async ({ cwa: t }) => {

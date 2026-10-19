@@ -531,7 +531,7 @@ describe('Header', () => {
 
     test.each([
       ['a clone', undefined, 'Cloning: Body Text — “Shared source component”'],
-      ['a move', { positionIri: '/_/component_positions/p1', fromLayout: false }, 'Moving: Body Text — “Shared source component”'],
+      ['a move', { positionIri: '/_/component_positions/p1', fromLayout: false, from: { componentPosition: '/_/component_positions/p1' } }, 'Moving: Body Text — “Shared source component”'],
     ] as const)('in %s the bar names the content as well as its type', async (_label, move, expected) => {
       const { cwa } = mockCwa({ admin: buildAdmin({ isEditing: true }) })
       useCloneMode(cwa).start(SOURCE_IRI, 'Body Text', move, { excerpt: 'Shared source component' })
@@ -550,7 +550,7 @@ describe('Header', () => {
 
     test('a move says Moving in the bar', async () => {
       const { cwa } = mockCwa({ admin: buildAdmin({ isEditing: true }) })
-      useCloneMode(cwa).start(SOURCE_IRI, 'Hero text', { positionIri: '/_/component_positions/p1', fromLayout: false })
+      useCloneMode(cwa).start(SOURCE_IRI, 'Hero text', { positionIri: '/_/component_positions/p1', fromLayout: false, from: { componentPosition: '/_/component_positions/p1' } })
       const wrapper = mountHeader()
       await flushPromises()
       expect(wrapper.find('[data-testid="clone-mode-bar"]').text()).toContain('Moving: Hero text')

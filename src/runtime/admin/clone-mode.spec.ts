@@ -84,8 +84,8 @@ describe('clone mode', () => {
   test('a move holds the position being moved and whether it started in the layout', () => {
     const { $cwa } = buildCwa()
     const mode = cloneModeOf($cwa)
-    mode.start(SOURCE_IRI, 'Hero text', { positionIri: '/_/component_positions/source', fromLayout: true })
-    expect(mode.source.value).toEqual({ iri: SOURCE_IRI, name: 'Hero text', move: { positionIri: '/_/component_positions/source', fromLayout: true } })
+    mode.start(SOURCE_IRI, 'Hero text', { positionIri: '/_/component_positions/source', fromLayout: true, from: { componentPosition: '/_/component_positions/source' } })
+    expect(mode.source.value).toEqual({ iri: SOURCE_IRI, name: 'Hero text', move: { positionIri: '/_/component_positions/source', fromLayout: true, from: { componentPosition: '/_/component_positions/source' } } })
   })
 
   test('start holds the position the editor started from and an excerpt of its content, for a clone and a move', () => {
@@ -93,8 +93,8 @@ describe('clone mode', () => {
     const mode = cloneModeOf($cwa)
     mode.start(SOURCE_IRI, 'Body Text', undefined, { positionIri: '/_/component_positions/from', excerpt: 'Shared source' })
     expect(mode.source.value).toEqual({ iri: SOURCE_IRI, name: 'Body Text', positionIri: '/_/component_positions/from', excerpt: 'Shared source' })
-    mode.start(SOURCE_IRI, 'Body Text', { positionIri: '/_/component_positions/from', fromLayout: false }, { positionIri: '/_/component_positions/from', excerpt: 'Shared source' })
-    expect(mode.source.value).toEqual({ iri: SOURCE_IRI, name: 'Body Text', positionIri: '/_/component_positions/from', excerpt: 'Shared source', move: { positionIri: '/_/component_positions/from', fromLayout: false } })
+    mode.start(SOURCE_IRI, 'Body Text', { positionIri: '/_/component_positions/from', fromLayout: false, from: { componentPosition: '/_/component_positions/from' } }, { positionIri: '/_/component_positions/from', excerpt: 'Shared source' })
+    expect(mode.source.value).toEqual({ iri: SOURCE_IRI, name: 'Body Text', positionIri: '/_/component_positions/from', excerpt: 'Shared source', move: { positionIri: '/_/component_positions/from', fromLayout: false, from: { componentPosition: '/_/component_positions/from' } } })
   })
 
   test('two Cwa instances hold separate clone sources', () => {

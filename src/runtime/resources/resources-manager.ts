@@ -623,26 +623,31 @@ export class ResourcesManager {
     return next
   }
 
-  public async orderComponentGroup(groupIri: string, positionIris: string[]): Promise<boolean> {
-    const endpoint = `${groupIri}/order`
-    const event = { endpoint, source: 'component-group-order' }
+  private async sendRequest<T>(endpoint: string, method: 'POST' | 'PATCH', body: unknown): Promise<T | undefined> {
+    const event = { endpoint, source: endpoint }
     const id = ++this.reqCount.value
-    const args: [string, RequestOptions] = [endpoint, { ...this.requestOptions('PATCH'), body: { componentPositions: positionIris } }]
-    set(this.requestsInProgress, [event.source, id], { event, args })
+    const args: [string, RequestOptions] = [endpoint, { ...this.requestOptions(method), body }]
+    set(this.requestsInProgress, [endpoint, id], { event, args })
     this.errorStore.removeByEndpoint(endpoint)
     try {
-      const response = await this.cwaFetch.fetch<ComponentGroupOrder>(...args)
-      await this.reconcileOrder(groupIri, response)
-      return true
+      return await this.cwaFetch.fetch<T>(...args)
     }
     catch (err) {
       this.errorStore.error(event, err as FetchError<any>)
-      await this.refreshComponentGroupOrder(groupIri)
-      return false
     }
     finally {
-      unset(this.requestsInProgress, [event.source, id])
+      unset(this.requestsInProgress, [endpoint, id])
     }
+  }
+
+  public async orderComponentGroup(groupIri: string, positionIris: string[]): Promise<boolean> {
+    const response = await this.sendRequest<ComponentGroupOrder>(`${groupIri}/order`, 'PATCH', { componentPositions: positionIris })
+    await (response ? this.reconcileOrder(groupIri, response) : this.refreshComponentGroupOrder(groupIri))
+    return !!response
+  }
+
+  public moveComponent(componentIri: string, body: { from: object, to: object }) {
+    return this.sendRequest<{ componentPosition: string | null }>(`${componentIri}/move`, 'POST', body)
   }
 
   public async refreshComponentGroupOrder(groupIri: string): Promise<void> {

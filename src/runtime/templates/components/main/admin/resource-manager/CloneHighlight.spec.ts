@@ -166,7 +166,7 @@ describe('CloneHighlight', () => {
 
   test.each([
     ['a clone', undefined],
-    ['a move', { positionIri: '/_/component_positions/from', fromLayout: false }],
+    ['a move', { positionIri: '/_/component_positions/from', fromLayout: false, from: { componentPosition: '/_/component_positions/from' } }],
   ] as const)('in %s the instance the editor started from is outlined solid, the others dashed', async (_label, move) => {
     const { cwa } = mockCwa()
     const origin = elementAt({ top: 10, left: 20, right: 120, bottom: 60 })

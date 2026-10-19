@@ -2,9 +2,12 @@ import { effectScope, shallowReadonly, shallowRef, watch } from 'vue'
 import type { EffectScope, Ref } from 'vue'
 import type Cwa from '#cwa/cwa'
 
+export type MoveFrom = { componentPosition: string } | { pageData: string, property: string }
+
 export interface CloneMove {
   positionIri: string
   fromLayout: boolean
+  from: MoveFrom
 }
 
 export interface CloneOrigin {

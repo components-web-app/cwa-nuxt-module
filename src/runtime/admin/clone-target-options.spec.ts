@@ -355,7 +355,7 @@ describe('cloneTargetOptions', () => {
   })
 
   describe('a move', () => {
-    const move = (positionIri: string, fromLayout = false) => ({ positionIri, fromLayout })
+    const move = (positionIri: string, fromLayout = false) => ({ positionIri, fromLayout, from: { componentPosition: positionIri } })
 
     test('is not offered next to the position being moved, as it is already there', () => {
       const resources = buildResources({ ...pageStore, [POSITION]: { component: SOURCE, componentGroup: GROUP } })
@@ -386,16 +386,71 @@ describe('cloneTargetOptions', () => {
       expect(result.options.every(option => option.reasons.includes('This is inside the component being moved'))).toBe(true)
     })
 
-    test('into a page-data slot is disabled with the reason', () => {
-      const result = cloneTargetOptions(input({
-        stack: stackOf(COMPONENT, DYNAMIC_POSITION, PAGE),
-        resources: buildResources(dataPageStore),
-        isDataPage: true,
-        move: move(POSITION),
-      }))
-      expect(summary(result)).toEqual([
-        { label: 'Use here', disabled: true, reasons: ['Moving into a page-data slot is not supported yet'] },
-      ])
+    describe('and page-data slots (#415)', () => {
+      const OCCUPANT = '/component/html_contents/occupant'
+      const OTHER_PAGE_DATA = '/page_data/other-article'
+      const fromSlot = (pageData: string, property = 'hero') => ({ positionIri: DYNAMIC_POSITION, fromLayout: false, from: { pageData, property } })
+      function slotHolding(value: string | null, extra: Record<string, Data> = {}) {
+        return buildResources({
+          ...dataPageStore,
+          [PAGE_DATA]: { ...dataPageStore[PAGE_DATA], hero: value },
+          [OCCUPANT]: { '@type': 'HtmlContent' },
+          ...extra,
+        })
+      }
+      function useHere(resources: CloneTargetOptionsInput['resources'], moving: CloneTargetOptionsInput['move'], overrides: Partial<CloneTargetOptionsInput> = {}) {
+        return cloneTargetOptions(input({ stack: stackOf(DYNAMIC_POSITION, PAGE), resources, isDataPage: true, move: moving, ...overrides }))
+      }
+
+      test('a position into an empty slot whose field takes its type is enabled', () => {
+        expect(summary(useHere(slotHolding(null), move(POSITION)))).toEqual([
+          { label: 'Use here', ...ENABLED },
+        ])
+      })
+
+      test('a position into an occupied slot is disabled with the reason, and gives no replace warning', () => {
+        const [option] = useHere(slotHolding(OCCUPANT), move(POSITION), { resourcesConfig: { HtmlContent: { name: 'Body Text' } } }).options
+        expect(option).toMatchObject({ disabled: true, reasons: ['This field already holds Body Text: a move cannot replace it'] })
+        expect(option!.warning).toBeUndefined()
+      })
+
+      test('a position into a slot of another type is disabled with the field\'s type', () => {
+        const resources = buildResources({ ...dataPageStore, [DYNAMIC_POSITION]: { pageDataProperty: 'banner' } })
+        expect(summary(useHere(resources, move(POSITION)))).toEqual([
+          { label: 'Use here', disabled: true, reasons: ['This field takes Container, not HtmlContent'] },
+        ])
+      })
+
+      test('a slot back into itself on the same page data is where it already is', () => {
+        expect(summary(useHere(slotHolding(SOURCE), fromSlot(PAGE_DATA)))).toEqual([
+          { label: 'Use here', disabled: true, reasons: ['This is where it already is'] },
+        ])
+      })
+
+      test('a slot into the same empty slot on another page-data page is allowed', () => {
+        expect(summary(useHere(slotHolding(null), fromSlot(OTHER_PAGE_DATA)))).toEqual([
+          { label: 'Use here', ...ENABLED },
+        ])
+      })
+
+      test('a slot into the same slot on another page-data page that holds a component is disabled as occupied', () => {
+        expect(summary(useHere(slotHolding(OCCUPANT), fromSlot(OTHER_PAGE_DATA)))[0]!.reasons).toEqual(['This field already holds HtmlContent: a move cannot replace it'])
+      })
+
+      test('a slot can be placed before or after its own slot\'s position, as that adds a position', () => {
+        const resources = buildResources({ ...dataPageStore, [GROUP]: { componentPositions: [DYNAMIC_POSITION] }, [DYNAMIC_POSITION]: { pageDataProperty: 'hero', componentGroup: GROUP } })
+        const result = cloneTargetOptions(input({ stack: stackOf(COMPONENT, DYNAMIC_POSITION, GROUP, PAGE), resources, isDataPage: true, move: fromSlot(OTHER_PAGE_DATA) }))
+        expect(summary(result).slice(0, 2)).toEqual([
+          { label: 'Add before', ...ENABLED },
+          { label: 'Add after', ...ENABLED },
+        ])
+      })
+
+      test('a slot into the full group holding its own slot\'s position is disabled, as that adds a position', () => {
+        const resources = buildResources({ ...dataPageStore, [GROUP]: { componentPositions: [DYNAMIC_POSITION], maxComponents: 1 }, [DYNAMIC_POSITION]: { pageDataProperty: 'hero', componentGroup: GROUP } })
+        const result = cloneTargetOptions(input({ stack: stackOf(COMPONENT, DYNAMIC_POSITION, GROUP, PAGE), resources, isDataPage: true, move: fromSlot(OTHER_PAGE_DATA) }))
+        expect(summary(result).slice(0, 2).map(option => option.reasons)).toEqual([['This group is full'], ['This group is full']])
+      })
     })
 
     test('from the layout into the page says it will leave every other page', () => {
