@@ -354,6 +354,58 @@ describe('cloneTargetOptions', () => {
     expect(cloneTargetOptions(input({ stack: layoutStack, resources: buildResources(layoutStore), type: 'layout', isEditingLayout: true })).scope).toEqual({ type: 'layout', switching: false })
   })
 
+  describe('a move', () => {
+    const move = (positionIri: string, fromLayout = false) => ({ positionIri, fromLayout })
+
+    test('is not offered next to the position being moved, as it is already there', () => {
+      const resources = buildResources({ ...pageStore, [POSITION]: { component: SOURCE, componentGroup: GROUP } })
+      expect(summary(cloneTargetOptions(input({ resources, stack: stackOf(SOURCE, POSITION, GROUP, PAGE), move: move(POSITION) })))).toEqual([
+        { label: 'Add before', disabled: true, reasons: ['This is where it already is'] },
+        { label: 'Add after', disabled: true, reasons: ['This is where it already is'] },
+      ])
+    })
+
+    test('elsewhere in its own full group is allowed, as a move does not add to the group', () => {
+      const resources = buildResources({ ...pageStore, [GROUP]: { ...pageStore[GROUP], maxComponents: 2 }, [POSITION_2]: { component: SOURCE, componentGroup: GROUP } })
+      expect(summary(cloneTargetOptions(input({ resources, move: move(POSITION_2) })))).toEqual([
+        { label: 'Add before', ...ENABLED },
+        { label: 'Add after', ...ENABLED },
+      ])
+    })
+
+    test('into another full group is disabled with the reason', () => {
+      const resources = buildResources({ ...pageStore, [GROUP]: { ...pageStore[GROUP], maxComponents: 2 }, '/_/component_positions/elsewhere': { component: SOURCE, componentGroup: EMPTY_GROUP } })
+      expect(summary(cloneTargetOptions(input({ resources, move: move('/_/component_positions/elsewhere') })))).toEqual([
+        { label: 'Add before', disabled: true, reasons: ['This group is full'] },
+        { label: 'Add after', disabled: true, reasons: ['This group is full'] },
+      ])
+    })
+
+    test('into its own subtree names the component being moved', () => {
+      const result = cloneTargetOptions(input({ stack: stackOf(COMPONENT, POSITION, GROUP, SOURCE), resources: buildResources({ ...pageStore, [SOURCE]: { '@type': 'HtmlContent', 'componentGroups': [GROUP] } }), move: move('/_/component_positions/other') }))
+      expect(result.options.every(option => option.reasons.includes('This is inside the component being moved'))).toBe(true)
+    })
+
+    test('into a page-data slot is disabled with the reason', () => {
+      const result = cloneTargetOptions(input({
+        stack: stackOf(COMPONENT, DYNAMIC_POSITION, PAGE),
+        resources: buildResources(dataPageStore),
+        isDataPage: true,
+        move: move(POSITION),
+      }))
+      expect(summary(result)).toEqual([
+        { label: 'Use here', disabled: true, reasons: ['Moving into a page-data slot is not supported yet'] },
+      ])
+    })
+
+    test('from the layout into the page says it will leave every other page', () => {
+      expect(cloneTargetOptions(input({ isEditingLayout: true, move: move(POSITION_2, true) })).leavesLayout).toBe(true)
+      expect(cloneTargetOptions(input({ move: move(POSITION_2, false) })).leavesLayout).toBeUndefined()
+      expect(cloneTargetOptions(input({ isEditingLayout: true, type: 'layout', move: move(POSITION_2, true) })).leavesLayout).toBeUndefined()
+      expect(cloneTargetOptions(input({ isEditingLayout: true })).leavesLayout).toBeUndefined()
+    })
+  })
+
   test('a missing source type disables every option', () => {
     const result = cloneTargetOptions(input({ sourceIri: '/component/unknowns/x', sourceType: undefined }))
     expect(summary(result)).toEqual([

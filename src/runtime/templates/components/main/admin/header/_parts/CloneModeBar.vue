@@ -12,7 +12,7 @@ const { source, end } = useCloneMode($cwa)
     data-testid="clone-mode-bar"
     class="cwa:py-1 cwa:px-3 cwa:rounded-full cwa:bg-light/10 cwa:text-sm cwa:flex cwa:gap-x-1.5 cwa:items-center"
   >
-    <span class="cwa:text-stone-300 cwa:whitespace-nowrap">Cloning: {{ source.name || source.iri }}</span>
+    <span class="cwa:text-stone-300 cwa:whitespace-nowrap">{{ source.move ? 'Moving' : 'Cloning' }}: {{ source.name || source.iri }}</span>
     <span
       class="cwa:text-stone-400 cwa:text-xs"
       data-testid="clone-mode-hint"

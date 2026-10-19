@@ -529,6 +529,15 @@ describe('Header', () => {
       expect(bar.find('button').text()).toBe('Cancel')
     })
 
+    test('a move says Moving in the bar', async () => {
+      const { cwa } = mockCwa({ admin: buildAdmin({ isEditing: true }) })
+      useCloneMode(cwa).start(SOURCE_IRI, 'Hero text', { positionIri: '/_/component_positions/p1', fromLayout: false })
+      const wrapper = mountHeader()
+      await flushPromises()
+      expect(wrapper.find('[data-testid="clone-mode-bar"]').text()).toContain('Moving: Hero text')
+      expect(wrapper.find('[data-testid="clone-mode-bar"]').text()).not.toContain('Cloning')
+    })
+
     test('the Cloning bar sits in the header row beside Enable Navigation, never over the layout below the header', async () => {
       const { cwa } = mockCwa({ admin: buildAdmin({ isEditing: true }) })
       useCloneMode(cwa).start(SOURCE_IRI, 'Hero text')

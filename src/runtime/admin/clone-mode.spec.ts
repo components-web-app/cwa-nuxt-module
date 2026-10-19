@@ -81,6 +81,13 @@ describe('clone mode', () => {
     expect(JSON.stringify(pinia.state.value)).not.toContain(SOURCE_IRI)
   })
 
+  test('a move holds the position being moved and whether it started in the layout', () => {
+    const { $cwa } = buildCwa()
+    const mode = cloneModeOf($cwa)
+    mode.start(SOURCE_IRI, 'Hero text', { positionIri: '/_/component_positions/source', fromLayout: true })
+    expect(mode.source.value).toEqual({ iri: SOURCE_IRI, name: 'Hero text', move: { positionIri: '/_/component_positions/source', fromLayout: true } })
+  })
+
   test('two Cwa instances hold separate clone sources', () => {
     const first = buildCwa('first')
     const second = buildCwa('second')
