@@ -4,6 +4,7 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+- Move: a component's ⋮ menu offers Move, which works like Clone but relocates the clicked instance's position (`PATCH` with `componentGroup` and `after`/`before`); page-data slots are not supported yet ([#413](https://github.com/components-web-app/cwa-nuxt-module/pull/413), [#409](https://github.com/components-web-app/cwa-nuxt-module/issues/409))
 - Clone mode: fixes to navigation, redirects, the scope confirm, right-clicks, the overlay and highlights; no `?published=` when deleting a resource that is not publishable; a confirm closed with Escape counts as Cancel; clone mode starts with Enable Navigation on and turns it off on arriving at another page, and the Cloning bar says what to do next; the highlight is redrawn after a page is shown from the route cache; the shared delete dialog focuses Remove from this location only, styles Delete from all as a danger, and counts Escape as Cancel; a clone into the layout always says it appears on every page ([#410](https://github.com/components-web-app/cwa-nuxt-module/pull/410), [#157](https://github.com/components-web-app/cwa-nuxt-module/issues/157))
 
 ## [2.0.0-alpha.22] - 2026-10-18
