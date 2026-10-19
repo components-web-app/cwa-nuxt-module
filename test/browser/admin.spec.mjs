@@ -2,6 +2,7 @@ import { test } from './fixtures.mjs'
 import { texts } from './seed.mjs'
 
 const notFoundResource = /^Failed to load resource: the server responded with a status of 404/
+const unknownResource = /^Failed to load resource: the server responded with a status of (400|404)/
 
 class AssertionError extends Error {}
 
@@ -346,16 +347,15 @@ test('13. removing a component from one location DELETEs its position without ?p
 })
 
 test('14. a clone whose source was deleted elsewhere ends clone mode with the source-gone message', async ({ cwa: t }) => {
-  test.fail(true, 'The API answers POST /_/component_positions with a deleted component as 400 "Item not found for IRI", and the module only treats 404 as source-gone (#411)')
   const { page } = t
-  t.allowConsoleErrors(notFoundResource)
+  t.allowConsoleErrors(unknownResource)
   await openEditMode(t)
   await startClone(page)
   await setNavigation(page, false)
   await t.api.remove(t.seed.iris.source)
   await page.getByText(texts.pageAOther, { exact: true }).click()
   await cloneDialog(page).getByRole('button', { name: 'Add after', exact: true }).click()
-  await assertCloneModeEnded(page, 'Clone mode did not end when the API answered 404')
+  await assertCloneModeEnded(page, 'Clone mode did not end when the API refused the deleted source')
   await page.getByText('The component being cloned no longer exists').first().waitFor()
 })
 
