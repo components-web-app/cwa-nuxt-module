@@ -8,7 +8,7 @@ import {
 } from '#cwa/resources/resource-utils'
 import type { CwaResource } from '#cwa/resources/resource-utils'
 import { useCwa } from '#cwa/composables/cwa'
-import { useCloneMode } from '#cwa/admin/clone-mode'
+import { excerptOf, useCloneMode } from '#cwa/admin/clone-mode'
 import { componentGroupCapacity } from '#cwa/resources/component-group-capacity'
 import type { ButtonOption, ModelValue } from '#cwa/templates/components/ui/form/Button.vue'
 
@@ -57,11 +57,15 @@ const isPersistedComponent = computed(() => {
   return resourceType.value === CwaResourceTypes.COMPONENT && props.resource?._metadata?.persisted !== false
 })
 
+const closestPositionIri = computed(() => {
+  return $cwa.admin.resourceStackManager.resourceStack.value.find(item => getResourceTypeFromIri(item.iri) === CwaResourceTypes.COMPONENT_POSITION)?.iri
+})
+
 const movablePositionIri = computed(() => {
   if (!isPersistedComponent.value) {
     return
   }
-  const positionIri = $cwa.admin.resourceStackManager.resourceStack.value.find(item => getResourceTypeFromIri(item.iri) === CwaResourceTypes.COMPONENT_POSITION)?.iri
+  const positionIri = closestPositionIri.value
   const position = positionIri ? $cwa.resources.getResource(positionIri).value?.data : undefined
   if (!positionIri || position?.pageDataProperty || position?._metadata?.isDynamicPosition) {
     return
@@ -132,16 +136,19 @@ function handleManagerCtaClick(value?: ModelValue) {
       $cwa.resourcesManager.initAddResource(props.currentIri, addAfter, $cwa.admin.resourceStackManager.resourceStack.value)
     }
 
+    const stackItem = $cwa.admin.resourceStackManager.currentStackItem.value
+    const origin = { positionIri: closestPositionIri.value, excerpt: excerptOf(stackItem?.domElements.value ?? []) }
+
     if (value === 'clone') {
-      useCloneMode($cwa).start(props.currentIri, $cwa.admin.resourceStackManager.currentStackItem.value?.displayName)
+      useCloneMode($cwa).start(props.currentIri, stackItem?.displayName, undefined, origin)
       $cwa.admin.emptyStack()
     }
 
     if (value === 'move' && movablePositionIri.value) {
-      useCloneMode($cwa).start(props.currentIri, $cwa.admin.resourceStackManager.currentStackItem.value?.displayName, {
+      useCloneMode($cwa).start(props.currentIri, stackItem?.displayName, {
         positionIri: movablePositionIri.value,
         fromLayout: $cwa.admin.resourceStackManager.isEditingLayout.value,
-      })
+      }, origin)
       $cwa.admin.emptyStack()
     }
   }

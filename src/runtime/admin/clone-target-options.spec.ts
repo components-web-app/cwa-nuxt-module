@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, test } from 'vitest'
 import { computed } from 'vue'
 import { ResourceTypeFromIri } from '../resources/resource-utils'
-import { cloneTargetOptions } from './clone-target-options'
+import { cloneAnchorIndex, cloneTargetOptions, sharedReasons } from './clone-target-options'
 import type { CloneTargetOptionsInput } from './clone-target-options'
 import type { ApiDocumentationComponentMetadataCollection } from '#cwa/api/api-documentation'
 
@@ -412,5 +412,101 @@ describe('cloneTargetOptions', () => {
       { label: 'Add before', disabled: true, reasons: ['This component type is not known'] },
       { label: 'Add after', disabled: true, reasons: ['This component type is not known'] },
     ])
+  })
+})
+
+describe('display names in reasons (#414)', () => {
+  const resourcesConfig = { HtmlContent: { name: 'Body Text' }, Container: { name: 'Container Block' } }
+
+  test('a group that does not allow the type names it by its display name', () => {
+    const resources = buildResources({ ...pageStore, [GROUP]: { ...pageStore[GROUP], allowedComponents: ['/component/containers'] } })
+    expect(summary(cloneTargetOptions(input({ resources, resourcesConfig })))[0]!.reasons).toEqual(['This group does not allow Body Text'])
+  })
+
+  test('a page-data field of another type names both types by their display names', () => {
+    const result = cloneTargetOptions(input({
+      stack: stackOf(DYNAMIC_POSITION, PAGE),
+      resources: buildResources({
+        ...pageStore,
+        [DYNAMIC_POSITION]: { pageDataProperty: 'banner' },
+        [PAGE_DATA]: { _metadata: { pageDataMetadata: { properties: [{ property: 'banner', componentShortName: 'Container' }] } } },
+      }),
+      isDataPage: true,
+      resourcesConfig,
+    }))
+    expect(summary(result)[0]!.reasons).toEqual(['This field takes Container Block, not Body Text'])
+  })
+
+  test('a type with no configured name keeps its type name', () => {
+    const resources = buildResources({ ...pageStore, [GROUP]: { ...pageStore[GROUP], allowedComponents: ['/component/containers'] } })
+    expect(summary(cloneTargetOptions(input({ resources, resourcesConfig: {} })))[0]!.reasons).toEqual(['This group does not allow HtmlContent'])
+  })
+})
+
+describe('a clone into an occupied page-data slot (#415)', () => {
+  const OCCUPANT = '/component/html_contents/occupant'
+  const DRAFT = '/component/html_contents/source-draft'
+  function slotWith(value: string | null | undefined) {
+    return buildResources({
+      ...pageStore,
+      [DYNAMIC_POSITION]: { pageDataProperty: 'hero' },
+      [PAGE_DATA]: { hero: value, _metadata: { pageDataMetadata: { properties: [{ property: 'hero', componentShortName: 'HtmlContent' }] } } },
+      [OCCUPANT]: { '@type': 'HtmlContent' },
+    }, [[SOURCE, DRAFT]])
+  }
+  function useHere(resources: CloneTargetOptionsInput['resources'], overrides: Partial<CloneTargetOptionsInput> = {}) {
+    return cloneTargetOptions(input({ stack: stackOf(DYNAMIC_POSITION, PAGE), resources, isDataPage: true, ...overrides })).options[0]!
+  }
+
+  test('warns that it replaces the component the slot holds, by its display name', () => {
+    const option = useHere(slotWith(OCCUPANT), { resourcesConfig: { HtmlContent: { name: 'Body Text' } } })
+    expect(option.warning).toBe('This replaces Body Text')
+    expect(option.disabled).toBe(false)
+  })
+
+  test('falls back to the @type of the component it replaces', () => {
+    expect(useHere(slotWith(OCCUPANT)).warning).toBe('This replaces HtmlContent')
+  })
+
+  test.each([
+    ['empty', null],
+    ['unset', undefined],
+    ['holding the source', SOURCE],
+    ['holding the draft of the source', DRAFT],
+  ])('gives no warning when the slot is %s', (_label, value) => {
+    expect(useHere(slotWith(value)).warning).toBeUndefined()
+  })
+
+  test('a group option gives no replace warning', () => {
+    const result = cloneTargetOptions(input({ resources: slotWith(OCCUPANT) }))
+    expect(result.options.every(option => option.warning === undefined)).toBe(true)
+  })
+})
+
+describe('sharedReasons', () => {
+  const disabled = (...reasons: string[]) => ({ label: 'x', value: { kind: 'position', groupIri: GROUP, anchor: {} } as const, disabled: true, reasons })
+
+  test('gives the reasons every option shares, so they are said once', () => {
+    expect(sharedReasons([disabled('This group is full', 'This is where it already is'), disabled('This group is full')])).toEqual(['This group is full'])
+  })
+
+  test('gives nothing when any option is enabled', () => {
+    expect(sharedReasons([disabled('This group is full'), { ...disabled(), disabled: false }])).toEqual([])
+  })
+
+  test('gives nothing for no options', () => {
+    expect(sharedReasons([])).toEqual([])
+  })
+})
+
+describe('cloneAnchorIndex', () => {
+  test('is the position the options anchor before or after, beneath the clicked group', () => {
+    expect(cloneAnchorIndex(stackOf(COMPONENT, POSITION, GROUP, PAGE))).toBe(1)
+    expect(cloneAnchorIndex(stackOf(INNER_COMPONENT, INNER_POSITION, CONTAINER_GROUP, INNER_CONTAINER, POSITION, GROUP, PAGE))).toBe(1)
+  })
+
+  test('is nothing when the group itself was clicked, or no group was', () => {
+    expect(cloneAnchorIndex(stackOf(GROUP, PAGE))).toBeUndefined()
+    expect(cloneAnchorIndex(stackOf(COMPONENT, DYNAMIC_POSITION, PAGE))).toBeUndefined()
   })
 })

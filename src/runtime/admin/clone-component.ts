@@ -1,6 +1,8 @@
 import { ResourceTypeFromIri } from '../resources/resource-utils'
 import { ErrorType } from '../storage/stores/error/state'
+import { nextTick } from 'vue'
 import { useCloneMode } from './clone-mode'
+import { instancesOf, onInstancesChange } from './manageable-instances'
 import type Cwa from '#cwa/cwa'
 
 export type CloneAnchor = { after: string } | { before: string } | Record<string, never>
@@ -13,6 +15,14 @@ export type CloneOutcome = 'added' | 'refused' | 'source-gone'
 
 export const CLONE_SOURCE_GONE_MESSAGE = 'The component being cloned no longer exists'
 export const MOVE_SOURCE_GONE_MESSAGE = 'The component being moved no longer exists'
+
+const PLACED_SELECT_TIMEOUT_MS = 2000
+
+interface SentWrite {
+  endpoint: string
+  request: Promise<unknown>
+  placedIri: (result: any) => string | undefined
+}
 
 function addPosition($cwa: Cwa, iri: string, groupIri: string, anchor: CloneAnchor) {
   const manager = $cwa.resourcesManager
@@ -29,7 +39,7 @@ function addPosition($cwa: Cwa, iri: string, groupIri: string, anchor: CloneAnch
     await manager.refreshComponentGroupOrder(groupIri)
     return created
   })
-  return { endpoint, request }
+  return { endpoint, request, placedIri: (created: any) => created?.['@id'] }
 }
 
 function usePageDataSlot($cwa: Cwa, iri: string, positionIri: string, property: string) {
@@ -42,7 +52,7 @@ function usePageDataSlot($cwa: Cwa, iri: string, positionIri: string, property: 
     data: { [property]: iri },
     refreshEndpoints: [positionIri],
   })
-  return { endpoint, request }
+  return { endpoint, request, placedIri: () => positionIri }
 }
 
 function movePosition($cwa: Cwa, positionIri: string, groupIri: string, anchor: CloneAnchor) {
@@ -60,17 +70,45 @@ function movePosition($cwa: Cwa, positionIri: string, groupIri: string, anchor: 
     }
     return moved
   })
-  return { endpoint: positionIri, request }
+  return { endpoint: positionIri, request, placedIri: () => positionIri }
 }
 
-async function finish($cwa: Cwa, sent: { endpoint: string, request: Promise<unknown> } | undefined, sourceGoneMessage: string): Promise<CloneOutcome> {
+function selectWhenShown($cwa: Cwa, positionIri: string) {
+  const isShown = () => instancesOf($cwa, positionIri).length > 0
+  const select = () => $cwa.admin.eventBus.emit('selectResource', positionIri)
+  void nextTick(() => {
+    if (isShown()) {
+      select()
+      return
+    }
+    const stop = onInstancesChange($cwa, () => {
+      if (isShown()) {
+        stopWaiting()
+        select()
+      }
+    })
+    const timer = setTimeout(stop, PLACED_SELECT_TIMEOUT_MS)
+    function stopWaiting() {
+      clearTimeout(timer)
+      stop()
+    }
+  })
+}
+
+async function finish($cwa: Cwa, sent: SentWrite | undefined, sourceGoneMessage: string): Promise<CloneOutcome> {
   if (!sent) {
     return 'refused'
   }
 
   const cloneMode = useCloneMode($cwa)
-  if (await sent.request) {
+  const result = await sent.request
+  if (result) {
     cloneMode.end()
+    const placedIri = sent.placedIri(result)
+    if (placedIri) {
+      cloneMode.showPlaced(placedIri)
+      selectWhenShown($cwa, placedIri)
+    }
     return 'added'
   }
 

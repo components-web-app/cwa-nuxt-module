@@ -7,7 +7,12 @@ export interface CloneMove {
   fromLayout: boolean
 }
 
-export interface CloneSource {
+export interface CloneOrigin {
+  positionIri?: string
+  excerpt?: string
+}
+
+export interface CloneSource extends CloneOrigin {
   iri: string
   name?: string
   move?: CloneMove
@@ -15,8 +20,27 @@ export interface CloneSource {
 
 export interface CloneMode {
   source: Readonly<Ref<CloneSource | undefined>>
-  start: (iri: string, name?: string, move?: CloneMove) => void
+  placed: Readonly<Ref<string | undefined>>
+  start: (iri: string, name?: string, move?: CloneMove, origin?: CloneOrigin) => void
   end: () => void
+  showPlaced: (positionIri: string) => void
+}
+
+export const PLACED_FLASH_MS = 1500
+
+const EXCERPT_LENGTH = 24
+
+export function excerptOf(elements: readonly Node[]): string | undefined {
+  const text = elements.map(element => element.textContent ?? '').join(' ').replace(/\s+/g, ' ').trim()
+  if (!text) {
+    return
+  }
+  if (text.length <= EXCERPT_LENGTH) {
+    return text
+  }
+  const cut = text.slice(0, EXCERPT_LENGTH)
+  const space = cut.lastIndexOf(' ')
+  return `${(space > 0 ? cut.slice(0, space) : cut).trimEnd()}…`
 }
 
 const cloneModes = new WeakMap<Cwa, CloneMode>()
@@ -27,6 +51,8 @@ function isDialogOpen() {
 
 function createCloneMode($cwa: Cwa): CloneMode {
   const source = shallowRef<CloneSource | undefined>()
+  const placed = shallowRef<string | undefined>()
+  let placedTimer: ReturnType<typeof setTimeout> | undefined
   let scope: EffectScope | undefined
   let navigationOffTimer: ReturnType<typeof setTimeout> | undefined
 
@@ -44,9 +70,21 @@ function createCloneMode($cwa: Cwa): CloneMode {
     window.removeEventListener('keydown', onKeydown)
   }
 
-  function start(iri: string, name?: string, move?: CloneMove) {
+  function clearPlaced() {
+    clearTimeout(placedTimer)
+    placed.value = undefined
+  }
+
+  function showPlaced(positionIri: string) {
+    clearPlaced()
+    placed.value = positionIri
+    placedTimer = setTimeout(clearPlaced, PLACED_FLASH_MS)
+  }
+
+  function start(iri: string, name?: string, move?: CloneMove, origin: CloneOrigin = {}) {
     stopListening()
-    source.value = move ? { iri, name, move } : { iri, name }
+    clearPlaced()
+    source.value = move ? { iri, name, ...origin, move } : { iri, name, ...origin }
     $cwa.admin.setNavigationGuardDisabled(true)
     let navigatingFrom = $cwa.resources.displayPageIri.value
     scope = effectScope(true)
@@ -85,8 +123,10 @@ function createCloneMode($cwa: Cwa): CloneMode {
 
   return {
     source: shallowReadonly(source),
+    placed: shallowReadonly(placed),
     start,
     end,
+    showPlaced,
   }
 }
 
