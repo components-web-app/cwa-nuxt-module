@@ -59,6 +59,9 @@ function serveCookies(cookies) {
 
 export class UnrecordedRequestError extends Error {}
 
+/**
+ * @param {{ port: number, mode: 'record' | 'replay', dir?: string, target?: string, ca?: string, bundle?: string }} options
+ */
 export async function startRehearsal({ port, mode, dir = rehearsalsDir, target, ca, bundle }) {
   const origin = `http://127.0.0.1:${port}`
   const targetUrl = target ? new URL(target) : undefined
