@@ -15,7 +15,10 @@ import AddComponentDialog
   from '#cwa/templates/components/main/admin/resource-manager/_parts/AddComponentDialog.vue'
 import { useDataResolver } from '#cwa/templates/components/core/useDataResolver'
 import { useCloneMode } from '#cwa/admin/clone-mode'
+import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/resources/resource-utils'
 
+const ComponentUsageBadge = defineAsyncComponent(() => import('#cwa/templates/components/main/admin/resource-manager/cta/ComponentUsageBadge.vue'))
+const SharedInstancesHighlight = defineAsyncComponent(() => import('#cwa/templates/components/main/admin/resource-manager/SharedInstancesHighlight.vue'))
 const CloneTargetDialog = defineAsyncComponent(() => import('#cwa/templates/components/main/admin/resource-manager/_parts/CloneTargetDialog.vue'))
 
 const $cwa = useCwa()
@@ -118,6 +121,14 @@ function selectTab(index: number) {
   selectedIndex.value = index
 }
 
+const showSharedInstances = computed(() => {
+  const iri = currentStackItem.value?.iri
+  return !!iri
+    && $cwa.admin.resourceStackManager.showManager.value
+    && !cloneMode.source.value
+    && getResourceTypeFromIri(iri) === CwaResourceTypes.COMPONENT
+})
+
 const showAdmin = computed(() => {
   return $cwa.auth.hasRole(CwaUserRoles.ADMIN)
 })
@@ -210,7 +221,8 @@ defineExpose({
                     @click="selectTab"
                   />
                 </div>
-                <div class="cwa:flex cwa:light cwa:items-center cwa:content-center cwa:justify-center">
+                <div class="cwa:flex cwa:light cwa:items-center cwa:content-center cwa:justify-center cwa:gap-x-3">
+                  <ComponentUsageBadge />
                   <ResourceManagerCtaButton />
                 </div>
               </div>
@@ -233,6 +245,7 @@ defineExpose({
     :virtual-element="virtualElement"
   />
   <AddComponentDialog />
+  <SharedInstancesHighlight v-if="showSharedInstances" />
   <CloneTargetDialog
     v-if="cloneTarget"
     :stack="cloneTarget.stack"

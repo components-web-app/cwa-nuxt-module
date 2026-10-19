@@ -946,6 +946,12 @@
 .cwa\:border-yellow {
   border-color: var(--cwa-color-yellow);
 }
+.cwa\:border-yellow\/60 {
+  border-color: var(--cwa-color-yellow);
+  @supports (color: color-mix(in lab, red, red)) {
+    border-color: color-mix(in oklab, var(--cwa-color-yellow) 60%, transparent);
+  }
+}
 .cwa\:border-b-blue-600 {
   border-bottom-color: var(--cwa-color-blue-600);
 }
@@ -1218,6 +1224,9 @@
 }
 .cwa\:px-2 {
   padding-inline: calc(var(--cwa-spacing) * 2);
+}
+.cwa\:px-2\.5 {
+  padding-inline: calc(var(--cwa-spacing) * 2.5);
 }
 .cwa\:px-3 {
   padding-inline: calc(var(--cwa-spacing) * 3);
@@ -1684,6 +1693,12 @@
 }
 .cwa\:outline-stone-700 {
   outline-color: var(--cwa-color-stone-700);
+}
+.cwa\:outline-white\/60 {
+  outline-color: var(--cwa-color-white);
+  @supports (color: color-mix(in lab, red, red)) {
+    outline-color: color-mix(in oklab, var(--cwa-color-white) 60%, transparent);
+  }
 }
 .cwa\:outline-yellow {
   outline-color: var(--cwa-color-yellow);
