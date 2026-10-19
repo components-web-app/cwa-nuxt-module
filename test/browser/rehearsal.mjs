@@ -120,6 +120,7 @@ export async function startRehearsal({ port, mode, dir = rehearsalsDir, target, 
         })
         res.on('error', reject)
       })
+      outgoing.setTimeout(30000, () => outgoing.destroy(new Error('the API did not answer within 30s')))
       outgoing.on('error', reject)
       outgoing.end(raw || undefined)
     })

@@ -15,7 +15,6 @@ import AddComponentDialog
   from '#cwa/templates/components/main/admin/resource-manager/_parts/AddComponentDialog.vue'
 import { useDataResolver } from '#cwa/templates/components/core/useDataResolver'
 import { useCloneMode } from '#cwa/admin/clone-mode'
-import { useNuxtApp } from '#app/nuxt'
 
 const CloneTargetDialog = defineAsyncComponent(() => import('#cwa/templates/components/main/admin/resource-manager/_parts/CloneTargetDialog.vue'))
 
@@ -33,7 +32,6 @@ const currentManagerTabs = ref<ManagerTab[] | undefined>()
 const cachedPosition = { top: 0, left: 0 }
 let mousedownTarget: null | EventTarget = null
 const cloneMode = useCloneMode($cwa)
-const { vueApp } = useNuxtApp()
 const cloneTarget = shallowRef<{ stack: { iri: string }[], type: 'page' | 'layout' }>()
 
 type ContextPosition = {
@@ -102,27 +100,14 @@ function clickHandler(e: MouseEvent, type: 'page' | 'layout') {
   $cwa.admin.resourceStackManager.selectStackIndex(0, false)
 }
 
-async function chooseCloneTarget(type: 'page' | 'layout') {
+function chooseCloneTarget(type: 'page' | 'layout') {
   const stackManager = $cwa.admin.resourceStackManager
   const stack = [...stackManager.resourceStack.value]
   stackManager.restorePreviousStack()
   if ($cwa.admin.navigationGuardDisabled || !stack.length) {
     return
   }
-  if (await confirmScopeChange(type) && cloneMode.source.value) {
-    cloneTarget.value = { stack, type }
-  }
-}
-
-async function confirmScopeChange(type: 'page' | 'layout') {
-  if ($cwa.admin.resourceStackManager.isEditingLayout.value === (type === 'layout')) {
-    return true
-  }
-  const { default: ConfirmDialog } = await import('#cwa/templates/components/core/ConfirmDialog.vue')
-  const { createConfirmDialog } = await import('#cwa/admin/confirm-dialog')
-  const dialog = await createConfirmDialog(vueApp, ConfirmDialog)
-  const { isCanceled } = await dialog.reveal({ title: 'Are you sure?', content: `<p>Are you sure you want to switch and edit the ${type}?</p>` })
-  return !isCanceled
+  cloneTarget.value = { stack, type }
 }
 
 function completeStack(e: MouseEvent, type: undefined | 'page' | 'layout', isContext: boolean = false) {

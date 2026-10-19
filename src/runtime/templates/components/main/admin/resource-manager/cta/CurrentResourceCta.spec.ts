@@ -109,6 +109,12 @@ describe('CurrentResourceCta', () => {
   })
 
   describe('clone (#157)', () => {
+    function textElement(text: string) {
+      const element = document.createElement('div')
+      element.textContent = text
+      return element
+    }
+
     function mountClone(currentIri: string, metadata: Record<string, any> = { persisted: true }, ops: { stack?: string[], byId?: Record<string, any>, isEditingLayout?: boolean } = {}) {
       const emptyStack = vi.fn()
       const $cwa = {
@@ -121,7 +127,7 @@ describe('CurrentResourceCta', () => {
           setNavigationGuardDisabled: vi.fn(),
           resourceStackManager: {
             resourceStack: { value: (ops.stack ?? [currentIri]).map(iri => ({ iri })) },
-            currentStackItem: { value: { iri: currentIri, displayName: 'Hero Section' } },
+            currentStackItem: { value: { iri: currentIri, displayName: 'Hero Section', domElements: { value: [textElement('  Shared source\n component ')] } } },
             isEditingLayout: { value: ops.isEditingLayout ?? false },
           },
         },
@@ -170,9 +176,18 @@ describe('CurrentResourceCta', () => {
       button.vm.$emit('click', 'clone')
       await flushPromises()
 
-      expect(useCloneMode($cwa as any).source.value).toEqual({ iri: '/component/c1', name: 'Hero Section' })
+      expect(useCloneMode($cwa as any).source.value).toEqual({ iri: '/component/c1', name: 'Hero Section', excerpt: 'Shared source component' })
       expect(emptyStack).toHaveBeenCalledTimes(1)
       expect($cwa.resourcesManager.initAddResource).not.toHaveBeenCalled()
+    })
+
+    test('choosing Clone holds the position it was started from, also a page-data slot\'s, so that instance is outlined apart from the others', async () => {
+      const { $cwa, button } = mountClone('/component/c1', { persisted: true }, { stack: ['/component/c1', '/_/component_positions/p1', '/_/component_groups/g1'], byId: { '/_/component_positions/p1': { pageDataProperty: 'hero' } } })
+
+      button.vm.$emit('click', 'clone')
+      await flushPromises()
+
+      expect(useCloneMode($cwa as any).source.value).toEqual({ iri: '/component/c1', name: 'Hero Section', excerpt: 'Shared source component', positionIri: '/_/component_positions/p1' })
     })
 
     describe('move (#409)', () => {
@@ -208,7 +223,7 @@ describe('CurrentResourceCta', () => {
         button.vm.$emit('click', 'move')
         await flushPromises()
 
-        expect(useCloneMode($cwa as any).source.value).toEqual({ iri: '/component/c1', name: 'Hero Section', move: { positionIri: POSITION, fromLayout: isEditingLayout } })
+        expect(useCloneMode($cwa as any).source.value).toEqual({ iri: '/component/c1', name: 'Hero Section', excerpt: 'Shared source component', positionIri: POSITION, move: { positionIri: POSITION, fromLayout: isEditingLayout } })
         expect(emptyStack).toHaveBeenCalledTimes(1)
       })
     })

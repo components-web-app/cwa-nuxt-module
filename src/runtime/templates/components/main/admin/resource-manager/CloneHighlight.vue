@@ -5,12 +5,24 @@ import { useCloneMode } from '#cwa/admin/clone-mode'
 import { instancesOf, onInstancesChange } from '#cwa/admin/manageable-instances'
 
 const $cwa = useCwa()
-const { source } = useCloneMode($cwa)
+const { source, placed } = useCloneMode($cwa)
 const redrawCount = ref(0)
 const instances = computed(() => {
   void redrawCount.value
   return instancesOf($cwa, source.value?.iri)
 })
+const originElements = computed(() => {
+  void redrawCount.value
+  return instancesOf($cwa, source.value?.positionIri).flatMap(instance => instance.value)
+})
+const placedInstances = computed(() => {
+  void redrawCount.value
+  return instancesOf($cwa, placed.value)
+})
+
+function isOrigin(elements: HTMLElement[]) {
+  return elements.some(element => originElements.value.some(origin => origin.contains(element)))
+}
 
 function boundsOf(elements: HTMLElement[]) {
   let top = Infinity
@@ -41,7 +53,13 @@ function boundsOf(elements: HTMLElement[]) {
 }
 
 const highlights = computed(() => {
-  return instances.value.map(instance => boundsOf(instance.value)).filter(style => !!style)
+  return instances.value
+    .map(instance => ({ style: boundsOf(instance.value), origin: isOrigin(instance.value) }))
+    .filter(highlight => !!highlight.style)
+})
+
+const placedHighlights = computed(() => {
+  return placedInstances.value.map(instance => boundsOf(instance.value)).filter(style => !!style)
 })
 
 function redraw() {
@@ -63,7 +81,7 @@ function redrawAfterRender() {
 
 const stopInstances = onInstancesChange($cwa, redrawAfterRender)
 
-watch(() => [$cwa.resources.displayPageIri.value, $cwa.resources.isLoading.value], redrawAfterRender)
+watch(() => [$cwa.resources.displayPageIri.value, $cwa.resources.isLoading.value, placed.value], redrawAfterRender)
 
 onMounted(() => {
   $cwa.admin.eventBus.on('redrawFocus', redraw)
@@ -80,15 +98,23 @@ onBeforeUnmount(() => {
 
 <template>
   <Teleport
-    v-if="highlights.length"
+    v-if="highlights.length || placedHighlights.length"
     to="body"
   >
     <div
       v-for="(highlight, index) of highlights"
       :key="index"
-      :style="highlight"
+      :style="highlight.style"
+      :data-origin="highlight.origin || undefined"
       data-testid="clone-highlight"
-      class="cwa:absolute cwa:z-manager-focus cwa:outline-2 cwa:outline-dashed cwa:outline-yellow cwa:outline-offset-4 cwa:pointer-events-none cwa:rounded-[1px]"
+      :class="[highlight.origin ? 'cwa:outline-solid cwa:outline-4' : 'cwa:outline-dashed cwa:outline-2', 'cwa:absolute cwa:z-manager-focus cwa:outline-yellow cwa:outline-offset-4 cwa:pointer-events-none cwa:rounded-[1px]']"
+    />
+    <div
+      v-for="(style, index) of placedHighlights"
+      :key="`placed-${index}`"
+      :style="style"
+      data-testid="clone-placed"
+      class="cwa:absolute cwa:z-manager-focus cwa:outline-4 cwa:outline-solid cwa:outline-yellow cwa:outline-offset-4 cwa:pointer-events-none cwa:rounded-[1px] cwa:animate-clone-placed"
     />
   </Teleport>
 </template>

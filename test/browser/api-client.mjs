@@ -19,6 +19,7 @@ export function createApiClient(origin, { username = 'admin', password = 'admin'
         ...extraHeaders,
       },
       body: body === undefined ? undefined : JSON.stringify(body),
+      signal: AbortSignal.timeout(30000),
     })
     const text = await response.text()
     let data
