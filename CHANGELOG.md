@@ -4,6 +4,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+- Clone and Move: the placed instance flashes and is selected; the instance started from is outlined solid; the dialog names the anchor and the bar names the content; the scope question ("Edit the shared layout?" / Edit layout) is asked only when something can be placed, and shared reasons are said once by display name; enabled options look different from disabled ones; the ⋮ button is named "More actions"; "Use here" on an occupied page-data slot warns "This replaces …"; "Remove from this location only" deletes through the group's write queue ([#417](https://github.com/components-web-app/cwa-nuxt-module/pull/417), [#414](https://github.com/components-web-app/cwa-nuxt-module/issues/414), [#415](https://github.com/components-web-app/cwa-nuxt-module/issues/415))
+
 ## [2.0.0-alpha.23] - 2026-10-19
 
 - Move: a component's ⋮ menu offers Move, which works like Clone but relocates the clicked instance's position (`PATCH` with `componentGroup` and `after`/`before`); page-data slots are not supported yet ([#413](https://github.com/components-web-app/cwa-nuxt-module/pull/413), [#409](https://github.com/components-web-app/cwa-nuxt-module/issues/409))
