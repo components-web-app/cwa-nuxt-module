@@ -113,7 +113,7 @@ describe('CurrentResourceCta', () => {
       const emptyStack = vi.fn()
       const $cwa = {
         resourcesManager: { updateResource: vi.fn(), initAddResource: vi.fn() },
-        resources: { getResource: vi.fn(() => ({ value: undefined })) },
+        resources: { getResource: vi.fn(() => ({ value: undefined })), displayPageIri: { value: undefined } },
         auth: { user: { '@id': '/_/users/1' } },
         admin: {
           isEditing: true,

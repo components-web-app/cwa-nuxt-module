@@ -90,6 +90,7 @@ function makeCwa(opts: {
       hasRole: vi.fn((role: string) => (opts.hasRole ?? false) && role === CwaUserRoles.ADMIN),
     },
     resources: {
+      displayPageIri: { value: undefined },
       isIriPublishableEquivalent: vi.fn(() => false),
     },
   }

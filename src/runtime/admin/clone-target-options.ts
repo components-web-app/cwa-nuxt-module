@@ -27,7 +27,7 @@ export interface CloneTargetOptionsInput {
 
 export interface CloneTargetOptions {
   options: CloneTargetOption[]
-  scope?: CloneScope
+  scope?: { type: CloneScope, switching: boolean }
 }
 
 function withoutPrefix(iri: string) {
@@ -145,8 +145,9 @@ export function cloneTargetOptions(input: CloneTargetOptionsInput): CloneTargetO
   const typeName = resolveSourceType(input)
   const options = [...groupOptions(input, typeName), ...pageDataOptions(input, typeName)]
   const result: CloneTargetOptions = { options }
-  if ((input.type === 'layout') !== input.isEditingLayout) {
-    result.scope = input.type
+  const switching = (input.type === 'layout') !== input.isEditingLayout
+  if (switching || input.type === 'layout') {
+    result.scope = { type: input.type, switching }
   }
   return result
 }

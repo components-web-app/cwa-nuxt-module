@@ -10,7 +10,8 @@ function mountDialog(total = 3) {
       stubs: {
         DialogBox: {
           props: ['modelValue', 'buttons', 'title'],
-          template: '<div v-if="modelValue"><h3>{{ title }}</h3><slot /><button v-for="b of buttons" :key="b.label" @click="b.callbackFn()">{{ b.label }}</button></div>',
+          emits: ['update:modelValue'],
+          template: '<div v-if="modelValue"><h3>{{ title }}</h3><slot /><button v-for="b of buttons" :key="b.label" :data-color="b.color" @click="b.callbackFn()">{{ b.label }}</button><button class="escape" @click="$emit(\'update:modelValue\', false)" /></div>',
         },
       },
     },
@@ -30,15 +31,37 @@ describe('DeleteLocationsDialog', () => {
     vi.useRealTimers()
   })
 
-  test('offers deleting from every location, removing from this one, or cancelling', () => {
+  test('offers removing from this location first, so it is focused and primary, then deleting from every location as a danger, then cancelling', () => {
     const wrapper = mountDialog(3)
 
-    expect(wrapper.findAll('button').map(b => b.text())).toEqual([
-      'Delete from all 3 locations',
-      'Remove from this location only',
-      'Cancel',
+    expect(wrapper.findAll('button:not(.escape)').map(b => [b.text(), b.attributes('data-color')])).toEqual([
+      ['Remove from this location only', 'blue'],
+      ['Delete from all 3 locations', 'error'],
+      ['Cancel', 'grey'],
     ])
     expect(wrapper.text()).toContain('used in 3 locations')
+  })
+
+  test('closing the dialog another way, as Escape does, cancels it', async () => {
+    vi.useFakeTimers()
+    const wrapper = mountDialog()
+
+    await wrapper.find('button.escape').trigger('click')
+    vi.runAllTimers()
+
+    expect(wrapper.emitted('cancel')).toHaveLength(1)
+    expect(wrapper.emitted('confirm')).toBeUndefined()
+  })
+
+  test('a choice is not also answered as a cancel when the dialog closes', async () => {
+    vi.useFakeTimers()
+    const wrapper = mountDialog()
+
+    await button(wrapper, 'Remove from this location only').trigger('click')
+    vi.runAllTimers()
+
+    expect(wrapper.emitted('confirm')).toEqual([['here']])
+    expect(wrapper.emitted('cancel')).toBeUndefined()
   })
 
   test('Delete from all X locations confirms with all', async () => {

@@ -14,11 +14,11 @@
     </CwaUiAlertWarning>
     <template v-else-if="result">
       <p
-        v-if="result.scope"
-        class="cwa:mb-4 cwa:text-yellow"
+        v-if="scopeNote"
+        :class="['cwa:mb-4', scopeNote.className]"
         data-testid="clone-scope"
       >
-        {{ scopeMessages[result.scope] }}
+        {{ scopeNote.text }}
       </p>
       <p
         v-if="!result.options.length"
@@ -111,6 +111,17 @@ const result = computed(() => {
     isEditingLayout: resourceStackManager.isEditingLayout.value,
     type: props.type,
   })
+})
+
+const scopeNote = computed(() => {
+  const scope = result.value?.scope
+  if (!scope) {
+    return
+  }
+  if (!scope.switching) {
+    return { text: 'Shared layout: this appears on every page', className: 'cwa:text-stone-400' }
+  }
+  return { text: scopeMessages[scope.type], className: 'cwa:text-yellow' }
 })
 
 async function choose(option: CloneTargetOption) {

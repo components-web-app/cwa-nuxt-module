@@ -560,6 +560,17 @@ describe('Header', () => {
       expect(useCloneMode(cwa).source.value).toBeUndefined()
     })
 
+    test.each([
+      [true, 'Follow links to the page you want, then turn off Enable Navigation to place it.'],
+      [false, 'Click a component to place it before or after. To use another page, turn on Enable Navigation.'],
+    ])('with Enable Navigation %s, the Cloning bar says what to do next', async (navigationGuardDisabled, hint) => {
+      const { cwa } = mockCwa({ admin: buildAdmin({ isEditing: true, navigationGuardDisabled }) })
+      useCloneMode(cwa).start(SOURCE_IRI, 'Hero text')
+      const wrapper = mountHeader()
+      await flushPromises()
+      expect(wrapper.find('[data-testid="clone-mode-hint"]').text()).toBe(hint)
+    })
+
     test('mounts the clone highlight only while cloning', async () => {
       const { cwa } = mockCwa({ admin: buildAdmin({ isEditing: true }) })
       const wrapper = mountHeader()

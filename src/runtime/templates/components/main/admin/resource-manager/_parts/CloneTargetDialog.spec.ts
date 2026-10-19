@@ -44,6 +44,7 @@ function makeCwa() {
       HtmlContent: { resourceName: 'HtmlContent', endpoint: '/component/html_contents', isPublishable: true, explicitAllowOnly: false },
     })),
     resources: {
+      displayPageIri: computed(() => undefined),
       isDataPage: computed(() => false),
       getResource: (iri: string) => computed(() => byId[iri] ? { data: byId[iri] } : undefined),
       getChildIris: () => [],
@@ -54,12 +55,12 @@ function makeCwa() {
   }
 }
 
-async function mountDialog() {
+async function mountDialog(type: 'page' | 'layout' = 'layout') {
   const { default: CloneTargetDialog } = await import('./CloneTargetDialog.vue')
   const wrapper = mount(CloneTargetDialog, {
     props: {
       stack: [{ iri: COMPONENT }, { iri: POSITION }, { iri: GROUP }, { iri: LAYOUT }],
-      type: 'layout',
+      type,
     },
     global: {
       stubs: {
@@ -88,6 +89,15 @@ describe('CloneTargetDialog', () => {
   afterEach(() => {
     state.cwa && useCloneMode(state.cwa as Cwa).end()
     state.editingLayoutWhenCloned = undefined
+  })
+
+  test('a layout target while already editing the layout says, without the switch warning, that it is shared by every page', async () => {
+    startCloning()
+    state.cwa.admin.resourceStackManager.isEditingLayout.value = true
+    const wrapper = await mountDialog()
+    const scope = wrapper.find('[data-testid="clone-scope"]')
+    expect(scope.text()).toBe('Shared layout: this appears on every page')
+    expect(scope.classes()).not.toContain('cwa:text-yellow')
   })
 
   test('a layout target switches to layout editing before adding', async () => {

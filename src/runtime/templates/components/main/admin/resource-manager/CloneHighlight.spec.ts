@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { afterEach, beforeAll, describe, expect, test, vi } from 'vitest'
-import { nextTick, reactive, ref } from 'vue'
+import { computed, nextTick, reactive, ref } from 'vue'
 import { flushPromises, mount } from '@vue/test-utils'
 import CloneHighlight from './CloneHighlight.vue'
 import * as cwaComposable from '#cwa/composables/cwa'
@@ -38,17 +38,21 @@ function mockCwa() {
       }),
     },
   })
+  const page = reactive<{ iri: string | undefined, loading: boolean }>({ iri: '/_/pages/home', loading: false })
   const cwa = {
     admin,
     auth: reactive({ user: { '@id': '/_/users/admin' } }),
     resources: {
       findAllPublishableIris: vi.fn((iri: string) => [iri]),
+      displayPageIri: computed(() => page.iri),
+      isLoading: computed(() => page.loading),
     },
   } as unknown as Cwa
   cwas.push(cwa)
   vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => cwa)
   return {
     cwa,
+    page,
     emit: (event: string) => handlers[event]?.forEach(handler => handler()),
   }
 }
@@ -178,6 +182,64 @@ describe('CloneHighlight', () => {
     await nextTick()
 
     expect(wrapper.get('[data-testid="clone-highlight"]').attributes('style')).toContain('top: 70px')
+  })
+
+  test.each([
+    ['the page on screen changes', (page: { iri: string | undefined, loading: boolean }) => {
+      page.iri = '/_/pages/second'
+    }],
+    ['the page finishes loading', (page: { iri: string | undefined, loading: boolean }) => {
+      page.loading = false
+    }],
+  ])('redraws when %s, and again on the next frame once it has rendered', async (_label, change) => {
+    const { cwa, page } = mockCwa()
+    page.loading = true
+    const element = elementAt({ top: 10, left: 20, right: 120, bottom: 60 })
+    registerInstance(cwa, SOURCE_IRI, ref([element]))
+    useCloneMode(cwa).start(SOURCE_IRI)
+    const wrapper = mountHighlight()
+    await flushPromises()
+    const frames: FrameRequestCallback[] = []
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+      frames.push(callback)
+      return frames.length
+    })
+
+    change(page)
+    element.remove()
+    await nextTick()
+    await nextTick()
+    expect(wrapper.findAll('[data-testid="clone-highlight"]')).toHaveLength(0)
+
+    document.body.appendChild(element)
+    element.getBoundingClientRect = vi.fn(() => ({ top: 70, left: 20, right: 120, bottom: 120 }) as DOMRect)
+    frames.forEach(frame => frame(0))
+    await nextTick()
+    expect(wrapper.get('[data-testid="clone-highlight"]').attributes('style')).toContain('top: 70px')
+  })
+
+  test('an instance registered before its elements are on the page is highlighted on the next frame', async () => {
+    const { cwa } = mockCwa()
+    useCloneMode(cwa).start(SOURCE_IRI)
+    const wrapper = mountHighlight()
+    await flushPromises()
+    const frames: FrameRequestCallback[] = []
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+      frames.push(callback)
+      return frames.length
+    })
+    const element = elementAt({ top: 10, left: 20, right: 120, bottom: 60 })
+    element.remove()
+
+    registerInstance(cwa, SOURCE_IRI, ref([element]))
+    await nextTick()
+    await nextTick()
+    expect(wrapper.findAll('[data-testid="clone-highlight"]')).toHaveLength(0)
+
+    document.body.appendChild(element)
+    frames.forEach(frame => frame(0))
+    await nextTick()
+    expect(wrapper.findAll('[data-testid="clone-highlight"]')).toHaveLength(1)
   })
 
   test('stops redrawing once unmounted', () => {

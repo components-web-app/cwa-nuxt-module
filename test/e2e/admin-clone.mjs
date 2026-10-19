@@ -145,6 +145,7 @@ const scenarios = [
     const { page, base, settle } = t
     await openEditMode(t)
     await startClone(page)
+    await setNavigation(page, false)
     await layoutLink(page, 'Second').click()
     const confirm = dialogWith(page, 'switch and edit the layout')
     await confirm.getByText('switch and edit the layout').waitFor()
@@ -260,6 +261,7 @@ const scenarios = [
     const { page, base, settle } = t
     await openEditMode(t)
     await startClone(page)
+    await setNavigation(page, false)
     const confirm = dialogWith(page, 'switch and edit the layout')
     await layoutLink(page, 'Third').click()
     await confirm.getByText('switch and edit the layout').waitFor()
@@ -322,12 +324,136 @@ const scenarios = [
     const { page, state } = t
     await openEditMode(t)
     await startClone(page)
+    await setNavigation(page, false)
     state.resources.delete(iris.source)
     await page.getByText(texts.pageAOther, { exact: true }).click()
     await dialogWith(page, 'Clone Here').getByRole('button', { name: 'Add after', exact: true }).click()
     await assertCloneModeEnded(page, 'Clone mode did not end when the API answered 404')
     await page.getByText('The component being cloned no longer exists').first().waitFor()
   }, [notFoundResource]],
+  ['15. clone mode starts with Enable Navigation on, and arriving on another page turns it off so the next click places the clone', async (t) => {
+    const { page } = t
+    await openEditMode(t)
+    await startClone(page)
+    const toggle = page.getByRole('switch', { name: 'Enable Navigation' })
+    assert(await toggle.getAttribute('aria-checked') === 'true', 'Clone mode started with Enable Navigation off')
+    assert((await page.getByTestId('clone-mode-hint').innerText()).includes('Follow links to the page you want'), 'The bar does not say how to reach another page')
+    await layoutLink(page, 'Second').click()
+    await assertOnSecondPage(t)
+    await eventually(async () => await toggle.getAttribute('aria-checked') === 'false', 'Enable Navigation stayed on after arriving on another page')
+    assert((await page.getByTestId('clone-mode-hint').innerText()).includes('Click a component to place it'), 'The bar does not say how to place the clone')
+    await page.getByText(texts.pageBOther, { exact: true }).click()
+    await dialogWith(page, 'Clone Here').getByRole('button', { name: 'Add after', exact: true }).waitFor()
+  }],
+  ['16. a redirect in clone mode turns Enable Navigation off only once the target page is shown', async (t) => {
+    const { page } = t
+    await openEditMode(t)
+    await startClone(page)
+    await layoutLink(page, 'Redirect').click()
+    await assertOnSecondPage(t)
+    await eventually(async () => await page.getByRole('switch', { name: 'Enable Navigation' }).getAttribute('aria-checked') === 'false', 'Enable Navigation stayed on after the redirect')
+  }],
+  ['17. the highlight comes back on a page with the source after visiting one without it, on a fresh page and on one shown from the route cache', async (t) => {
+    const { page, settle } = t
+    await openEditMode(t)
+    await startClone(page)
+    for (const [name, text] of [['Third', texts.third], ['Home', texts.pageAOther], ['Third', texts.third], ['Second', texts.pageBOther], ['Third', texts.third], ['Second', texts.pageBOther]]) {
+      await setNavigation(page, true)
+      await layoutLink(page, name).click()
+      await page.getByText(text, { exact: true }).waitFor()
+      await settle()
+      if (name === 'Third') {
+        await eventually(async () => (await visibleHighlights(page)).length === 0, `${(await visibleHighlights(page)).length} highlight(s) on Third, which does not contain the source`)
+      }
+      else {
+        await assertEveryInstanceHighlighted(page, `On ${name}`)
+      }
+    }
+  }],
+  ['18. a second clone session after visiting a page without the source highlights only the source', async (t) => {
+    const { page, base, settle } = t
+    await openEditMode(t)
+    await startClone(page)
+    await layoutLink(page, 'Third').click()
+    await page.getByText(texts.third, { exact: true }).waitFor()
+    await settle()
+    await page.keyboard.press('Escape')
+    await assertCloneModeEnded(page, 'Escape did not end clone mode')
+    await page.getByRole('button', { name: 'Done', exact: true }).click()
+    await page.getByRole('button', { name: 'Edit', exact: true }).waitFor()
+    await layoutLink(page, 'Home').click()
+    await eventually(() => page.url() === `${base}/`, `Expected /, at ${page.url()}`)
+    await page.getByText(texts.pageAOther, { exact: true }).waitFor()
+    await settle()
+    await page.getByRole('button', { name: 'Edit', exact: true }).click()
+    await startClone(page)
+    await layoutLink(page, 'Third').click()
+    await page.getByText(texts.third, { exact: true }).waitFor()
+    await settle()
+    await eventually(async () => (await visibleHighlights(page)).length === 0, `${(await visibleHighlights(page)).length} highlight(s) on Third, which does not contain the source`)
+    await setNavigation(page, true)
+    await layoutLink(page, 'Second').click()
+    await assertOnSecondPage(t)
+    await assertEveryInstanceHighlighted(page, 'On Second in the second session')
+  }],
+  ['22. a link to a page already visited, shown at once from the route cache, navigates without asking to place the clone', async (t) => {
+    const { page } = t
+    await openEditMode(t)
+    await startClone(page)
+    await layoutLink(page, 'Second').click()
+    await assertOnSecondPage(t)
+    await setNavigation(page, true)
+    await layoutLink(page, 'Home').click()
+    await page.getByText(texts.pageAOther, { exact: true }).waitFor()
+    await setNavigation(page, true)
+    await layoutLink(page, 'Second').click()
+    await assertOnSecondPage(t)
+    assert(await page.getByRole('dialog').count() === 0, `A dialog opened: ${await dialogTexts(page)}`)
+  }],
+  ['19. Escape on the shared delete dialog cancels it and Delete works again', async (t) => {
+    const { page, state } = t
+    await openEditMode(t)
+    await select(page, texts.source)
+    await page.getByRole('button', { name: 'Info', exact: true }).click()
+    const deleteButton = page.getByTestId('component-delete').getByRole('button', { name: 'Delete', exact: true })
+    await deleteButton.click()
+    await dialogWith(page, 'Delete this component?').getByText('Delete this component?').waitFor()
+    await page.keyboard.press('Escape')
+    await waitForNoDialog(page, 'Escape did not close the delete dialog')
+    await eventually(() => deleteButton.isEnabled(), 'Delete stayed disabled after Escape')
+    await deleteButton.click()
+    await dialogWith(page, 'Delete this component?').getByText('Delete this component?').waitFor()
+    assert(!state.writes.some(w => w.method === 'DELETE'), 'Escape deleted something')
+  }],
+  ['20. the shared delete dialog focuses Remove from this location only, so Enter removes just this one', async (t) => {
+    const { page, state } = t
+    await openEditMode(t)
+    await select(page, texts.source)
+    await page.getByRole('button', { name: 'Info', exact: true }).click()
+    await page.getByTestId('component-delete').getByRole('button', { name: 'Delete', exact: true }).click()
+    const dialog = dialogWith(page, 'Delete this component?')
+    const here = dialog.getByRole('button', { name: 'Remove from this location only', exact: true })
+    await eventually(() => here.evaluate(el => el === document.activeElement), 'Remove from this location only is not focused')
+    await page.keyboard.press('Enter')
+    const del = await eventually(() => state.writes.find(w => w.method === 'DELETE'), 'Enter deleted nothing')
+    assert(del.path === '/_api/_/component_positions/a-source', `Enter DELETEd ${del.path}`)
+    assert(state.resources.has(iris.source), 'Enter deleted the component from every location')
+  }],
+  ['21. cloning a layout component within the layout still says it appears on every page', async (t) => {
+    const { page } = t
+    await openEditMode(t)
+    await layoutLink(page, 'Second').click()
+    await dialogWith(page, 'switch and edit the layout').getByRole('button', { name: 'Ok', exact: true }).click()
+    await page.getByTestId('component-menu').waitFor()
+    await page.getByTestId('component-menu').getByTestId('button-options').click()
+    await page.getByTestId('component-menu-clone').click()
+    await page.getByTestId('clone-mode-bar').waitFor()
+    await setNavigation(page, false)
+    await layoutLink(page, 'Third').click()
+    const scope = dialogWith(page, 'Clone Here').getByTestId('clone-scope')
+    await scope.waitFor()
+    assert((await scope.innerText()).includes('every page'), `The layout note is "${await scope.innerText()}"`)
+  }],
 ]
 
 function unexpectedConsoleErrors(messages, allowed) {
@@ -356,7 +482,7 @@ async function main() {
       }
       catch (error) {
         failures++
-        console.log(`FAIL  ${name}\n      ${error.message.split('\n')[0]}`)
+        console.log(`FAIL  ${name}\n      ${process.env.E2E_VERBOSE ? error.message : error.message.split('\n')[0]}`)
         if (shots) {
           await page.screenshot({ path: `${shots}/${name.split('.')[0]}.png`, fullPage: true }).catch(() => undefined)
         }

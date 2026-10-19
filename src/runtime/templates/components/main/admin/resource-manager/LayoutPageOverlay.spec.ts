@@ -76,6 +76,7 @@ function mockCwa(isEditingLayout = false) {
       },
     },
     auth: { user: { '@id': '/_/users/admin' } },
+    resources: { displayPageIri: { value: undefined } },
   }
   // @ts-expect-error partial mock
   vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => mockedCwa)
