@@ -7,6 +7,53 @@ export const texts = {
   third: 'Third page component',
 }
 
+export const articleTexts = {
+  staticPart: 'Article template static component',
+  fallback: 'Article template fallback component',
+  slotA: 'Article A slot component',
+}
+
+export async function seedArticlePages(api, token, { iris }) {
+  const name = key => `e2e-${token}-${key}`
+  const paths = { articleA: `/${name('article-a')}`, articleB: `/${name('article-b')}` }
+
+  const components = {}
+  for (const [key, text] of Object.entries(articleTexts)) {
+    components[key] = (await api.create('/component/html_contents', { html: `<p>${text}</p>`, publishedAt: 'now' }))['@id']
+  }
+
+  const template = await api.create('/_/pages', { reference: name('article-template'), title: 'E2E article template', layout: iris.layout, uiComponent: 'CwaPagePrimaryPageTemplate', isTemplate: true })
+  const group = await api.create('/_/component_groups', { reference: `primary_${template['@id']}`, location: template['@id'], pages: [template['@id']] })
+  const staticPosition = await api.create('/_/component_positions', { componentGroup: group['@id'], component: components.staticPart })
+  const slotPosition = await api.create('/_/component_positions', { componentGroup: group['@id'], component: components.fallback, pageDataProperty: 'htmlContent', pageDataClass: 'App\\Entity\\BlogArticleData' })
+
+  const pageData = {}
+  const routes = {}
+  for (const [key, htmlContent] of [['articleA', components.slotA], ['articleB', null]]) {
+    pageData[key] = (await api.create('/page_data/blog_article_datas', { title: `E2E ${key}`, page: template['@id'], htmlContent }))['@id']
+    routes[key] = (await api.create('/_/routes', { path: paths[key], name: name(key), pageData: pageData[key] }))['@id']
+  }
+
+  for (const [label, key] of [['Article A', 'articleA'], ['Article B', 'articleB']]) {
+    const link = await api.create('/component/navigation_links', { label, route: routes[key], publishedAt: 'now' })
+    await api.create('/_/component_positions', { componentGroup: iris.topGroup, component: link['@id'] })
+  }
+
+  return {
+    paths,
+    iris: {
+      template: template['@id'],
+      group: group['@id'],
+      staticPosition: staticPosition['@id'],
+      slotPosition: slotPosition['@id'],
+      articleA: pageData.articleA,
+      articleB: pageData.articleB,
+      slotA: components.slotA,
+      fallback: components.fallback,
+    },
+  }
+}
+
 export async function seedClonePages(api, token) {
   const name = key => `e2e-${token}-${key}`
   const paths = { home: `/${name('home')}`, second: `/${name('second')}`, redirect: `/${name('redirect')}`, third: `/${name('third')}` }

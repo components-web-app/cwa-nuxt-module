@@ -221,7 +221,7 @@ async function choose(option: CloneTargetOption) {
   resourceStackManager.isEditingLayout.value = props.type === 'layout'
   try {
     await (move
-      ? moveComponent($cwa, { positionIri: move.positionIri, target: option.value })
+      ? moveComponent($cwa, { sourceIri, move, target: option.value })
       : cloneComponent($cwa, { sourceIri, target: option.value }))
   }
   finally {

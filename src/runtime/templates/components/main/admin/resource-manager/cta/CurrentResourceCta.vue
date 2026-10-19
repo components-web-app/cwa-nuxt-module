@@ -9,6 +9,7 @@ import {
 import type { CwaResource } from '#cwa/resources/resource-utils'
 import { useCwa } from '#cwa/composables/cwa'
 import { excerptOf, useCloneMode } from '#cwa/admin/clone-mode'
+import type { MoveFrom } from '#cwa/admin/clone-mode'
 import { componentGroupCapacity } from '#cwa/resources/component-group-capacity'
 import type { ButtonOption, ModelValue } from '#cwa/templates/components/ui/form/Button.vue'
 
@@ -61,16 +62,22 @@ const closestPositionIri = computed(() => {
   return $cwa.admin.resourceStackManager.resourceStack.value.find(item => getResourceTypeFromIri(item.iri) === CwaResourceTypes.COMPONENT_POSITION)?.iri
 })
 
-const movablePositionIri = computed(() => {
-  if (!isPersistedComponent.value) {
-    return
-  }
+const moveFrom = computed<MoveFrom | undefined>(() => {
   const positionIri = closestPositionIri.value
-  const position = positionIri ? $cwa.resources.getResource(positionIri).value?.data : undefined
-  if (!positionIri || position?.pageDataProperty || position?._metadata?.isDynamicPosition) {
+  if (!isPersistedComponent.value || !positionIri) {
     return
   }
-  return positionIri
+  const position = $cwa.resources.getResource(positionIri).value?.data
+  const property: string | undefined = position?.pageDataProperty
+  if (!property) {
+    return position?._metadata?.isDynamicPosition ? undefined : { componentPosition: positionIri }
+  }
+  const pageData = $cwa.resources.pageDataIriOf(positionIri).value
+  const held = pageData ? $cwa.resources.getResource(pageData).value?.data?.[property] : undefined
+  if (!pageData || !held || !$cwa.resources.findAllPublishableIris(props.currentIri).includes(held)) {
+    return
+  }
+  return { pageData, property }
 })
 
 const buttonOptions = computed(() => {
@@ -106,7 +113,7 @@ const buttonOptions = computed(() => {
   if (isPersistedComponent.value) {
     ops.push({ label: 'Clone', value: 'clone', testId: 'component-menu-clone' })
   }
-  if (movablePositionIri.value) {
+  if (moveFrom.value) {
     ops.push({ label: 'Move', value: 'move', testId: 'component-menu-move' })
   }
 
@@ -144,10 +151,11 @@ function handleManagerCtaClick(value?: ModelValue) {
       $cwa.admin.emptyStack()
     }
 
-    if (value === 'move' && movablePositionIri.value) {
+    if (value === 'move' && moveFrom.value && closestPositionIri.value) {
       useCloneMode($cwa).start(props.currentIri, stackItem?.displayName, {
-        positionIri: movablePositionIri.value,
+        positionIri: closestPositionIri.value,
         fromLayout: $cwa.admin.resourceStackManager.isEditingLayout.value,
+        from: moveFrom.value,
       }, origin)
       $cwa.admin.emptyStack()
     }

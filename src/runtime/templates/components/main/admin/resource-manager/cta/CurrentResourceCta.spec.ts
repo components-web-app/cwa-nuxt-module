@@ -115,11 +115,16 @@ describe('CurrentResourceCta', () => {
       return element
     }
 
-    function mountClone(currentIri: string, metadata: Record<string, any> = { persisted: true }, ops: { stack?: string[], byId?: Record<string, any>, isEditingLayout?: boolean } = {}) {
+    function mountClone(currentIri: string, metadata: Record<string, any> = { persisted: true }, ops: { stack?: string[], byId?: Record<string, any>, isEditingLayout?: boolean, pageDataOf?: Record<string, string>, publishable?: string[][] } = {}) {
       const emptyStack = vi.fn()
       const $cwa = {
         resourcesManager: { updateResource: vi.fn(), initAddResource: vi.fn() },
-        resources: { getResource: vi.fn((iri: string) => ({ value: ops.byId?.[iri] ? { data: ops.byId[iri] } : undefined })), displayPageIri: { value: undefined } },
+        resources: {
+          getResource: vi.fn((iri: string) => ({ value: ops.byId?.[iri] ? { data: ops.byId[iri] } : undefined })),
+          pageDataIriOf: vi.fn((iri: string) => ({ value: ops.pageDataOf?.[iri] })),
+          findAllPublishableIris: vi.fn((iri: string) => ops.publishable?.find(set => set.includes(iri)) ?? [iri]),
+          displayPageIri: { value: undefined },
+        },
         auth: { user: { '@id': '/_/users/1' } },
         admin: {
           isEditing: true,
@@ -203,12 +208,54 @@ describe('CurrentResourceCta', () => {
 
       test.each([
         ['with no position in the stack', { stack: ['/component/c1'] }],
-        ['in a page-data slot, which every page-data page shares', { stack, byId: { [POSITION]: { pageDataProperty: 'hero' } } }],
         ['in a dynamic position, as a visitor sees it', { stack, byId: { [POSITION]: { _metadata: { isDynamicPosition: true } } } }],
       ])('does not offer Move %s', (_label, ops) => {
         const { labels } = mountClone('/component/c1', { persisted: true }, ops)
 
         expect(labels).not.toContain('Move')
+      })
+
+      describe('from a page-data slot (#415)', () => {
+        const PAGE_DATA = '/page_data/article-1'
+        const DRAFT = '/component/c1-draft'
+        const slot = { [POSITION]: { pageDataProperty: 'hero', componentGroup: GROUP, _metadata: { isDynamicPosition: true } } }
+
+        test('offers Move when the page data on screen holds the component', () => {
+          const { labels } = mountClone('/component/c1', { persisted: true }, { stack, pageDataOf: { [POSITION]: PAGE_DATA }, byId: { ...slot, [PAGE_DATA]: { hero: '/component/c1' } } })
+
+          expect(labels).toContain('Move')
+        })
+
+        test('offers Move for the draft of the component the page data holds, as draft and published count as one', () => {
+          const { labels } = mountClone(DRAFT, { persisted: true }, { stack: [DRAFT, POSITION, GROUP], pageDataOf: { [POSITION]: PAGE_DATA }, publishable: [['/component/c1', DRAFT]], byId: { ...slot, [PAGE_DATA]: { hero: '/component/c1' } } })
+
+          expect(labels).toContain('Move')
+        })
+
+        test.each([
+          ['the template\'s fallback, as the page data holds nothing', { hero: null }],
+          ['another component than the page data holds', { hero: '/component/other' }],
+        ])('does not offer Move from a slot showing %s', (_label, pageData) => {
+          const { labels } = mountClone('/component/c1', { persisted: true }, { stack, pageDataOf: { [POSITION]: PAGE_DATA }, byId: { ...slot, [POSITION]: { ...slot[POSITION], component: '/component/c1' }, [PAGE_DATA]: pageData } })
+
+          expect(labels).not.toContain('Move')
+        })
+
+        test('does not offer Move from a slot with no page data at its depth', () => {
+          const { labels } = mountClone('/component/c1', { persisted: true }, { stack, byId: slot })
+
+          expect(labels).not.toContain('Move')
+        })
+
+        test('choosing Move records the page data and property on screen, as the slot\'s position is the same on every page-data page', async () => {
+          const { $cwa, button } = mountClone('/component/c1', { persisted: true }, { stack, pageDataOf: { [POSITION]: PAGE_DATA }, byId: { ...slot, [PAGE_DATA]: { hero: '/component/c1' } } })
+
+          button.vm.$emit('click', 'move')
+          await flushPromises()
+
+          expect($cwa.resources.pageDataIriOf).toHaveBeenCalledWith(POSITION)
+          expect(useCloneMode($cwa as any).source.value?.move).toEqual({ positionIri: POSITION, fromLayout: false, from: { pageData: PAGE_DATA, property: 'hero' } })
+        })
       })
 
       test('does not offer Move for a component being added', () => {
@@ -223,7 +270,7 @@ describe('CurrentResourceCta', () => {
         button.vm.$emit('click', 'move')
         await flushPromises()
 
-        expect(useCloneMode($cwa as any).source.value).toEqual({ iri: '/component/c1', name: 'Hero Section', excerpt: 'Shared source component', positionIri: POSITION, move: { positionIri: POSITION, fromLayout: isEditingLayout } })
+        expect(useCloneMode($cwa as any).source.value).toEqual({ iri: '/component/c1', name: 'Hero Section', excerpt: 'Shared source component', positionIri: POSITION, move: { positionIri: POSITION, fromLayout: isEditingLayout, from: { componentPosition: POSITION } } })
         expect(emptyStack).toHaveBeenCalledTimes(1)
       })
     })
