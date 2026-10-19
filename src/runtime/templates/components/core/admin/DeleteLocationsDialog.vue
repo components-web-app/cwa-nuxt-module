@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import DialogBox from '#cwa/templates/components/core/DialogBox.vue'
 import type { ActionButton } from '#cwa/templates/components/core/DialogBox.vue'
 
@@ -13,27 +13,34 @@ const emit = defineEmits<{
 }>()
 
 const open = ref(true)
+let answered = false
 
 function choose(choice: 'all' | 'here') {
+  answered = true
   open.value = false
   emit('confirm', choice)
 }
 
 function cancel() {
+  answered = true
   open.value = false
   setTimeout(() => emit('cancel'), 300)
 }
 
+watch(open, (isOpen) => {
+  !isOpen && !answered && cancel()
+})
+
 const buttons = computed<ActionButton[]>(() => [
-  {
-    label: `Delete from all ${total} locations`,
-    color: 'blue',
-    callbackFn: () => choose('all'),
-  },
   {
     label: 'Remove from this location only',
     color: 'blue',
     callbackFn: () => choose('here'),
+  },
+  {
+    label: `Delete from all ${total} locations`,
+    color: 'error',
+    callbackFn: () => choose('all'),
   },
   {
     label: 'Cancel',

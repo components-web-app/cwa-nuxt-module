@@ -16,6 +16,10 @@ vi.mock('#cwa/admin/clone-component', () => ({
     state.editingLayoutWhenCloned = state.cwa.admin.resourceStackManager.isEditingLayout.value
     return 'added'
   }),
+  moveComponent: vi.fn(async () => {
+    state.editingLayoutWhenCloned = state.cwa.admin.resourceStackManager.isEditingLayout.value
+    return 'added'
+  }),
 }))
 
 const SOURCE = '/component/html_contents/source'
@@ -44,6 +48,7 @@ function makeCwa() {
       HtmlContent: { resourceName: 'HtmlContent', endpoint: '/component/html_contents', isPublishable: true, explicitAllowOnly: false },
     })),
     resources: {
+      displayPageIri: computed(() => undefined),
       isDataPage: computed(() => false),
       getResource: (iri: string) => computed(() => byId[iri] ? { data: byId[iri] } : undefined),
       getChildIris: () => [],
@@ -54,19 +59,19 @@ function makeCwa() {
   }
 }
 
-async function mountDialog() {
+async function mountDialog(type: 'page' | 'layout' = 'layout') {
   const { default: CloneTargetDialog } = await import('./CloneTargetDialog.vue')
   const wrapper = mount(CloneTargetDialog, {
     props: {
       stack: [{ iri: COMPONENT }, { iri: POSITION }, { iri: GROUP }, { iri: LAYOUT }],
-      type: 'layout',
+      type,
     },
     global: {
       stubs: {
         DialogBox: {
           props: ['modelValue', 'buttons', 'title', 'isLoading'],
           emits: ['update:modelValue'],
-          template: '<div v-if="modelValue" class="dialog-stub"><slot /><button v-for="b of buttons" :key="b.label" class="dialog-button" @click="b.callbackFn ? b.callbackFn() : $emit(\'update:modelValue\', false)">{{ b.label }}</button></div>',
+          template: '<div v-if="modelValue" class="dialog-stub"><h3 class="dialog-title">{{ title }}</h3><slot /><button v-for="b of buttons" :key="b.label" class="dialog-button" @click="b.callbackFn ? b.callbackFn() : $emit(\'update:modelValue\', false)">{{ b.label }}</button></div>',
         },
         Spinner: { template: '<div class="spinner-stub" />' },
         CwaUiAlertWarning: { template: '<div class="alert-stub"><slot /></div>' },
@@ -88,6 +93,52 @@ describe('CloneTargetDialog', () => {
   afterEach(() => {
     state.cwa && useCloneMode(state.cwa as Cwa).end()
     state.editingLayoutWhenCloned = undefined
+  })
+
+  test('a layout target while already editing the layout says, without the switch warning, that it is shared by every page', async () => {
+    startCloning()
+    state.cwa.admin.resourceStackManager.isEditingLayout.value = true
+    const wrapper = await mountDialog()
+    const scope = wrapper.find('[data-testid="clone-scope"]')
+    expect(scope.text()).toBe('Shared layout: this appears on every page')
+    expect(scope.classes()).not.toContain('cwa:text-yellow')
+  })
+
+  test('a move is titled Move Here and patches the moved position instead of cloning', async () => {
+    state.cwa = makeCwa()
+    useCloneMode(state.cwa as Cwa).start(SOURCE, 'Source', { positionIri: '/_/component_positions/source', fromLayout: false })
+    const { cloneComponent, moveComponent } = await import('#cwa/admin/clone-component')
+    const wrapper = await mountDialog()
+
+    expect(wrapper.find('.dialog-title').text()).toBe('Move Here')
+    const addAfter = wrapper.findAll('[data-testid="clone-option"]').find(button => button.text() === 'Add after')!
+    await addAfter.trigger('click')
+    await flushPromises()
+
+    expect(moveComponent).toHaveBeenCalledWith(state.cwa, {
+      positionIri: '/_/component_positions/source',
+      target: { kind: 'position', groupIri: GROUP, anchor: { after: POSITION } },
+    })
+    expect(cloneComponent).not.toHaveBeenCalled()
+    expect(state.editingLayoutWhenCloned).toBe(true)
+  })
+
+  test('a move from the layout into the page warns that it will leave every other page', async () => {
+    state.cwa = makeCwa()
+    state.cwa.admin.resourceStackManager.isEditingLayout.value = true
+    useCloneMode(state.cwa as Cwa).start(SOURCE, 'Source', { positionIri: '/_/component_positions/source', fromLayout: true })
+    const wrapper = await mountDialog('page')
+
+    expect(wrapper.find('[data-testid="move-leaves-layout"]').text()).toBe('This takes it out of the layout: it will no longer appear on other pages')
+  })
+
+  test('a clone is titled Clone Here and gives no leave-the-layout warning', async () => {
+    startCloning()
+    state.cwa.admin.resourceStackManager.isEditingLayout.value = true
+    const wrapper = await mountDialog('page')
+
+    expect(wrapper.find('.dialog-title').text()).toBe('Clone Here')
+    expect(wrapper.find('[data-testid="move-leaves-layout"]').exists()).toBe(false)
   })
 
   test('a layout target switches to layout editing before adding', async () => {

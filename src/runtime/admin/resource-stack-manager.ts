@@ -175,6 +175,11 @@ export default class ResourceStackManager {
     }
   }
 
+  public restorePreviousStack() {
+    this.currentClickTarget.value = null
+    this.currentResourceStack.value = this.previousResourceStack.value
+  }
+
   private async confirmStackChange(alertData: { title: string, content: string }, fromContext?: boolean) {
     let cachedNewStack: ResourceStackItem[] | undefined
     if (!fromContext) {
@@ -307,10 +312,6 @@ export default class ResourceStackManager {
   private finishStack(isContext: boolean) {
     this.filterDisabledStackItems(isContext)
     this.getCurrentTarget(isContext).value = null
-
-    if (this.currentResourceStack.value.length === 0) {
-      this.previousResourceStack.value = []
-    }
   }
 
   public isComponentGroupDisabled(iri: string, location?: string): boolean {

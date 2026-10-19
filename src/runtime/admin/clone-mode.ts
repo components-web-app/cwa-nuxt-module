@@ -2,14 +2,20 @@ import { effectScope, shallowReadonly, shallowRef, watch } from 'vue'
 import type { EffectScope, Ref } from 'vue'
 import type Cwa from '#cwa/cwa'
 
+export interface CloneMove {
+  positionIri: string
+  fromLayout: boolean
+}
+
 export interface CloneSource {
   iri: string
   name?: string
+  move?: CloneMove
 }
 
 export interface CloneMode {
   source: Readonly<Ref<CloneSource | undefined>>
-  start: (iri: string, name?: string) => void
+  start: (iri: string, name?: string, move?: CloneMove) => void
   end: () => void
 }
 
@@ -22,6 +28,7 @@ function isDialogOpen() {
 function createCloneMode($cwa: Cwa): CloneMode {
   const source = shallowRef<CloneSource | undefined>()
   let scope: EffectScope | undefined
+  let navigationOffTimer: ReturnType<typeof setTimeout> | undefined
 
   function onKeydown(event: KeyboardEvent) {
     if (event.key !== 'Escape' || event.defaultPrevented || isDialogOpen()) {
@@ -31,16 +38,31 @@ function createCloneMode($cwa: Cwa): CloneMode {
   }
 
   function stopListening() {
+    clearTimeout(navigationOffTimer)
     scope?.stop()
     scope = undefined
     window.removeEventListener('keydown', onKeydown)
   }
 
-  function start(iri: string, name?: string) {
+  function start(iri: string, name?: string, move?: CloneMove) {
     stopListening()
-    source.value = { iri, name }
+    source.value = move ? { iri, name, move } : { iri, name }
+    $cwa.admin.setNavigationGuardDisabled(true)
+    let navigatingFrom = $cwa.resources.displayPageIri.value
     scope = effectScope(true)
     scope.run(() => {
+      watch(() => $cwa.admin.navigationGuardDisabled, (enabled) => {
+        if (enabled) {
+          navigatingFrom = $cwa.resources.displayPageIri.value
+        }
+      })
+      watch(() => $cwa.resources.displayPageIri.value, (pageIri) => {
+        if (pageIri && pageIri !== navigatingFrom) {
+          navigatingFrom = pageIri
+          clearTimeout(navigationOffTimer)
+          navigationOffTimer = setTimeout(() => $cwa.admin.setNavigationGuardDisabled(false))
+        }
+      })
       watch(() => $cwa.admin.isEditing, (isEditing) => {
         if (!isEditing) {
           end()

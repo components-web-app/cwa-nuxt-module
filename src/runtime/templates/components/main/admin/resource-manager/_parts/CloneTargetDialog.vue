@@ -1,7 +1,7 @@
 <template>
   <DialogBox
     v-model="open"
-    title="Clone Here"
+    :title="source?.move ? 'Move Here' : 'Clone Here'"
     :buttons="buttons"
     :is-loading="adding"
   >
@@ -14,11 +14,18 @@
     </CwaUiAlertWarning>
     <template v-else-if="result">
       <p
-        v-if="result.scope"
-        class="cwa:mb-4 cwa:text-yellow"
+        v-if="scopeNote"
+        :class="['cwa:mb-4', scopeNote.className]"
         data-testid="clone-scope"
       >
-        {{ scopeMessages[result.scope] }}
+        {{ scopeNote.text }}
+      </p>
+      <p
+        v-if="result.leavesLayout"
+        class="cwa:mb-4 cwa:text-yellow"
+        data-testid="move-leaves-layout"
+      >
+        This takes it out of the layout: it will no longer appear on other pages
       </p>
       <p
         v-if="!result.options.length"
@@ -64,7 +71,7 @@ import type { ActionButton } from '#cwa/templates/components/core/DialogBox.vue'
 import Spinner from '#cwa/templates/components/utils/Spinner.vue'
 import { useCwa } from '#cwa/composables/cwa'
 import { useCloneMode } from '#cwa/admin/clone-mode'
-import { cloneComponent } from '#cwa/admin/clone-component'
+import { cloneComponent, moveComponent } from '#cwa/admin/clone-component'
 import { cloneTargetOptions } from '#cwa/admin/clone-target-options'
 import type { CloneScope, CloneTargetOption } from '#cwa/admin/clone-target-options'
 import type { ApiDocumentationComponentMetadataCollection } from '#cwa/api/api-documentation'
@@ -110,18 +117,33 @@ const result = computed(() => {
     isDataPage: $cwa.resources.isDataPage.value,
     isEditingLayout: resourceStackManager.isEditingLayout.value,
     type: props.type,
+    move: source.value.move,
   })
+})
+
+const scopeNote = computed(() => {
+  const scope = result.value?.scope
+  if (!scope) {
+    return
+  }
+  if (!scope.switching) {
+    return { text: 'Shared layout: this appears on every page', className: 'cwa:text-stone-400' }
+  }
+  return { text: scopeMessages[scope.type], className: 'cwa:text-yellow' }
 })
 
 async function choose(option: CloneTargetOption) {
   const sourceIri = source.value?.iri
+  const move = source.value?.move
   if (option.disabled || adding.value || !sourceIri) {
     return
   }
   adding.value = true
   resourceStackManager.isEditingLayout.value = props.type === 'layout'
   try {
-    await cloneComponent($cwa, { sourceIri, target: option.value })
+    await (move
+      ? moveComponent($cwa, { positionIri: move.positionIri, target: option.value })
+      : cloneComponent($cwa, { sourceIri, target: option.value }))
   }
   finally {
     adding.value = false

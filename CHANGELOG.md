@@ -4,6 +4,11 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+## [2.0.0-alpha.23] - 2026-10-19
+
+- Move: a component's ⋮ menu offers Move, which works like Clone but relocates the clicked instance's position (`PATCH` with `componentGroup` and `after`/`before`); page-data slots are not supported yet ([#413](https://github.com/components-web-app/cwa-nuxt-module/pull/413), [#409](https://github.com/components-web-app/cwa-nuxt-module/issues/409))
+- Clone mode: fixes to navigation, redirects, the scope confirm, right-clicks, the overlay and highlights; no `?published=` when deleting a resource that is not publishable; a confirm closed with Escape counts as Cancel; clone mode starts with Enable Navigation on and turns it off on arriving at another page, and the Cloning bar says what to do next; the highlight is redrawn after a page is shown from the route cache; the shared delete dialog focuses Remove from this location only, styles Delete from all as a danger, and counts Escape as Cancel; a clone into the layout always says it appears on every page ([#410](https://github.com/components-web-app/cwa-nuxt-module/pull/410), [#157](https://github.com/components-web-app/cwa-nuxt-module/issues/157))
+
 ## [2.0.0-alpha.22] - 2026-10-18
 
 - The route cache keeps 200 routes by default instead of 50, so more pages revisit instantly; set `cwa.routeCacheLimit` to change it ([#259](https://github.com/components-web-app/cwa-nuxt-module/issues/259), [2c125fcb](https://github.com/components-web-app/cwa-nuxt-module/commit/2c125fcb))
@@ -162,7 +167,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 - First tagged release of `@cwa/nuxt`; releases are now published from `v*` tags ([7c61b7c](https://github.com/components-web-app/cwa-nuxt-module/commit/7c61b7ce331ec4a0cb8e76951a5de2ff806ed07a))
 
-[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.22...HEAD
+[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.23...HEAD
+[2.0.0-alpha.23]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.22...v2.0.0-alpha.23
 [2.0.0-alpha.22]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.21...v2.0.0-alpha.22
 [2.0.0-alpha.21]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.20...v2.0.0-alpha.21
 [2.0.0-alpha.20]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.19...v2.0.0-alpha.20

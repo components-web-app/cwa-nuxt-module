@@ -5,7 +5,7 @@ import { ResourceTypeFromIri } from '../resources/resource-utils'
 import { ErrorType } from '../storage/stores/error/state'
 import type { CwaErrorEvent } from '../storage/stores/error/state'
 import { useCloneMode } from './clone-mode'
-import { cloneComponent } from './clone-component'
+import { cloneComponent, moveComponent } from './clone-component'
 import type Cwa from '#cwa/cwa'
 
 const DRAFT_IRI = '/component/html_contents/draft-uuid'
@@ -14,11 +14,13 @@ const GROUP_IRI = '/_/component_groups/target-group'
 const POSITION_IRI = '/_/component_positions/target-position'
 const DYNAMIC_POSITION_IRI = '/_/component_positions/dynamic-position'
 const PAGE_DATA_IRI = '/page_data/blog-article'
+const SOURCE_POSITION_IRI = '/_/component_positions/source-position'
+const SOURCE_GROUP_IRI = '/_/component_groups/source-group'
 const CREATED_POSITION = { '@id': '/_/component_positions/new', '@type': 'ComponentPosition' }
 
 const cwas: Cwa[] = []
 
-function buildCwa(ops: { published?: Record<string, string | undefined>, pageData?: Record<string, string | undefined> } = {}) {
+function buildCwa(ops: { published?: Record<string, string | undefined>, pageData?: Record<string, string | undefined>, sourceGroup?: string } = {}) {
   const errors = reactive<CwaErrorEvent[]>([])
   const order: string[] = []
   const admin = reactive({
@@ -59,6 +61,8 @@ function buildCwa(ops: { published?: Record<string, string | undefined>, pageDat
     }),
   }
   const resources = {
+    displayPageIri: computed(() => undefined),
+    getResource: vi.fn((iri: string) => computed(() => iri === SOURCE_POSITION_IRI ? { data: { componentGroup: ops.sourceGroup ?? SOURCE_GROUP_IRI } } : undefined)),
     findPublishedComponentIri: vi.fn((iri: string) => computed(() => ops.published ? ops.published[iri] : iri)),
     pageDataIriOf: vi.fn((iri: string) => computed(() => (ops.pageData ?? { [DYNAMIC_POSITION_IRI]: PAGE_DATA_IRI })[iri])),
   }
@@ -287,5 +291,84 @@ describe('cloneComponent', () => {
       detail: 'The component being cloned no longer exists',
     }))
     expect(errors.map(error => error.detail)).toEqual(['Unrelated', 'The component being cloned no longer exists'])
+  })
+})
+
+describe('moveComponent', () => {
+  afterEach(() => {
+    cwas.forEach($cwa => useCloneMode($cwa).end())
+    cwas.length = 0
+  })
+
+  test('patches the source position into the target group after the anchor, through the target group\'s write queue, then reads both groups\' order', async () => {
+    const { $cwa, resourcesManager, order } = buildCwa()
+    useCloneMode($cwa).start(PUBLISHED_IRI, 'Hero', { positionIri: SOURCE_POSITION_IRI, fromLayout: false })
+    const result = await moveComponent($cwa, {
+      positionIri: SOURCE_POSITION_IRI,
+      target: { kind: 'position', groupIri: GROUP_IRI, anchor: { after: POSITION_IRI } },
+    })
+    expect(result).toBe('added')
+    expect(resourcesManager.queueComponentGroupWrite).toHaveBeenCalledWith(GROUP_IRI, expect.any(Function))
+    expect(resourcesManager.updateResource).toHaveBeenCalledTimes(1)
+    expect(resourcesManager.updateResource).toHaveBeenCalledWith({
+      endpoint: SOURCE_POSITION_IRI,
+      data: { componentGroup: GROUP_IRI, after: POSITION_IRI },
+      refreshEndpoints: [GROUP_IRI, SOURCE_GROUP_IRI],
+    })
+    expect(resourcesManager.refreshComponentGroupOrder.mock.calls).toEqual([[GROUP_IRI], [SOURCE_GROUP_IRI]])
+    expect(order).toEqual(['queue:start', 'updateResource', 'refreshComponentGroupOrder', 'refreshComponentGroupOrder', 'queue:end'])
+    expect(resourcesManager.createResource).not.toHaveBeenCalled()
+    expect(useCloneMode($cwa).source.value).toBeUndefined()
+  })
+
+  test('a move within its own group reads that group\'s order once', async () => {
+    const { $cwa, resourcesManager } = buildCwa({ sourceGroup: GROUP_IRI })
+    await moveComponent($cwa, {
+      positionIri: SOURCE_POSITION_IRI,
+      target: { kind: 'position', groupIri: GROUP_IRI, anchor: { before: POSITION_IRI } },
+    })
+    expect(resourcesManager.updateResource).toHaveBeenCalledWith({
+      endpoint: SOURCE_POSITION_IRI,
+      data: { componentGroup: GROUP_IRI, before: POSITION_IRI },
+      refreshEndpoints: [GROUP_IRI],
+    })
+    expect(resourcesManager.refreshComponentGroupOrder.mock.calls).toEqual([[GROUP_IRI]])
+  })
+
+  test('a page-data slot is never a move target: nothing is sent and move mode stays on', async () => {
+    const { $cwa, resourcesManager } = buildCwa()
+    useCloneMode($cwa).start(PUBLISHED_IRI, 'Hero', { positionIri: SOURCE_POSITION_IRI, fromLayout: false })
+    const result = await moveComponent($cwa, {
+      positionIri: SOURCE_POSITION_IRI,
+      target: { kind: 'page-data', positionIri: DYNAMIC_POSITION_IRI, property: 'hero' },
+    })
+    expect(result).toBe('refused')
+    expect(resourcesManager.updateResource).not.toHaveBeenCalled()
+    expect(useCloneMode($cwa).source.value).toBeDefined()
+  })
+
+  test('a refused move keeps move mode on', async () => {
+    const { $cwa, resourcesManager, errors } = buildCwa()
+    resourcesManager.updateResource.mockImplementationOnce(failWith(errors, SOURCE_POSITION_IRI, 422, 'Not allowed'))
+    useCloneMode($cwa).start(PUBLISHED_IRI, 'Hero', { positionIri: SOURCE_POSITION_IRI, fromLayout: false })
+    const result = await moveComponent($cwa, {
+      positionIri: SOURCE_POSITION_IRI,
+      target: { kind: 'position', groupIri: GROUP_IRI, anchor: {} },
+    })
+    expect(result).toBe('refused')
+    expect(useCloneMode($cwa).source.value).toBeDefined()
+  })
+
+  test('a 404 for the position says the component being moved no longer exists and ends move mode', async () => {
+    const { $cwa, resourcesManager, errors } = buildCwa()
+    resourcesManager.updateResource.mockImplementationOnce(failWith(errors, SOURCE_POSITION_IRI, 404, 'Not Found'))
+    useCloneMode($cwa).start(PUBLISHED_IRI, 'Hero', { positionIri: SOURCE_POSITION_IRI, fromLayout: false })
+    const result = await moveComponent($cwa, {
+      positionIri: SOURCE_POSITION_IRI,
+      target: { kind: 'position', groupIri: GROUP_IRI, anchor: {} },
+    })
+    expect(result).toBe('source-gone')
+    expect(errors.map(error => error.detail)).toEqual(['The component being moved no longer exists'])
+    expect(useCloneMode($cwa).source.value).toBeUndefined()
   })
 })

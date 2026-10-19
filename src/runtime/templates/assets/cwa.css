@@ -199,9 +199,6 @@
 .cwa\:left-2 {
   left: calc(var(--cwa-spacing) * 2);
 }
-.cwa\:left-4 {
-  left: calc(var(--cwa-spacing) * 4);
-}
 .cwa\:-z-10 {
   z-index: calc(10 * -1);
 }
@@ -1028,6 +1025,12 @@
 }
 .cwa\:bg-indigo-600 {
   background-color: var(--cwa-color-indigo-600);
+}
+.cwa\:bg-light\/10 {
+  background-color: var(--cwa-color-light);
+  @supports (color: color-mix(in lab, red, red)) {
+    background-color: color-mix(in oklab, var(--cwa-color-light) 10%, transparent);
+  }
 }
 .cwa\:bg-light\/30 {
   background-color: var(--cwa-color-light);

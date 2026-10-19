@@ -187,9 +187,11 @@ export class ResourcesManager {
     if (!resource) {
       return iri
     }
-    const isDraft = getPublishedResourceState({ data: resource }) === false
-    const postfix = isDraft ? '?published=false' : '?published=true'
-    return `${iri}${postfix}`
+    const publishedState = getPublishedResourceState({ data: resource })
+    if (publishedState === undefined) {
+      return iri
+    }
+    return `${iri}?published=${publishedState}`
   }
 
   public async deleteResource(event: ApiResourceEvent, force = false) {

@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
-import { defineComponent, h, nextTick, reactive } from 'vue'
+import { computed, defineComponent, h, nextTick, reactive } from 'vue'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import type { Pinia } from 'pinia'
@@ -32,14 +32,23 @@ function buildCwa(storeName = 'cwa') {
       adminStore.state.isEditing = editing ?? !adminStore.state.isEditing
     },
   }
-  const $cwa = { admin, auth } as unknown as Cwa
-  return { $cwa, admin, auth, adminStore }
+  const display = reactive<{ pageIri: string | undefined }>({ pageIri: '/_/pages/home' })
+  const resources = {
+    displayPageIri: computed(() => display.pageIri),
+  }
+  const $cwa = { admin, auth, resources } as unknown as Cwa
+  return { $cwa, admin, auth, adminStore, display }
 }
 
 function cloneModeOf($cwa: Cwa) {
   const mode = useCloneMode($cwa)
   started.push(mode)
   return mode
+}
+
+async function nextTask() {
+  await nextTick()
+  await new Promise(resolve => setTimeout(resolve))
 }
 
 function pressEscape(init: { prevent?: boolean } = {}) {
@@ -70,6 +79,13 @@ describe('clone mode', () => {
     expect(mode.source.value).toEqual({ iri: SOURCE_IRI, name: 'Hero text' })
     expect(useCloneMode($cwa).source.value).toEqual({ iri: SOURCE_IRI, name: 'Hero text' })
     expect(JSON.stringify(pinia.state.value)).not.toContain(SOURCE_IRI)
+  })
+
+  test('a move holds the position being moved and whether it started in the layout', () => {
+    const { $cwa } = buildCwa()
+    const mode = cloneModeOf($cwa)
+    mode.start(SOURCE_IRI, 'Hero text', { positionIri: '/_/component_positions/source', fromLayout: true })
+    expect(mode.source.value).toEqual({ iri: SOURCE_IRI, name: 'Hero text', move: { positionIri: '/_/component_positions/source', fromLayout: true } })
   })
 
   test('two Cwa instances hold separate clone sources', () => {
@@ -172,6 +188,93 @@ describe('clone mode', () => {
     auth.user = undefined
     await nextTick()
     expect(mode.source.value).toBeUndefined()
+  })
+
+  test('starting clone mode turns navigation on so the editor can go to another page', () => {
+    const { $cwa, adminStore } = buildCwa()
+    cloneModeOf($cwa).start(SOURCE_IRI)
+    expect(adminStore.state.navigationGuardDisabled).toBe(true)
+  })
+
+  test('a new page on screen turns navigation off so the next click places the clone', async () => {
+    const { $cwa, adminStore, display } = buildCwa()
+    cloneModeOf($cwa).start(SOURCE_IRI)
+    display.pageIri = '/_/pages/second'
+    await nextTask()
+    expect(adminStore.state.navigationGuardDisabled).toBe(false)
+    adminStore.state.navigationGuardDisabled = true
+    await nextTick()
+    display.pageIri = '/_/pages/third'
+    await nextTask()
+    expect(adminStore.state.navigationGuardDisabled).toBe(false)
+  })
+
+  test('navigation turns off only after the event that showed the new page, so the link click that navigated is not taken as a placement', async () => {
+    const { $cwa, adminStore, display } = buildCwa()
+    cloneModeOf($cwa).start(SOURCE_IRI)
+    display.pageIri = '/_/pages/second'
+    await nextTick()
+    expect(adminStore.state.navigationGuardDisabled).toBe(true)
+    await nextTask()
+    expect(adminStore.state.navigationGuardDisabled).toBe(false)
+  })
+
+  test('clone mode ended before the new page settles leaves navigation as the end left it', async () => {
+    const { $cwa, adminStore, display } = buildCwa()
+    const mode = cloneModeOf($cwa)
+    mode.start(SOURCE_IRI)
+    display.pageIri = '/_/pages/second'
+    await nextTick()
+    mode.end()
+    adminStore.state.navigationGuardDisabled = true
+    await nextTask()
+    expect(adminStore.state.navigationGuardDisabled).toBe(true)
+  })
+
+  test('the same page shown again, as when its fetch is revalidated, leaves navigation on', async () => {
+    const { $cwa, adminStore, display } = buildCwa()
+    cloneModeOf($cwa).start(SOURCE_IRI)
+    display.pageIri = undefined
+    await nextTick()
+    display.pageIri = '/_/pages/home'
+    await nextTask()
+    expect(adminStore.state.navigationGuardDisabled).toBe(true)
+  })
+
+  test('navigation turned back on by the editor turns off on the next new page, not on the page it was turned on from', async () => {
+    const { $cwa, adminStore, display } = buildCwa()
+    cloneModeOf($cwa).start(SOURCE_IRI)
+    display.pageIri = '/_/pages/second'
+    await nextTask()
+    adminStore.state.navigationGuardDisabled = true
+    await nextTick()
+    display.pageIri = undefined
+    await nextTick()
+    display.pageIri = '/_/pages/second'
+    await nextTask()
+    expect(adminStore.state.navigationGuardDisabled).toBe(true)
+    display.pageIri = '/_/pages/third'
+    await nextTask()
+    expect(adminStore.state.navigationGuardDisabled).toBe(false)
+  })
+
+  test('no page on screen yet, as during a redirect, leaves navigation on', async () => {
+    const { $cwa, adminStore, display } = buildCwa()
+    cloneModeOf($cwa).start(SOURCE_IRI)
+    display.pageIri = undefined
+    await nextTask()
+    expect(adminStore.state.navigationGuardDisabled).toBe(true)
+  })
+
+  test('after clone mode ends, a new page leaves navigation as the editor set it', async () => {
+    const { $cwa, adminStore, display } = buildCwa()
+    const mode = cloneModeOf($cwa)
+    mode.start(SOURCE_IRI)
+    mode.end()
+    adminStore.state.navigationGuardDisabled = true
+    display.pageIri = '/_/pages/second'
+    await nextTask()
+    expect(adminStore.state.navigationGuardDisabled).toBe(true)
   })
 
   test('ending clone mode turns navigation blocking back on', () => {
