@@ -64,3 +64,4 @@ src/runtime/templates/assets/*
 # ssl certs for running production node --env-file=.env ./playground/.output/server/index.mjs
 certs/
 *.pem
+/.playwright

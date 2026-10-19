@@ -104,18 +104,22 @@ jobs:
         if: matrix.e2e && steps.playwright-cache.outputs.cache-hit != 'true'
         run: pnpm exec playwright-core install --only-shell chromium
 
-      - name: E2E guards and admin browser tests
+      - name: E2E guards
         if: matrix.e2e
         run: pnpm run test:e2e:guards
-        env:
-          E2E_SHOTS: ${{ runner.temp }}/admin-e2e-screenshots
 
-      - name: Upload admin browser test screenshots
+      - name: Admin browser tests (rehearsal replay)
+        if: matrix.e2e
+        run: pnpm run test:browser
+        env:
+          E2E_OUTPUT_DIR: ${{ runner.temp }}/admin-browser-results
+
+      - name: Upload admin browser test traces
         if: failure() && matrix.e2e
         uses: actions/upload-artifact@v6
         with:
-          name: admin-e2e-screenshots
-          path: ${{ runner.temp }}/admin-e2e-screenshots
+          name: admin-browser-traces
+          path: ${{ runner.temp }}/admin-browser-results
           if-no-files-found: ignore
 
       - name: Upload test artifacts
