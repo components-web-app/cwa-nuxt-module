@@ -2,11 +2,13 @@
 import { nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue'
 import { useWindowSize } from '@vueuse/core'
 import { useCwa } from '#cwa/composables/cwa'
+import { useCloneMode } from '#cwa/admin/clone-mode'
 
 const canvas = useTemplateRef<HTMLCanvasElement | undefined>('canvas')
 const windowSize = useWindowSize()
 
 const $cwa = useCwa()
+const { source: cloneSource } = useCloneMode($cwa)
 
 interface BoundedElement {
   getBoundingClientRect(): DOMRect
@@ -209,6 +211,7 @@ const divElementOverlays = ref<DivElementOverlayType[] | undefined>(getDivElemen
 <template>
   <ClientOnly>
     <div
+      v-if="!cloneSource"
       id="cwa-layout-page-overlay"
       class="cwa:z-overlay cwa:pointer-events-none cwa:absolute cwa:top-0 cwa:left-0"
     >

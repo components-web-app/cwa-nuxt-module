@@ -59,6 +59,7 @@ function buildCwa(ops: { published?: Record<string, string | undefined>, pageDat
     }),
   }
   const resources = {
+    displayPageIri: computed(() => undefined),
     findPublishedComponentIri: vi.fn((iri: string) => computed(() => ops.published ? ops.published[iri] : iri)),
     pageDataIriOf: vi.fn((iri: string) => computed(() => (ops.pageData ?? { [DYNAMIC_POSITION_IRI]: PAGE_DATA_IRI })[iri])),
   }

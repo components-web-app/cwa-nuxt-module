@@ -348,6 +348,18 @@ describe('Resources manager', () => {
       })
       expect(resourcesManager.getEndpointForIri('/components/1')).toBe('/components/1?published=true')
     })
+
+    test('adds no published query for a resource that is not publishable, such as a position removed from one location', () => {
+      const { resourcesManager, resourcesStoreActions } = createResourcesManager()
+      resourcesStoreActions.getResource.mockReturnValue({
+        data: {
+          '@id': '/_/component_positions/1',
+          '@type': 'ComponentPosition',
+          '_metadata': { persisted: true },
+        },
+      })
+      expect(resourcesManager.getEndpointForIri('/_/component_positions/1')).toBe('/_/component_positions/1')
+    })
   })
 
   describe('confirmDiscardAddingResource', () => {

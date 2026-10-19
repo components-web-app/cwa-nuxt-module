@@ -113,7 +113,7 @@ describe('CurrentResourceCta', () => {
       const emptyStack = vi.fn()
       const $cwa = {
         resourcesManager: { updateResource: vi.fn(), initAddResource: vi.fn() },
-        resources: { getResource: vi.fn(() => ({ value: undefined })) },
+        resources: { getResource: vi.fn(() => ({ value: undefined })), displayPageIri: { value: undefined } },
         auth: { user: { '@id': '/_/users/1' } },
         admin: {
           isEditing: true,
@@ -142,7 +142,7 @@ describe('CurrentResourceCta', () => {
     test('offers Clone for a persisted component', () => {
       const { options } = mountClone('/component/c1')
 
-      expect(options).toContainEqual({ label: 'Clone', value: 'clone' })
+      expect(options).toContainEqual({ label: 'Clone', value: 'clone', testId: 'component-menu-clone' })
     })
 
     test.each([

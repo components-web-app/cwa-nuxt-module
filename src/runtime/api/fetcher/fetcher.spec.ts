@@ -50,7 +50,7 @@ function delay(time: number, returnValue: any = undefined) {
   })
 }
 
-function createFetcher(query?: Record<string, string | null | (string | null)[]>, isServer?: boolean): Fetcher {
+function createFetcher(query?: Record<string, string | null | (string | null)[]>, isServer?: boolean, followsRedirects?: () => boolean): Fetcher {
   const cwaFetch = new CwaFetch('https://api-url')
   const resourcesStore = new ResourcesStore()
   const statusManager = new FetchStatusManager(new FetcherStore(), new Mercure(), new ApiDocumentation(), resourcesStore)
@@ -64,7 +64,7 @@ function createFetcher(query?: Record<string, string | null | (string | null)[]>
     },
   }
 
-  return new Fetcher(cwaFetch, statusManager, vueRouter, resourcesStore, isServer)
+  return new Fetcher(cwaFetch, statusManager, vueRouter, resourcesStore, isServer, followsRedirects)
 }
 
 const validCwaResource = {
@@ -420,6 +420,20 @@ describe('Fetcher -> fetchResource', () => {
     expect(fetcher.fetchAssociatedResources).not.toHaveBeenCalled()
     expect(FetchStatusManager.mock.instances[0].abortFetch).toBeCalledTimes(1)
     expect(FetchStatusManager.mock.instances[0].abortFetch).toBeCalledWith('token', 'redirect')
+  })
+
+  test('a redirect the route middleware will not follow (editing with navigation disabled) neither aborts the fetch nor skips its nested fetches, so the old page is not left on screen under the new URL', async () => {
+    const editingFetcher = createFetcher(undefined, false, () => false)
+    const manager = FetchStatusManager.mock.instances.at(-1)
+    vi.spyOn(manager, 'primaryFetchPath', 'get').mockReturnValue('/_/routes//path')
+    vi.spyOn(editingFetcher, 'fetchAssociatedResources').mockImplementation(() => {})
+    manager.startFetch.mockImplementation(() => ({ continue: true, token: 'token' }))
+    manager.startFetchResource.mockImplementation(() => true)
+    manager.finishFetchResource.mockImplementationOnce(() => ({ '@id': '/_/routes//path', 'redirectPath': '/my-redirect' }))
+    vi.spyOn(editingFetcher, 'fetch').mockImplementation(() => ({ response: Promise.resolve({ _data: {} }), headers: {} }))
+    await editingFetcher.fetchResource({ path: '/_/routes//path', token: 'token' })
+    expect(manager.abortFetch).not.toHaveBeenCalled()
+    expect(editingFetcher.fetchAssociatedResources).toHaveBeenCalled()
   })
 })
 

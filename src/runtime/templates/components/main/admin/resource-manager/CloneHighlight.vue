@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useCwa } from '#imports'
 import { useCloneMode } from '#cwa/admin/clone-mode'
 import { instancesOf, onInstancesChange } from '#cwa/admin/manageable-instances'
@@ -18,7 +18,7 @@ function boundsOf(elements: HTMLElement[]) {
   let right = -Infinity
   let bottom = -Infinity
   for (const element of elements) {
-    if (element.nodeType !== 1) {
+    if (element.nodeType !== 1 || !element.isConnected) {
       continue
     }
     const rect = element.getBoundingClientRect()
@@ -48,7 +48,22 @@ function redraw() {
   redrawCount.value++
 }
 
-const stopInstances = onInstancesChange($cwa, redraw)
+let frame: number | undefined
+
+function redrawAfterRender() {
+  redraw()
+  void nextTick(() => {
+    frame !== undefined && cancelAnimationFrame(frame)
+    frame = requestAnimationFrame(() => {
+      frame = undefined
+      redraw()
+    })
+  })
+}
+
+const stopInstances = onInstancesChange($cwa, redrawAfterRender)
+
+watch(() => [$cwa.resources.displayPageIri.value, $cwa.resources.isLoading.value], redrawAfterRender)
 
 onMounted(() => {
   $cwa.admin.eventBus.on('redrawFocus', redraw)
@@ -56,6 +71,7 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  frame !== undefined && cancelAnimationFrame(frame)
   stopInstances()
   $cwa.admin.eventBus.off('redrawFocus', redraw)
   window.removeEventListener('resize', redraw)

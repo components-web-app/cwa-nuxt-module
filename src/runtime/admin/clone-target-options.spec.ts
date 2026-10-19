@@ -341,12 +341,17 @@ describe('cloneTargetOptions', () => {
     ])
   })
 
-  test('names the layout scope when the target is in the layout while editing the page', () => {
+  test('names the scope being switched to', () => {
     const layoutStore = { ...pageStore, [LAYOUT]: { componentGroups: [GROUP] } }
     const layoutStack = stackOf(COMPONENT, POSITION, GROUP, LAYOUT)
-    expect(cloneTargetOptions(input({ stack: layoutStack, resources: buildResources(layoutStore), type: 'layout' })).scope).toBe('layout')
-    expect(cloneTargetOptions(input({ isEditingLayout: true, type: 'page' })).scope).toBe('page')
-    expect(cloneTargetOptions(input({ stack: layoutStack, resources: buildResources(layoutStore), type: 'layout', isEditingLayout: true })).scope).toBeUndefined()
+    expect(cloneTargetOptions(input({ stack: layoutStack, resources: buildResources(layoutStore), type: 'layout' })).scope).toEqual({ type: 'layout', switching: true })
+    expect(cloneTargetOptions(input({ isEditingLayout: true, type: 'page' })).scope).toEqual({ type: 'page', switching: true })
+  })
+
+  test('a layout target while already editing the layout still says it is shared by every page', () => {
+    const layoutStore = { ...pageStore, [LAYOUT]: { componentGroups: [GROUP] } }
+    const layoutStack = stackOf(COMPONENT, POSITION, GROUP, LAYOUT)
+    expect(cloneTargetOptions(input({ stack: layoutStack, resources: buildResources(layoutStore), type: 'layout', isEditingLayout: true })).scope).toEqual({ type: 'layout', switching: false })
   })
 
   test('a missing source type disables every option', () => {

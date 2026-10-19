@@ -22,6 +22,7 @@ function isDialogOpen() {
 function createCloneMode($cwa: Cwa): CloneMode {
   const source = shallowRef<CloneSource | undefined>()
   let scope: EffectScope | undefined
+  let navigationOffTimer: ReturnType<typeof setTimeout> | undefined
 
   function onKeydown(event: KeyboardEvent) {
     if (event.key !== 'Escape' || event.defaultPrevented || isDialogOpen()) {
@@ -31,6 +32,7 @@ function createCloneMode($cwa: Cwa): CloneMode {
   }
 
   function stopListening() {
+    clearTimeout(navigationOffTimer)
     scope?.stop()
     scope = undefined
     window.removeEventListener('keydown', onKeydown)
@@ -39,8 +41,22 @@ function createCloneMode($cwa: Cwa): CloneMode {
   function start(iri: string, name?: string) {
     stopListening()
     source.value = { iri, name }
+    $cwa.admin.setNavigationGuardDisabled(true)
+    let navigatingFrom = $cwa.resources.displayPageIri.value
     scope = effectScope(true)
     scope.run(() => {
+      watch(() => $cwa.admin.navigationGuardDisabled, (enabled) => {
+        if (enabled) {
+          navigatingFrom = $cwa.resources.displayPageIri.value
+        }
+      })
+      watch(() => $cwa.resources.displayPageIri.value, (pageIri) => {
+        if (pageIri && pageIri !== navigatingFrom) {
+          navigatingFrom = pageIri
+          clearTimeout(navigationOffTimer)
+          navigationOffTimer = setTimeout(() => $cwa.admin.setNavigationGuardDisabled(false))
+        }
+      })
       watch(() => $cwa.admin.isEditing, (isEditing) => {
         if (!isEditing) {
           end()

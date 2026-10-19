@@ -150,6 +150,7 @@ const deleteLabel = computed(() => {
       <CwaUiFormButton
         color="grey"
         button-class="cwa:min-w-[100px]"
+        data-testid="component-delete"
         :disabled="disableButton"
         @click="handleDelete"
       >

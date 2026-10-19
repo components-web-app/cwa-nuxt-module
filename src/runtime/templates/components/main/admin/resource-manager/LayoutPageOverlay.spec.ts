@@ -4,6 +4,8 @@ import { ref, nextTick } from 'vue'
 import { mount, flushPromises } from '@vue/test-utils'
 import LayoutPageOverlay from './LayoutPageOverlay.vue'
 import * as cwaComposable from '#cwa/composables/cwa'
+import { useCloneMode } from '#cwa/admin/clone-mode'
+import type Cwa from '#cwa/cwa'
 
 const windowSize = vi.hoisted(() => ({ width: { value: 1000 }, height: { value: 800 } }))
 vi.mock('@vueuse/core', () => ({
@@ -59,18 +61,25 @@ function makeBounded(rect: Partial<DOMRect>): { getBoundingClientRect(): DOMRect
   return { getBoundingClientRect: () => full }
 }
 
+let mockedCwa: Record<string, any>
+
 function mockCwa(isEditingLayout = false) {
   eventBus.on.mockClear()
   eventBus.off.mockClear()
-  // @ts-expect-error partial mock
-  vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => ({
+  mockedCwa = {
     admin: {
       eventBus,
+      isEditing: true,
+      setNavigationGuardDisabled: vi.fn(),
       resourceStackManager: {
         isEditingLayout: ref(isEditingLayout),
       },
     },
-  }))
+    auth: { user: { '@id': '/_/users/admin' } },
+    resources: { displayPageIri: { value: undefined } },
+  }
+  // @ts-expect-error partial mock
+  vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => mockedCwa)
 }
 
 function mountComponent(opts: {
@@ -96,6 +105,20 @@ describe('LayoutPageOverlay', () => {
     vi.clearAllMocks()
     windowSize.width.value = 1000
     windowSize.height.value = 800
+  })
+
+  describe('clone mode (#157)', () => {
+    test('shows no blur or hatching while cloning, since both the page and the layout can take the clone, and returns when cloning ends', async () => {
+      const wrapper = mountComponent()
+      const cloneMode = useCloneMode(mockedCwa as unknown as Cwa)
+      cloneMode.start('/component/source', 'Source')
+      await nextTick()
+      expect(wrapper.find('#cwa-layout-page-overlay').exists()).toBe(false)
+
+      cloneMode.end()
+      await nextTick()
+      expect(wrapper.find('#cwa-layout-page-overlay').exists()).toBe(true)
+    })
   })
 
   describe('initial render', () => {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import DialogBox from '#cwa/templates/components/core/DialogBox.vue'
 import type { ActionButton } from '#cwa/templates/components/core/DialogBox.vue'
 
@@ -13,13 +13,19 @@ const props = withDefaults(defineProps<{
 
 const emit = defineEmits(['confirm', 'cancel'])
 const open = ref(true)
+let answered = false
 
 function completeDialog(eventName: 'confirm' | 'cancel') {
+  answered = true
   open.value = false
   setTimeout(() => {
     emit(eventName)
   }, eventName === 'cancel' ? 300 : 0)
 }
+
+watch(open, (isOpen) => {
+  !isOpen && !answered && completeDialog('cancel')
+})
 
 const buttons = computed<ActionButton[]>(() => {
   return [

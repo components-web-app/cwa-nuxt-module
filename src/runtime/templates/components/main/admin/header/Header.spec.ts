@@ -529,15 +529,46 @@ describe('Header', () => {
       expect(bar.find('button').text()).toBe('Cancel')
     })
 
-    test('the Cloning bar sits below the header so the header height does not change', async () => {
+    test('the Cloning bar sits in the header row beside Enable Navigation, never over the layout below the header', async () => {
       const { cwa } = mockCwa({ admin: buildAdmin({ isEditing: true }) })
       useCloneMode(cwa).start(SOURCE_IRI, 'Hero text')
       const wrapper = mountHeader()
+      await flushPromises()
       const refs = wrapper.vm.$refs as Record<string, HTMLElement>
       const bar = refs.header.querySelector('[data-testid="clone-mode-bar"]')!
-      expect(bar.parentElement).toBe(refs.header)
-      expect(bar.className).toContain('cwa:absolute')
-      expect(bar.className).toContain('cwa:top-full')
+      expect(bar.className).not.toContain('cwa:top-full')
+      expect(bar.className).not.toContain('cwa:absolute')
+      expect(bar.parentElement!.querySelector('.toggle-stub')).not.toBeNull()
+    })
+
+    test.each([
+      ['an error page', () => {
+        errorRef.value = { statusCode: 404 }
+      }],
+      ['an admin page', () => {
+        mockRouteMeta.cwa = { admin: true }
+      }],
+    ])('on %s, reached with Enable Navigation on, the Cloning bar and its Cancel still show while clone mode is on', async (_label, arrive) => {
+      arrive()
+      const { cwa } = mockCwa({ admin: buildAdmin({ isEditing: true }) })
+      useCloneMode(cwa).start(SOURCE_IRI, 'Hero text')
+      const wrapper = mountHeader()
+      await flushPromises()
+      const bar = wrapper.find('[data-testid="clone-mode-bar"]')
+      expect(bar.exists()).toBe(true)
+      await bar.find('button').trigger('click')
+      expect(useCloneMode(cwa).source.value).toBeUndefined()
+    })
+
+    test.each([
+      [true, 'Follow links to the page you want, then turn off Enable Navigation to place it.'],
+      [false, 'Click a component to place it before or after. To use another page, turn on Enable Navigation.'],
+    ])('with Enable Navigation %s, the Cloning bar says what to do next', async (navigationGuardDisabled, hint) => {
+      const { cwa } = mockCwa({ admin: buildAdmin({ isEditing: true, navigationGuardDisabled }) })
+      useCloneMode(cwa).start(SOURCE_IRI, 'Hero text')
+      const wrapper = mountHeader()
+      await flushPromises()
+      expect(wrapper.find('[data-testid="clone-mode-hint"]').text()).toBe(hint)
     })
 
     test('mounts the clone highlight only while cloning', async () => {
