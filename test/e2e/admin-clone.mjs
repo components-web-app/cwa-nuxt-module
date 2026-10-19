@@ -57,6 +57,13 @@ async function startClone(page) {
   await page.getByTestId('clone-mode-bar').waitFor()
 }
 
+async function startMove(page, text = texts.source) {
+  await select(page, text)
+  await page.getByTestId('component-menu').getByTestId('button-options').click()
+  await page.getByTestId('component-menu-move').click()
+  await page.getByTestId('clone-mode-bar').waitFor()
+}
+
 async function setNavigation(page, enabled) {
   const toggle = page.getByRole('switch', { name: 'Enable Navigation' })
   const checked = await toggle.getAttribute('aria-checked') === 'true'
@@ -410,6 +417,92 @@ const scenarios = [
     await assertOnSecondPage(t)
     assert(await page.getByRole('dialog').count() === 0, `A dialog opened: ${await dialogTexts(page)}`)
   }],
+  ['23. Move within a group PATCHes the clicked position after its new neighbour, and the new order survives a reload', async (t) => {
+    const { page, state, settle } = t
+    await openEditMode(t)
+    await eventually(async () => await sourceAbove(page, texts.pageAOther) === true, 'The fixture order is wrong')
+    await startMove(page)
+    assert((await page.getByTestId('clone-mode-bar').innerText()).includes('Moving:'), 'The bar does not say Moving')
+    await setNavigation(page, false)
+    await page.getByText(texts.pageAOther, { exact: true }).click()
+    const dialog = dialogWith(page, 'Move Here')
+    await dialog.getByRole('button', { name: 'Add after', exact: true }).click()
+    const patch = await eventually(() => state.writes.find(w => w.method === 'PATCH' && w.path === '/_api/_/component_positions/a-source'), 'The position was not PATCHed')
+    assert(JSON.stringify(patch.body) === JSON.stringify({ componentGroup: iris.pageAGroup, after: '/_api/_/component_positions/a-other' }), `PATCHed ${JSON.stringify(patch.body)}`)
+    assert(!state.writes.some(w => w.method === 'POST' || w.method === 'DELETE'), 'A move created or deleted something')
+    await assertCloneModeEnded(page, 'Move mode did not end')
+    await settle()
+    assert(await sourceAbove(page, texts.pageAOther) === false, 'The page did not show the new order')
+    await page.reload()
+    await page.getByText(texts.pageAOther, { exact: true }).waitFor()
+    await settle()
+    assert(await sourceAbove(page, texts.pageAOther) === false, 'The new order did not persist')
+  }],
+  ['24. Move to another page relocates only the clicked instance: it leaves Home, arrives on Third, and Second keeps its own', async (t) => {
+    const { page, base, state, settle } = t
+    await openEditMode(t)
+    await startMove(page)
+    await layoutLink(page, 'Third').click()
+    await page.getByText(texts.third, { exact: true }).waitFor()
+    await eventually(async () => await page.getByRole('switch', { name: 'Enable Navigation' }).getAttribute('aria-checked') === 'false', 'Enable Navigation stayed on after arriving')
+    await page.getByText(texts.third, { exact: true }).click()
+    await dialogWith(page, 'Move Here').getByRole('button', { name: 'Add after', exact: true }).click()
+    const patch = await eventually(() => state.writes.find(w => w.method === 'PATCH' && w.path === '/_api/_/component_positions/a-source'), 'The position was not PATCHed')
+    assert(JSON.stringify(patch.body) === JSON.stringify({ componentGroup: iris.pageCGroup, after: '/_api/_/component_positions/c-third' }), `PATCHed ${JSON.stringify(patch.body)}`)
+    await assertCloneModeEnded(page, 'Move mode did not end')
+    await eventually(async () => (await page.getByText(texts.source, { exact: true }).count()) === 1, 'The moved component is not on Third')
+    await settle()
+    await page.getByRole('button', { name: 'Done', exact: true }).click()
+    await layoutLink(page, 'Home').click()
+    await eventually(() => page.url() === `${base}/`, `Expected /, at ${page.url()}`)
+    await page.getByText(texts.pageAOther, { exact: true }).waitFor()
+    await settle()
+    assert(await page.getByText(texts.source, { exact: true }).count() === 0, 'The moved component is still on Home')
+    await layoutLink(page, 'Second').click()
+    await assertOnSecondPage(t)
+    assert(await page.getByText(texts.source, { exact: true }).count() === 1, 'The other instance on Second was moved too')
+  }],
+  ['25. Move is not offered next to its own position, with the reason', async (t) => {
+    const { page } = t
+    await openEditMode(t)
+    await startMove(page)
+    await setNavigation(page, false)
+    await page.getByText(texts.source, { exact: true }).click()
+    const dialog = dialogWith(page, 'Move Here')
+    for (const name of ['Add before', 'Add after']) {
+      assert(await dialog.getByRole('button', { name, exact: true }).isDisabled(), `${name} is enabled next to the position being moved`)
+    }
+    assert((await dialog.innerText()).includes('This is where it already is'), 'The reason is not shown')
+  }],
+  ['26. moving a layout component into the page warns that it will leave every other page', async (t) => {
+    const { page } = t
+    await openEditMode(t)
+    await layoutLink(page, 'Second').click()
+    await dialogWith(page, 'switch and edit the layout').getByRole('button', { name: 'Ok', exact: true }).click()
+    await page.getByTestId('component-menu').waitFor()
+    await page.getByTestId('component-menu').getByTestId('button-options').click()
+    await page.getByTestId('component-menu-move').click()
+    await page.getByTestId('clone-mode-bar').waitFor()
+    await setNavigation(page, false)
+    await page.getByText(texts.pageAOther, { exact: true }).click()
+    await dialogWith(page, 'switch and edit the page').getByRole('button', { name: 'Ok', exact: true }).click()
+    const note = dialogWith(page, 'Move Here').getByTestId('move-leaves-layout')
+    await note.waitFor()
+    assert((await note.innerText()).includes('no longer appear on other pages'), `The note is "${await note.innerText()}"`)
+  }],
+  ['27. a move whose position was deleted elsewhere ends move mode with the source-gone message', async (t) => {
+    const { page, state } = t
+    await openEditMode(t)
+    await startMove(page)
+    await setNavigation(page, false)
+    state.resources.delete('/_api/_/component_positions/a-source')
+    const group = state.resources.get(iris.pageAGroup)
+    group.componentPositions = group.componentPositions.filter(iri => iri !== '/_api/_/component_positions/a-source')
+    await page.getByText(texts.pageAOther, { exact: true }).click()
+    await dialogWith(page, 'Move Here').getByRole('button', { name: 'Add after', exact: true }).click()
+    await assertCloneModeEnded(page, 'Move mode did not end when the API answered 404')
+    await page.getByText('The component being moved no longer exists').first().waitFor()
+  }, [notFoundResource]],
   ['19. Escape on the shared delete dialog cancels it and Delete works again', async (t) => {
     const { page, state } = t
     await openEditMode(t)

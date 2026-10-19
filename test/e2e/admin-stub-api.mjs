@@ -361,6 +361,24 @@ export function startAdminStubApi(port) {
           send(404, { status: 404 })
           return
         }
+        if (resource['@type'] === 'ComponentPosition' && (body.componentGroup || body.after || body.before)) {
+          const { after, before, ...rest } = body
+          const target = resources.get(rest.componentGroup ?? resource.componentGroup)
+          const anchor = after ?? before
+          if (!target || (anchor && (anchor === path || !target.componentPositions.includes(anchor)))) {
+            send(422, { violations: [{ propertyPath: target ? (after ? 'after' : 'before') : 'componentGroup', message: 'Invalid' }] })
+            return
+          }
+          const source = resources.get(resource.componentGroup)
+          source.componentPositions = source.componentPositions.filter(iri => iri !== path)
+          renumber(resources, source)
+          Object.assign(resource, rest, { componentGroup: target['@id'] })
+          const anchorIndex = after ? target.componentPositions.indexOf(after) + 1 : before ? target.componentPositions.indexOf(before) : target.componentPositions.length
+          target.componentPositions.splice(anchorIndex, 0, path)
+          renumber(resources, target)
+          send(200, resource)
+          return
+        }
         Object.assign(resource, body)
         send(200, resource)
         return

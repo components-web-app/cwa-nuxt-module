@@ -2,14 +2,20 @@ import { effectScope, shallowReadonly, shallowRef, watch } from 'vue'
 import type { EffectScope, Ref } from 'vue'
 import type Cwa from '#cwa/cwa'
 
+export interface CloneMove {
+  positionIri: string
+  fromLayout: boolean
+}
+
 export interface CloneSource {
   iri: string
   name?: string
+  move?: CloneMove
 }
 
 export interface CloneMode {
   source: Readonly<Ref<CloneSource | undefined>>
-  start: (iri: string, name?: string) => void
+  start: (iri: string, name?: string, move?: CloneMove) => void
   end: () => void
 }
 
@@ -38,9 +44,9 @@ function createCloneMode($cwa: Cwa): CloneMode {
     window.removeEventListener('keydown', onKeydown)
   }
 
-  function start(iri: string, name?: string) {
+  function start(iri: string, name?: string, move?: CloneMove) {
     stopListening()
-    source.value = { iri, name }
+    source.value = move ? { iri, name, move } : { iri, name }
     $cwa.admin.setNavigationGuardDisabled(true)
     let navigatingFrom = $cwa.resources.displayPageIri.value
     scope = effectScope(true)

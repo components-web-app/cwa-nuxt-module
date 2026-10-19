@@ -3,6 +3,7 @@ import { componentGroupCapacity } from '../resources/component-group-capacity'
 import type { Resources } from '../resources/resources'
 import type { ApiDocumentationComponentMetadataCollection } from '../api/api-documentation'
 import type { CloneAnchor, CloneTarget } from './clone-component'
+import type { CloneMove } from './clone-mode'
 import { isComponentAllowedInGroup } from '#cwa/templates/components/main/admin/resource-manager/_parts/available-components'
 
 export type CloneScope = 'layout' | 'page'
@@ -23,11 +24,13 @@ export interface CloneTargetOptionsInput {
   isDataPage: boolean
   isEditingLayout: boolean
   type: CloneScope
+  move?: CloneMove
 }
 
 export interface CloneTargetOptions {
   options: CloneTargetOption[]
   scope?: { type: CloneScope, switching: boolean }
+  leavesLayout?: true
 }
 
 function withoutPrefix(iri: string) {
@@ -60,7 +63,8 @@ function groupReasons(input: CloneTargetOptionsInput, groupIndex: number, typeNa
   const groupIri = input.stack[groupIndex]!.iri
   const group = input.resources.getResource(groupIri).value?.data
   const reasons: string[] = []
-  if (componentGroupCapacity(group).full) {
+  const movingWithinGroup = !!input.move && input.resources.getResource(input.move.positionIri).value?.data?.componentGroup === groupIri
+  if (componentGroupCapacity(group).full && !movingWithinGroup) {
     reasons.push('This group is full')
   }
   const meta = typeName ? input.componentMetadata[typeName] : undefined
@@ -74,9 +78,18 @@ function groupReasons(input: CloneTargetOptionsInput, groupIndex: number, typeNa
     }
   }
   if (isInsideSource(input, groupIndex)) {
-    reasons.push('This is inside the component being cloned')
+    reasons.push(insideSourceReason(input))
   }
   return reasons
+}
+
+function insideSourceReason(input: CloneTargetOptionsInput) {
+  return `This is inside the component being ${input.move ? 'moved' : 'cloned'}`
+}
+
+function anchorReasons(input: CloneTargetOptionsInput, reasons: string[], anchor: CloneAnchor) {
+  const anchorIri = 'after' in anchor ? anchor.after : 'before' in anchor ? anchor.before : undefined
+  return input.move && anchorIri === input.move.positionIri ? [...reasons, 'This is where it already is'] : reasons
 }
 
 function option(label: string, value: CloneTarget, reasons: string[]): CloneTargetOption {
@@ -98,7 +111,7 @@ function groupOptions(input: CloneTargetOptionsInput, typeName: string | undefin
       return [option('Add here', at({}), reasons)]
     }
     return [
-      option('Add to Start', at({ before: first }), reasons),
+      option('Add to Start', at({ before: first }), anchorReasons(input, reasons, { before: first })),
       option('Add to End', at({}), reasons),
     ]
   }
@@ -109,8 +122,8 @@ function groupOptions(input: CloneTargetOptionsInput, typeName: string | undefin
   }
   const positionIri = input.stack[positionIndex]!.iri
   return [
-    option('Add before', at({ before: positionIri }), reasons),
-    option('Add after', at({ after: positionIri }), reasons),
+    option('Add before', at({ before: positionIri }), anchorReasons(input, reasons, { before: positionIri })),
+    option('Add after', at({ after: positionIri }), anchorReasons(input, reasons, { after: positionIri })),
   ]
 }
 
@@ -132,11 +145,14 @@ function pageDataOptions(input: CloneTargetOptionsInput, typeName: string | unde
   const properties: { property: string, componentShortName: string }[] = (pageDataIri && input.resources.getResource(pageDataIri).value?.data?._metadata?.pageDataMetadata?.properties) || []
   const fieldType = properties.find(item => item.property === property)?.componentShortName
   const reasons: string[] = []
+  if (input.move) {
+    return [option('Use here', { kind: 'page-data', positionIri, property }, ['Moving into a page-data slot is not supported yet'])]
+  }
   if (!typeName || fieldType !== typeName) {
     reasons.push(`This field takes ${fieldType ?? 'another type'}, not ${typeName ?? 'this component'}`)
   }
   if (isInsideSource(input, positionIndex)) {
-    reasons.push('This is inside the component being cloned')
+    reasons.push(insideSourceReason(input))
   }
   return [option('Use here', { kind: 'page-data', positionIri, property }, reasons)]
 }
@@ -148,6 +164,9 @@ export function cloneTargetOptions(input: CloneTargetOptionsInput): CloneTargetO
   const switching = (input.type === 'layout') !== input.isEditingLayout
   if (switching || input.type === 'layout') {
     result.scope = { type: input.type, switching }
+  }
+  if (input.move?.fromLayout && input.type === 'page') {
+    result.leavesLayout = true
   }
   return result
 }

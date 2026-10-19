@@ -57,6 +57,18 @@ const isPersistedComponent = computed(() => {
   return resourceType.value === CwaResourceTypes.COMPONENT && props.resource?._metadata?.persisted !== false
 })
 
+const movablePositionIri = computed(() => {
+  if (!isPersistedComponent.value) {
+    return
+  }
+  const positionIri = $cwa.admin.resourceStackManager.resourceStack.value.find(item => getResourceTypeFromIri(item.iri) === CwaResourceTypes.COMPONENT_POSITION)?.iri
+  const position = positionIri ? $cwa.resources.getResource(positionIri).value?.data : undefined
+  if (!positionIri || position?.pageDataProperty || position?._metadata?.isDynamicPosition) {
+    return
+  }
+  return positionIri
+})
+
 const buttonOptions = computed(() => {
   const ops: (ButtonOption | ButtonOption[])[] = []
 
@@ -90,6 +102,9 @@ const buttonOptions = computed(() => {
   if (isPersistedComponent.value) {
     ops.push({ label: 'Clone', value: 'clone', testId: 'component-menu-clone' })
   }
+  if (movablePositionIri.value) {
+    ops.push({ label: 'Move', value: 'move', testId: 'component-menu-move' })
+  }
 
   return ops
 })
@@ -119,6 +134,14 @@ function handleManagerCtaClick(value?: ModelValue) {
 
     if (value === 'clone') {
       useCloneMode($cwa).start(props.currentIri, $cwa.admin.resourceStackManager.currentStackItem.value?.displayName)
+      $cwa.admin.emptyStack()
+    }
+
+    if (value === 'move' && movablePositionIri.value) {
+      useCloneMode($cwa).start(props.currentIri, $cwa.admin.resourceStackManager.currentStackItem.value?.displayName, {
+        positionIri: movablePositionIri.value,
+        fromLayout: $cwa.admin.resourceStackManager.isEditingLayout.value,
+      })
       $cwa.admin.emptyStack()
     }
   }
