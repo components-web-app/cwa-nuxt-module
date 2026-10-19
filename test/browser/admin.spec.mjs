@@ -818,3 +818,44 @@ test('21. cloning a layout component within the layout still says it appears on 
   await scope.waitFor()
   assert((await scope.innerText()).includes('every page'), `The layout note is "${await scope.innerText()}"`)
 })
+
+test('34. a shared component shows how many places it is used in beside the publish button; an unshared one shows nothing', async ({ cwa: t }) => {
+  const { page } = t
+  await openEditMode(t)
+  await select(page, texts.source)
+  const badge = page.getByTestId('component-usage-badge')
+  await badge.waitFor()
+  assert(await badge.innerText() === 'Shared · 2 places', `The badge says "${await badge.innerText()}"`)
+  await eventually(async () => {
+    const [badgeBox, menuBox] = [await badge.boundingBox(), await page.getByTestId('component-menu').getByTestId('button-options').boundingBox()]
+    return badgeBox && menuBox && badgeBox.x + badgeBox.width <= menuBox.x && Math.abs((badgeBox.y + badgeBox.height / 2) - (menuBox.y + menuBox.height / 2)) < 8
+  }, 'The badge is not just left of the publish button, in the same row')
+  await select(page, texts.pageAOther)
+  await eventually(async () => (await badge.count()) === 0, 'An unshared component shows the badge')
+})
+
+test('35. selecting a component outlines its other copies on the page, not the selected one', async ({ cwa: t }) => {
+  const { page, settle } = t
+  await openEditMode(t)
+  await startClone(page)
+  await setNavigation(page, false)
+  await page.getByText(texts.pageAOther, { exact: true }).click()
+  await cloneDialog(page).getByRole('button', { name: 'Add after', exact: true }).click()
+  await assertCloneModeEnded(page, 'Clone mode did not end')
+  await eventually(async () => (await page.getByText(texts.source, { exact: true }).count()) === 2, 'The clone did not render')
+  await settle()
+  await page.getByText(texts.source, { exact: true }).first().click()
+  await page.getByTestId('component-menu').waitFor()
+  const outlineBoxes = async () => page.getByTestId('shared-instance-outline').evaluateAll(els => els.map((el) => {
+    const r = el.getBoundingClientRect()
+    return { top: r.top, left: r.left, width: r.width, height: r.height }
+  }))
+  await eventually(async () => {
+    const [selected, copy] = await boxesOf(page, texts.source)
+    const found = await outlineBoxes()
+    return found.length === 1 && covers(found[0], copy) && !covers(found[0], selected)
+  }, `The outlines are ${JSON.stringify(await outlineBoxes())}`)
+  await page.keyboard.press('Escape')
+  await select(page, texts.pageAOther)
+  await eventually(async () => (await page.getByTestId('shared-instance-outline').count()) === 0, 'An outline stayed after selecting an unshared component')
+})
