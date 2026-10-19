@@ -746,7 +746,7 @@ test('35. selecting a component outlines its other copies on the page, not the s
 })
 
 test.describe.fixme('needs the api-components-bundle release with #531 in the template', () => {
-  test('40. the shared badge lists the pages a component is on, marking this page and linking the other', async ({ cwa: t }) => {
+  test('41. the shared badge lists the pages a component is on, marking this page and linking the other', async ({ cwa: t }) => {
     const { page } = t
     await openEditMode(t)
     await select(page, texts.source)
@@ -762,7 +762,7 @@ test.describe.fixme('needs the api-components-bundle release with #531 in the te
     assert(await list.getByTestId('component-usage-more').count() === 0, 'The list says there are more places')
   })
 
-  test('41. following a page in the shared list while editing goes there and stays in edit mode', async ({ cwa: t }) => {
+  test('42. following a page in the shared list while editing goes there and stays in edit mode', async ({ cwa: t }) => {
     const { page } = t
     await openEditMode(t)
     await select(page, texts.source)
