@@ -856,3 +856,33 @@ test('35. selecting a component outlines its other copies on the page, not the s
   await select(page, texts.pageAOther)
   await eventually(async () => (await page.getByTestId('shared-instance-outline').count()) === 0, 'An outline stayed after selecting an unshared component')
 })
+
+test.describe('the list of places behind the shared badge', () => {
+  test('41. the shared badge lists the pages a component is on, marking this page and linking the other', async ({ cwa: t }) => {
+    const { page } = t
+    await openEditMode(t)
+    await select(page, texts.source)
+    await page.getByTestId('component-usage-badge').click()
+    const list = page.getByTestId('component-usage-list')
+    await list.waitFor()
+    const rows = await list.getByTestId('component-usage-location').allInnerTexts()
+    assert(rows.length === 2, `The list has ${rows.length} rows: ${JSON.stringify(rows)}`)
+    assert(rows[0].includes('E2E page a') && rows[0].includes('This page'), `The first row is "${rows[0]}"`)
+    assert(rows[1].includes('E2E page b') && !rows[1].includes('This page'), `The second row is "${rows[1]}"`)
+    assert(await list.getByRole('link', { name: 'E2E page a', exact: true }).count() === 0, 'This page is linked')
+    assert(await list.getByRole('link', { name: 'E2E page b', exact: true }).count() === 1, 'The other page is not linked')
+    assert(await list.getByTestId('component-usage-more').count() === 0, 'The list says there are more places')
+  })
+
+  test('42. following a page in the shared list while editing goes there and stays in edit mode', async ({ cwa: t }) => {
+    const { page } = t
+    await openEditMode(t)
+    await select(page, texts.source)
+    await page.getByTestId('component-usage-badge').click()
+    await page.getByTestId('component-usage-list').getByRole('link', { name: 'E2E page b', exact: true }).click()
+    await assertOnSecondPage(t)
+    assert(!page.url().includes('cwa_force'), `The address kept cwa_force: ${page.url()}`)
+    assert(await page.getByTestId('component-usage-list').count() === 0, 'The list stayed open')
+    await page.getByRole('button', { name: 'Done', exact: true }).waitFor()
+  })
+})
