@@ -1,7 +1,9 @@
 import { ResourceTypeFromIri } from '../resources/resource-utils'
 import { ErrorType } from '../storage/stores/error/state'
+import type { CwaErrorEvent } from '../storage/stores/error/state'
 import { nextTick } from 'vue'
 import { useCloneMode } from './clone-mode'
+import type { CloneMove } from './clone-mode'
 import { instancesOf, onInstancesChange } from './manageable-instances'
 import type Cwa from '#cwa/cwa'
 
@@ -22,7 +24,19 @@ interface SentWrite {
   endpoint: string
   request: Promise<unknown>
   placedIri: (result: any) => string | undefined
-  componentIri?: string
+  isSourceGone: (error: CwaErrorEvent) => boolean
+}
+
+function cloneSourceGone(componentIri: string) {
+  return (error: CwaErrorEvent) => error.statusCode === 404 || (error.statusCode === 400 && !!error.detail?.startsWith(`Item not found for "${componentIri}"`))
+}
+
+function moveSourceGone(error: CwaErrorEvent) {
+  return error.statusCode === 404 || (error.statusCode === 422 && !!error.violations?.some(({ property }) => property === 'from' || property?.startsWith('from.')))
+}
+
+function unique(iris: (string | undefined)[]) {
+  return [...new Set(iris.filter((iri): iri is string => !!iri))]
 }
 
 function addPosition($cwa: Cwa, iri: string, groupIri: string, anchor: CloneAnchor) {
@@ -40,7 +54,7 @@ function addPosition($cwa: Cwa, iri: string, groupIri: string, anchor: CloneAnch
     await manager.refreshComponentGroupOrder(groupIri)
     return created
   })
-  return { endpoint, request, placedIri: (created: any) => created?.['@id'], componentIri: iri }
+  return { endpoint, request, placedIri: (created: any) => created?.['@id'], isSourceGone: cloneSourceGone(iri) }
 }
 
 function usePageDataSlot($cwa: Cwa, iri: string, positionIri: string, property: string) {
@@ -53,25 +67,50 @@ function usePageDataSlot($cwa: Cwa, iri: string, positionIri: string, property: 
     data: { [property]: iri },
     refreshEndpoints: [positionIri],
   })
-  return { endpoint, request, placedIri: () => positionIri, componentIri: iri }
+  return { endpoint, request, placedIri: () => positionIri, isSourceGone: cloneSourceGone(iri) }
 }
 
-function movePosition($cwa: Cwa, positionIri: string, groupIri: string, anchor: CloneAnchor) {
-  const manager = $cwa.resourcesManager
-  const sourceGroupIri: string | undefined = $cwa.resources.getResource(positionIri).value?.data?.componentGroup
-  const groups = [...new Set([groupIri, sourceGroupIri].filter((iri): iri is string => !!iri))]
-  const request = manager.queueComponentGroupWrite(groupIri, async () => {
-    const moved = await manager.updateResource({
-      endpoint: positionIri,
-      data: { componentGroup: groupIri, ...anchor },
-      refreshEndpoints: groups,
-    })
-    for (const iri of groups) {
-      await manager.refreshComponentGroupOrder(iri)
+function sendMove($cwa: Cwa, sourceIri: string, { positionIri, from }: CloneMove, target: CloneTarget): SentWrite | undefined {
+  const { resources, resourcesManager: manager } = $cwa
+  const iri = resources.findPublishedComponentIri(sourceIri).value ?? sourceIri
+  const toPageData = target.kind === 'page-data' ? resources.pageDataIriOf(target.positionIri).value : undefined
+  if (target.kind === 'page-data' && !toPageData) {
+    return
+  }
+  const to = target.kind === 'position'
+    ? { componentGroup: target.groupIri, ...target.anchor }
+    : { pageData: toPageData!, property: target.property }
+  const fromPosition = 'componentPosition' in from ? from.componentPosition : undefined
+  const fromGroup: string | undefined = fromPosition && resources.getResource(fromPosition).value?.data?.componentGroup
+  const toGroup = target.kind === 'position' ? target.groupIri : undefined
+  const groups = unique([toGroup, fromGroup])
+  const onScreen = (iris: string[]) => iris.filter(iri => resources.currentIds.includes(iri))
+  const refresh = unique([
+    ...(target.kind === 'page-data' ? [toPageData, target.positionIri] : []),
+    ...onScreen('pageData' in from ? [from.pageData, positionIri] : (toGroup ? [from.componentPosition] : [])),
+    ...groups,
+  ])
+
+  const write = async () => {
+    const moved = await manager.send<{ componentPosition: string | null }>(`${iri}/move`, 'POST', { from, to })
+    if (moved) {
+      if (fromPosition && !toGroup) {
+        manager.removeResource({ resource: fromPosition })
+      }
+      await manager.refreshEndpoints(refresh)
+    }
+    for (const groupIri of groups) {
+      await manager.refreshComponentGroupOrder(groupIri)
     }
     return moved
-  })
-  return { endpoint: positionIri, request, placedIri: () => positionIri }
+  }
+  const queueIri = toGroup ?? fromGroup
+  return {
+    endpoint: `${iri}/move`,
+    request: queueIri ? manager.queueComponentGroupWrite(queueIri, write) : write(),
+    placedIri: moved => moved?.componentPosition ?? (target.kind === 'page-data' ? target.positionIri : undefined),
+    isSourceGone: moveSourceGone,
+  }
 }
 
 function selectWhenShown($cwa: Cwa, positionIri: string) {
@@ -114,8 +153,7 @@ async function finish($cwa: Cwa, sent: SentWrite | undefined, sourceGoneMessage:
   }
 
   const error = $cwa.resourcesManager.errors.filter(error => error.event?.endpoint === sent.endpoint).at(-1)
-  const unknownSource = error?.statusCode === 400 && !!sent.componentIri && !!error.detail?.startsWith(`Item not found for "${sent.componentIri}"`)
-  if (!error || (error.statusCode !== 404 && !unknownSource)) {
+  if (!error || !sent.isSourceGone(error)) {
     return 'refused'
   }
 
@@ -139,7 +177,6 @@ export function cloneComponent($cwa: Cwa, { sourceIri, target }: { sourceIri: st
   return finish($cwa, sent, CLONE_SOURCE_GONE_MESSAGE)
 }
 
-export function moveComponent($cwa: Cwa, { positionIri, target }: { positionIri: string, target: CloneTarget }): Promise<CloneOutcome> {
-  const sent = target.kind === 'position' ? movePosition($cwa, positionIri, target.groupIri, target.anchor) : undefined
-  return finish($cwa, sent, MOVE_SOURCE_GONE_MESSAGE)
+export function moveComponent($cwa: Cwa, { sourceIri, move, target }: { sourceIri: string, move: CloneMove, target: CloneTarget }): Promise<CloneOutcome> {
+  return finish($cwa, sendMove($cwa, sourceIri, move, target), MOVE_SOURCE_GONE_MESSAGE)
 }

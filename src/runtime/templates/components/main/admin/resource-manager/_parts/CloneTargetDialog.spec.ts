@@ -127,9 +127,9 @@ describe('CloneTargetDialog', () => {
     expect(scope.classes()).not.toContain('cwa:text-yellow')
   })
 
-  test('a move patches the moved position instead of cloning', async () => {
+  test('a move sends the source and where Move started instead of cloning', async () => {
     state.cwa = makeCwa()
-    useCloneMode(state.cwa as Cwa).start(SOURCE, 'Source', { positionIri: '/_/component_positions/source', fromLayout: false })
+    useCloneMode(state.cwa as Cwa).start(SOURCE, 'Source', { positionIri: '/_/component_positions/source', fromLayout: false, from: { componentPosition: '/_/component_positions/source' } })
     const { cloneComponent, moveComponent } = await import('#cwa/admin/clone-component')
     const wrapper = await mountDialog()
     await editLayout(wrapper)
@@ -139,7 +139,8 @@ describe('CloneTargetDialog', () => {
     await flushPromises()
 
     expect(moveComponent).toHaveBeenCalledWith(state.cwa, {
-      positionIri: '/_/component_positions/source',
+      sourceIri: SOURCE,
+      move: { positionIri: '/_/component_positions/source', fromLayout: false, from: { componentPosition: '/_/component_positions/source' } },
       target: { kind: 'position', groupIri: GROUP, anchor: { after: POSITION } },
     })
     expect(cloneComponent).not.toHaveBeenCalled()
@@ -149,7 +150,7 @@ describe('CloneTargetDialog', () => {
   test('a move from the layout into the page warns that it will leave every other page', async () => {
     state.cwa = makeCwa()
     state.cwa.admin.resourceStackManager.isEditingLayout.value = true
-    useCloneMode(state.cwa as Cwa).start(SOURCE, 'Source', { positionIri: '/_/component_positions/source', fromLayout: true })
+    useCloneMode(state.cwa as Cwa).start(SOURCE, 'Source', { positionIri: '/_/component_positions/source', fromLayout: true, from: { componentPosition: '/_/component_positions/source' } })
     const wrapper = await mountDialog('page')
     await dialogButton(wrapper, 'Edit page')!.trigger('click')
     await flushPromises()
@@ -233,7 +234,7 @@ describe('CloneTargetDialog', () => {
   describe('the title names the anchor (#414)', () => {
     test.each([
       ['a clone', undefined, 'Clone next to “Third page component”'],
-      ['a move', { positionIri: '/_/component_positions/source', fromLayout: false }, 'Move next to “Third page component”'],
+      ['a move', { positionIri: '/_/component_positions/source', fromLayout: false, from: { componentPosition: '/_/component_positions/source' } }, 'Move next to “Third page component”'],
     ] as const)('in %s, by an excerpt of its content', async (_label, move, title) => {
       state.cwa = makeCwa()
       state.cwa.admin.resourceStackManager.isEditingLayout.value = true
@@ -322,7 +323,7 @@ describe('CloneTargetDialog', () => {
   test('an enabled option is styled apart from a disabled one, not only by opacity (#414)', async () => {
     state.cwa = makeCwa()
     state.cwa.admin.resourceStackManager.isEditingLayout.value = true
-    useCloneMode(state.cwa as Cwa).start(SOURCE, 'Source', { positionIri: POSITION, fromLayout: true })
+    useCloneMode(state.cwa as Cwa).start(SOURCE, 'Source', { positionIri: POSITION, fromLayout: true, from: { componentPosition: POSITION } })
     const wrapper = await mountDialog('layout', [{ iri: GROUP }, { iri: LAYOUT }])
 
     const [toStart, toEnd] = wrapper.findAll('[data-testid="clone-option"]')
