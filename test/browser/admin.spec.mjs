@@ -4,7 +4,6 @@ import { articleTexts, seedArticlePages, texts } from './seed.mjs'
 const notFoundResource = /^Failed to load resource: the server responded with a status of 404/
 const unknownResource = /^Failed to load resource: the server responded with a status of (400|404)/
 const refusedResource = /^Failed to load resource: the server responded with a status of 422/
-const needsMoveEndpoint = { annotation: { type: 'fixme', description: 'needs the api-components-bundle release with #526 in the template' } }
 
 class AssertionError extends Error {}
 
@@ -454,7 +453,7 @@ test('22. a link to a page already visited, shown at once from the route cache, 
   assert(await page.getByRole('dialog').count() === 0, `A dialog opened: ${await dialogTexts(page)}`)
 })
 
-test.fixme('23. Move within a group POSTs the clicked position\'s move after its new neighbour, and the new order survives a reload', needsMoveEndpoint, async ({ cwa: t }) => {
+test('23. Move within a group POSTs the clicked position\'s move after its new neighbour, and the new order survives a reload', async ({ cwa: t }) => {
   const { page, settle } = t
   await openEditMode(t)
   await eventually(async () => await sourceAbove(page, texts.pageAOther) === true, 'The fixture order is wrong')
@@ -475,7 +474,7 @@ test.fixme('23. Move within a group POSTs the clicked position\'s move after its
   assert(await sourceAbove(page, texts.pageAOther) === false, 'The new order did not persist')
 })
 
-test.fixme('24. Move to another page relocates only the clicked instance: it leaves Home, arrives on Third, and Second keeps its own', needsMoveEndpoint, async ({ cwa: t }) => {
+test('24. Move to another page relocates only the clicked instance: it leaves Home, arrives on Third, and Second keeps its own', async ({ cwa: t }) => {
   const { page, base, settle } = t
   await openEditMode(t)
   await startMove(page)
@@ -529,7 +528,7 @@ test('26. moving a layout component into the page warns that it will leave every
   assert((await note.innerText()).includes('no longer appear on other pages'), `The note is "${await note.innerText()}"`)
 })
 
-test.fixme('27. a move whose position was deleted elsewhere ends move mode with the source-gone message', needsMoveEndpoint, async ({ cwa: t }) => {
+test('27. a move whose position was deleted elsewhere ends move mode with the source-gone message', async ({ cwa: t }) => {
   const { page } = t
   t.allowConsoleErrors(notFoundResource, refusedResource)
   await openEditMode(t)
@@ -573,7 +572,7 @@ test('28. after a clone the new instance is selected and its outline flashes, an
   await eventually(async () => (await page.getByTestId('clone-placed').count()) === 0, 'The flash did not go', 4000)
 })
 
-test.fixme('29. after a move the moved instance is selected and its outline flashes', needsMoveEndpoint, async ({ cwa: t }) => {
+test('29. after a move the moved instance is selected and its outline flashes', async ({ cwa: t }) => {
   const { page } = t
   await openEditMode(t)
   await startMove(page)
@@ -679,7 +678,7 @@ async function moveMenuOffers(page, text) {
   return await page.getByTestId('component-menu-move').count() > 0
 }
 
-test.fixme('36. Move out of a page-data slot into another page\'s group sends the slot\'s page data, and the slot then shows the template\'s fallback', needsMoveEndpoint, async ({ cwa: t }) => {
+test('36. Move out of a page-data slot into another page\'s group sends the slot\'s page data, and the slot then shows the template\'s fallback', async ({ cwa: t }) => {
   const { page, settle } = t
   const articles = await seedArticlePages(t.api, t.rehearsal.token, t.seed)
   await openEditMode(t, articles.paths.articleA)
@@ -698,7 +697,7 @@ test.fixme('36. Move out of a page-data slot into another page\'s group sends th
   assert(await page.getByText(articleTexts.slotA, { exact: true }).count() === 0, 'The slot still shows the moved component')
 })
 
-test.fixme('37. Move from a group into an empty page-data slot sends the position and the slot\'s page data, and leaves the group', needsMoveEndpoint, async ({ cwa: t }) => {
+test('37. Move from a group into an empty page-data slot sends the position and the slot\'s page data, and leaves the group', async ({ cwa: t }) => {
   const { page, settle } = t
   const articles = await seedArticlePages(t.api, t.rehearsal.token, t.seed)
   await openEditMode(t)
@@ -718,7 +717,7 @@ test.fixme('37. Move from a group into an empty page-data slot sends the positio
   assert(await page.getByText(texts.pageAOther, { exact: true }).count() === 0, 'The moved component is still on Home')
 })
 
-test.fixme('38. Move from a page-data slot into the same slot on another page-data page sends both page data, and swaps what each page shows', needsMoveEndpoint, async ({ cwa: t }) => {
+test('38. Move from a page-data slot into the same slot on another page-data page sends both page data, and swaps what each page shows', async ({ cwa: t }) => {
   const { page, settle } = t
   const articles = await seedArticlePages(t.api, t.rehearsal.token, t.seed)
   await openEditMode(t, articles.paths.articleA)
