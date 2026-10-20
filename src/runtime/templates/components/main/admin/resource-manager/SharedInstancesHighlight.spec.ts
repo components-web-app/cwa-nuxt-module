@@ -8,6 +8,13 @@ import * as cwaComposable from '#cwa/composables/cwa'
 import { registerInstance, unregisterInstance } from '#cwa/admin/manageable-instances'
 import type Cwa from '#cwa/cwa'
 
+const appContainer = vi.hoisted(() => ({ element: undefined as HTMLElement | undefined }))
+
+vi.mock('#app/nuxt', async importOriginal => ({
+  ...await importOriginal<typeof import('#app/nuxt')>(),
+  useNuxtApp: () => ({ vueApp: { _container: appContainer.element } }),
+}))
+
 const COMPONENT = '/component/html_contents/shared'
 const DRAFT = '/component/html_contents/shared-draft'
 const OTHER = '/component/html_contents/other'
@@ -56,6 +63,27 @@ function outlines(wrapper: ReturnType<typeof mount>) {
 }
 
 describe('SharedInstancesHighlight', () => {
+  test('mounts inside the app\'s own container, as the selection outline does, so the admin header stays above it when the page scrolls', async () => {
+    appContainer.element = document.createElement('div')
+    document.body.appendChild(appContainer.element)
+    const selectedElements = ref([elementAt({ top: 10, left: 20, right: 120, bottom: 60 })])
+    const { cwa } = mockCwa({ iri: COMPONENT, domElements: selectedElements })
+    register(cwa, COMPONENT, selectedElements)
+    register(cwa, COMPONENT, ref([elementAt({ top: 300, left: 40, right: 240, bottom: 380 })]))
+    try {
+      const wrapper = mount(SharedInstancesHighlight)
+      await flushPromises()
+      const outline = document.querySelector('[data-testid="shared-instance-outline"]')
+      expect(outline).not.toBeNull()
+      expect(appContainer.element.contains(outline)).toBe(true)
+      wrapper.unmount()
+    }
+    finally {
+      appContainer.element.remove()
+      appContainer.element = undefined
+    }
+  })
+
   afterEach(() => {
     for (const [cwa, iri, elements] of registered.splice(0)) {
       unregisterInstance(cwa, iri, elements)

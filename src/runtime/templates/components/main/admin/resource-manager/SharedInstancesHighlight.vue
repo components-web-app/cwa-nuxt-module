@@ -3,8 +3,10 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, unref, watch } fro
 import type { Ref } from 'vue'
 import { useCwa } from '#cwa/composables/cwa'
 import { instancesOf, onInstancesChange } from '#cwa/admin/manageable-instances'
+import { useNuxtApp } from '#app/nuxt'
 
 const $cwa = useCwa()
+const teleportTarget: HTMLElement | string = useNuxtApp().vueApp._container ?? 'body'
 const selected = $cwa.admin.resourceStackManager.currentStackItem
 const redrawCount = ref(0)
 
@@ -85,7 +87,7 @@ onBeforeUnmount(() => {
 <template>
   <Teleport
     v-if="outlines.length"
-    to="body"
+    :to="teleportTarget"
   >
     <div
       v-for="(outline, index) of outlines"

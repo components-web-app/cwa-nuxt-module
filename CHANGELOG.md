@@ -4,6 +4,7 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+- The yellow clone highlight and the shared outline no longer show above the admin header when the page scrolls ([67fe3e1e](https://github.com/components-web-app/cwa-nuxt-module/commit/67fe3e1e))
 - The package now ships its MIT licence text (`LICENSE`) ([360ec7af](https://github.com/components-web-app/cwa-nuxt-module/commit/360ec7af), [#425](https://github.com/components-web-app/cwa-nuxt-module/issues/425))
 
 ## [2.0.0-alpha.24] - 2026-10-19
