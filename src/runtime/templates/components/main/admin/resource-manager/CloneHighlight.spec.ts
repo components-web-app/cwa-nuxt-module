@@ -8,6 +8,13 @@ import { registerInstance, unregisterInstance } from '#cwa/admin/manageable-inst
 import { PLACED_FLASH_MS, useCloneMode } from '#cwa/admin/clone-mode'
 import type Cwa from '#cwa/cwa'
 
+const appContainer = vi.hoisted(() => ({ element: undefined as HTMLElement | undefined }))
+
+vi.mock('#app/nuxt', async importOriginal => ({
+  ...await importOriginal<typeof import('#app/nuxt')>(),
+  useNuxtApp: () => ({ vueApp: { _container: appContainer.element } }),
+}))
+
 const SOURCE_IRI = '/component/html_contents/source'
 const { instanceListenerStops } = vi.hoisted(() => ({ instanceListenerStops: [] as Array<ReturnType<typeof vi.fn>> }))
 
@@ -80,6 +87,26 @@ afterEach(() => {
 })
 
 describe('CloneHighlight', () => {
+  test('mounts inside the app\'s own container, as the selection outline does, so the admin header stays above it when the page scrolls', async () => {
+    const { cwa } = mockCwa()
+    appContainer.element = document.createElement('div')
+    document.body.appendChild(appContainer.element)
+    registerInstance(cwa, SOURCE_IRI, ref([elementAt({ top: 10, left: 20, right: 120, bottom: 60 })]))
+    useCloneMode(cwa).start(SOURCE_IRI)
+    try {
+      const wrapper = mount(CloneHighlight)
+      await flushPromises()
+      const highlight = document.querySelector('[data-testid="clone-highlight"]')
+      expect(highlight).not.toBeNull()
+      expect(appContainer.element.contains(highlight)).toBe(true)
+      wrapper.unmount()
+    }
+    finally {
+      appContainer.element.remove()
+      appContainer.element = undefined
+    }
+  })
+
   test('leaves out an instance whose elements have left the page, so navigating away leaves no highlight behind', async () => {
     const { cwa } = mockCwa()
     const detached = elementAt({ top: 10, left: 20, right: 120, bottom: 60 })
@@ -204,6 +231,30 @@ describe('CloneHighlight', () => {
     await flushPromises()
 
     expect(wrapper.get('[data-testid="clone-highlight"]').attributes('data-origin')).toBe('true')
+  })
+
+  test('outlines the target clicked for placing in blue dashed, apart from the yellow source outline, until it is cleared (#426)', async () => {
+    const { cwa } = mockCwa()
+    registerInstance(cwa, SOURCE_IRI, ref([elementAt({ top: 10, left: 20, right: 120, bottom: 60 })]))
+    const cloneMode = useCloneMode(cwa)
+    cloneMode.start(SOURCE_IRI)
+    const wrapper = mountHighlight()
+    await flushPromises()
+    expect(wrapper.find('[data-testid="clone-target"]').exists()).toBe(false)
+
+    cloneMode.setTarget([elementAt({ top: 200, left: 30, right: 130, bottom: 240 }), elementAt({ top: 240, left: 30, right: 180, bottom: 260 })])
+    await nextTick()
+
+    const target = wrapper.get('[data-testid="clone-target"]')
+    expect(target.attributes('style')).toBe('top: 200px; left: 30px; width: 150px; height: 60px;')
+    expect(target.classes()).toEqual(expect.arrayContaining(['cwa:outline-dashed', 'cwa:outline-blue-600']))
+    expect(target.classes()).not.toContain('cwa:outline-yellow')
+    expect(target.classes()).not.toContain('cwa:outline-green')
+    expect(wrapper.findAll('[data-testid="clone-highlight"]')).toHaveLength(1)
+
+    cloneMode.setTarget()
+    await nextTick()
+    expect(wrapper.find('[data-testid="clone-target"]').exists()).toBe(false)
   })
 
   test('the placed instance flashes after clone mode ends, until the flash is over', async () => {

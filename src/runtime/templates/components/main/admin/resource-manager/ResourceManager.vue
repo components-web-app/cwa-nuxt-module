@@ -19,7 +19,7 @@ import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/resources/resourc
 
 const ComponentUsageBadge = defineAsyncComponent(() => import('#cwa/templates/components/main/admin/resource-manager/cta/ComponentUsageBadge.vue'))
 const SharedInstancesHighlight = defineAsyncComponent(() => import('#cwa/templates/components/main/admin/resource-manager/SharedInstancesHighlight.vue'))
-const CloneTargetDialog = defineAsyncComponent(() => import('#cwa/templates/components/main/admin/resource-manager/_parts/CloneTargetDialog.vue'))
+const ClonePlacementMenu = defineAsyncComponent(() => import('#cwa/templates/components/main/admin/resource-manager/_parts/ClonePlacementMenu.vue'))
 
 const $cwa = useCwa()
 const { slideUp } = useTransitions()
@@ -35,7 +35,8 @@ const currentManagerTabs = ref<ManagerTab[] | undefined>()
 const cachedPosition = { top: 0, left: 0 }
 let mousedownTarget: null | EventTarget = null
 const cloneMode = useCloneMode($cwa)
-const cloneTarget = shallowRef<{ stack: { iri: string }[], type: 'page' | 'layout' }>()
+const cloneTarget = shallowRef<{ stack: { iri: string }[], type: 'page' | 'layout', point: { x: number, y: number }, key: number }>()
+let cloneTargetKey = 0
 
 type ContextPosition = {
   top: number
@@ -97,20 +98,20 @@ function clickHandler(e: MouseEvent, type: 'page' | 'layout') {
   }
   completeStack(e, type)
   if (cloneMode.source.value) {
-    chooseCloneTarget(type)
+    chooseCloneTarget(type, { x: e.clientX, y: e.clientY })
     return
   }
   $cwa.admin.resourceStackManager.selectStackIndex(0, false)
 }
 
-function chooseCloneTarget(type: 'page' | 'layout') {
+function chooseCloneTarget(type: 'page' | 'layout', point: { x: number, y: number }) {
   const stackManager = $cwa.admin.resourceStackManager
   const stack = [...stackManager.resourceStack.value]
   stackManager.restorePreviousStack()
   if ($cwa.admin.navigationGuardDisabled || !stack.length) {
     return
   }
-  cloneTarget.value = { stack, type }
+  cloneTarget.value = { stack, type, point, key: ++cloneTargetKey }
 }
 
 function completeStack(e: MouseEvent, type: undefined | 'page' | 'layout', isContext: boolean = false) {
@@ -246,10 +247,12 @@ defineExpose({
   />
   <AddComponentDialog />
   <SharedInstancesHighlight v-if="showSharedInstances" />
-  <CloneTargetDialog
+  <ClonePlacementMenu
     v-if="cloneTarget"
+    :key="cloneTarget.key"
     :stack="cloneTarget.stack"
     :type="cloneTarget.type"
+    :point="cloneTarget.point"
     @close="cloneTarget = undefined"
   />
 </template>
