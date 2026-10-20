@@ -7,7 +7,7 @@ import { useNuxtApp } from '#app/nuxt'
 
 const $cwa = useCwa()
 const teleportTarget: HTMLElement | string = useNuxtApp().vueApp._container ?? 'body'
-const { source, placed } = useCloneMode($cwa)
+const { source, placed, target } = useCloneMode($cwa)
 const redrawCount = ref(0)
 const instances = computed(() => {
   void redrawCount.value
@@ -64,6 +64,11 @@ const placedHighlights = computed(() => {
   return placedInstances.value.map(instance => boundsOf(instance.value)).filter(style => !!style)
 })
 
+const targetHighlight = computed(() => {
+  void redrawCount.value
+  return target.value && boundsOf([...target.value])
+})
+
 function redraw() {
   redrawCount.value++
 }
@@ -100,7 +105,7 @@ onBeforeUnmount(() => {
 
 <template>
   <Teleport
-    v-if="highlights.length || placedHighlights.length"
+    v-if="highlights.length || placedHighlights.length || targetHighlight"
     :to="teleportTarget"
   >
     <div
@@ -110,6 +115,12 @@ onBeforeUnmount(() => {
       :data-origin="highlight.origin || undefined"
       data-testid="clone-highlight"
       :class="[highlight.origin ? 'cwa:outline-solid cwa:outline-4' : 'cwa:outline-dashed cwa:outline-2', 'cwa:absolute cwa:z-manager-focus cwa:outline-yellow cwa:outline-offset-4 cwa:pointer-events-none cwa:rounded-[1px]']"
+    />
+    <div
+      v-if="targetHighlight"
+      :style="targetHighlight"
+      data-testid="clone-target"
+      class="cwa:absolute cwa:z-manager-focus cwa:outline-2 cwa:outline-dashed cwa:outline-blue-600 cwa:outline-offset-2 cwa:pointer-events-none cwa:rounded-[1px]"
     />
     <div
       v-for="(style, index) of placedHighlights"
