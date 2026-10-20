@@ -27,4 +27,4 @@ Include:
 
 We aim to acknowledge a report, keep you updated while we look into it, and credit you when a fix is released, unless
 you'd rather stay anonymous. This is a small open-source project: there is no guaranteed response time, no bug bounty,
-and the software is provided "as is", without warranty, under the MIT licence declared in `package.json`.
+and the software is provided "as is", without warranty, under the [MIT licence](LICENSE).
