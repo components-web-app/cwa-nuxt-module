@@ -4,8 +4,9 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
-- Clone and Move: clicking a target outlines it blue dashed and opens a menu at the click point instead of a dialog; a disabled option's reasons are behind its ⓘ, "Nothing can be placed here" when nothing is allowed, notes on one muted line, and "Edit the shared layout?" / "Edit the page?" is asked once an option in the other scope is picked ([#427](https://github.com/components-web-app/cwa-nuxt-module/pull/427), [#426](https://github.com/components-web-app/cwa-nuxt-module/issues/426))
+## [2.0.0-alpha.25] - 2026-10-20
 
+- Clone and Move: clicking a target outlines it blue dashed and opens a menu at the click point instead of a dialog; a disabled option's reasons are behind its ⓘ, "Nothing can be placed here" when nothing is allowed, notes on one muted line, and "Edit the shared layout?" / "Edit the page?" is asked once an option in the other scope is picked ([#427](https://github.com/components-web-app/cwa-nuxt-module/pull/427), [#426](https://github.com/components-web-app/cwa-nuxt-module/issues/426))
 - The yellow clone highlight and the shared outline no longer show above the admin header when the page scrolls ([67fe3e1e](https://github.com/components-web-app/cwa-nuxt-module/commit/67fe3e1e))
 - The package now ships its MIT licence text (`LICENSE`) ([360ec7af](https://github.com/components-web-app/cwa-nuxt-module/commit/360ec7af), [#425](https://github.com/components-web-app/cwa-nuxt-module/issues/425))
 
@@ -181,7 +182,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 - First tagged release of `@cwa/nuxt`; releases are now published from `v*` tags ([7c61b7c](https://github.com/components-web-app/cwa-nuxt-module/commit/7c61b7ce331ec4a0cb8e76951a5de2ff806ed07a))
 
-[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.24...HEAD
+[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.25...HEAD
+[2.0.0-alpha.25]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.24...v2.0.0-alpha.25
 [2.0.0-alpha.24]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.23...v2.0.0-alpha.24
 [2.0.0-alpha.23]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.22...v2.0.0-alpha.23
 [2.0.0-alpha.22]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.21...v2.0.0-alpha.22
