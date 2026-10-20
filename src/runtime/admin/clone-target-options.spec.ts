@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, test } from 'vitest'
 import { computed } from 'vue'
 import { ResourceTypeFromIri } from '../resources/resource-utils'
-import { cloneAnchorIndex, cloneTargetOptions, sharedReasons } from './clone-target-options'
+import { cloneAnchorIndex, cloneTargetOptions, distinctReasons } from './clone-target-options'
 import type { CloneTargetOptionsInput } from './clone-target-options'
 import type { ApiDocumentationComponentMetadataCollection } from '#cwa/api/api-documentation'
 
@@ -538,19 +538,15 @@ describe('a clone into an occupied page-data slot (#415)', () => {
   })
 })
 
-describe('sharedReasons', () => {
+describe('distinctReasons', () => {
   const disabled = (...reasons: string[]) => ({ label: 'x', value: { kind: 'position', groupIri: GROUP, anchor: {} } as const, disabled: true, reasons })
 
-  test('gives the reasons every option shares, so they are said once', () => {
-    expect(sharedReasons([disabled('This group is full', 'This is where it already is'), disabled('This group is full')])).toEqual(['This group is full'])
-  })
-
-  test('gives nothing when any option is enabled', () => {
-    expect(sharedReasons([disabled('This group is full'), { ...disabled(), disabled: false }])).toEqual([])
+  test('gives every option\'s reasons once each, in order, so nothing allowed says why without repeating (#426)', () => {
+    expect(distinctReasons([disabled('This group is full', 'This is where it already is'), disabled('This group is full', 'This group does not allow Body Text')])).toEqual(['This group is full', 'This is where it already is', 'This group does not allow Body Text'])
   })
 
   test('gives nothing for no options', () => {
-    expect(sharedReasons([])).toEqual([])
+    expect(distinctReasons([])).toEqual([])
   })
 })
 

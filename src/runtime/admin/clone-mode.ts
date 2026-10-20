@@ -24,6 +24,8 @@ export interface CloneSource extends CloneOrigin {
 export interface CloneMode {
   source: Readonly<Ref<CloneSource | undefined>>
   placed: Readonly<Ref<string | undefined>>
+  target: Readonly<Ref<readonly HTMLElement[] | undefined>>
+  setTarget: (elements?: readonly HTMLElement[]) => void
   start: (iri: string, name?: string, move?: CloneMove, origin?: CloneOrigin) => void
   end: () => void
   showPlaced: (positionIri: string) => void
@@ -55,6 +57,7 @@ function isDialogOpen() {
 function createCloneMode($cwa: Cwa): CloneMode {
   const source = shallowRef<CloneSource | undefined>()
   const placed = shallowRef<string | undefined>()
+  const target = shallowRef<readonly HTMLElement[] | undefined>()
   let placedTimer: ReturnType<typeof setTimeout> | undefined
   let scope: EffectScope | undefined
   let navigationOffTimer: ReturnType<typeof setTimeout> | undefined
@@ -67,6 +70,7 @@ function createCloneMode($cwa: Cwa): CloneMode {
   }
 
   function stopListening() {
+    target.value = undefined
     clearTimeout(navigationOffTimer)
     scope?.stop()
     scope = undefined
@@ -127,6 +131,10 @@ function createCloneMode($cwa: Cwa): CloneMode {
   return {
     source: shallowReadonly(source),
     placed: shallowReadonly(placed),
+    target: shallowReadonly(target),
+    setTarget: (elements) => {
+      target.value = elements
+    },
     start,
     end,
     showPlaced,

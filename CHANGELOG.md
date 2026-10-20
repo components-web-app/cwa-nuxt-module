@@ -4,6 +4,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+- Clone and Move: clicking a target outlines it blue dashed and opens a menu at the click point instead of a dialog; a disabled option's reasons are behind its ⓘ, "Nothing can be placed here" when nothing is allowed, notes on one muted line, and "Edit the shared layout?" / "Edit the page?" is asked once an option in the other scope is picked ([#427](https://github.com/components-web-app/cwa-nuxt-module/pull/427), [#426](https://github.com/components-web-app/cwa-nuxt-module/issues/426))
+
 - The yellow clone highlight and the shared outline no longer show above the admin header when the page scrolls ([67fe3e1e](https://github.com/components-web-app/cwa-nuxt-module/commit/67fe3e1e))
 - The package now ships its MIT licence text (`LICENSE`) ([360ec7af](https://github.com/components-web-app/cwa-nuxt-module/commit/360ec7af), [#425](https://github.com/components-web-app/cwa-nuxt-module/issues/425))
 

@@ -338,6 +338,26 @@ describe('clone mode', () => {
     expect(mode.placed.value).toBeUndefined()
   })
 
+  test('holds the elements of the target being placed on until it is cleared, the mode ends or starts again (#426)', () => {
+    const { $cwa } = buildCwa()
+    const mode = cloneModeOf($cwa)
+    const target = [document.createElement('div')]
+    mode.start(SOURCE_IRI)
+
+    mode.setTarget(target)
+    expect(mode.target.value).toBe(target)
+    mode.setTarget()
+    expect(mode.target.value).toBeUndefined()
+
+    mode.setTarget(target)
+    mode.start(SOURCE_IRI)
+    expect(mode.target.value).toBeUndefined()
+
+    mode.setTarget(target)
+    mode.end()
+    expect(mode.target.value).toBeUndefined()
+  })
+
   test('starting clone mode again clears a flash still showing', () => {
     vi.useFakeTimers()
     const { $cwa } = buildCwa()

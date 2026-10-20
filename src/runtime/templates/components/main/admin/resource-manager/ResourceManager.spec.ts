@@ -7,12 +7,12 @@ import { CwaUserRoles } from '#cwa/storage/stores/auth/state'
 import { useCloneMode } from '#cwa/admin/clone-mode'
 import type Cwa from '#cwa/cwa'
 
-vi.mock('#cwa/templates/components/main/admin/resource-manager/_parts/CloneTargetDialog.vue', () => ({
+vi.mock('#cwa/templates/components/main/admin/resource-manager/_parts/ClonePlacementMenu.vue', () => ({
   __esModule: true,
   default: {
-    name: 'CloneTargetDialog',
-    props: ['stack', 'type'],
-    template: '<div class="clone-target-dialog-stub" />',
+    name: 'ClonePlacementMenu',
+    props: ['stack', 'type', 'point'],
+    template: '<div class="clone-placement-menu-stub" />',
   },
 }))
 
@@ -307,12 +307,12 @@ describe('ResourceManager', () => {
       cwaState.cwa = makeCwa({ isEditing: true, stackManager, navigationGuardDisabled: opts.navigationGuardDisabled })
       useCloneMode(cwaState.cwa as Cwa).start('/component/source', 'Source')
       const wrapper = await mountManager()
-      ;(wrapper.vm as any).clickHandler({ target: document.createElement('span') } as unknown as MouseEvent, 'layout')
+      ;(wrapper.vm as any).clickHandler({ target: document.createElement('span'), clientX: 310, clientY: 420 } as unknown as MouseEvent, 'layout')
       await flushPromises()
       return { wrapper, stackManager }
     }
 
-    test('in clone mode a click opens the clone target dialog instead of selecting, keeping the selection and the scope, so the dialog decides whether to ask about switching scope', async () => {
+    test('in clone mode a click opens the placement menu at the click point instead of selecting, keeping the selection and the scope, so the menu decides whether to ask about switching scope (#426)', async () => {
       const { wrapper, stackManager } = await clickInCloneMode()
 
       expect(stackManager.completeStack).toHaveBeenCalledWith({ clickTarget: expect.any(HTMLElement) }, false, 'layout')
@@ -320,34 +320,46 @@ describe('ResourceManager', () => {
       expect(stackManager.restorePreviousStack).toHaveBeenCalled()
       expect(confirmState.reveal).not.toHaveBeenCalled()
       expect(stackManager.isEditingLayout.value).toBe(false)
-      const dialog = wrapper.findComponent({ name: 'CloneTargetDialog' })
-      expect(dialog.exists()).toBe(true)
-      expect(dialog.props()).toEqual({ stack: clonedStack, type: 'layout' })
+      const menu = wrapper.findComponent({ name: 'ClonePlacementMenu' })
+      expect(menu.exists()).toBe(true)
+      expect(menu.props()).toEqual({ stack: clonedStack, type: 'layout', point: { x: 310, y: 420 } })
     })
 
-    test('in clone mode with navigation enabled a click only navigates: no selection, confirm or dialog', async () => {
+    test('in clone mode with navigation enabled a click only navigates: no selection, confirm or menu', async () => {
       const { wrapper, stackManager } = await clickInCloneMode({ navigationGuardDisabled: true })
 
       expect(stackManager.selectStackIndex).not.toHaveBeenCalled()
       expect(confirmState.reveal).not.toHaveBeenCalled()
       expect(stackManager.restorePreviousStack).toHaveBeenCalled()
-      expect(wrapper.findComponent({ name: 'CloneTargetDialog' }).exists()).toBe(false)
+      expect(wrapper.findComponent({ name: 'ClonePlacementMenu' }).exists()).toBe(false)
     })
 
-    test('in clone mode a click on nothing opens no dialog and selects nothing', async () => {
+    test('in clone mode a click on nothing opens no menu and selects nothing', async () => {
       const { wrapper, stackManager } = await clickInCloneMode({ stack: [] })
 
       expect(stackManager.selectStackIndex).not.toHaveBeenCalled()
-      expect(wrapper.findComponent({ name: 'CloneTargetDialog' }).exists()).toBe(false)
+      expect(wrapper.findComponent({ name: 'ClonePlacementMenu' }).exists()).toBe(false)
     })
 
-    test('closing the clone target dialog removes it', async () => {
+    test('a click on another target while the menu is open opens a fresh menu at the new point (#426)', async () => {
       const { wrapper } = await clickInCloneMode()
+      const first = wrapper.findComponent({ name: 'ClonePlacementMenu' }).vm
 
-      wrapper.findComponent({ name: 'CloneTargetDialog' }).vm.$emit('close')
+      ;(wrapper.vm as any).clickHandler({ target: document.createElement('span'), clientX: 40, clientY: 50 } as unknown as MouseEvent, 'page')
       await flushPromises()
 
-      expect(wrapper.findComponent({ name: 'CloneTargetDialog' }).exists()).toBe(false)
+      const menu = wrapper.findComponent({ name: 'ClonePlacementMenu' })
+      expect(menu.vm).not.toBe(first)
+      expect(menu.props()).toEqual({ stack: clonedStack, type: 'page', point: { x: 40, y: 50 } })
+    })
+
+    test('closing the placement menu removes it', async () => {
+      const { wrapper } = await clickInCloneMode()
+
+      wrapper.findComponent({ name: 'ClonePlacementMenu' }).vm.$emit('close')
+      await flushPromises()
+
+      expect(wrapper.findComponent({ name: 'ClonePlacementMenu' }).exists()).toBe(false)
     })
   })
 

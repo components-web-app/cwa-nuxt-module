@@ -193,12 +193,8 @@ function replaceWarning(input: CloneTargetOptionsInput, occupantIri: unknown) {
   return `This replaces ${occupantName(input, occupantIri)}`
 }
 
-export function sharedReasons(options: CloneTargetOption[]): string[] {
-  const [first, ...rest] = options
-  if (!first) {
-    return []
-  }
-  return first.reasons.filter(reason => rest.every(item => item.reasons.includes(reason)))
+export function distinctReasons(options: CloneTargetOption[]): string[] {
+  return [...new Set(options.flatMap(option => option.reasons))]
 }
 
 export function cloneAnchorIndex(stack: { iri: string }[]): number | undefined {

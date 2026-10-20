@@ -233,6 +233,30 @@ describe('CloneHighlight', () => {
     expect(wrapper.get('[data-testid="clone-highlight"]').attributes('data-origin')).toBe('true')
   })
 
+  test('outlines the target clicked for placing in blue dashed, apart from the yellow source outline, until it is cleared (#426)', async () => {
+    const { cwa } = mockCwa()
+    registerInstance(cwa, SOURCE_IRI, ref([elementAt({ top: 10, left: 20, right: 120, bottom: 60 })]))
+    const cloneMode = useCloneMode(cwa)
+    cloneMode.start(SOURCE_IRI)
+    const wrapper = mountHighlight()
+    await flushPromises()
+    expect(wrapper.find('[data-testid="clone-target"]').exists()).toBe(false)
+
+    cloneMode.setTarget([elementAt({ top: 200, left: 30, right: 130, bottom: 240 }), elementAt({ top: 240, left: 30, right: 180, bottom: 260 })])
+    await nextTick()
+
+    const target = wrapper.get('[data-testid="clone-target"]')
+    expect(target.attributes('style')).toBe('top: 200px; left: 30px; width: 150px; height: 60px;')
+    expect(target.classes()).toEqual(expect.arrayContaining(['cwa:outline-dashed', 'cwa:outline-blue-600']))
+    expect(target.classes()).not.toContain('cwa:outline-yellow')
+    expect(target.classes()).not.toContain('cwa:outline-green')
+    expect(wrapper.findAll('[data-testid="clone-highlight"]')).toHaveLength(1)
+
+    cloneMode.setTarget()
+    await nextTick()
+    expect(wrapper.find('[data-testid="clone-target"]').exists()).toBe(false)
+  })
+
   test('the placed instance flashes after clone mode ends, until the flash is over', async () => {
     vi.useFakeTimers()
     try {
