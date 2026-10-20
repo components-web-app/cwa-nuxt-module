@@ -4,6 +4,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+- The package now ships its MIT licence text (`LICENSE`) ([360ec7af](https://github.com/components-web-app/cwa-nuxt-module/commit/360ec7af), [#425](https://github.com/components-web-app/cwa-nuxt-module/issues/425))
+
 ## [2.0.0-alpha.24] - 2026-10-19
 
 - No more "No Mercure rel in link header" error for resource manifest responses, which never carry one; a hub that is never found is still reported when Mercure starts ([3cf6de94](https://github.com/components-web-app/cwa-nuxt-module/commit/3cf6de94))

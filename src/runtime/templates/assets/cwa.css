@@ -432,6 +432,9 @@
 .cwa\:max-h-96 {
   max-height: calc(var(--cwa-spacing) * 96);
 }
+.cwa\:max-h-\[50vh\] {
+  max-height: 50vh;
+}
 .cwa\:max-h-full {
   max-height: 100%;
 }
@@ -575,6 +578,9 @@
 }
 .cwa\:min-w-\[150px\] {
   min-width: 150px;
+}
+.cwa\:min-w-\[220px\] {
+  min-width: 220px;
 }
 .cwa\:min-w-full {
   min-width: 100%;
@@ -1567,6 +1573,9 @@
 .cwa\:underline {
   text-decoration-line: underline;
 }
+.cwa\:underline-offset-2 {
+  text-underline-offset: 2px;
+}
 .cwa\:placeholder-light\/20::placeholder {
   color: var(--cwa-color-light);
   @supports (color: color-mix(in lab, red, red)) {
@@ -1949,6 +1958,14 @@
   .cwa\:hover\:bg-stone-800:hover {
     background-color: var(--cwa-color-stone-800);
   }
+  .cwa\:hover\:bg-yellow\/10:hover {
+    background-color: var(--cwa-color-yellow);
+  }
+  @supports (color: color-mix(in lab, red, red)) {
+    .cwa\:hover\:bg-yellow\/10:hover {
+      background-color: color-mix(in oklab, var(--cwa-color-yellow) 10%, transparent);
+    }
+  }
   .cwa\:hover\:text-dark:hover {
     color: var(--cwa-color-dark);
   }
@@ -2048,6 +2065,9 @@
 }
 .cwa\:focus-visible\:outline-stone-500:focus-visible {
   outline-color: var(--cwa-color-stone-500);
+}
+.cwa\:focus-visible\:outline-yellow:focus-visible {
+  outline-color: var(--cwa-color-yellow);
 }
 .cwa\:focus-visible\:\[outline-style\:solid\]:focus-visible {
   outline-style: solid;
