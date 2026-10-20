@@ -6,7 +6,7 @@ import { instancesOf, onInstancesChange } from '#cwa/admin/manageable-instances'
 import { useNuxtApp } from '#app/nuxt'
 
 const $cwa = useCwa()
-const teleportTarget: HTMLElement | string = useNuxtApp().vueApp._container ?? 'body'
+const teleportTarget: Element | string = useNuxtApp().vueApp._container ?? 'body'
 const { source, placed } = useCloneMode($cwa)
 const redrawCount = ref(0)
 const instances = computed(() => {
