@@ -3,8 +3,10 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useCwa } from '#imports'
 import { useCloneMode } from '#cwa/admin/clone-mode'
 import { instancesOf, onInstancesChange } from '#cwa/admin/manageable-instances'
+import { useNuxtApp } from '#app/nuxt'
 
 const $cwa = useCwa()
+const teleportTarget: HTMLElement | string = useNuxtApp().vueApp._container ?? 'body'
 const { source, placed } = useCloneMode($cwa)
 const redrawCount = ref(0)
 const instances = computed(() => {
@@ -99,7 +101,7 @@ onBeforeUnmount(() => {
 <template>
   <Teleport
     v-if="highlights.length || placedHighlights.length"
-    to="body"
+    :to="teleportTarget"
   >
     <div
       v-for="(highlight, index) of highlights"

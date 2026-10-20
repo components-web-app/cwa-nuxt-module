@@ -8,6 +8,13 @@ import { registerInstance, unregisterInstance } from '#cwa/admin/manageable-inst
 import { PLACED_FLASH_MS, useCloneMode } from '#cwa/admin/clone-mode'
 import type Cwa from '#cwa/cwa'
 
+const appContainer = vi.hoisted(() => ({ element: undefined as HTMLElement | undefined }))
+
+vi.mock('#app/nuxt', async importOriginal => ({
+  ...await importOriginal<typeof import('#app/nuxt')>(),
+  useNuxtApp: () => ({ vueApp: { _container: appContainer.element } }),
+}))
+
 const SOURCE_IRI = '/component/html_contents/source'
 const { instanceListenerStops } = vi.hoisted(() => ({ instanceListenerStops: [] as Array<ReturnType<typeof vi.fn>> }))
 
@@ -80,6 +87,26 @@ afterEach(() => {
 })
 
 describe('CloneHighlight', () => {
+  test('mounts inside the app\'s own container, as the selection outline does, so the admin header stays above it when the page scrolls', async () => {
+    const { cwa } = mockCwa()
+    appContainer.element = document.createElement('div')
+    document.body.appendChild(appContainer.element)
+    registerInstance(cwa, SOURCE_IRI, ref([elementAt({ top: 10, left: 20, right: 120, bottom: 60 })]))
+    useCloneMode(cwa).start(SOURCE_IRI)
+    try {
+      const wrapper = mount(CloneHighlight)
+      await flushPromises()
+      const highlight = document.querySelector('[data-testid="clone-highlight"]')
+      expect(highlight).not.toBeNull()
+      expect(appContainer.element.contains(highlight)).toBe(true)
+      wrapper.unmount()
+    }
+    finally {
+      appContainer.element.remove()
+      appContainer.element = undefined
+    }
+  })
+
   test('leaves out an instance whose elements have left the page, so navigating away leaves no highlight behind', async () => {
     const { cwa } = mockCwa()
     const detached = elementAt({ top: 10, left: 20, right: 120, bottom: 60 })
