@@ -1015,6 +1015,22 @@ function peerPresence(t, { key, name, page, state = 'viewing' }) {
   }
 }
 
+function managerPanel(page) {
+  return page.locator('.cwa\\:z-manager')
+}
+
+function managerInput(page) {
+  return managerPanel(page).locator('input')
+}
+
+async function selectLayoutLink(t, name) {
+  const { page } = t
+  await layoutLink(page, name).click()
+  await dialogWith(page, 'switch and edit the layout').getByRole('button', { name: 'Ok', exact: true }).click()
+  await page.getByTestId('component-menu').waitFor()
+  return presenceSent(t, data => data.state === 'selected' && !!data.component, 'No selected presence was sent for the link')
+}
+
 test.describe('presence', () => {
   test('46. an admin\'s tab announces it is viewing the page on load, and the component and position it selects', async ({ cwa: t }) => {
     const { page, seed } = t
@@ -1066,5 +1082,62 @@ test.describe('presence', () => {
     assert(remaining.join() === '+1 elsewhere', `The header says ${JSON.stringify(remaining)} after the tab on this page left`)
     t.publish({ ...elsewhere, data: { v: 1, page: seed.iris.pageB, state: 'left' } })
     await eventually(async () => (await indicator.count()) === 0, 'The indicator stayed after every other tab left')
+  })
+
+  test('48. focusing a field in the manager panel sends editing with the component and the field, and blurring it sends selected again', async ({ cwa: t }) => {
+    const { page, seed } = t
+    await openEditMode(t)
+    const selected = await selectLayoutLink(t, 'Third')
+    await page.getByRole('button', { name: 'Label', exact: true }).click()
+    const input = managerInput(page)
+    await input.focus()
+    const editing = await presenceSent(t, data => data.state === 'editing', 'No editing presence was sent on focus')
+    assert(JSON.stringify(editing.data) === JSON.stringify({ v: 1, page: seed.iris.pageA, state: 'editing', component: selected.data.component, componentPosition: selected.data.componentPosition, field: 'label' }), `Sent ${JSON.stringify(editing.data)}`)
+    const sentBeforeBlur = t.rehearsal.realtime.length
+    await input.evaluate(el => el.blur())
+    const back = await eventually(() => t.rehearsal.realtime.slice(sentBeforeBlur).find(body => body?.event === 'presence'), 'Nothing was sent on blur')
+    assert(JSON.stringify(back.data) === JSON.stringify(selected.data), `Sent ${JSON.stringify(back.data)} on blur`)
+    assert(t.rehearsal.writes.length === 0, `Something was written: ${JSON.stringify(t.rehearsal.writes)}`)
+  })
+
+  test('49. another admin editing a component on this page outlines it with their name flag, and left removes the outline', async ({ cwa: t }) => {
+    const { page, seed } = t
+    await openEditMode(t)
+    await presenceSent(t, data => data.page === seed.iris.pageA, 'No presence was sent for the page')
+    await eventually(() => t.rehearsal.mercureSubscriptions > 0, 'Mercure was never subscribed to')
+    const peer = peerPresence(t, { key: '1', name: 'Pat Peer', page: seed.iris.pageA })
+    t.publish({ ...peer, data: { v: 1, page: seed.iris.pageA, state: 'editing', component: seed.iris.pageAOther, componentPosition: seed.positions.aOther } })
+    const outline = page.getByTestId('peer-outline')
+    await eventually(async () => (await outline.count()) === 1, `There are ${await outline.count()} outlines`)
+    const drawn = await outline.evaluate((el) => {
+      const r = el.getBoundingClientRect()
+      return { top: r.top, left: r.left, width: r.width, height: r.height }
+    })
+    const [target] = await boxesOf(page, texts.pageAOther)
+    assert(covers(drawn, target), `The outline ${JSON.stringify(drawn)} does not cover the component ${JSON.stringify(target)}`)
+    const flag = outline.getByTestId('peer-flag')
+    assert(await flag.innerText() === 'Pat Peer is editing', `The flag says "${await flag.innerText()}"`)
+    assert(await flag.getAttribute('data-faded') === null, 'The flag is faded as soon as it appears')
+    t.publish({ ...peer, data: { v: 1, page: seed.iris.pageA, state: 'left' } })
+    await eventually(async () => (await outline.count()) === 0, 'The outline stayed after its tab left')
+  })
+
+  test('50. another admin focused on the same field shows their name flag on the kit input, and it goes when they leave', async ({ cwa: t }) => {
+    const { page, seed } = t
+    await openEditMode(t)
+    const selected = await selectLayoutLink(t, 'Third')
+    await page.getByRole('button', { name: 'Label', exact: true }).click()
+    await managerInput(page).waitFor()
+    await eventually(() => t.rehearsal.mercureSubscriptions > 0, 'Mercure was never subscribed to')
+    const peer = peerPresence(t, { key: '1', name: 'Pat Peer', page: seed.iris.pageA })
+    const { component, componentPosition } = selected.data
+    t.publish({ ...peer, data: { v: 1, page: seed.iris.pageA, state: 'editing', component, componentPosition, field: 'label' } })
+    const flag = managerPanel(page).getByTestId('field-presence-flag')
+    await eventually(async () => (await flag.count()) === 1, 'The field flag did not show')
+    assert(await flag.innerText() === 'Pat Peer', `The field flag says "${await flag.innerText()}"`)
+    const [fieldBox, inputBox] = [await managerPanel(page).getByTestId('field-presence').boundingBox(), await managerInput(page).boundingBox()]
+    assert(covers({ top: fieldBox.y, left: fieldBox.x, width: fieldBox.width, height: fieldBox.height }, { top: inputBox.y, left: inputBox.x, width: inputBox.width, height: inputBox.height }), `The field outline ${JSON.stringify(fieldBox)} does not cover the input ${JSON.stringify(inputBox)}`)
+    t.publish({ ...peer, data: { v: 1, page: seed.iris.pageA, state: 'left' } })
+    await eventually(async () => (await flag.count()) === 0, 'The field flag stayed after its tab left')
   })
 })
