@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { computed, ref } from 'vue'
 import { PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger } from 'reka-ui'
-import { navigateTo } from '#app/composables/router'
+import { navigateTo, useRouter } from '#app/composables/router'
 import { useCwa } from '#cwa/composables/cwa'
 import { useCwaResourceRoute } from '#cwa/composables/useCwaResourceRoute'
 import { getResourceTypeFromIri } from '#cwa/resources/resource-utils'
@@ -20,6 +20,7 @@ const $cwa = useCwa()
 const { active, paused, onThisPage, elsewhere } = usePresence($cwa)
 const open = ref(false)
 const { getInternalResourceLink } = useCwaResourceRoute()
+const router = useRouter()
 
 function nameOf(peer: PresencePeer) {
   return peer.user.name || 'Someone'
@@ -44,7 +45,18 @@ function people(peers: PresencePeer[]) {
 }
 
 const here = computed(() => people(onThisPage.value))
-const elsewhereCount = computed(() => people(elsewhere.value).length)
+const elsewhereCount = computed(() => {
+  const hereIds = new Set(here.value.map(person => person.id))
+  return people(elsewhere.value).filter(person => !hereIds.has(person.id)).length
+})
+const label = computed(() => {
+  const names = here.value.map(person => person.tabs > 1 ? `${person.name} (${person.tabs} tabs)` : person.name)
+  const parts = names.length ? [`${names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names.at(-1)}` : names[0]} on this page`] : []
+  if (elsewhereCount.value) {
+    parts.push(`${elsewhereCount.value} other ${elsewhereCount.value === 1 ? 'editor' : 'editors'} elsewhere`)
+  }
+  return `${parts.join(', ')}. Show editors`
+})
 const rows = computed(() => [
   ...onThisPage.value.map(peer => ({ peer, here: true })),
   ...elsewhere.value.map(peer => ({ peer, here: false })),
@@ -76,12 +88,20 @@ function activity(peer: PresencePeer) {
   return `Selected ${type ? $cwa.resourcesConfig[type]?.name || type : 'a component'}`
 }
 
-async function goTo(page: string) {
-  open.value = false
-  await flushPendingUpdates($cwa)
+function locationOf(page: string) {
   const path = routePathOf(page)
   const query = { cwa_force: 'true' }
-  await navigateTo(path ? { path, query } : { ...getInternalResourceLink(page), query })
+  return path ? { path, query } : { ...getInternalResourceLink(page), query }
+}
+
+async function goTo(event: MouseEvent, page: string) {
+  if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+    return
+  }
+  event.preventDefault()
+  open.value = false
+  await flushPendingUpdates($cwa)
+  await navigateTo(locationOf(page))
 }
 </script>
 
@@ -89,6 +109,8 @@ async function goTo(page: string) {
   <span
     v-if="active && paused"
     data-testid="presence-paused"
+    role="status"
+    title="Other editors' changes and who is here will catch up when the connection returns. You can keep editing."
     class="cwa:self-center cwa:whitespace-nowrap cwa:text-sm cwa:text-stone-400"
   >Live editing paused</span>
   <PopoverRoot
@@ -97,6 +119,7 @@ async function goTo(page: string) {
   >
     <PopoverTrigger
       data-testid="presence-indicator"
+      :aria-label="label"
       class="cwa:flex cwa:items-center cwa:gap-x-2 cwa:cursor-pointer cwa:rounded-full cwa:focus-visible:outline-2 cwa:focus-visible:outline-stone-400"
     >
       <span
@@ -147,19 +170,11 @@ async function goTo(page: string) {
               class="cwa:text-yellow"
             >This page</span>
             <a
-              v-else-if="routePathOf(peer.page)"
-              :href="routePathOf(peer.page)"
-              class="cwa:underline cwa:underline-offset-2 cwa:hover:text-white"
-              @click.prevent="goTo(peer.page)"
-            >{{ pageLabel(peer.page) }}</a>
-            <button
               v-else
-              type="button"
-              class="cwa:underline cwa:underline-offset-2 cwa:hover:text-white cwa:cursor-pointer"
-              @click="goTo(peer.page)"
-            >
-              {{ pageLabel(peer.page) }}
-            </button>
+              :href="router.resolve(locationOf(peer.page)).href"
+              class="cwa:underline cwa:underline-offset-2 cwa:hover:text-white"
+              @click="goTo($event, peer.page)"
+            >{{ pageLabel(peer.page) }}</a>
             <span class="cwa:text-stone-400">{{ activity(peer) }}</span>
           </li>
         </ul>

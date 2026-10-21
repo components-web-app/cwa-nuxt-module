@@ -13,6 +13,11 @@ import type Cwa from '#cwa/cwa'
 
 vi.mock('#app/composables/router', () => ({
   navigateTo: vi.fn(),
+  useRouter: () => ({
+    resolve: (location: { path?: string, name?: string, params?: Record<string, string>, query?: Record<string, string> }) => ({
+      href: `/base${location.path ?? `/${location.name}/${Object.values(location.params ?? {}).join('/')}`}?${new URLSearchParams(location.query).toString()}`,
+    }),
+  }),
 }))
 
 const HOME = '/_/pages/home'
@@ -149,6 +154,40 @@ describe('PresenceIndicator (#429)', () => {
     expect(text(wrapper.get('[data-testid="presence-elsewhere"]').element)).toBe('+2 elsewhere')
   })
 
+  test('someone with a tab here and another elsewhere has an avatar and is not counted again elsewhere', async () => {
+    mockCwa()
+    presence!.start(true)
+    arrive(ids[0]!, SAM, {})
+    arrive(ids[1]!, SAM, { page: ABOUT })
+    arrive(ids[2]!, JO, { page: ABOUT })
+    const wrapper = await mountIndicator()
+
+    expect(wrapper.findAll('[data-testid="presence-avatar"]').map(avatar => text(avatar.element))).toStrictEqual(['SS'])
+    expect(text(wrapper.get('[data-testid="presence-elsewhere"]').element)).toBe('+1 elsewhere')
+  })
+
+  test('the trigger is named for screen readers by who is here and how many are elsewhere', async () => {
+    mockCwa()
+    presence!.start(true)
+    arrive(ids[0]!, SAM, {})
+    arrive(ids[1]!, SAM, {})
+    arrive(ids[2]!, ALEX, {})
+    arrive(ids[3]!, JO, { page: ABOUT })
+    const wrapper = await mountIndicator()
+
+    expect(wrapper.get('[data-testid="presence-indicator"]').attributes('aria-label')).toBe('Sam Smith (2 tabs) and Alex on this page, 1 other editor elsewhere. Show editors')
+  })
+
+  test('the trigger names only the editors elsewhere when nobody else is here', async () => {
+    mockCwa()
+    presence!.start(true)
+    arrive(ids[0]!, SAM, { page: ABOUT })
+    arrive(ids[1]!, JO, { page: CONTACT })
+    const wrapper = await mountIndicator()
+
+    expect(wrapper.get('[data-testid="presence-indicator"]').attributes('aria-label')).toBe('2 other editors elsewhere. Show editors')
+  })
+
   test('while the connection is down it says live editing is paused instead of showing anyone', async () => {
     mockCwa()
     presence!.start(true)
@@ -156,7 +195,10 @@ describe('PresenceIndicator (#429)', () => {
     presence!.paused()
     const wrapper = await mountIndicator()
 
-    expect(text(wrapper.get('[data-testid="presence-paused"]').element)).toBe('Live editing paused')
+    const pausedNotice = wrapper.get('[data-testid="presence-paused"]')
+    expect(text(pausedNotice.element)).toBe('Live editing paused')
+    expect(pausedNotice.attributes('role')).toBe('status')
+    expect(pausedNotice.attributes('title')).toBe('Other editors\' changes and who is here will catch up when the connection returns. You can keep editing.')
     expect(wrapper.findAll('[data-testid="presence-avatar"]')).toHaveLength(0)
   })
 
@@ -189,12 +231,52 @@ describe('PresenceIndicator (#429)', () => {
     arrive(ids[1]!, ALEX, { page: ABOUT })
     const { rows } = await openList()
 
-    rows[0]!.querySelector<HTMLElement>('a, button')!.click()
+    rows[0]!.querySelector<HTMLElement>('a')!.click()
     await flushPromises()
 
-    expect(flush).toHaveBeenCalledOnce()
+    expect(flush).toHaveBeenCalledExactlyOnceWith(false)
     expect(navigateTo).toHaveBeenCalledWith({ path: '/about', query: { cwa_force: 'true' } })
     expect(order).toStrictEqual(['flush', 'navigate'])
+  })
+
+  test('a page link\'s href is the router\'s, with the app base and past the editing guard, so it can be opened in a new tab', async () => {
+    mockCwa({
+      [ABOUT]: { '@id': ABOUT, 'title': 'About us', 'route': '/_/routes/about' },
+      '/_/routes/about': { '@id': '/_/routes/about', 'path': '/about' },
+    })
+    presence!.start(true)
+    arrive(ids[1]!, ALEX, { page: ABOUT })
+    arrive(ids[2]!, JO, { page: CONTACT })
+    const { rows } = await openList()
+
+    expect(rows.map(row => row.querySelector('a')?.getAttribute('href'))).toStrictEqual([
+      '/base/about?cwa_force=true',
+      `/base/_cwa-resource-page/${CONTACT}?cwa_force=true`,
+    ])
+  })
+
+  test.each([
+    { name: 'Cmd', init: { metaKey: true } },
+    { name: 'Ctrl', init: { ctrlKey: true } },
+    { name: 'Shift', init: { shiftKey: true } },
+    { name: 'Alt', init: { altKey: true } },
+    { name: 'middle button', init: { button: 1 } },
+  ])('a $name click on a page link is left to the browser', async ({ init }) => {
+    mockCwa({
+      [ABOUT]: { '@id': ABOUT, 'title': 'About us', 'route': '/_/routes/about' },
+      '/_/routes/about': { '@id': '/_/routes/about', 'path': '/about' },
+    })
+    presence!.start(true)
+    arrive(ids[1]!, ALEX, { page: ABOUT })
+    const { rows } = await openList()
+
+    const event = new MouseEvent('click', { bubbles: true, cancelable: true, ...init })
+    rows[0]!.querySelector('a')!.dispatchEvent(event)
+    await flushPromises()
+
+    expect(event.defaultPrevented).toBe(false)
+    expect(flush).not.toHaveBeenCalled()
+    expect(navigateTo).not.toHaveBeenCalled()
   })
 
   test('a page with no known route path is opened by its internal link', async () => {
@@ -203,7 +285,7 @@ describe('PresenceIndicator (#429)', () => {
     arrive(ids[1]!, ALEX, { page: CONTACT })
     const { rows } = await openList()
 
-    rows[0]!.querySelector<HTMLElement>('a, button')!.click()
+    rows[0]!.querySelector<HTMLElement>('a')!.click()
     await flushPromises()
 
     expect(navigateTo).toHaveBeenCalledWith({ name: '_cwa-resource-page', params: { cwaPage0: CONTACT }, query: { cwa_force: 'true' } })
@@ -215,7 +297,7 @@ describe('PresenceIndicator (#429)', () => {
     arrive(ids[1]!, ALEX, { page: '/_cwa/users' })
     const { rows } = await openList()
 
-    rows[0]!.querySelector<HTMLElement>('a, button')!.click()
+    rows[0]!.querySelector<HTMLElement>('a')!.click()
     await flushPromises()
 
     expect(navigateTo).toHaveBeenCalledWith({ path: '/_cwa/users', query: { cwa_force: 'true' } })
