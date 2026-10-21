@@ -13,6 +13,17 @@ export interface RemoteFieldChange<T = unknown> {
   keep: () => void
 }
 
+export interface ResourceModelField<T = unknown> {
+  model: { value: T | null | undefined }
+  remoteChange: { readonly value: RemoteFieldChange<T> | undefined }
+  focus: () => void
+  blur: () => void
+}
+
+export function writeField<T>(field: ResourceModelField<T>, value: T | null | undefined) {
+  field.model.value = value
+}
+
 export interface ModelEditor {
   iri: () => string | undefined
   field: () => string

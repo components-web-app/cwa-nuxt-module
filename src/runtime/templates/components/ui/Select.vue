@@ -8,10 +8,24 @@ import {
 import { computed } from 'vue'
 import { useCwaSelectInput } from '#cwa/composables/cwa-select-input'
 import type { SelectInputProps } from '#cwa/composables/cwa-select-input'
+import type { ResourceModelField } from '#cwa/resources/model-editors'
+import { writeField } from '#cwa/resources/model-editors'
+import RemoteChangeConflict from '#cwa/templates/components/core/admin/form/RemoteChangeConflict.vue'
 
 const emit = defineEmits(['update:modelValue'])
-const props = defineProps<SelectInputProps>()
-const { value, compareOptions, displayLabel, selectedOptions, trigger, container } = useCwaSelectInput(computed(() => props), emit)
+const props = defineProps<Omit<SelectInputProps, 'modelValue'> & {
+  modelValue?: SelectInputProps['modelValue']
+  model?: ResourceModelField<SelectInputProps['modelValue']>
+}>()
+const inputProps = computed<SelectInputProps>(() => ({ ...props, modelValue: props.model ? props.model.model.value : props.modelValue }))
+const { value, compareOptions, displayLabel, selectedOptions, trigger, container } = useCwaSelectInput(inputProps, (event, next) => {
+  if (props.model) {
+    writeField(props.model, next)
+    return
+  }
+  emit(event, next)
+})
+const remoteChange = computed(() => props.model?.remoteChange.value)
 
 const hasSelection = computed(() => selectedOptions.value.length > 0)
 </script>
@@ -22,10 +36,12 @@ const hasSelection = computed(() => selectedOptions.value.length > 0)
     :by="compareOptions"
     :multiple="multiple"
   >
-    <div class="cwa:relative cwa:inline-flex cwa:w-full">
+    <div class="cwa:relative cwa:inline-flex cwa:w-full cwa:items-center cwa:gap-x-3">
       <ListboxButton
         ref="trigger"
         class="cwa:relative cwa:py-2 cwa:pl-4 cwa:pr-10 cwa:text-left cwa:text-light cwa:w-full cwa:dark-blur cwa:border-0 cwa:outline-dotted cwa:outline-1 cwa:outline-stone-700 cwa:hover:outline-stone-400 cwa:focus-visible:ring-2 cwa:focus-visible:ring-stone-600 cwa:cursor-pointer"
+        @focus="props.model?.focus()"
+        @blur="props.model?.blur()"
       >
         <span
           class="cwa:block cwa:truncate"
@@ -95,6 +111,10 @@ const hasSelection = computed(() => selectedOptions.value.length > 0)
           </li>
         </ListboxOption>
       </ListboxOptions>
+      <RemoteChangeConflict
+        v-if="remoteChange"
+        :change="remoteChange"
+      />
     </div>
   </Listbox>
 </template>
