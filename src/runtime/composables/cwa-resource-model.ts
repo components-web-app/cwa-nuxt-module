@@ -8,6 +8,8 @@ import { useCwa } from '#cwa/composables/cwa'
 import { useCwaResourceEndpoint } from '#cwa/composables/cwa-resource-endpoint'
 import { registerModelEditor } from '#cwa/resources/model-editors'
 import type { RemoteFieldChange } from '#cwa/resources/model-editors'
+import { realtimeView } from '#cwa/resources/realtime-view'
+import type { FocusedPeer } from '#cwa/admin/presence'
 
 interface ResourceModelOps {
   longWaitThreshold?: number
@@ -61,6 +63,18 @@ export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: s
   const lastSubmittedValueInProgress = ref()
   const heldChange = shallowRef<{ iri: string, change: RemoteFieldChange<T> }>()
   const remoteChange = computed(() => heldChange.value?.iri === iri.value ? heldChange.value?.change : undefined)
+  const realtime = realtimeView($cwa)
+  const focusOwner = Symbol(source)
+  const focusedBy = computed<FocusedPeer[]>(() => iri.value && realtime.view.value ? realtime.view.value.focusedBy(iri.value, rootProperty.value) : [])
+
+  function focus() {
+    const focusIri = iri.value
+    focusIri && realtime.load().then(view => view?.focus(focusOwner, focusIri, rootProperty.value))
+  }
+
+  function blur() {
+    realtime.load().then(view => view?.blur(focusOwner))
+  }
 
   function rootValue(value: any) {
     if (!isNestedProperty.value && !isObject(value)) {
@@ -236,6 +250,7 @@ export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: s
   })
 
   onBeforeUnmount(() => {
+    blur()
     unregisterEditor()
     unwatchLocalValue()
     unwatchIsBusy()
@@ -252,5 +267,8 @@ export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: s
     model,
     localValueWithIri,
     remoteChange,
+    focus,
+    blur,
+    focusedBy,
   }
 }

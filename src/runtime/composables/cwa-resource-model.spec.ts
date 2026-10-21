@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, expect, test, vi, beforeEach, afterEach } from 'vitest'
-import { ref, nextTick, onBeforeUnmount } from 'vue'
+import { ref, nextTick, onBeforeUnmount, shallowRef } from 'vue'
 import { useCwaResourceModel } from '#cwa/composables/cwa-resource-model'
 import type { ModelEditor } from '#cwa/resources/model-editors'
 
@@ -38,6 +38,12 @@ const mockRegisterModelEditor = vi.hoisted(() => vi.fn((_cwa: unknown, editor: u
 vi.mock('#cwa/resources/model-editors', () => ({
   registerModelEditor: mockRegisterModelEditor,
 }))
+
+const realtime = vi.hoisted(() => ({
+  view: { value: undefined as unknown },
+  load: vi.fn().mockResolvedValue(undefined),
+}))
+vi.mock('#cwa/resources/realtime-view', () => ({ realtimeView: () => realtime }))
 
 // vi.hoisted runs before imports — use a plain object with .value instead of Vue ref
 const mockEndpoint = vi.hoisted(() => ({ value: '/my/resource' }))
@@ -496,6 +502,75 @@ describe('useCwaResourceModel', () => {
       model.value = 'London'
 
       expect(editor.localPatch()).toEqual({ line1: '1 High Street', city: 'London' })
+    })
+  })
+
+  describe('field focus for co-editing presence (#429)', () => {
+    const SAM = { user: { id: '/users/sam', name: 'Sam' }, colour: '#c084fc' }
+
+    function presenceView() {
+      return { focus: vi.fn(), blur: vi.fn(), focusedBy: vi.fn((on: string, field: string) => on === '/my/resource' && field === 'meta' ? [SAM] : []) }
+    }
+
+    beforeEach(() => {
+      realtime.view = shallowRef()
+      realtime.load.mockResolvedValue(undefined)
+    })
+
+    test('focus() reports the model\'s IRI and root field to the real-time view, and blur() clears that same focus', async () => {
+      const presence = presenceView()
+      realtime.load.mockResolvedValue(presence)
+      const { focus, blur } = useCwaResourceModel(iri, 'meta.a')
+
+      focus()
+      await vi.waitFor(() => expect(presence.focus).toHaveBeenCalledOnce())
+      const [owner, focusedIri, field] = presence.focus.mock.calls[0]!
+      expect([focusedIri, field]).toStrictEqual(['/my/resource', 'meta'])
+
+      blur()
+      await vi.waitFor(() => expect(presence.blur).toHaveBeenCalledExactlyOnceWith(owner))
+    })
+
+    test('each model reports focus as its own owner', async () => {
+      const presence = presenceView()
+      realtime.load.mockResolvedValue(presence)
+      useCwaResourceModel(iri, 'title').focus()
+      useCwaResourceModel(iri, 'title').focus()
+
+      await vi.waitFor(() => expect(presence.focus).toHaveBeenCalledTimes(2))
+      expect(presence.focus.mock.calls[0]![0]).not.toBe(presence.focus.mock.calls[1]![0])
+    })
+
+    test('focus() with no IRI reports nothing', async () => {
+      const presence = presenceView()
+      realtime.load.mockResolvedValue(presence)
+      iri.value = undefined
+      useCwaResourceModel(iri, 'title').focus()
+      await nextTick()
+      await Promise.resolve()
+
+      expect(presence.focus).not.toHaveBeenCalled()
+    })
+
+    test('unmounting blurs the field', async () => {
+      const presence = presenceView()
+      realtime.load.mockResolvedValue(presence)
+      useCwaResourceModel(iri, 'title')
+
+      vi.mocked(onBeforeUnmount).mock.calls.at(-1)![0]()
+
+      await vi.waitFor(() => expect(presence.blur).toHaveBeenCalledOnce())
+    })
+
+    test('focusedBy is empty until the real-time view has loaded, then lists who has this field of this IRI focused', () => {
+      const { focusedBy } = useCwaResourceModel(iri, 'meta.a')
+      expect(focusedBy.value).toStrictEqual([])
+
+      realtime.view.value = presenceView()
+      expect(focusedBy.value).toStrictEqual([SAM])
+
+      iri.value = '/my/other'
+      expect(focusedBy.value).toStrictEqual([])
     })
   })
 })

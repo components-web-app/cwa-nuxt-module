@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Switch, SwitchGroup, SwitchLabel } from '@headlessui/vue'
 import { computed } from 'vue'
+import { fieldFocusListeners } from '#cwa/resources/model-editors'
 import type { ResourceModelField } from '#cwa/resources/model-editors'
 import RemoteChangeConflict from '#cwa/templates/components/core/admin/form/RemoteChangeConflict.vue'
 
@@ -14,6 +15,7 @@ const { modelValue, disabled = false, model: field } = defineProps<{
 
 const current = computed(() => field ? field.model.value : modelValue)
 const remoteChange = computed(() => field?.remoteChange.value)
+const focusListeners = fieldFocusListeners(() => field)
 
 const valueAsBoolean = computed<boolean>({
   get() {
@@ -38,6 +40,7 @@ function handleSwitchInput(newValue: boolean) {
   <SwitchGroup
     as="div"
     class="cwa:flex cwa:items-center"
+    v-on="focusListeners"
   >
     <Switch
       :model-value="valueAsBoolean"

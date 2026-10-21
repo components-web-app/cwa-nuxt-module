@@ -144,6 +144,7 @@ function build(opts: { publishable?: boolean } = {}) {
   }
 
   holder.cwa = {
+    options: { realtime: { enabled: false } },
     resources,
     resourcesManager,
     admin,

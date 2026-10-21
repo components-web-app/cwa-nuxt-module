@@ -19,6 +19,8 @@ function fieldModel<T>(initial: T) {
       value.value = next
     } }),
     remoteChange: computed(() => change.value),
+    focus: vi.fn(),
+    blur: vi.fn(),
     value,
     change,
   }
@@ -102,5 +104,66 @@ describe('kit fields bound to a resource model (#429)', () => {
 
     expect(model.value.value).toBe('a')
     wrapper.unmount()
+  })
+
+  describe('focus is reported to co-editing presence (#429)', () => {
+    function leave(element: Element, to: Element | null) {
+      element.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: to }))
+    }
+
+    test('CwaUiFormInput reports focus on entering the field and blur on leaving it, never per keystroke', async () => {
+      const model = fieldModel('Mine')
+      const wrapper = mount(Input, { props: { model }, attachTo: document.body })
+      const input = wrapper.get('input')
+
+      await input.trigger('focusin')
+      await input.setValue('Edited')
+      expect(model.focus).toHaveBeenCalledOnce()
+      expect(model.blur).not.toHaveBeenCalled()
+
+      leave(input.element, document.body)
+      expect(model.blur).toHaveBeenCalledOnce()
+      wrapper.unmount()
+    })
+
+    test('CwaUiFormInput stays focused while focus moves to its conflict buttons', async () => {
+      const model = fieldModel('Mine')
+      model.change.value = conflict('Theirs', 'Sam')
+      const wrapper = mount(Input, { props: { model }, attachTo: document.body })
+
+      leave(wrapper.get('input').element, wrapper.get('[data-testid="remote-change-accept"]').element)
+
+      expect(model.blur).not.toHaveBeenCalled()
+      wrapper.unmount()
+    })
+
+    test('CwaUiFormToggle reports focus and blur', async () => {
+      const model = fieldModel<boolean>(false)
+      const wrapper = mount(Toggle, { props: { label: 'Visible', model }, attachTo: document.body })
+      const button = wrapper.get('button')
+
+      await button.trigger('focusin')
+      leave(button.element, null)
+
+      expect(model.focus).toHaveBeenCalledOnce()
+      expect(model.blur).toHaveBeenCalledOnce()
+      wrapper.unmount()
+    })
+
+    test('CwaUiSelect stays focused while focus moves into its options, and blurs on leaving', async () => {
+      const model = fieldModel('b')
+      const wrapper = mount(Select, { props: { model, options: [{ label: 'First', value: 'a' }, { label: 'Second', value: 'b' }] }, attachTo: document.body })
+      const button = wrapper.get('button')
+
+      await button.trigger('focusin')
+      await button.trigger('click')
+      leave(button.element, wrapper.get('ul').element)
+      expect(model.focus).toHaveBeenCalledOnce()
+      expect(model.blur).not.toHaveBeenCalled()
+
+      leave(wrapper.get('ul').element, document.body)
+      expect(model.blur).toHaveBeenCalledOnce()
+      wrapper.unmount()
+    })
   })
 })
