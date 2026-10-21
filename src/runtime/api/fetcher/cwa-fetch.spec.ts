@@ -344,3 +344,46 @@ describe('CwaFetch -> error responses and the page cache', () => {
     expect(cwaFetch.httpCacheState.storable).toBe(false)
   })
 })
+
+describe('CwaFetch -> headers sent only on writes, for the co-editing client id (#429)', () => {
+  function create() {
+    // @ts-expect-error mocked
+    const createSpy = vi.spyOn($fetch, 'create').mockReturnValue(vi.fn())
+    const cwaFetch = new CwaFetch('https://my-api')
+    return { cwaFetch, onRequest: createSpy.mock.calls.at(-1)![0].onRequest }
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.spyOn(processComposables, 'useProcess').mockReturnValue({ isClient: true, isServer: false })
+  })
+
+  test.each(['POST', 'PATCH', 'DELETE'])('a %s carries the write headers', (method) => {
+    const { cwaFetch, onRequest } = create()
+    cwaFetch.writeHeaders['x-cwa-client-id'] = 'tab-1'
+    const ctx = { request: '/component/a', options: { method, headers: new Headers() } }
+
+    onRequest(ctx)
+
+    expect(ctx.options.headers.get('x-cwa-client-id')).toBe('tab-1')
+  })
+
+  test.each([undefined, 'GET'])('a read (%s) never carries them', (method) => {
+    const { cwaFetch, onRequest } = create()
+    cwaFetch.writeHeaders['x-cwa-client-id'] = 'tab-1'
+    const ctx = { request: '/component/a', options: { method, headers: new Headers() } }
+
+    onRequest(ctx)
+
+    expect(ctx.options.headers.has('x-cwa-client-id')).toBe(false)
+  })
+
+  test('a write sends nothing extra while no write header is set', () => {
+    const { onRequest } = create()
+    const ctx = { request: '/component/a', options: { method: 'PATCH', headers: new Headers() } }
+
+    onRequest(ctx)
+
+    expect([...ctx.options.headers.keys()]).toStrictEqual([])
+  })
+})

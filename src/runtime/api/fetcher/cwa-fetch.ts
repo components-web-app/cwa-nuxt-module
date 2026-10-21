@@ -19,11 +19,14 @@ export default class CwaFetch {
 
   private readonly unauthorised: { handler?: () => void } = {}
 
+  public readonly writeHeaders: Record<string, string> = {}
+
   constructor(baseURL: string) {
     const { isServer } = useProcess()
     const requestCookie = isServer ? useRequestHeaders(['cookie']).cookie : undefined
     const cacheState = this.cacheState
     const unauthorised = this.unauthorised
+    const writeHeaders = this.writeHeaders
 
     this.fetch = $fetch.create({
       baseURL,
@@ -50,6 +53,11 @@ export default class CwaFetch {
         }
 
         requestCookie && ctx.options.headers.append('cookie', requestCookie)
+        if (ctx.options.method && ctx.options.method !== 'GET') {
+          for (const name in writeHeaders) {
+            ctx.options.headers.set(name, writeHeaders[name]!)
+          }
+        }
       },
       onResponse(ctx) {
         if (!isServer) {

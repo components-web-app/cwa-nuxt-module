@@ -1,4 +1,4 @@
-import { computed, getCurrentInstance, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, getCurrentInstance, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
 import type { Ref } from 'vue'
 import debounce from 'lodash-es/debounce'
 import get from 'lodash-es/get'
@@ -6,6 +6,8 @@ import isObject from 'lodash-es/isObject'
 import set from 'lodash-es/set'
 import { useCwa } from '#cwa/composables/cwa'
 import { useCwaResourceEndpoint } from '#cwa/composables/cwa-resource-endpoint'
+import { registerModelEditor } from '#cwa/resources/model-editors'
+import type { RemoteFieldChange } from '#cwa/resources/model-editors'
 
 interface ResourceModelOps {
   longWaitThreshold?: number
@@ -57,6 +59,23 @@ export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: s
   const isBusy = computed(() => pendingSubmit.value || isSubmitting.value)
   const isSubmitting = ref(false)
   const lastSubmittedValueInProgress = ref()
+  const heldChange = shallowRef<{ iri: string, change: RemoteFieldChange<T> }>()
+  const remoteChange = computed(() => heldChange.value?.iri === iri.value ? heldChange.value?.change : undefined)
+  let focused = false
+
+  function rootValue(value: any) {
+    if (!isNestedProperty.value && !isObject(value)) {
+      return value
+    }
+    return set({ [rootProperty.value]: { ...rootStoreValue.value } }, property, value)[rootProperty.value]
+  }
+
+  function cancelPending() {
+    debounced?.cancel()
+    untrackPendingUpdate?.()
+    untrackPendingUpdate = undefined
+    pendingSubmit.value = false
+  }
 
   function isEqual(value1: any, value2: any) {
     function requiresNormalizing(value: any) {
@@ -107,15 +126,7 @@ export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: s
     }
 
     isSubmitting.value = true
-    let submittingValue
-    // if updating a nested property within an object, we need to submit the object from the root, merging in the new value
-    if (mergeFromRoot) {
-      const newObject = set({ [rootProperty.value]: { ...rootStoreValue.value } }, property, newLocalValue)
-      submittingValue = newObject[rootProperty.value]
-    }
-    else {
-      submittingValue = newLocalValue
-    }
+    const submittingValue = rootValue(newLocalValue)
     lastSubmittedValueInProgress.value = submittingValue
 
     pendingSubmit.value = false
@@ -159,6 +170,9 @@ export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: s
     untrackPendingUpdate?.()
     pendingSubmit.value = true
     const submit = debounce(() => {
+      if (heldChange.value) {
+        return
+      }
       untrackPendingUpdate?.()
       return updateResource(newLocalValue)
     }, debounceTime)
@@ -199,7 +213,28 @@ export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: s
     },
   })
 
+  const unregisterEditor = registerModelEditor($cwa, {
+    iri: () => iri.value,
+    field: () => rootProperty.value,
+    value: data => get(data, property),
+    hasLocalChange: () => localValue.value !== undefined,
+    focused: () => focused,
+    localPatch: () => rootValue(localValue.value),
+    discardLocal: () => {
+      cancelPending()
+      resetValue()
+    },
+    submit: () => {
+      cancelPending()
+      return updateResource(localValue.value)
+    },
+    conflict: (held) => {
+      heldChange.value = held as typeof heldChange.value
+    },
+  })
+
   onBeforeUnmount(() => {
+    unregisterEditor()
     unwatchLocalValue()
     unwatchIsBusy()
   })
@@ -214,5 +249,12 @@ export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: s
     resetValue,
     model,
     localValueWithIri,
+    remoteChange,
+    focus: () => {
+      focused = true
+    },
+    blur: () => {
+      focused = false
+    },
   }
 }

@@ -1,0 +1,42 @@
+import type Cwa from '#cwa/cwa'
+import type { CwaResource } from '#cwa/resources/resource-utils'
+
+export interface RemoteUser {
+  id: string
+  name?: string
+}
+
+export interface RemoteFieldChange<T = unknown> {
+  user?: RemoteUser
+  value: T
+  accept: () => void
+  keep: () => void
+}
+
+export interface ModelEditor {
+  iri: () => string | undefined
+  field: () => string
+  value: (resource: CwaResource) => unknown
+  hasLocalChange: () => boolean
+  focused: () => boolean
+  localPatch: () => unknown
+  discardLocal: () => void
+  submit: () => Promise<void>
+  conflict: (held?: { iri: string, change: RemoteFieldChange }) => void
+}
+
+const editors = new WeakMap<Cwa, Set<ModelEditor>>()
+
+export function registerModelEditor($cwa: Cwa, editor: ModelEditor) {
+  let registered = editors.get($cwa)
+  if (!registered) {
+    registered = new Set()
+    editors.set($cwa, registered)
+  }
+  registered.add(editor)
+  return () => registered.delete(editor)
+}
+
+export function modelEditors($cwa: Cwa): ModelEditor[] {
+  return [...(editors.get($cwa) ?? [])]
+}
