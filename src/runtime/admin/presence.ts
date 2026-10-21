@@ -61,7 +61,7 @@ const PRUNE_MS = 1_000
 const HELLO_JITTER_MS = 2_000
 const MAX_BACKOFF_MS = 60_000
 const DEFAULT_TTL_MS = 45_000
-const PALETTE = ['#e30a6c', '#9cdd05', '#ffaa00', '#a855f7', '#14b8a6', '#f472b6', '#c2410c', '#84cc16']
+const PALETTE = ['#a855f7', '#14b8a6', '#f472b6', '#22d3ee', '#f87171', '#d6a77a']
 
 const states = new WeakMap<Cwa, PresenceState>()
 

@@ -449,13 +449,13 @@ describe('Presence: peers (#429)', () => {
 })
 
 describe('presenceColour (#429)', () => {
-  test('the same user always gets the same colour, and none is a selection or clone colour', () => {
+  test('the same user always gets the same colour, and none is a selection outline, clone or header colour', () => {
     const ids = Array.from({ length: 40 }, (_, index) => `/users/${index}`)
     const colours = ids.map(presenceColour)
 
     expect(ids.map(presenceColour)).toStrictEqual(colours)
     expect(new Set(colours).size).toBeGreaterThan(3)
-    for (const forbidden of ['#2563eb', '#4f46e5', '#fee600']) {
+    for (const forbidden of ['#2563eb', '#4f46e5', '#fee600', '#ffaa00', '#9cdd05', '#e30a6c', '#fff']) {
       expect(colours).not.toContain(forbidden)
     }
   })
