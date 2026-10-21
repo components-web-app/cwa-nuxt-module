@@ -97,6 +97,7 @@ function mountHeader(options: { stubs?: Record<string, any>, attachTo?: HTMLElem
         SpinnerTick: { name: 'SpinnerTick', props: ['isLoading', 'isPending'], template: '<div class="spinner-tick-stub" />' },
         OutdatedContentNotice: { name: 'OutdatedContentNotice', template: '<div class="outdated-stub" />' },
         CloneHighlight: { name: 'CloneHighlight', template: '<div class="clone-highlight-stub" />' },
+        PresenceIndicator: { name: 'PresenceIndicator', template: '<div class="presence-indicator-stub" />' },
         ResourceLoadingIndicator: { name: 'ResourceLoadingIndicator', template: '<div class="loading-indicator-stub" />' },
         ResourceModalOverlayTemplate: {
           name: 'ResourceModalOverlayTemplate',
@@ -658,6 +659,19 @@ describe('Header', () => {
       expect(wrapper.findComponent({ name: 'RequestErrors' }).exists()).toBe(true)
       expect(wrapper.findComponent({ name: 'OutdatedContentNotice' }).exists()).toBe(true)
       expect(wrapper.findComponent({ name: 'ResourceLoadingIndicator' }).exists()).toBe(true)
+    })
+
+    test.each([
+      { name: 'on a page outside edit mode', admin: false, isEditing: false },
+      { name: 'on a page in edit mode', admin: false, isEditing: true },
+      { name: 'on an admin page', admin: true, isEditing: false },
+    ])('shows who else is here $name (#429)', async ({ admin, isEditing }) => {
+      mockRouteMeta.cwa = { admin }
+      mockCwa({ admin: buildAdmin({ isEditing }) })
+      const wrapper = mountHeader()
+      await flushPromises()
+
+      expect(wrapper.find('.presence-indicator-stub').exists()).toBe(true)
     })
   })
 

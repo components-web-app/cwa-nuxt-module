@@ -5,7 +5,6 @@ import type { Router } from 'vue-router'
 import type Cwa from '#cwa/cwa'
 import type { CwaResourcesStoreInterface } from '#cwa/storage/stores/resources/resources-store'
 import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/resources/resource-utils'
-import { retryAfterSeconds } from '#cwa/api/retry-after'
 
 export type PresenceActivity = 'viewing' | 'selected' | 'editing' | 'left'
 
@@ -77,6 +76,24 @@ function presenceState($cwa: Cwa): PresenceState {
 
 function serverTime(value: unknown) {
   return typeof value === 'string' ? Date.parse(value.replace(/(\.\d{3})\d+/, '$1')) : Number.NaN
+}
+
+function retryAfterSeconds(error: FetchError) {
+  const headers = error.response?.headers
+  const value = headers?.get('Retry-After')?.trim()
+  if (!value) {
+    return undefined
+  }
+  if (/^\d+$/.test(value)) {
+    return Number(value)
+  }
+  const seconds = Math.ceil((Date.parse(value) - Date.parse(headers?.get('Date') ?? '')) / 1000)
+  return seconds > 0 ? seconds : undefined
+}
+
+export async function flushPendingUpdates($cwa: Cwa) {
+  const pending: Map<string, Set<() => unknown>> = $cwa.resourcesManager['pendingUpdates']
+  await Promise.all([...pending.values()].flatMap(flushes => [...flushes]).map(flush => flush()))
 }
 
 export function presenceColour(userId: string) {
