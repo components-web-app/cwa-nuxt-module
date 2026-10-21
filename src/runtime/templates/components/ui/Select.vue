@@ -9,7 +9,6 @@ import { computed } from 'vue'
 import { useCwaSelectInput } from '#cwa/composables/cwa-select-input'
 import type { SelectInputProps } from '#cwa/composables/cwa-select-input'
 import type { ResourceModelField } from '#cwa/resources/model-editors'
-import { writeField } from '#cwa/resources/model-editors'
 import RemoteChangeConflict from '#cwa/templates/components/core/admin/form/RemoteChangeConflict.vue'
 
 const emit = defineEmits(['update:modelValue'])
@@ -20,7 +19,8 @@ const props = defineProps<Omit<SelectInputProps, 'modelValue'> & {
 const inputProps = computed<SelectInputProps>(() => ({ ...props, modelValue: props.model ? props.model.model.value : props.modelValue }))
 const { value, compareOptions, displayLabel, selectedOptions, trigger, container } = useCwaSelectInput(inputProps, (event, next) => {
   if (props.model) {
-    writeField(props.model, next)
+    // eslint-disable-next-line vue/no-mutating-props
+    props.model.model.value = next
     return
   }
   emit(event, next)

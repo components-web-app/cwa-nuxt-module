@@ -2,7 +2,6 @@
 import { Switch, SwitchGroup, SwitchLabel } from '@headlessui/vue'
 import { computed } from 'vue'
 import type { ResourceModelField } from '#cwa/resources/model-editors'
-import { writeField } from '#cwa/resources/model-editors'
 import RemoteChangeConflict from '#cwa/templates/components/core/admin/form/RemoteChangeConflict.vue'
 
 const emit = defineEmits(['update:modelValue'])
@@ -27,7 +26,8 @@ const valueAsBoolean = computed<boolean>({
 
 function handleSwitchInput(newValue: boolean) {
   if (field) {
-    writeField(field, newValue)
+    // eslint-disable-next-line vue/no-mutating-props
+    field.model.value = newValue
     return
   }
   emit('update:modelValue', newValue)

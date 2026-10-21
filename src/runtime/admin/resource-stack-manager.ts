@@ -187,11 +187,8 @@ export default class ResourceStackManager {
       this.currentResourceStack.value = this.previousResourceStack.value
     }
 
-    const { default: ConfirmDialog } = await import('#cwa/templates/components/core/ConfirmDialog.vue')
-    const { createConfirmDialog } = await import('./confirm-dialog')
-    const dialog = await createConfirmDialog(this.vueApp, ConfirmDialog)
-    const { isCanceled } = await dialog.reveal(alertData)
-    if (isCanceled) {
+    const { confirmResourceAction } = await import('./resource-confirm')
+    if (!await confirmResourceAction(this.vueApp, alertData)) {
       if (fromContext) {
         // can prevent the context stack from becoming the currentResourceStack easily here
         this.resetStack(true)

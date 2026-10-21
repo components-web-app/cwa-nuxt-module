@@ -20,10 +20,6 @@ export interface ResourceModelField<T = unknown> {
   blur: () => void
 }
 
-export function writeField<T>(field: ResourceModelField<T>, value: T | null | undefined) {
-  field.model.value = value
-}
-
 export interface ModelEditor {
   iri: () => string | undefined
   field: () => string

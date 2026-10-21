@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { ResourceModelField } from '#cwa/resources/model-editors'
-import { writeField } from '#cwa/resources/model-editors'
 import RemoteChangeConflict from '#cwa/templates/components/core/admin/form/RemoteChangeConflict.vue'
 
 defineOptions({ inheritAttrs: false })
@@ -21,7 +20,8 @@ const value = computed<InputValue>({
       next ||= null
     }
     if (field) {
-      writeField(field, next)
+      // eslint-disable-next-line vue/no-mutating-props
+      field.model.value = next
       return
     }
     vModel.value = next
