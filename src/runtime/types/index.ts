@@ -55,6 +55,9 @@ export interface CwaModuleOptions {
   auth?: {
     clearCachesOnSessionEnd?: string[]
   }
+  realtime?: {
+    enabled?: boolean
+  }
   upload?: {
     image?: Partial<ImageDownscaleOptions>
   }

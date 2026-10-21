@@ -72,6 +72,7 @@ export interface CwaResourcesActionsInterface {
   restoreResourceApiState (event: RestoreResourceApiStateEvent): void
   saveResource(event: SaveResourceEvent | SaveNewResourceEvent): void
   deleteResource(event: DeleteResourceEvent): void
+  mergeNewResource(iri: string): void
   mergeNewResources(): void
 }
 
@@ -356,6 +357,34 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
     mapPositionToComponent(event.resource)
   }
 
+  function mergeNewResource(newId: string): void {
+    const newResource = resourcesState.new.byId[newId]
+    if (!newResource?.resource) {
+      return
+    }
+    if (Object.keys(newResource.resource).length === 1 && newResource.resource['@id']) {
+      deleteResource({
+        resource: newId,
+      })
+      clearPublishableMapping(newId)
+      clearPositionToComponentMapping(newId)
+      removeFromList(resourcesState.new.allIds, newId)
+      delete resourcesState.new.byId[newId]
+      return
+    }
+    saveResource({ resource: newResource.resource })
+    resourcesState.current.byId[newId]!.apiState = {
+      status: CwaResourceApiStatuses.SUCCESS,
+      headers: {
+        path: newResource.path,
+      },
+      fetchedAt: Date.now(),
+    }
+    if (!resourcesState.current.currentIds.includes(newId)) {
+      resourcesState.current.currentIds.push(newId)
+    }
+  }
+
   return {
     resetNewResource(): void {
       if (!resourcesState.adding.value) {
@@ -489,46 +518,11 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
       }
     },
     deleteResource,
+    mergeNewResource,
     mergeNewResources(): void {
-      for (const newId of resourcesState.new.allIds) {
-        const newResource = resourcesState.new.byId[newId]
-        if (!newResource?.resource) continue
-
-        // if empty resource, it should be deleted
-        if (Object.keys(newResource.resource).length === 1 && newResource.resource['@id']) {
-          deleteResource({
-            resource: newId,
-          })
-          // todo: test we clear publishable mapping here
-          clearPublishableMapping(newId)
-          clearPositionToComponentMapping(newId)
-          continue
-        }
-
-        const previous = resourcesState.current.byId[newId]?.data
-        // save/replace new resource
-        resourcesState.current.byId[newId] = {
-          apiState: {
-            status: CwaResourceApiStatuses.SUCCESS,
-            headers: {
-              path: newResource.path,
-            },
-            fetchedAt: (new Date()).getTime(),
-          },
-          data: newResource.resource,
-        }
-
-        // if a new resource, we should populate into allIds and currentIds
-        addId(newId)
-        indexGroup(newId, previous?.reference, newResource.resource.reference)
-        if (!resourcesState.current.currentIds.includes(newId)) {
-          resourcesState.current.currentIds.push(newId)
-        }
-        // todo: test we save publishable mapping here
-        mapPublishableResource(newResource.resource)
+      for (const newId of [...resourcesState.new.allIds]) {
+        mergeNewResource(newId)
       }
-      resourcesState.new.allIds = []
-      resourcesState.new.byId = {}
     },
     resetCurrentResources(currentIds?: string[]): void {
       if (currentIds) {

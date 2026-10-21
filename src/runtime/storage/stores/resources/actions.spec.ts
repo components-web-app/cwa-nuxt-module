@@ -1727,3 +1727,85 @@ describe('resources action -> evictResources without scanning every component (#
     expect(resourcesState.current.positionsByComponent[c1]).toEqual([])
   })
 })
+
+describe('resources action -> mergeNewResource applies one held resource for a co-editing admin (#429)', () => {
+  let resourcesState: CwaResourcesStateInterface
+  let resourcesActions: CwaResourcesActionsInterface
+
+  beforeEach(() => {
+    resourcesState = state()
+    resourcesActions = actions(resourcesState, getters(resourcesState))
+  })
+
+  function hold(resource: Record<string, unknown> & { '@id': string }, path = '/page') {
+    resourcesActions.saveResource({ resource: resource as never, isNew: true, path })
+  }
+
+  test('only the named IRI leaves the held resources, the others stay held', () => {
+    resourcesActions.saveResource({ resource: { '@id': '/component/a', '@type': 'Title', 'title': 'old' } })
+    resourcesActions.saveResource({ resource: { '@id': '/component/b', '@type': 'Title', 'title': 'old' } })
+    hold({ '@id': '/component/a', '@type': 'Title', 'title': 'new a' })
+    hold({ '@id': '/component/b', '@type': 'Title', 'title': 'new b' })
+
+    resourcesActions.mergeNewResource('/component/a')
+
+    expect(resourcesState.current.byId['/component/a']?.data?.title).toBe('new a')
+    expect(resourcesState.current.byId['/component/b']?.data?.title).toBe('old')
+    expect(resourcesState.new.allIds).toStrictEqual(['/component/b'])
+    expect(resourcesState.new.byId['/component/a']).toBeUndefined()
+  })
+
+  test('the merged resource keeps the path it was fetched for', () => {
+    resourcesActions.saveResource({ resource: { '@id': '/_/component_positions/p', '@type': 'ComponentPosition' } })
+    hold({ '@id': '/_/component_positions/p', '@type': 'ComponentPosition', 'component': '/component/a' }, '/page-data/1')
+
+    resourcesActions.mergeNewResource('/_/component_positions/p')
+
+    const apiState = resourcesState.current.byId['/_/component_positions/p']?.apiState
+    expect(apiState?.status).toBe(CwaResourceApiStatuses.SUCCESS)
+    expect(apiState && 'headers' in apiState ? apiState.headers?.path : undefined).toBe('/page-data/1')
+  })
+
+  test('a draft is mapped to its published resource', () => {
+    hold({ '@id': '/component/draft', '@type': 'Title', '_metadata': { publishable: { published: false } }, 'publishedResource': '/component/live' })
+
+    resourcesActions.mergeNewResource('/component/draft')
+
+    expect(resourcesState.current.publishableMapping).toStrictEqual([{ draftIri: '/component/draft', publishedIri: '/component/live' }])
+  })
+
+  test('a position is indexed against its component', () => {
+    hold({ '@id': '/_/component_positions/p', '@type': 'ComponentPosition', 'component': '/component/a' })
+
+    resourcesActions.mergeNewResource('/_/component_positions/p')
+
+    expect(resourcesState.current.positionsByComponent['/component/a']).toStrictEqual(['/_/component_positions/p'])
+  })
+
+  test('a group is indexed by its reference', () => {
+    hold({ '@id': '/_/component_groups/g', '@type': 'ComponentGroup', 'reference': 'top' })
+
+    resourcesActions.mergeNewResource('/_/component_groups/g')
+
+    expect(resourcesState.current.groupIrisByReference.top).toStrictEqual(['/_/component_groups/g'])
+  })
+
+  test('a held delete removes the resource and its mappings', () => {
+    resourcesActions.saveResource({ resource: { '@id': '/component/draft', '@type': 'Title', '_metadata': { publishable: { published: false } }, 'publishedResource': '/component/live' } })
+    hold({ '@id': '/component/draft' })
+
+    resourcesActions.mergeNewResource('/component/draft')
+
+    expect(resourcesState.current.byId['/component/draft']).toBeUndefined()
+    expect(resourcesState.current.publishableMapping).toStrictEqual([])
+    expect(resourcesState.new.allIds).toStrictEqual([])
+  })
+
+  test('nothing changes when nothing is held for the IRI', () => {
+    resourcesActions.saveResource({ resource: { '@id': '/component/a', '@type': 'Title', 'title': 'old' } })
+
+    resourcesActions.mergeNewResource('/component/a')
+
+    expect(resourcesState.current.byId['/component/a']?.data?.title).toBe('old')
+  })
+})
