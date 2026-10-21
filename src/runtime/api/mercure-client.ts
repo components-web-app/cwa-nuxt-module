@@ -10,6 +10,7 @@ import { CwaResourceTypes, getPublishedResourceIri, getResourceTypeFromIri } fro
 import type { CwaFetcherStoreInterface, FetcherStore } from '../storage/stores/fetcher/fetcher-store'
 import type Fetcher from './fetcher/fetcher'
 import type { RemoteChanges } from '#cwa/admin/remote-changes'
+import type { Presence, RealtimeEvent } from '#cwa/admin/presence'
 import type Cwa from '#cwa/cwa'
 import { useProcess } from '#cwa/composables/process'
 
@@ -35,6 +36,7 @@ export default class MercureClient {
   private readonly _resourcesStore: CwaResourcesStoreInterface
   private readonly _fetcherStore: CwaFetcherStoreInterface
   private realtime?: RemoteChanges
+  private presence?: Presence
   private realtimeWatch?: () => void
 
   constructor(
@@ -102,14 +104,17 @@ export default class MercureClient {
     if (!$cwa || !this.realtimeAllowed()) {
       this.realtime?.disconnect()
       this.realtime = undefined
+      this.presence?.stop()
       return
     }
-    const { RemoteChanges } = await import('#cwa/admin/remote-changes')
+    const [{ RemoteChanges }, { Presence }] = await Promise.all([import('#cwa/admin/remote-changes'), import('#cwa/admin/presence')])
     if (!this.realtimeAllowed()) {
       return
     }
     this.realtime ??= new RemoteChanges($cwa, this.resourcesStore)
     this.realtime.connect()
+    this.presence ??= new Presence($cwa, this.resourcesStore, this.nuxtApp!.$router, this.realtime.clientId)
+    this.presence.start(this.mercureStore.connected !== false)
   }
 
   private save(resource: CwaResource, path: string | undefined) {
@@ -146,6 +151,7 @@ export default class MercureClient {
       return
     }
     this.mercureStore.connected = false
+    this.presence?.paused()
     logger.warn('Mercure connection lost. Resources will be revalidated when it returns.')
   }
 
@@ -155,6 +161,7 @@ export default class MercureClient {
     if (!isReconnect) {
       return
     }
+    this.presence?.resumed()
     logger.info('Mercure reconnected. Revalidating current resources.')
     this.revalidateCurrentResources()
   }
@@ -206,7 +213,11 @@ export default class MercureClient {
       data: JSON.parse(event.data),
     }
 
-    if (mercureMessage.data?.['@type'] === REALTIME_EVENT_TYPE || (mercureMessage.data && this.realtime?.isOwnEcho(mercureMessage.data))) {
+    if (mercureMessage.data?.['@type'] === REALTIME_EVENT_TYPE) {
+      this.presence?.receive(mercureMessage.data as RealtimeEvent)
+      return
+    }
+    if (mercureMessage.data && this.realtime?.isOwnEcho(mercureMessage.data)) {
       return
     }
 

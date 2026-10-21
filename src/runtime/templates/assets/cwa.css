@@ -141,6 +141,9 @@
 .cwa\:-top-0\.5 {
   top: calc(var(--cwa-spacing) * -0.5);
 }
+.cwa\:-top-1 {
+  top: calc(var(--cwa-spacing) * -1);
+}
 .cwa\:-top-1\.5 {
   top: calc(var(--cwa-spacing) * -1.5);
 }
@@ -161,6 +164,9 @@
 }
 .cwa\:-right-0\.5 {
   right: calc(var(--cwa-spacing) * -0.5);
+}
+.cwa\:-right-1 {
+  right: calc(var(--cwa-spacing) * -1);
 }
 .cwa\:-right-2 {
   right: calc(var(--cwa-spacing) * -2);
@@ -389,6 +395,9 @@
 .cwa\:h-2 {
   height: calc(var(--cwa-spacing) * 2);
 }
+.cwa\:h-2\.5 {
+  height: calc(var(--cwa-spacing) * 2.5);
+}
 .cwa\:h-3 {
   height: calc(var(--cwa-spacing) * 3);
 }
@@ -400,6 +409,9 @@
 }
 .cwa\:h-6 {
   height: calc(var(--cwa-spacing) * 6);
+}
+.cwa\:h-7 {
+  height: calc(var(--cwa-spacing) * 7);
 }
 .cwa\:h-8 {
   height: calc(var(--cwa-spacing) * 8);
@@ -472,6 +484,9 @@
 }
 .cwa\:w-2 {
   width: calc(var(--cwa-spacing) * 2);
+}
+.cwa\:w-2\.5 {
+  width: calc(var(--cwa-spacing) * 2.5);
 }
 .cwa\:w-3 {
   width: calc(var(--cwa-spacing) * 3);
@@ -783,6 +798,11 @@
 .cwa\:gap-x-8 {
   column-gap: calc(var(--cwa-spacing) * 8);
 }
+:where(.cwa\:-space-x-1\.5 > :not(:last-child)) {
+  --tw-space-x-reverse: 0;
+  margin-inline-start: calc(calc(var(--cwa-spacing) * -1.5) * var(--tw-space-x-reverse));
+  margin-inline-end: calc(calc(var(--cwa-spacing) * -1.5) * calc(1 - var(--tw-space-x-reverse)));
+}
 :where(.cwa\:space-x-8 > :not(:last-child)) {
   --tw-space-x-reverse: 0;
   margin-inline-start: calc(calc(var(--cwa-spacing) * 8) * var(--tw-space-x-reverse));
@@ -824,6 +844,9 @@
 }
 :where(.cwa\:divide-stone-700 > :not(:last-child)) {
   border-color: var(--cwa-color-stone-700);
+}
+.cwa\:self-center {
+  align-self: center;
 }
 .cwa\:self-start {
   align-self: flex-start;
@@ -923,6 +946,9 @@
 }
 .cwa\:border-blue-600 {
   border-color: var(--cwa-color-blue-600);
+}
+.cwa\:border-dark {
+  border-color: var(--cwa-color-dark);
 }
 .cwa\:border-gray-200 {
   border-color: var(--cwa-color-gray-200);
@@ -1426,6 +1452,9 @@
   font-size: var(--cwa-text-xs);
   line-height: var(--tw-leading, var(--cwa-text-xs--line-height));
 }
+.cwa\:text-\[10px\] {
+  font-size: 10px;
+}
 .cwa\:leading-6 {
   --tw-leading: calc(var(--cwa-spacing) * 6);
   line-height: calc(var(--cwa-spacing) * 6);
@@ -1433,6 +1462,10 @@
 .cwa\:leading-8 {
   --tw-leading: calc(var(--cwa-spacing) * 8);
   line-height: calc(var(--cwa-spacing) * 8);
+}
+.cwa\:leading-none {
+  --tw-leading: 1;
+  line-height: 1;
 }
 .cwa\:leading-tight {
   --tw-leading: var(--cwa-leading-tight);

@@ -56,7 +56,7 @@ interface RequestOptions {
 export class ResourcesManager {
   private readonly cwaFetch: CwaFetch
   private readonly fetchStatusManager: FetchStatusManager
-  private readonly pendingUpdates = new Map<string, Set<() => unknown>>()
+  private readonly pendingUpdates = new Map<string, Set<(keepConflict?: boolean) => unknown>>()
   private readonly groupWrites = new Map<string, Promise<void>>()
   private requestsInProgress = reactive<{ [source: string]: { [id: string]: { event: ApiResourceEvent, args: [string, RequestOptions] } } }>({})
   private readonly reqCount = ref(0)
@@ -130,7 +130,7 @@ export class ResourcesManager {
   }
 
   // @internal
-  public registerPendingUpdate(iri: string, flush: () => unknown) {
+  public registerPendingUpdate(iri: string, flush: (keepConflict?: boolean) => unknown) {
     const flushes = this.pendingUpdates.get(iri) ?? new Set()
     flushes.add(flush)
     this.pendingUpdates.set(iri, flushes)

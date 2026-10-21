@@ -24,6 +24,8 @@ const forbidden = [
   { marker: 'Manageable resource listener called to select component', source: 'admin/manageable-resource.ts' },
   { marker: 'vuejs-confirm-dialog-root', source: 'vuejs-confirm-dialog' },
   { marker: 'were saved to a new draft', source: 'admin/remote-changes.ts' },
+  { marker: 'Real-time presence is turned off on the API', source: 'admin/presence.ts' },
+  { marker: 'Live editing paused', source: 'header/_parts/PresenceIndicator.vue' },
 ]
 
 let stub

@@ -113,6 +113,7 @@
               label="Enable Navigation"
             />
           </template>
+          <PresenceIndicator />
           <CloneModeBar />
         </div>
         <div
@@ -178,6 +179,7 @@ import { useStrandedComponentGroups } from '#cwa/admin/stranded-component-groups
 import { useCloneMode } from '#cwa/admin/clone-mode'
 
 const CloneHighlight = defineAsyncComponent(() => import('../resource-manager/CloneHighlight.vue').then(module => module.default))
+const PresenceIndicator = defineAsyncComponent(() => import('./_parts/PresenceIndicator.vue').then(module => module.default))
 const StrandedComponentGroupsModal = defineAsyncComponent(() => import('#cwa/templates/components/core/admin/StrandedComponentGroupsModal.vue').then(module => module.default))
 
 const $cwa = useCwa()
