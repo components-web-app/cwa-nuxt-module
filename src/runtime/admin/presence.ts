@@ -15,6 +15,7 @@ export interface PresenceData {
   component?: string
   componentPosition?: string
   pageData?: string
+  field?: string
   hello?: true
 }
 
@@ -31,8 +32,21 @@ export interface PresencePeer {
   component?: string
   componentPosition?: string
   pageData?: string
+  field?: string
   receivedAt: number
   ttlMs: number
+}
+
+export interface RealtimePeer {
+  user: PresenceUser
+  state: PresenceActivity
+  field?: string
+  expiresAt: number
+}
+
+export interface FocusedPeer {
+  user: PresenceUser
+  colour: string
 }
 
 export interface RealtimeEvent {
@@ -52,6 +66,7 @@ interface PresenceState {
   page: string | undefined
   peers: Record<string, PresencePeer>
   names: Record<string, string>
+  focus: { owner: symbol, iri: string, field: string } | undefined
 }
 
 const REALTIME_PATH = '/_/realtime'
@@ -68,7 +83,7 @@ const states = new WeakMap<Cwa, PresenceState>()
 function presenceState($cwa: Cwa): PresenceState {
   let state = states.get($cwa)
   if (!state) {
-    state = reactive({ active: false, paused: false, page: undefined, peers: {}, names: {} })
+    state = reactive({ active: false, paused: false, page: undefined, peers: {}, names: {}, focus: undefined })
     states.set($cwa, state)
   }
   return state
@@ -107,12 +122,34 @@ export function presenceColour(userId: string) {
 export function usePresence($cwa: Cwa) {
   const state = presenceState($cwa)
   const peers = computed(() => state.active ? Object.values(state.peers) : [])
+  const peersOn = (iri: string) => {
+    const iris = $cwa.resources.findAllPublishableIris(iri)
+    return peers.value.filter(peer => [peer.component, peer.componentPosition].some(on => !!on && iris.includes(on)))
+  }
   return {
     active: computed(() => state.active),
     paused: computed(() => state.active && state.paused),
     onThisPage: computed(() => peers.value.filter(peer => peer.page === state.page)),
     elsewhere: computed(() => peers.value.filter(peer => peer.page !== state.page)),
     nameOf: (userId: string): string | undefined => state.names[userId],
+    peers: (iri: string): RealtimePeer[] => peersOn(iri).map(peer => ({
+      user: { ...peer.user },
+      state: peer.state,
+      ...(peer.field ? { field: peer.field } : {}),
+      expiresAt: peer.receivedAt + peer.ttlMs,
+    })),
+    focusedBy: (iri: string, field: string): FocusedPeer[] => {
+      const editing = peersOn(iri).filter(peer => peer.field === field)
+      return [...new Map(editing.map(peer => [peer.user.id, { user: { ...peer.user }, colour: presenceColour(peer.user.id) }])).values()]
+    },
+    focus: (owner: symbol, iri: string, field: string) => {
+      state.focus = { owner, iri, field }
+    },
+    blur: (owner: symbol) => {
+      if (state.focus?.owner === owner) {
+        state.focus = undefined
+      }
+    },
   }
 }
 
@@ -210,6 +247,7 @@ export class Presence {
       component: data.component,
       componentPosition: data.componentPosition,
       pageData: data.pageData,
+      field: data.field,
       receivedAt: Date.now(),
       ttlMs: ttlMs > 0 ? ttlMs : DEFAULT_TTL_MS,
     }
@@ -245,12 +283,23 @@ export class Presence {
       data.component = this.store.findPublishedComponentIri(selected) ?? selected
     }
     const position = type === CwaResourceTypes.COMPONENT_POSITION ? selected : stackManager.getClosestStackItemByType(CwaResourceTypes.COMPONENT_POSITION)
+    const iris: (string | undefined)[] = [...this.store.findAllPublishableIris(selected)]
     if (position) {
       data.componentPosition = position
-      const pageData = this.store.current.byId[position]?.data?._metadata?.isDynamicPosition ? this.$cwa.resources.pageDataIriOf(position).value : undefined
+      const positionData = this.store.current.byId[position]?.data
+      const pageData = positionData?._metadata?.isDynamicPosition ? this.$cwa.resources.pageDataIriOf(position).value : undefined
       if (pageData) {
         data.pageData = pageData
       }
+      iris.push(position, positionData?.componentGroup)
+    }
+    const focus = this.state.focus
+    if (focus && iris.includes(focus.iri)) {
+      data.state = 'editing'
+      data.field = focus.field
+    }
+    else if (iris.some(iri => iri && this.$cwa.resourcesManager.isUpdating(iri))) {
+      data.state = 'editing'
     }
     return data
   }
