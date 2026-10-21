@@ -9,7 +9,6 @@ import type { CwaResource } from '../resources/resource-utils'
 import { CwaResourceTypes, getPublishedResourceIri, getResourceTypeFromIri } from '../resources/resource-utils'
 import type { CwaFetcherStoreInterface, FetcherStore } from '../storage/stores/fetcher/fetcher-store'
 import type Fetcher from './fetcher/fetcher'
-import { toMillisecondPrecision } from '../resources/millisecond-precision'
 import type { RemoteChanges } from '#cwa/admin/remote-changes'
 import type Cwa from '#cwa/cwa'
 import { useProcess } from '#cwa/composables/process'
@@ -17,7 +16,7 @@ import { useProcess } from '#cwa/composables/process'
 const REALTIME_EVENT_TYPE = 'CwaRealtimeEvent'
 
 function serverTime(value: unknown) {
-  return typeof value === 'string' ? Date.parse(toMillisecondPrecision(value)) : Number.NaN
+  return typeof value === 'string' ? Date.parse(value.replace(/(\.\d{3})\d+/, '$1')) : Number.NaN
 }
 
 interface MercureMessageInterface {
