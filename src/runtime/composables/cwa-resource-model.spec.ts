@@ -12,8 +12,8 @@ vi.mock('vue', async () => {
 const mockGetResource = vi.hoisted(() => vi.fn())
 const mockGetWaitForRequestPromise = vi.hoisted(() => vi.fn().mockResolvedValue(undefined))
 const mockUpdateResource = vi.hoisted(() => vi.fn().mockResolvedValue(undefined))
-const pendingUpdates = vi.hoisted(() => new Map<string, () => unknown>())
-const mockRegisterPendingUpdate = vi.hoisted(() => vi.fn((iri: string, flush: () => unknown) => {
+const pendingUpdates = vi.hoisted(() => new Map<string, (keepConflict?: boolean) => unknown>())
+const mockRegisterPendingUpdate = vi.hoisted(() => vi.fn((iri: string, flush: (keepConflict?: boolean) => unknown) => {
   pendingUpdates.set(iri, flush)
   return () => pendingUpdates.delete(iri)
 }))
@@ -438,6 +438,31 @@ describe('useCwaResourceModel', () => {
       await pendingUpdates.get('/my/resource')!()
 
       expect(keep).toHaveBeenCalledOnce()
+    })
+
+    test('a flush that does not keep conflicts, as a presence page link sends, leaves a held conflict for the editor to choose and saves nothing (#429)', async () => {
+      const { editor, model } = createModel()
+      model.value = 'Mine'
+      await nextTick()
+      const keep = vi.fn().mockResolvedValue(undefined)
+      editor.conflict({ iri: '/my/resource', change: { value: 'Theirs', accept: vi.fn(), keep } })
+
+      await pendingUpdates.get('/my/resource')!(false)
+      await flushDebounceAndAsync()
+
+      expect(keep).not.toHaveBeenCalled()
+      expect(mockUpdateResource).not.toHaveBeenCalled()
+    })
+
+    test('a flush that does not keep conflicts still sends a waiting save with no conflict (#429)', async () => {
+      const { model } = createModel()
+      model.value = 'Mine'
+      await nextTick()
+
+      await pendingUpdates.get('/my/resource')!(false)
+
+      expect(mockUpdateResource).toHaveBeenCalledOnce()
+      expect(mockUpdateResource).toHaveBeenCalledWith(expect.objectContaining({ data: { title: 'Mine' } }))
     })
 
     test('a conflict left on an earlier IRI does not hold the saves of the IRI the model shows now', async () => {

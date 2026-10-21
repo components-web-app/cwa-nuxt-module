@@ -176,7 +176,7 @@ export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: s
       return updateResource(newLocalValue)
     }, debounceTime)
     debounced = submit
-    untrackPendingUpdate = iri.value ? $cwa.resourcesManager.registerPendingUpdate(iri.value, () => remoteChange.value?.keep() ?? submit.flush()) : undefined
+    untrackPendingUpdate = iri.value ? $cwa.resourcesManager.registerPendingUpdate(iri.value, (keepConflict = true) => remoteChange.value ? keepConflict && remoteChange.value.keep() : submit.flush()) : undefined
     submit()
   })
 

@@ -622,7 +622,7 @@ describe('Resources manager', () => {
       expect(cwaFetch.fetch.mock.calls.map(call => call[1].body)).toEqual([{ html: 'last keystroke' }, { publishedAt: 'now' }])
     })
 
-    test('the presence links\' flushPendingUpdates sends every waiting save and settles once they are sent, so leaving the page never loses an edit (#429)', async () => {
+    test('the presence links\' flushPendingUpdates sends every waiting save without resolving held conflicts, and settles once they are sent, so leaving the page never loses an edit (#429)', async () => {
       const { resourcesManager } = createResourcesManager({ includeAdmin: true })
       let finish = () => {}
       const flush = vi.fn(() => new Promise<void>((resolve) => {
@@ -636,8 +636,8 @@ describe('Resources manager', () => {
         settled = true
       })
       await Promise.resolve()
-      expect(flush).toHaveBeenCalledOnce()
-      expect(otherFlush).toHaveBeenCalledOnce()
+      expect(flush).toHaveBeenCalledExactlyOnceWith(false)
+      expect(otherFlush).toHaveBeenCalledExactlyOnceWith(false)
       expect(settled).toBe(false)
 
       finish()

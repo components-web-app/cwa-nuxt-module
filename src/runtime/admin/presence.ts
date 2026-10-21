@@ -92,8 +92,8 @@ function retryAfterSeconds(error: FetchError) {
 }
 
 export async function flushPendingUpdates($cwa: Cwa) {
-  const pending: Map<string, Set<() => unknown>> = $cwa.resourcesManager['pendingUpdates']
-  await Promise.all([...pending.values()].flatMap(flushes => [...flushes]).map(flush => flush()))
+  const pending: Map<string, Set<(keepConflict?: boolean) => unknown>> = $cwa.resourcesManager['pendingUpdates']
+  await Promise.all([...pending.values()].flatMap(flushes => [...flushes]).map(flush => flush(false)))
 }
 
 export function presenceColour(userId: string) {
