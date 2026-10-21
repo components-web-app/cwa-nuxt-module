@@ -192,6 +192,56 @@ describe('PeerOutlines (#429)', () => {
     expect(flags(wrapper).map(flag => flag.text())).toStrictEqual(['Sam, Alex (editing)'])
   })
 
+  test.each([
+    { people: [SAM, ALEX], label: 'Sam and Alex are editing' },
+    { people: [SAM, ALEX, { id: '/users/jo', name: 'Jo' }], label: 'Sam, Alex and Jo are editing' },
+  ])('when everyone on a component is editing the flag says so once: $label', async ({ people, label }) => {
+    const { cwa } = mockCwa()
+    register(cwa, COMPONENT, [elementAt({ top: 300, left: 20, right: 120, bottom: 360 })])
+    people.forEach((user, index) => arrive(ids[index]!, user, { state: 'editing', component: COMPONENT }))
+
+    const wrapper = await mountOutlines()
+
+    expect(flags(wrapper).map(flag => flag.text())).toStrictEqual([label])
+  })
+
+  test('the flag sits above the outline, or inside it where the admin header would cover it', async () => {
+    const { cwa } = mockCwa()
+    register(cwa, COMPONENT, [elementAt({ top: 80, left: 20, right: 120, bottom: 160 })])
+    register(cwa, OTHER, [elementAt({ top: 300, left: 20, right: 120, bottom: 360 })])
+    arrive(ids[0]!, SAM, { component: COMPONENT })
+    arrive(ids[1]!, ALEX, { component: OTHER })
+
+    const wrapper = await mountOutlines()
+
+    const [underHeader, clear] = flags(wrapper)
+    expect(underHeader!.classes()).toContain('cwa:top-0')
+    expect(underHeader!.classes()).not.toContain('cwa:bottom-full')
+    expect(clear!.classes()).toContain('cwa:bottom-full')
+    expect(clear!.classes()).not.toContain('cwa:top-0')
+  })
+
+  test('moving the pointer within the same outlined component measures nothing again', async () => {
+    vi.useFakeTimers()
+    const { cwa } = mockCwa()
+    const element = elementAt({ top: 300, left: 20, right: 120, bottom: 360 })
+    const [first, second] = [document.createElement('span'), document.createElement('span')]
+    element.append(first, second)
+    register(cwa, COMPONENT, [element])
+    arrive(ids[0]!, SAM, { component: COMPONENT })
+    await mountOutlines()
+    vi.advanceTimersByTime(3000)
+    await nextTick()
+    first.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))
+    await nextTick()
+    const measured = vi.mocked(element.getBoundingClientRect).mock.calls.length
+
+    second.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))
+    await nextTick()
+
+    expect(vi.mocked(element.getBoundingClientRect).mock.calls.length).toBe(measured)
+  })
+
   test('someone with no name is called "Someone"', async () => {
     const { cwa } = mockCwa()
     register(cwa, COMPONENT, [elementAt({ top: 10, left: 20, right: 120, bottom: 60 })])

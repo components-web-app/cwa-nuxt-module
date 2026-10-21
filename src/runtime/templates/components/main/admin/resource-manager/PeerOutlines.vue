@@ -12,6 +12,7 @@ const teleportTarget: Element | string = useNuxtApp().vueApp._container ?? 'body
 const { onThisPage } = usePresence($cwa)
 const redrawCount = ref(0)
 const hovered = ref<string[]>([])
+const HEADER_CLEARANCE_PX = 96
 
 const peersByIri = computed(() => {
   const byIri: Record<string, PresencePeer[]> = {}
@@ -39,8 +40,12 @@ function labelOf(peers: PresencePeer[]) {
     people.set(peer.user.id, person)
   }
   const list = [...people.values()]
+  const names = list.map(person => person.name)
   if (list.length === 1) {
-    return list[0]!.editing ? `${list[0]!.name} is editing` : list[0]!.name
+    return list[0]!.editing ? `${names[0]} is editing` : names[0]!
+  }
+  if (list.every(person => person.editing)) {
+    return `${names.slice(0, -1).join(', ')} and ${names.at(-1)} are editing`
   }
   return list.map(person => person.editing ? `${person.name} (editing)` : person.name).join(', ')
 }
@@ -54,13 +59,22 @@ const outlines = computed(() => {
     return instancesOf($cwa, iri)
       .map(instance => boundsOf(instance.value))
       .filter(style => !!style)
-      .map(style => ({ style: { ...style, outlineColor: colour }, colour, label, faded }))
+      .map(style => ({
+        style: { ...style, outlineColor: colour },
+        colour,
+        label,
+        faded,
+        inside: Number.parseFloat(style.top) - window.scrollY < HEADER_CLEARANCE_PX,
+      }))
   })
 })
 
 function onMouseOver(event: MouseEvent) {
   const target = event.target as Node
-  hovered.value = Object.keys(peersByIri.value).filter(iri => instancesOf($cwa, iri).some(instance => instance.value.some(element => element.contains(target))))
+  const now = Object.keys(peersByIri.value).filter(iri => instancesOf($cwa, iri).some(instance => instance.value.some(element => element.contains(target))))
+  if (now.join(' ') !== hovered.value.join(' ')) {
+    hovered.value = now
+  }
 }
 
 function redraw() {
@@ -117,8 +131,8 @@ onBeforeUnmount(() => {
         data-testid="peer-flag"
         :data-faded="outline.faded || undefined"
         :style="{ backgroundColor: outline.colour }"
-        :class="outline.faded ? 'cwa:opacity-0' : 'cwa:opacity-100'"
-        class="cwa:absolute cwa:bottom-full cwa:left-0 cwa:mb-px cwa:px-1.5 cwa:py-0.5 cwa:max-w-60 cwa:truncate cwa:whitespace-nowrap cwa:rounded-t-sm cwa:text-xs cwa:font-medium cwa:text-dark cwa:transition-opacity cwa:duration-300"
+        :class="[outline.faded ? 'cwa:opacity-0' : 'cwa:opacity-100', outline.inside ? 'cwa:top-0 cwa:rounded-b-sm' : 'cwa:bottom-full cwa:mb-px cwa:rounded-t-sm']"
+        class="cwa:absolute cwa:left-0 cwa:px-1.5 cwa:py-0.5 cwa:max-w-60 cwa:truncate cwa:whitespace-nowrap cwa:text-xs cwa:font-medium cwa:text-dark cwa:transition-opacity cwa:duration-300"
       >{{ outline.label }}</span>
     </div>
   </Teleport>

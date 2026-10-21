@@ -914,6 +914,10 @@
   border-top-right-radius: 0;
   border-bottom-right-radius: 0;
 }
+.cwa\:rounded-b-sm {
+  border-bottom-right-radius: var(--cwa-radius-sm);
+  border-bottom-left-radius: var(--cwa-radius-sm);
+}
 .cwa\:border {
   border-style: var(--tw-border-style);
   border-width: 1px;
