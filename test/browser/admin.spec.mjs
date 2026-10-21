@@ -994,3 +994,77 @@ test('45. near the right edge of the window the placement menu shifts left to st
     return m && m.x >= 0 && m.x + m.width <= viewport.width && m.x < point.x && m.y >= point.y
   }, `The menu ${JSON.stringify(await menu.boundingBox())} is not on screen below ${JSON.stringify(point)} in the ${JSON.stringify(viewport)} window`)
 })
+
+const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
+
+function presenceSent(t, matches, message) {
+  return eventually(() => t.rehearsal.realtime.find(body => body?.event === 'presence' && matches(body.data ?? {})), `${message}: ${JSON.stringify(t.rehearsal.realtime)}`)
+}
+
+function peerPresence(t, { key, name, page, state = 'viewing' }) {
+  return {
+    '@type': 'CwaRealtimeEvent',
+    'v': 1,
+    'clientId': `00000000-0000-4000-8000-${key.padStart(12, '0')}`,
+    'user': { id: `/users/e2e-${t.rehearsal.token}-${key}`, name },
+    'event': 'presence',
+    'iri': null,
+    'data': { v: 1, page, state },
+    'sentAt': '2001-01-01T00:00:00.000000+00:00',
+    'expiresAt': '2001-01-01T00:00:45.000000+00:00',
+  }
+}
+
+test.describe('presence', () => {
+  test('46. an admin\'s tab announces it is viewing the page on load, and the component and position it selects', async ({ cwa: t }) => {
+    const { page, seed } = t
+    await openEditMode(t)
+    const viewing = await presenceSent(t, data => data.state === 'viewing' && data.page === seed.iris.pageA, 'No viewing presence was sent for the page')
+    assert(uuid.test(viewing.clientId), `The client id is "${viewing.clientId}"`)
+    await select(page, texts.pageAOther)
+    const selected = await presenceSent(t, data => data.state === 'selected', 'No selected presence was sent')
+    assert(selected.clientId === viewing.clientId, `The client id changed from ${viewing.clientId} to ${selected.clientId}`)
+    assert(JSON.stringify(selected.data) === JSON.stringify({ v: 1, page: seed.iris.pageA, state: 'selected', component: seed.iris.pageAOther, componentPosition: seed.positions.aOther }), `Sent ${JSON.stringify(selected.data)}`)
+  })
+
+  test('47. another admin on this page shows as initials in the header, one on another page as +1 elsewhere, the list names both with their page, and left removes them', async ({ cwa: t }) => {
+    const { page, base, seed, settle } = t
+    await page.goto(`${base}${seed.paths.home}`)
+    await page.getByRole('button', { name: 'Edit', exact: true }).waitFor()
+    await settle()
+    await layoutLink(page, 'Second').click()
+    await assertOnSecondPage(t)
+    await layoutLink(page, 'Home').click()
+    await eventually(() => page.url() === `${base}${seed.paths.home}`, `Expected to be on ${seed.paths.home}, at ${page.url()}`)
+    await page.getByText(texts.pageAOther, { exact: true }).waitFor()
+    await settle()
+    await presenceSent(t, data => data.page === seed.iris.pageA, 'No presence was sent for the page')
+    await eventually(() => t.rehearsal.mercureSubscriptions > 0, 'Mercure was never subscribed to')
+
+    const here = peerPresence(t, { key: '1', name: 'Pat Peer', page: seed.iris.pageA })
+    const elsewhere = peerPresence(t, { key: '2', name: 'Robin Remote', page: seed.iris.pageB })
+    t.publish(here)
+    t.publish(elsewhere)
+
+    const indicator = page.getByTestId('presence-indicator')
+    await eventually(async () => (await indicator.getByTestId('presence-avatar').allInnerTexts()).join(',') === 'PP', `The avatars are ${JSON.stringify(await indicator.getByTestId('presence-avatar').allInnerTexts())}`)
+    const others = indicator.getByTestId('presence-elsewhere')
+    await eventually(async () => (await others.allInnerTexts()).join() === '+1 elsewhere', `The header says ${JSON.stringify(await others.allInnerTexts())}`)
+
+    await indicator.click()
+    const rows = page.getByTestId('presence-list').getByTestId('presence-row')
+    await eventually(async () => (await rows.count()) === 2, `The list has ${await rows.count()} rows`)
+    const [first, second] = await rows.allInnerTexts()
+    assert(first.includes('Pat Peer') && first.includes('This page') && first.includes('Viewing'), `The first row is "${first}"`)
+    assert(second.includes('Robin Remote') && second.includes('E2E page b') && !second.includes('This page'), `The second row is "${second}"`)
+    await page.keyboard.press('Escape')
+    await page.getByTestId('presence-list').waitFor({ state: 'detached' })
+
+    t.publish({ ...here, data: { v: 1, page: seed.iris.pageA, state: 'left' } })
+    await eventually(async () => (await indicator.getByTestId('presence-avatar').count()) === 0, 'The avatar stayed after its tab left')
+    const remaining = await others.allInnerTexts()
+    assert(remaining.join() === '+1 elsewhere', `The header says ${JSON.stringify(remaining)} after the tab on this page left`)
+    t.publish({ ...elsewhere, data: { v: 1, page: seed.iris.pageB, state: 'left' } })
+    await eventually(async () => (await indicator.count()) === 0, 'The indicator stayed after every other tab left')
+  })
+})
