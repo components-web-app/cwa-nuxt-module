@@ -22,7 +22,7 @@ function connect() {
   resourcesStoreDef = new ResourcesStore('cwa')
   const resourcesStore = resourcesStoreDef.useStore()
   resourcesStore.current.currentIds = ['/component/a']
-  const client = new MercureClient(mercureStoreDef, resourcesStoreDef, new FetcherStore('cwa', resourcesStoreDef))
+  const client = new MercureClient(mercureStoreDef, resourcesStoreDef, new FetcherStore('cwa'))
   client.setRequestCount(computed(() => 0))
   client.init()
   return { client, resourcesStore }
@@ -62,7 +62,7 @@ describe('installFakeEventSource', () => {
 
     expect(hub.instances).toHaveLength(2)
     expect(new URL(hub.latest().url).searchParams.get('last_event_id')).toBe('urn:uuid:42')
-    expect(hub.instances[0].readyState).toBe(2)
+    expect(hub.instances[0]?.readyState).toBe(2)
     expect(hub.latest().withCredentials).toBe(true)
   })
 
