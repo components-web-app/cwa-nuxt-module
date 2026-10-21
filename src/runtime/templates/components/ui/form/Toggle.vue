@@ -4,6 +4,7 @@ import { computed } from 'vue'
 import { fieldFocusListeners } from '#cwa/resources/model-editors'
 import type { ResourceModelField } from '#cwa/resources/model-editors'
 import RemoteChangeConflict from '#cwa/templates/components/core/admin/form/RemoteChangeConflict.vue'
+import FieldPresence from '#cwa/templates/components/core/admin/form/FieldPresence.vue'
 
 const emit = defineEmits(['update:modelValue'])
 const { modelValue, disabled = false, model: field } = defineProps<{
@@ -16,6 +17,7 @@ const { modelValue, disabled = false, model: field } = defineProps<{
 const current = computed(() => field ? field.model.value : modelValue)
 const remoteChange = computed(() => field?.remoteChange.value)
 const focusListeners = fieldFocusListeners(() => field)
+const focusedBy = computed(() => field?.focusedBy?.value ?? [])
 
 const valueAsBoolean = computed<boolean>({
   get() {
@@ -39,9 +41,13 @@ function handleSwitchInput(newValue: boolean) {
 <template>
   <SwitchGroup
     as="div"
-    class="cwa:flex cwa:items-center"
+    class="cwa:relative cwa:group/field cwa:flex cwa:items-center"
     v-on="focusListeners"
   >
+    <FieldPresence
+      v-if="focusedBy.length"
+      :peers="focusedBy"
+    />
     <Switch
       :model-value="valueAsBoolean"
       :disabled="disabled"

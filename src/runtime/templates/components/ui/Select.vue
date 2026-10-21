@@ -11,6 +11,7 @@ import type { SelectInputProps } from '#cwa/composables/cwa-select-input'
 import { fieldFocusListeners } from '#cwa/resources/model-editors'
 import type { ResourceModelField } from '#cwa/resources/model-editors'
 import RemoteChangeConflict from '#cwa/templates/components/core/admin/form/RemoteChangeConflict.vue'
+import FieldPresence from '#cwa/templates/components/core/admin/form/FieldPresence.vue'
 
 const emit = defineEmits(['update:modelValue'])
 const props = defineProps<Omit<SelectInputProps, 'modelValue'> & {
@@ -28,6 +29,7 @@ const { value, compareOptions, displayLabel, selectedOptions, trigger, container
 })
 const remoteChange = computed(() => props.model?.remoteChange.value)
 const focusListeners = fieldFocusListeners(() => props.model)
+const focusedBy = computed(() => props.model?.focusedBy?.value ?? [])
 
 const hasSelection = computed(() => selectedOptions.value.length > 0)
 </script>
@@ -39,9 +41,13 @@ const hasSelection = computed(() => selectedOptions.value.length > 0)
     :multiple="multiple"
   >
     <div
-      class="cwa:relative cwa:inline-flex cwa:w-full cwa:items-center cwa:gap-x-3"
+      class="cwa:relative cwa:group/field cwa:inline-flex cwa:w-full cwa:items-center cwa:gap-x-3"
       v-on="focusListeners"
     >
+      <FieldPresence
+        v-if="focusedBy.length"
+        :peers="focusedBy"
+      />
       <ListboxButton
         ref="trigger"
         class="cwa:relative cwa:py-2 cwa:pl-4 cwa:pr-10 cwa:text-left cwa:text-light cwa:w-full cwa:dark-blur cwa:border-0 cwa:outline-dotted cwa:outline-1 cwa:outline-stone-700 cwa:hover:outline-stone-400 cwa:focus-visible:ring-2 cwa:focus-visible:ring-stone-600 cwa:cursor-pointer"

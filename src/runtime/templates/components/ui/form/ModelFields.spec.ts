@@ -3,6 +3,7 @@ import { describe, expect, test, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { computed, nextTick, ref, shallowRef } from 'vue'
 import type { RemoteFieldChange } from '#cwa/resources/model-editors'
+import type { FocusedPeer } from '#cwa/admin/presence'
 import Input from './Input.vue'
 import Toggle from './Toggle.vue'
 import Select from '../Select.vue'
@@ -14,6 +15,7 @@ vi.mock('#cwa/composables/popper', () => ({
 function fieldModel<T>(initial: T) {
   const value = ref<T | null | undefined>(initial)
   const change = shallowRef<RemoteFieldChange<T>>()
+  const peers = ref<FocusedPeer[]>([])
   return {
     model: computed({ get: () => value.value, set: (next) => {
       value.value = next
@@ -21,8 +23,10 @@ function fieldModel<T>(initial: T) {
     remoteChange: computed(() => change.value),
     focus: vi.fn(),
     blur: vi.fn(),
+    focusedBy: computed(() => peers.value),
     value,
     change,
+    peers,
   }
 }
 
@@ -164,6 +168,35 @@ describe('kit fields bound to a resource model (#429)', () => {
       leave(wrapper.get('ul').element, document.body)
       expect(model.blur).toHaveBeenCalledOnce()
       wrapper.unmount()
+    })
+  })
+
+  describe('another admin in the field is shown on it (#429)', () => {
+    const SAM = { user: { id: '/users/sam', name: 'Sam' }, colour: '#c084fc' }
+    const options = [{ label: 'First', value: 'a' }, { label: 'Second', value: 'b' }]
+
+    test.each([
+      ['CwaUiFormInput', Input, 'Mine', {}],
+      ['CwaUiFormToggle', Toggle, false, { label: 'Visible' }],
+      ['CwaUiSelect', Select, 'b', { options }],
+    ] as const)('%s outlines itself with the name of whoever has it focused, and only then', async (_name, component, initial, props) => {
+      const model = fieldModel<any>(initial)
+      const wrapper = mount(component as any, { props: { ...props, model } })
+      expect(wrapper.find('[data-testid="field-presence"]').exists()).toBe(false)
+
+      model.peers.value = [SAM]
+      await nextTick()
+
+      const presence = wrapper.get('[data-testid="field-presence"]')
+      expect(presence.text()).toBe('Sam')
+      expect(presence.element.parentElement!.classList).toContain('cwa:relative')
+      expect(presence.element.parentElement!.classList).toContain('cwa:group/field')
+    })
+
+    test('a field with no model shows no one', () => {
+      const wrapper = mount(Input, { props: { modelValue: 'Plain' } })
+
+      expect(wrapper.find('[data-testid="field-presence"]').exists()).toBe(false)
     })
   })
 })
