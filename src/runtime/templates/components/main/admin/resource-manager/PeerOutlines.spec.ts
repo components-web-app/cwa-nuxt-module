@@ -357,6 +357,36 @@ describe('PeerOutlines (#429)', () => {
     expect(outlines(wrapper)[0]!.attributes('style')).toContain('top: 400px')
   })
 
+  test('redraws when an outlined component or the page changes size, as a component that fills in after its outline was drawn', async () => {
+    const observers: { callback: () => void, observed: Element[], disconnect: ReturnType<typeof vi.fn> }[] = []
+    vi.stubGlobal('ResizeObserver', class {
+      observed: Element[] = []
+      disconnect = vi.fn()
+      constructor(public callback: () => void) {
+        observers.push(this)
+      }
+
+      observe(element: Element) {
+        this.observed.push(element)
+      }
+    })
+    const { cwa } = mockCwa()
+    const element = elementAt({ top: 10, left: 20, right: 120, bottom: 10 })
+    register(cwa, COMPONENT, [element])
+    arrive(ids[0]!, SAM, { component: COMPONENT })
+    const wrapper = await mountOutlines()
+    expect(observers[0]!.observed).toEqual(expect.arrayContaining([element, document.body]))
+
+    element.getBoundingClientRect = vi.fn(() => ({ top: 38, left: 20, right: 120, bottom: 66 }) as DOMRect)
+    observers[0]!.callback()
+    await nextTick()
+
+    expect(outlines(wrapper)[0]!.attributes('style')).toContain('top: 38px')
+    wrapper.unmount()
+    expect(observers[0]!.disconnect).toHaveBeenCalled()
+    vi.unstubAllGlobals()
+  })
+
   test('stops listening once unmounted', async () => {
     const { cwa } = mockCwa()
     const removeSpy = vi.spyOn(window, 'removeEventListener')

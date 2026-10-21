@@ -96,6 +96,20 @@ function redrawAfterRender() {
 
 const stopInstances = onInstancesChange($cwa, redrawAfterRender)
 
+const resizes = typeof ResizeObserver === 'undefined' ? undefined : new ResizeObserver(redraw)
+let observed: HTMLElement[] = []
+watch(() => {
+  void redrawCount.value
+  return Object.keys(peersByIri.value).flatMap(iri => instancesOf($cwa, iri).flatMap(instance => instance.value))
+}, (elements) => {
+  if (!resizes || (elements.length === observed.length && elements.every((element, index) => element === observed[index]))) {
+    return
+  }
+  resizes.disconnect()
+  observed = elements
+  ;[document.body, ...elements].forEach(element => element.nodeType === 1 && resizes.observe(element))
+}, { immediate: true })
+
 watch(() => [$cwa.resources.displayPageIri.value, $cwa.resources.isLoading.value], redrawAfterRender)
 
 onMounted(() => {
@@ -107,6 +121,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   frame !== undefined && cancelAnimationFrame(frame)
+  resizes?.disconnect()
   stopInstances()
   $cwa.admin.eventBus.off('redrawFocus', redraw)
   window.removeEventListener('resize', redraw)

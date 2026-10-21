@@ -1109,12 +1109,11 @@ test.describe('presence', () => {
     t.publish({ ...peer, data: { v: 1, page: seed.iris.pageA, state: 'editing', component: seed.iris.pageAOther, componentPosition: seed.positions.aOther } })
     const outline = page.getByTestId('peer-outline')
     await eventually(async () => (await outline.count()) === 1, `There are ${await outline.count()} outlines`)
-    const drawn = await outline.evaluate((el) => {
+    const drawnBox = () => outline.evaluate((el) => {
       const r = el.getBoundingClientRect()
       return { top: r.top, left: r.left, width: r.width, height: r.height }
     })
-    const [target] = await boxesOf(page, texts.pageAOther)
-    assert(covers(drawn, target), `The outline ${JSON.stringify(drawn)} does not cover the component ${JSON.stringify(target)}`)
+    await eventually(async () => covers(await drawnBox(), (await boxesOf(page, texts.pageAOther))[0]), 'The outline never covered the component')
     const flag = outline.getByTestId('peer-flag')
     assert(await flag.innerText() === 'Pat Peer is editing', `The flag says "${await flag.innerText()}"`)
     assert(await flag.getAttribute('data-faded') === null, 'The flag is faded as soon as it appears')
