@@ -3,6 +3,7 @@ import { computed, reactive, watch } from 'vue'
 import type { FetchError } from 'ofetch'
 import type { Router } from 'vue-router'
 import type Cwa from '#cwa/cwa'
+import { retryAfterSeconds } from '#cwa/api/retry-after'
 import type { CwaResourcesStoreInterface } from '#cwa/storage/stores/resources/resources-store'
 import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/resources/resource-utils'
 
@@ -76,24 +77,6 @@ function presenceState($cwa: Cwa): PresenceState {
 
 function serverTime(value: unknown) {
   return typeof value === 'string' ? Date.parse(value.replace(/(\.\d{3})\d+/, '$1')) : Number.NaN
-}
-
-function retryAfterSeconds(error: FetchError) {
-  const headers = error.response?.headers
-  const value = headers?.get('Retry-After')?.trim()
-  if (!value) {
-    return undefined
-  }
-  if (/^\d+$/.test(value)) {
-    return Number(value)
-  }
-  const seconds = Math.ceil((Date.parse(value) - Date.parse(headers?.get('Date') ?? '')) / 1000)
-  return seconds > 0 ? seconds : undefined
-}
-
-export async function flushPendingUpdates($cwa: Cwa) {
-  const pending: Map<string, Set<(keepConflict?: boolean) => unknown>> = $cwa.resourcesManager['pendingUpdates']
-  await Promise.all([...pending.values()].flatMap(flushes => [...flushes]).map(flush => flush(false)))
 }
 
 export function presenceColour(userId: string) {
@@ -286,7 +269,7 @@ export class Presence {
     this.inFlight = true
     const data: PresenceData = hello ? { ...this.current(), hello: true } : this.current()
     try {
-      await this.$cwa['cwaFetch'].fetch(REALTIME_PATH, {
+      await this.$cwa.cwaFetch.fetch(REALTIME_PATH, {
         method: 'POST',
         body: { clientId: this.clientId, event: 'presence', data },
         retry: 0,

@@ -3,8 +3,6 @@ import type { App } from 'vue'
 import { createConfirmDialog } from 'vuejs-confirm-dialog'
 import { createPinia, setActivePinia } from 'pinia'
 import { ResourcesManager } from './resources-manager'
-import { flushPendingUpdates } from '#cwa/admin/presence'
-import type Cwa from '#cwa/cwa'
 import { Resources } from './resources'
 import { ResourcesStore } from '#cwa/storage/stores/resources/resources-store'
 import { FetcherStore } from '#cwa/storage/stores/fetcher/fetcher-store'
@@ -622,7 +620,7 @@ describe('Resources manager', () => {
       expect(cwaFetch.fetch.mock.calls.map(call => call[1].body)).toEqual([{ html: 'last keystroke' }, { publishedAt: 'now' }])
     })
 
-    test('the presence links\' flushPendingUpdates sends every waiting save without resolving held conflicts, and settles once they are sent, so leaving the page never loses an edit (#429)', async () => {
+    test('flushPendingUpdates, used by the presence links, sends every waiting save without resolving held conflicts, and settles once they are sent, so leaving the page never loses an edit (#429)', async () => {
       const { resourcesManager } = createResourcesManager({ includeAdmin: true })
       let finish = () => {}
       const flush = vi.fn(() => new Promise<void>((resolve) => {
@@ -632,7 +630,7 @@ describe('Resources manager', () => {
       resourcesManager.registerPendingUpdate('/things/draft', flush)
       resourcesManager.registerPendingUpdate('/things/other', otherFlush)
       let settled = false
-      const flushing = flushPendingUpdates({ resourcesManager } as unknown as Cwa).then(() => {
+      const flushing = resourcesManager.flushPendingUpdates().then(() => {
         settled = true
       })
       await Promise.resolve()

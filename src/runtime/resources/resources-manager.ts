@@ -142,6 +142,11 @@ export class ResourcesManager {
     }
   }
 
+  // @internal
+  public async flushPendingUpdates() {
+    await Promise.all([...this.pendingUpdates.values()].flatMap(flushes => [...flushes]).map(flush => flush(false)))
+  }
+
   private async settleUpdates(iri: string) {
     await Promise.all([...(this.pendingUpdates.get(iri) ?? [])].map(flush => flush()))
     const hasRequestInProgress = () => Object.values(this.requestsInProgress).some(sourceReqs =>
