@@ -14,7 +14,7 @@ const mocks = vi.hoisted(() => ({
   vueApp: { name: 'vue-app' },
   reveal: vi.fn(),
   createConfirmDialog: vi.fn(),
-  editingNotice: vi.fn((): string | undefined => undefined),
+  editingNotice: vi.fn(async (): Promise<string | undefined> => undefined),
 }))
 
 const usageResponses = new Map<string, Promise<unknown>>()
@@ -245,7 +245,7 @@ describe('Info tab — a component in several locations', () => {
     inLocations(3)
     inStackPosition()
     revealChoosing()
-    mocks.editingNotice.mockReturnValue('Sam is editing this.')
+    mocks.editingNotice.mockResolvedValue('Sam is editing this.')
     const wrapper = mountInfoTab()
     await flushPromises()
 

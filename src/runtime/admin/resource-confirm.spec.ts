@@ -14,7 +14,7 @@ vi.mock('#cwa/templates/components/core/ConfirmDialog.vue', () => ({ default: { 
 
 const realtime = vi.hoisted(() => ({ loaders: new WeakMap<object, unknown>() }))
 vi.mock('#cwa/resources/realtime-view', () => ({
-  realtimeView: ($cwa: object) => realtime.loaders.get($cwa) ?? { view: { value: undefined } },
+  realtimeView: ($cwa: object) => realtime.loaders.get($cwa) ?? { load: async () => undefined },
 }))
 
 const COMPONENT = '/component/html_contents/c1'
@@ -26,7 +26,7 @@ function peer(name: string | undefined, id: string, state: RealtimePeer['state']
 function cwaWith(peers: RealtimePeer[] | undefined) {
   const $cwa = {} as Cwa
   const view = peers ? { peers: vi.fn(() => peers) } : undefined
-  realtime.loaders.set($cwa, { view: shallowRef(view) })
+  realtime.loaders.set($cwa, { load: async () => view })
   return { $cwa, view }
 }
 
@@ -75,7 +75,20 @@ describe('editingNotice (#429)', () => {
     { peers: [peer('Sam', '/users/sam'), peer('Alex', '/users/alex'), peer('Jo', '/users/jo')], notice: 'Sam, Alex and Jo are editing this.' },
     { peers: [], notice: undefined },
     { peers: undefined, notice: undefined },
-  ])('$notice', ({ peers, notice }) => {
-    expect(editingNotice(cwaWith(peers).$cwa, COMPONENT)).toBe(notice)
+  ])('$notice', async ({ peers, notice }) => {
+    expect(await editingNotice(cwaWith(peers).$cwa, COMPONENT)).toBe(notice)
+  })
+
+  test('waits for the realtime view when nothing has loaded it yet', async () => {
+    const $cwa = {} as Cwa
+    const view = shallowRef<{ peers: () => RealtimePeer[] }>()
+    realtime.loaders.set($cwa, {
+      view,
+      load: () => new Promise((resolve) => {
+        setTimeout(() => resolve(view.value = { peers: () => [peer('Sam', '/users/sam')] }))
+      }),
+    })
+
+    expect(await editingNotice($cwa, COMPONENT)).toBe('Sam is editing this.')
   })
 })

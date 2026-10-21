@@ -39,7 +39,7 @@ async function chooseLocations(componentIri: string, total: number) {
   const { createConfirmDialog } = await import('#cwa/admin/confirm-dialog')
   const { editingNotice } = await import('#cwa/admin/resource-confirm')
   const dialog = await createConfirmDialog(vueApp, DeleteLocationsDialog)
-  const { isCanceled, data } = await dialog.reveal({ total, notice: editingNotice($cwa, componentIri) })
+  const { isCanceled, data } = await dialog.reveal({ total, notice: await editingNotice($cwa, componentIri) })
   return isCanceled ? undefined : data as 'all' | 'here'
 }
 

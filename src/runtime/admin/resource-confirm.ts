@@ -14,8 +14,8 @@ const confirmations = {
   },
 }
 
-export function editingNotice($cwa: Cwa, iri: string) {
-  const peers = realtimeView($cwa).view.value?.peers(iri) ?? []
+export async function editingNotice($cwa: Cwa, iri: string) {
+  const peers = (await realtimeView($cwa).load())?.peers(iri) ?? []
   const names = [...new Map(peers.map(peer => [peer.user.id, peer.user.name || 'Someone'])).values()]
   if (!names.length) {
     return
@@ -30,7 +30,7 @@ export async function confirmResourceAction(app: App, action: keyof typeof confi
   const { default: ConfirmDialog } = await import('#cwa/templates/components/core/ConfirmDialog.vue')
   const dialog = await createConfirmDialog(app, ConfirmDialog)
   const $cwa = iri ? app.config.globalProperties.$cwa as Cwa | undefined : undefined
-  const notice = iri && $cwa ? editingNotice($cwa, iri) : undefined
+  const notice = iri && $cwa ? await editingNotice($cwa, iri) : undefined
   const { isCanceled } = await dialog.reveal({ ...(typeof action === 'string' ? confirmations[action] : action), notice })
   return !isCanceled
 }
