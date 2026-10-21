@@ -7,6 +7,8 @@ import type { CwaResourcesStoreInterface } from '../storage/stores/resources/res
 import type { ModelEditor, RemoteFieldChange } from '../resources/model-editors'
 import { registerModelEditor } from '../resources/model-editors'
 import { CLIENT_ID_HEADER, RemoteChanges, subscribeToRemoteChanges } from './remote-changes'
+import { Presence } from './presence'
+import type { Router } from 'vue-router'
 import type Cwa from '#cwa/cwa'
 
 const cloneMode = vi.hoisted(() => ({
@@ -27,7 +29,9 @@ function buildCwa() {
   const currentIri = computed(() => shownVersion.value ?? stack.value[0]?.iri)
   const groupWrites: Promise<unknown>[] = []
   const $cwa = {
-    cwaFetch: { writeHeaders: {} as Record<string, string> },
+    cwaFetch: { writeHeaders: {} as Record<string, string>, fetch: vi.fn().mockResolvedValue(undefined) },
+    apiUrlBase: 'https://api.test',
+    resources: { displayPageIri: computed(() => '/_/pages/home') },
     admin: {
       resourceStackManager: { resourceStack: stack, currentIri },
       emptyStack: vi.fn(() => {
@@ -210,6 +214,21 @@ describe('RemoteChanges: another admin\'s saved drafts reach a signed-in admin (
       expect(editor.conflict).toHaveBeenCalledOnce()
       expect(held.value?.iri).toBe(DRAFT)
       expect(held.value?.change).toMatchObject({ value: 'theirs', user: { id: '/_/users/2' } })
+    })
+
+    test.each([
+      { name: 'a writer who is a known peer is named', peer: true, user: { id: '/_/users/2', name: 'Sam' } },
+      { name: 'a writer who is not a known peer has no name', peer: false, user: { id: '/_/users/2' } },
+    ])('$name in the conflict', async ({ peer, user }) => {
+      const presence = new Presence(cwa.$cwa, store, { currentRoute: computed(() => ({ path: '/', meta: {} })) } as unknown as Router, remote.clientId)
+      presence.start(true)
+      peer && presence.receive({ '@type': 'CwaRealtimeEvent', 'v': 1, 'clientId': '7f1e2d3c-4b5a-4c6d-8e7f-9a0b1c2d3e4f', 'user': { id: '/_/users/2', name: 'Sam' }, 'event': 'presence', 'data': { v: 1, state: 'viewing', page: '/_/pages/home' }, 'sentAt': '2026-10-21T10:00:01Z', 'expiresAt': '2026-10-21T10:00:46Z' })
+      const { held } = editorOn({ iri: DRAFT, field: 'title', hasUnsentChange: () => true })
+
+      await remote.receive(theirs, '/page')
+      presence.stop()
+
+      expect(held.value?.change.user).toStrictEqual(user)
     })
 
     test('a save already sent, with nothing typed since, is no conflict: the later write settles it', async () => {

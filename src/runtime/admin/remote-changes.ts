@@ -5,6 +5,7 @@ import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/resources/resourc
 import { modelEditors } from '#cwa/resources/model-editors'
 import type { ModelEditor, RemoteFieldChange, RemoteUser } from '#cwa/resources/model-editors'
 import { useCloneMode } from '#cwa/admin/clone-mode'
+import { usePresence } from '#cwa/admin/presence'
 import { ErrorType } from '#cwa/storage/stores/error/state'
 
 export const CLIENT_ID_HEADER = 'X-CWA-Client-Id'
@@ -76,9 +77,13 @@ function changedFieldsOf(current: CwaResource | undefined, remote: CwaResource) 
   return [...fields].filter(field => !IGNORED_FIELDS.includes(field) && !isSame(current?.[field], remote[field]))
 }
 
-function userOf(resource: CwaResource): RemoteUser | undefined {
+function userOf($cwa: Cwa, resource: CwaResource): RemoteUser | undefined {
   const userId = resource._metadata?.lastWrite?.userId
-  return userId ? { id: userId } : undefined
+  if (!userId) {
+    return
+  }
+  const name = usePresence($cwa).nameOf(userId)
+  return name ? { id: userId, name } : { id: userId }
 }
 
 export class RemoteChanges {
@@ -152,7 +157,7 @@ export class RemoteChanges {
     }
     const current = this.stored(iri)
     const changedFields = changedFieldsOf(current ?? this.stored(resource.publishedResource), resource)
-    const user = userOf(resource)
+    const user = userOf(this.$cwa, resource)
     const conflicting = this.editorsOf(iri, resource).filter((editor) => {
       const field = editor.field()
       const editorStored = this.stored(editor.iri())
