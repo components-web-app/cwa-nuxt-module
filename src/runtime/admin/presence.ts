@@ -43,6 +43,7 @@ export interface RealtimePeer {
   state: PresenceActivity
   field?: string
   expiresAt: number
+  colour: string
 }
 
 export interface FocusedPeer {
@@ -77,7 +78,7 @@ const PRUNE_MS = 1_000
 const HELLO_JITTER_MS = 2_000
 const MAX_BACKOFF_MS = 60_000
 const DEFAULT_TTL_MS = 45_000
-const PALETTE = ['#c084fc', '#14b8a6', '#f472b6', '#22d3ee', '#f87171', '#d6a77a']
+const PALETTE = ['#c084fc', '#14b8a6', '#4ade80', '#22d3ee', '#f87171', '#e879f9']
 
 const states = new WeakMap<Cwa, PresenceState>()
 
@@ -120,6 +121,7 @@ export function usePresence($cwa: Cwa) {
       state: peer.state,
       ...(peer.field ? { field: peer.field } : {}),
       expiresAt: peer.receivedAt + peer.ttlMs,
+      colour: presenceColour(peer.user.id),
     })),
     focusedBy: (iri: string, field: string): FocusedPeer[] => {
       const editing = peersOn(iri).filter(peer => peer.field === field)

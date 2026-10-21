@@ -710,13 +710,13 @@ describe('Presence: peers on a resource (#429)', () => {
     return start(build())
   }
 
-  test('peers lists who is on a resource, draft and published as one, with their field and a local-clock expiry', () => {
+  test('peers lists who is on a resource, draft and published as one, with their field, a local-clock expiry and their colour', () => {
     const built = withDraft()
     built.presence.receive(peerEvent({ state: 'editing', component: LIVE, componentPosition: POSITION, field: 'title' }, { sentAt: '1999-01-01T00:00:00Z', expiresAt: '1999-01-01T00:00:30Z' }))
     built.presence.receive(peerEvent({ state: 'selected', component: '/component/titles/another' }, ALEX))
     const { peers } = usePresence(built.$cwa)
 
-    const expected = [{ user: { id: '/users/sam', name: 'Sam' }, state: 'editing', field: 'title', expiresAt: Date.now() + 30_000 }]
+    const expected = [{ user: { id: '/users/sam', name: 'Sam' }, state: 'editing', field: 'title', expiresAt: Date.now() + 30_000, colour: presenceColour('/users/sam') }]
     expect(peers(DRAFT)).toStrictEqual(expected)
     expect(peers(LIVE)).toStrictEqual(expected)
     expect(peers(POSITION)).toStrictEqual(expected)
@@ -727,7 +727,7 @@ describe('Presence: peers on a resource (#429)', () => {
     const built = withDraft()
     built.presence.receive(peerEvent({ state: 'selected', component: LIVE }))
 
-    expect(usePresence(built.$cwa).peers(DRAFT)).toStrictEqual([{ user: { id: '/users/sam', name: 'Sam' }, state: 'selected', expiresAt: Date.now() + 45_000 }])
+    expect(usePresence(built.$cwa).peers(DRAFT)).toStrictEqual([{ user: { id: '/users/sam', name: 'Sam' }, state: 'selected', expiresAt: Date.now() + 45_000, colour: presenceColour('/users/sam') }])
   })
 
   test('focusedBy lists each person editing that field of the resource once, in their colour', () => {
@@ -794,6 +794,24 @@ describe('presenceColour (#429)', () => {
     expect(new Set(colours).size).toBeGreaterThan(3)
     for (const forbidden of ['#2563eb', '#4f46e5', '#fee600', '#ffaa00', '#9cdd05', '#e30a6c', '#fff']) {
       expect(colours).not.toContain(forbidden)
+    }
+  })
+
+  test('every colour is a hue clearly apart from the selection magenta, draft orange, clone yellow and selection blues', () => {
+    const hue = (hex: string) => {
+      const [r, g, b] = [1, 3, 5].map(index => Number.parseInt(hex.slice(index, index + 2), 16) / 255) as [number, number, number]
+      const max = Math.max(r, g, b)
+      const delta = max - Math.min(r, g, b)
+      const sector = max === r ? ((g - b) / delta) % 6 : max === g ? (b - r) / delta + 2 : (r - g) / delta + 4
+      return (sector * 60 + 360) % 360
+    }
+    const apart = (a: number, b: number) => Math.min(Math.abs(a - b), 360 - Math.abs(a - b))
+    const colours = new Set(Array.from({ length: 200 }, (_, index) => presenceColour(`/users/${index}`)))
+
+    for (const colour of colours) {
+      for (const reserved of ['#e30a6c', '#ffaa00', '#fee600', '#2563eb', '#4f46e5']) {
+        expect(apart(hue(colour), hue(reserved)), `${colour} against ${reserved}`).toBeGreaterThanOrEqual(25)
+      }
     }
   })
 })
