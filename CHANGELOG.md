@@ -4,9 +4,9 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
-- The admin header shows who else is here: an avatar per admin on this page in their colour, "+N elsewhere", and a list of each one's page and what they have selected, linked; "Live editing paused" while the real-time connection is down ([b6c735af](https://github.com/components-web-app/cwa-nuxt-module/commit/b6c735af), [416888d1](https://github.com/components-web-app/cwa-nuxt-module/commit/416888d1), [#429](https://github.com/components-web-app/cwa-nuxt-module/issues/429))
+- The admin header shows who else is here: an avatar per admin on this page in their colour, "+N elsewhere", and a list of each one's page and what they have selected, linked; "Live editing paused" while the real-time connection is down ([b6c735af](https://github.com/components-web-app/cwa-nuxt-module/commit/b6c735af), [416888d1](https://github.com/components-web-app/cwa-nuxt-module/commit/416888d1), [d5165bab](https://github.com/components-web-app/cwa-nuxt-module/commit/d5165bab), [891fa5f5](https://github.com/components-web-app/cwa-nuxt-module/commit/891fa5f5), [#429](https://github.com/components-web-app/cwa-nuxt-module/issues/429))
 - A co-editing conflict names the admin who made the change instead of "Someone" when they are on the site ([b6c735af](https://github.com/components-web-app/cwa-nuxt-module/commit/b6c735af), [#429](https://github.com/components-web-app/cwa-nuxt-module/issues/429))
-- Admins announce their presence with `POST /_/realtime` (api-components-bundle 2.0.0-alpha.35 or later); an API with the endpoint turned off gets one warning and no further requests ([b6c735af](https://github.com/components-web-app/cwa-nuxt-module/commit/b6c735af), [#429](https://github.com/components-web-app/cwa-nuxt-module/issues/429))
+- Admins announce their presence with `POST /_/realtime` (api-components-bundle 2.0.0-alpha.35 or later); an API with the endpoint turned off gets one warning and no further requests ([b6c735af](https://github.com/components-web-app/cwa-nuxt-module/commit/b6c735af), [274c774a](https://github.com/components-web-app/cwa-nuxt-module/commit/274c774a), [#429](https://github.com/components-web-app/cwa-nuxt-module/issues/429))
 
 ## [2.0.0-alpha.26] - 2026-10-21
 
