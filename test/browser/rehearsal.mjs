@@ -12,8 +12,9 @@ export const seedHeader = 'x-rehearsal-seed'
 export const cleanupHeader = 'x-rehearsal-cleanup'
 
 const keptResponseHeaders = ['content-type', 'link', 'cache-control', 'expires', 'vary', 'location', 'set-cookie', 'retry-after', 'date']
-const forwardedRequestHeaders = ['accept', 'content-type', 'cookie', 'path', 'preload', 'authorization', 'user-agent']
+const forwardedRequestHeaders = ['accept', 'content-type', 'cookie', 'path', 'preload', 'authorization', 'user-agent', 'x-cwa-client-id']
 const writeMethods = new Set(['POST', 'PUT', 'PATCH', 'DELETE'])
+const realtimePath = /\/_\/realtime$/
 
 function sortKeys(value) {
   if (Array.isArray(value)) {
@@ -73,7 +74,7 @@ export async function startRehearsal({ port, mode, dir = rehearsalsDir, target, 
     return {
       'access-control-allow-origin': req.headers.origin || '*',
       'access-control-allow-credentials': 'true',
-      'access-control-allow-headers': 'content-type, accept, path, preload, authorization',
+      'access-control-allow-headers': 'content-type, accept, path, preload, authorization, x-cwa-client-id',
       'access-control-allow-methods': 'GET, POST, PATCH, PUT, DELETE, OPTIONS',
       'access-control-expose-headers': 'link, retry-after, date',
     }
@@ -188,6 +189,11 @@ export async function startRehearsal({ port, mode, dir = rehearsalsDir, target, 
         return
       }
       const current = scenario
+      if (req.method === 'POST' && realtimePath.test(new URL(req.url, origin).pathname)) {
+        current.realtime.push(parseBody(raw))
+        send(res, req, 202, {})
+        return
+      }
       const request = { method: req.method, url: req.url, path: req.headers.path, body: parseBody(raw) }
       const isWrite = writeMethods.has(req.method)
       if (isWrite && !req.headers[seedHeader]) {
@@ -243,7 +249,7 @@ export async function startRehearsal({ port, mode, dir = rehearsalsDir, target, 
     mode,
     begin(title) {
       const file = join(dir, rehearsalFileName(title))
-      scenario = { title, file, entries: [], writes: [], unrecorded: [], epoch: 0, mercureSubscriptions: 0, used: new Map(), byKey: new Map(), pending: new Set() }
+      scenario = { title, file, entries: [], writes: [], realtime: [], unrecorded: [], epoch: 0, mercureSubscriptions: 0, used: new Map(), byKey: new Map(), pending: new Set() }
       if (mode === 'record') {
         scenario.token = randomBytes(4).toString('hex')
         scenario.apiOrigin = targetUrl.origin
@@ -261,6 +267,12 @@ export async function startRehearsal({ port, mode, dir = rehearsalsDir, target, 
         }
       }
       return scenario
+    },
+    publish(data, { id } = {}) {
+      const message = `${id === undefined ? '' : `id: ${id}\n`}data: ${JSON.stringify(data)}\n\n`
+      for (const stream of streams) {
+        stream.write(message)
+      }
     },
     async end({ save }) {
       closeStreams()
