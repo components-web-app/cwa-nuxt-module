@@ -54,15 +54,16 @@ function fakeEditor({ iri, field, ...overrides }: Partial<Omit<ModelEditor, 'iri
     field: () => field,
     value: (resource: Record<string, unknown>) => resource[field],
     hasLocalChange: () => false,
-    focused: () => false,
+    hasUnsentChange: () => false,
     localPatch: () => undefined,
     discardLocal: vi.fn(),
+    adopt: vi.fn(),
     submit: vi.fn().mockResolvedValue(undefined),
     conflict: vi.fn((next?: { iri: string, change: RemoteFieldChange }) => {
       held.value = next
     }),
     ...overrides,
-  } as unknown as ModelEditor & { discardLocal: ReturnType<typeof vi.fn>, submit: ReturnType<typeof vi.fn> }
+  } as unknown as ModelEditor & { discardLocal: ReturnType<typeof vi.fn>, submit: ReturnType<typeof vi.fn>, adopt: ReturnType<typeof vi.fn> }
   return { editor, held }
 }
 
@@ -157,14 +158,25 @@ describe('RemoteChanges: another admin\'s saved drafts reach a signed-in admin (
       expect(handler).not.toHaveBeenCalled()
     })
 
-    test('a field focused here but not changed still takes the remote value', async () => {
+    test('a re-fetch that changed nothing does not call onRemoteChange', async () => {
       seed({ '@id': DRAFT, '@type': 'Title', 'title': 'old' })
-      const { editor } = editorOn({ iri: DRAFT, field: 'title', focused: () => true })
+      const handler = vi.fn()
+      unregister.push(subscribeToRemoteChanges(cwa.$cwa, () => DRAFT, handler))
 
-      await remote.receive({ '@id': DRAFT, '@type': 'Title', 'title': 'new' }, '/page')
+      await remote.receive({ '@id': DRAFT, '@type': 'Title', 'title': 'old', '_metadata': { lastWrite: { clientId: 'other-tab', userId: '/_/users/2' } } }, '/page')
 
-      expect(stored(DRAFT)?.title).toBe('new')
-      expect(editor.conflict).not.toHaveBeenCalled()
+      expect(handler).not.toHaveBeenCalled()
+    })
+
+    test('this tab\'s own save coming back through a re-fetch does not call onRemoteChange, and is stored', async () => {
+      seed({ '@id': DRAFT, '@type': 'Title', 'title': 'old' })
+      const handler = vi.fn()
+      unregister.push(subscribeToRemoteChanges(cwa.$cwa, () => DRAFT, handler))
+
+      await remote.receive({ '@id': DRAFT, '@type': 'Title', 'title': 'mine', '_metadata': { lastWrite: { clientId: remote.clientId, userId: '/_/users/1' } } }, '/page')
+
+      expect(handler).not.toHaveBeenCalled()
+      expect(stored(DRAFT)?.title).toBe('mine')
     })
   })
 
@@ -175,21 +187,51 @@ describe('RemoteChanges: another admin\'s saved drafts reach a signed-in admin (
       seed({ '@id': DRAFT, '@type': 'Title', 'title': 'old', 'subtitle': 'old subtitle' })
     })
 
-    test('keeps the local field, applies the others, holds the remote resource and raises the conflict on the model', async () => {
-      const { editor, held } = editorOn({ iri: DRAFT, field: 'title', hasLocalChange: () => true })
+    test('keeps the local field, applies the others and raises the conflict on the model, with no outdated notice', async () => {
+      const { editor, held } = editorOn({ iri: DRAFT, field: 'title', hasUnsentChange: () => true })
 
       await remote.receive(theirs, '/page')
 
       expect(stored(DRAFT)?.title).toBe('old')
       expect(stored(DRAFT)?.subtitle).toBe('their subtitle')
-      expect(store.new.byId[DRAFT]?.resource).toEqual(theirs)
+      expect(store.hasNewResources).toBe(false)
       expect(editor.conflict).toHaveBeenCalledOnce()
       expect(held.value?.iri).toBe(DRAFT)
       expect(held.value?.change).toMatchObject({ value: 'theirs', user: { id: '/_/users/2' } })
     })
 
+    test('a save already sent, with nothing typed since, is no conflict: the later write settles it', async () => {
+      const { editor } = editorOn({ iri: DRAFT, field: 'title', hasLocalChange: () => true })
+
+      await remote.receive(theirs, '/page')
+
+      expect(editor.conflict).not.toHaveBeenCalled()
+      expect(stored(DRAFT)?.title).toBe('theirs')
+    })
+
+    test('accept() after this tab\'s own earlier save landed sends their value as a save rather than only showing it', async () => {
+      const { editor, held } = editorOn({ iri: DRAFT, field: 'title', hasUnsentChange: () => true })
+      await remote.receive(theirs, '/page')
+      store.saveResource({ resource: { ...stored(DRAFT)!, title: 'mine, saved' } })
+
+      held.value!.change.accept()
+
+      expect(editor.adopt).toHaveBeenCalledWith('theirs')
+      expect(stored(DRAFT)?.title).toBe('mine, saved')
+      expect(held.value).toBeUndefined()
+    })
+
+    test('this tab\'s own save coming back through a re-fetch is stored and raises no conflict', async () => {
+      const { editor } = editorOn({ iri: DRAFT, field: 'title', hasUnsentChange: () => true })
+
+      await remote.receive({ ...theirs, title: 'mine', _metadata: { lastWrite: { clientId: remote.clientId, userId: '/_/users/1' } } }, '/page')
+
+      expect(editor.conflict).not.toHaveBeenCalled()
+      expect(stored(DRAFT)?.title).toBe('mine')
+    })
+
     test('a local change to another field is no conflict', async () => {
-      const { editor } = editorOn({ iri: DRAFT, field: 'heading', hasLocalChange: () => true })
+      const { editor } = editorOn({ iri: DRAFT, field: 'heading', hasUnsentChange: () => true })
 
       await remote.receive(theirs, '/page')
 
@@ -198,7 +240,7 @@ describe('RemoteChanges: another admin\'s saved drafts reach a signed-in admin (
     })
 
     test('a newer remote change that no longer touches the field clears its conflict', async () => {
-      const { held } = editorOn({ iri: DRAFT, field: 'title', hasLocalChange: () => true })
+      const { held } = editorOn({ iri: DRAFT, field: 'title', hasUnsentChange: () => true })
       await remote.receive(theirs, '/page')
 
       await remote.receive({ ...theirs, title: 'old' }, '/page')
@@ -208,13 +250,14 @@ describe('RemoteChanges: another admin\'s saved drafts reach a signed-in admin (
     })
 
     test('accept() drops the local edit and its waiting save, takes their value without sending a save, and is spent', async () => {
-      const { editor, held } = editorOn({ iri: DRAFT, field: 'title', hasLocalChange: () => true })
+      const { editor, held } = editorOn({ iri: DRAFT, field: 'title', hasUnsentChange: () => true })
       await remote.receive(theirs, '/page')
       const change = held.value!.change
 
       change.accept()
 
       expect(editor.discardLocal).toHaveBeenCalledOnce()
+      expect(editor.adopt).not.toHaveBeenCalled()
       expect(stored(DRAFT)?.title).toBe('theirs')
       expect(store.new.allIds).toStrictEqual([])
       expect(held.value).toBeUndefined()
@@ -225,7 +268,7 @@ describe('RemoteChanges: another admin\'s saved drafts reach a signed-in admin (
     })
 
     test('keep() discards their value for the field and lets the local save go', async () => {
-      const { editor, held } = editorOn({ iri: DRAFT, field: 'title', hasLocalChange: () => true })
+      const { editor, held } = editorOn({ iri: DRAFT, field: 'title', hasUnsentChange: () => true })
       await remote.receive(theirs, '/page')
 
       held.value!.change.keep()
@@ -238,22 +281,23 @@ describe('RemoteChanges: another admin\'s saved drafts reach a signed-in admin (
     })
 
     test('with two conflicting fields, resolving one keeps the other held', async () => {
-      const title = editorOn({ iri: DRAFT, field: 'title', hasLocalChange: () => true })
-      const subtitle = editorOn({ iri: DRAFT, field: 'subtitle', hasLocalChange: () => true })
+      const title = editorOn({ iri: DRAFT, field: 'title', hasUnsentChange: () => true })
+      const subtitle = editorOn({ iri: DRAFT, field: 'subtitle', hasUnsentChange: () => true })
       await remote.receive(theirs, '/page')
 
       title.held.value!.change.accept()
 
       expect(stored(DRAFT)?.title).toBe('theirs')
       expect(stored(DRAFT)?.subtitle).toBe('old subtitle')
-      expect(store.new.byId[DRAFT]?.resource.subtitle).toBe('their subtitle')
+      expect(subtitle.held.value?.change.value).toBe('their subtitle')
 
-      subtitle.held.value!.change.keep()
-      expect(store.new.allIds).toStrictEqual([])
+      await subtitle.held.value!.change.keep()
+      expect(subtitle.editor.submit).toHaveBeenCalledOnce()
+      expect(stored(DRAFT)?.subtitle).toBe('old subtitle')
     })
 
     test('a newer remote change makes the older accept() a no-op', async () => {
-      const { editor, held } = editorOn({ iri: DRAFT, field: 'title', hasLocalChange: () => true })
+      const { editor, held } = editorOn({ iri: DRAFT, field: 'title', hasUnsentChange: () => true })
       await remote.receive(theirs, '/page')
       const older = held.value!.change
       await remote.receive({ ...theirs, title: 'theirs again' }, '/page')
@@ -265,7 +309,7 @@ describe('RemoteChanges: another admin\'s saved drafts reach a signed-in admin (
     })
 
     test('onRemoteChange gets the conflicting fields and its accept() takes the whole remote resource', async () => {
-      const { editor } = editorOn({ iri: DRAFT, field: 'title', hasLocalChange: () => true })
+      const { editor } = editorOn({ iri: DRAFT, field: 'title', hasUnsentChange: () => true })
       const handler = vi.fn()
       unregister.push(subscribeToRemoteChanges(cwa.$cwa, () => DRAFT, handler))
       await remote.receive(theirs, '/page')
@@ -278,7 +322,7 @@ describe('RemoteChanges: another admin\'s saved drafts reach a signed-in admin (
       expect(store.new.allIds).toStrictEqual([])
     })
     test('onRemoteChange\'s accept() from an older change does nothing once a newer one arrived', async () => {
-      const { editor } = editorOn({ iri: DRAFT, field: 'title', hasLocalChange: () => true })
+      const { editor } = editorOn({ iri: DRAFT, field: 'title', hasUnsentChange: () => true })
       const handler = vi.fn()
       unregister.push(subscribeToRemoteChanges(cwa.$cwa, () => DRAFT, handler))
       await remote.receive(theirs, '/page')
@@ -288,6 +332,48 @@ describe('RemoteChanges: another admin\'s saved drafts reach a signed-in admin (
 
       expect(editor.discardLocal).not.toHaveBeenCalled()
       expect(stored(DRAFT)?.title).toBe('old')
+    })
+  })
+
+  describe('draft and published are one resource for the conflict check', () => {
+    const theirDraft = { '@id': DRAFT, '@type': 'Title', 'title': 'theirs', 'subtitle': 'live subtitle', 'publishedResource': LIVE, '_metadata': { publishable: { published: false }, lastWrite: { clientId: 'other-tab', userId: '/_/users/2' } } }
+
+    beforeEach(() => {
+      seed({ '@id': LIVE, '@type': 'Title', 'title': 'live', 'subtitle': 'live subtitle', '_metadata': { publishable: { published: true } } })
+    })
+
+    test('another admin\'s new draft conflicts with an unsent change made here on its published IRI', async () => {
+      const { editor, held } = editorOn({ iri: LIVE, field: 'title', hasUnsentChange: () => true })
+
+      await remote.receive(theirDraft, '/page')
+
+      expect(held.value?.iri).toBe(LIVE)
+      expect(held.value?.change).toMatchObject({ value: 'theirs', user: { id: '/_/users/2' } })
+      expect(stored(DRAFT)?.title).toBe('theirs')
+      expect(stored(LIVE)?.title).toBe('live')
+
+      await held.value!.change.keep()
+      expect(editor.submit).toHaveBeenCalledOnce()
+    })
+
+    test('use theirs drops the local change on the published IRI and leaves the published resource as it was', async () => {
+      const { editor, held } = editorOn({ iri: LIVE, field: 'title', hasUnsentChange: () => true })
+      await remote.receive(theirDraft, '/page')
+
+      held.value!.change.accept()
+
+      expect(editor.discardLocal).toHaveBeenCalledOnce()
+      expect(editor.adopt).not.toHaveBeenCalled()
+      expect(stored(LIVE)?.title).toBe('live')
+      expect(held.value).toBeUndefined()
+    })
+
+    test('a field the new draft did not change is no conflict for the published IRI\'s editor', async () => {
+      const { editor } = editorOn({ iri: LIVE, field: 'subtitle', hasUnsentChange: () => true })
+
+      await remote.receive(theirDraft, '/page')
+
+      expect(editor.conflict).not.toHaveBeenCalled()
     })
   })
 
@@ -305,6 +391,27 @@ describe('RemoteChanges: another admin\'s saved drafts reach a signed-in admin (
     finishWrite()
     await received
     expect(stored(GROUP)?.componentPositions).toStrictEqual(['/_/component_positions/b'])
+  })
+
+  test('a group change is dropped when this tab\'s group write stored a newer copy while it waited', async () => {
+    const a = '/_/component_positions/a'
+    const x = '/_/component_positions/x'
+    const y = '/_/component_positions/y'
+    seed({ '@id': GROUP, '@type': 'ComponentGroup', 'componentPositions': [a, x] })
+    let finishWrite!: () => void
+    cwa.mocks.resourcesManager.queueComponentGroupWrite(GROUP, () => new Promise<void>((resolve) => {
+      finishWrite = () => {
+        store.saveResource({ resource: { '@id': GROUP, '@type': 'ComponentGroup', 'componentPositions': [a, x, y] } })
+        resolve()
+      }
+    }))
+
+    const received = remote.receive({ '@id': GROUP, '@type': 'ComponentGroup', 'componentPositions': [a, x] }, '/page')
+    await Promise.resolve()
+    finishWrite()
+    await received
+
+    expect(stored(GROUP)?.componentPositions).toStrictEqual([a, x, y])
   })
 
   describe('a remote delete', () => {
@@ -354,6 +461,31 @@ describe('RemoteChanges: another admin\'s saved drafts reach a signed-in admin (
       expect(stored(DRAFT)).toBeUndefined()
       expect(cwa.mocks.resourcesManager.updateResource).toHaveBeenCalledWith({ endpoint: `${LIVE}?published=false`, data: { title: 'mine' } })
       expect(cwa.mocks.resourcesManager.addError).toHaveBeenCalledWith(expect.objectContaining({ detail: 'The draft you were editing was removed by someone else. Your unsaved changes were saved to a new draft.' }))
+    })
+
+    test('of a draft published elsewhere, after the live update the bundle sends first, still moves the unsaved edits onto a new draft', async () => {
+      seed({ '@id': LIVE, '@type': 'Title', 'title': 'live', 'draftResource': DRAFT, '_metadata': { publishable: { published: true } } })
+      seed({ '@id': DRAFT, '@type': 'Title', 'title': 'saved', 'publishedResource': LIVE, '_metadata': { publishable: { published: false } } })
+      const { editor } = editorOn({ iri: DRAFT, field: 'title', hasLocalChange: () => true, hasUnsentChange: () => true, localPatch: () => 'mine' })
+
+      await remote.receive({ '@id': LIVE, '@type': 'Title', 'title': 'saved', '_metadata': { publishable: { published: true }, lastWrite: { clientId: 'other-tab', userId: '/_/users/2' } } }, '/page')
+      await remote.receive({ '@id': DRAFT }, '/page')
+
+      expect(editor.conflict).not.toHaveBeenCalledWith(expect.objectContaining({ change: expect.anything() }))
+      expect(cwa.mocks.resourcesManager.updateResource).toHaveBeenCalledWith({ endpoint: `${LIVE}?published=false`, data: { title: 'mine' } })
+      expect(cwa.mocks.resourcesManager.addError).toHaveBeenCalledWith(expect.objectContaining({ detail: 'The draft you were editing was removed by someone else. Your unsaved changes were saved to a new draft.' }))
+    })
+
+    test('of a draft clears a conflict its live resource\'s update raised on the draft\'s editor', async () => {
+      seed({ '@id': LIVE, '@type': 'Title', 'title': 'live', 'draftResource': DRAFT, '_metadata': { publishable: { published: true } } })
+      seed({ '@id': DRAFT, '@type': 'Title', 'title': 'saved', 'publishedResource': LIVE, '_metadata': { publishable: { published: false } } })
+      const { held } = editorOn({ iri: DRAFT, field: 'title', hasLocalChange: () => true, hasUnsentChange: () => true, localPatch: () => 'mine' })
+      await remote.receive({ '@id': LIVE, '@type': 'Title', 'title': 'theirs', 'draftResource': DRAFT, '_metadata': { publishable: { published: true }, lastWrite: { clientId: 'other-tab', userId: '/_/users/2' } } }, '/page')
+      expect(held.value?.iri).toBe(DRAFT)
+
+      await remote.receive({ '@id': DRAFT }, '/page')
+
+      expect(held.value).toBeUndefined()
     })
 
     test('of a component edited here with no live version says the unsaved edits are lost', async () => {
