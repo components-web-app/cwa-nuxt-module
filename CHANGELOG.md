@@ -4,6 +4,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+## [2.0.0-alpha.26] - 2026-10-21
+
 - Real-time co-editing for admins: another admin's saved draft appears in place, and a field you are changing offers "Use theirs / Keep mine"; visitors keep the outdated notice ([937a73db](https://github.com/components-web-app/cwa-nuxt-module/commit/937a73db), [ecbd27ae](https://github.com/components-web-app/cwa-nuxt-module/commit/ecbd27ae), [ec646400](https://github.com/components-web-app/cwa-nuxt-module/commit/ec646400), [94908ae2](https://github.com/components-web-app/cwa-nuxt-module/commit/94908ae2), [33c11503](https://github.com/components-web-app/cwa-nuxt-module/commit/33c11503), [7dcc4138](https://github.com/components-web-app/cwa-nuxt-module/commit/7dcc4138), [ff435de8](https://github.com/components-web-app/cwa-nuxt-module/commit/ff435de8), [b9a31a33](https://github.com/components-web-app/cwa-nuxt-module/commit/b9a31a33), [2371595e](https://github.com/components-web-app/cwa-nuxt-module/commit/2371595e), [#429](https://github.com/components-web-app/cwa-nuxt-module/issues/429))
 - A component removed by someone else is deselected, and unsaved edits to a draft published elsewhere go to a new draft ([937a73db](https://github.com/components-web-app/cwa-nuxt-module/commit/937a73db), [94908ae2](https://github.com/components-web-app/cwa-nuxt-module/commit/94908ae2), [#429](https://github.com/components-web-app/cwa-nuxt-module/issues/429))
 - **Breaking:** admin writes send `X-CWA-Client-Id`, so the API's CORS `allow_headers` must include it; `cwa.realtime.enabled: false` turns co-editing off. Needs api-components-bundle 2.0.0-alpha.35 or later (`_metadata.lastWrite`) ([#559](https://github.com/components-web-app/api-components-bundle/issues/559), [#560](https://github.com/components-web-app/api-components-bundle/pull/560)) ([937a73db](https://github.com/components-web-app/cwa-nuxt-module/commit/937a73db), [#429](https://github.com/components-web-app/cwa-nuxt-module/issues/429))
@@ -188,7 +190,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 - First tagged release of `@cwa/nuxt`; releases are now published from `v*` tags ([7c61b7c](https://github.com/components-web-app/cwa-nuxt-module/commit/7c61b7ce331ec4a0cb8e76951a5de2ff806ed07a))
 
-[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.25...HEAD
+[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.26...HEAD
+[2.0.0-alpha.26]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.25...v2.0.0-alpha.26
 [2.0.0-alpha.25]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.24...v2.0.0-alpha.25
 [2.0.0-alpha.24]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.23...v2.0.0-alpha.24
 [2.0.0-alpha.23]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.22...v2.0.0-alpha.23
