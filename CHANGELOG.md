@@ -4,6 +4,10 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+- Presence sends `editing` with the field in focus, and while a save or a group write for the selected component is waiting or in flight ([9b7efa52](https://github.com/components-web-app/cwa-nuxt-module/commit/9b7efa52), [c6655b04](https://github.com/components-web-app/cwa-nuxt-module/commit/c6655b04), [#429](https://github.com/components-web-app/cwa-nuxt-module/issues/429))
+- `useCwaResourceModel` returns `focus()`, `blur()` and `focusedBy` (the other admins with that field in focus, in their colour); `CwaUiFormInput`, `CwaUiFormToggle` and `CwaUiSelect` with `:model` report focus themselves ([52ac8f89](https://github.com/components-web-app/cwa-nuxt-module/commit/52ac8f89), [c6655b04](https://github.com/components-web-app/cwa-nuxt-module/commit/c6655b04), [#429](https://github.com/components-web-app/cwa-nuxt-module/issues/429))
+- `useCwaRealtime(iri).peers` lists the other admins on a resource, draft and published as one, with their state, field and expiry ([52ac8f89](https://github.com/components-web-app/cwa-nuxt-module/commit/52ac8f89), [c6655b04](https://github.com/components-web-app/cwa-nuxt-module/commit/c6655b04), [#429](https://github.com/components-web-app/cwa-nuxt-module/issues/429))
+
 ## [2.0.0-alpha.27] - 2026-10-21
 
 - The admin header shows who else is here: an avatar per admin on this page in their colour, "+N elsewhere", and a list of each one's page and what they have selected, linked; "Live editing paused" while the real-time connection is down ([b6c735af](https://github.com/components-web-app/cwa-nuxt-module/commit/b6c735af), [416888d1](https://github.com/components-web-app/cwa-nuxt-module/commit/416888d1), [d5165bab](https://github.com/components-web-app/cwa-nuxt-module/commit/d5165bab), [891fa5f5](https://github.com/components-web-app/cwa-nuxt-module/commit/891fa5f5), [#429](https://github.com/components-web-app/cwa-nuxt-module/issues/429))
