@@ -5,7 +5,7 @@ import { navigateTo, useRouter } from '#app/composables/router'
 import { useCwa } from '#cwa/composables/cwa'
 import { useCwaResourceRoute } from '#cwa/composables/useCwaResourceRoute'
 import { getResourceTypeFromIri } from '#cwa/resources/resource-utils'
-import { flushPendingUpdates, presenceColour, usePresence } from '#cwa/admin/presence'
+import { presenceColour, usePresence } from '#cwa/admin/presence'
 import type { PresencePeer } from '#cwa/admin/presence'
 
 interface Person {
@@ -100,7 +100,7 @@ async function goTo(event: MouseEvent, page: string) {
   }
   event.preventDefault()
   open.value = false
-  await flushPendingUpdates($cwa)
+  await $cwa.resourcesManager.flushPendingUpdates()
   await navigateTo(locationOf(page))
 }
 </script>
