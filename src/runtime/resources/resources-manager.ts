@@ -177,9 +177,9 @@ export class ResourcesManager {
     return this.doResourceRequest(event, args)
   }
 
-  private async confirm(action: 'delete' | 'discard') {
+  private async confirm(action: 'delete' | 'discard', iri?: string) {
     const { confirmResourceAction } = await import('../admin/resource-confirm')
-    return confirmResourceAction(this.vueApp, action)
+    return confirmResourceAction(this.vueApp, action, iri)
   }
 
   private getEndpointForIri(iri: string) {
@@ -195,7 +195,7 @@ export class ResourcesManager {
   }
 
   public async deleteResource(event: ApiResourceEvent, force = false) {
-    if (!force && !await this.confirm('delete')) {
+    if (!force && !await this.confirm('delete', event.endpoint)) {
       return false
     }
     const args: [string, RequestOptions] = [

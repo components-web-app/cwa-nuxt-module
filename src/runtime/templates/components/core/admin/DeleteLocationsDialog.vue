@@ -3,8 +3,9 @@ import { computed, ref, watch } from 'vue'
 import DialogBox from '#cwa/templates/components/core/DialogBox.vue'
 import type { ActionButton } from '#cwa/templates/components/core/DialogBox.vue'
 
-const { total } = defineProps<{
+const { total, notice } = defineProps<{
   total: number
+  notice?: string
 }>()
 
 const emit = defineEmits<{
@@ -57,5 +58,12 @@ const buttons = computed<ActionButton[]>(() => [
     :buttons="buttons"
   >
     <p>This component is used in {{ total }} locations.</p>
+    <p
+      v-if="notice"
+      data-testid="confirm-notice"
+      class="cwa:mt-3 cwa:text-amber-300"
+    >
+      {{ notice }}
+    </p>
   </DialogBox>
 </template>

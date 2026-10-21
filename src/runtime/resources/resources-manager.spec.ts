@@ -1,6 +1,5 @@
 import { describe, vi, test, expect, beforeEach, afterEach } from 'vitest'
-import { computed } from 'vue'
-import type { App } from 'vue'
+import { computed, createApp } from 'vue'
 import { createConfirmDialog } from 'vuejs-confirm-dialog'
 import { createPinia, setActivePinia } from 'pinia'
 import { ResourcesManager } from './resources-manager'
@@ -11,8 +10,13 @@ import { ResourcesStore } from '#cwa/storage/stores/resources/resources-store'
 import { FetcherStore } from '#cwa/storage/stores/fetcher/fetcher-store'
 import { ErrorStore } from '#cwa/storage/stores/error/error-store'
 import type { CwaResource } from '#cwa/resources/resource-utils'
+import { confirmResourceAction } from '#cwa/admin/resource-confirm'
 
 vi.mock('#cwa/templates/components/core/ConfirmDialog.vue', () => ({ default: {} }))
+vi.mock('#cwa/admin/resource-confirm', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('#cwa/admin/resource-confirm')>()
+  return { ...actual, confirmResourceAction: vi.fn(actual.confirmResourceAction) }
+})
 vi.mock('vuejs-confirm-dialog', () => ({
   install: vi.fn(),
   createConfirmDialog: vi.fn(() => ({
@@ -76,7 +80,7 @@ function createResourcesManager(opts: { includeAdmin?: boolean, fetcher?: any, r
     opts.fetcher ?? undefined,
     mockAdmin,
     opts.resources ?? undefined,
-    {} as App,
+    createApp({}),
   )
 
   return {
@@ -430,6 +434,13 @@ describe('Resources manager', () => {
       cwaFetch.fetch.mockResolvedValue({})
       await resourcesManager.deleteResource({ endpoint: '/components/1' })
       expect(createConfirmDialog).toHaveBeenCalledTimes(1)
+    })
+
+    test('the confirmation is about the resource being deleted, so it can say who else is editing it (#429)', async () => {
+      const { resourcesManager, cwaFetch } = createResourcesManager()
+      cwaFetch.fetch.mockResolvedValue({})
+      await resourcesManager.deleteResource({ endpoint: '/components/1' })
+      expect(confirmResourceAction).toHaveBeenCalledWith(expect.anything(), 'delete', '/components/1')
     })
 
     test('with force, sends the DELETE without asking for confirmation', async () => {

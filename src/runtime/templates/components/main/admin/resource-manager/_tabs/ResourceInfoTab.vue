@@ -34,11 +34,12 @@ watch([iri, isPersistedComponent], async ([currentIri, persisted]) => {
   }
 }, { immediate: true })
 
-async function chooseLocations(total: number) {
+async function chooseLocations(componentIri: string, total: number) {
   const { default: DeleteLocationsDialog } = await import('#cwa/templates/components/core/admin/DeleteLocationsDialog.vue')
   const { createConfirmDialog } = await import('#cwa/admin/confirm-dialog')
+  const { editingNotice } = await import('#cwa/admin/resource-confirm')
   const dialog = await createConfirmDialog(vueApp, DeleteLocationsDialog)
-  const { isCanceled, data } = await dialog.reveal({ total })
+  const { isCanceled, data } = await dialog.reveal({ total, notice: editingNotice($cwa, componentIri) })
   return isCanceled ? undefined : data as 'all' | 'here'
 }
 
@@ -71,7 +72,7 @@ async function deleteSelected(componentIri: string) {
   if (!positionIri || total <= 1) {
     return $cwa.resourcesManager.deleteResource(deleteEvent)
   }
-  const choice = await chooseLocations(total)
+  const choice = await chooseLocations(componentIri, total)
   if (choice === 'all') {
     return $cwa.resourcesManager.deleteResource(deleteEvent, true)
   }

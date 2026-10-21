@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({
   vueApp: { name: 'vue-app' },
   reveal: vi.fn(),
   createConfirmDialog: vi.fn(),
+  editingNotice: vi.fn((): string | undefined => undefined),
 }))
 
 const usageResponses = new Map<string, Promise<unknown>>()
@@ -53,6 +54,10 @@ vi.mock('#app/nuxt', async importOriginal => ({
 
 vi.mock('#cwa/admin/confirm-dialog', () => ({
   createConfirmDialog: mocks.createConfirmDialog,
+}))
+
+vi.mock('#cwa/admin/resource-confirm', () => ({
+  editingNotice: mocks.editingNotice,
 }))
 
 vi.mock('#cwa/composables/cwa-resource-manager-tab', () => ({
@@ -157,6 +162,7 @@ describe('Info tab — a component in several locations', () => {
 
   afterEach(() => {
     mocks.reveal.mockReset()
+    mocks.editingNotice.mockReset()
   })
 
   test('shows Used in X locations for a component in more than one location', async () => {
@@ -233,6 +239,21 @@ describe('Info tab — a component in several locations', () => {
     expect(mocks.reveal).toHaveBeenCalledWith({ total: 3 })
     expect(mockCwa.resourcesManager.deleteResource).not.toHaveBeenCalled()
     expect(mockCwa.admin.emptyStack).not.toHaveBeenCalled()
+  })
+
+  test('the question says who else is editing the component (#429)', async () => {
+    inLocations(3)
+    inStackPosition()
+    revealChoosing()
+    mocks.editingNotice.mockReturnValue('Sam is editing this.')
+    const wrapper = mountInfoTab()
+    await flushPromises()
+
+    await wrapper.find('button').trigger('click')
+    await flushPromises()
+
+    expect(mocks.editingNotice).toHaveBeenCalledWith(mockCwa, '/component/abc')
+    expect(mocks.reveal).toHaveBeenCalledWith({ total: 3, notice: 'Sam is editing this.' })
   })
 
   test('Delete from all X locations deletes the component without a second confirmation', async () => {
