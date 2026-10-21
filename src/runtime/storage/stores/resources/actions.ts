@@ -378,7 +378,7 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
       headers: {
         path: newResource.path,
       },
-      fetchedAt: (new Date()).getTime(),
+      fetchedAt: Date.now(),
     }
     if (!resourcesState.current.currentIds.includes(newId)) {
       resourcesState.current.currentIds.push(newId)
@@ -523,8 +523,6 @@ export default function (resourcesState: CwaResourcesStateInterface, resourcesGe
       for (const newId of [...resourcesState.new.allIds]) {
         mergeNewResource(newId)
       }
-      resourcesState.new.allIds = []
-      resourcesState.new.byId = {}
     },
     resetCurrentResources(currentIds?: string[]): void {
       if (currentIds) {
