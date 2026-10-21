@@ -46,8 +46,6 @@ function handleSwitchInput(newValue: boolean) {
         current ? 'cwa:bg-indigo-600' : 'cwa:bg-gray-200', disabled ? 'cwa:opacity-50 cwa:cursor-not-allowed' : 'cwa:cursor-pointer', 'cwa:relative cwa:inline-flex cwa:h-6 cwa:w-11 cwa:shrink-0 cwa:border-2 cwa:border-transparent cwa:transition-colors cwa:duration-200 cwa:ease-in-out cwa:rounded-full',
       ]"
       @update:model-value="handleSwitchInput"
-      @focus="field?.focus()"
-      @blur="field?.blur()"
     >
       <span
         aria-hidden="true"

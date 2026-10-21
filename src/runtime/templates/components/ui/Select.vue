@@ -40,8 +40,6 @@ const hasSelection = computed(() => selectedOptions.value.length > 0)
       <ListboxButton
         ref="trigger"
         class="cwa:relative cwa:py-2 cwa:pl-4 cwa:pr-10 cwa:text-left cwa:text-light cwa:w-full cwa:dark-blur cwa:border-0 cwa:outline-dotted cwa:outline-1 cwa:outline-stone-700 cwa:hover:outline-stone-400 cwa:focus-visible:ring-2 cwa:focus-visible:ring-stone-600 cwa:cursor-pointer"
-        @focus="props.model?.focus()"
-        @blur="props.model?.blur()"
       >
         <span
           class="cwa:block cwa:truncate"

@@ -61,7 +61,6 @@ export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: s
   const lastSubmittedValueInProgress = ref()
   const heldChange = shallowRef<{ iri: string, change: RemoteFieldChange<T> }>()
   const remoteChange = computed(() => heldChange.value?.iri === iri.value ? heldChange.value?.change : undefined)
-  let focused = false
 
   function rootValue(value: any) {
     if (!isNestedProperty.value && !isObject(value)) {
@@ -170,14 +169,14 @@ export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: s
     untrackPendingUpdate?.()
     pendingSubmit.value = true
     const submit = debounce(() => {
-      if (heldChange.value) {
+      if (remoteChange.value) {
         return
       }
       untrackPendingUpdate?.()
       return updateResource(newLocalValue)
     }, debounceTime)
     debounced = submit
-    untrackPendingUpdate = iri.value ? $cwa.resourcesManager.registerPendingUpdate(iri.value, () => submit.flush()) : undefined
+    untrackPendingUpdate = iri.value ? $cwa.resourcesManager.registerPendingUpdate(iri.value, () => remoteChange.value?.keep() ?? submit.flush()) : undefined
     submit()
   })
 
@@ -218,11 +217,14 @@ export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: s
     field: () => rootProperty.value,
     value: data => get(data, property),
     hasLocalChange: () => localValue.value !== undefined,
-    focused: () => focused,
+    hasUnsentChange: () => pendingSubmit.value || (localValue.value !== undefined && !isSubmitting.value),
     localPatch: () => rootValue(localValue.value),
     discardLocal: () => {
       cancelPending()
       resetValue()
+    },
+    adopt: (value) => {
+      localValue.value = value as T
     },
     submit: () => {
       cancelPending()
@@ -250,11 +252,5 @@ export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: s
     model,
     localValueWithIri,
     remoteChange,
-    focus: () => {
-      focused = true
-    },
-    blur: () => {
-      focused = false
-    },
   }
 }

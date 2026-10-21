@@ -19,8 +19,6 @@ function fieldModel<T>(initial: T) {
       value.value = next
     } }),
     remoteChange: computed(() => change.value),
-    focus: vi.fn(),
-    blur: vi.fn(),
     value,
     change,
   }
@@ -31,7 +29,7 @@ function conflict<T>(value: T, name?: string) {
 }
 
 describe('kit fields bound to a resource model (#429)', () => {
-  test('CwaUiFormInput shows and writes the model, and reports focus and blur to it', async () => {
+  test('CwaUiFormInput shows and writes the model', async () => {
     const model = fieldModel('Mine')
     const wrapper = mount(Input, { props: { model } })
     const input = wrapper.get('input')
@@ -39,11 +37,6 @@ describe('kit fields bound to a resource model (#429)', () => {
     expect(input.element.value).toBe('Mine')
     await input.setValue('Edited')
     expect(model.value.value).toBe('Edited')
-
-    await input.trigger('focus')
-    expect(model.focus).toHaveBeenCalledOnce()
-    await input.trigger('blur')
-    expect(model.blur).toHaveBeenCalledOnce()
   })
 
   test('CwaUiFormInput keeps its v-model behaviour without a model', async () => {
@@ -80,31 +73,23 @@ describe('kit fields bound to a resource model (#429)', () => {
     expect(wrapper.get('[data-testid="remote-change"]').text()).toContain('Someone changed this')
   })
 
-  test('CwaUiFormToggle writes the model, reports focus and shows a conflict', async () => {
+  test('CwaUiFormToggle writes the model and shows a conflict', async () => {
     const model = fieldModel<boolean>(false)
     model.change.value = conflict(true, 'Sam')
     const wrapper = mount(Toggle, { props: { label: 'Visible', model } })
 
     await wrapper.get('button').trigger('click')
     expect(model.value.value).toBe(true)
-    await wrapper.get('button').trigger('focus')
-    expect(model.focus).toHaveBeenCalledOnce()
-    await wrapper.get('button').trigger('blur')
-    expect(model.blur).toHaveBeenCalledOnce()
     expect(wrapper.get('[data-testid="remote-change"]').text()).toContain('Sam changed this')
   })
 
-  test('CwaUiSelect shows the model\'s option, reports focus and shows a conflict', async () => {
+  test('CwaUiSelect shows the model\'s option and shows a conflict', async () => {
     const model = fieldModel('b')
     model.change.value = conflict('a', 'Sam')
     const wrapper = mount(Select, { props: { model, options: [{ label: 'First', value: 'a' }, { label: 'Second', value: 'b' }] } })
 
     const trigger = wrapper.get('button')
     expect(trigger.text()).toContain('Second')
-    await trigger.trigger('focus')
-    expect(model.focus).toHaveBeenCalledOnce()
-    await trigger.trigger('blur')
-    expect(model.blur).toHaveBeenCalledOnce()
     expect(wrapper.get('[data-testid="remote-change"]').text()).toContain('Sam changed this')
   })
 

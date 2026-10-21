@@ -10,14 +10,12 @@ export interface RemoteFieldChange<T = unknown> {
   user?: RemoteUser
   value: T
   accept: () => void
-  keep: () => void
+  keep: () => Promise<void>
 }
 
 export interface ResourceModelField<T = unknown> {
   model: { value: T | null | undefined }
   remoteChange: { readonly value: RemoteFieldChange<T> | undefined }
-  focus: () => void
-  blur: () => void
 }
 
 export interface ModelEditor {
@@ -25,9 +23,10 @@ export interface ModelEditor {
   field: () => string
   value: (resource: CwaResource) => unknown
   hasLocalChange: () => boolean
-  focused: () => boolean
+  hasUnsentChange: () => boolean
   localPatch: () => unknown
   discardLocal: () => void
+  adopt: (value: unknown) => void
   submit: () => Promise<void>
   conflict: (held?: { iri: string, change: RemoteFieldChange }) => void
 }

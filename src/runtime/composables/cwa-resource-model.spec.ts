@@ -344,16 +344,6 @@ describe('useCwaResourceModel', () => {
       expect(mockUnregisterEditor).toHaveBeenCalledOnce()
     })
 
-    test('focus() and blur() are reported to the editor', () => {
-      const { editor, focus, blur } = createModel()
-
-      expect(editor.focused()).toBe(false)
-      focus()
-      expect(editor.focused()).toBe(true)
-      blur()
-      expect(editor.focused()).toBe(false)
-    })
-
     test('the editor has a local change from the first keystroke until the value is reset', () => {
       const { editor, model, resetValue } = createModel()
 
@@ -391,6 +381,61 @@ describe('useCwaResourceModel', () => {
       await editor.submit()
       expect(mockUpdateResource).toHaveBeenCalledOnce()
       expect(mockUpdateResource).toHaveBeenCalledWith(expect.objectContaining({ data: { title: 'Mine' } }))
+    })
+
+    test('a change is unsent until its save goes out, and again once typed over while that save is in flight', async () => {
+      const { editor, model } = createModel()
+      let finishSave!: () => void
+      mockUpdateResource.mockReturnValueOnce(new Promise((resolve) => {
+        finishSave = () => resolve(undefined)
+      }))
+
+      model.value = 'Mine'
+      expect(editor.hasUnsentChange()).toBe(true)
+      await flushDebounceAndAsync()
+      expect(mockUpdateResource).toHaveBeenCalledOnce()
+      expect(editor.hasUnsentChange()).toBe(false)
+      expect(editor.hasLocalChange()).toBe(true)
+
+      model.value = 'Mine again'
+      await nextTick()
+      expect(editor.hasUnsentChange()).toBe(true)
+      finishSave()
+    })
+
+    test('adopt() replaces the local value and saves it like a keystroke', async () => {
+      const { editor, model } = createModel()
+
+      editor.adopt('Theirs')
+      expect(model.value).toBe('Theirs')
+      await flushDebounceAndAsync()
+
+      expect(mockUpdateResource).toHaveBeenCalledOnce()
+      expect(mockUpdateResource).toHaveBeenCalledWith(expect.objectContaining({ data: { title: 'Theirs' } }))
+    })
+
+    test('a publish flushing the held save while a conflict is shown keeps the local value', async () => {
+      const { editor, model } = createModel()
+      model.value = 'Mine'
+      await nextTick()
+      const keep = vi.fn().mockResolvedValue(undefined)
+      editor.conflict({ iri: '/my/resource', change: { value: 'Theirs', accept: vi.fn(), keep } })
+
+      await pendingUpdates.get('/my/resource')!()
+
+      expect(keep).toHaveBeenCalledOnce()
+    })
+
+    test('a conflict left on an earlier IRI does not hold the saves of the IRI the model shows now', async () => {
+      const { editor, model } = createModel()
+      editor.conflict({ iri: '/my/resource', change: { value: 'Theirs', accept: vi.fn(), keep: vi.fn() } })
+
+      iri.value = '/other'
+      model.value = 'Other edit'
+      await flushDebounceAndAsync()
+
+      expect(mockUpdateResource).toHaveBeenCalledOnce()
+      expect(mockUpdateResource).toHaveBeenCalledWith(expect.objectContaining({ data: { title: 'Other edit' } }))
     })
 
     test('discardLocal() cancels the waiting save and its pending registration, and shows the store value', async () => {

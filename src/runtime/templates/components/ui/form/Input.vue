@@ -42,8 +42,6 @@ const inputClass = 'cwa:disabled:opacity-50 cwa:disabled:cursor-not-allowed cwa:
       v-model="value"
       v-bind="$attrs"
       :class="inputClass"
-      @focus="field.focus()"
-      @blur="field.blur()"
     >
     <RemoteChangeConflict
       v-if="remoteChange"
