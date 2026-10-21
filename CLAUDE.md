@@ -408,6 +408,12 @@ Replay is not trusted. On reconnect (`connected` going `false` → `true`; `unde
 
 ## Real-time co-editing ([#429](https://github.com/components-web-app/cwa-nuxt-module/issues/429))
 
+- **Who gets what:** visitors, and admins with `cwa.realtime.enabled: false`, keep the outdated notice. For a signed-in admin the Mercure client hands updates to `RemoteChanges` (`admin/remote-changes.ts`, imported only then): applied in place with `mergeNewResource`, except a field with a local change in this tab, which stays held in `new` and raises `remoteChange` on its model; the model holds that field's save until Use theirs / Keep mine.
+- **Own saves are recognised only by `_metadata.lastWrite.clientId`**, the per-tab id `CwaFetch` sends on writes as `X-CWA-Client-Id` (`writeHeaders`, set by `RemoteChanges` for an admin only). Trap: the API's CORS `allow_headers` must list it, or every admin write fails its preflight.
+- Messages with `@type: CwaRealtimeEvent` are dropped before the current-resource check; an update older than the stored `modifiedAt` is dropped (server time against server time).
+- A remote delete of a draft holding unsaved edits here sends them to a new draft of the live resource (`PATCH <live>?published=false`); flushing them to the deleted draft would 404, and the model skips a save once its resource is gone.
+- Remote group changes go through `queueComponentGroupWrite`, so they wait for this tab's writes.
+- The entry has no headroom: the lazy module reads `Cwa`'s private `options` and `cwaFetch` with bracket access rather than adding getters.
 - **Tests:** a Vitest spec delivers Mercure messages to the real `MercureClient` with `installFakeEventSource()` (`test/utils/fake-event-source.ts`), never by calling private handlers. A browser scenario pushes messages with the rehearsal's `publish(data, { id })`; `POST …/_/realtime` is answered 202 in both modes, never recorded or matched, and kept on `scenario.realtime` for assertions. `x-cwa-client-id` is forwarded, so re-rehearse once the module sends it.
 
 ## Composables
