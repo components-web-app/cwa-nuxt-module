@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest'
-import { computed, nextTick, ref, shallowRef } from 'vue'
+import { computed, nextTick, reactive, ref, shallowRef } from 'vue'
 import { createPinia, setActivePinia } from 'pinia'
 import { consola as logger } from 'consola'
 import type { Router } from 'vue-router'
@@ -30,10 +30,13 @@ function build(options: { page?: string, routePath?: string, fetch?: ReturnType<
   const route = shallowRef<{ path: string, meta: Record<string, any> }>({ path: routePath, meta: {} })
   const stack = shallowRef<{ iri: string }[]>([])
   const pageDataByPosition: Record<string, string> = {}
+  const updating = reactive(new Set<string>())
   const $cwa = {
     apiUrlBase: 'https://api.test/_api',
     cwaFetch: { fetch },
+    resourcesManager: { isUpdating: (iri: string) => updating.has(iri) },
     resources: {
+      findAllPublishableIris: (iri: string) => store.findAllPublishableIris(iri),
       displayPageIri: computed(() => displayPageIri.value),
       isLoading: computed(() => isLoading.value),
       pageDataIriOf: (iri: string) => computed(() => pageDataByPosition[iri]),
@@ -48,7 +51,7 @@ function build(options: { page?: string, routePath?: string, fetch?: ReturnType<
   const router = { currentRoute: computed(() => route.value) }
   const presence = new Presence($cwa as unknown as Cwa, store, router as unknown as Router, CLIENT_ID)
   const sent = () => fetch.mock.calls.map(([, options]) => options.body.data)
-  return { presence, $cwa: $cwa as unknown as Cwa, fetch, sent, displayPageIri, isLoading, route, stack, pageDataByPosition }
+  return { presence, $cwa: $cwa as unknown as Cwa, fetch, sent, displayPageIri, isLoading, route, stack, pageDataByPosition, updating }
 }
 
 function peerEvent(data: Record<string, unknown>, overrides: Record<string, unknown> = {}) {
@@ -242,7 +245,7 @@ describe('Presence: what this tab sends (#429)', () => {
 
     await vi.advanceTimersByTimeAsync(14_999)
     expect(built.sent()).toHaveLength(1)
-    await vi.advanceTimersByTimeAsync(1)
+    await vi.advanceTimersByTimeAsync(2)
     expect(built.sent()).toHaveLength(2)
     expect(built.sent()[1]).toStrictEqual({ v: 1, page: HOME, state: 'viewing' })
   })
@@ -255,7 +258,7 @@ describe('Presence: what this tab sends (#429)', () => {
     built.presence.receive(peerEvent({ hello: true }))
     await vi.advanceTimersByTimeAsync(999)
     expect(built.sent()).toHaveLength(1)
-    await vi.advanceTimersByTimeAsync(1)
+    await vi.advanceTimersByTimeAsync(2)
     expect(built.sent()).toHaveLength(2)
     expect(built.sent()[1]).toStrictEqual({ v: 1, page: HOME, state: 'viewing' })
   })
@@ -323,6 +326,138 @@ describe('Presence: what this tab sends (#429)', () => {
     expect(built.sent()).toHaveLength(1)
     expect(sendBeacon).not.toHaveBeenCalled()
     expect(vi.getTimerCount()).toBe(0)
+  })
+})
+
+describe('Presence: editing (#429)', () => {
+  const FIELD = Symbol('title field')
+  const OTHER_FIELD = Symbol('subtitle field')
+
+  function selectDraft() {
+    store.saveResource({ resource: { '@id': LIVE, '@type': 'Title', 'draftResource': DRAFT, '_metadata': { persisted: true, publishable: { published: true } } } as never })
+    store.saveResource({ resource: { '@id': DRAFT, '@type': 'Title', 'publishedResource': LIVE, '_metadata': { persisted: true, publishable: { published: false } } } as never })
+    store.saveResource({ resource: { '@id': POSITION, '@type': 'ComponentPosition', 'componentGroup': '/_/component_groups/top', '_metadata': { persisted: true } } as never })
+    const built = build()
+    built.stack.value = [{ iri: DRAFT }, { iri: POSITION }]
+    return start(built)
+  }
+
+  test('focusing a field of the selected component sends editing with that field; blurring it goes back to selected', async () => {
+    const built = selectDraft()
+    await settle()
+    const { focus, blur } = usePresence(built.$cwa)
+
+    focus(FIELD, DRAFT, 'title')
+    await vi.advanceTimersByTimeAsync(250)
+    expect(built.sent().at(-1)).toStrictEqual({ v: 1, page: HOME, state: 'editing', component: LIVE, componentPosition: POSITION, field: 'title' })
+
+    blur(FIELD)
+    await vi.advanceTimersByTimeAsync(250)
+    expect(built.sent().at(-1)).toStrictEqual({ v: 1, page: HOME, state: 'selected', component: LIVE, componentPosition: POSITION })
+  })
+
+  test('a field of the published version counts for its selected draft, draft and published being one resource', async () => {
+    const built = selectDraft()
+    await settle()
+
+    usePresence(built.$cwa).focus(FIELD, LIVE, 'title')
+    await vi.advanceTimersByTimeAsync(250)
+
+    expect(built.sent().at(-1)).toMatchObject({ state: 'editing', field: 'title' })
+  })
+
+  test('a field focused on a resource that is not selected sends no editing', async () => {
+    const built = selectDraft()
+    await settle()
+
+    usePresence(built.$cwa).focus(FIELD, '/component/titles/another', 'title')
+    await vi.advanceTimersByTimeAsync(1_000)
+
+    expect(built.sent().map(data => data.state)).toStrictEqual(['selected'])
+  })
+
+  test('a blur of another field leaves the focused field, and the latest focus wins', async () => {
+    const built = selectDraft()
+    await settle()
+    const { focus, blur } = usePresence(built.$cwa)
+
+    focus(OTHER_FIELD, DRAFT, 'subtitle')
+    focus(FIELD, DRAFT, 'title')
+    blur(OTHER_FIELD)
+    await vi.advanceTimersByTimeAsync(250)
+
+    expect(built.sent().at(-1)).toMatchObject({ state: 'editing', field: 'title' })
+  })
+
+  test('a blur after the selection has gone sends viewing', async () => {
+    const built = selectDraft()
+    await settle()
+    const { focus, blur } = usePresence(built.$cwa)
+    focus(FIELD, DRAFT, 'title')
+    await vi.advanceTimersByTimeAsync(250)
+
+    built.stack.value = []
+    blur(FIELD)
+    await vi.advanceTimersByTimeAsync(250)
+
+    expect(built.sent().at(-1)).toStrictEqual({ v: 1, page: HOME, state: 'viewing' })
+  })
+
+  test.each([
+    { name: 'a save waiting or in flight for the draft', iri: DRAFT },
+    { name: 'a save for its published version', iri: LIVE },
+    { name: 'a save for its position', iri: POSITION },
+    { name: 'a write queued to its position\'s group', iri: '/_/component_groups/top' },
+  ])('$name sends editing with no field until it is done', async ({ iri }) => {
+    const built = selectDraft()
+    await settle()
+
+    built.updating.add(iri)
+    await vi.advanceTimersByTimeAsync(250)
+    expect(built.sent().at(-1)).toStrictEqual({ v: 1, page: HOME, state: 'editing', component: LIVE, componentPosition: POSITION })
+
+    built.updating.delete(iri)
+    await vi.advanceTimersByTimeAsync(250)
+    expect(built.sent().at(-1)).toMatchObject({ state: 'selected' })
+  })
+
+  test('moving focus from one field to another, each in its own microtask, sends the new field and never selected in between', async () => {
+    const built = selectDraft()
+    await settle()
+    const { focus, blur } = usePresence(built.$cwa)
+    focus(OTHER_FIELD, DRAFT, 'title')
+    await vi.advanceTimersByTimeAsync(1_000)
+
+    const loaded = Promise.resolve()
+    void loaded.then(() => blur(OTHER_FIELD))
+    void loaded.then(() => focus(FIELD, DRAFT, 'subtitle'))
+    await vi.advanceTimersByTimeAsync(1_000)
+
+    expect(built.sent().map(data => `${data.state}:${data.field ?? ''}`)).toStrictEqual(['selected:', 'editing:title', 'editing:subtitle'])
+  })
+
+  test('a waiting save handed over to its request a microtask later sends no selected in between', async () => {
+    const built = selectDraft()
+    await settle()
+    built.updating.add(DRAFT)
+    await vi.advanceTimersByTimeAsync(1_000)
+
+    built.updating.delete(DRAFT)
+    await Promise.resolve()
+    built.updating.add(DRAFT)
+    await vi.advanceTimersByTimeAsync(1_000)
+
+    expect(built.sent().map(data => data.state)).toStrictEqual(['selected', 'editing'])
+  })
+
+  test('a save for another resource sends no editing', async () => {
+    const built = selectDraft()
+    await settle()
+
+    built.updating.add('/component/titles/another')
+    await vi.advanceTimersByTimeAsync(1_000)
+
+    expect(built.sent().map(data => data.state)).toStrictEqual(['selected'])
   })
 })
 
@@ -563,6 +698,76 @@ describe('Presence: peers (#429)', () => {
     built.presence.receive(peerEvent({}))
 
     expect(usePresence(built.$cwa).onThisPage.value).toStrictEqual([])
+  })
+})
+
+describe('Presence: peers on a resource (#429)', () => {
+  const ALEX = { clientId: 'b0c1d2e3-f4a5-4b6c-8d7e-8f9a0b1c2d3e', user: { id: '/users/alex', name: 'Alex' } }
+
+  function withDraft() {
+    store.saveResource({ resource: { '@id': LIVE, '@type': 'Title', 'draftResource': DRAFT, '_metadata': { persisted: true, publishable: { published: true } } } as never })
+    store.saveResource({ resource: { '@id': DRAFT, '@type': 'Title', 'publishedResource': LIVE, '_metadata': { persisted: true, publishable: { published: false } } } as never })
+    return start(build())
+  }
+
+  test('peers lists who is on a resource, draft and published as one, with their field and a local-clock expiry', () => {
+    const built = withDraft()
+    built.presence.receive(peerEvent({ state: 'editing', component: LIVE, componentPosition: POSITION, field: 'title' }, { sentAt: '1999-01-01T00:00:00Z', expiresAt: '1999-01-01T00:00:30Z' }))
+    built.presence.receive(peerEvent({ state: 'selected', component: '/component/titles/another' }, ALEX))
+    const { peers } = usePresence(built.$cwa)
+
+    const expected = [{ user: { id: '/users/sam', name: 'Sam' }, state: 'editing', field: 'title', expiresAt: Date.now() + 30_000 }]
+    expect(peers(DRAFT)).toStrictEqual(expected)
+    expect(peers(LIVE)).toStrictEqual(expected)
+    expect(peers(POSITION)).toStrictEqual(expected)
+    expect(peers('/component/titles/unknown')).toStrictEqual([])
+  })
+
+  test('a peer selecting a resource has no field', () => {
+    const built = withDraft()
+    built.presence.receive(peerEvent({ state: 'selected', component: LIVE }))
+
+    expect(usePresence(built.$cwa).peers(DRAFT)).toStrictEqual([{ user: { id: '/users/sam', name: 'Sam' }, state: 'selected', expiresAt: Date.now() + 45_000 }])
+  })
+
+  test('focusedBy lists each person editing that field of the resource once, in their colour', () => {
+    const built = withDraft()
+    built.presence.receive(peerEvent({ state: 'editing', component: LIVE, field: 'title' }))
+    built.presence.receive(peerEvent({ state: 'editing', component: LIVE, field: 'title' }, { clientId: 'c1d2e3f4-a5b6-4c7d-8e9f-0a1b2c3d4e5f' }))
+    built.presence.receive(peerEvent({ state: 'editing', component: LIVE, field: 'subtitle' }, ALEX))
+    built.presence.receive(peerEvent({ state: 'selected', component: LIVE }, { clientId: 'd2e3f4a5-b6c7-4d8e-9f0a-1b2c3d4e5f60', user: { id: '/users/kim', name: 'Kim' } }))
+    const { focusedBy } = usePresence(built.$cwa)
+
+    expect(focusedBy(DRAFT, 'title')).toStrictEqual([{ user: { id: '/users/sam', name: 'Sam' }, colour: presenceColour('/users/sam') }])
+    expect(focusedBy(DRAFT, 'subtitle')).toMatchObject([{ user: { name: 'Alex' } }])
+    expect(focusedBy('/component/titles/another', 'title')).toStrictEqual([])
+  })
+
+  test('peers and focusedBy follow the peers as they change and expire', async () => {
+    const built = withDraft()
+    const { peers, focusedBy } = usePresence(built.$cwa)
+    const focused = computed(() => focusedBy(DRAFT, 'title'))
+    const onDraft = computed(() => peers(DRAFT))
+
+    built.presence.receive(peerEvent({ state: 'editing', component: LIVE, field: 'title' }))
+    expect(focused.value).toHaveLength(1)
+    expect(onDraft.value).toHaveLength(1)
+
+    built.presence.receive(peerEvent({ state: 'selected', component: LIVE }))
+    expect(focused.value).toStrictEqual([])
+
+    await vi.advanceTimersByTimeAsync(45_000)
+    expect(onDraft.value).toStrictEqual([])
+  })
+
+  test('peers and focusedBy are empty once presence stops', () => {
+    const built = withDraft()
+    built.presence.receive(peerEvent({ state: 'editing', component: LIVE, field: 'title' }))
+    built.presence.stop()
+    const { peers, focusedBy } = usePresence(built.$cwa)
+
+    expect(peers(DRAFT)).toStrictEqual([])
+    expect(focusedBy(DRAFT, 'title')).toStrictEqual([])
   })
 })
 

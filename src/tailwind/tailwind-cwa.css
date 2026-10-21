@@ -75,6 +75,7 @@
   --shadow-orange-bottom: 0 0 10px 1px #ffaa00;
 
   --z-index-overlay: 750;
+  --z-index-peer-outline: 899;
   --z-index-manager-focus: 900;
   --z-index-manager: 901;
   --z-index-dialog: 902;

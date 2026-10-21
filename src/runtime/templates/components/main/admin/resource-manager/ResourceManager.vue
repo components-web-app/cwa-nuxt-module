@@ -19,6 +19,7 @@ import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/resources/resourc
 
 const ComponentUsageBadge = defineAsyncComponent(() => import('#cwa/templates/components/main/admin/resource-manager/cta/ComponentUsageBadge.vue'))
 const SharedInstancesHighlight = defineAsyncComponent(() => import('#cwa/templates/components/main/admin/resource-manager/SharedInstancesHighlight.vue'))
+const PeerOutlines = defineAsyncComponent(() => import('#cwa/templates/components/main/admin/resource-manager/PeerOutlines.vue'))
 const ClonePlacementMenu = defineAsyncComponent(() => import('#cwa/templates/components/main/admin/resource-manager/_parts/ClonePlacementMenu.vue'))
 
 const $cwa = useCwa()
@@ -247,6 +248,7 @@ defineExpose({
   />
   <AddComponentDialog />
   <SharedInstancesHighlight v-if="showSharedInstances" />
+  <PeerOutlines v-if="$cwa.admin.isEditing && !cloneMode.source.value" />
   <ClonePlacementMenu
     v-if="cloneTarget"
     :key="cloneTarget.key"

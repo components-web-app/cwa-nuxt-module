@@ -1,4 +1,4 @@
-import { computed, nextTick, reactive, ref, watch } from 'vue'
+import { computed, nextTick, reactive, ref, shallowReactive, watch } from 'vue'
 import type { App, ComputedRef, Ref } from 'vue'
 import type { FetchError } from 'ofetch'
 import set from 'lodash-es/set'
@@ -56,8 +56,8 @@ interface RequestOptions {
 export class ResourcesManager {
   private readonly cwaFetch: CwaFetch
   private readonly fetchStatusManager: FetchStatusManager
-  private readonly pendingUpdates = new Map<string, Set<(keepConflict?: boolean) => unknown>>()
-  private readonly groupWrites = new Map<string, Promise<void>>()
+  private readonly pendingUpdates = shallowReactive(new Map<string, Set<(keepConflict?: boolean) => unknown>>())
+  private readonly groupWrites = shallowReactive(new Map<string, Promise<void>>())
   private requestsInProgress = reactive<{ [source: string]: { [id: string]: { event: ApiResourceEvent, args: [string, RequestOptions] } } }>({})
   private readonly reqCount = ref(0)
   private readonly _addResourceEvent: Ref<undefined | AddResourceEvent> = ref()
@@ -147,17 +147,30 @@ export class ResourcesManager {
     await Promise.all([...this.pendingUpdates.values()].flatMap(flushes => [...flushes]).map(flush => flush(false)))
   }
 
-  private async settleUpdates(iri: string) {
-    await Promise.all([...(this.pendingUpdates.get(iri) ?? [])].map(flush => flush()))
-    const hasRequestInProgress = () => Object.values(this.requestsInProgress).some(sourceReqs =>
+  /** @internal */
+  public isUpdating(iri: string) {
+    return this.pendingUpdates.has(iri) || this.groupWrites.has(iri) || this.hasRequestInProgress(iri)
+  }
+
+  // @internal
+  public groupWritesSettled(groupIri: string) {
+    return this.groupWrites.get(groupIri) ?? Promise.resolve()
+  }
+
+  private hasRequestInProgress(iri: string) {
+    return Object.values(this.requestsInProgress).some(sourceReqs =>
       Object.values(sourceReqs).some(req => (req.event.iri || req.event.endpoint).split('?')[0] === iri),
     )
-    if (!hasRequestInProgress()) {
+  }
+
+  private async settleUpdates(iri: string) {
+    await Promise.all([...(this.pendingUpdates.get(iri) ?? [])].map(flush => flush()))
+    if (!this.hasRequestInProgress(iri)) {
       return
     }
     await new Promise<void>((resolve) => {
       const unwatch = watch(this.requestsInProgress, () => {
-        if (hasRequestInProgress()) {
+        if (this.hasRequestInProgress(iri)) {
           return
         }
         unwatch()
@@ -174,9 +187,9 @@ export class ResourcesManager {
     return this.doResourceRequest(event, args)
   }
 
-  private async confirm(action: 'delete' | 'discard') {
+  private async confirm(action: 'delete' | 'discard', iri?: string) {
     const { confirmResourceAction } = await import('../admin/resource-confirm')
-    return confirmResourceAction(this.vueApp, action)
+    return confirmResourceAction(this.vueApp, action, iri)
   }
 
   private getEndpointForIri(iri: string) {
@@ -192,7 +205,7 @@ export class ResourcesManager {
   }
 
   public async deleteResource(event: ApiResourceEvent, force = false) {
-    if (!force && !await this.confirm('delete')) {
+    if (!force && !await this.confirm('delete', event.endpoint)) {
       return false
     }
     const args: [string, RequestOptions] = [

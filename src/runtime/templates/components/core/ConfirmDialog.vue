@@ -6,6 +6,7 @@ import type { ActionButton } from '#cwa/templates/components/core/DialogBox.vue'
 const props = withDefaults(defineProps<{
   title?: string
   content?: string
+  notice?: string
 }>(), {
   title: 'No Title Set',
   content: 'No Content Set',
@@ -51,5 +52,12 @@ const buttons = computed<ActionButton[]>(() => {
     :buttons="buttons"
   >
     <div v-html="props.content" />
+    <p
+      v-if="notice"
+      data-testid="confirm-notice"
+      class="cwa:mt-3 cwa:text-amber-300"
+    >
+      {{ notice }}
+    </p>
   </DialogBox>
 </template>

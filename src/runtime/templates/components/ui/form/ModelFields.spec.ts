@@ -3,6 +3,7 @@ import { describe, expect, test, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { computed, nextTick, ref, shallowRef } from 'vue'
 import type { RemoteFieldChange } from '#cwa/resources/model-editors'
+import type { FocusedPeer } from '#cwa/admin/presence'
 import Input from './Input.vue'
 import Toggle from './Toggle.vue'
 import Select from '../Select.vue'
@@ -14,13 +15,18 @@ vi.mock('#cwa/composables/popper', () => ({
 function fieldModel<T>(initial: T) {
   const value = ref<T | null | undefined>(initial)
   const change = shallowRef<RemoteFieldChange<T>>()
+  const peers = ref<FocusedPeer[]>([])
   return {
     model: computed({ get: () => value.value, set: (next) => {
       value.value = next
     } }),
     remoteChange: computed(() => change.value),
+    focus: vi.fn(),
+    blur: vi.fn(),
+    focusedBy: computed(() => peers.value),
     value,
     change,
+    peers,
   }
 }
 
@@ -102,5 +108,95 @@ describe('kit fields bound to a resource model (#429)', () => {
 
     expect(model.value.value).toBe('a')
     wrapper.unmount()
+  })
+
+  describe('focus is reported to co-editing presence (#429)', () => {
+    function leave(element: Element, to: Element | null) {
+      element.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: to }))
+    }
+
+    test('CwaUiFormInput reports focus on entering the field and blur on leaving it, never per keystroke', async () => {
+      const model = fieldModel('Mine')
+      const wrapper = mount(Input, { props: { model }, attachTo: document.body })
+      const input = wrapper.get('input')
+
+      await input.trigger('focusin')
+      await input.setValue('Edited')
+      expect(model.focus).toHaveBeenCalledOnce()
+      expect(model.blur).not.toHaveBeenCalled()
+
+      leave(input.element, document.body)
+      expect(model.blur).toHaveBeenCalledOnce()
+      wrapper.unmount()
+    })
+
+    test('CwaUiFormInput stays focused while focus moves to its conflict buttons', async () => {
+      const model = fieldModel('Mine')
+      model.change.value = conflict('Theirs', 'Sam')
+      const wrapper = mount(Input, { props: { model }, attachTo: document.body })
+
+      leave(wrapper.get('input').element, wrapper.get('[data-testid="remote-change-accept"]').element)
+
+      expect(model.blur).not.toHaveBeenCalled()
+      wrapper.unmount()
+    })
+
+    test('CwaUiFormToggle reports focus and blur', async () => {
+      const model = fieldModel<boolean>(false)
+      const wrapper = mount(Toggle, { props: { label: 'Visible', model }, attachTo: document.body })
+      const button = wrapper.get('button')
+
+      await button.trigger('focusin')
+      leave(button.element, null)
+
+      expect(model.focus).toHaveBeenCalledOnce()
+      expect(model.blur).toHaveBeenCalledOnce()
+      wrapper.unmount()
+    })
+
+    test('CwaUiSelect stays focused while focus moves into its options, and blurs on leaving', async () => {
+      const model = fieldModel('b')
+      const wrapper = mount(Select, { props: { model, options: [{ label: 'First', value: 'a' }, { label: 'Second', value: 'b' }] }, attachTo: document.body })
+      const button = wrapper.get('button')
+
+      await button.trigger('focusin')
+      await button.trigger('click')
+      leave(button.element, wrapper.get('ul').element)
+      expect(model.focus).toHaveBeenCalledOnce()
+      expect(model.blur).not.toHaveBeenCalled()
+
+      leave(wrapper.get('ul').element, document.body)
+      expect(model.blur).toHaveBeenCalledOnce()
+      wrapper.unmount()
+    })
+  })
+
+  describe('another admin in the field is shown on it (#429)', () => {
+    const SAM = { user: { id: '/users/sam', name: 'Sam' }, colour: '#c084fc' }
+    const options = [{ label: 'First', value: 'a' }, { label: 'Second', value: 'b' }]
+
+    test.each([
+      ['CwaUiFormInput', Input, 'Mine', {}],
+      ['CwaUiFormToggle', Toggle, false, { label: 'Visible' }],
+      ['CwaUiSelect', Select, 'b', { options }],
+    ] as const)('%s outlines itself with the name of whoever has it focused, and only then', async (_name, component, initial, props) => {
+      const model = fieldModel<any>(initial)
+      const wrapper = mount(component as any, { props: { ...props, model } })
+      expect(wrapper.find('[data-testid="field-presence"]').exists()).toBe(false)
+
+      model.peers.value = [SAM]
+      await nextTick()
+
+      const presence = wrapper.get('[data-testid="field-presence"]')
+      expect(presence.text()).toBe('Sam')
+      expect(presence.element.parentElement!.classList).toContain('cwa:relative')
+      expect(presence.element.parentElement!.classList).toContain('cwa:group/field')
+    })
+
+    test('a field with no model shows no one', () => {
+      const wrapper = mount(Input, { props: { modelValue: 'Plain' } })
+
+      expect(wrapper.find('[data-testid="field-presence"]').exists()).toBe(false)
+    })
   })
 })

@@ -3,9 +3,9 @@ import { afterEach, describe, expect, test, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import DeleteLocationsDialog from './DeleteLocationsDialog.vue'
 
-function mountDialog(total = 3) {
+function mountDialog(total = 3, notice?: string) {
   return mount(DeleteLocationsDialog, {
-    props: { total },
+    props: { total, notice },
     global: {
       stubs: {
         DialogBox: {
@@ -89,5 +89,10 @@ describe('DeleteLocationsDialog', () => {
 
     expect(wrapper.emitted('cancel')).toHaveLength(1)
     expect(wrapper.emitted('confirm')).toBeUndefined()
+  })
+
+  test('says who else is editing the component (#429)', () => {
+    expect(mountDialog(3, 'Sam is editing this.').get('[data-testid="confirm-notice"]').text()).toBe('Sam is editing this.')
+    expect(mountDialog(3).find('[data-testid="confirm-notice"]').exists()).toBe(false)
   })
 })

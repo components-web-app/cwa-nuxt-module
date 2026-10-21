@@ -13,7 +13,7 @@ const serverEntry = resolve(outputDir, 'server/index.mjs')
 const chunkDir = resolve(outputDir, 'public/_nuxt')
 const appBase = `http://127.0.0.1:${appPort}`
 
-const gzipBudget = 183788
+const gzipBudget = 183896
 
 const required = [
   { marker: 'cwa-start', source: 'core/ComponentPosition.vue' },
@@ -26,6 +26,8 @@ const forbidden = [
   { marker: 'were saved to a new draft', source: 'admin/remote-changes.ts' },
   { marker: 'Real-time presence is turned off on the API', source: 'admin/presence.ts' },
   { marker: 'Live editing paused', source: 'header/_parts/PresenceIndicator.vue' },
+  { marker: 'cwa:z-peer-outline', source: 'resource-manager/PeerOutlines.vue' },
+  { marker: 'field-presence-flag', source: 'core/admin/form/FieldPresence.vue' },
 ]
 
 let stub

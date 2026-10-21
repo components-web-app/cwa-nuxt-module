@@ -27,7 +27,7 @@ function buildCwa() {
   const stack = shallowRef<{ iri: string }[]>([])
   const shownVersion = shallowRef<string>()
   const currentIri = computed(() => shownVersion.value ?? stack.value[0]?.iri)
-  const groupWrites: Promise<unknown>[] = []
+  const groupWrites = new Map<string, Promise<void>>()
   const $cwa = {
     cwaFetch: { writeHeaders: {} as Record<string, string>, fetch: vi.fn().mockResolvedValue(undefined) },
     apiUrlBase: 'https://api.test',
@@ -39,9 +39,13 @@ function buildCwa() {
       }),
     },
     resourcesManager: {
-      queueComponentGroupWrite: vi.fn((_iri: string, write: () => Promise<unknown>) => {
-        const next = (groupWrites.at(-1) ?? Promise.resolve()).then(write)
-        groupWrites.push(next)
+      groupWritesSettled: (iri: string) => groupWrites.get(iri) ?? Promise.resolve(),
+      isUpdating: (iri: string) => groupWrites.has(iri),
+      queueComponentGroupWrite: vi.fn((iri: string, write: () => Promise<unknown>) => {
+        const next = (groupWrites.get(iri) ?? Promise.resolve()).then(write)
+        const settled = next.then(() => undefined, () => undefined)
+        groupWrites.set(iri, settled)
+        void settled.then(() => groupWrites.get(iri) === settled && groupWrites.delete(iri))
         return next
       }),
       updateResource: vi.fn().mockResolvedValue({ '@id': '/component/titles/new-draft' }),
@@ -445,6 +449,17 @@ describe('RemoteChanges: another admin\'s saved drafts reach a signed-in admin (
     finishWrite()
     await received
     expect(stored(GROUP)?.componentPositions).toStrictEqual(['/_/component_positions/b'])
+  })
+
+  test('a group change never joins the group\'s write queue, so it never makes this tab look as if it were editing the group', async () => {
+    seed({ '@id': GROUP, '@type': 'ComponentGroup', 'componentPositions': ['/_/component_positions/a'] })
+
+    const received = remote.receive({ '@id': GROUP, '@type': 'ComponentGroup', 'componentPositions': ['/_/component_positions/b'] }, '/page')
+    expect(cwa.$cwa.resourcesManager.isUpdating(GROUP)).toBe(false)
+    await received
+
+    expect(stored(GROUP)?.componentPositions).toStrictEqual(['/_/component_positions/b'])
+    expect(cwa.$cwa.resourcesManager.isUpdating(GROUP)).toBe(false)
   })
 
   test('a group change is dropped when this tab\'s group write stored a newer copy while it waited', async () => {

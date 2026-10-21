@@ -12,6 +12,7 @@ import { FetcherStore } from '#cwa/storage/stores/fetcher/fetcher-store'
 import * as processComposables from '#cwa/composables/process'
 import MercureClient from '#cwa/api/mercure-client'
 import { usePresence } from '#cwa/admin/presence'
+import { realtimeView } from '#cwa/resources/realtime-view'
 import type Cwa from '#cwa/cwa'
 import type Fetcher from '#cwa/api/fetcher/fetcher'
 import { installFakeEventSource } from '../../../test/utils/fake-event-source'
@@ -39,7 +40,7 @@ function connect({ isAdmin = true, realtime, hub: hubUrl = 'https://api.test/.we
     realtimeConfig: realtime,
     apiUrlBase: 'https://api.test',
     cwaFetch: { writeHeaders, fetch },
-    resources: { displayPageIri: computed(() => PAGE), pageDataIriOf: () => computed(() => undefined) },
+    resources: { displayPageIri: computed(() => PAGE), pageDataIriOf: () => computed(() => undefined), findAllPublishableIris: (iri: string) => resourcesStore.findAllPublishableIris(iri) },
     admin: { resourceStackManager: { currentIri: computed(() => undefined), getClosestStackItemByType: () => undefined } },
     auth: { get isAdmin() {
       return computed(() => admin.value)
@@ -259,6 +260,18 @@ describe('MercureClient: presence for a signed-in admin (#429)', () => {
 
     expect(usePresence($cwa).onThisPage.value).toMatchObject([{ user: { name: 'Sam' }, page: PAGE }])
     expect(resourcesStore.hasNewResources).toBe(false)
+  })
+
+  test('another admin with a field focused reaches focusedBy and peers for that resource, through the view an admin loads', async () => {
+    const { $cwa } = connect()
+    await vi.waitFor(() => expect(usePresence($cwa).active.value).toBe(true))
+    const { view } = realtimeView($cwa)
+    await vi.waitFor(() => expect(view.value).toBeDefined())
+
+    await deliver({ ...SAM, data: { v: 1, state: 'editing', page: PAGE, component: IRI, field: 'title' } })
+
+    expect(view.value!.focusedBy(IRI, 'title')).toMatchObject([{ user: { id: '/users/sam', name: 'Sam' } }])
+    expect(view.value!.peers(IRI)).toMatchObject([{ user: { name: 'Sam' }, state: 'editing', field: 'title' }])
   })
 
   test('a lost connection pauses presence; reconnecting says hello again', async () => {

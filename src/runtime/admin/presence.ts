@@ -16,6 +16,7 @@ export interface PresenceData {
   component?: string
   componentPosition?: string
   pageData?: string
+  field?: string
   hello?: true
 }
 
@@ -32,8 +33,21 @@ export interface PresencePeer {
   component?: string
   componentPosition?: string
   pageData?: string
+  field?: string
   receivedAt: number
   ttlMs: number
+}
+
+export interface RealtimePeer {
+  user: PresenceUser
+  state: PresenceActivity
+  field?: string
+  expiresAt: number
+}
+
+export interface FocusedPeer {
+  user: PresenceUser
+  colour: string
 }
 
 export interface RealtimeEvent {
@@ -53,6 +67,7 @@ interface PresenceState {
   page: string | undefined
   peers: Record<string, PresencePeer>
   names: Record<string, string>
+  focus: { owner: symbol, iri: string, field: string } | undefined
 }
 
 const REALTIME_PATH = '/_/realtime'
@@ -69,7 +84,7 @@ const states = new WeakMap<Cwa, PresenceState>()
 function presenceState($cwa: Cwa): PresenceState {
   let state = states.get($cwa)
   if (!state) {
-    state = reactive({ active: false, paused: false, page: undefined, peers: {}, names: {} })
+    state = reactive({ active: false, paused: false, page: undefined, peers: {}, names: {}, focus: undefined })
     states.set($cwa, state)
   }
   return state
@@ -90,12 +105,34 @@ export function presenceColour(userId: string) {
 export function usePresence($cwa: Cwa) {
   const state = presenceState($cwa)
   const peers = computed(() => state.active ? Object.values(state.peers) : [])
+  const peersOn = (iri: string) => {
+    const iris = $cwa.resources.findAllPublishableIris(iri)
+    return peers.value.filter(peer => [peer.component, peer.componentPosition].some(on => !!on && iris.includes(on)))
+  }
   return {
     active: computed(() => state.active),
     paused: computed(() => state.active && state.paused),
     onThisPage: computed(() => peers.value.filter(peer => peer.page === state.page)),
     elsewhere: computed(() => peers.value.filter(peer => peer.page !== state.page)),
     nameOf: (userId: string): string | undefined => state.names[userId],
+    peers: (iri: string): RealtimePeer[] => peersOn(iri).map(peer => ({
+      user: { ...peer.user },
+      state: peer.state,
+      ...(peer.field ? { field: peer.field } : {}),
+      expiresAt: peer.receivedAt + peer.ttlMs,
+    })),
+    focusedBy: (iri: string, field: string): FocusedPeer[] => {
+      const editing = peersOn(iri).filter(peer => peer.field === field)
+      return [...new Map(editing.map(peer => [peer.user.id, { user: { ...peer.user }, colour: presenceColour(peer.user.id) }])).values()]
+    },
+    focus: (owner: symbol, iri: string, field: string) => {
+      state.focus = { owner, iri, field }
+    },
+    blur: (owner: symbol) => {
+      if (state.focus?.owner === owner) {
+        state.focus = undefined
+      }
+    },
   }
 }
 
@@ -107,6 +144,8 @@ export class Presence {
   private dirty = false
   private inFlight = false
   private hello = false
+  private repeat = false
+  private lastKey: string | undefined
   private lastSent = Number.NEGATIVE_INFINITY
   private blockedUntil = 0
   private failures = 0
@@ -139,7 +178,7 @@ export class Presence {
       this.state.page = (JSON.parse(key) as PresenceData).page
       this.announce()
     }, { flush: 'sync' })
-    this.heartbeat = setInterval(() => this.announce(), HEARTBEAT_MS)
+    this.heartbeat = setInterval(() => this.announce(false, true), HEARTBEAT_MS)
     this.pruner = setInterval(() => this.prune(), PRUNE_MS)
     window.addEventListener('pagehide', this.onPageHide)
     window.addEventListener('pageshow', this.onPageShow)
@@ -150,6 +189,7 @@ export class Presence {
     this.running = false
     this.dirty = false
     this.hello = false
+    this.lastKey = undefined
     this.unwatch?.()
     clearTimeout(this.sendTimer)
     clearTimeout(this.helloTimer)
@@ -193,13 +233,14 @@ export class Presence {
       component: data.component,
       componentPosition: data.componentPosition,
       pageData: data.pageData,
+      field: data.field,
       receivedAt: Date.now(),
       ttlMs: ttlMs > 0 ? ttlMs : DEFAULT_TTL_MS,
     }
     if (data.hello && !this.helloTimer) {
       this.helloTimer = setTimeout(() => {
         this.helloTimer = undefined
-        this.announce()
+        this.announce(false, true)
       }, Math.random() * HELLO_JITTER_MS)
     }
   }
@@ -228,18 +269,30 @@ export class Presence {
       data.component = this.store.findPublishedComponentIri(selected) ?? selected
     }
     const position = type === CwaResourceTypes.COMPONENT_POSITION ? selected : stackManager.getClosestStackItemByType(CwaResourceTypes.COMPONENT_POSITION)
+    const iris: (string | undefined)[] = [...this.store.findAllPublishableIris(selected)]
     if (position) {
       data.componentPosition = position
-      const pageData = this.store.current.byId[position]?.data?._metadata?.isDynamicPosition ? this.$cwa.resources.pageDataIriOf(position).value : undefined
+      const positionData = this.store.current.byId[position]?.data
+      const pageData = positionData?._metadata?.isDynamicPosition ? this.$cwa.resources.pageDataIriOf(position).value : undefined
       if (pageData) {
         data.pageData = pageData
       }
+      iris.push(position, positionData?.componentGroup)
+    }
+    const focus = this.state.focus
+    if (focus && iris.includes(focus.iri)) {
+      data.state = 'editing'
+      data.field = focus.field
+    }
+    else if (iris.some(iri => iri && this.$cwa.resourcesManager.isUpdating(iri))) {
+      data.state = 'editing'
     }
     return data
   }
 
-  private announce(hello = false) {
+  private announce(hello = false, repeat = hello) {
     this.hello ||= hello
+    this.repeat ||= repeat
     this.dirty = true
     this.schedule()
   }
@@ -249,25 +302,28 @@ export class Presence {
       return
     }
     const wait = Math.max(this.lastSent + THROTTLE_MS, this.blockedUntil) - Date.now()
-    if (wait <= 0) {
-      this.send()
-      return
-    }
     this.sendTimer = setTimeout(() => {
       this.sendTimer = undefined
       this.send()
-    }, wait)
+    }, Math.max(wait, 0))
   }
 
   private async send() {
     if (!this.running || !this.dirty) {
       return
     }
+    const current = this.current()
+    const key = JSON.stringify(current)
     const hello = this.hello
-    this.dirty = this.hello = false
+    const repeat = this.repeat
+    this.dirty = this.hello = this.repeat = false
+    if (!repeat && key === this.lastKey) {
+      return
+    }
+    this.lastKey = key
     this.lastSent = Date.now()
     this.inFlight = true
-    const data: PresenceData = hello ? { ...this.current(), hello: true } : this.current()
+    const data: PresenceData = hello ? { ...current, hello: true } : current
     try {
       await this.$cwa.cwaFetch.fetch(REALTIME_PATH, {
         method: 'POST',
@@ -278,6 +334,7 @@ export class Presence {
       this.failures = 0
     }
     catch (error) {
+      this.lastKey = undefined
       this.failed(error as FetchError, hello)
     }
     finally {

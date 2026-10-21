@@ -222,6 +222,16 @@ describe('PresenceIndicator (#429)', () => {
     ])
   })
 
+  test('someone editing a component is listed as editing it', async () => {
+    mockCwa({ '/component/html_contents/c1': { '@id': '/component/html_contents/c1', '@type': 'HtmlContent' } })
+    presence!.start(true)
+    arrive(ids[0]!, SAM, { state: 'editing', component: '/component/html_contents/c1', field: 'html' })
+
+    const { rows } = await openList()
+
+    expect(rows.map(texts)).toStrictEqual(['Sam Smith This page Editing Rich text'])
+  })
+
   test('a page link sends this tab\'s waiting saves first, then goes to the route path past the editing guard', async () => {
     mockCwa({
       [ABOUT]: { '@id': ABOUT, 'title': 'About us', 'route': '/_/routes/about' },

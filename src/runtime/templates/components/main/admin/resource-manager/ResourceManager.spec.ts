@@ -116,6 +116,7 @@ async function mountManager() {
         ResourceManagerCtaButton: { template: '<div class="cta-stub" />' },
         ComponentUsageBadge: { template: '<span class="usage-badge-stub" />' },
         SharedInstancesHighlight: { template: '<div class="shared-instances-stub" />' },
+        PeerOutlines: { template: '<div class="peer-outlines-stub" />' },
         AddComponentDialog: { template: '<div class="add-dialog-stub" />' },
         Transition: false,
       },
@@ -210,6 +211,20 @@ describe('ResourceManager', () => {
       await flushPromises()
 
       expect(wrapper.find('.shared-instances-stub').exists()).toBe(shown)
+      cloning && useCloneMode(cwaState.cwa).end()
+    })
+
+    test.each([
+      ['editing', true, false, true],
+      ['not editing', false, false, false],
+      ['cloning', true, true, false],
+    ])('outlines what other admins have selected only while %s (#429)', async (_label, isEditing, cloning, shown) => {
+      cwaState.cwa = makeCwa({ isEditing })
+      cloning && useCloneMode(cwaState.cwa).start('/component/source')
+      const wrapper = await mountManager()
+      await flushPromises()
+
+      expect(wrapper.find('.peer-outlines-stub').exists()).toBe(shown)
       cloning && useCloneMode(cwaState.cwa).end()
     })
 
