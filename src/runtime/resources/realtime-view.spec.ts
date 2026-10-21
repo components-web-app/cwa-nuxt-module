@@ -12,7 +12,7 @@ vi.mock('#cwa/admin/presence', () => ({ usePresence: mockUsePresence }))
 function buildCwa({ isAdmin = false, realtime }: { isAdmin?: boolean, realtime?: { enabled?: boolean } } = {}) {
   const admin = ref(isAdmin)
   const $cwa = {
-    options: { realtime },
+    realtimeConfig: realtime,
     auth: { get isAdmin() {
       return computed(() => admin.value)
     } },

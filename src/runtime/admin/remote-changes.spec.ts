@@ -39,7 +39,7 @@ function buildCwa() {
       }),
     },
     resourcesManager: {
-      groupWrites,
+      groupWritesSettled: (iri: string) => groupWrites.get(iri) ?? Promise.resolve(),
       isUpdating: (iri: string) => groupWrites.has(iri),
       queueComponentGroupWrite: vi.fn((iri: string, write: () => Promise<unknown>) => {
         const next = (groupWrites.get(iri) ?? Promise.resolve()).then(write)

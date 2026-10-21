@@ -48,7 +48,7 @@ function mockCwa(byId: Record<string, Record<string, unknown>> = {}) {
       getResource: (iri: string) => computed(() => state.byId[iri] ? { data: state.byId[iri] } : undefined),
     },
     resourcesManager: {
-      pendingUpdates: new Map([['/component/html_contents/c1', new Set([flush])]]),
+      flushPendingUpdates: flush,
     },
     admin: { resourceStackManager: { currentIri: computed(() => undefined), getClosestStackItemByType: () => undefined } },
   }
@@ -244,7 +244,7 @@ describe('PresenceIndicator (#429)', () => {
     rows[0]!.querySelector<HTMLElement>('a')!.click()
     await flushPromises()
 
-    expect(flush).toHaveBeenCalledExactlyOnceWith(false)
+    expect(flush).toHaveBeenCalledOnce()
     expect(navigateTo).toHaveBeenCalledWith({ path: '/about', query: { cwa_force: 'true' } })
     expect(order).toStrictEqual(['flush', 'navigate'])
   })

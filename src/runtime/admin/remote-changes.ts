@@ -115,8 +115,7 @@ export class RemoteChanges {
     }
     if (getResourceTypeFromIri(iri) === CwaResourceTypes.COMPONENT_GROUP) {
       const stored = this.stored(iri)
-      const groupWrites: Map<string, Promise<void>> = this.$cwa.resourcesManager['groupWrites']
-      return (groupWrites.get(iri) ?? Promise.resolve()).then(() => {
+      return this.$cwa.resourcesManager.groupWritesSettled(iri).then(() => {
         this.stored(iri) === stored && this.apply(resource, path)
       })
     }
@@ -125,7 +124,7 @@ export class RemoteChanges {
   }
 
   private get writeHeaders(): Record<string, string> {
-    return this.$cwa['cwaFetch'].writeHeaders
+    return this.$cwa.cwaFetch.writeHeaders
   }
 
   private stored(iri: string | undefined): CwaResource | undefined {

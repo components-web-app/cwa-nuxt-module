@@ -37,7 +37,7 @@ function connect({ isAdmin = true, realtime, hub: hubUrl = 'https://api.test/.we
   const writeHeaders: Record<string, string> = {}
   const fetch = vi.fn().mockResolvedValue(undefined)
   const $cwa = {
-    options: { realtime },
+    realtimeConfig: realtime,
     apiUrlBase: 'https://api.test',
     cwaFetch: { writeHeaders, fetch },
     resources: { displayPageIri: computed(() => PAGE), pageDataIriOf: () => computed(() => undefined), findAllPublishableIris: (iri: string) => resourcesStore.findAllPublishableIris(iri) },

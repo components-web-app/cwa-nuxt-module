@@ -21,7 +21,7 @@ export function realtimeView($cwa: Cwa): RealtimeLoader {
   const view = shallowRef<RealtimeView>()
   let loading: Promise<RealtimeView | undefined> | undefined
   const load = () => {
-    if (!loading && $cwa['options'].realtime?.enabled !== false && $cwa.auth.isAdmin.value) {
+    if (!loading && $cwa.realtimeConfig?.enabled !== false && $cwa.auth.isAdmin.value) {
       loading = import('#cwa/admin/presence').then(({ usePresence }) => (view.value = usePresence($cwa)))
     }
     return loading ?? Promise.resolve(undefined)

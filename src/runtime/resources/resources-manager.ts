@@ -142,9 +142,19 @@ export class ResourcesManager {
     }
   }
 
+  // @internal
+  public async flushPendingUpdates() {
+    await Promise.all([...this.pendingUpdates.values()].flatMap(flushes => [...flushes]).map(flush => flush(false)))
+  }
+
   /** @internal */
   public isUpdating(iri: string) {
     return this.pendingUpdates.has(iri) || this.groupWrites.has(iri) || this.hasRequestInProgress(iri)
+  }
+
+  // @internal
+  public groupWritesSettled(groupIri: string) {
+    return this.groupWrites.get(groupIri) ?? Promise.resolve()
   }
 
   private hasRequestInProgress(iri: string) {
