@@ -61,7 +61,7 @@ const PRUNE_MS = 1_000
 const HELLO_JITTER_MS = 2_000
 const MAX_BACKOFF_MS = 60_000
 const DEFAULT_TTL_MS = 45_000
-const PALETTE = ['#a855f7', '#14b8a6', '#f472b6', '#22d3ee', '#f87171', '#d6a77a']
+const PALETTE = ['#c084fc', '#14b8a6', '#f472b6', '#22d3ee', '#f87171', '#d6a77a']
 
 const states = new WeakMap<Cwa, PresenceState>()
 
@@ -122,6 +122,7 @@ export class Presence {
   private running = false
   private disabled = false
   private dirty = false
+  private inFlight = false
   private hello = false
   private lastSent = Number.NEGATIVE_INFINITY
   private blockedUntil = 0
@@ -132,6 +133,7 @@ export class Presence {
   private pruner?: ReturnType<typeof setInterval>
   private unwatch?: () => void
   private readonly onPageHide = () => this.sendLeft()
+  private readonly onPageShow = (event: PageTransitionEvent) => event.persisted && this.announce(true)
 
   constructor(
     private readonly $cwa: Cwa,
@@ -157,6 +159,7 @@ export class Presence {
     this.heartbeat = setInterval(() => this.announce(), HEARTBEAT_MS)
     this.pruner = setInterval(() => this.prune(), PRUNE_MS)
     window.addEventListener('pagehide', this.onPageHide)
+    window.addEventListener('pageshow', this.onPageShow)
     this.announce(true)
   }
 
@@ -171,6 +174,7 @@ export class Presence {
     clearInterval(this.pruner)
     this.sendTimer = this.helloTimer = this.heartbeat = this.pruner = this.unwatch = undefined
     window.removeEventListener('pagehide', this.onPageHide)
+    window.removeEventListener('pageshow', this.onPageShow)
     this.state.active = false
     this.state.peers = {}
     this.state.names = {}
@@ -222,6 +226,9 @@ export class Presence {
     if (route.meta.cwa?.admin) {
       return route.path
     }
+    if (this.state.page && !getResourceTypeFromIri(this.state.page) && this.$cwa.resources.isLoading.value) {
+      return this.state.page
+    }
     return this.$cwa.resources.displayPageIri.value ?? route.path
   }
 
@@ -255,7 +262,7 @@ export class Presence {
   }
 
   private schedule() {
-    if (!this.running || this.sendTimer) {
+    if (!this.running || this.sendTimer || this.inFlight) {
       return
     }
     const wait = Math.max(this.lastSent + THROTTLE_MS, this.blockedUntil) - Date.now()
@@ -276,6 +283,7 @@ export class Presence {
     const hello = this.hello
     this.dirty = this.hello = false
     this.lastSent = Date.now()
+    this.inFlight = true
     const data: PresenceData = hello ? { ...this.current(), hello: true } : this.current()
     try {
       await this.$cwa['cwaFetch'].fetch(REALTIME_PATH, {
@@ -289,6 +297,10 @@ export class Presence {
     catch (error) {
       this.failed(error as FetchError, hello)
     }
+    finally {
+      this.inFlight = false
+    }
+    this.dirty && this.schedule()
   }
 
   private failed(error: FetchError, hello: boolean) {
@@ -317,7 +329,6 @@ export class Presence {
       this.blockedUntil = Date.now() + Math.min(1000 * 2 ** this.failures, MAX_BACKOFF_MS)
       this.failures++
     }
-    this.schedule()
   }
 
   private warnOnce(key: string, message: string) {

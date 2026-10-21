@@ -26,6 +26,7 @@ let store: CwaResourcesStoreInterface
 function build(options: { page?: string, routePath?: string, fetch?: ReturnType<typeof vi.fn> } = {}) {
   const { routePath = '/home', fetch = vi.fn().mockResolvedValue(undefined) } = options
   const displayPageIri = ref<string | undefined>('page' in options ? options.page : HOME)
+  const isLoading = ref(false)
   const route = shallowRef<{ path: string, meta: Record<string, any> }>({ path: routePath, meta: {} })
   const stack = shallowRef<{ iri: string }[]>([])
   const pageDataByPosition: Record<string, string> = {}
@@ -34,6 +35,7 @@ function build(options: { page?: string, routePath?: string, fetch?: ReturnType<
     cwaFetch: { fetch },
     resources: {
       displayPageIri: computed(() => displayPageIri.value),
+      isLoading: computed(() => isLoading.value),
       pageDataIriOf: (iri: string) => computed(() => pageDataByPosition[iri]),
     },
     admin: {
@@ -46,7 +48,7 @@ function build(options: { page?: string, routePath?: string, fetch?: ReturnType<
   const router = { currentRoute: computed(() => route.value) }
   const presence = new Presence($cwa as unknown as Cwa, store, router as unknown as Router, CLIENT_ID)
   const sent = () => fetch.mock.calls.map(([, options]) => options.body.data)
-  return { presence, $cwa: $cwa as unknown as Cwa, fetch, sent, displayPageIri, route, stack, pageDataByPosition }
+  return { presence, $cwa: $cwa as unknown as Cwa, fetch, sent, displayPageIri, isLoading, route, stack, pageDataByPosition }
 }
 
 function peerEvent(data: Record<string, unknown>, overrides: Record<string, unknown> = {}) {
@@ -62,6 +64,14 @@ function peerEvent(data: Record<string, unknown>, overrides: Record<string, unkn
     'expiresAt': '2026-10-21T10:00:45.000000+00:00',
     ...overrides,
   }
+}
+
+function held() {
+  let settle: { resolve: (value?: unknown) => void, reject: (error: unknown) => void } = { resolve: () => {}, reject: () => {} }
+  const promise = new Promise((resolve, reject) => {
+    settle = { resolve, reject }
+  })
+  return { promise, ...settle }
 }
 
 function httpError(status: number, headers: Record<string, string> = {}) {
@@ -126,6 +136,49 @@ describe('Presence: what this tab sends (#429)', () => {
     await settle()
 
     expect(sent()[0]).toMatchObject({ page: '/_cwa/pages' })
+  })
+
+  test('coming back from an admin page keeps reporting the admin page until the new CWA page is on screen, never the page left behind', async () => {
+    const built = build()
+    built.route.value = { path: '/_cwa/routes', meta: { cwa: { admin: true } } }
+    start(built)
+    await settle()
+
+    built.isLoading.value = true
+    built.route.value = { path: '/about', meta: {} }
+    await vi.advanceTimersByTimeAsync(1_000)
+    expect(built.sent()).toHaveLength(1)
+
+    built.displayPageIri.value = ABOUT
+    built.isLoading.value = false
+    await vi.advanceTimersByTimeAsync(250)
+    expect(built.sent().map(data => data.page)).toStrictEqual(['/_cwa/routes', ABOUT])
+  })
+
+  test('coming back from an admin page to the page left behind reports it once it has loaded', async () => {
+    const built = build()
+    built.route.value = { path: '/_cwa/routes', meta: { cwa: { admin: true } } }
+    start(built)
+    await settle()
+
+    built.isLoading.value = true
+    built.route.value = { path: '/home', meta: {} }
+    await vi.advanceTimersByTimeAsync(1_000)
+    built.isLoading.value = false
+    await vi.advanceTimersByTimeAsync(250)
+
+    expect(built.sent().map(data => data.page)).toStrictEqual(['/_cwa/routes', HOME])
+  })
+
+  test('a cached page shown while it is still revalidating is reported at once', async () => {
+    const built = start(build())
+    await settle()
+
+    built.isLoading.value = true
+    built.displayPageIri.value = ABOUT
+    await vi.advanceTimersByTimeAsync(250)
+
+    expect(built.sent()[1]).toMatchObject({ page: ABOUT })
   })
 
   test('a change of the page on screen sends viewing with the new page', async () => {
@@ -222,6 +275,40 @@ describe('Presence: what this tab sends (#429)', () => {
     expect(JSON.parse(await blob.text())).toStrictEqual({ clientId: CLIENT_ID, event: 'presence', data: { v: 1, page: HOME, state: 'left' } })
   })
 
+  test('a page restored from the back/forward cache says hello again at once', async () => {
+    vi.stubGlobal('navigator', { ...navigator, sendBeacon: vi.fn(() => true) })
+    const built = start(build())
+    await settle()
+
+    window.dispatchEvent(new Event('pagehide'))
+    window.dispatchEvent(Object.assign(new Event('pageshow'), { persisted: false }))
+    await vi.advanceTimersByTimeAsync(250)
+    expect(built.sent()).toHaveLength(1)
+
+    window.dispatchEvent(Object.assign(new Event('pageshow'), { persisted: true }))
+    await vi.advanceTimersByTimeAsync(250)
+    expect(built.sent()).toHaveLength(2)
+    expect(built.sent()[1]).toStrictEqual({ v: 1, page: HOME, state: 'viewing', hello: true })
+  })
+
+  test('only one update is in flight at a time, and the newest state follows once it is answered', async () => {
+    const first = held()
+    const fetch = vi.fn().mockReturnValueOnce(first.promise).mockResolvedValue(undefined)
+    const built = start(build({ fetch }))
+    await settle()
+
+    built.displayPageIri.value = ABOUT
+    await nextTick()
+    built.displayPageIri.value = '/_/pages/team'
+    await vi.advanceTimersByTimeAsync(1_000)
+    expect(fetch).toHaveBeenCalledOnce()
+
+    first.resolve()
+    await settle()
+    expect(fetch).toHaveBeenCalledTimes(2)
+    expect(built.sent()[1]).toStrictEqual({ v: 1, page: '/_/pages/team', state: 'viewing' })
+  })
+
   test('stop() sends nothing more and removes the timers and the pagehide listener', async () => {
     const sendBeacon = vi.fn(() => true)
     vi.stubGlobal('navigator', { ...navigator, sendBeacon })
@@ -253,6 +340,37 @@ describe('Presence: when the API refuses (#429)', () => {
     await vi.advanceTimersByTimeAsync(1)
     expect(fetch).toHaveBeenCalledTimes(2)
     expect(built.sent()[1]).toMatchObject({ hello: true })
+  })
+
+  test('a change while a request is in flight still waits for its Retry-After', async () => {
+    const first = held()
+    const fetch = vi.fn().mockReturnValueOnce(first.promise).mockResolvedValue(undefined)
+    const built = start(build({ fetch }))
+    await settle()
+
+    await vi.advanceTimersByTimeAsync(50)
+    built.displayPageIri.value = ABOUT
+    first.reject(httpError(429, { 'Retry-After': '5' }))
+    await vi.advanceTimersByTimeAsync(4_999)
+    expect(fetch).toHaveBeenCalledOnce()
+    await vi.advanceTimersByTimeAsync(1)
+    expect(fetch).toHaveBeenCalledTimes(2)
+    expect(built.sent()[1]).toStrictEqual({ v: 1, page: ABOUT, state: 'viewing', hello: true })
+  })
+
+  test('a change while a request is in flight still waits for the backoff after a 5xx', async () => {
+    const first = held()
+    const fetch = vi.fn().mockReturnValueOnce(first.promise).mockResolvedValue(undefined)
+    const built = start(build({ fetch }))
+    await settle()
+
+    await vi.advanceTimersByTimeAsync(50)
+    built.displayPageIri.value = ABOUT
+    first.reject(httpError(503))
+    await vi.advanceTimersByTimeAsync(999)
+    expect(fetch).toHaveBeenCalledOnce()
+    await vi.advanceTimersByTimeAsync(1)
+    expect(fetch).toHaveBeenCalledTimes(2)
   })
 
   test('a 5xx or a network error backs off exponentially, capped at 60 seconds', async () => {
@@ -449,6 +567,20 @@ describe('Presence: peers (#429)', () => {
 })
 
 describe('presenceColour (#429)', () => {
+  test('every colour gives the dark initials at least WCAG AA contrast', () => {
+    const luminance = (hex: string) => {
+      const [r, g, b] = [1, 3, 5].map(index => Number.parseInt(hex.slice(index, index + 2), 16) / 255).map(value => value <= 0.03928 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4)
+      return 0.2126 * r! + 0.7152 * g! + 0.0722 * b!
+    }
+    const dark = luminance('#1c1917')
+    const colours = new Set(Array.from({ length: 200 }, (_, index) => presenceColour(`/users/${index}`)))
+
+    expect(colours.size).toBe(6)
+    for (const colour of colours) {
+      expect((luminance(colour) + 0.05) / (dark + 0.05), colour).toBeGreaterThanOrEqual(4.5)
+    }
+  })
+
   test('the same user always gets the same colour, and none is a selection outline, clone or header colour', () => {
     const ids = Array.from({ length: 40 }, (_, index) => `/users/${index}`)
     const colours = ids.map(presenceColour)
