@@ -9,6 +9,7 @@
     --cwa-color-red-500: #ef4444;
     --cwa-color-red-600: oklch(57.7% 0.245 27.325);
     --cwa-color-red-700: oklch(50.5% 0.213 27.518);
+    --cwa-color-amber-300: oklch(87.9% 0.169 91.605);
     --cwa-color-amber-400: oklch(82.8% 0.189 84.429);
     --cwa-color-yellow-500: oklch(79.5% 0.184 86.047);
     --cwa-color-blue-500: oklch(62.3% 0.214 259.815);
@@ -363,6 +364,10 @@
   width: calc(var(--cwa-spacing) * 4);
   height: calc(var(--cwa-spacing) * 4);
 }
+.cwa\:size-5 {
+  width: calc(var(--cwa-spacing) * 5);
+  height: calc(var(--cwa-spacing) * 5);
+}
 .cwa\:size-6 {
   width: calc(var(--cwa-spacing) * 6);
   height: calc(var(--cwa-spacing) * 6);
@@ -539,6 +544,9 @@
 }
 .cwa\:max-w-\[100px\] {
   max-width: 100px;
+}
+.cwa\:max-w-\[260px\] {
+  max-width: 260px;
 }
 .cwa\:max-w-\[300px\] {
   max-width: 300px;
@@ -1129,6 +1137,9 @@
 .cwa\:bg-stone-800 {
   background-color: var(--cwa-color-stone-800);
 }
+.cwa\:bg-stone-900 {
+  background-color: var(--cwa-color-stone-900);
+}
 .cwa\:bg-stone-900\/40 {
   background-color: var(--cwa-color-stone-900);
   @supports (color: color-mix(in lab, red, red)) {
@@ -1466,6 +1477,9 @@
 }
 .cwa\:whitespace-nowrap {
   white-space: nowrap;
+}
+.cwa\:text-amber-300 {
+  color: var(--cwa-color-amber-300);
 }
 .cwa\:text-amber-400 {
   color: var(--cwa-color-amber-400);
@@ -1810,6 +1824,10 @@
   --tw-outline-style: dotted;
   outline-style: dotted;
 }
+.cwa\:outline-none {
+  --tw-outline-style: none;
+  outline-style: none;
+}
 .cwa\:outline-solid {
   --tw-outline-style: solid;
   outline-style: solid;
@@ -1948,9 +1966,6 @@
   }
   .cwa\:hover\:bg-neutral-500:hover {
     background-color: var(--cwa-color-neutral-500);
-  }
-  .cwa\:hover\:bg-stone-600:hover {
-    background-color: var(--cwa-color-stone-600);
   }
   .cwa\:hover\:bg-stone-700:hover {
     background-color: var(--cwa-color-stone-700);
