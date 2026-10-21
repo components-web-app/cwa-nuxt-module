@@ -99,6 +99,7 @@ describe('RemoteChanges: another admin\'s saved drafts reach a signed-in admin (
 
   afterEach(() => {
     unregister.splice(0).forEach(fn => fn())
+    vi.unstubAllGlobals()
   })
 
   describe('the client id', () => {
@@ -109,6 +110,17 @@ describe('RemoteChanges: another admin\'s saved drafts reach a signed-in admin (
 
       remote.disconnect()
       expect(cwa.mocks.cwaFetch.writeHeaders).not.toHaveProperty(CLIENT_ID_HEADER)
+    })
+
+    test('without crypto.randomUUID (an insecure context) the id is still a v4 UUID, which the bundle requires', () => {
+      const { getRandomValues } = globalThis.crypto
+      vi.stubGlobal('crypto', { getRandomValues: getRandomValues.bind(globalThis.crypto) })
+      const v4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
+
+      const ids = [buildCwa(), buildCwa(), buildCwa()].map(({ $cwa }) => new RemoteChanges($cwa, store).clientId)
+
+      ids.forEach(id => expect(id).toMatch(v4))
+      expect(new Set(ids).size).toBe(3)
     })
 
     test('the id is kept per Cwa instance, so each tab has its own', () => {
