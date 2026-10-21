@@ -115,7 +115,8 @@ export class RemoteChanges {
     }
     if (getResourceTypeFromIri(iri) === CwaResourceTypes.COMPONENT_GROUP) {
       const stored = this.stored(iri)
-      return this.$cwa.resourcesManager.queueComponentGroupWrite(iri, async () => {
+      const groupWrites: Map<string, Promise<void>> = this.$cwa.resourcesManager['groupWrites']
+      return (groupWrites.get(iri) ?? Promise.resolve()).then(() => {
         this.stored(iri) === stored && this.apply(resource, path)
       })
     }
