@@ -78,6 +78,33 @@ export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: s
     realtime.load().then(view => view?.blur(focusOwner))
   }
 
+  let stopWatchingOutside: (() => void) | undefined
+
+  function leave() {
+    stopWatchingOutside?.()
+    stopWatchingOutside = undefined
+    blur()
+  }
+
+  const focusListeners = {
+    onFocusin: () => focus(),
+    onFocusout: (event: FocusEvent) => {
+      (event.currentTarget as Node).contains(event.relatedTarget as Node | null) || leave()
+    },
+    onPointerdown: (event: PointerEvent) => {
+      focus()
+      if (stopWatchingOutside) {
+        return
+      }
+      const root = event.currentTarget as Node
+      const outside = (down: Event) => {
+        root.contains(down.target as Node | null) || leave()
+      }
+      document.addEventListener('pointerdown', outside, true)
+      stopWatchingOutside = () => document.removeEventListener('pointerdown', outside, true)
+    },
+  }
+
   function rootValue(value: any) {
     if (!isNestedProperty.value && !isObject(value)) {
       return value
@@ -252,7 +279,7 @@ export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: s
   })
 
   onBeforeUnmount(() => {
-    blur()
+    leave()
     unregisterEditor()
     unwatchLocalValue()
     unwatchIsBusy()
@@ -272,5 +299,6 @@ export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: s
     focus,
     blur,
     focusedBy,
+    focusListeners,
   }
 }
