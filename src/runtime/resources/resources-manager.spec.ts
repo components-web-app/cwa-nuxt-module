@@ -1,4 +1,5 @@
 import { describe, vi, test, expect, beforeEach, afterEach } from 'vitest'
+import { computed } from 'vue'
 import type { App } from 'vue'
 import { createConfirmDialog } from 'vuejs-confirm-dialog'
 import { createPinia, setActivePinia } from 'pinia'
@@ -1693,5 +1694,55 @@ describe('Resources manager', () => {
       await moving
       expect(resourcesManager.requestCount.value).toBe(0)
     })
+  })
+})
+
+describe('isUpdating: the saves presence reports as editing (#429)', () => {
+  test('a save waiting for its debounce makes its resource updating until it is sent, reactively', () => {
+    const { resourcesManager } = createResourcesManager()
+    const updating = computed(() => resourcesManager.isUpdating('/things/draft'))
+    expect(updating.value).toBe(false)
+
+    const untrack = resourcesManager.registerPendingUpdate('/things/draft', vi.fn())
+    expect(updating.value).toBe(true)
+    expect(resourcesManager.isUpdating('/things/other')).toBe(false)
+
+    untrack()
+    expect(updating.value).toBe(false)
+  })
+
+  test('a save in flight makes its resource updating until it is answered', async () => {
+    const { resourcesManager, cwaFetch } = createResourcesManager()
+    let answer: (value: unknown) => void = () => {}
+    cwaFetch.fetch.mockImplementationOnce(() => new Promise((resolve) => {
+      answer = resolve
+    }))
+    const updating = computed(() => resourcesManager.isUpdating('/things/draft'))
+
+    const saving = resourcesManager.updateResource({ endpoint: '/things/draft?published=false', data: { title: 'x' }, source: 'input_1' })
+    await Promise.resolve()
+    expect(updating.value).toBe(true)
+
+    answer({ '@id': '/things/draft' })
+    await saving
+    expect(updating.value).toBe(false)
+  })
+
+  test('a queued write to a group makes the group updating until it settles, even when it fails', async () => {
+    const { resourcesManager } = createResourcesManager()
+    let fail: (error: Error) => void = () => {}
+    const updating = computed(() => resourcesManager.isUpdating('/_/component_groups/top'))
+
+    const writing = resourcesManager.queueComponentGroupWrite('/_/component_groups/top', () => new Promise((_resolve, reject) => {
+      fail = reject
+    }))
+    expect(updating.value).toBe(true)
+    expect(resourcesManager.isUpdating('/_/component_groups/other')).toBe(false)
+
+    await Promise.resolve()
+    fail(new Error('x'))
+    await expect(writing).rejects.toThrow('x')
+    await Promise.resolve()
+    expect(updating.value).toBe(false)
   })
 })
