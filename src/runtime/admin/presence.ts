@@ -269,7 +269,7 @@ export class Presence {
     this.inFlight = true
     const data: PresenceData = hello ? { ...this.current(), hello: true } : this.current()
     try {
-      await this.$cwa['cwaFetch'].fetch(REALTIME_PATH, {
+      await this.$cwa.cwaFetch.fetch(REALTIME_PATH, {
         method: 'POST',
         body: { clientId: this.clientId, event: 'presence', data },
         retry: 0,

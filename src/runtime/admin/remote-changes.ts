@@ -124,7 +124,7 @@ export class RemoteChanges {
   }
 
   private get writeHeaders(): Record<string, string> {
-    return this.$cwa['cwaFetch'].writeHeaders
+    return this.$cwa.cwaFetch.writeHeaders
   }
 
   private stored(iri: string | undefined): CwaResource | undefined {
