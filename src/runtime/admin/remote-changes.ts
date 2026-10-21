@@ -161,10 +161,11 @@ export class RemoteChanges {
     const held = conflicting.filter(editor => editor.iri() === iri)
 
     this.latest.set(iri, resource)
-    this.clearConflicts(iri)
+    const cleared = this.clearConflicts(iri)
     const kept = Object.fromEntries(held.map(editor => [editor.field(), current?.[editor.field()]]))
     this.saveInPlace({ ...resource, ...kept }, path)
     conflicting.forEach(editor => this.raise(editor, iri, resource, user))
+    cleared.filter(editor => !conflicting.includes(editor) && editor.hasUnsentChange()).forEach(editor => editor.submit())
 
     if (!changedFields.length) {
       return
@@ -194,12 +195,15 @@ export class RemoteChanges {
   }
 
   private clearConflicts(iri: string, onEditorsOfIri = false) {
+    const cleared: ModelEditor[] = []
     for (const [editor, conflict] of this.conflicts) {
       if (conflict.iri === iri || (onEditorsOfIri && editor.iri() === iri)) {
         this.conflicts.delete(editor)
         editor.conflict(undefined)
+        cleared.push(editor)
       }
     }
+    return cleared
   }
 
   private async resolve(editor: ModelEditor, conflict: Conflict, accept: boolean): Promise<void> {

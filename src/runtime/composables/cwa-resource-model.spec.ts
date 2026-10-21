@@ -383,6 +383,20 @@ describe('useCwaResourceModel', () => {
       expect(mockUpdateResource).toHaveBeenCalledWith(expect.objectContaining({ data: { title: 'Mine' } }))
     })
 
+    test('a save held by a conflict stays unsent after its debounce has run, so the conflict clearing can send it', async () => {
+      const { editor, model } = createModel()
+      model.value = 'Mine'
+      editor.conflict({ iri: '/my/resource', change: { value: 'Theirs', accept: vi.fn(), keep: vi.fn() } })
+      await flushDebounceAndAsync()
+
+      editor.conflict(undefined)
+      expect(editor.hasUnsentChange()).toBe(true)
+      await editor.submit()
+
+      expect(mockUpdateResource).toHaveBeenCalledOnce()
+      expect(mockUpdateResource).toHaveBeenCalledWith(expect.objectContaining({ data: { title: 'Mine' } }))
+    })
+
     test('a change is unsent until its save goes out, and again once typed over while that save is in flight', async () => {
       const { editor, model } = createModel()
       let finishSave!: () => void

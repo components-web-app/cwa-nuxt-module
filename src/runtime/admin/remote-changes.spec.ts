@@ -251,14 +251,37 @@ describe('RemoteChanges: another admin\'s saved drafts reach a signed-in admin (
       expect(stored(DRAFT)?.title).toBe('theirs')
     })
 
-    test('a newer remote change that no longer touches the field clears its conflict', async () => {
-      const { held } = editorOn({ iri: DRAFT, field: 'title', hasUnsentChange: () => true })
+    test('a newer remote change that no longer touches the field clears its conflict and sends the save it held', async () => {
+      const { editor, held } = editorOn({ iri: DRAFT, field: 'title', hasUnsentChange: () => true })
       await remote.receive(theirs, '/page')
+      expect(editor.submit).not.toHaveBeenCalled()
 
       await remote.receive({ ...theirs, title: 'old' }, '/page')
 
       expect(held.value).toBeUndefined()
       expect(store.new.allIds).toStrictEqual([])
+      expect(editor.submit).toHaveBeenCalledOnce()
+    })
+
+    test('a newer remote change that still conflicts holds the save again rather than sending it', async () => {
+      const { editor, held } = editorOn({ iri: DRAFT, field: 'title', hasUnsentChange: () => true })
+      await remote.receive(theirs, '/page')
+
+      await remote.receive({ ...theirs, title: 'theirs again' }, '/page')
+
+      expect(held.value?.change.value).toBe('theirs again')
+      expect(editor.submit).not.toHaveBeenCalled()
+    })
+
+    test('a cleared conflict whose change has since been sent sends nothing more', async () => {
+      let unsent = true
+      const { editor } = editorOn({ iri: DRAFT, field: 'title', hasUnsentChange: () => unsent })
+      await remote.receive(theirs, '/page')
+      unsent = false
+
+      await remote.receive({ ...theirs, title: 'old' }, '/page')
+
+      expect(editor.submit).not.toHaveBeenCalled()
     })
 
     test('accept() drops the local edit and its waiting save, takes their value without sending a save, and is spent', async () => {
