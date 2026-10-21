@@ -24,7 +24,7 @@ function connect({ isAdmin = true, realtime }: { isAdmin?: boolean, realtime?: {
   mercureStoreDef.useStore().hub = 'https://api.test/.well-known/mercure'
   const resourcesStoreDef = new ResourcesStore('cwa')
   const resourcesStore = resourcesStoreDef.useStore()
-  resourcesStore.saveResource({ resource: { '@id': IRI, '@type': 'Title', 'title': 'old', 'modifiedAt': '2026-10-21T10:00:00.000000+00:00' } })
+  resourcesStore.saveResource({ resource: { '@id': IRI, '@type': 'Title', 'title': 'old' } })
   resourcesStore.resetCurrentResources([IRI])
   const admin = ref(isAdmin)
   const writeHeaders: Record<string, string> = {}
@@ -72,7 +72,7 @@ describe('MercureClient: another admin\'s saved drafts for a signed-in admin (#4
     const { resourcesStore, writeHeaders } = connect()
     await vi.waitFor(() => expect(writeHeaders['X-CWA-Client-Id']).toBeDefined())
 
-    await deliver({ '@id': IRI, '@type': 'Title', 'title': 'theirs', 'modifiedAt': '2026-10-21T10:00:01.000000+00:00', '_metadata': OTHER_TAB })
+    await deliver({ '@id': IRI, '@type': 'Title', 'title': 'theirs', '_metadata': OTHER_TAB })
 
     expect(resourcesStore.current.byId[IRI]?.data?.title).toBe('theirs')
     expect(resourcesStore.hasNewResources).toBe(false)
@@ -82,7 +82,7 @@ describe('MercureClient: another admin\'s saved drafts for a signed-in admin (#4
     const { resourcesStore, writeHeaders } = connect()
     await vi.waitFor(() => expect(writeHeaders['X-CWA-Client-Id']).toBeDefined())
 
-    await deliver({ '@id': IRI, '@type': 'Title', 'title': 'echo', 'modifiedAt': '2026-10-21T10:00:01.000000+00:00', '_metadata': { lastWrite: { clientId: writeHeaders['X-CWA-Client-Id'], userId: '/_/users/1' } } })
+    await deliver({ '@id': IRI, '@type': 'Title', 'title': 'echo', '_metadata': { lastWrite: { clientId: writeHeaders['X-CWA-Client-Id'], userId: '/_/users/1' } } })
 
     expect(resourcesStore.current.byId[IRI]?.data?.title).toBe('old')
     expect(resourcesStore.hasNewResources).toBe(false)
@@ -94,7 +94,7 @@ describe('MercureClient: another admin\'s saved drafts for a signed-in admin (#4
   ])('$name still gets the outdated notice and sends no client id', async ({ options }) => {
     const { resourcesStore, writeHeaders } = connect(options)
 
-    await deliver({ '@id': IRI, '@type': 'Title', 'title': 'theirs', 'modifiedAt': '2026-10-21T10:00:01.000000+00:00', '_metadata': OTHER_TAB })
+    await deliver({ '@id': IRI, '@type': 'Title', 'title': 'theirs', '_metadata': OTHER_TAB })
 
     expect(resourcesStore.current.byId[IRI]?.data?.title).toBe('old')
     expect(resourcesStore.new.byId[IRI]?.resource.title).toBe('theirs')
@@ -110,7 +110,7 @@ describe('MercureClient: another admin\'s saved drafts for a signed-in admin (#4
     await flushPromises()
 
     expect(writeHeaders).toStrictEqual({})
-    await deliver({ '@id': IRI, '@type': 'Title', 'title': 'theirs', 'modifiedAt': '2026-10-21T10:00:01.000000+00:00' })
+    await deliver({ '@id': IRI, '@type': 'Title', 'title': 'theirs' })
     expect(resourcesStore.new.byId[IRI]?.resource.title).toBe('theirs')
   })
 
@@ -122,7 +122,7 @@ describe('MercureClient: another admin\'s saved drafts for a signed-in admin (#4
     admin.value = true
     await vi.waitFor(() => expect(writeHeaders['X-CWA-Client-Id']).toMatch(/\S{8,}/))
 
-    await deliver({ '@id': IRI, '@type': 'Title', 'title': 'theirs', 'modifiedAt': '2026-10-21T10:00:01.000000+00:00', '_metadata': OTHER_TAB })
+    await deliver({ '@id': IRI, '@type': 'Title', 'title': 'theirs', '_metadata': OTHER_TAB })
     expect(resourcesStore.current.byId[IRI]?.data?.title).toBe('theirs')
     expect(resourcesStore.hasNewResources).toBe(false)
   })
@@ -149,7 +149,7 @@ describe('MercureClient: another admin\'s saved drafts for a signed-in admin (#4
   test('a reconnect\'s revalidation is applied in place for an admin', async () => {
     const { client, resourcesStore, writeHeaders } = connect()
     await vi.waitFor(() => expect(writeHeaders['X-CWA-Client-Id']).toBeDefined())
-    const fetchResource = vi.fn().mockResolvedValue({ '@id': IRI, '@type': 'Title', 'title': 'revalidated', 'modifiedAt': '2026-10-21T10:00:02.000000+00:00' })
+    const fetchResource = vi.fn().mockResolvedValue({ '@id': IRI, '@type': 'Title', 'title': 'revalidated' })
     client.setFetcher({ fetchResource } as unknown as Fetcher)
 
     hub.latest().open()
@@ -169,15 +169,32 @@ describe('MercureClient: messages older than the stored copy (#429)', () => {
     vi.spyOn(Date, 'parse').mockImplementation(value => /\.\d{4,}/.test(value) ? Number.NaN : parse(value))
   })
 
-  test.each([
-    { name: 'older than the stored copy is dropped', modifiedAt: '2026-10-21T09:59:59.000000+00:00', held: false },
-    { name: 'newer than the stored copy is kept', modifiedAt: '2026-10-21T10:00:00.500000+00:00', held: true },
-    { name: 'with the same modifiedAt is kept', modifiedAt: '2026-10-21T10:00:00.000000+00:00', held: true },
-    { name: 'without a modifiedAt is kept', modifiedAt: undefined, held: true },
-  ])('an update $name', async ({ modifiedAt, held }) => {
-    const { resourcesStore } = connect({ isAdmin: false })
+  const STORED_AT = '2026-10-21T10:00:00.000+00:00'
 
-    await deliver({ '@id': IRI, '@type': 'Title', 'title': 'theirs', modifiedAt })
+  test.each([
+    { name: 'older than the stored copy is dropped', storedAt: STORED_AT, at: '2026-10-21T09:59:59.999+00:00', held: false },
+    { name: 'newer than the stored copy is kept', storedAt: STORED_AT, at: '2026-10-21T10:00:00.001+00:00', held: true },
+    { name: 'with the same lastWrite.at is kept', storedAt: STORED_AT, at: STORED_AT, held: true },
+    { name: 'with microseconds older than the stored copy is dropped', storedAt: STORED_AT, at: '2026-10-21T09:59:59.999999+00:00', held: false },
+    { name: 'without a lastWrite.at is kept', storedAt: STORED_AT, at: undefined, held: true },
+    { name: 'is kept when the stored copy has no lastWrite.at', storedAt: undefined, at: '2026-10-21T09:59:59.999+00:00', held: true },
+  ])('an update $name', async ({ storedAt, at, held }) => {
+    const { resourcesStore } = connect({ isAdmin: false })
+    resourcesStore.saveResource({ resource: { '@id': IRI, '@type': 'Title', 'title': 'old', '_metadata': { persisted: true, lastWrite: storedAt ? { at: storedAt } : undefined } } })
+
+    await deliver({ '@id': IRI, '@type': 'Title', 'title': 'theirs', '_metadata': { persisted: true, lastWrite: at ? { at, clientId: 'other-tab', userId: '/_/users/2' } : undefined } })
+
+    expect(!!resourcesStore.new.byId[IRI]).toBe(held)
+  })
+
+  test.each([
+    { name: 'an older modifiedAt does not drop a newer write', modifiedAt: '2026-10-21T09:00:00+00:00', at: '2026-10-21T10:00:00.001+00:00', held: true },
+    { name: 'a newer modifiedAt does not keep an older write', modifiedAt: '2026-10-21T11:00:00+00:00', at: '2026-10-21T09:59:59.999+00:00', held: false },
+  ])('ordering ignores modifiedAt: $name', async ({ modifiedAt, at, held }) => {
+    const { resourcesStore } = connect({ isAdmin: false })
+    resourcesStore.saveResource({ resource: { '@id': IRI, '@type': 'Title', 'title': 'old', 'modifiedAt': '2026-10-21T10:00:00+00:00', '_metadata': { persisted: true, lastWrite: { at: STORED_AT } } } })
+
+    await deliver({ '@id': IRI, '@type': 'Title', 'title': 'theirs', modifiedAt, '_metadata': { persisted: true, lastWrite: { at, clientId: 'other-tab', userId: '/_/users/2' } } })
 
     expect(!!resourcesStore.new.byId[IRI]).toBe(held)
   })
