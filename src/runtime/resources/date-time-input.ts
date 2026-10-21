@@ -1,12 +1,11 @@
 import dayjs from 'dayjs'
 import { fromDate, getLocalTimeZone } from '@internationalized/date'
 import type { DateValue, ZonedDateTime } from '@internationalized/date'
+import { toMillisecondPrecision } from './millisecond-precision'
 
 const DISPLAY_FORMAT = 'D MMM YYYY, HH:mm'
 
-export function toMillisecondPrecision(value: string): string {
-  return value.replace(/(\.\d{3})\d+/, '$1')
-}
+export { toMillisecondPrecision }
 
 export function formatDateTime(value?: string | null): string {
   if (!value) {

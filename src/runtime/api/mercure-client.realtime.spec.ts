@@ -114,6 +114,28 @@ describe('MercureClient: another admin\'s saved drafts for a signed-in admin (#4
     expect(resourcesStore.new.byId[IRI]?.resource.title).toBe('theirs')
   })
 
+  test('an admin who signs in after Mercure started gets co-editing without a reload', async () => {
+    const { resourcesStore, writeHeaders, admin } = connect({ isAdmin: false })
+    await flushPromises()
+    expect(writeHeaders).toStrictEqual({})
+
+    admin.value = true
+    await vi.waitFor(() => expect(writeHeaders['X-CWA-Client-Id']).toMatch(/\S{8,}/))
+
+    await deliver({ '@id': IRI, '@type': 'Title', 'title': 'theirs', 'modifiedAt': '2026-10-21T10:00:01.000000+00:00', '_metadata': OTHER_TAB })
+    expect(resourcesStore.current.byId[IRI]?.data?.title).toBe('theirs')
+    expect(resourcesStore.hasNewResources).toBe(false)
+  })
+
+  test('signing out while co-editing is still loading leaves it off', async () => {
+    const { writeHeaders, admin } = connect()
+
+    admin.value = false
+    await flushPromises()
+
+    expect(writeHeaders).toStrictEqual({})
+  })
+
   test('a real-time event is routed away before the check for a current resource', async () => {
     const { resourcesStore, writeHeaders } = connect()
     await vi.waitFor(() => expect(writeHeaders['X-CWA-Client-Id']).toBeDefined())
@@ -142,6 +164,11 @@ describe('MercureClient: another admin\'s saved drafts for a signed-in admin (#4
 })
 
 describe('MercureClient: messages older than the stored copy (#429)', () => {
+  beforeEach(() => {
+    const parse = Date.parse
+    vi.spyOn(Date, 'parse').mockImplementation(value => /\.\d{4,}/.test(value) ? Number.NaN : parse(value))
+  })
+
   test.each([
     { name: 'older than the stored copy is dropped', modifiedAt: '2026-10-21T09:59:59.000000+00:00', held: false },
     { name: 'newer than the stored copy is kept', modifiedAt: '2026-10-21T10:00:00.500000+00:00', held: true },

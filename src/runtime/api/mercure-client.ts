@@ -9,6 +9,7 @@ import type { CwaResource } from '../resources/resource-utils'
 import { CwaResourceTypes, getPublishedResourceIri, getResourceTypeFromIri } from '../resources/resource-utils'
 import type { CwaFetcherStoreInterface, FetcherStore } from '../storage/stores/fetcher/fetcher-store'
 import type Fetcher from './fetcher/fetcher'
+import { toMillisecondPrecision } from '../resources/millisecond-precision'
 import type { RemoteChanges } from '#cwa/admin/remote-changes'
 import type Cwa from '#cwa/cwa'
 import { useProcess } from '#cwa/composables/process'
@@ -16,7 +17,7 @@ import { useProcess } from '#cwa/composables/process'
 const REALTIME_EVENT_TYPE = 'CwaRealtimeEvent'
 
 function serverTime(value: unknown) {
-  return typeof value === 'string' ? Date.parse(value.replace(/(\.\d{3})\d+/, '$1')) : Number.NaN
+  return typeof value === 'string' ? Date.parse(toMillisecondPrecision(value)) : Number.NaN
 }
 
 interface MercureMessageInterface {
@@ -35,6 +36,7 @@ export default class MercureClient {
   private readonly _resourcesStore: CwaResourcesStoreInterface
   private readonly _fetcherStore: CwaFetcherStoreInterface
   private realtime?: RemoteChanges
+  private realtimeWatch?: () => void
 
   constructor(
     mercureStoreDefinition: MercureStore,
@@ -68,7 +70,7 @@ export default class MercureClient {
       return
     }
 
-    this.syncRealtime()
+    this.realtimeWatch ??= watch(() => this.realtimeAllowed(), () => this.syncRealtime(), { immediate: true })
 
     // Event is already setup and in a ready state to the correct URL
     if (!forceRestart && this.eventSource && this.eventSource.readyState === 1 && this.eventSource.url === this.hubUrl) {
@@ -87,14 +89,26 @@ export default class MercureClient {
     this.listenForOnline()
   }
 
+  private get cwa() {
+    return this.nuxtApp?.$cwa as Cwa | undefined
+  }
+
+  private realtimeAllowed() {
+    const $cwa = this.cwa
+    return !!$cwa && $cwa['options'].realtime?.enabled !== false && $cwa.auth.isAdmin.value
+  }
+
   private async syncRealtime() {
-    const $cwa = this.nuxtApp?.$cwa as Cwa | undefined
-    if (!$cwa || $cwa['options'].realtime?.enabled === false || !$cwa.auth.isAdmin.value) {
+    const $cwa = this.cwa
+    if (!$cwa || !this.realtimeAllowed()) {
       this.realtime?.disconnect()
       this.realtime = undefined
       return
     }
     const { RemoteChanges } = await import('#cwa/admin/remote-changes')
+    if (!this.realtimeAllowed()) {
+      return
+    }
     this.realtime ??= new RemoteChanges($cwa, this.resourcesStore)
     this.realtime.connect()
   }
