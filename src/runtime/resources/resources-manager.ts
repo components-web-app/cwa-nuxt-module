@@ -169,17 +169,9 @@ export class ResourcesManager {
     return this.doResourceRequest(event, args)
   }
 
-  private async confirmDelete() {
-    const alertData = {
-      title: 'Delete this resource?',
-      content: '<p>Are you sure you want to permanently delete this resource?</p>',
-    }
-    const { default: ConfirmDialog } = await import('#cwa/templates/components/core/ConfirmDialog.vue')
-    const { createConfirmDialog } = await import('../admin/confirm-dialog')
-    const dialog = await createConfirmDialog(this.vueApp, ConfirmDialog)
-    const { isCanceled } = await dialog.reveal(alertData)
-
-    return !isCanceled
+  private async confirm(action: 'delete' | 'discard') {
+    const { confirmResourceAction } = await import('../admin/resource-confirm')
+    return confirmResourceAction(this.vueApp, action)
   }
 
   private getEndpointForIri(iri: string) {
@@ -195,7 +187,7 @@ export class ResourcesManager {
   }
 
   public async deleteResource(event: ApiResourceEvent, force = false) {
-    if (!force && !await this.confirmDelete()) {
+    if (!force && !await this.confirm('delete')) {
       return false
     }
     const args: [string, RequestOptions] = [
@@ -485,16 +477,7 @@ export class ResourcesManager {
     if (!this._addResourceEvent.value) {
       return true
     }
-    const alertData = {
-      title: 'Discard new resource?',
-      content: '<p>Are you sure you want to discard your new resource. It will NOT be saved.</p>',
-    }
-    const { default: ConfirmDialog } = await import('#cwa/templates/components/core/ConfirmDialog.vue')
-    const { createConfirmDialog } = await import('../admin/confirm-dialog')
-    const dialog = await createConfirmDialog(this.vueApp, ConfirmDialog)
-    const { isCanceled } = await dialog.reveal(alertData)
-
-    if (isCanceled) {
+    if (!await this.confirm('discard')) {
       return false
     }
     this.clearAddResource()

@@ -255,6 +255,79 @@ describe('rehearsal proxy', () => {
     expect(api.requests).toEqual([])
   })
 
+  test('a scenario\'s published messages reach every open Mercure stream with their event id', async () => {
+    const api = await startFakeApi(() => ({ body: {} }))
+    const proxy = await startRehearsal({ port: await freePort(), mode: 'record', dir, target: api.origin })
+    cleanups.push(() => proxy.stop())
+    proxy.begin(TITLE)
+    const readers = await Promise.all([0, 1].map(async () => {
+      const response = await fetch(`${proxy.origin}${mercurePath}?match=*`)
+      const reader = response.body!.getReader()
+      await reader.read()
+      return reader
+    }))
+
+    proxy.publish({ '@type': 'CwaRealtimeEvent', 'event': 'presence' }, { id: 'urn:uuid:1' })
+    proxy.publish({ '@id': '/_api/component/a' })
+
+    const decoder = new TextDecoder()
+    for (const reader of readers) {
+      let text = ''
+      while (!text.includes('component/a')) {
+        const { value, done } = await reader.read()
+        if (done) {
+          break
+        }
+        text += decoder.decode(value)
+      }
+      expect(text).toBe('id: urn:uuid:1\ndata: {"@type":"CwaRealtimeEvent","event":"presence"}\n\ndata: {"@id":"/_api/component/a"}\n\n')
+    }
+    await proxy.end({ save: false })
+    await proxy.stop()
+    await api.stop()
+    expect(api.requests).toEqual([])
+  })
+
+  test('the tab\'s client id header is forwarded to the API and allowed by CORS', async () => {
+    const api = await startFakeApi(req => ({ body: { clientId: req.headers['x-cwa-client-id'] } }))
+    await record(api, async (origin) => {
+      expect((await getJson(`${origin}/_api/component/a`, { method: 'PATCH', headers: { 'content-type': 'application/merge-patch+json', 'x-cwa-client-id': 'tab-1' }, body: '{}' })).body).toEqual({ clientId: 'tab-1' })
+      const preflight = await fetch(`${origin}/_api/component/a`, { method: 'OPTIONS', headers: { origin: 'http://app.test' } })
+      expect(preflight.headers.get('access-control-allow-headers')!.split(/,\s*/)).toContain('x-cwa-client-id')
+    })
+    await api.stop()
+  })
+
+  test.each(['record', 'replay'] as const)('a real-time POST is answered 202 while %sing, kept on the scenario, and never forwarded, recorded or counted as a write', async (mode) => {
+    const api = await startFakeApi(() => ({ body: {} }))
+    await record(api, async (origin) => {
+      await getJson(`${origin}/_api/component/a`)
+    })
+    const proxy = mode === 'record'
+      ? await startRehearsal({ port: await freePort(), mode, dir, target: api.origin })
+      : await startRehearsal({ port: await freePort(), mode, dir })
+    cleanups.push(() => proxy.stop())
+    const scenario = proxy.begin(TITLE)
+    const posted = { clientId: 'tab-1', event: 'presence', data: { state: 'viewing' } }
+    const response = await fetch(`${proxy.origin}/_api/_/realtime`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(posted) })
+    const beacon = await fetch(`${proxy.origin}/_/realtime`, { method: 'POST', headers: { 'content-type': 'text/plain' }, body: JSON.stringify({ ...posted, data: { state: 'left' } }) })
+    if (mode === 'replay') {
+      expect((await getJson(`${proxy.origin}/_api/component/a`)).status).toBe(200)
+    }
+    await proxy.end({ save: false })
+    await proxy.stop()
+    await api.stop()
+
+    expect(response.status).toBe(202)
+    expect(beacon.status).toBe(202)
+    expect(scenario.realtime).toEqual([posted, { ...posted, data: { state: 'left' } }])
+    expect(scenario.writes).toEqual([])
+    expect(scenario.unrecorded).toEqual([])
+    expect(scenario.entries).toEqual([])
+    expect(scenario.epoch).toBe(0)
+    expect(api.requests.map(request => request.url)).toEqual(['/_api/component/a'])
+  })
+
   test('CORS preflights are answered by the proxy, never forwarded', async () => {
     const api = await startFakeApi(() => ({ body: {} }))
     const proxy = await startRehearsal({ port: await freePort(), mode: 'record', dir, target: api.origin })

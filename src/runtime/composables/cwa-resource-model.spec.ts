@@ -1,7 +1,8 @@
 // @vitest-environment happy-dom
 import { describe, expect, test, vi, beforeEach, afterEach } from 'vitest'
-import { ref, nextTick } from 'vue'
+import { ref, nextTick, onBeforeUnmount } from 'vue'
 import { useCwaResourceModel } from '#cwa/composables/cwa-resource-model'
+import type { ModelEditor } from '#cwa/resources/model-editors'
 
 vi.mock('vue', async () => {
   const mod = await vi.importActual<typeof import('vue')>('vue')
@@ -28,6 +29,16 @@ vi.mock('#cwa/composables/cwa', () => ({
   }),
 }))
 
+const registeredEditors = vi.hoisted(() => [] as unknown[])
+const mockUnregisterEditor = vi.hoisted(() => vi.fn())
+const mockRegisterModelEditor = vi.hoisted(() => vi.fn((_cwa: unknown, editor: unknown) => {
+  registeredEditors.push(editor)
+  return mockUnregisterEditor
+}))
+vi.mock('#cwa/resources/model-editors', () => ({
+  registerModelEditor: mockRegisterModelEditor,
+}))
+
 // vi.hoisted runs before imports — use a plain object with .value instead of Vue ref
 const mockEndpoint = vi.hoisted(() => ({ value: '/my/resource' }))
 
@@ -43,6 +54,7 @@ describe('useCwaResourceModel', () => {
     mockEndpoint.value = '/my/resource'
     vi.clearAllMocks()
     pendingUpdates.clear()
+    registeredEditors.length = 0
     mockGetResource.mockReturnValue(ref(undefined))
     mockUpdateResource.mockResolvedValue(undefined)
   })
@@ -294,6 +306,171 @@ describe('useCwaResourceModel', () => {
       vi.runAllTimers()
       await nextTick()
       expect(states.isLongWait.value).toBe(true)
+    })
+  })
+
+  describe('co-editing: the model is an editor the real-time layer can read and hold (#429)', () => {
+    beforeEach(() => {
+      vi.useFakeTimers()
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    async function flushDebounceAndAsync() {
+      await nextTick()
+      vi.runAllTimers()
+      await nextTick()
+      await nextTick()
+    }
+
+    function createModel(property: string | string[] = 'title', data: Record<string, unknown> = { title: 'Store' }) {
+      mockGetResource.mockReturnValue(ref({ data }))
+      const model = useCwaResourceModel<any>(iri, property)
+      expect(mockRegisterModelEditor).toHaveBeenCalledOnce()
+      return { ...model, editor: registeredEditors.at(-1) as ModelEditor }
+    }
+
+    test('registers an editor for the root field of its IRI, and unregisters it on unmount', () => {
+      const { editor } = createModel('meta.a', { meta: { a: 1 } })
+
+      expect(editor.iri()).toBe('/my/resource')
+      expect(editor.field()).toBe('meta')
+      expect(editor.value({ '@id': '/my/resource', '@type': 'T', 'meta': { a: 7 } })).toBe(7)
+
+      const unmount = vi.mocked(onBeforeUnmount).mock.calls.at(-1)![0]
+      unmount()
+      expect(mockUnregisterEditor).toHaveBeenCalledOnce()
+    })
+
+    test('the editor has a local change from the first keystroke until the value is reset', () => {
+      const { editor, model, resetValue } = createModel()
+
+      expect(editor.hasLocalChange()).toBe(false)
+      model.value = 'Mine'
+      expect(editor.hasLocalChange()).toBe(true)
+      resetValue()
+      expect(editor.hasLocalChange()).toBe(false)
+    })
+
+    test('a conflict is exposed as remoteChange only while the model shows the IRI it was raised for', () => {
+      const { editor, remoteChange } = createModel()
+      const change = { value: 'Theirs', accept: vi.fn(), keep: vi.fn() }
+
+      editor.conflict({ iri: '/my/resource', change })
+      expect(remoteChange.value).toBe(change)
+
+      iri.value = '/other'
+      expect(remoteChange.value).toBeUndefined()
+
+      iri.value = '/my/resource'
+      editor.conflict(undefined)
+      expect(remoteChange.value).toBeUndefined()
+    })
+
+    test('the save is held while a conflict is shown, and submit() sends the local value', async () => {
+      const { editor, model } = createModel()
+      model.value = 'Mine'
+      editor.conflict({ iri: '/my/resource', change: { value: 'Theirs', accept: vi.fn(), keep: vi.fn() } })
+
+      await flushDebounceAndAsync()
+      expect(mockUpdateResource).not.toHaveBeenCalled()
+
+      editor.conflict(undefined)
+      await editor.submit()
+      expect(mockUpdateResource).toHaveBeenCalledOnce()
+      expect(mockUpdateResource).toHaveBeenCalledWith(expect.objectContaining({ data: { title: 'Mine' } }))
+    })
+
+    test('a save held by a conflict stays unsent after its debounce has run, so the conflict clearing can send it', async () => {
+      const { editor, model } = createModel()
+      model.value = 'Mine'
+      editor.conflict({ iri: '/my/resource', change: { value: 'Theirs', accept: vi.fn(), keep: vi.fn() } })
+      await flushDebounceAndAsync()
+
+      editor.conflict(undefined)
+      expect(editor.hasUnsentChange()).toBe(true)
+      await editor.submit()
+
+      expect(mockUpdateResource).toHaveBeenCalledOnce()
+      expect(mockUpdateResource).toHaveBeenCalledWith(expect.objectContaining({ data: { title: 'Mine' } }))
+    })
+
+    test('a change is unsent until its save goes out, and again once typed over while that save is in flight', async () => {
+      const { editor, model } = createModel()
+      let finishSave!: () => void
+      mockUpdateResource.mockReturnValueOnce(new Promise((resolve) => {
+        finishSave = () => resolve(undefined)
+      }))
+
+      model.value = 'Mine'
+      expect(editor.hasUnsentChange()).toBe(true)
+      await flushDebounceAndAsync()
+      expect(mockUpdateResource).toHaveBeenCalledOnce()
+      expect(editor.hasUnsentChange()).toBe(false)
+      expect(editor.hasLocalChange()).toBe(true)
+
+      model.value = 'Mine again'
+      await nextTick()
+      expect(editor.hasUnsentChange()).toBe(true)
+      finishSave()
+    })
+
+    test('adopt() replaces the local value and saves it like a keystroke', async () => {
+      const { editor, model } = createModel()
+
+      editor.adopt('Theirs')
+      expect(model.value).toBe('Theirs')
+      await flushDebounceAndAsync()
+
+      expect(mockUpdateResource).toHaveBeenCalledOnce()
+      expect(mockUpdateResource).toHaveBeenCalledWith(expect.objectContaining({ data: { title: 'Theirs' } }))
+    })
+
+    test('a publish flushing the held save while a conflict is shown keeps the local value', async () => {
+      const { editor, model } = createModel()
+      model.value = 'Mine'
+      await nextTick()
+      const keep = vi.fn().mockResolvedValue(undefined)
+      editor.conflict({ iri: '/my/resource', change: { value: 'Theirs', accept: vi.fn(), keep } })
+
+      await pendingUpdates.get('/my/resource')!()
+
+      expect(keep).toHaveBeenCalledOnce()
+    })
+
+    test('a conflict left on an earlier IRI does not hold the saves of the IRI the model shows now', async () => {
+      const { editor, model } = createModel()
+      editor.conflict({ iri: '/my/resource', change: { value: 'Theirs', accept: vi.fn(), keep: vi.fn() } })
+
+      iri.value = '/other'
+      model.value = 'Other edit'
+      await flushDebounceAndAsync()
+
+      expect(mockUpdateResource).toHaveBeenCalledOnce()
+      expect(mockUpdateResource).toHaveBeenCalledWith(expect.objectContaining({ data: { title: 'Other edit' } }))
+    })
+
+    test('discardLocal() cancels the waiting save and its pending registration, and shows the store value', async () => {
+      const { editor, model } = createModel()
+      model.value = 'Mine'
+      await nextTick()
+      expect(pendingUpdates.has('/my/resource')).toBe(true)
+
+      editor.discardLocal()
+
+      expect(pendingUpdates.has('/my/resource')).toBe(false)
+      expect(model.value).toBe('Store')
+      await flushDebounceAndAsync()
+      expect(mockUpdateResource).not.toHaveBeenCalled()
+    })
+
+    test('localPatch() is the root value a save would send, merging a nested property into its root', () => {
+      const { editor, model } = createModel('address.city', { address: { line1: '1 High Street', city: 'Leeds' } })
+      model.value = 'London'
+
+      expect(editor.localPatch()).toEqual({ line1: '1 High Street', city: 'London' })
     })
   })
 })

@@ -13,7 +13,7 @@ const serverEntry = resolve(outputDir, 'server/index.mjs')
 const chunkDir = resolve(outputDir, 'public/_nuxt')
 const appBase = `http://127.0.0.1:${appPort}`
 
-const gzipBudget = 183827
+const gzipBudget = 183728
 
 const required = [
   { marker: 'cwa-start', source: 'core/ComponentPosition.vue' },
@@ -23,6 +23,7 @@ const forbidden = [
   { marker: 'm5.69507059 20.3811012', source: 'core/assets/IconComponents.vue' },
   { marker: 'Manageable resource listener called to select component', source: 'admin/manageable-resource.ts' },
   { marker: 'vuejs-confirm-dialog-root', source: 'vuejs-confirm-dialog' },
+  { marker: 'were saved to a new draft', source: 'admin/remote-changes.ts' },
 ]
 
 let stub

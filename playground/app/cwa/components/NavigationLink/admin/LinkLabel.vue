@@ -1,6 +1,6 @@
 <template>
   <CwaUiFormLabelWrapper label="Label">
-    <CwaUiFormInput v-model="labelModel.model.value" />
+    <CwaUiFormInput :model="labelModel" />
   </CwaUiFormLabelWrapper>
 </template>
 

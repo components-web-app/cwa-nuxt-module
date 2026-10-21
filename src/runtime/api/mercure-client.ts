@@ -2,13 +2,22 @@ import { consola as logger } from 'consola'
 import { storeToRefs } from 'pinia'
 import { computed, watch } from 'vue'
 import type { ComputedRef } from 'vue'
+import type { NuxtApp } from 'nuxt/app'
 import type { CwaMercureStoreInterface, MercureStore } from '../storage/stores/mercure/mercure-store'
 import type { CwaResourcesStoreInterface, ResourcesStore } from '../storage/stores/resources/resources-store'
 import type { CwaResource } from '../resources/resource-utils'
 import { CwaResourceTypes, getPublishedResourceIri, getResourceTypeFromIri } from '../resources/resource-utils'
 import type { CwaFetcherStoreInterface, FetcherStore } from '../storage/stores/fetcher/fetcher-store'
 import type Fetcher from './fetcher/fetcher'
+import type { RemoteChanges } from '#cwa/admin/remote-changes'
+import type Cwa from '#cwa/cwa'
 import { useProcess } from '#cwa/composables/process'
+
+const REALTIME_EVENT_TYPE = 'CwaRealtimeEvent'
+
+function serverTime(value: unknown) {
+  return typeof value === 'string' ? Date.parse(value.replace(/(\.\d{3})\d+/, '$1')) : Number.NaN
+}
 
 interface MercureMessageInterface {
   event: MessageEvent
@@ -25,11 +34,14 @@ export default class MercureClient {
   private readonly _mercureStore: CwaMercureStoreInterface
   private readonly _resourcesStore: CwaResourcesStoreInterface
   private readonly _fetcherStore: CwaFetcherStoreInterface
+  private realtime?: RemoteChanges
+  private realtimeWatch?: () => void
 
   constructor(
     mercureStoreDefinition: MercureStore,
     resourcesStoreDefinition: ResourcesStore,
     fetcherStoreDefinition: FetcherStore,
+    private readonly nuxtApp?: NuxtApp,
   ) {
     this._mercureStore = mercureStoreDefinition.useStore()
     this._resourcesStore = resourcesStoreDefinition.useStore()
@@ -57,6 +69,8 @@ export default class MercureClient {
       return
     }
 
+    this.realtimeWatch ??= watch(() => this.realtimeAllowed(), () => this.syncRealtime(), { immediate: true })
+
     // Event is already setup and in a ready state to the correct URL
     if (!forceRestart && this.eventSource && this.eventSource.readyState === 1 && this.eventSource.url === this.hubUrl) {
       logger.debug(`Mercure already initialized '${this.hubUrl}'`)
@@ -72,6 +86,47 @@ export default class MercureClient {
     this.eventSource.onerror = () => this.handleConnectionLost()
     this.eventSource.onopen = () => this.handleConnectionOpen()
     this.listenForOnline()
+  }
+
+  private get cwa() {
+    return this.nuxtApp?.$cwa as Cwa | undefined
+  }
+
+  private realtimeAllowed() {
+    const $cwa = this.cwa
+    return !!$cwa && $cwa['options'].realtime?.enabled !== false && $cwa.auth.isAdmin.value
+  }
+
+  private async syncRealtime() {
+    const $cwa = this.cwa
+    if (!$cwa || !this.realtimeAllowed()) {
+      this.realtime?.disconnect()
+      this.realtime = undefined
+      return
+    }
+    const { RemoteChanges } = await import('#cwa/admin/remote-changes')
+    if (!this.realtimeAllowed()) {
+      return
+    }
+    this.realtime ??= new RemoteChanges($cwa, this.resourcesStore)
+    this.realtime.connect()
+  }
+
+  private save(resource: CwaResource, path: string | undefined) {
+    if (this.realtime) {
+      this.realtime.receive(resource, path)
+      return
+    }
+    this.resourcesStore.saveResource({
+      resource,
+      path,
+      isNew: true,
+    })
+  }
+
+  private isOlderThanStored(resource: CwaResource) {
+    const stored = serverTime(this.resourcesStore.current.byId[resource['@id']]?.data?._metadata?.lastWrite?.at)
+    return serverTime(resource._metadata?.lastWrite?.at) < stored
   }
 
   private listenForOnline() {
@@ -113,11 +168,7 @@ export default class MercureClient {
       const path = this._fetcherStore.primaryFetchPath
       const resources = await this.fetch(currentIds)
       for (const resource of resources) {
-        this.resourcesStore.saveResource({
-          resource,
-          path,
-          isNew: true,
-        })
+        this.save(resource, path)
       }
     }
 
@@ -153,6 +204,10 @@ export default class MercureClient {
     const mercureMessage: MercureMessageInterface = {
       event,
       data: JSON.parse(event.data),
+    }
+
+    if (mercureMessage.data?.['@type'] === REALTIME_EVENT_TYPE || (mercureMessage.data && this.realtime?.isOwnEcho(mercureMessage.data))) {
+      return
     }
 
     if (!this.isMessageForCurrentResource(mercureMessage)) {
@@ -207,11 +262,7 @@ export default class MercureClient {
     const fetchedComponents = await this.fetch(this.unheldPositionComponents(fetchedResources))
     const toSave = [...resourceActions.toSave, ...fetchedResources, ...fetchedComponents]
     for (const resource of toSave) {
-      this.resourcesStore.saveResource({
-        resource,
-        path,
-        isNew: true,
-      })
+      this.save(resource, path)
     }
   }
 
@@ -222,7 +273,7 @@ export default class MercureClient {
       this.lastEventId = message.event.lastEventId
 
       // re-check to make sure message is still current
-      if (!this.isMessageForCurrentResource(message)) {
+      if (!this.isMessageForCurrentResource(message) || this.isOlderThanStored(message.data)) {
         continue
       }
 
