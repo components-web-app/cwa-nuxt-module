@@ -4,6 +4,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+## [2.0.0-alpha.27] - 2026-10-21
+
 - The admin header shows who else is here: an avatar per admin on this page in their colour, "+N elsewhere", and a list of each one's page and what they have selected, linked; "Live editing paused" while the real-time connection is down ([b6c735af](https://github.com/components-web-app/cwa-nuxt-module/commit/b6c735af), [416888d1](https://github.com/components-web-app/cwa-nuxt-module/commit/416888d1), [d5165bab](https://github.com/components-web-app/cwa-nuxt-module/commit/d5165bab), [891fa5f5](https://github.com/components-web-app/cwa-nuxt-module/commit/891fa5f5), [#429](https://github.com/components-web-app/cwa-nuxt-module/issues/429))
 - A co-editing conflict names the admin who made the change instead of "Someone" when they are on the site ([b6c735af](https://github.com/components-web-app/cwa-nuxt-module/commit/b6c735af), [#429](https://github.com/components-web-app/cwa-nuxt-module/issues/429))
 - Admins announce their presence with `POST /_/realtime` (api-components-bundle 2.0.0-alpha.35 or later); an API with the endpoint turned off gets one warning and no further requests ([b6c735af](https://github.com/components-web-app/cwa-nuxt-module/commit/b6c735af), [274c774a](https://github.com/components-web-app/cwa-nuxt-module/commit/274c774a), [#429](https://github.com/components-web-app/cwa-nuxt-module/issues/429))
@@ -194,7 +196,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 - First tagged release of `@cwa/nuxt`; releases are now published from `v*` tags ([7c61b7c](https://github.com/components-web-app/cwa-nuxt-module/commit/7c61b7ce331ec4a0cb8e76951a5de2ff806ed07a))
 
-[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.26...HEAD
+[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.27...HEAD
+[2.0.0-alpha.27]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.26...v2.0.0-alpha.27
 [2.0.0-alpha.26]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.25...v2.0.0-alpha.26
 [2.0.0-alpha.25]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.24...v2.0.0-alpha.25
 [2.0.0-alpha.24]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.23...v2.0.0-alpha.24
