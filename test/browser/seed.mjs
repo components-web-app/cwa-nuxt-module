@@ -74,12 +74,14 @@ export async function seedClonePages(api, token) {
     ['c', 'third', [['cThird', 'third']]],
   ]
   const groups = {}
+  const pages = {}
   const positions = {}
   const routes = {}
   for (const [key, routeKey, slots] of pageSpecs) {
     const page = await api.create('/_/pages', { reference: name(`page-${key}`), title: `E2E page ${key}`, layout: layoutIri, uiComponent: 'CwaPagePrimaryPageTemplate', isTemplate: false })
     const group = await api.create('/_/component_groups', { reference: `primary_${page['@id']}`, location: page['@id'], pages: [page['@id']] })
     groups[key] = group['@id']
+    pages[key] = page['@id']
     for (const [positionKey, componentKey] of slots) {
       positions[positionKey] = (await api.create('/_/component_positions', { componentGroup: group['@id'], component: components[componentKey] }))['@id']
     }
@@ -106,6 +108,8 @@ export async function seedClonePages(api, token) {
       pageAGroup: groups.a,
       pageBGroup: groups.b,
       pageCGroup: groups.c,
+      pageA: pages.a,
+      pageB: pages.b,
     },
   }
 }

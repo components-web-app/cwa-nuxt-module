@@ -168,6 +168,7 @@ export const test = base.extend({
         api,
         seed,
         rehearsal: scenario,
+        publish: data => rehearsal.publish(data),
         allowConsoleErrors: (...patterns) => allowedConsoleErrors.push(...patterns),
       })
       expect(scenario.unrecorded, 'Requests missing from the rehearsal').toEqual([])
