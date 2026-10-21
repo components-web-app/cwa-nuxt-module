@@ -245,7 +245,7 @@ describe('Presence: what this tab sends (#429)', () => {
 
     await vi.advanceTimersByTimeAsync(14_999)
     expect(built.sent()).toHaveLength(1)
-    await vi.advanceTimersByTimeAsync(1)
+    await vi.advanceTimersByTimeAsync(2)
     expect(built.sent()).toHaveLength(2)
     expect(built.sent()[1]).toStrictEqual({ v: 1, page: HOME, state: 'viewing' })
   })
@@ -258,7 +258,7 @@ describe('Presence: what this tab sends (#429)', () => {
     built.presence.receive(peerEvent({ hello: true }))
     await vi.advanceTimersByTimeAsync(999)
     expect(built.sent()).toHaveLength(1)
-    await vi.advanceTimersByTimeAsync(1)
+    await vi.advanceTimersByTimeAsync(2)
     expect(built.sent()).toHaveLength(2)
     expect(built.sent()[1]).toStrictEqual({ v: 1, page: HOME, state: 'viewing' })
   })
@@ -419,6 +419,35 @@ describe('Presence: editing (#429)', () => {
     built.updating.delete(iri)
     await vi.advanceTimersByTimeAsync(250)
     expect(built.sent().at(-1)).toMatchObject({ state: 'selected' })
+  })
+
+  test('moving focus from one field to another, each in its own microtask, sends the new field and never selected in between', async () => {
+    const built = selectDraft()
+    await settle()
+    const { focus, blur } = usePresence(built.$cwa)
+    focus(OTHER_FIELD, DRAFT, 'title')
+    await vi.advanceTimersByTimeAsync(1_000)
+
+    const loaded = Promise.resolve()
+    void loaded.then(() => blur(OTHER_FIELD))
+    void loaded.then(() => focus(FIELD, DRAFT, 'subtitle'))
+    await vi.advanceTimersByTimeAsync(1_000)
+
+    expect(built.sent().map(data => `${data.state}:${data.field ?? ''}`)).toStrictEqual(['selected:', 'editing:title', 'editing:subtitle'])
+  })
+
+  test('a waiting save handed over to its request a microtask later sends no selected in between', async () => {
+    const built = selectDraft()
+    await settle()
+    built.updating.add(DRAFT)
+    await vi.advanceTimersByTimeAsync(1_000)
+
+    built.updating.delete(DRAFT)
+    await Promise.resolve()
+    built.updating.add(DRAFT)
+    await vi.advanceTimersByTimeAsync(1_000)
+
+    expect(built.sent().map(data => data.state)).toStrictEqual(['selected', 'editing'])
   })
 
   test('a save for another resource sends no editing', async () => {

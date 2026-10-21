@@ -161,6 +161,8 @@ export class Presence {
   private dirty = false
   private inFlight = false
   private hello = false
+  private repeat = false
+  private lastKey: string | undefined
   private lastSent = Number.NEGATIVE_INFINITY
   private blockedUntil = 0
   private failures = 0
@@ -193,7 +195,7 @@ export class Presence {
       this.state.page = (JSON.parse(key) as PresenceData).page
       this.announce()
     }, { flush: 'sync' })
-    this.heartbeat = setInterval(() => this.announce(), HEARTBEAT_MS)
+    this.heartbeat = setInterval(() => this.announce(false, true), HEARTBEAT_MS)
     this.pruner = setInterval(() => this.prune(), PRUNE_MS)
     window.addEventListener('pagehide', this.onPageHide)
     window.addEventListener('pageshow', this.onPageShow)
@@ -204,6 +206,7 @@ export class Presence {
     this.running = false
     this.dirty = false
     this.hello = false
+    this.lastKey = undefined
     this.unwatch?.()
     clearTimeout(this.sendTimer)
     clearTimeout(this.helloTimer)
@@ -254,7 +257,7 @@ export class Presence {
     if (data.hello && !this.helloTimer) {
       this.helloTimer = setTimeout(() => {
         this.helloTimer = undefined
-        this.announce()
+        this.announce(false, true)
       }, Math.random() * HELLO_JITTER_MS)
     }
   }
@@ -304,8 +307,9 @@ export class Presence {
     return data
   }
 
-  private announce(hello = false) {
+  private announce(hello = false, repeat = hello) {
     this.hello ||= hello
+    this.repeat ||= repeat
     this.dirty = true
     this.schedule()
   }
@@ -315,25 +319,28 @@ export class Presence {
       return
     }
     const wait = Math.max(this.lastSent + THROTTLE_MS, this.blockedUntil) - Date.now()
-    if (wait <= 0) {
-      this.send()
-      return
-    }
     this.sendTimer = setTimeout(() => {
       this.sendTimer = undefined
       this.send()
-    }, wait)
+    }, Math.max(wait, 0))
   }
 
   private async send() {
     if (!this.running || !this.dirty) {
       return
     }
+    const current = this.current()
+    const key = JSON.stringify(current)
     const hello = this.hello
-    this.dirty = this.hello = false
+    const repeat = this.repeat
+    this.dirty = this.hello = this.repeat = false
+    if (!repeat && key === this.lastKey) {
+      return
+    }
+    this.lastKey = key
     this.lastSent = Date.now()
     this.inFlight = true
-    const data: PresenceData = hello ? { ...this.current(), hello: true } : this.current()
+    const data: PresenceData = hello ? { ...current, hello: true } : current
     try {
       await this.$cwa['cwaFetch'].fetch(REALTIME_PATH, {
         method: 'POST',
@@ -344,6 +351,7 @@ export class Presence {
       this.failures = 0
     }
     catch (error) {
+      this.lastKey = undefined
       this.failed(error as FetchError, hello)
     }
     finally {
