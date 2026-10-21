@@ -21,8 +21,7 @@ function fieldModel<T>(initial: T) {
       value.value = next
     } }),
     remoteChange: computed(() => change.value),
-    focus: vi.fn(),
-    blur: vi.fn(),
+    focusListeners: { onFocusin: vi.fn(), onFocusout: vi.fn(), onPointerdown: vi.fn() },
     focusedBy: computed(() => peers.value),
     value,
     change,
@@ -111,62 +110,31 @@ describe('kit fields bound to a resource model (#429)', () => {
   })
 
   describe('focus is reported to co-editing presence (#429)', () => {
-    function leave(element: Element, to: Element | null) {
-      element.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: to }))
-    }
+    const options = [{ label: 'First', value: 'a' }, { label: 'Second', value: 'b' }]
 
-    test('CwaUiFormInput reports focus on entering the field and blur on leaving it, never per keystroke', async () => {
-      const model = fieldModel('Mine')
-      const wrapper = mount(Input, { props: { model }, attachTo: document.body })
-      const input = wrapper.get('input')
+    test.each([
+      ['CwaUiFormInput', Input, 'Mine', {}, 'input'],
+      ['CwaUiFormToggle', Toggle, false, { label: 'Visible' }, 'button'],
+      ['CwaUiSelect', Select, 'b', { options }, 'button'],
+    ] as const)('%s binds the model\'s focusListeners on the element holding the whole field and its conflict', async (_name, component, initial, props, control) => {
+      const model = fieldModel<any>(initial)
+      model.change.value = conflict(initial, 'Sam')
+      const roots: Element[] = []
+      for (const listener of Object.values(model.focusListeners)) {
+        listener.mockImplementation((event: Event) => roots.push(event.currentTarget as Element))
+      }
+      const wrapper = mount(component as any, { props: { ...props, model }, attachTo: document.body })
+      const target = wrapper.get(control)
 
-      await input.trigger('focusin')
-      await input.setValue('Edited')
-      expect(model.focus).toHaveBeenCalledOnce()
-      expect(model.blur).not.toHaveBeenCalled()
+      await target.trigger('focusin')
+      await target.trigger('pointerdown')
+      await target.trigger('focusout')
 
-      leave(input.element, document.body)
-      expect(model.blur).toHaveBeenCalledOnce()
-      wrapper.unmount()
-    })
-
-    test('CwaUiFormInput stays focused while focus moves to its conflict buttons', async () => {
-      const model = fieldModel('Mine')
-      model.change.value = conflict('Theirs', 'Sam')
-      const wrapper = mount(Input, { props: { model }, attachTo: document.body })
-
-      leave(wrapper.get('input').element, wrapper.get('[data-testid="remote-change-accept"]').element)
-
-      expect(model.blur).not.toHaveBeenCalled()
-      wrapper.unmount()
-    })
-
-    test('CwaUiFormToggle reports focus and blur', async () => {
-      const model = fieldModel<boolean>(false)
-      const wrapper = mount(Toggle, { props: { label: 'Visible', model }, attachTo: document.body })
-      const button = wrapper.get('button')
-
-      await button.trigger('focusin')
-      leave(button.element, null)
-
-      expect(model.focus).toHaveBeenCalledOnce()
-      expect(model.blur).toHaveBeenCalledOnce()
-      wrapper.unmount()
-    })
-
-    test('CwaUiSelect stays focused while focus moves into its options, and blurs on leaving', async () => {
-      const model = fieldModel('b')
-      const wrapper = mount(Select, { props: { model, options: [{ label: 'First', value: 'a' }, { label: 'Second', value: 'b' }] }, attachTo: document.body })
-      const button = wrapper.get('button')
-
-      await button.trigger('focusin')
-      await button.trigger('click')
-      leave(button.element, wrapper.get('ul').element)
-      expect(model.focus).toHaveBeenCalledOnce()
-      expect(model.blur).not.toHaveBeenCalled()
-
-      leave(wrapper.get('ul').element, document.body)
-      expect(model.blur).toHaveBeenCalledOnce()
+      expect(model.focusListeners.onFocusin).toHaveBeenCalledOnce()
+      expect(model.focusListeners.onPointerdown).toHaveBeenCalledOnce()
+      expect(model.focusListeners.onFocusout).toHaveBeenCalledOnce()
+      expect(new Set(roots).size).toBe(1)
+      expect(roots[0]!.contains(wrapper.get('[data-testid="remote-change"]').element)).toBe(true)
       wrapper.unmount()
     })
   })

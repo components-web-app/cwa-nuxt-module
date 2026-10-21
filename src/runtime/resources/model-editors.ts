@@ -17,17 +17,11 @@ export interface RemoteFieldChange<T = unknown> {
 export interface ResourceModelField<T = unknown> {
   model: { value: T | null | undefined }
   remoteChange: { readonly value: RemoteFieldChange<T> | undefined }
-  focus?: () => void
-  blur?: () => void
   focusedBy?: { readonly value: FocusedPeer[] }
-}
-
-export function fieldFocusListeners(field: () => ResourceModelField<any> | undefined) {
-  return {
-    focusin: () => field()?.focus?.(),
-    focusout: (event: FocusEvent) => {
-      (event.currentTarget as Node).contains(event.relatedTarget as Node | null) || field()?.blur?.()
-    },
+  focusListeners?: {
+    onFocusin: () => void
+    onFocusout: (event: FocusEvent) => void
+    onPointerdown: (event: PointerEvent) => void
   }
 }
 

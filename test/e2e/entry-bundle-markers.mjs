@@ -27,7 +27,7 @@ const forbidden = [
   { marker: 'Real-time presence is turned off on the API', source: 'admin/presence.ts' },
   { marker: 'Live editing paused', source: 'header/_parts/PresenceIndicator.vue' },
   { marker: 'cwa:z-peer-outline', source: 'resource-manager/PeerOutlines.vue' },
-  { marker: 'field-presence-flag', source: 'core/admin/form/FieldPresence.vue' },
+  { marker: 'field-presence-flag', source: 'ui/FieldPresence.vue' },
 ]
 
 async function readEntryChunks() {

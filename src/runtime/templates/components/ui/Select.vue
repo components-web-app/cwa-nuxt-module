@@ -8,10 +8,9 @@ import {
 import { computed } from 'vue'
 import { useCwaSelectInput } from '#cwa/composables/cwa-select-input'
 import type { SelectInputProps } from '#cwa/composables/cwa-select-input'
-import { fieldFocusListeners } from '#cwa/resources/model-editors'
 import type { ResourceModelField } from '#cwa/resources/model-editors'
 import RemoteChangeConflict from '#cwa/templates/components/core/admin/form/RemoteChangeConflict.vue'
-import FieldPresence from '#cwa/templates/components/core/admin/form/FieldPresence.vue'
+import FieldPresence from '#cwa/templates/components/ui/FieldPresence.vue'
 
 const emit = defineEmits(['update:modelValue'])
 const props = defineProps<Omit<SelectInputProps, 'modelValue'> & {
@@ -28,8 +27,6 @@ const { value, compareOptions, displayLabel, selectedOptions, trigger, container
   emit(event, next)
 })
 const remoteChange = computed(() => props.model?.remoteChange.value)
-const focusListeners = fieldFocusListeners(() => props.model)
-const focusedBy = computed(() => props.model?.focusedBy?.value ?? [])
 
 const hasSelection = computed(() => selectedOptions.value.length > 0)
 </script>
@@ -40,14 +37,11 @@ const hasSelection = computed(() => selectedOptions.value.length > 0)
     :by="compareOptions"
     :multiple="multiple"
   >
-    <div
-      class="cwa:relative cwa:group/field cwa:inline-flex cwa:w-full cwa:items-center cwa:gap-x-3"
-      v-on="focusListeners"
+    <FieldPresence
+      :model="model"
+      class="cwa:inline-flex cwa:w-full cwa:items-center cwa:gap-x-3"
+      v-bind="model?.focusListeners"
     >
-      <FieldPresence
-        v-if="focusedBy.length"
-        :peers="focusedBy"
-      />
       <ListboxButton
         ref="trigger"
         class="cwa:relative cwa:py-2 cwa:pl-4 cwa:pr-10 cwa:text-left cwa:text-light cwa:w-full cwa:dark-blur cwa:border-0 cwa:outline-dotted cwa:outline-1 cwa:outline-stone-700 cwa:hover:outline-stone-400 cwa:focus-visible:ring-2 cwa:focus-visible:ring-stone-600 cwa:cursor-pointer"
@@ -124,6 +118,6 @@ const hasSelection = computed(() => selectedOptions.value.length > 0)
         v-if="remoteChange"
         :change="remoteChange"
       />
-    </div>
+    </FieldPresence>
   </Listbox>
 </template>
