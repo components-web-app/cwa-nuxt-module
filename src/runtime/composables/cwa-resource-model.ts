@@ -11,6 +11,8 @@ import type { RemoteFieldChange } from '#cwa/resources/model-editors'
 import { realtimeView } from '#cwa/resources/realtime-view'
 import type { FocusedPeer } from '#cwa/admin/presence'
 
+export type { FocusedPeer } from '#cwa/admin/presence'
+
 interface ResourceModelOps {
   longWaitThreshold?: number
   debounceTime?: number
