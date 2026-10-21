@@ -68,3 +68,31 @@ export function onInstancesChange($cwa: Cwa, listener: () => void): () => void {
     listeners.delete(listener)
   }
 }
+
+export function boundsOf(elements: HTMLElement[]) {
+  let top = Infinity
+  let left = Infinity
+  let right = -Infinity
+  let bottom = -Infinity
+  for (const element of elements) {
+    if (element.nodeType !== 1 || !element.isConnected) {
+      continue
+    }
+    const rect = element.getBoundingClientRect()
+    top = Math.min(top, rect.top)
+    left = Math.min(left, rect.left)
+    right = Math.max(right, rect.right)
+    bottom = Math.max(bottom, rect.bottom)
+  }
+  if (top === Infinity) {
+    return
+  }
+  const scrollY = Math.max(document.body.scrollTop, document.documentElement.scrollTop)
+  const scrollX = Math.max(document.body.scrollLeft, document.documentElement.scrollLeft)
+  return {
+    top: `${top + scrollY}px`,
+    left: `${left + scrollX}px`,
+    width: `${right - left}px`,
+    height: `${bottom - top}px`,
+  }
+}

@@ -2,7 +2,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, unref, watch } from 'vue'
 import type { Ref } from 'vue'
 import { useCwa } from '#cwa/composables/cwa'
-import { instancesOf, onInstancesChange } from '#cwa/admin/manageable-instances'
+import { boundsOf, instancesOf, onInstancesChange } from '#cwa/admin/manageable-instances'
 import { useNuxtApp } from '#app/nuxt'
 
 const $cwa = useCwa()
@@ -19,34 +19,6 @@ const otherInstances = computed(() => {
   const selectedElements = new Set(unref(item.domElements as Ref<HTMLElement[]> | HTMLElement[] | undefined) ?? [])
   return instancesOf($cwa, item.iri).filter(instance => !instance.value.some(element => selectedElements.has(element)))
 })
-
-function boundsOf(elements: HTMLElement[]) {
-  let top = Infinity
-  let left = Infinity
-  let right = -Infinity
-  let bottom = -Infinity
-  for (const element of elements) {
-    if (element.nodeType !== 1 || !element.isConnected) {
-      continue
-    }
-    const rect = element.getBoundingClientRect()
-    top = Math.min(top, rect.top)
-    left = Math.min(left, rect.left)
-    right = Math.max(right, rect.right)
-    bottom = Math.max(bottom, rect.bottom)
-  }
-  if (top === Infinity) {
-    return
-  }
-  const scrollY = Math.max(document.body.scrollTop, document.documentElement.scrollTop)
-  const scrollX = Math.max(document.body.scrollLeft, document.documentElement.scrollLeft)
-  return {
-    top: `${top + scrollY}px`,
-    left: `${left + scrollX}px`,
-    width: `${right - left}px`,
-    height: `${bottom - top}px`,
-  }
-}
 
 const outlines = computed(() => otherInstances.value.map(instance => boundsOf(instance.value)).filter(style => !!style))
 

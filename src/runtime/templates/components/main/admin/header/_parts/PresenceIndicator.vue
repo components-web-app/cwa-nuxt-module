@@ -81,11 +81,11 @@ function pageLabel(page: string) {
 }
 
 function activity(peer: PresencePeer) {
-  if (peer.state !== 'selected') {
+  if (peer.state !== 'selected' && peer.state !== 'editing') {
     return 'Viewing'
   }
   const type = stored(peer.component)?.['@type']
-  return `Selected ${type ? $cwa.resourcesConfig[type]?.name || type : 'a component'}`
+  return `${peer.state === 'editing' ? 'Editing' : 'Selected'} ${type ? $cwa.resourcesConfig[type]?.name || type : 'a component'}`
 }
 
 function locationOf(page: string) {
