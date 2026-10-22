@@ -121,7 +121,6 @@ const IDLE_HEARTBEAT_MS = 60_000
 const IDLE_KEEP_MS = 3 * IDLE_HEARTBEAT_MS
 const IDLE_AFTER_MS = 5 * 60_000
 const ACTIVITY_EVENTS = ['pointerdown', 'pointermove', 'keydown', 'focusin']
-const PRUNE_MS = 1_000
 const HELLO_JITTER_MS = 2_000
 const MAX_BACKOFF_MS = 60_000
 const DEFAULT_TTL_MS = 45_000
@@ -256,7 +255,7 @@ export class Presence {
   private sendTimer?: ReturnType<typeof setTimeout>
   private helloTimer?: ReturnType<typeof setTimeout>
   private heartbeat?: ReturnType<typeof setInterval>
-  private pruner?: ReturnType<typeof setInterval>
+  private pruner?: ReturnType<typeof setTimeout>
   private unwatch?: () => void
   private readonly onPageHide = () => this.sendLeft()
   private readonly onPageShow = (event: PageTransitionEvent) => event.persisted && this.announce(true)
@@ -291,7 +290,7 @@ export class Presence {
       this.announce()
     }, { flush: 'sync' })
     this.beat()
-    this.pruner = setInterval(() => this.prune(), PRUNE_MS)
+    this.schedulePrune()
     window.addEventListener('pagehide', this.onPageHide)
     window.addEventListener('pageshow', this.onPageShow)
     document.addEventListener('visibilitychange', this.onVisibilityChange)
@@ -308,7 +307,7 @@ export class Presence {
     clearTimeout(this.sendTimer)
     clearTimeout(this.helloTimer)
     clearInterval(this.heartbeat)
-    clearInterval(this.pruner)
+    clearTimeout(this.pruner)
     this.sendTimer = this.helloTimer = this.heartbeat = this.pruner = this.unwatch = undefined
     this.outbox.forEach(outgoing => clearTimeout(outgoing.timer))
     this.outbox.clear()
@@ -386,6 +385,7 @@ export class Presence {
       receivedAt: Date.now(),
       ttlMs: data.state === 'idle' ? Math.max(ttlMs, IDLE_KEEP_MS) : ttlMs,
     }
+    this.schedulePrune()
     if (data.hello && !this.helloTimer) {
       this.helloTimer = setTimeout(() => {
         this.helloTimer = undefined
@@ -631,6 +631,13 @@ export class Presence {
         delete this.state.peers[clientId]
       }
     }
+    this.schedulePrune()
+  }
+
+  private schedulePrune() {
+    clearTimeout(this.pruner)
+    const due = Math.min(this.lastActivity + IDLE_AFTER_MS, ...Object.values(this.state.peers).map(peer => peer.receivedAt + peer.ttlMs))
+    this.pruner = setTimeout(() => this.prune(), due - Date.now())
   }
 
   private sendLeft() {

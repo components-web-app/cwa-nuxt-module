@@ -843,6 +843,18 @@ describe('Presence: idle (#429)', () => {
     }
   })
 
+  test('goes idle five minutes after the last activity to the moment, not on the next tick of a clock', async () => {
+    const built = start(build())
+    await settle()
+    await vi.advanceTimersByTimeAsync(400)
+    window.dispatchEvent(new Event('pointermove'))
+
+    await vi.advanceTimersByTimeAsync(5 * 60_000 - 1)
+    expect(built.sent().map(data => data.state)).not.toContain('idle')
+    await vi.advanceTimersByTimeAsync(251)
+    expect(built.sent().at(-1)).toMatchObject({ state: 'idle' })
+  })
+
   test('moving the pointer keeps the tab from going idle', async () => {
     const built = start(build())
     await settle()
@@ -913,6 +925,32 @@ describe('Presence: idle (#429)', () => {
     expect(onThisPage.value).toMatchObject([{ state: 'idle' }])
     await vi.advanceTimersByTimeAsync(1_000)
     expect(onThisPage.value).toStrictEqual([])
+  })
+
+  test('a peer leaves the list the moment its lifetime ends', async () => {
+    const built = start(build())
+    await vi.advanceTimersByTimeAsync(300)
+    built.presence.receive(peerEvent({ state: 'viewing' }))
+    const { onThisPage } = usePresence(built.$cwa)
+
+    await vi.advanceTimersByTimeAsync(44_999)
+    expect(onThisPage.value).toHaveLength(1)
+    await vi.advanceTimersByTimeAsync(1)
+    expect(onThisPage.value).toStrictEqual([])
+  })
+
+  test('a busy page keeps one timer for idle and expiry, however many presence events arrive', async () => {
+    const built = start(build())
+    await settle()
+    built.presence.receive(peerEvent({ state: 'viewing' }))
+    const timers = vi.getTimerCount()
+
+    for (let index = 0; index < 20; index++) {
+      built.presence.receive(peerEvent({ state: index % 2 ? 'viewing' : 'selected' }))
+    }
+    await vi.advanceTimersByTimeAsync(250)
+
+    expect(vi.getTimerCount()).toBe(timers)
   })
 
   test('an idle peer becoming active again expires by the event\'s own lifetime', async () => {
