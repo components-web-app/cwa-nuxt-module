@@ -4,6 +4,9 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+- A selected component whose draft another admin's first save created is edited as that draft, as the page already shows it; before, the tab kept the live version on screen and its next save overwrote that first save ([b4638e35](https://github.com/components-web-app/cwa-nuxt-module/commit/b4638e35), [#429](https://github.com/components-web-app/cwa-nuxt-module/issues/429))
+- The playground's TipTap reference keeps spaces typed in a row when loading and when another admin's save arrives (`parseOptions: { preserveWhitespace: true }`, passed on to `applyRemoteContent`); an app that copied `TipTapHtmlEditor.vue` and `tiptap/co-editing.ts` should copy them again ([274b5907](https://github.com/components-web-app/cwa-nuxt-module/commit/274b5907), [#429](https://github.com/components-web-app/cwa-nuxt-module/issues/429))
+
 ## [2.0.0-alpha.28] - 2026-10-22
 
 - Presence sends `editing` with the field in focus, and while a save or a group write for the selected component is waiting or in flight ([9b7efa52](https://github.com/components-web-app/cwa-nuxt-module/commit/9b7efa52), [c6655b04](https://github.com/components-web-app/cwa-nuxt-module/commit/c6655b04), [bcca4248](https://github.com/components-web-app/cwa-nuxt-module/commit/bcca4248), [644c3184](https://github.com/components-web-app/cwa-nuxt-module/commit/644c3184), [#429](https://github.com/components-web-app/cwa-nuxt-module/issues/429))

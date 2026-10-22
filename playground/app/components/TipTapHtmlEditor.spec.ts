@@ -102,6 +102,21 @@ describe('TipTapHtmlEditor: the co-editing reference editor (#429)', () => {
     expect(editor.state.selection.to).toBe(5)
   })
 
+  test('spaces typed in a row survive loading the stored HTML and another admin\'s save, as the editor shows them with pre-wrap', async () => {
+    const { editor, stored } = await mountEditor('<p>Hello  there</p>')
+    expect(editor.getHTML()).toBe('<p>Hello  there</p>')
+
+    stored.value = '<p>Hello  there,   Sam</p>'
+    await nextTick()
+
+    expect(editor.getHTML()).toBe('<p>Hello  there,   Sam</p>')
+  })
+
+  test('stored HTML with line breaks between its blocks loads without empty paragraphs between them', async () => {
+    const { editor } = await mountEditor('<p>One</p>\n    <p>Two</p>')
+    expect(editor.getHTML()).toBe('<p>One</p><p>Two</p>')
+  })
+
   test('a held conflict shows Use theirs / Keep mine', async () => {
     const { held, wrapper } = await mountEditor()
     expect(wrapper.find('[data-testid="remote-change"]').exists()).toBe(false)

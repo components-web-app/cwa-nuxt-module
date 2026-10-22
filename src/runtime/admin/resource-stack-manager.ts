@@ -141,7 +141,7 @@ export default class ResourceStackManager {
         }
         const stackIri = currentStackItem.iri
         if (this.forcePublishedVersion.value === undefined) {
-          return stackIri
+          return this.resourcesStore.findDraftComponentIri(stackIri) ?? stackIri
         }
         if (this.forcePublishedVersion.value) {
           return this.resourcesStore.findPublishedComponentIri(stackIri)
