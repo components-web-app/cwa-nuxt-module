@@ -23,7 +23,7 @@ const POSITION = '/_/component_positions/hero'
 const ME = '/users/me'
 const CHROME_MAC = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36'
 
-function setNavigator(values: { userAgent?: string, userAgentData?: unknown }) {
+function setNavigator(values: { userAgent?: string }) {
   for (const [key, value] of Object.entries(values)) {
     Object.defineProperty(navigator, key, { configurable: true, get: () => value })
   }
@@ -117,13 +117,12 @@ beforeEach(() => {
   vi.useFakeTimers({ now: new Date('2030-01-01T00:00:00Z') })
   setActivePinia(createPinia())
   store = new ResourcesStore('test').useStore()
-  setNavigator({ userAgent: '', userAgentData: undefined })
+  setNavigator({ userAgent: '' })
 })
 
 afterEach(() => {
   started.splice(0).forEach(presence => presence.stop())
   delete (navigator as unknown as Record<string, unknown>).userAgent
-  delete (navigator as unknown as Record<string, unknown>).userAgentData
   delete (document as unknown as Record<string, unknown>).visibilityState
   vi.useRealTimers()
   vi.unstubAllGlobals()
@@ -1007,25 +1006,22 @@ describe('Presence: device and your other windows (#429)', () => {
 
 describe('deviceLabel (#429)', () => {
   test.each([
-    ['Chrome on macOS', { userAgent: CHROME_MAC }],
-    ['Safari on macOS', { userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Safari/605.1.15' }],
-    ['Safari on iOS', { userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/604.1' }],
-    ['Chrome on iOS', { userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/141.0.0.0 Mobile/15E148 Safari/604.1' }],
-    ['Firefox on Windows', { userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:144.0) Gecko/20100101 Firefox/144.0' }],
-    ['Edge on Windows', { userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36 Edg/141.0.0.0' }],
-    ['Chrome on Android', { userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36' }],
-    ['Firefox on Linux', { userAgent: 'Mozilla/5.0 (X11; Linux x86_64; rv:144.0) Gecko/20100101 Firefox/144.0' }],
-    ['Edge on Windows', { userAgent: CHROME_MAC, userAgentData: { brands: [{ brand: 'Chromium' }, { brand: 'Microsoft Edge' }, { brand: 'Not_A Brand' }], platform: 'Windows' } }],
-    ['Chrome on macOS', { userAgent: '', userAgentData: { brands: [{ brand: 'Not)A;Brand' }, { brand: 'Google Chrome' }, { brand: 'Chromium' }], platform: 'macOS' } }],
-    ['Chrome on Linux', { userAgent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', userAgentData: { brands: [{ brand: 'Chromium' }, { brand: 'Not_A Brand' }], platform: 'Linux' } }],
-    ['Linux', { userAgent: 'Mozilla/5.0 (X11; Linux x64) AppleWebKit/537.36 (KHTML, like Gecko) HappyDOM/20.0.0' }],
-  ])('%s', (label, nav) => {
-    expect(deviceLabel(nav)).toBe(label)
+    ['Chrome on macOS', CHROME_MAC],
+    ['Safari on macOS', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Safari/605.1.15'],
+    ['Safari on iOS', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/604.1'],
+    ['Chrome on iOS', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/141.0.0.0 Mobile/15E148 Safari/604.1'],
+    ['Firefox on Windows', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:144.0) Gecko/20100101 Firefox/144.0'],
+    ['Edge on Windows', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36 Edg/141.0.0.0'],
+    ['Chrome on Android', 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36'],
+    ['Firefox on Linux', 'Mozilla/5.0 (X11; Linux x86_64; rv:144.0) Gecko/20100101 Firefox/144.0'],
+    ['Linux', 'Mozilla/5.0 (X11; Linux x64) AppleWebKit/537.36 (KHTML, like Gecko) HappyDOM/20.0.0'],
+  ])('%s', (label, userAgent) => {
+    expect(deviceLabel(userAgent)).toBe(label)
   })
 
   test('nothing recognisable gives no label', () => {
-    expect(deviceLabel({ userAgent: 'curl/8.7.1' })).toBeUndefined()
-    expect(deviceLabel({})).toBeUndefined()
+    expect(deviceLabel('curl/8.7.1')).toBeUndefined()
+    expect(deviceLabel('')).toBeUndefined()
   })
 })
 

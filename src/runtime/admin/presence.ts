@@ -172,15 +172,9 @@ export function peerName(name: string | undefined, isSelf: boolean) {
   return isSelf ? 'You (other window)' : name || 'Someone'
 }
 
-interface DeviceSource {
-  userAgent?: string
-  userAgentData?: { brands?: { brand: string }[], platform?: string }
-}
-
-export function deviceLabel({ userAgent = '', userAgentData }: DeviceSource): string | undefined {
-  const brand = userAgentData?.brands?.map(({ brand }) => brand.replace(/^(Google|Microsoft) /, '')).find(brand => !/not.?a.?brand|chromium/i.test(brand))
-  const browser = brand ?? BROWSERS.find(([pattern]) => pattern.test(userAgent))?.[1]
-  const system = userAgentData?.platform || SYSTEMS.find(([pattern]) => pattern.test(userAgent))?.[1]
+export function deviceLabel(userAgent: string): string | undefined {
+  const browser = BROWSERS.find(([pattern]) => pattern.test(userAgent))?.[1]
+  const system = SYSTEMS.find(([pattern]) => pattern.test(userAgent))?.[1]
   return [browser, system].filter(Boolean).join(' on ') || undefined
 }
 
@@ -240,7 +234,7 @@ export class Presence {
   private readonly state: PresenceState
   private readonly warned = new Set<string>()
   private readonly outbox = new Map<string, Outgoing>()
-  private readonly device = deviceLabel(navigator as DeviceSource)
+  private readonly device = deviceLabel(navigator.userAgent)
   private lastActivity = 0
   private running = false
   private disabled = false
