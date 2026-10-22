@@ -4,12 +4,11 @@ import type { FocusedPeer } from '#cwa/admin/presence'
 import { useFreshFlags } from '#cwa/admin/presence-flags'
 import type { ResourceModelField } from '#cwa/resources/model-editors'
 
-const { model, focusedBy } = defineProps<{
+const { model } = defineProps<{
   model?: ResourceModelField<any>
-  focusedBy?: FocusedPeer[]
 }>()
 
-const peers = computed<FocusedPeer[]>(() => focusedBy ?? model?.focusedBy?.value ?? [])
+const peers = computed<FocusedPeer[]>(() => model?.focusedBy?.value ?? [])
 const fresh = useFreshFlags(() => ({ field: JSON.stringify(peers.value.map(peer => peer.user.id)) }))
 const colour = computed(() => peers.value[0]?.colour)
 const label = computed(() => peers.value.map(peer => peer.name).join(', '))
