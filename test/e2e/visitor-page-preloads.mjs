@@ -29,6 +29,7 @@ const forbidden = [
   { marker: 'cwa:z-peer-outline', source: 'resource-manager/PeerOutlines.vue' },
   { marker: 'field-presence-flag', source: 'ui/FieldPresence.vue' },
   { marker: 'remote-change-accept', source: 'ui/RemoteChangeConflict.vue' },
+  { marker: 'remoteCursors', source: 'playground/app/tiptap/co-editing.ts' },
 ]
 
 let stub

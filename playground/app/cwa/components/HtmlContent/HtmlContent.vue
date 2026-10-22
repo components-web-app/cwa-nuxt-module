@@ -2,7 +2,8 @@
   <article>
     <LazyTipTapHtmlEditor
       v-if="$cwa.admin.isEditing"
-      v-model="resourceModel.model.value"
+      :model="resourceModel"
+      :iri="iri"
       :disabled="disableEditor"
       data-placeholder="[Empty HTML Content Area]"
       :class="{ 'is-empty opacity-50 text-inherit': disableEditor && !htmlContent }"

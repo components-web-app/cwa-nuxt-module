@@ -1,5 +1,9 @@
 <template>
-  <div v-if="editor">
+  <CwaUiFieldPresence
+    v-if="editor"
+    :model="model"
+    v-bind="focusListeners"
+  >
     <bubble-menu
       class="bg-stone-700 text-stone-100 rounded overflow-hidden text-sm"
       style="z-index: 760"
@@ -50,7 +54,12 @@
       </BubbleMenuButton>
     </floating-menu>
     <editor-content :editor="editor" />
-  </div>
+    <CwaUiRemoteChangeConflict
+      v-if="remoteChange"
+      :change="remoteChange"
+      class="mt-2"
+    />
+  </CwaUiFieldPresence>
 </template>
 
 <script lang="ts" setup>
@@ -62,35 +71,51 @@ import {
   EditorContent,
 } from '@tiptap/vue-3'
 import { BubbleMenu, FloatingMenu } from '@tiptap/vue-3/menus'
-import { computed, toRef, watch } from 'vue'
+import { computed, reactive, toRef, watch } from 'vue'
 import type { Editor, ChainedCommands } from '@tiptap/core'
 import BubbleMenuButton from '~/components/TipTap/BubbleMenuButton.vue'
+import { RemoteCursors, applyRemoteContent, setRemoteCursors } from '~/tiptap/co-editing'
+import type { RemoteCursor } from '~/tiptap/co-editing'
+import { useCwaRealtime } from '#imports'
+import type { useCwaResourceModel } from '#imports'
 
 const props = defineProps<{
-  modelValue: string | null | undefined
+  model: ReturnType<typeof useCwaResourceModel<string>>
+  iri: string
   disabled?: boolean
   editorClasses?: string
 }>()
-
-const emit = defineEmits(['update:modelValue'])
 
 // Render the menus at the top level so they escape the editor's stacking context and clear the CWA
 // page overlay. `document` isn't available in the template expression scope, so define it here.
 const appendToBody = () => document.body
 
-// reactive updating of the model
-const value = computed({
-  get() {
-    return props.modelValue
-  },
-  set(value) {
-    emit('update:modelValue', value)
-  },
+const { model: html, remoteChange, focusedBy, focusListeners } = props.model
+
+type Selection = { from: number, to: number } | null
+const { send, on } = useCwaRealtime<{ selection: { selection: Selection } }>(() => props.iri)
+const selections = reactive(new Map<string, { userId: string, cursor: RemoteCursor }>())
+
+on('selection', ({ selection }, peer) => {
+  if (!selection) {
+    selections.delete(peer.clientId)
+    return
+  }
+  const name = peer.isSelf ? 'You (other window)' : peer.user.name || 'Someone'
+  selections.set(peer.clientId, { userId: peer.user.id, cursor: { id: peer.clientId, name, colour: peer.colour, ...selection } })
 })
 
-// create the editor
+const cursors = computed(() => {
+  const inField = new Set(focusedBy.value.map(peer => peer.user.id))
+  return [...selections.values()].filter(({ userId }) => inField.has(userId)).map(({ cursor }) => cursor)
+})
+
+function sendSelection(selection: Selection) {
+  send('selection', { selection })
+}
+
 const editor = useEditor({
-  content: value.value,
+  content: html.value,
   editorProps: {
     attributes: {
       class: props.editorClasses || '',
@@ -110,14 +135,16 @@ const editor = useEditor({
       openOnClick: false,
       defaultProtocol: 'https',
     }),
+    RemoteCursors,
   ],
-  onUpdate: () => {
-    // HTML
-    value.value = editor.value?.isEmpty ? null : editor.value?.getHTML()
-
-    // JSON
-    // this.$emit('update:modelValue', this.editor.getJSON())
+  onUpdate: ({ editor }) => {
+    html.value = editor.isEmpty ? null : editor.getHTML()
   },
+  onSelectionUpdate: ({ editor }) => {
+    editor.isFocused && sendSelection({ from: editor.state.selection.from, to: editor.state.selection.to })
+  },
+  onFocus: ({ editor }) => sendSelection({ from: editor.state.selection.from, to: editor.state.selection.to }),
+  onBlur: () => sendSelection(null),
   editable: !props.disabled,
 })
 
@@ -152,21 +179,14 @@ function showLinkManager() {
     .run()
 }
 
-// match the editor value to the modelValue prop
-watch(value, (newValue) => {
-  if (!editor.value) {
-    return
+watch(html, (value) => {
+  if (editor.value && editor.value.getHTML() !== value) {
+    applyRemoteContent(editor.value, value)
   }
-  // HTML
-  const isSame = editor.value.getHTML() === newValue
+})
 
-  // JSON
-  // const isSame = JSON.stringify(this.editor.getJSON()) === JSON.stringify(value)
-  if (isSame) {
-    return
-  }
-
-  editor.value.commands.setContent(newValue || null, {})
+watch([cursors, editor], ([drawn, loaded]) => {
+  loaded && setRemoteCursors(loaded, drawn)
 })
 
 // Toggle disabled prop and focus when enabled
