@@ -32,8 +32,8 @@ export function createApiClient(origin, { username = 'admin', password = 'admin'
     return { status: response.status, data, response }
   }
 
-  async function expectOk(method, path, body) {
-    const result = await request(method, path, body)
+  async function expectOk(method, path, body, extraHeaders) {
+    const result = await request(method, path, body, extraHeaders)
     if (result.status >= 400) {
       throw new Error(`Seeding ${method} ${path} failed with ${result.status}: ${JSON.stringify(result.data)?.slice(0, 500)}`)
     }
@@ -59,8 +59,14 @@ export function createApiClient(origin, { username = 'admin', password = 'admin'
       created.push(resource['@id'])
       return resource
     },
-    async patch(iri, body) {
-      return expectOk('PATCH', iri, body)
+    async patch(iri, body, headers) {
+      return expectOk('PATCH', iri, body, headers)
+    },
+    track(iri) {
+      created.push(iri)
+    },
+    async get(path) {
+      return expectOk('GET', path)
     },
     async remove(iri) {
       return request('DELETE', iri)

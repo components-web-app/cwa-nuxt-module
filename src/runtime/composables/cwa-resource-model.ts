@@ -8,6 +8,10 @@ import { useCwa } from '#cwa/composables/cwa'
 import { useCwaResourceEndpoint } from '#cwa/composables/cwa-resource-endpoint'
 import { registerModelEditor } from '#cwa/resources/model-editors'
 import type { RemoteFieldChange } from '#cwa/resources/model-editors'
+import { realtimeView } from '#cwa/resources/realtime-view'
+import type { FocusedPeer } from '#cwa/admin/presence'
+
+export type { FocusedPeer } from '#cwa/admin/presence'
 
 interface ResourceModelOps {
   longWaitThreshold?: number
@@ -61,6 +65,46 @@ export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: s
   const lastSubmittedValueInProgress = ref()
   const heldChange = shallowRef<{ iri: string, change: RemoteFieldChange<T> }>()
   const remoteChange = computed(() => heldChange.value?.iri === iri.value ? heldChange.value?.change : undefined)
+  const realtime = realtimeView($cwa)
+  const focusOwner = Symbol(source)
+  const focusedBy = computed<FocusedPeer[]>(() => iri.value && realtime.view.value ? realtime.view.value.focusedBy(iri.value, rootProperty.value) : [])
+
+  function focus() {
+    const focusIri = iri.value
+    focusIri && realtime.load().then(view => view?.focus(focusOwner, focusIri, rootProperty.value))
+  }
+
+  function blur() {
+    realtime.load().then(view => view?.blur(focusOwner))
+  }
+
+  let stopWatchingOutside: (() => void) | undefined
+
+  function leave() {
+    stopWatchingOutside?.()
+    stopWatchingOutside = undefined
+    blur()
+  }
+
+  const focusListeners = {
+    onFocusin: () => focus(),
+    onFocusout: (event: FocusEvent) => {
+      (event.currentTarget as Node).contains(event.relatedTarget as Node | null) || leave()
+    },
+    // Safari does not focus a button, checkbox or switch on click, so focusin never fires for them
+    onPointerdown: (event: PointerEvent) => {
+      focus()
+      if (stopWatchingOutside) {
+        return
+      }
+      const root = event.currentTarget as Node
+      const outside = (down: Event) => {
+        root.contains(down.target as Node | null) || root.contains(document.activeElement) || leave()
+      }
+      document.addEventListener('pointerdown', outside, true)
+      stopWatchingOutside = () => document.removeEventListener('pointerdown', outside, true)
+    },
+  }
 
   function rootValue(value: any) {
     if (!isNestedProperty.value && !isObject(value)) {
@@ -236,6 +280,7 @@ export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: s
   })
 
   onBeforeUnmount(() => {
+    leave()
     unregisterEditor()
     unwatchLocalValue()
     unwatchIsBusy()
@@ -252,5 +297,9 @@ export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: s
     model,
     localValueWithIri,
     remoteChange,
+    focus,
+    blur,
+    focusedBy,
+    focusListeners,
   }
 }

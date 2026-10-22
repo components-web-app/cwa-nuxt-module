@@ -8,7 +8,7 @@ const outputDir = resolve(here, '../../playground/.output')
 const manifestPath = resolve(outputDir, 'server/chunks/virtual/precomputed.mjs')
 const chunkDir = resolve(outputDir, 'public/_nuxt')
 
-const gzipBudget = 163036
+const gzipBudget = 163190
 
 const forbidden = [
   { marker: 'Invalid DateTime', source: 'luxon' },
@@ -26,6 +26,9 @@ const forbidden = [
   { marker: 'were saved to a new draft', source: 'admin/remote-changes.ts' },
   { marker: 'Real-time presence is turned off on the API', source: 'admin/presence.ts' },
   { marker: 'Live editing paused', source: 'header/_parts/PresenceIndicator.vue' },
+  { marker: 'cwa:z-peer-outline', source: 'resource-manager/PeerOutlines.vue' },
+  { marker: 'field-presence-flag', source: 'ui/FieldPresence.vue' },
+  { marker: 'remote-change-accept', source: 'ui/RemoteChangeConflict.vue' },
 ]
 
 async function readEntryChunks() {

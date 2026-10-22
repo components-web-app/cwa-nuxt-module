@@ -96,7 +96,7 @@ export default class MercureClient {
 
   private realtimeAllowed() {
     const $cwa = this.cwa
-    return !!$cwa && $cwa['options'].realtime?.enabled !== false && $cwa.auth.isAdmin.value
+    return !!$cwa && $cwa.realtimeConfig?.enabled !== false && $cwa.auth.isAdmin.value
   }
 
   private async syncRealtime() {

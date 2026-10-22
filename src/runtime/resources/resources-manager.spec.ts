@@ -1,17 +1,20 @@
 import { describe, vi, test, expect, beforeEach, afterEach } from 'vitest'
-import type { App } from 'vue'
+import { computed, createApp } from 'vue'
 import { createConfirmDialog } from 'vuejs-confirm-dialog'
 import { createPinia, setActivePinia } from 'pinia'
 import { ResourcesManager } from './resources-manager'
-import { flushPendingUpdates } from '#cwa/admin/presence'
-import type Cwa from '#cwa/cwa'
 import { Resources } from './resources'
 import { ResourcesStore } from '#cwa/storage/stores/resources/resources-store'
 import { FetcherStore } from '#cwa/storage/stores/fetcher/fetcher-store'
 import { ErrorStore } from '#cwa/storage/stores/error/error-store'
 import type { CwaResource } from '#cwa/resources/resource-utils'
+import { confirmResourceAction } from '#cwa/admin/resource-confirm'
 
 vi.mock('#cwa/templates/components/core/ConfirmDialog.vue', () => ({ default: {} }))
+vi.mock('#cwa/admin/resource-confirm', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('#cwa/admin/resource-confirm')>()
+  return { ...actual, confirmResourceAction: vi.fn(actual.confirmResourceAction) }
+})
 vi.mock('vuejs-confirm-dialog', () => ({
   install: vi.fn(),
   createConfirmDialog: vi.fn(() => ({
@@ -75,7 +78,7 @@ function createResourcesManager(opts: { includeAdmin?: boolean, fetcher?: any, r
     opts.fetcher ?? undefined,
     mockAdmin,
     opts.resources ?? undefined,
-    {} as App,
+    createApp({}),
   )
 
   return {
@@ -431,6 +434,13 @@ describe('Resources manager', () => {
       expect(createConfirmDialog).toHaveBeenCalledTimes(1)
     })
 
+    test('the confirmation is about the resource being deleted, so it can say who else is editing it (#429)', async () => {
+      const { resourcesManager, cwaFetch } = createResourcesManager()
+      cwaFetch.fetch.mockResolvedValue({})
+      await resourcesManager.deleteResource({ endpoint: '/components/1' })
+      expect(confirmResourceAction).toHaveBeenCalledWith(expect.anything(), 'delete', '/components/1')
+    })
+
     test('with force, sends the DELETE without asking for confirmation', async () => {
       const { resourcesManager, cwaFetch, resourcesStoreActions } = createResourcesManager()
       resourcesStoreActions.getResource.mockReturnValue(undefined)
@@ -622,7 +632,7 @@ describe('Resources manager', () => {
       expect(cwaFetch.fetch.mock.calls.map(call => call[1].body)).toEqual([{ html: 'last keystroke' }, { publishedAt: 'now' }])
     })
 
-    test('the presence links\' flushPendingUpdates sends every waiting save without resolving held conflicts, and settles once they are sent, so leaving the page never loses an edit (#429)', async () => {
+    test('flushPendingUpdates, used by the presence links, sends every waiting save without resolving held conflicts, and settles once they are sent, so leaving the page never loses an edit (#429)', async () => {
       const { resourcesManager } = createResourcesManager({ includeAdmin: true })
       let finish = () => {}
       const flush = vi.fn(() => new Promise<void>((resolve) => {
@@ -632,7 +642,7 @@ describe('Resources manager', () => {
       resourcesManager.registerPendingUpdate('/things/draft', flush)
       resourcesManager.registerPendingUpdate('/things/other', otherFlush)
       let settled = false
-      const flushing = flushPendingUpdates({ resourcesManager } as unknown as Cwa).then(() => {
+      const flushing = resourcesManager.flushPendingUpdates().then(() => {
         settled = true
       })
       await Promise.resolve()
@@ -1693,5 +1703,55 @@ describe('Resources manager', () => {
       await moving
       expect(resourcesManager.requestCount.value).toBe(0)
     })
+  })
+})
+
+describe('isUpdating: the saves presence reports as editing (#429)', () => {
+  test('a save waiting for its debounce makes its resource updating until it is sent, reactively', () => {
+    const { resourcesManager } = createResourcesManager()
+    const updating = computed(() => resourcesManager.isUpdating('/things/draft'))
+    expect(updating.value).toBe(false)
+
+    const untrack = resourcesManager.registerPendingUpdate('/things/draft', vi.fn())
+    expect(updating.value).toBe(true)
+    expect(resourcesManager.isUpdating('/things/other')).toBe(false)
+
+    untrack()
+    expect(updating.value).toBe(false)
+  })
+
+  test('a save in flight makes its resource updating until it is answered', async () => {
+    const { resourcesManager, cwaFetch } = createResourcesManager()
+    let answer: (value: unknown) => void = () => {}
+    cwaFetch.fetch.mockImplementationOnce(() => new Promise((resolve) => {
+      answer = resolve
+    }))
+    const updating = computed(() => resourcesManager.isUpdating('/things/draft'))
+
+    const saving = resourcesManager.updateResource({ endpoint: '/things/draft?published=false', data: { title: 'x' }, source: 'input_1' })
+    await Promise.resolve()
+    expect(updating.value).toBe(true)
+
+    answer({ '@id': '/things/draft' })
+    await saving
+    expect(updating.value).toBe(false)
+  })
+
+  test('a queued write to a group makes the group updating until it settles, even when it fails', async () => {
+    const { resourcesManager } = createResourcesManager()
+    let fail: (error: Error) => void = () => {}
+    const updating = computed(() => resourcesManager.isUpdating('/_/component_groups/top'))
+
+    const writing = resourcesManager.queueComponentGroupWrite('/_/component_groups/top', () => new Promise((_resolve, reject) => {
+      fail = reject
+    }))
+    expect(updating.value).toBe(true)
+    expect(resourcesManager.isUpdating('/_/component_groups/other')).toBe(false)
+
+    await Promise.resolve()
+    fail(new Error('x'))
+    await expect(writing).rejects.toThrow('x')
+    await Promise.resolve()
+    expect(updating.value).toBe(false)
   })
 })

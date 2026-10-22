@@ -2,7 +2,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useCwa } from '#imports'
 import { useCloneMode } from '#cwa/admin/clone-mode'
-import { instancesOf, onInstancesChange } from '#cwa/admin/manageable-instances'
+import { boundsOf, instancesOf, onInstancesChange } from '#cwa/admin/manageable-instances'
 import { useNuxtApp } from '#app/nuxt'
 
 const $cwa = useCwa()
@@ -24,34 +24,6 @@ const placedInstances = computed(() => {
 
 function isOrigin(elements: HTMLElement[]) {
   return elements.some(element => originElements.value.some(origin => origin.contains(element)))
-}
-
-function boundsOf(elements: HTMLElement[]) {
-  let top = Infinity
-  let left = Infinity
-  let right = -Infinity
-  let bottom = -Infinity
-  for (const element of elements) {
-    if (element.nodeType !== 1 || !element.isConnected) {
-      continue
-    }
-    const rect = element.getBoundingClientRect()
-    top = Math.min(top, rect.top)
-    left = Math.min(left, rect.left)
-    right = Math.max(right, rect.right)
-    bottom = Math.max(bottom, rect.bottom)
-  }
-  if (top === Infinity) {
-    return
-  }
-  const scrollY = Math.max(document.body.scrollTop, document.documentElement.scrollTop)
-  const scrollX = Math.max(document.body.scrollLeft, document.documentElement.scrollLeft)
-  return {
-    top: `${top + scrollY}px`,
-    left: `${left + scrollX}px`,
-    width: `${right - left}px`,
-    height: `${bottom - top}px`,
-  }
 }
 
 const highlights = computed(() => {

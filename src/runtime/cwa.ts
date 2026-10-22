@@ -33,7 +33,8 @@ export default class Cwa {
   private readonly mercure: Mercure
   private readonly fetcher: Fetcher
   private readonly fetchStatusManager: FetchStatusManager
-  private readonly cwaFetch: CwaFetch
+  // @internal
+  public readonly cwaFetch: CwaFetch
 
   public readonly siteConfig: SiteConfig
 
@@ -173,6 +174,11 @@ export default class Cwa {
 
   public get uploadConfig() {
     return this.options.upload
+  }
+
+  // @internal
+  public get realtimeConfig() {
+    return this.options.realtime
   }
 
   public get config() {

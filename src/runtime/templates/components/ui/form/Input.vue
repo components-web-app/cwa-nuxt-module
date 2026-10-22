@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { ResourceModelField } from '#cwa/resources/model-editors'
-import RemoteChangeConflict from '#cwa/templates/components/core/admin/form/RemoteChangeConflict.vue'
+import RemoteChangeConflict from '#cwa/templates/components/ui/RemoteChangeConflict.vue'
+import FieldPresence from '#cwa/templates/components/ui/FieldPresence.vue'
 
 defineOptions({ inheritAttrs: false })
 
 type InputValue = string | number | undefined | null
 
-const { model: field } = defineProps<{
+const { model: field, disabled = false } = defineProps<{
   model?: ResourceModelField<InputValue>
+  disabled?: boolean
 }>()
 
 const [vModel, modifiers] = defineModel<InputValue>()
@@ -34,24 +36,28 @@ const inputClass = 'cwa:disabled:opacity-50 cwa:disabled:cursor-not-allowed cwa:
 </script>
 
 <template>
-  <div
+  <FieldPresence
     v-if="field"
+    :model="field"
     class="cwa:flex cwa:w-full cwa:items-center cwa:gap-x-3"
+    v-bind="disabled ? undefined : field.focusListeners"
   >
     <input
       v-model="value"
       v-bind="$attrs"
+      :disabled="disabled"
       :class="inputClass"
     >
     <RemoteChangeConflict
       v-if="remoteChange"
       :change="remoteChange"
     />
-  </div>
+  </FieldPresence>
   <input
     v-else
     v-model="value"
     v-bind="$attrs"
+    :disabled="disabled"
     :class="inputClass"
   >
 </template>
