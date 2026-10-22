@@ -1349,6 +1349,62 @@ describe('Presence: an app\'s own events, send and on (#429)', () => {
     expect(events(fetch as never).map(({ data }) => data)).toStrictEqual([1, 'a', 3])
   })
 
+  test('however many events a tab sends, it stays under the API\'s limit of 10 a second with bursts of 20, sending 8 a second', async () => {
+    const built = withDraft()
+    await settle()
+    const { send } = usePresence(built.$cwa)
+    const startedAt = Date.now()
+    const sentAt: number[] = []
+    built.fetch.mockImplementation(() => {
+      sentAt.push(Date.now() - startedAt)
+      return Promise.resolve()
+    })
+
+    for (let tick = 0; tick < 500; tick++) {
+      send(LIVE, 'cursor', tick)
+      send(LIVE, 'selection', tick)
+      send(POSITION, 'cursor', tick)
+      await vi.advanceTimersByTimeAsync(10)
+    }
+
+    let apiTokens = 20
+    let apiCheckedAt = 0
+    for (const at of sentAt) {
+      apiTokens = Math.min(20, apiTokens + (at - apiCheckedAt) * 10 / 1_000) - 1
+      apiCheckedAt = at
+      expect(apiTokens).toBeGreaterThanOrEqual(0)
+    }
+    const sustained = sentAt.filter(at => at >= 3_000 && at < 5_000).length
+    expect(sustained).toBeLessThanOrEqual(2 * 8 + 1)
+    expect(sustained).toBeGreaterThanOrEqual(2 * 8 - 2)
+  })
+
+  test('event traffic never holds back this tab\'s presence: a change still goes out at once', async () => {
+    const built = withDraft()
+    await settle()
+    const { send } = usePresence(built.$cwa)
+
+    for (let tick = 0; tick < 300; tick++) {
+      send(LIVE, 'cursor', tick)
+      send(LIVE, 'selection', tick)
+      await vi.advanceTimersByTimeAsync(10)
+    }
+    const selectedAt = Date.now()
+    let presenceAt: number | undefined
+    built.fetch.mockImplementation((_path: string, options: { body: { event: string, data: { state?: string } } }) => {
+      options.body.event === 'presence' && options.body.data.state === 'selected' && (presenceAt ??= Date.now() - selectedAt)
+      return Promise.resolve()
+    })
+    built.stack.value = [{ iri: LIVE }]
+    for (let tick = 0; tick < 60; tick++) {
+      send(LIVE, 'cursor', tick)
+      send(LIVE, 'selection', tick)
+      await vi.advanceTimersByTimeAsync(10)
+    }
+
+    expect(presenceAt).toBeLessThan(50)
+  })
+
   test('a handler registered before presence starts receives events once it has', () => {
     const built = build()
     const handler = vi.fn()

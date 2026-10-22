@@ -114,6 +114,8 @@ interface Outgoing {
 const REALTIME_PATH = '/_/realtime'
 const THROTTLE_MS = 250
 const EVENT_THROTTLE_MS = 100
+const SEND_RATE_PER_S = 8
+const SEND_BURST = 16
 const HEARTBEAT_MS = 15_000
 const IDLE_HEARTBEAT_MS = 60_000
 const IDLE_KEEP_MS = 3 * IDLE_HEARTBEAT_MS
@@ -247,6 +249,8 @@ export class Presence {
   private repeat = false
   private lastKey: string | undefined
   private lastSent = Number.NEGATIVE_INFINITY
+  private tokens = SEND_BURST
+  private tokensAt = Date.now()
   private blockedUntil = 0
   private failures = 0
   private sendTimer?: ReturnType<typeof setTimeout>
@@ -468,7 +472,7 @@ export class Presence {
     if (!this.running || this.sendTimer || this.inFlight) {
       return
     }
-    const wait = Math.max(this.lastSent + THROTTLE_MS, this.blockedUntil) - Date.now()
+    const wait = Math.max(this.lastSent + THROTTLE_MS, this.blockedUntil, Date.now() + this.tokenWait(0)) - Date.now()
     this.sendTimer = setTimeout(() => {
       this.sendTimer = undefined
       this.send()
@@ -477,6 +481,10 @@ export class Presence {
 
   private async send() {
     if (!this.running || !this.dirty) {
+      return
+    }
+    if (this.tokenWait(0) > 0) {
+      this.schedule()
       return
     }
     const current = this.current()
@@ -489,6 +497,7 @@ export class Presence {
     }
     this.lastKey = key
     this.lastSent = Date.now()
+    this.tokens--
     this.inFlight = true
     const data: PresenceData = hello ? { ...current, hello: true } : current
     try {
@@ -517,7 +526,7 @@ export class Presence {
     if (!this.running || outgoing.timer || outgoing.inFlight || !outgoing.pending) {
       return
     }
-    const wait = Math.max(outgoing.lastSent + EVENT_THROTTLE_MS, this.blockedUntil) - Date.now()
+    const wait = Math.max(outgoing.lastSent + EVENT_THROTTLE_MS, this.blockedUntil, Date.now() + this.tokenWait(1)) - Date.now()
     outgoing.timer = setTimeout(() => {
       outgoing.timer = undefined
       this.sendEvent(outgoing)
@@ -525,6 +534,11 @@ export class Presence {
   }
 
   private async sendEvent(outgoing: Outgoing) {
+    if (this.tokenWait(1) > 0) {
+      this.scheduleEvent(outgoing)
+      return
+    }
+    this.tokens--
     const { iri, event, data } = outgoing
     outgoing.pending = false
     outgoing.inFlight = true
@@ -564,6 +578,14 @@ export class Presence {
         }
       }
     }
+  }
+
+  private tokenWait(reserve: number) {
+    const now = Date.now()
+    this.tokens = Math.min(SEND_BURST, this.tokens + (now - this.tokensAt) * SEND_RATE_PER_S / 1000)
+    this.tokensAt = now
+    const short = 1 + reserve - this.tokens
+    return short > 0 ? Math.ceil(short * 1000 / SEND_RATE_PER_S) : 0
   }
 
   private failed(error: FetchError, refused: string) {
