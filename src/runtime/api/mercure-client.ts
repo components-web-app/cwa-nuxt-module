@@ -130,8 +130,12 @@ export default class MercureClient {
   }
 
   private isOlderThanStored(resource: CwaResource) {
-    const stored = serverTime(this.resourcesStore.current.byId[resource['@id']]?.data?._metadata?.lastWrite?.at)
-    return serverTime(resource._metadata?.lastWrite?.at) < stored
+    const stored = this.resourcesStore.current.byId[resource['@id']]?.data?._metadata
+    const version = resource._metadata?.version
+    if (typeof version === 'number' && typeof stored?.version === 'number') {
+      return version < stored.version
+    }
+    return serverTime(resource._metadata?.lastWrite?.at) < serverTime(stored?.lastWrite?.at)
   }
 
   private listenForOnline() {

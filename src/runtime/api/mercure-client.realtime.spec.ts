@@ -44,6 +44,7 @@ function connect({ isAdmin = true, realtime, hub: hubUrl = 'https://api.test/.we
     realtimeConfig: realtime,
     apiUrlBase: 'https://api.test',
     cwaFetch: { writeHeaders, fetch },
+    resourcesManager: {},
     resources: { displayPageIri: computed(() => PAGE), pageDataIriOf: () => computed(() => undefined), findAllPublishableIris: (iri: string) => resourcesStore.findAllPublishableIris(iri) },
     admin: { resourceStackManager: { currentIri: computed(() => undefined), getClosestStackItemByType: () => undefined } },
     auth: { user: { '@id': '/users/me' }, get isAdmin() {
@@ -222,6 +223,33 @@ describe('MercureClient: messages older than the stored copy (#429)', () => {
     await deliver({ '@id': IRI, '@type': 'Title', 'title': 'theirs', modifiedAt, '_metadata': { persisted: true, lastWrite: { at, clientId: 'other-tab', userId: '/_/users/2' } } })
 
     expect(!!resourcesStore.new.byId[IRI]).toBe(held)
+  })
+})
+
+describe('MercureClient: messages ordered by version (api-components-bundle#561)', () => {
+  const EARLIER = '2026-10-21T09:00:00.000+00:00'
+  const LATER = '2026-10-21T11:00:00.000+00:00'
+
+  test.each([
+    { name: 'a lower version is dropped, though its lastWrite.at is later', version: 2, at: LATER, held: false },
+    { name: 'a higher version is kept, though its lastWrite.at is earlier', version: 4, at: EARLIER, held: true },
+    { name: 'the same version is kept', version: 3, at: EARLIER, held: true },
+  ])('$name', async ({ version, at, held }) => {
+    const { resourcesStore } = connect({ isAdmin: false })
+    resourcesStore.saveResource({ resource: { '@id': IRI, '@type': 'Title', 'title': 'old', '_metadata': { persisted: true, version: 3, lastWrite: { at: '2026-10-21T10:00:00.000+00:00' } } } })
+
+    await deliver({ '@id': IRI, '@type': 'Title', 'title': 'theirs', '_metadata': { persisted: true, version, lastWrite: { at, clientId: 'other-tab', userId: '/_/users/2' } } })
+
+    expect(!!resourcesStore.new.byId[IRI]).toBe(held)
+  })
+
+  test('without a version on both copies, lastWrite.at still decides', async () => {
+    const { resourcesStore } = connect({ isAdmin: false })
+    resourcesStore.saveResource({ resource: { '@id': IRI, '@type': 'Title', 'title': 'old', '_metadata': { persisted: true, version: 3, lastWrite: { at: '2026-10-21T10:00:00.000+00:00' } } } })
+
+    await deliver({ '@id': IRI, '@type': 'Title', 'title': 'theirs', '_metadata': { persisted: true, lastWrite: { at: EARLIER, clientId: 'other-tab', userId: '/_/users/2' } } })
+
+    expect(resourcesStore.new.byId[IRI]).toBeUndefined()
   })
 })
 
