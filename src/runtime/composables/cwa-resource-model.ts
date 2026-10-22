@@ -185,14 +185,18 @@ export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: s
     // todo: check on when second request made before initial is complete
     const newIriReturned = newResource?.['@id'] && newResource['@id'] !== submittingIri
     if (newIriReturned) {
-      localValueWithIri.value[newResource['@id']] = localValueWithIri.value[submittingIri]
-      resetValue(submittingIri)
+      moveLocalValue(submittingIri, newResource['@id'])
     }
 
     // we want to make sure the value is in sync with the store if we are not updating, which means resetting the locally stored variable
     // sequence of updating is:
     // local var > debounce > submitting var > store value
     isEqual(storeValue.value, submittingValue) && isEqual(storeValue.value, localValue.value) && resetValue()
+  }
+
+  function moveLocalValue(from: string, to: string) {
+    localValueWithIri.value[to] = localValueWithIri.value[from]
+    resetValue(from)
   }
 
   function resetValue(resetIri?: string) {
@@ -270,6 +274,7 @@ export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: s
     adopt: (value) => {
       localValue.value = value as T
     },
+    moveTo: moveLocalValue,
     submit: () => {
       cancelPending()
       return updateResource(localValue.value)

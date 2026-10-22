@@ -33,7 +33,11 @@ export default function (errorState: CwaErrorStateInterface): CwaErrorActionsInt
       const id = new Date().getTime()
       const err: Partial<CwaErrorEvent> = { event, timestamp: id }
 
-      if (error.cause) {
+      if (error.statusCode === 412) {
+        err.type = ErrorType.SERVER
+        err.detail = 'Someone else saved this first, so your change was not saved. Reload to see their version.'
+      }
+      else if (error.cause) {
         err.type = getErrorType(error.cause.constructor.name)
         err.detail = (error.cause as Error).message
       }

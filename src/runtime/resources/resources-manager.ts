@@ -58,12 +58,15 @@ export class ResourcesManager {
   private readonly fetchStatusManager: FetchStatusManager
   private readonly pendingUpdates = shallowReactive(new Map<string, Set<(keepConflict?: boolean) => unknown>>())
   private readonly groupWrites = shallowReactive(new Map<string, Promise<void>>())
+  private readonly writes = new Map<string, Promise<void>>()
   private requestsInProgress = reactive<{ [source: string]: { [id: string]: { event: ApiResourceEvent, args: [string, RequestOptions] } } }>({})
   private readonly reqCount = ref(0)
   private readonly _addResourceEvent: Ref<undefined | AddResourceEvent> = ref()
   private _requestCount?: ComputedRef<number>
   private readonly _resourcesStore: CwaResourcesStoreInterface
   private readonly _errorStore: CwaErrorStoreInterface
+  /** @internal */
+  public preconditionFailed?: (event: ApiResourceEvent, iri: string, resource: CwaResource) => boolean
 
   constructor(
     cwaFetch: CwaFetch,
@@ -208,11 +211,37 @@ export class ResourcesManager {
     if (!force && !await this.confirm('delete', event.endpoint)) {
       return false
     }
-    const args: [string, RequestOptions] = [
+    return this.versioned(event, event.endpoint, () => this.doResourceRequest(event, [
       this.getEndpointForIri(event.endpoint),
-      { ...this.requestOptions('DELETE') },
-    ]
-    return this.doResourceRequest(event, args)
+      this.withVersion(this.requestOptions('DELETE'), event.endpoint),
+    ]))
+  }
+
+  private versionOf(iri: string) {
+    const version = this.resourcesStore.getResource(iri)?.data?._metadata?.version
+    return typeof version === 'number' ? version : undefined
+  }
+
+  private withVersion(options: RequestOptions, iri: string) {
+    const version = this.versionOf(iri)
+    if (version !== undefined) {
+      options.headers['If-Match'] = `"${version}"`
+    }
+    return options
+  }
+
+  private versioned<T>(event: ApiResourceEvent, iri: string, send: (waited: boolean) => Promise<T>): Promise<T> {
+    if (('data' in event && event.data instanceof FormData) || this.versionOf(iri) === undefined) {
+      return send(false)
+    }
+    const stored = this.resourcesStore.getResource(iri)?.data?.publishedResource
+    const key = typeof stored === 'string' ? stored : iri
+    const previous = this.writes.get(key)
+    const next = (previous ?? Promise.resolve()).then(() => send(!!previous))
+    const settled = next.then(() => undefined, () => undefined)
+    this.writes.set(key, settled)
+    settled.then(() => this.writes.get(key) === settled && this.writes.delete(key))
+    return next
   }
 
   public removeResource(event: DeleteResourceEvent) {
@@ -228,6 +257,14 @@ export class ResourcesManager {
       await this.settleUpdates(iri)
     }
 
+    return this.versioned(event, iri, (waited) => {
+      const draft = waited && this.resourcesStore.publishedToDraftIris[iri]
+      return this.sendUpdate(draft ? { ...event, endpoint: event.endpoint.replace(iri, draft) } : event)
+    })
+  }
+
+  private async sendUpdate(event: DataApiResourceEvent) {
+    const iri = (event.iri || event.endpoint).split('?')[0] as string
     const currentResource = this.resourcesStore.getResource(iri)?.data
 
     const reqOps = {
@@ -237,6 +274,7 @@ export class ResourcesManager {
     if (event.headers) {
       reqOps.headers = event.headers
     }
+    event.data instanceof FormData || this.withVersion(reqOps, iri)
     const args: [string, RequestOptions] = [
       event.endpoint,
       reqOps,
@@ -360,7 +398,10 @@ export class ResourcesManager {
       return resource
     }
     catch (err) {
-      this.errorStore.error(event, err as FetchError<any>)
+      const error = err as FetchError<any>
+      if (error?.statusCode !== 412 || !this.preconditionFailed?.(event, iri, error.data)) {
+        this.errorStore.error(event, error)
+      }
     }
     finally {
       unset(this.requestsInProgress, [source, id])

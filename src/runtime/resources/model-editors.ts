@@ -36,6 +36,7 @@ export interface ModelEditor {
   localPatch: () => unknown
   discardLocal: () => void
   adopt: (value: unknown) => void
+  moveTo: (from: string, to: string) => void
   submit: () => Promise<void>
   conflict: (held?: { iri: string, change: RemoteFieldChange }) => void
 }
