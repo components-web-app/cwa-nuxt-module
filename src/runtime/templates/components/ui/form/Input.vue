@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { ResourceModelField } from '#cwa/resources/model-editors'
-import RemoteChangeConflict from '#cwa/templates/components/core/admin/form/RemoteChangeConflict.vue'
+import RemoteChangeConflict from '#cwa/templates/components/ui/RemoteChangeConflict.vue'
 import FieldPresence from '#cwa/templates/components/ui/FieldPresence.vue'
 
 defineOptions({ inheritAttrs: false })

@@ -9,7 +9,7 @@ import { computed } from 'vue'
 import { useCwaSelectInput } from '#cwa/composables/cwa-select-input'
 import type { SelectInputProps } from '#cwa/composables/cwa-select-input'
 import type { ResourceModelField } from '#cwa/resources/model-editors'
-import RemoteChangeConflict from '#cwa/templates/components/core/admin/form/RemoteChangeConflict.vue'
+import RemoteChangeConflict from '#cwa/templates/components/ui/RemoteChangeConflict.vue'
 import FieldPresence from '#cwa/templates/components/ui/FieldPresence.vue'
 
 const emit = defineEmits(['update:modelValue'])

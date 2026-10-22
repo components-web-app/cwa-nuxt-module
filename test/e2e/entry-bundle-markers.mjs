@@ -28,6 +28,7 @@ const forbidden = [
   { marker: 'Live editing paused', source: 'header/_parts/PresenceIndicator.vue' },
   { marker: 'cwa:z-peer-outline', source: 'resource-manager/PeerOutlines.vue' },
   { marker: 'field-presence-flag', source: 'ui/FieldPresence.vue' },
+  { marker: 'remote-change-accept', source: 'ui/RemoteChangeConflict.vue' },
 ]
 
 async function readEntryChunks() {
