@@ -1,16 +1,16 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { fieldFocusListeners } from '#cwa/resources/model-editors'
 import type { ResourceModelField } from '#cwa/resources/model-editors'
-import RemoteChangeConflict from '#cwa/templates/components/core/admin/form/RemoteChangeConflict.vue'
-import FieldPresence from '#cwa/templates/components/core/admin/form/FieldPresence.vue'
+import RemoteChangeConflict from '#cwa/templates/components/ui/RemoteChangeConflict.vue'
+import FieldPresence from '#cwa/templates/components/ui/FieldPresence.vue'
 
 defineOptions({ inheritAttrs: false })
 
 type InputValue = string | number | undefined | null
 
-const { model: field } = defineProps<{
+const { model: field, disabled = false } = defineProps<{
   model?: ResourceModelField<InputValue>
+  disabled?: boolean
 }>()
 
 const [vModel, modifiers] = defineModel<InputValue>()
@@ -31,36 +31,33 @@ const value = computed<InputValue>({
 })
 
 const remoteChange = computed(() => field?.remoteChange.value)
-const focusListeners = fieldFocusListeners(() => field)
-const focusedBy = computed(() => field?.focusedBy?.value ?? [])
 
 const inputClass = 'cwa:disabled:opacity-50 cwa:disabled:cursor-not-allowed cwa:disabled:pointer-events-none cwa:disabled:select-none cwa:text-light cwa:w-full cwa:dark-blur cwa:border-0 cwa:outline-dotted cwa:outline-1 cwa:outline-stone-700 cwa:[outline-offset:-1px] cwa:hover:outline-stone-400 cwa:focus-visible:ring-0 cwa:focus-visible:[outline-style:solid] cwa:focus-visible:outline-2 cwa:focus-visible:outline-stone-500 cwa:focus-visible:[outline-offset:-2px]'
 </script>
 
 <template>
-  <div
+  <FieldPresence
     v-if="field"
-    class="cwa:relative cwa:group/field cwa:flex cwa:w-full cwa:items-center cwa:gap-x-3"
-    v-on="focusListeners"
+    :model="field"
+    class="cwa:flex cwa:w-full cwa:items-center cwa:gap-x-3"
+    v-bind="disabled ? undefined : field.focusListeners"
   >
-    <FieldPresence
-      v-if="focusedBy.length"
-      :peers="focusedBy"
-    />
     <input
       v-model="value"
       v-bind="$attrs"
+      :disabled="disabled"
       :class="inputClass"
     >
     <RemoteChangeConflict
       v-if="remoteChange"
       :change="remoteChange"
     />
-  </div>
+  </FieldPresence>
   <input
     v-else
     v-model="value"
     v-bind="$attrs"
+    :disabled="disabled"
     :class="inputClass"
   >
 </template>

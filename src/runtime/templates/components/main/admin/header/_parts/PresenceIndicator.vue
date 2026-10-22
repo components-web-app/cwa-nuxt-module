@@ -5,7 +5,7 @@ import { navigateTo, useRouter } from '#app/composables/router'
 import { useCwa } from '#cwa/composables/cwa'
 import { useCwaResourceRoute } from '#cwa/composables/useCwaResourceRoute'
 import { getResourceTypeFromIri } from '#cwa/resources/resource-utils'
-import { presenceColour, usePresence } from '#cwa/admin/presence'
+import { peerColour, peerName, usePresence } from '#cwa/admin/presence'
 import type { PresencePeer } from '#cwa/admin/presence'
 
 interface Person {
@@ -14,6 +14,8 @@ interface Person {
   initials: string
   colour: string
   tabs: number
+  isSelf: boolean
+  idle: boolean
 }
 
 const $cwa = useCwa()
@@ -21,10 +23,6 @@ const { active, paused, onThisPage, elsewhere } = usePresence($cwa)
 const open = ref(false)
 const { getInternalResourceLink } = useCwaResourceRoute()
 const router = useRouter()
-
-function nameOf(peer: PresencePeer) {
-  return peer.user.name || 'Someone'
-}
 
 function initialsOf(name: string) {
   return name.split(/\s+/).filter(Boolean).slice(0, 2).map(word => word[0]!.toUpperCase()).join('')
@@ -36,10 +34,11 @@ function people(peers: PresencePeer[]) {
     const person = byUser.get(peer.user.id)
     if (person) {
       person.tabs++
+      person.idle &&= peer.state === 'idle'
       continue
     }
-    const name = nameOf(peer)
-    byUser.set(peer.user.id, { id: peer.user.id, name, initials: initialsOf(name), colour: presenceColour(peer.user.id), tabs: 1 })
+    const name = peerName(peer.user.name, peer.isSelf)
+    byUser.set(peer.user.id, { id: peer.user.id, name, initials: peer.isSelf ? 'You' : initialsOf(name), colour: peerColour(peer), tabs: 1, isSelf: peer.isSelf, idle: peer.state === 'idle' })
   }
   return [...byUser.values()]
 }
@@ -47,7 +46,7 @@ function people(peers: PresencePeer[]) {
 const here = computed(() => people(onThisPage.value))
 const elsewhereCount = computed(() => {
   const hereIds = new Set(here.value.map(person => person.id))
-  return people(elsewhere.value).filter(person => !hereIds.has(person.id)).length
+  return people(elsewhere.value).filter(person => !person.isSelf && !hereIds.has(person.id)).length
 })
 const label = computed(() => {
   const names = here.value.map(person => person.tabs > 1 ? `${person.name} (${person.tabs} tabs)` : person.name)
@@ -81,6 +80,9 @@ function pageLabel(page: string) {
 }
 
 function activity(peer: PresencePeer) {
+  if (peer.state === 'idle') {
+    return 'Idle'
+  }
   if (peer.state !== 'selected' && peer.state !== 'editing') {
     return 'Viewing'
   }
@@ -114,7 +116,7 @@ async function goTo(event: MouseEvent, page: string) {
     class="cwa:self-center cwa:whitespace-nowrap cwa:text-sm cwa:text-stone-400"
   >Live editing paused</span>
   <PopoverRoot
-    v-else-if="active && rows.length"
+    v-else-if="active && (here.length || elsewhereCount)"
     v-model:open="open"
   >
     <PopoverTrigger
@@ -130,8 +132,10 @@ async function goTo(event: MouseEvent, page: string) {
           v-for="person in here"
           :key="person.id"
           data-testid="presence-avatar"
+          :data-idle="person.idle || undefined"
           :title="person.tabs > 1 ? `${person.name} · ${person.tabs} tabs` : person.name"
           :style="{ backgroundColor: person.colour }"
+          :class="{ 'cwa:opacity-50': person.idle }"
           class="cwa:relative cwa:flex cwa:items-center cwa:justify-center cwa:h-7 cwa:w-7 cwa:rounded-full cwa:text-xs cwa:font-bold cwa:text-dark cwa:border-2 cwa:border-dark"
         >{{ person.initials }}<span
           v-if="person.tabs > 1"
@@ -157,14 +161,20 @@ async function goTo(event: MouseEvent, page: string) {
             v-for="{ peer, here: isHere } in rows"
             :key="peer.clientId"
             data-testid="presence-row"
+            :data-idle="peer.state === 'idle' || undefined"
+            :class="{ 'cwa:opacity-50': peer.state === 'idle' }"
             class="cwa:flex cwa:flex-wrap cwa:items-center cwa:gap-x-2"
           >
             <span
               aria-hidden="true"
-              :style="{ backgroundColor: presenceColour(peer.user.id) }"
+              :style="{ backgroundColor: peerColour(peer) }"
               class="cwa:h-2.5 cwa:w-2.5 cwa:rounded-full"
             />
-            <span>{{ nameOf(peer) }}</span>
+            <span>{{ peerName(peer.user.name, peer.isSelf) }}</span>
+            <span
+              v-if="peer.device"
+              class="cwa:text-stone-400"
+            >{{ peer.device }}</span>
             <span
               v-if="isHere"
               class="cwa:text-yellow"

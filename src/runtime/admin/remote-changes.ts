@@ -5,7 +5,7 @@ import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/resources/resourc
 import { modelEditors } from '#cwa/resources/model-editors'
 import type { ModelEditor, RemoteFieldChange, RemoteUser } from '#cwa/resources/model-editors'
 import { useCloneMode } from '#cwa/admin/clone-mode'
-import { usePresence } from '#cwa/admin/presence'
+import { peerName, usePresence } from '#cwa/admin/presence'
 import { ErrorType } from '#cwa/storage/stores/error/state'
 
 export const CLIENT_ID_HEADER = 'X-CWA-Client-Id'
@@ -83,7 +83,8 @@ function userOf($cwa: Cwa, resource: CwaResource): RemoteUser | undefined {
     return
   }
   const name = usePresence($cwa).nameOf(userId)
-  return name ? { id: userId, name } : { id: userId }
+  const isSelf = userId === $cwa.auth.user?.['@id']
+  return name ? { id: userId, name, isSelf } : { id: userId, isSelf }
 }
 
 export class RemoteChanges {
@@ -189,6 +190,7 @@ export class RemoteChanges {
     const conflict: Conflict = { iri, remote, stored: this.stored(editorIri)?.[editor.field()] }
     const change: RemoteFieldChange = {
       user,
+      name: peerName(user?.name, !!user?.isSelf),
       value: editor.value(remote),
       accept: () => {
         this.resolve(editor, conflict, true)

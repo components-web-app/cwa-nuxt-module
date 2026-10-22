@@ -7,7 +7,7 @@ import type { Router } from 'vue-router'
 import PresenceIndicator from './PresenceIndicator.vue'
 import { navigateTo } from '#app/composables/router'
 import * as cwaComposable from '#cwa/composables/cwa'
-import { Presence, presenceColour } from '#cwa/admin/presence'
+import { Presence, presenceColour, SELF_COLOUR } from '#cwa/admin/presence'
 import { ResourcesStore } from '#cwa/storage/stores/resources/resources-store'
 import type Cwa from '#cwa/cwa'
 
@@ -27,6 +27,7 @@ const ids = ['0a1b2c3d-1111-4aaa-8bbb-000000000001', '0a1b2c3d-1111-4aaa-8bbb-00
 const SAM = { id: '/users/sam', name: 'Sam Smith' }
 const ALEX = { id: '/users/alex', name: 'Alex' }
 const JO = { id: '/users/jo', name: 'Jo Bloggs' }
+const ME = { id: '/users/me', name: 'Daniel West' }
 
 let presence: Presence | undefined
 const order: string[] = []
@@ -40,6 +41,7 @@ function mockCwa(byId: Record<string, Record<string, unknown>> = {}) {
   const state = reactive({ byId })
   const cwa = {
     apiUrlBase: 'https://api.test',
+    auth: { user: { '@id': ME.id } },
     cwaFetch: { fetch: vi.fn().mockResolvedValue(undefined) },
     resourcesConfig: { HtmlContent: { name: 'Rich text' } },
     resources: {
@@ -230,6 +232,73 @@ describe('PresenceIndicator (#429)', () => {
     const { rows } = await openList()
 
     expect(rows.map(texts)).toStrictEqual(['Sam Smith This page Editing Rich text'])
+  })
+
+  test('this admin\'s other window shows as "You (other window)" in the neutral colour, never as another person', async () => {
+    mockCwa()
+    presence!.start(true)
+    arrive(ids[0]!, ME, { device: 'Safari on iOS' })
+    arrive(ids[1]!, ALEX, {})
+    const wrapper = await mountIndicator()
+
+    const avatars = wrapper.findAll('[data-testid="presence-avatar"]')
+    expect(avatars.map(avatar => text(avatar.element))).toStrictEqual(['You', 'A'])
+    expect(avatars[0]!.attributes('title')).toBe('You (other window)')
+    expect(avatars[0]!.attributes('style')).toContain(SELF_COLOUR)
+    expect(wrapper.get('[data-testid="presence-indicator"]').attributes('aria-label')).toBe('You (other window) and Alex on this page. Show editors')
+  })
+
+  test('this admin\'s other windows elsewhere are never counted as another editor', async () => {
+    mockCwa()
+    presence!.start(true)
+    arrive(ids[0]!, ME, { page: ABOUT })
+    arrive(ids[1]!, JO, { page: ABOUT })
+    const wrapper = await mountIndicator()
+
+    expect(text(wrapper.get('[data-testid="presence-elsewhere"]').element)).toBe('+1 elsewhere')
+  })
+
+  test('with only this admin\'s other window elsewhere there is nothing to show', async () => {
+    mockCwa()
+    presence!.start(true)
+    arrive(ids[0]!, ME, { page: ABOUT })
+    const wrapper = await mountIndicator()
+
+    expect(wrapper.find('[data-testid="presence-indicator"]').exists()).toBe(false)
+  })
+
+  test('the list names this admin\'s other window with its device, and shows no one else\'s device', async () => {
+    mockCwa()
+    presence!.start(true)
+    arrive(ids[0]!, ME, { device: 'Safari on iOS' })
+    arrive(ids[1]!, ALEX, { device: 'Firefox on Linux' })
+
+    const { rows } = await openList()
+
+    expect(rows.map(texts)).toStrictEqual([
+      'You (other window) Safari on iOS This page Viewing',
+      'Alex This page Viewing',
+    ])
+  })
+
+  test('idle people are dimmed and listed as idle; someone with another tab active here is not dimmed', async () => {
+    mockCwa()
+    presence!.start(true)
+    arrive(ids[0]!, SAM, { state: 'idle' })
+    arrive(ids[1]!, ALEX, { state: 'idle' })
+    arrive(ids[2]!, ALEX, {})
+
+    const { wrapper, rows } = await openList()
+
+    const avatars = wrapper.findAll('[data-testid="presence-avatar"]')
+    expect(avatars[0]!.attributes('data-idle')).toBe('true')
+    expect(avatars[0]!.classes()).toContain('cwa:opacity-50')
+    expect(avatars[1]!.attributes('data-idle')).toBeUndefined()
+    expect(avatars[1]!.classes()).not.toContain('cwa:opacity-50')
+    expect(rows.map(texts)).toStrictEqual(['Sam Smith This page Idle', 'Alex This page Idle', 'Alex This page Viewing'])
+    expect(rows[0]!.dataset.idle).toBe('true')
+    expect(rows[0]!.classList).toContain('cwa:opacity-50')
+    expect(rows[2]!.dataset.idle).toBeUndefined()
   })
 
   test('a page link sends this tab\'s waiting saves first, then goes to the route path past the editing guard', async () => {

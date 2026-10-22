@@ -15,8 +15,8 @@ const confirmations = {
 }
 
 export async function editingNotice($cwa: Cwa, iri: string) {
-  const peers = (await realtimeView($cwa).load())?.peers(iri) ?? []
-  const names = [...new Map(peers.map(peer => [peer.user.id, peer.user.name || 'Someone'])).values()]
+  const peers = ((await realtimeView($cwa).load())?.peers(iri) ?? []).filter(peer => !peer.idle)
+  const names = [...new Map(peers.map(peer => [peer.user.id, peer.name])).values()]
   if (!names.length) {
     return
   }

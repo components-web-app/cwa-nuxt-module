@@ -19,8 +19,8 @@ vi.mock('#cwa/resources/realtime-view', () => ({
 
 const COMPONENT = '/component/html_contents/c1'
 
-function peer(name: string | undefined, id: string, state: RealtimePeer['state'] = 'selected'): RealtimePeer {
-  return { user: name ? { id, name } : { id }, state, expiresAt: 0 }
+function peer(name: string | undefined, id: string, state: RealtimePeer['state'] = 'selected', isSelf = false): RealtimePeer {
+  return { user: name ? { id, name } : { id }, name: isSelf ? 'You (other window)' : name ?? 'Someone', state, expiresAt: 0, colour: '#c084fc', isSelf, idle: state === 'idle' }
 }
 
 function cwaWith(peers: RealtimePeer[] | undefined) {
@@ -73,6 +73,10 @@ describe('editingNotice (#429)', () => {
     { peers: [peer('Sam', '/users/sam'), peer('Sam', '/users/sam', 'editing')], notice: 'Sam is editing this.' },
     { peers: [peer('Sam', '/users/sam'), peer(undefined, '/users/anon')], notice: 'Sam and Someone are editing this.' },
     { peers: [peer('Sam', '/users/sam'), peer('Alex', '/users/alex'), peer('Jo', '/users/jo')], notice: 'Sam, Alex and Jo are editing this.' },
+    { peers: [peer('Me', '/users/me', 'editing', true)], notice: 'You (other window) is editing this.' },
+    { peers: [peer('Me', '/users/me', 'selected', true), peer('Sam', '/users/sam')], notice: 'You (other window) and Sam are editing this.' },
+    { peers: [peer('Sam', '/users/sam', 'idle'), peer('Alex', '/users/alex')], notice: 'Alex is editing this.' },
+    { peers: [peer('Sam', '/users/sam', 'idle')], notice: undefined },
     { peers: [], notice: undefined },
     { peers: undefined, notice: undefined },
   ])('$notice', async ({ peers, notice }) => {

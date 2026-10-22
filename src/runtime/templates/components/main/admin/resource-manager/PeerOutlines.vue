@@ -2,7 +2,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useCwa } from '#cwa/composables/cwa'
 import { boundsOf, instancesOf, onInstancesChange } from '#cwa/admin/manageable-instances'
-import { presenceColour, usePresence } from '#cwa/admin/presence'
+import { peerColour, peerName, usePresence } from '#cwa/admin/presence'
 import type { PresencePeer } from '#cwa/admin/presence'
 import { useFreshFlags } from '#cwa/admin/presence-flags'
 import { useNuxtApp } from '#app/nuxt'
@@ -18,7 +18,7 @@ const peersByIri = computed(() => {
   const byIri: Record<string, PresencePeer[]> = {}
   for (const peer of onThisPage.value) {
     const iri = peer.component ?? peer.componentPosition
-    if (!iri) {
+    if (!iri || peer.state === 'idle') {
       continue
     }
     const key = Object.keys(byIri).find(existing => $cwa.resources.findAllPublishableIris(existing).includes(iri)) ?? iri
@@ -35,7 +35,7 @@ const fresh = useFreshFlags(() => Object.fromEntries(Object.entries(peersByIri.v
 function labelOf(peers: PresencePeer[]) {
   const people = new Map<string, { name: string, editing: boolean }>()
   for (const peer of peers) {
-    const person = people.get(peer.user.id) ?? { name: peer.user.name || 'Someone', editing: false }
+    const person = people.get(peer.user.id) ?? { name: peerName(peer.user.name, peer.isSelf), editing: false }
     person.editing ||= peer.state === 'editing'
     people.set(peer.user.id, person)
   }
@@ -53,7 +53,7 @@ function labelOf(peers: PresencePeer[]) {
 const outlines = computed(() => {
   void redrawCount.value
   return Object.entries(peersByIri.value).flatMap(([iri, peers]) => {
-    const colour = presenceColour(peers[0]!.user.id)
+    const colour = peerColour(peers[0]!)
     const label = labelOf(peers)
     const faded = !fresh.has(iri) && !hovered.value.includes(iri)
     return instancesOf($cwa, iri)

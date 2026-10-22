@@ -562,6 +562,115 @@ describe('useCwaResourceModel', () => {
       await vi.waitFor(() => expect(presence.blur).toHaveBeenCalledOnce())
     })
 
+    describe('focusListeners, bound on the root of the field\'s editor', () => {
+      function editorRoot() {
+        const root = document.createElement('div')
+        const inner = document.createElement('button')
+        const outside = document.createElement('button')
+        root.append(inner)
+        document.body.append(root, outside)
+        return { root, inner, outside }
+      }
+
+      function bind(root: HTMLElement, listeners: Record<string, (event: any) => void>) {
+        root.addEventListener('focusin', listeners.onFocusin!)
+        root.addEventListener('focusout', listeners.onFocusout!)
+        root.addEventListener('pointerdown', listeners.onPointerdown!)
+      }
+
+      const pointerdown = (on: Element) => on.dispatchEvent(new Event('pointerdown', { bubbles: true }))
+      const focusout = (from: Element, to: Element | null) => from.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: to }))
+      const settled = () => new Promise(resolve => setTimeout(resolve))
+
+      afterEach(() => {
+        document.body.innerHTML = ''
+      })
+
+      test('focus moving in reports focus, moving within the editor keeps it, and leaving it blurs', async () => {
+        const presence = presenceView()
+        realtime.load.mockResolvedValue(presence)
+        const { root, inner, outside } = editorRoot()
+        bind(root, useCwaResourceModel(iri, 'title').focusListeners)
+
+        inner.dispatchEvent(new FocusEvent('focusin', { bubbles: true }))
+        focusout(inner, root)
+        await settled()
+        expect(presence.focus).toHaveBeenCalledOnce()
+        expect(presence.blur).not.toHaveBeenCalled()
+
+        focusout(inner, outside)
+        await settled()
+        expect(presence.blur).toHaveBeenCalledOnce()
+      })
+
+      test('a button that takes no focus on click (Safari) reports focus on pointerdown and blurs on the next pointerdown outside, once', async () => {
+        const presence = presenceView()
+        realtime.load.mockResolvedValue(presence)
+        const { root, inner, outside } = editorRoot()
+        bind(root, useCwaResourceModel(iri, 'title').focusListeners)
+
+        pointerdown(inner)
+        pointerdown(inner)
+        await settled()
+        expect(presence.focus).toHaveBeenCalledWith(expect.anything(), '/my/resource', 'title')
+        expect(presence.blur).not.toHaveBeenCalled()
+
+        pointerdown(outside)
+        await settled()
+        expect(presence.blur).toHaveBeenCalledOnce()
+
+        pointerdown(outside)
+        await settled()
+        expect(presence.blur).toHaveBeenCalledOnce()
+      })
+
+      test('a pointerdown outside that leaves focus in the editor, as on its own menu rendered elsewhere, keeps the focus until focus leaves', async () => {
+        const presence = presenceView()
+        realtime.load.mockResolvedValue(presence)
+        const { root, inner, outside } = editorRoot()
+        bind(root, useCwaResourceModel(iri, 'title').focusListeners)
+
+        pointerdown(inner)
+        inner.focus()
+        pointerdown(outside)
+        await settled()
+        expect(document.activeElement).toBe(inner)
+        expect(presence.blur).not.toHaveBeenCalled()
+
+        outside.focus()
+        await settled()
+        expect(presence.blur).toHaveBeenCalledOnce()
+      })
+
+      test('after focus leaves by keyboard, a later pointerdown outside does not blur again', async () => {
+        const presence = presenceView()
+        realtime.load.mockResolvedValue(presence)
+        const { root, inner, outside } = editorRoot()
+        bind(root, useCwaResourceModel(iri, 'title').focusListeners)
+
+        pointerdown(inner)
+        focusout(inner, outside)
+        pointerdown(outside)
+        await settled()
+
+        expect(presence.blur).toHaveBeenCalledOnce()
+      })
+
+      test('unmounting stops watching for a pointerdown outside', async () => {
+        const presence = presenceView()
+        realtime.load.mockResolvedValue(presence)
+        const { root, inner, outside } = editorRoot()
+        bind(root, useCwaResourceModel(iri, 'title').focusListeners)
+
+        pointerdown(inner)
+        vi.mocked(onBeforeUnmount).mock.calls.at(-1)![0]()
+        pointerdown(outside)
+        await settled()
+
+        expect(presence.blur).toHaveBeenCalledOnce()
+      })
+    })
+
     test('focusedBy is empty until the real-time view has loaded, then lists who has this field of this IRI focused', () => {
       const { focusedBy } = useCwaResourceModel(iri, 'meta.a')
       expect(focusedBy.value).toStrictEqual([])

@@ -21,8 +21,7 @@ function fieldModel<T>(initial: T) {
       value.value = next
     } }),
     remoteChange: computed(() => change.value),
-    focus: vi.fn(),
-    blur: vi.fn(),
+    focusListeners: { onFocusin: vi.fn(), onFocusout: vi.fn(), onPointerdown: vi.fn() },
     focusedBy: computed(() => peers.value),
     value,
     change,
@@ -30,8 +29,8 @@ function fieldModel<T>(initial: T) {
   }
 }
 
-function conflict<T>(value: T, name?: string) {
-  return { value, user: name ? { id: '/_/users/2', name } : { id: '/_/users/2' }, accept: vi.fn(), keep: vi.fn() }
+function conflict<T>(value: T, name: string) {
+  return { value, name, accept: vi.fn(), keep: vi.fn() }
 }
 
 describe('kit fields bound to a resource model (#429)', () => {
@@ -71,14 +70,6 @@ describe('kit fields bound to a resource model (#429)', () => {
     expect(wrapper.get('input').element.value).toBe('Mine')
   })
 
-  test('a conflict from someone with no known name says Someone', async () => {
-    const model = fieldModel('Mine')
-    model.change.value = conflict('Theirs')
-    const wrapper = mount(Input, { props: { model } })
-
-    expect(wrapper.get('[data-testid="remote-change"]').text()).toContain('Someone changed this')
-  })
-
   test('CwaUiFormToggle writes the model and shows a conflict', async () => {
     const model = fieldModel<boolean>(false)
     model.change.value = conflict(true, 'Sam')
@@ -111,68 +102,69 @@ describe('kit fields bound to a resource model (#429)', () => {
   })
 
   describe('focus is reported to co-editing presence (#429)', () => {
-    function leave(element: Element, to: Element | null) {
-      element.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: to }))
-    }
+    const options = [{ label: 'First', value: 'a' }, { label: 'Second', value: 'b' }]
 
-    test('CwaUiFormInput reports focus on entering the field and blur on leaving it, never per keystroke', async () => {
-      const model = fieldModel('Mine')
-      const wrapper = mount(Input, { props: { model }, attachTo: document.body })
-      const input = wrapper.get('input')
+    test.each([
+      ['CwaUiFormInput', Input, 'Mine', {}, 'input'],
+      ['CwaUiFormToggle', Toggle, false, { label: 'Visible' }, 'button'],
+      ['CwaUiSelect', Select, 'b', { options }, 'button'],
+    ] as const)('%s binds the model\'s focusListeners on the element holding the whole field and its conflict', async (_name, component, initial, props, control) => {
+      const model = fieldModel<any>(initial)
+      model.change.value = conflict(initial, 'Sam')
+      const roots: Element[] = []
+      for (const listener of Object.values(model.focusListeners)) {
+        listener.mockImplementation((event: Event) => roots.push(event.currentTarget as Element))
+      }
+      const wrapper = mount(component as any, { props: { ...props, model }, attachTo: document.body })
+      const target = wrapper.get(control)
 
-      await input.trigger('focusin')
-      await input.setValue('Edited')
-      expect(model.focus).toHaveBeenCalledOnce()
-      expect(model.blur).not.toHaveBeenCalled()
+      await target.trigger('focusin')
+      await target.trigger('pointerdown')
+      await target.trigger('focusout')
 
-      leave(input.element, document.body)
-      expect(model.blur).toHaveBeenCalledOnce()
+      expect(model.focusListeners.onFocusin).toHaveBeenCalledOnce()
+      expect(model.focusListeners.onPointerdown).toHaveBeenCalledOnce()
+      expect(model.focusListeners.onFocusout).toHaveBeenCalledOnce()
+      expect(new Set(roots).size).toBe(1)
+      expect(roots[0]!.contains(wrapper.get('[data-testid="remote-change"]').element)).toBe(true)
+      wrapper.unmount()
+    })
+  })
+
+  describe('a disabled field never reports focus (#429)', () => {
+    test.each([
+      ['CwaUiFormInput', Input, 'Mine', { disabled: true }, 'input'],
+      ['CwaUiFormToggle', Toggle, false, { label: 'Visible', disabled: true }, 'button'],
+    ] as const)('%s, clicked while disabled, reports nothing to presence', async (_name, component, initial, props, control) => {
+      const model = fieldModel<any>(initial)
+      const wrapper = mount(component as any, { props: { ...props, model }, attachTo: document.body })
+
+      await wrapper.trigger('pointerdown')
+      await wrapper.get(control).trigger('pointerdown')
+      await wrapper.get(control).trigger('focusin')
+
+      expect(model.focusListeners.onPointerdown).not.toHaveBeenCalled()
+      expect(model.focusListeners.onFocusin).not.toHaveBeenCalled()
       wrapper.unmount()
     })
 
-    test('CwaUiFormInput stays focused while focus moves to its conflict buttons', async () => {
-      const model = fieldModel('Mine')
-      model.change.value = conflict('Theirs', 'Sam')
-      const wrapper = mount(Input, { props: { model }, attachTo: document.body })
+    test.each([
+      ['CwaUiFormInput', Input, 'Mine', {}, 'input'],
+      ['CwaUiFormToggle', Toggle, false, { label: 'Visible' }, 'button'],
+    ] as const)('%s reports focus again once enabled', async (_name, component, initial, props, control) => {
+      const model = fieldModel<any>(initial)
+      const wrapper = mount(component as any, { props: { ...props, disabled: true, model }, attachTo: document.body })
 
-      leave(wrapper.get('input').element, wrapper.get('[data-testid="remote-change-accept"]').element)
+      await wrapper.setProps({ disabled: false })
+      await wrapper.get(control).trigger('pointerdown')
 
-      expect(model.blur).not.toHaveBeenCalled()
-      wrapper.unmount()
-    })
-
-    test('CwaUiFormToggle reports focus and blur', async () => {
-      const model = fieldModel<boolean>(false)
-      const wrapper = mount(Toggle, { props: { label: 'Visible', model }, attachTo: document.body })
-      const button = wrapper.get('button')
-
-      await button.trigger('focusin')
-      leave(button.element, null)
-
-      expect(model.focus).toHaveBeenCalledOnce()
-      expect(model.blur).toHaveBeenCalledOnce()
-      wrapper.unmount()
-    })
-
-    test('CwaUiSelect stays focused while focus moves into its options, and blurs on leaving', async () => {
-      const model = fieldModel('b')
-      const wrapper = mount(Select, { props: { model, options: [{ label: 'First', value: 'a' }, { label: 'Second', value: 'b' }] }, attachTo: document.body })
-      const button = wrapper.get('button')
-
-      await button.trigger('focusin')
-      await button.trigger('click')
-      leave(button.element, wrapper.get('ul').element)
-      expect(model.focus).toHaveBeenCalledOnce()
-      expect(model.blur).not.toHaveBeenCalled()
-
-      leave(wrapper.get('ul').element, document.body)
-      expect(model.blur).toHaveBeenCalledOnce()
+      expect(model.focusListeners.onPointerdown).toHaveBeenCalledOnce()
       wrapper.unmount()
     })
   })
 
   describe('another admin in the field is shown on it (#429)', () => {
-    const SAM = { user: { id: '/users/sam', name: 'Sam' }, colour: '#c084fc' }
+    const SAM = { user: { id: '/users/sam', name: 'Sam' }, name: 'Sam', colour: '#c084fc', isSelf: false, clientIds: ['tab-sam'] }
     const options = [{ label: 'First', value: 'a' }, { label: 'Second', value: 'b' }]
 
     test.each([
