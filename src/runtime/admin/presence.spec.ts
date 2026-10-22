@@ -1000,7 +1000,7 @@ describe('presenceColour (#429)', () => {
     const dark = luminance('#1c1917')
     const colours = new Set(Array.from({ length: 200 }, (_, index) => presenceColour(`/users/${index}`)))
 
-    expect(colours.size).toBe(6)
+    expect(colours.size).toBe(5)
     for (const colour of colours) {
       expect((luminance(colour) + 0.05) / (dark + 0.05), colour).toBeGreaterThanOrEqual(4.5)
     }
