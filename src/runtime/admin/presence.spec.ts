@@ -734,7 +734,7 @@ describe('Presence: peers on a resource (#429)', () => {
     built.presence.receive(peerEvent({ state: 'selected', component: '/component/titles/another' }, ALEX))
     const { peers } = usePresence(built.$cwa)
 
-    const expected = [{ user: { id: '/users/sam', name: 'Sam' }, state: 'editing', field: 'title', expiresAt: Date.now() + 30_000, colour: presenceColour('/users/sam'), isSelf: false, idle: false }]
+    const expected = [{ user: { id: '/users/sam', name: 'Sam' }, name: 'Sam', state: 'editing', field: 'title', expiresAt: Date.now() + 30_000, colour: presenceColour('/users/sam'), isSelf: false, idle: false }]
     expect(peers(DRAFT)).toStrictEqual(expected)
     expect(peers(LIVE)).toStrictEqual(expected)
     expect(peers(POSITION)).toStrictEqual(expected)
@@ -745,7 +745,7 @@ describe('Presence: peers on a resource (#429)', () => {
     const built = withDraft()
     built.presence.receive(peerEvent({ state: 'selected', component: LIVE }))
 
-    expect(usePresence(built.$cwa).peers(DRAFT)).toStrictEqual([{ user: { id: '/users/sam', name: 'Sam' }, state: 'selected', expiresAt: Date.now() + 45_000, colour: presenceColour('/users/sam'), isSelf: false, idle: false }])
+    expect(usePresence(built.$cwa).peers(DRAFT)).toStrictEqual([{ user: { id: '/users/sam', name: 'Sam' }, name: 'Sam', state: 'selected', expiresAt: Date.now() + 45_000, colour: presenceColour('/users/sam'), isSelf: false, idle: false }])
   })
 
   test('focusedBy lists each person editing that field of the resource once, in their colour, named, with the windows they have it focused in', () => {
@@ -992,8 +992,8 @@ describe('Presence: device and your other windows (#429)', () => {
     const { peers, focusedBy } = usePresence(built.$cwa)
 
     expect(peers(LIVE)).toStrictEqual([
-      { user: { id: ME, name: 'Me' }, state: 'editing', field: 'title', expiresAt: Date.now() + 45_000, colour: SELF_COLOUR, isSelf: true, idle: false, device: 'Safari on iOS' },
-      { user: { id: '/users/alex', name: 'Alex' }, state: 'idle', expiresAt: Date.now() + 180_000, colour: presenceColour('/users/alex'), isSelf: false, idle: true },
+      { user: { id: ME, name: 'Me' }, name: 'You (other window)', state: 'editing', field: 'title', expiresAt: Date.now() + 45_000, colour: SELF_COLOUR, isSelf: true, idle: false, device: 'Safari on iOS' },
+      { user: { id: '/users/alex', name: 'Alex' }, name: 'Alex', state: 'idle', expiresAt: Date.now() + 180_000, colour: presenceColour('/users/alex'), isSelf: false, idle: true },
     ])
     expect(focusedBy(LIVE, 'title')).toStrictEqual([{ user: { id: ME, name: 'Me' }, name: 'You (other window)', colour: SELF_COLOUR, isSelf: true, clientIds: [PEER_ID] }])
   })

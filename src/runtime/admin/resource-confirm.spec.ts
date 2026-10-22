@@ -20,7 +20,7 @@ vi.mock('#cwa/resources/realtime-view', () => ({
 const COMPONENT = '/component/html_contents/c1'
 
 function peer(name: string | undefined, id: string, state: RealtimePeer['state'] = 'selected', isSelf = false): RealtimePeer {
-  return { user: name ? { id, name } : { id }, state, expiresAt: 0, colour: '#c084fc', isSelf, idle: state === 'idle' }
+  return { user: name ? { id, name } : { id }, name: isSelf ? 'You (other window)' : name ?? 'Someone', state, expiresAt: 0, colour: '#c084fc', isSelf, idle: state === 'idle' }
 }
 
 function cwaWith(peers: RealtimePeer[] | undefined) {

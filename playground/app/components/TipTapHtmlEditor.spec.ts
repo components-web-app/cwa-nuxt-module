@@ -106,7 +106,7 @@ describe('TipTapHtmlEditor: the co-editing reference editor (#429)', () => {
     const { held, wrapper } = await mountEditor()
     expect(wrapper.find('[data-testid="remote-change"]').exists()).toBe(false)
 
-    held.value = { user: { id: '/users/sam', name: 'Sam', isSelf: false }, value: '<p>Theirs</p>', accept: vi.fn(), keep: vi.fn() }
+    held.value = { user: { id: '/users/sam', name: 'Sam', isSelf: false }, name: 'Sam', value: '<p>Theirs</p>', accept: vi.fn(), keep: vi.fn() }
     await nextTick()
 
     expect(wrapper.get('[data-testid="remote-change"]').text()).toContain('Sam changed this')

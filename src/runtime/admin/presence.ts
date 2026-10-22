@@ -43,6 +43,7 @@ export interface PresencePeer {
 
 export interface RealtimePeer {
   user: PresenceUser
+  name: string
   state: PresenceActivity
   field?: string
   expiresAt: number
@@ -167,8 +168,8 @@ export function peerColour(peer: { user: PresenceUser, isSelf: boolean }) {
   return peer.isSelf ? SELF_COLOUR : presenceColour(peer.user.id)
 }
 
-export function peerName(peer: { user: PresenceUser, isSelf: boolean }) {
-  return peer.isSelf ? 'You (other window)' : peer.user.name || 'Someone'
+export function peerName(name: string | undefined, isSelf: boolean) {
+  return isSelf ? 'You (other window)' : name || 'Someone'
 }
 
 interface DeviceSource {
@@ -198,6 +199,7 @@ export function usePresence($cwa: Cwa) {
     nameOf: (userId: string): string | undefined => state.names[userId],
     peers: (iri: string): RealtimePeer[] => peersOn(iri).map(peer => ({
       user: { ...peer.user },
+      name: peerName(peer.user.name, peer.isSelf),
       state: peer.state,
       ...(peer.field ? { field: peer.field } : {}),
       expiresAt: peer.receivedAt + peer.ttlMs,
@@ -209,7 +211,7 @@ export function usePresence($cwa: Cwa) {
     focusedBy: (iri: string, field: string): FocusedPeer[] => {
       const byUser = new Map<string, FocusedPeer>()
       for (const peer of peersOn(iri).filter(peer => peer.field === field)) {
-        const focused = byUser.get(peer.user.id) ?? { user: { ...peer.user }, name: peerName(peer), colour: peerColour(peer), isSelf: peer.isSelf, clientIds: [] }
+        const focused = byUser.get(peer.user.id) ?? { user: { ...peer.user }, name: peerName(peer.user.name, peer.isSelf), colour: peerColour(peer), isSelf: peer.isSelf, clientIds: [] }
         focused.clientIds.push(peer.clientId)
         byUser.set(peer.user.id, focused)
       }
@@ -536,7 +538,7 @@ export class Presence {
   private dispatch(event: RealtimeEvent, clientId: string, user: PresenceUser) {
     const { iri } = event
     const isSelf = user.id === this.$cwa.auth.user?.['@id']
-    const message: RealtimeMessage = { clientId, user: { ...user }, name: peerName({ user, isSelf }), isSelf, colour: peerColour({ user, isSelf }), event: event.event!, data: event.data, sentAt: event.sentAt }
+    const message: RealtimeMessage = { clientId, user: { ...user }, name: peerName(user.name, isSelf), isSelf, colour: peerColour({ user, isSelf }), event: event.event!, data: event.data, sentAt: event.sentAt }
     for (const listener of [...listenersOf(this.$cwa)]) {
       const on = listener.iri()
       if (listener.event === event.event && on && iri && this.$cwa.resources.findAllPublishableIris(on).includes(iri)) {

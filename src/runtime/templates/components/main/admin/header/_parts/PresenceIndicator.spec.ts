@@ -234,7 +234,7 @@ describe('PresenceIndicator (#429)', () => {
     expect(rows.map(texts)).toStrictEqual(['Sam Smith This page Editing Rich text'])
   })
 
-  test('this admin\'s other window shows as "You · other window" in the neutral colour, never as another person', async () => {
+  test('this admin\'s other window shows as "You (other window)" in the neutral colour, never as another person', async () => {
     mockCwa()
     presence!.start(true)
     arrive(ids[0]!, ME, { device: 'Safari on iOS' })
@@ -243,9 +243,9 @@ describe('PresenceIndicator (#429)', () => {
 
     const avatars = wrapper.findAll('[data-testid="presence-avatar"]')
     expect(avatars.map(avatar => text(avatar.element))).toStrictEqual(['You', 'A'])
-    expect(avatars[0]!.attributes('title')).toBe('You · other window')
+    expect(avatars[0]!.attributes('title')).toBe('You (other window)')
     expect(avatars[0]!.attributes('style')).toContain(SELF_COLOUR)
-    expect(wrapper.get('[data-testid="presence-indicator"]').attributes('aria-label')).toBe('You · other window and Alex on this page. Show editors')
+    expect(wrapper.get('[data-testid="presence-indicator"]').attributes('aria-label')).toBe('You (other window) and Alex on this page. Show editors')
   })
 
   test('this admin\'s other windows elsewhere are never counted as another editor', async () => {
@@ -276,7 +276,7 @@ describe('PresenceIndicator (#429)', () => {
     const { rows } = await openList()
 
     expect(rows.map(texts)).toStrictEqual([
-      'You · other window Safari on iOS This page Viewing',
+      'You (other window) Safari on iOS This page Viewing',
       'Alex This page Viewing',
     ])
   })

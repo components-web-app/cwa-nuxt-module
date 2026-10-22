@@ -29,8 +29,8 @@ function fieldModel<T>(initial: T) {
   }
 }
 
-function conflict<T>(value: T, name?: string, isSelf = false) {
-  return { value, user: name ? { id: '/_/users/2', name, isSelf } : { id: '/_/users/2', isSelf }, accept: vi.fn(), keep: vi.fn() }
+function conflict<T>(value: T, name: string) {
+  return { value, name, accept: vi.fn(), keep: vi.fn() }
 }
 
 describe('kit fields bound to a resource model (#429)', () => {
@@ -68,23 +68,6 @@ describe('kit fields bound to a resource model (#429)', () => {
     await row.get('[data-testid="remote-change-keep"]').trigger('click')
     expect(change.keep).toHaveBeenCalledOnce()
     expect(wrapper.get('input').element.value).toBe('Mine')
-  })
-
-  test('a conflict from someone with no known name says Someone', async () => {
-    const model = fieldModel('Mine')
-    model.change.value = conflict('Theirs')
-    const wrapper = mount(Input, { props: { model } })
-
-    expect(wrapper.get('[data-testid="remote-change"]').text()).toContain('Someone changed this')
-  })
-
-  test('a conflict from this admin\'s other window says so, never their name', async () => {
-    const model = fieldModel('Mine')
-    model.change.value = conflict('Theirs', 'Me', true)
-    const wrapper = mount(Input, { props: { model } })
-
-    expect(wrapper.get('[data-testid="remote-change"]').text()).toContain('You (other window) changed this')
-    expect(wrapper.get('[data-testid="remote-change"]').text()).not.toContain('Me changed')
   })
 
   test('CwaUiFormToggle writes the model and shows a conflict', async () => {

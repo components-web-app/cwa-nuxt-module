@@ -35,7 +35,7 @@ const fresh = useFreshFlags(() => Object.fromEntries(Object.entries(peersByIri.v
 function labelOf(peers: PresencePeer[]) {
   const people = new Map<string, { name: string, editing: boolean }>()
   for (const peer of peers) {
-    const person = people.get(peer.user.id) ?? { name: peerName(peer), editing: false }
+    const person = people.get(peer.user.id) ?? { name: peerName(peer.user.name, peer.isSelf), editing: false }
     person.editing ||= peer.state === 'editing'
     people.set(peer.user.id, person)
   }

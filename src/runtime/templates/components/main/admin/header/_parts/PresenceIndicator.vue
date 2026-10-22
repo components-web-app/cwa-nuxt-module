@@ -5,7 +5,7 @@ import { navigateTo, useRouter } from '#app/composables/router'
 import { useCwa } from '#cwa/composables/cwa'
 import { useCwaResourceRoute } from '#cwa/composables/useCwaResourceRoute'
 import { getResourceTypeFromIri } from '#cwa/resources/resource-utils'
-import { peerColour, usePresence } from '#cwa/admin/presence'
+import { peerColour, peerName, usePresence } from '#cwa/admin/presence'
 import type { PresencePeer } from '#cwa/admin/presence'
 
 interface Person {
@@ -24,10 +24,6 @@ const open = ref(false)
 const { getInternalResourceLink } = useCwaResourceRoute()
 const router = useRouter()
 
-function nameOf(peer: PresencePeer) {
-  return peer.isSelf ? 'You · other window' : peer.user.name || 'Someone'
-}
-
 function initialsOf(name: string) {
   return name.split(/\s+/).filter(Boolean).slice(0, 2).map(word => word[0]!.toUpperCase()).join('')
 }
@@ -41,7 +37,7 @@ function people(peers: PresencePeer[]) {
       person.idle &&= peer.state === 'idle'
       continue
     }
-    const name = nameOf(peer)
+    const name = peerName(peer.user.name, peer.isSelf)
     byUser.set(peer.user.id, { id: peer.user.id, name, initials: peer.isSelf ? 'You' : initialsOf(name), colour: peerColour(peer), tabs: 1, isSelf: peer.isSelf, idle: peer.state === 'idle' })
   }
   return [...byUser.values()]
@@ -174,7 +170,7 @@ async function goTo(event: MouseEvent, page: string) {
               :style="{ backgroundColor: peerColour(peer) }"
               class="cwa:h-2.5 cwa:w-2.5 cwa:rounded-full"
             />
-            <span>{{ nameOf(peer) }}</span>
+            <span>{{ peerName(peer.user.name, peer.isSelf) }}</span>
             <span
               v-if="peer.device"
               class="cwa:text-stone-400"

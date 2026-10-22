@@ -11,7 +11,7 @@ const { change } = defineProps<{
     data-testid="remote-change"
     class="cwa:flex cwa:shrink-0 cwa:items-center cwa:gap-x-2 cwa:whitespace-nowrap cwa:text-sm cwa:text-amber-300"
   >
-    <span>{{ change.user?.isSelf ? 'You (other window)' : change.user?.name || 'Someone' }} changed this</span>
+    <span>{{ change.name }} changed this</span>
     <span aria-hidden="true">·</span>
     <button
       type="button"

@@ -222,10 +222,10 @@ describe('RemoteChanges: another admin\'s saved drafts reach a signed-in admin (
     })
 
     test.each([
-      { name: 'a writer who is a known peer is named', peer: true, writer: '/_/users/2', user: { id: '/_/users/2', name: 'Sam', isSelf: false } },
-      { name: 'a writer who is not a known peer has no name', peer: false, writer: '/_/users/2', user: { id: '/_/users/2', isSelf: false } },
-      { name: 'this admin writing from another window is marked as self', peer: false, writer: '/_/users/1', user: { id: '/_/users/1', isSelf: true } },
-    ])('$name in the conflict', async ({ peer, writer, user }) => {
+      { name: 'a writer who is a known peer is named', peer: true, writer: '/_/users/2', user: { id: '/_/users/2', name: 'Sam', isSelf: false }, shown: 'Sam' },
+      { name: 'a writer who is not a known peer has no name', peer: false, writer: '/_/users/2', user: { id: '/_/users/2', isSelf: false }, shown: 'Someone' },
+      { name: 'this admin writing from another window is marked as self', peer: false, writer: '/_/users/1', user: { id: '/_/users/1', isSelf: true }, shown: 'You (other window)' },
+    ])('$name in the conflict', async ({ peer, writer, user, shown }) => {
       const presence = new Presence(cwa.$cwa, store, { currentRoute: computed(() => ({ path: '/', meta: {} })) } as unknown as Router, remote.clientId)
       presence.start(true)
       peer && presence.receive({ '@type': 'CwaRealtimeEvent', 'v': 1, 'clientId': '7f1e2d3c-4b5a-4c6d-8e7f-9a0b1c2d3e4f', 'user': { id: '/_/users/2', name: 'Sam' }, 'event': 'presence', 'data': { v: 1, state: 'viewing', page: '/_/pages/home' }, 'sentAt': '2026-10-21T10:00:01Z', 'expiresAt': '2026-10-21T10:00:46Z' })
@@ -235,6 +235,7 @@ describe('RemoteChanges: another admin\'s saved drafts reach a signed-in admin (
       presence.stop()
 
       expect(held.value?.change.user).toStrictEqual(user)
+      expect(held.value?.change.name).toBe(shown)
     })
 
     test('a save already sent, with nothing typed since, is no conflict: the later write settles it', async () => {

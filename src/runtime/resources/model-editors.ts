@@ -10,6 +10,7 @@ export interface RemoteUser {
 
 export interface RemoteFieldChange<T = unknown> {
   user?: RemoteUser
+  name: string
   value: T
   accept: () => void
   keep: () => Promise<void>
