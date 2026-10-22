@@ -68,17 +68,22 @@
 import { StarterKit } from '@tiptap/starter-kit'
 import { Placeholder } from '@tiptap/extension-placeholder'
 import { Link } from '@tiptap/extension-link'
+import { Collaboration } from '@tiptap/extension-collaboration'
 import {
-  useEditor,
+  Editor,
   EditorContent,
 } from '@tiptap/vue-3'
 import { BubbleMenu, FloatingMenu } from '@tiptap/vue-3/menus'
-import { computed, reactive, toRef, watch } from 'vue'
-import type { Editor, ChainedCommands } from '@tiptap/core'
+import { getSchema } from '@tiptap/core'
+import { computed, onBeforeUnmount, onMounted, reactive, shallowRef, toRef, watch } from 'vue'
+import type { ChainedCommands } from '@tiptap/core'
+import type * as Y from 'yjs'
 import BubbleMenuButton from '~/components/TipTap/BubbleMenuButton.vue'
 import { RemoteCursors, applyRemoteContent, setRemoteCursors } from '~/tiptap/co-editing'
 import type { RemoteCursor } from '~/tiptap/co-editing'
-import { useCwaRealtime } from '#imports'
+import type { YSyncData } from '~/tiptap/y-sync'
+import { acquireYSession } from '~/tiptap/y-session'
+import { useCwa, useCwaRealtime } from '#imports'
 import type { useCwaResourceModel } from '#imports'
 
 const props = defineProps<{
@@ -95,7 +100,7 @@ const appendToBody = () => document.body
 const { model: html, remoteChange, focusedBy, focusListeners } = props.model
 
 type Selection = { from: number, to: number } | null
-const { send, on } = useCwaRealtime<{ selection: { selection: Selection } }>(() => props.iri)
+const { send, on, peers } = useCwaRealtime<{ selection: { selection: Selection }, yjs: YSyncData }>(() => props.iri)
 const selections = reactive(new Map<string, RemoteCursor>())
 
 on('selection', ({ data: { selection }, clientId, name, colour }) => {
@@ -118,18 +123,13 @@ function sendSelection(selection: Selection) {
   send('selection', { selection })
 }
 
-const editor = useEditor({
-  content: html.value,
-  editorProps: {
-    attributes: {
-      class: props.editorClasses || '',
-    },
-  },
-  extensions: [
+function extensions(shared?: Y.Doc, onFirstRender?: () => void) {
+  return [
     StarterKit.configure({
       // TipTap v3 StarterKit includes Link by default — disable it here and
       // register it explicitly below so we can apply custom configuration.
       link: false,
+      ...(shared ? { undoRedo: false as const } : {}),
     }),
     Placeholder.configure({
       placeholder: 'Write something …',
@@ -140,16 +140,72 @@ const editor = useEditor({
       defaultProtocol: 'https',
     }),
     RemoteCursors,
-  ],
-  onUpdate: ({ editor }) => {
-    html.value = editor.isEmpty ? null : editor.getHTML()
-  },
-  onSelectionUpdate: ({ editor }) => {
-    editor.isFocused && sendSelection({ from: editor.state.selection.from, to: editor.state.selection.to })
-  },
-  onFocus: ({ editor }) => sendSelection({ from: editor.state.selection.from, to: editor.state.selection.to }),
-  onBlur: () => sendSelection(null),
-  editable: !props.disabled,
+    ...(shared ? [Collaboration.configure({ document: shared, onFirstRender })] : []),
+  ]
+}
+
+const schema = getSchema(extensions())
+const editor = shallowRef<Editor>()
+const $cwa = useCwa()
+let session: ReturnType<typeof acquireYSession> | undefined
+
+on('yjs', ({ clientId, data }) => session?.sync.receive(clientId, data))
+
+function build(shared?: Y.Doc) {
+  const previous = editor.value
+  setTimeout(() => previous?.destroy())
+  let rendered = !shared
+  editor.value = new Editor({
+    ...(shared ? {} : { content: html.value }),
+    editorProps: {
+      attributes: {
+        class: props.editorClasses || '',
+      },
+    },
+    extensions: extensions(shared, () => {
+      rendered = true
+    }),
+    onUpdate: ({ editor }) => {
+      if (rendered) {
+        html.value = editor.isEmpty ? null : editor.getHTML()
+      }
+    },
+    onSelectionUpdate: ({ editor }) => {
+      editor.isFocused && sendSelection({ from: editor.state.selection.from, to: editor.state.selection.to })
+    },
+    onFocus: ({ editor }) => sendSelection({ from: editor.state.selection.from, to: editor.state.selection.to }),
+    onBlur: () => sendSelection(null),
+    editable: !!shared && !props.disabled,
+  })
+}
+
+function endSession() {
+  session?.release()
+  session = undefined
+}
+
+async function startSession() {
+  endSession()
+  const held = acquireYSession($cwa, props.iri, { send: data => send('yjs', data), others: () => peers.value.length > 0, html: () => html.value, schema, joinMs: 10_000 })
+  session = held
+  await held.ready
+  if (session === held) {
+    build(held.doc)
+  }
+}
+
+onMounted(() => {
+  build()
+  props.disabled || startSession()
+})
+
+onBeforeUnmount(() => {
+  endSession()
+  editor.value?.destroy()
+})
+
+watch(remoteChange, (change) => {
+  change && session?.sync.hasPeers() && change.keep()
 })
 
 function showLinkManager() {
@@ -184,7 +240,7 @@ function showLinkManager() {
 }
 
 watch(html, (value) => {
-  if (editor.value && editor.value.getHTML() !== value) {
+  if (editor.value && editor.value.getHTML() !== value && !session?.sync.hasPeers()) {
     applyRemoteContent(editor.value, value)
   }
 })
@@ -193,17 +249,15 @@ watch([cursors, editor], ([drawn, loaded]) => {
   loaded && setRemoteCursors(loaded, drawn)
 })
 
-// Toggle disabled prop and focus when enabled
 const disabledRef = toRef(props, 'disabled')
-watch(disabledRef, () => {
-  if (!editor.value) {
+watch(disabledRef, async (disabled) => {
+  if (disabled) {
+    endSession()
+    build()
     return
   }
-  const editable = !disabledRef.value
-  editor.value.setEditable(editable)
-  if (editable) {
-    editor.value.chain().focus(null, { scrollIntoView: false }).run()
-  }
+  await startSession()
+  editor.value?.chain().focus(null, { scrollIntoView: false }).run()
 })
 
 // Common menu item props
