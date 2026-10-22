@@ -58,12 +58,23 @@ export interface FocusedPeer {
   isSelf: boolean
 }
 
+export interface RealtimeEventMeta {
+  user: PresenceUser
+  clientId: string
+  isSelf: boolean
+  colour: string
+  sentAt?: string
+}
+
+export type RealtimeEventHandler<Data = unknown> = (data: Data, meta: RealtimeEventMeta) => void
+
 export interface RealtimeEvent {
   '@type'?: string
   'v'?: number
   'clientId'?: string
   'user'?: PresenceUser
   'event'?: string
+  'iri'?: string | null
   'data'?: Partial<PresenceData> | null
   'sentAt'?: string
   'expiresAt'?: string
@@ -79,8 +90,25 @@ interface PresenceState {
   focus: { owner: symbol, iri: string, field: string } | undefined
 }
 
+interface Listener {
+  iri: () => string | undefined
+  event: string
+  handler: RealtimeEventHandler
+}
+
+interface Outgoing {
+  iri: string
+  event: string
+  data: unknown
+  pending: boolean
+  inFlight: boolean
+  lastSent: number
+  timer?: ReturnType<typeof setTimeout>
+}
+
 const REALTIME_PATH = '/_/realtime'
 const THROTTLE_MS = 250
+const EVENT_THROTTLE_MS = 100
 const HEARTBEAT_MS = 15_000
 const IDLE_HEARTBEAT_MS = 60_000
 const IDLE_KEEP_MS = 3 * IDLE_HEARTBEAT_MS
@@ -96,6 +124,17 @@ const BROWSERS: [RegExp, string][] = [[/Edg(e|A|iOS)?\//, 'Edge'], [/OPR\//, 'Op
 const SYSTEMS: [RegExp, string][] = [[/iPhone|iPad|iPod/, 'iOS'], [/Android/, 'Android'], [/CrOS/, 'ChromeOS'], [/Mac OS X|Macintosh/, 'macOS'], [/Windows/, 'Windows'], [/Linux/, 'Linux']]
 
 const states = new WeakMap<Cwa, PresenceState>()
+const listeners = new WeakMap<Cwa, Set<Listener>>()
+const transports = new WeakMap<Cwa, Presence>()
+
+function listenersOf($cwa: Cwa) {
+  let set = listeners.get($cwa)
+  if (!set) {
+    set = new Set()
+    listeners.set($cwa, set)
+  }
+  return set
+}
 
 function presenceState($cwa: Cwa): PresenceState {
   let state = states.get($cwa)
@@ -173,12 +212,21 @@ export function usePresence($cwa: Cwa) {
         state.focus = undefined
       }
     },
+    send: (iri: string, event: string, data: unknown) => transports.get($cwa)?.emit(iri, event, data),
+    on: (iri: () => string | undefined, event: string, handler: RealtimeEventHandler) => {
+      const listener = { iri, event, handler }
+      listenersOf($cwa).add(listener)
+      return () => {
+        listenersOf($cwa).delete(listener)
+      }
+    },
   }
 }
 
 export class Presence {
   private readonly state: PresenceState
   private readonly warned = new Set<string>()
+  private readonly outbox = new Map<string, Outgoing>()
   private readonly device = deviceLabel(navigator as DeviceSource)
   private lastActivity = 0
   private running = false
@@ -211,6 +259,7 @@ export class Presence {
     private readonly clientId: string,
   ) {
     this.state = presenceState($cwa)
+    transports.set($cwa, this)
   }
 
   public start(connected: boolean) {
@@ -247,6 +296,8 @@ export class Presence {
     clearInterval(this.heartbeat)
     clearInterval(this.pruner)
     this.sendTimer = this.helloTimer = this.heartbeat = this.pruner = this.unwatch = undefined
+    this.outbox.forEach(outgoing => clearTimeout(outgoing.timer))
+    this.outbox.clear()
     window.removeEventListener('pagehide', this.onPageHide)
     window.removeEventListener('pageshow', this.onPageShow)
     document.removeEventListener('visibilitychange', this.onVisibilityChange)
@@ -266,9 +317,26 @@ export class Presence {
     this.announce(true)
   }
 
+  public emit(iri: string, event: string, data: unknown) {
+    const published = this.store.findPublishedComponentIri(iri) ?? iri
+    const key = JSON.stringify([published, event])
+    const outgoing = this.outbox.get(key) ?? { iri: published, event, data, pending: false, inFlight: false, lastSent: Number.NEGATIVE_INFINITY }
+    this.outbox.set(key, outgoing)
+    outgoing.data = data
+    outgoing.pending = true
+    this.scheduleEvent(outgoing)
+  }
+
   public receive(event: RealtimeEvent) {
     const { clientId, user, data } = event
-    if (!this.running || event.v !== 1 || event.event !== 'presence' || !clientId || clientId === this.clientId || !user?.id || !data) {
+    if (!this.running || event.v !== 1 || !clientId || clientId === this.clientId || !user?.id) {
+      return
+    }
+    if (event.event !== 'presence') {
+      this.dispatch(event, clientId, user)
+      return
+    }
+    if (!data) {
       return
     }
     if (user.name) {
@@ -415,7 +483,10 @@ export class Presence {
     }
     catch (error) {
       this.lastKey = undefined
-      this.failed(error as FetchError, hello)
+      if (this.failed(error as FetchError, 'a real-time presence update')) {
+        this.dirty = true
+        this.hello ||= hello
+      }
     }
     finally {
       this.inFlight = false
@@ -423,24 +494,70 @@ export class Presence {
     this.dirty && this.schedule()
   }
 
-  private failed(error: FetchError, hello: boolean) {
+  private scheduleEvent(outgoing: Outgoing) {
+    if (!this.running || outgoing.timer || outgoing.inFlight || !outgoing.pending) {
+      return
+    }
+    const wait = Math.max(outgoing.lastSent + EVENT_THROTTLE_MS, this.blockedUntil) - Date.now()
+    outgoing.timer = setTimeout(() => {
+      outgoing.timer = undefined
+      this.sendEvent(outgoing)
+    }, Math.max(wait, 0))
+  }
+
+  private async sendEvent(outgoing: Outgoing) {
+    const { iri, event, data } = outgoing
+    outgoing.pending = false
+    outgoing.inFlight = true
+    outgoing.lastSent = Date.now()
+    try {
+      await this.$cwa.cwaFetch.fetch(REALTIME_PATH, {
+        method: 'POST',
+        body: { clientId: this.clientId, event, iri, data },
+        retry: 0,
+        onResponse: () => {},
+      })
+      this.failures = 0
+    }
+    catch (error) {
+      if (this.failed(error as FetchError, `the real-time "${event}" event`)) {
+        outgoing.pending = true
+      }
+    }
+    finally {
+      outgoing.inFlight = false
+    }
+    this.scheduleEvent(outgoing)
+  }
+
+  private dispatch(event: RealtimeEvent, clientId: string, user: PresenceUser) {
+    const { iri } = event
+    const isSelf = user.id === this.$cwa.auth.user?.['@id']
+    const meta: RealtimeEventMeta = { user: { ...user }, clientId, isSelf, colour: peerColour({ user, isSelf }), sentAt: event.sentAt }
+    for (const listener of [...listenersOf(this.$cwa)]) {
+      const on = listener.iri()
+      if (listener.event === event.event && on && iri && this.$cwa.resources.findAllPublishableIris(on).includes(iri)) {
+        listener.handler(event.data, meta)
+      }
+    }
+  }
+
+  private failed(error: FetchError, refused: string) {
     const status = error.response?.status
     if (status === 401 || status === 403) {
       this.stop()
-      return
+      return false
     }
     if (status === 404 || status === 405) {
       this.disabled = true
       this.stop()
       this.warnOnce('off', 'Real-time presence is turned off on the API, so other editors will not be shown.')
-      return
+      return false
     }
     if (status && status !== 429 && status < 500) {
-      this.warnOnce('refused', `The API refused a real-time presence update (${status}).`)
-      return
+      this.warnOnce(refused, `The API refused ${refused} (${status}).`)
+      return false
     }
-    this.dirty = true
-    this.hello ||= hello
     const retryAfter = status === 429 ? retryAfterSeconds(error) : undefined
     if (retryAfter !== undefined) {
       this.blockedUntil = Date.now() + retryAfter * 1000
@@ -449,6 +566,7 @@ export class Presence {
       this.blockedUntil = Date.now() + Math.min(1000 * 2 ** this.failures, MAX_BACKOFF_MS)
       this.failures++
     }
+    return true
   }
 
   private warnOnce(key: string, message: string) {

@@ -1035,3 +1035,271 @@ describe('presenceColour (#429)', () => {
     }
   })
 })
+
+describe('Presence: an app\'s own events, send and on (#429)', () => {
+  const ALEX = { clientId: 'b0c1d2e3-f4a5-4b6c-8d7e-8f9a0b1c2d3e', user: { id: '/users/alex', name: 'Alex' } }
+
+  function withDraft(fetch?: ReturnType<typeof vi.fn>) {
+    store.saveResource({ resource: { '@id': LIVE, '@type': 'Title', 'draftResource': DRAFT, '_metadata': { persisted: true, publishable: { published: true } } } as never })
+    store.saveResource({ resource: { '@id': DRAFT, '@type': 'Title', 'publishedResource': LIVE, '_metadata': { persisted: true, publishable: { published: false } } } as never })
+    return start(build({ fetch }))
+  }
+
+  function events(fetch: ReturnType<typeof vi.fn>) {
+    return fetch.mock.calls.map(([, options]) => options.body).filter(body => body.event !== 'presence')
+  }
+
+  function appEvent(event: string, iri: string | null, data: unknown, overrides: Record<string, unknown> = {}) {
+    return { ...peerEvent({}), event, iri, data, ...overrides }
+  }
+
+  test('send posts the event with this tab\'s client id, the IRI and the data, the published IRI for a draft', async () => {
+    const built = withDraft()
+    await settle()
+
+    usePresence(built.$cwa).send(DRAFT, 'cursor', { from: 3, to: 5 })
+    await settle()
+
+    expect(built.fetch).toHaveBeenCalledWith('/_/realtime', expect.objectContaining({ method: 'POST', retry: 0 }))
+    expect(events(built.fetch)).toStrictEqual([{ clientId: CLIENT_ID, event: 'cursor', iri: LIVE, data: { from: 3, to: 5 } }])
+  })
+
+  test('sends of one event on one IRI go out at most every 100 ms, the newest data winning, and the last one always goes out', async () => {
+    const built = withDraft()
+    await settle()
+    const { send } = usePresence(built.$cwa)
+
+    send(LIVE, 'cursor', 1)
+    await settle()
+    send(LIVE, 'cursor', 2)
+    send(LIVE, 'cursor', 3)
+    await vi.advanceTimersByTimeAsync(99)
+    expect(events(built.fetch).map(({ data }) => data)).toStrictEqual([1])
+
+    await vi.advanceTimersByTimeAsync(1)
+    expect(events(built.fetch).map(({ data }) => data)).toStrictEqual([1, 3])
+
+    await vi.advanceTimersByTimeAsync(1_000)
+    expect(events(built.fetch)).toHaveLength(2)
+  })
+
+  test('another event, or the same event on another IRI, is not held back by the first', async () => {
+    const built = withDraft()
+    await settle()
+    const { send } = usePresence(built.$cwa)
+
+    send(LIVE, 'cursor', 1)
+    send(LIVE, 'selection', 2)
+    send(POSITION, 'cursor', 3)
+    await settle()
+
+    expect(events(built.fetch).map(({ event, iri, data }) => [event, iri, data])).toStrictEqual([['cursor', LIVE, 1], ['selection', LIVE, 2], ['cursor', POSITION, 3]])
+  })
+
+  test('only one send of an event on an IRI is in flight at a time, and the newest data follows once it is answered', async () => {
+    const first = held()
+    const fetch = vi.fn((_path: string, options: { body: { event: string } }) => options.body.event === 'cursor' && fetch.mock.calls.filter(([, call]) => call.body.event === 'cursor').length === 1 ? first.promise : Promise.resolve())
+    const built = withDraft(fetch as never)
+    await settle()
+    const { send } = usePresence(built.$cwa)
+
+    send(LIVE, 'cursor', 1)
+    await settle()
+    await vi.advanceTimersByTimeAsync(500)
+    send(LIVE, 'cursor', 2)
+    await vi.advanceTimersByTimeAsync(500)
+    expect(events(fetch as never).map(({ data }) => data)).toStrictEqual([1])
+
+    first.resolve()
+    await settle()
+    expect(events(fetch as never).map(({ data }) => data)).toStrictEqual([1, 2])
+  })
+
+  test('a 429 sends the same data again once its Retry-After has passed', async () => {
+    const fetch = vi.fn((_path: string, options: { body: { event: string } }) => options.body.event === 'cursor' && fetch.mock.calls.length === 2 ? Promise.reject(httpError(429, { 'Retry-After': '5' })) : Promise.resolve())
+    const built = withDraft(fetch as never)
+    await settle()
+
+    usePresence(built.$cwa).send(LIVE, 'cursor', 1)
+    await settle()
+    await vi.advanceTimersByTimeAsync(4_999)
+    expect(events(fetch as never)).toHaveLength(1)
+
+    await vi.advanceTimersByTimeAsync(1)
+    expect(events(fetch as never).map(({ data }) => data)).toStrictEqual([1, 1])
+  })
+
+  test('a 5xx backs off, then sends the newest data', async () => {
+    const fetch = vi.fn((_path: string, options: { body: { event: string } }) => options.body.event === 'cursor' && fetch.mock.calls.length === 2 ? Promise.reject(httpError(503)) : Promise.resolve())
+    const built = withDraft(fetch as never)
+    await settle()
+    const { send } = usePresence(built.$cwa)
+
+    send(LIVE, 'cursor', 1)
+    await settle()
+    send(LIVE, 'cursor', 2)
+    await vi.advanceTimersByTimeAsync(999)
+    expect(events(fetch as never)).toHaveLength(1)
+
+    await vi.advanceTimersByTimeAsync(1)
+    expect(events(fetch as never).map(({ data }) => data)).toStrictEqual([1, 2])
+  })
+
+  test.each([413, 415, 422])('a %i warns once naming the event and drops that send, and later sends still go out', async (status) => {
+    const fetch = vi.fn((_path: string, options: { body: { event: string } }) => options.body.event === 'cursor' ? Promise.reject(httpError(status)) : Promise.resolve())
+    const built = withDraft(fetch as never)
+    await settle()
+    const { send } = usePresence(built.$cwa)
+
+    send(LIVE, 'cursor', 1)
+    await settle()
+    await vi.advanceTimersByTimeAsync(1_000)
+    send(LIVE, 'cursor', 2)
+    await vi.advanceTimersByTimeAsync(1_000)
+
+    expect(events(fetch as never).map(({ data }) => data)).toStrictEqual([1, 2])
+    expect(logger.warn).toHaveBeenCalledOnce()
+    expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('"cursor"'))
+  })
+
+  test.each([401, 403])('a %i stops real-time quietly, sending nothing more', async (status) => {
+    const fetch = vi.fn((_path: string, options: { body: { event: string } }) => options.body.event === 'cursor' ? Promise.reject(httpError(status)) : Promise.resolve())
+    const built = withDraft(fetch as never)
+    await settle()
+    const { send, active } = usePresence(built.$cwa)
+
+    send(LIVE, 'cursor', 1)
+    await settle()
+    send(LIVE, 'cursor', 2)
+    await vi.advanceTimersByTimeAsync(60_000)
+
+    expect(events(fetch as never)).toHaveLength(1)
+    expect(active.value).toBe(false)
+    expect(logger.warn).not.toHaveBeenCalled()
+  })
+
+  test.each([404, 405])('a %i turns real-time off for the session and warns once', async (status) => {
+    const fetch = vi.fn((_path: string, options: { body: { event: string } }) => options.body.event === 'cursor' ? Promise.reject(httpError(status)) : Promise.resolve())
+    const built = withDraft(fetch as never)
+    await settle()
+    const { send, active } = usePresence(built.$cwa)
+
+    send(LIVE, 'cursor', 1)
+    await settle()
+    built.presence.start(true)
+    send(LIVE, 'cursor', 2)
+    await vi.advanceTimersByTimeAsync(60_000)
+
+    expect(events(fetch as never)).toHaveLength(1)
+    expect(active.value).toBe(false)
+    expect(logger.warn).toHaveBeenCalledOnce()
+    expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('Real-time presence is turned off on the API'))
+  })
+
+  test('nothing is sent while presence is stopped, and stop() drops a send still waiting', async () => {
+    const built = withDraft()
+    await settle()
+    const { send } = usePresence(built.$cwa)
+
+    send(LIVE, 'cursor', 1)
+    await settle()
+    send(LIVE, 'cursor', 2)
+    built.presence.stop()
+    send(LIVE, 'cursor', 3)
+    await vi.advanceTimersByTimeAsync(1_000)
+
+    expect(events(built.fetch).map(({ data }) => data)).toStrictEqual([1])
+  })
+
+  test('after a stop and a new start, the same event on the same IRI goes out again', async () => {
+    const built = withDraft()
+    await settle()
+    const { send } = usePresence(built.$cwa)
+
+    send(LIVE, 'cursor', 1)
+    await settle()
+    send(LIVE, 'cursor', 2)
+    built.presence.stop()
+    built.presence.start(true)
+    send(LIVE, 'cursor', 3)
+    await vi.advanceTimersByTimeAsync(1_000)
+
+    expect(events(built.fetch).map(({ data }) => data)).toStrictEqual([1, 3])
+  })
+
+  test('on calls the handler with the data and who sent it, for that event on that resource, draft and published as one', () => {
+    const built = withDraft()
+    const handler = vi.fn()
+    usePresence(built.$cwa).on(() => DRAFT, 'cursor', handler)
+
+    built.presence.receive(appEvent('cursor', LIVE, { from: 1 }, ALEX))
+    built.presence.receive(appEvent('cursor', DRAFT, { from: 2 }, ALEX))
+
+    const meta = { user: ALEX.user, clientId: ALEX.clientId, isSelf: false, colour: presenceColour('/users/alex'), sentAt: '2026-10-21T10:00:00.000000+00:00' }
+    expect(handler.mock.calls).toStrictEqual([[{ from: 1 }, meta], [{ from: 2 }, meta]])
+  })
+
+  test('on ignores other events, other resources, events with no resource, other versions and this tab\'s own events', () => {
+    const built = withDraft()
+    const handler = vi.fn()
+    usePresence(built.$cwa).on(() => LIVE, 'cursor', handler)
+
+    built.presence.receive(appEvent('selection', LIVE, 1))
+    built.presence.receive(appEvent('cursor', POSITION, 1))
+    built.presence.receive(appEvent('cursor', null, 1))
+    built.presence.receive(appEvent('cursor', LIVE, 1, { v: 2 }))
+    built.presence.receive(appEvent('cursor', LIVE, 1, { clientId: CLIENT_ID }))
+    built.presence.receive(appEvent('cursor', LIVE, 1, { user: undefined }))
+
+    expect(handler).not.toHaveBeenCalled()
+  })
+
+  test('an event from this admin\'s other window is marked as theirs, in the neutral colour', () => {
+    const built = withDraft()
+    const handler = vi.fn()
+    usePresence(built.$cwa).on(() => LIVE, 'cursor', handler)
+
+    built.presence.receive(appEvent('cursor', LIVE, 1, { user: { id: ME, name: 'Me' } }))
+
+    expect(handler).toHaveBeenCalledWith(1, expect.objectContaining({ isSelf: true, colour: SELF_COLOUR }))
+  })
+
+  test('on follows the IRI as it changes, and its unsubscribe stops it', () => {
+    const built = withDraft()
+    const handler = vi.fn()
+    const iri = ref(LIVE)
+    const off = usePresence(built.$cwa).on(() => iri.value, 'cursor', handler)
+
+    iri.value = POSITION
+    built.presence.receive(appEvent('cursor', LIVE, 1))
+    built.presence.receive(appEvent('cursor', POSITION, 2))
+    off()
+    built.presence.receive(appEvent('cursor', POSITION, 3))
+
+    expect(handler.mock.calls.map(([data]) => data)).toStrictEqual([2])
+  })
+
+  test('an event is not taken for presence, and a presence event reaches no handler', () => {
+    const built = withDraft()
+    const handler = vi.fn()
+    usePresence(built.$cwa).on(() => LIVE, 'cursor', handler)
+
+    built.presence.receive(appEvent('cursor', LIVE, { v: 1, state: 'viewing', page: HOME }))
+    built.presence.receive(peerEvent({ component: LIVE }, { iri: LIVE }))
+
+    expect(usePresence(built.$cwa).onThisPage.value).toHaveLength(1)
+    expect(handler).toHaveBeenCalledOnce()
+  })
+
+  test('a handler registered before presence starts receives events once it has', () => {
+    const built = build()
+    const handler = vi.fn()
+    usePresence(built.$cwa).on(() => LIVE, 'cursor', handler)
+
+    built.presence.receive(appEvent('cursor', LIVE, 1))
+    start(built)
+    built.presence.receive(appEvent('cursor', LIVE, 2))
+
+    expect(handler.mock.calls.map(([data]) => data)).toStrictEqual([2])
+  })
+})

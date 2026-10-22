@@ -13,9 +13,13 @@ import * as processComposables from '#cwa/composables/process'
 import MercureClient from '#cwa/api/mercure-client'
 import { usePresence } from '#cwa/admin/presence'
 import { realtimeView } from '#cwa/resources/realtime-view'
+import { useCwaRealtime } from '#cwa/composables/cwa-realtime'
 import type Cwa from '#cwa/cwa'
 import type Fetcher from '#cwa/api/fetcher/fetcher'
 import { installFakeEventSource } from '../../../test/utils/fake-event-source'
+
+const appCwa = vi.hoisted(() => ({ current: undefined as unknown }))
+vi.mock('#cwa/composables/cwa', () => ({ useCwa: () => appCwa.current }))
 
 const IRI = '/component/titles/draft'
 const PAGE = '/_/pages/home'
@@ -312,5 +316,46 @@ describe('MercureClient: presence for a signed-in admin (#429)', () => {
     expect(usePresence($cwa).paused.value).toBe(false)
     await vi.waitFor(() => expect(presenceSent(fetch)).toHaveLength(2))
     expect(presenceSent(fetch)[1]).toMatchObject({ hello: true })
+  })
+})
+
+describe('MercureClient: an app\'s own real-time events (#429)', () => {
+  const SAM = { '@type': 'CwaRealtimeEvent', 'v': 1, 'clientId': '7f1e2d3c-4b5a-4c6d-8e7f-9a0b1c2d3e4f', 'user': { id: '/users/sam', name: 'Sam' }, 'event': 'cursor', 'iri': IRI, 'data': { from: 4 }, 'sentAt': '2026-10-21T10:00:01Z', 'expiresAt': '2026-10-21T10:00:46Z' }
+
+  test('a handler registered before the admin code loads receives another admin\'s event over the hub, never this tab\'s own, and nothing reaches the resources', async () => {
+    const { $cwa, resourcesStore, writeHeaders } = connect()
+    appCwa.current = $cwa
+    const handler = vi.fn()
+    useCwaRealtime(() => IRI).on('cursor', handler)
+    await vi.waitFor(() => expect(writeHeaders['X-CWA-Client-Id']).toBeDefined())
+    await vi.waitFor(() => expect(realtimeView($cwa).view.value).toBeDefined())
+
+    await deliver(SAM)
+    await deliver({ ...SAM, clientId: writeHeaders['X-CWA-Client-Id'], data: { from: 9 } })
+
+    expect(handler.mock.calls).toStrictEqual([[{ from: 4 }, { user: { id: '/users/sam', name: 'Sam' }, clientId: SAM.clientId, isSelf: false, colour: expect.stringMatching(/^#/), sentAt: SAM.sentAt }]])
+    expect(resourcesStore.hasNewResources).toBe(false)
+  })
+
+  test('send posts the event from the same client id as this tab\'s writes', async () => {
+    const { $cwa, fetch, writeHeaders } = connect()
+    appCwa.current = $cwa
+    await vi.waitFor(() => expect(usePresence($cwa).active.value).toBe(true))
+    await vi.waitFor(() => expect(realtimeView($cwa).view.value).toBeDefined())
+
+    useCwaRealtime(() => IRI).send('cursor', { from: 4 })
+
+    await vi.waitFor(() => expect(fetch.mock.calls.map(([, options]) => options.body).filter(body => body.event === 'cursor')).toStrictEqual([{ clientId: writeHeaders['X-CWA-Client-Id'], event: 'cursor', iri: IRI, data: { from: 4 } }]))
+  })
+
+  test('a visitor\'s send posts nothing', async () => {
+    const { $cwa, fetch } = connect({ isAdmin: false })
+    appCwa.current = $cwa
+    await flushPromises()
+
+    useCwaRealtime(() => IRI).send('cursor', { from: 4 })
+    await flushPromises()
+
+    expect(fetch).not.toHaveBeenCalled()
   })
 })
