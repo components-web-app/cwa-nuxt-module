@@ -1215,7 +1215,7 @@ test.describe('co-editing', () => {
     assert(idle.data.page === seed.iris.pageA, `The idle presence is for ${idle.data.page}`)
   })
 
-  test('52. a presence from another window signed in as you shows as You · other window with its device, not as another editor', async ({ cwa: t }) => {
+  test('52. a presence from another window signed in as you shows as You (other window) with its device, not as another editor', async ({ cwa: t }) => {
     const { page, seed } = t
     const me = await t.api.get('/me')
     await openEditMode(t)
@@ -1228,16 +1228,16 @@ test.describe('co-editing', () => {
     const indicator = page.getByTestId('presence-indicator')
     const avatar = indicator.getByTestId('presence-avatar')
     await eventually(async () => (await avatar.allInnerTexts()).join() === 'You', `The avatars are ${JSON.stringify(await avatar.allInnerTexts())}`)
-    assert(await avatar.getAttribute('title') === 'You · other window', `The avatar is titled "${await avatar.getAttribute('title')}"`)
+    assert(await avatar.getAttribute('title') === 'You (other window)', `The avatar is titled "${await avatar.getAttribute('title')}"`)
     assert(await avatar.evaluate(el => getComputedStyle(el).backgroundColor) === 'rgb(168, 162, 158)', `The avatar is ${await avatar.evaluate(el => getComputedStyle(el).backgroundColor)}`)
-    assert(await indicator.getAttribute('aria-label') === 'You · other window on this page. Show editors', `The indicator is labelled "${await indicator.getAttribute('aria-label')}"`)
+    assert(await indicator.getAttribute('aria-label') === 'You (other window) on this page. Show editors', `The indicator is labelled "${await indicator.getAttribute('aria-label')}"`)
     assert(await indicator.getByTestId('presence-elsewhere').count() === 0, 'Your other window is counted as an editor elsewhere')
 
     await indicator.click()
     const rows = page.getByTestId('presence-list').getByTestId('presence-row')
     await eventually(async () => (await rows.count()) === 1, `The list has ${await rows.count()} rows`)
     const row = await rows.innerText()
-    assert(row.includes('You · other window') && row.includes('Firefox on Windows') && row.includes('This page'), `The row is "${row}"`)
+    assert(row.includes('You (other window)') && row.includes('Firefox on Windows') && row.includes('This page'), `The row is "${row}"`)
     assert(!row.includes('admin'), `The row names you as another editor: "${row}"`)
   })
 
