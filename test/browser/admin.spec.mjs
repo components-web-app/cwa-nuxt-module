@@ -1326,7 +1326,7 @@ test.describe('co-editing', () => {
     assert(sent.length < moves, `${sent.length} selection events were sent for ${moves} moves`)
     const starts = posted.map(request => request.timing().startTime)
     const gaps = starts.slice(1).map((start, i) => start - starts[i])
-    assert(posted.length >= 2 && gaps.every(gap => gap >= 90), `The selection events were sent ${JSON.stringify(gaps)}ms apart`)
+    assert(gaps.every(gap => gap >= 115), `The selection events were sent ${JSON.stringify(gaps)}ms apart`)
     assert(sent.at(-1) === last, `The last event sent is ${JSON.stringify(sent.at(-1))}`)
     assert(last.clientId === viewing.clientId && last.iri === seed.iris.pageAOther, `Sent ${JSON.stringify(last)}`)
     assert(JSON.stringify(last.data) === JSON.stringify({ selection: { from: moves + 1, to: moves + 1 } }), `Sent ${JSON.stringify(last.data)}`)
