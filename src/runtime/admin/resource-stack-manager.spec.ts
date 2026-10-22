@@ -401,14 +401,14 @@ describe('Resource Manager', () => {
   })
 
   describe('currentIri - forcePublishedVersion', () => {
-    function createManagerWithPublishableFns() {
+    function createManagerWithPublishableFns(draftOf: (iri: string) => string | undefined = iri => `draft:${iri}`) {
       const mockAdminStore = { useStore: () => ({ state: reactive({ isEditing: false }) }) }
       const mockResourcesStore = {
         useStore: () => ({
           state: reactive({}),
           isIriPublishableEquivalent: vi.fn().mockReturnValue(false),
           findPublishedComponentIri: vi.fn((iri: string) => `published:${iri}`),
-          findDraftComponentIri: vi.fn((iri: string) => `draft:${iri}`),
+          findDraftComponentIri: vi.fn(draftOf),
         }),
       }
       const manager = new ResourceStackManager(mockAdminStore as any, mockResourcesStore as any, {} as any, {} as any)
@@ -417,8 +417,13 @@ describe('Resource Manager', () => {
       return manager
     }
 
-    test('returns raw stackIri when forcePublishedVersion is undefined', () => {
+    test('follows the clicked component\'s draft when no version was chosen, so a draft another admin made is the one edited', () => {
       const manager = createManagerWithPublishableFns()
+      expect(manager.currentIri.value).toBe('draft:/component/1')
+    })
+
+    test('returns the clicked IRI when no version was chosen and it has no draft', () => {
+      const manager = createManagerWithPublishableFns(() => undefined)
       expect(manager.currentIri.value).toBe('/component/1')
     })
 
@@ -970,6 +975,7 @@ describe('Resource Manager', () => {
         useStore: () => ({
           state: reactive({}),
           isIriPublishableEquivalent: vi.fn().mockReturnValue(false),
+          findDraftComponentIri: vi.fn((iri: string) => iri),
         }),
       }
       return new ResourceStackManager(mockAdminStore as any, mockResourcesStore as any, {} as any, {} as any)
