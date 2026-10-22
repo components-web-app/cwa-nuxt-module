@@ -120,6 +120,7 @@ function sendSelection(selection: Selection) {
 
 const editor = useEditor({
   content: html.value,
+  parseOptions: { preserveWhitespace: true },
   editorProps: {
     attributes: {
       class: props.editorClasses || '',

@@ -94,6 +94,14 @@ describe('applyRemoteContent: another admin\'s saved HTML reaching the editor (#
     expect(on.view.dom.querySelector('[data-remote-selection]')!.textContent).toBe('Big ')
   })
 
+  test('parses another admin\'s save with the editor\'s own parse options, so the spaces they typed arrive as typed', () => {
+    editor = new Editor({ element: document.createElement('div'), content: '<p>Hello</p>', extensions: [StarterKit, RemoteCursors], parseOptions: { preserveWhitespace: true } })
+
+    applyRemoteContent(editor, '<p>Hello  there,   Sam</p>')
+
+    expect(editor.getHTML()).toBe('<p>Hello  there,   Sam</p>')
+  })
+
   test('empty HTML empties the editor', () => {
     const on = createEditor('<p>Hello</p>')
 

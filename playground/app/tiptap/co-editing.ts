@@ -24,7 +24,7 @@ const key = new PluginKey<CursorsState>('remoteCursors')
 
 export function applyRemoteContent(editor: Editor, html: string | null | undefined) {
   const { doc } = editor.state
-  const next = createDocument(html || '', editor.schema)
+  const next = createDocument(html || '', editor.schema, editor.options.parseOptions)
   const start = doc.content.findDiffStart(next.content)
   if (start === null) {
     return
