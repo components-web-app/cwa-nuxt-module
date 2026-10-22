@@ -1037,10 +1037,11 @@ test.describe('presence', () => {
     await openEditMode(t)
     const viewing = await presenceSent(t, data => data.state === 'viewing' && data.page === seed.iris.pageA, 'No viewing presence was sent for the page')
     assert(uuid.test(viewing.clientId), `The client id is "${viewing.clientId}"`)
+    assert(typeof viewing.data.device === 'string' && viewing.data.device.length > 0, `The device is ${JSON.stringify(viewing.data.device)}`)
     await select(page, texts.pageAOther)
-    const selected = await presenceSent(t, data => data.state === 'selected', 'No selected presence was sent')
+    const selected = await presenceSent(t, data => data.component === seed.iris.pageAOther, 'No presence was sent for the selected component')
     assert(selected.clientId === viewing.clientId, `The client id changed from ${viewing.clientId} to ${selected.clientId}`)
-    assert(JSON.stringify(selected.data) === JSON.stringify({ v: 1, page: seed.iris.pageA, state: 'selected', component: seed.iris.pageAOther, componentPosition: seed.positions.aOther }), `Sent ${JSON.stringify(selected.data)}`)
+    assert(JSON.stringify(selected.data) === JSON.stringify({ v: 1, page: seed.iris.pageA, state: 'editing', device: viewing.data.device, component: seed.iris.pageAOther, componentPosition: seed.positions.aOther, field: 'html' }), `Sent ${JSON.stringify(selected.data)}`)
   })
 
   test('47. another admin on this page shows as initials in the header, one on another page as +1 elsewhere, the list names both with their page, and left removes them', async ({ cwa: t }) => {
@@ -1092,7 +1093,7 @@ test.describe('presence', () => {
     const input = managerInput(page)
     await input.focus()
     const editing = await presenceSent(t, data => data.state === 'editing', 'No editing presence was sent on focus')
-    assert(JSON.stringify(editing.data) === JSON.stringify({ v: 1, page: seed.iris.pageA, state: 'editing', component: selected.data.component, componentPosition: selected.data.componentPosition, field: 'label' }), `Sent ${JSON.stringify(editing.data)}`)
+    assert(JSON.stringify(editing.data) === JSON.stringify({ v: 1, page: seed.iris.pageA, state: 'editing', device: selected.data.device, component: selected.data.component, componentPosition: selected.data.componentPosition, field: 'label' }), `Sent ${JSON.stringify(editing.data)}`)
     const sentBeforeBlur = t.rehearsal.realtime.length
     await input.evaluate(el => el.blur())
     const back = await eventually(() => t.rehearsal.realtime.slice(sentBeforeBlur).find(body => body?.event === 'presence'), 'Nothing was sent on blur')
@@ -1138,5 +1139,197 @@ test.describe('presence', () => {
     assert(covers({ top: fieldBox.y, left: fieldBox.x, width: fieldBox.width, height: fieldBox.height }, { top: inputBox.y, left: inputBox.x, width: inputBox.width, height: inputBox.height }), `The field outline ${JSON.stringify(fieldBox)} does not cover the input ${JSON.stringify(inputBox)}`)
     t.publish({ ...peer, data: { v: 1, page: seed.iris.pageA, state: 'left' } })
     await eventually(async () => (await flag.count()) === 0, 'The field flag stayed after its tab left')
+  })
+})
+
+function editorParagraph(page, text) {
+  return page.locator('.ProseMirror p').filter({ hasText: text })
+}
+
+async function placeCaret(page, text, edge) {
+  const point = await editorParagraph(page, text).evaluate((paragraph, atStart) => {
+    const range = document.createRange()
+    range.selectNodeContents(paragraph)
+    const rects = [...range.getClientRects()]
+    const rect = atStart ? rects[0] : rects.at(-1)
+    return { x: atStart ? rect.left + 1 : rect.right - 1, y: rect.top + rect.height / 2 }
+  }, edge === 'start')
+  await page.mouse.click(point.x, point.y)
+}
+
+function caretOffset(page, text) {
+  return editorParagraph(page, text).evaluate((paragraph) => {
+    const selection = window.getSelection()
+    return selection.isCollapsed && paragraph.contains(selection.focusNode) ? selection.focusOffset : -1
+  })
+}
+
+function realtimeEvent(t, { key, name, event, iri, data }) {
+  return { ...peerPresence(t, { key, name, page: null }), event, iri, data }
+}
+
+function htmlWrite(t, iri, includes, from = 0) {
+  return eventually(() => t.rehearsal.writes.slice(from).find(w => w.method === 'PATCH' && w.path === iri && w.body?.html?.includes(includes)), `No PATCH of ${iri} with "${includes}": ${JSON.stringify(t.rehearsal.writes)}`)
+}
+
+async function peerSave(t, iri, html, peer) {
+  const saved = await t.api.patch(iri, { html }, { 'X-CWA-Client-Id': peer.clientId })
+  assert(saved._metadata?.lastWrite?.clientId === peer.clientId, `The API recorded the write as ${JSON.stringify(saved._metadata?.lastWrite)}`)
+  t.publish({ ...saved, _metadata: { ...saved._metadata, lastWrite: { ...saved._metadata.lastWrite, userId: peer.user.id } } })
+  return saved['@id']
+}
+
+test.describe('co-editing', () => {
+  test('51. hiding the tab sends idle presence, and a peer going idle is dimmed in the header and loses their outline', async ({ cwa: t }) => {
+    const { page, seed } = t
+    await openEditMode(t)
+    const viewing = await presenceSent(t, data => data.state === 'viewing' && data.page === seed.iris.pageA, 'No viewing presence was sent for the page')
+    await eventually(() => t.rehearsal.mercureSubscriptions > 0, 'Mercure was never subscribed to')
+
+    const peer = peerPresence(t, { key: '1', name: 'Pat Peer', page: seed.iris.pageA })
+    const editing = { v: 1, page: seed.iris.pageA, state: 'editing', component: seed.iris.pageAOther, componentPosition: seed.positions.aOther }
+    t.publish({ ...peer, data: editing })
+    const outline = page.getByTestId('peer-outline')
+    await eventually(async () => (await outline.count()) === 1, `There are ${await outline.count()} outlines`)
+    const avatar = page.getByTestId('presence-indicator').getByTestId('presence-avatar')
+    await eventually(async () => (await avatar.allInnerTexts()).join() === 'PP', `The avatars are ${JSON.stringify(await avatar.allInnerTexts())}`)
+    assert(await avatar.getAttribute('data-idle') === null, 'The editing peer is shown as idle')
+    assert(await avatar.evaluate(el => getComputedStyle(el).opacity) === '1', 'The editing peer is dimmed')
+
+    t.publish({ ...peer, data: { ...editing, state: 'idle' } })
+    await eventually(async () => await avatar.getAttribute('data-idle') === 'true', 'The idle peer is not marked idle')
+    assert(await avatar.evaluate(el => getComputedStyle(el).opacity) === '0.5', `The idle peer has opacity ${await avatar.evaluate(el => getComputedStyle(el).opacity)}`)
+    await eventually(async () => (await outline.count()) === 0, 'The idle peer is still outlined')
+    await page.getByTestId('presence-indicator').click()
+    const row = page.getByTestId('presence-list').getByTestId('presence-row')
+    await eventually(async () => (await row.innerText()).includes('Idle'), `The row says "${await row.innerText()}"`)
+    await page.keyboard.press('Escape')
+
+    const sentBeforeHiding = t.rehearsal.realtime.length
+    await page.evaluate(() => {
+      Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' })
+      document.dispatchEvent(new Event('visibilitychange'))
+    })
+    const idle = await eventually(() => t.rehearsal.realtime.slice(sentBeforeHiding).find(body => body?.event === 'presence' && body.data?.state === 'idle'), `No idle presence was sent: ${JSON.stringify(t.rehearsal.realtime.slice(sentBeforeHiding))}`)
+    assert(idle.clientId === viewing.clientId, `The idle presence came from ${idle.clientId}`)
+    assert(idle.data.page === seed.iris.pageA, `The idle presence is for ${idle.data.page}`)
+  })
+
+  test('52. a presence from another window signed in as you shows as You · other window with its device, not as another editor', async ({ cwa: t }) => {
+    const { page, seed } = t
+    const me = await t.api.get('/me')
+    await openEditMode(t)
+    await presenceSent(t, data => data.page === seed.iris.pageA, 'No presence was sent for the page')
+    await eventually(() => t.rehearsal.mercureSubscriptions > 0, 'Mercure was never subscribed to')
+
+    const otherWindow = peerPresence(t, { key: '9', name: 'admin', page: seed.iris.pageA })
+    t.publish({ ...otherWindow, user: { id: me['@id'], name: 'admin' }, data: { v: 1, page: seed.iris.pageA, state: 'viewing', device: 'Firefox on Windows' } })
+
+    const indicator = page.getByTestId('presence-indicator')
+    const avatar = indicator.getByTestId('presence-avatar')
+    await eventually(async () => (await avatar.allInnerTexts()).join() === 'You', `The avatars are ${JSON.stringify(await avatar.allInnerTexts())}`)
+    assert(await avatar.getAttribute('title') === 'You · other window', `The avatar is titled "${await avatar.getAttribute('title')}"`)
+    assert(await avatar.evaluate(el => getComputedStyle(el).backgroundColor) === 'rgb(168, 162, 158)', `The avatar is ${await avatar.evaluate(el => getComputedStyle(el).backgroundColor)}`)
+    assert(await indicator.getAttribute('aria-label') === 'You · other window on this page. Show editors', `The indicator is labelled "${await indicator.getAttribute('aria-label')}"`)
+    assert(await indicator.getByTestId('presence-elsewhere').count() === 0, 'Your other window is counted as an editor elsewhere')
+
+    await indicator.click()
+    const rows = page.getByTestId('presence-list').getByTestId('presence-row')
+    await eventually(async () => (await rows.count()) === 1, `The list has ${await rows.count()} rows`)
+    const row = await rows.innerText()
+    assert(row.includes('You · other window') && row.includes('Firefox on Windows') && row.includes('This page'), `The row is "${row}"`)
+    assert(!row.includes('admin'), `The row names you as another editor: "${row}"`)
+  })
+
+  test('53. TipTap saves typing through the model, draws a peer\'s cursor with their name, applies their save in place while unfocused and holds it as a conflict while you have unsent typing', async ({ cwa: t }) => {
+    const { page, seed, settle } = t
+    const live = (await t.api.create('/component/html_contents', { html: '<p>Co-edited live text</p>', publishedAt: 'now' }))['@id']
+    const position = (await t.api.create('/_/component_positions', { componentGroup: seed.iris.pageAGroup, component: live }))['@id']
+    const peer = peerPresence(t, { key: '1', name: 'Pat Peer', page: seed.iris.pageA })
+    await page.clock.install()
+    await openEditMode(t)
+    await editorParagraph(page, 'Co-edited live text').waitFor()
+    await presenceSent(t, data => data.page === seed.iris.pageA, 'No presence was sent for the page')
+    await eventually(() => t.rehearsal.mercureSubscriptions > 0, 'Mercure was never subscribed to')
+    t.publish(peer)
+    await eventually(async () => (await page.getByTestId('presence-avatar').count()) === 1, 'The peer never showed in the header')
+
+    const draft = await peerSave(t, live, '<p>Peer first edit</p>\n', peer)
+    t.api.track(draft)
+    assert(draft !== live, 'The peer\'s save of the live component did not make a draft')
+    await editorParagraph(page, 'Peer first edit').waitFor()
+    await settle()
+    assert(await page.getByTestId('remote-change').count() === 0, 'A save while unfocused raised a conflict')
+    assert(t.rehearsal.writes.length === 0, `Something was written: ${JSON.stringify(t.rehearsal.writes)}`)
+
+    await select(page, 'Peer first edit')
+    await placeCaret(page, 'Peer first edit', 'end')
+    await eventually(async () => await caretOffset(page, 'Peer first edit') === 'Peer first edit'.length, 'The caret is not at the end of the text')
+    await page.keyboard.type(' and mine')
+    await htmlWrite(t, draft, 'Peer first edit and mine')
+    await settle()
+
+    t.publish({ ...peer, data: { v: 1, page: seed.iris.pageA, state: 'editing', component: live, componentPosition: position, field: 'html' } })
+    t.publish(realtimeEvent(t, { key: '1', name: 'Pat Peer', event: 'selection', iri: live, data: { selection: { from: 1, to: 5 } } }))
+    const cursor = page.locator('.ProseMirror [data-remote-cursor]')
+    await eventually(async () => (await cursor.count()) === 1, `There are ${await cursor.count()} remote cursors`)
+    assert(await cursor.innerText() === 'Pat Peer', `The cursor is labelled "${await cursor.innerText()}"`)
+    const highlighted = page.locator('.ProseMirror [data-remote-selection]')
+    assert(await highlighted.innerText() === 'Peer', `The peer's selection covers "${await highlighted.innerText()}"`)
+
+    await page.clock.pauseAt(await page.evaluate(() => Date.now() + 1000))
+    const writesBeforeConflict = t.rehearsal.writes.length
+    await page.keyboard.type(' too')
+    await editorParagraph(page, 'and mine too').waitFor()
+    await peerSave(t, draft, '<p>Peer second edit</p>', peer)
+    const conflict = page.getByTestId('remote-change')
+    await conflict.waitFor()
+    assert((await conflict.innerText()).includes('Pat Peer changed this'), `The conflict says "${await conflict.innerText()}"`)
+    assert(await editorParagraph(page, 'Peer first edit and mine too').count() === 1, 'The held save replaced the unsent typing')
+    assert(await editorParagraph(page, 'Peer second edit').count() === 0, 'The held save was applied in place')
+    assert(t.rehearsal.writes.length === writesBeforeConflict, `The unsent typing was saved before a choice: ${JSON.stringify(t.rehearsal.writes.slice(writesBeforeConflict))}`)
+
+    await conflict.getByTestId('remote-change-keep').click()
+    await page.clock.resume()
+    await htmlWrite(t, draft, 'Peer first edit and mine too', writesBeforeConflict)
+    await conflict.waitFor({ state: 'detached' })
+    await settle()
+    assert(await editorParagraph(page, 'Peer first edit and mine too').count() === 1, 'Keep mine lost the typing')
+  })
+
+  test('54. moving the cursor in TipTap posts a coalesced selection event ending at the caret', async ({ cwa: t }) => {
+    const { page, seed, settle } = t
+    await openEditMode(t)
+    const viewing = await presenceSent(t, data => data.page === seed.iris.pageA, 'No presence was sent for the page')
+    await select(page, texts.pageAOther)
+    await placeCaret(page, texts.pageAOther, 'start')
+    await eventually(async () => await caretOffset(page, texts.pageAOther) === 0, 'The caret is not at the start of the text')
+    const selections = from => t.rehearsal.realtime.slice(from).filter(body => body?.event === 'selection')
+    await eventually(() => selections(0).some(body => body.data?.selection?.from === 1), `The caret at the start was never sent: ${JSON.stringify(selections(0))}`)
+    await settle()
+
+    const before = t.rehearsal.realtime.length
+    const posted = []
+    page.on('request', (request) => {
+      if (request.method() === 'POST' && request.url().endsWith('/_/realtime') && request.postDataJSON()?.event === 'selection') {
+        posted.push(request)
+      }
+    })
+    const moves = 12
+    for (let i = 0; i < moves; i++) {
+      await page.keyboard.press('ArrowRight')
+    }
+    assert(await caretOffset(page, texts.pageAOther) === moves, `The caret is at ${await caretOffset(page, texts.pageAOther)}`)
+    const last = await eventually(() => selections(before).find(body => body.data?.selection?.from === moves + 1), `The final caret was never sent: ${JSON.stringify(selections(before))}`)
+    await settle()
+    const sent = selections(before)
+    assert(sent.length < moves, `${sent.length} selection events were sent for ${moves} moves`)
+    const starts = posted.map(request => request.timing().startTime)
+    const gaps = starts.slice(1).map((start, i) => start - starts[i])
+    assert(posted.length >= 2 && gaps.every(gap => gap >= 90), `The selection events were sent ${JSON.stringify(gaps)}ms apart`)
+    assert(sent.at(-1) === last, `The last event sent is ${JSON.stringify(sent.at(-1))}`)
+    assert(last.clientId === viewing.clientId && last.iri === seed.iris.pageAOther, `Sent ${JSON.stringify(last)}`)
+    assert(JSON.stringify(last.data) === JSON.stringify({ selection: { from: moves + 1, to: moves + 1 } }), `Sent ${JSON.stringify(last.data)}`)
+    assert(t.rehearsal.writes.length === 0, `Something was written: ${JSON.stringify(t.rehearsal.writes)}`)
   })
 })
