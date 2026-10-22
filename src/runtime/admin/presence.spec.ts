@@ -1083,6 +1083,10 @@ describe('Presence: an app\'s own events, send and on (#429)', () => {
     return start(build({ fetch }))
   }
 
+  async function afterHello() {
+    await vi.advanceTimersByTimeAsync(125)
+  }
+
   function events(fetch: ReturnType<typeof vi.fn>) {
     return fetch.mock.calls.map(([, options]) => options.body).filter(body => body.event !== 'presence')
   }
@@ -1093,7 +1097,7 @@ describe('Presence: an app\'s own events, send and on (#429)', () => {
 
   test('send posts the event with this tab\'s client id, the IRI and the data, the published IRI for a draft', async () => {
     const built = withDraft()
-    await settle()
+    await afterHello()
 
     usePresence(built.$cwa).send(DRAFT, 'cursor', { from: 3, to: 5 })
     await settle()
@@ -1102,16 +1106,16 @@ describe('Presence: an app\'s own events, send and on (#429)', () => {
     expect(events(built.fetch)).toStrictEqual([{ clientId: CLIENT_ID, event: 'cursor', iri: LIVE, data: { from: 3, to: 5 } }])
   })
 
-  test('sends of one event on one IRI go out at most every 100 ms, the newest data winning, and the last one always goes out', async () => {
+  test('a tab sends at most one real-time request every 125 ms, a waiting event keeping only its newest data, and the last one always goes out', async () => {
     const built = withDraft()
-    await settle()
+    await afterHello()
     const { send } = usePresence(built.$cwa)
 
     send(LIVE, 'cursor', 1)
     await settle()
     send(LIVE, 'cursor', 2)
     send(LIVE, 'cursor', 3)
-    await vi.advanceTimersByTimeAsync(99)
+    await vi.advanceTimersByTimeAsync(124)
     expect(events(built.fetch).map(({ data }) => data)).toStrictEqual([1])
 
     await vi.advanceTimersByTimeAsync(1)
@@ -1121,42 +1125,47 @@ describe('Presence: an app\'s own events, send and on (#429)', () => {
     expect(events(built.fetch)).toHaveLength(2)
   })
 
-  test('another event, or the same event on another IRI, is not held back by the first', async () => {
+  test('another event, or the same event on another IRI, waits its turn and is never replaced by the first', async () => {
     const built = withDraft()
-    await settle()
+    await afterHello()
     const { send } = usePresence(built.$cwa)
 
     send(LIVE, 'cursor', 1)
     send(LIVE, 'selection', 2)
     send(POSITION, 'cursor', 3)
     await settle()
+    expect(events(built.fetch)).toHaveLength(1)
+    await vi.advanceTimersByTimeAsync(250)
 
     expect(events(built.fetch).map(({ event, iri, data }) => [event, iri, data])).toStrictEqual([['cursor', LIVE, 1], ['selection', LIVE, 2], ['cursor', POSITION, 3]])
   })
 
-  test('only one send of an event on an IRI is in flight at a time, and the newest data follows once it is answered', async () => {
+  test('only one real-time request is in flight at a time: presence and events wait for it, and the newest data follows once it is answered', async () => {
     const first = held()
     const fetch = vi.fn((_path: string, options: { body: { event: string } }) => options.body.event === 'cursor' && fetch.mock.calls.filter(([, call]) => call.body.event === 'cursor').length === 1 ? first.promise : Promise.resolve())
     const built = withDraft(fetch as never)
-    await settle()
+    await afterHello()
     const { send } = usePresence(built.$cwa)
 
     send(LIVE, 'cursor', 1)
     await settle()
+    const requests = fetch.mock.calls.length
     await vi.advanceTimersByTimeAsync(500)
     send(LIVE, 'cursor', 2)
+    send(LIVE, 'selection', 'a')
+    built.stack.value = [{ iri: LIVE }]
     await vi.advanceTimersByTimeAsync(500)
-    expect(events(fetch as never).map(({ data }) => data)).toStrictEqual([1])
+    expect(fetch.mock.calls).toHaveLength(requests)
 
     first.resolve()
-    await settle()
-    expect(events(fetch as never).map(({ data }) => data)).toStrictEqual([1, 2])
+    await vi.advanceTimersByTimeAsync(250)
+    expect(fetch.mock.calls.slice(requests).map(([, options]) => [options.body.event, options.body.data.state ?? options.body.data])).toStrictEqual([['presence', 'selected'], ['cursor', 2], ['selection', 'a']])
   })
 
   test('a 429 sends the same data again once its Retry-After has passed', async () => {
     const fetch = vi.fn((_path: string, options: { body: { event: string } }) => options.body.event === 'cursor' && fetch.mock.calls.length === 2 ? Promise.reject(httpError(429, { 'Retry-After': '5' })) : Promise.resolve())
     const built = withDraft(fetch as never)
-    await settle()
+    await afterHello()
 
     usePresence(built.$cwa).send(LIVE, 'cursor', 1)
     await settle()
@@ -1167,15 +1176,18 @@ describe('Presence: an app\'s own events, send and on (#429)', () => {
     expect(events(fetch as never).map(({ data }) => data)).toStrictEqual([1, 1])
   })
 
-  test('a 5xx backs off, then sends the newest data', async () => {
-    const fetch = vi.fn((_path: string, options: { body: { event: string } }) => options.body.event === 'cursor' && fetch.mock.calls.length === 2 ? Promise.reject(httpError(503)) : Promise.resolve())
+  test('a 5xx backs off, then sends the newest data, never the failed data over data sent while it was in flight', async () => {
+    const failing = held()
+    const fetch = vi.fn((_path: string, options: { body: { event: string } }) => options.body.event === 'cursor' && fetch.mock.calls.length === 2 ? failing.promise : Promise.resolve())
     const built = withDraft(fetch as never)
-    await settle()
+    await afterHello()
     const { send } = usePresence(built.$cwa)
 
     send(LIVE, 'cursor', 1)
     await settle()
     send(LIVE, 'cursor', 2)
+    failing.reject(httpError(503))
+    await settle()
     await vi.advanceTimersByTimeAsync(999)
     expect(events(fetch as never)).toHaveLength(1)
 
@@ -1186,7 +1198,7 @@ describe('Presence: an app\'s own events, send and on (#429)', () => {
   test.each([413, 415, 422])('a %i warns once naming the event and drops that send, and later sends still go out', async (status) => {
     const fetch = vi.fn((_path: string, options: { body: { event: string } }) => options.body.event === 'cursor' ? Promise.reject(httpError(status)) : Promise.resolve())
     const built = withDraft(fetch as never)
-    await settle()
+    await afterHello()
     const { send } = usePresence(built.$cwa)
 
     send(LIVE, 'cursor', 1)
@@ -1203,7 +1215,7 @@ describe('Presence: an app\'s own events, send and on (#429)', () => {
   test.each([401, 403])('a %i stops real-time quietly, sending nothing more', async (status) => {
     const fetch = vi.fn((_path: string, options: { body: { event: string } }) => options.body.event === 'cursor' ? Promise.reject(httpError(status)) : Promise.resolve())
     const built = withDraft(fetch as never)
-    await settle()
+    await afterHello()
     const { send, active } = usePresence(built.$cwa)
 
     send(LIVE, 'cursor', 1)
@@ -1219,7 +1231,7 @@ describe('Presence: an app\'s own events, send and on (#429)', () => {
   test.each([404, 405])('a %i turns real-time off for the session and warns once', async (status) => {
     const fetch = vi.fn((_path: string, options: { body: { event: string } }) => options.body.event === 'cursor' ? Promise.reject(httpError(status)) : Promise.resolve())
     const built = withDraft(fetch as never)
-    await settle()
+    await afterHello()
     const { send, active } = usePresence(built.$cwa)
 
     send(LIVE, 'cursor', 1)
@@ -1236,7 +1248,7 @@ describe('Presence: an app\'s own events, send and on (#429)', () => {
 
   test('nothing is sent while presence is stopped, and stop() drops a send still waiting', async () => {
     const built = withDraft()
-    await settle()
+    await afterHello()
     const { send } = usePresence(built.$cwa)
 
     send(LIVE, 'cursor', 1)
@@ -1251,12 +1263,12 @@ describe('Presence: an app\'s own events, send and on (#429)', () => {
 
   test('after a stop and a new start, the same event on the same IRI goes out again', async () => {
     const built = withDraft()
-    await settle()
+    await afterHello()
     const { send } = usePresence(built.$cwa)
 
     send(LIVE, 'cursor', 1)
     await settle()
-    send(LIVE, 'cursor', 2)
+    send(LIVE, 'selection', 2)
     built.presence.stop()
     built.presence.start(true)
     send(LIVE, 'cursor', 3)
@@ -1347,7 +1359,7 @@ describe('Presence: an app\'s own events, send and on (#429)', () => {
 
   test('send returns true once the event is on its way, and false with nothing sent while stopped or while Mercure is down', async () => {
     const built = withDraft()
-    await settle()
+    await afterHello()
     const { send } = usePresence(built.$cwa)
 
     expect(send(LIVE, 'cursor', 1)).toBe(true)
@@ -1367,7 +1379,7 @@ describe('Presence: an app\'s own events, send and on (#429)', () => {
     const first = held()
     const fetch = vi.fn((_path: string, options: { body: { event: string } }) => options.body.event === 'cursor' && fetch.mock.calls.filter(([, call]) => call.body.event === 'cursor').length === 1 ? first.promise : Promise.resolve())
     const built = withDraft(fetch as never)
-    await settle()
+    await afterHello()
     const { send } = usePresence(built.$cwa)
 
     send(LIVE, 'cursor', 1)
@@ -1380,16 +1392,16 @@ describe('Presence: an app\'s own events, send and on (#429)', () => {
     await vi.advanceTimersByTimeAsync(1_000)
     built.presence.resumed()
     await vi.advanceTimersByTimeAsync(1_000)
-    expect(events(fetch as never).map(({ data }) => data)).toStrictEqual([1, 'a'])
+    expect(events(fetch as never).map(({ data }) => data)).toStrictEqual([1])
 
     expect(send(LIVE, 'cursor', 3)).toBe(true)
     await vi.advanceTimersByTimeAsync(1_000)
-    expect(events(fetch as never).map(({ data }) => data)).toStrictEqual([1, 'a', 3])
+    expect(events(fetch as never).map(({ data }) => data)).toStrictEqual([1, 3])
   })
 
   test('however many events a tab sends, it stays under the API\'s limit of 10 a second with bursts of 20, sending 8 a second', async () => {
     const built = withDraft()
-    await settle()
+    await afterHello()
     const { send } = usePresence(built.$cwa)
     const startedAt = Date.now()
     const sentAt: number[] = []
@@ -1417,9 +1429,9 @@ describe('Presence: an app\'s own events, send and on (#429)', () => {
     expect(sustained).toBeGreaterThanOrEqual(2 * 8 - 2)
   })
 
-  test('event traffic never holds back this tab\'s presence: a change still goes out at once', async () => {
+  test('event traffic never holds back this tab\'s presence: a change goes out in the next request, ahead of waiting events', async () => {
     const built = withDraft()
-    await settle()
+    await afterHello()
     const { send } = usePresence(built.$cwa)
 
     for (let tick = 0; tick < 300; tick++) {
@@ -1440,7 +1452,28 @@ describe('Presence: an app\'s own events, send and on (#429)', () => {
       await vi.advanceTimersByTimeAsync(10)
     }
 
-    expect(presenceAt).toBeLessThan(50)
+    expect(presenceAt).toBeLessThanOrEqual(125)
+  })
+
+  test('presence changes still go out at most every 250 ms while events are going out', async () => {
+    const built = withDraft()
+    await afterHello()
+    const { send } = usePresence(built.$cwa)
+    const presenceAt: number[] = []
+    built.fetch.mockImplementation((_path: string, options: { body: { event: string } }) => {
+      options.body.event === 'presence' && presenceAt.push(Date.now())
+      return Promise.resolve()
+    })
+
+    built.stack.value = [{ iri: LIVE }]
+    for (let tick = 0; tick < 100; tick++) {
+      send(LIVE, 'cursor', tick)
+      tick % 5 || usePresence(built.$cwa).focus(Symbol('field'), LIVE, `field${tick}`)
+      await vi.advanceTimersByTimeAsync(10)
+    }
+
+    expect(presenceAt.length).toBeGreaterThan(2)
+    expect(presenceAt.slice(1).map((at, index) => at - presenceAt[index]!).every(gap => gap >= 250)).toBe(true)
   })
 
   test('a handler registered before presence starts receives events once it has', () => {

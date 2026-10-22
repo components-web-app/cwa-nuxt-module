@@ -105,17 +105,17 @@ interface Outgoing {
   iri: string
   event: string
   data: unknown
-  pending: boolean
-  inFlight: boolean
-  lastSent: number
-  timer?: ReturnType<typeof setTimeout>
+}
+
+interface Request {
+  body: Record<string, unknown>
+  refused: string
+  failed: (retry: boolean) => void
 }
 
 const REALTIME_PATH = '/_/realtime'
 const THROTTLE_MS = 250
-const EVENT_THROTTLE_MS = 100
-const SEND_RATE_PER_S = 8
-const SEND_BURST = 16
+const REQUEST_GAP_MS = 125
 const HEARTBEAT_MS = 15_000
 const IDLE_HEARTBEAT_MS = 60_000
 const IDLE_KEEP_MS = 3 * IDLE_HEARTBEAT_MS
@@ -248,8 +248,7 @@ export class Presence {
   private repeat = false
   private lastKey: string | undefined
   private lastSent = Number.NEGATIVE_INFINITY
-  private tokens = SEND_BURST
-  private tokensAt = Date.now()
+  private lastPresence = Number.NEGATIVE_INFINITY
   private blockedUntil = 0
   private failures = 0
   private sendTimer?: ReturnType<typeof setTimeout>
@@ -309,7 +308,6 @@ export class Presence {
     clearInterval(this.heartbeat)
     clearTimeout(this.pruner)
     this.sendTimer = this.helloTimer = this.heartbeat = this.pruner = this.unwatch = undefined
-    this.outbox.forEach(outgoing => clearTimeout(outgoing.timer))
     this.outbox.clear()
     window.removeEventListener('pagehide', this.onPageHide)
     window.removeEventListener('pageshow', this.onPageShow)
@@ -323,11 +321,7 @@ export class Presence {
 
   public paused() {
     this.state.paused = true
-    this.outbox.forEach((outgoing) => {
-      clearTimeout(outgoing.timer)
-      outgoing.timer = undefined
-      outgoing.pending = false
-    })
+    this.outbox.clear()
   }
 
   public resumed() {
@@ -340,12 +334,8 @@ export class Presence {
       return false
     }
     const published = this.store.findPublishedComponentIri(iri) ?? iri
-    const key = JSON.stringify([published, event])
-    const outgoing = this.outbox.get(key) ?? { iri: published, event, data, pending: false, inFlight: false, lastSent: Number.NEGATIVE_INFINITY }
-    this.outbox.set(key, outgoing)
-    outgoing.data = data
-    outgoing.pending = true
-    this.scheduleEvent(outgoing)
+    this.outbox.set(JSON.stringify([published, event]), { iri: published, event, data })
+    this.schedule()
     return true
   }
 
@@ -469,10 +459,11 @@ export class Presence {
   }
 
   private schedule() {
-    if (!this.running || this.sendTimer || this.inFlight) {
+    if (!this.running || this.sendTimer || this.inFlight || (!this.dirty && !this.outbox.size)) {
       return
     }
-    const wait = Math.max(this.lastSent + THROTTLE_MS, this.blockedUntil, Date.now() + this.tokenWait(0)) - Date.now()
+    const due = this.outbox.size ? 0 : this.lastPresence + THROTTLE_MS
+    const wait = Math.max(due, this.lastSent + REQUEST_GAP_MS, this.blockedUntil) - Date.now()
     this.sendTimer = setTimeout(() => {
       this.sendTimer = undefined
       this.send()
@@ -480,87 +471,66 @@ export class Presence {
   }
 
   private async send() {
-    if (!this.running || !this.dirty) {
-      return
-    }
-    if (this.tokenWait(0) > 0) {
+    const request = (this.dirty && Date.now() >= this.lastPresence + THROTTLE_MS && this.presenceRequest()) || this.eventRequest()
+    if (!request) {
       this.schedule()
       return
     }
+    this.lastSent = Date.now()
+    this.inFlight = true
+    try {
+      await this.$cwa.cwaFetch.fetch(REALTIME_PATH, {
+        method: 'POST',
+        body: { clientId: this.clientId, ...request.body },
+        retry: 0,
+        onResponse: () => {},
+      })
+      this.failures = 0
+    }
+    catch (error) {
+      request.failed(this.failed(error as FetchError, request.refused))
+    }
+    finally {
+      this.inFlight = false
+    }
+    this.schedule()
+  }
+
+  private presenceRequest(): Request | undefined {
     const current = this.current()
     const key = JSON.stringify(current)
-    const hello = this.hello
-    const repeat = this.repeat
+    const { hello, repeat } = this
     this.dirty = this.hello = this.repeat = false
     if (!repeat && key === this.lastKey) {
       return
     }
     this.lastKey = key
-    this.lastSent = Date.now()
-    this.tokens--
-    this.inFlight = true
-    const data: PresenceData = hello ? { ...current, hello: true } : current
-    try {
-      await this.$cwa.cwaFetch.fetch(REALTIME_PATH, {
-        method: 'POST',
-        body: { clientId: this.clientId, event: 'presence', data },
-        retry: 0,
-        onResponse: () => {},
-      })
-      this.failures = 0
+    this.lastPresence = Date.now()
+    return {
+      body: { event: 'presence', data: hello ? { ...current, hello: true } : current },
+      refused: 'a real-time presence update',
+      failed: (retry) => {
+        this.lastKey = undefined
+        if (retry) {
+          this.dirty = true
+          this.hello ||= hello
+        }
+      },
     }
-    catch (error) {
-      this.lastKey = undefined
-      if (this.failed(error as FetchError, 'a real-time presence update')) {
-        this.dirty = true
-        this.hello ||= hello
-      }
-    }
-    finally {
-      this.inFlight = false
-    }
-    this.dirty && this.schedule()
   }
 
-  private scheduleEvent(outgoing: Outgoing) {
-    if (!this.running || outgoing.timer || outgoing.inFlight || !outgoing.pending) {
+  private eventRequest(): Request | undefined {
+    const [key, outgoing] = this.outbox.entries().next().value ?? []
+    if (!key || !outgoing) {
       return
     }
-    const wait = Math.max(outgoing.lastSent + EVENT_THROTTLE_MS, this.blockedUntil, Date.now() + this.tokenWait(1)) - Date.now()
-    outgoing.timer = setTimeout(() => {
-      outgoing.timer = undefined
-      this.sendEvent(outgoing)
-    }, Math.max(wait, 0))
-  }
-
-  private async sendEvent(outgoing: Outgoing) {
-    if (this.tokenWait(1) > 0) {
-      this.scheduleEvent(outgoing)
-      return
-    }
-    this.tokens--
+    this.outbox.delete(key)
     const { iri, event, data } = outgoing
-    outgoing.pending = false
-    outgoing.inFlight = true
-    outgoing.lastSent = Date.now()
-    try {
-      await this.$cwa.cwaFetch.fetch(REALTIME_PATH, {
-        method: 'POST',
-        body: { clientId: this.clientId, event, iri, data },
-        retry: 0,
-        onResponse: () => {},
-      })
-      this.failures = 0
+    return {
+      body: { event, iri, data },
+      refused: `the real-time "${event}" event`,
+      failed: retry => retry && !this.outbox.has(key) && this.outbox.set(key, outgoing),
     }
-    catch (error) {
-      if (this.failed(error as FetchError, `the real-time "${event}" event`)) {
-        outgoing.pending = true
-      }
-    }
-    finally {
-      outgoing.inFlight = false
-    }
-    this.scheduleEvent(outgoing)
   }
 
   private dispatch(event: RealtimeEvent, clientId: string, user: PresenceUser) {
@@ -578,14 +548,6 @@ export class Presence {
         }
       }
     }
-  }
-
-  private tokenWait(reserve: number) {
-    const now = Date.now()
-    this.tokens = Math.min(SEND_BURST, this.tokens + (now - this.tokensAt) * SEND_RATE_PER_S / 1000)
-    this.tokensAt = now
-    const short = 1 + reserve - this.tokens
-    return short > 0 ? Math.ceil(short * 1000 / SEND_RATE_PER_S) : 0
   }
 
   private failed(error: FetchError, refused: string) {
