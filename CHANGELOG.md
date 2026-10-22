@@ -4,6 +4,7 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+- Admin saves and deletes send `If-Match` with the stored `_metadata.version`, one at a time per resource in a tab; a 412 shows the field's Use theirs / Keep mine conflict (moving to the other admin's draft when there is one) for an admin with real-time on, and an error otherwise; Mercure updates with a lower version than the stored copy are dropped. Needs api-components-bundle 2.0.0-alpha.36 or later, whose CORS must allow `If-Match` for a cross-origin app ([460ba188](https://github.com/components-web-app/cwa-nuxt-module/commit/460ba188), [api-components-bundle#561](https://github.com/components-web-app/api-components-bundle/issues/561))
 - A selected component whose draft another admin's first save created is edited as that draft, as the page already shows it; before, the tab kept the live version on screen and its next save overwrote that first save ([b4638e35](https://github.com/components-web-app/cwa-nuxt-module/commit/b4638e35), [#429](https://github.com/components-web-app/cwa-nuxt-module/issues/429))
 - The playground's TipTap reference keeps spaces typed in a row when loading and when another admin's save arrives (`parseOptions: { preserveWhitespace: true }`, passed on to `applyRemoteContent`); an app that copied `TipTapHtmlEditor.vue` and `tiptap/co-editing.ts` should copy them again ([274b5907](https://github.com/components-web-app/cwa-nuxt-module/commit/274b5907), [#429](https://github.com/components-web-app/cwa-nuxt-module/issues/429))
 
