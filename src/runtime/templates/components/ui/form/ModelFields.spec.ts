@@ -148,8 +148,40 @@ describe('kit fields bound to a resource model (#429)', () => {
     })
   })
 
+  describe('a disabled field never reports focus (#429)', () => {
+    test.each([
+      ['CwaUiFormInput', Input, 'Mine', { disabled: true }, 'input'],
+      ['CwaUiFormToggle', Toggle, false, { label: 'Visible', disabled: true }, 'button'],
+    ] as const)('%s, clicked while disabled, reports nothing to presence', async (_name, component, initial, props, control) => {
+      const model = fieldModel<any>(initial)
+      const wrapper = mount(component as any, { props: { ...props, model }, attachTo: document.body })
+
+      await wrapper.trigger('pointerdown')
+      await wrapper.get(control).trigger('pointerdown')
+      await wrapper.get(control).trigger('focusin')
+
+      expect(model.focusListeners.onPointerdown).not.toHaveBeenCalled()
+      expect(model.focusListeners.onFocusin).not.toHaveBeenCalled()
+      wrapper.unmount()
+    })
+
+    test.each([
+      ['CwaUiFormInput', Input, 'Mine', {}, 'input'],
+      ['CwaUiFormToggle', Toggle, false, { label: 'Visible' }, 'button'],
+    ] as const)('%s reports focus again once enabled', async (_name, component, initial, props, control) => {
+      const model = fieldModel<any>(initial)
+      const wrapper = mount(component as any, { props: { ...props, disabled: true, model }, attachTo: document.body })
+
+      await wrapper.setProps({ disabled: false })
+      await wrapper.get(control).trigger('pointerdown')
+
+      expect(model.focusListeners.onPointerdown).toHaveBeenCalledOnce()
+      wrapper.unmount()
+    })
+  })
+
   describe('another admin in the field is shown on it (#429)', () => {
-    const SAM = { user: { id: '/users/sam', name: 'Sam' }, colour: '#c084fc' }
+    const SAM = { user: { id: '/users/sam', name: 'Sam' }, name: 'Sam', colour: '#c084fc', isSelf: false, clientIds: ['tab-sam'] }
     const options = [{ label: 'First', value: 'a' }, { label: 'Second', value: 'b' }]
 
     test.each([

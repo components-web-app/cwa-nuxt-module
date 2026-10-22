@@ -8,8 +8,9 @@ defineOptions({ inheritAttrs: false })
 
 type InputValue = string | number | undefined | null
 
-const { model: field } = defineProps<{
+const { model: field, disabled = false } = defineProps<{
   model?: ResourceModelField<InputValue>
+  disabled?: boolean
 }>()
 
 const [vModel, modifiers] = defineModel<InputValue>()
@@ -39,11 +40,12 @@ const inputClass = 'cwa:disabled:opacity-50 cwa:disabled:cursor-not-allowed cwa:
     v-if="field"
     :model="field"
     class="cwa:flex cwa:w-full cwa:items-center cwa:gap-x-3"
-    v-bind="field.focusListeners"
+    v-bind="disabled ? undefined : field.focusListeners"
   >
     <input
       v-model="value"
       v-bind="$attrs"
+      :disabled="disabled"
       :class="inputClass"
     >
     <RemoteChangeConflict
@@ -55,6 +57,7 @@ const inputClass = 'cwa:disabled:opacity-50 cwa:disabled:cursor-not-allowed cwa:
     v-else
     v-model="value"
     v-bind="$attrs"
+    :disabled="disabled"
     :class="inputClass"
   >
 </template>

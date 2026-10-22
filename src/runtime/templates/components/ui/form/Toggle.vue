@@ -39,7 +39,7 @@ function handleSwitchInput(newValue: boolean) {
   <FieldPresence
     :model="field"
     class="cwa:flex cwa:items-center"
-    v-bind="field?.focusListeners"
+    v-bind="disabled ? undefined : field?.focusListeners"
   >
     <SwitchGroup
       as="div"
