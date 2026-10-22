@@ -83,7 +83,8 @@ function userOf($cwa: Cwa, resource: CwaResource): RemoteUser | undefined {
     return
   }
   const name = usePresence($cwa).nameOf(userId)
-  return name ? { id: userId, name } : { id: userId }
+  const isSelf = userId === $cwa.auth.user?.['@id']
+  return name ? { id: userId, name, isSelf } : { id: userId, isSelf }
 }
 
 export class RemoteChanges {

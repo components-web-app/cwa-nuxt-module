@@ -5,6 +5,7 @@ import type { FocusedPeer } from '#cwa/admin/presence'
 export interface RemoteUser {
   id: string
   name?: string
+  isSelf: boolean
 }
 
 export interface RemoteFieldChange<T = unknown> {
