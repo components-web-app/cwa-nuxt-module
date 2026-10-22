@@ -98,7 +98,7 @@ export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: s
       }
       const root = event.currentTarget as Node
       const outside = (down: Event) => {
-        root.contains(down.target as Node | null) || leave()
+        root.contains(down.target as Node | null) || root.contains(document.activeElement) || leave()
       }
       document.addEventListener('pointerdown', outside, true)
       stopWatchingOutside = () => document.removeEventListener('pointerdown', outside, true)

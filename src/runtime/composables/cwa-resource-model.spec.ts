@@ -624,6 +624,24 @@ describe('useCwaResourceModel', () => {
         expect(presence.blur).toHaveBeenCalledOnce()
       })
 
+      test('a pointerdown outside that leaves focus in the editor, as on its own menu rendered elsewhere, keeps the focus until focus leaves', async () => {
+        const presence = presenceView()
+        realtime.load.mockResolvedValue(presence)
+        const { root, inner, outside } = editorRoot()
+        bind(root, useCwaResourceModel(iri, 'title').focusListeners)
+
+        pointerdown(inner)
+        inner.focus()
+        pointerdown(outside)
+        await settled()
+        expect(document.activeElement).toBe(inner)
+        expect(presence.blur).not.toHaveBeenCalled()
+
+        outside.focus()
+        await settled()
+        expect(presence.blur).toHaveBeenCalledOnce()
+      })
+
       test('after focus leaves by keyboard, a later pointerdown outside does not blur again', async () => {
         const presence = presenceView()
         realtime.load.mockResolvedValue(presence)
