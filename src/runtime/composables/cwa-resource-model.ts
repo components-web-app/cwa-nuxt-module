@@ -91,6 +91,7 @@ export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: s
     onFocusout: (event: FocusEvent) => {
       (event.currentTarget as Node).contains(event.relatedTarget as Node | null) || leave()
     },
+    // Safari does not focus a button, checkbox or switch on click, so focusin never fires for them
     onPointerdown: (event: PointerEvent) => {
       focus()
       if (stopWatchingOutside) {
