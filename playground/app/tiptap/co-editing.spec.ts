@@ -55,6 +55,45 @@ describe('applyRemoteContent: another admin\'s saved HTML reaching the editor (#
     expect(on.state.selection.to).toBe(3)
   })
 
+  test('keeps the cursor on the same text when text is added before it', () => {
+    const on = createEditor('<p>Hello there</p>')
+    on.commands.setTextSelection(7)
+
+    applyRemoteContent(on, '<p>XXXX Hello there</p>')
+
+    expect(on.state.doc.textBetween(on.state.selection.from - 6, on.state.selection.from)).toBe('Hello ')
+  })
+
+  test('undo never takes back another admin\'s save', () => {
+    const on = createEditor('<p>Hello</p>')
+
+    applyRemoteContent(on, '<p>Hello and peer</p>')
+    on.commands.undo()
+
+    expect(on.getHTML()).toBe('<p>Hello and peer</p>')
+  })
+
+  test('undo still takes back this admin\'s own typing around another admin\'s save', () => {
+    const on = createEditor('<p>Hello</p>')
+    on.commands.insertContentAt(6, '!')
+
+    applyRemoteContent(on, '<p>Peer: Hello!</p>')
+    on.commands.undo()
+
+    expect(on.getHTML()).toBe('<p>Peer: Hello</p>')
+  })
+
+  test('other admins\' cursors stay drawn, at the positions they sent, which are in the document they saved', () => {
+    const on = createEditor('<p>Hello</p>')
+    setRemoteCursors(on, [{ ...SAM, from: 1, to: 5 }])
+
+    applyRemoteContent(on, '<p>Big Hello</p>')
+
+    expect(carets(on)).toHaveLength(1)
+    expect(on.view.posAtDOM(carets(on)[0]!, 0)).toBe(5)
+    expect(on.view.dom.querySelector('[data-remote-selection]')!.textContent).toBe('Big ')
+  })
+
   test('empty HTML empties the editor', () => {
     const on = createEditor('<p>Hello</p>')
 
@@ -107,6 +146,18 @@ describe('RemoteCursors: other admins\' cursors as decorations (#429)', () => {
 
     const caret = carets(on)[0]!
     expect(on.view.posAtDOM(caret, 0)).toBe(8)
+  })
+
+  test('a cursor listed again at the position it was sent at stays where this admin\'s typing moved it; a new position moves it', () => {
+    const on = createEditor('<p>Hello</p>')
+    setRemoteCursors(on, [{ ...SAM, from: 3, to: 3 }])
+    on.commands.insertContentAt(1, 'ZZ')
+
+    setRemoteCursors(on, [{ ...SAM, from: 3, to: 3 }, { ...ALEX, from: 2, to: 2 }])
+    expect(on.view.posAtDOM(carets(on).find(caret => caret.textContent === 'Sam')!, 0)).toBe(5)
+
+    setRemoteCursors(on, [{ ...SAM, from: 4, to: 4 }])
+    expect(on.view.posAtDOM(carets(on)[0]!, 0)).toBe(4)
   })
 
   test('a cursor no longer listed is removed', () => {

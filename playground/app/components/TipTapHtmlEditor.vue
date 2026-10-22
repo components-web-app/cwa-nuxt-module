@@ -11,6 +11,7 @@
       :options="{ strategy: 'fixed' }"
       :editor="editor"
       :update-delay="0"
+      @mousedown.prevent
       @contextmenu.stop
     >
       <BubbleMenuButton v-bind="buttonBubbleMenuProps('toggleHeading', 'heading', [{ level: 1 }])">
@@ -41,6 +42,7 @@
       :options="{ strategy: 'fixed' }"
       :editor="editor"
       :update-delay="0"
+      @mousedown.prevent
       @contextmenu.stop
     >
       <BubbleMenuButton v-bind="buttonBubbleMenuProps('toggleHeading', 'heading', [{ level: 1 }])">
@@ -94,21 +96,23 @@ const { model: html, remoteChange, focusedBy, focusListeners } = props.model
 
 type Selection = { from: number, to: number } | null
 const { send, on } = useCwaRealtime<{ selection: { selection: Selection } }>(() => props.iri)
-const selections = reactive(new Map<string, { userId: string, cursor: RemoteCursor }>())
+const selections = reactive(new Map<string, RemoteCursor>())
 
-on('selection', ({ selection }, peer) => {
+on('selection', ({ data: { selection }, clientId, name, colour }) => {
   if (!selection) {
-    selections.delete(peer.clientId)
+    selections.delete(clientId)
     return
   }
-  const name = peer.isSelf ? 'You (other window)' : peer.user.name || 'Someone'
-  selections.set(peer.clientId, { userId: peer.user.id, cursor: { id: peer.clientId, name, colour: peer.colour, ...selection } })
+  selections.set(clientId, { id: clientId, name, colour, ...selection })
 })
 
-const cursors = computed(() => {
-  const inField = new Set(focusedBy.value.map(peer => peer.user.id))
-  return [...selections.values()].filter(({ userId }) => inField.has(userId)).map(({ cursor }) => cursor)
+const inField = computed(() => focusedBy.value.flatMap(peer => peer.clientIds))
+
+watch(inField, (now, before) => {
+  before.filter(clientId => !now.includes(clientId)).forEach(clientId => selections.delete(clientId))
 })
+
+const cursors = computed(() => [...selections.values()].filter(({ id }) => inField.value.includes(id)))
 
 function sendSelection(selection: Selection) {
   send('selection', { selection })

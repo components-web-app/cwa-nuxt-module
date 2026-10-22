@@ -1,4 +1,4 @@
-import { Extension } from '@tiptap/core'
+import { Extension, createDocument } from '@tiptap/core'
 import type { Editor } from '@tiptap/core'
 import type { Node } from '@tiptap/pm/model'
 import { Plugin, PluginKey, TextSelection } from '@tiptap/pm/state'
@@ -12,16 +12,39 @@ export interface RemoteCursor {
   to: number
 }
 
-const key = new PluginKey<DecorationSet>('remoteCursors')
+interface CursorsState {
+  received: RemoteCursor[]
+  drawn: RemoteCursor[]
+  decorations: DecorationSet
+}
+
+type CursorsMeta = { cursors: RemoteCursor[] } | { remoteContent: true }
+
+const key = new PluginKey<CursorsState>('remoteCursors')
 
 export function applyRemoteContent(editor: Editor, html: string | null | undefined) {
-  const { from, to } = editor.state.selection
-  editor.commands.setContent(html || '', { emitUpdate: false })
-  editor.commands.setTextSelection({ from, to })
+  const { doc } = editor.state
+  const next = createDocument(html || '', editor.schema)
+  const start = doc.content.findDiffStart(next.content)
+  if (start === null) {
+    return
+  }
+  let { a: end, b: nextEnd } = doc.content.findDiffEnd(next.content)!
+  const overlap = start - Math.min(end, nextEnd)
+  if (overlap > 0) {
+    end += overlap
+    nextEnd += overlap
+  }
+  const tr = editor.state.tr
+    .replace(start, end, next.slice(start, nextEnd))
+    .setMeta('addToHistory', false)
+    .setMeta('preventUpdate', true)
+    .setMeta(key, { remoteContent: true } satisfies CursorsMeta)
+  editor.view.dispatch(tr)
 }
 
 export function setRemoteCursors(editor: Editor, cursors: RemoteCursor[]) {
-  editor.view.dispatch(editor.state.tr.setMeta(key, cursors))
+  editor.view.dispatch(editor.state.tr.setMeta(key, { cursors } satisfies CursorsMeta))
 }
 
 function caret(cursor: RemoteCursor) {
@@ -51,20 +74,41 @@ function decorations(doc: Node, cursors: RemoteCursor[]) {
   }))
 }
 
+function sameSpot(one: RemoteCursor, other: RemoteCursor | undefined) {
+  return !!other && one.from === other.from && one.to === other.to
+}
+
 export const RemoteCursors = Extension.create({
   name: 'remoteCursors',
   addProseMirrorPlugins() {
-    return [new Plugin<DecorationSet>({
+    return [new Plugin<CursorsState>({
       key,
       state: {
-        init: () => DecorationSet.empty,
-        apply: (tr, drawn) => {
-          const cursors = tr.getMeta(key) as RemoteCursor[] | undefined
-          return cursors ? decorations(tr.doc, cursors) : drawn.map(tr.mapping, tr.doc)
+        init: () => ({ received: [], drawn: [], decorations: DecorationSet.empty }),
+        apply: (tr, state) => {
+          const meta = tr.getMeta(key) as CursorsMeta | undefined
+          let { received, drawn } = state
+          if (meta && 'cursors' in meta) {
+            drawn = meta.cursors.map((cursor) => {
+              const before = state.drawn.find(({ id }) => id === cursor.id)
+              return before && sameSpot(cursor, state.received.find(({ id }) => id === cursor.id)) ? { ...cursor, from: before.from, to: before.to } : cursor
+            })
+            received = meta.cursors
+          }
+          else if (meta && 'remoteContent' in meta) {
+            drawn = received
+          }
+          else if (tr.docChanged) {
+            drawn = drawn.map(cursor => ({ ...cursor, from: tr.mapping.map(cursor.from), to: tr.mapping.map(cursor.to) }))
+          }
+          else {
+            return state
+          }
+          return { received, drawn, decorations: decorations(tr.doc, drawn) }
         },
       },
       props: {
-        decorations: state => key.getState(state),
+        decorations: state => key.getState(state)?.decorations,
       },
     })]
   },

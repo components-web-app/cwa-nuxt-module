@@ -7,12 +7,13 @@ import type { Editor } from '@tiptap/core'
 import { mockNuxtImport } from '@nuxt/test-utils/runtime'
 import type { FocusedPeer } from '#cwa/composables/cwa-resource-model'
 import type { RealtimeEventHandler } from '#cwa/composables/cwa-realtime'
+import { BubbleMenu, FloatingMenu } from '@tiptap/vue-3/menus'
 import TipTapHtmlEditor from './TipTapHtmlEditor.vue'
 
 const realtime = vi.hoisted(() => ({
   iri: undefined as undefined | (() => string | undefined),
   send: vi.fn(),
-  handlers: {} as Record<string, (data: any, meta: any) => void>,
+  handlers: {} as Record<string, (message: any) => void>,
 }))
 
 mockNuxtImport('useCwaRealtime', () => (iri: () => string | undefined) => {
@@ -26,8 +27,8 @@ mockNuxtImport('useCwaRealtime', () => (iri: () => string | undefined) => {
   }
 })
 
-const SAM = { user: { id: '/users/sam', name: 'Sam' }, colour: '#c084fc', isSelf: false }
-const ME = { user: { id: '/users/me', name: 'Me' }, colour: '#a8a29e', isSelf: true }
+const SAM = { user: { id: '/users/sam', name: 'Sam' }, name: 'Sam', colour: '#c084fc', isSelf: false, clientIds: ['tab-sam'] }
+const ME = { user: { id: '/users/me', name: 'Me' }, name: 'You (other window)', colour: '#a8a29e', isSelf: true, clientIds: ['tab-me'] }
 
 let wrapper: VueWrapper | undefined
 
@@ -63,8 +64,14 @@ function carets() {
   return [...document.querySelectorAll<HTMLElement>('[data-remote-cursor]')].map(caret => caret.textContent)
 }
 
-function selection(from: number, to: number, meta: Partial<{ clientId: string, user: { id: string, name?: string }, colour: string, isSelf: boolean }> = {}) {
-  realtime.handlers.selection!({ selection: { from, to } }, { clientId: 'tab-sam', user: SAM.user, colour: SAM.colour, isSelf: false, ...meta })
+type Sender = Partial<{ clientId: string, user: { id: string, name?: string }, name: string, colour: string, isSelf: boolean }>
+
+function message(data: unknown, sender: Sender = {}) {
+  return { clientId: 'tab-sam', user: SAM.user, name: SAM.name, colour: SAM.colour, isSelf: false, event: 'selection', data, sentAt: '2026-10-21T10:00:00Z', ...sender }
+}
+
+function selection(from: number, to: number, sender: Sender = {}) {
+  realtime.handlers.selection!(message({ selection: { from, to } }, sender))
 }
 
 afterEach(() => {
@@ -152,13 +159,80 @@ describe('TipTapHtmlEditor: the co-editing reference editor (#429)', () => {
     const { focused } = await mountEditor()
     focused.value = [SAM, ME]
     selection(2, 2)
-    selection(4, 4, { clientId: 'tab-me', user: ME.user, colour: ME.colour, isSelf: true })
+    selection(4, 4, { clientId: 'tab-me', user: ME.user, name: ME.name, colour: ME.colour, isSelf: true })
     await nextTick()
     expect(carets()).toEqual(['Sam', 'You (other window)'])
 
-    realtime.handlers.selection!({ selection: null }, { clientId: 'tab-sam', user: SAM.user, colour: SAM.colour, isSelf: false })
+    realtime.handlers.selection!(message({ selection: null }))
     await nextTick()
 
     expect(carets()).toEqual(['You (other window)'])
+  })
+
+  test('another admin\'s cursor stays drawn when their save is applied', async () => {
+    const { focused, stored } = await mountEditor('<p>Hello</p>')
+    focused.value = [SAM]
+    selection(1, 5)
+    await nextTick()
+
+    stored.value = '<p>Big Hello</p>'
+    await nextTick()
+
+    expect(carets()).toEqual(['Sam'])
+    expect(document.querySelector('[data-remote-selection]')!.textContent).toBe('Big ')
+  })
+
+  test('a cursor is drawn only for a window that has the field focused, never for another window of the same person', async () => {
+    const { focused } = await mountEditor()
+    selection(2, 2, { clientId: 'tab-sam-closed' })
+    selection(4, 4, { clientId: 'tab-sam' })
+    focused.value = [SAM]
+    await nextTick()
+
+    expect(carets()).toEqual(['Sam'])
+    expect(document.querySelector<HTMLElement>('[data-remote-cursor]')!.dataset.remoteCursor).toBe('tab-sam')
+  })
+
+  test('a window that leaves the field loses its cursor, and coming back draws none until it sends one', async () => {
+    const { focused } = await mountEditor()
+    focused.value = [SAM]
+    selection(2, 2)
+    await nextTick()
+
+    focused.value = []
+    await nextTick()
+    focused.value = [SAM]
+    await nextTick()
+    expect(carets()).toEqual([])
+
+    selection(3, 3)
+    await nextTick()
+    expect(carets()).toEqual(['Sam'])
+  })
+
+  test('a cursor sent before its window\'s focus arrives is drawn once it does', async () => {
+    const { focused } = await mountEditor()
+    focused.value = [ME]
+    await nextTick()
+    selection(2, 2)
+    await nextTick()
+
+    focused.value = [ME, SAM]
+    await nextTick()
+
+    expect(carets()).toEqual(['Sam'])
+  })
+
+  test('pressing a menu button never takes focus from the editor, so the field stays focused for the others', async () => {
+    const { wrapper } = await mountEditor()
+
+    const menus = [BubbleMenu, FloatingMenu].map(menu => wrapper.getComponent(menu).element as HTMLElement)
+    const buttons = menus.flatMap(menu => [...menu.querySelectorAll('button')])
+    expect(buttons.map(button => button.textContent!.trim())).toEqual(expect.arrayContaining(['H1', 'Bold', 'Link', 'Bullet List']))
+    for (const button of buttons) {
+      const press = new MouseEvent('mousedown', { bubbles: true, cancelable: true })
+      button.dispatchEvent(press)
+      expect(press.defaultPrevented).toBe(true)
+    }
   })
 })
