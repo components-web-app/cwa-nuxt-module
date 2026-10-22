@@ -333,7 +333,7 @@ describe('MercureClient: an app\'s own real-time events (#429)', () => {
     await deliver(SAM)
     await deliver({ ...SAM, clientId: writeHeaders['X-CWA-Client-Id'], data: { from: 9 } })
 
-    expect(handler.mock.calls).toStrictEqual([[{ from: 4 }, { user: { id: '/users/sam', name: 'Sam' }, clientId: SAM.clientId, isSelf: false, colour: expect.stringMatching(/^#/), sentAt: SAM.sentAt }]])
+    expect(handler.mock.calls).toStrictEqual([[{ clientId: SAM.clientId, user: { id: '/users/sam', name: 'Sam' }, name: 'Sam', isSelf: false, colour: expect.stringMatching(/^#/), event: 'cursor', data: { from: 4 }, sentAt: SAM.sentAt }]])
     expect(resourcesStore.hasNewResources).toBe(false)
   })
 
@@ -343,17 +343,17 @@ describe('MercureClient: an app\'s own real-time events (#429)', () => {
     await vi.waitFor(() => expect(usePresence($cwa).active.value).toBe(true))
     await vi.waitFor(() => expect(realtimeView($cwa).view.value).toBeDefined())
 
-    useCwaRealtime(() => IRI).send('cursor', { from: 4 })
+    expect(useCwaRealtime(() => IRI).send('cursor', { from: 4 })).toBe(true)
 
     await vi.waitFor(() => expect(fetch.mock.calls.map(([, options]) => options.body).filter(body => body.event === 'cursor')).toStrictEqual([{ clientId: writeHeaders['X-CWA-Client-Id'], event: 'cursor', iri: IRI, data: { from: 4 } }]))
   })
 
-  test('a visitor\'s send posts nothing', async () => {
+  test('a visitor\'s send posts nothing and returns false', async () => {
     const { $cwa, fetch } = connect({ isAdmin: false })
     appCwa.current = $cwa
     await flushPromises()
 
-    useCwaRealtime(() => IRI).send('cursor', { from: 4 })
+    expect(useCwaRealtime(() => IRI).send('cursor', { from: 4 })).toBe(false)
     await flushPromises()
 
     expect(fetch).not.toHaveBeenCalled()

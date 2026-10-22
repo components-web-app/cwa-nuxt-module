@@ -39,20 +39,21 @@ describe('useCwaRealtime (#429)', () => {
     expect(useCwaRealtime(() => undefined).peers.value).toStrictEqual([])
   })
 
-  test('send is a no-op until the admin real-time code has loaded, then sends the event on the IRI it is given now', () => {
+  test('send is a no-op returning false until the admin real-time code has loaded, then sends the event on the IRI it is given now, returning what presence answers', () => {
     view.ref = shallowRef()
     const iri = ref<string | undefined>('/component/a')
     const { send } = useCwaRealtime(iri)
-    send('cursor', { from: 1 })
+    expect(send('cursor', { from: 1 })).toBe(false)
 
-    const viewSend = vi.fn()
+    const viewSend = vi.fn().mockReturnValueOnce(true).mockReturnValueOnce(false)
     view.ref.value = { send: viewSend }
     iri.value = '/component/b'
-    send('cursor', { from: 2 })
+    expect(send('cursor', { from: 2 })).toBe(true)
+    expect(send('cursor', { from: 3 })).toBe(false)
     iri.value = undefined
-    send('cursor', { from: 3 })
+    expect(send('cursor', { from: 4 })).toBe(false)
 
-    expect(viewSend.mock.calls).toStrictEqual([['/component/b', 'cursor', { from: 2 }]])
+    expect(viewSend.mock.calls).toStrictEqual([['/component/b', 'cursor', { from: 2 }], ['/component/b', 'cursor', { from: 3 }]])
   })
 
   test('a handler registered before the admin real-time code has loaded is registered once it loads, following the IRI', async () => {
@@ -132,7 +133,7 @@ describe('useCwaRealtime (#429)', () => {
     view.ref = shallowRef({ send: viewSend, on: viewOn })
     const { send, on } = useCwaRealtime(() => '/component/a')
 
-    send('cwa:cursor', 1)
+    expect(send('cwa:cursor', 1)).toBe(false)
     on('presence', vi.fn())()
 
     expect(viewSend).not.toHaveBeenCalled()
@@ -153,7 +154,9 @@ describe('useCwaRealtime (#429)', () => {
     const { send, on } = useCwaRealtime<{ cursor: { from: number } }>(() => '/component/a')
 
     send('cursor', { from: 1 })
-    on('cursor', (data, { user }) => [data.from, user.id])
+    on('cursor', ({ data, user, name }) => [data.from, user.id, name])
+    // @ts-expect-error the data is the event's
+    on('cursor', ({ data }) => data.to)
     // @ts-expect-error data must match the event
     send('cursor', { from: 'one' })
     // @ts-expect-error the event must be in the map

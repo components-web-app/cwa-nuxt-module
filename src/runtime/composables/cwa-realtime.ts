@@ -4,7 +4,7 @@ import { useCwa } from '#cwa/composables/cwa'
 import { realtimeView } from '#cwa/resources/realtime-view'
 import type { RealtimeEventHandler } from '#cwa/admin/presence'
 
-export type { RealtimePeer, RealtimeEventHandler, RealtimeEventMeta } from '#cwa/admin/presence'
+export type { RealtimePeer, RealtimeEventHandler, RealtimeMessage } from '#cwa/admin/presence'
 
 export type RealtimeEvents = Record<string, unknown>
 
@@ -25,11 +25,9 @@ export const useCwaRealtime = <Events extends object = RealtimeEvents>(iri: Mayb
       const on = toValue(iri)
       return on && view.value ? view.value.peers(on) : []
     }),
-    send: <Event extends keyof Events & string>(event: Event, data: Events[Event]) => {
+    send: <Event extends keyof Events & string>(event: Event, data: Events[Event]): boolean => {
       const on = toValue(iri)
-      if (!reserved(event) && on) {
-        view.value?.send(on, event, data)
-      }
+      return !reserved(event) && !!on && !!view.value && view.value.send(on, event, data)
     },
     on: <Event extends keyof Events & string>(event: Event, handler: RealtimeEventHandler<Events[Event]>) => {
       if (reserved(event)) {

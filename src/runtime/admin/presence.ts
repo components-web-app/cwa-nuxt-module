@@ -54,19 +54,24 @@ export interface RealtimePeer {
 
 export interface FocusedPeer {
   user: PresenceUser
+  name: string
   colour: string
   isSelf: boolean
+  clientIds: string[]
 }
 
-export interface RealtimeEventMeta {
-  user: PresenceUser
+export interface RealtimeMessage<Data = unknown> {
   clientId: string
+  user: PresenceUser
+  name: string
   isSelf: boolean
   colour: string
+  event: string
+  data: Data
   sentAt?: string
 }
 
-export type RealtimeEventHandler<Data = unknown> = (data: Data, meta: RealtimeEventMeta) => void
+export type RealtimeEventHandler<Data = unknown> = (message: RealtimeMessage<Data>) => void
 
 export interface RealtimeEvent {
   '@type'?: string
@@ -201,8 +206,13 @@ export function usePresence($cwa: Cwa) {
       ...(peer.device ? { device: peer.device } : {}),
     })),
     focusedBy: (iri: string, field: string): FocusedPeer[] => {
-      const editing = peersOn(iri).filter(peer => peer.field === field)
-      return [...new Map(editing.map(peer => [peer.user.id, { user: { ...peer.user }, colour: peerColour(peer), isSelf: peer.isSelf }])).values()]
+      const byUser = new Map<string, FocusedPeer>()
+      for (const peer of peersOn(iri).filter(peer => peer.field === field)) {
+        const focused = byUser.get(peer.user.id) ?? { user: { ...peer.user }, name: peerName(peer), colour: peerColour(peer), isSelf: peer.isSelf, clientIds: [] }
+        focused.clientIds.push(peer.clientId)
+        byUser.set(peer.user.id, focused)
+      }
+      return [...byUser.values()]
     },
     focus: (owner: symbol, iri: string, field: string) => {
       state.focus = { owner, iri, field }
@@ -212,7 +222,7 @@ export function usePresence($cwa: Cwa) {
         state.focus = undefined
       }
     },
-    send: (iri: string, event: string, data: unknown) => transports.get($cwa)?.emit(iri, event, data),
+    send: (iri: string, event: string, data: unknown): boolean => transports.get($cwa)?.emit(iri, event, data) ?? false,
     on: (iri: () => string | undefined, event: string, handler: RealtimeEventHandler) => {
       const listener = { iri, event, handler }
       listenersOf($cwa).add(listener)
@@ -310,6 +320,11 @@ export class Presence {
 
   public paused() {
     this.state.paused = true
+    this.outbox.forEach((outgoing) => {
+      clearTimeout(outgoing.timer)
+      outgoing.timer = undefined
+      outgoing.pending = false
+    })
   }
 
   public resumed() {
@@ -318,6 +333,9 @@ export class Presence {
   }
 
   public emit(iri: string, event: string, data: unknown) {
+    if (!this.running || this.state.paused) {
+      return false
+    }
     const published = this.store.findPublishedComponentIri(iri) ?? iri
     const key = JSON.stringify([published, event])
     const outgoing = this.outbox.get(key) ?? { iri: published, event, data, pending: false, inFlight: false, lastSent: Number.NEGATIVE_INFINITY }
@@ -325,6 +343,7 @@ export class Presence {
     outgoing.data = data
     outgoing.pending = true
     this.scheduleEvent(outgoing)
+    return true
   }
 
   public receive(event: RealtimeEvent) {
@@ -533,11 +552,16 @@ export class Presence {
   private dispatch(event: RealtimeEvent, clientId: string, user: PresenceUser) {
     const { iri } = event
     const isSelf = user.id === this.$cwa.auth.user?.['@id']
-    const meta: RealtimeEventMeta = { user: { ...user }, clientId, isSelf, colour: peerColour({ user, isSelf }), sentAt: event.sentAt }
+    const message: RealtimeMessage = { clientId, user: { ...user }, name: peerName({ user, isSelf }), isSelf, colour: peerColour({ user, isSelf }), event: event.event!, data: event.data, sentAt: event.sentAt }
     for (const listener of [...listenersOf(this.$cwa)]) {
       const on = listener.iri()
       if (listener.event === event.event && on && iri && this.$cwa.resources.findAllPublishableIris(on).includes(iri)) {
-        listener.handler(event.data, meta)
+        try {
+          listener.handler(message)
+        }
+        catch (error) {
+          logger.error(`A handler for the real-time "${event.event}" event threw.`, error)
+        }
       }
     }
   }

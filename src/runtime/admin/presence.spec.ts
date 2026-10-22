@@ -748,7 +748,7 @@ describe('Presence: peers on a resource (#429)', () => {
     expect(usePresence(built.$cwa).peers(DRAFT)).toStrictEqual([{ user: { id: '/users/sam', name: 'Sam' }, state: 'selected', expiresAt: Date.now() + 45_000, colour: presenceColour('/users/sam'), isSelf: false, idle: false }])
   })
 
-  test('focusedBy lists each person editing that field of the resource once, in their colour', () => {
+  test('focusedBy lists each person editing that field of the resource once, in their colour, named, with the windows they have it focused in', () => {
     const built = withDraft()
     built.presence.receive(peerEvent({ state: 'editing', component: LIVE, field: 'title' }))
     built.presence.receive(peerEvent({ state: 'editing', component: LIVE, field: 'title' }, { clientId: 'c1d2e3f4-a5b6-4c7d-8e9f-0a1b2c3d4e5f' }))
@@ -756,7 +756,7 @@ describe('Presence: peers on a resource (#429)', () => {
     built.presence.receive(peerEvent({ state: 'selected', component: LIVE }, { clientId: 'd2e3f4a5-b6c7-4d8e-9f0a-1b2c3d4e5f60', user: { id: '/users/kim', name: 'Kim' } }))
     const { focusedBy } = usePresence(built.$cwa)
 
-    expect(focusedBy(DRAFT, 'title')).toStrictEqual([{ user: { id: '/users/sam', name: 'Sam' }, colour: presenceColour('/users/sam'), isSelf: false }])
+    expect(focusedBy(DRAFT, 'title')).toStrictEqual([{ user: { id: '/users/sam', name: 'Sam' }, name: 'Sam', colour: presenceColour('/users/sam'), isSelf: false, clientIds: [PEER_ID, 'c1d2e3f4-a5b6-4c7d-8e9f-0a1b2c3d4e5f'] }])
     expect(focusedBy(DRAFT, 'subtitle')).toMatchObject([{ user: { name: 'Alex' } }])
     expect(focusedBy('/component/titles/another', 'title')).toStrictEqual([])
   })
@@ -957,7 +957,7 @@ describe('Presence: device and your other windows (#429)', () => {
       { user: { id: ME, name: 'Me' }, state: 'editing', field: 'title', expiresAt: Date.now() + 45_000, colour: SELF_COLOUR, isSelf: true, idle: false, device: 'Safari on iOS' },
       { user: { id: '/users/alex', name: 'Alex' }, state: 'idle', expiresAt: Date.now() + 180_000, colour: presenceColour('/users/alex'), isSelf: false, idle: true },
     ])
-    expect(focusedBy(LIVE, 'title')).toStrictEqual([{ user: { id: ME, name: 'Me' }, colour: SELF_COLOUR, isSelf: true }])
+    expect(focusedBy(LIVE, 'title')).toStrictEqual([{ user: { id: ME, name: 'Me' }, name: 'You (other window)', colour: SELF_COLOUR, isSelf: true, clientIds: [PEER_ID] }])
   })
 
   test('the neutral colour is none of the people\'s colours', () => {
@@ -1227,7 +1227,7 @@ describe('Presence: an app\'s own events, send and on (#429)', () => {
     expect(events(built.fetch).map(({ data }) => data)).toStrictEqual([1, 3])
   })
 
-  test('on calls the handler with the data and who sent it, for that event on that resource, draft and published as one', () => {
+  test('on calls the handler with the event, its data and who sent it, named, for that event on that resource, draft and published as one', () => {
     const built = withDraft()
     const handler = vi.fn()
     usePresence(built.$cwa).on(() => DRAFT, 'cursor', handler)
@@ -1235,8 +1235,8 @@ describe('Presence: an app\'s own events, send and on (#429)', () => {
     built.presence.receive(appEvent('cursor', LIVE, { from: 1 }, ALEX))
     built.presence.receive(appEvent('cursor', DRAFT, { from: 2 }, ALEX))
 
-    const meta = { user: ALEX.user, clientId: ALEX.clientId, isSelf: false, colour: presenceColour('/users/alex'), sentAt: '2026-10-21T10:00:00.000000+00:00' }
-    expect(handler.mock.calls).toStrictEqual([[{ from: 1 }, meta], [{ from: 2 }, meta]])
+    const message = { clientId: ALEX.clientId, user: ALEX.user, name: 'Alex', isSelf: false, colour: presenceColour('/users/alex'), event: 'cursor', sentAt: '2026-10-21T10:00:00.000000+00:00' }
+    expect(handler.mock.calls).toStrictEqual([[{ ...message, data: { from: 1 } }], [{ ...message, data: { from: 2 } }]])
   })
 
   test('on ignores other events, other resources, events with no resource, other versions and this tab\'s own events', () => {
@@ -1261,7 +1261,7 @@ describe('Presence: an app\'s own events, send and on (#429)', () => {
 
     built.presence.receive(appEvent('cursor', LIVE, 1, { user: { id: ME, name: 'Me' } }))
 
-    expect(handler).toHaveBeenCalledWith(1, expect.objectContaining({ isSelf: true, colour: SELF_COLOUR }))
+    expect(handler).toHaveBeenCalledWith(expect.objectContaining({ data: 1, isSelf: true, colour: SELF_COLOUR, name: 'You (other window)' }))
   })
 
   test('on follows the IRI as it changes, and its unsubscribe stops it', () => {
@@ -1276,7 +1276,7 @@ describe('Presence: an app\'s own events, send and on (#429)', () => {
     off()
     built.presence.receive(appEvent('cursor', POSITION, 3))
 
-    expect(handler.mock.calls.map(([data]) => data)).toStrictEqual([2])
+    expect(handler.mock.calls.map(([message]) => message.data)).toStrictEqual([2])
   })
 
   test('an event is not taken for presence, and a presence event reaches no handler', () => {
@@ -1291,6 +1291,64 @@ describe('Presence: an app\'s own events, send and on (#429)', () => {
     expect(handler).toHaveBeenCalledOnce()
   })
 
+  test('a handler that throws is reported naming the event, and the other handlers still hear it', () => {
+    const built = withDraft()
+    const failing = vi.fn(() => {
+      throw new Error('broken')
+    })
+    const handler = vi.fn()
+    usePresence(built.$cwa).on(() => LIVE, 'cursor', failing)
+    usePresence(built.$cwa).on(() => LIVE, 'cursor', handler)
+
+    expect(() => built.presence.receive(appEvent('cursor', LIVE, 1))).not.toThrow()
+
+    expect(failing).toHaveBeenCalledOnce()
+    expect(handler).toHaveBeenCalledOnce()
+    expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('"cursor"'), expect.objectContaining({ message: 'broken' }))
+  })
+
+  test('send returns true once the event is on its way, and false with nothing sent while stopped or while Mercure is down', async () => {
+    const built = withDraft()
+    await settle()
+    const { send } = usePresence(built.$cwa)
+
+    expect(send(LIVE, 'cursor', 1)).toBe(true)
+    await settle()
+
+    built.presence.paused()
+    expect(send(LIVE, 'cursor', 2)).toBe(false)
+    await vi.advanceTimersByTimeAsync(1_000)
+    built.presence.stop()
+    expect(send(LIVE, 'cursor', 3)).toBe(false)
+    await vi.advanceTimersByTimeAsync(1_000)
+
+    expect(events(built.fetch).map(({ data }) => data)).toStrictEqual([1])
+  })
+
+  test('Mercure going down drops a send still waiting, and nothing is sent for it on reconnect', async () => {
+    const first = held()
+    const fetch = vi.fn((_path: string, options: { body: { event: string } }) => options.body.event === 'cursor' && fetch.mock.calls.filter(([, call]) => call.body.event === 'cursor').length === 1 ? first.promise : Promise.resolve())
+    const built = withDraft(fetch as never)
+    await settle()
+    const { send } = usePresence(built.$cwa)
+
+    send(LIVE, 'cursor', 1)
+    send(LIVE, 'selection', 'a')
+    await settle()
+    send(LIVE, 'cursor', 2)
+    send(LIVE, 'selection', 'b')
+    built.presence.paused()
+    first.resolve()
+    await vi.advanceTimersByTimeAsync(1_000)
+    built.presence.resumed()
+    await vi.advanceTimersByTimeAsync(1_000)
+    expect(events(fetch as never).map(({ data }) => data)).toStrictEqual([1, 'a'])
+
+    expect(send(LIVE, 'cursor', 3)).toBe(true)
+    await vi.advanceTimersByTimeAsync(1_000)
+    expect(events(fetch as never).map(({ data }) => data)).toStrictEqual([1, 'a', 3])
+  })
+
   test('a handler registered before presence starts receives events once it has', () => {
     const built = build()
     const handler = vi.fn()
@@ -1300,6 +1358,6 @@ describe('Presence: an app\'s own events, send and on (#429)', () => {
     start(built)
     built.presence.receive(appEvent('cursor', LIVE, 2))
 
-    expect(handler.mock.calls.map(([data]) => data)).toStrictEqual([2])
+    expect(handler.mock.calls.map(([message]) => message.data)).toStrictEqual([2])
   })
 })
