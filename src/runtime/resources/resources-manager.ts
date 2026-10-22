@@ -258,7 +258,7 @@ export class ResourcesManager {
     }
 
     return this.versioned(event, iri, (waited) => {
-      const draft = waited && this.resourcesStore.publishedToDraftIris[iri]
+      const draft = waited && !event.endpoint.includes('published=true') && this.resourcesStore.publishedToDraftIris[iri]
       return this.sendUpdate(draft ? { ...event, endpoint: event.endpoint.replace(iri, draft) } : event)
     })
   }

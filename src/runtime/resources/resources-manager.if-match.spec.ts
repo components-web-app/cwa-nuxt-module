@@ -229,6 +229,25 @@ describe('ResourcesManager: optimistic concurrency with If-Match (api-components
     ])
   })
 
+  test('saves an admin chose to make to the live version stay on it while a draft exists, however they queue', async () => {
+    const { seed, api, sent, resourcesManager } = setup()
+    seed({ '@id': LIVE, '@type': 'Title', 'title': 'live', 'draftResource': DRAFT, '_metadata': { persisted: true, version: 3, publishable: { published: true } } })
+    seed({ '@id': DRAFT, '@type': 'Title', 'title': 'draft', 'publishedResource': LIVE, '_metadata': { persisted: true, version: 1, publishable: { published: false } } })
+    const live = { '@id': LIVE, '@type': 'Title', 'title': 'a', 'draftResource': DRAFT, '_metadata': { persisted: true, version: 4, publishable: { published: true } } }
+    api.mockResolvedValueOnce(live)
+    api.mockResolvedValueOnce({ ...live, title: 'ab', _metadata: { ...live._metadata, version: 5 } })
+
+    await Promise.all([
+      resourcesManager.updateResource({ endpoint: `${LIVE}?published=true`, data: { title: 'a' } }),
+      resourcesManager.updateResource({ endpoint: `${LIVE}?published=true`, data: { title: 'ab' } }),
+    ])
+
+    expect(sent().map(({ path, ifMatch }) => ({ path, ifMatch }))).toStrictEqual([
+      { path: `${LIVE}?published=true`, ifMatch: '"3"' },
+      { path: `${LIVE}?published=true`, ifMatch: '"4"' },
+    ])
+  })
+
   test('a save to a live component that waited for nothing is not sent to a draft this tab did not create', async () => {
     const { seed, api, sent, resourcesManager } = setup()
     seed({ '@id': LIVE, '@type': 'Title', 'title': 'live', 'draftResource': DRAFT, '_metadata': { persisted: true, version: 3, publishable: { published: true } } })
