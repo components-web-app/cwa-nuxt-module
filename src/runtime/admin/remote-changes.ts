@@ -152,7 +152,8 @@ export class RemoteChanges {
     const iri = resource['@id']
     this.store.saveResource({ resource, path, isNew: true })
     this.store.mergeNewResource(iri)
-    isSame(this.stored(iri)?._metadata, resource._metadata) || this.store.saveResource({ resource })
+    const stored = this.stored(iri)
+    stored && stored._metadata?.version !== resource._metadata?.version && this.store.saveResource({ resource: { ...stored, _metadata: resource._metadata } })
   }
 
   private refused(event: ApiResourceEvent, iri: string, resource: CwaResource) {

@@ -248,6 +248,18 @@ describe('RemoteChanges: another admin\'s saved drafts reach a signed-in admin (
       expect(stored(DRAFT)?._metadata?.version).toBe(3)
     })
 
+    test('the public copy of a save to the live version, which carries no draftResource, keeps the live version paired with its draft', async () => {
+      const L = '/component/titles/paired-live'
+      const D = '/component/titles/paired-draft'
+      seed({ '@id': L, '@type': 'Title', 'title': 'live 2', 'draftResource': D, '_metadata': { version: 2, publishable: { published: true }, lastWrite: { clientId: 'other-tab', userId: '/_/users/2' } } })
+      seed({ '@id': D, '@type': 'Title', 'title': 'draft', 'publishedResource': L, '_metadata': { version: 1, publishable: { published: false } } })
+
+      await remote.receive({ '@id': L, '@type': 'Title', 'title': 'live 2', '_metadata': { version: 2, publishable: { published: true } } }, '/page')
+
+      expect(store.findDraftComponentIri(L)).toBe(D)
+      expect(stored(L)?.draftResource).toBe(D)
+    })
+
     test('another admin\'s new draft is stored as on screen, with the path it was fetched for, so it is re-fetched on reconnect', async () => {
       const NEW_DRAFT = '/component/titles/new-draft'
 
