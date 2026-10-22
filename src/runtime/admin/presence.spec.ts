@@ -10,7 +10,7 @@ import { getResourceTypeFromIri } from '../resources/resource-utils'
 import type { CwaResourceTypes } from '../resources/resource-utils'
 import CwaFetch from '../api/fetcher/cwa-fetch'
 import * as processComposables from '../composables/process'
-import { Presence, presenceColour, usePresence } from './presence'
+import { deviceLabel, Presence, presenceColour, SELF_COLOUR, usePresence } from './presence'
 import type Cwa from '#cwa/cwa'
 
 const CLIENT_ID = '0b3c8f0e-5a7d-4d1e-9f2a-1c2b3d4e5f60'
@@ -20,6 +20,19 @@ const ABOUT = '/_/pages/about'
 const DRAFT = '/component/titles/draft'
 const LIVE = '/component/titles/live'
 const POSITION = '/_/component_positions/hero'
+const ME = '/users/me'
+const CHROME_MAC = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36'
+
+function setNavigator(values: { userAgent?: string, userAgentData?: unknown }) {
+  for (const [key, value] of Object.entries(values)) {
+    Object.defineProperty(navigator, key, { configurable: true, get: () => value })
+  }
+}
+
+function setVisibility(visibility: 'visible' | 'hidden') {
+  Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => visibility })
+  document.dispatchEvent(new Event('visibilitychange'))
+}
 
 let store: CwaResourcesStoreInterface
 
@@ -33,6 +46,7 @@ function build(options: { page?: string, routePath?: string, fetch?: ReturnType<
   const updating = reactive(new Set<string>())
   const $cwa = {
     apiUrlBase: 'https://api.test/_api',
+    auth: { user: { '@id': ME } },
     cwaFetch: { fetch },
     resourcesManager: { isUpdating: (iri: string) => updating.has(iri) },
     resources: {
@@ -103,10 +117,14 @@ beforeEach(() => {
   vi.useFakeTimers({ now: new Date('2030-01-01T00:00:00Z') })
   setActivePinia(createPinia())
   store = new ResourcesStore('test').useStore()
+  setNavigator({ userAgent: '', userAgentData: undefined })
 })
 
 afterEach(() => {
   started.splice(0).forEach(presence => presence.stop())
+  delete (navigator as unknown as Record<string, unknown>).userAgent
+  delete (navigator as unknown as Record<string, unknown>).userAgentData
+  delete (document as unknown as Record<string, unknown>).visibilityState
   vi.useRealTimers()
   vi.unstubAllGlobals()
   vi.restoreAllMocks()
@@ -716,7 +734,7 @@ describe('Presence: peers on a resource (#429)', () => {
     built.presence.receive(peerEvent({ state: 'selected', component: '/component/titles/another' }, ALEX))
     const { peers } = usePresence(built.$cwa)
 
-    const expected = [{ user: { id: '/users/sam', name: 'Sam' }, state: 'editing', field: 'title', expiresAt: Date.now() + 30_000, colour: presenceColour('/users/sam') }]
+    const expected = [{ user: { id: '/users/sam', name: 'Sam' }, state: 'editing', field: 'title', expiresAt: Date.now() + 30_000, colour: presenceColour('/users/sam'), isSelf: false, idle: false }]
     expect(peers(DRAFT)).toStrictEqual(expected)
     expect(peers(LIVE)).toStrictEqual(expected)
     expect(peers(POSITION)).toStrictEqual(expected)
@@ -727,7 +745,7 @@ describe('Presence: peers on a resource (#429)', () => {
     const built = withDraft()
     built.presence.receive(peerEvent({ state: 'selected', component: LIVE }))
 
-    expect(usePresence(built.$cwa).peers(DRAFT)).toStrictEqual([{ user: { id: '/users/sam', name: 'Sam' }, state: 'selected', expiresAt: Date.now() + 45_000, colour: presenceColour('/users/sam') }])
+    expect(usePresence(built.$cwa).peers(DRAFT)).toStrictEqual([{ user: { id: '/users/sam', name: 'Sam' }, state: 'selected', expiresAt: Date.now() + 45_000, colour: presenceColour('/users/sam'), isSelf: false, idle: false }])
   })
 
   test('focusedBy lists each person editing that field of the resource once, in their colour', () => {
@@ -738,7 +756,7 @@ describe('Presence: peers on a resource (#429)', () => {
     built.presence.receive(peerEvent({ state: 'selected', component: LIVE }, { clientId: 'd2e3f4a5-b6c7-4d8e-9f0a-1b2c3d4e5f60', user: { id: '/users/kim', name: 'Kim' } }))
     const { focusedBy } = usePresence(built.$cwa)
 
-    expect(focusedBy(DRAFT, 'title')).toStrictEqual([{ user: { id: '/users/sam', name: 'Sam' }, colour: presenceColour('/users/sam') }])
+    expect(focusedBy(DRAFT, 'title')).toStrictEqual([{ user: { id: '/users/sam', name: 'Sam' }, colour: presenceColour('/users/sam'), isSelf: false }])
     expect(focusedBy(DRAFT, 'subtitle')).toMatchObject([{ user: { name: 'Alex' } }])
     expect(focusedBy('/component/titles/another', 'title')).toStrictEqual([])
   })
@@ -768,6 +786,208 @@ describe('Presence: peers on a resource (#429)', () => {
 
     expect(peers(DRAFT)).toStrictEqual([])
     expect(focusedBy(DRAFT, 'title')).toStrictEqual([])
+  })
+})
+
+describe('Presence: idle (#429)', () => {
+  function selected() {
+    store.saveResource({ resource: { '@id': LIVE, '@type': 'Title', '_metadata': { persisted: true } } as never })
+    const built = start(build())
+    built.stack.value = [{ iri: LIVE }, { iri: POSITION }]
+    return built
+  }
+
+  test('hiding the tab sends idle, keeping the selection but not the field; showing it again sends the real state at once', async () => {
+    const built = selected()
+    usePresence(built.$cwa).focus(Symbol('field'), LIVE, 'title')
+    await vi.advanceTimersByTimeAsync(1_000)
+    expect(built.sent().at(-1)).toMatchObject({ state: 'editing', field: 'title' })
+
+    setVisibility('hidden')
+    await vi.advanceTimersByTimeAsync(250)
+    expect(built.sent().at(-1)).toStrictEqual({ v: 1, page: HOME, state: 'idle', component: LIVE, componentPosition: POSITION })
+
+    const before = built.sent().length
+    await vi.advanceTimersByTimeAsync(10_000)
+    setVisibility('visible')
+    await settle()
+    expect(built.sent()).toHaveLength(before + 1)
+    expect(built.sent().at(-1)).toMatchObject({ state: 'editing', field: 'title' })
+  })
+
+  test('a tab started hidden starts idle', async () => {
+    Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' })
+    const { sent } = start(build())
+    await settle()
+
+    expect(sent()[0]).toMatchObject({ state: 'idle', hello: true })
+  })
+
+  test('five minutes with no pointer, key or focus sends idle; any of them sends the real state within the 250 ms throttle', async () => {
+    const built = start(build())
+    await settle()
+
+    await vi.advanceTimersByTimeAsync(5 * 60_000 - 1_000)
+    expect(built.sent().map(data => data.state)).not.toContain('idle')
+    await vi.advanceTimersByTimeAsync(1_250)
+    expect(built.sent().at(-1)).toMatchObject({ state: 'idle' })
+
+    for (const [target, type] of [[window, 'pointerdown'], [window, 'keydown'], [document.body, 'focusin']] as const) {
+      const before = built.sent().length
+      target.dispatchEvent(new Event(type, { bubbles: true }))
+      await vi.advanceTimersByTimeAsync(250)
+      expect(built.sent()).toHaveLength(before + 1)
+      expect(built.sent().at(-1)).toMatchObject({ state: 'viewing' })
+      await vi.advanceTimersByTimeAsync(5 * 60_000 + 1_250)
+      expect(built.sent().at(-1)).toMatchObject({ state: 'idle' })
+    }
+  })
+
+  test('moving the pointer keeps the tab from going idle', async () => {
+    const built = start(build())
+    await settle()
+
+    await vi.advanceTimersByTimeAsync(4 * 60_000)
+    window.dispatchEvent(new Event('pointermove'))
+    await vi.advanceTimersByTimeAsync(4 * 60_000)
+
+    expect(built.sent().map(data => data.state)).not.toContain('idle')
+  })
+
+  test('activity in a hidden tab keeps it idle', async () => {
+    const built = start(build())
+    await settle()
+    setVisibility('hidden')
+    await vi.advanceTimersByTimeAsync(250)
+
+    window.dispatchEvent(new Event('pointermove'))
+    await vi.advanceTimersByTimeAsync(250)
+
+    expect(built.sent().at(-1)).toMatchObject({ state: 'idle' })
+  })
+
+  test('an idle tab sends its heartbeat every 60 seconds instead of every 15, and every 15 again once back', async () => {
+    const built = start(build())
+    await settle()
+    setVisibility('hidden')
+    await vi.advanceTimersByTimeAsync(250)
+    const idleAt = built.sent().length
+
+    await vi.advanceTimersByTimeAsync(59_000)
+    expect(built.sent()).toHaveLength(idleAt)
+    await vi.advanceTimersByTimeAsync(1_000)
+    expect(built.sent()).toHaveLength(idleAt + 1)
+    expect(built.sent().at(-1)).toMatchObject({ state: 'idle' })
+
+    setVisibility('visible')
+    await settle()
+    const backAt = built.sent().length
+    await vi.advanceTimersByTimeAsync(15_000)
+    expect(built.sent()).toHaveLength(backAt + 1)
+  })
+
+  test('stop() removes the idle listeners and timers', async () => {
+    const added = [vi.spyOn(window, 'addEventListener'), vi.spyOn(document, 'addEventListener')]
+    const removed = [vi.spyOn(window, 'removeEventListener'), vi.spyOn(document, 'removeEventListener')]
+    const built = start(build())
+    await settle()
+    built.presence.stop()
+
+    const listeners = (spies: typeof added) => spies.flatMap(spy => spy.mock.calls.map(([type, listener]) => [type, listener])).filter(([type]) => ['visibilitychange', 'pointerdown', 'pointermove', 'keydown', 'focusin'].includes(type as string))
+    expect(listeners(added)).toHaveLength(5)
+    expect(listeners(removed)).toStrictEqual(listeners(added))
+
+    setVisibility('hidden')
+    window.dispatchEvent(new Event('pointerdown'))
+    await vi.advanceTimersByTimeAsync(10 * 60_000)
+
+    expect(built.sent()).toHaveLength(1)
+  })
+
+  test('an idle peer stays for three idle heartbeats on the local clock, longer than the event\'s own 45 second lifetime', async () => {
+    const built = start(build())
+    built.presence.receive(peerEvent({ state: 'idle' }))
+    const { onThisPage } = usePresence(built.$cwa)
+
+    await vi.advanceTimersByTimeAsync(179_000)
+    expect(onThisPage.value).toMatchObject([{ state: 'idle' }])
+    await vi.advanceTimersByTimeAsync(1_000)
+    expect(onThisPage.value).toStrictEqual([])
+  })
+
+  test('an idle peer becoming active again expires by the event\'s own lifetime', async () => {
+    const built = start(build())
+    built.presence.receive(peerEvent({ state: 'idle' }))
+    built.presence.receive(peerEvent({ state: 'viewing' }))
+
+    await vi.advanceTimersByTimeAsync(45_000)
+    expect(usePresence(built.$cwa).onThisPage.value).toStrictEqual([])
+  })
+})
+
+describe('Presence: device and your other windows (#429)', () => {
+  test('presence carries this tab\'s device label, read once when presence is created', async () => {
+    setNavigator({ userAgent: CHROME_MAC })
+    const built = build()
+    setNavigator({ userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:144.0) Gecko/20100101 Firefox/144.0' })
+    start(built)
+    await settle()
+
+    expect(built.sent()[0]).toStrictEqual({ v: 1, page: HOME, state: 'viewing', device: 'Chrome on macOS', hello: true })
+  })
+
+  test('a peer signed in as this admin is this admin\'s other window, and carries its device; another person\'s device is never kept', () => {
+    const built = start(build())
+    built.presence.receive(peerEvent({ device: 'Safari on iOS' }, { user: { id: ME, name: 'Me' } }))
+    built.presence.receive(peerEvent({ device: 'Firefox on Linux' }, { clientId: 'b0c1d2e3-f4a5-4b6c-8d7e-8f9a0b1c2d3e', user: { id: '/users/alex', name: 'Alex' } }))
+    const { onThisPage } = usePresence(built.$cwa)
+
+    expect(onThisPage.value).toMatchObject([{ user: { id: ME }, isSelf: true, device: 'Safari on iOS' }, { user: { id: '/users/alex' }, isSelf: false }])
+    expect(onThisPage.value[1]).not.toHaveProperty('device')
+  })
+
+  test('peers and focusedBy mark this admin\'s other window, in the neutral colour, with its device; and mark idle peers', () => {
+    store.saveResource({ resource: { '@id': LIVE, '@type': 'Title', '_metadata': { persisted: true } } as never })
+    const built = start(build())
+    built.presence.receive(peerEvent({ state: 'editing', component: LIVE, field: 'title', device: 'Safari on iOS' }, { user: { id: ME, name: 'Me' } }))
+    built.presence.receive(peerEvent({ state: 'idle', component: LIVE, device: 'Firefox on Linux' }, { clientId: 'b0c1d2e3-f4a5-4b6c-8d7e-8f9a0b1c2d3e', user: { id: '/users/alex', name: 'Alex' } }))
+    const { peers, focusedBy } = usePresence(built.$cwa)
+
+    expect(peers(LIVE)).toStrictEqual([
+      { user: { id: ME, name: 'Me' }, state: 'editing', field: 'title', expiresAt: Date.now() + 45_000, colour: SELF_COLOUR, isSelf: true, idle: false, device: 'Safari on iOS' },
+      { user: { id: '/users/alex', name: 'Alex' }, state: 'idle', expiresAt: Date.now() + 180_000, colour: presenceColour('/users/alex'), isSelf: false, idle: true },
+    ])
+    expect(focusedBy(LIVE, 'title')).toStrictEqual([{ user: { id: ME, name: 'Me' }, colour: SELF_COLOUR, isSelf: true }])
+  })
+
+  test('the neutral colour is none of the people\'s colours', () => {
+    const colours = Array.from({ length: 50 }, (_, index) => presenceColour(`/users/${index}`))
+
+    expect(colours).not.toContain(SELF_COLOUR)
+  })
+})
+
+describe('deviceLabel (#429)', () => {
+  test.each([
+    ['Chrome on macOS', { userAgent: CHROME_MAC }],
+    ['Safari on macOS', { userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Safari/605.1.15' }],
+    ['Safari on iOS', { userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/604.1' }],
+    ['Chrome on iOS', { userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/141.0.0.0 Mobile/15E148 Safari/604.1' }],
+    ['Firefox on Windows', { userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:144.0) Gecko/20100101 Firefox/144.0' }],
+    ['Edge on Windows', { userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36 Edg/141.0.0.0' }],
+    ['Chrome on Android', { userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36' }],
+    ['Firefox on Linux', { userAgent: 'Mozilla/5.0 (X11; Linux x86_64; rv:144.0) Gecko/20100101 Firefox/144.0' }],
+    ['Edge on Windows', { userAgent: CHROME_MAC, userAgentData: { brands: [{ brand: 'Chromium' }, { brand: 'Microsoft Edge' }, { brand: 'Not_A Brand' }], platform: 'Windows' } }],
+    ['Chrome on macOS', { userAgent: '', userAgentData: { brands: [{ brand: 'Not)A;Brand' }, { brand: 'Google Chrome' }, { brand: 'Chromium' }], platform: 'macOS' } }],
+    ['Chrome on Linux', { userAgent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', userAgentData: { brands: [{ brand: 'Chromium' }, { brand: 'Not_A Brand' }], platform: 'Linux' } }],
+    ['Linux', { userAgent: 'Mozilla/5.0 (X11; Linux x64) AppleWebKit/537.36 (KHTML, like Gecko) HappyDOM/20.0.0' }],
+  ])('%s', (label, nav) => {
+    expect(deviceLabel(nav)).toBe(label)
+  })
+
+  test('nothing recognisable gives no label', () => {
+    expect(deviceLabel({ userAgent: 'curl/8.7.1' })).toBeUndefined()
+    expect(deviceLabel({})).toBeUndefined()
   })
 })
 

@@ -42,7 +42,7 @@ function connect({ isAdmin = true, realtime, hub: hubUrl = 'https://api.test/.we
     cwaFetch: { writeHeaders, fetch },
     resources: { displayPageIri: computed(() => PAGE), pageDataIriOf: () => computed(() => undefined), findAllPublishableIris: (iri: string) => resourcesStore.findAllPublishableIris(iri) },
     admin: { resourceStackManager: { currentIri: computed(() => undefined), getClosestStackItemByType: () => undefined } },
-    auth: { get isAdmin() {
+    auth: { user: { '@id': '/users/me' }, get isAdmin() {
       return computed(() => admin.value)
     } },
   }
@@ -77,6 +77,7 @@ afterEach(async () => {
     admin.value = false
   })
   await flushPromises()
+  delete (navigator as unknown as Record<string, unknown>).userAgent
   vi.unstubAllGlobals()
   vi.restoreAllMocks()
 })
@@ -224,6 +225,7 @@ describe('MercureClient: presence for a signed-in admin (#429)', () => {
   const SAM = { '@type': 'CwaRealtimeEvent', 'v': 1, 'clientId': '7f1e2d3c-4b5a-4c6d-8e7f-9a0b1c2d3e4f', 'user': { id: '/users/sam', name: 'Sam' }, 'event': 'presence', 'iri': null, 'data': { v: 1, state: 'viewing', page: PAGE }, 'sentAt': '2026-10-21T10:00:01Z', 'expiresAt': '2026-10-21T10:00:46Z' }
 
   test('an admin\'s Mercure start announces the page on screen with a hello, from the same client id as their writes', async () => {
+    Object.defineProperty(navigator, 'userAgent', { configurable: true, get: () => '' })
     const { fetch, writeHeaders } = connect()
 
     await vi.waitFor(() => expect(presenceSent(fetch)).toStrictEqual([{ v: 1, page: PAGE, state: 'viewing', hello: true }]))
@@ -272,6 +274,30 @@ describe('MercureClient: presence for a signed-in admin (#429)', () => {
 
     expect(view.value!.focusedBy(IRI, 'title')).toMatchObject([{ user: { id: '/users/sam', name: 'Sam' } }])
     expect(view.value!.peers(IRI)).toMatchObject([{ user: { name: 'Sam' }, state: 'editing', field: 'title' }])
+  })
+
+  test('this admin\'s other window over the hub is marked as theirs with its device, and an idle peer as idle', async () => {
+    const { $cwa } = connect()
+    await vi.waitFor(() => expect(usePresence($cwa).active.value).toBe(true))
+    const { view } = realtimeView($cwa)
+    await vi.waitFor(() => expect(view.value).toBeDefined())
+
+    await deliver({ ...SAM, clientId: 'b0c1d2e3-f4a5-4b6c-8d7e-8f9a0b1c2d3e', user: { id: '/users/me', name: 'Me' }, data: { v: 1, state: 'editing', page: PAGE, component: IRI, field: 'title', device: 'Safari on iOS' } })
+    await deliver({ ...SAM, data: { v: 1, state: 'idle', page: PAGE, component: IRI, device: 'Firefox on Linux' } })
+
+    expect(view.value!.peers(IRI)).toMatchObject([
+      { user: { id: '/users/me' }, isSelf: true, idle: false, device: 'Safari on iOS' },
+      { user: { id: '/users/sam' }, isSelf: false, idle: true },
+    ])
+    expect(view.value!.peers(IRI)[1]).not.toHaveProperty('device')
+  })
+
+  test('presence names this tab\'s device', async () => {
+    Object.defineProperty(navigator, 'userAgent', { configurable: true, get: () => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Safari/605.1.15' })
+    const { fetch } = connect()
+    await vi.waitFor(() => expect(presenceSent(fetch)).toHaveLength(1))
+
+    expect(presenceSent(fetch)[0]).toMatchObject({ device: 'Safari on macOS' })
   })
 
   test('a lost connection pauses presence; reconnecting says hello again', async () => {

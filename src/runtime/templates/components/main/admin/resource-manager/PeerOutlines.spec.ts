@@ -7,7 +7,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import type { Router } from 'vue-router'
 import PeerOutlines from './PeerOutlines.vue'
 import * as cwaComposable from '#cwa/composables/cwa'
-import { Presence, presenceColour } from '#cwa/admin/presence'
+import { Presence, presenceColour, SELF_COLOUR } from '#cwa/admin/presence'
 import { registerInstance, unregisterInstance } from '#cwa/admin/manageable-instances'
 import { ResourcesStore } from '#cwa/storage/stores/resources/resources-store'
 import type Cwa from '#cwa/cwa'
@@ -27,6 +27,7 @@ const OTHER = '/component/html_contents/c2'
 const POSITION = '/_/component_positions/p1'
 const SAM = { id: '/users/sam', name: 'Sam' }
 const ALEX = { id: '/users/alex', name: 'Alex' }
+const ME = { id: '/users/me', name: 'Me' }
 const ids = ['0a1b2c3d-1111-4aaa-8bbb-000000000001', '0a1b2c3d-1111-4aaa-8bbb-000000000002', '0a1b2c3d-1111-4aaa-8bbb-000000000003']
 
 let presence: Presence | undefined
@@ -38,6 +39,7 @@ function mockCwa() {
   const state = reactive({ pageIri: HOME, loading: false })
   const cwa = {
     apiUrlBase: 'https://api.test',
+    auth: { user: { '@id': ME.id } },
     cwaFetch: { fetch: vi.fn().mockResolvedValue(undefined) },
     resources: {
       displayPageIri: computed(() => state.pageIri),
@@ -145,6 +147,33 @@ describe('PeerOutlines (#429)', () => {
       `top: 300px; left: 40px; width: 200px; height: 80px; outline-color: ${presenceColour(SAM.id)};`,
     ])
     expect(flags(wrapper).map(flag => flag.text())).toStrictEqual(['Sam', 'Sam'])
+  })
+
+  test('this admin\'s other window is outlined in the neutral colour and called "You (other window)"', async () => {
+    const { cwa } = mockCwa()
+    register(cwa, COMPONENT, [elementAt({ top: 10, left: 20, right: 120, bottom: 60 })])
+    arrive(ids[0]!, ME, { state: 'editing', component: COMPONENT, field: 'html' })
+
+    const wrapper = await mountOutlines()
+
+    expect(outlines(wrapper)[0]!.attributes('style')).toContain(`outline-color: ${SELF_COLOUR}`)
+    expect(flags(wrapper).map(flag => flag.text())).toStrictEqual(['You (other window) is editing'])
+  })
+
+  test('an idle peer is not outlined, though it still has the component selected', async () => {
+    const { cwa } = mockCwa()
+    register(cwa, COMPONENT, [elementAt({ top: 10, left: 20, right: 120, bottom: 60 })])
+    arrive(ids[0]!, SAM, { state: 'idle', component: COMPONENT })
+    arrive(ids[1]!, ALEX, { component: COMPONENT })
+
+    const wrapper = await mountOutlines()
+
+    expect(outlines(wrapper)[0]!.attributes('style')).toContain(`outline-color: ${presenceColour(ALEX.id)}`)
+    expect(flags(wrapper).map(flag => flag.text())).toStrictEqual(['Alex'])
+
+    arrive(ids[1]!, ALEX, { state: 'idle', component: COMPONENT })
+    await flushPromises()
+    expect(outlines(wrapper)).toHaveLength(0)
   })
 
   test('a peer with only a position selected outlines that position', async () => {

@@ -7,7 +7,7 @@ import { retryAfterSeconds } from '#cwa/api/retry-after'
 import type { CwaResourcesStoreInterface } from '#cwa/storage/stores/resources/resources-store'
 import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/resources/resource-utils'
 
-export type PresenceActivity = 'viewing' | 'selected' | 'editing' | 'left'
+export type PresenceActivity = 'viewing' | 'selected' | 'editing' | 'idle' | 'left'
 
 export interface PresenceData {
   v: 1
@@ -17,6 +17,7 @@ export interface PresenceData {
   componentPosition?: string
   pageData?: string
   field?: string
+  device?: string
   hello?: true
 }
 
@@ -34,6 +35,8 @@ export interface PresencePeer {
   componentPosition?: string
   pageData?: string
   field?: string
+  isSelf: boolean
+  device?: string
   receivedAt: number
   ttlMs: number
 }
@@ -44,11 +47,15 @@ export interface RealtimePeer {
   field?: string
   expiresAt: number
   colour: string
+  isSelf: boolean
+  idle: boolean
+  device?: string
 }
 
 export interface FocusedPeer {
   user: PresenceUser
   colour: string
+  isSelf: boolean
 }
 
 export interface RealtimeEvent {
@@ -65,6 +72,7 @@ export interface RealtimeEvent {
 interface PresenceState {
   active: boolean
   paused: boolean
+  idle: boolean
   page: string | undefined
   peers: Record<string, PresencePeer>
   names: Record<string, string>
@@ -74,18 +82,25 @@ interface PresenceState {
 const REALTIME_PATH = '/_/realtime'
 const THROTTLE_MS = 250
 const HEARTBEAT_MS = 15_000
+const IDLE_HEARTBEAT_MS = 60_000
+const IDLE_KEEP_MS = 3 * IDLE_HEARTBEAT_MS
+const IDLE_AFTER_MS = 5 * 60_000
+const ACTIVITY_EVENTS = ['pointerdown', 'pointermove', 'keydown', 'focusin']
 const PRUNE_MS = 1_000
 const HELLO_JITTER_MS = 2_000
 const MAX_BACKOFF_MS = 60_000
 const DEFAULT_TTL_MS = 45_000
 const PALETTE = ['#c084fc', '#14b8a6', '#4ade80', '#22d3ee', '#f87171', '#e879f9']
+export const SELF_COLOUR = '#a8a29e'
+const BROWSERS: [RegExp, string][] = [[/Edg(e|A|iOS)?\//, 'Edge'], [/OPR\//, 'Opera'], [/Firefox\/|FxiOS/, 'Firefox'], [/Chrome\/|CriOS/, 'Chrome'], [/Safari\//, 'Safari']]
+const SYSTEMS: [RegExp, string][] = [[/iPhone|iPad|iPod/, 'iOS'], [/Android/, 'Android'], [/CrOS/, 'ChromeOS'], [/Mac OS X|Macintosh/, 'macOS'], [/Windows/, 'Windows'], [/Linux/, 'Linux']]
 
 const states = new WeakMap<Cwa, PresenceState>()
 
 function presenceState($cwa: Cwa): PresenceState {
   let state = states.get($cwa)
   if (!state) {
-    state = reactive({ active: false, paused: false, page: undefined, peers: {}, names: {}, focus: undefined })
+    state = reactive({ active: false, paused: false, idle: false, page: undefined, peers: {}, names: {}, focus: undefined })
     states.set($cwa, state)
   }
   return state
@@ -101,6 +116,26 @@ export function presenceColour(userId: string) {
     hash = (hash * 31 + char.charCodeAt(0)) | 0
   }
   return PALETTE[Math.abs(hash) % PALETTE.length]!
+}
+
+export function peerColour(peer: { user: PresenceUser, isSelf: boolean }) {
+  return peer.isSelf ? SELF_COLOUR : presenceColour(peer.user.id)
+}
+
+export function peerName(peer: { user: PresenceUser, isSelf: boolean }) {
+  return peer.isSelf ? 'You (other window)' : peer.user.name || 'Someone'
+}
+
+interface DeviceSource {
+  userAgent?: string
+  userAgentData?: { brands?: { brand: string }[], platform?: string }
+}
+
+export function deviceLabel({ userAgent = '', userAgentData }: DeviceSource): string | undefined {
+  const brand = userAgentData?.brands?.map(({ brand }) => brand.replace(/^(Google|Microsoft) /, '')).find(brand => !/not.?a.?brand|chromium/i.test(brand))
+  const browser = brand ?? BROWSERS.find(([pattern]) => pattern.test(userAgent))?.[1]
+  const system = userAgentData?.platform || SYSTEMS.find(([pattern]) => pattern.test(userAgent))?.[1]
+  return [browser, system].filter(Boolean).join(' on ') || undefined
 }
 
 export function usePresence($cwa: Cwa) {
@@ -121,11 +156,14 @@ export function usePresence($cwa: Cwa) {
       state: peer.state,
       ...(peer.field ? { field: peer.field } : {}),
       expiresAt: peer.receivedAt + peer.ttlMs,
-      colour: presenceColour(peer.user.id),
+      colour: peerColour(peer),
+      isSelf: peer.isSelf,
+      idle: peer.state === 'idle',
+      ...(peer.device ? { device: peer.device } : {}),
     })),
     focusedBy: (iri: string, field: string): FocusedPeer[] => {
       const editing = peersOn(iri).filter(peer => peer.field === field)
-      return [...new Map(editing.map(peer => [peer.user.id, { user: { ...peer.user }, colour: presenceColour(peer.user.id) }])).values()]
+      return [...new Map(editing.map(peer => [peer.user.id, { user: { ...peer.user }, colour: peerColour(peer), isSelf: peer.isSelf }])).values()]
     },
     focus: (owner: symbol, iri: string, field: string) => {
       state.focus = { owner, iri, field }
@@ -141,6 +179,8 @@ export function usePresence($cwa: Cwa) {
 export class Presence {
   private readonly state: PresenceState
   private readonly warned = new Set<string>()
+  private readonly device = deviceLabel(navigator as DeviceSource)
+  private lastActivity = 0
   private running = false
   private disabled = false
   private dirty = false
@@ -158,6 +198,11 @@ export class Presence {
   private unwatch?: () => void
   private readonly onPageHide = () => this.sendLeft()
   private readonly onPageShow = (event: PageTransitionEvent) => event.persisted && this.announce(true)
+  private readonly onVisibilityChange = () => this.setIdle(document.visibilityState === 'hidden')
+  private readonly onActivity = () => {
+    this.lastActivity = Date.now()
+    document.visibilityState !== 'hidden' && this.setIdle(false)
+  }
 
   constructor(
     private readonly $cwa: Cwa,
@@ -175,15 +220,19 @@ export class Presence {
     this.running = true
     this.state.active = true
     this.state.paused = !connected
+    this.state.idle = document.visibilityState === 'hidden'
+    this.lastActivity = Date.now()
     this.state.page = this.current().page
     this.unwatch = watch(() => JSON.stringify(this.current()), (key) => {
       this.state.page = (JSON.parse(key) as PresenceData).page
       this.announce()
     }, { flush: 'sync' })
-    this.heartbeat = setInterval(() => this.announce(false, true), HEARTBEAT_MS)
+    this.beat()
     this.pruner = setInterval(() => this.prune(), PRUNE_MS)
     window.addEventListener('pagehide', this.onPageHide)
     window.addEventListener('pageshow', this.onPageShow)
+    document.addEventListener('visibilitychange', this.onVisibilityChange)
+    ACTIVITY_EVENTS.forEach(type => window.addEventListener(type, this.onActivity, { capture: true, passive: true }))
     this.announce(true)
   }
 
@@ -200,7 +249,10 @@ export class Presence {
     this.sendTimer = this.helloTimer = this.heartbeat = this.pruner = this.unwatch = undefined
     window.removeEventListener('pagehide', this.onPageHide)
     window.removeEventListener('pageshow', this.onPageShow)
+    document.removeEventListener('visibilitychange', this.onVisibilityChange)
+    ACTIVITY_EVENTS.forEach(type => window.removeEventListener(type, this.onActivity, { capture: true }))
     this.state.active = false
+    this.state.idle = false
     this.state.peers = {}
     this.state.names = {}
   }
@@ -226,7 +278,9 @@ export class Presence {
       delete this.state.peers[clientId]
       return
     }
-    const ttlMs = serverTime(event.expiresAt) - serverTime(event.sentAt)
+    const lifetimeMs = serverTime(event.expiresAt) - serverTime(event.sentAt)
+    const ttlMs = lifetimeMs > 0 ? lifetimeMs : DEFAULT_TTL_MS
+    const isSelf = user.id === this.$cwa.auth.user?.['@id']
     this.state.peers[clientId] = {
       clientId,
       user: { ...user },
@@ -236,8 +290,10 @@ export class Presence {
       componentPosition: data.componentPosition,
       pageData: data.pageData,
       field: data.field,
+      isSelf,
+      ...(isSelf && data.device ? { device: data.device } : {}),
       receivedAt: Date.now(),
-      ttlMs: ttlMs > 0 ? ttlMs : DEFAULT_TTL_MS,
+      ttlMs: data.state === 'idle' ? Math.max(ttlMs, IDLE_KEEP_MS) : ttlMs,
     }
     if (data.hello && !this.helloTimer) {
       this.helloTimer = setTimeout(() => {
@@ -259,12 +315,12 @@ export class Presence {
   }
 
   private current(): PresenceData {
-    const data: PresenceData = { v: 1, page: this.page(), state: 'viewing' }
+    const data: PresenceData = { v: 1, page: this.page(), state: 'viewing', ...(this.device ? { device: this.device } : {}) }
     const stackManager = this.$cwa.admin.resourceStackManager
     const selected = stackManager.currentIri.value
     const type = selected ? getResourceTypeFromIri(selected) : undefined
     if (!selected || (type !== CwaResourceTypes.COMPONENT && type !== CwaResourceTypes.COMPONENT_POSITION)) {
-      return data
+      return this.idled(data)
     }
     data.state = 'selected'
     if (type === CwaResourceTypes.COMPONENT) {
@@ -289,7 +345,29 @@ export class Presence {
     else if (iris.some(iri => iri && this.$cwa.resourcesManager.isUpdating(iri))) {
       data.state = 'editing'
     }
-    return data
+    return this.idled(data)
+  }
+
+  private idled(data: PresenceData): PresenceData {
+    if (!this.state.idle) {
+      return data
+    }
+    const { field: _field, ...rest } = data
+    return { ...rest, state: 'idle' }
+  }
+
+  private setIdle(idle: boolean) {
+    if (this.state.idle === idle) {
+      return
+    }
+    this.state.idle = idle
+    this.lastActivity = Date.now()
+    this.running && this.beat()
+  }
+
+  private beat() {
+    clearInterval(this.heartbeat)
+    this.heartbeat = setInterval(() => this.announce(false, true), this.state.idle ? IDLE_HEARTBEAT_MS : HEARTBEAT_MS)
   }
 
   private announce(hello = false, repeat = hello) {
@@ -383,6 +461,7 @@ export class Presence {
 
   private prune() {
     const now = Date.now()
+    now - this.lastActivity >= IDLE_AFTER_MS && this.setIdle(true)
     for (const [clientId, peer] of Object.entries(this.state.peers)) {
       if (now >= peer.receivedAt + peer.ttlMs) {
         delete this.state.peers[clientId]

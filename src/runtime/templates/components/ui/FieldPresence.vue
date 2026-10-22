@@ -12,7 +12,7 @@ const { model, focusedBy } = defineProps<{
 const peers = computed<FocusedPeer[]>(() => focusedBy ?? model?.focusedBy?.value ?? [])
 const fresh = useFreshFlags(() => ({ field: JSON.stringify(peers.value.map(peer => peer.user.id)) }))
 const colour = computed(() => peers.value[0]?.colour)
-const label = computed(() => peers.value.map(peer => peer.user.name || 'Someone').join(', '))
+const label = computed(() => peers.value.map(peer => peer.isSelf ? 'You (other window)' : peer.user.name || 'Someone').join(', '))
 const faded = computed(() => !fresh.has('field'))
 </script>
 
