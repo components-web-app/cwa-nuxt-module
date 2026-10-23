@@ -4,6 +4,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+## [2.0.0-alpha.29] - 2026-10-23
+
 - A change typed in any model-bound field (`useCwaResourceModel`) whose resource another window's save moved to a draft before it was sent is no longer sent a second time, to the live resource, when the field returns to it (for example after a publish), which created a stray draft with the old value ([5949d187](https://github.com/components-web-app/cwa-nuxt-module/commit/5949d187), [cc156460](https://github.com/components-web-app/cwa-nuxt-module/commit/cc156460), [#435](https://github.com/components-web-app/cwa-nuxt-module/issues/435))
 - Admin saves and deletes send `If-Match` with the stored `_metadata.version`, one at a time per resource in a tab; a 412 shows the field's Use theirs / Keep mine conflict (moving to the other admin's draft when there is one) for an admin with real-time on, and an error otherwise; Mercure updates with a lower version than the stored copy are dropped. Needs api-components-bundle 2.0.0-alpha.36 or later, whose CORS must allow `If-Match` for a cross-origin app ([460ba188](https://github.com/components-web-app/cwa-nuxt-module/commit/460ba188), [api-components-bundle#561](https://github.com/components-web-app/api-components-bundle/issues/561))
 - `useCwaRealtime(iri).peers` entries carry the window's `clientId` (`RealtimePeer`), so an editor can tell which window joined or left ([8570bf57](https://github.com/components-web-app/cwa-nuxt-module/commit/8570bf57), [#435](https://github.com/components-web-app/cwa-nuxt-module/issues/435))
@@ -218,7 +220,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 - First tagged release of `@cwa/nuxt`; releases are now published from `v*` tags ([7c61b7c](https://github.com/components-web-app/cwa-nuxt-module/commit/7c61b7ce331ec4a0cb8e76951a5de2ff806ed07a))
 
-[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.28...HEAD
+[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.29...HEAD
+[2.0.0-alpha.29]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.28...v2.0.0-alpha.29
 [2.0.0-alpha.28]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.27...v2.0.0-alpha.28
 [2.0.0-alpha.27]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.26...v2.0.0-alpha.27
 [2.0.0-alpha.26]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.25...v2.0.0-alpha.26
