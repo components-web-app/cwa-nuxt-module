@@ -216,11 +216,13 @@ export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: s
     }
     untrackPendingUpdate?.()
     pendingSubmit.value = true
+    const typedIri = iri.value
     const submit = debounce(() => {
       if (remoteChange.value) {
         return
       }
       untrackPendingUpdate?.()
+      typedIri && typedIri !== iri.value && resetValue(typedIri)
       return updateResource(newLocalValue)
     }, debounceTime)
     debounced = submit
