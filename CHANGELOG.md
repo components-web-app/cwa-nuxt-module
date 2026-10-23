@@ -4,6 +4,11 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+## [2.0.0-alpha.30] - 2026-10-23
+
+- A model-bound field (`useCwaResourceModel`) whose Keep mine is chosen while its refused save (a 412) is still settling sends its value again; before, the model dropped it as a duplicate of the refused request and showed the stored value from before the typing, which the TipTap reference then applied, losing every admin's typing for a moment ([e75b4561](https://github.com/components-web-app/cwa-nuxt-module/commit/e75b4561), [#435](https://github.com/components-web-app/cwa-nuxt-module/issues/435))
+- The playground's TipTap reference: on a page showing the same field twice, the second editor no longer applies its own tab's save over what another admin typed meanwhile, which deleted that typing for everyone; an app that copied it should copy `TipTapHtmlEditor.vue` and `tiptap/y-session.ts` again ([9e2836be](https://github.com/components-web-app/cwa-nuxt-module/commit/9e2836be), [#435](https://github.com/components-web-app/cwa-nuxt-module/issues/435))
+
 ## [2.0.0-alpha.29] - 2026-10-23
 
 - A change typed in any model-bound field (`useCwaResourceModel`) whose resource another window's save moved to a draft before it was sent is no longer sent a second time, to the live resource, when the field returns to it (for example after a publish), which created a stray draft with the old value ([5949d187](https://github.com/components-web-app/cwa-nuxt-module/commit/5949d187), [cc156460](https://github.com/components-web-app/cwa-nuxt-module/commit/cc156460), [#435](https://github.com/components-web-app/cwa-nuxt-module/issues/435))
@@ -220,7 +225,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 - First tagged release of `@cwa/nuxt`; releases are now published from `v*` tags ([7c61b7c](https://github.com/components-web-app/cwa-nuxt-module/commit/7c61b7ce331ec4a0cb8e76951a5de2ff806ed07a))
 
-[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.29...HEAD
+[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.30...HEAD
+[2.0.0-alpha.30]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.29...v2.0.0-alpha.30
 [2.0.0-alpha.29]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.28...v2.0.0-alpha.29
 [2.0.0-alpha.28]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.27...v2.0.0-alpha.28
 [2.0.0-alpha.27]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.26...v2.0.0-alpha.27
