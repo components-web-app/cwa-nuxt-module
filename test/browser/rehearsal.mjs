@@ -12,7 +12,7 @@ export const seedHeader = 'x-rehearsal-seed'
 export const cleanupHeader = 'x-rehearsal-cleanup'
 
 const keptResponseHeaders = ['content-type', 'link', 'cache-control', 'expires', 'vary', 'location', 'set-cookie', 'retry-after', 'date']
-const forwardedRequestHeaders = ['accept', 'content-type', 'cookie', 'path', 'preload', 'authorization', 'user-agent', 'x-cwa-client-id']
+const forwardedRequestHeaders = ['accept', 'content-type', 'cookie', 'path', 'preload', 'authorization', 'user-agent', 'x-cwa-client-id', 'if-match']
 const writeMethods = new Set(['POST', 'PUT', 'PATCH', 'DELETE'])
 const realtimePath = /\/_\/realtime$/
 
@@ -38,8 +38,15 @@ function parseBody(raw) {
   }
 }
 
+function matchedBody(url, body) {
+  if (body && typeof body === 'object' && 'state' in body && url.split('?')[0].includes('/_/collaboration_states')) {
+    return Object.fromEntries(Object.entries(body).filter(([key]) => key !== 'state'))
+  }
+  return body
+}
+
 function requestKey({ method, url, path, body }) {
-  return JSON.stringify([method, url, path ?? null, body === undefined ? null : sortKeys(body)])
+  return JSON.stringify([method, url, path ?? null, body === undefined ? null : sortKeys(matchedBody(url, body))])
 }
 
 export function rehearsalFileName(title) {
@@ -74,9 +81,9 @@ export async function startRehearsal({ port, mode, dir = rehearsalsDir, target, 
     return {
       'access-control-allow-origin': req.headers.origin || '*',
       'access-control-allow-credentials': 'true',
-      'access-control-allow-headers': 'content-type, accept, path, preload, authorization, x-cwa-client-id',
+      'access-control-allow-headers': 'content-type, accept, path, preload, authorization, x-cwa-client-id, if-match',
       'access-control-allow-methods': 'GET, POST, PATCH, PUT, DELETE, OPTIONS',
-      'access-control-expose-headers': 'link, retry-after, date',
+      'access-control-expose-headers': 'link, retry-after, date, etag',
     }
   }
 

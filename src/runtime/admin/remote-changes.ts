@@ -7,6 +7,7 @@ import type { ModelEditor, RemoteFieldChange, RemoteUser } from '#cwa/resources/
 import { useCloneMode } from '#cwa/admin/clone-mode'
 import { peerName, usePresence } from '#cwa/admin/presence'
 import { ErrorType } from '#cwa/storage/stores/error/state'
+import type { ApiResourceEvent } from '#cwa/resources/resources-manager'
 
 export const CLIENT_ID_HEADER = 'X-CWA-Client-Id'
 
@@ -99,10 +100,12 @@ export class RemoteChanges {
 
   public connect() {
     this.writeHeaders[CLIENT_ID_HEADER] = this.clientId
+    this.$cwa.resourcesManager.preconditionFailed = (event, iri, resource) => this.refused(event, iri, resource)
   }
 
   public disconnect() {
     delete this.writeHeaders[CLIENT_ID_HEADER]
+    this.$cwa.resourcesManager.preconditionFailed = undefined
   }
 
   public isOwnEcho(resource: CwaResource) {
@@ -146,8 +149,28 @@ export class RemoteChanges {
   }
 
   private saveInPlace(resource: CwaResource, path: string | undefined) {
+    const iri = resource['@id']
     this.store.saveResource({ resource, path, isNew: true })
-    this.store.mergeNewResource(resource['@id'])
+    this.store.mergeNewResource(iri)
+    const stored = this.stored(iri)
+    stored && stored._metadata?.version !== resource._metadata?.version && this.store.saveResource({ resource: { ...stored, _metadata: resource._metadata } })
+  }
+
+  private refused(event: ApiResourceEvent, iri: string, resource: CwaResource) {
+    const target = resource['@id']
+    const toDraft = target !== iri
+    const fields = Object.keys(('data' in event && event.data) || {})
+    const editors = modelEditors(this.$cwa).filter(editor => editor.iri() === iri && fields.includes(editor.field()) && editor.hasLocalChange())
+    const current = this.stored(target)
+    const kept = toDraft ? {} : Object.fromEntries(editors.map(editor => [editor.field(), current?.[editor.field()]]))
+    this.latest.set(target, resource)
+    this.store.saveResource({ resource: { ...resource, ...kept } })
+    const user = userOf(this.$cwa, resource)
+    editors.forEach((editor) => {
+      toDraft && editor.moveTo(iri, target)
+      this.raise(editor, target, resource, user, target)
+    })
+    return !!editors.length
   }
 
   private apply(resource: CwaResource, path: string | undefined) {
@@ -185,8 +208,7 @@ export class RemoteChanges {
     }
   }
 
-  private raise(editor: ModelEditor, iri: string, remote: CwaResource, user: RemoteUser | undefined) {
-    const editorIri = editor.iri()!
+  private raise(editor: ModelEditor, iri: string, remote: CwaResource, user: RemoteUser | undefined, editorIri = editor.iri()!) {
     const conflict: Conflict = { iri, remote, stored: this.stored(editorIri)?.[editor.field()] }
     const change: RemoteFieldChange = {
       user,

@@ -238,6 +238,37 @@ describe('RemoteChanges: another admin\'s saved drafts reach a signed-in admin (
       expect(held.value?.change.name).toBe(shown)
     })
 
+    test('a change to the held field alone still stores its version, so Keep mine is sent against it (api-components-bundle#561)', async () => {
+      store.saveResource({ resource: { ...stored(DRAFT)!, _metadata: { version: 2 } } as never })
+      editorOn({ iri: DRAFT, field: 'title', hasUnsentChange: () => true })
+
+      await remote.receive({ '@id': DRAFT, '@type': 'Title', 'title': 'theirs', 'subtitle': 'old subtitle', '_metadata': { version: 3, lastWrite: { clientId: 'other-tab', userId: '/_/users/2' } } }, '/page')
+
+      expect(stored(DRAFT)?.title).toBe('old')
+      expect(stored(DRAFT)?._metadata?.version).toBe(3)
+    })
+
+    test('the public copy of a save to the live version, which carries no draftResource, keeps the live version paired with its draft', async () => {
+      const L = '/component/titles/paired-live'
+      const D = '/component/titles/paired-draft'
+      seed({ '@id': L, '@type': 'Title', 'title': 'live 2', 'draftResource': D, '_metadata': { version: 2, publishable: { published: true }, lastWrite: { clientId: 'other-tab', userId: '/_/users/2' } } })
+      seed({ '@id': D, '@type': 'Title', 'title': 'draft', 'publishedResource': L, '_metadata': { version: 1, publishable: { published: false } } })
+
+      await remote.receive({ '@id': L, '@type': 'Title', 'title': 'live 2', '_metadata': { version: 2, publishable: { published: true } } }, '/page')
+
+      expect(store.findDraftComponentIri(L)).toBe(D)
+      expect(stored(L)?.draftResource).toBe(D)
+    })
+
+    test('another admin\'s new draft is stored as on screen, with the path it was fetched for, so it is re-fetched on reconnect', async () => {
+      const NEW_DRAFT = '/component/titles/new-draft'
+
+      await remote.receive({ '@id': NEW_DRAFT, '@type': 'Title', 'title': 'theirs', 'publishedResource': DRAFT, '_metadata': { version: 1, lastWrite: { clientId: 'other-tab', userId: '/_/users/2' } } }, '/page')
+
+      expect(store.current.currentIds).toContain(NEW_DRAFT)
+      expect(store.current.byId[NEW_DRAFT]?.apiState.headers?.path).toBe('/page')
+    })
+
     test('a save already sent, with nothing typed since, is no conflict: the later write settles it', async () => {
       const { editor } = editorOn({ iri: DRAFT, field: 'title', hasLocalChange: () => true })
 

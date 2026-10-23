@@ -289,6 +289,67 @@ describe('useCwaResourceModel', () => {
       expect(localValueWithIri.value['/my/new-resource']).toBe('New')
     })
 
+    test.each([
+      ['its debounce', async () => {
+        vi.runAllTimers()
+      }],
+      ['a publish asking for it (#394)', async () => {
+        await pendingUpdates.get('/my/resource')!()
+      }],
+    ])('a change typed on one IRI and sent, by %s, after another window\'s save moved the field to its draft, is never sent again when the field moves back', async (_by, send) => {
+      mockGetResource.mockReturnValue(ref({ data: { title: 'Store' } }))
+      const shown = ref('/my/resource')
+      const { model, localValueWithIri } = useCwaResourceModel(shown, 'title')
+      model.value = 'Typed on live'
+      await nextTick()
+      shown.value = '/my/resource-draft'
+      await nextTick()
+
+      await send()
+      await flushDebounceAndAsync()
+      expect(mockUpdateResource).toHaveBeenCalledOnce()
+      shown.value = '/my/resource'
+      await flushDebounceAndAsync()
+
+      expect(mockUpdateResource).toHaveBeenCalledOnce()
+      expect(localValueWithIri.value['/my/resource']).toBeUndefined()
+    })
+
+    test('a second keystroke before the save goes out keeps showing what was typed, and only that is sent', async () => {
+      mockGetResource.mockReturnValue(ref({ data: { title: 'Store' } }))
+      const shown = ref('/my/resource')
+      const { model } = useCwaResourceModel(shown, 'title')
+      model.value = 'T'
+      await nextTick()
+      model.value = 'Ty'
+      await nextTick()
+
+      expect(model.value).toBe('Ty')
+      await flushDebounceAndAsync()
+      expect(mockUpdateResource).toHaveBeenCalledOnce()
+      expect(mockUpdateResource).toHaveBeenCalledWith(expect.objectContaining({ data: { title: 'Ty' } }))
+    })
+
+    test('a change typed on one IRI and overtaken by typing after another window\'s save moved the field to its draft is never sent when the field moves back', async () => {
+      mockGetResource.mockReturnValue(ref({ data: { title: 'Store' } }))
+      const shown = ref('/my/resource')
+      const { model, localValueWithIri } = useCwaResourceModel(shown, 'title')
+      model.value = 'Typed on live'
+      await nextTick()
+      shown.value = '/my/resource-draft'
+      await nextTick()
+      model.value = 'Typed on the draft'
+      await flushDebounceAndAsync()
+      expect(mockUpdateResource).toHaveBeenCalledOnce()
+
+      shown.value = '/my/resource'
+      await flushDebounceAndAsync()
+
+      expect(mockUpdateResource).toHaveBeenCalledOnce()
+      expect(mockUpdateResource).toHaveBeenCalledWith(expect.objectContaining({ data: { title: 'Typed on the draft' } }))
+      expect(localValueWithIri.value['/my/resource']).toBeUndefined()
+    })
+
     test('a waiting save is sent at once when a publish asks for it, and only once (#394)', async () => {
       mockGetResource.mockReturnValue(ref({ data: { title: 'Store' } }))
       const { model } = useCwaResourceModel(iri, 'title')
