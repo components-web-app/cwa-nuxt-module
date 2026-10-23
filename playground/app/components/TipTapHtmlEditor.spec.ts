@@ -580,7 +580,7 @@ describe('TipTapHtmlEditor: the stored Yjs state (api-components-bundle#563)', (
     const second = await mountEditor('<p>Hello</p>', { name: 'second' })
     await wait(20)
 
-    expect(api.writes().map(([, options]) => options.method)).toEqual(['POST'])
+    expect(api.writes().map(([, options]) => options?.method)).toEqual(['POST'])
     expect(Y.encodeStateAsUpdate(docOf(second.editor()))).toEqual(alone)
   })
 

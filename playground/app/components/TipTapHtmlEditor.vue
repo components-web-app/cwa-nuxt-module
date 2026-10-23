@@ -76,7 +76,8 @@ import {
 } from '@tiptap/vue-3'
 import { BubbleMenu, FloatingMenu } from '@tiptap/vue-3/menus'
 import { getSchema } from '@tiptap/core'
-import type { ChainedCommands, Transaction } from '@tiptap/core'
+import type { ChainedCommands, Editor as CoreEditor } from '@tiptap/core'
+import type { Transaction } from '@tiptap/pm/state'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
 import * as Y from 'yjs'
 import BubbleMenuButton from '~/components/TipTap/BubbleMenuButton.vue'
@@ -158,7 +159,7 @@ function storedHtml(): string | null | undefined {
   return $cwa.resources.getResource(props.iri).value?.data?.[props.field]
 }
 
-function save(current: Editor) {
+function save(current: CoreEditor) {
   const value = current.isEmpty ? null : current.getHTML()
   ownSaves.push(value)
   ownSaves.splice(0, ownSaves.length - OWN_SAVES)

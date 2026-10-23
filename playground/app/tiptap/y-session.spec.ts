@@ -139,7 +139,7 @@ describe('one Yjs session per resource in a tab (#435)', () => {
     let answer: (value: StoredCollaborationState | undefined) => void = () => {}
     const state = () => ({ load: vi.fn(() => new Promise<StoredCollaborationState | undefined>((resolve) => {
       answer = resolve
-    })), save: vi.fn() })
+    })), create: vi.fn(), save: vi.fn() })
     const session = acquireYSession(TAB, IRI, options(send, { state }))
 
     session.release()
