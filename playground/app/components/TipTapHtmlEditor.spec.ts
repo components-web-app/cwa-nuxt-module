@@ -623,6 +623,21 @@ describe('TipTapHtmlEditor: the caret when the editor is rebuilt (#435)', () => 
     expect(editor().isFocused).toBe(true)
   })
 
+  test.each([[true, false], [false, true]])('swapping the editors never puts both in the page at once, where the browser\'s scroll anchoring could move a tall field to the top of the page (disabled %s → %s)', async (from, to) => {
+    const { wrapper, editor } = await mountEditor('<p>Hello there</p>', { disabled: from })
+    const counts: number[] = []
+    const observer = new MutationObserver(() => counts.push(document.querySelectorAll('.ProseMirror').length))
+    observer.observe(document.body, { childList: true, subtree: true })
+
+    await wrapper.setProps({ disabled: to })
+    await vi.waitFor(() => expect(editor().isEditable).toBe(!to))
+    await wait(20)
+    observer.disconnect()
+
+    expect(counts.length).toBeGreaterThan(0)
+    expect(Math.max(...counts)).toBe(1)
+  })
+
   test('a menu opened after selecting keeps focus when the editor becomes editable, so it stays open', async () => {
     const { wrapper, editor } = await mountEditor('<p>Hello there</p>', { disabled: true })
     document.getSelection()!.collapse(editor().view.dom.querySelector('p')!.firstChild!, 5)

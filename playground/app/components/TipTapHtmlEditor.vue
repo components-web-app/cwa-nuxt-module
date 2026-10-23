@@ -77,7 +77,7 @@ import {
 import { BubbleMenu, FloatingMenu } from '@tiptap/vue-3/menus'
 import { getSchema } from '@tiptap/core'
 import type { ChainedCommands, Transaction } from '@tiptap/core'
-import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
 import * as Y from 'yjs'
 import BubbleMenuButton from '~/components/TipTap/BubbleMenuButton.vue'
 import { applyRemoteContent, sameContent } from '~/tiptap/co-editing'
@@ -234,7 +234,7 @@ function build(shared?: Shared, wantsFocus = false) {
     },
     editable: !!shared && !props.disabled,
   })
-  previous && setTimeout(() => previous.destroy())
+  previous && nextTick(() => previous.destroy())
 }
 
 function showRemoteCursors() {
