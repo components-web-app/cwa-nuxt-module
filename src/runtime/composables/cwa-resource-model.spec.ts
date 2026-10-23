@@ -450,6 +450,27 @@ describe('useCwaResourceModel', () => {
       expect(mockUpdateResource).toHaveBeenCalledWith(expect.objectContaining({ data: { title: 'Mine' } }))
     })
 
+    test('Keep mine chosen while the refused save is still settling sends the local value again, and the model keeps showing it', async () => {
+      const { editor, model } = createModel()
+      let refuse!: () => void
+      mockUpdateResource.mockReturnValueOnce(new Promise((resolve) => {
+        refuse = () => resolve(undefined)
+      }))
+      model.value = 'Mine'
+      await flushDebounceAndAsync()
+      expect(mockUpdateResource).toHaveBeenCalledOnce()
+
+      editor.conflict({ iri: '/my/resource', change: { value: 'Theirs', accept: vi.fn(), keep: vi.fn() } })
+      editor.conflict(undefined)
+      const resent = editor.submit()
+      refuse()
+      await resent
+
+      expect(mockUpdateResource).toHaveBeenCalledTimes(2)
+      expect(mockUpdateResource).toHaveBeenLastCalledWith(expect.objectContaining({ data: { title: 'Mine' } }))
+      expect(model.value).toBe('Mine')
+    })
+
     test('a save held by a conflict stays unsent after its debounce has run, so the conflict clearing can send it', async () => {
       const { editor, model } = createModel()
       model.value = 'Mine'
