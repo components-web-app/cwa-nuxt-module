@@ -42,6 +42,7 @@ export interface PresencePeer {
 }
 
 export interface RealtimePeer {
+  clientId: string
   user: PresenceUser
   name: string
   state: PresenceActivity
@@ -192,6 +193,7 @@ export function usePresence($cwa: Cwa) {
     elsewhere: computed(() => peers.value.filter(peer => peer.page !== state.page)),
     nameOf: (userId: string): string | undefined => state.names[userId],
     peers: (iri: string): RealtimePeer[] => peersOn(iri).map(peer => ({
+      clientId: peer.clientId,
       user: { ...peer.user },
       name: peerName(peer.user.name, peer.isSelf),
       state: peer.state,

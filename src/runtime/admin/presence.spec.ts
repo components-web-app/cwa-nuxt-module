@@ -733,18 +733,30 @@ describe('Presence: peers on a resource (#429)', () => {
     built.presence.receive(peerEvent({ state: 'selected', component: '/component/titles/another' }, ALEX))
     const { peers } = usePresence(built.$cwa)
 
-    const expected = [{ user: { id: '/users/sam', name: 'Sam' }, name: 'Sam', state: 'editing', field: 'title', expiresAt: Date.now() + 30_000, colour: presenceColour('/users/sam'), isSelf: false, idle: false }]
+    const expected = [{ clientId: PEER_ID, user: { id: '/users/sam', name: 'Sam' }, name: 'Sam', state: 'editing', field: 'title', expiresAt: Date.now() + 30_000, colour: presenceColour('/users/sam'), isSelf: false, idle: false }]
     expect(peers(DRAFT)).toStrictEqual(expected)
     expect(peers(LIVE)).toStrictEqual(expected)
     expect(peers(POSITION)).toStrictEqual(expected)
     expect(peers('/component/titles/unknown')).toStrictEqual([])
   })
 
+  test('peers carry each window\'s client ID, one entry per window, so an editor can tell which window left', () => {
+    const built = withDraft()
+    built.presence.receive(peerEvent({ state: 'editing', component: LIVE, field: 'title' }))
+    built.presence.receive(peerEvent({ state: 'selected', component: LIVE }, { clientId: ALEX.clientId }))
+    const { peers } = usePresence(built.$cwa)
+    expect(peers(DRAFT).map(peer => peer.clientId)).toStrictEqual([PEER_ID, ALEX.clientId])
+
+    built.presence.receive(peerEvent({ state: 'left' }))
+
+    expect(peers(DRAFT).map(peer => peer.clientId)).toStrictEqual([ALEX.clientId])
+  })
+
   test('a peer selecting a resource has no field', () => {
     const built = withDraft()
     built.presence.receive(peerEvent({ state: 'selected', component: LIVE }))
 
-    expect(usePresence(built.$cwa).peers(DRAFT)).toStrictEqual([{ user: { id: '/users/sam', name: 'Sam' }, name: 'Sam', state: 'selected', expiresAt: Date.now() + 45_000, colour: presenceColour('/users/sam'), isSelf: false, idle: false }])
+    expect(usePresence(built.$cwa).peers(DRAFT)).toStrictEqual([{ clientId: PEER_ID, user: { id: '/users/sam', name: 'Sam' }, name: 'Sam', state: 'selected', expiresAt: Date.now() + 45_000, colour: presenceColour('/users/sam'), isSelf: false, idle: false }])
   })
 
   test('focusedBy lists each person editing that field of the resource once, in their colour, named, with the windows they have it focused in', () => {
@@ -991,8 +1003,8 @@ describe('Presence: device and your other windows (#429)', () => {
     const { peers, focusedBy } = usePresence(built.$cwa)
 
     expect(peers(LIVE)).toStrictEqual([
-      { user: { id: ME, name: 'Me' }, name: 'You (other window)', state: 'editing', field: 'title', expiresAt: Date.now() + 45_000, colour: SELF_COLOUR, isSelf: true, idle: false, device: 'Safari on iOS' },
-      { user: { id: '/users/alex', name: 'Alex' }, name: 'Alex', state: 'idle', expiresAt: Date.now() + 180_000, colour: presenceColour('/users/alex'), isSelf: false, idle: true },
+      { clientId: PEER_ID, user: { id: ME, name: 'Me' }, name: 'You (other window)', state: 'editing', field: 'title', expiresAt: Date.now() + 45_000, colour: SELF_COLOUR, isSelf: true, idle: false, device: 'Safari on iOS' },
+      { clientId: 'b0c1d2e3-f4a5-4b6c-8d7e-8f9a0b1c2d3e', user: { id: '/users/alex', name: 'Alex' }, name: 'Alex', state: 'idle', expiresAt: Date.now() + 180_000, colour: presenceColour('/users/alex'), isSelf: false, idle: true },
     ])
     expect(focusedBy(LIVE, 'title')).toStrictEqual([{ user: { id: ME, name: 'Me' }, name: 'You (other window)', colour: SELF_COLOUR, isSelf: true, clientIds: [PEER_ID] }])
   })

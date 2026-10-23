@@ -38,8 +38,15 @@ function parseBody(raw) {
   }
 }
 
+function matchedBody(url, body) {
+  if (body && typeof body === 'object' && 'state' in body && url.split('?')[0].includes('/_/collaboration_states')) {
+    return Object.fromEntries(Object.entries(body).filter(([key]) => key !== 'state'))
+  }
+  return body
+}
+
 function requestKey({ method, url, path, body }) {
-  return JSON.stringify([method, url, path ?? null, body === undefined ? null : sortKeys(body)])
+  return JSON.stringify([method, url, path ?? null, body === undefined ? null : sortKeys(matchedBody(url, body))])
 }
 
 export function rehearsalFileName(title) {
