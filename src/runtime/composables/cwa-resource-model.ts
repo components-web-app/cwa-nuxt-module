@@ -134,7 +134,7 @@ export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: s
     return getNormalizedValue(value1) === getNormalizedValue(value2)
   }
 
-  async function updateResource(newLocalValue: any) {
+  async function updateResource(newLocalValue: any, resend = false) {
     const submittingIri = iri.value
     if (!submittingIri) {
       return
@@ -155,7 +155,7 @@ export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: s
     // if the resource has been deleted, this will trigger a store value update but we do not need to submit this
     if (
       resource.value === undefined
-      || (isSubmitting.value && isEqual(lastSubmittedValueInProgress.value, newLocalValue))
+      || (!resend && isSubmitting.value && isEqual(lastSubmittedValueInProgress.value, newLocalValue))
     ) {
       resetValue()
       return
@@ -282,7 +282,7 @@ export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: s
     moveTo: moveLocalValue,
     submit: () => {
       cancelPending()
-      return updateResource(localValue.value)
+      return updateResource(localValue.value, true)
     },
     conflict: (held) => {
       heldChange.value = held as typeof heldChange.value
