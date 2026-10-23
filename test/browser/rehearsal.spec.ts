@@ -164,6 +164,19 @@ describe('rehearsal proxy', () => {
     })
   })
 
+  test('a Yjs state write matches whatever state it carries, since Yjs client ids are random, but not another HTML hash', async () => {
+    const api = await startFakeApi(() => ({ status: 200, body: { ok: true } }))
+    await record(api, async (origin) => {
+      await getJson(`${origin}/_api/_/collaboration_states/1`, { method: 'PATCH', headers: { 'content-type': 'application/merge-patch+json' }, body: JSON.stringify({ state: 'AQID', htmlHash: 'c53:abc' }) })
+    })
+    await api.stop()
+
+    await replay(async (origin) => {
+      expect((await getJson(`${origin}/_api/_/collaboration_states/1`, { method: 'PATCH', headers: { 'content-type': 'application/merge-patch+json' }, body: JSON.stringify({ state: 'BAUG', htmlHash: 'c53:abc' }) })).status).toBe(200)
+      await expect(getJson(`${origin}/_api/_/collaboration_states/1`, { method: 'PATCH', headers: { 'content-type': 'application/merge-patch+json' }, body: JSON.stringify({ state: 'BAUG', htmlHash: 'c53:other' }) }).then(({ status }) => status)).resolves.toBe(599)
+    })
+  })
+
   test('the same request repeated before any write replays each recorded answer in turn, then keeps the last', async () => {
     let count = 0
     const api = await startFakeApi(() => ({ body: { count: ++count } }))

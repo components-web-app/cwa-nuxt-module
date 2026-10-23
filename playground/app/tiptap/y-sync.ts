@@ -9,6 +9,7 @@ export interface YSyncData {
   update: string
   cursor?: YCursor
   bye?: true
+  stored?: true
 }
 
 export interface YSyncPeer {
@@ -22,6 +23,10 @@ export interface YSyncOptions {
   retryMs?: number
   joinMs?: number
   refusedMs?: number
+  maxRetryMs?: number
+  maxBytes?: number
+  store?: () => Promise<boolean>
+  load?: () => Promise<Uint8Array | undefined>
 }
 
 type StateVector = Map<number, number>
@@ -61,7 +66,7 @@ function lacks(theirs: StateVector, ours: StateVector) {
   return false
 }
 
-export function createYSync(doc: Y.Doc, { send, retryMs = 1000, joinMs = 1500, refusedMs = 250 }: YSyncOptions) {
+export function createYSync(doc: Y.Doc, { send, retryMs = 1000, joinMs = 1500, refusedMs = 250, maxRetryMs = 30_000, maxBytes = 14_000, store, load }: YSyncOptions) {
   const peers = new Map<string, { sv: StateVector, ds: number, id: number, cursor: YCursor }>()
   const listeners = new Set<() => void>()
   let cursor: YCursor = null
@@ -71,6 +76,8 @@ export function createYSync(doc: Y.Doc, { send, retryMs = 1000, joinMs = 1500, r
   let retryTimer: ReturnType<typeof setTimeout> | undefined
   let joinTimer: ReturnType<typeof setTimeout> | undefined
   let settle: ((joined: boolean) => void) | undefined
+  let storing = false
+  let attempts = 0
 
   function changed() {
     listeners.forEach(listener => listener())
@@ -98,9 +105,43 @@ export function createYSync(doc: Y.Doc, { send, retryMs = 1000, joinMs = 1500, r
     return [...peers.values()].some(peer => lacks(peer.sv, ours) || peer.ds !== ds)
   }
 
+  function later(ms: number) {
+    clearTimeout(retryTimer)
+    retryTimer = setTimeout(flush, Math.min(ms * 2 ** attempts++, maxRetryMs))
+  }
+
   function scheduleRetry() {
     clearTimeout(retryTimer)
-    retryTimer = running && behind() ? setTimeout(flush, retryMs) : undefined
+    retryTimer = undefined
+    running && behind() && later(retryMs)
+  }
+
+  function sent(data: YSyncData) {
+    if (!send(data)) {
+      later(refusedMs)
+      return false
+    }
+    lastSent = stateVector(doc)
+    if (settle && !joinTimer) {
+      joinTimer = setTimeout(() => settle?.(false), joinMs)
+    }
+    scheduleRetry()
+    return true
+  }
+
+  function sendStored() {
+    if (!store) {
+      later(retryMs)
+      return
+    }
+    storing = true
+    store().then((ok) => {
+      storing = false
+      if (!running) {
+        return
+      }
+      ok ? sent({ ...message(), update: '', stored: true }) : later(retryMs)
+    })
   }
 
   function flush() {
@@ -110,19 +151,11 @@ export function createYSync(doc: Y.Doc, { send, retryMs = 1000, joinMs = 1500, r
     queued = true
     queueMicrotask(() => {
       queued = false
-      if (!running) {
+      if (!running || storing) {
         return
       }
-      if (!send(message())) {
-        clearTimeout(retryTimer)
-        retryTimer = setTimeout(flush, refusedMs)
-        return
-      }
-      lastSent = stateVector(doc)
-      if (settle && !joinTimer) {
-        joinTimer = setTimeout(() => settle?.(false), joinMs)
-      }
-      scheduleRetry()
+      const data = message()
+      JSON.stringify(data).length > maxBytes ? sendStored() : sent(data)
     })
   }
 
@@ -143,6 +176,18 @@ export function createYSync(doc: Y.Doc, { send, retryMs = 1000, joinMs = 1500, r
       forget(clientId)
       return
     }
+    if (data.stored) {
+      (load ? load().catch(() => undefined) : Promise.resolve(undefined)).then((update) => {
+        running && update && Y.applyUpdate(doc, update, REMOTE)
+        running && apply(clientId, data)
+      })
+      return
+    }
+    apply(clientId, data)
+  }
+
+  function apply(clientId: string, data: YSyncData) {
+    attempts = 0
     const known = peers.has(clientId)
     const before = Y.encodeStateVector(doc).join()
     const beforeDs = digest(doc)

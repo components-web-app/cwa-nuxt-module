@@ -20,11 +20,3 @@ export function seedUpdate(html: string | null | undefined, schema: Schema, clie
   prosemirrorToYXmlFragment(createDocument(html || '', schema, parseOptions), doc.getXmlFragment(FIELD))
   return Y.encodeStateAsUpdate(doc)
 }
-
-export async function joinOrSeed(doc: Y.Doc, joined: Promise<boolean>, html: string | null | undefined, schema: Schema, parseOptions?: ParseOptions) {
-  if (await joined) {
-    return 'joined' as const
-  }
-  Y.applyUpdate(doc, seedUpdate(html, schema, undefined, parseOptions))
-  return 'seeded' as const
-}

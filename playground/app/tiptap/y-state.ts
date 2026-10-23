@@ -41,8 +41,9 @@ function status(error: unknown) {
 export function createCollaborationState(fetch: CollaborationStateFetch, { iri, field, encode }: CollaborationStateOptions) {
   let known: { id: string, version: number } | undefined
   let looked = false
-  let writing: Promise<void> | undefined
+  let writing: Promise<boolean> | undefined
   let next: { html: string | null | undefined } | undefined
+  let written: string | undefined
 
   function query() {
     const resource = iri()
@@ -60,12 +61,21 @@ export function createCollaborationState(fetch: CollaborationStateFetch, { iri, 
     return found
   }
 
-  async function write(html: string | null | undefined, retry: boolean): Promise<void> {
+  function signature(state: string, hash: string) {
+    return `${hash}|${state}`
+  }
+
+  async function write(html: string | null | undefined, retry: boolean): Promise<boolean> {
     const body = { state: encodeUpdate(encode()), htmlHash: htmlHash(html) }
+    if (written === signature(body.state, body.htmlHash)) {
+      return true
+    }
     try {
       remember(known
         ? await fetch(known.id, { method: 'PATCH', headers: { 'content-type': 'application/merge-patch+json', 'if-match': `"${known.version}"` }, body })
         : await fetch(PATH, { method: 'POST', headers: { 'content-type': 'application/ld+json' }, body: { ...query(), ...body } }))
+      written = signature(body.state, body.htmlHash)
+      return true
     }
     catch (error) {
       const code = status(error)
@@ -76,30 +86,31 @@ export function createCollaborationState(fetch: CollaborationStateFetch, { iri, 
         await lookUp().catch(() => undefined)
       }
       else {
-        return
+        return false
       }
-      if (retry && known) {
-        await write(html, false)
-      }
+      return retry && !!known && await write(html, false)
     }
   }
 
   async function drain() {
+    let ok = true
     while (next) {
       const { html } = next
       next = undefined
       if (!looked) {
         await lookUp().catch(() => undefined)
       }
-      await write(html, true)
+      ok = await write(html, true)
     }
     writing = undefined
+    return ok
   }
 
   return {
     async load(): Promise<StoredCollaborationState | undefined> {
       try {
         const found = await lookUp()
+        written = found && signature(found.state, found.htmlHash)
         return found && { state: found.state, htmlHash: found.htmlHash }
       }
       catch (error) {
@@ -107,7 +118,19 @@ export function createCollaborationState(fetch: CollaborationStateFetch, { iri, 
         return undefined
       }
     },
-    save(html: string | null | undefined) {
+    async create(update: Uint8Array, html: string | null | undefined): Promise<'created' | 'exists' | 'failed'> {
+      const body = { state: encodeUpdate(update), htmlHash: htmlHash(html) }
+      try {
+        remember(await fetch(PATH, { method: 'POST', headers: { 'content-type': 'application/ld+json' }, body: { ...query(), ...body } }))
+        looked = true
+        written = signature(body.state, body.htmlHash)
+        return 'created'
+      }
+      catch (error) {
+        return status(error) === 422 ? 'exists' : 'failed'
+      }
+    },
+    save(html: string | null | undefined): Promise<boolean> {
       next = { html }
       writing ??= drain()
       return writing

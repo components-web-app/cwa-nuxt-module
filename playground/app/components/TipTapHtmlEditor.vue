@@ -69,13 +69,14 @@ import { StarterKit } from '@tiptap/starter-kit'
 import { Placeholder } from '@tiptap/extension-placeholder'
 import { Link } from '@tiptap/extension-link'
 import { Collaboration } from '@tiptap/extension-collaboration'
+import { ySyncPluginKey } from '@tiptap/y-tiptap'
 import {
   Editor,
   EditorContent,
 } from '@tiptap/vue-3'
 import { BubbleMenu, FloatingMenu } from '@tiptap/vue-3/menus'
 import { getSchema } from '@tiptap/core'
-import type { ChainedCommands } from '@tiptap/core'
+import type { ChainedCommands, Transaction } from '@tiptap/core'
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
 import * as Y from 'yjs'
 import BubbleMenuButton from '~/components/TipTap/BubbleMenuButton.vue'
@@ -100,6 +101,8 @@ const props = defineProps<{
 const appendToBody = () => document.body
 
 const parseOptions = { preserveWhitespace: true } as const
+const SETTLE_MS = 1500
+const OWN_SAVES = 20
 
 const { model: html, remoteChange, focusedBy, focusListeners, states } = props.model
 const $cwa = useCwa()
@@ -114,8 +117,10 @@ const session = shallowRef<ReturnType<typeof acquireYSession>>()
 const ready = ref(false)
 const heard = ref(0)
 const senders = new Map<string, { name: string, colour: string }>()
+const ownSaves: (string | null)[] = []
 let cursorChannel: Shared['channel'] | undefined
 let stopHearing: (() => void) | undefined
+let settleTimer: ReturnType<typeof setTimeout> | undefined
 
 const live = computed(() => peers.value.map(peer => peer.clientId))
 const inField = computed(() => focusedBy.value.flatMap(peer => peer.clientIds))
@@ -153,6 +158,37 @@ function storedHtml(): string | null | undefined {
   return $cwa.resources.getResource(props.iri).value?.data?.[props.field]
 }
 
+function save(current: Editor) {
+  const value = current.isEmpty ? null : current.getHTML()
+  ownSaves.push(value)
+  ownSaves.splice(0, ownSaves.length - OWN_SAVES)
+  html.value = value
+}
+
+function isLocal(transaction: Transaction) {
+  const sync = transaction.getMeta(ySyncPluginKey)
+  return !sync?.isChangeOrigin || !!sync.isUndoRedoOperation
+}
+
+function settle() {
+  const current = editor.value
+  if (!ready.value || !saver.value || !current) {
+    return
+  }
+  sameContent(current, html.value) || save(current)
+  session.value?.state.save(storedHtml())
+}
+
+function settleSoon() {
+  clearTimeout(settleTimer)
+  settleTimer = setTimeout(settle, SETTLE_MS)
+}
+
+function isOutside(value: string | null | undefined) {
+  const writer = $cwa.resources.getResource(props.iri).value?.data?._metadata?.lastWrite?.clientId
+  return !ownSaves.includes(value ?? null) && !session.value?.sync.peers().some(peer => peer.clientId === writer)
+}
+
 function caretIn(previous: Editor | undefined): Caret {
   const selection = document.getSelection()
   if (!previous || !selection?.anchorNode || !selection.focusNode || !previous.view.dom.contains(selection.anchorNode)) {
@@ -166,8 +202,13 @@ function caretIn(previous: Editor | undefined): Caret {
   }
 }
 
-function build(shared?: Shared, focus = false) {
+function focusTaken() {
+  return !!document.activeElement && document.activeElement !== document.body
+}
+
+function build(shared?: Shared, wantsFocus = false) {
   const previous = editor.value
+  const focus = wantsFocus && !focusTaken()
   const caret = focus ? caretIn(previous) : undefined
   let rendered = !shared
   cursorChannel = shared?.channel
@@ -184,21 +225,16 @@ function build(shared?: Shared, focus = false) {
       rendered = true
       focus && created.chain().setTextSelection(caret ?? created.state.selection).focus(null, { scrollIntoView: false }).run()
     },
-    onUpdate: ({ editor: changed }) => {
-      if (rendered && saver.value) {
-        html.value = changed.isEmpty ? null : changed.getHTML()
+    onUpdate: ({ editor: changed, transaction }) => {
+      if (!rendered || !shared) {
+        return
       }
+      isLocal(transaction) && save(changed)
+      saver.value && settleSoon()
     },
     editable: !!shared && !props.disabled,
   })
   previous && setTimeout(() => previous.destroy())
-}
-
-function takeOver() {
-  const current = editor.value
-  if (ready.value && saver.value && current && !sameContent(current, html.value)) {
-    html.value = current.isEmpty ? null : current.getHTML()
-  }
 }
 
 function showRemoteCursors() {
@@ -212,6 +248,7 @@ function showRemoteCursors() {
 function endSession() {
   stopHearing?.()
   stopHearing = undefined
+  clearTimeout(settleTimer)
   session.value?.release()
   session.value = undefined
   ready.value = false
@@ -235,11 +272,15 @@ async function startSession(focus: boolean) {
     stop()
     return
   }
+  const start = held.claim()
   stopHearing = stop
   build({ doc: held.doc, channel: createCursorChannel(cursor => held.sync.setCursor(cursor)) }, focus)
   ready.value = true
   showRemoteCursors()
-  takeOver()
+  const built = editor.value!
+  start === 'stale' && applyRemoteContent(built, html.value)
+  start === 'ahead' && save(built)
+  settleSoon()
 }
 
 onMounted(() => {
@@ -256,23 +297,34 @@ watch(live, (now, before) => {
   before.filter(clientId => !now.includes(clientId)).forEach(clientId => session.value?.sync.forget(clientId))
 })
 
-watch(saver, takeOver)
+watch(saver, isSaver => isSaver && settleSoon())
 
 watch([heard, inField], showRemoteCursors)
 
 watch(() => states.submitting.value, (submitting, before) => {
-  if (before && !submitting && ready.value && saver.value) {
-    session.value?.state.save(storedHtml())
-  }
+  before && !submitting && saver.value && settleSoon()
 })
 
 watch(remoteChange, (change) => {
-  change && company.value && change.keep()
+  const current = editor.value
+  if (!change || !company.value || !current) {
+    return
+  }
+  if (sameContent(current, change.value as string | null | undefined)) {
+    change.accept()
+    return
+  }
+  save(current)
+  change.keep()
 })
 
-watch(html, (value) => {
-  if (editor.value && !company.value && editor.value.getHTML() !== value) {
-    applyRemoteContent(editor.value, value)
+watch([html, () => props.iri], ([value, iri], [, before]) => {
+  const current = editor.value
+  if (!current || iri !== before || sameContent(current, value)) {
+    return
+  }
+  if (!company.value || (ready.value && saver.value && isOutside(value))) {
+    applyRemoteContent(current, value)
   }
 })
 

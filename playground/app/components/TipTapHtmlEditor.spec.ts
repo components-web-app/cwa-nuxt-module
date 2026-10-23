@@ -33,6 +33,7 @@ const realtime = vi.hoisted(() => ({
   current: undefined as undefined | { tab: Tab, cwa: object },
   sent: [] as { from: string, event: string, data: any }[],
   delayMs: 5,
+  generation: 0,
 }))
 
 mockNuxtImport('useCwa', () => () => realtime.current!.cwa)
@@ -51,7 +52,8 @@ mockNuxtImport('useCwaRealtime', () => (iri: () => string | undefined) => {
       }
       const published = JSON.parse(JSON.stringify(data))
       realtime.sent.push({ from: tab.clientId, event, data: published })
-      setTimeout(() => registry.tabs.filter(other => other !== tab && other.live && !other.deaf).forEach(other => other.handlers[event]?.({ clientId: tab.clientId, user: { id: `/users/${tab.name}`, name: tab.name }, name: tab.name, colour: tab.colour, isSelf: false, event, data: published })), realtime.delayMs)
+      const generation = realtime.generation
+      setTimeout(() => generation === realtime.generation && registry.tabs.filter(other => other !== tab && other.live && !other.deaf).forEach(other => other.handlers[event]?.({ clientId: tab.clientId, user: { id: `/users/${tab.name}`, name: tab.name }, name: tab.name, colour: tab.colour, isSelf: false, event, data: published })), realtime.delayMs)
       return true
     },
     on: (event: string, handler: RealtimeEventHandler) => {
@@ -114,9 +116,11 @@ function resourceModel(html: string | null) {
   const held = ref()
   const focused = ref<FocusedPeer[]>([])
   const submitting = ref(false)
+  const lastWrite = ref<string>()
   const writes: (string | null | undefined)[] = []
   return {
     stored,
+    lastWrite,
     held,
     focused,
     submitting,
@@ -144,7 +148,7 @@ function cwaFor(model: ReturnType<typeof resourceModel>, drafts: Record<string, 
   return {
     cwaFetch: { fetch: api.fetch },
     resources: {
-      getResource: (iri: string) => computed(() => ({ data: { '@id': iri, 'html': model.stored.value } })),
+      getResource: (iri: string) => computed(() => ({ data: { '@id': iri, 'html': model.stored.value, '_metadata': { lastWrite: model.lastWrite.value ? { clientId: model.lastWrite.value } : undefined } } })),
       findPublishedComponentIri: (iri: string) => computed(() => drafts[iri]),
     },
   }
@@ -161,9 +165,9 @@ async function mountEditor(html: string | null = '<p>Hello there</p>', options: 
   return { ...model, wrapper, tab: on, cwa, editor: () => editorOf(wrapper)! }
 }
 
-async function pair(html: string) {
-  const first = await mountEditor(html, { name: 'first' })
-  const second = await mountEditor(html, { name: 'second' })
+async function pair(html: string, options: Parameters<typeof mountEditor>[1] = {}) {
+  const first = await mountEditor(html, { ...options, name: 'first' })
+  const second = await mountEditor(html, { ...options, name: 'second' })
   await vi.waitFor(() => expect([yjsSent('tab-first').length, yjsSent('tab-second').length].every(count => count > 0)).toBe(true))
   await wait(50)
   const id = (from: string) => yjsSent(from).at(-1)!.data.id as number
@@ -194,9 +198,12 @@ const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
 afterEach(() => {
   mounted.splice(0).forEach(wrapper => wrapper.unmount())
-  realtime.registry!.tabs.splice(0)
+  realtime.registry!.tabs.splice(0).forEach((gone) => {
+    gone.live = false
+  })
   realtime.sent = []
   realtime.delayMs = 5
+  realtime.generation++
   api = bundle()
   document.body.innerHTML = ''
   vi.restoreAllMocks()
@@ -309,7 +316,7 @@ describe('TipTapHtmlEditor: edits that merge, over Yjs (#435)', () => {
     expect(api.writes()).toEqual([])
   })
 
-  test('two admins typing at once both end with every keystroke, once, and only the saver saves it', async () => {
+  test('two admins typing at once both end with every keystroke, once, and the saver saves the merge', async () => {
     const [saver, other] = await pair('<p>Hello world</p>')
 
     saver.editor().commands.insertContentAt(1, 'Sam: ')
@@ -321,35 +328,48 @@ describe('TipTapHtmlEditor: edits that merge, over Yjs (#435)', () => {
       expect(saver.editor().getHTML()).toBe(other.editor().getHTML())
       expect(saver.editor().getText()).toMatch(/^(Alex: Sam: |Sam: Alex: )Hello world( and Alex!|! and Alex)$/)
       expect(saver.stored.value).toBe(saver.editor().getHTML())
-    })
+    }, { timeout: 5000 })
+  })
+
+  test('every window saves its own typing at once, so Publish in the window that typed waits for it', async () => {
+    const [, other] = await pair('<p>Hello</p>')
+
+    other.editor().commands.insertContentAt(6, ' world')
+
+    expect(other.writes).toEqual(['<p>Hello world</p>'])
+  })
+
+  test('a window that only received others\' typing does not save it unless it saves for everyone', async () => {
+    const [saver, other] = await pair('<p>Hello</p>')
+
+    saver.editor().commands.insertContentAt(1, 'Oh, ')
+    await vi.waitFor(() => expect(other.editor().getHTML()).toBe('<p>Oh, Hello</p>'))
+    await wait(1800)
+
     expect(other.writes).toEqual([])
   })
 
-  test('only the window with the lowest Yjs client ID saves, and the next lowest takes over with the merged HTML when it leaves', async () => {
+  test('the saver saves what another window typed long after they both started', async () => {
     const [saver, other] = await pair('<p>Hello</p>')
+    await wait(1800)
 
     other.editor().commands.insertContentAt(6, ' world')
-    await vi.waitFor(() => expect(saver.stored.value).toBe('<p>Hello world</p>'))
+
+    await vi.waitFor(() => expect(saver.stored.value).toBe('<p>Hello world</p>'), { timeout: 4000 })
+  }, 10_000)
+
+  test('the next lowest window takes over saving what others typed when the saver leaves', async () => {
+    const [saver, other] = await pair('<p>Hello</p>')
+    await wait(1800)
+    saver.editor().commands.insertContentAt(1, 'Oh, ')
+    await vi.waitFor(() => expect(other.editor().getHTML()).toBe('<p>Oh, Hello</p>'))
+    await wait(1800)
     expect(other.writes).toEqual([])
 
     saver.tab.live = false
-    other.editor().commands.insertContentAt(1, 'Oh, ')
 
-    await vi.waitFor(() => expect(other.stored.value).toBe('<p>Oh, Hello world</p>'))
-  })
-
-  test('a window taking over saves what the leaving saver had not saved yet', async () => {
-    const [saver, other] = await pair('<p>Hello</p>')
-    saver.tab.deaf = true
-    other.editor().commands.insertContentAt(6, ' world')
-    await wait(30)
-    expect(other.writes).toEqual([])
-    expect(saver.stored.value).toBe('<p>Hello</p>')
-
-    saver.tab.live = false
-
-    await vi.waitFor(() => expect(other.stored.value).toBe('<p>Hello world</p>'))
-  })
+    await vi.waitFor(() => expect(other.stored.value).toBe('<p>Oh, Hello</p>'), { timeout: 4000 })
+  }, 15_000)
 
   test('a window that has gone without a goodbye is forgotten once its presence goes, so updates stop being resent to it', async () => {
     const [gone, staying] = await pair('<p>Hello</p>')
@@ -373,7 +393,9 @@ describe('TipTapHtmlEditor: edits that merge, over Yjs (#435)', () => {
     other.editor().commands.insertContentAt(6, ' world')
     await vi.waitFor(() => expect(saver.editor().getHTML()).toBe('<p>Hello world</p>'))
 
+    saver.lastWrite.value = other.tab.clientId
     saver.stored.value = '<p>An older save</p>'
+    other.lastWrite.value = saver.tab.clientId
     other.stored.value = '<p>Another older save</p>'
     await wait(50)
 
@@ -381,14 +403,87 @@ describe('TipTapHtmlEditor: edits that merge, over Yjs (#435)', () => {
     expect(other.editor().getHTML()).toBe('<p>Hello world</p>')
   })
 
-  test('a save held as a conflict is kept for you while you edit with others, since the edits merge', async () => {
-    const [first] = await pair('<p>Hello</p>')
-    const keep = vi.fn()
+  test('a save held as a conflict is kept for you while you edit with others, sending what the editor shows now', async () => {
+    const [saver, other] = await pair('<p>Hello</p>')
+    saver.editor().commands.insertContentAt(1, 'Oh, ')
+    await vi.waitFor(() => expect(other.editor().getHTML()).toBe('<p>Oh, Hello</p>'))
+    const sentWhenKept: (string | null | undefined)[] = []
+    const keep = vi.fn(async () => {
+      sentWhenKept.push(other.field.model.value)
+    })
+    const accept = vi.fn()
 
-    first.held.value = { user: { id: '/users/sam', name: 'Sam', isSelf: false }, name: 'Sam', value: '<p>Theirs</p>', accept: vi.fn(), keep }
+    other.held.value = { user: { id: '/users/sam', name: 'Sam', isSelf: false }, name: 'Sam', value: '<p>Theirs</p>', accept, keep }
     await nextTick()
 
     expect(keep).toHaveBeenCalled()
+    expect(accept).not.toHaveBeenCalled()
+    expect(sentWhenKept).toEqual(['<p>Oh, Hello</p>'])
+  })
+
+  test('a conflict with what the editor already shows is taken, sending nothing', async () => {
+    const [, other] = await pair('<p>Hello</p>')
+    const keep = vi.fn()
+    const accept = vi.fn()
+
+    other.held.value = { user: { id: '/users/sam', name: 'Sam', isSelf: false }, name: 'Sam', value: '<p>Hello</p>\n', accept, keep }
+    await nextTick()
+
+    expect(accept).toHaveBeenCalled()
+    expect(keep).not.toHaveBeenCalled()
+    expect(other.writes).toEqual([])
+  })
+
+  test('a save from outside the shared editing, such as the API, is applied by the saver alone and reaches the others through Yjs, writing no HTML', async () => {
+    const [saver, other] = await pair('<p>Hello</p>')
+
+    saver.lastWrite.value = undefined
+    saver.stored.value = '<p>Hello from outside</p>'
+    other.lastWrite.value = undefined
+    other.stored.value = '<p>Hello from outside</p>'
+
+    await vi.waitFor(() => expect([saver.editor().getHTML(), other.editor().getHTML()]).toEqual(['<p>Hello from outside</p>', '<p>Hello from outside</p>']))
+    await wait(1800)
+    expect(saver.editor().getText()).toBe('Hello from outside')
+    expect([saver.writes, other.writes]).toEqual([[], []])
+  })
+
+  test('typing only another window has saved survives both windows moving to the draft that save made', async () => {
+    const [saver, other] = await pair('<p>Hello</p>', { drafts: { [DRAFT]: LIVE } })
+    await wait(1800)
+    other.editor().commands.insertContentAt(1, 'Oh, ')
+    await vi.waitFor(() => expect(saver.editor().getHTML()).toBe('<p>Oh, Hello</p>'))
+
+    await Promise.all([saver, other].map(window => window.wrapper.setProps({ disabled: true })))
+    await wait(100)
+    await Promise.all([saver, other].map(window => window.wrapper.setProps({ iri: DRAFT, disabled: false })))
+    await vi.waitFor(() => expect([saver.editor().isEditable, other.editor().isEditable]).toEqual([true, true]), { timeout: 4000 })
+    await wait(2000)
+
+    expect([saver.editor().getHTML(), other.editor().getHTML()]).toEqual(['<p>Oh, Hello</p>', '<p>Oh, Hello</p>'])
+  }, 15_000)
+
+  test('moving from a draft published elsewhere to its live component, whose stored copy is older, neither applies nor saves that copy', async () => {
+    const [saver] = await pair('<p>Hello draft</p>', { iri: DRAFT, drafts: { [DRAFT]: LIVE } })
+    await wait(1800)
+
+    saver.stored.value = '<p>Hello</p>'
+    await saver.wrapper.setProps({ iri: LIVE })
+    await wait(1800)
+
+    expect([saver.editor().getHTML(), saver.writes]).toEqual(['<p>Hello draft</p>', []])
+  }, 10_000)
+
+  test('an older save of this window\'s own arriving late is never applied over what it shows', async () => {
+    const [saver] = await pair('<p>Hello</p>')
+    saver.editor().commands.insertContentAt(6, ' A')
+    saver.editor().commands.insertContentAt(8, 'B')
+    expect(saver.writes).toEqual(['<p>Hello A</p>', '<p>Hello AB</p>'])
+
+    saver.stored.value = '<p>Hello A</p>'
+    await wait(50)
+
+    expect(saver.editor().getHTML()).toBe('<p>Hello AB</p>')
   })
 
   test('a second editor for the same resource in one tab, such as a preview, shares the document and never sends a goodbye for it', async () => {
@@ -465,22 +560,27 @@ describe('TipTapHtmlEditor: the stored Yjs state (api-components-bundle#563)', (
     await vi.waitFor(() => expect(api.items.has(`${LIVE}|html`)).toBe(true))
   })
 
-  test('discards a stored state made from other HTML, and starts from the HTML', async () => {
+  test('a stored state older than the HTML stays the start, and is brought up to the HTML as an edit, writing no HTML and storing the state again', async () => {
     api.store(LIVE, '<p>Older</p>')
+    const older = api.items.get(`${LIVE}|html`)!.state
 
-    const { editor } = await mountEditor('<p>Hello</p>')
+    const { editor, writes } = await mountEditor('<p>Hello</p>')
 
     expect(editor().getHTML()).toBe('<p>Hello</p>')
+    const olderClients = [...Y.decodeStateVector(Y.encodeStateVectorFromUpdate(Uint8Array.from(atob(older), char => char.charCodeAt(0)))).keys()]
+    expect([...Y.decodeStateVector(Y.encodeStateVector(docOf(editor()))).keys()]).toEqual(expect.arrayContaining(olderClients))
+    await vi.waitFor(() => expect(api.items.get(`${LIVE}|html`)).toMatchObject({ htmlHash: htmlHash('<p>Hello</p>'), _metadata: { version: 2 } }), { timeout: 4000 })
+    expect(writes).toEqual([])
   })
 
-  test('selecting a field with no stored state only looks it up, since every window seeds the same HTML into the same document', async () => {
+  test('selecting a field with no stored state creates it from the seed at once, and the next window starts from it', async () => {
     const first = await mountEditor('<p>Hello</p>', { name: 'first' })
     const alone = Y.encodeStateAsUpdate(docOf(first.editor()))
     first.wrapper.unmount()
     const second = await mountEditor('<p>Hello</p>', { name: 'second' })
     await wait(20)
 
-    expect(api.writes()).toEqual([])
+    expect(api.writes().map(([, options]) => options.method)).toEqual(['POST'])
     expect(Y.encodeStateAsUpdate(docOf(second.editor()))).toEqual(alone)
   })
 
@@ -493,7 +593,7 @@ describe('TipTapHtmlEditor: the stored Yjs state (api-components-bundle#563)', (
     stored.value = '<p>Hello world</p>'
     submitting.value = false
 
-    await vi.waitFor(() => expect(api.items.get(`${LIVE}|html`)).toMatchObject({ htmlHash: htmlHash('<p>Hello world</p>'), _metadata: { version: 1 } }))
+    await vi.waitFor(() => expect(api.items.get(`${LIVE}|html`)).toMatchObject({ htmlHash: htmlHash('<p>Hello world</p>'), _metadata: { version: 2 } }), { timeout: 4000 })
   })
 
   test('a window that does not save never writes the state', async () => {
@@ -521,6 +621,20 @@ describe('TipTapHtmlEditor: the caret when the editor is rebuilt (#435)', () => 
 
     await vi.waitFor(() => expect(editor().state.selection.from).toBe(6))
     expect(editor().isFocused).toBe(true)
+  })
+
+  test('a menu opened after selecting keeps focus when the editor becomes editable, so it stays open', async () => {
+    const { wrapper, editor } = await mountEditor('<p>Hello there</p>', { disabled: true })
+    document.getSelection()!.collapse(editor().view.dom.querySelector('p')!.firstChild!, 5)
+    const menu = document.body.appendChild(document.createElement('button'))
+
+    await wrapper.setProps({ disabled: false })
+    menu.focus()
+    await vi.waitFor(() => expect(editor().isEditable).toBe(true))
+    await wait(20)
+
+    expect(document.activeElement).toBe(menu)
+    expect(editor().isFocused).toBe(false)
   })
 })
 

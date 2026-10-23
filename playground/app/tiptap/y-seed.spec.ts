@@ -1,13 +1,11 @@
 // @vitest-environment happy-dom
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
+import { describe, expect, test } from 'vitest'
 import * as Y from 'yjs'
 import { createDocument, getHTMLFromFragment, getSchema } from '@tiptap/core'
 import { StarterKit } from '@tiptap/starter-kit'
 import { prosemirrorToYXmlFragment, yXmlFragmentToProseMirrorRootNode } from '@tiptap/y-tiptap'
-import { createYSync, encodeUpdate } from './y-sync'
-import type { YSyncData } from './y-sync'
-import { FIELD, joinOrSeed, seedClientId, seedUpdate } from './y-seed'
-import { createCoalescingChannel } from './fake-realtime-channel'
+import { encodeUpdate } from './y-sync'
+import { FIELD, seedClientId, seedUpdate } from './y-seed'
 
 const extensions = [StarterKit]
 const schema = getSchema(extensions)
@@ -104,71 +102,6 @@ describe('seeding with the editor\'s parse options (#435)', () => {
     Y.applyUpdate(doc, seedUpdate('<p>Hello  there,   Sam</p>', schema, undefined, { preserveWhitespace: true }))
 
     expect(html(doc)).toBe('<p>Hello  there,   Sam</p>')
-  })
-
-  test('joining or seeding seeds with them too', async () => {
-    const doc = new Y.Doc()
-
-    await joinOrSeed(doc, Promise.resolve(false), '<p>Hello  there</p>', schema, { preserveWhitespace: true })
-
-    expect(html(doc)).toBe('<p>Hello  there</p>')
-  })
-})
-
-describe('joining an open session before seeding (#435 question 3)', () => {
-  beforeEach(() => {
-    vi.useFakeTimers()
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
-  })
-
-  function tab(channel: ReturnType<typeof createCoalescingChannel<YSyncData>>, name: string, source: string) {
-    const doc = new Y.Doc()
-    const transport = channel.tab(name)
-    const sync = createYSync(doc, { send: transport.send, joinMs: 1500 })
-    transport.on((clientId, data) => sync.receive(clientId, data))
-    const ready = joinOrSeed(doc, sync.start(), source, schema)
-    return { doc, ready }
-  }
-
-  test('a tab that opens after the HTML was saved again takes the open session\'s document instead of seeding', async () => {
-    const channel = createCoalescingChannel<YSyncData>()
-    const first = tab(channel, 'a', STORED)
-    await vi.advanceTimersByTimeAsync(2000)
-    await expect(first.ready).resolves.toBe('seeded')
-    const paragraph = first.doc.getXmlFragment(FIELD).get(1) as Y.XmlElement
-    ;(paragraph.get(0) as Y.XmlText).insert('First paragraph'.length, ', edited')
-    await vi.advanceTimersByTimeAsync(2000)
-
-    const second = tab(channel, 'b', SAVED_SINCE)
-    await vi.advanceTimersByTimeAsync(2000)
-
-    await expect(second.ready).resolves.toBe('joined')
-    expect(html(second.doc)).toBe(SAVED_SINCE)
-    expect(html(first.doc)).toBe(SAVED_SINCE)
-  })
-
-  test('two tabs opening together on the same HTML both seed it and do not double it', async () => {
-    const channel = createCoalescingChannel<YSyncData>()
-    const one = tab(channel, 'a', STORED)
-    const other = tab(channel, 'b', STORED)
-    await vi.advanceTimersByTimeAsync(5000)
-
-    await expect(Promise.all([one.ready, other.ready])).resolves.toEqual(['seeded', 'seeded'])
-    expect(html(one.doc)).toBe(STORED)
-    expect(html(other.doc)).toBe(STORED)
-  })
-
-  test('two tabs that both seed different HTML before hearing each other end up with both versions', async () => {
-    const channel = createCoalescingChannel<YSyncData>()
-    const one = tab(channel, 'a', STORED)
-    const other = tab(channel, 'b', SAVED_SINCE)
-    await vi.advanceTimersByTimeAsync(5000)
-
-    expect(html(one.doc)).toBe(html(other.doc))
-    expect(html(one.doc).match(/<h1>/g)).toHaveLength(2)
   })
 })
 

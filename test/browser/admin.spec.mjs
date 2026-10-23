@@ -1,3 +1,4 @@
+import * as Y from 'yjs'
 import { test } from './fixtures.mjs'
 import { articleTexts, seedArticlePages, texts } from './seed.mjs'
 
@@ -41,9 +42,10 @@ async function openEditMode({ page, base, settle, seed }, path = seed.paths.home
   await page.getByRole('button', { name: 'Done', exact: true }).waitFor()
 }
 
-async function select(page, text) {
+async function select(page, text, { editable = true } = {}) {
   await page.getByText(text, { exact: true }).first().click()
   await page.getByTestId('component-menu').waitFor()
+  editable && await page.locator('.ProseMirror[contenteditable=true]').filter({ hasText: text }).first().waitFor()
 }
 
 async function startClone(page) {
@@ -472,7 +474,7 @@ test('23. Move within a group POSTs the clicked position\'s move after its new n
   await page.getByText(texts.pageAOther, { exact: true }).click()
   await moveMenu(page).getByRole('button', { name: 'Add after', exact: true }).click()
   assertMove(await moveWrite(t), t.seed.iris.source, { from: { componentPosition: t.seed.positions.aSource }, to: { componentGroup: t.seed.iris.pageAGroup, after: t.seed.positions.aOther } })
-  assert(t.rehearsal.writes.length === 1, `A move wrote more than once: ${JSON.stringify(t.rehearsal.writes)}`)
+  assert(contentWrites(t).length === 1, `A move wrote more than once: ${JSON.stringify(contentWrites(t))}`)
   await assertCloneModeEnded(page, 'Move mode did not end')
   await settle()
   assert(await sourceAbove(page, texts.pageAOther) === false, 'The page did not show the new order')
@@ -636,7 +638,7 @@ test('31. switching scope in clone mode asks "Edit the page?" or "Edit the share
   const toPage = dialogWith(page, 'Edit the page?')
   await toPage.getByRole('button', { name: 'Edit page', exact: true }).waitFor()
   assert(await toPage.getByRole('button', { name: 'Cancel', exact: true }).isVisible(), 'The page confirm has no Cancel')
-  assert(!t.rehearsal.writes.some(w => w.method === 'POST'), 'It placed before the scope was confirmed')
+  assert(!contentWrites(t).some(w => w.method === 'POST'), 'It placed before the scope was confirmed')
   await toPage.getByRole('button', { name: 'Edit page', exact: true }).click()
   await eventually(() => t.rehearsal.writes.find(w => w.method === 'POST' && w.path.endsWith('/_/component_positions')), 'No position was POSTed')
   await assertCloneModeEnded(page, 'Clone mode did not end')
@@ -651,7 +653,7 @@ test('31. switching scope in clone mode asks "Edit the page?" or "Edit the share
   await toLayout.getByRole('button', { name: 'Edit layout', exact: true }).waitFor()
   await toLayout.getByRole('button', { name: 'Cancel', exact: true }).click()
   await waitForNoDialog(page, 'Cancel did not close the layout confirm')
-  assert(t.rehearsal.writes.filter(w => w.method === 'POST').length === 1, 'Cancel placed something')
+  assert(contentWrites(t).filter(w => w.method === 'POST').length === 1, 'Cancel placed something')
   assert(await page.getByTestId('clone-mode-bar').isVisible(), 'Cancel ended clone mode')
 })
 
@@ -699,8 +701,8 @@ async function placeInMove(page, text, option) {
   }
 }
 
-async function moveMenuOffers(page, text) {
-  await select(page, text)
+async function moveMenuOffers(page, text, options) {
+  await select(page, text, options)
   await page.getByTestId('component-menu').getByTestId('button-options').click()
   await page.getByText('Add After', { exact: true }).waitFor()
   return await page.getByTestId('component-menu-move').count() > 0
@@ -787,14 +789,14 @@ test('39. in move mode an occupied page-data slot is disabled with the reason, a
   assert(!(await itself.getByTestId('clone-option').count()), 'Use here is offered on the slot moved from')
   const itselfReasons = await reasonsBehind(page, itself, 'Why nothing can be placed here')
   assert(itselfReasons.includes('This is where it already is'), `The reason is "${itselfReasons}"`)
-  assert(t.rehearsal.writes.length === 0, `Something was written: ${JSON.stringify(t.rehearsal.writes)}`)
+  assert(contentWrites(t).length === 0, `Something was written: ${JSON.stringify(contentWrites(t))}`)
 })
 
 test('40. Move is never offered from a page-data slot showing the template\'s fallback', async ({ cwa: t }) => {
   const { page } = t
   const articles = await seedArticlePages(t.api, t.rehearsal.token, t.seed)
   await openEditMode(t, articles.paths.articleB)
-  assert(!await moveMenuOffers(page, articleTexts.fallback), 'Move is offered from a slot showing the template\'s fallback')
+  assert(!await moveMenuOffers(page, articleTexts.fallback, { editable: false }), 'Move is offered from a slot showing the template\'s fallback')
 })
 
 test('19. Escape on the shared delete dialog cancels it and Delete works again', async ({ cwa: t }) => {
@@ -949,7 +951,7 @@ test('43. a click on a target in clone mode outlines it in blue dashed at once a
   await page.getByTestId('clone-mode-source').click()
   await waitForNoMenu(page, 'A click outside did not close the menu')
   assert(await page.getByTestId('clone-mode-bar').isVisible(), 'A click outside the menu ended clone mode')
-  assert(t.rehearsal.writes.length === 0, `Something was written: ${JSON.stringify(t.rehearsal.writes)}`)
+  assert(contentWrites(t).length === 0, `Something was written: ${JSON.stringify(contentWrites(t))}`)
 })
 
 test('44. where nothing can be placed the menu has one disabled row whose ⓘ shows the reasons on click, and Escape closes the reasons before the menu', async ({ cwa: t }) => {
@@ -1098,7 +1100,7 @@ test.describe('presence', () => {
     await input.evaluate(el => el.blur())
     const back = await eventually(() => t.rehearsal.realtime.slice(sentBeforeBlur).find(body => body?.event === 'presence'), 'Nothing was sent on blur')
     assert(JSON.stringify(back.data) === JSON.stringify(selected.data), `Sent ${JSON.stringify(back.data)} on blur`)
-    assert(t.rehearsal.writes.length === 0, `Something was written: ${JSON.stringify(t.rehearsal.writes)}`)
+    assert(contentWrites(t).length === 0, `Something was written: ${JSON.stringify(contentWrites(t))}`)
   })
 
   test('49. another admin editing a component on this page outlines it with their name flag, and left removes the outline', async ({ cwa: t }) => {
@@ -1160,8 +1162,24 @@ async function placeCaret(page, text, edge) {
 function caretOffset(page, text) {
   return editorParagraph(page, text).evaluate((paragraph) => {
     const selection = window.getSelection()
-    return selection.isCollapsed && paragraph.contains(selection.focusNode) ? selection.focusOffset : -1
+    if (!selection.isCollapsed || !paragraph.contains(selection.focusNode)) {
+      return -1
+    }
+    const range = document.createRange()
+    range.setStart(paragraph, 0)
+    range.setEnd(selection.focusNode, selection.focusOffset)
+    const before = range.cloneContents()
+    before.querySelectorAll('[data-remote-cursor]').forEach(cursor => cursor.remove())
+    return before.textContent.length
   })
+}
+
+function editorTexts(page) {
+  return page.locator('.ProseMirror p').evaluateAll(paragraphs => paragraphs.map((paragraph) => {
+    const shown = paragraph.cloneNode(true)
+    shown.querySelectorAll('[data-remote-cursor]').forEach(cursor => cursor.remove())
+    return shown.textContent
+  }))
 }
 
 function realtimeEvent(t, { key, name, event, iri, data }) {
@@ -1172,11 +1190,41 @@ function htmlWrite(t, iri, includes, from = 0) {
   return eventually(() => t.rehearsal.writes.slice(from).find(w => w.method === 'PATCH' && w.path === iri && w.body?.html?.includes(includes)), `No PATCH of ${iri} with "${includes}": ${JSON.stringify(t.rehearsal.writes)}`)
 }
 
-async function peerSave(t, iri, html, peer) {
-  const saved = await t.api.patch(iri, { html }, { 'X-CWA-Client-Id': peer.clientId })
-  assert(saved._metadata?.lastWrite?.clientId === peer.clientId, `The API recorded the write as ${JSON.stringify(saved._metadata?.lastWrite)}`)
-  t.publish({ ...saved, _metadata: { ...saved._metadata, lastWrite: { ...saved._metadata.lastWrite, userId: peer.user.id } } })
-  return saved['@id']
+function base64(update) {
+  return Buffer.from(update).toString('base64')
+}
+
+function realtimeSent(t, event) {
+  return t.rehearsal.realtime.filter(body => body?.event === event)
+}
+
+function yjsSent(t, iri) {
+  return realtimeSent(t, 'yjs:html').filter(body => body.iri === iri)
+}
+
+function isStateCreate(write) {
+  return write.method === 'POST' && write.path.includes('/_/collaboration_states')
+}
+
+function contentWrites(t) {
+  return t.rehearsal.writes.filter(write => !isStateCreate(write))
+}
+
+function stateCreated(t) {
+  return eventually(() => t.rehearsal.writes.find(isStateCreate), `The Yjs state was never created: ${JSON.stringify(t.rehearsal.writes)}`)
+}
+
+async function peerDocument(t, iri) {
+  const { member: [stored] } = await t.api.get(`/_/collaboration_states?component=${encodeURIComponent(iri)}&field=html`)
+  assert(stored, `No Yjs state is stored for ${iri}`)
+  const doc = new Y.Doc()
+  doc.clientID = 1
+  Y.applyUpdate(doc, Buffer.from(stored.state, 'base64'))
+  return doc
+}
+
+function firstText(doc) {
+  return doc.getXmlFragment('default').get(0).get(0)
 }
 
 test.describe('co-editing', () => {
@@ -1241,77 +1289,72 @@ test.describe('co-editing', () => {
     assert(!row.includes('admin'), `The row names you as another editor: "${row}"`)
   })
 
-  test('53. TipTap saves typing through the model, draws a peer\'s cursor with their name, applies their save in place while unfocused and holds it as a conflict while you have unsent typing', async ({ cwa: t }) => {
+  test('53. TipTap co-edits over Yjs: a peer\'s update shows in place with their cursor and name, and typing here is sent to them and saved by this window', async ({ cwa: t }) => {
     const { page, seed, settle } = t
     const live = (await t.api.create('/component/html_contents', { html: '<p>Co-edited live text</p>', publishedAt: 'now' }))['@id']
     const position = (await t.api.create('/_/component_positions', { componentGroup: seed.iris.pageAGroup, component: live }))['@id']
-    const peer = peerPresence(t, { key: '1', name: 'Pat Peer', page: seed.iris.pageA })
-    await page.clock.install()
     await openEditMode(t)
     await editorParagraph(page, 'Co-edited live text').waitFor()
-    await presenceSent(t, data => data.page === seed.iris.pageA, 'No presence was sent for the page')
     await eventually(() => t.rehearsal.mercureSubscriptions > 0, 'Mercure was never subscribed to')
-    t.publish(peer)
-    await eventually(async () => (await page.getByTestId('presence-avatar').count()) === 1, 'The peer never showed in the header')
+    await select(page, 'Co-edited live text')
+    await stateCreated(t)
+    await eventually(() => yjsSent(t, live).length > 0, 'The editor never joined over Yjs')
 
-    const draft = await peerSave(t, live, '<p>Peer first edit</p>\n', peer)
-    t.api.track(draft)
-    assert(draft !== live, 'The peer\'s save of the live component did not make a draft')
-    await editorParagraph(page, 'Peer first edit').waitFor()
-    await settle()
-    assert(await page.getByTestId('remote-change').count() === 0, 'A save while unfocused raised a conflict')
-    assert(t.rehearsal.writes.length === 0, `Something was written: ${JSON.stringify(t.rehearsal.writes)}`)
-
-    await select(page, 'Peer first edit')
-    await placeCaret(page, 'Peer first edit', 'end')
-    await eventually(async () => await caretOffset(page, 'Peer first edit') === 'Peer first edit'.length, 'The caret is not at the end of the text')
-    await page.keyboard.type(' and mine')
-    await htmlWrite(t, draft, 'Peer first edit and mine')
-    await settle()
-
+    const peer = peerPresence(t, { key: '1', name: 'Pat Peer', page: seed.iris.pageA })
     t.publish({ ...peer, data: { v: 1, page: seed.iris.pageA, state: 'editing', component: live, componentPosition: position, field: 'html' } })
-    t.publish(realtimeEvent(t, { key: '1', name: 'Pat Peer', event: 'selection', iri: live, data: { selection: { from: 1, to: 5 } } }))
+    await eventually(async () => (await page.getByTestId('presence-avatar').count()) === 1, 'The peer never showed in the header')
+    const peerDoc = await peerDocument(t, live)
+    const stored = Y.encodeStateVector(peerDoc)
+    const text = firstText(peerDoc)
+    text.insert(0, 'Peer: ')
+    t.publish(realtimeEvent(t, { key: '1', name: 'Pat Peer', event: 'yjs:html', iri: live, data: {
+      id: peerDoc.clientID,
+      sv: base64(Y.encodeStateVector(peerDoc)),
+      ds: 0,
+      update: base64(Y.encodeStateAsUpdate(peerDoc, stored)),
+      cursor: { anchor: Y.createRelativePositionFromTypeIndex(text, 1), head: Y.createRelativePositionFromTypeIndex(text, 5) },
+    } }))
+
+    await eventually(async () => (await editorTexts(page)).includes('Peer: Co-edited live text'), 'The peer\'s update never showed')
     const cursor = page.locator('.ProseMirror [data-remote-cursor]')
     await eventually(async () => (await cursor.count()) === 1, `There are ${await cursor.count()} remote cursors`)
     assert(await cursor.innerText() === 'Pat Peer', `The cursor is labelled "${await cursor.innerText()}"`)
     const highlighted = page.locator('.ProseMirror [data-remote-selection]')
-    assert(await highlighted.innerText() === 'Peer', `The peer's selection covers "${await highlighted.innerText()}"`)
-
-    await page.clock.pauseAt(await page.evaluate(() => Date.now() + 1000))
-    const writesBeforeConflict = t.rehearsal.writes.length
-    await page.keyboard.type(' too')
-    await editorParagraph(page, 'and mine too').waitFor()
-    await peerSave(t, draft, '<p>Peer second edit</p>', peer)
-    const conflict = page.getByTestId('remote-change')
-    await conflict.waitFor()
-    assert((await conflict.innerText()).includes('Pat Peer changed this'), `The conflict says "${await conflict.innerText()}"`)
-    assert(await editorParagraph(page, 'Peer first edit and mine too').count() === 1, 'The held save replaced the unsent typing')
-    assert(await editorParagraph(page, 'Peer second edit').count() === 0, 'The held save was applied in place')
-    assert(t.rehearsal.writes.length === writesBeforeConflict, `The unsent typing was saved before a choice: ${JSON.stringify(t.rehearsal.writes.slice(writesBeforeConflict))}`)
-
-    await conflict.getByTestId('remote-change-keep').click()
-    await page.clock.resume()
-    await htmlWrite(t, draft, 'Peer first edit and mine too', writesBeforeConflict)
-    await conflict.waitFor({ state: 'detached' })
+    assert(await highlighted.innerText() === 'eer:', `The peer's selection covers "${await highlighted.innerText()}"`)
     await settle()
-    assert(await editorParagraph(page, 'Peer first edit and mine too').count() === 1, 'Keep mine lost the typing')
+    const htmlWrites = () => t.rehearsal.writes.filter(w => w.method === 'PATCH' && w.body && 'html' in w.body)
+    assert(htmlWrites().length === 0, `The peer's typing was saved by this window: ${JSON.stringify(htmlWrites())}`)
+
+    const sentBeforeTyping = yjsSent(t, live).length
+    await placeCaret(page, 'Co-edited live text', 'end')
+    await eventually(async () => await caretOffset(page, 'Co-edited live text') === 'Peer: Co-edited live text'.length, 'The caret is not at the end of the text')
+    await page.keyboard.type(' and mine')
+    await htmlWrite(t, live, 'Peer: Co-edited live text and mine')
+    await eventually(() => {
+      yjsSent(t, live).slice(sentBeforeTyping).forEach(body => body.data.update && Y.applyUpdate(peerDoc, Buffer.from(body.data.update, 'base64')))
+      return firstText(peerDoc).toString() === 'Peer: Co-edited live text and mine'
+    }, `The typing never reached the peer: "${firstText(peerDoc).toString()}"`)
+    await settle()
+    const stateWrites = t.rehearsal.writes.filter(w => w.method === 'PATCH' && w.path.includes('/_/collaboration_states'))
+    assert(stateWrites.length === 0, `The window that does not save for everyone wrote the state: ${JSON.stringify(stateWrites)}`)
   })
 
-  test('54. moving the cursor in TipTap posts a coalesced selection event ending at the caret', async ({ cwa: t }) => {
+  test('54. moving the caret in TipTap sends it inside coalesced Yjs events, the last ending at the caret', async ({ cwa: t }) => {
     const { page, seed, settle } = t
     await openEditMode(t)
-    const viewing = await presenceSent(t, data => data.page === seed.iris.pageA, 'No presence was sent for the page')
     await select(page, texts.pageAOther)
+    await stateCreated(t)
     await placeCaret(page, texts.pageAOther, 'start')
     await eventually(async () => await caretOffset(page, texts.pageAOther) === 0, 'The caret is not at the start of the text')
-    const selections = from => t.rehearsal.realtime.slice(from).filter(body => body?.event === 'selection')
-    await eventually(() => selections(0).some(body => body.data?.selection?.from === 1), `The caret at the start was never sent: ${JSON.stringify(selections(0))}`)
+    const doc = await peerDocument(t, seed.iris.pageAOther)
+    const caretOf = body => body.data?.cursor && Y.createAbsolutePositionFromRelativePosition(Y.createRelativePositionFromJSON(body.data.cursor.head), doc)?.index
+    await eventually(() => yjsSent(t, seed.iris.pageAOther).some(body => caretOf(body) === 0), `The caret at the start was never sent: ${JSON.stringify(yjsSent(t, seed.iris.pageAOther).map(body => body.data.cursor))}`)
     await settle()
 
-    const before = t.rehearsal.realtime.length
+    const before = yjsSent(t, seed.iris.pageAOther).length
     const posted = []
     page.on('request', (request) => {
-      if (request.method() === 'POST' && request.url().endsWith('/_/realtime') && request.postDataJSON()?.event === 'selection') {
+      if (request.method() === 'POST' && request.url().endsWith('/_/realtime') && request.postDataJSON()?.event === 'yjs:html') {
         posted.push(request)
       }
     })
@@ -1320,16 +1363,16 @@ test.describe('co-editing', () => {
       await page.keyboard.press('ArrowRight')
     }
     assert(await caretOffset(page, texts.pageAOther) === moves, `The caret is at ${await caretOffset(page, texts.pageAOther)}`)
-    const last = await eventually(() => selections(before).find(body => body.data?.selection?.from === moves + 1), `The final caret was never sent: ${JSON.stringify(selections(before))}`)
+    const last = await eventually(() => yjsSent(t, seed.iris.pageAOther).slice(before).find(body => caretOf(body) === moves), `The final caret was never sent: ${JSON.stringify(yjsSent(t, seed.iris.pageAOther).slice(before).map(body => body.data.cursor))}`)
     await settle()
-    const sent = selections(before)
-    assert(sent.length < moves, `${sent.length} selection events were sent for ${moves} moves`)
+    const sent = yjsSent(t, seed.iris.pageAOther).slice(before)
+    assert(sent.length < moves, `${sent.length} Yjs events were sent for ${moves} moves`)
     const starts = posted.map(request => request.timing().startTime)
     const gaps = starts.slice(1).map((start, i) => start - starts[i])
-    assert(gaps.every(gap => gap >= 115), `The selection events were sent ${JSON.stringify(gaps)}ms apart`)
+    assert(gaps.every(gap => gap >= 115), `The Yjs events were sent ${JSON.stringify(gaps)}ms apart`)
     assert(sent.at(-1) === last, `The last event sent is ${JSON.stringify(sent.at(-1))}`)
-    assert(last.clientId === viewing.clientId && last.iri === seed.iris.pageAOther, `Sent ${JSON.stringify(last)}`)
-    assert(JSON.stringify(last.data) === JSON.stringify({ selection: { from: moves + 1, to: moves + 1 } }), `Sent ${JSON.stringify(last.data)}`)
-    assert(t.rehearsal.writes.length === 0, `Something was written: ${JSON.stringify(t.rehearsal.writes)}`)
+    assert(caretOf(last) === moves && Y.createAbsolutePositionFromRelativePosition(Y.createRelativePositionFromJSON(last.data.cursor.anchor), doc)?.index === moves, `Sent ${JSON.stringify(last.data.cursor)}`)
+    assert(realtimeSent(t, 'selection').length === 0, 'A selection event was sent')
+    assert(contentWrites(t).length === 0, `Something was written: ${JSON.stringify(contentWrites(t))}`)
   })
 })

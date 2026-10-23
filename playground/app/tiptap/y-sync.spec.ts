@@ -441,3 +441,75 @@ describe('a tab joining after the others have edited (#435 question 2)', () => {
     expect(body.length).toBeGreaterThan(16_384)
   })
 })
+
+describe('the 16 KB limit on one real-time event (api-components-bundle RealtimeEventRequest::MAX_BYTES)', () => {
+  const LARGE = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. '.repeat(400)
+
+  function storedTabs(names: string[], storeWorks = () => true) {
+    const channel = createCoalescingChannel<YSyncData>()
+    const store = { state: undefined as Uint8Array | undefined, writes: 0, loads: 0 }
+    const all = names.map((name) => {
+      const doc = new Y.Doc()
+      const tab = channel.tab(name)
+      const sync = createYSync(doc, {
+        send: tab.send,
+        store: async () => {
+          store.writes++
+          if (!storeWorks()) {
+            return false
+          }
+          store.state = Y.encodeStateAsUpdate(doc)
+          return true
+        },
+        load: async () => {
+          store.loads++
+          return store.state
+        },
+      })
+      tab.on((clientId, data) => sync.receive(clientId, data))
+      sync.start()
+      return { name, doc, sync, text: doc.getText('t') }
+    })
+    return { channel, store, all }
+  }
+
+  test('a difference larger than one event holds is stored and announced in a small event, which the other window loads, so both end the same with no event refused', async () => {
+    const { channel, store, all: [a, b] } = storedTabs(['a', 'b'])
+    await vi.advanceTimersByTimeAsync(2000)
+
+    a!.text.insert(0, LARGE)
+    await vi.advanceTimersByTimeAsync(5000)
+    b!.text.insert(0, 'B: ')
+    await vi.advanceTimersByTimeAsync(5000)
+
+    expect(b!.text.toString()).toBe(a!.text.toString())
+    expect(a!.text.toString()).toBe(`B: ${LARGE}`)
+    expect(channel.stats.refused).toBe(0)
+    expect(channel.stats.largestBody).toBeLessThan(16_384)
+    expect(store.writes).toBeGreaterThan(0)
+    expect(store.loads).toBeGreaterThan(0)
+  })
+
+  test('a store that keeps failing is tried again ever less often, never once a second for good', async () => {
+    const { channel, store, all: [a] } = storedTabs(['a', 'b'], () => false)
+    await vi.advanceTimersByTimeAsync(2000)
+
+    a!.text.insert(0, LARGE)
+    await vi.advanceTimersByTimeAsync(120_000)
+
+    expect(channel.stats.refused).toBe(0)
+    expect(store.writes).toBeGreaterThan(1)
+    expect(store.writes).toBeLessThan(12)
+  })
+
+  test('a window that never answers is sent to ever less often until it is forgotten', async () => {
+    const { channel, all: [a] } = tabs(['a', 'b'], { drop: from => from === 'a' })
+    await vi.advanceTimersByTimeAsync(2000)
+    const before = channel.stats.senders.filter(sender => sender === 'a').length
+
+    a!.text.insert(0, 'never heard')
+    await vi.advanceTimersByTimeAsync(120_000)
+
+    expect(channel.stats.senders.filter(sender => sender === 'a').length - before).toBeLessThan(12)
+  })
+})

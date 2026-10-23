@@ -174,3 +174,45 @@ describe('saving the Yjs state of a field (api-components-bundle#563)', () => {
     expect(fetch.mock.calls[1]![1].headers['if-match']).toBe('"6"')
   })
 })
+
+describe('creating the state from the seed, and writing only what changed (#435)', () => {
+  test('creates the state from the update it is given, with the hash of the HTML it was seeded from', async () => {
+    const fetch = vi.fn().mockResolvedValueOnce(item(1))
+
+    await expect(client(fetch).create(new Uint8Array([9, 9]), '<p>Seeded</p>')).resolves.toBe('created')
+
+    expect(fetch).toHaveBeenCalledWith('/_/collaboration_states', {
+      method: 'POST',
+      headers: { 'content-type': 'application/ld+json' },
+      body: { component: COMPONENT, field: 'html', state: 'CQk=', htmlHash: htmlHash('<p>Seeded</p>') },
+    })
+  })
+
+  test('a state another window created first is reported as existing, and a failed create as failed', async () => {
+    await expect(client(vi.fn().mockRejectedValueOnce(httpError(422))).create(new Uint8Array([9]), '<p>Seeded</p>')).resolves.toBe('exists')
+    await expect(client(vi.fn().mockRejectedValueOnce(httpError(500))).create(new Uint8Array([9]), '<p>Seeded</p>')).resolves.toBe('failed')
+  })
+
+  test('saving the state and HTML just loaded, created or written writes nothing', async () => {
+    const fetch = vi.fn()
+      .mockResolvedValueOnce({ member: [item(3, { state: 'AQID', htmlHash: htmlHash('<p>Stored</p>') })] })
+      .mockResolvedValueOnce(item(4, { state: 'AQID', htmlHash: htmlHash('<p>New</p>') }))
+    const state = client(fetch)
+    await state.load()
+
+    await expect(state.save('<p>Stored</p>')).resolves.toBe(true)
+    await state.save('<p>New</p>')
+    await state.save('<p>New</p>')
+
+    expect(fetch).toHaveBeenCalledTimes(2)
+    expect(fetch.mock.calls[1]![1].body.htmlHash).toBe(htmlHash('<p>New</p>'))
+  })
+
+  test('a save that could not be written resolves false', async () => {
+    const fetch = vi.fn().mockResolvedValueOnce({ member: [item(3)] }).mockRejectedValueOnce(httpError(500))
+    const state = client(fetch)
+    await state.load()
+
+    await expect(state.save('<p>Mine</p>')).resolves.toBe(false)
+  })
+})

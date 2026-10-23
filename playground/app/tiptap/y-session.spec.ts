@@ -21,8 +21,16 @@ function html(doc: Y.Doc) {
   return getHTMLFromFragment(yXmlFragmentToProseMirrorRootNode(doc.getXmlFragment(FIELD), schema).content, schema)
 }
 
-function stateClient(stored?: StoredCollaborationState) {
-  return { load: vi.fn(async () => stored), save: vi.fn(async (_html: string | null | undefined) => {}) }
+function stateClient(stored?: StoredCollaborationState, created: 'created' | 'exists' | 'failed' = 'created') {
+  return {
+    load: vi.fn(async () => stored),
+    create: vi.fn(async (_update: Uint8Array, _html: string | null | undefined) => created),
+    save: vi.fn(async (_html: string | null | undefined) => true),
+  }
+}
+
+function clients(doc: Y.Doc) {
+  return [...Y.decodeStateVector(Y.encodeStateVector(doc)).keys()]
 }
 
 function options(send: (data: YSyncData) => boolean, overrides: Partial<YSessionOptions> = {}): YSessionOptions {
@@ -46,7 +54,8 @@ beforeEach(() => {
   vi.useFakeTimers()
 })
 
-afterEach(() => {
+afterEach(async () => {
+  await vi.advanceTimersByTimeAsync(5000)
   vi.useRealTimers()
 })
 
@@ -59,7 +68,7 @@ describe('one Yjs session per resource in a tab (#435)', () => {
 
     expect(second.doc).toBe(first.doc)
     expect(second.state).toBe(first.state)
-    expect(send.mock.calls.filter(([data]) => !data.bye)).toHaveLength(2)
+    expect(send.mock.calls.filter(([data]) => !data.bye)).toHaveLength(1)
     first.release()
     second.release()
   })
@@ -76,14 +85,48 @@ describe('one Yjs session per resource in a tab (#435)', () => {
 
     expect(send.mock.calls.some(([data]) => data.bye)).toBe(false)
     kept.release()
+    await vi.advanceTimersByTimeAsync(5000)
     expect(send.mock.calls.at(-1)![0].bye).toBe(true)
   })
 
-  test('once every editor has gone, the next one starts a new document', async () => {
+  test('an editor given the session back moments after releasing it, as when a save or publish moves it between the live component and its draft, keeps the document and its unsaved typing', async () => {
+    const send = vi.fn((_data: YSyncData) => true)
+    const first = acquireYSession(TAB, IRI, options(send))
+    await vi.advanceTimersByTimeAsync(100)
+    appendParagraph(first.doc, 'Unsaved')
+    first.release()
+    await vi.advanceTimersByTimeAsync(500)
+
+    const next = acquireYSession(TAB, IRI, options(send))
+    await vi.advanceTimersByTimeAsync(5000)
+
+    expect(next.doc).toBe(first.doc)
+    expect(html(next.doc)).toBe('<p>Hello</p><p>Unsaved</p>')
+    expect(send.mock.calls.some(([data]) => data.bye)).toBe(false)
+    next.release()
+    await vi.advanceTimersByTimeAsync(5000)
+  })
+
+  test('how the session started is handed to one editor only, so an editor given a running session never applies it again', async () => {
+    const { stored } = storedFrom('<p>Older</p>')
+    const first = acquireYSession(TAB, IRI, options(vi.fn(() => true), { state: () => stateClient(stored) }))
+    await vi.advanceTimersByTimeAsync(2000)
+    await first.ready
+    const second = acquireYSession(TAB, IRI, options(vi.fn(() => true)))
+    await second.ready
+
+    expect([first.claim(), second.claim(), first.claim()]).toEqual(['stale', 'joined', 'joined'])
+    first.release()
+    second.release()
+    await vi.advanceTimersByTimeAsync(5000)
+  })
+
+  test('once every editor has been gone a while, the next one starts a new document', async () => {
     const send = vi.fn((_data: YSyncData) => true)
     const first = acquireYSession(TAB, IRI, options(send))
     await vi.advanceTimersByTimeAsync(100)
     first.release()
+    await vi.advanceTimersByTimeAsync(5000)
 
     const next = acquireYSession(TAB, IRI, options(send))
 
@@ -108,22 +151,99 @@ describe('one Yjs session per resource in a tab (#435)', () => {
 })
 
 describe('starting from the stored Yjs state (api-components-bundle#563)', () => {
-  test('a stored state made from the HTML loaded is used as it is, edits the HTML does not have yet included, without waiting for anyone', async () => {
+  test('a stored state made from the HTML loaded, holding typing the HTML does not have yet, is reported ahead once nobody answers', async () => {
     const { stored } = storedFrom('<p>Hello</p>', doc => appendParagraph(doc, 'Typed since the save'))
     const session = acquireYSession(TAB, IRI, options(vi.fn(() => true), { others: () => true, state: () => stateClient(stored) }))
+    await vi.advanceTimersByTimeAsync(2000)
 
-    await expect(session.ready).resolves.toBe('loaded')
+    await expect(session.ready).resolves.toBe('ahead')
     expect(html(session.doc)).toBe('<p>Hello</p><p>Typed since the save</p>')
     session.release()
   })
 
-  test('a stored state made from other HTML is discarded, and the HTML is seeded', async () => {
-    const { stored } = storedFrom('<p>Older</p>')
+  test('a stored state made from other HTML is still the start, never seeded over, and is reported stale', async () => {
+    const { doc: older, stored } = storedFrom('<p>Older</p>')
+    const session = acquireYSession(TAB, IRI, options(vi.fn(() => true), { state: () => stateClient(stored) }))
+    await vi.advanceTimersByTimeAsync(2000)
+
+    await expect(session.ready).resolves.toBe('stale')
+    expect(html(session.doc)).toBe('<p>Older</p>')
+    expect(clients(session.doc)).toEqual(clients(older))
+    session.release()
+  })
+
+  test('a stored state that matches the HTML is reported current', async () => {
+    const { stored } = storedFrom('<p>Hello</p>')
     const session = acquireYSession(TAB, IRI, options(vi.fn(() => true), { state: () => stateClient(stored) }))
 
-    await expect(session.ready).resolves.toBe('seeded')
+    await expect(session.ready).resolves.toBe('current')
+    session.release()
+  })
+
+  test('with no stored state, seeds the HTML before sending anything and creates the state from that seed at once', async () => {
+    const send = vi.fn((_data: YSyncData) => true)
+    const state = stateClient()
+    const session = acquireYSession(TAB, IRI, options(send, { state: () => state }))
+
+    await expect(session.ready).resolves.toBe('current')
+    expect(state.create).toHaveBeenCalledWith(seedUpdate('<p>Hello</p>', schema), '<p>Hello</p>')
+    const first = new Y.Doc()
+    Y.applyUpdate(first, decodeUpdate(send.mock.calls[0]![0].update))
+    expect(first.getXmlFragment(FIELD).length).toBe(0)
+    session.release()
+  })
+
+  test('when another window created the state first, starts from that state and throws its own seed away', async () => {
+    const { doc: theirs, stored } = storedFrom('<p>Saved by them</p>')
+    const state = stateClient(undefined, 'exists')
+    state.load.mockResolvedValueOnce(undefined).mockResolvedValueOnce(stored)
+    const session = acquireYSession(TAB, IRI, options(vi.fn(() => true), { state: () => state }))
+    await vi.advanceTimersByTimeAsync(2000)
+
+    await expect(session.ready).resolves.toBe('stale')
+    expect(html(session.doc)).toBe('<p>Saved by them</p>')
+    expect(clients(session.doc)).toEqual(clients(theirs))
+    session.release()
+  })
+
+  test('when the state cannot be created, the seed is used', async () => {
+    const session = acquireYSession(TAB, IRI, options(vi.fn(() => true), { state: () => stateClient(undefined, 'failed') }))
+
+    await expect(session.ready).resolves.toBe('current')
     expect(html(session.doc)).toBe('<p>Hello</p>')
     session.release()
+  })
+
+  test('two windows opening together with no stored state seed the same document and do not double it', async () => {
+    const channel = createCoalescingChannel<YSyncData>()
+    const sessions = ['a', 'b'].map((name) => {
+      const tab = channel.tab(name)
+      const session = acquireYSession({}, IRI, options(tab.send, { others: () => true }))
+      tab.on((clientId, data) => session.sync.receive(clientId, data))
+      return session
+    })
+    await vi.advanceTimersByTimeAsync(5000)
+
+    expect(sessions.map(session => html(session.doc))).toEqual(['<p>Hello</p>', '<p>Hello</p>'])
+    sessions.forEach(session => session.release())
+  })
+
+  test.each([['known', true], ['not yet known', false]])('two windows starting together from a stored state older than the HTML, with their presence %s, are not joined by each other: the lowest applies the HTML and the other waits for it', async (_known, known) => {
+    const channel = createCoalescingChannel<YSyncData>()
+    const { stored } = storedFrom('<p>Hello</p>')
+    const sessions = ['a', 'b'].map((name) => {
+      const tab = channel.tab(name)
+      const session = acquireYSession({}, IRI, options(tab.send, { others: () => known, html: () => '<p>Hello</p><p>Typed</p>', state: () => stateClient(stored) }))
+      tab.on((clientId, data) => session.sync.receive(clientId, data))
+      return session
+    })
+    await vi.advanceTimersByTimeAsync(3000)
+
+    const starts = await Promise.all(sessions.map(session => session.ready))
+    const lowest = sessions[0]!.doc.clientID < sessions[1]!.doc.clientID ? 0 : 1
+    expect(starts[lowest]).toBe('stale')
+    expect(starts[1 - lowest]).toBe('joined')
+    sessions.forEach(session => session.release())
   })
 
   test('the first message already holds the stored state, so a window that has it answers with only what is new', async () => {
@@ -165,6 +285,28 @@ describe('starting from the stored Yjs state (api-components-bundle#563)', () =>
 
     await expect(second.ready).resolves.toBe('joined')
     expect(html(second.doc)).toBe('<p>Hello</p><p>Unsaved</p>')
+    expect(html(first.doc)).toBe('<p>Hello</p><p>Unsaved</p>')
+    first.release()
+    second.release()
+  })
+
+  test('a stored state older than the HTML waits for a window that already has the newer HTML, even before its presence arrives, so the change is never applied twice', async () => {
+    const channel = createCoalescingChannel<YSyncData>()
+    const { stored } = storedFrom('<p>Hello</p>')
+    const tabA = channel.tab('a')
+    const first = acquireYSession({}, IRI, options(tabA.send, { html: () => '<p>Hello</p>', state: () => stateClient(stored) }))
+    tabA.on((clientId, data) => first.sync.receive(clientId, data))
+    await vi.advanceTimersByTimeAsync(2000)
+    appendParagraph(first.doc, 'Outside')
+    await vi.advanceTimersByTimeAsync(2000)
+
+    const tabB = channel.tab('b')
+    const second = acquireYSession({}, IRI, options(tabB.send, { html: () => '<p>Hello</p><p>Outside</p>', state: () => stateClient(stored) }))
+    tabB.on((clientId, data) => second.sync.receive(clientId, data))
+    await vi.advanceTimersByTimeAsync(3000)
+
+    await expect(second.ready).resolves.toBe('joined')
+    expect([html(first.doc), html(second.doc)]).toEqual(['<p>Hello</p><p>Outside</p>', '<p>Hello</p><p>Outside</p>'])
     first.release()
     second.release()
   })

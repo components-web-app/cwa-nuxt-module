@@ -1,16 +1,19 @@
 import * as Y from 'yjs'
+import { createDocument } from '@tiptap/core'
 import type { ParseOptions, Schema } from '@tiptap/pm/model'
+import { yXmlFragmentToProseMirrorRootNode } from '@tiptap/y-tiptap'
 import { createYSync, decodeUpdate } from './y-sync'
 import type { YSyncData } from './y-sync'
-import { joinOrSeed } from './y-seed'
+import { FIELD, seedUpdate } from './y-seed'
 import { htmlHash } from './y-state'
 import type { StoredCollaborationState } from './y-state'
 
-export type YSessionStart = 'loaded' | 'joined' | 'seeded'
+export type YSessionStart = 'joined' | 'current' | 'ahead' | 'stale'
 
 export interface YSessionState {
   load: () => Promise<StoredCollaborationState | undefined>
-  save: (html: string | null | undefined) => Promise<void>
+  create: (update: Uint8Array, html: string | null | undefined) => Promise<'created' | 'exists' | 'failed'>
+  save: (html: string | null | undefined) => Promise<boolean>
 }
 
 interface Session {
@@ -20,6 +23,10 @@ interface Session {
   ready: Promise<YSessionStart>
   refs: number
   closed: boolean
+  started: boolean
+  claimed: boolean
+  start: YSessionStart
+  closing?: ReturnType<typeof setTimeout>
 }
 
 export interface YSessionOptions {
@@ -33,21 +40,49 @@ export interface YSessionOptions {
 }
 
 const STORED = Symbol('y-session-stored')
+const LINGER_MS = 3000
 const tabs = new WeakMap<object, Map<string, Session>>()
 
-async function begin(session: Session, { others, html, schema, parseOptions }: YSessionOptions): Promise<YSessionStart> {
-  const loaded = html()
+function decoded(stored: StoredCollaborationState | undefined) {
+  return stored && { update: decodeUpdate(stored.state), htmlHash: stored.htmlHash }
+}
+
+async function startingState(session: Session, loaded: string | null | undefined, { schema, parseOptions }: YSessionOptions) {
   const stored = await session.state.load()
-  if (session.closed) {
-    return 'seeded'
+  if (stored || session.closed) {
+    return decoded(stored)
   }
-  if (stored && stored.htmlHash === htmlHash(loaded)) {
-    Y.applyUpdate(session.doc, decodeUpdate(stored.state), STORED)
-    session.sync.start()
-    return 'loaded'
+  const update = seedUpdate(loaded, schema, undefined, parseOptions)
+  const created = await session.state.create(update, loaded)
+  const winner = created === 'exists' && !session.closed ? await session.state.load() : undefined
+  return decoded(winner) ?? { update, htmlHash: htmlHash(loaded) }
+}
+
+async function begin(session: Session, options: YSessionOptions): Promise<YSessionStart> {
+  const { others, html, schema, parseOptions } = options
+  const start = await startingState(session, html(), options)
+  if (session.closed || !start) {
+    return 'current'
   }
+  Y.applyUpdate(session.doc, start.update, STORED)
+  const started = Y.encodeStateVector(session.doc).join()
+  const brought = () => Y.encodeStateVector(session.doc).join() !== started
   const joined = session.sync.start()
-  return joinOrSeed(session.doc, others() ? joined : Promise.resolve(false), html(), schema, parseOptions)
+  const waited = others()
+  if (waited && await joined && brought()) {
+    return 'joined'
+  }
+  const now = html()
+  if (yXmlFragmentToProseMirrorRootNode(session.doc.getXmlFragment(FIELD), schema).eq(createDocument(now || '', schema, parseOptions))) {
+    return 'current'
+  }
+  if (start.htmlHash === htmlHash(now)) {
+    return 'ahead'
+  }
+  if (!waited && await joined && brought()) {
+    return 'joined'
+  }
+  return session.sync.isSaver(session.sync.peers().map(peer => peer.clientId)) ? 'stale' : 'joined'
 }
 
 export function acquireYSession(tab: object, key: string, options: YSessionOptions) {
@@ -56,12 +91,27 @@ export function acquireYSession(tab: object, key: string, options: YSessionOptio
   let session = sessions.get(key)
   if (!session) {
     const doc = new Y.Doc()
-    const created: Session = { doc, sync: createYSync(doc, { send: options.send, joinMs: options.joinMs }), state: options.state(doc), refs: 0, closed: false, ready: Promise.resolve('seeded') }
-    created.ready = begin(created, options)
+    const state = options.state(doc)
+    const sync = createYSync(doc, {
+      send: options.send,
+      joinMs: options.joinMs,
+      store: () => state.save(options.html()),
+      load: async () => {
+        const stored = await state.load()
+        return stored && decodeUpdate(stored.state)
+      },
+    })
+    const created: Session = { doc, sync, state, refs: 0, closed: false, started: false, claimed: false, start: 'current', ready: Promise.resolve('current') }
+    created.ready = begin(created, options).then((start) => {
+      created.started = true
+      created.start = start
+      return start
+    })
     session = created
     sessions.set(key, session)
   }
   const held = session
+  clearTimeout(held.closing)
   held.refs++
   let released = false
   return {
@@ -69,18 +119,29 @@ export function acquireYSession(tab: object, key: string, options: YSessionOptio
     sync: held.sync,
     state: held.state,
     ready: held.ready,
+    claim(): YSessionStart {
+      if (held.claimed) {
+        return 'joined'
+      }
+      held.claimed = true
+      return held.start
+    },
     release() {
       if (released) {
         return
       }
       released = true
       held.refs--
-      if (!held.refs) {
+      if (held.refs) {
+        return
+      }
+      const close = () => {
         held.closed = true
         sessions.delete(key)
         held.sync.stop()
         held.doc.destroy()
       }
+      held.started ? held.closing = setTimeout(close, LINGER_MS) : close()
     },
   }
 }
