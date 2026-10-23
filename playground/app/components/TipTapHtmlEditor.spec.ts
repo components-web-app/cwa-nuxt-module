@@ -486,6 +486,21 @@ describe('TipTapHtmlEditor: edits that merge, over Yjs (#435)', () => {
     expect(saver.editor().getHTML()).toBe('<p>Hello AB</p>')
   })
 
+  test('the saver\'s save landing in a second editor of the same tab is its own, never applied over what another window typed meanwhile', async () => {
+    const [saver, other] = await pair('<p>Hello</p>')
+    const second = await mountEditor('<p>Hello</p>', { sameTabAs: saver })
+    saver.editor().commands.insertContentAt(6, ' A')
+    await vi.waitFor(() => expect(other.editor().getHTML()).toBe('<p>Hello A</p>'))
+    other.editor().commands.insertContentAt(8, 'B')
+    await vi.waitFor(() => expect(second.editor().getHTML()).toBe('<p>Hello AB</p>'))
+
+    saver.lastWrite.value = saver.tab.clientId
+    second.stored.value = '<p>Hello A</p>'
+    await wait(50)
+
+    expect([saver.editor().getHTML(), second.editor().getHTML(), other.editor().getHTML()]).toEqual(['<p>Hello AB</p>', '<p>Hello AB</p>', '<p>Hello AB</p>'])
+  })
+
   test('a second editor for the same resource in one tab, such as a preview, shares the document and never sends a goodbye for it', async () => {
     const first = await mountEditor('<p>Hello</p>')
     const preview = await mountEditor('<p>Hello</p>', { sameTabAs: first })
