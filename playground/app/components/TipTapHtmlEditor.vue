@@ -4,57 +4,62 @@
     :model="model"
     v-bind="focusListeners"
   >
-    <bubble-menu
-      class="bg-stone-700 text-stone-100 rounded overflow-hidden text-sm"
-      style="z-index: 760"
-      :append-to="appendToBody"
-      :options="{ strategy: 'fixed' }"
-      :editor="editor"
-      :update-delay="0"
-      @mousedown.prevent
-      @contextmenu.stop
+    <div
+      :key="editorKey"
+      class="contents"
     >
-      <BubbleMenuButton v-bind="buttonBubbleMenuProps('toggleHeading', 'heading', [{ level: 1 }])">
-        H1
-      </BubbleMenuButton>
-      <BubbleMenuButton v-bind="buttonBubbleMenuProps('toggleHeading', 'heading', [{ level: 2 }])">
-        H2
-      </BubbleMenuButton>
-      <BubbleMenuButton v-bind="buttonBubbleMenuProps('toggleBold', 'bold')">
-        Bold
-      </BubbleMenuButton>
-      <BubbleMenuButton v-bind="buttonBubbleMenuProps('toggleItalic', 'italic')">
-        Italic
-      </BubbleMenuButton>
-      <button
-        class="px-1.5 py-1 content-center items-center"
-        :class="[editor.isActive('link') ? 'bg-black text-white' : null]"
-        @click="showLinkManager"
+      <bubble-menu
+        class="bg-stone-700 text-stone-100 rounded overflow-hidden text-sm"
+        style="z-index: 760"
+        :append-to="appendToBody"
+        :options="{ strategy: 'fixed' }"
+        :editor="editor"
+        :update-delay="0"
+        @mousedown.prevent
+        @contextmenu.stop
       >
-        Link
-      </button>
-    </bubble-menu>
+        <BubbleMenuButton v-bind="buttonBubbleMenuProps('toggleHeading', 'heading', [{ level: 1 }])">
+          H1
+        </BubbleMenuButton>
+        <BubbleMenuButton v-bind="buttonBubbleMenuProps('toggleHeading', 'heading', [{ level: 2 }])">
+          H2
+        </BubbleMenuButton>
+        <BubbleMenuButton v-bind="buttonBubbleMenuProps('toggleBold', 'bold')">
+          Bold
+        </BubbleMenuButton>
+        <BubbleMenuButton v-bind="buttonBubbleMenuProps('toggleItalic', 'italic')">
+          Italic
+        </BubbleMenuButton>
+        <button
+          class="px-1.5 py-1 content-center items-center"
+          :class="[editor.isActive('link') ? 'bg-black text-white' : null]"
+          @click="showLinkManager"
+        >
+          Link
+        </button>
+      </bubble-menu>
 
-    <floating-menu
-      class="floating-menu bg-stone-200 text-stone-700 rounded overflow-hidden"
-      style="z-index: 760"
-      :append-to="appendToBody"
-      :options="{ strategy: 'fixed' }"
-      :editor="editor"
-      :update-delay="0"
-      @mousedown.prevent
-      @contextmenu.stop
-    >
-      <BubbleMenuButton v-bind="buttonBubbleMenuProps('toggleHeading', 'heading', [{ level: 1 }])">
-        H1
-      </BubbleMenuButton>
-      <BubbleMenuButton v-bind="buttonBubbleMenuProps('toggleHeading', 'heading', [{ level: 2 }])">
-        H2
-      </BubbleMenuButton>
-      <BubbleMenuButton v-bind="buttonBubbleMenuProps('toggleBulletList', 'bulletList')">
-        Bullet List
-      </BubbleMenuButton>
-    </floating-menu>
+      <floating-menu
+        class="floating-menu bg-stone-200 text-stone-700 rounded overflow-hidden"
+        style="z-index: 760"
+        :append-to="appendToBody"
+        :options="{ strategy: 'fixed' }"
+        :editor="editor"
+        :update-delay="0"
+        @mousedown.prevent
+        @contextmenu.stop
+      >
+        <BubbleMenuButton v-bind="buttonBubbleMenuProps('toggleHeading', 'heading', [{ level: 1 }])">
+          H1
+        </BubbleMenuButton>
+        <BubbleMenuButton v-bind="buttonBubbleMenuProps('toggleHeading', 'heading', [{ level: 2 }])">
+          H2
+        </BubbleMenuButton>
+        <BubbleMenuButton v-bind="buttonBubbleMenuProps('toggleBulletList', 'bulletList')">
+          Bullet List
+        </BubbleMenuButton>
+      </floating-menu>
+    </div>
     <editor-content :editor="editor" />
     <CwaUiRemoteChangeConflict
       v-if="remoteChange"
@@ -114,6 +119,7 @@ type Shared = { doc: Y.Doc, channel: ReturnType<typeof createCursorChannel> }
 type Caret = { from: number, to: number } | undefined
 
 const editor = shallowRef<Editor>()
+const editorKey = ref(0)
 const session = shallowRef<ReturnType<typeof acquireYSession>>()
 const ready = ref(false)
 const heard = ref(0)
@@ -235,6 +241,7 @@ function build(shared?: Shared, wantsFocus = false) {
     },
     editable: !!shared && !props.disabled,
   })
+  editorKey.value++
   previous && nextTick(() => previous.destroy())
 }
 
