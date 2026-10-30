@@ -40,14 +40,13 @@ vi.mock('./component-group-declarations', () => ({
 }))
 
 vi.mock('node:fs', () => {
-  return {
-    default: {
-      statSync: vi.fn(() => ({
-        isDirectory: vi.fn(() => true),
-      })),
-      readFileSync: vi.fn(() => ('{ "name": "@cwa/nuxt", "version": "1.0.0" }')),
-    },
+  const fs = {
+    statSync: vi.fn(() => ({
+      isDirectory: vi.fn(() => true),
+    })),
+    readFileSync: vi.fn(() => ('{ "name": "@cwa/nuxt", "version": "1.0.0" }')),
   }
+  return { ...fs, default: fs }
 })
 
 let moduleDefinitionCall: Parameters<typeof nuxtKit.defineNuxtModule>
