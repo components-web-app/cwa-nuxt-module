@@ -4,6 +4,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+- Dependencies updated to their latest versions, including pinia 4.1, `@pinia/nuxt` 1.0.3, the Nuxt SEO modules and `vuejs-confirm-dialog` 1.1, for the fast-uri, seroval, zod, qs and other advisories; `@nuxt/kit` and `@nuxt/schema` still accept 4.6.0 or later ([c5966b1a](https://github.com/components-web-app/cwa-nuxt-module/commit/c5966b1a))
+
 ## [2.0.0-alpha.30] - 2026-10-23
 
 - A model-bound field (`useCwaResourceModel`) whose Keep mine is chosen while its refused save (a 412) is still settling sends its value again; before, the model dropped it as a duplicate of the refused request and showed the stored value from before the typing, which the TipTap reference then applied, losing every admin's typing for a moment ([e75b4561](https://github.com/components-web-app/cwa-nuxt-module/commit/e75b4561), [#435](https://github.com/components-web-app/cwa-nuxt-module/issues/435))
