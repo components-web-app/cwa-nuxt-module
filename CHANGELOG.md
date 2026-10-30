@@ -4,6 +4,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+- An admin can select and move a page-data slot's component straight after navigating between pages that share a template; before, a component the manifest showed before the position's re-fetch landed was not counted as the position's, so its clicks missed the position and Move said "Nothing can be placed here" ([#445](https://github.com/components-web-app/cwa-nuxt-module/pull/445), [#443](https://github.com/components-web-app/cwa-nuxt-module/issues/443))
+
 ## [2.0.0-alpha.31] - 2026-10-30
 
 - Dependencies updated to their latest versions, including pinia 4.1, `@pinia/nuxt` 1.0.3, the Nuxt SEO modules and `vuejs-confirm-dialog` 1.1, for the fast-uri, seroval, zod, qs and other advisories; `@nuxt/kit` and `@nuxt/schema` still accept 4.6.0 or later ([c5966b1a](https://github.com/components-web-app/cwa-nuxt-module/commit/c5966b1a))
