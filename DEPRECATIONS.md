@@ -134,27 +134,22 @@ Until then a 404 is the normal answer, not a fault.
 
 ---
 
-## Remove when node-forge and braces publish fixes
+## Remove when `deepmerge` has a patched release
 
-### Ignored audit advisories in `pnpm-workspace.yaml`
+### The ignored audit advisory in `pnpm-workspace.yaml`
 
-`auditConfig.ignoreGhsas` ignores two high advisories that have **no patched
-release** (`first_patched_version` is null on both):
+`auditConfig.ignoreGhsas` ignores `GHSA-gcqx-w48m-w2h4` (low): deepmerge's
+`mergeObject()` allows prototype poisoning of returned objects. It has **no
+patched release**; 4.3.1, the latest, is vulnerable. It is reached only through
+`@rollup/plugin-node-resolve`, used by `nitropack` (Nuxt's build) and `unbuild`
+(`@nuxt/module-builder`), so it is build tooling and is not in a built app's
+server bundle. It is ignored by ID, not by lowering the audit level, so any new
+advisory still fails CI.
 
-- `GHSA-86w9-cpqp-85rv`: node-forge ≤ 1.4.0, RSA PKCS#1 v1.5 signature
-  verification. Reached only through `listhen`, the Nuxt dev server's HTTPS
-  certificate tooling.
-- `GHSA-vfj7-8cjw-p6xm`: braces ≤ 3.0.3, stack exhaustion on deeply nested
-  patterns. Reached only through `nitropack`'s build-time `globby`, matching
-  the app's own patterns.
+**Delete:** the ID (and `auditConfig` if it is empty).
 
-Neither is in a built app's server bundle. They are ignored by ID, not by
-lowering the audit level, so any new advisory still fails CI.
-
-**Delete:** the two IDs (and `auditConfig` if empty), and add an override in
-`overrides` instead if the fix is not picked up by a lockfile update.
-
-**When:** node-forge > 1.4.0 and braces > 3.0.3 are on npm.
+**When:** a patched deepmerge is on npm, or `@rollup/plugin-node-resolve` no
+longer depends on it; check with `pnpm audit` after removing it.
 
 ---
 

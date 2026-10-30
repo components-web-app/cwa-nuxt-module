@@ -4,6 +4,10 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+## [2.0.0-alpha.31] - 2026-10-30
+
+- Dependencies updated to their latest versions, including pinia 4.1, `@pinia/nuxt` 1.0.3, the Nuxt SEO modules and `vuejs-confirm-dialog` 1.1, for the fast-uri, seroval, zod, qs and other advisories; `@nuxt/kit` and `@nuxt/schema` still accept 4.6.0 or later ([c5966b1a](https://github.com/components-web-app/cwa-nuxt-module/commit/c5966b1a))
+
 ## [2.0.0-alpha.30] - 2026-10-23
 
 - A model-bound field (`useCwaResourceModel`) whose Keep mine is chosen while its refused save (a 412) is still settling sends its value again; before, the model dropped it as a duplicate of the refused request and showed the stored value from before the typing, which the TipTap reference then applied, losing every admin's typing for a moment ([e75b4561](https://github.com/components-web-app/cwa-nuxt-module/commit/e75b4561), [#435](https://github.com/components-web-app/cwa-nuxt-module/issues/435))
@@ -225,7 +229,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 - First tagged release of `@cwa/nuxt`; releases are now published from `v*` tags ([7c61b7c](https://github.com/components-web-app/cwa-nuxt-module/commit/7c61b7ce331ec4a0cb8e76951a5de2ff806ed07a))
 
-[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.30...HEAD
+[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.31...HEAD
+[2.0.0-alpha.31]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.30...v2.0.0-alpha.31
 [2.0.0-alpha.30]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.29...v2.0.0-alpha.30
 [2.0.0-alpha.29]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.28...v2.0.0-alpha.29
 [2.0.0-alpha.28]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.27...v2.0.0-alpha.28
