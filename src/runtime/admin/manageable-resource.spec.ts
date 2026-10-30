@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 
 import { describe, test, vi, expect, afterEach, beforeAll } from 'vitest'
-import { computed, nextTick, ref } from 'vue'
+import { computed, nextTick, ref, toRaw } from 'vue'
 import type { Mock } from '@vitest/spy'
 import * as vue from 'vue'
 import Cwa from '../cwa'
@@ -80,6 +80,7 @@ vi.mock('../cwa', () => {
           findAllPublishableIris: vi.fn(iri => ([iri])),
           getResource: vi.fn(() => undefined),
           getChildIris: vi.fn(() => []),
+          positionComponentIri: vi.fn(() => computed(() => undefined)),
         },
         resourcesManager: {
           addResourceEvent: ref(),
@@ -284,6 +285,32 @@ describe('ManageableResource Class', () => {
       if (callCount) {
         expect(instance.addClickEventListeners.mock.invocationCallOrder[0]).toBeGreaterThan(instance.removeClickEventListeners.mock.invocationCallOrder[0])
       }
+    })
+  })
+
+  describe('componentMountedListener for a dynamic position (#443)', () => {
+    test('a dynamic position whose manifest component mounts while the store still holds the previous page\'s component registers that component\'s element', async () => {
+      const position = '/_/component_positions/body'
+      const slotA = '/component/html_contents/article-a'
+      const articleB = '/component/html_contents/article-b'
+      const { instance, $cwa } = createManageableResource()
+      ;($cwa.resources as any).getChildIris.mockReturnValue([slotA])
+      ;($cwa.resources as any).positionComponentIri.mockImplementation((iri: string, depth?: number) => computed(() => (iri === position && depth === 0 ? articleB : undefined)))
+      instance.currentIri = ref(position)
+      instance.isIriInit = true
+      const previousElement = createDomElement(Node.ELEMENT_NODE)
+      instance.domElements.value = [previousElement]
+      const newElement = createDomElement(Node.ELEMENT_NODE)
+      instance.component.$el = newElement
+
+      instance.componentMountedListener(articleB)
+      await nextTick()
+
+      expect(toRaw(instance.domElements.value[0])).toBe(newElement)
+      expect(newElement.addEventListener).toHaveBeenCalledWith('click', expect.any(Function), false)
+      expect(previousElement.removeEventListener).toHaveBeenCalledWith('click', expect.any(Function))
+      expect($cwa.admin.eventBus.emit).toHaveBeenCalledWith('componentMounted', position)
+      expect(($cwa.resources as any).positionComponentIri).toHaveBeenCalledWith(position, 0)
     })
   })
 

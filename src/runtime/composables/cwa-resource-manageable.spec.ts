@@ -43,6 +43,7 @@ vi.mock('vue', async () => {
   const mod = await vi.importActual<typeof import('vue')>('vue')
   return {
     ...mod,
+    inject: vi.fn((_key, fallback) => fallback),
     onMounted: vi.fn(fn => fn()),
     onBeforeUnmount: vi.fn(fn => fn()),
     watch: vi.fn((source, cb, opts) => {
@@ -127,7 +128,7 @@ describe('CWA resource manageable composable', () => {
     resolveImport()
     await flushPromises()
 
-    expect(ManageableResource).toHaveBeenCalledWith(mockProxy, mockCwa, ops)
+    expect(ManageableResource).toHaveBeenCalledWith(mockProxy, mockCwa, ops, 0)
     expect(initSpy).toHaveBeenCalledWith(mockIri)
     expect(mockCwa.admin.eventBus.emit).toHaveBeenCalledWith('componentMounted', mockIri.value)
     expect(manager.value?.init).toBe(initSpy)
@@ -183,6 +184,18 @@ describe('CWA resource manageable composable', () => {
     errorSpy.mockRestore()
   })
 
+  test('hands the ManageableResource the page depth its component renders at', () => {
+    const mockProxy = { mock: 'proxy' }
+    vi.spyOn(vue, 'getCurrentInstance').mockReturnValue({ proxy: mockProxy })
+    vi.mocked(vue.inject).mockImplementationOnce((key, fallback) => (key === 'cwa-page-own-depth' ? 2 : fallback))
+
+    const ops = ref({})
+    useCwaResourceManageable(mockIri, ops)
+
+    expect(vue.inject).toHaveBeenCalledWith('cwa-page-own-depth', 0)
+    expect(ManageableResource).toHaveBeenCalledWith(mockProxy, mockCwa, ops, 2)
+  })
+
   test('should show message IF current instance does not have a proxy', () => {
     vi.spyOn(vue, 'getCurrentInstance').mockReturnValue({ mock: true })
     expect(() => useCwaResourceManageable(mockIri)).toThrow('Cannot initialise manager for resource. Instance is not defined')
@@ -196,7 +209,7 @@ describe('CWA resource manageable composable', () => {
     const ops = { op: 'op' }
     useCwaResourceManageable(mockIri, ops)
 
-    expect(ManageableResource).toHaveBeenCalledWith(mockProxy, mockCwa, ops)
+    expect(ManageableResource).toHaveBeenCalledWith(mockProxy, mockCwa, ops, 0)
   })
 
   test('ManageableResource should init IF iri is passed', () => {
