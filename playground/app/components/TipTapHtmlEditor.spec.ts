@@ -653,6 +653,19 @@ describe('TipTapHtmlEditor: the caret when the editor is rebuilt (#435)', () => 
     expect(Math.max(...counts)).toBe(1)
   })
 
+  test('after selecting rebuilds the editor for the shared session, the live editor still has the bubble and floating menus', async () => {
+    const { wrapper, editor } = await mountEditor('<p>Hello there</p>', { disabled: true })
+    const readOnly = editor()
+
+    await wrapper.setProps({ disabled: false })
+    await vi.waitFor(() => expect(editor().isEditable).toBe(true))
+    await nextTick()
+
+    expect(editor()).not.toBe(readOnly)
+    const keys = editor().state.plugins.map(plugin => (plugin as unknown as { key: string }).key)
+    expect(keys.filter(key => /^(bubbleMenu|floatingMenu)\$/.test(key)).map(key => key.replace(/\$.*/, '')).sort()).toEqual(['bubbleMenu', 'floatingMenu'])
+  })
+
   test('a menu opened after selecting keeps focus when the editor becomes editable, so it stays open', async () => {
     const { wrapper, editor } = await mountEditor('<p>Hello there</p>', { disabled: true })
     document.getSelection()!.collapse(editor().view.dom.querySelector('p')!.firstChild!, 5)
