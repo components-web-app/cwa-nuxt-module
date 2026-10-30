@@ -134,6 +134,25 @@ Until then a 404 is the normal answer, not a fault.
 
 ---
 
+## Remove when `deepmerge` has a patched release
+
+### The ignored audit advisory in `pnpm-workspace.yaml`
+
+`auditConfig.ignoreGhsas` ignores `GHSA-gcqx-w48m-w2h4` (low): deepmerge's
+`mergeObject()` allows prototype poisoning of returned objects. It has **no
+patched release**; 4.3.1, the latest, is vulnerable. It is reached only through
+`@rollup/plugin-node-resolve`, used by `nitropack` (Nuxt's build) and `unbuild`
+(`@nuxt/module-builder`), so it is build tooling and is not in a built app's
+server bundle. It is ignored by ID, not by lowering the audit level, so any new
+advisory still fails CI.
+
+**Delete:** the ID (and `auditConfig` if it is empty).
+
+**When:** a patched deepmerge is on npm, or `@rollup/plugin-node-resolve` no
+longer depends on it; check with `pnpm audit` after removing it.
+
+---
+
 ## Remove when `@tailwindcss/typography` takes the fixed major
 
 ### The `@tailwindcss/typography>postcss-selector-parser` override in `pnpm-workspace.yaml`
