@@ -4,6 +4,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+- Changing a user's email in the admin asks for your own current password and sends it as `oldPassword`; a wrong or missing password is shown on the field. Needs api-components-bundle 2.0.0-alpha.40, which also sends the email-change confirmation to the new address ([#451](https://github.com/components-web-app/cwa-nuxt-module/pull/451), [#449](https://github.com/components-web-app/cwa-nuxt-module/issues/449))
+
 ## [2.0.0-alpha.31] - 2026-10-30
 
 - Dependencies updated to their latest versions, including pinia 4.1, `@pinia/nuxt` 1.0.3, the Nuxt SEO modules and `vuejs-confirm-dialog` 1.1, for the fast-uri, seroval, zod, qs and other advisories; `@nuxt/kit` and `@nuxt/schema` still accept 4.6.0 or later ([c5966b1a](https://github.com/components-web-app/cwa-nuxt-module/commit/c5966b1a))
