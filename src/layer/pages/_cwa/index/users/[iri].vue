@@ -23,6 +23,24 @@
               type="email"
             />
           </div>
+          <template v-if="isChangingEmail">
+            <div>
+              <ModalInput
+                v-model="oldPassword"
+                label="Your current password"
+                type="password"
+                placeholder="***"
+                autocomplete="current-password"
+              />
+            </div>
+            <p
+              v-if="oldPasswordError"
+              data-old-password-error
+              class="cwa:mb-4 cwa:text-xs cwa:text-red-400"
+            >
+              {{ oldPasswordError }}
+            </p>
+          </template>
           <div
             v-if="!!resource.newEmailAddress"
             class="cwa:mb-4 cwa:text-sm"
@@ -116,7 +134,7 @@
               <CwaUiFormButton
                 color="dark"
                 :disabled="isUpdating"
-                @click="saveResource(!isAdding)"
+                @click="save(!isAdding)"
               >
                 {{ isAdding ? 'Add Now' : 'Save & Close' }}
               </CwaUiFormButton>
@@ -125,7 +143,7 @@
               <CwaUiFormButton
                 color="blue"
                 :disabled="isUpdating"
-                @click="() => saveResource(isAdding)"
+                @click="() => save(isAdding)"
               >
                 {{ isAdding ? 'Add & Close' : 'Save' }}
               </CwaUiFormButton>
@@ -158,7 +176,7 @@
               <CwaUiFormButton
                 color="dark"
                 :disabled="isUpdating"
-                @click="saveResource(true)"
+                @click="save(true)"
               >
                 Save & Close
               </CwaUiFormButton>
@@ -167,7 +185,7 @@
               <CwaUiFormButton
                 color="blue"
                 :disabled="isUpdating"
-                @click="() => saveResource(false)"
+                @click="() => save(false)"
               >
                 Save
               </CwaUiFormButton>
@@ -251,7 +269,7 @@ const emailAddress = computed({
   },
 })
 
-const { isAdding, isLoading, isUpdating, localResourceData, formatDate, deleteResource, saveResource, saveTitle, resource } = useItemPage({
+const { isAdding, isLoading, isUpdating, localResourceData, formatDate, deleteResource, saveResource, resource } = useItemPage({
   createEndpoint: '/users',
   emit,
   resourceType: 'User',
@@ -268,6 +286,42 @@ const { isAdding, isLoading, isUpdating, localResourceData, formatDate, deleteRe
     return true
   },
 })
+
+const oldPassword = ref<string>()
+
+const isChangingEmail = computed(() => {
+  const newEmailAddress = localResourceData.value?.newEmailAddress
+  return !!newEmailAddress && newEmailAddress !== resource.value?.newEmailAddress
+})
+
+const oldPasswordError = computed(() => {
+  const iri = resource.value?.['@id']
+  for (const error of $cwa.resourcesManager.errors) {
+    if (error.event?.endpoint !== iri) {
+      continue
+    }
+    const violation = error.violations?.find(({ property }) => property === 'oldPassword')
+    if (violation) {
+      return violation.message
+    }
+  }
+  return undefined
+})
+
+async function save(close = false) {
+  const savedResource = await saveResource(close, isChangingEmail.value && oldPassword.value ? { oldPassword: oldPassword.value } : undefined)
+  if (savedResource) {
+    oldPassword.value = undefined
+  }
+  return savedResource
+}
+
+function saveTitle() {
+  if (isAdding.value) {
+    return
+  }
+  return save()
+}
 
 const roleOptions: SelectOption[] = [
   {
