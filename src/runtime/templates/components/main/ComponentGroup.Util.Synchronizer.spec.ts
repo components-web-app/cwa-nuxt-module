@@ -51,8 +51,12 @@ function createGroupSynchronizer() {
       }
     }),
   }
+  const signedIn = ref(false)
+  const roles = ref<string[]>(['ROLE_ADMIN'])
   const mockAuth = {
-    signedIn: ref(false),
+    signedIn,
+    roles,
+    isAdmin: computed(() => signedIn.value && roles.value.includes('ROLE_ADMIN')),
   }
   const mockFetchResource = vi.fn()
   const mockGetComponentMetadata = vi.fn()
@@ -133,6 +137,58 @@ describe('Group synchronizer', () => {
 
     expect(resourcesManager.createResource).not.toHaveBeenCalled()
     expect(resourcesManager.updateResource).not.toHaveBeenCalled()
+  })
+
+  describe('a signed-in non-admin (#448)', () => {
+    function signedInNonAdminWithMissingAndOutOfSyncGroups() {
+      const context = createGroupSynchronizer()
+      context.auth.roles.value = ['ROLE_USER']
+      context.auth.signedIn.value = true
+      createSyncWatcher(context.groupSynchronizer, { resource: null, location: '/component/missing-location' })
+      createSyncWatcher(context.groupSynchronizer, {
+        resource: {
+          data: { '@id': '/_/component_groups/out-of-sync', 'allowedComponents': ['/component/a'] },
+          apiState: { status: CwaResourceApiStatuses.SUCCESS },
+        },
+        maxComponents: 3,
+      })
+      return context
+    }
+
+    test('the synchroniser does not create or update a component group for a signed-in non-admin', async () => {
+      const { resourcesManager, fetchResource } = signedInNonAdminWithMissingAndOutOfSyncGroups()
+
+      await flushPromises()
+
+      expect(resourcesManager.createResource).not.toHaveBeenCalled()
+      expect(resourcesManager.updateResource).not.toHaveBeenCalled()
+      expect(fetchResource).not.toHaveBeenCalled()
+    })
+
+    test('the synchroniser creates and updates the groups once the user becomes an admin', async () => {
+      const { auth, resourcesManager } = signedInNonAdminWithMissingAndOutOfSyncGroups()
+      await flushPromises()
+
+      auth.roles.value = ['ROLE_USER', 'ROLE_ADMIN']
+      await flushPromises()
+
+      expect(resourcesManager.createResource).toHaveBeenCalledWith({
+        endpoint: '/_/component_groups',
+        data: {
+          reference: 'mockReference',
+          location: '/component/missing-location',
+          allowedComponents: ['/component/a', '/component/b', '/component/c'],
+          components: ['/component/missing-location'],
+        },
+      })
+      expect(resourcesManager.updateResource).toHaveBeenCalledWith({
+        endpoint: '/_/component_groups/out-of-sync',
+        data: {
+          allowedComponents: ['/component/a', '/component/b', '/component/c'],
+          maxComponents: 3,
+        },
+      })
+    })
   })
 
   test('should create resource with additional location info IF loading is not in progress, user is signed in, resource does not exist', async () => {

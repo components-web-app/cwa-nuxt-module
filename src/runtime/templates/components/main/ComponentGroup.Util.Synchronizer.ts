@@ -51,10 +51,9 @@ export class ComponentGroupUtilSynchronizer {
 
   private async createComponentGroupWatchHandler(
     { allowedComponents, maxComponents, location, fullReference }: SyncWatcherOps,
-    [signedIn, componentGroupResource]: [boolean, CwaCurrentResourceInterface | undefined],
+    [isAdmin, componentGroupResource]: [boolean, CwaCurrentResourceInterface | undefined],
   ) {
-    // not signed in? we shouldn't have permissions anyway to do anything in creating new component groups
-    if (!signedIn) {
+    if (!isAdmin) {
       return
     }
     // if the component groups exists, we can check if the allowed components are in sync
@@ -132,17 +131,17 @@ export class ComponentGroupUtilSynchronizer {
   public createSyncWatcher(ops: SyncWatcherOps) {
     this.watchStopHandle = watch(
       [
-        this.auth.signedIn,
+        this.auth.isAdmin,
         ops.resource,
       ],
       async (
         [
-          currentSignedIn,
+          currentIsAdmin,
           currentResource,
         ],
       ) => {
         await this.$cwa.addUniquePromise('component_group_sync', `${ops.fullReference.value}-${ops.location}`, async () => {
-          await this.createComponentGroupWatchHandler(ops, [currentSignedIn, currentResource])
+          await this.createComponentGroupWatchHandler(ops, [currentIsAdmin, currentResource])
         })
       },
       {
