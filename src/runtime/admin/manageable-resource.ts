@@ -44,6 +44,7 @@ export default class ManageableResource {
     private readonly component: ComponentPublicInstance,
     private readonly $cwa: Cwa,
     private readonly ops: ManageableResourceOps,
+    private readonly pageDepth: number = 0,
   ) {
     this.tabResolver = new ManagerTabsResolver()
     this.componentMountedListener = this.componentMountedListener.bind(this)
@@ -145,7 +146,11 @@ export default class ManageableResource {
       return
     }
 
-    const childIris = this.childIris.value
+    const childIris = [...this.childIris.value]
+    const renderedIri = this.$cwa.resources.positionComponentIri(currentIri, this.pageDepth).value
+    if (renderedIri) {
+      childIris.push(renderedIri)
+    }
     const iris: string[] = []
     if (iri.endsWith('_placeholder')) {
       iris.push(iri)

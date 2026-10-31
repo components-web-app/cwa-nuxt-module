@@ -1,5 +1,6 @@
 import {
   getCurrentInstance,
+  inject,
   onBeforeUnmount,
   onMounted,
   ref,
@@ -26,6 +27,7 @@ export const useCwaResourceManageable = (iri: Ref<string | undefined>, ops?: Man
   }
   const $cwa = useCwa()
   const managerOps = ops || ref({})
+  const pageDepth = inject<number>('cwa-page-own-depth', 0)
 
   const manageableResource = shallowRef<ManageableResource>()
   const isAdmin = $cwa.auth.isAdmin
@@ -51,7 +53,7 @@ export const useCwaResourceManageable = (iri: Ref<string | undefined>, ops?: Man
     if (!adminActive) {
       return
     }
-    manageableResource.value ??= new ManageableResourceClass(useProxy, $cwa, managerOps)
+    manageableResource.value ??= new ManageableResourceClass(useProxy, $cwa, managerOps, pageDepth)
     manageableResource.value.init(iri)
     iri.value && $cwa.admin.eventBus.emit('componentMounted', iri.value)
   }
