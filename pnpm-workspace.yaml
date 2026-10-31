@@ -18,3 +18,5 @@ overrides:
 auditConfig:
   ignoreGhsas:
     - GHSA-gcqx-w48m-w2h4
+    - GHSA-g3hv-75wg-m249
+    - GHSA-3g3m-2fjr-6pw4

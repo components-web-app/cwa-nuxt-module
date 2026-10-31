@@ -4,6 +4,13 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+## [2.0.0-alpha.32] - 2026-10-31
+
+- Changing a user's email in the admin asks for your own current password and sends it as `oldPassword`; a wrong or missing password is shown on the field. Needs api-components-bundle 2.0.0-alpha.40, which also sends the email-change confirmation to the new address ([#451](https://github.com/components-web-app/cwa-nuxt-module/pull/451), [#449](https://github.com/components-web-app/cwa-nuxt-module/issues/449))
+- The component group synchroniser only creates or updates groups for an admin; a signed-in non-admin's page load no longer sends writes that api-components-bundle#569 refuses with a 403 ([#450](https://github.com/components-web-app/cwa-nuxt-module/pull/450), [#448](https://github.com/components-web-app/cwa-nuxt-module/issues/448))
+- An admin can select and move a page-data slot's component straight after navigating between pages that share a template; before, a component the manifest showed before the position's re-fetch landed was not counted as the position's, so its clicks missed the position and Move said "Nothing can be placed here" ([#445](https://github.com/components-web-app/cwa-nuxt-module/pull/445), [#443](https://github.com/components-web-app/cwa-nuxt-module/issues/443))
+- Dependencies updated to their latest versions, including set-cookie-parser 3.2.2 ([d83192bb](https://github.com/components-web-app/cwa-nuxt-module/commit/d83192bb))
+
 ## [2.0.0-alpha.31] - 2026-10-30
 
 - Dependencies updated to their latest versions, including pinia 4.1, `@pinia/nuxt` 1.0.3, the Nuxt SEO modules and `vuejs-confirm-dialog` 1.1, for the fast-uri, seroval, zod, qs and other advisories; `@nuxt/kit` and `@nuxt/schema` still accept 4.6.0 or later ([c5966b1a](https://github.com/components-web-app/cwa-nuxt-module/commit/c5966b1a))
@@ -229,7 +236,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 - First tagged release of `@cwa/nuxt`; releases are now published from `v*` tags ([7c61b7c](https://github.com/components-web-app/cwa-nuxt-module/commit/7c61b7ce331ec4a0cb8e76951a5de2ff806ed07a))
 
-[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.31...HEAD
+[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.32...HEAD
+[2.0.0-alpha.32]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.31...v2.0.0-alpha.32
 [2.0.0-alpha.31]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.30...v2.0.0-alpha.31
 [2.0.0-alpha.30]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.29...v2.0.0-alpha.30
 [2.0.0-alpha.29]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.28...v2.0.0-alpha.29

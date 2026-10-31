@@ -134,6 +134,26 @@ Until then a 404 is the normal answer, not a fault.
 
 ---
 
+## Remove when Nuxt's build tooling takes minimatch 11 and glob 14
+
+### The ignored minimatch and glob advisories in `pnpm-workspace.yaml`
+
+`auditConfig.ignoreGhsas` ignores `GHSA-g3hv-75wg-m249` (moderate, minimatch
+`<11.0.1`, globparts amplification) and `GHSA-3g3m-2fjr-6pw4` (moderate, glob
+`>=9.0.0 <=14.0.1`, AbortSignal bypass). The fixes are only in minimatch 11 and
+glob 14; no older major was patched. The tree holds minimatch 3, 5, 9 and 10 and
+glob 10, 11 and 13, each required by a different package's range (eslint,
+copyfiles, archiver through nitropack, workbox-build through `@vite-pwa/nuxt`,
+`@vercel/nft`), so neither dedupes to one version and an override would force
+those packages onto a major they do not support. Every path is build, test or
+lint tooling; nothing in `src/runtime` or `src/layer` imports either.
+
+**Delete:** both IDs.
+
+**When:** `pnpm audit` passes without them after `pnpm up --latest`.
+
+---
+
 ## Remove when `deepmerge` has a patched release
 
 ### The ignored audit advisory in `pnpm-workspace.yaml`
