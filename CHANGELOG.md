@@ -4,6 +4,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+- The component group synchroniser only creates or updates groups for an admin; a signed-in non-admin's page load no longer sends writes that api-components-bundle#569 refuses with a 403 ([#450](https://github.com/components-web-app/cwa-nuxt-module/pull/450), [#448](https://github.com/components-web-app/cwa-nuxt-module/issues/448))
+
 ## [2.0.0-alpha.31] - 2026-10-30
 
 - Dependencies updated to their latest versions, including pinia 4.1, `@pinia/nuxt` 1.0.3, the Nuxt SEO modules and `vuejs-confirm-dialog` 1.1, for the fast-uri, seroval, zod, qs and other advisories; `@nuxt/kit` and `@nuxt/schema` still accept 4.6.0 or later ([c5966b1a](https://github.com/components-web-app/cwa-nuxt-module/commit/c5966b1a))
