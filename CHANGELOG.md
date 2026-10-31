@@ -4,8 +4,10 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+- The component group synchroniser only creates or updates groups for an admin; a signed-in non-admin's page load no longer sends writes that api-components-bundle#569 refuses with a 403 ([#450](https://github.com/components-web-app/cwa-nuxt-module/pull/450), [#448](https://github.com/components-web-app/cwa-nuxt-module/issues/448))
 - An admin can select and move a page-data slot's component straight after navigating between pages that share a template; before, a component the manifest showed before the position's re-fetch landed was not counted as the position's, so its clicks missed the position and Move said "Nothing can be placed here" ([#445](https://github.com/components-web-app/cwa-nuxt-module/pull/445), [#443](https://github.com/components-web-app/cwa-nuxt-module/issues/443))
 - Dependencies updated to their latest versions, including set-cookie-parser 3.2.2 ([d83192bb](https://github.com/components-web-app/cwa-nuxt-module/commit/d83192bb))
+
 
 ## [2.0.0-alpha.31] - 2026-10-30
 
