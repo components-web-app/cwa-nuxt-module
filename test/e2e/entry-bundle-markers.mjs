@@ -8,7 +8,7 @@ const outputDir = resolve(here, '../../playground/.output')
 const manifestPath = resolve(outputDir, 'server/chunks/virtual/precomputed.mjs')
 const chunkDir = resolve(outputDir, 'public/_nuxt')
 
-const gzipBudget = 163830
+const gzipBudget = 164040
 
 const forbidden = [
   { marker: 'Invalid DateTime', source: 'luxon' },
@@ -31,6 +31,7 @@ const forbidden = [
   { marker: 'remote-change-accept', source: 'ui/RemoteChangeConflict.vue' },
   { marker: 'path:`/kit`', source: 'playground/app/pages/kit.vue, which is dev only' },
   { marker: 'cwa-fullscreen-dialog', source: 'core/ui/Toaster.vue' },
+  { marker: 'The request could not be sent.', source: 'admin/field-states.ts' },
 ]
 
 async function readEntryChunks() {

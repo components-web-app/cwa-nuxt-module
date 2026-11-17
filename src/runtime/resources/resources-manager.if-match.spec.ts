@@ -385,3 +385,89 @@ describe('ResourcesManager: optimistic concurrency with If-Match (api-components
     expect(api).toHaveBeenCalledOnce()
   })
 })
+
+describe('one save in flight per field, with its state in the store (#458)', () => {
+  const debounced = () => new Promise(resolve => setTimeout(resolve, 20))
+
+  function edit(iri: Ref<string | undefined>, property: string) {
+    let field!: ReturnType<typeof useCwaResourceModel<string>>
+    mounted.push(mount(defineComponent({
+      setup() {
+        field = useCwaResourceModel<string>(iri, property, { debounceTime: 0 })
+        return () => null
+      },
+    })))
+    return field
+  }
+
+  test('typing while the first save of a live component is in flight sends the newest text next, to the draft that save created, and the field\'s state follows it', async () => {
+    const { seed, api, sent, store, select, resourceStackManager } = setup()
+    seed({ '@id': LIVE, '@type': 'Title', 'title': 'live', '_metadata': { persisted: true, publishable: { published: true } } })
+    select(LIVE)
+    let answerFirst!: (resource: CwaResource) => void
+    api.mockImplementationOnce(() => new Promise((resolve) => {
+      answerFirst = resolve
+    }))
+    api.mockImplementationOnce((_path: string, options: { body: object }) => Promise.resolve({ '@id': DRAFT, '@type': 'Title', 'publishedResource': LIVE, ...options.body, '_metadata': { persisted: true, publishable: { published: false } } }))
+    const field = edit(resourceStackManager.currentIri as Ref<string | undefined>, 'title')
+
+    field.model.value = 'a'
+    await vi.waitFor(() => expect(api).toHaveBeenCalledOnce())
+    field.model.value = 'ab'
+    await debounced()
+    field.model.value = 'abc'
+    await debounced()
+    expect(api).toHaveBeenCalledOnce()
+
+    answerFirst({ '@id': DRAFT, '@type': 'Title', 'title': 'a', 'publishedResource': LIVE, '_metadata': { persisted: true, publishable: { published: false } } })
+    await vi.waitFor(() => expect(api).toHaveBeenCalledTimes(2))
+    await flushPromises()
+
+    expect(sent().map(({ path, body }) => ({ path, body }))).toStrictEqual([
+      { path: LIVE, body: { title: 'a' } },
+      { path: DRAFT, body: { title: 'abc' } },
+    ])
+    await vi.waitFor(() => expect(store.current.byId[DRAFT]?.fieldStates?.title?.status).toBe('saved'))
+    expect(store.current.byId[LIVE]?.fieldStates?.title).toBeUndefined()
+  })
+
+  test('a publish while a follow-up is queued waits for it, so what was typed is published', async () => {
+    const { seed, api, sent, resourcesManager } = setup()
+    seed({ '@id': TITLE, '@type': 'Title', 'title': 'old', '_metadata': { persisted: true } })
+    let answerFirst!: (resource: CwaResource) => void
+    api.mockImplementationOnce(() => new Promise((resolve) => {
+      answerFirst = resolve
+    }))
+    api.mockImplementation((path: string, options: { body: object }) => Promise.resolve({ '@id': path, '@type': 'Title', 'title': 'ab', ...options.body, '_metadata': { persisted: true } }))
+    const field = edit(ref(TITLE), 'title')
+
+    field.model.value = 'a'
+    await vi.waitFor(() => expect(api).toHaveBeenCalledOnce())
+    field.model.value = 'ab'
+    await debounced()
+    expect(api).toHaveBeenCalledOnce()
+    const publishing = resourcesManager.updateResource({ endpoint: TITLE, data: { publishedAt: 'now' } })
+    await flushPromises()
+    answerFirst({ '@id': TITLE, '@type': 'Title', 'title': 'a', '_metadata': { persisted: true } })
+    await publishing
+
+    expect(sent().map(({ body }) => body)).toStrictEqual([{ title: 'a' }, { title: 'ab' }, { publishedAt: 'now' }])
+  })
+
+  test('one field\'s failed save keeps its error when another field of the same resource saves', async () => {
+    const { seed, api, store } = setup()
+    seed({ '@id': TITLE, '@type': 'Title', 'title': 'old', 'subtitle': 'old', '_metadata': { persisted: true } })
+    api.mockRejectedValueOnce(Object.assign(new Error('Server Error'), { statusCode: 500, data: { detail: 'Boom' } }))
+    api.mockImplementation((path: string, options: { body: object }) => Promise.resolve({ ...store.current.byId[path]?.data, ...options.body }))
+    const title = edit(ref(TITLE), 'title')
+    const subtitle = edit(ref(TITLE), 'subtitle')
+
+    title.model.value = 'mine'
+    await vi.waitFor(() => expect(title.state.value.status).toBe('error'))
+    subtitle.model.value = 'mine too'
+    await vi.waitFor(() => expect(subtitle.state.value.status).toBe('saved'))
+
+    expect(title.state.value).toMatchObject({ status: 'error', error: { kind: 'server', status: 500, message: 'Boom' } })
+    expect(title.model.value).toBe('mine')
+  })
+})

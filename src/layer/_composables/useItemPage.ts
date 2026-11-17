@@ -168,6 +168,10 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
         endpoint: iri?.value || endpoint.value,
         data,
       })
+      if (updatedResource && localResourceData.value && updatedResource['@id'] === resource.value?.['@id']) {
+        const saved = Object.keys(data).filter(key => key in updatedResource)
+        localResourceData.value = { ...localResourceData.value, ...Object.fromEntries(saved.map(key => [key, updatedResource[key]])) }
+      }
       if (close && updatedResource) {
         emit('close')
       }
@@ -187,7 +191,18 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
     }
   }
 
-  watch(resource, syncLocalResourceWithStore)
+  function keepLocalEdits(newResource?: TempCwaResource | CwaResource, oldResource?: TempCwaResource | CwaResource) {
+    const local: { [key: string]: any } | undefined = localResourceData.value
+    if (isAdding.value || !newResource || !local || !oldResource || newResource['@id'] !== oldResource['@id']) {
+      syncLocalResourceWithStore(newResource)
+      return
+    }
+    const stored: { [key: string]: any } = oldResource
+    const edits = Object.entries(local).filter(([key, value]) => !isEqual(value, stored[key]))
+    localResourceData.value = { ...newResource, ...Object.fromEntries(edits) }
+  }
+
+  watch(resource, keepLocalEdits)
   watch(endpoint, loadResource)
 
   onMounted(async () => {

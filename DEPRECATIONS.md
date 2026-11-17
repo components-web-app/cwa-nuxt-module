@@ -211,3 +211,31 @@ Until then a short value is still read in places.
 
 **Precondition:** the module requires an api-components-bundle release
 containing #431, and its upgrade notes tell sites to run the prefix command.
+
+---
+
+## Remove when every site runs on the admin UI kit
+
+### `states` and `resetValue` on `useCwaResourceModel`
+
+The field model now returns `state` (`CwaFieldState`, read from the resources
+store), `retry()` and `reset()` ([#458](https://github.com/components-web-app/cwa-nuxt-module/issues/458),
+part of [#236](https://github.com/components-web-app/cwa-nuxt-module/issues/236)).
+The old names stay, unchanged, for one minor release so apps and the template
+can move over: `states.pendingSubmit` is `state.value.waiting`,
+`states.submitting` is `state.value.status === 'saving'`, `states.isBusy` is
+either of those, `states.isLongWait` is `state.value.slow`, and `resetValue()`
+is `reset()`.
+
+**Delete:**
+
+- `states` (`pendingSubmit`, `submitting`, `isBusy`, `isLongWait`, with the
+  `isLongWait` timer and the `longWaitThreshold` option) and `resetValue` from
+  the returned object in `composables/cwa-resource-model.ts`, keeping the
+  internal refs the model still needs
+- their tests in `cwa-resource-model.spec.ts`
+- the `states.submitting` watch in `playground/app/components/TipTapHtmlEditor.vue`,
+  moved to `state`
+
+**Precondition:** the template and the sites built on it (CK, bcio) no longer
+read `states` or `resetValue`; this is the kit's removals PR (step 9 of #236).

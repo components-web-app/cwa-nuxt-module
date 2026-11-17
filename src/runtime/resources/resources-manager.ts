@@ -23,6 +23,7 @@ import type Fetcher from '#cwa/api/fetcher/fetcher'
 import type { AddResourceEvent, ResourceStackItem } from '#cwa/admin/resource-stack-manager'
 import type Admin from '#cwa/admin/admin'
 import type { Resources } from '#cwa/resources/resources'
+import { writeFieldStates } from '#cwa/resources/field-state-writer'
 
 interface DeleteApiResourceEvent {
   iri?: string
@@ -280,6 +281,8 @@ export class ResourcesManager {
       reqOps,
     ]
 
+    const fields = Object.keys(event.data ?? {})
+    const entry = () => this.resourcesStore.getResource(iri)
     // if the resource is not persisted to the api but a request is updated, we just save it locally in the store
     // it'll update anything visually until client-side refresh
     if (currentResource?._metadata?.persisted === false) {
@@ -291,6 +294,7 @@ export class ResourcesManager {
       this.storeResource({
         resource: newResource,
       })
+      fields.length && writeFieldStates(states => fields.forEach(field => states.skipped(entry(), field)))
       return
     }
 
@@ -323,8 +327,14 @@ export class ResourcesManager {
       }
     }
 
-    const resource = await this.doResourceRequest(event, args, postRequestFn, postSaveFn)
+    const sending = entry()
+    fields.length && writeFieldStates(states => states.started(sending, fields))
+    const outcome: { failure?: FetchError<any> } = {}
+    const resource = await this.doResourceRequest(event, args, postRequestFn, postSaveFn, (error) => {
+      outcome.failure = error
+    })
 
+    fields.length && writeFieldStates(states => states.settled(sending, fields, resource, outcome.failure, this.resourcesStore.getResource))
     const responseId = resource?.['@id']
     if (responseId && responseId !== iri) {
       this.admin.resourceStackManager.forcePublishedVersion.value = publishedOverLiveResource(resource) ? undefined : false
@@ -347,7 +357,7 @@ export class ResourcesManager {
     }
   }
 
-  private async doResourceRequest(event: ApiResourceEvent, args: [string, RequestOptions], postRequestFn?: (resource?: CwaResource) => void | Promise<void>, postSaveFn?: (resource?: CwaResource) => void | Promise<void>) {
+  private async doResourceRequest(event: ApiResourceEvent, args: [string, RequestOptions], postRequestFn?: (resource?: CwaResource) => void | Promise<void>, postSaveFn?: (resource?: CwaResource) => void | Promise<void>, onError?: (error: FetchError<any>) => void) {
     const source = 'source' in event ? event.source || 'unknown' : 'delete'
     const id = ++this.reqCount.value
     const eventIriOrEndpoint: string = (event.iri || event.endpoint)
@@ -402,6 +412,7 @@ export class ResourcesManager {
       if (error?.statusCode !== 412 || !this.preconditionFailed?.(event, iri, error.data)) {
         this.errorStore.error(event, error)
       }
+      onError?.(error)
     }
     finally {
       unset(this.requestsInProgress, [source, id])

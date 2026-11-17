@@ -52,6 +52,12 @@ vi.mock('#cwa/composables/cwa-resource-endpoint', () => ({
   useCwaResourceEndpoint: () => ({ endpoint: mockEndpoint }),
 }))
 
+async function microtasks() {
+  for (let i = 0; i < 20; i++) {
+    await Promise.resolve()
+  }
+}
+
 describe('useCwaResourceModel', () => {
   const iri = ref<string | undefined>('/my/resource')
 
@@ -373,6 +379,312 @@ describe('useCwaResourceModel', () => {
       vi.runAllTimers()
       await nextTick()
       expect(states.isLongWait.value).toBe(true)
+    })
+  })
+
+  describe('one request in flight per model, with the newest value queued (#458)', () => {
+    beforeEach(() => {
+      vi.useFakeTimers()
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    function deferredSaves() {
+      const answers: ((resource?: unknown) => void)[] = []
+      mockUpdateResource.mockImplementation(() => new Promise((resolve) => {
+        answers.push(resolve)
+      }))
+      return answers
+    }
+
+    async function type(model: { value: unknown }, value: string) {
+      model.value = value
+      await nextTick()
+      vi.runAllTimers()
+      await nextTick()
+    }
+
+    test('a change whose debounce runs while a save is in flight waits for it, and only the newest value is sent next', async () => {
+      mockGetResource.mockReturnValue(ref({ data: { title: 'Store' } }))
+      const answers = deferredSaves()
+      const { model, states } = useCwaResourceModel(iri, 'title')
+
+      await type(model, 'A')
+      await type(model, 'AB')
+      await type(model, 'ABC')
+      expect(mockUpdateResource).toHaveBeenCalledOnce()
+      expect(states.pendingSubmit.value).toBe(true)
+
+      answers[0]!(undefined)
+      await microtasks()
+      expect(mockUpdateResource).toHaveBeenCalledTimes(2)
+      expect(mockUpdateResource.mock.calls.map(([event]) => event.data)).toStrictEqual([{ title: 'A' }, { title: 'ABC' }])
+      expect(states.pendingSubmit.value).toBe(false)
+      expect(states.submitting.value).toBe(true)
+
+      answers[1]!(undefined)
+      await microtasks()
+      expect(states.submitting.value).toBe(false)
+      expect(mockUpdateResource).toHaveBeenCalledTimes(2)
+    })
+
+    test('the follow-up is sent to the draft the previous save returned', async () => {
+      const resources: Record<string, unknown> = {
+        '/my/resource': { data: { '@id': '/my/resource', 'title': 'Live' } },
+        '/my/draft': { data: { '@id': '/my/draft', 'title': 'A' } },
+      }
+      mockGetResource.mockImplementation((at: string) => ref(resources[at]))
+      mockEndpoint.value = '/my/resource?published=false'
+      const answers = deferredSaves()
+      const { model } = useCwaResourceModel(iri, 'title')
+
+      await type(model, 'A')
+      await type(model, 'AB')
+      answers[0]!({ '@id': '/my/draft', 'title': 'A' })
+      await microtasks()
+      expect(mockUpdateResource).toHaveBeenCalledTimes(2)
+
+      expect(mockUpdateResource.mock.calls.map(([event]) => [event.endpoint, event.data])).toStrictEqual([
+        ['/my/resource?published=false', { title: 'A' }],
+        ['/my/draft', { title: 'AB' }],
+      ])
+      answers[1]!(undefined)
+    })
+
+    test('a queued value the previous save already stored is not sent again', async () => {
+      const stored = ref({ data: { title: 'Store' } })
+      mockGetResource.mockReturnValue(stored)
+      const answers = deferredSaves()
+      const { model, states } = useCwaResourceModel(iri, 'title')
+
+      await type(model, 'A')
+      await type(model, 'AB')
+      await type(model, 'A')
+      stored.value = { data: { title: 'A' } }
+      answers[0]!({ '@id': '/my/resource', 'title': 'A' })
+      await microtasks()
+      expect(states.submitting.value).toBe(false)
+
+      expect(mockUpdateResource).toHaveBeenCalledOnce()
+      expect(states.pendingSubmit.value).toBe(false)
+    })
+
+    test('a publish flushing the waiting saves resolves only once the queued follow-up has settled (#394)', async () => {
+      mockGetResource.mockReturnValue(ref({ data: { title: 'Store' } }))
+      const answers = deferredSaves()
+      const { model } = useCwaResourceModel(iri, 'title')
+
+      await type(model, 'A')
+      await type(model, 'AB')
+      expect(pendingUpdates.has('/my/resource')).toBe(true)
+      let flushed = false
+      const flush = Promise.resolve(pendingUpdates.get('/my/resource')!()).then(() => {
+        flushed = true
+      })
+
+      answers[0]!(undefined)
+      await microtasks()
+      expect(mockUpdateResource).toHaveBeenCalledTimes(2)
+      await Promise.resolve()
+      expect(flushed).toBe(false)
+
+      answers[1]!(undefined)
+      await flush
+      expect(flushed).toBe(true)
+    })
+
+    test('the queued value keeps its publish registration until it is sent', async () => {
+      mockGetResource.mockReturnValue(ref({ data: { title: 'Store' } }))
+      const answers = deferredSaves()
+      const { model } = useCwaResourceModel(iri, 'title')
+
+      await type(model, 'A')
+      expect(pendingUpdates.has('/my/resource')).toBe(false)
+      await type(model, 'AB')
+      expect(pendingUpdates.has('/my/resource')).toBe(true)
+
+      answers[0]!(undefined)
+      await microtasks()
+      expect(mockUpdateResource).toHaveBeenCalledTimes(2)
+      expect(pendingUpdates.has('/my/resource')).toBe(false)
+      answers[1]!(undefined)
+    })
+
+    test('submit() sends at once while a save is in flight, even with the same value, and drops the queued one', async () => {
+      mockGetResource.mockReturnValue(ref({ data: { title: 'Store' } }))
+      const answers = deferredSaves()
+      const { model } = useCwaResourceModel(iri, 'title')
+      const editor = registeredEditors.at(-1) as ModelEditor
+
+      await type(model, 'A')
+      await type(model, 'AB')
+      model.value = 'A'
+      await nextTick()
+      const submitted = editor.submit()
+      expect(mockUpdateResource).toHaveBeenCalledTimes(2)
+      expect(mockUpdateResource).toHaveBeenLastCalledWith(expect.objectContaining({ data: { title: 'A' } }))
+
+      answers[0]!(undefined)
+      answers[1]!(undefined)
+      await submitted
+      await microtasks()
+      expect(pendingUpdates.size).toBe(0)
+      vi.runAllTimers()
+      await nextTick()
+      expect(mockUpdateResource).toHaveBeenCalledTimes(2)
+    })
+
+    test('a queued value is held while a conflict is shown, and Keep mine sends it', async () => {
+      mockGetResource.mockReturnValue(ref({ data: { title: 'Store' } }))
+      const answers = deferredSaves()
+      const { model } = useCwaResourceModel(iri, 'title')
+      const editor = registeredEditors.at(-1) as ModelEditor
+
+      await type(model, 'A')
+      await type(model, 'AB')
+      editor.conflict({ iri: '/my/resource', change: { name: 'Mia', value: 'Theirs', accept: vi.fn(), keep: vi.fn() } })
+      answers[0]!(undefined)
+      await microtasks()
+      expect(editor.hasUnsentChange()).toBe(true)
+      await nextTick()
+      expect(mockUpdateResource).toHaveBeenCalledOnce()
+
+      editor.conflict(undefined)
+      const kept = editor.submit()
+      answers[1]!(undefined)
+      await kept
+      expect(mockUpdateResource).toHaveBeenLastCalledWith(expect.objectContaining({ data: { title: 'AB' } }))
+    })
+  })
+
+  describe('state, retry and reset (#458)', () => {
+    beforeEach(() => {
+      vi.useFakeTimers()
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    test('state is idle until the store holds a state for the field', () => {
+      mockGetResource.mockReturnValue(ref({ data: { title: 'Store' } }))
+      const { state } = useCwaResourceModel(iri, 'title')
+
+      expect(state.value).toStrictEqual({ status: 'idle', waiting: false, slow: false })
+    })
+
+    test('state is the store\'s state for the model\'s IRI and root field', () => {
+      const saved = { status: 'saved', waiting: false, slow: false, savedAt: 1 }
+      mockGetResource.mockReturnValue(ref({ data: { meta: { a: 1 } }, fieldStates: { meta: saved, title: { status: 'error' } } }))
+      const { state } = useCwaResourceModel(iri, 'meta.a')
+
+      expect(state.value).toStrictEqual(saved)
+    })
+
+    test('a change marks the field pending and waiting in the store', async () => {
+      const resource = ref<any>({ data: { title: 'Store' } })
+      mockGetResource.mockReturnValue(resource)
+      const { model, state } = useCwaResourceModel(iri, 'title', { debounceTime: 60_000 })
+
+      model.value = 'Mine'
+      await nextTick()
+
+      await vi.waitFor(() => expect(state.value).toStrictEqual({ status: 'pending', waiting: true, slow: false }))
+      expect(resource.value.fieldStates.title.status).toBe('pending')
+    })
+
+    test('a change typed back to the stored value leaves no state', async () => {
+      const resource = ref<any>({ data: { title: 'Store' } })
+      mockGetResource.mockReturnValue(resource)
+      const { model, state } = useCwaResourceModel(iri, 'title')
+
+      model.value = 'Mine'
+      await nextTick()
+      model.value = 'Store'
+      await nextTick()
+      vi.runAllTimers()
+
+      await vi.waitFor(() => expect(state.value.status).toBe('idle'))
+      expect(mockUpdateResource).not.toHaveBeenCalled()
+    })
+
+    test('a conflict raised on the model is held in the store as plain data, and cleared with it', async () => {
+      const resource = ref<any>({ data: { title: 'Store' } })
+      mockGetResource.mockReturnValue(resource)
+      const { state } = useCwaResourceModel(iri, 'title')
+      const editor = registeredEditors.at(-1) as ModelEditor
+
+      editor.conflict({ iri: '/my/resource', change: { user: { id: '/_/users/2', name: 'Mia', isSelf: false }, name: 'Mia', value: 'Theirs', accept: vi.fn(), keep: vi.fn() } })
+      await vi.waitFor(() => expect(state.value.status).toBe('conflict'))
+      expect(state.value.held).toStrictEqual({ user: { id: '/_/users/2', name: 'Mia' }, value: 'Theirs' })
+
+      editor.conflict(undefined)
+      await vi.waitFor(() => expect(state.value.status).toBe('idle'))
+    })
+
+    test('retry() sends the value that failed again', async () => {
+      mockGetResource.mockReturnValue(ref({ data: { title: 'Store' } }))
+      const { model, retry } = useCwaResourceModel(iri, 'title')
+      model.value = 'Mine'
+      await nextTick()
+      vi.runAllTimers()
+      await microtasks()
+      expect(mockUpdateResource).toHaveBeenCalledOnce()
+
+      await retry()
+
+      expect(mockUpdateResource).toHaveBeenCalledTimes(2)
+      expect(mockUpdateResource).toHaveBeenLastCalledWith(expect.objectContaining({ data: { title: 'Mine' } }))
+    })
+
+    test('retry() with nothing unsaved sends nothing', async () => {
+      mockGetResource.mockReturnValue(ref({ data: { title: 'Store' } }))
+      const { retry } = useCwaResourceModel(iri, 'title')
+
+      await retry()
+
+      expect(mockUpdateResource).not.toHaveBeenCalled()
+    })
+
+    test('reset() puts the field back to its stored value, clears its state and sends nothing', async () => {
+      const resource = ref<any>({ data: { title: 'Store' }, fieldStates: { title: { status: 'error', waiting: false, slow: false, error: { kind: 'server', message: 'Boom' } } } })
+      mockGetResource.mockReturnValue(resource)
+      const { model, reset, state } = useCwaResourceModel(iri, 'title')
+      model.value = 'Mine'
+      await nextTick()
+
+      await reset()
+      vi.runAllTimers()
+
+      expect(model.value).toBe('Store')
+      await vi.waitFor(() => expect(state.value.status).toBe('idle'))
+      expect(mockUpdateResource).not.toHaveBeenCalled()
+      expect(pendingUpdates.has('/my/resource')).toBe(false)
+    })
+
+    test('reset() during a conflict takes the other editor\'s value', async () => {
+      mockGetResource.mockReturnValue(ref({ data: { title: 'Store' } }))
+      const { model, reset } = useCwaResourceModel(iri, 'title')
+      const editor = registeredEditors.at(-1) as ModelEditor
+      const accept = vi.fn()
+      model.value = 'Mine'
+      editor.conflict({ iri: '/my/resource', change: { name: 'Mia', value: 'Theirs', accept, keep: vi.fn() } })
+
+      await reset()
+
+      expect(accept).toHaveBeenCalledOnce()
+    })
+
+    test('the deprecated resetValue() still clears the local value', () => {
+      mockGetResource.mockReturnValue(ref({ data: { title: 'Store' } }))
+      const { model, resetValue } = useCwaResourceModel(iri, 'title')
+      model.value = 'Mine'
+
+      resetValue()
+
+      expect(model.value).toBe('Store')
     })
   })
 
