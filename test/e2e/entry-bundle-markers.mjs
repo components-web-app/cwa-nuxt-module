@@ -8,7 +8,7 @@ const outputDir = resolve(here, '../../playground/.output')
 const manifestPath = resolve(outputDir, 'server/chunks/virtual/precomputed.mjs')
 const chunkDir = resolve(outputDir, 'public/_nuxt')
 
-const gzipBudget = 164040
+const gzipBudget = 164035
 
 const forbidden = [
   { marker: 'Invalid DateTime', source: 'luxon' },
