@@ -169,8 +169,16 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
         data,
       })
       if (updatedResource && localResourceData.value && updatedResource['@id'] === resource.value?.['@id']) {
-        const saved = Object.keys(data).filter(key => key in updatedResource)
-        localResourceData.value = { ...localResourceData.value, ...Object.fromEntries(saved.map(key => [key, updatedResource[key]])) }
+        const local: { [key: string]: any } = { ...localResourceData.value }
+        for (const key of Object.keys(data)) {
+          if (key in updatedResource) {
+            local[key] = updatedResource[key]
+          }
+          else {
+            delete local[key]
+          }
+        }
+        localResourceData.value = local as CwaResource
       }
       if (close && updatedResource) {
         emit('close')

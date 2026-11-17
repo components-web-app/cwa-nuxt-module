@@ -58,6 +58,22 @@ async function microtasks() {
   }
 }
 
+function recordedSaves() {
+  const answers: ((outcome: { resource?: unknown, error?: unknown }) => void)[] = []
+  mockUpdateResource.mockImplementation((event: { endpoint: string, onRequest?: (iri: string, done: Promise<unknown>) => void }) => new Promise((resolve) => {
+    let settle!: (outcome: unknown) => void
+    const done = new Promise((answered) => {
+      settle = answered
+    })
+    event.onRequest?.(event.endpoint.split('?')[0]!, done)
+    answers.push((outcome) => {
+      settle(outcome)
+      resolve(outcome.resource)
+    })
+  }))
+  return answers
+}
+
 describe('useCwaResourceModel', () => {
   const iri = ref<string | undefined>('/my/resource')
 
@@ -548,6 +564,7 @@ describe('useCwaResourceModel', () => {
       answers[0]!(undefined)
       await microtasks()
       expect(editor.hasUnsentChange()).toBe(true)
+      expect(pendingUpdates.has('/my/resource')).toBe(true)
       await nextTick()
       expect(mockUpdateResource).toHaveBeenCalledOnce()
 
@@ -625,18 +642,28 @@ describe('useCwaResourceModel', () => {
     })
 
     test('retry() sends the value that failed again', async () => {
-      mockGetResource.mockReturnValue(ref({ data: { title: 'Store' } }))
-      const { model, retry } = useCwaResourceModel(iri, 'title')
+      const resource = ref<any>({ data: { title: 'Store' } })
+      mockGetResource.mockReturnValue(resource)
+      const answers = recordedSaves()
+      const { model, retry, state } = useCwaResourceModel(iri, 'title')
       model.value = 'Mine'
       await nextTick()
       vi.runAllTimers()
       await microtasks()
       expect(mockUpdateResource).toHaveBeenCalledOnce()
+      answers[0]!({ error: Object.assign(new Error('Server Error'), { statusCode: 500, data: { detail: 'Boom' } }) })
+      await vi.waitFor(() => expect(state.value.status).toBe('error'))
+      expect(model.value).toBe('Mine')
 
-      await retry()
-
+      const retried = retry()
+      await microtasks()
       expect(mockUpdateResource).toHaveBeenCalledTimes(2)
       expect(mockUpdateResource).toHaveBeenLastCalledWith(expect.objectContaining({ data: { title: 'Mine' } }))
+      resource.value = { ...resource.value, data: { title: 'Mine' } }
+      answers[1]!({ resource: { '@id': '/my/resource', 'title': 'Mine' } })
+      await retried
+
+      await vi.waitFor(() => expect(state.value.status).toBe('saved'))
     })
 
     test('retry() with nothing unsaved sends nothing', async () => {
@@ -685,6 +712,284 @@ describe('useCwaResourceModel', () => {
       resetValue()
 
       expect(model.value).toBe('Store')
+    })
+  })
+
+  describe('the queue after review (#466)', () => {
+    beforeEach(() => {
+      vi.useFakeTimers()
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    function deferredSaves() {
+      const answers: ((resource?: unknown) => void)[] = []
+      mockUpdateResource.mockImplementation(() => new Promise((resolve) => {
+        answers.push(resolve)
+      }))
+      return answers
+    }
+
+    async function type(model: { value: unknown }, value: string) {
+      model.value = value
+      await nextTick()
+      vi.runAllTimers()
+      await nextTick()
+    }
+
+    function sent() {
+      return mockUpdateResource.mock.calls.map(([event]) => [event.endpoint, event.data])
+    }
+
+    test('a follow-up skipped because the store already holds it keeps a newer value still being typed', async () => {
+      const selected = ref<string | undefined>('/my/resource')
+      const stored = ref({ data: { title: 'Store' } })
+      mockGetResource.mockReturnValue(stored)
+      const answers = deferredSaves()
+      const { model } = useCwaResourceModel(selected, 'title')
+
+      await type(model, 'A')
+      await type(model, 'AB')
+      await type(model, 'A')
+      model.value = 'AX'
+      await nextTick()
+      stored.value = { data: { title: 'A' } }
+      answers[0]!({ '@id': '/my/resource', 'title': 'A' })
+      await microtasks()
+
+      expect(model.value).toBe('AX')
+      expect(mockUpdateResource).toHaveBeenCalledOnce()
+      vi.runAllTimers()
+      await microtasks()
+      expect(sent()).toStrictEqual([['/my/resource', { title: 'A' }], ['/my/resource', { title: 'AX' }]])
+      answers[1]!(undefined)
+    })
+
+    test('a follow-up for one component skipped as already stored leaves the value queued for the component now selected', async () => {
+      const selected = ref<string | undefined>('/my/resource')
+      const resources: Record<string, unknown> = {
+        '/my/resource': { data: { title: 'X' } },
+        '/my/other': { data: { title: 'Y' } },
+      }
+      mockGetResource.mockImplementation((at: string) => ref(resources[at]))
+      const answers = deferredSaves()
+      const { model } = useCwaResourceModel(selected, 'title')
+
+      await type(model, 'A')
+      await type(model, 'X')
+      selected.value = '/my/other'
+      mockEndpoint.value = '/my/other'
+      await type(model, 'Y2')
+      answers[0]!(undefined)
+      await microtasks()
+
+      expect(model.value).toBe('Y2')
+      expect(sent()).toStrictEqual([['/my/resource', { title: 'A' }], ['/my/other', { title: 'Y2' }]])
+      answers[1]!(undefined)
+    })
+
+    test('a follow-up is held while the model\'s conflict sits on the draft a 412 answered with, though the model still reads the live component', async () => {
+      const selected = ref<string | undefined>('/my/resource')
+      mockGetResource.mockReturnValue(ref({ data: { title: 'Store' } }))
+      const answers = deferredSaves()
+      const { model } = useCwaResourceModel(selected, 'title')
+      const editor = registeredEditors.at(-1) as ModelEditor
+
+      await type(model, 'A')
+      await type(model, 'AB')
+      editor.conflict({ iri: '/my/draft', change: { name: 'Mia', value: 'Theirs', accept: vi.fn(), keep: vi.fn() } })
+      answers[0]!(undefined)
+      await microtasks()
+
+      expect(mockUpdateResource).toHaveBeenCalledOnce()
+      expect(editor.hasUnsentChange()).toBe(true)
+    })
+
+    test('a change typed into one component is sent to it even when the selection moves on before the debounce fires', async () => {
+      const selected = ref<string | undefined>('/my/resource')
+      const resources: Record<string, unknown> = {
+        '/my/resource': { data: { title: 'X' } },
+        '/my/other': { data: { title: 'Y' } },
+      }
+      const resource = (at: string) => resources[at] as { fieldStates?: Record<string, { status: string }> }
+      mockGetResource.mockImplementation((at: string) => ref(resources[at]))
+      const answers = recordedSaves()
+      const { model } = useCwaResourceModel(selected, 'title')
+
+      model.value = 'X typed'
+      await nextTick()
+      selected.value = '/my/other'
+      mockEndpoint.value = '/my/other'
+      vi.runAllTimers()
+      await microtasks()
+
+      expect(sent()).toStrictEqual([['/my/resource', { title: 'X typed' }]])
+      await vi.waitFor(() => expect(resource('/my/resource').fieldStates?.title?.status).toBe('saving'))
+      expect(resource('/my/other').fieldStates).toBeUndefined()
+      answers[0]!({})
+    })
+
+    test('a value queued for one component is still sent after another component is selected and edited', async () => {
+      const selected = ref<string | undefined>('/my/resource')
+      const resources: Record<string, unknown> = {
+        '/my/resource': { data: { title: 'X' } },
+        '/my/other': { data: { title: 'Y' } },
+      }
+      mockGetResource.mockImplementation((at: string) => ref(resources[at]))
+      const answers = deferredSaves()
+      const { model } = useCwaResourceModel(selected, 'title')
+
+      await type(model, 'X1')
+      await type(model, 'X2')
+      selected.value = '/my/other'
+      mockEndpoint.value = '/my/other'
+      await type(model, 'Y1')
+      answers[0]!(undefined)
+      await microtasks()
+      answers[1]!(undefined)
+      await microtasks()
+
+      expect(sent()).toStrictEqual([
+        ['/my/resource', { title: 'X1' }],
+        ['/my/resource', { title: 'X2' }],
+        ['/my/other', { title: 'Y1' }],
+      ])
+      answers[2]!(undefined)
+    })
+
+    test('a follow-up to the live version keeps ?published=true when the selection has moved to the draft', async () => {
+      const selected = ref<string | undefined>('/my/resource')
+      const resources: Record<string, unknown> = {
+        '/my/resource': { data: { '@id': '/my/resource', 'title': 'Live' } },
+        '/my/draft': { data: { '@id': '/my/draft', 'title': 'Draft' } },
+      }
+      mockGetResource.mockImplementation((at: string) => ref(resources[at]))
+      mockEndpoint.value = '/my/resource?published=true'
+      const answers = deferredSaves()
+      const { model } = useCwaResourceModel(selected, 'title')
+
+      await type(model, 'A')
+      await type(model, 'AB')
+      selected.value = '/my/draft'
+      mockEndpoint.value = '/my/draft'
+      answers[0]!({ '@id': '/my/resource', 'title': 'A' })
+      await microtasks()
+
+      expect(sent()).toStrictEqual([
+        ['/my/resource?published=true', { title: 'A' }],
+        ['/my/resource?published=true', { title: 'AB' }],
+      ])
+      answers[1]!(undefined)
+    })
+
+    test('a change made while submit()\'s request is in flight waits behind it', async () => {
+      const selected = ref<string | undefined>('/my/resource')
+      mockGetResource.mockReturnValue(ref({ data: { title: 'Store' } }))
+      const answers = deferredSaves()
+      const { model } = useCwaResourceModel(selected, 'title')
+      const editor = registeredEditors.at(-1) as ModelEditor
+
+      model.value = 'A'
+      await nextTick()
+      const submitted = editor.submit()
+      await microtasks()
+      expect(mockUpdateResource).toHaveBeenCalledOnce()
+
+      await type(model, 'AB')
+      expect(mockUpdateResource).toHaveBeenCalledOnce()
+
+      answers[0]!(undefined)
+      await microtasks()
+      expect(sent()).toStrictEqual([['/my/resource', { title: 'A' }], ['/my/resource', { title: 'AB' }]])
+      answers[1]!(undefined)
+      await submitted
+    })
+
+    test('a change made after submit() overtook a save in flight waits for submit()\'s request, not the overtaken one', async () => {
+      const selected = ref<string | undefined>('/my/resource')
+      mockGetResource.mockReturnValue(ref({ data: { title: 'Store' } }))
+      const answers = deferredSaves()
+      const { model } = useCwaResourceModel(selected, 'title')
+      const editor = registeredEditors.at(-1) as ModelEditor
+
+      await type(model, 'A')
+      model.value = 'AB'
+      await nextTick()
+      const submitted = editor.submit()
+      await microtasks()
+      await type(model, 'ABC')
+      expect(mockUpdateResource).toHaveBeenCalledTimes(2)
+
+      answers[0]!(undefined)
+      await microtasks()
+      expect(mockUpdateResource).toHaveBeenCalledTimes(2)
+
+      answers[1]!(undefined)
+      await microtasks()
+      expect(sent().map(([, data]) => data)).toStrictEqual([{ title: 'A' }, { title: 'AB' }, { title: 'ABC' }])
+      answers[2]!(undefined)
+      await submitted
+    })
+
+    test('Keep mine taken before the refused request settles leaves the field saved once the resend lands, not in conflict', async () => {
+      const selected = ref<string | undefined>('/my/resource')
+      const resource = ref<any>({ data: { title: 'Store' } })
+      mockGetResource.mockReturnValue(resource)
+      const answers = recordedSaves()
+      const { model, state } = useCwaResourceModel(selected, 'title')
+      const editor = registeredEditors.at(-1) as ModelEditor
+
+      await type(model, 'Mine')
+      await microtasks()
+      editor.conflict({ iri: '/my/resource', change: { name: 'Mia', value: 'Theirs', accept: vi.fn(), keep: vi.fn() } })
+      editor.conflict(undefined)
+      const kept = editor.submit()
+      await microtasks()
+      expect(mockUpdateResource).toHaveBeenCalledTimes(2)
+
+      answers[0]!({ error: Object.assign(new Error('Precondition Failed'), { statusCode: 412, data: { '@id': '/my/resource', 'title': 'Theirs' } }) })
+      await microtasks()
+      resource.value = { ...resource.value, data: { title: 'Mine' } }
+      answers[1]!({ resource: { '@id': '/my/resource', 'title': 'Mine' } })
+      await kept
+
+      await vi.waitFor(() => expect(state.value.status).toBe('saved'))
+      expect(state.value.held).toBeUndefined()
+    })
+
+    test('Use theirs after more was typed during the conflict leaves no state behind', async () => {
+      const selected = ref<string | undefined>('/my/resource')
+      const resource = ref<any>({ data: { title: 'Store' } })
+      mockGetResource.mockReturnValue(resource)
+      const { model, state } = useCwaResourceModel(selected, 'title')
+      const editor = registeredEditors.at(-1) as ModelEditor
+
+      editor.conflict({ iri: '/my/resource', change: { name: 'Mia', value: 'Theirs', accept: vi.fn(), keep: vi.fn() } })
+      await vi.waitFor(() => expect(state.value.status).toBe('conflict'))
+      await type(model, 'More')
+      await vi.waitFor(() => expect(state.value.waiting).toBe(true))
+
+      editor.conflict(undefined)
+      editor.discardLocal()
+
+      await vi.waitFor(() => expect(state.value).toStrictEqual({ status: 'idle', waiting: false, slow: false }))
+      expect(mockUpdateResource).not.toHaveBeenCalled()
+    })
+
+    test('a save records its own field state, sending, then the outcome', async () => {
+      const selected = ref<string | undefined>('/my/resource')
+      const resource = ref<any>({ data: { title: 'Store' } })
+      mockGetResource.mockReturnValue(resource)
+      const answers = recordedSaves()
+      const { model, state } = useCwaResourceModel(selected, 'title')
+
+      await type(model, 'Mine')
+      await vi.waitFor(() => expect(state.value.status).toBe('saving'))
+      answers[0]!({ error: Object.assign(new Error('Unprocessable'), { statusCode: 422, data: { detail: 'x', violations: [{ propertyPath: 'title', message: 'Too short.' }] } }) })
+
+      await vi.waitFor(() => expect(state.value).toMatchObject({ status: 'error', error: { kind: 'violation', message: 'Too short.' } }))
     })
   })
 

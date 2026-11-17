@@ -213,6 +213,43 @@ describe('useItemPage keeps local edits through a re-fetch (#458)', () => {
     expect(itemPage.localResourceData.value?.reference).toBe('Later')
   })
 
+  test('a field the server does not return, such as a password, is cleared once saved and not sent again', async () => {
+    const { itemPage, updateResource, refetch } = setup({ ...layout })
+    await flushPromises()
+    Object.assign(itemPage.localResourceData.value!, { plainPassword: 'secret', repeatPassword: 'secret' })
+    updateResource.mockImplementationOnce(async () => {
+      refetch({ ...layout })
+      return { ...layout }
+    })
+
+    await itemPage.saveResource()
+    await flushPromises()
+    expect(itemPage.localResourceData.value).not.toHaveProperty('plainPassword')
+    expect(itemPage.localResourceData.value).not.toHaveProperty('repeatPassword')
+
+    itemPage.localResourceData.value!.reference = 'Renamed'
+    await itemPage.saveResource()
+    expect(updateResource.mock.calls[1]![0].data).toStrictEqual({ reference: 'Renamed' })
+  })
+
+  test('a field saved as null that the server leaves out of its answer is not sent again', async () => {
+    const { itemPage, updateResource, refetch } = setup({ ...layout })
+    await flushPromises()
+    itemPage.localResourceData.value!.uiComponent = null
+    const { uiComponent: _uiComponent, ...saved } = layout
+    updateResource.mockImplementationOnce(async () => {
+      refetch(saved)
+      return saved
+    })
+
+    await itemPage.saveResource()
+    await flushPromises()
+    itemPage.localResourceData.value!.reference = 'Renamed'
+    await itemPage.saveResource()
+
+    expect(updateResource.mock.calls[1]![0].data).toStrictEqual({ reference: 'Renamed' })
+  })
+
   test('a failed save keeps the edits, so a re-fetch after a conflict still shows them', async () => {
     const { itemPage, updateResource, refetch } = setup({ ...layout })
     await flushPromises()

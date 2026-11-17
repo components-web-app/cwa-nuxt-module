@@ -31,7 +31,7 @@ async function fieldStatesLoaded() {
   await new Promise(resolve => writeFieldStates(resolve))
 }
 
-describe('ResourcesManager writes each field\'s save state (#458)', () => {
+describe('ResourcesManager reports each request to the caller that asked, and writes no field state itself (#458)', () => {
   beforeEach(async () => {
     await fieldStatesLoaded()
   })
@@ -47,84 +47,84 @@ describe('ResourcesManager writes each field\'s save state (#458)', () => {
     expect(await manager.updateResource({ endpoint: PAGE, data: { title: 'Newer' } })).toBeUndefined()
   })
 
-  test('each field sent is saving while the request is in flight, then saved', async () => {
-    const { fetch, manager, seed, stateOf } = setup()
+  test('a page modal\'s save refused with 422 leaves no field state in the store, so nothing is left that no model can clear', async () => {
+    const { fetch, manager, seed, store } = setup()
     seed({ '@id': PAGE, '@type': 'Page', 'title': 'Old', 'reference': 'old', '_metadata': { persisted: true } })
+    fetch.mockRejectedValueOnce(httpError(422, {
+      detail: 'title: Add a title.',
+      violations: [{ propertyPath: 'title', message: 'Add a title.' }],
+    }))
+
+    await manager.updateResource({ endpoint: PAGE, data: { title: '', reference: '1' } })
+    await fieldStatesLoaded()
+
+    expect(fetch).toHaveBeenCalledOnce()
+    expect(store.current.byId[PAGE]?.fieldStates).toBeUndefined()
+  })
+
+  test('onRequest is told the IRI sent to as the request starts, then what it answered', async () => {
+    const { fetch, manager, seed } = setup()
+    seed({ '@id': PAGE, '@type': 'Page', 'title': 'Old', '_metadata': { persisted: true } })
     let answer!: (resource: CwaResource) => void
     fetch.mockReturnValueOnce(new Promise((resolve) => {
       answer = resolve
     }))
+    const onRequest = vi.fn()
 
-    const saving = manager.updateResource({ endpoint: PAGE, data: { title: 'New', reference: 'new' } })
-    expect(stateOf(PAGE, 'title')?.status).toBe('saving')
-    expect(stateOf(PAGE, 'reference')?.status).toBe('saving')
+    const saving = manager.updateResource({ endpoint: `${PAGE}?published=false`, data: { title: 'New' }, onRequest })
+    await vi.waitFor(() => expect(onRequest).toHaveBeenCalledOnce())
+    const [sentTo, done] = onRequest.mock.calls[0]!
+    expect(sentTo).toBe(PAGE)
+    let outcome: unknown
+    done.then((settled: unknown) => {
+      outcome = settled
+    })
+    await Promise.resolve()
+    expect(outcome).toBeUndefined()
 
-    answer({ '@id': PAGE, '@type': 'Page', 'title': 'New', 'reference': 'new', '_metadata': { persisted: true } })
+    const saved = { '@id': PAGE, '@type': 'Page', 'title': 'New', '_metadata': { persisted: true } }
+    answer(saved)
     await saving
 
-    expect(stateOf(PAGE, 'title')?.status).toBe('saved')
-    expect(stateOf(PAGE, 'reference')?.status).toBe('saved')
+    expect(outcome).toStrictEqual({ resource: saved, error: undefined })
   })
 
-  test('a page modal\'s save refused with 422 puts each violation on its own field, and a later save of another field never clears them', async () => {
-    const { fetch, manager, seed, stateOf } = setup()
-    seed({ '@id': PAGE, '@type': 'Page', 'title': 'Old', 'reference': 'old', 'layout': '/_/layouts/1', '_metadata': { persisted: true } })
-    fetch.mockRejectedValueOnce(httpError(422, {
-      detail: 'title: Add a title.\nreference: Use letters only.',
-      violations: [{ propertyPath: 'title', message: 'Add a title.' }, { propertyPath: 'reference', message: 'Use letters only.' }],
-    }))
-    fetch.mockResolvedValueOnce({ '@id': PAGE, '@type': 'Page', 'title': 'Old', 'reference': 'old', 'layout': '/_/layouts/2', '_metadata': { persisted: true } })
-
-    await manager.updateResource({ endpoint: PAGE, data: { title: '', reference: '1' } })
-    await manager.updateResource({ endpoint: PAGE, data: { layout: '/_/layouts/2' } })
-
-    expect(stateOf(PAGE, 'title')).toMatchObject({ status: 'error', error: { kind: 'violation', status: 422, message: 'Add a title.' } })
-    expect(stateOf(PAGE, 'reference')).toMatchObject({ status: 'error', error: { kind: 'violation', status: 422, message: 'Use letters only.' } })
-    expect(stateOf(PAGE, 'layout')?.status).toBe('saved')
-  })
-
-  test('a 412 marks each field sent as a conflict holding the server\'s value', async () => {
-    const { fetch, manager, seed, stateOf } = setup()
+  test('onRequest is given the error a failed request answered with', async () => {
+    const { fetch, manager, seed } = setup()
     seed({ '@id': PAGE, '@type': 'Page', 'title': 'Old', '_metadata': { persisted: true, version: 2 } })
-    fetch.mockRejectedValueOnce(httpError(412, { '@id': PAGE, '@type': 'Page', 'title': 'Theirs', '_metadata': { persisted: true, version: 3 } }))
+    const refused = httpError(412, { '@id': PAGE, '@type': 'Page', 'title': 'Theirs', '_metadata': { persisted: true, version: 3 } })
+    fetch.mockRejectedValueOnce(refused)
+    const onRequest = vi.fn()
 
-    await manager.updateResource({ endpoint: PAGE, data: { title: 'Mine' } })
+    await manager.updateResource({ endpoint: PAGE, data: { title: 'Mine' }, onRequest })
 
-    expect(stateOf(PAGE, 'title')).toMatchObject({ status: 'conflict', held: { value: 'Theirs' }, error: { kind: 'precondition', status: 412 } })
+    expect(await onRequest.mock.calls[0]![1]).toStrictEqual({ resource: undefined, error: refused })
   })
 
-  test('a save of a live component that creates a draft moves the field\'s state to the draft', async () => {
-    const { fetch, manager, seed, stateOf } = setup()
-    seed({ '@id': LIVE, '@type': 'Title', 'title': 'Live', '_metadata': { persisted: true, publishable: { published: true } } })
-    fetch.mockResolvedValueOnce({ '@id': DRAFT, '@type': 'Title', 'title': 'Mine', 'publishedResource': LIVE, '_metadata': { persisted: true, publishable: { published: false } } })
-
-    await manager.updateResource({ endpoint: `${LIVE}?published=false`, data: { title: 'Mine' } })
-
-    expect(stateOf(LIVE, 'title')).toBeUndefined()
-    expect(stateOf(DRAFT, 'title')?.status).toBe('saved')
-  })
-
-  test('an upload, sent as FormData, writes no field state', async () => {
-    const { fetch, manager, seed, store } = setup()
-    seed({ '@id': PAGE, '@type': 'Page', '_metadata': { persisted: true } })
-    fetch.mockResolvedValueOnce({ '@id': PAGE, '@type': 'Page', '_metadata': { persisted: true } })
-    const data = new FormData()
-    data.append('file', 'x')
-
-    await manager.updateResource({ endpoint: `${PAGE}/upload`, iri: PAGE, data })
-
-    expect(store.current.byId[PAGE]?.fieldStates).toBeUndefined()
-  })
-
-  test('a change to a component still being added, saved only in the store, leaves no pending state behind', async () => {
-    const { manager, seed, stateOf, fetch } = setup()
+  test('a change to a component still being added, saved only in the store, tells onRequest no request was made', async () => {
+    const { manager, seed, fetch } = setup()
     seed({ '@id': LIVE, '@type': 'Title', 'title': 'Old', '_metadata': { persisted: false } })
-    const { writeFieldStates } = await import('./field-state-writer')
-    writeFieldStates(states => states.edited(manager['resourcesStore'].getResource(LIVE), 'title'))
+    const onRequest = vi.fn()
 
-    await manager.updateResource({ endpoint: LIVE, data: { title: 'New' } })
+    await manager.updateResource({ endpoint: LIVE, data: { title: 'New' }, onRequest })
 
     expect(fetch).not.toHaveBeenCalled()
-    expect(stateOf(LIVE, 'title')).toBeUndefined()
+    expect(onRequest).toHaveBeenCalledExactlyOnceWith(LIVE)
+  })
+
+  test('a save queued behind this tab\'s first save of a live component tells onRequest the draft it was sent to', async () => {
+    const { fetch, manager, seed } = setup()
+    seed({ '@id': LIVE, '@type': 'Title', 'title': 'Live', '_metadata': { persisted: true, version: 1, publishable: { published: true } } })
+    const draft = { '@id': DRAFT, '@type': 'Title', 'title': 'a', 'publishedResource': LIVE, '_metadata': { persisted: true, version: 1, publishable: { published: false } } }
+    fetch.mockResolvedValueOnce(draft)
+    fetch.mockResolvedValueOnce({ ...draft, subtitle: 'b' })
+    const onRequest = vi.fn()
+
+    await Promise.all([
+      manager.updateResource({ endpoint: LIVE, data: { title: 'a' } }),
+      manager.updateResource({ endpoint: LIVE, data: { subtitle: 'b' }, onRequest }),
+    ])
+
+    expect(onRequest.mock.calls.map(([iri]) => iri)).toStrictEqual([DRAFT])
   })
 })

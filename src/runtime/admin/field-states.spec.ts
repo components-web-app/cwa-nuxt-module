@@ -109,19 +109,42 @@ describe('field states (#458)', () => {
     expect(title.fieldStates?.title?.error?.status).toBeUndefined()
   })
 
-  test('a 412 is a conflict holding the value the server has, as plain data', () => {
+  test('a 412 for a field no editor holds a conflict for is an error, never a conflict, whatever the body holds', () => {
     const title = entry()
     started(title, ['title'])
 
     failed(title, ['title'], httpError(412, { '@id': '/component/titles/1', 'title': 'theirs' }))
 
     expect(title.fieldStates?.title).toStrictEqual({
-      status: 'conflict',
+      status: 'error',
       waiting: false,
       slow: false,
       error: { kind: 'precondition', status: 412, message: 'Someone else saved this first, so your change was not saved.' },
-      held: { value: 'theirs' },
     })
+  })
+
+  test('a 412 settling after the editor already took Keep mine and resent leaves no conflict once the resend lands', () => {
+    const title = entry()
+    started(title, ['title'])
+    held(title, 'title', { user: { id: '/_/users/2', name: 'Mia' }, value: 'theirs' })
+    held(title, 'title', undefined)
+    started(title, ['title'])
+
+    failed(title, ['title'], httpError(412, { '@id': '/component/titles/1', 'title': 'theirs' }))
+    succeeded(title, ['title'])
+
+    expect(title.fieldStates?.title).toMatchObject({ status: 'saved' })
+    expect(title.fieldStates?.title?.held).toBeUndefined()
+  })
+
+  test('a held conflict is kept by a 412 as plain data', () => {
+    const title = entry()
+    started(title, ['title'])
+    held(title, 'title', { value: 'theirs' })
+
+    failed(title, ['title'], httpError(412, { '@id': '/component/titles/1', 'title': 'other' }))
+
+    expect(title.fieldStates?.title).toMatchObject({ status: 'conflict', held: { value: 'theirs' }, error: { kind: 'precondition' } })
     expect(JSON.parse(JSON.stringify(title.fieldStates))).toStrictEqual(title.fieldStates)
   })
 
@@ -160,7 +183,8 @@ describe('field states (#458)', () => {
 
     started(sent, ['subtitle'])
     settled(sent, ['subtitle'], undefined, httpError(412, { '@id': '/component/titles/draft', 'subtitle': 'theirs' }), find)
-    expect(draft.fieldStates?.subtitle?.status).toBe('conflict')
+    expect(draft.fieldStates?.subtitle?.error?.kind).toBe('precondition')
+    expect(sent.fieldStates?.subtitle).toBeUndefined()
 
     started(sent, ['reference'])
     settled(sent, ['reference'], undefined, httpError(422, { '@id': '/component/titles/draft', 'detail': 'Bad' }), find)
@@ -256,6 +280,27 @@ describe('field states (#458)', () => {
     held(title, 'title', { value: 'theirs' })
     held(title, 'title', undefined)
     expect(title.fieldStates?.title?.status).toBe('saving')
+  })
+
+  test('a waiting change dropped once its conflict is cleared, as Use theirs does, leaves no state', () => {
+    const title = entry()
+    held(title, 'title', { value: 'theirs' })
+    edited(title, 'title')
+    held(title, 'title', undefined)
+
+    unqueued(title, 'title')
+
+    expect(title.fieldStates?.title).toBeUndefined()
+  })
+
+  test('a change taken off the queue while a request for the field is in flight stays saving', () => {
+    const title = entry()
+    started(title, ['title'])
+    edited(title, 'title')
+
+    unqueued(title, 'title')
+
+    expect(title.fieldStates?.title).toStrictEqual({ status: 'saving', waiting: false, slow: false })
   })
 
   test('reset clears the field\'s state', () => {

@@ -23,7 +23,6 @@ import type Fetcher from '#cwa/api/fetcher/fetcher'
 import type { AddResourceEvent, ResourceStackItem } from '#cwa/admin/resource-stack-manager'
 import type Admin from '#cwa/admin/admin'
 import type { Resources } from '#cwa/resources/resources'
-import { writeFieldStates } from '#cwa/resources/field-state-writer'
 
 interface DeleteApiResourceEvent {
   iri?: string
@@ -37,6 +36,7 @@ interface DataApiResourceEvent extends DeleteApiResourceEvent {
   data: any
   source?: string
   headers?: Record<string, string>
+  onRequest?: (iri: string, done?: Promise<{ resource?: CwaResource, error?: FetchError<any> }>) => void
 }
 
 export type ApiResourceEvent = DataApiResourceEvent | DeleteApiResourceEvent
@@ -281,8 +281,6 @@ export class ResourcesManager {
       reqOps,
     ]
 
-    const fields = Object.keys(event.data ?? {})
-    const entry = () => this.resourcesStore.getResource(iri)
     // if the resource is not persisted to the api but a request is updated, we just save it locally in the store
     // it'll update anything visually until client-side refresh
     if (currentResource?._metadata?.persisted === false) {
@@ -294,7 +292,7 @@ export class ResourcesManager {
       this.storeResource({
         resource: newResource,
       })
-      fields.length && writeFieldStates(states => fields.forEach(field => states.skipped(entry(), field)))
+      event.onRequest?.(iri)
       return
     }
 
@@ -327,14 +325,13 @@ export class ResourcesManager {
       }
     }
 
-    const sending = entry()
-    fields.length && writeFieldStates(states => states.started(sending, fields))
-    const outcome: { failure?: FetchError<any> } = {}
-    const resource = await this.doResourceRequest(event, args, postRequestFn, postSaveFn, (error) => {
-      outcome.failure = error
+    let error: FetchError<any> | undefined
+    const request = this.doResourceRequest(event, args, postRequestFn, postSaveFn, (failure) => {
+      error = failure
     })
+    event.onRequest?.(iri, request.then(resource => ({ resource, error })))
+    const resource = await request
 
-    fields.length && writeFieldStates(states => states.settled(sending, fields, resource, outcome.failure, this.resourcesStore.getResource))
     const responseId = resource?.['@id']
     if (responseId && responseId !== iri) {
       this.admin.resourceStackManager.forcePublishedVersion.value = publishedOverLiveResource(resource) ? undefined : false

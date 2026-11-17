@@ -402,13 +402,13 @@ describe('one save in flight per field, with its state in the store (#458)', () 
 
   test('typing while the first save of a live component is in flight sends the newest text next, to the draft that save created, and the field\'s state follows it', async () => {
     const { seed, api, sent, store, select, resourceStackManager } = setup()
-    seed({ '@id': LIVE, '@type': 'Title', 'title': 'live', '_metadata': { persisted: true, publishable: { published: true } } })
+    seed({ '@id': LIVE, '@type': 'Title', 'title': 'live', '_metadata': { persisted: true, version: 3, publishable: { published: true } } })
     select(LIVE)
     let answerFirst!: (resource: CwaResource) => void
     api.mockImplementationOnce(() => new Promise((resolve) => {
       answerFirst = resolve
     }))
-    api.mockImplementationOnce((_path: string, options: { body: object }) => Promise.resolve({ '@id': DRAFT, '@type': 'Title', 'publishedResource': LIVE, ...options.body, '_metadata': { persisted: true, publishable: { published: false } } }))
+    api.mockImplementationOnce((_path: string, options: { body: object }) => Promise.resolve({ '@id': DRAFT, '@type': 'Title', 'publishedResource': LIVE, ...options.body, '_metadata': { persisted: true, version: 2, publishable: { published: false } } }))
     const field = edit(resourceStackManager.currentIri as Ref<string | undefined>, 'title')
 
     field.model.value = 'a'
@@ -419,13 +419,13 @@ describe('one save in flight per field, with its state in the store (#458)', () 
     await debounced()
     expect(api).toHaveBeenCalledOnce()
 
-    answerFirst({ '@id': DRAFT, '@type': 'Title', 'title': 'a', 'publishedResource': LIVE, '_metadata': { persisted: true, publishable: { published: false } } })
+    answerFirst({ '@id': DRAFT, '@type': 'Title', 'title': 'a', 'publishedResource': LIVE, '_metadata': { persisted: true, version: 1, publishable: { published: false } } })
     await vi.waitFor(() => expect(api).toHaveBeenCalledTimes(2))
     await flushPromises()
 
-    expect(sent().map(({ path, body }) => ({ path, body }))).toStrictEqual([
-      { path: LIVE, body: { title: 'a' } },
-      { path: DRAFT, body: { title: 'abc' } },
+    expect(sent().map(({ path, ifMatch, body }) => ({ path, ifMatch, body }))).toStrictEqual([
+      { path: LIVE, ifMatch: '"3"', body: { title: 'a' } },
+      { path: DRAFT, ifMatch: '"1"', body: { title: 'abc' } },
     ])
     await vi.waitFor(() => expect(store.current.byId[DRAFT]?.fieldStates?.title?.status).toBe('saved'))
     expect(store.current.byId[LIVE]?.fieldStates?.title).toBeUndefined()
@@ -433,12 +433,13 @@ describe('one save in flight per field, with its state in the store (#458)', () 
 
   test('a publish while a follow-up is queued waits for it, so what was typed is published', async () => {
     const { seed, api, sent, resourcesManager } = setup()
-    seed({ '@id': TITLE, '@type': 'Title', 'title': 'old', '_metadata': { persisted: true } })
+    seed({ '@id': TITLE, '@type': 'Title', 'title': 'old', '_metadata': { persisted: true, version: 2 } })
     let answerFirst!: (resource: CwaResource) => void
     api.mockImplementationOnce(() => new Promise((resolve) => {
       answerFirst = resolve
     }))
-    api.mockImplementation((path: string, options: { body: object }) => Promise.resolve({ '@id': path, '@type': 'Title', 'title': 'ab', ...options.body, '_metadata': { persisted: true } }))
+    let version = 3
+    api.mockImplementation((path: string, options: { body: object }) => Promise.resolve({ '@id': path, '@type': 'Title', 'title': 'ab', ...options.body, '_metadata': { persisted: true, version: ++version } }))
     const field = edit(ref(TITLE), 'title')
 
     field.model.value = 'a'
@@ -448,15 +449,19 @@ describe('one save in flight per field, with its state in the store (#458)', () 
     expect(api).toHaveBeenCalledOnce()
     const publishing = resourcesManager.updateResource({ endpoint: TITLE, data: { publishedAt: 'now' } })
     await flushPromises()
-    answerFirst({ '@id': TITLE, '@type': 'Title', 'title': 'a', '_metadata': { persisted: true } })
+    answerFirst({ '@id': TITLE, '@type': 'Title', 'title': 'a', '_metadata': { persisted: true, version: 3 } })
     await publishing
 
-    expect(sent().map(({ body }) => body)).toStrictEqual([{ title: 'a' }, { title: 'ab' }, { publishedAt: 'now' }])
+    expect(sent().map(({ ifMatch, body }) => ({ ifMatch, body }))).toStrictEqual([
+      { ifMatch: '"2"', body: { title: 'a' } },
+      { ifMatch: '"3"', body: { title: 'ab' } },
+      { ifMatch: '"4"', body: { publishedAt: 'now' } },
+    ])
   })
 
   test('one field\'s failed save keeps its error when another field of the same resource saves', async () => {
     const { seed, api, store } = setup()
-    seed({ '@id': TITLE, '@type': 'Title', 'title': 'old', 'subtitle': 'old', '_metadata': { persisted: true } })
+    seed({ '@id': TITLE, '@type': 'Title', 'title': 'old', 'subtitle': 'old', '_metadata': { persisted: true, version: 2 } })
     api.mockRejectedValueOnce(Object.assign(new Error('Server Error'), { statusCode: 500, data: { detail: 'Boom' } }))
     api.mockImplementation((path: string, options: { body: object }) => Promise.resolve({ ...store.current.byId[path]?.data, ...options.body }))
     const title = edit(ref(TITLE), 'title')
@@ -469,5 +474,61 @@ describe('one save in flight per field, with its state in the store (#458)', () 
 
     expect(title.state.value).toMatchObject({ status: 'error', error: { kind: 'server', status: 500, message: 'Boom' } })
     expect(title.model.value).toBe('mine')
+  })
+  test('a follow-up to a live component whose draft another admin made goes to the live component, never to that draft', async () => {
+    const { seed, api, sent } = setup()
+    seed({ '@id': LIVE, '@type': 'Title', 'title': 'live', 'draftResource': DRAFT, '_metadata': { persisted: true, version: 3, publishable: { published: true } } })
+    seed({ '@id': DRAFT, '@type': 'Title', 'title': 'theirs', 'publishedResource': LIVE, '_metadata': { persisted: true, version: 7, publishable: { published: false } } })
+    let answerFirst!: (resource: CwaResource) => void
+    api.mockImplementationOnce(() => new Promise((resolve) => {
+      answerFirst = resolve
+    }))
+    api.mockResolvedValueOnce({ '@id': LIVE, '@type': 'Title', 'title': 'ab', 'draftResource': DRAFT, '_metadata': { persisted: true, version: 5, publishable: { published: true } } })
+    const field = edit(ref(LIVE), 'title')
+
+    field.model.value = 'a'
+    await vi.waitFor(() => expect(api).toHaveBeenCalledOnce())
+    field.model.value = 'ab'
+    await debounced()
+    answerFirst({ '@id': LIVE, '@type': 'Title', 'title': 'a', 'draftResource': DRAFT, '_metadata': { persisted: true, version: 4, publishable: { published: true } } })
+    await vi.waitFor(() => expect(api).toHaveBeenCalledTimes(2))
+
+    expect(sent().map(({ path, ifMatch }) => ({ path, ifMatch }))).toStrictEqual([
+      { path: LIVE, ifMatch: '"3"' },
+      { path: LIVE, ifMatch: '"4"' },
+    ])
+  })
+
+  test('a 422 on a field puts the violation on that field only, and a 412 with no conflict raised is an error, not a conflict', async () => {
+    const { seed, api, store } = setup()
+    seed({ '@id': TITLE, '@type': 'Title', 'title': 'old', 'subtitle': 'old', '_metadata': { persisted: true, version: 2 } })
+    api.mockRejectedValueOnce(Object.assign(new Error('Unprocessable'), { statusCode: 422, data: { detail: 'title: Too short.', violations: [{ propertyPath: 'title', message: 'Too short.' }] } }))
+    api.mockRejectedValueOnce(preconditionFailed({ '@id': TITLE, '@type': 'Title', 'title': 'old', 'subtitle': 'theirs', '_metadata': { persisted: true, version: 3, ...THEIRS } }))
+    const title = edit(ref(TITLE), 'title')
+    const subtitle = edit(ref(TITLE), 'subtitle')
+
+    title.model.value = 'x'
+    await vi.waitFor(() => expect(title.state.value.status).toBe('error'))
+    subtitle.model.value = 'mine'
+    await vi.waitFor(() => expect(subtitle.state.value.status).toBe('error'))
+
+    expect(title.state.value.error).toStrictEqual({ kind: 'violation', status: 422, message: 'Too short.' })
+    expect(subtitle.state.value).toMatchObject({ error: { kind: 'precondition', status: 412 } })
+    expect(subtitle.state.value.held).toBeUndefined()
+    expect(Object.keys(store.current.byId[TITLE]?.fieldStates ?? {})).toStrictEqual(['title', 'subtitle'])
+  })
+
+  test('a save made outside a field, such as a modal\'s or a publish, writes no field state', async () => {
+    const { seed, api, store, resourcesManager } = setup()
+    seed({ '@id': TITLE, '@type': 'Title', 'title': 'old', '_metadata': { persisted: true, version: 2 } })
+    api.mockRejectedValueOnce(Object.assign(new Error('Unprocessable'), { statusCode: 422, data: { detail: 'title: Too short.', violations: [{ propertyPath: 'title', message: 'Too short.' }] } }))
+    api.mockResolvedValueOnce({ '@id': TITLE, '@type': 'Title', 'title': 'old', '_metadata': { persisted: true, version: 3 } })
+
+    await resourcesManager.updateResource({ endpoint: TITLE, data: { title: 'x' } })
+    await resourcesManager.updateResource({ endpoint: TITLE, data: { publishedAt: 'now' } })
+    await flushPromises()
+
+    expect(api).toHaveBeenCalledTimes(2)
+    expect(store.current.byId[TITLE]?.fieldStates).toBeUndefined()
   })
 })

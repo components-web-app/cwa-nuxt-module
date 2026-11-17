@@ -12,8 +12,16 @@ import { realtimeView } from '#cwa/resources/realtime-view'
 import { writeFieldStates } from '#cwa/resources/field-state-writer'
 import type { FocusedPeer } from '#cwa/admin/presence'
 import type { CwaFieldState } from '#cwa/storage/stores/resources/state'
+import type { CwaResource } from '#cwa/resources/resource-utils'
 
 export type { FocusedPeer } from '#cwa/admin/presence'
+
+interface Change {
+  value: any
+  iri: string
+  endpoint: string
+  untrack?: () => void
+}
 
 interface ResourceModelOps {
   longWaitThreshold?: number
@@ -70,7 +78,8 @@ export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: s
   const isBusy = computed(() => pendingSubmit.value || isSubmitting.value)
   let debouncing = false
   let episode: Promise<void> | undefined
-  let queued: { value: any, untrack?: () => void } | undefined
+  let episodes = 0
+  const queued = new Map<string, Change>()
   const state = computed<CwaFieldState>(() => resource.value?.fieldStates?.[rootProperty.value] ?? IDLE)
   const heldChange = shallowRef<{ iri: string, change: RemoteFieldChange<T> }>()
   const remoteChange = computed(() => heldChange.value?.iri === iri.value ? heldChange.value?.change : undefined)
@@ -127,9 +136,22 @@ export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: s
     return at === iri.value ? resource.value : at ? $cwa.resources.getResource(at).value : undefined
   }
 
-  function record(at: string | undefined, write: (states: Parameters<Parameters<typeof writeFieldStates>[0]>[0], entry: ReturnType<typeof resourceAt>, field: string) => void) {
+  type States = Parameters<Parameters<typeof writeFieldStates>[0]>[0]
+
+  function record(at: string | undefined, write: (states: States, entry: ReturnType<typeof resourceAt>, field: string) => void) {
     const field = rootProperty.value
     at && writeFieldStates(states => write(states, resourceAt(at), field))
+  }
+
+  function onRequest(sentTo: string, done?: Promise<{ resource?: CwaResource, error?: any }>) {
+    if (!done) {
+      record(sentTo, (states, entry, field) => states.skipped(entry, field))
+      return
+    }
+    const field = rootProperty.value
+    const sending = resourceAt(sentTo)
+    writeFieldStates(states => states.started(sending, [field]))
+    done.then(({ resource, error }) => writeFieldStates(states => states.settled(sending, [field], resource, error, at => $cwa.resources.getResource(at).value)))
   }
 
   function cancelPending() {
@@ -137,10 +159,11 @@ export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: s
     debouncing = false
     untrackPendingUpdate?.()
     untrackPendingUpdate = undefined
-    queued?.untrack?.()
-    queued = undefined
+    const dropped = [iri.value, ...queued.keys()]
+    queued.forEach(change => change.untrack?.())
+    queued.clear()
     pendingSubmit.value = false
-    record(iri.value, (states, entry, field) => states.unqueued(entry, field))
+    new Set(dropped).forEach(at => record(at, (states, entry, field) => states.unqueued(entry, field)))
   }
 
   function hold(untrack?: () => void) {
@@ -151,38 +174,43 @@ export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: s
     untrackPendingUpdate = untrack
   }
 
-  function send(value: any, untrack?: () => void): Promise<void> {
+  function send(change: Change): Promise<void> {
     if (episode) {
-      queued?.untrack?.()
-      queued = { value, untrack }
+      queued.get(change.iri)?.untrack?.()
+      queued.delete(change.iri)
+      queued.set(change.iri, change)
       pendingSubmit.value = true
-      record(iri.value, (states, entry, field) => states.edited(entry, field))
+      record(change.iri, (states, entry, field) => states.edited(entry, field))
       return episode
     }
-    untrack?.()
-    const sending = run(value).finally(() => {
-      episode = undefined
+    return start(change)
+  }
+
+  function start(change: Change): Promise<void> {
+    change.untrack?.()
+    const sending: Promise<void> = run(change).finally(() => {
+      episode === sending && (episode = undefined)
     })
     episode = sending
     return sending
   }
 
-  async function run(first: any) {
-    let value = first
-    let target = iri.value
+  async function run(first: Change) {
+    const id = ++episodes
+    let change = first
     for (;;) {
-      target = await updateResource(value, target) ?? target
-      const next = queued
-      queued = undefined
-      if (!next) {
+      const savedAs = await updateResource(change.value, change.iri, change.endpoint)
+      const [next] = queued.values()
+      if (id !== episodes || !next) {
         return
       }
-      if (remoteChange.value) {
+      queued.delete(next.iri)
+      if (heldChange.value) {
         hold(next.untrack)
         return
       }
       next.untrack?.()
-      value = next.value
+      change = savedAs && savedAs !== change.iri && next.iri === change.iri ? { ...next, iri: savedAs, endpoint: savedAs } : next
     }
   }
 
@@ -199,12 +227,10 @@ export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: s
     return getNormalizedValue(value1) === getNormalizedValue(value2)
   }
 
-  async function updateResource(newLocalValue: any, target = iri.value): Promise<string | undefined> {
-    const submittingIri = target
+  async function updateResource(newLocalValue: any, submittingIri: string | undefined, submittingEndpoint: string): Promise<string | undefined> {
     if (!submittingIri) {
       return
     }
-    const submittingEndpoint = submittingIri === iri.value ? endpoint.value : submittingIri
 
     // consider: another field is updating the same object and the request is not complete, we could overwrite that change with the new change as we are merging objects from the root property
     // consider: it doesn't matter if THIS field is updated and there is a pending request, we can continue and override that change
@@ -216,26 +242,17 @@ export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: s
 
     const submittingResource = resourceAt(submittingIri)
     // if the resource has been deleted, this will trigger a store value update but we do not need to submit this
-    if (submittingResource === undefined) {
-      pendingSubmit.value = debouncing
+    if (submittingResource === undefined || (!isSubmitting.value && isEqual(submittingResource.data ? get(submittingResource.data, property) : undefined, newLocalValue))) {
+      pendingSubmit.value = debouncing || !!queued.size
       record(submittingIri, (states, entry, field) => states.skipped(entry, field))
-      resetValue()
-      return
-    }
-
-    // if we are submitting already, then we will already be updating the store value in a moment,
-    // so the equality check would be invalid
-    if (!isSubmitting.value && isEqual(submittingResource.data ? get(submittingResource.data, property) : undefined, newLocalValue)) {
-      pendingSubmit.value = debouncing
-      record(submittingIri, (states, entry, field) => states.skipped(entry, field))
-      resetValue()
+      submittingIri === iri.value && !debouncing && isEqual(localValue.value, newLocalValue) && resetValue()
       return
     }
 
     requests.value++
     const submittingValue = rootValue(newLocalValue, submittingIri)
 
-    pendingSubmit.value = debouncing
+    pendingSubmit.value = debouncing || !!queued.size
     record(submittingIri, (states, entry, field) => states.unqueued(entry, field))
     const newResource = await $cwa.resourcesManager.updateResource({
       endpoint: submittingEndpoint,
@@ -243,6 +260,7 @@ export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: s
         [rootProperty.value]: submittingValue,
       },
       source,
+      onRequest,
     })
     requests.value--
 
@@ -283,6 +301,7 @@ export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: s
     pendingSubmit.value = true
     debouncing = true
     const typedIri = iri.value
+    const typedEndpoint = endpoint.value
     waitingIri = typedIri
     record(typedIri, (states, entry, field) => states.edited(entry, field))
     const submit = debounce(() => {
@@ -293,7 +312,7 @@ export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: s
       const untrack = untrackPendingUpdate
       untrackPendingUpdate = undefined
       typedIri && typedIri !== iri.value && resetValue(typedIri)
-      return send(newLocalValue, untrack)
+      return typedIri ? send({ value: newLocalValue, iri: typedIri, endpoint: typedEndpoint, untrack }) : untrack?.()
     }, debounceTime)
     debounced = submit
     untrackPendingUpdate = iri.value ? $cwa.resourcesManager.registerPendingUpdate(iri.value, (keepConflict = true) => remoteChange.value ? keepConflict && remoteChange.value.keep() : submit.flush()) : undefined
@@ -347,9 +366,10 @@ export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: s
       localValue.value = value as T
     },
     moveTo: moveLocalValue,
-    submit: async () => {
+    submit: () => {
+      const value = localValue.value
       cancelPending()
-      await updateResource(localValue.value)
+      return start({ value, iri: iri.value!, endpoint: endpoint.value })
     },
     conflict: (held) => {
       const previous = heldChange.value
@@ -368,7 +388,7 @@ export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: s
     }
     const value = localValue.value
     cancelPending()
-    return send(value)
+    return send({ value, iri: iri.value!, endpoint: endpoint.value })
   }
 
   async function reset() {

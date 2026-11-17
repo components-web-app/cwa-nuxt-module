@@ -99,7 +99,7 @@ export function edited(entry: Entry, field: string) {
 export function unqueued(entry: Entry, field: string) {
   const state = entry && stateOf(entry, field)
   if (entry && state) {
-    put(entry, field, { ...state, waiting: false })
+    put(entry, field, state.status === 'pending' && !flightOf(entry, field).count ? undefined : { ...state, waiting: false })
   }
 }
 
@@ -163,8 +163,7 @@ export function failed(entry: Entry, fields: string[], error: RequestError, to: 
     const state = stateOf(entry, field)
     const own = target === entry ? state : stateOf(target, field)
     const fieldError = errorOf(error, field)
-    const body = error.statusCode === 412 && error.data && typeof error.data === 'object' ? error.data : undefined
-    const heldValue = own?.held ?? (body && field in body ? { value: body[field] } : undefined)
+    const heldValue = own?.held
     put(entry, field, undefined)
     put(target, field, {
       ...base(state),
