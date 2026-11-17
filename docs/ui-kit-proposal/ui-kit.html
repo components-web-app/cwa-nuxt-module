@@ -801,8 +801,12 @@ button.f{cursor:pointer;width:100%}
 .fsh-row{display:flex;align-items:center;justify-content:space-between;gap:1rem}
 .fsh-row .fsh{margin:0;font-size:1.125rem;font-weight:650;line-height:1.3;letter-spacing:-.01em}
 .fsh-row .btn{--bh:var(--k-control-lg)}
-.rt-rec{font-size:.8125rem;line-height:1.45;color:var(--k-muted);display:flex;gap:.25rem .5rem;flex-wrap:wrap;align-items:center}
-.rt-rec .mono{color:var(--k-fg)}
+.rt-rec{display:grid;grid-template-columns:1rem minmax(0,1fr) auto;gap:.5rem .75rem;align-items:center;padding:.5rem .75rem .5rem calc(.75rem + 3px);background:color-mix(in srgb,var(--k-accent-fg) 10%,var(--k-surface));box-shadow:inset 3px 0 0 var(--k-accent-fg);font-size:.8125rem;line-height:1.45;color:var(--k-fg)}
+.rt-rec[hidden]{display:none}
+.rt-rec>.g{color:var(--k-accent-fg)}
+.rt-rec .btn{--bh:2rem;padding:0 .75rem;font-size:.8125rem}
+.coarse .rt-rec .btn{--bh:2.75rem}
+@media (pointer: coarse){.rt-rec .btn{--bh:2.75rem}}
 .rt-warn{display:grid;grid-template-columns:1rem 1fr;gap:.25rem .75rem;padding:.75rem 1rem .75rem calc(1rem + 3px);background:color-mix(in srgb,var(--k-warning) 10%,var(--k-surface));box-shadow:inset 3px 0 0 var(--k-warning);font-size:.8125rem;line-height:1.45}
 .rt-warn .g{margin-top:.125rem}
 .rt-warn p{margin:0;grid-column:2}
@@ -830,7 +834,7 @@ button.f{cursor:pointer;width:100%}
 .sback:focus-visible{outline:2px solid var(--k-accent-fg);outline-offset:2px}
 .coarse .sback{min-height:2.75rem}
 @media (pointer: coarse){.sback{min-height:2.75rem}}
-.dlg-subh .subt{margin:.25rem 0 0;font-size:1.125rem;font-weight:650;line-height:1.3;letter-spacing:-.01em;color:var(--k-fg);max-width:100%;overflow-wrap:anywhere}
+.dlg-subh .subt{margin:.5rem 0 0;font-size:1.125rem;font-weight:650;line-height:1.3;letter-spacing:-.01em;color:var(--k-fg);max-width:100%;overflow-wrap:anywhere}
 .dlg-subh .subt:focus{outline:none}
 .dlg-subh .subt:focus-visible{outline:2px solid var(--k-accent-fg);outline-offset:2px}
 .dlg-subh .ovf{display:none;--bh:2.75rem;margin:-.625rem -.75rem -.625rem 0}
@@ -847,16 +851,16 @@ button.f{cursor:pointer;width:100%}
 .rt-target .fsd{margin:0}
 .rt-off{margin:0;font-size:.875rem;color:var(--k-fg)}
 .rt-sub .rt-status{margin:0}
-.navrows{margin-top:2rem;box-shadow:inset 0 1px 0 var(--k-line)}
+.navrows{margin-top:2.5rem;box-shadow:inset 0 1px 0 var(--k-line)}
 .navrows>div{box-shadow:inset 0 -1px 0 var(--k-line)}
-.navrow{display:grid;grid-template-columns:auto minmax(0,1fr) 1rem;align-items:center;gap:1rem;width:100%;min-height:3rem;padding:.5rem .5rem .5rem 0;border:0;background:none;font:inherit;text-align:left;color:var(--k-fg);cursor:pointer}
+.navrow{display:grid;grid-template-columns:auto minmax(0,1fr) 1rem;align-items:center;gap:1rem;width:calc(100% + 2rem);margin:0 -1rem;min-height:3.5rem;padding:.75rem 1rem;border:0;background:none;font:inherit;text-align:left;color:var(--k-fg);cursor:pointer}
 .navrow .nl{font-size:.9375rem;font-weight:600}
 .navrow .ns{justify-self:end;min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.875rem;color:var(--k-muted)}
 .navrow .nc{width:.75rem;height:.75rem;color:var(--k-muted);justify-self:end}
 .navrow:hover{background:var(--k-step-hover)}
 .navrow:hover .nc{color:var(--k-fg)}
 .navrow:focus-visible{outline:2px solid var(--k-accent-fg);outline-offset:-2px}
-.coarse .navrow{min-height:3.25rem}
+.coarse .navrow{min-height:3.5rem}
 .rt-cons{display:flex;flex-direction:column;gap:.75rem;font-size:.8125rem;line-height:1.45}
 .rt-cons>p{display:grid;grid-template-columns:1rem 1fr;gap:.75rem;margin:0;color:var(--k-fg)}
 .rt-cons>p .g{margin-top:.125rem}
@@ -874,9 +878,10 @@ button.f{cursor:pointer;width:100%}
 .tlab .rt-arr{margin:0 .125rem}
 .rt-to{color:var(--k-muted)}
 .tlab .rt-to.tp{color:var(--k-muted)}
-.rt-rec .brk{display:none}
-@container dbody (max-width: 25rem){.rt-rec .dotsep{display:none}.rt-rec .brk{display:block;flex-basis:100%;height:0}}
-.rt-rec>span:first-child{min-width:0;overflow-wrap:anywhere}
+.rt-rec>span{min-width:0}
+.rt-rec .mono{display:inline-block;max-width:100%;overflow-wrap:anywhere}
+.tlab .rt-to{white-space:nowrap;flex:none}
+@container dbody (max-width: 25rem){.rt-rec{grid-template-columns:1rem minmax(0,1fr)}.rt-rec .btn{grid-column:2;justify-self:start}}
 
 /* v6: skeletons shimmer: one band, in sync across rows, 1.4 s */
 .skel i,.opt.sk i,.f .lbl-sk{background-image:linear-gradient(100deg,transparent 0,transparent 30%,var(--k-shimmer) 50%,transparent 70%,transparent 100%);background-size:50vw 100%;background-repeat:no-repeat;background-attachment:fixed;animation:k-shimmer 1.4s linear infinite}
@@ -3269,7 +3274,7 @@ function routesPanel (el, R, ctx) {
   const what = ctx.what || 'page'
   const effective = () => R.gate ? 'held' : (R.path ? R.live : 'none')
   const arrow = `<span class="rt-arr" aria-hidden="true">${g('go')}</span>`
-  const rec = (attr, extra = '') => `<div class="rt-rec"${extra}><span>Recommended: <span class="mono">${esc(R.recommended)}</span></span><span class="dotsep" aria-hidden="true">·</span><span class="brk" aria-hidden="true"></span><button type="button" class="tbtn" ${attr} aria-label="Use this: the recommended path, ${esc(R.recommended)}">Use this</button></div>`
+  const rec = (attr, extra = '') => `<div class="rt-rec" role="note"${extra}>${g('info')}<span>Recommended: <span class="mono">${esc(R.recommended)}</span></span><button type="button" class="btn soft" ${attr} aria-label="Use this: the recommended path, ${esc(R.recommended)}">Use this</button></div>`
   const status = sec => R.status && R.status.sec === sec ? `<div class="rt-status" role="status" tabindex="-1" data-rstat>${g('saved', 'c-success')}<span>${R.status.html}</span></div>` : ''
   const failBox = () => R.viewFail ? `<div class="alert danger rt-fail" role="alert" tabindex="-1" data-rfail>${g('error', 'c-danger')}<b>${esc(R.viewFail.title)}</b><p>The server couldn't save it. Nothing changed.</p><div class="acts"><button type="button" class="btn soft" data-rretry>Retry</button></div></div>` : ''
   const count = ns => ns.reduce((n, x) => n + 1 + (x.kids ? count(x.kids) : 0), 0)

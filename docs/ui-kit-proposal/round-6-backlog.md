@@ -44,3 +44,6 @@ Verified by a checker per role and spot-checked by Claude. Apply in round 6 unle
 
 ## 6. Template count in lists
 - Needs api-components-bundle#587 (admin-only `_metadata.pageDataCount` on template pages). Until it ships, the list shows "Template" with no number. Bundle contract (2026-11-17): total only, admins only, template pages only, 0 when unused; the list says "Template · 14 pages" and "Template · unused".
+
+## 7. Route status in page lists (decided 2026-11-17)
+- The Pages list reads statuses from `GET /_/routes?page[]=<page IRI>…` (`pageData[]=` for page data lists), one request per list page alongside `/_/pages`, joined on `route`; every match returned. No route data on Page (bundle rule: relations are IRIs; go-live state is owned and cache-managed by Route). A page with no match is "No route". api-components-bundle#588: `itemsPerPage` up to 100 with either filter, every match returned, more than 100 IRIs is a 422; admins get `path`, `liveAt`, `_metadata.effectiveLiveAt`.
