@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>CWA Admin UI Kit</title>
-<meta name="description" content="Proposal v2 for the @cwa/nuxt admin UI kit (#236): filled square fields, solid status glyphs, working menus, the either/or group, the one-row manager bar, modals, lists and feedback.">
+<meta name="description" content="Proposal v4 for the @cwa/nuxt admin UI kit (#236): filled square fields, status glyphs that take no reserved space, working menus, the either/or group, the one-row manager bar, modals and admin pages with Save, lists and feedback.">
 <style>
 :root{
   --bg:#f5f5f4;--text:#1c1917;--text-muted:#57534e;--card:#ffffff;--border:#d6d3d1;--code:#e7e5e4;--link:#1d4ed8;
@@ -118,6 +118,7 @@ h3.sub{font-size:1.0625rem;margin:2.5rem 0 .5rem}
 .sim{display:flex;flex-wrap:wrap;gap:.5rem;margin:0 0 .75rem}
 .sim button{background:var(--card);color:var(--text);border:1px solid var(--border);padding:.375rem .75rem;font-size:.8125rem;cursor:pointer;min-height:2.25rem}
 .sim button:hover{border-color:var(--text-muted)}
+.sim button[aria-pressed="true"]{border-color:var(--text);font-weight:600}
 .qs{max-width:52rem;padding-left:1.25rem}
 .qs li{margin:0 0 1rem}
 .qs b{font-weight:650}
@@ -188,22 +189,25 @@ button.f{cursor:pointer;width:100%}
 .f input,.f textarea{all:unset;display:block;flex:1;min-width:0;height:100%;font:inherit;color:inherit}
 .f input::placeholder,.f textarea::placeholder{color:var(--k-muted-on-field);opacity:1}
 .f.ro input::placeholder{color:var(--k-muted)}
-@media (pointer: coarse){.f input,.f textarea{font-size:1rem}}
-.coarse .f input{font-size:1rem}
-.f .sv{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media (pointer: coarse){.f input,.f textarea,.f .sv,.f .ph,.chip,.chip.sm,.seg button{font-size:1rem}}
+.coarse .f input,.coarse .f textarea,.coarse .f .sv,.coarse .f .ph,.coarse .chip,.coarse .chip.sm,.coarse .seg button{font-size:1rem}
+.f .sv{flex:1;min-width:0;overflow:hidden;overflow-x:clip;overflow-y:visible;text-overflow:ellipsis;white-space:nowrap}
 .f .sv.ph,.f .ph{color:var(--k-muted-on-field)}
 .f .lead{color:var(--k-muted-on-field)}
-.f .chev{color:var(--k-muted-on-field);width:.75rem;height:.75rem}
-.f .suffix{color:var(--k-muted-on-field);font-size:.8125rem;white-space:nowrap}
+.f .chev{color:var(--k-muted-on-field);width:.75rem;height:.75rem;margin:0 .125rem}
+.f .end{color:var(--k-muted-on-field)}
+.f .suffix{color:var(--k-muted-on-field);font-size:.8125rem;white-space:nowrap;width:1rem;display:grid;place-items:center;flex:none}
+.f:has(> .st:not(:empty)) > .end,.f:has(> .st:not(:empty)) > .suffix,.tail:has(> .st:not(:empty)) > .end{display:none}
 .trunc{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.w-xs{width:4.5rem}.w-sm{width:9rem}.w-md{width:13rem}.w-lg{width:19rem}.w-auto{width:auto}
+.w-xs,.f.w-xs{width:4.5rem}.w-sm,.f.w-sm{width:9rem}.w-md,.f.w-md{width:13rem}.w-lg,.f.w-lg{width:19rem}.w-auto,.f.w-auto{width:auto}
 .st{flex:none;width:1rem;height:1rem;display:grid;place-items:center;color:var(--k-muted-on-field);position:relative}
+.st:empty{display:none}
+.f.num>.st{margin-right:.5rem}
 .st-btn{position:absolute;inset:50% auto auto 50%;transform:translate(-50%,-50%);width:var(--k-hit);height:var(--k-hit);display:grid;place-items:center;background:none;border:0;padding:0;cursor:pointer;color:inherit}
 .st-btn:focus-visible{outline-offset:-2px}
 .f.ta{display:block;height:auto;padding:0}
-.f.ta textarea{box-sizing:border-box;display:block;width:100%;height:auto;padding:.75rem calc(var(--fx) + 1.75rem) .75rem var(--fx);line-height:1.5;resize:none;field-sizing:content;min-height:calc(4.5em + 1.5rem);max-height:calc(12em + 1.5rem);overflow-y:auto;scrollbar-width:thin;white-space:pre-wrap;overflow-wrap:break-word}
-.f.ta .st{position:absolute;top:calc(.75rem + .75em - .5rem);right:calc(var(--fx) + .25rem)}
-.f.multi{height:auto;min-height:var(--h);flex-wrap:wrap;padding:.25rem 2.75rem .25rem .25rem;gap:.25rem;cursor:text}
+.f.ta textarea{box-sizing:border-box;display:block;width:100%;height:auto;padding:.75rem var(--fx);line-height:1.5;resize:none;field-sizing:content;min-height:calc(4.5em + 1.5rem);max-height:calc(12em + 1.5rem);overflow-y:auto;scrollbar-width:thin;white-space:pre-wrap;overflow-wrap:break-word}
+.f.multi{height:auto;min-height:var(--h);flex-wrap:wrap;padding:.25rem 2.25rem .25rem .25rem;gap:.25rem;cursor:text}
 .f.multi input{flex:1 0 6.5rem;height:2.25rem;min-width:0;padding-left:.5rem}
 .f.multi .chips{display:contents}
 .f.multi .tail{position:absolute;right:.75rem;top:0;height:var(--h);display:flex;align-items:center;gap:.5rem}
@@ -216,7 +220,7 @@ button.f{cursor:pointer;width:100%}
 .chip-x .g{width:.75rem;height:.75rem}
 .chip-x.is-hover{background:var(--k-step-hover)}
 .f.multi.bar{height:var(--h);flex-wrap:nowrap;padding:0 var(--fx);cursor:pointer}
-.f.multi.bar .sum{display:flex;align-items:center;gap:.5rem;flex:1;min-width:0;overflow:hidden}
+.f.multi.bar .sum{display:flex;align-items:center;gap:.5rem;flex:1;min-width:0;overflow:hidden;overflow-x:clip;overflow-y:visible}
 .chip.sm{height:1.5rem;padding:0 .5rem;font-size:.8125rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;display:inline-block;line-height:1.5rem}
 .more{font:600 .75rem/1 inherit;color:var(--k-muted-on-field);flex:none}
 .f.multi.bar input{position:absolute;opacity:0;width:1px;height:1px;min-width:0;padding:0}
@@ -381,6 +385,8 @@ button.f{cursor:pointer;width:100%}
 .o-c{width:1rem;height:1rem;flex:none}
 .o-l b,.o-d b{font-weight:650;color:var(--k-fg)}
 .mgroup{padding:.5rem .75rem .25rem;font-size:.8125rem;color:var(--k-muted)}
+.msep{height:1px;background:var(--k-line);margin:.25rem 0}
+.menu .opt.c-danger .o-l{color:var(--k-danger-fg)}
 .mgroup:not(:first-child){margin-top:.5rem}
 .mstate{display:flex;align-items:center;gap:.5rem;padding:.75rem;color:var(--k-muted);flex-wrap:wrap}
 .menu.sheet{left:0!important;right:0;bottom:0;top:auto!important;width:auto!important;max-width:none;max-height:70vh;padding-bottom:env(safe-area-inset-bottom)}
@@ -466,6 +472,9 @@ button.f{cursor:pointer;width:100%}
 .coarse .row-arrow,.row-wrap:focus-within .row-arrow{display:none!important}
 .pin{grid-area:pin;display:flex;align-items:center;gap:.5rem;padding:0 .75rem 0 .5rem;min-width:0;box-shadow:inset 1px 0 0 var(--k-line)}
 .pin .btn{--bh:calc(var(--k-tabs) - .5rem)}
+.pin-split{display:inline-flex;gap:1px;flex:none}
+.pin-split .pin-more{width:var(--bh);padding:0}
+.pin-split .pin-more .g{width:.75rem;height:.75rem}
 .coarse .pin{padding:0 .25rem;gap:.25rem}
 .coarse .pin .btn{--bh:var(--k-tabs)}
 .bsum{display:inline-flex;align-items:center;gap:.5rem;height:calc(var(--k-tabs) - .5rem);padding:0 .5rem;background:none;border:0;color:var(--k-muted);font:500 .875rem/1 inherit;white-space:nowrap;cursor:pointer}
@@ -476,8 +485,10 @@ button.f{cursor:pointer;width:100%}
 .sum-short,.pa-short{display:none}
 @container mgr (max-width: 63.99rem){.sum-full{display:none}.sum-short{display:inline}}
 @container mgr (max-width: 39.99rem){
-  .pin{padding:0 0 0 .25rem;gap:.125rem}
-  .pin .btn{--bh:var(--k-tabs);padding:0 calc(.875rem + env(safe-area-inset-right)) 0 .875rem}
+  .pin,.coarse .pin{padding:0 0 0 .25rem;gap:.125rem}
+  .pin .pin-split .pin-more{width:calc(var(--bh) + env(safe-area-inset-right));padding:0 env(safe-area-inset-right) 0 0}
+  .pin .pin-split .pin-act{padding:0 .875rem}
+  .pin .btn,.coarse .pin .btn{--bh:var(--k-tabs);padding:0 calc(.875rem + env(safe-area-inset-right)) 0 .875rem}
   .bsum{padding:0 .5rem;gap:.375rem}
   .pa-full{display:none}.pa-short{display:inline}
   .row{scroll-snap-type:x proximity}
@@ -559,6 +570,36 @@ button.f{cursor:pointer;width:100%}
 @media (max-width:639px){.eo-foot{margin:1.5rem -1rem -1rem;padding:.75rem 1rem}.eo-foot .btn{flex:1}}
 .dlg-row{display:flex;gap:2rem;align-items:flex-start;flex-wrap:wrap;justify-content:center}
 .dlg-row>.dlg-inline{flex:1 1 36rem;max-width:36rem}
+.dlg{position:relative}
+
+/* in-page confirm (discard, leave) */
+.cfm{position:absolute;inset:0;z-index:20;display:grid;place-items:center;padding:1rem;background:var(--k-scrim);animation:k-fade var(--d-base) ease-out}
+.cfm-box{background:var(--k-menu);color:var(--k-fg);box-shadow:var(--k-shadow);width:min(24rem,100%);padding:1.25rem 1.25rem 1rem;font-size:.875rem;line-height:1.5;animation:k-dlg var(--d-slow) var(--ease)}
+.cfm-box h3{margin:0;font-size:1rem;font-weight:600;line-height:1.35}
+.cfm-box p{margin:.5rem 0 0;color:var(--k-muted)}
+.cfm-acts{display:flex;justify-content:flex-end;gap:.75rem;margin-top:1.25rem}
+.cfm-acts .btn{--bh:var(--k-control-lg)}
+@container dlgframe (max-width: 39.99rem){.cfm-acts .btn{flex:1}}
+@media (max-width:639px){.cfm-acts .btn{flex:1}}
+
+/* admin page (/_cwa/settings) */
+.apage{position:relative;border:1px solid var(--border);background:var(--k-surface);color:var(--k-fg);font-size:.875rem;line-height:1.45}
+.anav{display:flex;padding:0 .75rem;box-shadow:inset 0 -1px 0 var(--k-line);overflow-x:auto;scrollbar-width:none}
+.anav::-webkit-scrollbar{display:none}
+.anav a{display:inline-flex;align-items:center;height:2.75rem;padding:0 1rem;color:var(--k-muted);text-decoration:none;font-weight:500;white-space:nowrap;line-height:1.25rem}
+.anav a:hover{color:var(--k-fg)}
+.anav a[aria-current="page"]{color:var(--k-fg);box-shadow:inset 0 -2px 0 var(--k-accent)}
+.anav a:focus-visible{outline-offset:-2px}
+.apage-b{padding:1.75rem;max-width:40rem}
+.apage-head{display:flex;align-items:baseline;gap:.75rem;flex-wrap:wrap;margin:0 0 1.75rem}
+.apage-head h3{font-size:1.125rem;font-weight:600;margin:0}
+.apage-head .mono{color:var(--k-muted)}
+.apage-acts{display:flex;gap:.75rem;align-items:center;justify-content:flex-end;margin-top:2rem}
+.apage-acts .btn{--bh:var(--k-control-lg)}
+.apage-acts .fstate{color:var(--k-muted);font-size:.8125rem;margin-right:auto}
+@media (max-width:639px){.apage-b{padding:1.25rem}.apage-acts .btn{flex:1}.apage-acts .fstate{display:none}}
+.ltool .create{margin-left:auto}
+.ltool .count+.create{margin-left:0}
 
 /* list */
 .list{container-type:inline-size;container-name:list;background:var(--k-surface);color:var(--k-fg);font-size:.875rem}
@@ -617,8 +658,9 @@ button.f{cursor:pointer;width:100%}
   .psub.wide{display:none}.psub.narrow{display:flex}
   .lrow{min-height:4.25rem;padding:0 .25rem 0 .75rem;column-gap:.875rem}
   .ltool{gap:.75rem}
-  .ltool .search{flex:1 1 100%;max-width:none}
-  .lfilters{flex:1 1 100%;overflow-x:auto;scrollbar-width:none;gap:.75rem;margin:0 -1rem;padding:0 1rem}
+  .ltool .search{flex:1 1 0;min-width:0;max-width:none}
+  .ltool .create{margin-left:0}
+  .lfilters{order:2;flex:1 1 100%;overflow-x:auto;scrollbar-width:none;gap:.75rem;margin:0 -1rem;padding:0 1rem}
   .lfilters::-webkit-scrollbar{display:none}
   .ltool .count{display:none}
 }
@@ -656,6 +698,7 @@ button.f{cursor:pointer;width:100%}
 .f .sv,.f .ph,.btn,.chip,.ftog,.seg button,.bsum,.tab,.f input,.nb{line-height:1.25rem}
 .chip.sm{line-height:1.5rem}
 .f>.sv,.f .sum>.ph{text-box:trim-both cap alphabetic}
+@supports not (overflow-x: clip){.f>.sv,.f .sum>.ph{text-box:normal}}
 /* toggles in forms: unsaved tag; footer state on phones */
 .trow .tt b .chg{display:none;font:600 .75rem/1 inherit;color:var(--k-accent-fg);margin:0}
 .fb.changed .trow .tt b .chg{display:inline}
@@ -733,7 +776,7 @@ button.f{cursor:pointer;width:100%}
 
 <header class="top">
   <div class="wrap">
-    <div class="brand">CWA Admin UI Kit <small>Proposal v3 · #236 · UI kit only</small></div>
+    <div class="brand">CWA Admin UI Kit <small>Proposal v4 · #236 · UI kit only</small></div>
     <div class="themes" role="group" aria-label="Page theme">
       <button type="button" data-theme-set="auto" aria-pressed="true">Auto</button>
       <button type="button" data-theme-set="light" aria-pressed="false">Light</button>
@@ -743,9 +786,18 @@ button.f{cursor:pointer;width:100%}
 </header>
 
 <main class="wrap">
-  <h1>The admin UI kit, v3</h1>
+  <h1>The admin UI kit, v4</h1>
   <p class="lede">Every control is shown here in the state it will ship with. Only the kit is covered: how components declare their fields, styles and UI variants is a separate job. The menus, popovers, bar, modal and list all work, so try them with a mouse, a keyboard and a phone.</p>
-  <p class="lede"><strong>New in v3, after review:</strong></p>
+  <p class="lede"><strong>New in v4, after review:</strong></p>
+  <ul class="changes">
+    <li><strong>No space is reserved for a status glyph.</strong> On a control with an end icon (a select's chevron, a date's calendar), the state takes the icon's place while it lasts: spinner, then tick, then the chevron again; error and conflict are a solid glyph button there. On a plain text input or stepper in the bar, the end padding widens only while a state shows, so the field's outer size never changes. Modal and page fields show no glyph inside at all.</li>
+    <li><strong>Admin pages with forms use the modal's Save model</strong>: a local copy, a Save button, nothing saved as you type.</li>
+    <li><strong>Create buttons name what they create</strong>: “Create page”, “Create article”.</li>
+    <li><strong>Unsaved changes are never lost silently.</strong> Cancel, ×, Escape and a click outside ask “Discard 3 unsaved changes?”; leaving an admin page or modal asks “Leave without saving?”; closing the browser tab gets the browser's own prompt. Nothing asks when nothing changed.</li>
+    <li><strong>On touch screens every control's value is 1rem</strong>, so a select sits at the same size as the text input beside it.</li>
+    <li><strong>Values are never clipped.</strong> A value that ends in an ellipsis is clipped sideways only, so ascenders and descenders show in full.</li>
+  </ul>
+  <p class="lede"><strong>From v3:</strong></p>
   <ul class="changes">
     <li><strong>Modals and pages edit a local copy and keep a Save button.</strong> Changed fields and tabs are marked, Save counts the changes and sends only those, errors from Save go on their fields, and a 412 asks per field which version to keep.</li>
     <li><strong>The page modal has tabs again</strong> (Details, Routes, Info, then page data tabs), including how they behave while creating.</li>
@@ -766,12 +818,12 @@ button.f{cursor:pointer;width:100%}
     <li><strong>Friendlier spacing</strong>, a rebuilt modal form layout, a list on one grid, and phone layouts for all of them, with 44px touch targets.</li>
   </ul>
   <nav class="toc" aria-label="Sections">
-    <a href="#gallery">1 Gallery</a><a href="#menus">2 Menus</a><a href="#errors">3 Errors and info</a><a href="#eitheror">4 Either/or</a><a href="#bar">5 Manager bar</a><a href="#modal">6 Modals</a><a href="#list">7 Lists</a><a href="#feedback">8 Feedback</a><a href="#questions">9 Open questions</a>
+    <a href="#gallery">1 Gallery</a><a href="#menus">2 Menus</a><a href="#errors">3 Errors and info</a><a href="#eitheror">4 Either/or</a><a href="#bar">5 Manager bar</a><a href="#modal">6 Modals and pages</a><a href="#list">7 Lists</a><a href="#feedback">8 Feedback</a><a href="#questions">9 Open questions</a>
   </nav>
 
   <section class="sec" id="gallery" aria-labelledby="h-gallery">
     <h2 id="h-gallery">1 · Gallery</h2>
-    <p class="lede">Every component and state in both admin themes. Dark is the default. Field states are drawn by the fill and a reserved 1rem status slot, so no state ever moves the layout.</p>
+    <p class="lede">Every component and state in both admin themes. Dark is the default. In the bar, a field's state is drawn by its fill and a glyph that replaces its end icon or sits in its widened end padding, so no state changes a field's size. Modal and page fields show their state by the label (“· Unsaved”) and the line below, never inside the field.</p>
     <div class="grid2">
       <div><p class="panel-cap"><b>Dark</b> default</p><div class="kit kit-dark panel s-modal" data-gallery="d"></div></div>
       <div><p class="panel-cap"><b>Light</b> <code>cwa:theme-light</code></p><div class="kit kit-light panel s-modal" data-gallery="l"></div></div>
@@ -822,12 +874,17 @@ button.f{cursor:pointer;width:100%}
 
   <section class="sec" id="bar" aria-labelledby="h-bar">
     <h2 id="h-bar">5 · The manager bar</h2>
-    <p class="lede">The bar is <strong>one row and never stacks</strong>. The row scrolls sideways with fades at its edges; with a mouse, arrows also appear at a hovered edge, and they hide while a field has focus. Focusing a field scrolls it fully into view, label included. The status and the primary action are pinned in the tab row, top right, on every tab; they never move into the field row. Type in Title to see it save. Description is edited on the page: its button scrolls to the text and focuses it. Mia's flag sits in a layer above the bar, on the field's top edge, so it never covers the tabs and the bar's height never changes. When you type in a field Mia is in, the flag stays up and reads “Mia is editing this too”.</p>
+    <p class="lede">The bar is <strong>one row and never stacks</strong>. The row scrolls sideways with fades at its edges; with a mouse, arrows also appear at a hovered edge, and they hide while a field has focus. Focusing a field scrolls it fully into view, label included. The status and the primary action are pinned in the tab row, top right, on every tab; they never move into the field row. The primary action is a split button: its arrow (“More actions”) opens the component's other actions, as today's admin does. Switch between an existing component, one in a full group, and a new one below to see its options. Type in Title to see it save. Description is edited on the page: its button scrolls to the text and focuses it. Mia's flag sits in a layer above the bar, on the field's top edge, so it never covers the tabs and the bar's height never changes. When you type in a field Mia is in, the flag stays up and reads “Mia is editing this too”.</p>
     <div class="sim" id="bar-sim">
       <button type="button" data-sim="fail">Make the next save fail</button>
       <button type="button" data-sim="conflict">Mia edits Title</button>
       <button type="button" data-sim="flag">Show Mia's flag</button>
       <button type="button" data-sim="reset">Reset</button>
+    </div>
+    <div class="sim" id="bar-mode" role="group" aria-label="Selected component">
+      <button type="button" data-sim="mode-existing" aria-pressed="true">Existing component</button>
+      <button type="button" data-sim="mode-full" aria-pressed="false">Existing, in a full group</button>
+      <button type="button" data-sim="mode-new" aria-pressed="false">New component</button>
     </div>
     <div id="bar-desktop"></div>
     <h3 class="sub">On a phone</h3>
@@ -836,8 +893,8 @@ button.f{cursor:pointer;width:100%}
   </section>
 
   <section class="sec" id="modal" aria-labelledby="h-modal">
-    <h2 id="h-modal">6 · Modals</h2>
-    <p class="lede"><strong>A modal edits a local copy and keeps a Save button.</strong> Nothing is sent as you type. A changed field says “Unsaved” after its label and shows the solid dot in its status slot, its tab shows a dot, and Save counts the changes. Save sends only the changed fields, in one request per resource. Errors returned by Save go on their fields, linked below them, and each tab holding one gets the triangle and is opened. If someone else saved first (a 412), nothing is saved and each field you both changed asks which version to keep. Creating uses the same button and the same flow.</p>
+    <h2 id="h-modal">6 · Modals and admin pages</h2>
+    <p class="lede"><strong>A modal edits a local copy and keeps a Save button.</strong> Nothing is sent as you type. A changed field says “Unsaved” after its label (nothing is drawn inside the field), its tab shows a dot, and Save counts the changes. Cancel, ×, Escape or a click outside with unsaved changes asks “Discard 3 unsaved changes?” first; with nothing changed it just closes. Save sends only the changed fields, in one request per resource. Errors returned by Save go on their fields, linked below them, and each tab holding one gets the triangle and is opened. If someone else saved first (a 412), nothing is saved and each field you both changed asks which version to keep. Creating uses the same button and the same flow.</p>
     <p class="lede">Layout: a label, 0.375rem, the field, 0.5rem, the helper line; fields 1.5rem apart; sections 2.5rem apart with space and no rules. The header, the tabs and the footer stay put while the body scrolls. Below 640px the dialog fills the screen, Delete moves to the header's ⋯ menu, and Cancel and Save share the footer row.</p>
     <div class="sim" id="modal-sim">
       <button type="button" data-sim="edit">Change three fields</button>
@@ -848,21 +905,25 @@ button.f{cursor:pointer;width:100%}
     </div>
     <div class="dlg-row">
       <div class="dlg-inline"><p class="panel-cap"><b>Editing a page</b> md, 36rem</p><div class="dlg-host" id="modal-edit"></div><pre class="log" id="modal-log" aria-live="polite">Requests appear here.</pre></div>
-      <div><p class="panel-cap"><b>Phone</b> full screen</p><div class="phone-dlg kit"><div class="dlg-host" id="modal-edit-phone"></div></div></div>
+      <div><p class="panel-cap"><b>Phone</b> full screen</p><div class="phone-dlg kit coarse"><div class="dlg-host" id="modal-edit-phone"></div></div></div>
     </div>
     <h3 class="sub">Creating: tabs before the resource exists</h3>
     <p class="note" style="margin:0 0 1rem">Details and the page data tab (Article) can be filled before the article exists. Routes needs a saved article, so its tab is disabled, with a lock, and opening it says why. Info has nothing to show yet, so it is hidden. Press Create article with fields empty: each tab holding a missing field gets the triangle, and the first one opens. Once created, the same modal turns into the edit view with Routes and Info.</p>
     <div class="dlg-row">
       <div class="dlg-inline"><p class="panel-cap"><b>Create</b></p><div class="dlg-host" id="modal-create"></div><pre class="log" id="modal-create-log" aria-live="polite">Requests appear here.</pre></div>
-      <div><p class="panel-cap"><b>Phone</b></p><div class="phone-dlg kit"><div class="dlg-host" id="modal-create-phone"></div></div></div>
+      <div><p class="panel-cap"><b>Phone</b></p><div class="phone-dlg kit coarse"><div class="dlg-host" id="modal-create-phone"></div></div></div>
     </div>
+    <h3 class="sub">Admin pages: the same Save model</h3>
+    <p class="note" style="margin:0 0 1rem">A <code>/_cwa</code> page with a form (here, site settings) works like a modal: it edits a local copy, nothing is sent as you type, and Save counts and sends the changes in one request. Change a field, then click Pages, Layouts or Users: leaving with unsaved changes asks first (in the module this is the existing <code>NavigationGuard</code>). Cancel asks too. Closing or reloading the browser tab with unsaved changes gets the browser's own prompt, whose wording we cannot change. When nothing has changed, nothing asks.</p>
+    <div id="settings-page"></div>
+    <pre class="log" id="settings-log" aria-live="polite">Requests appear here.</pre>
   </section>
   <section class="sec" id="list" aria-labelledby="h-list">
     <h2 id="h-list">7 · Lists</h2>
     <p class="lede">Every list uses one grid, and the header row uses the same columns, so badges, dates and actions line up down the page. The whole row is the link. Rows are 4rem tall when they have two lines. There are no per-row thumbnails: a small dot after the name gives the page's type, Static (blue) or Dynamic (yellow), and the toggles above the list filter by it. A toggle is a square filled button with its colour as a dot when off, and filled in that colour with a check when on; none on shows every type. Below 768px a row becomes title and ⋯, with the status dot and word first on the second line and the path last, so only the path is cut. On a phone the toggles and sort share one scrolling row, and row actions open as a bottom sheet. Search, the filters and the checkboxes work.</p>
     <div class="kit panel" style="padding:1.5rem" id="list-wide"></div>
     <div class="cols" style="margin-top:2rem">
-      <div><p class="panel-cap"><b>Phone</b></p><div class="narrow-list kit list" id="list-narrow"></div></div>
+      <div><p class="panel-cap"><b>Phone</b></p><div class="narrow-list kit list coarse" id="list-narrow"></div></div>
       <div><p class="panel-cap"><b>States</b> loading, empty, error</p><div class="states3" id="list-states" style="grid-template-columns:1fr"></div></div>
     </div>
   </section>
@@ -981,7 +1042,7 @@ function themeOf (el) {
   return c
 }
 
-function place (el, anchor, { gap = 4, cap = Infinity, matchW = false } = {}) {
+function place (el, anchor, { gap = 4, cap = Infinity, matchW = false, end = false } = {}) {
   const r = anchor.getBoundingClientRect()
   const vw = document.documentElement.clientWidth
   const vh = innerHeight
@@ -991,7 +1052,7 @@ function place (el, anchor, { gap = 4, cap = Infinity, matchW = false } = {}) {
   const target = list || el
   target.style.maxHeight = ''
   const w = el.offsetWidth
-  const left = Math.min(Math.max(8, r.left), vw - w - 8)
+  const left = Math.min(Math.max(8, end ? r.right - w : r.left), vw - w - 8)
   const below = vh - r.bottom - gap - 8
   const above = r.top - gap - 8
   const h = el.offsetHeight
@@ -1124,7 +1185,7 @@ function openMenu (cfg) {
       panel.tabIndex = -1
       setTimeout(() => panel.focus({ preventScroll: true }), 0)
     }
-    place(panel, cfg.anchor, { matchW: !isMenu, cap: 288 })
+    place(panel, cfg.anchor, { matchW: !isMenu, cap: 288, end: !!cfg.alignEnd })
   }
   return m
 }
@@ -1136,6 +1197,7 @@ function renderMenu (mode) {
   m.opts = []
   for (const it of items) {
     if (it.type === 'group') html += `<div class="mgroup" role="presentation">${esc(it.label)}</div>`
+    else if (it.type === 'sep') html += '<div class="msep" role="separator"></div>'
     else if (it.type === 'state') html += `<div class="mstate" role="presentation">${it.html}</div>`
     else {
       const i = m.opts.length
@@ -1157,7 +1219,7 @@ function renderMenu (mode) {
     m.hl = firstEnabled
   }
   paintHl(true)
-  if (!m.sheet && mode !== 'initial') place(m.panel, m.cfg.anchor, { matchW: !m.isMenu, cap: 288 })
+  if (!m.sheet && mode !== 'initial') place(m.panel, m.cfg.anchor, { matchW: !m.isMenu, cap: 288, end: !!m.cfg.alignEnd })
 }
 function paintHl (scroll) {
   const m = cur
@@ -1230,7 +1292,7 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape' && openPop && !e.defaultPrevented) { e.preventDefault(); closePop(true) }
 })
 addEventListener('scroll', e => {
-  if (cur && !cur.sheet && !cur.panel.contains(e.target)) place(cur.panel, cur.cfg.anchor, { matchW: true, cap: 288 })
+  if (cur && !cur.sheet && !cur.panel.contains(e.target)) place(cur.panel, cur.cfg.anchor, { matchW: !cur.isMenu, cap: 288, end: !!cur.cfg.alignEnd })
   if (openPop && !openPop.p.contains(e.target)) place(openPop.p, openPop.anchor, { gap: 8 })
 }, true)
 addEventListener('resize', () => { closeMenu(); closePop() })
@@ -1270,6 +1332,7 @@ function setupSelect (btn) {
     sv.classList.toggle('ph', !o)
   }
   show()
+  btn.api = { get: () => value, set: v => { value = v; show() } }
   let kbOpen = 0
   const open = kb => openMenu({
     anchor: btn, owner: btn, label, typeahead: true, kbOpen: !!kb,
@@ -1581,13 +1644,13 @@ function setupAll (root) {
 /* markup helpers */
 const infoBtn = (label, text) => `<span class="ib"><button type="button" aria-label="About ${esc(label)}" data-name="${esc(label)}" data-info="${esc(text)}">${g('info')}</button></span>`
 const selectHTML = ({ key, value = '', label, width = '', nullable, placeholder, status = '' }) =>
-  `<button type="button" class="f ${width}" data-select="${key}" data-value="${esc(value)}" data-label="${esc(label)}" aria-label="${esc(label)}"${nullable ? ' data-nullable' : ''}${placeholder ? ` data-placeholder="${esc(placeholder)}"` : ''}><span class="sv"></span>${g('chev', 'chev')}<span class="st" data-s="${status}"></span></button>`
+  `<button type="button" class="f ${width}" data-select="${key}" data-value="${esc(value)}" data-label="${esc(label)}" aria-label="${esc(label)}"${nullable ? ' data-nullable' : ''}${placeholder ? ` data-placeholder="${esc(placeholder)}"` : ''}><span class="sv"></span>${g('chev', 'chev end')}<span class="st" data-s="${status}"></span></button>`
 const searchHTML = ({ key = 'routes', value = '', label, width = '', id = nid('s'), placeholder = 'Search pages' }) =>
-  `<div class="f ${width}" data-search="${key}" data-value="${esc(value)}" data-label="${esc(label)}">${g('search', 'lead')}<input id="${id}" aria-label="${esc(label)}" placeholder="${esc(placeholder)}" autocomplete="off">${g('chev', 'chev')}<span class="st"></span></div>`
+  `<div class="f ${width}" data-search="${key}" data-value="${esc(value)}" data-label="${esc(label)}">${g('search', 'lead')}<input id="${id}" aria-label="${esc(label)}" placeholder="${esc(placeholder)}" autocomplete="off">${g('chev', 'chev end')}<span class="st"></span></div>`
 const multiHTML = ({ key = 'styles', values = '', label, mode = 'chips', width = '', placeholder }) =>
   mode === 'chips'
-    ? `<div class="f multi ${width}" data-multi="${key}" data-values="${values}" data-label="${esc(label)}" data-mode="chips"${placeholder ? ` data-placeholder="${esc(placeholder)}"` : ''}><span class="chips"></span><input aria-label="${esc(label)}" autocomplete="off"><span class="tail">${g('chev', 'chev')}<span class="st"></span></span></div>`
-    : `<div class="f multi bar ${width}" data-multi="${key}" data-values="${values}" data-label="${esc(label)}" data-mode="bar"><span class="sum"></span><input aria-label="${esc(label)}" autocomplete="off" placeholder="Search styles">${g('chev', 'chev')}<span class="st"></span></div>`
+    ? `<div class="f multi ${width}" data-multi="${key}" data-values="${values}" data-label="${esc(label)}" data-mode="chips"${placeholder ? ` data-placeholder="${esc(placeholder)}"` : ''}><span class="chips"></span><input aria-label="${esc(label)}" autocomplete="off"><span class="tail">${g('chev', 'chev end')}<span class="st"></span></span></div>`
+    : `<div class="f multi bar ${width}" data-multi="${key}" data-values="${values}" data-label="${esc(label)}" data-mode="bar"><span class="sum"></span><input aria-label="${esc(label)}" autocomplete="off" placeholder="Search styles">${g('chev', 'chev end')}<span class="st"></span></div>`
 const SLOT = {
   pending: '<span class="dot" role="img" aria-label="Not saved yet"></span>',
   saving: '<span class="spin" role="img" aria-label="Saving"></span>',
@@ -1611,16 +1674,17 @@ function cmpHTML (label, theirs, yours, choice) {
   return `<div class="cmp" role="radiogroup" aria-label="Which ${esc(lc(label))} to keep">${b('theirs', `Use ${PEER.name}'s`, theirs)}${b('yours', 'Keep yours', yours)}</div>`
 }
 const stepperHTML = (id, { hover, cls = '', label = ['Decrease', 'Increase'], value = 3, width = '9rem' } = {}) =>
-  `<div class="f num ${cls}${hover ? ' is-hover' : ''}" style="width:${width}"><button type="button" class="nb${hover === 'down' ? ' is-hover' : ''}" aria-label="${label[0]}" data-step="-1">−</button><input id="${id}" inputmode="numeric" value="${value}"><button type="button" class="nb${hover === 'up' ? ' is-hover' : ''}" aria-label="${label[1]}" data-step="1">+</button></div>`
+  `<div class="f num ${cls}${hover ? ' is-hover' : ''}" style="width:${width}"><button type="button" class="nb${hover === 'down' ? ' is-hover' : ''}" aria-label="${label[0]}" data-step="-1">−</button><input id="${id}" inputmode="numeric" value="${value}"><span class="st"></span><button type="button" class="nb${hover === 'up' ? ' is-hover' : ''}" aria-label="${label[1]}" data-step="1">+</button></div>`
 const LONG_TEXT = 'Every kitchen we fit is drawn, cut and finished by the same small team, a mile from our Bath showroom.\n\nWe start with a visit: we measure, listen and sketch, and you leave with drawings the same week. Cabinets are built from solid oak and birch ply in our own workshop, then hand-painted in any colour you like.\n\nFitting takes about two weeks, and the people who built your kitchen are the ones who fit it. When we finish, we come back after a month to adjust doors and drawers as the timber settles.\n\nCome and see the bench where yours will be made. The workshop is open on Saturdays, and the kettle is always on.'
-const textareaHTML = (id, value, status = '') => `<div class="f ta"><textarea id="${id}" %DESC% rows="3">${esc(value)}</textarea><span class="st" data-s="${status}"></span></div>`
+const textareaHTML = (id, value) => `<div class="f ta"><textarea id="${id}" %DESC% rows="3">${esc(value)}</textarea></div>`
 const inputF = ({ id, value = '', placeholder = '', cls = '', status = '', attrs = '' }) =>
   `<div class="f ${cls}"><input id="${id}" value="${esc(value)}" placeholder="${esc(placeholder)}" %DESC% ${attrs}><span class="st" data-s="${status}"></span></div>`
 const toggle = ({ id = nid('t'), label, checked, disabled, hidden }) =>
   `<label class="tgl${disabled ? ' dis' : ''}">${hidden ? `<span class="sr">${esc(label)}</span>` : `<span class="bl">${esc(label)}</span>`}<input type="checkbox" role="switch" id="${id}"${checked ? ' checked' : ''}${disabled ? ' disabled' : ''}><span class="tg"></span></label>`
 
+const inBar = el => !!el.closest('.kit-row,.mgr')
 function hydrate (root) {
-  $$('.st[data-s]', root).forEach(s => { if (s.dataset.state !== undefined) return; s.innerHTML = SLOT[s.dataset.s] || ''; s.dataset.state = s.dataset.s })
+  $$('.st[data-s]', root).forEach(s => { if (s.dataset.state !== undefined) return; s.innerHTML = inBar(s) ? (SLOT[s.dataset.s] || '') : ''; s.dataset.state = s.dataset.s })
 }
 
 /* gallery */
@@ -1681,22 +1745,31 @@ function galleryHTML (p) {
     ${T('Number', fb({ id: `${p}-nm`, label: 'Position', control: stepperHTML(`${p}-nm`) }))}
     ${T('Number, pointer on +', fb({ id: `${p}-nh`, label: 'Position', control: stepperHTML(`${p}-nh`, { hover: 'up' }) }))}
     ${T('Number in error, pointer on −', fb({ id: `${p}-ne`, label: 'Position', control: stepperHTML(`${p}-ne`, { hover: 'down', cls: 'err' }), err: { msg: 'Choose 1 to 7.' } }))}
-    ${T('Date', fb({ id: `${p}-dt`, label: 'Go live', control: `<button type="button" id="${p}-dt" class="f" data-cal>${g('cal', 'lead')}<span class="sv">18 Nov 2026, 09:00</span><span class="st"></span></button>` }))}
+    ${T('Date', fb({ id: `${p}-dt`, label: 'Go live', control: `<button type="button" id="${p}-dt" class="f" data-cal><span class="sv">18 Nov 2026, 09:00</span>${g('cal', 'end')}<span class="st"></span></button>` }))}
     ${T('Segmented', `<div class="fb"><div class="fl">Link</div><div class="seg" role="group" aria-label="Link type"><button type="button" aria-pressed="true">Page</button><button type="button" aria-pressed="false">URL</button></div></div>`)}
     ${T('Toggles', `<div class="fb" style="gap:.75rem"><div class="gl" style="gap:1.5rem">${toggle({ label: 'Off', hidden: false })}${toggle({ label: 'On', checked: true })}${toggle({ label: 'Disabled', disabled: true })}</div><label class="cblab"><input type="checkbox" class="cb" checked> Checkbox</label><label class="cblab"><input type="checkbox" class="cb"> Unchecked</label></div>`)}
     ${T('Textarea, grows with its text', fb({ id: `${p}-ta`, label: 'SEO meta description', optional: true, counter: '96 / 160', control: textareaHTML(`${p}-ta`, 'Hand-built kitchens, designed in Bath and made in our own workshop.') }))}
-    ${T('Textarea, long: scrolls after 8 lines', fb({ id: `${p}-tl`, label: 'Intro', optional: true, changed: true, control: textareaHTML(`${p}-tl`, LONG_TEXT, 'pending') }))}
-    ${T('Truncation, on purpose', fb({ id: `${p}-tr`, label: 'Layout', help: 'A long value ends in an ellipsis; the status slot keeps its place.', control: `<button type="button" class="f" id="${p}-tr" %DESC%><span class="sv">Kitchens made in our own workshop, a mile from the showroom</span>${g('chev', 'chev')}<span class="st" data-s="saved"></span></button>` }))}
+    ${T('Textarea, long: scrolls after 8 lines', fb({ id: `${p}-tl`, label: 'Intro', optional: true, changed: true, control: textareaHTML(`${p}-tl`, LONG_TEXT) }))}
+    ${T('Truncation, on purpose', fb({ id: `${p}-tr`, label: 'Layout', help: 'A long value ends in an ellipsis before the chevron.', control: `<button type="button" class="f" id="${p}-tr" %DESC%><span class="sv">Kitchens made in our own workshop, a mile from the showroom</span>${g('chev', 'chev end')}<span class="st" data-s="saved"></span></button>` }))}
     ${T('Read-only value', `<div class="fb"><div class="fl">ID</div><span class="rov"><span class="mono">/_/component/hero_sections/4f1c…a9e2</span><button type="button" class="btn ghost icon" aria-label="Copy ID" style="--bh:2rem">${g('copy')}</button></span></div>`)}
     ${T('Progress and spinner', `<div class="fb"><div class="fl">Uploading workshop-bench.jpg</div><div class="prog" role="progressbar" aria-label="Upload" aria-valuenow="62" aria-valuemin="0" aria-valuemax="100"><span style="width:62%"></span></div><div class="gl" style="gap:1rem;margin-top:.25rem"><span class="spin"></span><span class="spin" style="width:1.5rem;height:1.5rem"></span><span class="fh" style="margin:0">62%</span></div></div>`)}
   </div>
   <div style="margin-top:1.5rem">${fb({ id: `${p}-ms`, label: 'Style', info: 'Styles add classes to this component. Some combinations are not available here.', control: multiHTML({ values: 'dark,pad', label: 'Style', placeholder: 'Add a style' }) })}</div>
   <div style="margin-top:1.5rem" data-chiphover>${fb({ id: `${p}-mh`, label: 'Style, pointer on a chip’s ×', help: 'Only the × shows hover. The field and the chip keep their fill.', control: multiHTML({ values: 'dark,pad,wide', label: 'Style', placeholder: 'Add a style' }) })}</div>
-  <h3>Save states, bar only <span class="scrolls">· scrolls sideways</span></h3>
-  <div class="kit-row framed" style="--h:var(--k-control)">
-    ${[['Not saved yet', 'pending', ''], ['Saving', 'saving', ''], ['Still saving', 'wait', ''], ['Saved', 'saved', ''], ['Not saved', 'error', 'err'], ['Mia changed it', 'conflict', 'conf']].map(([l, st, c]) => `<div class="bf"><span class="bl">${l}</span><div class="f w-sm ${c}"><input aria-label="${l}" value="Summer menu"><span class="st" data-s="${st}"></span></div></div>`).join('<span class="dv"></span>')}
+  <h3>Save states, bar only: text inputs <span class="scrolls">· scrolls sideways</span></h3>
+  <div class="kit-row framed" style="--h:var(--k-control)" data-states="text">
+    ${[['Idle', '', ''], ['Not saved yet', 'pending', ''], ['Saving', 'saving', ''], ['Still saving', 'wait', ''], ['Saved', 'saved', ''], ['Not saved', 'error', 'err'], ['Mia changed it', 'conflict', 'conf']].map(([l, st, c]) => `<div class="bf"><span class="bl">${l}</span><div class="f w-sm ${c}"><input aria-label="${l}" value="Summer menu, served all day"><span class="st" data-s="${st}"></span></div></div>`).join('<span class="dv"></span>')}
   </div>
-  <p class="fh" style="margin-top:.5rem">The bar saves each field as you type. Modals and pages never do: they keep a local copy until Save.</p>
+  <p class="fh" style="margin-top:.5rem">No space is kept for a glyph. While a state shows, the field's end padding widens and the glyph sits in it; the field's outer size never changes, so the text just ends a little earlier.</p>
+  <h3>Save states, bar only: selects and other controls with an end icon <span class="scrolls">· scrolls sideways</span></h3>
+  <div class="kit-row framed" style="--h:var(--k-control)" data-states="select">
+    ${[['Idle', '', ''], ['Saving', 'saving', ''], ['Saved', 'saved', ''], ['Not saved', 'error', 'err'], ['Mia changed it', 'conflict', 'conf']].map(([l, st, c]) => `<div class="bf"><span class="bl">${l}</span>${selectHTML({ key: 'ui', value: 'split', label: l, width: 'w-sm', status: st }).replace('class="f w-sm"', `class="f w-sm ${c}"`)}</div>`).join('<span class="dv"></span>')}
+    <span class="dv"></span>
+    <div class="bf"><span class="bl">Date, saving</span><button type="button" class="f w-md" data-cal aria-label="Go live date"><span class="sv">18 Nov 2026, 09:00</span>${g('cal', 'end')}<span class="st" data-s="saving"></span></button></div>
+    <span class="dv"></span>
+    <div class="bf"><span class="bl">Position, saved</span>${stepperHTML(`${p}-sts`, { width: '8.25rem' }).replace('<span class="st"></span>', '<span class="st" data-s="saved"></span>')}</div>
+  </div>
+  <p class="fh" style="margin-top:.5rem">The state takes the end icon's place while it lasts: the chevron becomes the spinner, then the tick, then the chevron again. The bar saves each field as you type. Modals and pages never do: they keep a local copy until Save, and show no glyph inside the field.</p>
   <h3>Bar size, inline labels <span class="scrolls">· scrolls sideways</span></h3>
   <div class="kit-row framed">
     <div class="bf"><label class="bl" for="${p}-b1">Title</label><div class="f w-lg"><input id="${p}-b1" value="Made in our own workshop"><span class="st" data-s="saved"></span></div></div>
@@ -1709,6 +1782,16 @@ function galleryHTML (p) {
     <span class="dv"></span>
     <div class="bf"><span class="bl">Link</span><div class="seg" role="group" aria-label="Link type"><button type="button" aria-pressed="true">Page</button><button type="button" aria-pressed="false">URL</button></div></div>
   </div>
+  <h3>Touch size: every value at 1rem <span class="scrolls">· scrolls sideways</span></h3>
+  <div class="kit-row framed coarse" data-touchrow>
+    <div class="bf"><label class="bl" for="${p}-c1">Title</label><div class="f w-sm"><input id="${p}-c1" value="Made in Bath"><span class="st"></span></div></div>
+    <div class="bf"><span class="bl">UI</span>${selectHTML({ key: 'ui', value: 'split', label: 'UI', width: 'w-sm' })}</div>
+    <div class="bf">${multiHTML({ values: 'dark,pad', label: 'Style', mode: 'bar', width: 'w-sm' })}</div>
+    <div class="bf"><span class="bl">Go live</span><button type="button" class="f w-md" data-cal aria-label="Go live date"><span class="sv">18 Nov 2026, 09:00</span>${g('cal', 'end')}<span class="st"></span></button></div>
+    <div class="bf"><span class="bl">Position</span>${stepperHTML(`${p}-c2`, { width: '9rem' })}</div>
+    <div class="bf"><span class="bl">Link</span><div class="seg" role="group" aria-label="Link type"><button type="button" aria-pressed="true">Page</button><button type="button" aria-pressed="false">URL</button></div></div>
+  </div>
+  <p class="fh" style="margin-top:.5rem">On a touch screen the text in every control is 1rem, the size iOS needs to not zoom on focus, so a select, a chip or a date sits at the same size as the text input beside it. Labels stay 0.875rem.</p>
 </div>`
 }
 
@@ -1716,7 +1799,7 @@ function galleryHTML (p) {
 function setStatus (slot, state, o = {}) {
   slot.dataset.state = state
   const f = slot.closest('.f')
-  const bar = !slot.closest('.s-modal')
+  const bar = inBar(slot)
   if (f) {
     f.classList.toggle('err', state === 'error')
     f.classList.toggle('conf', state === 'conflict')
@@ -1729,14 +1812,17 @@ function setStatus (slot, state, o = {}) {
     const glyph = state === 'error' ? g('error', 'c-danger') : state === 'conflict' ? g('conflict', 'c-warning') : g('saved', 'c-success')
     slot.innerHTML = `<button type="button" class="st-btn" aria-label="${esc(aria)}" aria-haspopup="dialog" aria-expanded="false">${glyph}</button>`
     const b = $('button', slot)
-    b.addEventListener('click', () => {
+    b.addEventListener('keydown', e => e.stopPropagation())
+    b.addEventListener('mousedown', e => e.stopPropagation())
+    b.addEventListener('click', e => {
+      e.stopPropagation()
       const head = state === 'error' ? [g('error', 'c-danger'), `${name}: ${o.title || 'not saved'}`] : state === 'conflict' ? [g('conflict', 'c-warning'), `${name}: ${PEER.name} changed this`] : [g('saved', 'c-success'), `${name}: saved`]
       const pop = popover(b, popBody(state, o), { label: aria, icon: head[0], title: head[1] })
       if (!pop) return
       $$('[data-act]', pop).forEach((x, i) => x.addEventListener('click', () => { closePop(true); (o.actions[i].fn || (() => {}))() }))
     })
   } else {
-    slot.innerHTML = state === 'undo' ? SLOT.saved : (SLOT[state] || '')
+    slot.innerHTML = !bar ? '' : state === 'undo' ? SLOT.saved : (SLOT[state] || '')
   }
   if (!bar) {
     const block = slot.closest('.fb')
@@ -1777,6 +1863,120 @@ function fakeSave (slots, { fail = false, field = 'Field', onState = () => {}, r
       resolve(true)
     }
   }, ms))
+}
+
+/* in-page confirm */
+const andList = a => a.length < 2 ? (a[0] || '') : a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1]
+function askConfirm (host, { title, desc, keep = 'Keep editing', go, onGo, onKeep }) {
+  const prev = document.activeElement
+  const id = nid('cfm')
+  const layer = document.createElement('div')
+  layer.className = 'cfm'
+  layer.innerHTML = `<div class="cfm-box" role="alertdialog" aria-modal="true" aria-labelledby="${id}-t" aria-describedby="${id}-d"><h3 id="${id}-t">${esc(title)}</h3><p id="${id}-d">${esc(desc)}</p><div class="cfm-acts"><button type="button" class="btn soft" data-keep>${esc(keep)}</button><button type="button" class="btn solid danger" data-go>${esc(go)}</button></div></div>`
+  host.append(layer)
+  const keepB = $('[data-keep]', layer)
+  const goB = $('[data-go]', layer)
+  const close = back => { layer.remove(); if (back && prev && prev.isConnected) prev.focus({ preventScroll: true }) }
+  keepB.addEventListener('click', () => { close(true); onKeep && onKeep() })
+  goB.addEventListener('click', () => { close(false); onGo() })
+  layer.addEventListener('mousedown', e => { if (e.target === layer) { e.preventDefault(); e.stopPropagation(); close(true) } })
+  layer.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close(true) }
+    if (e.key === 'Tab') { e.preventDefault(); (document.activeElement === keepB ? goB : keepB).focus() }
+  })
+  keepB.focus({ preventScroll: true })
+  return layer
+}
+
+/* section 6b: admin page with the Save model */
+let settingsDirty = () => false
+function settingsPage (host, logEl) {
+  const F = {
+    name: { label: 'Site name', type: 'text', value: 'Hartley & Finch', help: 'Shown in the browser tab and in search results.' },
+    email: { label: 'Contact email', type: 'text', value: 'hello@hartleyandfinch.co.uk', help: 'Where form submissions are sent.' },
+    ui: { label: 'Default page UI', type: 'select', key: 'pageUi', value: 'primary' },
+    maint: { label: 'Maintenance mode', type: 'toggle', value: false, help: 'Visitors see a holding page. Admins still see the site.' }
+  }
+  let orig, v, busy = false
+  const log = t => { if (logEl) logEl.textContent = t }
+  const changedKeys = () => Object.keys(F).filter(k => v[k] !== orig[k])
+  const fid = k => 'st-' + k
+  function render () {
+    orig = Object.fromEntries(Object.entries(F).map(([k, f]) => [k, f.value]))
+    v = { ...orig }
+    const field = k => {
+      const f = F[k]
+      if (f.type === 'toggle') return `<div class="fb" data-k="${k}"><label class="trow"><span class="tt"><b>${esc(f.label)} <span class="chg">· Unsaved</span></b><span id="${fid(k)}-h">${esc(f.help)}</span></span><span class="tgl"><input type="checkbox" role="switch" id="${fid(k)}" aria-describedby="${fid(k)}-h"><span class="tg"></span></span></label></div>`
+      const ctl = f.type === 'select'
+        ? selectHTML({ key: f.key, value: f.value, label: f.label }).replace('<button', `<button id="${fid(k)}"`)
+        : `<div class="f"><input id="${fid(k)}" value="${esc(f.value)}" %DESC% autocomplete="off"><span class="st"></span></div>`
+      return fb({ id: fid(k), label: f.label, help: f.help, control: ctl, key: k })
+    }
+    host.innerHTML = `<div class="apage kit s-modal">
+      <nav class="anav" aria-label="Admin"><a href="/_cwa/pages" data-nav>Pages</a><a href="/_cwa/layouts" data-nav>Layouts</a><a href="/_cwa/users" data-nav>Users</a><a href="/_cwa/settings" aria-current="page">Settings</a></nav>
+      <div class="apage-b">
+        <div class="apage-head"><h3>Site settings</h3><span class="mono">/_cwa/settings</span></div>
+        <div class="form"><div class="fsec"><h3>General</h3><div class="fields">${Object.keys(F).map(field).join('')}</div></div></div>
+        <div class="apage-acts"><span class="fstate" aria-live="polite" data-fstate></span><button type="button" class="btn soft" data-cancel>Cancel</button><button type="button" class="btn solid" data-save>Save</button></div>
+      </div>
+    </div>`
+    setupAll(host)
+    Object.entries(F).forEach(([k, f]) => {
+      const el = $('#' + fid(k), host)
+      if (f.type === 'text') el.addEventListener('input', () => { v[k] = el.value; paint() })
+      if (f.type === 'toggle') el.addEventListener('change', () => { v[k] = el.checked; paint() })
+      if (f.type === 'select') el.addEventListener('commit', e => { v[k] = e.detail || ''; paint() })
+    })
+    $$('[data-nav]', host).forEach(a => a.addEventListener('click', e => { e.preventDefault(); leave(a) }))
+    $('[data-cancel]', host).addEventListener('click', () => {
+      const ks = changedKeys()
+      if (!ks.length) return
+      askConfirm($('.apage', host), { title: `Discard ${ks.length} unsaved ${ks.length === 1 ? 'change' : 'changes'}?`, desc: `Your ${ks.length === 1 ? 'change' : 'changes'} to ${andList(ks.map(k => F[k].label))} will be lost.`, go: 'Discard', onGo: () => { render(); log('Discarded. Nothing was sent.') } })
+    })
+    $('[data-save]', host).addEventListener('click', save)
+    paint()
+  }
+  function paint () {
+    const ks = changedKeys()
+    Object.keys(F).forEach(k => { const b = $(`[data-k="${k}"]`, host); b && b.classList.toggle('changed', ks.includes(k)) })
+    if (busy) return
+    const sv = $('[data-save]', host)
+    sv.textContent = ks.length ? `Save ${ks.length} ${ks.length === 1 ? 'change' : 'changes'}` : 'Save'
+    sv.disabled = !ks.length
+    $('[data-cancel]', host).disabled = !ks.length
+    $('[data-fstate]', host).textContent = ks.length ? `${ks.length} unsaved` : ''
+  }
+  function leave (a) {
+    const to = a.getAttribute('href')
+    const ks = changedKeys()
+    if (!ks.length) { log(`Navigated to ${to}. Nothing had changed, so nothing was asked.`); return }
+    if ($('.cfm', host)) return
+    askConfirm($('.apage', host), {
+      title: 'Leave without saving?',
+      desc: `${ks.length} unsaved ${ks.length === 1 ? 'change' : 'changes'} (${andList(ks.map(k => F[k].label))}) will be lost.`,
+      go: 'Leave', onGo: () => { render(); log(`Navigated to ${to}. The unsaved changes were discarded.`) }
+    })
+  }
+  function save () {
+    const ks = changedKeys()
+    if (!ks.length || busy) return
+    busy = true
+    const sv = $('[data-save]', host)
+    sv.disabled = true
+    sv.innerHTML = '<span class="spin"></span>Saving…'
+    setTimeout(() => {
+      busy = false
+      log(`PATCH /_/site_config_parameters\n${JSON.stringify(Object.fromEntries(ks.map(k => [k, v[k]])))}   ← one request`)
+      ks.forEach(k => { orig[k] = v[k] })
+      paint()
+      sv.innerHTML = `${g('saved')}Saved`
+      sv.disabled = true
+      setTimeout(paint, 1500)
+    }, 800)
+  }
+  settingsDirty = () => changedKeys().length > 0
+  window.addEventListener('beforeunload', e => { if (settingsDirty()) { e.preventDefault(); e.returnValue = '' } })
+  render()
 }
 
 /* toasts */
@@ -2070,19 +2270,19 @@ function buildBar (host, p, { coarse } = {}) {
             <div class="bf"><span class="bl">Image</span><div class="file"><span class="thumb" role="img" aria-label="Thumbnail"></span><span class="fname">workshop-bench.jpg</span><span class="fsize">240 KB</span><button type="button" class="btn soft">Replace</button><button type="button" class="btn ghost">Remove</button><span class="st"></span></div></div>
           </div>
           <div class="row" role="tabpanel" id="${p}-pn-ui" aria-labelledby="${p}-tab-ui" data-panel="ui" hidden>
-            <div class="bf"><span class="bl">UI</span>${selectHTML({ key: 'ui', value: 'split', label: 'UI', width: 'w-md' })}</div>
+            <div class="bf"><span class="bl">UI</span>${selectHTML({ key: 'ui', value: 'split', label: 'UI', width: 'w-md' }).replace('<button', '<button data-field="ui"')}</div>
             <span class="dv"></span>
             <div class="bf"><span class="bl">Style</span>${multiHTML({ values: 'dark,pad', label: 'Style', mode: 'bar', width: 'w-md' })}</div>
           </div>
           <div class="row" role="tabpanel" id="${p}-pn-order" aria-labelledby="${p}-tab-order" data-panel="order" hidden>
-            <div class="bf"><label class="bl" for="${p}-pos">Position</label>${stepperHTML(`${p}-pos`, { label: ['Move up', 'Move down'], width: '8.25rem' })}</div>
+            <div class="bf"><label class="bl" for="${p}-pos">Position</label>${stepperHTML(`${p}-pos`, { label: ['Move up', 'Move down'], width: '8.25rem' }).replace('<div class="f num', '<div data-field="pos" class="f num')}</div>
             <span class="bl">3 of 7 in Main content</span>
           </div>
           <div class="row" role="tabpanel" id="${p}-pn-publish" aria-labelledby="${p}-tab-publish" data-panel="publish" hidden>
             <div class="bf">${toggle({ label: 'Edit published version' })}${infoBtn('Edit published version', 'Changes go live as soon as they are saved, without a draft.')}</div>
             <span class="dv"></span>
             <div class="bf">${toggle({ id: p + '-sched', label: 'Schedule' })}</div>
-            <div class="bf"><button type="button" class="f w-md dis" data-cal aria-label="Go live date" id="${p}-date" disabled>${g('cal', 'lead')}<span class="sv">18 Nov 2026, 09:00</span><span class="st"></span></button></div>
+            <div class="bf"><button type="button" class="f w-md dis" data-cal aria-label="Go live date" id="${p}-date" disabled><span class="sv">18 Nov 2026, 09:00</span>${g('cal', 'end')}<span class="st"></span></button></div>
           </div>
           <div class="row" role="tabpanel" id="${p}-pn-info" aria-labelledby="${p}-tab-info" data-panel="info" hidden>
             <div class="bf"><span class="bl">ID</span><span class="rov"><span class="mono">/_/component/hero_sections/4f1c…a9e2</span><button type="button" class="btn ghost icon" aria-label="Copy ID">${g('copy')}</button></span></div>
@@ -2097,7 +2297,7 @@ function buildBar (host, p, { coarse } = {}) {
         <div class="pin">
           <button type="button" class="bsum" aria-haspopup="dialog"></button>
           <span class="sr" aria-live="polite" data-live></span>
-          <button type="button" class="btn solid pin-act"></button>
+          <span class="split pin-split"><button type="button" class="btn solid pin-act"></button><button type="button" class="btn solid icon pin-more" aria-label="More actions" aria-haspopup="menu" aria-expanded="false">${g('chev')}</button></span>
         </div>
       </div>
       <div class="flags"></div>
@@ -2115,7 +2315,7 @@ function buildBar (host, p, { coarse } = {}) {
   const live = $('[data-live]', mgr)
   const act = $('.pin-act', mgr)
   const B = { fieldStates: {}, failNext: false, savedAt: 0 }
-  const TAB_OF = { title: 'content', subtitle: 'content', button: 'content', link: 'content' }
+  const TAB_OF = { title: 'content', subtitle: 'content', button: 'content', link: 'content', ui: 'ui', pos: 'order' }
   const activeRow = () => rows.find(r => !r.hidden)
   const setAct = (full, short) => { act.innerHTML = `<span class="pa-full">${full}</span><span class="pa-short">${short}</span>`; act.setAttribute('aria-label', full) }
   setAct('Publish now', 'Publish')
@@ -2201,6 +2401,7 @@ function buildBar (host, p, { coarse } = {}) {
     else if (conf.length) { full = `${conf.length} conflict →`; short = `${conf.length} conflict`; glyph = g('conflict', 'c-warning'); goto = conf[0][0] }
     else if (busy) { full = 'Saving…'; short = 'Saving…'; glyph = '<span class="spin c-accent"></span>' }
     else if (Date.now() - B.savedAt < 4000) { full = 'All changes saved'; short = 'Saved'; glyph = g('saved', 'c-success') }
+    else if (B.mode === 'new') { full = 'New · not added yet'; short = 'New'; glyph = '<span class="dot"></span>' }
     else { full = sched ? 'Draft · scheduled' : 'Draft · not live'; short = sched ? 'Scheduled' : 'Draft'; glyph = '<span class="dot"></span>' }
     sum.innerHTML = `${glyph}<span class="sum-full">${esc(full)}</span><span class="sum-short">${esc(short)}</span>`
     sum.classList.toggle('act', !!goto)
@@ -2249,6 +2450,25 @@ function buildBar (host, p, { coarse } = {}) {
   wireField('title', $('#' + p + '-title'), v => { $('#' + p + '-htitle').textContent = v })
   wireField('subtitle', $('#' + p + '-sub'), v => { $('#' + p + '-hsub').textContent = v.toUpperCase() })
   wireField('button', $('#' + p + '-btn'), v => { $('#' + p + '-cta').textContent = v })
+  wireField('pos', $('#' + p + '-pos'))
+  const uiSel = $('[data-field="ui"]', mgr)
+  setupSelect(uiSel)
+  let uiLast = uiSel.api.get()
+  const uiSave = () => {
+    const fail = B.failNext
+    B.failNext = false
+    const prev = uiLast
+    uiLast = uiSel.api.get()
+    const slot = $(':scope > .st', uiSel)
+    return fakeSave([slot], {
+      fail, field: 'UI',
+      onState: s => { B.fieldStates.ui = s; if (s === 'saved') B.savedAt = Date.now(); summary() },
+      retry: () => uiSave(),
+      undo: () => { uiSel.api.set(prev); uiLast = prev; B.fieldStates.ui = ''; setStatus(slot, ''); summary() }
+    })
+  }
+  uiSel.addEventListener('commit', uiSave)
+  B.ui = { slot: $(':scope > .st', uiSel), f: uiSel, save: uiSave }
   setupEitherOr($('[data-eo]', mgr), null, '/component/hero_sections/4f1c')
 
   const desc = $('#' + p + '-desc')
@@ -2270,11 +2490,43 @@ function buildBar (host, p, { coarse } = {}) {
     sched.checked ? setAct('Schedule', 'Schedule') : setAct('Publish now', 'Publish')
     summary()
   })
-  act.addEventListener('click', () => toast({ tone: 'success', title: sched.checked ? 'Scheduled for 18 Nov, 09:00' : 'Published', desc: 'Hero section on Kitchens.' }))
+  B.mode = 'existing'
+  const more = $('.pin-more', mgr)
+  const ctaLabel = () => B.mode === 'new' ? ['Add', 'Add'] : sched.checked ? ['Schedule', 'Schedule'] : ['Publish now', 'Publish']
+  B.paintCta = () => { setAct(...ctaLabel()); summary() }
+  act.addEventListener('click', () => {
+    if (B.mode === 'new') { toast({ tone: 'success', title: 'Added as a draft', desc: 'Hero section, after Intro text.' }); return }
+    toast({ tone: 'success', title: sched.checked ? 'Scheduled for 18 Nov, 09:00' : 'Published', desc: 'Hero section on Kitchens.' })
+  })
+  const ctaItems = () => {
+    if (B.mode === 'new') {
+      return [
+        { label: 'Add and publish', fn: () => toast({ tone: 'success', title: 'Added and published', desc: 'Hero section, after Intro text.' }) },
+        { type: 'sep' },
+        { label: 'Discard', danger: true, fn: () => askConfirm(stage, { title: 'Discard this new component?', desc: 'The Hero section you are adding has not been saved, and will be removed.', go: 'Discard', onGo: () => toast({ tone: 'info', title: 'New component discarded' }) }) }
+      ]
+    }
+    const adds = B.mode === 'full'
+      ? [{ label: 'Add before or after', disabled: true, desc: 'Main content is full: 6 of 6 components.' }]
+      : [{ label: 'Add before', fn: () => toast({ tone: 'info', title: 'Choose a component to add before Hero section' }) }, { label: 'Add after', fn: () => toast({ tone: 'info', title: 'Choose a component to add after Hero section' }) }]
+    return [...adds, { type: 'sep' },
+      { label: 'Clone', fn: () => toast({ tone: 'info', title: 'Cloning Hero section', desc: 'Click where it should also appear.' }) },
+      { label: 'Move', fn: () => toast({ tone: 'info', title: 'Moving Hero section', desc: 'Click where it should go.' }) }]
+  }
+  const openCta = kb => {
+    if (cur && cur.cfg.owner === more) { closeMenu(true); return }
+    openMenu({ anchor: more, owner: more, label: 'More actions', role: 'menu', alignEnd: true, kbOpen: !!kb, items: ctaItems, selected: () => false, onPick: a => { a.fn && a.fn() } })
+  }
+  let ctaKb = 0
+  more.addEventListener('click', () => { if (Date.now() - ctaKb < 400) return; openCta(false) })
+  more.addEventListener('keydown', e => {
+    if (cur && cur.cfg.owner === more) return menuKey(e)
+    if (['Enter', ' ', 'ArrowDown'].includes(e.key)) { e.preventDefault(); ctaKb = Date.now(); openCta(true) }
+  })
 
   B.sim = k => {
     const T = B.title
-    if (k === 'fail') { B.failNext = true; toast({ tone: 'info', id: 'sim', title: 'The next save will fail', desc: 'Type in Title, Subtitle or Button.' }) }
+    if (k === 'fail') { B.failNext = true; toast({ tone: 'info', id: 'sim', title: 'The next save will fail', desc: 'Type in Title, Subtitle or Button, change UI, or step Position.' }) }
     if (k === 'flag') { peerOn = true; T.f.classList.add('pres'); T.f.style.setProperty('--peer', PEER.ring); selectTab(tabs[0]); placeFlags(true) }
     if (k === 'conflict') {
       B.fieldStates.title = 'conflict'
@@ -2287,6 +2539,7 @@ function buildBar (host, p, { coarse } = {}) {
       })
       summary()
     }
+    if (k.startsWith('mode-')) { B.mode = k.slice(5); closeMenu(); B.paintCta() }
     if (k === 'reset') {
       Object.keys(B.fieldStates).forEach(key => { B.fieldStates[key] = ''; B[key] && setStatus(B[key].slot, '') })
       B.failNext = false; B.savedAt = 0
@@ -2444,7 +2697,7 @@ function pageModal (host, p, { mode = 'edit', logEl = null, onClose } = {}) {
       fld.classList.toggle('err', state === 'error')
       fld.classList.toggle('conf', state === 'conflict')
     }
-    if (st && st.dataset.state !== state) { st.innerHTML = SLOT[state] || ''; st.dataset.state = state }
+    if (st) st.dataset.state = state
     const ctl = $('#' + fid(k), host)
     if (ctl) err[k] ? ctl.setAttribute('aria-invalid', 'true') : ctl.removeAttribute('aria-invalid')
     if (f.type === 'toggle') return
@@ -2525,7 +2778,10 @@ function pageModal (host, p, { mode = 'edit', logEl = null, onClose } = {}) {
     paint(k); paintChrome()
   }
   function wire () {
-    $$('[data-close],[data-cancel]', host).forEach(b => b.addEventListener('click', () => onClose ? onClose() : (init(mode), render())))
+    $$('[data-close],[data-cancel]', host).forEach(b => b.addEventListener('click', () => requestClose()))
+    $('.dlg', host).addEventListener('keydown', e => {
+      if (e.key === 'Escape' && !e.defaultPrevented && !cur && !openPop && !$('.cfm', host)) { e.preventDefault(); requestClose() }
+    })
     const ovf = $('[data-ovf]', host)
     ovf && ovf.addEventListener('click', e => actionMenu(e.currentTarget, 'Page actions', [{ label: 'Duplicate' }, { label: 'Delete page', danger: true }]))
     const tabs = $$('.tab', host)
@@ -2557,6 +2813,18 @@ function pageModal (host, p, { mode = 'edit', logEl = null, onClose } = {}) {
       })
     })
     $('[data-save]', host).addEventListener('click', save)
+  }
+  function requestClose () {
+    if (busy) return
+    const ks = changedKeys()
+    const done = () => onClose ? onClose() : (init(mode), render())
+    if (!ks.length) { done(); return }
+    if ($('.cfm', host)) return
+    askConfirm($('.dlg', host), {
+      title: `Discard ${ks.length} unsaved ${ks.length === 1 ? 'change' : 'changes'}?`,
+      desc: `Your ${ks.length === 1 ? 'change' : 'changes'} to ${andList(ks.map(k => F[k].label))} will be lost.`,
+      go: 'Discard', onGo: done
+    })
   }
   const ifMatch = { page: 7, route: 3 }
   function bodyOf (keys) { return JSON.stringify(Object.fromEntries(keys.map(k => [k === 'ref' ? 'reference' : k === 'rt' ? 'path' : k === 'seo' ? 'title' : k === 'desc' ? 'metaDescription' : k === 'lay' ? 'layout' : k === 'ui' ? 'uiComponent' : k === 'par' ? 'parentPage' : k === 'pub' ? 'isPublic' : k === 'tpl' ? 'page' : k, v[k] === '' ? null : v[k]]))) }
@@ -2668,6 +2936,7 @@ function pageModal (host, p, { mode = 'edit', logEl = null, onClose } = {}) {
       if (k === 'conflict') { prefill(false); sim.conflict = true; save() }
       if (k === 'reset') { sim = {}; init(mode); render() }
     },
+    requestClose,
     focusFirst () { const el = $('input,button.f', $('[data-pn]:not([hidden])', host)); el && el.focus() }
   }
   init(mode)
@@ -2684,9 +2953,8 @@ function openModal () {
   const close = () => { ov.remove(); document.documentElement.style.overflow = ''; lastFocus && lastFocus.focus() }
   const m = pageModal($('.dlg-host', ov), 'dlg', { onClose: close })
   document.documentElement.style.overflow = 'hidden'
-  ov.addEventListener('mousedown', e => { if (e.target === ov) close() })
+  ov.addEventListener('mousedown', e => { if (e.target === ov) m.requestClose() })
   ov.addEventListener('keydown', e => {
-    if (e.key === 'Escape' && !e.defaultPrevented && !cur && !openPop) { e.preventDefault(); close() }
     if (e.key === 'Tab') {
       const fs = $$('button:not([disabled]),input,textarea,[tabindex="0"]', ov).filter(x => x.offsetParent)
       const first = fs[0]; const last = fs[fs.length - 1]
@@ -2723,7 +2991,7 @@ function listHTML (p) {
         </div>
         <div class="sortsel">${selectHTML({ key: 'sort', value: 'updated', label: 'Sort by', width: 'w-sm' }).replace('<span class="st" data-s=""></span>', '')}</div>
       </div>
-      <span class="count" data-count>143 pages</span>
+      <span class="count" data-count>143 pages</span><button type="button" class="btn solid create" data-create>Create page</button>
     </div>
     <div class="lgrid" role="table" aria-label="Pages">
       <div class="lrow head" role="row">
@@ -2807,6 +3075,10 @@ function boot () {
   const desk = buildBar($('#bar-desktop'), 'bd')
   const phone = buildBar($('#bar-phone'), 'bp', { coarse: true })
   $$('#bar-sim [data-sim]').forEach(b => b.addEventListener('click', () => { desk.sim(b.dataset.sim); phone.sim(b.dataset.sim) }))
+  $$('#bar-mode [data-sim]').forEach(b => b.addEventListener('click', () => {
+    $$('#bar-mode [data-sim]').forEach(x => x.setAttribute('aria-pressed', String(x === b)))
+    desk.sim(b.dataset.sim); phone.sim(b.dataset.sim)
+  }))
 
   const me = pageModal($('#modal-edit'), 'ma', { logEl: $('#modal-log') })
   const mp = pageModal($('#modal-edit-phone'), 'mb')
@@ -2814,6 +3086,7 @@ function boot () {
   pageModal($('#modal-create'), 'mc', { mode: 'create', logEl: $('#modal-create-log') })
   pageModal($('#modal-create-phone'), 'md', { mode: 'create' })
   $('#open-modal').addEventListener('click', openModal)
+  settingsPage($('#settings-page'), $('#settings-log'))
 
   $('#list-wide').innerHTML = listHTML('w')
   wireList($('#list-wide'))
@@ -2821,7 +3094,7 @@ function boot () {
   wireList($('#list-narrow'))
   $('#list-states').innerHTML = `
     <div class="kit list" aria-busy="true" aria-label="Loading pages">${'<div class="skel"><i class="two"></i><i></i></div>'.repeat(3)}</div>
-    <div class="kit list"><div class="lstate"><b>No pages yet</b><span>Pages you add appear here.</span><button type="button" class="btn solid">Add a page</button></div></div>
+    <div class="kit list"><div class="lstate"><b>No pages yet</b><span>Pages you add appear here.</span><button type="button" class="btn solid">Create page</button></div></div>
     <div class="kit list" style="padding:1rem"><div class="alert danger" role="alert">${g('error', 'c-danger')}<b>Pages couldn't be loaded.</b><p>The list below is from 2 minutes ago.</p><div class="acts"><button type="button" class="btn soft">Retry</button></div></div><div class="lgrid" style="margin-top:.5rem;opacity:.7" aria-label="Pages, 2 minutes old">${PAGES.slice(0, 3).map(rowHTML).join('')}</div></div>`
 
   $('#fb-row').innerHTML = `

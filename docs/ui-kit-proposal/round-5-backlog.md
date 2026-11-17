@@ -61,3 +61,6 @@ Starts after round 4 has been reviewed and published to the shared link.
     <CwaUiToggle field="openInNewTab" label="Open in a new tab" />
   </CwaUiManagerTab>
   ```
+
+## 6. List row actions: Open vs View on site
+- The v4 mockup's row menu (Open, View on site, Delete) was invented without a defined difference. Decide and name them: the row click opens the page's settings modal, so the menu's "Open" is redundant. Proposed: "Edit settings" (modal, also the row click) and "Go to page" (navigates to the page in the site with the admin; a page without a route uses the internal resource link, `getInternalResourceLink`; a template page previews through the same link). Awaiting Daniel.
