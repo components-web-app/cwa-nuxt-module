@@ -33,3 +33,10 @@ Verified by a checker per role and spot-checked by Claude. Apply in round 6 unle
 - Skeleton rows get a shimmer: a soft light band sweeping across every row in sync (one CSS gradient animation, 1.4 s loop), in both themes.
 - Under reduced motion the shimmer stops, so a spinner (the one animation we keep) plus "Loading pages…" sits above the skeleton instead. Show that text in all modes after about 1 s, and "Still loading…" after about 5 s, matching search.
 - `aria-busy="true"` on the list and one polite "Loading pages" announcement. The same rule applies to search's first-load skeleton and any other skeleton.
+
+## 5. Decided on the review panel (Daniel, 2026-11-17)
+- Buttons get their own fill, distinct from fields (semi-bold label).
+- ⋮ is the only "more" glyph: CTA, list rows and tree.
+- Manual VoiceOver/NVDA pass once per new component and before each release; axe and keyboard tests on every PR.
+- Routes tab headings: **Redirect to** (this page's address sends visitors elsewhere; row `/kitchens/shaker → /kitchens/shaker-range`) and **Redirected from** (old addresses that send visitors here; row `/shaker → this page`).
+- **`updateResource` keeps its return** (the saved resource, or undefined on failure); replace the v3 `{ ok } | { ok, error }` wording. Per-field outcomes go into `fieldStates` keyed by (iri, field), using the fields the event sent, so one field's success never clears another's error (today's `removeByEndpoint`). Callers checked: the field model needs the returned resource's `@id` (a save on a live component returns a new draft IRI); `useItemPage` returns it to its caller; stranded merge, clone, remote changes and the Info tab only test success. Outside the module only bcio calls it (ArticlesCollection, result unused); the docs example doesn't use the result.
