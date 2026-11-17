@@ -1,0 +1,402 @@
+[
+ {
+  "title": "Delete copy never says that the template's 14 article addresses stop working",
+  "where": "\u00a78.6 and ui-kit.html: the Info tab's 'Delete this page' section and the typed confirm text (lines ~3568 and ~4230)",
+  "problem": "The copy says '14 pages built from this template are deleted too' and 'Its route /kitchens/shaker stays but no longer shows a page.' In the bundle, AbstractPageData extends AbstractPage, so each of those 14 page data has its own route, and each route is kept with SET NULL. So 14 live article URLs also stop showing a page. As an editor I would read this as 'some drafts behind the template go' and not as '14 published articles go offline'. 'Pages' is also not what I call them: the list says 'Template \u00b7 14 articles'.",
+  "fix": "Name the class and the effect on visitors: '14 articles built from this template are deleted too. Visitors to their 14 addresses get page not found.' Add a 'See the 14 articles' link that opens the filtered list in a new tab. Say what visitors get at the kept route ('page not found'), not 'no longer shows a page'.",
+  "severity": "high",
+  "role": "editor",
+  "real": true,
+  "evidence": "Checked against the bundle source. AbstractPageData.php:37 has `abstract class AbstractPageData extends AbstractPage`, and AbstractPage.php:42 has `route_id onDelete: 'SET NULL'`. So each page data deleted by the CASCADE on `page_id` (AbstractPageData.php:42) leaves its own route behind, still in place but showing no page. Spec \u00a78.6 (line 835) and the mockup (ui-kit.html:3628, 4286-4290) only mention the template page's own route. Nothing says the cascaded pages' addresses stop working too. One part of the finding is wrong: the wording 'pages' rather than 'articles' was decided in round-6-backlog \u00a76 ('Template \u00b7 14 pages'). The fix should keep 'pages' and add the effect on visitors."
+ },
+ {
+  "title": "The in-page error outline looks almost the same as the normal selection outline",
+  "where": "\u00a77.1 whole-outline variant; ui-kit.html .ip-sel (--sel #e30a6c) and .ipstage --ip-danger #b91c1c; shot v6-inpage-error-1280-light.png",
+  "problem": "The selection outline is magenta (#e30a6c) and the error outline is red-700 (#b91c1c), about 27\u00b0 of hue apart, both solid, the same width and with no segments. In the screenshot the 'not saved' outline reads as the ordinary pink selection. While typing on the page I look at my text, not at the bar, so the outline is the one cue meant to catch my eye, and it does not change enough to notice. The conflict amber is clearly different, but the error is not.",
+  "fix": "Add a cue that is not colour alone on the page. Change the sticky tag from 'Rich text' to '\u26a0 Not saved' (or '\u25c6 Changed by Mia') in the state colour while the error lasts, so the label I already see at the top of the outline carries the words. Keep the line width constant.",
+  "severity": "high",
+  "role": "editor",
+  "real": true,
+  "evidence": "In ui-kit.html:289-316 the selection is `--sel:#e30a6c` (hue about 333\u00b0) and the error strips are `--ip-danger:#b91c1c` (hue about 0\u00b0). That is roughly 27\u00b0 apart, at the same width and solid in both cases. The `.tag` keeps `background:var(--sel)` and the text 'Rich text' in every state (line 291), so the label carries no change. In v6-inpage-error-1280-light.png the red edge is hard to tell from the magenta selection. This is not a WCAG 1.4.1 failure, because the bar status and the header carry a glyph and words. Still, the on-page cue the spec gives in \u00a77.1 is weak for error. Conflict, in amber #b45309, is clearly different. The width is left as it is, as instructed."
+ },
+ {
+  "title": "The 'Text wasn't saved' toast stays after a later save succeeds",
+  "where": "\u00a77.1 Errors / \u00a78.4; ui-kit.html in-page simulation (errToast, end(), and the input handler)",
+  "problem": "Verified with playwright at 1280 and 390: make a save fail, deselect (the toast appears), select again and type. The next save succeeds and the header says 'All changes saved', but the persistent error toast with Retry and Reset is still on screen. I would get two contradictory messages, might press Reset and throw away text that was saved, and would stop trusting the toast.",
+  "fix": "Spec and mockup: when the field's state leaves 'error' (a successful save, Retry or Reset), dismiss its persistent toast. Optionally replace it with a short success toast, 'Text saved'. Add a test for fail \u2192 deselect \u2192 reselect \u2192 type \u2192 toast gone.",
+  "severity": "high",
+  "role": "editor",
+  "real": true,
+  "evidence": "In ui-kit.html:3109-3165 the toast is closed only in `reset()` (`$('[data-tid=\"ip-err\"] .x').click()`). The input handler (`if (E.st === 'error') paint('')`) does not close it, nor does `end()`, nor does a successful `retry()`/`send()`. So fail \u2192 deselect \u2192 reselect \u2192 type \u2192 200 leaves the error toast up while the header reads 'All changes saved'. \u00a77.1 (line 690) and \u00a710 (line 910, 'errors \u2026 stay until dismissed') never say the toast is closed when the error resolves."
+ },
+ {
+  "title": "The template count in the delete confirm can be stale, with no sign it is being checked",
+  "where": "\u00a78.6 confirm; round-6 'Bundle shapes': pageDataCount is not republished; ui-kit.html ~4226 reuses spec.pageDataCount",
+  "problem": "The backlog says the count must be read fresh by re-fetching the page when the confirm opens. The spec text for \u00a78.6 does not say this, and the mockup reuses the count it loaded with the modal. The Info section and the confirm can show '14' after a colleague added a 15th article. Delete is the one place where I need the number to be right.",
+  "fix": "Add to \u00a78.6: opening the confirm re-fetches the page. While it loads, the sentence reads 'Checking how many pages use this template\u2026' and Delete stays off. If the fetch fails, use the 'Pages built from this template are deleted too.' wording. The Info section's sentence updates to the fresh number as well.",
+  "severity": "medium",
+  "role": "editor",
+  "real": true,
+  "evidence": "round-6-backlog 'Bundle shapes, final' says: 'Nothing republishes the template when page data is created or deleted, so the list and the delete confirm must read the count fresh (re-fetch the page when opening the confirm).' Spec \u00a78.6 (line 835) only says the count comes from `_metadata.pageDataCount`, with no fresh read and no loading state. In the mockup, ui-kit.html:4286 reuses `spec.pageDataCount` from when the modal loaded."
+ },
+ {
+  "title": "The Info section's delete sentence is static and can describe things that don't exist",
+  "where": "ui-kit.html line ~3568 (the Delete this page section) vs the confirm (~4230)",
+  "problem": "The section always says 'Its route stays but no longer shows a page, and pages nested under it are kept without a parent', even for a page with no route or no nested pages. The confirm builds its text from the real route and children. Seeing two different descriptions of the same delete makes me unsure which is true.",
+  "fix": "Build the section sentence the same way as the confirm: name the route path only when there is one, give the nested count only when above 0, and leave each clause out otherwise.",
+  "severity": "medium",
+  "role": "editor",
+  "real": true,
+  "evidence": "ui-kit.html:3628 always prints 'Its route stays but no longer shows a page, and pages nested under it are kept without a parent.', whatever the route or nested pages. The confirm at 4290 builds its sentence conditionally (`RT.path ? \u2026 : ''`, `RT.children.length ? \u2026 : ''`). The two descriptions differ for a page with no route or no nested pages. Spec \u00a78.6 requires 'one sentence saying what goes and what stays', with the route path named."
+ },
+ {
+  "title": "Delete is hard to find on a phone and from the list",
+  "where": "\u00a78.6 'Where it goes' (the last section of the Info tab only); \u00a79.1 row actions (Edit settings, Go to page)",
+  "problem": "To delete a page I must know to open the page settings, choose 'Info' (a name that sounds read-only), and on a phone scroll past ID, History and Cache. The modal header's \u22ee no longer holds Delete and the list row's \u22ee never did. Delete is rare, but when I need it I will look in the row's \u22ee first and not find it.",
+  "fix": "Add 'Delete\u2026' as the last item of the list row \u22ee (and the modal header \u22ee). It opens the modal on Info, scrolled to and focusing the Delete section, so the confirm and its consequences stay in one place.",
+  "severity": "medium",
+  "role": "editor",
+  "real": false,
+  "evidence": "This is a design preference, not a defect, and it reopens settled choices. Row actions were fixed in v5 as 'Edit settings' and 'Go to page' (spec line 31, from Daniel's review). v6 \u00a78.6 (line 835) moves Delete out of the header \u22ee on purpose and puts it in the Info tab, the same place in every modal type. Adding Delete to the row and header \u22ee would undo both decisions. The finding points to no breakage."
+ },
+ {
+  "title": "The header shows nothing 2 s after a save, and also nothing while a change is waiting",
+  "where": "\u00a77.2 the admin header's status; ui-kit.html paint() clears #ip-hs after 2000 ms",
+  "problem": "After 'All changes saved' the header goes blank. A blank header also shows during the 250 ms debounce, when a change is not saved yet, and after typing over an error (the input handler clears the error state at once). When I glance up before leaving, blank does not answer 'safe to leave?': I can't tell 'all saved a while ago' from 'nothing happened'.",
+  "fix": "Keep a quiet persistent 'All saved' in fg-muted after the 2 s highlight, and show 'Saving\u2026' from the first keystroke of an episode (or keep 'not saved' until the retry actually succeeds) so blank never appears while something is unsaved.",
+  "severity": "medium",
+  "role": "editor",
+  "real": false,
+  "evidence": "The spec specifies both behaviours on purpose. \u00a77.2 (lines 696-701) says '\"All changes saved\" for about 2 s \u2026 then nothing' and 'A change still inside its 250 ms debounce before an episode has started shows nothing, like a field.' The mockup's 2000 ms clear (ui-kit.html:3107) matches. Typing over an error clears the error at once (3159) and goes blank for at most 250 ms before 'Saving\u2026', which also follows the stated debounce rule. This asks to change the spec, not to fix a defect."
+ },
+ {
+  "title": "Error popovers that open on hover will pop up while moving across the bar",
+  "where": "\u00a77 Field state in the row / \u00a74.4: 'Error and conflict popovers open on focus or hover'",
+  "problem": "On desktop, sliding the pointer along the bar to reach another field or the Publish button opens a Retry/Reset popover over the page every time it passes a field in error. On a phone, tapping a field in error to correct it opens the keyboard and the popover together, which leaves little room to see what I type. Both slow down everyday corrections. \u00a74.5 already rejects hover-only for \u24d8.",
+  "fix": "Open on focus and click only, never on hover. Keep the bar status ('1 not saved \u2192') as the main way in. On coarse pointers, show the popover only from the bar status or after a second tap, not on the first focus.",
+  "severity": "medium",
+  "role": "editor",
+  "real": true,
+  "evidence": "Spec \u00a74.4 (line 417) and \u00a77 (line 667) open the error, conflict and Undo popovers on hover with no hover-intent delay. They close only '300 ms after the pointer leaves both', so a pointer passing over the bar opens and leaves popovers over the page. \u00a711 (line 950) confirms hover opening. Opening on hover is part of the v6 edge-line design (spec line 45), so dropping hover altogether goes too far. The narrower fix is real: a hover-intent delay of about 300 ms, and on coarse pointers no popover on the first focus that brings up the keyboard. No coarse-pointer exception is specified."
+ },
+ {
+  "title": "The typed confirm for 'removing a component used in more than one place' risks slowing a routine edit",
+  "where": "\u00a78.6 tiers table, Type to confirm row",
+  "problem": "'Removing a component used in more than one place' is ambiguous. 'Remove from this location only' is the safe, everyday choice for a shared component, and making me type 'delete' for it is friction for an action that loses nothing. Typing should be for deleting the component everywhere.",
+  "fix": "Split the row: 'Delete everywhere' (usage total > 1) is typed; 'Remove from this location only' is a simple confirm (or none). Say in the confirm how many other places keep it.",
+  "severity": "low",
+  "role": "editor",
+  "real": true,
+  "evidence": "Spec \u00a78.6's tier table (line 842) puts 'removing a component used in more than one place (`/usage` total > 1)' in Type to confirm, without separating the two choices that delete flow offers. Per the module's CLAUDE.md, those are 'Remove from this location only' (deletes one position, or nulls one page-data property) and deleting the component everywhere. As written, the safe 'this location only' path would also need 'delete' typed. The row is ambiguous and should split as suggested."
+ },
+ {
+  "title": "A tab badge hides an error behind a conflict",
+  "where": "\u00a77 'Tab badges are derived' (conflict > error > nothing)",
+  "problem": "With a conflict on Title and a failed Subtitle, the tab shows only the diamond. After I choose a version, a triangle appears, which I read as a new problem. Nothing told me there were two problems on the tab.",
+  "fix": "Keep the single glyph, but give the tab's hover title and accessible name both counts ('Content: 1 conflict, 1 not saved'). The bar's status popover lists both.",
+  "severity": "low",
+  "role": "editor",
+  "real": true,
+  "evidence": "In ui-kit.html:3386 the bar tab badge's accessible text is only 'has a conflict' or 'has an unsaved field', a single state with no counts. With a conflict and an error on one tab, the error cannot be seen or heard until the conflict is resolved. The modal's tab rule (spec line 748) gives counts in the accessible name (', 1 to fix', ', 1 to choose'), but the bar's tab rule (line 669) does not, so adding counts to the bar tab's name and title fits the modal precedent. Related inconsistency: line 748 ranks the modal tabs 'error beats conflict', while the bar's line 669 ranks conflict above error."
+ },
+ {
+  "title": "Tab badge precedence contradicts itself between the bar and the page modal",
+  "where": "05-proposal-v2.md \u00a77 'Tab badges are derived' vs \u00a78.3 'Each tab shows its state'",
+  "problem": "\u00a77 (v6) says the badge order is conflict > error > nothing. \u00a78.3, for the modal tabs that share the same `ManagerTabs` component, still says 'error beats conflict beats unsaved'. That is the v5 ranking the v6 note calls a bug, because it made the badge switch kind during a retry. \u00a77 also says the badge is read from the store so it survives the tab unmounting, but the spec never says how an unmounted tab knows which `(iri, field)` pairs belong to it. \u00a73 says the metadata-only render (`cwaTabMetaOnly`) creates no models, and it does not say that it records field names either.",
+  "fix": "Use one precedence for both surfaces: conflict > error > unsaved for modals, conflict > error for the bar, with a shared `badgeFor(states)` helper. In \u00a73, say that the metadata-only render collects the tab's `field` names (into `defineExpose` metadata, or by having `CwaUiManagerTab` register them), and that the badge is computed over `fieldStates[iri][field]` for those names.",
+  "severity": "high",
+  "role": "dx",
+  "real": true,
+  "evidence": "05-proposal-v2.md \u00a77 (line 669) says conflict > error > nothing and calls error-above-conflict a v5 bug. \u00a78.3 (line 748), for modal tabs drawn by the same `ManagerTabs` component, still says \"error beats conflict beats unsaved\". \u00a73 says only that under `cwaTabMetaOnly` a `field` \"creates no model, starts no request and registers no presence\". It never says the tab records its field names, so an unmounted tab has no defined way to know which `(iri, field)` states belong to it. That is the claim \u00a77 relies on with \"read from the store, so it survives the tab unmounting\"."
+ },
+ {
+  "title": "CwaFieldState cannot hold what \u00a74.1 and \u00a77 read from it, and is not plain data",
+  "where": "\u00a78.4 `CwaFieldState` interface; \u00a74.1 migration table; \u00a77 'One saving episode per field'",
+  "problem": "\u00a74.1 maps `isLongWait` to `state.value.slow`, but `CwaFieldState` has no `slow`. `held?: RemoteFieldChange` holds `accept()` and `keep()` functions (see `src/runtime/resources/model-editors.ts`), which breaks the section's own 'plain data only, serialisable' rule. A single `status` enum also cannot express 'saving with a follow-up waiting'. Today `pendingSubmit` and `isSubmitting` can both be true. If the status becomes 'pending' between the in-flight request and its follow-up, the line shows nothing and the episode restarts, which \u00a77 forbids. If it stays 'saving', the `states.pendingSubmit` alias changes meaning and `hasUnsentChange` callers break.",
+  "fix": "Add `slow: boolean` and `waiting: boolean` (or `episode: boolean`) to `CwaFieldState`. Define `status` as 'saving' for the whole episode and keep `pendingSubmit` equal to `waiting`. Store `held` as plain data (`{ user, name, value }`) and keep `accept` and `keep` as store actions or model methods keyed by `(iri, field)`.",
+  "severity": "high",
+  "role": "dx",
+  "real": true,
+  "evidence": "The \u00a74.1 migration table maps `states.isLongWait` to `state.value.slow`, but the \u00a78.4 `CwaFieldState` interface has only status, savedAt, error and held, so `slow` does not exist. `held?: RemoteFieldChange` holds `accept: () => void` and `keep: () => Promise<void>` (src/runtime/resources/model-editors.ts lines 11-16), which breaks \u00a78.4's own \"Plain data only... serialisable\" rule. In cwa-resource-model.ts, `pendingSubmit` and `isSubmitting` are separate refs that can both be true, and `isBusy` is their OR. A single status enum cannot express \"in flight with a follow-up waiting\" without the line going blank or the `pendingSubmit` alias changing meaning."
+ },
+ {
+  "title": "'One request in flight per field' is a new model behaviour the migration plan does not list",
+  "where": "\u00a77 'Coalesce'; \u00a74.1 'Shape and migration'; \u00a712",
+  "problem": "Today `useCwaResourceModel` does not serialise requests. When a debounce fires while `isSubmitting` is true and the value differs, `updateResource` runs again in parallel. Only `mergeFromRoot` waits, and only for nested properties. The single newest-value follow-up that \u00a77 requires, and which the one-episode measurements depend on, is therefore a rewrite of the model's submit path. \u00a74.1 presents the change as only adding `state`, `retry` and `reset`. The spec also does not say how the follow-up works with `registerPendingUpdate`'s flush (a publish must wait for the follow-up as well, #394), with a draft IRI returned mid-episode (the follow-up must go to the new IRI), or with the 412 `submit()` resend, which must not be dropped as a duplicate (CLAUDE.md, Yjs trap).",
+  "fix": "In \u00a74.1, add a row and a paragraph: one request in flight per model, a queued newest value, a flush that resolves after the follow-up settles, the follow-up targeting the IRI the previous response returned, and `submit()` bypassing coalescing. Name this in the \u00a712 phase that touches the model and give it its own tests.",
+  "severity": "high",
+  "role": "dx",
+  "real": true,
+  "evidence": "In src/runtime/composables/cwa-resource-model.ts, `updateResource` (lines 137-184) blocks a second send only when the value equals `lastSubmittedValueInProgress` (line 158). A different value sends a parallel `resourcesManager.updateResource`. Only `mergeFromRoot` waits, through `getWaitForRequestPromise` (line 152). \u00a77 (\"Coalesce: one request in flight per field... a single follow-up\") and \u00a77.1 require serialisation, but \u00a74.1 describes the change as only adding `state`, `retry` and `reset` plus aliases. The spec also says nothing about how the follow-up interacts with the pending-update flush (#394), the draft IRI switch, or the `resend` path at line 285."
+ },
+ {
+  "title": "Page delete copy and store handling miss the cascade's second-order effects",
+  "where": "\u00a78.6 'Where it goes' (page modal copy); mockup ui-kit.html delete confirm (lines ~4226-4231) and Info section (~3568)",
+  "problem": "`AbstractPageData extends AbstractPage`, so each of the 14 page data deleted by `page_id ON DELETE CASCADE` also has its `route_id` set to NULL. Their 14 addresses stay and show nothing, but the copy mentions only the template's own route. Pages and page data whose `parent_page_data_id` points at a cascaded page data also lose their parent. The cascade happens in SQL, so no Doctrine events, Mercure updates or cache purges are sent for those rows, and the module's store, lists and route-status joins keep them until they are re-fetched. The mockup counts 'pages nested under it' from `RT.children`, the child routes, which is a different hierarchy from `parentPage`: an unrouted nested page is missed, and a child route can belong to a page that is not nested. The Info section also says 'Its route stays' even for a page with no route.",
+  "fix": "Copy: '14 pages built from this template are deleted too, and their 14 addresses stop showing a page.' Show the route sentence only when a route exists. Give a real source for the nested count (for example `GET /_/pages?parentPage=` and page data `parentPage`), or drop the number. In the spec, say what the module does after a successful delete: evict the cascaded page data from the store, re-fetch the affected routes and lists, and do not wait for Mercure.",
+  "severity": "high",
+  "role": "dx",
+  "real": true,
+  "evidence": "In the bundle, `AbstractPageData extends AbstractPage` (AbstractPageData.php:37). AbstractPage owns `route_id ... onDelete: 'SET NULL'` and `parent_page_data_id ... SET NULL` (AbstractPage.php:42, 52). Each cascaded page data therefore leaves its own route without a page, and children of those page data lose their parent. The copy mentions only the template's own route. In the mockup, the Info section (ui-kit.html:3628) says \"Its route stays but no longer shows a page\" unconditionally, while the confirm (4290) guards it with `RT.path`. The confirm counts nested pages from `RT.children` (child routes, 4290), not from `parentPage`. The spec says nothing about updating the store or lists after a SQL-level cascade."
+ },
+ {
+  "title": "pageDataCount freshness rule from the bundle is not in the spec",
+  "where": "\u00a78.6 'Where it goes'; round-6-backlog 'Bundle shapes, final' (#587)",
+  "problem": "The backlog records that nothing republishes the template when page data is created or deleted, so the delete confirm must read the count fresh by re-fetching the page when the confirm opens. \u00a78.6 only says the count comes from `_metadata.pageDataCount`. A developer following \u00a78.6 would read the stored page, and both the Info section and the typed confirm would then understate how much is deleted, which is the most important line in a destructive confirm. The 0 case ('Template \u00b7 unused') is also not specified.",
+  "fix": "In \u00a78.6, add: opening the confirm re-fetches the page (a fresh, non-cached fetch, since authenticated Page GETs are `no-store`), shows 'Pages built from this template are deleted too.' until it answers, and uses the fresh count. A count of 0 shows no template sentence. The Info section's sentence may use the stored count but must be refreshed when the tab is shown.",
+  "severity": "medium",
+  "role": "dx",
+  "real": true,
+  "evidence": "round-6-backlog.md, 'Bundle shapes, final', says: \"Nothing republishes the template when page data is created or deleted, so the list and the delete confirm must read the count fresh (re-fetch the page when opening the confirm).\" \u00a78.6 (line 835) says only \"with the count from `_metadata.pageDataCount`\". Searching the spec for \"fresh\" or \"re-fetch the page\" finds nothing. The 0 case is covered for lists in \u00a79.3 (line 902, \"Template \u00b7 unused\"), and the mockup shows nothing at 0 (ui-kit.html:3628, 4287), but the spec's \u00a78.6 does not state either rule."
+ },
+ {
+  "title": "Deleting from the Info tab with unsaved edits, and which 'remove' is typed, are undefined",
+  "where": "\u00a78.6 two-tier table; \u00a78.5 NavigationGuard; module's /usage delete flow",
+  "problem": "Delete now sits in a tab of a modal whose other tabs can hold a dirty local copy. After a successful delete the modal closes or navigates (the page on screen navigates with `cwa_force`). The dirty copy's `NavigationGuard` registration and `beforeunload` would then ask 'Leave without saving?' on top of a completed delete, or block it. Separately, the typed tier says 'removing a component used in more than one place (`/usage` total > 1)', but in that case the module offers 'Remove from this location only' (low risk) and a delete from everywhere. Requiring a typed word for removing one placement is out of proportion, and the spec does not say which of the two actions it means.",
+  "fix": "In \u00a78.6: the delete confirm says 'Your 3 unsaved changes are discarded too' when the copy is dirty, and a successful delete discards the copy and unregisters the guard before closing or navigating. Change the typed-tier row to 'deleting a component used in more than one place', and put 'Remove from this location only' in the simple tier.",
+  "severity": "medium",
+  "role": "dx",
+  "real": true,
+  "evidence": "\u00a78.6 moves Delete into the Info tab of a modal whose other tabs can hold a dirty local copy. \u00a78.5 registers a dirty copy with `NavigationGuard` and `beforeunload`, and nothing in \u00a78.5 or \u00a78.6 says what happens to that copy, or to the guard, when a delete succeeds. The \u00a78.6 tier table puts \"removing a component used in more than one place (`/usage` total > 1)\" in the typed tier. CLAUDE.md's Delete flow offers \"Remove from this location only\" and a delete from everywhere when total > 1, so it is unclear which action needs the typed word."
+ },
+ {
+  "title": "Header 'safe to leave' status has no defined data source",
+  "where": "\u00a77.2 The admin header's status",
+  "problem": "Today `Header.vue` reads `resourcesManager.requestCount`, which counts only writes made through `doResourceRequest` and `send`. It does not count fetches, presence, waiting debounced saves (`pendingUpdates`) or failures. \u00a77.2 says 'Saving\u2026' includes 'background requests' (GETs and Mercure re-fetches would show 'Saving\u2026' with nothing being saved). It says '1 change not saved' counts failures and held conflicts, but not whether failures that are not field failures count: a failed publish, order PATCH or delete lives only in `errorStore`, and there is nothing for 'Show it' to focus. It also does not say whether a modal's dirty local copy counts, so the header can say 'All changes saved' while a modal holds 3 unsaved changes.",
+  "fix": "Define the inputs: saving = `requestCount > 0 || pendingUpdates` that have started an episode (no GETs, and remove 'background requests'); not saved = the count of `fieldStates` in error or conflict, plus `errorStore` write errors (where 'Show it' opens the bar status or toast), plus dirty local copies (where 'Show it' focuses the modal), or explicitly exclude modals and say why. Expose this as one internal getter, not computed in the header.",
+  "severity": "medium",
+  "role": "dx",
+  "real": true,
+  "evidence": "\u00a77.2 says \"Saving\u2026\" includes \"background requests\" and that \"1 change not saved\" counts failures and held conflicts. Today the header's source is `resourcesManager.requestCount`, a sum over `requestsInProgress` (resources-manager.ts:97-101), which covers only writes and none of fetches, debounced `pendingUpdates` or failures. The spec does not say whether GETs, non-field write failures (errorStore) or a modal's dirty local copy count. As written, the header could say \"All changes saved\" while a modal holds unsaved changes."
+ },
+ {
+  "title": "When the saving line appears is specified two ways, and \u00a74.1 still mentions a bar glyph",
+  "where": "\u00a74.2 state table row 'saving (bar, > 300 ms)'; \u00a77 'The line'; \u00a77.1 whole outline 'Start'; \u00a74.1 'Multi-model controls'",
+  "problem": "The \u00a74.2 table shows the sweep only after 300 ms. \u00a77 says it starts 'when the first request is sent', and \u00a77.1 cross-fades the outline 'on the first send'. For a 150 ms save the implementations differ: sweep then saved, or saved alone. \u00a74.1 also still says multi-model controls 'drive one status glyph in the bar from all their models', which v6 removed. It should say where the either/or group's, FileUpload's and ImageAlt's line is drawn.",
+  "fix": "Pick one rule, for example 'the sweep starts on the first send; the 300 ms applies only to the announcement and the bar's gap hold', and state it in \u00a74.2, \u00a77 and \u00a77.1. Rewrite the \u00a74.1 sentence: 'Multi-model controls show one edge line, on the visible control, from the most severe state among their models.'",
+  "severity": "medium",
+  "role": "dx",
+  "real": true,
+  "evidence": "The \u00a74.2 state table row reads \"saving (bar, > 300 ms), long wait\". \u00a77 says \"The sweep starts when the first request is sent\", and \u00a77.1 says the whole outline cross-fades \"on the first send\". These disagree for a save under 300 ms. \u00a74.1 still says \"Multi-model controls (the either/or group, FileUpload, ImageAlt) drive one status glyph in the bar\", which contradicts v6's \"no status glyph inside any bar control\" (v6 note and \u00a77)."
+ },
+ {
+  "title": "'Tab from the control into the popover' is undefined for controls with several tab stops",
+  "where": "\u00a74.4 bar popover keyboard rules; \u00a74.2 'Which controls'",
+  "problem": "The edge line now applies to every bar control, including composites: the stepper (input plus \u2212/+), the date picker (input plus calendar button), MultiSelect (input plus chip \u00d7 buttons) and the either/or group. 'Tab from the control moves into the popover's first action' does not say which inner element hands off, so it is unclear whether Tab from the stepper input goes to + or to Retry. The popover is portalled, so this needs explicit focus management. The hidden description 'Press Tab for Retry and Reset' would be wrong whenever Tab goes to an inner button first.",
+  "fix": "Specify that the hand-off happens from the control's last tab stop (or that inner buttons such as \u2212/+ and the calendar are `tabindex=-1` in the bar, with keyboard equivalents), that Shift+Tab from the popover's first action returns to that same element, and that the hidden description names the real key path. Add a keyboard test per composite to \u00a711.3.",
+  "severity": "medium",
+  "role": "dx",
+  "real": true,
+  "evidence": "The spec (\u00a74.4) says only \"Tab from the control moves into the popover's first action\". In the mockup, the stepper's \u2212/+ are ordinary tab stops (`stepperHTML`, ui-kit.html:2333, with no tabindex on `.nb`). The popover keydown handler is on the whole control `el` (ui-kit.html:2431): any non-shift Tab inside the control is intercepted. So Tab from \u2212 jumps into the popover and skips the input and +, and Shift+Tab from the popover always returns to `ctlOf(el)` (2414, 2421), not to the element that handed off."
+ },
+ {
+  "title": "In-page error toast triggers contradict each other and do not match the field lifecycle",
+  "where": "\u00a77.1 'Errors'; \u00a78.4 'Unmounting a field in error or held'",
+  "problem": "\u00a77.1 says there is no toast while the component is selected, then says the toast applies if the component is 'deselected, or scrolled out of view', and scrolling out of view happens while it is still selected. It does not say whether the toast goes away when the component scrolls back, so an IntersectionObserver implementation would show and hide it repeatedly. \u00a78.4 raises the toast when a field in error unmounts, but an in-page editor (`CwaInlineText` or the TipTap editor) does not unmount on deselect, so the \u00a78.4 trigger never fires for it, and the two rules need different code paths.",
+  "fix": "Use one trigger: the toast is raised when the field's state is unresolved and the field is no longer reachable from the bar (its component deselected, or its tab unmounted). Drop 'scrolled out of view', or define it as raising the toast once with no retraction until resolved. Implement the trigger once, from `fieldStates` plus the resource stack, not from the editor's unmount.",
+  "severity": "low",
+  "role": "dx",
+  "real": true,
+  "evidence": "\u00a77.1 (Errors) says: \"while the component is selected there is no toast\", then \"If the component is deselected, or scrolled out of view, while the error is unresolved, the persistent toast applies\". Scrolling out of view can happen while the component is still selected, and the spec does not say whether the toast goes away when the component scrolls back. \u00a78.4 raises the toast on \"Unmounting a field in error or held (tab switch, deselect)\". An in-page editor stays mounted on the page when its component is deselected, so that trigger never fires for it. The two rules need different code paths."
+ },
+ {
+  "title": "In-page error outline is barely distinguishable from the normal selection outline",
+  "where": "ui-kit.html \u00a7'Editing on the page' (#ip-sel, CSS .ip-sel --sel:#e30a6c and [data-st=error] .sd \u2192 --ip-danger); spec \u00a77.1 Colours",
+  "problem": "The idle selection colour is magenta #e30a6c. The error state cross-fades the whole outline to red-700 #b91c1c, a neighbouring hue at similar weight. The 'Rich text' tag stays magenta in every state, so in the error state a magenta tag sits on a red frame (driven at 1280 and 390: tag rgb(227,10,108), sides rgb(185,28,28)). At a glance the failed component looks like an ordinarily selected one. This is the one state the outline most needs to signal, and in the whole-outline variant Daniel chose, colour change is its only cue. The conflict amber (amber-700) is also close to the magenta/red pair.",
+  "fix": "Give error and conflict a second cue on the overlay. Recolour the tag to the state colour and add the state glyph and word to it ('\u25b2 Rich text \u00b7 not saved', '\u25c6 \u2026 \u00b7 changed by Mia'). Optionally use a dashed or double frame for error. Restore the tag to magenta only when the state clears. Check the danger, warning and selection colours against each other (not only against the page) so all three stay distinguishable.",
+  "severity": "high",
+  "role": "visual",
+  "real": true,
+  "evidence": "ui-kit.html:289-291: `.ip-sel{--sel:#e30a6c}` and `.ip-sel .tag{background:var(--sel)}`. No rule recolours the tag for any data-st, so 'Rich text' stays magenta in every state. Lines 314-316: error is `--ip-danger:#b91c1c` and conflict `--ip-warning:#b45309`. In shots/v6-inpage-error-1280-light.png the red frame next to the magenta tag reads much like a selected component. The bar status does show '1 not saved \u2192', but on the overlay itself colour is the only cue. Spec \u00a77.1 checks these colours only against the page, never against each other or the selection magenta. Not a backlog decision, and not about width."
+ },
+ {
+  "title": "Severity ranking differs between tab badges, the pinned status and modal tab badges",
+  "where": "ui-kit.html summary() (lines ~3304-3305 vs 3323) and modal tab badge (line ~4163); spec \u00a77 'Tab badges are derived' and pinned end",
+  "problem": "Bar tab badges rank conflict > error, as decided. The pinned status checks errors first ('1 not saved \u2192', red \u25b2), and the modal tab badges use `e ? error : c ? conflict`. With a conflict on Title and a failed Subtitle, the Content tab shows an amber \u25c6 while the status right beside it shows a red \u25b2 and does not mention the conflict. Two adjacent indicators disagree about the same tab, and 'Show the field' jumps to a different field from the one the badge points at.",
+  "fix": "Use one severity order everywhere (conflict > error, as the badge rule says), from a single shared helper used by the bar badges, the pinned status, the modal tabs and the header. When both kinds are present, the pinned status names both ('1 conflict \u00b7 1 not saved \u2192', short form '2 issues') and goes to the conflict first.",
+  "severity": "high",
+  "role": "visual",
+  "real": true,
+  "evidence": "ui-kit.html:3383 bar badge: `mine.includes('conflict') ? 'conflict' : mine.includes('error') ? 'error'` (conflict first, as \u00a77 says). ui-kit.html:3364-3365 summary(): `if (err.length) {...'not saved \u2192'...; goto = err[0][0]} else if (conf.length)`, and 3377 data-state puts error first too. So with both present, the status names only the error and 'show the field' jumps to the errored field. ui-kit.html:4223 modal paintChrome: `e ? error : c ? conflict`, which also rewrites innerHTML on every paint, unlike the bar's change-only guard at 3384. The spec does not set the pinned status's order, but the mismatch is real."
+ },
+ {
+  "title": "The white 'saving' highlight reads as a gap in the outline on light sites",
+  "where": "ui-kit.html .ip-sel .sd::after (linear-gradient with rgb(255 255 255 / .85)); shots v6-inpage-saving-outline-top/-bottom-*-light and the -dark ones (the site stays light)",
+  "problem": "The moving highlight is near-white laid over the 2px line-saving blue. On the sample page (#fffdf9 component on #f7f3ee) and on most light client sites, the highlight segment matches the page, so the motion looks like a hole travelling around the frame rather than a bright pulse. The sides look broken, which reads as a rendering glitch, not progress. The overlay colour has to work on any site background, and white only works on dark ones.",
+  "fix": "Draw the moving segment in the saving colour at full strength and drop the resting strips to about 40-50% opacity of line-saving, so the moving part is always the most saturated. This works on light and dark sites alike. Alternatively, pick the highlight per site background (white on dark, a darker blue on light), but the opacity approach needs no detection.",
+  "severity": "medium",
+  "role": "visual",
+  "real": false,
+  "evidence": "The current mockup has no white highlight. ui-kit.html:302: `.ip-sel .sd::after{color:var(--ip-saving);background:linear-gradient(...,currentColor 30%,currentColor 70%,...)}`. Line 316: `--ip-saving-base:#93c5fd;--ip-saving:#1d4ed8`, and line 312: the saving strips use the light base. So the moving segment is dark blue-700 over light blue-300 strips, which is already the fix suggested. The only `rgb(255 255 255 /\u2026)` values in the file are shimmer, step-hover and toast tokens. The file (modified 21:03) is newer than the outline shots (20:38-21:01) the reviewer used. The one thing left over: spec \u00a77.1 still calls it 'a light highlight segment', a wording nit, not this finding."
+ },
+ {
+  "title": "Error/conflict popover opens instantly on hover as the pointer crosses the bar",
+  "where": "ui-kit.html setLine(): el.addEventListener('mouseenter', show) with no delay; spec \u00a74.4 'The popover opens when the control is focused or hovered'",
+  "problem": "The popover opens on the first mouseenter. The conflict version is large (two quoted values and two buttons) and the bar is a dense row. Moving the pointer from a field to Publish, the tabs or \u22ee makes it flash open over neighbouring fields and the page, then close 300 ms later. With two errored fields it flickers between them. This is the noisy, flickering motion the badge fix was meant to remove.",
+  "fix": "Open on hover only after a hover-intent delay (about 250-300 ms with the pointer still over the control). Keep focus opening it at once. Specify the open delay in \u00a74.4 beside the 300 ms close delay.",
+  "severity": "medium",
+  "role": "visual",
+  "real": true,
+  "evidence": "ui-kit.html:2425: `el.addEventListener('mouseenter', show)`. show() (2402) opens the popover at once with no delay; only the close has a 300 ms timeout (2426). Spec \u00a74.4 (line 417) gives a 300 ms close delay but no open delay. Daniel decided that focus or hover opens it. He did not decide the timing, so a hover-intent delay does not contradict his decision."
+ },
+ {
+  "title": "Toast actions are underlined text links while the same actions elsewhere are buttons",
+  "where": "ui-kit.html errToast (line ~3090, .toast .tbtn underline); shots v6-inpage-error-toast-*; spec \u00a74.4 'Popovers, alerts and toasts use real buttons'",
+  "problem": "After deselecting, the toast shows 'Show me  Retry  Reset' as three underlined links of equal weight. In the bar popover a moment earlier, Retry is a solid accent button and Reset a soft button. The same decision has two visual vocabularies, the toast has no primary action, and three equal links in a row read as navigation. The description 'Rich text, How we build a kitchen. The server couldn't save your last edit.' also opens with a comma-joined type and title that reads like a data dump.",
+  "fix": "Render toast actions as kit buttons, small size: Retry solid (or soft), Reset and Show me soft. Put Show me first or make it the primary, since it leads to the full context. Rewrite the copy as 'Your last edit to \u201cHow we build a kitchen\u201d (Rich text) wasn't saved.'",
+  "severity": "medium",
+  "role": "visual",
+  "real": true,
+  "evidence": "The toast template (ui-kit.html:2801) renders actions as `.tbtn`, and line 1040 underlines them in toast styles A and B: `.ts-a .toast .tbtn,.ts-b .toast .tbtn{...text-decoration:underline}`. shots/v6-inpage-error-toast-1280-light.png shows 'Show me  Retry  Reset' as three equal underlined links. That contradicts spec line 402: 'Popovers, alerts and toasts use real buttons.' The bar popover uses `btn solid`/`btn soft` (3152). The copy is at 3150: desc 'Rich text, How we build a kitchen. The server couldn\u2019t save your last edit.' Daniel chose style B for the toast's surface, not for link-style actions."
+ },
+ {
+  "title": "Delete page in the Info tab is the loudest element on the tab and sits just above Save",
+  "where": "Page modal Info tab, section 'Delete this page' (shots v6-info-delete-1280-light, -390-dark)",
+  "problem": "The section uses a solid danger button. It is the most saturated thing in the modal, stronger than the footer's Save, which is disabled or primary blue. When the tab is scrolled to the end (always on a phone), it sits about 60-70px above Cancel/Save. Moving Delete out of the footer was meant to stop the button beside Save being destructive, but visually it now dominates the tab's lower area. A solid danger button that only opens a confirm also duplicates the confirm's own solid danger button, so the two tiers look alike.",
+  "fix": "In the section, use a soft (or outline) danger button: danger-fg text on the button fill, solid danger on hover. Keep solid danger for the confirm's final button only, so the commitment step is the visually strongest. Give the section 2.5rem more space above the footer on a phone.",
+  "severity": "medium",
+  "role": "visual",
+  "real": true,
+  "evidence": "shots/v6-info-delete-1280-light.png: the solid red 'Delete page' button is the most saturated element in the modal, and it sits about 75px above the footer, where Save is a pale disabled blue. ui-kit.html:3628 uses solid danger, and the confirm's final button is also solid danger, so the two steps look the same. The spec (\u00a78.6) specifies 'solid danger' for the section button, but the backlog decision covers only moving Delete out of the footer and the confirm tiers, not this button's style. This is a design proposal that Daniel can accept or reject."
+ },
+ {
+  "title": "Confirm copy: the cascade is buried and some wording is awkward",
+  "where": "Typed and simple confirms (shots v6-confirm-typed-*, v6-confirm-simple-*); Info 'Delete this page' section text",
+  "problem": "(a) In the typed confirm the most serious consequence, '14 pages \u2026 are deleted too', is mid-paragraph after 'This can't be undone.' The Info section bolds it, but the confirm, where the decision happens, does not. (b) 'Delete the page Shaker kitchens?' reads like a template string. (c) The Info section ends with meta-copy, 'You'll be asked to type delete.' (d) The simple confirm says 'The 1 address under it goes too.' and deletes a cascading redirect in the simple tier, while a cascading route delete is in the typed tier.",
+  "fix": "Title the confirm 'Delete \u201cShaker kitchens\u201d?'. Start the body with the bold cascade line on its own ('14 pages built from this template are deleted too.'), then a muted line for what is kept (route, nested pages), then 'This can't be undone.' Drop 'You'll be asked to type delete.' Write the redirect case as 'Its old address /shaker-style goes too.', and move a redirect that has children into the typed tier to match the route rule.",
+  "severity": "medium",
+  "role": "visual",
+  "real": true,
+  "evidence": "ui-kit.html:4289-4290: title `Delete the ${spec.what} ${spec.title}?` gives 'Delete the page Shaker kitchens?'. desc starts `This can't be undone.` and then adds the template cascade as plain text, not bold, whereas the Info section bolds it (3628). Line 3628 ends 'You'll be asked to type delete.' Line 4100: the redirect confirm 'The N address(es) under it go(es) too' runs through the simple askConfirm with no `typed:true` (4098-4103). \u00a78.6 puts 'deleting a route that has old addresses' in the typed tier, and a redirect is a route, so a cascading redirect delete sits in the wrong tier."
+ },
+ {
+  "title": "Error and conflict lines on toggles and segmented controls differ by hue only, and are nearly the same hue in light",
+  "where": "Bar save states for toggles and the segmented control (shots v6-bar-toggle-states-1280-light); spec \u00a74.2 'Colour alone'",
+  "problem": "Text, select and stepper controls get a tinted fill as a second cue. Toggles and segmented controls have no field fill, so the 2px line is the only mark on the control. In light, red-700 and amber-700 at 2px under 'Show button' read as the same brownish red. Under a toggle's label the line also looks like a link underline or a spell-check mark rather than a status. The spec's colour-alone argument relies on cues that are not on the control.",
+  "fix": "For unfilled controls, also tint a box behind the toggle and its label (field-danger / field-warning at the same inset as the line), so they follow the same 'tint + line' rule as filled fields. Alternatively, use a dashed line for conflict and a solid one for error on every control. Place the line under the whole control box (switch and label as one padded box), not just under the text.",
+  "severity": "medium",
+  "role": "visual",
+  "real": true,
+  "evidence": "shots/v6-bar-toggle-states-1280-light.png: the conflict line under 'Show button' (amber-700 #b45309) and the error line under the Page/URL segmented control (red-700) are both dark brownish-red 2px underlines, and neither has a tinted fill. setLine (ui-kit.html:2383) toggles the `err`/`conf` tint only when `el.matches('.f')`, so toggles and segmented controls get no tint. Spec \u00a74.2 promises a tint plus the line, which those controls do not have."
+ },
+ {
+  "title": "Header and bar show the same 'saving' moment with different treatments and different dwell times",
+  "where": "In-page stage: #ip-hs (header) vs #ip-sum (bar status) and the outline; spec \u00a77, \u00a77.1, \u00a77.2",
+  "problem": "While editing, 'Saving\u2026' appears twice on screen: muted text with no glyph in the header, and a spinner with text in the bar. Then 'saved' lasts for different times in each place: outline \u22481.3 s, field line 1.5 s, header 2 s, bar status 4 s (`Date.now() - B.savedAt < 4000`). The indicators finish one after another, so the 'one episode, saved once' result looks staggered rather than single. The header's '1 change not saved' is also a button with no button affordance (bare red text), next to Done, which is a filled button.",
+  "fix": "Use one dwell time for 'saved' on every surface (for example 2 s), ending together. Give the header the same glyph-plus-word pattern as the bar status (spinner, tick, triangle), or hide the header's Saving\u2026/Saved while a bar with its own status is on screen and keep only its 'not saved' button. Style the 'not saved' button as a ghost kit button with danger text and a visible hover and focus fill.",
+  "severity": "low",
+  "role": "visual",
+  "real": true,
+  "evidence": "Partly accurate. The dwell times do differ. In the in-page stage the header shows 'All changes saved' for 2000 ms (ui-kit.html:3104), while the bar status and outline return to the idle state after 780 ms (3140). In the bar demo the status holds 'All changes saved' for 4000 ms (3367). The header's 'Saving\u2026' is muted text with no glyph (3103), next to the bar's spinner. One claim is wrong: the header's '1 change not saved' is not bare text. It has a danger triangle glyph and a hover fill (3105, 274-275; visible in shots/v6-inpage-error-1280-light.png). Its lack of a visible button shape next to the filled Done button stands."
+ },
+ {
+  "title": "Leftover pre-v6 copy and a redirect-only menu item",
+  "where": "ui-kit.html 'Writing a tab' paragraph (bar section); phone page modal \u22ee menu (line ~4236)",
+  "problem": "The 'Writing a tab' text still says inputs lay out 'the state in the end icon's place, errors as a popover', which is v4's model and contradicts the v6 edge line beside it. On a phone, the modal header's \u22ee now offers 'Go to the Info tab to delete'. A menu item whose only job is to tell you where something is reads as a leftover and gives \u22ee an almost empty menu.",
+  "fix": "Change the copy to 'the state as a line along the control's bottom edge, errors and conflicts in a popover on focus or hover'. Remove the \u22ee item. If Delete needs to be found from the header, make it 'Delete page\u2026', which switches to Info, scrolls to the section and focuses its button. Otherwise drop \u22ee when Duplicate is its only action.",
+  "severity": "low",
+  "role": "visual",
+  "real": true,
+  "evidence": "ui-kit.html:1271 still says fields lay out 'the state in the end icon's place, errors as a popover', which is v4's model and contradicts v6's edge line (\u00a74.2, \u00a77). ui-kit.html:4296: the modal header's \u22ee offers `{ label: 'Go to the Info tab to delete', fn: () => selectTab('info', true) }` next to Duplicate. The spec only says the \u22ee 'no longer holds Delete'. A menu item that only points elsewhere is a leftover, not a decided pattern."
+ },
+ {
+  "severity": "high",
+  "title": "Bar error/conflict popover takes over Tab inside multi-part controls, so parts of the control can't be reached",
+  "where": "\u00a74.4 bar popover keyboard model; mockup setLine() keydown handler (ui-kit.html ~2400) on the stepper and segmented rows in 'Save states, bar only'",
+  "problem": "While the popover is open, the handler catches every forward Tab anywhere inside the control's wrapper (.f / .seg / .tgl) and moves focus into the popover. I checked this in a browser. On the 'Position, not saved' stepper, Tab from 'Move up' goes to Retry and never reaches the number input or 'Move down'. On the segmented 'Link, not saved', Tab from 'Page' goes to Retry, so 'URL' can't be reached by Tab. Shift+Tab from Retry calls back(), which focuses the input, and the next Tab sends you back into the popover. Keyboard users get stuck in a loop and can only get out by pressing Escape first, which nothing tells them to do. Fails WCAG 2.1.1 and 2.4.3.",
+  "fix": "Only redirect Tab into the popover when focus is on the control's last focusable element (the stepper's +, the last segment, the select trigger). Spec it as 'Tab from the control's last focusable part', and make Shift+Tab from the first action return to that same part, not always the input. Add a browser scenario that tabs through a stepper and a segmented control in the error state.",
+  "role": "a11y",
+  "real": true,
+  "evidence": "In setLine() (ui-kit.html ~2431), the keydown listener on the wrapper `el` sends any forward Tab to the popover's first [data-act]. It does not check where in the control focus is. Playwright run on the 'Save states, bar only: steppers' 'Not saved' stepper: focus on 'Move up', then Tab, went to Retry; the number input and 'Move down' were skipped. On the segmented 'Not saved' (Link): 'Page', then Tab, went to Retry, so 'URL' was never reached. Spec \u00a74.4 line 417 says only 'Tab from the control' and never says which part of a multi-part control, so this is a spec gap and a mockup bug."
+ },
+ {
+  "severity": "high",
+  "title": "Tab past the popover's last action drops focus to <body>, and the popover is unreachable for touch screen readers",
+  "where": "\u00a74.4, \u00a711.1 (1.4.13), \u00a711.3 'Bar status line' row; mockup popover() portals into #portal at the end of the document",
+  "problem": "Tested: control \u2192 Tab \u2192 Retry \u2192 Tab \u2192 Reset \u2192 Tab puts focus on BODY, and the popover stays open. The popover sits at the end of the DOM, so the natural Tab order after its last button leaves the bar entirely. The close \u00d7 comes before Retry, and Shift+Tab from Retry is caught, so \u00d7 can never be reached by keyboard. VoiceOver iOS and TalkBack have no Tab key, yet the hidden description says 'Press Tab for Retry and Reset'. Swiping from the control does not reach the portalled dialog, so Retry and Reset can't be reached on a touch screen reader.",
+  "fix": "Spec that Tab from the popover's last action goes to the next focusable element after the control and closes the popover, and that Shift+Tab from the first action returns to the control. Put the \u00d7 last in focus order, or let Escape be the only way to close it. Either render the popover straight after the control in the DOM (the reka Popover's portal can be turned off, or use aria-owns), or keep the portal and manage focus explicitly. Word the description so it works on any device: 'Not saved. Retry and Reset follow.'",
+  "role": "a11y",
+  "real": true,
+  "evidence": "Playwright: stepper 'Move up', then Tab to Retry, Tab to Reset, Tab to BODY. popover() appends to #portal at the end of the document, and the next Tab after that landed on the page's first control ('Auto'). The \u00d7 (data-x) comes before Retry in the DOM. Shift+Tab from the first [data-act] calls back(), so the \u00d7 is never reachable by keyboard. The hidden description in setLine() literally says 'Press Tab for Retry and Reset', which means nothing without a keyboard. The portalled dialog is not next to the control in reading order, so swipe navigation on a touch screen reader doesn't reach it. Spec \u00a74.4 and \u00a711.3 say nothing about leaving the popover or about touch screen readers."
+ },
+ {
+  "severity": "high",
+  "title": "Toast after deselecting is announced again and rebuilt on every scroll, and its actions drop focus",
+  "where": "\u00a77.1 Errors (persistent toast after deselect or scroll out of view); mockup initInpage() scroll handler \u2192 errToast() \u2192 toast() upsert",
+  "problem": "Every time a scroll ends with the component out of view, the code calls toast() again. That rewrites the toast's innerHTML and calls pageLive.say() each time. Measured: two scrolls after deselecting gave two identical announcements ('Text wasn't saved. Rich text, How we build a kitchen\u2026'), and focus on the toast's Reset button was lost to BODY when the toast was rebuilt. Retry or Reset in the toast removes the toast, and focus goes to BODY. The same failure was already announced once by the bar's region (ip-live), so a screen reader hears it 2 or more times, against \u00a711.2's 'Errors are announced once'.",
+  "fix": "Upsert by id must not announce, and must not rebuild the DOM, when tone, title and description are unchanged. Spec 'a toast is announced only when it first appears or its text changes'. After a toast action, move focus to a defined place: Retry to the bar status, which shows Saving\u2026; Reset to the editor or the component; Show me to the bar status, as now. Dismiss returns focus to where it was before.",
+  "role": "a11y",
+  "real": true,
+  "evidence": "initInpage(): the site scroll handler calls errToast() every time a scroll settles (400 ms) while E.st==='error' and the component is out of view. toast() (ui-kit.html ~2810) upserts by id through toastEl(o, el). That rewrites el.innerHTML, which destroys a focused toast button, and it calls pageLive.say(...) every time, with no check for unchanged text. The action handlers call fn() then kill(), and nothing moves focus. The bar's own region already said the outcome (say.done('text','Text',false)). This goes against \u00a711.2's 'Errors are announced once'."
+ },
+ {
+  "severity": "medium",
+  "title": "In-page editor gets no programmatic error state and no keyboard route to Retry/Reset",
+  "where": "\u00a77.1 Errors ('the outline and the bar status show it'); mockup #ip-body contenteditable",
+  "problem": "After a failed save the editor (role=textbox) has no aria-invalid and no aria-describedby. Checked: both are null. The outline overlay is aria-hidden. A screen reader user still typing hears one polite 'Text wasn't saved', and after that nothing on the field they are in tells them it is unsaved. The only way to reach Retry is to find the bar status button, and the spec gives no route from inside the editor (\u00a77's Escape order covers 'on-page editor', but doesn't say where focus goes). Bar controls have this through FieldStatus; in-page editors do not (WCAG 3.3.1, 4.1.2).",
+  "fix": "Specify that a registered in-page editor gets aria-invalid=\"true\" while its save has failed, plus aria-describedby pointing to a hidden description: 'Not saved. Press Escape, then Enter on the bar status for Retry and Reset.' Spec that Escape from the editor moves focus to the bar status button when the editor has an error, which opens its popover. Clear both when the next save starts.",
+  "role": "a11y",
+  "real": true,
+  "evidence": "Playwright: I forced a failed save via __ip.fail() + type(). Afterwards #ip-body had aria-invalid=null and aria-describedby=null. Spec \u00a77.1 Errors says only 'the outline and the bar status show it'. Bar controls get aria-invalid and the hidden description through FieldStatus (\u00a74.4, \u00a711.3), but no rule covers registered in-page editors, and none says where focus goes from the editor to reach Retry."
+ },
+ {
+  "severity": "medium",
+  "title": "Admin header status is a live region that is re-created, hidden when empty, and duplicates the bar's announcements",
+  "where": "\u00a77.2 ('the text itself is not a live region of its own'); mockup #ip-hs",
+  "problem": "The mockup gives #ip-hs role=\"status\" and swaps it with outerHTML on each state change. A newly inserted live region with its text already in it is often not announced, and .ip-hs:empty{display:none} stops some screen readers watching it at all. Where it is announced, it speaks 'Saving\u2026' and 'All changes saved' on top of the bar region's 'Text saved'. In the error state the element changes from a span to a button and back. A keyboard user resting on '1 change not saved' loses focus to BODY when the state changes (seen after a Retry). Its position in the tab order also comes and goes.",
+  "fix": "Make the mockup match the spec: no role=status on the header text; announce only through the \u00a711.2 region, and say in the spec which region owns header-only events, such as saves finishing after deselecting. Keep one element that persists. Either it is always a button, named 'Save status: All changes saved' and so on, or there is a persistent span plus a persistent button, hidden with the hidden attribute but never re-created. When the button disappears while it has focus, move focus to a defined target, such as the header's first control.",
+  "role": "a11y",
+  "real": true,
+  "evidence": "Spec \u00a77.2 line 701: 'the text itself is not a live region of its own'. The mockup's #ip-hs (line 1293 and paint() at ~3106-3109) has role=\"status\" and is replaced through outerHTML on every state. It changes from a span to a button (error) and back, so a focused '1 change not saved' button is destroyed when the state changes. CSS .ip-hs:empty{display:none} (line 273) hides it when empty. The mockup and the spec disagree, and focus loss on re-creation is not specified."
+ },
+ {
+  "severity": "medium",
+  "title": "Typed confirm: aria-invalid is exposed as false, the match is silent, and focus after delete is undefined",
+  "where": "\u00a78.6 Type to confirm; mockup askConfirm(); Delete this route failure alert",
+  "problem": "(a) inp.toggleAttribute('aria-invalid', wrong) writes aria-invalid=\"\", and ARIA treats an empty value as false. The accessibility tree shows invalid=false while 'That doesn't match' is on screen. (b) 'Matches. Delete page is on.' changes only aria-describedby text, which is never announced, so a screen reader user only finds out by tabbing to the button. (c) After a successful delete, close(false) leaves focus unmanaged while the modal closes and the list updates. The spec doesn't say where focus goes. (d) A failed route delete uses role=\"alert\" and also moves focus to it, so it is spoken twice and assertively, against \u00a711.2. (e) The confirm's count text depends on a fresh pageDataCount re-fetch (bundle facts: it is never republished). If the text updates after the alertdialog has opened, its description changes without being announced.",
+  "fix": "(a) Set aria-invalid=\"true\", or remove it. (b) Add one polite announcement through the confirm's own region when the field first matches, and when it stops matching. (c) Spec focus after a delete: to the list's next row, or the list heading if no row is left, with the success toast announced once. A route deleted inside the sub-view goes to the Route section's status, as now. (d) Use role=group plus a single polite announcement, or keep the focus move and drop role=alert. (e) Fetch the count before opening the confirm: the Delete page button shows busy, with a short timeout that falls back to the 'Pages built from this template\u2026' wording. Never change the confirm's text once it is open.",
+  "role": "a11y",
+  "real": true,
+  "evidence": "askConfirm() line 2686: inp.toggleAttribute('aria-invalid', wrong) sets aria-invalid=\"\", which ARIA treats as the default false. The 'Matches. Delete page is on.' text only rewrites the helper that aria-describedby points to (line 2687), and nothing announces it. On go, close(false) does not refocus, and the page-delete onGo only toasts, so focus is unmanaged. The route delete failure box is role=\"alert\" tabindex=-1, and render('[data-sfail]')/render('[data-rfail]') (lines 3963, 4008, 4026) focus it, so it is announced twice. round-6-backlog 'Bundle shapes' says to re-fetch pageDataCount when the confirm opens, but \u00a78.6 and the mockup (askConfirm reads spec.pageDataCount synchronously, ~4288) don't say whether the text can change after the confirm opens. That makes the (e) gap real."
+ },
+ {
+  "severity": "medium",
+  "title": "'Type delete' clashes with speech input commands",
+  "where": "\u00a78.6 ('The word is always \"delete\"'); label 'Type delete to confirm'",
+  "problem": "In macOS/iOS Voice Control, Windows Voice Access and Dragon, saying 'delete' is an editing command, so a speech-input user who says the word deletes text instead of typing it. Typing the word therefore needs workarounds most people don't know. The unquoted label 'Type delete to confirm' is also unclear, both read aloud and for cognitive accessibility: it doesn't show that 'delete' is the literal word to type.",
+  "fix": "Quote the word in the label and the helper: Type \u201cdelete\u201d to confirm. Either pick a word that is not an editing command in the main speech tools ('remove' is also a command; 'confirm' or 'yes delete' are worth checking), or add a speech-friendly alternative in the same tier, such as a required checkbox 'I understand 14 pages are deleted too' that switches the button on. Add it to the manual VoiceOver/Voice Control pass in \u00a711.4.",
+  "role": "a11y",
+  "real": true,
+  "evidence": "\u00a78.6: label 'Type delete to confirm' (also askConfirm line 2667) and 'The word is always \"delete\"'. The label and helper don't quote the word, so the literal token is ambiguous. That part is plainly verifiable and cheap to fix. The speech-command clash is plausible, because 'delete' is an editing command in Voice Control, Voice Access and Dragon. I could not test it here, and \u00a711.4's manual pass names only VoiceOver/NVDA. The backlog records no decision about the word, so this doesn't relitigate anything. Lower priority than the others."
+ },
+ {
+  "severity": "medium",
+  "title": "Which bar control is in error is shown by colour alone, and the danger and saved lines have almost the same luminance",
+  "where": "\u00a74.2 'Colour alone' paragraph and the line tokens; \u00a77 pinned status ('1 not saved \u2192', '2 not saved')",
+  "problem": "The pinned status, the tab badge and the description say that something on a tab failed, but with two or more fields on a tab, the only visual sign of which control failed is the tint plus a 2px line, both colour. line-danger #991b1b against line-saved #3f6212 is 1.18:1 in light, and #fecaca against #9cdd05 is 1.14:1 in dark, so with deuteranopia or protanopia an error line and a just-saved line look the same. Error and conflict also differ only in hue. 1.4.1 is not met for 'which field', only for 'some field'.",
+  "fix": "Without adding a glyph, give the line a non-colour difference: conflict as a dashed 2px line and error solid; saved stays solid but fades. Make the pinned status name the field when there is one ('Title not saved \u2192'), and when there are several, list them in its popover with links that focus each field. Update the \u00a74.2 'Colour alone' claim to match.",
+  "role": "a11y",
+  "real": true,
+  "evidence": "Spec \u00a74.2 line 380 says error and conflict lines differ 'by colour and tint only' and points to the pinned status, the tab badge, the popover and the description for non-colour cues. With several fields on one tab, the pinned status ('2 not saved'), the badge and the description don't show visually which control failed, and the popover appears only on hover or focus. Tokens: light --k-line-danger #991b1b vs --k-line-saved #3f6212, dark #fecaca vs #9cdd05 (lines 15/31). Their luminances are close, as claimed. The saved line fades within 1.5 s, so mixing up saved and error is brief. Error vs conflict, and 'which field', at rest are still colour-only. Within scope, since it is the new edge-line status, and it doesn't conflict with the 'no glyphs' decision."
+ },
+ {
+  "severity": "medium",
+  "title": "Saving animations run for as long as the editor keeps typing (2.2.2), and outline colours are only checked on a light site",
+  "where": "\u00a77.1 whole-outline variant and left-edge sweep; \u00a74.2 bar saving sweep; \u00a77.1 Colours",
+  "problem": "An episode lasts until nothing is waiting or in flight, so steady typing keeps the segments circling all four sides of the component you are typing in (and the bar sweep running) for minutes, beside the text being edited. Reduced motion is the only way to stop it, but WCAG 2.2.2 requires a pause/stop mechanism, or that the motion end within 5 s, for movement shown alongside other content during interaction. Separately, the overlay colours were measured only on the sample light site (#fffdf9 / #f7f3ee). On a dark or saturated site, blue-700 and red-700 strips fall well below 3:1 (1.4.11), and the outline is the in-page sign of the state.",
+  "fix": "Cap the motion: after about 5 s of continuous episode the segments (and the bar sweep) settle into the still saving colour until the episode ends, or animate only while a request has been in flight for more than 1 s, matching the 'Saving\u2026 only when slow' rule. For contrast, give the strips a 1px contrasting halo (white over dark, black over light) or pick the line set from the luminance of the page behind it, and add a dark-site row to the measured table.",
+  "role": "a11y",
+  "real": true,
+  "evidence": "\u00a77.1 whole outline: segments circle every side 'for the whole episode and typing never restarts them'. An episode lasts until nothing is waiting or in flight (\u00a77.2), so steady typing keeps it moving past 5 s, next to content the user is interacting with. WCAG's preload-phase exemption needs interaction to be impossible, so it doesn't apply, and reduced motion is the only way to stop it. This doesn't reopen the choice of the whole-outline variant or the width. The colour half is only partly true: \u00a77.1 Colours says the overlay uses the line tokens 'as set for the page under the overlay', which implies the dark set on a dark page. But only the light sample is measured, and saturated backgrounds aren't addressed."
+ },
+ {
+  "severity": "low",
+  "title": "Modal tab badges break the v6 badge rule (error ranked above conflict, re-rendered on every paint), and the bar badge's name says 'unsaved'",
+  "where": "\u00a77 'Tab badges are derived'; mockup page modal paintChrome() (~4215) and the bar tab badge (~3386)",
+  "problem": "The modal's paintChrome ranks error > conflict and rewrites each badge's innerHTML on every paint, including its hidden text (', 2 to fix'). That is the v5 behaviour v6 removed, so the badge changes kind, and its accessible name changes, when one field moves error \u2192 saving while another holds a conflict. The bar badge's accessible name 'has an unsaved field' uses 'unsaved', which in the modal means a local change not yet saved with Save, while the pinned status says 'not saved'. Screen reader users hear the same word for two different states.",
+  "fix": "Apply one derived rule (conflict > error > nothing, plus the modal's unsaved dot after those) to bar and modal tabs alike, and re-render only when the derived value changes. Rename the bar badge 'has a field not saved' and the conflict one 'has a conflict to resolve', so the words match the pinned status.",
+  "role": "a11y",
+  "real": true,
+  "evidence": "Page modal paintChrome() (~4218-4225): el.innerHTML = e ? error : c ? conflict : ..., which ranks error above conflict, and it rewrites every badge's innerHTML on every paint. Spec line 42/669 requires 'conflict > error > nothing' and re-rendering only on change. The bar badge (~3381-3386) follows the rule but is named 'has an unsaved field', while the pinned status says 'not saved' and the modal uses 'unsaved' for local changes not yet saved."
+ }
+]

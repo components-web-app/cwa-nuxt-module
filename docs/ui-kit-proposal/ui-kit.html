@@ -10,10 +10,10 @@
   --bg:#f5f5f4;--text:#1c1917;--text-muted:#57534e;--card:#ffffff;--border:#d6d3d1;--code:#e7e5e4;--link:#1d4ed8;
 
   --k-surface:#ffffff;--k-raised:#f5f5f4;--k-field:#d6d3d1;--k-field-hover:#c9c4c0;--k-chip:#b8b2ad;--k-menu:#ffffff;--k-menu-hl:#e7e5e4;
-  --k-field-danger:#dabfbd;--k-field-warning:#dcc9ad;--k-line:#d6d3d1;--k-tree-line:#8a837e;
-  --k-fg:#1c1917;--k-muted:#57534e;--k-muted-on-field:#4f4a45;
+  --k-field-danger:#dabfbd;--k-field-warning:#dcc9ad;--k-line:#d6d3d1;--k-line-dash:#78716c;--k-tree-line:#8a837e;
+  --k-fg:#1c1917;--k-fg-2:#57534e;--k-muted:#57534e;--k-muted-on-field:#4f4a45;
   --k-accent:#2563eb;--k-accent-hover:#1d4ed8;--k-accent-fg:#1d4ed8;--k-line-saving:#1d4ed8;--k-line-saved:#3f6212;--k-line-danger:#991b1b;--k-line-warning:#92400e;--k-accent-tint:rgb(37 99 235 / .12);
-  --k-success:#3f6212;--k-warning:#b45309;--k-danger:#b91c1c;--k-danger-fg:#b91c1c;--k-danger-fill:#dc2626;
+  --k-success:#3f6212;--k-warning:#b45309;--k-danger:#b91c1c;--k-danger-fg:#b91c1c;--k-danger-strong:#dc2626;--k-danger-fill:#dc2626;
   --k-highlight:#e30a6c;--k-toggle-off:#78716c;--k-shadow:0 8px 24px rgb(0 0 0 / .14);
   --k-step-hover:rgb(28 25 23 / .16);--k-step-press:rgb(28 25 23 / .3);--k-type-static:#2563eb;--k-type-dynamic:#a16207;
   --k-scrim:rgb(28 25 23 / .45);--k-btn:#e7e5e4;--k-shimmer:rgb(255 255 255 / .9);
@@ -26,10 +26,10 @@
   :root:not([data-theme="light"]){
     --bg:#0c0a09;--text:#f5f5f4;--text-muted:#a8a29e;--card:#1c1917;--border:#3a3532;--code:#292524;--link:#60a5fa;
     --k-surface:#1c1917;--k-raised:#292524;--k-field:#57534e;--k-field-hover:#625d58;--k-chip:#6e6964;--k-menu:#292524;--k-menu-hl:#57534e;
-    --k-field-danger:#6f514c;--k-field-warning:#6d5e45;--k-line:#44403c;--k-tree-line:#78716c;
-    --k-fg:#f5f5f4;--k-muted:#a8a29e;--k-muted-on-field:#e7e5e4;
+    --k-field-danger:#6f514c;--k-field-warning:#6d5e45;--k-line:#44403c;--k-line-dash:#78716c;--k-tree-line:#78716c;
+    --k-fg:#f5f5f4;--k-fg-2:#d6d3d1;--k-muted:#a8a29e;--k-muted-on-field:#e7e5e4;
     --k-accent:#2563eb;--k-accent-hover:#1d4ed8;--k-accent-fg:#60a5fa;--k-line-saving:#93c5fd;--k-line-saved:#9cdd05;--k-line-danger:#fecaca;--k-line-warning:#fcd34d;--k-accent-tint:rgb(37 99 235 / .28);
-    --k-success:#9cdd05;--k-warning:#ffaa00;--k-danger:#fca5a5;--k-danger-fg:#fca5a5;--k-danger-fill:#dc2626;
+    --k-success:#9cdd05;--k-warning:#ffaa00;--k-danger:#fca5a5;--k-danger-fg:#fca5a5;--k-danger-strong:#f87171;--k-danger-fill:#dc2626;
     --k-toggle-off:#78716c;--k-shadow:0 8px 24px rgb(0 0 0 / .28);--k-scrim:rgb(0 0 0 / .6);--k-btn:#44403c;--k-shimmer:rgb(255 255 255 / .24);
     --k-step-hover:rgb(255 255 255 / .17);--k-step-press:rgb(255 255 255 / .3);--k-type-static:#60a5fa;--k-type-dynamic:#facc15;
     color-scheme:dark;
@@ -38,29 +38,29 @@
 :root[data-theme="dark"]{
   --bg:#0c0a09;--text:#f5f5f4;--text-muted:#a8a29e;--card:#1c1917;--border:#3a3532;--code:#292524;--link:#60a5fa;
   --k-surface:#1c1917;--k-raised:#292524;--k-field:#57534e;--k-field-hover:#625d58;--k-chip:#6e6964;--k-menu:#292524;--k-menu-hl:#57534e;
-  --k-field-danger:#6f514c;--k-field-warning:#6d5e45;--k-line:#44403c;--k-tree-line:#78716c;
-  --k-fg:#f5f5f4;--k-muted:#a8a29e;--k-muted-on-field:#e7e5e4;
+  --k-field-danger:#6f514c;--k-field-warning:#6d5e45;--k-line:#44403c;--k-line-dash:#78716c;--k-tree-line:#78716c;
+  --k-fg:#f5f5f4;--k-fg-2:#d6d3d1;--k-muted:#a8a29e;--k-muted-on-field:#e7e5e4;
   --k-accent:#2563eb;--k-accent-hover:#1d4ed8;--k-accent-fg:#60a5fa;--k-line-saving:#93c5fd;--k-line-saved:#9cdd05;--k-line-danger:#fecaca;--k-line-warning:#fcd34d;--k-accent-tint:rgb(37 99 235 / .28);
-  --k-success:#9cdd05;--k-warning:#ffaa00;--k-danger:#fca5a5;--k-danger-fg:#fca5a5;--k-danger-fill:#dc2626;
+  --k-success:#9cdd05;--k-warning:#ffaa00;--k-danger:#fca5a5;--k-danger-fg:#fca5a5;--k-danger-strong:#f87171;--k-danger-fill:#dc2626;
   --k-toggle-off:#78716c;--k-shadow:0 8px 24px rgb(0 0 0 / .28);--k-scrim:rgb(0 0 0 / .6);--k-btn:#44403c;--k-shimmer:rgb(255 255 255 / .24);
     --k-step-hover:rgb(255 255 255 / .17);--k-step-press:rgb(255 255 255 / .3);--k-type-static:#60a5fa;--k-type-dynamic:#facc15;
   color-scheme:dark;
 }
 .kit-dark{
   --k-surface:#1c1917;--k-raised:#292524;--k-field:#57534e;--k-field-hover:#625d58;--k-chip:#6e6964;--k-menu:#292524;--k-menu-hl:#57534e;
-  --k-field-danger:#6f514c;--k-field-warning:#6d5e45;--k-line:#44403c;--k-tree-line:#78716c;
-  --k-fg:#f5f5f4;--k-muted:#a8a29e;--k-muted-on-field:#e7e5e4;
+  --k-field-danger:#6f514c;--k-field-warning:#6d5e45;--k-line:#44403c;--k-line-dash:#78716c;--k-tree-line:#78716c;
+  --k-fg:#f5f5f4;--k-fg-2:#d6d3d1;--k-muted:#a8a29e;--k-muted-on-field:#e7e5e4;
   --k-accent-fg:#60a5fa;--k-line-saving:#93c5fd;--k-line-saved:#9cdd05;--k-line-danger:#fecaca;--k-line-warning:#fcd34d;--k-accent-tint:rgb(37 99 235 / .28);
-  --k-success:#9cdd05;--k-warning:#ffaa00;--k-danger:#fca5a5;--k-danger-fg:#fca5a5;
+  --k-success:#9cdd05;--k-warning:#ffaa00;--k-danger:#fca5a5;--k-danger-fg:#fca5a5;--k-danger-strong:#f87171;
   --k-toggle-off:#78716c;--k-shadow:0 8px 24px rgb(0 0 0 / .28);color-scheme:dark;--k-btn:#44403c;--k-shimmer:rgb(255 255 255 / .24);
   --k-step-hover:rgb(255 255 255 / .17);--k-step-press:rgb(255 255 255 / .3);--k-type-static:#60a5fa;--k-type-dynamic:#facc15;
 }
 .kit-light{
   --k-surface:#ffffff;--k-raised:#f5f5f4;--k-field:#d6d3d1;--k-field-hover:#c9c4c0;--k-chip:#b8b2ad;--k-menu:#ffffff;--k-menu-hl:#e7e5e4;
-  --k-field-danger:#dabfbd;--k-field-warning:#dcc9ad;--k-line:#d6d3d1;--k-tree-line:#8a837e;
-  --k-fg:#1c1917;--k-muted:#57534e;--k-muted-on-field:#4f4a45;
+  --k-field-danger:#dabfbd;--k-field-warning:#dcc9ad;--k-line:#d6d3d1;--k-line-dash:#78716c;--k-tree-line:#8a837e;
+  --k-fg:#1c1917;--k-fg-2:#57534e;--k-muted:#57534e;--k-muted-on-field:#4f4a45;
   --k-accent-fg:#1d4ed8;--k-line-saving:#1d4ed8;--k-line-saved:#3f6212;--k-line-danger:#991b1b;--k-line-warning:#92400e;--k-accent-tint:rgb(37 99 235 / .12);
-  --k-success:#3f6212;--k-warning:#b45309;--k-danger:#b91c1c;--k-danger-fg:#b91c1c;
+  --k-success:#3f6212;--k-warning:#b45309;--k-danger:#b91c1c;--k-danger-fg:#b91c1c;--k-danger-strong:#dc2626;
   --k-toggle-off:#78716c;--k-shadow:0 8px 24px rgb(0 0 0 / .14);color-scheme:light;--k-btn:#e7e5e4;--k-shimmer:rgb(255 255 255 / .9);
   --k-step-hover:rgb(28 25 23 / .16);--k-step-press:rgb(28 25 23 / .3);--k-type-static:#2563eb;--k-type-dynamic:#a16207;
 }
@@ -155,6 +155,9 @@ h3.sub{font-size:1.0625rem;margin:2.5rem 0 .5rem}
 .btn.ghost[disabled]:hover{background:transparent}
 .btn.solid[disabled]:hover{background:var(--k-accent)}
 .btn.lg{--bh:var(--k-control-lg)}
+.btn.sm{--bh:2rem;padding:0 .75rem;font-size:.8125rem}
+.btn.soft.danger{color:var(--k-danger-fg)}
+.btn.soft.danger:hover{background:var(--k-field-danger)}
 .split{display:inline-flex;gap:1px}
 .tbtn{position:relative;background:none;border:0;padding:.25rem 0;color:var(--k-accent-fg);font:600 .8125rem/1.3 inherit;text-decoration:none;text-underline-offset:3px;cursor:pointer;white-space:nowrap}
 .tbtn::after{content:"";position:absolute;left:50%;top:50%;width:max(100%,2.75rem);height:2.75rem;transform:translate(-50%,-50%)}
@@ -208,17 +211,78 @@ button.f{cursor:pointer;width:100%}
 .st-btn{position:absolute;inset:50% auto auto 50%;transform:translate(-50%,-50%);width:var(--k-hit);height:var(--k-hit);display:grid;place-items:center;background:none;border:0;padding:0;cursor:pointer;color:inherit}
 .st-btn:focus-visible{outline-offset:-2px}
 /* v6: bar text inputs and steppers show state as a 2px line inside the field's bottom edge */
+.stackm{min-width:0;padding:.5rem;line-height:1.35}
+.stackm.sheet{padding:0}
+.stackm.sheet .ntree{padding:.75rem;overflow:auto}
+.ntree{outline:none}
+.nbox{display:flex;flex-direction:column;gap:.375rem;padding:.375rem;border:1px dashed var(--k-line-dash);background:var(--k-menu);cursor:pointer;min-width:0}
+.nbox>.nkids{display:flex;flex-direction:column}
+.nbox.hl{border-style:solid;border-color:var(--k-fg);background:var(--k-field-hover)}
+.nbox.hl>.nkids>.nbox:not(.hl){background:var(--k-menu)}
+.nbox.hl.kb{outline:2px solid var(--k-accent-fg);outline-offset:1px;border-color:var(--k-accent-fg)}
+.nbox.sel{box-shadow:inset 3px 0 0 var(--k-accent-fg)}
+.nl{display:flex;align-items:flex-start;gap:.5rem;padding:0 .25rem 0 .375rem;min-height:1.5rem}
+.nl .ni{flex:none;width:.875rem;height:.875rem;margin-top:.1875rem;color:var(--k-muted)}
+.nm{display:flex;flex-direction:column;min-width:0;flex:1}
+.nn{font-size:.875rem;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nbox.sel>.nl .nn{font-weight:600}
+.nd{font-size:.8125rem;color:var(--k-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nbox.hl>.nl .nd{color:var(--k-muted-on-field)}
+.nck{flex:none;width:.875rem;height:.875rem;margin-top:.1875rem}
+.nlink{color:var(--k-accent-fg)}
+.pathsel{display:inline-flex;align-items:center;max-width:100%;min-width:0;height:2rem;padding:0 .75rem;border:1px dashed var(--k-line-dash);background:none;color:var(--k-fg);font:inherit;font-size:.875rem;font-weight:500;cursor:default}
+.pathsel>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pathsel.can{cursor:pointer}
+.pathsel.can:hover,.pathsel[aria-expanded=true]{border-style:solid;border-color:var(--k-fg);background:var(--k-field-hover)}
+.pathsel[aria-expanded=true]>span{opacity:0}
+.ac .dlg-b{padding:0;display:flex;flex-direction:column}
+.dlg-inline .dlg.ac{height:40rem}
+.ac-top{position:sticky;top:0;z-index:1;background:var(--k-surface);padding:1.25rem 1.75rem .75rem}
+.ac-ctx{margin:0 0 .75rem;color:var(--k-muted)}
+.ac-ctx b{color:var(--k-fg);font-weight:600}
+.ac-top .f{width:100%}
+.ac-lb{padding:0 .75rem 1rem;outline:none}
+.ac-gh{padding:.75rem 1rem .25rem;font-size:.8125rem;color:var(--k-muted)}
+.ac-o{display:flex;align-items:center;gap:.75rem;min-height:2.75rem;padding:.375rem 1rem;cursor:pointer;position:relative}
+.ac-o:hover,.ac-o.hl{background:var(--k-menu-hl)}
+.ac-o.hl.kb{box-shadow:inset 2px 0 0 var(--k-accent-fg)}
+.ac-o[aria-selected=true] .ac-n{font-weight:600}
+.ac-o .ac-ic{flex:none;width:3.5rem;height:1rem;display:flex;justify-content:center;align-items:center;color:var(--k-muted)}
+.ac-o .ac-ic .g{width:1rem;height:1rem}
+.ac-m{flex:1;min-width:0;display:flex;flex-direction:column}
+.ac-n{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ac-n mark{background:none;color:inherit;font-weight:650}
+.ac-d{font-size:.8125rem;color:var(--k-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ac-r{flex:none;font-size:.8125rem;color:var(--k-muted)}
+.ac-o.hl .ac-d,.ac-o.hl .ac-r,.ac-o:hover .ac-d,.ac-o:hover .ac-r{color:var(--k-muted-on-field)}
+.ac-o .ac-ck{flex:none;width:1rem;height:1rem}
+.ac-th{flex:none;width:3.5rem;height:2.25rem;display:flex;align-items:center;justify-content:center}
+.ac-th i{display:block;width:2.5rem;height:1.625rem;background:var(--thumb);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--k-fg) 12%,transparent);transition:width var(--d-fast,120ms) ease-out,height var(--d-fast,120ms) ease-out}
+.ac-o.hl .ac-th i{width:3.5rem;height:2.25rem}
+@media (prefers-reduced-motion: reduce){.ac-th i{transition:none}}
+.ac-dynsq{display:block;flex:none;width:.75rem;height:.75rem;background:var(--k-type-dynamic);margin:0 .125rem}
+.ac-none{padding:1.5rem 1rem;color:var(--k-muted)}
+.ac-none b{color:var(--k-fg);font-weight:600}
+.ac-dyn{padding:.25rem 1.75rem 1.5rem 3.5rem;display:grid;gap:1rem}
+.ac-dyn[hidden]{display:none}
+.coarse .ac-top,.phone-dlg .ac-top{padding:1rem 1.25rem .75rem}
+.phone-dlg .ac-lb{padding:0 .25rem 1rem}
+.phone-dlg .ac-dyn{padding:.25rem 1.25rem 1.5rem 2.75rem}
 [data-line]{position:relative}
-[data-line]::after{content:'';position:absolute;left:0;right:0;bottom:0;height:2px;pointer-events:none}
-[data-line=saving]::after,[data-line=wait]::after{background:linear-gradient(90deg,transparent 0,var(--k-line-saving) 30%,var(--k-line-saving) 70%,transparent 100%) no-repeat;background-size:40% 100%;animation:k-line 1.1s linear infinite}
-@keyframes k-line{from{background-position:-70% 0}to{background-position:170% 0}}
-[data-line=saved]::after{background:var(--k-line-saved);animation:k-linefade 1.5s ease-in forwards}
+[data-line]::before,[data-line]::after{content:'';position:absolute;bottom:0;height:2px;pointer-events:none;opacity:0}
+[data-line]::before{left:0;right:0;background:currentColor;color:var(--k-line-saved)}
+[data-line]::after{left:0;right:0;color:var(--k-line-saving);background:linear-gradient(90deg,transparent,currentColor 30%,currentColor 70%,transparent) no-repeat;background-size:40% 100%;background-position:-70% 0}
+[data-line=saving]::after,[data-line=wait]::after{opacity:1;animation:k-band 1.1s linear infinite,k-in .15s ease-out}
+@keyframes k-band{from{background-position:-70% 0}to{background-position:170% 0}}
+@keyframes k-in{from{opacity:0}}
+[data-line=saved]::before{opacity:1;animation:k-linefade 1s ease-out forwards}
 @keyframes k-linefade{0%,60%{opacity:1}100%{opacity:0}}
-.kit-row[data-states] [data-line=saved]::after{animation:none}
-[data-line=error]::after{background:var(--k-line-danger)}
-[data-line=undo]::after{background:var(--k-line-saved)}
-[data-line=conflict]::after{background:var(--k-line-warning)}
-@media (prefers-reduced-motion: reduce){[data-line=saving]::after,[data-line=wait]::after{animation:none!important;background:var(--k-line-saving)}[data-line=saved]::after{animation:none!important}}
+.kit-row[data-states] [data-line=saved]::before{animation:none}
+[data-line=error]::before{opacity:1;color:var(--k-line-danger)}
+[data-line=conflict]::before{opacity:1;color:var(--k-line-warning)}
+[data-line=undo]::before{opacity:1}
+[data-morph]::before,[data-morph]::after{animation:none!important}
+@media (prefers-reduced-motion: reduce){[data-line=saving]::after,[data-line=wait]::after{display:none}[data-line=saving]::before,[data-line=wait]::before{opacity:1;color:var(--k-line-saving)}[data-line=saved]::before{animation:none}}
 .f.ta{display:block;height:auto;padding:0}
 .f.ta textarea{box-sizing:border-box;display:block;width:100%;height:auto;padding:.75rem var(--fx);line-height:1.5;resize:none;field-sizing:content;min-height:calc(4.5em + 1.5rem);max-height:calc(12em + 1.5rem);overflow-y:auto;scrollbar-width:thin;white-space:pre-wrap;overflow-wrap:break-word}
 .f.multi{height:auto;min-height:var(--h);flex-wrap:wrap;padding:.25rem 2.25rem .25rem .25rem;gap:.25rem;cursor:text}
@@ -266,9 +330,12 @@ button.f{cursor:pointer;width:100%}
 .ip-head .ttl{text-align:center;font-size:.875rem;color:var(--k-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ip-head .right{display:flex;align-items:center;gap:.25rem;min-width:0}
 .ip-hs{font:inherit;font-size:.8125rem;color:var(--k-muted);background:none;border:0;padding:0 .5rem;min-height:2rem;display:inline-flex;align-items:center;gap:.375rem;white-space:nowrap}
-.ip-hs:empty{display:none}
-button.ip-hs{cursor:pointer;color:var(--k-danger-fg);font-weight:600}
-button.ip-hs:hover{background:var(--k-step-hover)}
+.ip-hs[hidden],.ip-hb[hidden]{display:none}
+.ip-hs .hg,.ip-hb .hg{display:inline-flex;width:1rem;height:1rem;align-items:center;justify-content:center}
+.ip-hs .g,.ip-hb .g{width:1rem;height:1rem}
+.ip-hb{--bh:2rem;padding:0 .5rem;gap:.375rem;font-size:.8125rem}
+.btn.ghost.danger.ip-hb,.ip-hb .c-danger{color:var(--k-danger-strong)}
+.ip-hb:hover{background:var(--k-field-danger)}
 .ip-site{position:absolute;top:var(--hh);left:0;right:0;bottom:0;overflow:auto;color:#2b2420;font-family:Georgia,"Times New Roman",serif;padding-bottom:calc(var(--bh) + 2rem);scroll-padding-top:1rem;scroll-padding-bottom:calc(var(--bh) + 1rem)}
 .ipstage.desel .ip-site{padding-bottom:2rem}
 .ip-site nav{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:1rem 1.5rem;font-family:system-ui,sans-serif;font-size:.875rem;border-bottom:1px solid #e4dcd2}
@@ -282,59 +349,60 @@ button.ip-hs:hover{background:var(--k-step-hover)}
 .ip-more{margin:2rem 1.5rem;display:grid;gap:1rem;grid-template-columns:repeat(auto-fit,minmax(10rem,1fr))}
 .ip-more div{background:#ebe3d9;height:6rem}
 .ip-ov{position:absolute;inset:0;pointer-events:none;z-index:1}
-.ip-sel{position:absolute;--sel:#e30a6c;--w:2px}
+.ip-sel{position:absolute;--sel:var(--ip-pub);--w:2px}
+.ipstage.draft .ip-sel{--sel:var(--ip-draft)}
+.ipstage .ip-sel.core{--sel:var(--ip-core)}
+.ip-comp{-webkit-touch-callout:none}
+.ip-comp:focus-within{-webkit-touch-callout:default}
 .ip-sel[hidden]{display:none}
-.ip-sel .tag{position:sticky;top:0;display:inline-block;margin:-1.625rem 0 0 -2px;background:var(--sel);color:#fff;font:600 .75rem/1 system-ui,sans-serif;padding:.375rem .5rem}
 .ip-sel .box{position:absolute;inset:0;box-shadow:0 0 0 var(--w) var(--sel)}
-.ip-sel .edge{position:absolute;left:calc(-1 * var(--w));top:calc(-1 * var(--w));bottom:calc(-1 * var(--w));width:4px;display:none}
-.ip-sel.v-edge[data-st] .edge{display:block}
-.ip-sel.v-edge[data-st=saving] .edge{background:var(--sel) repeating-linear-gradient(to bottom,transparent 0,var(--ip-saving) 3rem,var(--ip-saving) 6rem,transparent 9rem) 0 0/100% 18rem;animation:k-edge 1.2s linear infinite}
-@keyframes k-edge{from{background-position:0 0}to{background-position:0 18rem}}
-.ip-sel.v-edge[data-st=saved] .edge{background:var(--ip-saved);animation:k-linefade 1.5s ease-in forwards}
-.ip-sel.v-edge[data-st=error] .edge{background:var(--ip-danger)}
-.ip-sel.v-edge[data-st=conflict] .edge{background:var(--ip-warning)}
-.ip-sel .sd{position:absolute;display:none;overflow:hidden;background:var(--sel);transition:background-color .2s ease-out,width .2s ease-out,height .2s ease-out}
-.ip-sel.v-outline .sd{display:block}
-.ip-sel.v-outline .box{box-shadow:none}
+.ip-sel .sd{position:absolute;display:none;overflow:hidden;background:var(--sel);transition:background-color .4s ease-out}
+.ip-sel[data-st=saving] .sd{transition-duration:.15s}
+.ip-sel[data-st=saved] .sd,.ip-sel[data-st=error] .sd,.ip-sel[data-st=conflict] .sd{transition-duration:.18s}
+.ip-sel .sd{display:block}
+.ip-sel .box{box-shadow:none}
 .ip-sel .s-t{left:calc(-1 * var(--w));right:calc(-1 * var(--w));top:calc(-1 * var(--w));height:var(--w)}
 .ip-sel .s-b{left:calc(-1 * var(--w));right:calc(-1 * var(--w));bottom:calc(-1 * var(--w));height:var(--w)}
 .ip-sel .s-l{top:calc(-1 * var(--w));bottom:calc(-1 * var(--w));left:calc(-1 * var(--w));width:var(--w)}
 .ip-sel .s-r{top:calc(-1 * var(--w));bottom:calc(-1 * var(--w));right:calc(-1 * var(--w));width:var(--w)}
-.ip-sel[data-st] .s-t,.ip-sel[data-st] .s-b{height:4px}
-.ip-sel[data-st] .s-l,.ip-sel[data-st] .s-r{width:4px}
-.ip-sel[data-st] .s-t{top:-4px}.ip-sel[data-st] .s-b{bottom:-4px}.ip-sel[data-st] .s-l{left:-4px}.ip-sel[data-st] .s-r{right:-4px}
-.ip-sel[data-st] .s-t,.ip-sel[data-st] .s-b{left:-4px;right:-4px}.ip-sel[data-st] .s-l,.ip-sel[data-st] .s-r{top:-4px;bottom:-4px}
-.ip-sel .sd::after{content:'';position:absolute;opacity:0;transition:opacity .2s ease-out;background:linear-gradient(var(--dir),transparent,rgb(255 255 255 / .85) 35%,rgb(255 255 255 / .85) 65%,transparent)}
+.ip-sel .sd::after{content:'';position:absolute;opacity:0;transition:opacity .2s ease-out;color:var(--ip-saving);background:linear-gradient(var(--dir),transparent,currentColor 30%,currentColor 70%,transparent)}
 .ip-sel .s-t::after,.ip-sel .s-b::after{top:0;bottom:0;width:25%;--dir:90deg}
 .ip-sel .s-l::after,.ip-sel .s-r::after{left:0;right:0;height:25%;--dir:180deg}
 .ip-sel .s-t::after{left:0;--a:k-slide-r}.ip-sel .s-b::after{right:0;--a:k-slide-l}.ip-sel .s-r::after{top:0;--a:k-slide-d}.ip-sel .s-l::after{bottom:0;--a:k-slide-u}
-.ip-sel.v-outline[data-st=saving] .sd::after,.ip-sel.v-outline[data-st=saved] .sd::after{animation:var(--a) 1.6s linear infinite}
-.ip-sel.v-outline[data-st=saving] .sd::after{opacity:1}
+.ip-sel[data-st=saving] .sd::after{opacity:1;animation:var(--a) 1.2s linear infinite}
+.ip-sel[data-morph] .sd::after{animation:none!important}
 @keyframes k-slide-r{from{transform:translateX(-100%)}to{transform:translateX(400%)}}
 @keyframes k-slide-l{from{transform:translateX(100%)}to{transform:translateX(-400%)}}
 @keyframes k-slide-d{from{transform:translateY(-100%)}to{transform:translateY(400%)}}
 @keyframes k-slide-u{from{transform:translateY(100%)}to{transform:translateY(-400%)}}
-.ip-sel.v-outline[data-st=saving] .sd{background:var(--ip-saving)}
-.ip-sel.v-outline[data-st=saved] .sd{background:var(--ip-saved)}
-.ip-sel.v-outline[data-st=error] .sd{background:var(--ip-danger)}
-.ip-sel.v-outline[data-st=conflict] .sd{background:var(--ip-warning)}
-.ipstage{--ip-saving:#1d4ed8;--ip-saved:#3f6212;--ip-danger:#b91c1c;--ip-warning:#b45309}
-@media (prefers-reduced-motion: reduce){.ip-sel.v-edge[data-st=saving] .edge{animation:none!important;background:var(--ip-saving)}.ip-sel .sd::after{display:none}.ip-sel .sd{transition:none!important}.ip-sel[data-st=saved] .edge{animation:none!important}}
+.ip-sel[data-st=saving] .sd{background:var(--ip-saving-base)}
+.ip-sel[data-st=saved] .sd{background:var(--ip-saved)}
+.ip-sel[data-st=error] .sd{background:var(--ip-danger)}
+.ip-sel[data-st=conflict] .sd{background:var(--ip-warning)}
+.ipstage{--ip-pub:#9cdd05;--ip-draft:#ffaa00;--ip-core:#e30a6c;--ip-saving-base:#93c5fd;--ip-saving:#1d4ed8;--ip-saved:#3f6212;--ip-danger:#dc2626;--ip-warning:#b45309}
+.ipstage.site-dark{background:#1c1917;--ip-saving-base:#3b82f6;--ip-saving:#bfdbfe;--ip-saved:#9cdd05;--ip-danger:#ef4444;--ip-warning:#fcd34d}
+.ipstage.site-dark .ip-site{color:#e7e5e4}
+.ipstage.site-dark .ip-site nav{border-bottom-color:#44403c}
+.ipstage.site-dark .ip-comp{background:#292524}
+.ipstage.site-dark .ip-more div{background:#33302d}
+@media (prefers-reduced-motion: reduce){.ip-sel .sd::after{display:none}.ip-sel .sd{transition:background-color .15s linear!important}.ip-sel[data-st=saving] .sd{background:var(--ip-saving)}}
 .ip-bar{position:absolute;left:0;right:0;bottom:0;height:var(--bh);z-index:3;background:var(--k-surface);color:var(--k-fg);box-shadow:0 -8px 24px rgb(0 0 0 / .18);display:grid;grid-template-rows:var(--k-tabs) 1fr}
 .ipstage.desel .ip-bar{display:none}
 .ip-tabs{display:flex;align-items:stretch;justify-content:space-between;box-shadow:inset 0 -1px 0 var(--k-line);min-width:0}
 .ip-tabs .tl{display:flex;align-items:stretch;min-width:0;overflow:hidden}
 .ip-tabs .tl span{display:flex;align-items:center;padding:0 1rem;font-size:.875rem;color:var(--k-muted);white-space:nowrap}
 .ip-tabs .tl span.on{color:var(--k-fg);box-shadow:inset 0 -2px 0 var(--k-accent)}
-.ip-pin{display:flex;align-items:center;gap:.25rem;padding:0 .25rem 0 .5rem;box-shadow:inset 1px 0 0 var(--k-line)}
-.ip-sum{display:inline-flex;align-items:center;gap:.375rem;height:2rem;padding:0 .5rem;font:inherit;font-size:.8125rem;color:var(--k-muted);background:none;border:0;cursor:pointer;white-space:nowrap}
+.ip-pin{--cta-inset:.25rem;align-self:flex-start;height:calc(var(--k-tabs) - 1px);display:flex;align-items:center;gap:var(--cta-inset);padding:0 var(--cta-inset) 0 calc(1px + var(--cta-inset));box-shadow:inset 1px 0 0 var(--k-line)}
+.ip-pin .btn{--bh:calc(var(--k-tabs) - 1px - 2 * var(--cta-inset))}
+.coarse .ip-pin{--cta-inset:0px}
+.ip-sum{display:inline-flex;align-items:center;gap:.375rem;height:calc(var(--k-tabs) - 1px - 2 * var(--cta-inset));padding:0 .5rem;font:inherit;font-size:.8125rem;color:var(--k-muted);background:none;border:0;cursor:pointer;white-space:nowrap}
 .ip-sum:hover{background:var(--k-step-hover)}
 .ip-sum.err{color:var(--k-danger-fg);font-weight:600}
 .ip-sum .g{width:1rem;height:1rem;flex:none}
 .ip-row{display:flex;align-items:center;gap:.75rem;padding:0 1rem;min-width:0}
 .ip-row .bl{white-space:nowrap}
 .ip-row .hv{color:var(--k-muted);font-size:.875rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
-@media (max-width: 639px){.ip-head .ttl{display:none}.ip-head{grid-template-columns:auto minmax(0,1fr) auto}.ip-sum .sl{display:none}.ip-row .hv{display:none}.ip-comp{margin:1.75rem .75rem;padding:1.25rem 1rem}}
+@media (max-width: 639px){.ip-hs .ht{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}.pathsel{min-width:6rem}.ip-pin{--cta-inset:0px}.ip-head{grid-template-columns:auto minmax(0,1fr) auto}.ip-sum .sl{display:none}.ip-row .hv{display:none}.ip-comp{margin:1.75rem .75rem;padding:1.25rem 1rem}}
 
 .tgl input{position:absolute;opacity:0;width:1px;height:1px}
 .tg{position:relative;flex:none;width:2.25rem;height:1.25rem;border-radius:9999px;background:var(--k-toggle-off);transition:background-color var(--d-base) var(--ease)}
@@ -366,7 +434,7 @@ button.ip-hs:hover{background:var(--k-step-hover)}
 .form{display:flex;flex-direction:column}
 .fsec+.fsec{margin-top:2rem;padding-top:2rem;box-shadow:inset 0 1px 0 var(--k-line)}
 .fsec{display:flex;flex-direction:column}
-.fsec>.fsh{font-size:1.125rem;font-weight:650;margin:0;line-height:1.3;letter-spacing:-.01em;color:var(--k-fg)}
+.fsec>.fsh{font-size:1.125rem;font-weight:650;margin:0;line-height:1.3;letter-spacing:-.01em;color:var(--k-fg-2)}
 .fsec>.fsd{font-size:.8125rem;line-height:1.45;color:var(--k-muted);margin:.25rem 0 0}
 .fsec>.fields{display:flex;flex-direction:column;gap:1.5rem}
 .fsec>.fsh+.fields,.fsec>.fsh+.fsh-row+.fields{margin-top:1rem}
@@ -565,17 +633,15 @@ button.ip-hs:hover{background:var(--k-step-hover)}
 .row-arrow{position:absolute;top:50%;transform:translateY(-50%);z-index:2;width:2rem;height:2rem;display:none;place-items:center;border:0;background:var(--k-menu);color:var(--k-fg);box-shadow:var(--k-shadow);cursor:pointer;padding:0}
 .row-arrow.l{left:.25rem}.row-arrow.r{right:.25rem}
 @media (hover:hover) and (pointer:fine){.row-wrap.os:hover .row-arrow.l,.row-wrap.oe:hover .row-arrow.r{display:grid}}
-.coarse .bsum{height:calc(var(--k-tabs) - 1px)}
 .coarse .row-arrow,.row-wrap:focus-within .row-arrow{display:none!important}
-.pin{grid-area:pin;align-self:start;height:calc(var(--k-tabs) - 1px);display:flex;align-items:center;gap:.5rem;padding:0 .25rem 0 .5rem;min-width:0;box-shadow:inset 1px 0 0 var(--k-line)}
-.pin .btn{--bh:calc(var(--k-tabs) - 1px - .5rem)}
+.pin{--cta-inset:.25rem;grid-area:pin;align-self:start;height:calc(var(--k-tabs) - 1px);display:flex;align-items:center;gap:var(--cta-inset);padding:0 var(--cta-inset) 0 calc(1px + var(--cta-inset));min-width:0;box-shadow:inset 1px 0 0 var(--k-line)}
+.pin .btn{--bh:calc(var(--k-tabs) - 1px - 2 * var(--cta-inset))}
 .pin-split{display:inline-flex;gap:1px;flex:none}
 .pin-split .pin-more{width:var(--bh);padding:0}
 .pin-split .pin-more .g{width:1rem;height:1rem}
 .pin-act[hidden]{display:none}
-.coarse .pin{padding:0 0 0 .25rem;gap:.25rem}
-.coarse .pin .btn{--bh:calc(var(--k-tabs) - 1px)}
-.bsum{display:inline-flex;align-items:center;gap:.5rem;height:calc(var(--k-tabs) - 1px - .5rem);padding:0 .5rem;background:none;border:0;color:var(--k-muted);font:500 .875rem/1 inherit;white-space:nowrap;cursor:pointer}
+.coarse .pin{--cta-inset:0px}
+.bsum{display:inline-flex;align-items:center;gap:.5rem;height:calc(var(--k-tabs) - 1px - 2 * var(--cta-inset));padding:0 .5rem;background:none;border:0;color:var(--k-muted);font:500 .875rem/1 inherit;white-space:nowrap;cursor:pointer}
 .bsum:hover{background:var(--k-btn)}
 .bsum.act{color:var(--k-fg);font-weight:600}
 .bsum .dot{background:var(--k-muted)}
@@ -584,8 +650,8 @@ button.ip-hs:hover{background:var(--k-step-hover)}
 .pa-full{display:inline-flex;align-items:center;gap:.375rem}
 @container mgr (max-width: 63.99rem){.sum-full{display:none}.sum-short{display:inline}}
 @container mgr (max-width: 39.99rem){
-  .pin,.coarse .pin{padding:0 0 0 .25rem;gap:0}
-  .bsum,.coarse .bsum{width:calc(var(--k-tabs) - 1px);height:calc(var(--k-tabs) - 1px);padding:0;justify-content:center}
+  .pin,.coarse .pin{--cta-inset:0px}
+  .bsum,.coarse .bsum{width:calc(var(--k-tabs) - 1px);padding:0;justify-content:center}
   .bsum .sum-short{display:none!important}
   .pin .pin-split .pin-more{width:calc(var(--bh) + env(safe-area-inset-right));padding:0 env(safe-area-inset-right) 0 0}
   .pin .pin-split .pin-act{padding:0 .875rem}
@@ -612,9 +678,8 @@ button.ip-hs:hover{background:var(--k-step-hover)}
 .dlg-h{display:flex;align-items:center;gap:.75rem;height:3.75rem;padding:0 .75rem 0 1.75rem;box-shadow:inset 0 -1px 0 var(--k-line);flex:none}
 .dlg-h .dt{font-size:1.375rem;font-weight:650;line-height:1.75rem;margin:0;flex:1;min-width:0;white-space:nowrap;overflow:hidden;overflow-x:clip;overflow-y:visible;text-overflow:ellipsis;letter-spacing:-.01em}
 .dlg-h .btn{--bh:2.75rem}
-.dlg-h .ovf{display:none}
 .dlg-b{padding:1.75rem 1.75rem 2.25rem;overflow:auto;flex:1;container-type:inline-size;container-name:dbody}
-.dlg-f{display:flex;align-items:center;gap:.75rem;padding:1rem 1.75rem;background:var(--k-raised);flex:none}
+.dlg-f{display:flex;align-items:center;gap:.75rem;padding:1rem 1rem 1rem 1.75rem;background:var(--k-raised);flex:none}
 .dlg-f .spacer{flex:1}
 .dlg-f .fstate{color:var(--k-muted);font-size:.8125rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .dlg.has-tabs .dlg-h{box-shadow:none}
@@ -641,18 +706,16 @@ button.ip-hs:hover{background:var(--k-step-hover)}
 @container dlgframe (max-width: 39.99rem){
   .dlg{width:100%;max-height:none;box-shadow:none}
   .dlg-h{padding-left:1.25rem;padding-right:.25rem}
-  .dlg-h .ovf{display:inline-flex}
   .dlg-b{padding:1.25rem 1.25rem 2rem}
-  .dlg-f{padding:.75rem 1.25rem calc(.75rem + env(safe-area-inset-bottom))}
+  .dlg-f{padding:.75rem .75rem calc(.75rem + env(safe-area-inset-bottom)) 1.25rem}
   .dlg-f .del,.dlg-f .spacer{display:none}
   .dlg-f .btn{flex:1}
 }
 @media (max-width: 639px){
   .dlg{width:100%;box-shadow:none}
   .dlg-h{padding-left:1.25rem;padding-right:.25rem}
-  .dlg-h .ovf{display:inline-flex}
   .dlg-b{padding:1.25rem 1.25rem 2rem}
-  .dlg-f{padding:.75rem 1.25rem calc(.75rem + env(safe-area-inset-bottom))}
+  .dlg-f{padding:.75rem .75rem calc(.75rem + env(safe-area-inset-bottom)) 1.25rem}
   .dlg-f .del,.dlg-f .spacer{display:none}
   .dlg-f .btn{flex:1}
 }
@@ -678,6 +741,7 @@ button.ip-hs:hover{background:var(--k-step-hover)}
 .cfm-box{background:var(--k-menu);color:var(--k-fg);box-shadow:var(--k-shadow);width:min(24rem,100%);padding:1.25rem 1.25rem 1rem;font-size:.875rem;line-height:1.5;animation:k-dlg var(--d-slow) var(--ease)}
 .cfm-box .cfm-t{margin:0;font-size:1.0625rem;font-weight:650;line-height:1.35;color:var(--k-fg)}
 .cfm-box p{margin:.5rem 0 0;color:var(--k-muted)}
+.cfm-box .cfm-lead{color:var(--k-fg)}
 .cfm-acts{display:flex;justify-content:flex-end;gap:.75rem;margin-top:1.25rem}
 .cfm-acts .btn{--bh:var(--k-control-lg)}
 .cfm-acts .btn[aria-disabled="true"]{opacity:.5;cursor:not-allowed}
@@ -806,7 +870,7 @@ button.ip-hs:hover{background:var(--k-step-hover)}
 .toast .g{margin-top:.1875rem}
 .toast b{font-weight:600}
 .toast p{margin:0;grid-column:2;color:var(--k-muted)}
-.toast .acts{grid-column:2;display:flex;gap:1rem;margin-top:.25rem}
+.toast .acts{grid-column:2;display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.5rem}
 .toast .x{grid-column:3;grid-row:1;width:2rem;height:2rem;margin:-.5rem -.5rem 0 0;display:grid;place-items:center;border:0;background:none;color:var(--k-muted);cursor:pointer}
 .toast .x:hover{color:var(--k-fg);background:var(--k-step-hover)}
 .toast.static{animation:none}
@@ -897,7 +961,7 @@ button.ip-hs:hover{background:var(--k-step-hover)}
 .rt-h{display:flex;align-items:center;gap:1rem;justify-content:space-between}
 .rt-h .fsh{margin:0}
 .fsh-row{display:flex;align-items:center;justify-content:space-between;gap:1rem}
-.fsh-row .fsh{margin:0;font-size:1.125rem;font-weight:650;line-height:1.3;letter-spacing:-.01em}
+.fsh-row .fsh{margin:0;font-size:1.125rem;font-weight:650;line-height:1.3;letter-spacing:-.01em;color:var(--k-fg-2)}
 .fsh-row .btn{--bh:var(--k-control-lg)}
 .rt-rec{display:grid;grid-template-columns:1rem minmax(0,1fr) auto;gap:.5rem .75rem;align-items:center;padding:.5rem .75rem .5rem calc(.75rem + 3px);background:color-mix(in srgb,var(--k-accent-fg) 10%,var(--k-surface));box-shadow:inset 3px 0 0 var(--k-accent-fg);font-size:.8125rem;line-height:1.45;color:var(--k-fg)}
 .rt-rec[hidden]{display:none}
@@ -923,7 +987,7 @@ button.ip-hs:hover{background:var(--k-step-hover)}
 .rt-fail{margin:0 0 1.5rem}
 
 /* v6: the route sub-view takes the tab strip's and the footer's place */
-.dlg.sub-on>.dlg-f:not(.dlg-subf),.dlg.sub-on>.dlg-h .ovf{display:none}
+.dlg.sub-on>.dlg-f:not(.dlg-subf){display:none}
 .dlg-subh{display:flex;flex-direction:column;align-items:flex-start;padding:.75rem 1.75rem 1rem;box-shadow:inset 0 -1px 0 var(--k-line);flex:none;min-width:0;animation:k-fade var(--d-fast) ease-out}
 .dlg-subh .subrow{display:flex;align-items:center;justify-content:space-between;align-self:stretch;min-height:1.5rem}
 .sback{display:inline-flex;align-items:center;gap:.25rem;min-height:1.5rem;padding:0;margin:0;border:0;background:none;font:inherit;font-size:.875rem;font-weight:500;color:var(--k-muted);cursor:pointer}
@@ -935,9 +999,8 @@ button.ip-hs:hover{background:var(--k-step-hover)}
 .dlg-subh .subt{margin:.5rem 0 0;font-size:1.125rem;font-weight:650;line-height:1.3;letter-spacing:-.01em;color:var(--k-fg);max-width:100%;overflow-wrap:anywhere}
 .dlg-subh .subt:focus{outline:none}
 .dlg-subh .subt:focus-visible{outline:2px solid var(--k-accent-fg);outline-offset:2px}
-.dlg-subh .ovf{display:none;--bh:2.75rem;margin:-.625rem -.75rem -.625rem 0}
-@container dlgframe (max-width: 39.99rem){.dlg-subh{padding:.75rem 1.25rem 1rem}.dlg-subh .ovf{display:inline-flex}}
-@media (max-width: 639px){.dlg-subh{padding:.75rem 1.25rem 1rem}.dlg-subh .ovf{display:inline-flex}}
+@container dlgframe (max-width: 39.99rem){.dlg-subh{padding:.75rem 1.25rem 1rem}}
+@media (max-width: 639px){.dlg-subh{padding:.75rem 1.25rem 1rem}}
 .rt-sub.in{animation:k-sub var(--d-base) var(--ease)}
 .rt-view.back{animation:k-sub-back var(--d-base) var(--ease)}
 @keyframes k-sub{from{opacity:0;transform:translateX(2rem)}}
@@ -1042,11 +1105,13 @@ button.ip-hs:hover{background:var(--k-step-hover)}
 .ts-a .toast{background:color-mix(in srgb,var(--k-menu) 85%,transparent)}
 .ts-b .toast{background:color-mix(in srgb,color-mix(in srgb,var(--tone) 12%,var(--k-menu)) 85%,transparent)}
 .ts-a .toast p,.ts-b .toast p{color:var(--k-fg)}
-.ts-a .toast .tbtn,.ts-b .toast .tbtn{color:var(--k-fg);text-decoration:underline;text-decoration-thickness:1px}
 .ts-c .toast{background:var(--tone-solid);color:#fff}
-.ts-c .toast p,.ts-c .toast .x,.ts-c .toast .tbtn,.ts-c .toast .g{color:#fff}
+.ts-c .toast p,.ts-c .toast .x,.ts-c .toast .g{color:#fff}
+.ts-c .toast .btn.soft{background:rgb(255 255 255 / .18);color:#fff}
+.ts-c .toast .btn.soft:hover{background:rgb(255 255 255 / .28)}
+.ts-c .toast .btn.solid{background:#fff;color:var(--tone-solid)}
 .ts-c .toast .x:hover{background:rgb(255 255 255 / .16)}
-.ts-c .toast .tbtn:focus-visible,.ts-c .toast .x:focus-visible{outline-color:#fff}
+.ts-c .toast .btn:focus-visible,.ts-c .toast .x:focus-visible{outline-color:#fff}
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.ts-a .toast{background:var(--k-menu)}.ts-b .toast{background:color-mix(in srgb,var(--tone) 12%,var(--k-menu))}}
 @media (prefers-reduced-transparency:reduce){.ts-a .toast{background:var(--k-menu);backdrop-filter:none;-webkit-backdrop-filter:none}.ts-b .toast{background:color-mix(in srgb,var(--tone) 12%,var(--k-menu));backdrop-filter:none;-webkit-backdrop-filter:none}}
 .topts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1.5rem;margin-top:1rem}
@@ -1113,6 +1178,16 @@ button.ip-hs:hover{background:var(--k-step-hover)}
   <symbol id="g-cal" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M1 3h3V1h2v2h4V1h2v2h3v12H1V3Zm2 4v6h10V7H3Z"/></symbol>
   <symbol id="g-up" viewBox="0 0 16 16"><path d="M8 3 2.5 9.5h11z"/></symbol>
   <symbol id="g-down" viewBox="0 0 16 16"><path d="M8 13 2.5 6.5h11z"/></symbol>
+  <symbol id="g-ac-text" viewBox="0 0 16 16"><path d="M2 2h12v3h-2V4H9v8h2v2H5v-2h2V4H4v1H2z"/></symbol>
+  <symbol id="g-ac-image" viewBox="0 0 16 16"><path d="M1 2h14v12H1zm2 2v6.6L6 7l3 3.5 2-2 2 2.4V4zm8 1.5a1.5 1.5 0 1 1 0 .01z"/></symbol>
+  <symbol id="g-ac-video" viewBox="0 0 16 16"><path d="M1 3h14v10H1zm5 2.5v5l4.5-2.5z"/></symbol>
+  <symbol id="g-ac-quote" viewBox="0 0 16 16"><path d="M2 4h5v5l-2 4H3l2-4H2zm7 0h5v5l-2 4h-2l2-4H9z"/></symbol>
+  <symbol id="g-ac-form" viewBox="0 0 16 16"><path d="M1 2h14v4H1zm2 2v0h10V4zM1 8h14v4H1zm2 2h10v0zM9 13h6v2H9z"/></symbol>
+  <symbol id="g-ac-layout" viewBox="0 0 16 16"><path d="M1 2h14v12H1zm2 2v8h4V4zm6 0v3h4V4zm0 5v3h4V9z"/></symbol>
+  <symbol id="g-ac-space" viewBox="0 0 16 16"><path d="M1 1h14v2H1zm0 12h14v2H1zM7 5h2v6H7z"/></symbol>
+  <symbol id="g-rs-comp" viewBox="0 0 16 16"><path d="M2 2h12v12H2zm2 2v8h8V4z"/></symbol>
+  <symbol id="g-rs-pos" viewBox="0 0 16 16"><path d="M7 1h2v3H7zM7 12h2v3H7zM1 7h3v2H1zm11 0h3v2h-3zM5 5h6v6H5z"/></symbol>
+  <symbol id="g-rs-page" viewBox="0 0 16 16"><path d="M3 1h7l3 3v11H3zm2 2v10h6V5H9V3z"/></symbol>
   <symbol id="g-plus" viewBox="0 0 16 16"><path d="M7 2h2v5h5v2H9v5H7V9H2V7h5z"/></symbol>
   <symbol id="g-new" viewBox="0 0 16 16"><path d="M7 .55h2v2.1H7zM12.1 2.5l1.4 1.4-1.5 1.5-1.4-1.4zM13.35 7h2.1v2h-2.1zM12 10.6l1.5 1.5-1.4 1.4-1.5-1.5zM7 13.35h2v2.1H7zM4 10.6l1.4 1.4-1.5 1.5-1.4-1.4zM.55 7h2.1v2H.55zM2.5 3.9l1.4-1.4 1.5 1.5L4 5.4z"/></symbol>
   <symbol id="g-trash" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M5.5 1h5v1.5H14v2H2v-2h3.5V1ZM3 5.5h10L12 15H4L3 5.5Zm3 2v5.5h1.5V7.5H6Zm2.5 0v5.5H10V7.5H8.5Z"/></symbol>
@@ -1136,16 +1211,16 @@ button.ip-hs:hover{background:var(--k-step-hover)}
   <p class="lede"><strong>New in v6, after the v5 review panel:</strong></p>
   <ul class="changes">
     <li><strong>The Routes tab is the Route, then three rows that open sub-views</strong> (section 6): Redirect to, Redirected from and Child routes, each with a one-line summary and ▸. A sub-view keeps the modal's tabs, with a stacked “‹ Routes” and title above its content; while a form is open its own Cancel and Save replace the footer, so only one Save is ever on screen and nothing opens on top. Back, Escape or another tab with something typed asks first.</li>
-    <li><strong>Bar status is a 2px line inside the control's bottom edge</strong>, on every bar control: a sweep while saving, success that fades once saved, a danger or warning line with the tint for an error or conflict. No glyph or glyph button in the bar, so no value, chevron or calendar ever moves. An error or conflict opens its popover on focus or hover; Escape closes it and keeps you in the field.</li>
+    <li><strong>Bar status is a 2px line inside the control's bottom edge</strong>, on every bar control: a sweep while saving, success that fades once saved, a danger or warning line with the tint for an error or conflict. No glyph or glyph button in the bar, so no value, chevron or calendar ever moves. An error or conflict opens its popover on focus, or after you hover it for 300 ms; Escape closes it and keeps you in the field.</li>
     <li><strong>One saving episode</strong>: a field saves 250 ms after the last change, one request at a time with one newest-value follow-up, and its line, the bar's spinner and the header's "Saving…" each run once, without restarting, until nothing is waiting or in flight. Tab badges are derived (conflict before error) and only redraw when they change.</li>
-    <li><strong>Editing on the page</strong> (section 5): the bar's status stays primary, the selection outline shows the save (compare "Left edge" and "Whole outline"), and the admin header says whether it is safe to leave.</li>
-    <li><strong>Delete is never in a footer.</strong> A modal's footer is only Cancel and Save on every tab; deleting is the last section of its Info (or last) tab, and Delete route is the last section of the Edit route form. Deletes that are hard to recover from ask you to <strong>type delete</strong>; a single redirect or a component used once keeps the simple confirm. Try Info → Delete page, and Routes → Redirected from → a bin.</li>
+    <li><strong>Editing on the page</strong> (section 5): the bar's status stays primary, the selection outline shows the save (the whole outline changes colour, with a highlight running along each side while it saves), and the admin header says whether it is safe to leave.</li>
+    <li><strong>Delete is never in a footer.</strong> A modal's footer is only Cancel and Save on every tab; deleting is the last section of its Info (or last) tab, and Delete route is the last section of the Edit route form. Deletes that are hard to recover from ask you to <strong>type the name</strong> (the page's name, a user's email, the route, the number of orphans); a single redirect or removing a component keeps the simple confirm. Try Info → Delete page, and Routes → Redirected from → a bin.</li>
     <li><strong>No ghost button at a container's edge</strong>: there its text looked misaligned, because the padding shows while the box doesn't. The phone sheet's Done now lines its text up with the edge.</li>
     <li><strong>Redirect to and Redirected from</strong> replace Forwarding and Redirects, and rows show the direction: <code>/shaker → this page</code>. “Not redirecting. Visitors to /kitchens/shaker see this page.” replaces the old “Off.” line, and no button ends in “…”.</li>
     <li><strong>Steppers keep to their range</strong>: type 9 into a 1 to 6 position and the field says “Between 1 and 6”; leave it or press Enter and it snaps to 6 and says so. − and + are disabled at the ends, with the reason.</li>
     <li><strong>Loading lists shimmer</strong>: one soft band sweeps across every skeleton row in step, and that is the only sign until “Still loading…” after about five seconds. With reduced motion there is no band, so a spinner and “Loading pages…” show at once instead.</li>
     <li><strong>Buttons have their own fill</strong>, lighter than a field's, with a semi-bold label, so an action never looks like an input.</li>
-    <li><strong>⋮ is the only “more” glyph</strong>: the bar, list rows, the tree and the phone modal header.</li>
+    <li><strong>⋮ is the only “more” glyph</strong>: the bar, list rows and the tree. A modal header has none: delete is only in Info.</li>
     <li><strong>Design fixes</strong>: section actions sit on the heading's line without making it taller; the conflict diff is tint and weight only, and none when most of the value differs; alerts get a tinted surface and a coloured edge rather than the field tint; delete icons are grey until hovered; “Unsaved” is muted with a dot; phone list rows start their status at one place, Scheduled has a clock, and a date says what it is; the phone New status is a dashed ring, not a plus; the phone recommendation keeps “Use this” on its own line; phone toasts sit below a full-screen dialog's header.</li>
   </ul>
   <p class="lede"><strong>From v5:</strong></p>
@@ -1230,10 +1305,10 @@ button.ip-hs:hover{background:var(--k-step-hover)}
 
   <section class="sec" id="errors" aria-labelledby="h-errors">
     <h2 id="h-errors">3 · Errors and info</h2>
-    <p class="lede"><strong>Modals and pages</strong> show what Save returned: the message goes on the line below the field, linked with <code>aria-describedby</code>, and a conflict asks which version to keep. A client check (a bad URL) shows the same way before anything is sent. <strong>The bar</strong> has no room for a line below, so the field's fill is tinted with a 2px danger or warning line inside its bottom edge, and the message and its actions open in a popover when you focus or hover the field. Tab moves into it; Escape closes it and leaves you in the field. <strong>Info</strong> is an opt-in ⓘ straight after the label. In a form it opens a note in place, under the label, and the field moves down so nothing is covered. In the bar it opens a popover titled with the field's name, with a close button. Use it only when a field's effect is not obvious from its label. Inline actions are text buttons with a 44px tap area; popovers and alerts use real buttons.</p>
+    <p class="lede"><strong>Modals and pages</strong> show what Save returned: the message goes on the line below the field, linked with <code>aria-describedby</code>, and a conflict asks which version to keep. A client check (a bad URL) shows the same way before anything is sent. <strong>The bar</strong> has no room for a line below, so the field's fill is tinted with a 2px danger or warning line inside its bottom edge, and the message and its actions open in a popover when you focus the field, or hover it for 300 ms. Tab from the field’s last part moves into it, Shift+Tab comes back, and Tab past its last action goes on to the next field; Escape closes it and leaves you in the field. <strong>Info</strong> is an opt-in ⓘ straight after the label. In a form it opens a note in place, under the label, and the field moves down so nothing is covered. In the bar it opens a popover titled with the field's name, with a close button. Use it only when a field's effect is not obvious from its label. Inline actions are text buttons with a 44px tap area; popovers and alerts use real buttons.</p>
     <div class="cols">
       <div><p class="panel-cap"><b>Modal and page</b></p><div class="kit panel s-modal" id="err-modal"></div></div>
-      <div><p class="panel-cap"><b>Bar</b> focus or hover a field <span class="scrolls">· scrolls sideways</span></p>
+      <div><p class="panel-cap"><b>Bar</b> focus a field, or hover it for 300 ms <span class="scrolls">· scrolls sideways</span></p>
         <div class="kit panel" style="padding:0"><div class="kit-row" id="err-bar"></div></div>
         <p class="note">A failed save offers <strong>Retry</strong> and <strong>Reset</strong> (back to the last saved value). In the real bar the pinned status in the tab row also reads “1 not saved →” and the tab gets the triangle, so an error can be seen from any tab (see section 5).</p>
       </div>
@@ -1273,7 +1348,7 @@ button.ip-hs:hover{background:var(--k-step-hover)}
     <p class="note" style="margin:.5rem 0 .25rem">Requests from the bar's Order tab. Press + five times quickly: presses within 250 ms are one save, moves made while a request is in flight become one follow-up with the newest position, and the saving line sweeps once without restarting until the last request settles.</p>
     <pre class="log" id="bar-log" aria-live="off">Requests appear here.</pre>
     <h3 class="sub">Writing a tab</h3>
-    <p class="note" style="margin:0 0 .5rem">A manager tab's single root is <code>CwaUiManagerTab</code>, which is the one-row layout. Fields are its direct children and lay themselves out for the bar: inline label, bar control size, the state in the end icon's place, errors as a popover. Kit inputs take <code>field="…"</code> and build their model from the tab's resource; <code>:model</code> stays for page data, a custom debounce and other unusual cases. A tab whose root is anything else gets a development warning.</p>
+    <p class="note" style="margin:0 0 .5rem">A manager tab's single root is <code>CwaUiManagerTab</code>, which is the one-row layout. Fields are its direct children and lay themselves out for the bar: inline label, bar control size, the state as a line along the control's bottom edge, errors and conflicts in a popover on focus or a 300 ms hover. Kit inputs take <code>field="…"</code> and build their model from the tab's resource; <code>:model</code> stays for page data, a custom debounce and other unusual cases. A tab whose root is anything else gets a development warning.</p>
 <pre class="code" tabindex="0" aria-label="Example: a NavigationLink tab"><code>&lt;CwaUiManagerTab&gt;
   &lt;CwaUiInput field="label" label="Label" /&gt;
   &lt;CwaUiLinkInput :fields="['route', 'rawPath']" label="Link" /&gt;
@@ -1283,37 +1358,41 @@ button.ip-hs:hover{background:var(--k-step-hover)}
     <p class="note" style="margin:0 0 1rem">The same bar with 2.75rem controls and no arrows. The status stays in the tab row as a glyph only, right against Publish with no gap, so the tabs get more room; each state has its own shape (a dot for Draft, a clock for Scheduled, a dashed ring for New, the spinner, the tick, the triangle, the diamond; a plus only ever means create), and its name is read out. Fields are sized so the next one peeks in, and the row snaps to fields.</p>
     <div class="phone" id="bar-phone"></div>
     <h3 class="sub" id="inpage">Editing on the page</h3>
-    <p class="note" style="margin:0 0 .75rem">A long component edited in place: click into its text and type. The <strong>bar's status</strong> is the main indicator and the only place an error opens while the component is selected. The <strong>selection outline</strong> carries the same states, drawn in the admin overlay: compare the two variants. The <strong>admin header</strong> answers "is it safe to leave?" for every request.</p>
-    <div class="sim" id="ip-variant" role="group" aria-label="Outline variant"><button type="button" data-ipv="edge" aria-pressed="true">Left edge</button><button type="button" data-ipv="outline" aria-pressed="false">Whole outline</button></div>
+    <p class="note" style="margin:0 0 .75rem"><strong>Right-click the component</strong> (Shift+F10 or the Menu key while it has focus; a long press on a phone, which opens a sheet), or <strong>click the name at the top of the header</strong>, to get the resource stack as boxes inside boxes: each name sits under what it contains, Up goes to the parent, Down to the child, and choosing one selects it. A long component edited in place: click into its text and type. The <strong>bar's status</strong> is the main indicator and the only place an error opens while the component is selected. The <strong>selection outline</strong> carries the same states in the real selection colours (green when published, orange for a draft; switch below), drawn in the admin overlay at the selection's own width, with no name tag: the admin header names the selection at its top centre. Saved, an error and a conflict each start with a soft glow round the outline (the outline only; bar controls have none). The <strong>admin header</strong>'s status, top right, answers "is it safe to leave?": "All changes saved" at rest, "Saving…" from your first keystroke, "1 change not saved" until a save succeeds.</p>
     <div class="sim" id="ip-sim">
       <button type="button" data-ips="type">Type a sentence for me</button>
       <button type="button" data-ips="fail" aria-pressed="false">Next save fails</button>
       <button type="button" data-ips="top">Scroll to its top</button>
       <button type="button" data-ips="bottom">Scroll to its bottom</button>
       <button type="button" data-ips="desel">Deselect</button>
+      <span role="group" aria-label="Component" style="display:contents"><button type="button" data-ips="pub" aria-pressed="true">Published</button><button type="button" data-ips="draft" aria-pressed="false">Draft</button></span>
+      <button type="button" data-ips="dark" aria-pressed="false">Dark site</button>
+      <button type="button" data-ips="deep" aria-pressed="false">Deep nesting (8 levels)</button>
     </div>
     <div class="ipstage kit" id="ip-stage">
-      <div class="ip-head" role="banner" aria-label="Admin header, example">
+      <div class="ip-head" role="group" aria-label="Admin header, example">
         <button type="button" class="btn soft">Done</button>
-        <span class="ttl">Kitchens · About our workshop</span>
-        <span class="right"><span class="ip-hs" id="ip-hs" role="status"></span><button type="button" class="btn ghost" aria-label="Menu">Menu</button></span>
+        <span class="ttl" id="ip-ttl"></span>
+        <span class="right"><button type="button" class="btn ghost">Menu</button><span class="ip-hs" id="ip-hs"><span class="hg"></span><span class="ht"></span></span><button type="button" class="btn ghost danger ip-hb" id="ip-hb" hidden><span class="hg"></span><span class="ht"></span></button></span>
       </div>
       <div class="ip-site" id="ip-site" tabindex="0" role="region" aria-label="Example page, editing on the page">
         <nav aria-label="Example site, editing on the page"><b>Hartley &amp; Finch</b><span>Kitchens · Worktops · Contact</span></nav>
         <div class="ip-wrap">
           <article class="ip-comp" id="ip-comp" aria-label="Rich text component">
             <h4>How we build a kitchen</h4>
-            <div class="ip-body" id="ip-body" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Text, edited on the page"><p>Every kitchen we fit is drawn, cut and finished by the same small team, a mile from our Bath showroom. We have worked this way since 1998, and we have never handed a job to a subcontractor.</p><p>We start with a visit. We measure, listen and sketch, and you leave with drawings the same week. Nothing is fixed until you are happy with the layout, the doors and the way the room will be used.</p><p>Cabinets are built from solid oak and birch ply in our own workshop. Every joint is glued and pinned, every drawer runs on full-extension soft-close runners, and every carcass is finished inside as carefully as out.</p><p>Doors are hand-painted in any colour you like. We mix to a sample, a fabric or a photograph, and we keep the formula on file so a touch-up in ten years matches the day it was fitted.</p><p>Worktops come from three quarries and two timber yards we have used for years. We template in your kitchen once the cabinets are in, so every edge and cut-out is made to the room, not to a drawing.</p><p>Fitting takes about two weeks. The people who built your kitchen fit it, and one of them is on site every day. We protect floors and stairs, take our waste away and leave the room clean each evening.</p><p>When we finish, we walk through every drawer, hinge and appliance with you. We come back after six weeks to adjust anything that has settled, and again after a year, free of charge.</p><p>Our guarantee covers the cabinets for twenty-five years and the paint finish for five. If something is wrong, ring the workshop and you will speak to someone who built it.</p><p>We take on about thirty kitchens a year. That keeps the team small and the waiting list honest: we will tell you the week we can start before you pay a deposit.</p><p>Come and see the workshop. We open on the first Saturday of every month, and you are welcome to bring drawings, measurements or just questions.</p></div>
+            <div class="ip-body" id="ip-body" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Text, edited on the page" data-ipb><p>Every kitchen we fit is drawn, cut and finished by the same small team, a mile from our Bath showroom. We have worked this way since 1998, and we have never handed a job to a subcontractor.</p><p>We start with a visit. We measure, listen and sketch, and you leave with drawings the same week. Nothing is fixed until you are happy with the layout, the doors and the way the room will be used.</p><p>Cabinets are built from solid oak and birch ply in our own workshop. Every joint is glued and pinned, every drawer runs on full-extension soft-close runners, and every carcass is finished inside as carefully as out.</p><p>Doors are hand-painted in any colour you like. We mix to a sample, a fabric or a photograph, and we keep the formula on file so a touch-up in ten years matches the day it was fitted.</p><p>Worktops come from three quarries and two timber yards we have used for years. We template in your kitchen once the cabinets are in, so every edge and cut-out is made to the room, not to a drawing.</p><p>Fitting takes about two weeks. The people who built your kitchen fit it, and one of them is on site every day. We protect floors and stairs, take our waste away and leave the room clean each evening.</p><p>When we finish, we walk through every drawer, hinge and appliance with you. We come back after six weeks to adjust anything that has settled, and again after a year, free of charge.</p><p>Our guarantee covers the cabinets for twenty-five years and the paint finish for five. If something is wrong, ring the workshop and you will speak to someone who built it.</p><p>We take on about thirty kitchens a year. That keeps the team small and the waiting list honest: we will tell you the week we can start before you pay a deposit.</p><p>Come and see the workshop. We open on the first Saturday of every month, and you are welcome to bring drawings, measurements or just questions.</p></div>
           </article>
           <div class="ip-more" aria-hidden="true"><div></div><div></div><div></div></div>
-          <div class="ip-ov" aria-hidden="true"><div class="ip-sel v-edge" id="ip-sel"><span class="tag">Rich text</span><div class="box"></div><div class="edge"></div><div class="sd s-t"></div><div class="sd s-r"></div><div class="sd s-b"></div><div class="sd s-l"></div></div></div>
+          <div class="ip-ov" aria-hidden="true"><div class="ip-sel" id="ip-sel"><div class="box"></div><div class="sd s-t"></div><div class="sd s-r"></div><div class="sd s-b"></div><div class="sd s-l"></div></div></div>
         </div>
       </div>
       <div class="ip-bar" role="region" aria-label="Manager bar, example">
         <div class="ip-tabs"><span class="tl"><span class="on">Content</span><span>UI</span><span>Order</span></span>
           <span class="ip-pin"><button type="button" class="ip-sum" id="ip-sum" aria-label="Status: Draft · not live"><span class="sl">Draft · not live</span></button><button type="button" class="btn solid">Publish</button></span></div>
-        <div class="ip-row"><span class="bl">Text</span><span class="hv">Edited on the page</span><button type="button" class="btn soft" data-ip-edit>Edit on page</button></div>
+        <div class="ip-row" id="ip-row-alt" hidden><span class="bl">Selected</span><span class="hv" id="ip-alt-n"></span></div>
+        <div class="ip-row" id="ip-row-main"><span class="bl">Text</span><span class="hv">Edited on the page</span><button type="button" class="btn soft" data-ip-edit>Edit on page</button></div>
         <div class="sr" aria-live="polite" id="ip-live"></div>
+        <span class="sr" id="ip-body-err">Not saved. Press Escape for Retry and Reset.</span>
       </div>
     </div>
     <pre class="log" id="ip-log" aria-live="off">Requests appear here.</pre>
@@ -1322,7 +1401,7 @@ button.ip-hs:hover{background:var(--k-step-hover)}
   <section class="sec" id="modal" aria-labelledby="h-modal">
     <h2 id="h-modal">6 · Modals and admin pages</h2>
     <p class="lede"><strong>A modal edits a local copy and keeps a Save button.</strong> Nothing is sent as you type. A changed field says “Unsaved” after its label (nothing is drawn inside the field), its tab shows a dot, and Save counts the changes. Cancel, ×, Escape or a click outside with unsaved changes asks “Discard 3 unsaved changes?” first; with nothing changed it just closes. Save sends only the changed fields, in one request per resource. Errors returned by Save go on their fields, linked below them, and each tab holding one gets the triangle and is opened. If someone else saved first (a 412), nothing is saved and each field you both changed asks which version to keep. Creating uses the same button and the same flow.</p>
-    <p class="lede">Layout: a label, 0.375rem, the field, 0.5rem, the helper line; fields 1.5rem apart; sections 2.5rem apart with space and no rules. The header, the tabs and the footer stay put while the body scrolls. The footer holds only Cancel and Save, on every tab: <strong>Delete page is the last section of the Info tab</strong> (“Delete this page”, with what it removes and what it keeps), and asks you to type delete. Below 640px the dialog fills the screen and Cancel and Save share the footer row.</p>
+    <p class="lede">Layout: a label, 0.375rem, the field, 0.5rem, the helper line; fields 1.5rem apart; sections 2.5rem apart with space and no rules. The header, the tabs and the footer stay put while the body scrolls. The footer holds only Cancel and Save, on every tab: <strong>Delete page is the last section of the Info tab</strong> (“Delete this page”, with what it removes and what it keeps), and asks you to type the page's name. Below 640px the dialog fills the screen and Cancel and Save share the footer row.</p>
     <div class="sim" id="modal-sim">
       <button type="button" data-sim="edit">Change three fields</button>
       <button type="button" data-sim="fail">Save from the Info tab, and it fails</button>
@@ -1359,6 +1438,19 @@ button.ip-hs:hover{background:var(--k-step-hover)}
     <div class="dlg-row">
       <div class="dlg-inline"><p class="panel-cap"><b>Routes tab</b> Shaker kitchens, under Kitchens</p><div class="dlg-host" id="routes-edit"></div><pre class="log" id="routes-log" aria-live="polite">Requests appear here.</pre></div>
       <div><p class="panel-cap"><b>Phone</b></p><div class="phone-dlg kit coarse"><div class="dlg-host" id="routes-edit-phone"></div></div></div>
+    </div>
+    <h3 class="sub" id="addcomp">Adding a component: <code>CwaUiCombobox</code>, open inline</h3>
+    <p class="note" style="margin:0 0 1rem">The search field has focus when the dialog opens and the list is always visible. <strong>In this group</strong> comes first with counts, then every other component by its configured <code>group</code> (or A to Z), then <strong>Dynamic</strong>, whose two selects open in place. Type to filter by name, description and group; arrows move, Enter adds, a double-click adds. A thumbnail shows when a component has a preview image, larger on the highlighted row. On a phone the dialog is full screen and the search stays at the top.</p>
+    <div class="sim" id="ac-sim">
+      <button type="button" data-acs="gal">Type “gal”</button>
+      <button type="button" data-acs="galery">Type “galery”</button>
+      <button type="button" data-acs="dyn">Choose Dynamic</button>
+      <button type="button" data-acs="empty" aria-pressed="false">Empty group</button>
+      <button type="button" data-acs="reset">Reset</button>
+    </div>
+    <div class="dlg-row">
+      <div class="dlg-inline"><p class="panel-cap"><b>Add a component</b> md, 36rem</p><div class="dlg-host" id="ac-desk"></div><pre class="log" id="ac-log" aria-live="off">Requests appear here.</pre></div>
+      <div><p class="panel-cap"><b>Phone</b> full screen</p><div class="phone-dlg kit coarse"><div class="dlg-host" id="ac-phone"></div></div></div>
     </div>
     <h3 class="sub">Admin pages: the same Save model</h3>
     <p class="note" style="margin:0 0 1rem">A <code>/_cwa</code> page with a form (here, site settings) works like a modal: it edits a local copy, nothing is sent as you type, and Save counts and sends the changes in one request. Change a field, then click Pages, Layouts or Users: leaving with unsaved changes asks first (in the module this is the existing <code>NavigationGuard</code>). Cancel asks too. Closing or reloading the browser tab with unsaved changes gets the browser's own prompt, whose wording we cannot change. When nothing has changed, nothing asks.</p>
@@ -1531,7 +1623,7 @@ function place (el, anchor, { gap = 4, cap = Infinity, matchW = false, end = fal
 
 /* popovers */
 let openPop = null
-function popover (anchor, html, { label = 'Details', focus = true, title, icon = '', caret = true, expands = true } = {}) {
+function popover (anchor, html, { label = 'Details', focus = true, title, icon = '', caret = true, expands = true, after = null, owner = null } = {}) {
   if (openPop && openPop.anchor === anchor) { closePop(); return }
   closePop(); closeMenu()
   const p = document.createElement('div')
@@ -1540,15 +1632,16 @@ function popover (anchor, html, { label = 'Details', focus = true, title, icon =
   p.setAttribute('aria-label', label)
   p.tabIndex = -1
   p.innerHTML = (title ? `<div class="ph4">${icon}<span class="t">${esc(title)}</span><button type="button" class="btn ghost icon" data-x aria-label="Close">${g('x', 'sm')}</button></div>` : '') + html
-  portal.append(p)
+  if (after) after.after(p); else portal.append(p)
   const x = $('[data-x]', p)
+  if (x && after) x.tabIndex = -1
   if (x) x.addEventListener('click', () => closePop(true))
   place(p, anchor, { gap: 8 })
   openPop = { p, anchor, expands }
   if (expands) anchor.setAttribute('aria-expanded', 'true')
   if (focus) (p.querySelector('button:not([data-x]),a,input') || p).focus({ preventScroll: true })
   p.addEventListener('focusout', e => {
-    if (e.relatedTarget && !p.contains(e.relatedTarget) && e.relatedTarget !== anchor) closePop()
+    if (e.relatedTarget && !p.contains(e.relatedTarget) && e.relatedTarget !== anchor && !(owner && owner.contains(e.relatedTarget))) closePop()
   })
   return p
 }
@@ -1738,8 +1831,109 @@ function closeMenu (refocus) {
   m.cfg.owner.removeAttribute('aria-activedescendant')
   m.cfg.anchor.classList.remove('open')
   m.cfg.onClose && m.cfg.onClose()
-  if (refocus && m.cfg.owner.isConnected) m.cfg.owner.focus({ preventScroll: true })
+  const back = m.cfg.returnTo || m.cfg.owner
+  if (refocus && back.isConnected) back.focus({ preventScroll: true })
 }
+/* CwaUiResourceStack: the stack as nested containment boxes, at the pointer or over the header's path selector */
+let curStack = null
+function closeStack (refocus) {
+  const s = curStack
+  if (!s) return
+  curStack = null
+  s.panel.remove(); s.scrim && s.scrim.remove()
+  removeEventListener('scroll', s.onScroll, true)
+  s.onClose && s.onClose()
+  if (refocus && s.returnTo && s.returnTo.isConnected) s.returnTo.focus({ preventScroll: true })
+}
+function stackMenu ({ at, levels, selected, returnTo, onPick, onClose, label = 'Select a resource', limit = 5, minW = 0 }) {
+  closeMenu(); closePop(); closeStack()
+  const sheet = isSheet()
+  const id = nid('rs')
+  const S = { all: false, hl: -1, kb: false }
+  const panel = document.createElement('div')
+  panel.className = 'menu kit stackm ' + themeOf(at.nodeType ? at : returnTo) + (sheet ? ' sheet' : '')
+  let scrim = null
+  if (sheet) { scrim = document.createElement('div'); scrim.className = 'scrim'; scrim.addEventListener('click', () => closeStack(true)); portal.append(scrim) }
+  panel.innerHTML = (sheet ? `<div class="sh-h"><span>${esc(label)}</span><button type="button" class="btn ghost sh-done">Close</button></div>` : '') + `<div class="ntree" role="tree" tabindex="-1" aria-label="${esc(label)}" id="${id}"></div>`
+  portal.append(panel)
+  const tree = $('.ntree', panel)
+  let order = []
+  function render () {
+    const shown = S.all ? levels.length : Math.min(limit, levels.length)
+    const more = levels.length - shown
+    let inner = ''
+    for (let j = 0; j < shown; j++) {
+      const l = levels[j]
+      const lvl = shown - j + (more ? 1 : 0)
+      const isSel = l.key === selected
+      inner = `<div class="nbox${isSel ? ' sel' : ''}${j === 0 ? ' inmost' : ''}" role="treeitem" id="${id}-${j}" data-j="${j}" aria-level="${lvl}" aria-label="${esc(l.label)}${l.desc ? ', ' + esc(l.desc) : ''}${isSel ? ', selected' : ''}" aria-selected="${isSel}"${inner ? ' aria-expanded="true"' : ''}${j === 0 && minW ? ` style="min-width:${minW}px"` : ''}>${inner ? `<div class="nkids" role="group">${inner}</div>` : ''}<span class="nl">${l.icon ? g(l.icon, 'ni') : ''}<span class="nm"><span class="nn">${esc(l.label)}</span>${l.desc ? `<span class="nd">${esc(l.desc)}</span>` : ''}</span>${isSel ? g('check', 'nck') : ''}</span></div>`
+    }
+    if (more) inner = `<div class="nbox nmore" role="treeitem" id="${id}-m" data-j="m" aria-level="1" aria-expanded="false" aria-label="Show ${more} more ${more === 1 ? 'parent' : 'parents'}"><div class="nkids" role="group">${inner}</div><span class="nl"><span class="nm"><span class="nn nlink">Show ${more} more ${more === 1 ? 'parent' : 'parents'}</span></span></span></div>`
+    tree.innerHTML = inner
+    order = (more ? ['m'] : []).concat([...Array(shown).keys()].reverse())
+    if (S.hl < 0 || S.hl >= order.length) S.hl = order.length - 1
+    paint()
+  }
+  function paint (scroll) {
+    $$('.nbox', tree).forEach(b => { const on = b.dataset.j === String(order[S.hl]); b.classList.toggle('hl', on); b.classList.toggle('kb', on && S.kb) })
+    const el = $(`#${id}-${order[S.hl]}`)
+    if (el) { tree.setAttribute('aria-activedescendant', el.id); if (scroll) el.scrollIntoView({ block: 'nearest' }) }
+  }
+  function act (k) {
+    if (k === 'm') { S.all = true; S.hl = 0; render(); return }
+    const l = levels[+k]
+    closeStack(true)
+    onPick(l)
+  }
+  tree.addEventListener('keydown', e => {
+    const k = e.key
+    if (k === 'ArrowUp' || k === 'ArrowLeft') { e.preventDefault(); S.kb = true; S.hl = Math.max(0, S.hl - 1); paint(true) }
+    else if (k === 'ArrowDown' || k === 'ArrowRight') { e.preventDefault(); S.kb = true; S.hl = Math.min(order.length - 1, S.hl + 1); paint(true) }
+    else if (k === 'Home' || k === 'End') { e.preventDefault(); S.kb = true; S.hl = k === 'Home' ? 0 : order.length - 1; paint(true) }
+    else if (k === 'Enter' || k === ' ') { e.preventDefault(); act(order[S.hl]) }
+    else if (k === 'Escape') { e.preventDefault(); e.stopPropagation(); closeStack(true) }
+    else if (k === 'Tab') { closeStack() }
+    else if (k.length === 1 && !e.metaKey && !e.ctrlKey) {
+      const i = order.findIndex(j => j !== 'm' && levels[j].label.toLowerCase().startsWith(k.toLowerCase()))
+      if (i >= 0) { S.hl = i; S.kb = true; paint(true) }
+    }
+  })
+  tree.addEventListener('mousedown', e => e.preventDefault())
+  tree.addEventListener('pointermove', e => { const b = e.target.closest('.nbox'); if (!b) return; const i = order.indexOf(b.dataset.j === 'm' ? 'm' : +b.dataset.j); if (i !== S.hl || S.kb) { S.hl = i; S.kb = false; paint() } })
+  tree.addEventListener('click', e => { const b = e.target.closest('.nbox'); if (b) act(b.dataset.j === 'm' ? 'm' : +b.dataset.j) })
+  if (sheet) $('.sh-done', panel).addEventListener('click', () => closeStack(true))
+  render()
+  if (!sheet) {
+    const vw = document.documentElement.clientWidth
+    const pw = panel.offsetWidth; const ph = panel.offsetHeight
+    const ib = $('.inmost', tree).getBoundingClientRect()
+    let left; let top
+    if (at.nodeType) {
+      const a = at.getBoundingClientRect()
+      const pr = panel.getBoundingClientRect()
+      left = a.left + a.width / 2 - (ib.left - pr.left + ib.width / 2)
+      top = a.top + a.height / 2 - (ib.top - pr.top + ib.height / 2)
+    } else {
+      left = at.x; top = at.y
+      if (left + pw > vw - 8) left = at.x - pw
+      if (top + ph > innerHeight - 8) top = at.y - ph
+    }
+    left = Math.min(Math.max(8, left), vw - pw - 8)
+    top = Math.min(Math.max(8, top), innerHeight - ph - 8)
+    panel.style.left = left + 'px'; panel.style.top = top + 'px'
+    const ib2 = $('.inmost', tree).getBoundingClientRect()
+    panel.style.transformOrigin = `${ib2.left - left + ib2.width / 2}px ${ib2.top - top + ib2.height / 2}px`
+    if (!reduced()) panel.animate([{ transform: 'scale(.9)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 150, easing: 'cubic-bezier(.2,.8,.2,1)' })
+  }
+  setTimeout(() => tree.focus({ preventScroll: true }), sheet ? 30 : 0)
+  const onScroll = e => { if (!panel.contains(e.target) && !sheet) closeStack() }
+  addEventListener('scroll', onScroll, true)
+  curStack = { panel, scrim, returnTo, onClose, onScroll, at }
+  return curStack
+}
+document.addEventListener('pointerdown', e => {
+  if (curStack && !curStack.panel.contains(e.target) && !(curStack.at.nodeType && curStack.at.contains(e.target)) && curStack.scrim !== e.target) closeStack()
+}, true)
 document.addEventListener('pointerdown', e => {
   if (openPop && !openPop.p.contains(e.target) && !openPop.anchor.contains(e.target)) closePop()
   if (cur && !cur.panel.contains(e.target) && !cur.cfg.anchor.contains(e.target) && !(cur.scrim && cur.scrim === e.target)) closeMenu()
@@ -1863,6 +2057,7 @@ function setupMulti (f) {
     return out
   }
   function commit () { f.dispatchEvent(new CustomEvent('commit', { detail: values.slice() })) }
+  f.api = { get: () => values.join(','), set: v => { values = v ? v.split(',') : []; draw() } }
   function remove (v, viaKey) {
     const at = values.indexOf(v)
     values = values.filter(x => x !== v)
@@ -2349,8 +2544,79 @@ const lineField = f => !!f && !f.classList.contains('ro')
 const LINE = { saving: 1, wait: 1, saved: 1, error: 1, conflict: 1, undo: 1 }
 const POPS = { error: 1, conflict: 1, undo: 1 }
 const ctlOf = el => el.matches('button') ? el : $('input:not([type=checkbox])', el) || $('input', el) || $('[aria-pressed="true"], button', el)
+const MORPH_TO = { saved: 'saved', undo: 'saved', error: 'danger', conflict: 'warning' }
+const SAVED_MS = 1180
+function badgeFor (states, unsaved = 0) {
+  const c = states.filter(s => s === 'conflict').length
+  const e = states.filter(s => s === 'error').length
+  const kind = c ? 'conflict' : e ? 'error' : unsaved ? 'unsaved' : ''
+  return { kind, c, e, n: unsaved, key: `${kind}:${c}:${e}:${unsaved}` }
+}
+function paintBadge (tabEl, b, words) {
+  const tb = $('.tb', tabEl)
+  if (tb.dataset.key === b.key) return
+  const text = words(b)
+  if (tb.dataset.kind === undefined || tb.dataset.kind !== b.kind) {
+    tb.dataset.kind = b.kind
+    tb.innerHTML = (b.kind === 'conflict' ? g('conflict', 'c-warning') : b.kind === 'error' ? g('error', 'c-danger') : b.kind === 'unsaved' ? '<span class="udot" aria-hidden="true"></span>' : '') + '<span class="sr"></span>'
+  }
+  tb.dataset.key = b.key
+  $('.sr', tb).textContent = text ? ', ' + text : ''
+  const name = tabEl.firstChild && tabEl.firstChild.nodeType === 3 ? tabEl.firstChild.textContent.trim() : tabEl.textContent.trim()
+  text ? tabEl.title = `${name}: ${text}` : tabEl.removeAttribute('title')
+}
+const barWords = b => [b.c ? `${b.c} ${b.c === 1 ? 'conflict' : 'conflicts'} to resolve` : '', b.e ? `${b.e} not saved` : ''].filter(Boolean).join(', ')
+const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches
+function cancelMorph (el) {
+  for (const a of el.getAnimations({ subtree: true })) if (a.id === 'morph') a.cancel()
+  delete el.dataset.morph
+}
+function morphLine (el, state, cap) {
+  const cs = getComputedStyle(el)
+  const from = cs.getPropertyValue('--k-line-saving').trim()
+  const to = cs.getPropertyValue('--k-line-' + MORPH_TO[state]).trim()
+  const fin = state === 'saved'
+  const rm = reduced()
+  const D = rm ? 150 : 180
+  const total = fin ? D + 600 + 400 : D
+  const at = ms => ms / total
+  el.dataset.morph = ''
+  const opt = pe => ({ duration: total, fill: 'forwards', pseudoElement: pe, id: 'morph' })
+  const endA = { color: to, backgroundPosition: '0% 0%', backgroundSize: '100% 100%' }
+  const before = rm
+    ? [{ opacity: 1, color: from, easing: 'linear' }, { opacity: 1, color: to, offset: at(D) }]
+    : [{ opacity: 0, color: to, easing: 'ease-out' }, { opacity: 1, color: to, offset: at(D) }]
+  const after = rm
+    ? [{ opacity: 0 }, { opacity: 0, offset: at(D) }]
+    : [{ opacity: 1, color: from, backgroundPosition: cap, backgroundSize: '40% 100%', easing: 'ease-out' }, { opacity: 1, ...endA, offset: at(D) }]
+  if (fin) {
+    before.push({ opacity: 1, color: to, offset: at(D + 600), easing: rm ? 'step-end' : 'ease-out' }, { opacity: 0, color: to })
+    after.push(rm ? { opacity: 0, offset: at(D + 600) } : { opacity: 1, ...endA, offset: at(D + 600), easing: 'ease-out' }, rm ? { opacity: 0 } : { opacity: 0, ...endA })
+  }
+  el.animate(before, opt('::before'))
+  el.animate(after, opt('::after'))
+}
+function rgba (c, a) {
+  const m = c.match(/[\d.]+/g)
+  if (m && c.startsWith('rgb')) return `rgba(${m[0]}, ${m[1]}, ${m[2]}, ${a})`
+  const h = c.replace('#', '')
+  return `rgba(${parseInt(h.slice(0, 2), 16)}, ${parseInt(h.slice(2, 4), 16)}, ${parseInt(h.slice(4, 6), 16)}, ${a})`
+}
+const GLOW = { rise: 250, fall: 650 }
+function glowFrames (c, tight, wide, tightA, wideA, extra = {}) {
+  const sh = (ta, wa) => `${tight} ${rgba(c, ta)}, ${wide} ${rgba(c, wa)}`
+  return [
+    { boxShadow: sh(0, 0), easing: 'ease-out', ...extra },
+    { boxShadow: sh(tightA, wideA), offset: GLOW.rise / (GLOW.rise + GLOW.fall), easing: 'ease-in-out', ...extra },
+    { boxShadow: sh(0, 0), ...extra }
+  ]
+}
 function setLine (el, state, o = {}) {
+  const prev = el.dataset.line
+  const cap = (prev === 'saving' || prev === 'wait') && MORPH_TO[state] ? getComputedStyle(el, '::after').backgroundPosition : null
+  cancelMorph(el)
   if (LINE[state]) el.dataset.line = state; else delete el.dataset.line
+  if (cap) morphLine(el, state, cap)
   if (el.matches('.f')) { el.classList.toggle('err', state === 'error'); el.classList.toggle('conf', state === 'conflict') }
   const ctl = ctlOf(el)
   const old = el._lineMsg
@@ -2362,7 +2628,7 @@ function setLine (el, state, o = {}) {
   const msg = document.createElement('span')
   msg.className = 'sr'
   msg.id = nid('lm')
-  msg.textContent = state === 'error' ? `Not saved. ${o.msg || "The server couldn't save this."} Press Tab for ${andList((o.actions || [{ label: 'Retry' }, { label: 'Reset' }]).map(a => a.label))}.` : state === 'undo' ? `Saved. ${o.msg} Press Tab for Undo.` : `Changed by ${PEER.name} while you were editing. Press Tab to choose a version.`
+  msg.textContent = state === 'error' ? `Not saved. ${o.msg || "The server couldn't save this."} ${andList((o.actions || [{ label: 'Retry' }, { label: 'Reset' }]).map(a => a.label))} follow.` : state === 'undo' ? `Saved. ${o.msg} Undo follows.` : `Changed by ${PEER.name} while you were editing. Use ${PEER.name}'s and Keep mine follow.`
   el.append(msg)
   el._lineMsg = msg
   ctl.setAttribute('aria-describedby', ((ctl.getAttribute('aria-describedby') || '') + ' ' + msg.id).trim())
@@ -2380,26 +2646,25 @@ function setLine (el, state, o = {}) {
     const nm = S.o.field || (named && named.dataset.fieldName) || ($(`label[for="${ctlOf(el).id}"]`) || {}).textContent || ($('.bl', el.closest('.bf') || el) || {}).textContent || ctlOf(el).getAttribute('aria-label') || 'Field'
     const head = S.state === 'error' ? [g('error', 'c-danger'), `${nm}: ${S.o.title || 'not saved'}`] : S.state === 'undo' ? [g('saved', 'c-success'), `${nm}: saved`] : [g('conflict', 'c-warning'), `${nm}: changed by ${PEER.name}`]
     const o2 = { msg: S.o.msg || "The server couldn't save this. Reset puts back the last saved value.", actions: S.o.actions || (S.state === 'error' ? [{ label: 'Retry' }, { label: 'Reset' }] : [{ label: `Use ${PEER.name}'s` }, { label: 'Keep mine' }]), theirs: S.o.theirs, yours: S.o.yours }
-    const pop = popover(anchor, popBody(S.state, o2), { label: head[1], icon: head[0], title: head[1], focus: false, expands: false })
+    const pop = popover(anchor, popBody(S.state, o2), { label: head[1], icon: head[0], title: head[1], focus: false, expands: false, after: el, owner: el })
     if (!pop) return
-    const back = () => ctlOf(el).focus({ preventScroll: true })
+    const back = () => ((el._last && el._last.isConnected && el.contains(el._last)) ? el._last : ctlOf(el)).focus({ preventScroll: true })
     $$('[data-act]', pop).forEach((x, i) => x.addEventListener('click', () => { closePop(); back(); (o2.actions[i].fn || (() => {}))() }))
     $('[data-x]', pop) && $('[data-x]', pop).addEventListener('click', back)
     pop.addEventListener('mouseenter', () => clearTimeout(hideT))
     pop.addEventListener('mouseleave', () => { if (!el.contains(document.activeElement) && !pop.contains(document.activeElement)) hideT = setTimeout(() => { if (openPop && openPop.p === pop) closePop() }, 300) })
     pop.addEventListener('keydown', e => {
       if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closePop(); back() }
-      if (e.key === 'Tab' && e.shiftKey && e.target === $('[data-act]', pop)) { e.preventDefault(); back() }
     })
   }
-  el.addEventListener('focusin', show)
-  el.addEventListener('mouseenter', show)
-  el.addEventListener('mouseleave', () => { if (!el.contains(document.activeElement)) hideT = setTimeout(() => { if (mine() && !openPop.p.matches(':hover')) closePop() }, 300) })
+  let hoverT
+  el.addEventListener('focusin', e => { el._last = e.target; clearTimeout(hoverT); show() })
+  el.addEventListener('mouseenter', () => { clearTimeout(hoverT); hoverT = setTimeout(show, 300) })
+  el.addEventListener('mouseleave', () => { clearTimeout(hoverT); if (!el.contains(document.activeElement)) hideT = setTimeout(() => { if (mine() && !openPop.p.matches(':hover')) closePop() }, 300) })
   el.addEventListener('focusout', e => { if (mine() && !(e.relatedTarget && (openPop.p.contains(e.relatedTarget) || el.contains(e.relatedTarget)))) closePop() })
   el.addEventListener('keydown', e => {
     if (!mine()) return
     if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closePop() }
-    if (e.key === 'Tab' && !e.shiftKey) { const b = $('[data-act]', openPop.p); if (b) { e.preventDefault(); b.focus() } }
   })
 }
 function hydrate (root) {
@@ -2494,7 +2759,7 @@ function galleryHTML (p) {
   <div class="kit-row framed" style="--h:var(--k-control)" data-states="text" data-field-name="Title">
     ${[['Idle', '', ''], ['Not saved yet', 'pending', ''], ['Saving', 'saving', ''], ['Still saving', 'wait', ''], ['Saved', 'saved', ''], ['Not saved', 'error', 'err'], ['Mia changed it', 'conflict', 'conf']].map(([l, st, c]) => `<div class="bf"><span class="bl">${l}</span><div class="f w-sm ${c}"><input aria-label="Title, ${l.toLowerCase()}" value="Summer menu, served all day"><span class="st" data-s="${st}"></span></div></div>`).join('<span class="dv"></span>')}
   </div>
-  <p class="fh" style="margin-top:.5rem">No control in the bar has a status glyph inside, so the value never moves. A 2px line inside the field's bottom edge shows the state: a moving accent sweep while saving (a still line with reduced motion), success that fades after 1.5 s once saved, and a solid danger or warning line with the field's tint for an error or a conflict. Not saved yet shows nothing on the field: the bar's status says it. An error or conflict opens its popover when the field is focused or hovered; Tab moves into it for Retry and Reset (or Use Mia's and Keep mine), and Escape closes it with focus left in the field.</p>
+  <p class="fh" style="margin-top:.5rem">No control in the bar has a status glyph inside, so the value never moves. A 2px line inside the field's bottom edge shows the state: a moving accent sweep while saving (a still line with reduced motion), success that fades after 1.5 s once saved, and a solid danger or warning line with the field's tint for an error or a conflict. Not saved yet shows nothing on the field: the bar's status says it. An error or conflict opens its popover when the field is focused or hovered; It sits straight after the control in the reading order: Tab from the control’s last part (a stepper’s +, the last segment) moves into it for Retry and Reset (or Use Mia's and Keep mine), Shift+Tab returns to that part, Tab past the last action goes to the next control, and Escape closes it with focus left in the control.</p>
   <h3>Save states, bar only: toggles and segmented <span class="scrolls">· scrolls sideways</span></h3>
   <div class="kit-row framed" style="--h:var(--k-control)" data-states="toggle" data-field-name="Show button">
     ${[['Idle', ''], ['Saving', 'saving'], ['Saved', 'saved'], ['Not saved', 'error'], ['Mia changed it', 'conflict']].map(([l, st]) => `<div class="bf"><span class="bl">${l}</span>${toggle({ label: 'Show button', checked: true }).replace('<label class="tgl', `<label data-line-s="${st}" class="tgl`)}</div>`).join('<span class="dv"></span>')}
@@ -2511,7 +2776,7 @@ function galleryHTML (p) {
     <span class="dv"></span>
     <div class="bf"><span class="bl">Date, saving</span><button type="button" class="f w-md" data-cal aria-label="Go live date"><span class="sv">18 Nov 2026, 09:00</span>${g('cal', 'end')}<span class="st" data-s="saving"></span></button></div>
   </div>
-  <p class="fh" style="margin-top:.5rem">Selects, the date picker, multi-selects and searches keep their end icon in every state: the state is the same 2px line along the bottom edge, and an error or conflict opens its popover on focus or hover. The bar saves each field as you type. Modals and pages never do: they keep a local copy until Save, and show no glyph inside the field.</p>
+  <p class="fh" style="margin-top:.5rem">Selects, the date picker, multi-selects and searches keep their end icon in every state: the state is the same 2px line along the bottom edge, and an error or conflict opens its popover on focus or a 300 ms hover. The bar saves each field as you type. Modals and pages never do: they keep a local copy until Save, and show no glyph inside the field.</p>
   <h3>Bar size, inline labels <span class="scrolls">· scrolls sideways</span></h3>
   <div class="kit-row framed">
     <div class="bf"><label class="bl" for="${p}-b1">Title</label><div class="f w-lg"><input id="${p}-b1" value="Made in our own workshop"><span class="st" data-s="saved"></span></div></div>
@@ -2541,7 +2806,7 @@ function galleryHTML (p) {
 /* status, saving */
 function setStatus (slot, state, o = {}) {
   slot.dataset.state = state
-  const f = slot.closest('.f')
+  const f = slot.closest('.f, .tgl, .file')
   const bar = inBar(slot)
   if (f) {
     f.classList.toggle('err', state === 'error')
@@ -2630,33 +2895,39 @@ function fakeSave (slots, { fail = false, field = 'Field', onState = () => {}, r
 
 /* in-page confirm */
 const andList = a => a.length < 2 ? (a[0] || '') : a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1]
-function askConfirm (host, { title, desc, keep = 'Keep editing', go, onGo, onKeep, tone = 'danger', extra = '', typed = false }) {
+function askConfirm (host, { title, lead = '', desc = '', kept = '', keep = 'Keep editing', go, onGo, onKeep, tone = 'danger', extra = '', typed = null }) {
   const prev = document.activeElement
   const id = nid('cfm')
   const layer = document.createElement('div')
   layer.className = 'cfm'
-  const field = typed ? `<div class="cfm-type"><label class="fl" for="${id}-in">Type delete to confirm</label><div class="f"><input id="${id}-in" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="${id}-h"><span class="st"></span></div><p class="fh" id="${id}-h"><span class="msg">${esc(go)} stays off until the word matches.</span></p></div>` : ''
-  layer.innerHTML = `<div class="cfm-box${typed ? ' typed' : ''}" role="alertdialog" aria-modal="true" aria-labelledby="${id}-t" aria-describedby="${id}-d"><p class="cfm-t" id="${id}-t">${esc(title)}</p><p id="${id}-d">${esc(desc)}</p>${extra}${field}<div class="cfm-acts"><button type="button" class="btn soft" data-keep>${esc(keep)}</button><button type="button" class="btn solid${tone === 'danger' ? ' danger' : ''}" data-go${typed ? ` aria-disabled="true" aria-describedby="${id}-why"` : ''}>${esc(go)}</button>${typed ? `<span class="sr" id="${id}-why">Type delete in the field above to turn this on.</span>` : ''}</div></div>`
+  const word = typed ? typed.word : ''
+  const norm = s => s.trim().toLowerCase()
+  const field = typed ? `<div class="cfm-type"><label class="fl" for="${id}-in">${esc(typed.label)}</label><div class="f"><input id="${id}-in" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="${id}-h"><span class="st"></span></div><p class="fh" id="${id}-h"><span class="msg">${esc(go)} stays off until it matches.</span></p><span class="sr" aria-live="polite" id="${id}-live"></span></div>` : ''
+  const body = `${lead ? `<p class="cfm-lead"><strong>${esc(lead)}</strong></p>` : ''}${kept ? `<p class="cfm-kept">${esc(kept)}</p>` : ''}${desc ? `<p>${esc(desc)}</p>` : ''}`
+  layer.innerHTML = `<div class="cfm-box${typed ? ' typed' : ''}" role="alertdialog" aria-modal="true" aria-labelledby="${id}-t" aria-describedby="${id}-d"><p class="cfm-t" id="${id}-t">${esc(title)}</p><div id="${id}-d">${body}</div>${extra}${field}<div class="cfm-acts"><button type="button" class="btn soft" data-keep>${esc(keep)}</button><button type="button" class="btn solid${tone === 'danger' ? ' danger' : ''}" data-go${typed ? ` aria-disabled="true" aria-describedby="${id}-why"` : ''}>${esc(go)}</button>${typed ? `<span class="sr" id="${id}-why">Type ${esc(typed.what)} in the field above to turn this on.</span>` : ''}</div></div>`
   host.append(layer)
   const keepB = $('[data-keep]', layer)
   const goB = $('[data-go]', layer)
   const inp = typed ? $('input', layer) : null
-  const ok = () => !inp || inp.value.trim().toLowerCase() === 'delete'
+  const ok = () => !inp || norm(inp.value) === norm(word)
   const close = back => { layer.remove(); if (back && prev && prev.isConnected) prev.focus({ preventScroll: true }) }
   const goNow = () => { if (!ok()) { inp.focus(); return } const vals = Object.fromEntries($$('input[type=checkbox][name]', layer).map(c => [c.name, c.checked])); close(false); onGo(vals) }
   keepB.addEventListener('click', () => { close(true); onKeep && onKeep() })
   goB.addEventListener('click', goNow)
   if (inp) {
+    let was = false
+    const live = $(`#${id}-live`, layer)
     const sync = () => {
       const m = ok()
       goB.setAttribute('aria-disabled', String(!m))
       goB.toggleAttribute('aria-describedby', !m)
       if (!m) goB.setAttribute('aria-describedby', `${id}-why`)
-      const wrong = inp.value.trim() !== '' && !m && !'delete'.startsWith(inp.value.trim().toLowerCase())
+      const wrong = norm(inp.value) !== '' && !m && !norm(word).startsWith(norm(inp.value))
       inp.closest('.f').classList.toggle('err', wrong)
-      inp.toggleAttribute('aria-invalid', wrong)
-      $(`#${id}-h`, layer).innerHTML = wrong ? `${g('error')}<span class="msg">That doesn't match. Type delete.</span>` : m ? `${g('saved', 'c-success')}<span class="msg">Matches. ${esc(go)} is on.</span>` : `<span class="msg">${esc(go)} stays off until the word matches.</span>`
+      wrong ? inp.setAttribute('aria-invalid', 'true') : inp.removeAttribute('aria-invalid')
+      $(`#${id}-h`, layer).innerHTML = wrong ? `${g('error')}<span class="msg">That doesn't match. Type ${esc(word)}.</span>` : m ? `${g('saved', 'c-success')}<span class="msg">Matches. ${esc(go)} is on.</span>` : `<span class="msg">${esc(go)} stays off until it matches.</span>`
       $(`#${id}-h`, layer).classList.toggle('err', wrong)
+      if (m !== was) { live.textContent = m ? `Matches. ${go} is on.` : `${go} is off.`; was = m }
     }
     inp.addEventListener('input', sync)
     inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); if (ok()) goNow() } })
@@ -2769,23 +3040,41 @@ function settingsPage (host, logEl) {
 const toastsEl = $('#toasts')
 const TONE = { success: g('saved', 'c-success'), info: g('info', 'c-accent'), warning: g('conflict', 'c-warning'), error: g('error', 'c-danger') }
 function toastHTML ({ tone, title, desc, actions = [] }) {
-  return `${TONE[tone]}<div><b>${esc(title)}</b></div><button type="button" class="x" aria-label="Dismiss">${g('x', 'sm')}</button>${desc ? `<p>${esc(desc)}</p>` : ''}${actions.length ? `<div class="acts">${actions.map((a, i) => `<button type="button" class="tbtn" data-a="${i}">${esc(a.label)}</button>`).join('')}</div>` : ''}`
+  return `${TONE[tone]}<div><b>${esc(title)}</b></div><button type="button" class="x" aria-label="Dismiss">${g('x', 'sm')}</button>${desc ? `<p>${esc(desc)}</p>` : ''}${actions.length ? `<div class="acts">${actions.map((a, i) => `<button type="button" class="btn sm ${a.primary ? 'solid' : 'soft'}" data-a="${i}">${esc(a.label)}</button>`).join('')}</div>` : ''}`
+}
+function toastEl (o, el = document.createElement('div')) {
+  el.className = 'toast t-' + o.tone + (o.static ? ' static' : '')
+  if (o.id && !o.static) el.dataset.tid = o.id
+  el.innerHTML = toastHTML(o)
+  return el
+}
+const toastSample = o => toastEl({ ...o, static: true }).outerHTML
+const toastSig = o => JSON.stringify([o.tone, o.title, o.desc || '', (o.actions || []).map(a => [a.label, !!a.primary])])
+function dismissToast (id) {
+  const el = $(`[data-tid="${id}"]`, toastsEl)
+  if (!el) return
+  if (el.contains(document.activeElement)) el._back && el._back.isConnected ? el._back.focus({ preventScroll: true }) : document.activeElement.blur()
+  clearTimeout(el._t); el.remove()
 }
 function toast (o) {
   let el = o.id ? $(`[data-tid="${o.id}"]`, toastsEl) : null
+  const same = el && !el.classList.contains('out') && el._sig === toastSig(o)
   if (!el) {
-    el = document.createElement('div')
-    el.className = 'toast t-' + o.tone
-    if (o.id) el.dataset.tid = o.id
-    toastsEl.prepend(el)
-  }
-  el.className = 'toast t-' + o.tone
-  el.innerHTML = toastHTML(o)
+    el = toastEl(o); toastsEl.prepend(el)
+    el.addEventListener('focusin', e => { if (!el.contains(e.relatedTarget)) el._back = e.relatedTarget })
+  } else if (!same) toastEl(o, el)
+  el._o = o
+  if (same) return
+  el._sig = toastSig(o)
   pageLive.say(o.title + (o.desc ? '. ' + o.desc : ''), 0)
-  const kill = () => { clearTimeout(el._t); el.classList.add('out'); setTimeout(() => el.remove(), 160) }
+  const kill = () => {
+    clearTimeout(el._t)
+    if (el.contains(document.activeElement)) el._back && el._back.isConnected ? el._back.focus({ preventScroll: true }) : document.activeElement.blur()
+    el.classList.add('out'); setTimeout(() => el.remove(), 160)
+  }
   el.classList.remove('out')
   $('.x', el).addEventListener('click', kill)
-  $$('[data-a]', el).forEach((b, i) => b.addEventListener('click', () => { o.actions[i].fn && o.actions[i].fn(); kill() }))
+  $$('[data-a]', el).forEach((b, i) => b.addEventListener('click', () => { const a = el._o.actions[i]; if (a.fn) { el._back = null; a.fn() } if (el.isConnected) kill() }))
   while (toastsEl.children.length > 3) toastsEl.lastElementChild.remove()
   const ttl = o.ttl ?? (o.tone === 'error' || (o.actions && o.actions.length) ? 0 : o.tone === 'warning' ? 6000 : 4000)
   clearTimeout(el._t)
@@ -2924,6 +3213,8 @@ function setupEitherOr (root, logEl, iri) {
   }
   const local = !!root.closest('.s-modal')
   let saved = { ...st }
+  let good = { ...st }
+  root.eoRevert = () => { Object.assign(st, good); search.api.set(st.route); url.value = st.rawPath || ''; offsite(); show(st.route != null ? 'page' : 'url') }
   const diff = () => Object.fromEntries(Object.keys(st).filter(k => st[k] !== saved[k]).map(k => [k, st[k]]))
   function markLocal () {
     const d = diff()
@@ -2961,7 +3252,9 @@ function setupEitherOr (root, logEl, iri) {
     }
     log(`PATCH ${iri}\n${JSON.stringify(body)}${isUndo ? '   ← undo, one request' : ''}`)
     const s = visibleSlot()
-    fakeSave([s], { field: 'Link' }).then(ok => {
+    const sent = root.saver ? root.saver(s, body) : fakeSave([s], { field: 'Link' })
+    sent.then(ok => {
+      if (ok) good = { ...st }
       if (!ok || !Object.keys(cleared).length || isUndo) return
       const what = cleared.route ? `the page link (${search.api.label(cleared.route)})` : `the URL (${cleared.rawPath})`
       const restore = () => {
@@ -3036,29 +3329,101 @@ function initInpage () {
   const stage = $('#ip-stage'); const site = $('#ip-site'); const comp = $('#ip-comp'); const bodyEl = $('#ip-body')
   const sel = $('#ip-sel'); const sum = $('#ip-sum'); const logEl = $('#ip-log')
   const say = announcer($('#ip-live'))
+  const ann = () => E.selected ? say : pageLive
+  const hs = $('#ip-hs'); const hb = $('#ip-hb')
+  $('.hg', hb).innerHTML = g('error')
   let n = 0
   const blog = s => { logEl.textContent = (logEl.textContent === 'Requests appear here.' ? '' : logEl.textContent + '\n') + s; logEl.scrollTop = logEl.scrollHeight }
-  const place = () => { sel.style.left = comp.offsetLeft + 'px'; sel.style.top = comp.offsetTop + 'px'; sel.style.width = comp.offsetWidth + 'px'; sel.style.height = comp.offsetHeight + 'px' }
+  const wrap = $('.ip-wrap', stage)
+  const SHORT = [
+    { key: 'comp', box: 'comp', icon: 'rs-comp', label: 'Rich text', desc: 'Component' },
+    { key: 'pos', box: 'pos', icon: 'rs-pos', label: 'Component position', desc: '3 of 6 in Main content' },
+    { key: 'group', box: 'group', icon: 'group', label: 'Main content group', desc: '6 components' },
+    { key: 'page', box: 'page', icon: 'rs-page', label: 'Page', desc: 'Kitchens' }
+  ]
+  const DEEP = [
+    { key: 'comp', box: 'comp', icon: 'rs-comp', label: 'Rich text', desc: 'Component' },
+    { key: 'pos', box: 'pos', icon: 'rs-pos', label: 'Component position', desc: '1 of 2 in Left column' },
+    { key: 'lcol', box: 'pos', icon: 'group', label: 'Left column group', desc: '2 components' },
+    { key: 'cols', box: 'pos', icon: 'rs-comp', label: 'Two columns', desc: 'Component' },
+    { key: 'cpos', box: 'group', icon: 'rs-pos', label: 'Component position', desc: '3 of 6 in Main content' },
+    { key: 'group', box: 'group', icon: 'group', label: 'Main content group', desc: '6 components' },
+    { key: 'page', box: 'page', icon: 'rs-page', label: 'Page', desc: 'Kitchens' },
+    { key: 'layout', box: 'page', icon: 'rs-page', label: 'Layout', desc: 'Default' }
+  ]
+  let STACK = SHORT
+  const P = { k: 'comp' }
+  const lvOf = k => STACK.find(s => s.key === k) || STACK[0]
+  const nameOf = k => k === 'page' ? 'Page · Kitchens' : lvOf(k).label
+  const place = () => {
+    const k = lvOf(P.k).box
+    let b = [comp.offsetLeft, comp.offsetTop, comp.offsetWidth, comp.offsetHeight]
+    if (k === 'pos') b = [b[0] - 6, b[1] - 6, b[2] + 12, b[3] + 12]
+    if (k === 'group') b = [4, 4, wrap.offsetWidth - 8, wrap.offsetHeight - 8]
+    if (k === 'page') b = [4 - wrap.offsetLeft, 4 - wrap.offsetTop, site.clientWidth - 8, Math.max(site.scrollHeight, site.clientHeight) - 8]
+    sel.classList.toggle('core', k !== 'comp')
+    sel.style.left = b[0] + 'px'; sel.style.top = b[1] + 'px'; sel.style.width = b[2] + 'px'; sel.style.height = b[3] + 'px'
+  }
   new ResizeObserver(place).observe(comp); place()
-  const E = { timer: null, inFlight: false, queued: false, on: false, st: '', sent: bodyEl.innerHTML, failNext: false, selected: true, hsT: null }
+  const E = { timer: null, inFlight: false, queued: false, on: false, st: '', sent: bodyEl.innerHTML, failNext: false, selected: true, unsaved: false }
   const SUM = {
     '': [g('status'), 'Draft · not live', 'Status: Draft · not live'],
     saving: ['<span class="spin" aria-hidden="true"></span>', 'Saving…', 'Status: Saving…'],
     saved: [g('saved', 'c-success'), 'All changes saved', 'Status: All changes saved'],
     error: [g('error', 'c-danger'), '1 not saved →', 'Status: Text not saved, show details']
   }
+  const morphSel = (st, caps) => {
+    const cs = getComputedStyle(stage)
+    const to = cs.getPropertyValue(st === 'saved' ? '--ip-saved' : st === 'error' ? '--ip-danger' : '--ip-warning').trim()
+    const from = cs.getPropertyValue('--ip-saving').trim()
+    const rm = reduced()
+    sel.dataset.morph = ''
+    $$('.sd', sel).forEach((sd, i) => {
+      const horiz = sd.matches('.s-t, .s-b')
+      const t = caps[i]
+      const kf = rm
+        ? [{ opacity: 0 }, { opacity: 0 }]
+        : [{ opacity: 1, color: from, transform: t, [horiz ? 'width' : 'height']: '25%', easing: 'ease-out' }, { opacity: 1, color: to, transform: horiz ? 'translateX(0)' : 'translateY(0)', [horiz ? 'width' : 'height']: '100%' }]
+      sd.animate(kf, { duration: 180, fill: 'forwards', pseudoElement: '::after', id: 'morph' })
+    })
+  }
+  const glow = st => {
+    if (reduced()) return
+    const c = getComputedStyle(stage).getPropertyValue(st === 'saved' ? '--ip-saved' : st === 'error' ? '--ip-danger' : '--ip-warning').trim()
+    const box = $('.box', sel)
+    for (const a of box.getAnimations()) a.cancel()
+    box.animate(glowFrames(c, '0 0 4px 1px', '0 0 14px 2px', 0.6, 0.45), { duration: GLOW.rise + GLOW.fall, id: 'glow' })
+  }
+  const hdr = () => {
+    const k = E.unsaved ? 'error' : (E.timer || E.inFlight || E.queued || E.hold || E.on) ? 'saving' : 'saved'
+    if (hs.dataset.k === k) return
+    hs.dataset.k = k
+    if (k !== 'error') {
+      $('.hg', hs).innerHTML = k === 'saving' ? '<span class="spin" aria-hidden="true"></span>' : g('saved', 'c-success')
+      $('.ht', hs).textContent = k === 'saving' ? 'Saving…' : 'All changes saved'
+      hs.title = $('.ht', hs).textContent
+    } else $('.ht', hb).textContent = '1 change not saved'
+    const had = document.activeElement === hb
+    hs.hidden = k === 'error'
+    hb.hidden = k !== 'error'
+    if (had && hb.hidden) $('.ip-head .btn').focus({ preventScroll: true })
+  }
+  const invalid = on => { if (on) { bodyEl.setAttribute('aria-invalid', 'true'); bodyEl.setAttribute('aria-describedby', 'ip-body-err') } else { bodyEl.removeAttribute('aria-invalid'); bodyEl.removeAttribute('aria-describedby') } }
+  const unmorphSel = () => { for (const a of sel.getAnimations({ subtree: true })) if (a.id === 'morph') a.cancel(); delete sel.dataset.morph }
   const paint = st => {
+    const was = E.st
     E.st = st
+    const morph = was === 'saving' && (st === 'saved' || st === 'error' || st === 'conflict')
+    const caps = morph ? $$('.sd', sel).map(sd => getComputedStyle(sd, '::after').transform) : null
+    unmorphSel()
     if (st) sel.dataset.st = st; else delete sel.dataset.st
+    if (morph) morphSel(st, caps)
+    if (st !== was && (st === 'saved' || st === 'error' || st === 'conflict')) glow(st)
     const s = SUM[st] || SUM['']
     sum.innerHTML = `${s[0]}<span class="sl">${s[1]}</span>`
     sum.classList.toggle('err', st === 'error')
     sum.setAttribute('aria-label', s[2])
-    clearTimeout(E.hsT)
-    if (st === 'saving') $('#ip-hs').outerHTML = '<span class="ip-hs" id="ip-hs" role="status">Saving…</span>'
-    else if (st === 'saved') { $('#ip-hs').outerHTML = '<span class="ip-hs" id="ip-hs" role="status">All changes saved</span>'; E.hsT = setTimeout(() => { $('#ip-hs').textContent = '' }, 2000) }
-    else if (st === 'error') { $('#ip-hs').outerHTML = '<button type="button" class="ip-hs" id="ip-hs" aria-label="1 change not saved, show it">' + g('error', 'c-danger') + '1 change not saved</button>'; $('#ip-hs').addEventListener('click', showIt) }
-    else $('#ip-hs').outerHTML = '<span class="ip-hs" id="ip-hs" role="status"></span>'
+    hdr()
   }
   const busy = () => !!E.timer || E.inFlight || E.queued
   const send = (retry) => {
@@ -3066,7 +3431,7 @@ function initInpage () {
     if (E.inFlight) { E.queued = true; return }
     E.queued = false
     if (!retry && bodyEl.innerHTML === E.sent) { if (!busy() && E.on) end(); return }
-    if (!E.on) { E.on = true; paint('saving'); say.saving('text') }
+    if (!E.on) { E.on = true; invalid(false); paint('saving'); ann().saving('text') }
     const fail = E.failNext
     if (fail) { E.failNext = false; $('[data-ips="fail"]').setAttribute('aria-pressed', 'false') }
     const v = bodyEl.innerHTML; const id = ++n
@@ -3077,29 +3442,33 @@ function initInpage () {
       if (fail) {
         blog(`#${id} ← 500`)
         clearTimeout(E.timer); E.timer = null; E.queued = false; E.on = false
-        paint('error'); say.done('text', 'Text', false)
-        if (!E.selected || !visible()) errToast()
+        E.unsaved = true; invalid(true)
+        paint('error'); ann().done('text', 'Text', false)
+        if (!E.selected) errToast()
         return
       }
       E.sent = v; blog(`#${id} ← 200`)
+      if (E.unsaved) { E.unsaved = false; dismissToast('ip-err') }
       if (E.queued) { send(); return }
-      if (!busy()) E.hold = setTimeout(() => { E.hold = null; if (!busy()) end() }, 300)
+      if (!busy()) E.hold = setTimeout(() => { E.hold = null; if (!busy()) end(); else hdr() }, 300)
+      hdr()
     }, 900)
   }
   const end = () => {
     E.on = false
-    paint('saved'); say.done('text', 'Text', true)
-    setTimeout(() => { if (E.st === 'saved' && !E.on) { delete sel.dataset.st; E.st = ''; const s = SUM['']; sum.innerHTML = `${s[0]}<span class="sl">${s[1]}</span>`; sum.setAttribute('aria-label', s[2]) } }, 1500)
+    paint('saved'); ann().done('text', 'Text', true)
+    setTimeout(() => { if (E.st === 'saved' && !E.on) { unmorphSel(); delete sel.dataset.st } }, 780)
+    setTimeout(() => { if (E.st === 'saved' && !E.on) { E.st = ''; const s = SUM['']; sum.innerHTML = `${s[0]}<span class="sl">${s[1]}</span>`; sum.setAttribute('aria-label', s[2]) } }, SAVED_MS)
   }
-  const reset = () => { bodyEl.innerHTML = E.sent; $('[data-tid="ip-err"]') && $('[data-tid="ip-err"] .x').click(); paint('') }
+  const reset = () => { bodyEl.innerHTML = E.sent; E.unsaved = false; invalid(false); dismissToast('ip-err'); paint('') }
   const retry = () => { send(true) }
-  const visible = () => { const a = comp.getBoundingClientRect(); const b = site.getBoundingClientRect(); return a.bottom > b.top + 40 && a.top < b.bottom - 40 }
+  const reveal = () => { if (!E.selected) select(); comp.scrollIntoView({ block: 'nearest', behavior: 'instant' }) }
   const showIt = () => {
     if (!E.selected) select()
     comp.scrollIntoView({ block: 'nearest', behavior: 'instant' })
     sum.focus(); openSum()
   }
-  const errToast = () => toast({ tone: 'error', id: 'ip-err', title: 'Text wasn’t saved', desc: 'Rich text, How we build a kitchen. The server couldn’t save your last edit.', actions: [{ label: 'Show me', fn: showIt }, { label: 'Retry', fn: retry }, { label: 'Reset', fn: reset }] })
+  const errToast = () => toast({ tone: 'error', id: 'ip-err', title: 'Text wasn’t saved', desc: 'Your last edit to “How we build a kitchen” (Rich text) wasn’t saved.', actions: [{ label: 'Show me', primary: true, fn: showIt }, { label: 'Retry', fn: () => { reveal(); sum.focus({ preventScroll: true }); retry() } }, { label: 'Reset', fn: () => { reveal(); reset(); bodyEl.focus({ preventScroll: true }) } }] })
   const openSum = () => {
     if (E.st !== 'error') { popover(sum, `<p>${E.st === 'saving' ? 'Saving your edits to the text.' : 'Draft · not live. Visitors see the published version.'}</p>`, { label: 'Status', title: 'Status', icon: SUM[E.st || ''][0], focus: false }); return }
     const pop = popover(sum, `<p>The server couldn't save your last edit to the text. Your edit is still on the page. Reset puts back the last saved text.</p><div class="acts"><button type="button" class="btn solid" data-a="0">Retry</button><button type="button" class="btn soft" data-a="1">Reset</button></div>`, { label: 'Text: not saved', icon: g('error', 'c-danger'), title: 'Text: not saved' })
@@ -3111,16 +3480,69 @@ function initInpage () {
     clearTimeout(E.hold); E.hold = null
     if (E.st === 'error') paint('')
     clearTimeout(E.timer); E.timer = setTimeout(() => send(), 250)
+    hdr()
   })
-  const select = () => { E.selected = true; stage.classList.remove('desel'); sel.hidden = false; place() }
-  const deselect = () => { E.selected = false; stage.classList.add('desel'); sel.hidden = true; closePop(); if (E.st === 'error') errToast() }
-  comp.addEventListener('click', () => { if (!E.selected) select() })
-  let scrollT
-  site.addEventListener('scroll', () => { clearTimeout(scrollT); scrollT = setTimeout(() => { if (E.st === 'error' && !visible()) errToast() }, 400) }, { passive: true })
+  bodyEl.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && bodyEl.getAttribute('aria-invalid') === 'true') { e.preventDefault(); e.stopPropagation(); sum.focus({ preventScroll: true }); openSum() }
+  })
+  hb.addEventListener('click', showIt)
+  const ttl = $('#ip-ttl')
+  const curStackOf = () => STACK.slice(STACK.indexOf(lvOf(P.k)))
+  const hdrTtl = () => {
+    const had = ttl.contains(document.activeElement)
+    hdrTtlDraw()
+    if (had && $('button', ttl)) $('button', ttl).focus({ preventScroll: true })
+  }
+  const hdrTtlDraw = () => {
+    if (!E.selected) { ttl.textContent = 'Kitchens · About our workshop'; return }
+    const can = curStackOf().length > 1
+    ttl.innerHTML = `<button type="button" class="pathsel${can ? ' can' : ''}" aria-haspopup="tree" aria-expanded="false"${can ? '' : ' aria-disabled="true"'} aria-label="${esc(nameOf(P.k))}${can ? ', choose a parent' : ''}"><span>${esc(nameOf(P.k))}</span></button>`
+    const btn = $('button', ttl)
+    btn.addEventListener('click', () => {
+      if (!can || btn.getAttribute('aria-expanded') === 'true') return
+      btn.setAttribute('aria-expanded', 'true')
+      stackMenu({ at: btn, levels: curStackOf(), selected: P.k, returnTo: btn, minW: btn.offsetWidth, onPick: l => pickRes(l.key), onClose: () => btn.isConnected && btn.setAttribute('aria-expanded', 'false') })
+    })
+  }
+  const select = () => { E.selected = true; stage.classList.remove('desel'); sel.hidden = false; hdrTtl(); place() }
+  const pickRes = k => {
+    P.k = k
+    $('#ip-row-main').hidden = k !== 'comp'
+    $('#ip-row-alt').hidden = k === 'comp'
+    $('#ip-alt-n').textContent = k === 'comp' ? '' : `${nameOf(k)}. Its tabs show here.`
+    select()
+    say.say(`${nameOf(k)} selected`, 0)
+  }
+  const openCtx = (pt, back) => stackMenu({ at: pt, levels: STACK, selected: E.selected ? P.k : null, returnTo: back, onPick: l => pickRes(l.key) })
+  const ctxOpen = () => !!curStack
+  comp.addEventListener('contextmenu', e => {
+    e.preventDefault()
+    if (ctxOpen()) return
+    const a = document.activeElement
+    openCtx({ x: e.clientX, y: e.clientY }, stage.contains(a) && a !== document.body ? a : site)
+  })
+  site.addEventListener('keydown', e => {
+    if (e.key !== 'ContextMenu' && !(e.shiftKey && e.key === 'F10')) return
+    e.preventDefault()
+    const s = getSelection()
+    let r = s.rangeCount ? s.getRangeAt(0).getBoundingClientRect() : null
+    if (!r || (!r.width && !r.height)) r = (document.activeElement && comp.contains(document.activeElement) ? document.activeElement : comp).getBoundingClientRect()
+    openCtx({ x: r.left, y: r.bottom }, document.activeElement)
+  })
+  let lp = null; let lp0 = null
+  comp.addEventListener('pointerdown', e => {
+    if (e.pointerType !== 'touch' || document.activeElement === bodyEl) return
+    lp0 = { x: e.clientX, y: e.clientY }
+    clearTimeout(lp)
+    lp = setTimeout(() => { lp = null; openCtx(lp0, site) }, 500)
+  })
+  comp.addEventListener('pointermove', e => { if (lp && Math.hypot(e.clientX - lp0.x, e.clientY - lp0.y) > 8) { clearTimeout(lp); lp = null } })
+  ;['pointerup', 'pointercancel'].forEach(t => comp.addEventListener(t, () => { clearTimeout(lp); lp = null }))
+  const deselect = () => { E.selected = false; P.k = 'comp'; $('#ip-row-main').hidden = false; $('#ip-row-alt').hidden = true; stage.classList.add('desel'); sel.hidden = true; hdrTtl(); closePop(); if (E.unsaved) errToast() }
+  comp.addEventListener('click', () => { if (!E.selected || P.k !== 'comp') pickRes('comp') })
   $('[data-ip-edit]', stage).addEventListener('click', () => { comp.scrollIntoView({ block: 'nearest', behavior: 'instant' }); bodyEl.focus() })
   const caretEnd = el => { const p = el.lastElementChild || el; const rg = document.createRange(); rg.selectNodeContents(p); rg.collapse(false); const s = getSelection(); s.removeAllRanges(); s.addRange(rg) }
   const ctl = {
-    variant (v) { sel.classList.toggle('v-edge', v === 'edge'); sel.classList.toggle('v-outline', v === 'outline') },
     scroll (where) {
       site.scrollTo({ top: Math.max(0, where === 'bottom' ? comp.offsetTop + comp.offsetHeight - site.clientHeight + parseFloat(getComputedStyle(site).paddingBottom) - 24 : comp.offsetTop - 40), behavior: 'instant' })
     },
@@ -3132,16 +3554,19 @@ function initInpage () {
       for (const ch of text) { document.execCommand('insertText', false, ch); await new Promise(res => setTimeout(res, 110)) }
     },
     fail () { E.failNext = true; $('[data-ips="fail"]').setAttribute('aria-pressed', 'true') },
-    desel: deselect, select, E, caretEnd
+    desel: deselect, select, pick: pickRes, E, caretEnd, glow, paint
   }
-  $$('#ip-variant [data-ipv]').forEach(b => b.addEventListener('click', () => { $$('#ip-variant [data-ipv]').forEach(x => x.setAttribute('aria-pressed', String(x === b))); ctl.variant(b.dataset.ipv) }))
   $$('#ip-sim [data-ips]').forEach(b => b.addEventListener('click', () => {
     const k = b.dataset.ips
     if (k === 'type') ctl.type()
     else if (k === 'fail') ctl.fail()
     else if (k === 'top' || k === 'bottom') ctl.scroll(k)
     else if (k === 'desel') E.selected ? deselect() : select()
+    else if (k === 'pub' || k === 'draft') { stage.classList.toggle('draft', k === 'draft'); $$('#ip-sim [data-ips="pub"], #ip-sim [data-ips="draft"]').forEach(x => x.setAttribute('aria-pressed', String(x === b))) }
+    else if (k === 'deep') { const on = STACK === SHORT; STACK = on ? DEEP : SHORT; b.setAttribute('aria-pressed', String(on)); P.k = 'comp'; if (E.selected) select() }
+    else if (k === 'dark') { const on = !stage.classList.contains('site-dark'); stage.classList.toggle('site-dark', on); b.setAttribute('aria-pressed', String(on)) }
   }))
+  hdrTtl()
   paint('')
   window.__ip = ctl
   return ctl
@@ -3174,16 +3599,16 @@ function buildBar (host, p, { coarse } = {}) {
             <div class="bf"><span class="bl">Description</span><span class="handoff-q">“Every kitchen we fit is drawn, cut and finished…”</span><button type="button" class="btn soft" data-handoff>Edit on page</button></div>
             <span class="dv"></span>
             <div class="bf"><label class="bl" for="${p}-btn">Button</label><div class="f w-sm" data-field="button"><input id="${p}-btn" value="Book a visit"><span class="st"></span></div></div>
-            ${toggle({ label: 'Show', checked: true })}
+            ${toggle({ label: 'Show', checked: true }).replace('<label class="tgl', '<label data-field="show" class="tgl').replace('</label>', '<span class="st"></span></label>')}
             <span class="dv"></span>
             ${eitherOrHTML(p + '-lk', { bar: true, route: '/showrooms' })}
             <span class="dv"></span>
-            <div class="bf"><span class="bl">Image</span><div class="file"><span class="thumb" role="img" aria-label="Thumbnail"></span><span class="fname">workshop-bench.jpg</span><span class="fsize">240 KB</span><button type="button" class="btn soft">Replace</button><button type="button" class="btn ghost">Remove</button><span class="st"></span></div></div>
+            <div class="bf"><span class="bl">Image</span><div class="file" data-field="image"><span class="thumb" role="img" aria-label="Thumbnail"></span><span class="fname">workshop-bench.jpg</span><span class="fsize">240 KB</span><button type="button" class="btn soft" data-img="replace">Replace</button><button type="button" class="btn ghost" data-img="remove">Remove</button><span class="st"></span></div></div>
           </div>
           <div class="row" tabindex="0" role="tabpanel" id="${p}-pn-ui" aria-labelledby="${p}-tab-ui" data-panel="ui" hidden>
             <div class="bf"><span class="bl">UI</span>${selectHTML({ key: 'ui', value: 'split', label: 'UI', width: 'w-md' }).replace('<button', '<button data-field="ui"')}</div>
             <span class="dv"></span>
-            <div class="bf"><span class="bl">Style</span>${multiHTML({ values: 'dark,pad', label: 'Style', mode: 'bar', width: 'w-md' })}</div>
+            <div class="bf"><span class="bl">Style</span>${multiHTML({ values: 'dark,pad', label: 'Style', mode: 'bar', width: 'w-md' }).replace('<div class="f multi', '<div data-field="styles" class="f multi')}</div>
           </div>
           <div class="row" tabindex="0" role="tabpanel" id="${p}-pn-order" aria-labelledby="${p}-tab-order" data-panel="order" hidden>
             <div class="bf"><label class="bl" for="${p}-pos">Position</label>${stepperHTML(`${p}-pos`, { label: ['Move up', 'Move down'], width: '8.25rem', msgFor: `${p}-posr`, minReason: 'Already first in Main content', maxReason: 'Already last in Main content' }).replace('<div class="f num', '<div data-field="pos" class="f num')}</div>
@@ -3199,7 +3624,7 @@ function buildBar (host, p, { coarse } = {}) {
             <div class="bf"><span class="bl">ID</span><span class="rov"><span class="rv mono">/_/component/hero_sections/4f1c…a9e2</span><button type="button" class="btn ghost icon" aria-label="Copy ID">${g('copy')}</button></span></div>
             <span class="dv"></span>
             <div class="bf"><span class="bl">Created</span><span class="rov"><span class="rv">12 Nov 2026</span></span></div>
-            <div class="bf"><label class="bl" for="${p}-note">Note</label><div class="f w-sm"><input id="${p}-note" value="Spring launch"><span class="st"></span></div></div>
+            <div class="bf"><label class="bl" for="${p}-note">Note</label><div class="f w-sm" data-field="note"><input id="${p}-note" value="Spring launch"><span class="st"></span></div></div>
             <div class="bf"><span class="bl">Updated</span><span class="rov"><span class="rv">2 min ago</span></span></div>
             <span class="dv"></span>
             <span class="badge accent">Shared · 3 places</span>
@@ -3229,7 +3654,7 @@ function buildBar (host, p, { coarse } = {}) {
   const tell = (key, name, st) => { if (st === 'saving') say.saving(key); else if (st === 'saved') say.done(key, name, true); else if (st === 'error') say.done(key, name, false) }
   const act = $('.pin-act', mgr)
   const B = { fieldStates: {}, failNext: false, savedAt: 0 }
-  const TAB_OF = { title: 'content', subtitle: 'content', button: 'content', link: 'content', ui: 'ui', pos: 'order' }
+  const TAB_OF = { title: 'content', subtitle: 'content', button: 'content', link: 'content', show: 'content', image: 'content', ui: 'ui', styles: 'ui', pos: 'order', note: 'info' }
   const activeRow = () => rows.find(r => !r.hidden)
   const setAct = (full, short, aria) => { act.hidden = !full; if (!full) return; act.innerHTML = `<span class="pa-full">${full}</span><span class="pa-short">${short}</span>`; act.setAttribute('aria-label', aria || full) }
   setAct('Publish now', 'Publish')
@@ -3315,10 +3740,11 @@ function buildBar (host, p, { coarse } = {}) {
     if (!busy && B.busyAt) { B.busyAt = 0; B.savedAt = Date.now() }
     const sched = $('#' + p + '-sched').checked
     let full; let short; let glyph; let goto = null
-    if (err.length) { full = `${err.length} not saved →`; short = `${err.length} not saved`; glyph = g('error', 'c-danger'); goto = err[0][0] }
-    else if (conf.length) { full = `${conf.length} conflict →`; short = `${conf.length} conflict`; glyph = g('conflict', 'c-warning'); goto = conf[0][0] }
+    if (conf.length && err.length) { full = `${conf.length} ${conf.length === 1 ? 'conflict' : 'conflicts'} · ${err.length} not saved →`; short = `${conf.length + err.length} issues`; glyph = g('conflict', 'c-warning'); goto = conf[0][0] }
+    else if (conf.length) { full = `${conf.length} ${conf.length === 1 ? 'conflict' : 'conflicts'} →`; short = `${conf.length} ${conf.length === 1 ? 'conflict' : 'conflicts'}`; glyph = g('conflict', 'c-warning'); goto = conf[0][0] }
+    else if (err.length) { full = `${err.length} not saved →`; short = `${err.length} not saved`; glyph = g('error', 'c-danger'); goto = err[0][0] }
     else if (busy) { full = 'Saving…'; short = 'Saving…'; glyph = '<span class="spin c-accent"></span>' }
-    else if (Date.now() - B.savedAt < 4000) { full = 'All changes saved'; short = 'Saved'; glyph = g('saved', 'c-success') }
+    else if (Date.now() - B.savedAt < SAVED_MS) { full = 'All changes saved'; short = 'Saved'; glyph = g('saved', 'c-success'); clearTimeout(B.savedT); B.savedT = setTimeout(summary, SAVED_MS - (Date.now() - B.savedAt) + 10) }
     else if (B.mode === 'live') { full = 'Live · published'; short = 'Live'; glyph = g('live', 'c-success') }
     else if (B.mode === 'group') { full = 'Group · 4 of 6 components'; short = 'Group'; glyph = g('group', 'c-muted') }
     else if (B.mode.startsWith('new')) { full = 'New · not added yet'; short = 'New'; glyph = g('new', 'c-muted') }
@@ -3328,32 +3754,31 @@ function buildBar (host, p, { coarse } = {}) {
     const fullEl = sum.children[1]; const shortEl = sum.children[2]
     if (fullEl.textContent !== full) fullEl.textContent = full
     if (shortEl.textContent !== short) shortEl.textContent = short
-    sum.dataset.state = err.length ? 'error' : conf.length ? 'conflict' : busy ? 'saving' : 'idle'
+    sum.dataset.state = conf.length ? 'conflict' : err.length ? 'error' : busy ? 'saving' : 'idle'
     sum.classList.toggle('act', !!goto)
     sum.setAttribute('aria-label', 'Status: ' + full.replace(' →', '') + (goto ? ', show the field' : ''))
     sum.onclick = () => goto ? jump(goto) : popover(sum, `<p>${esc(full)}.${B.mode === 'live' ? ' Visitors see this version. Editing a field makes a draft.' : B.mode === 'group' ? ' A group has nothing to publish; add components from ⋮.' : sched ? ' It goes live on 18 Nov at 09:00.' : ' Visitors still see the published version.'}</p>`, { label: 'Status', title: 'Status', icon: glyph, focus: false })
     tabs.forEach(t => {
-      const mine = vals.filter(([k]) => TAB_OF[k] === t.dataset.tab).map(([, s]) => s)
-      const kind = mine.includes('conflict') ? 'conflict' : mine.includes('error') ? 'error' : ''
-      if ((t.dataset.badge || '') === kind) return
-      t.dataset.badge = kind
-      $('.tb', t).innerHTML = kind === 'conflict' ? g('conflict', 'c-warning', 'has a conflict') : kind === 'error' ? g('error', 'c-danger', 'has an unsaved field') : ''
+      const b = badgeFor(vals.filter(([k]) => TAB_OF[k] === t.dataset.tab).map(([, s]) => s))
+      t.dataset.badge = b.kind
+      paintBadge(t, b, barWords)
     })
   }
   function jump (field) {
     selectTab($(`[data-tab="${TAB_OF[field]}"]`, mgr))
-    const f = $(`[data-field="${field}"]`, mgr)
+    const f = field === 'link' ? B.link.slot().closest('.f') : $(`[data-field="${field}"]`, mgr)
     reveal(activeRow(), f.closest('.bf'), 40)
     const b = $('.st-btn', f)
     setTimeout(() => b ? b.click() : ctlOf(f).focus(), 260)
   }
-  setInterval(() => { if (B.savedAt && Date.now() - B.savedAt < 6000) summary() }, 1000)
 
   const barLog = p === 'bd' ? $('#bar-log') : null
   let reqN = 0
   const blog = s => { if (!barLog) return; barLog.textContent = (barLog.textContent === 'Requests appear here.' ? '' : barLog.textContent + '\n') + s; barLog.scrollTop = barLog.scrollHeight }
-  function episode ({ key, label, slot, get, set, delay = 250, body }) {
-    const E = { timer: null, inFlight: false, queued: false, on: false, sent: get() }
+  function episode ({ key, label, slot, get, set, delay = 250, body, theirs, show = v => v }) {
+    const S = typeof slot === 'function' ? slot : () => slot
+    const E = { timer: null, inFlight: false, queued: false, on: false, sent: get(), done: [] }
+    const settle = ok => { const d = E.done; E.done = []; d.forEach(f => f(ok)) }
     const busy = () => !!E.timer || E.inFlight || E.queued
     const st = s => { B.fieldStates[key] = s; summary() }
     const send = () => {
@@ -3362,7 +3787,7 @@ function buildBar (host, p, { coarse } = {}) {
       E.queued = false
       if (get() === E.sent && !E.retry) { if (!busy()) end(); return }
       E.retry = false
-      if (!E.on) { E.on = true; setStatus(slot, 'saving'); st('saving'); tell(key, label, 'saving') }
+      if (!E.on) { E.on = true; setStatus(S(), 'saving'); st('saving'); tell(key, label, 'saving') }
       const fail = B.failNext
       B.failNext = false
       const v = get()
@@ -3374,8 +3799,9 @@ function buildBar (host, p, { coarse } = {}) {
         if (fail) {
           blog(`#${id} ← 500`)
           clearTimeout(E.timer); E.timer = null; E.queued = false; E.on = false
-          setStatus(slot, 'error', { field: label, title: 'not saved', msg: "The server couldn't save this. Reset puts back the last saved value.", actions: [{ label: 'Retry', fn: () => { E.retry = true; send() } }, { label: 'Reset', fn: () => { set(E.sent); setStatus(slot, ''); st('') } }] })
+          setStatus(S(), 'error', { field: label, title: 'not saved', msg: "The server couldn't save this. Reset puts back the last saved value.", actions: [{ label: 'Retry', fn: () => { E.retry = true; send() } }, { label: 'Reset', fn: () => { set(E.sent); setStatus(S(), ''); st('') } }] })
           st('error'); tell(key, label, 'error')
+          settle(false)
           return
         }
         E.sent = v
@@ -3388,41 +3814,92 @@ function buildBar (host, p, { coarse } = {}) {
       }, 900)
     }
     const end = () => {
-      if (!E.on) { if (slot.dataset.state === 'pending') { setStatus(slot, ''); st('') } return }
+      if (!E.on) { if (S().dataset.state === 'pending') { setStatus(S(), ''); st('') } settle(true); return }
       if (E.hold) return
       E.on = false
-      setStatus(slot, 'saved'); B.savedAt = Date.now(); st('saved'); tell(key, label, 'saved')
-      setTimeout(() => { if (slot.dataset.state === 'saved' && !E.on) { setStatus(slot, ''); st('') } }, 1500)
+      setStatus(S(), 'saved'); B.savedAt = Date.now(); st('saved'); tell(key, label, 'saved')
+      settle(true)
+      setTimeout(() => { if (S().dataset.state === 'saved' && !E.on) { setStatus(S(), ''); st('') } }, 1500)
     }
     const change = () => {
+      B.last = key
       clearTimeout(E.hold); E.hold = null
-      if (!E.on && slot.dataset.state !== 'error') { if (slot.dataset.state !== 'pending') setStatus(slot, 'pending'); st('pending') }
-      if (slot.dataset.state === 'error') { setStatus(slot, 'pending'); st('pending') }
+      if (!E.on && S().dataset.state !== 'error') { if (S().dataset.state !== 'pending') setStatus(S(), 'pending'); st('pending') }
+      if (S().dataset.state === 'error') { setStatus(S(), 'pending'); st('pending') }
       clearTimeout(E.timer)
       E.timer = setTimeout(send, delay)
     }
-    return { change, save: () => { E.retry = true; send() }, E }
+    const conflict = () => {
+      clearTimeout(E.timer); E.timer = null; clearTimeout(E.hold); E.hold = null; E.queued = false; E.on = false
+      say.say(`${PEER.name} changed ${label} while you were editing`, 0)
+      B.fieldStates[key] = 'conflict'
+      setStatus(S(), 'conflict', {
+        field: label, msg: `${PEER.name} changed this while you were editing.`, theirs: show(theirs), yours: show(get()),
+        actions: [
+          { label: `Use ${PEER.name}'s`, fn: () => { set(theirs); E.sent = theirs; setStatus(S(), ''); st('') } },
+          { label: 'Keep mine', fn: () => { E.retry = true; send() } }
+        ]
+      })
+      summary()
+    }
+    return { change, save: () => { E.retry = true; send() }, conflict: theirs === undefined ? null : conflict, wait: () => new Promise(res => E.done.push(res)), E }
   }
   function wireField (key, input, onLive, onCommit) {
     const f = input.closest('.f')
     const slot = $('.st', f)
     const label = $(`label[for="${input.id}"]`, mgr).textContent
-    const ep = episode({ key, label, slot, get: () => input.value, set: v => { input.value = v; onLive && onLive(v) }, body: v => key === 'pos' ? `/_/component_groups/main/order  { position: ${v} }` : `/component/hero_sections/4f1c  { ${key}: ${JSON.stringify(v)} }` })
+    const ep = episode({ key, label, slot, theirs: THEIRS[key], get: () => input.value, set: v => { input.value = v; onLive && onLive(v) }, body: v => key === 'pos' ? `/_/component_groups/main/order  { position: ${v} }` : `/component/hero_sections/4f1c  { ${key}: ${JSON.stringify(v)} }` })
     if (onCommit) f.addEventListener('commit', ep.change)
     else input.addEventListener('input', () => { onLive && onLive(input.value); ep.change() })
-    B[key] = { slot, input, f, save: ep.save }
+    B[key] = { slot, input, f, save: ep.save, conflict: ep.conflict }
   }
+  const THEIRS = { subtitle: 'Made in Bath', button: 'Come and see us', pos: '2', note: 'Summer launch' }
   wireField('title', $('#' + p + '-title'), v => { $('#' + p + '-htitle').textContent = v })
   wireField('subtitle', $('#' + p + '-sub'), v => { $('#' + p + '-hsub').textContent = v.toUpperCase() })
   wireField('button', $('#' + p + '-btn'), v => { $('#' + p + '-cta').textContent = v })
   $('[data-field="pos"]', mgr).rangeText = v => `${v} of 6 in Main content`
   wireField('pos', $('#' + p + '-pos'), null, true)
+  wireField('note', $('#' + p + '-note'))
   const uiSel = $('[data-field="ui"]', mgr)
   setupSelect(uiSel)
-  const uiEp = episode({ key: 'ui', label: 'UI', slot: $(':scope > .st', uiSel), get: () => uiSel.api.get(), set: v => uiSel.api.set(v), delay: 0, body: v => `/component/hero_sections/4f1c  { uiComponent: ${JSON.stringify(v)} }` })
+  const optLabel = (k, v) => (OPTS[k].find(o => o.value === v) || {}).label || v
+  const uiEp = episode({ key: 'ui', label: 'UI', slot: $(':scope > .st', uiSel), theirs: 'centred', show: v => optLabel('ui', v), get: () => uiSel.api.get(), set: v => uiSel.api.set(v), delay: 0, body: v => `/component/hero_sections/4f1c  { uiComponent: ${JSON.stringify(v)} }` })
   uiSel.addEventListener('commit', uiEp.change)
-  B.ui = { slot: $(':scope > .st', uiSel), f: uiSel, save: uiEp.save }
-  setupEitherOr($('[data-eo]', mgr), null, '/component/hero_sections/4f1c')
+  B.ui = { slot: $(':scope > .st', uiSel), f: uiSel, save: uiEp.save, conflict: uiEp.conflict }
+  const styleF = $('[data-field="styles"]', mgr)
+  setupMulti(styleF)
+  const styleEp = episode({ key: 'styles', label: 'Style', slot: $(':scope > .st', styleF), theirs: 'dark,wide', show: v => v ? v.split(',').map(x => optLabel('styles', x)).join(', ') : 'None', get: () => styleF.api.get(), set: v => styleF.api.set(v), delay: 0, body: v => `/component/hero_sections/4f1c  { uiClassNames: ${JSON.stringify(v ? v.split(',') : [])} }` })
+  styleF.addEventListener('commit', styleEp.change)
+  B.styles = { slot: $(':scope > .st', styleF), f: styleF, save: styleEp.save, conflict: styleEp.conflict }
+  const showT = $('[data-field="show"]', mgr)
+  const showIn = $('input', showT)
+  const showCta = () => { $('#' + p + '-cta').hidden = !showIn.checked }
+  const showEp = episode({ key: 'show', label: 'Show', slot: $('.st', showT), theirs: 'off', show: v => v === 'on' ? 'Shown' : 'Hidden', get: () => showIn.checked ? 'on' : 'off', set: v => { showIn.checked = v === 'on'; showCta() }, delay: 0, body: v => `/component/hero_sections/4f1c  { showButton: ${v === 'on'} }` })
+  showIn.addEventListener('change', () => { showCta(); showEp.change() })
+  B.show = { slot: $('.st', showT), f: showT, save: showEp.save, conflict: showEp.conflict }
+  const fileG = $('[data-field="image"]', mgr)
+  const IMG = { 'workshop-bench.jpg': '240 KB', 'oak-doors.jpg': '312 KB' }
+  let imgV = 'workshop-bench.jpg'
+  const imgSet = v => {
+    imgV = v
+    $('.fname', fileG).textContent = v || 'No image'
+    $('.fsize', fileG).textContent = IMG[v] || ''
+    const rm = $('[data-img="remove"]', fileG)
+    if (!v && document.activeElement === rm) $('[data-img="replace"]', fileG).focus({ preventScroll: true })
+    rm.hidden = !v
+  }
+  const imgEp = episode({ key: 'image', label: 'Image', slot: $('.st', fileG), theirs: 'oak-doors.jpg', show: v => v || 'No image', get: () => imgV, set: imgSet, delay: 0, body: v => `/component/hero_sections/4f1c  { file: ${v ? JSON.stringify('/_/files/' + v) : 'null'} }` })
+  $('[data-img="replace"]', fileG).addEventListener('click', () => { imgSet(imgV === 'workshop-bench.jpg' ? 'oak-doors.jpg' : 'workshop-bench.jpg'); imgEp.change() })
+  $('[data-img="remove"]', fileG).addEventListener('click', () => { imgSet(''); imgEp.change() })
+  B.image = { slot: $('.st', fileG), f: fileG, save: imgEp.save, conflict: imgEp.conflict }
+  const eo = $('[data-eo]', mgr)
+  setupEitherOr(eo, null, '/component/hero_sections/4f1c')
+  let linkV = null
+  let linkSlot = null
+  const linkSl = () => linkSlot || $('[data-panel]:not([hidden]) .st', eo)
+  const linkEp = episode({ key: 'link', label: 'Link', slot: linkSl, get: () => linkV, set: () => { linkV = null; eo.eoRevert() }, delay: 0, body: v => `/component/hero_sections/4f1c  ${v}` })
+  eo.saver = (s, body) => { linkSlot = s; linkV = JSON.stringify(body); const w = linkEp.wait(); linkEp.change(); return w }
+  B.link = { slot: linkSl, save: linkEp.save }
 
   const desc = $('#' + p + '-desc')
   const handoff = $('[data-handoff]', mgr)
@@ -3482,8 +3959,9 @@ function buildBar (host, p, { coarse } = {}) {
 
   B.sim = k => {
     const T = B.title
-    if (k === 'fail') { B.failNext = true; toast({ tone: 'info', id: 'sim', title: 'The next save will fail', desc: 'Type in Title, Subtitle or Button, change UI, or step Position.' }) }
+    if (k === 'fail') { B.failNext = true; toast({ tone: 'info', id: 'sim', title: 'The next save will fail', desc: 'Change any field in the bar: a text field, Show, Image, Link, UI, Style, Position or Note.' }) }
     if (k === 'flag') { peerOn = true; T.f.classList.add('pres'); T.f.style.setProperty('--peer', PEER.ring); selectTab(tabs[0]); placeFlags(true) }
+    if (k === 'conflict' && B.last && B.last !== 'title' && B[B.last] && B[B.last].conflict) { selectTab($(`[data-tab="${TAB_OF[B.last]}"]`, mgr)); B[B.last].conflict(); return }
     if (k === 'conflict') {
       say.say(`${PEER.name} changed Title while you were editing`, 0)
       B.fieldStates.title = 'conflict'
@@ -3498,7 +3976,7 @@ function buildBar (host, p, { coarse } = {}) {
     }
     if (k.startsWith('mode-')) { B.mode = k.slice(5); closeMenu(); B.paintCta() }
     if (k === 'reset') {
-      Object.keys(B.fieldStates).forEach(key => { B.fieldStates[key] = ''; B[key] && setStatus(B[key].slot, '') })
+      Object.keys(B.fieldStates).forEach(key => { B.fieldStates[key] = ''; B[key] && setStatus(typeof B[key].slot === 'function' ? B[key].slot() : B[key].slot, '') })
       B.failNext = false; B.savedAt = 0
       peerOn = false; T.f.classList.remove('pres'); placeFlags()
       summary()
@@ -3511,6 +3989,145 @@ function buildBar (host, p, { coarse } = {}) {
   measure()
   setTimeout(() => placeFlags(true), 50)
   return B
+}
+
+/* add a component: CwaUiCombobox, inline-open */
+const AC_LIST = [
+  { k: 'RichText', name: 'Rich text', icon: 'ac-text', group: 'Text', desc: 'Paragraphs, headings, lists and links', uis: 1 },
+  { k: 'Quote', name: 'Quote', icon: 'ac-quote', group: 'Text', uis: 2 },
+  { k: 'Image', name: 'Image', icon: 'ac-image', group: 'Media', desc: 'One image with alt text and a caption', uis: 3, thumb: 'linear-gradient(135deg,#a8a29e 0 40%,#78716c 40% 70%,#d6d3d1 70%)' },
+  { k: 'Gallery', name: 'Gallery', icon: 'ac-image', group: 'Media', desc: 'A grid of images that opens full screen', uis: 2, thumb: 'repeating-linear-gradient(90deg,#a8a29e 0 30%,#e7e5e4 30% 35%)' },
+  { k: 'Video', name: 'Video', icon: 'ac-video', group: 'Media', desc: 'A YouTube or Vimeo video', uis: 1 },
+  { k: 'HeroSection', name: 'Hero section', icon: 'ac-layout', group: 'Layout', desc: 'Title, subtitle, button and image', uis: 3, thumb: 'linear-gradient(90deg,#57534e 0 55%,#d6d3d1 55%)' },
+  { k: 'CallToAction', name: 'Call to action', icon: 'ac-layout', group: 'Layout', desc: 'A heading and one button', uis: 2 },
+  { k: 'ContactForm', name: 'Contact form', icon: 'ac-form', group: 'Forms', desc: 'Name, email and message', uis: 1 },
+  { k: 'Spacer', name: 'Spacer', icon: 'ac-space', uis: 1 }
+]
+const AC_IN_GROUP = [['Image', 3], ['RichText', 2], ['HeroSection', 1]]
+OPTS.dynType = [{ value: 'BlogArticleData', label: 'Blog article' }, { value: 'ProductData', label: 'Product' }]
+OPTS.dynField = [{ value: 'heroImage', label: 'Hero image' }, { value: 'intro', label: 'Intro' }]
+const acHit = (t, q) => { if (!q) return esc(t); const i = t.toLowerCase().indexOf(q.toLowerCase()); return i < 0 ? esc(t) : esc(t.slice(0, i)) + '<mark>' + esc(t.slice(i, i + q.length)) + '</mark>' + esc(t.slice(i + q.length)) }
+function addComponentDialog (host, p, { logEl = null } = {}) {
+  const S = { q: '', hl: -1, kb: false, picked: null, empty: false, dynT: null, dynF: null }
+  const log = m => { if (!logEl) return; logEl.textContent = (logEl.textContent === 'Requests appear here.' ? '' : logEl.textContent + '\n') + m }
+  host.innerHTML = `<div class="dlg ac s-modal" role="dialog" aria-labelledby="${p}-t" aria-describedby="${p}-ctx">
+    <div class="dlg-h"><h2 class="dt" id="${p}-t">Add a component</h2><button type="button" class="btn ghost icon" aria-label="Close" data-x>${g('x')}</button></div>
+    <div class="dlg-b">
+      <div class="ac-top"><p class="ac-ctx" id="${p}-ctx">To <b>Main content</b>, after Intro text</p>
+        <div class="f">${g('search', 'lead')}<input id="${p}-q" type="text" role="combobox" aria-expanded="true" aria-controls="${p}-lb" aria-autocomplete="list" aria-label="Search components" placeholder="Search components" autocomplete="off" spellcheck="false"></div></div>
+      <div class="ac-lb" id="${p}-lb" role="listbox" aria-label="Components"></div>
+      <div class="ac-dyn" id="${p}-dyn" hidden>
+        ${fb({ id: `${p}-dt`, label: 'Data type', control: selectHTML({ key: 'dynType', value: null, label: 'Data type', placeholder: 'Choose a data type' }).replace('<button', `<button id="${p}-dt" data-dyn="t"`) })}
+        ${fb({ id: `${p}-df`, label: 'Field', control: selectHTML({ key: 'dynField', value: null, label: 'Field', placeholder: 'Choose a field' }).replace('<button', `<button id="${p}-df" data-dyn="f"`) })}
+      </div>
+      <span class="sr" aria-live="polite" id="${p}-live"></span>
+    </div>
+    <div class="dlg-f"><span class="fstate" id="${p}-fs">Choose a component</span><span class="spacer"></span><button type="button" class="btn soft" data-cancel>Cancel</button><button type="button" class="btn solid" id="${p}-add" disabled>Add</button></div>
+  </div>`
+  const q = $(`#${p}-q`, host); const lb = $(`#${p}-lb`, host); const dyn = $(`#${p}-dyn`, host)
+  const add = $(`#${p}-add`, host); const fs = $(`#${p}-fs`, host); const live = $(`#${p}-live`, host)
+  const dt = $('[data-dyn="t"]', host); const df = $('[data-dyn="f"]', host)
+  setupSelect(dt); setupSelect(df)
+  df.closest('.fb').hidden = true
+  let opts = []
+  const hits = c => !S.q || [c.name, c.desc || '', c.group || ''].some(t => t.toLowerCase().includes(S.q.toLowerCase()))
+  function rows () {
+    const out = []
+    const by = k => AC_LIST.find(c => c.k === k)
+    if (!S.empty) {
+      const ing = AC_IN_GROUP.map(([k, n]) => ({ ...by(k), n })).filter(hits)
+      if (ing.length) out.push({ h: 'In this group' }, ...ing.map(c => ({ c, id: 'in-' + c.k })))
+    }
+    const groups = [...new Set(AC_LIST.map(c => c.group).filter(Boolean))].sort()
+    for (const gname of [...groups, null]) {
+      const cs = AC_LIST.filter(c => (c.group || null) === gname).filter(hits).sort((a, b) => a.name.localeCompare(b.name))
+      if (cs.length) out.push({ h: gname || 'Other' }, ...cs.map(c => ({ c, id: c.k })))
+    }
+    const dynHit = !S.q || 'dynamic'.includes(S.q.toLowerCase()) || 'chosen by each page'.includes(S.q.toLowerCase())
+    if (dynHit) out.push({ h: '' }, { dyn: true, id: 'dyn' })
+    return out
+  }
+  function render (keepHl) {
+    const rs = rows()
+    opts = rs.filter(x => !x.h && x.h !== '')
+    const sel = S.picked
+    if (!opts.length) {
+      lb.innerHTML = `<div class="ac-none" role="presentation">No component called “<b>${esc(S.q)}</b>”</div>`
+      S.hl = -1
+    } else {
+      let i = -1
+      lb.innerHTML = rs.map(x => {
+        if (x.h !== undefined) return x.h ? `<div class="ac-gh" role="presentation" id="${p}-g-${esc(x.h).replace(/\s/g, '')}">${esc(x.h)}</div>` : ''
+        i++
+        if (x.dyn) return `<div class="ac-o" role="option" id="${p}-o-dyn" data-i="${i}" aria-selected="${sel === 'dyn'}"><span class="ac-ic"><span class="ac-dynsq" role="img" aria-label="Dynamic"></span></span><span class="ac-m"><span class="ac-n">${acHit('Dynamic', S.q)}</span><span class="ac-d">Shows the component each page's data chooses</span></span>${sel === 'dyn' ? g('check', 'ac-ck') : '<span class="ac-ck"></span>'}</div>`
+        const c = x.c
+        const lead = c.thumb ? `<span class="ac-th"><i style="--thumb:${c.thumb}"></i></span>` : `<span class="ac-ic">${c.icon ? g(c.icon) : ''}</span>`
+        const right = [c.n ? `${c.n} here` : '', c.uis > 1 ? `${c.uis} styles` : ''].filter(Boolean).join(' · ')
+        return `<div class="ac-o" role="option" id="${p}-o-${x.id}" data-i="${i}" data-k="${c.k}" aria-selected="${sel === x.id}"${c.n ? ` aria-label="${esc(c.name)}, ${c.n} in this group"` : ''}>${lead}<span class="ac-m"><span class="ac-n">${acHit(c.name, S.q)}${c.n ? ` <span class="ac-r">· ${c.n}</span>` : ''}</span>${c.desc ? `<span class="ac-d">${acHit(c.desc, S.q)}</span>` : ''}</span>${c.uis > 1 ? `<span class="ac-r">${c.uis} styles</span>` : ''}${sel === x.id ? g('check', 'ac-ck') : '<span class="ac-ck"></span>'}</div>`
+      }).join('')
+      if (!keepHl || S.hl >= opts.length) S.hl = opts.length ? 0 : -1
+    }
+    paint()
+  }
+  function paint (scroll) {
+    $$('.ac-o', lb).forEach((o, i) => { o.classList.toggle('hl', i === S.hl); o.classList.toggle('kb', i === S.hl && S.kb) })
+    const h = $$('.ac-o', lb)[S.hl]
+    if (h) { q.setAttribute('aria-activedescendant', h.id); if (scroll) h.scrollIntoView({ block: 'nearest' }) } else q.removeAttribute('aria-activedescendant')
+    const pk = S.picked
+    dyn.hidden = pk !== 'dyn'
+    const ok = pk && (pk !== 'dyn' || (S.dynT && S.dynF))
+    add.disabled = !ok
+    const c = pk && pk !== 'dyn' && AC_LIST.find(x => x.k === pk.replace(/^in-/, ''))
+    fs.textContent = !pk ? 'Choose a component' : pk === 'dyn' ? (ok ? 'Dynamic, ready to add' : 'Choose a data type and a field') : `${c.name}, ready to add`
+  }
+  function choose (i, go) {
+    const o = opts[i]
+    if (!o) return
+    S.hl = i
+    S.picked = o.id
+    $$('.ac-o', lb).forEach((el, j) => { const on = j === i; el.setAttribute('aria-selected', String(on)); $('.ac-ck', el).outerHTML = on ? g('check', 'ac-ck') : '<span class="ac-ck"></span>' })
+    paint()
+    if (o.dyn) { live.textContent = 'Dynamic chosen. Choose a data type and a field below.'; if (go) dt.focus(); return }
+    if (go) doAdd()
+  }
+  function doAdd () {
+    if (add.disabled) return
+    const pk = S.picked
+    const c = pk !== 'dyn' && AC_LIST.find(x => x.k === pk.replace(/^in-/, ''))
+    log(pk === 'dyn' ? `POST /_/component_positions  { componentGroup: "/_/component_groups/main", after: "…/intro", pageDataProperty: "${S.dynF}" }` : `New ${c.name} after Intro text (draft, nothing sent until + Draft)`)
+    toast({ tone: 'success', title: pk === 'dyn' ? 'Dynamic position added' : `Adding ${c.name}`, desc: pk === 'dyn' ? 'Main content, after Intro text.' : 'Fill it in, then choose + Draft.' })
+    reset()
+  }
+  function reset () { S.q = ''; S.picked = null; S.hl = -1; S.kb = false; S.dynT = null; S.dynF = null; q.value = ''; dt.api.set(null); df.api.set(null); df.closest('.fb').hidden = true; render() }
+  q.addEventListener('input', () => {
+    S.q = q.value.trim(); S.kb = false
+    render()
+    clearTimeout(S.t)
+    S.t = setTimeout(() => { live.textContent = opts.length ? `${opts.length} ${opts.length === 1 ? 'component' : 'components'}` : `No component called ${S.q}` }, 400)
+  })
+  q.addEventListener('keydown', e => {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); if (!opts.length) return; S.kb = true; S.hl = S.hl < 0 ? 0 : (S.hl + (e.key === 'ArrowDown' ? 1 : -1) + opts.length) % opts.length; paint(true) }
+    else if ((e.key === 'Home' || e.key === 'End') && e.ctrlKey) { e.preventDefault(); S.kb = true; S.hl = e.key === 'Home' ? 0 : opts.length - 1; paint(true) }
+    else if (e.key === 'Enter') { e.preventDefault(); if (S.hl >= 0 && opts[S.hl] && S.picked !== opts[S.hl].id) choose(S.hl, true); else doAdd() }
+    else if (e.key === 'Escape' && q.value) { e.preventDefault(); e.stopPropagation(); q.value = ''; S.q = ''; render() }
+  })
+  lb.addEventListener('mousedown', e => e.preventDefault())
+  lb.addEventListener('pointermove', e => { const o = e.target.closest('.ac-o'); if (o && +o.dataset.i !== S.hl) { S.hl = +o.dataset.i; S.kb = false; paint() } })
+  lb.addEventListener('click', e => { const o = e.target.closest('.ac-o'); if (o) { choose(+o.dataset.i, false); q.focus({ preventScroll: true }) } })
+  lb.addEventListener('dblclick', e => { const o = e.target.closest('.ac-o'); if (o) choose(+o.dataset.i, true) })
+  dt.addEventListener('commit', () => { S.dynT = dt.api.get(); df.closest('.fb').hidden = !S.dynT; paint() })
+  df.addEventListener('commit', () => { S.dynF = df.api.get(); paint() })
+  add.addEventListener('click', doAdd)
+  $('[data-cancel]', host).addEventListener('click', reset)
+  $('[data-x]', host).addEventListener('click', reset)
+  render()
+  return {
+    type (s) { q.focus({ preventScroll: true }); q.value = s; q.dispatchEvent(new Event('input')) },
+    dyn () { reset(); const i = opts.findIndex(o => o.dyn); choose(i, false); S.hl = i; paint(true) },
+    empty (on) { S.empty = on; render() },
+    reset,
+    focus () { q.focus({ preventScroll: true }) }
+  }
 }
 
 /* section 6: modal */
@@ -3568,7 +4185,17 @@ function modalSpec (mode, o = {}) {
     }
   }
 }
-function infoTabHTML (spec, hl) {
+function delSentence (spec, RT, n = spec.pageDataCount) {
+  const c = delPageCopy(spec, RT, n)
+  return (c.lead ? `<strong>${esc(c.lead)}</strong> ` : '') + esc(c.kept) + (n > 0 ? ` <a href="#lists" data-seetpl>See the ${n} pages</a>` : '') + (!c.lead && !c.kept ? 'Nothing else depends on it.' : '')
+}
+function delPageCopy (spec, RT, n = spec.pageDataCount) {
+  const lead = n === null ? 'Pages built from this template are deleted too, and their addresses stop showing a page.' : n > 0 ? `${n} ${n === 1 ? 'page' : 'pages'} built from this template ${n === 1 ? 'is' : 'are'} deleted too. Visitors to ${n === 1 ? 'its address' : `their ${n} addresses`} get “Page not found”.` : ''
+  const nested = spec.nested || 0
+  const kept = [RT && RT.path ? `The route ${RT.path} is kept, and visitors to it get “Page not found”.` : '', nested ? `The ${nested} ${nested === 1 ? 'page' : 'pages'} nested under it ${nested === 1 ? 'is kept and loses its parent' : 'are kept and lose their parent'}.` : ''].filter(Boolean).join(' ')
+  return { lead, kept }
+}
+function infoTabHTML (spec, hl, RT) {
   const now = spec.mode === 'created'
   return `<div class="form"><div class="fsec"><div class="fields">
     <div class="fb"><div class="fl">ID</div><span class="rov"><span class="rv mono">${esc(spec.iri)}</span><button type="button" class="btn ghost icon" aria-label="Copy ID" style="--bh:2rem">${g('copy')}</button></span></div>
@@ -3579,8 +4206,8 @@ function infoTabHTML (spec, hl) {
     <div class="fb"><div class="fl">Version</div><span class="rov"><span class="rv">${now ? '1' : '7'}</span></span></div>
   </div></div><div class="fsec"><h${hl} class="fsh">Cache</h${hl}><p class="fsd">Visitors may see a cached copy for up to an hour after a change.</p><div class="fields">
     <div><button type="button" class="btn soft lg">Clear this page from the cache</button></div>
-  </div></div>${spec.mode === 'edit' ? `<div class="fsec"><h${hl} class="fsh">Delete this ${esc(spec.what)}</h${hl}><p class="fsd">${spec.pageDataCount === null ? '<strong>Pages built from this template are deleted too.</strong> ' : spec.pageDataCount > 0 ? `<strong>${spec.pageDataCount} ${spec.pageDataCount === 1 ? 'page' : 'pages'} built from this template ${spec.pageDataCount === 1 ? 'is' : 'are'} deleted too.</strong> ` : ''}Its route stays but no longer shows a page, and pages nested under it are kept without a parent. You'll be asked to type delete.</p><div class="fields">
-    <div><button type="button" class="btn solid danger" data-delpage>Delete ${esc(spec.what)}</button></div>
+  </div></div>${spec.mode === 'edit' ? `<div class="fsec"><h${hl} class="fsh">Delete this ${esc(spec.what)}</h${hl}><p class="fsd" data-delcopy>${delSentence(spec, RT)}</p><div class="fields">
+    <div><button type="button" class="btn soft danger" data-delpage>Delete ${esc(spec.what)}</button></div>
   </div></div>` : ''}</div>`
 }
 
@@ -3717,7 +4344,7 @@ function routesPanel (el, R, ctx) {
   function formHTML () {
     const S = R.sub
     const d = S.draft
-    const fail = R.fail ? `<div class="alert danger rt-fail" role="alert" tabindex="-1" data-sfail>${g('error', 'c-danger')}<b>${esc(R.fail)}</b><p>The server couldn't save it. Nothing changed, and what you typed is still here.</p><div class="acts"><button type="button" class="btn soft" data-sretry>Retry</button></div></div>` : ''
+    const fail = R.fail ? `<div class="alert danger rt-fail" role="group" aria-labelledby="${p}-sf-t" aria-describedby="${p}-sf-d" tabindex="-1" data-sfail>${g('error', 'c-danger')}<b id="${p}-sf-t">${esc(R.fail)}</b><p id="${p}-sf-d">The server couldn't save it. Nothing changed, and what you typed is still here.</p><div class="acts"><button type="button" class="btn soft" data-sretry>Retry</button></div></div>` : ''
     let body = ''
     if (S.kind === 'route') {
       OPTS['pfx-' + pid] = R.prefixes.map(v => ({ value: v, label: v }))
@@ -3736,7 +4363,7 @@ function routesPanel (el, R, ctx) {
     } else {
       body = `<div class="fb"><div class="fl"><label for="${pid}-red">Old address</label></div><div class="f${S.err ? ' err' : ''}"><input id="${pid}-red" value="${esc(d.path)}" placeholder="/old-path" aria-describedby="${pid}-redh" autocomplete="off" spellcheck="false"${S.err ? ' aria-invalid="true"' : ''}><span class="st"></span></div><div class="fh${S.err ? ' err' : ''}" id="${pid}-redh">${S.err ? `${g('error')}<span class="msg">${esc(S.err)}</span>` : '<span class="msg">A path on this site, starting with /.</span>'}</div></div>`
     }
-    const delSec = S.kind === 'route' && R.path ? `<div class="fsec"><h${h + 1} class="fsh">Delete this route</h${h + 1}><p class="fsd">Visitors to ${esc(R.path)} get “Page not found”.${R.redirects.length || R.children.length ? ' Asks you to type delete, because old addresses or child routes depend on it.' : ''}</p><div class="fields"><div>${R.busy === 'del' ? '<button type="button" class="btn solid danger" aria-disabled="true"><span class="spin"></span>Deleting…</button>' : '<button type="button" class="btn solid danger" data-sdel>Delete route</button>'}</div></div></div>` : ''
+    const delSec = S.kind === 'route' && R.path ? `<div class="fsec"><h${h + 1} class="fsh">Delete this route</h${h + 1}><p class="fsd">Visitors to ${esc(R.path)} get “Page not found”.${R.redirects.length ? ` Its ${count(R.redirects)} old ${count(R.redirects) === 1 ? 'address goes' : 'addresses go'} too.` : ''}</p><div class="fields"><div>${R.busy === 'del' ? '<button type="button" class="btn solid danger" aria-disabled="true"><span class="spin"></span>Deleting…</button>' : '<button type="button" class="btn soft danger" data-sdel>Delete route</button>'}</div></div></div>` : ''
     return `${fail}<div class="form"><div class="fsec"><div class="fields">${body}<div class="rt-cons" data-cons></div></div></div>${delSec}</div>`
   }
 
@@ -3949,9 +4576,11 @@ function routesPanel (el, R, ctx) {
     const p = R.path
     const routed = R.children.length
     askConfirm(dlg(), {
-      typed: !!(R.redirects.length || R.children.length),
-      title: `Delete the route ${p}?`,
-      desc: `Visitors to ${p} will get “Page not found”.${R.redirects.length ? ` The ${count(R.redirects)} old ${count(R.redirects) === 1 ? 'address' : 'addresses'} that redirect to it go too.` : ''}${routed ? ` This ${what} stays reachable through the ${routed} ${routed === 1 ? 'page' : 'pages'} nested under it.` : ''}`,
+      typed: R.redirects.length || R.children.length ? { word: p, label: `Type the route, “${p}”, to confirm`, what: 'the route' } : null,
+      title: `Delete “${p}”?`,
+      lead: R.redirects.length ? `The ${count(R.redirects)} old ${count(R.redirects) === 1 ? 'address' : 'addresses'} that redirect to it go too.` : '',
+      kept: routed ? `This ${what} stays reachable through the ${routed} ${routed === 1 ? 'page' : 'pages'} nested under it.` : '',
+      desc: `Visitors to ${p} will get “Page not found”. This can't be undone.`,
       keep: 'Don\'t delete', go: 'Delete route',
       onGo: () => {
         R.busy = 'del'; chrome()
@@ -4051,7 +4680,9 @@ function routesPanel (el, R, ctx) {
     }
     const del = n => askConfirm(dlg(), {
       title: `Delete the redirect from ${n.path}?`,
-      desc: `Visitors to ${n.path} will get “Page not found”.${n.kids && n.kids.length ? ` The ${n.kids.length} ${n.kids.length === 1 ? 'address' : 'addresses'} under it ${n.kids.length === 1 ? 'goes' : 'go'} too.` : ''}`,
+      typed: n.kids && n.kids.length ? { word: n.path, label: `Type the old address, “${n.path}”, to confirm`, what: 'the old address' } : null,
+      lead: n.kids && n.kids.length ? (n.kids.length === 1 ? `Its old address ${n.kids[0].path} goes too.` : `Its ${n.kids.length} old addresses ${andList(n.kids.map(k => k.path))} go too.`) : '',
+      desc: `Visitors to ${n.path} will get “Page not found”.`,
       keep: 'Don\'t delete', go: 'Delete redirect',
       onGo: () => runAction('tree', `The redirect from ${n.path} wasn't deleted.`, () => { const list = findParent(R.redirects, n); list.splice(list.indexOf(n), 1); return `DELETE /_/routes/${slug(n.path)}   (${n.path})` }, { sec: 'from', html: `<span class="mono">${esc(n.path)}</span> no longer sends visitors here.` })
     })
@@ -4070,6 +4701,7 @@ function pageModal (host, p, { mode = 'edit', logEl = null, onClose, hl = 2, tit
   const log = (s) => { if (logEl) logEl.textContent = s + (logEl.textContent && logEl.textContent !== 'Requests appear here.' ? '\n\n' + logEl.textContent.split('\n\n').slice(0, 3).join('\n\n') : '') }
   function init (m) {
     spec = modalSpec(m, { title })
+    if (m === 'edit') spec.nested = 2
     F = spec.fields
     RT = m === 'edit' ? routesData(routes) : routesData('new', { page: 'New article', parentNoRoute: null })
     orig = Object.fromEntries(Object.entries(F).map(([k, f]) => [k, f.value]))
@@ -4100,7 +4732,7 @@ function pageModal (host, p, { mode = 'edit', logEl = null, onClose, hl = 2, tit
   }
   function panelHTML (t) {
     if (t.disabled) return `<div class="tabnote" role="note"><b>${esc(t.disabled.title)}</b><p>${esc(t.disabled.text)}</p></div>`
-    if (t.k === 'info') return infoTabHTML(spec, hl + 1)
+    if (t.k === 'info') return infoTabHTML(spec, hl + 1, RT)
     if (t.k === 'routes') return '<div data-routes></div>'
     const secs = spec.sections.filter(s => s.tab === t.k)
     return `<div class="form">${secs.map(s => `<div class="fsec${s.cols ? ' cols2' : ''}">${s.title ? `<h${hl + 1} class="fsh">${esc(s.title)}</h${hl + 1}>` : ''}${s.desc ? `<p class="fsd">${esc(s.desc)}</p>` : ''}<div class="fields">${s.fields.map(fieldHTML).join('')}${s.after || ''}</div></div>`).join('')}</div>`
@@ -4109,7 +4741,6 @@ function pageModal (host, p, { mode = 'edit', logEl = null, onClose, hl = 2, tit
     const create = spec.mode === 'create'
     host.innerHTML = `<div class="dlg has-tabs s-modal kit" role="dialog" aria-modal="true" aria-labelledby="${p}-t">
       <div class="dlg-h"><h${hl} class="dt" id="${p}-t">${esc(spec.title)}</h${hl}>
-        ${create ? '' : `<button type="button" class="btn ghost icon ovf" aria-label="More actions" data-ovf>${g('more')}</button>`}
         <button type="button" class="btn ghost icon" aria-label="Close" data-close>${g('x')}</button></div>
       <div class="dlg-tabs" role="tablist" aria-label="${esc(spec.title)}">${spec.tabs.map(t => `<button type="button" role="tab" class="tab" id="${p}-tab-${t.k}" aria-controls="${p}-pn-${t.k}" aria-selected="${t.k === tab}" tabindex="${t.k === tab ? 0 : -1}" data-tab="${t.k}"${t.disabled ? ' aria-disabled="true"' : ''}>${t.n}<span class="tb"></span></button>`).join('')}</div>
       <div class="dlg-b"><div data-notice></div>${spec.tabs.map(t => `<div class="dpanel" role="tabpanel" id="${p}-pn-${t.k}" aria-labelledby="${p}-tab-${t.k}" data-pn="${t.k}"${t.k === tab ? '' : ' hidden'}>${panelHTML(t)}</div>`).join('')}</div>
@@ -4169,12 +4800,11 @@ function pageModal (host, p, { mode = 'edit', logEl = null, onClose, hl = 2, tit
   }
   function paintChrome () {
     spec.tabs.forEach(t => {
-      const el = $(`[data-tab="${t.k}"] .tb`, host)
+      const tabEl = $(`[data-tab="${t.k}"]`, host)
+      if (t.disabled) { const el = $('.tb', tabEl); if (!el.dataset.key) { el.dataset.key = 'lock'; el.innerHTML = '<svg class="g lock" aria-hidden="true" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M4 7V5a4 4 0 1 1 8 0v2h1.5v8h-11V7H4Zm2 0h4V5a2 2 0 1 0-4 0v2Z"/></svg><span class="sr">, unavailable</span>' } return }
       const ks = Object.keys(F).filter(k => tabOf(k) === t.k)
-      const e = ks.filter(k => err[k]).length
-      const c = ks.filter(k => conf[k] && !conf[k].choice).length
-      const n = ks.filter(changed).length
-      el.innerHTML = e ? g('error', 'c-danger') + `<span class="sr">, ${e} to fix</span>` : c ? g('conflict', 'c-warning') + `<span class="sr">, ${c} to choose</span>` : n ? `<span class="udot" aria-hidden="true"></span><span class="sr">, ${n} unsaved</span>` : t.disabled ? `<svg class="g lock" aria-hidden="true" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M4 7V5a4 4 0 1 1 8 0v2h1.5v8h-11V7H4Zm2 0h4V5a2 2 0 1 0-4 0v2Z"/></svg><span class="sr">, unavailable</span>` : ''
+      const states = ks.map(k => err[k] ? 'error' : conf[k] && !conf[k].choice ? 'conflict' : '')
+      paintBadge(tabEl, badgeFor(states, ks.filter(changed).length), b => [b.c ? `${b.c} to choose` : '', b.e ? `${b.e} to fix` : '', b.n ? `${b.n} unsaved` : ''].filter(Boolean).join(', '))
     })
     const sv = $('[data-save]', host)
     const n = changedKeys().length
@@ -4203,6 +4833,8 @@ function pageModal (host, p, { mode = 'edit', logEl = null, onClose, hl = 2, tit
     $$('[data-pn]', host).forEach(pn => { pn.hidden = pn.dataset.pn !== k })
     closeMenu(); closePop()
     $$('.f.ta textarea', host).forEach(autosize)
+    const cp = k === 'info' && $('[data-delcopy]', host)
+    if (cp) { cp.innerHTML = delSentence(spec, RT); if (spec.pageDataCount > 0) log(`GET ${spec.iri}   (fresh: the Info tab was shown)`) }
   }
   function goTo (k) {
     if (rtp && rtp.isOpen() && tabOf(k) !== 'routes') { rtp.leave(() => goTo(k)); return }
@@ -4236,18 +4868,33 @@ function pageModal (host, p, { mode = 'edit', logEl = null, onClose, hl = 2, tit
       if (e.key === 'Escape' && !e.defaultPrevented && !cur && !openPop && !$('.cfm', host)) { e.preventDefault(); rtp && rtp.isOpen() ? rtp.back() : requestClose() }
     })
     $('.dlg', host).addEventListener('click', e => {
-      if (!e.target.closest('[data-delpage]')) return
-      const n = spec.pageDataCount
-      const tpl = n === undefined ? '' : n === null ? ' Pages built from this template are deleted too.' : n > 0 ? ` ${n} ${n === 1 ? 'page' : 'pages'} built from this template ${n === 1 ? 'is' : 'are'} deleted too.` : ''
-      askConfirm($('.dlg', host), {
-        title: `Delete the ${spec.what} ${spec.title}?`,
-        desc: `This can't be undone.${tpl}${RT.path ? ` Its route ${RT.path} stays but no longer shows a page.` : ''}${RT.children.length ? ` The ${RT.children.length} ${RT.children.length === 1 ? 'page' : 'pages'} nested under it ${RT.children.length === 1 ? 'is' : 'are'} kept and lose${RT.children.length === 1 ? 's' : ''} ${RT.children.length === 1 ? 'its' : 'their'} parent.` : ''}`,
-        keep: 'Don\'t delete', go: `Delete ${spec.what}`, typed: true,
-        onGo: () => { log(`DELETE ${spec.iri}\n← 204`); toast({ tone: 'success', title: `${spec.title} deleted`, desc: 'The modal closes and the list updates.' }) }
-      })
+      if (e.target.closest('[data-seetpl]')) { e.preventDefault(); toast({ tone: 'info', id: 'seetpl', title: `Opens the ${spec.pageDataCount} pages in a new tab`, desc: 'The page data list, filtered by this template.' }); return }
+      const b = e.target.closest('[data-delpage]')
+      if (!b || b.getAttribute('aria-busy') === 'true') return
+      b.setAttribute('aria-busy', 'true'); b.innerHTML = '<span class="spin" aria-hidden="true"></span>Checking'
+      log(`GET ${spec.iri}   (fresh, not cached: how many pages are built from it)`)
+      setTimeout(() => {
+        b.removeAttribute('aria-busy'); b.textContent = `Delete ${spec.what}`
+        const n = spec.pageDataCount
+        const cp = $('[data-delcopy]', host); if (cp) cp.innerHTML = delSentence(spec, RT, n)
+        const c = delPageCopy(spec, RT, n)
+        const ks = changedKeys()
+        askConfirm($('.dlg', host), {
+          title: `Delete “${spec.title}”?`,
+          lead: c.lead, kept: c.kept,
+          desc: `${ks.length ? `Your ${ks.length} unsaved ${ks.length === 1 ? 'change is' : 'changes are'} discarded too. ` : ''}This can't be undone.`,
+          keep: 'Don\'t delete', go: `Delete ${spec.what}`,
+          typed: { word: spec.title, label: `Type the ${spec.what} name, “${spec.title}”, to confirm`, what: `the ${spec.what} name` },
+          onGo: () => {
+            log(`DELETE ${spec.iri}\n← 204${n > 0 ? `\nThe ${n} page data built from it are removed from the store; routes and lists are re-fetched.` : ''}${ks.length ? '\nThe unsaved copy is discarded and the guard unregistered before closing.' : ''}`)
+            const t = spec.title
+            init(mode); render()
+            const h = $('.dt', host); h.tabIndex = -1; h.focus({ preventScroll: true })
+            toast({ tone: 'success', title: `${t} deleted`, desc: 'In the admin the modal closes, the list updates and focus goes to the next row.' })
+          }
+        })
+      }, 600)
     })
-    const ovf = $('[data-ovf]', host)
-    ovf && ovf.addEventListener('click', e => actionMenu(e.currentTarget, 'Page actions', [{ label: 'Duplicate' }, { label: 'Go to the Info tab to delete', fn: () => selectTab('info', true) }]))
     const tabs = $$('.tab', host)
     tabs.forEach((t, i) => {
       t.addEventListener('click', () => selectTab(t.dataset.tab))
@@ -4407,7 +5054,7 @@ function pageModal (host, p, { mode = 'edit', logEl = null, onClose, hl = 2, tit
       if (k === 'template') {
         spec.pageDataCount = spec.pageDataCount ? undefined : 14
         const pn = $('[data-pn="info"]', host)
-        if (pn) pn.innerHTML = infoTabHTML(spec, hl + 1)
+        if (pn) pn.innerHTML = infoTabHTML(spec, hl + 1, RT)
         toast({ tone: 'info', id: 'rsim', title: spec.pageDataCount ? 'Treated as a template used by 14 pages' : 'Treated as an ordinary page', desc: 'See Info → Delete this page.' })
         return
       }
@@ -4426,6 +5073,7 @@ function pageModal (host, p, { mode = 'edit', logEl = null, onClose, hl = 2, tit
       if (k !== 'fail' || !(rtp && rtp.isOpen())) selectTab('routes')
       const rp = $('[data-routes]', host)
       if (k !== 'fail' || !(rtp && rtp.isOpen())) rtp = rp ? routesPanel(rp, RT, rctx()) : null
+      const cp = $('[data-delcopy]', host); if (cp) cp.innerHTML = delSentence(spec, RT)
     },
     focusFirst () { const el = $('input,button.f', $('[data-pn]:not([hidden])', host)); el && el.focus() }
   }
@@ -4603,6 +5251,19 @@ function boot () {
     desk.sim(b.dataset.sim); phone.sim(b.dataset.sim)
   }))
 
+  const acD = addComponentDialog($('#ac-desk'), 'acd', { logEl: $('#ac-log') })
+  const acP = addComponentDialog($('#ac-phone'), 'acp')
+  $$('#ac-sim [data-acs]').forEach(b => b.addEventListener('click', () => {
+    const k = b.dataset.acs
+    for (const a of [acD, acP]) {
+      if (k === 'gal' || k === 'galery') a.type(k)
+      if (k === 'dyn') a.dyn()
+      if (k === 'reset') a.reset()
+      if (k === 'empty') { const on = b.getAttribute('aria-pressed') !== 'true'; a.empty(on) }
+    }
+    if (k === 'empty') b.setAttribute('aria-pressed', String(b.getAttribute('aria-pressed') !== 'true'))
+  }))
+  window.__ac = [acD, acP]
   const me = pageModal($('#modal-edit'), 'ma', { logEl: $('#modal-log'), hl: 3 })
   const mp = pageModal($('#modal-edit-phone'), 'mb', { hl: 3 })
   $$('#modal-sim [data-sim]').forEach(x => x.addEventListener('click', () => { me.sim(x.dataset.sim); mp.sim(x.dataset.sim) }))
@@ -4665,19 +5326,20 @@ function boot () {
     success: { tone: 'success', title: 'Published', desc: 'Hero section on Kitchens.' },
     info: { tone: 'info', title: 'Updated from your other window', desc: 'Title and Intro on Hero section.' },
     warning: { tone: 'warning', title: 'Mercure reconnected', desc: '3 components on this page changed while you were away.' },
-    error: { tone: 'error', id: 'unmounted', title: 'Title wasn’t saved', desc: 'You switched tabs before it could save.', actions: [{ label: 'Show me' }, { label: 'Retry' }, { label: 'Reset' }] },
-    errors: { tone: 'error', id: 'unmounted-many', title: '2 changes weren’t saved', desc: 'Title and Subtitle, on Hero section. Reset puts back their last saved values.', actions: [{ label: 'Show me' }, { label: 'Retry all' }, { label: 'Reset all' }] }
+    error: { tone: 'error', id: 'unmounted', title: 'Title wasn’t saved', desc: 'You switched tabs before it could save.', actions: [{ label: 'Show me', primary: true }, { label: 'Retry' }, { label: 'Reset' }] },
+    errors: { tone: 'error', id: 'unmounted-many', title: '2 changes weren’t saved', desc: 'Title and Subtitle, on Hero section. Reset puts back their last saved values.', actions: [{ label: 'Show me', primary: true }, { label: 'Retry all' }, { label: 'Reset all' }] }
   }
   $$('#toast-sim [data-t]').forEach(b => b.addEventListener('click', () => toast(TOASTS[b.dataset.t])))
-  $('#toast-static').innerHTML = ['success', 'warning', 'errors'].map(k => `<div class="toast static t-${TOASTS[k].tone}">${toastHTML(TOASTS[k])}</div>`).join('')
+  $('#toast-static').innerHTML = ['success', 'warning', 'errors'].map(k => toastSample(TOASTS[k])).join('')
   const OPTN = { a: ['A · Frosted', 'The menu surface at 85% with a blur. The tone is only in the glyph and a 3px start edge. Solid when blur is unsupported or transparency is reduced.'], b: ['B · Tinted frosted (chosen)', 'The same blur, with the surface mixed 12% toward the tone. Actions are underlined in the text colour. Worst-case text over the photo: 6.73:1.'], c: ['C · Solid tone', 'The tone as the background with white text. Each tone is dark enough for 4.5:1.'] }
   const bgTx = '<div class="bgtx" aria-hidden="true">Hand-built kitchens<span>Designed in Bath and made in our own workshop, every kitchen is drawn for the room it goes in.</span><span>Book a visit to the showroom and see the finishes in daylight.</span><span>Oak, walnut and painted tulipwood, with worktops in quartz and marble.</span><span>Every cabinet is assembled by hand and fitted by the people who built it.</span></div>'
   const demoSet = ['success', 'info', 'warning', 'error']
-  $('#toast-opts').innerHTML = Object.entries(OPTN).map(([k, [n, d]]) => `<div class="topt"><h4>${n}</h4><p>${d}</p>${[['busy', 'kit-light', 'Photo, light'], ['busy', 'kit-dark', 'Photo, dark'], ['plain', 'kit-light', 'Plain, light'], ['plain', 'kit-dark', 'Plain, dark']].map(([bg, th, cap]) => `<div class="kit ${th} tbg ${bg} ts-${k}" data-tbg="${bg}" role="group" aria-label="${n}, ${cap}">${bg === 'busy' ? bgTx : ''}<span class="tbg-cap">${cap}</span>${demoSet.map(t => `<div class="toast static t-${t}">${toastHTML(TOASTS[t])}</div>`).join('')}</div>`).join('')}</div>`).join('')
+  $('#toast-opts').innerHTML = Object.entries(OPTN).map(([k, [n, d]]) => `<div class="topt"><h4>${n}</h4><p>${d}</p>${[['busy', 'kit-light', 'Photo, light'], ['busy', 'kit-dark', 'Photo, dark'], ['plain', 'kit-light', 'Plain, light'], ['plain', 'kit-dark', 'Plain, dark']].map(([bg, th, cap]) => `<div class="kit ${th} tbg ${bg} ts-${k}" data-tbg="${bg}" role="group" aria-label="${n}, ${cap}">${bg === 'busy' ? bgTx : ''}<span class="tbg-cap">${cap}</span>${demoSet.map(t => toastSample(TOASTS[t])).join('')}</div>`).join('')}</div>`).join('')
   toastsEl.classList.add('ts-b')
+  $('#toast-static').classList.add('ts-b')
   $$('#toast-style [data-ts]').forEach(b => b.addEventListener('click', () => {
     $$('#toast-style [data-ts]').forEach(x => x.setAttribute('aria-pressed', String(x === b)))
-    toastsEl.classList.remove('ts-a', 'ts-b', 'ts-c'); toastsEl.classList.add('ts-' + b.dataset.ts)
+    for (const el of [toastsEl, $('#toast-static')]) { el.classList.remove('ts-a', 'ts-b', 'ts-c'); el.classList.add('ts-' + b.dataset.ts) }
     toast(TOASTS.success)
   }))
   $$('#search-sim [data-ss]').forEach(b => b.addEventListener('click', () => {
