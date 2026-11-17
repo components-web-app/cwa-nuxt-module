@@ -10,6 +10,7 @@ import {
   addServerTemplate,
   addTemplate,
   addTypeTemplate,
+  addVitePlugin,
   createResolver,
   defineNuxtModule,
   extendPages,
@@ -327,6 +328,23 @@ export default defineNuxtModule<CwaModuleOptions>({
         },
       })
     }
+
+    const reportedConfigCallSites = new Set<string>()
+    addVitePlugin({
+      name: 'cwa:define-cwa-config-call-sites',
+      enforce: 'pre',
+      transform(code: string, id: string) {
+        const filePath = id.split('?')[0]!
+        if (id.startsWith('\0') || filePath.includes('/node_modules/') || !/\bdefineCwaConfig\s*\(/.test(code)) {
+          return
+        }
+        if (isCwaTemplate({ filePath } as Component) || reportedConfigCallSites.has(filePath)) {
+          return
+        }
+        reportedConfigCallSites.add(filePath)
+        logger.warn(`${NAME}: the defineCwaConfig in ${filePath} has no effect, because the module only reads it in app/cwa/components/<Type>/<Type>.vue, app/cwa/components/<Type>/ui/*.vue, app/cwa/layouts/*.vue and app/cwa/pages/*.vue.`)
+      },
+    })
 
     function resolveCwaConfig(components: Component[]) {
       const declarations = scanCwaConfig(components)

@@ -17,6 +17,7 @@ vi.mock('@nuxt/kit', async () => {
     addImportsDir: vi.fn(),
     tryResolveModule: vi.fn(async (id: string) => `/node_modules/${id}`),
     addTemplate: vi.fn(),
+    addVitePlugin: vi.fn(),
     addServerTemplate: vi.fn(),
     addServerHandler: vi.fn(),
     addServerPlugin: vi.fn(),
@@ -1228,6 +1229,47 @@ export const styleClasses: CwaStyleClasses = {
         expect(warnings[0]).toContain('description')
         expect(warnings[0]).toContain('instantAdd')
         expect(warnings[0]).toContain('ignored')
+      })
+
+      describe('a defineCwaConfig call the scanner does not read', () => {
+        async function callSites() {
+          const logger = { info: vi.fn(), warn: vi.fn(), debug: vi.fn(), error: vi.fn(), success: vi.fn() }
+          vi.spyOn(nuxtKit, 'useLogger').mockReturnValue(logger as any)
+          await prepare()
+          const plugin = vi.mocked(nuxtKit.addVitePlugin).mock.calls
+            .map(([registered]) => registered as any)
+            .findLast(registered => registered?.name === 'cwa:define-cwa-config-call-sites')
+          const transform = (code: string, id: string) => plugin.transform(code, id)
+          const warnings = () => logger.warn.mock.calls.map(([message]) => message as string).filter(message => message.includes('defineCwaConfig'))
+          return { plugin, transform, warnings }
+        }
+        const call = `<script setup lang="ts">\ndefineCwaConfig({ name: 'Hero' })\n</script>\n`
+
+        test('a call in a file outside the scanned folders warns once naming the file', async () => {
+          const { plugin, transform, warnings } = await callSites()
+          expect(plugin.enforce).toBe('pre')
+
+          transform(call, 'components/HeaderMenuLinks.vue')
+          transform(call, 'components/HeaderMenuLinks.vue?vue&type=script&setup=true&lang.ts')
+          transform(`defineCwaConfig({ name: 'Hero' })`, 'cwa/components/Hero/useHero.ts')
+
+          expect(warnings()).toHaveLength(2)
+          expect(warnings()[0]).toContain('components/HeaderMenuLinks.vue')
+          expect(warnings()[0]).toContain('has no effect')
+          expect(warnings()[1]).toContain('cwa/components/Hero/useHero.ts')
+        })
+
+        test('a call in a scanned file does not warn', async () => {
+          const { transform, warnings } = await callSites()
+
+          transform(call, 'cwa/components/Hero/Hero.vue')
+          transform(call, 'cwa/components/Hero/ui/Wide.vue')
+          transform(call, 'cwa/layouts/primary.vue')
+          transform(call, 'cwa/pages/PrimaryPageTemplate.vue')
+          transform(`<script setup lang="ts">\nconst props = defineProps()\n</script>\n`, 'components/HeaderMenuLinks.vue')
+
+          expect(warnings()).toEqual([])
+        })
       })
 
       test('auto-imports neither generated template', async () => {

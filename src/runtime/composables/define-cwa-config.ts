@@ -1,3 +1,3 @@
 import type { CwaComponentConfig } from '#cwa/types'
 
-export function defineCwaConfig(_config: CwaComponentConfig): void {}
+export const defineCwaConfig = /* @__NO_SIDE_EFFECTS__ */ (_config: CwaComponentConfig): void => {}
