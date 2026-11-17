@@ -28,3 +28,8 @@ Verified by a checker per role and spot-checked by Claude. Apply in round 6 unle
 - **Design (designer):** soft buttons share the field fill, so actions look like inputs; section action on the heading line; the conflict diff looks like a link; phone toasts cover a full-screen dialog's header; trash icons always red in the tree; three different "more" glyphs; phone list status alignment, Scheduled vs Static confusion.
 - **Users:** Forwarding vs Redirects naming; a confirm's Cancel over the form's Cancel; "· Unsaved" in the link colour; two unlabelled dates on phone rows; the phone "New" glyph is a circled plus beside "+ Draft"; phone Routes recommendation wrapping.
 - Rejected by the checker: "removals land before the ~220 tabs migrate".
+
+## 4. List loading must look alive (Daniel)
+- Skeleton rows get a shimmer: a soft light band sweeping across every row in sync (one CSS gradient animation, 1.4 s loop), in both themes.
+- Under reduced motion the shimmer stops, so a spinner (the one animation we keep) plus "Loading pages…" sits above the skeleton instead. Show that text in all modes after about 1 s, and "Still loading…" after about 5 s, matching search.
+- `aria-busy="true"` on the list and one polite "Loading pages" announcement. The same rule applies to search's first-load skeleton and any other skeleton.
