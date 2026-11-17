@@ -13,6 +13,17 @@ export default defineNuxtConfig({
     'nuxt-og-image',
     '@vite-pwa/nuxt',
     'nuxt-svgo',
+    (_options, nuxt) => {
+      if (nuxt.options.dev) {
+        return
+      }
+      nuxt.hook('pages:extend', (pages) => {
+        const kit = pages.findIndex(page => page.path === '/kit')
+        if (kit !== -1) {
+          pages.splice(kit, 1)
+        }
+      })
+    },
   ],
   devtools: {
     enabled: true,

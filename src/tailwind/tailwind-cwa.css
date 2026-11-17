@@ -3,20 +3,13 @@
 @import 'tailwindcss/theme' layer(theme) prefix(cwa);
 @import 'tailwindcss/utilities' prefix(cwa);
 
+@source not "../../playground/app/pages/kit.vue";
+
 @plugin "@tailwindcss/forms" {
   strategy: base;
 }
 
-@custom-variant reduced-motion {
-  @media (prefers-reduced-motion: reduce) {
-    @slot;
-  }
-  &:where(.cwa\:reduce-motion, .cwa\:reduce-motion *) {
-    @slot;
-  }
-}
-
-@theme static {
+@theme {
   --color-surface: #1c1917;
   --color-surface-raised: #292524;
   --color-surface-menu: #292524;
@@ -42,7 +35,7 @@
   --color-accent: #2563eb;
   --color-accent-hover: #1d4ed8;
   --color-accent-fg: #60a5fa;
-  --color-accent-tint: rgb(37 99 235 / 0.28);
+  --color-accent-tint: color-mix(in srgb, var(--cwa-color-accent) 28%, var(--cwa-color-surface));
   --color-success: #9cdd05;
   --color-line-saving: #93c5fd;
   --color-line-saved: #9cdd05;
@@ -162,7 +155,7 @@
   --color-black: #000;
 
   --color-red-500: #ef4444;
-  --color-danger-dark: color-mix(in oklch, var(--color-red-800), transparent 20%);
+  --color-danger-dark: oklch(44.4% 0.177 26.899 / 0.8);
 
   --color-dark: #1c1917;
   --color-light: #f5f5f4;
@@ -184,59 +177,6 @@
   --z-index-dialog: 902;
   --z-index-notifications: 903;
   --z-index-context: 904;
-}
-
-@layer base {
-  .cwa\:theme-light {
-    --cwa-color-surface: #ffffff;
-    --cwa-color-surface-raised: #f5f5f4;
-    --cwa-color-surface-menu: #ffffff;
-    --cwa-color-button: #e7e5e4;
-    --cwa-color-shimmer: rgb(255 255 255 / 0.9);
-    --cwa-color-menu-highlight: #e7e5e4;
-    --cwa-color-field: #d6d3d1;
-    --cwa-color-field-hover: #c9c4c0;
-    --cwa-color-chip: #b8b2ad;
-    --cwa-color-field-danger: #dabfbd;
-    --cwa-color-field-warning: #dcc9ad;
-    --cwa-color-muted-on-field: #4f4a45;
-    --cwa-color-tree-line: #8a837e;
-    --cwa-color-toggle-off: #78716c;
-    --cwa-color-step-hover: rgb(28 25 23 / 0.16);
-    --cwa-color-step-press: rgb(28 25 23 / 0.3);
-    --cwa-color-type-static: #2563eb;
-    --cwa-color-type-dynamic: #a16207;
-    --cwa-color-line: #d6d3d1;
-    --cwa-color-fg: #1c1917;
-    --cwa-color-fg-secondary: #57534e;
-    --cwa-color-fg-muted: #57534e;
-    --cwa-color-accent: #2563eb;
-    --cwa-color-accent-hover: #1d4ed8;
-    --cwa-color-accent-fg: #1d4ed8;
-    --cwa-color-accent-tint: rgb(37 99 235 / 0.12);
-    --cwa-color-success: #3f6212;
-    --cwa-color-line-saving: #1d4ed8;
-    --cwa-color-line-saved: #3f6212;
-    --cwa-color-line-danger: #991b1b;
-    --cwa-color-line-warning: #92400e;
-    --cwa-color-warning: #b45309;
-    --cwa-color-danger: #b91c1c;
-    --cwa-color-danger-fill: #dc2626;
-    --cwa-color-danger-fill-hover: #b91c1c;
-    --cwa-color-danger-fg: #b91c1c;
-    --cwa-color-highlight: #e30a6c;
-    --cwa-shadow-popover: 0 8px 24px rgb(0 0 0 / 0.14);
-  }
-
-  @media (pointer: coarse) {
-    :root, :host {
-      --cwa-spacing-control: 2.75rem;
-      --cwa-spacing-option: 2.75rem;
-      --cwa-spacing-manager-tabs: 2.75rem;
-      --cwa-spacing-manager-row: 4.25rem;
-      --cwa-spacing-manager: 7rem;
-    }
-  }
 }
 
 @layer components {

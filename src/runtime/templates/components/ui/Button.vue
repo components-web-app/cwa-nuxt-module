@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, useId } from 'vue'
 import type { Component } from 'vue'
 import Spinner from './Spinner.vue'
-
-type ButtonVariant = 'solid' | 'soft' | 'ghost'
-type ButtonTone = 'accent' | 'danger'
+import { buttonLooks } from './kit-looks'
+import type { ButtonTone, ButtonVariant } from './kit-looks'
 
 const {
   label,
@@ -15,6 +14,7 @@ const {
   iconOnly = false,
   loading = false,
   disabled = false,
+  disabledReason,
   type = 'button',
 } = defineProps<{
   label: string
@@ -25,27 +25,17 @@ const {
   iconOnly?: boolean
   loading?: boolean
   disabled?: boolean
+  disabledReason?: string
   type?: 'button' | 'submit' | 'reset'
 }>()
 
 const emit = defineEmits<{ click: [event: MouseEvent] }>()
 
-const looks: Record<ButtonVariant, Record<ButtonTone, { rest: string, hover: string }>> = {
-  solid: {
-    accent: { rest: 'cwa:bg-accent cwa:text-white', hover: 'cwa:hover:bg-accent-hover' },
-    danger: { rest: 'cwa:bg-danger-fill cwa:text-white', hover: 'cwa:hover:bg-danger-fill-hover' },
-  },
-  soft: {
-    accent: { rest: 'cwa:bg-button cwa:text-fg', hover: 'cwa:hover:bg-field-hover' },
-    danger: { rest: 'cwa:bg-button cwa:text-danger-fg', hover: 'cwa:hover:bg-field-danger cwa:hover:text-fg' },
-  },
-  ghost: {
-    accent: { rest: 'cwa:bg-transparent cwa:text-fg', hover: 'cwa:hover:bg-button' },
-    danger: { rest: 'cwa:bg-transparent cwa:text-danger-fg', hover: 'cwa:hover:bg-button' },
-  },
-}
-
 const inactive = computed(() => loading || disabled)
+
+const reason = computed(() => disabled ? disabledReason : undefined)
+
+const reasonId = useId()
 
 const hasLead = computed(() => loading || !!icon)
 
@@ -60,7 +50,7 @@ const boxClasses = computed(() => {
 })
 
 const classes = computed(() => {
-  const look = looks[variant][tone]
+  const look = buttonLooks[variant][tone]
   return [
     boxClasses.value,
     size === 'sm' ? 'cwa:text-helper' : 'cwa:text-label',
@@ -85,7 +75,9 @@ function onClick(event: MouseEvent) {
     :aria-label="iconOnly ? label : undefined"
     :aria-disabled="inactive ? 'true' : undefined"
     :aria-busy="loading ? 'true' : undefined"
-    class="cwa:inline-flex cwa:shrink-0 cwa:items-center cwa:justify-center cwa:gap-2 cwa:whitespace-nowrap cwa:font-semibold cwa:leading-5 cwa:transition-colors cwa:duration-(--cwa-duration-fast) cwa:ease-out cwa:reduced-motion:transition-none cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-accent-fg"
+    :aria-describedby="reason ? reasonId : undefined"
+    :title="reason"
+    class="cwa:inline-flex cwa:shrink-0 cwa:items-center cwa:justify-center cwa:gap-2 cwa:whitespace-nowrap cwa:font-semibold cwa:leading-5 cwa:transition-colors cwa:duration-(--cwa-duration-fast) cwa:ease-out cwa:motion-reduce:transition-none cwa:outline-1 cwa:outline-transparent cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-accent-fg"
     :class="classes"
     @click="onClick"
   >
@@ -103,5 +95,11 @@ function onClick(event: MouseEvent) {
       v-if="!iconOnly"
       class="cwa:min-w-0"
     >{{ label }}</span>
+    <span
+      v-if="reason"
+      :id="reasonId"
+      aria-hidden="true"
+      class="cwa:sr-only"
+    >{{ reason }}</span>
   </button>
 </template>

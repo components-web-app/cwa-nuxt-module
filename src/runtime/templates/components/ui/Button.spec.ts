@@ -1,7 +1,8 @@
 // @vitest-environment happy-dom
-import { describe, expect, test } from 'vitest'
+import { afterEach, describe, expect, test } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { h } from 'vue'
+import { axe } from '../../../../../test/utils/axe'
 import Button from './Button.vue'
 import Spinner from './Spinner.vue'
 
@@ -12,6 +13,10 @@ function hoverClasses(classes: string[]) {
 }
 
 describe('CwaUiButton (#456)', () => {
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
   test('is a square, soft, accent-toned button named by its label, which never submits a form by accident', () => {
     const wrapper = mount(Button, { props: { label: 'Cancel' } })
 
@@ -81,10 +86,17 @@ describe('CwaUiButton (#456)', () => {
     expect(wrapper.classes()).toEqual(expect.arrayContaining(['cwa:focus-visible:outline-2', 'cwa:focus-visible:outline-offset-2', 'cwa:focus-visible:outline-accent-fg']))
   })
 
+  test('keeps a visible box in forced colours, where its fill is dropped, from a transparent outline that takes no space', () => {
+    const wrapper = mount(Button, { props: { label: 'Go', variant: 'ghost' } })
+
+    expect(wrapper.classes()).toEqual(expect.arrayContaining(['cwa:outline-1', 'cwa:outline-transparent']))
+    expect(wrapper.classes().some(c => /(^|:)border/.test(c))).toBe(false)
+  })
+
   test('colours change over 120 ms, and not at all under reduced motion', () => {
     const wrapper = mount(Button, { props: { label: 'Go' } })
 
-    expect(wrapper.classes()).toEqual(expect.arrayContaining(['cwa:transition-colors', 'cwa:duration-(--cwa-duration-fast)', 'cwa:reduced-motion:transition-none']))
+    expect(wrapper.classes()).toEqual(expect.arrayContaining(['cwa:transition-colors', 'cwa:duration-(--cwa-duration-fast)', 'cwa:motion-reduce:transition-none']))
   })
 
   test('emits click when it can act', async () => {
@@ -140,5 +152,68 @@ describe('CwaUiButton (#456)', () => {
     expect(wrapper.attributes('aria-label')).toBe('Delete')
     expect(wrapper.findComponent(Spinner).exists()).toBe(true)
     expect(wrapper.find('[data-testid="plus"]').exists()).toBe(false)
+  })
+
+  test('a disabled button with a reason gives it as its description and as a tooltip, without changing its name', () => {
+    const wrapper = mount(Button, { props: { label: 'Publish', disabled: true, disabledReason: 'Nothing has changed since the last save' } })
+
+    const id = wrapper.attributes('aria-describedby')
+    expect(id).toBeTruthy()
+    const reason = wrapper.get(`[id="${id}"]`)
+    expect(reason.text()).toBe('Nothing has changed since the last save')
+    expect(reason.classes()).toContain('cwa:sr-only')
+    expect(reason.attributes('aria-hidden')).toBe('true')
+    expect(wrapper.attributes('title')).toBe('Nothing has changed since the last save')
+    expect(wrapper.get('span:not([aria-hidden])').text()).toBe('Publish')
+  })
+
+  test('each button on a page has its own reason id', () => {
+    const wrapper = mount({
+      render: () => [
+        h(Button, { label: 'Publish', disabled: true, disabledReason: 'One' }),
+        h(Button, { label: 'Delete', disabled: true, disabledReason: 'Two' }),
+      ],
+    })
+
+    const [first, second] = wrapper.findAll('button')
+    expect(first!.attributes('aria-describedby')).not.toBe(second!.attributes('aria-describedby'))
+    expect(wrapper.get(`[id="${second!.attributes('aria-describedby')}"]`).text()).toBe('Two')
+  })
+
+  test('a reason is only given while the button is disabled', async () => {
+    const wrapper = mount(Button, { props: { label: 'Publish', disabledReason: 'Nothing has changed since the last save' } })
+
+    expect(wrapper.attributes('aria-describedby')).toBeUndefined()
+    expect(wrapper.attributes('title')).toBeUndefined()
+    expect(wrapper.text()).toBe('Publish')
+
+    await wrapper.setProps({ disabled: true })
+    expect(wrapper.attributes('aria-describedby')).toBeTruthy()
+
+    await wrapper.setProps({ loading: true, disabled: false })
+    expect(wrapper.attributes('aria-describedby')).toBeUndefined()
+  })
+
+  describe('has no axe violations', () => {
+    const states = {
+      'rest': {},
+      'with an icon': { icon: Plus },
+      'disabled': { disabled: true },
+      'disabled with a reason': { disabled: true, disabledReason: 'Nothing has changed since the last save' },
+      'loading': { loading: true },
+      'small': { size: 'sm' },
+      'icon-only': { icon: Plus, iconOnly: true },
+      'icon-only, small': { icon: Plus, iconOnly: true, size: 'sm' },
+      'icon-only, loading': { icon: Plus, iconOnly: true, loading: true },
+      'icon-only, disabled with a reason': { icon: Plus, iconOnly: true, disabled: true, disabledReason: 'Nothing to remove' },
+    } as const
+    const cases = (['solid', 'soft', 'ghost'] as const).flatMap(variant => (['accent', 'danger'] as const).flatMap(tone =>
+      Object.entries(states).map(([state, props]) => [`${variant} ${tone}, ${state}`, { variant, tone, ...props }] as const)))
+
+    test.each(cases)('%s', async (_, props) => {
+      const wrapper = mount(Button, { props: { label: 'Publish', ...props }, attachTo: document.body })
+
+      expect(await axe(wrapper.element)).toHaveNoViolations()
+    })
   })
 })

@@ -11,7 +11,7 @@ const sizeClasses = computed(() => size === 'sm' ? 'cwa:size-3 cwa:border-[1.5px
 <template>
   <span
     aria-hidden="true"
-    class="cwa:inline-block cwa:shrink-0 cwa:rounded-full cwa:border-current/28 cwa:border-t-current cwa:animate-spinner cwa:reduced-motion:animate-spinner-reduced"
+    class="cwa:inline-block cwa:shrink-0 cwa:rounded-full cwa:border-current/28 cwa:border-t-current cwa:animate-spinner cwa:motion-reduce:animate-spinner-reduced"
     :class="sizeClasses"
   />
 </template>

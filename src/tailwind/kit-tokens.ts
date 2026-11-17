@@ -1,46 +1,53 @@
+import { badgeLookColours, badgeTintPercent, buttonLookColours } from '../runtime/templates/components/ui/kit-looks'
+import type { BadgeTone, ButtonTone, ButtonVariant, KitLookColour } from '../runtime/templates/components/ui/kit-looks'
+
+export type KitTheme = 'dark' | 'light'
+
+export type KitTokenValue = string | { mix: string, percent: number }
+
 export const kitColourTokens = [
-  { name: 'surface', use: 'Bar, modal and page' },
-  { name: 'surface-raised', use: 'Modal footer' },
-  { name: 'surface-menu', use: 'Menu, popover and toast' },
-  { name: 'button', use: 'Soft button fill' },
-  { name: 'shimmer', use: 'The band sweeping across skeletons' },
-  { name: 'menu-highlight', use: 'Highlighted menu option' },
-  { name: 'field', use: 'Every input\'s fill' },
-  { name: 'field-hover', use: 'Field hover, soft button hover' },
-  { name: 'chip', use: 'Chips inside a field' },
-  { name: 'field-danger', use: 'Field in error, soft danger button hover' },
-  { name: 'field-warning', use: 'Field in conflict' },
-  { name: 'muted-on-field', use: 'Placeholders and muted text on a fill' },
-  { name: 'tree-line', use: 'Tree connector lines' },
-  { name: 'toggle-off', use: 'Toggle track when off' },
-  { name: 'step-hover', use: 'Hover on a control nested in a field' },
-  { name: 'step-press', use: 'A nested control while pressed' },
-  { name: 'type-static', use: 'Static page type' },
-  { name: 'type-dynamic', use: 'Dynamic page type' },
-  { name: 'line', use: 'Dividers only' },
-  { name: 'fg', use: 'Text and values' },
-  { name: 'fg-secondary', use: 'Section headings in modals and admin pages' },
-  { name: 'fg-muted', use: 'Labels in the bar, helper text' },
-  { name: 'accent', use: 'Primary button fill, selected tab, toggle on' },
-  { name: 'accent-hover', use: 'Primary button hover' },
-  { name: 'accent-fg', use: 'Focus ring, links, accent text' },
-  { name: 'accent-tint', use: 'Accent badge fill' },
-  { name: 'success', use: 'Saved glyph' },
-  { name: 'line-saving', use: 'Bar status line while saving' },
-  { name: 'line-saved', use: 'Bar status line once saved' },
-  { name: 'line-danger', use: 'Bar status line, error' },
-  { name: 'line-warning', use: 'Bar status line, conflict' },
-  { name: 'warning', use: 'Conflict and long-wait glyph' },
-  { name: 'danger', use: 'Error glyph' },
-  { name: 'danger-fill', use: 'Destructive button fill' },
-  { name: 'danger-fill-hover', use: 'Destructive button hover' },
-  { name: 'danger-fg', use: 'Error text' },
-  { name: 'highlight', use: 'Reorder, clone and selection' },
-] as const
+  { name: 'surface', use: 'Bar, modal and page', dark: '#1c1917', light: '#ffffff' },
+  { name: 'surface-raised', use: 'Modal footer', dark: '#292524', light: '#f5f5f4' },
+  { name: 'surface-menu', use: 'Menu, popover and toast', dark: '#292524', light: '#ffffff' },
+  { name: 'button', use: 'Soft button fill', dark: '#44403c', light: '#e7e5e4' },
+  { name: 'shimmer', use: 'The band sweeping across skeletons', dark: 'rgb(255 255 255 / 0.24)', light: 'rgb(255 255 255 / 0.9)' },
+  { name: 'menu-highlight', use: 'Highlighted menu option', dark: '#57534e', light: '#e7e5e4' },
+  { name: 'field', use: 'Every input\'s fill', dark: '#57534e', light: '#d6d3d1' },
+  { name: 'field-hover', use: 'Field hover, soft button hover', dark: '#625d58', light: '#c9c4c0' },
+  { name: 'chip', use: 'Chips inside a field', dark: '#6e6964', light: '#b8b2ad' },
+  { name: 'field-danger', use: 'Field in error, soft danger button hover', dark: '#6f514c', light: '#dabfbd' },
+  { name: 'field-warning', use: 'Field in conflict', dark: '#6d5e45', light: '#dcc9ad' },
+  { name: 'muted-on-field', use: 'Placeholders and muted text on a fill', dark: '#e7e5e4', light: '#4f4a45' },
+  { name: 'tree-line', use: 'Tree connector lines', dark: '#78716c', light: '#8a837e' },
+  { name: 'toggle-off', use: 'Toggle track when off', dark: '#78716c', light: '#78716c' },
+  { name: 'step-hover', use: 'Hover on a control nested in a field', dark: 'rgb(255 255 255 / 0.17)', light: 'rgb(28 25 23 / 0.16)' },
+  { name: 'step-press', use: 'A nested control while pressed', dark: 'rgb(255 255 255 / 0.3)', light: 'rgb(28 25 23 / 0.3)' },
+  { name: 'type-static', use: 'Static page type', dark: '#60a5fa', light: '#2563eb' },
+  { name: 'type-dynamic', use: 'Dynamic page type', dark: '#facc15', light: '#a16207' },
+  { name: 'line', use: 'Dividers only', dark: '#44403c', light: '#d6d3d1' },
+  { name: 'fg', use: 'Text and values', dark: '#f5f5f4', light: '#1c1917' },
+  { name: 'fg-secondary', use: 'Section headings in modals and admin pages', dark: '#d6d3d1', light: '#57534e' },
+  { name: 'fg-muted', use: 'Labels in the bar, helper text', dark: '#a8a29e', light: '#57534e' },
+  { name: 'accent', use: 'Primary button fill, selected tab, toggle on', dark: '#2563eb', light: '#2563eb' },
+  { name: 'accent-hover', use: 'Primary button hover', dark: '#1d4ed8', light: '#1d4ed8' },
+  { name: 'accent-fg', use: 'Focus ring, links, accent text', dark: '#60a5fa', light: '#1d4ed8' },
+  { name: 'accent-tint', use: 'Accent badge fill', dark: { mix: 'accent', percent: 28 }, light: { mix: 'accent', percent: 12 } },
+  { name: 'success', use: 'Saved glyph', dark: '#9cdd05', light: '#3f6212' },
+  { name: 'line-saving', use: 'Bar status line while saving', dark: '#93c5fd', light: '#1d4ed8' },
+  { name: 'line-saved', use: 'Bar status line once saved', dark: '#9cdd05', light: '#3f6212' },
+  { name: 'line-danger', use: 'Bar status line, error', dark: '#fecaca', light: '#991b1b' },
+  { name: 'line-warning', use: 'Bar status line, conflict', dark: '#fcd34d', light: '#92400e' },
+  { name: 'warning', use: 'Conflict and long-wait glyph', dark: '#ffaa00', light: '#b45309' },
+  { name: 'danger', use: 'Error glyph', dark: '#fca5a5', light: '#b91c1c' },
+  { name: 'danger-fill', use: 'Destructive button fill', dark: '#dc2626', light: '#dc2626' },
+  { name: 'danger-fill-hover', use: 'Destructive button hover', dark: '#b91c1c', light: '#b91c1c' },
+  { name: 'danger-fg', use: 'Error text', dark: '#fca5a5', light: '#b91c1c' },
+  { name: 'highlight', use: 'Reorder, clone and selection', dark: '#e30a6c', light: '#e30a6c' },
+] as const satisfies readonly { name: string, use: string, dark: KitTokenValue, light: KitTokenValue }[]
 
 export type KitColourToken = typeof kitColourTokens[number]['name']
 
-export type KitColour = KitColourToken | 'white' | { tint: KitColourToken, amount: number }
+export type KitColour = KitColourToken | 'white' | 'transparent' | { tint: KitColourToken, percent: number }
 
 export interface KitContrastPair {
   fg: KitColour
@@ -49,9 +56,52 @@ export interface KitContrastPair {
   use: string
 }
 
-export const kitBadgeTintAmount = 0.18
+const tokenValues = new Map<string, Record<KitTheme, KitTokenValue>>(kitColourTokens.map(token => [token.name, token]))
 
-const badgeTones = ['success', 'warning', 'danger'] as const
+function isToken(name: string): name is KitColourToken {
+  return tokenValues.has(name)
+}
+
+function asKitColour(colour: KitLookColour): KitColour {
+  if (typeof colour === 'object') {
+    if (!isToken(colour.tint)) {
+      throw new Error(`"${colour.tint}" is not a kit colour token`)
+    }
+    return { tint: colour.tint, percent: badgeTintPercent }
+  }
+  if (colour === 'white' || colour === 'transparent' || isToken(colour)) {
+    return colour
+  }
+  throw new Error(`"${colour}" is not a kit colour token`)
+}
+
+function capitalise(word: string): string {
+  return `${word[0]!.toUpperCase()}${word.slice(1)}`
+}
+
+const buttonVariants: ButtonVariant[] = ['solid', 'soft', 'ghost']
+const buttonTones: ButtonTone[] = ['accent', 'danger']
+const badgeTones: BadgeTone[] = ['neutral', 'accent', 'success', 'warning', 'danger']
+
+function buttonPairs(): KitContrastPair[] {
+  return buttonVariants.flatMap(variant => buttonTones.flatMap((tone) => {
+    const { rest, hover } = buttonLookColours(variant, tone)
+    return [
+      { fg: asKitColour(rest.fg), bg: asKitColour(rest.bg), min: 4.5 as const, use: `${capitalise(variant)} ${tone} button` },
+      { fg: asKitColour(hover.fg), bg: asKitColour(hover.bg), min: 4.5 as const, use: `${capitalise(variant)} ${tone} button on hover` },
+    ]
+  }))
+}
+
+function badgePairs(): KitContrastPair[] {
+  return badgeTones.flatMap((tone) => {
+    const { text, fill, mark } = badgeLookColours(tone)
+    return [
+      { fg: asKitColour(text), bg: asKitColour(fill), min: 4.5 as const, use: `${capitalise(tone)} badge` },
+      { fg: asKitColour(mark), bg: asKitColour(fill), min: 3 as const, use: `${capitalise(tone)} badge dot` },
+    ]
+  })
+}
 
 export const kitContrastPairs: KitContrastPair[] = [
   { fg: 'fg', bg: 'surface', min: 4.5, use: 'Text' },
@@ -79,21 +129,21 @@ export const kitContrastPairs: KitContrastPair[] = [
   { fg: 'type-dynamic', bg: 'surface', min: 3, use: 'Dynamic page marker' },
   { fg: 'toggle-off', bg: 'surface', min: 3, use: 'Toggle track, off' },
   { fg: 'tree-line', bg: 'surface', min: 3, use: 'Tree line' },
-  { fg: 'white', bg: 'accent', min: 4.5, use: 'Solid button' },
-  { fg: 'white', bg: 'accent-hover', min: 4.5, use: 'Solid button on hover' },
-  { fg: 'white', bg: 'danger-fill', min: 4.5, use: 'Solid danger button' },
-  { fg: 'white', bg: 'danger-fill-hover', min: 4.5, use: 'Solid danger button on hover' },
-  { fg: 'fg', bg: 'button', min: 4.5, use: 'Soft button' },
-  { fg: 'danger-fg', bg: 'button', min: 4.5, use: 'Soft danger button, ghost danger on hover' },
-  { fg: 'fg', bg: 'field-danger', min: 4.5, use: 'Soft danger button on hover' },
-  { fg: 'fg', bg: 'accent-tint', min: 4.5, use: 'Accent badge' },
-  { fg: 'accent-fg', bg: 'accent-tint', min: 3, use: 'Accent badge dot' },
-  { fg: 'fg-muted', bg: 'field', min: 3, use: 'Neutral badge dot' },
-  ...badgeTones.flatMap(tone => [
-    { fg: 'fg' as const, bg: { tint: tone, amount: kitBadgeTintAmount }, min: 4.5 as const, use: `${tone[0]!.toUpperCase()}${tone.slice(1)} badge` },
-    { fg: tone, bg: { tint: tone, amount: kitBadgeTintAmount }, min: 3 as const, use: `${tone[0]!.toUpperCase()}${tone.slice(1)} badge dot` },
-  ]),
+  ...buttonPairs(),
+  ...badgePairs(),
 ]
+
+export function kitTokenCss(value: KitTokenValue): string {
+  return typeof value === 'string' ? value : `color-mix(in srgb, var(--cwa-color-${value.mix}) ${value.percent}%, var(--cwa-color-surface))`
+}
+
+export function kitThemeStyle(theme: KitTheme): Record<string, string> {
+  return Object.fromEntries(kitColourTokens.map(token => [`--cwa-color-${token.name}`, kitTokenCss(token[theme])]))
+}
+
+export function kitTokenValue(token: KitColourToken, theme: KitTheme): KitTokenValue {
+  return tokenValues.get(token)![theme]
+}
 
 export type Rgba = [number, number, number, number]
 
@@ -131,23 +181,37 @@ export function contrastRatio(fg: Rgba, bg: Rgba): number {
   return (high! + 0.05) / (low! + 0.05)
 }
 
-export function resolveKitColour(colour: KitColour, read: (token: KitColourToken) => string): Rgba {
-  const surface = parseColour(read('surface'))
+function mix(top: Rgba, bottom: Rgba, percent: number): Rgba {
+  const amount = percent / 100
+  return [0, 1, 2].map(i => top[i]! * amount + bottom[i]! * (1 - amount)).concat(1) as Rgba
+}
+
+export function resolveKitColour(colour: KitColour, theme: KitTheme): Rgba {
   if (colour === 'white') {
     return [255, 255, 255, 1]
   }
-  if (typeof colour === 'object') {
-    const tone = over(parseColour(read(colour.tint)), surface)
-    return [0, 1, 2].map(i => tone[i]! * colour.amount + surface[i]! * (1 - colour.amount)).concat(1) as Rgba
+  const surface = parseColour(kitTokenValue('surface', theme) as string)
+  if (colour === 'transparent') {
+    return surface
   }
-  const value = parseColour(read(colour))
-  return value[3] < 1 ? over(value, surface) : value
+  if (typeof colour === 'object') {
+    return mix(resolveKitColour(colour.tint, theme), surface, colour.percent)
+  }
+  const value = kitTokenValue(colour, theme)
+  if (typeof value === 'object') {
+    return mix(resolveKitColour(value.mix as KitColourToken, theme), surface, value.percent)
+  }
+  const parsed = parseColour(value)
+  return parsed[3] < 1 ? over(parsed, surface) : parsed
 }
 
-export function measureKitPair(pair: KitContrastPair, read: (token: KitColourToken) => string): number {
-  return contrastRatio(resolveKitColour(pair.fg, read), resolveKitColour(pair.bg, read))
+export function measureKitPair(pair: KitContrastPair, theme: KitTheme): number {
+  return contrastRatio(resolveKitColour(pair.fg, theme), resolveKitColour(pair.bg, theme))
 }
 
 export function kitColourLabel(colour: KitColour): string {
-  return typeof colour === 'object' ? `${colour.tint} tint` : colour
+  if (colour === 'transparent') {
+    return 'surface (transparent)'
+  }
+  return typeof colour === 'object' ? `${colour.tint} at ${colour.percent}%` : colour
 }

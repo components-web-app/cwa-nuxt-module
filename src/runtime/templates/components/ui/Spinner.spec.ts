@@ -1,9 +1,15 @@
 // @vitest-environment happy-dom
-import { describe, expect, test } from 'vitest'
+import { afterEach, describe, expect, test } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { h } from 'vue'
+import { axe } from '../../../../../test/utils/axe'
 import Spinner from './Spinner.vue'
 
 describe('CwaUiSpinner (#456)', () => {
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
   test('is decoration only: hidden from assistive technology, which hears the busy state from its control', () => {
     const wrapper = mount(Spinner)
 
@@ -25,6 +31,12 @@ describe('CwaUiSpinner (#456)', () => {
   test('is the only motion that repeats, and turns once every 2 s under reduced motion instead of stopping', () => {
     const wrapper = mount(Spinner)
 
-    expect(wrapper.classes()).toEqual(expect.arrayContaining(['cwa:animate-spinner', 'cwa:reduced-motion:animate-spinner-reduced']))
+    expect(wrapper.classes()).toEqual(expect.arrayContaining(['cwa:animate-spinner', 'cwa:motion-reduce:animate-spinner-reduced']))
+  })
+
+  test.each(['sm', 'md'] as const)('has no axe violations at %s, inside the busy control it decorates', async (size) => {
+    const wrapper = mount({ render: () => h('button', { 'type': 'button', 'aria-busy': 'true' }, [h(Spinner, { size }), 'Saving']) }, { attachTo: document.body })
+
+    expect(await axe(wrapper.element)).toHaveNoViolations()
   })
 })

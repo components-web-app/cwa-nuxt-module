@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
+import { computed, ref } from 'vue'
 import { definePageMeta, useHead } from '#imports'
 import {
   CwaUiBadge,
@@ -10,8 +10,8 @@ import {
   CwaUiIconXMarkIcon,
   CwaUiSpinner,
 } from '#components'
-import { kitColourLabel, kitColourTokens, kitContrastPairs, measureKitPair } from '../../../src/tailwind/kit-tokens'
-import type { KitColourToken } from '../../../src/tailwind/kit-tokens'
+import { badgeTintPercent } from '../../../src/runtime/templates/components/ui/kit-looks'
+import { kitColourLabel, kitColourTokens, kitContrastPairs, kitThemeStyle, kitTokenCss, measureKitPair } from '../../../src/tailwind/kit-tokens'
 
 definePageMeta({
   cwa: {
@@ -22,23 +22,9 @@ definePageMeta({
 useHead({ title: 'CWA admin UI kit' })
 
 const light = ref(false)
-const reducedMotion = ref(false)
-const root = useTemplateRef<HTMLElement>('root')
-const values = ref<Partial<Record<KitColourToken, string>>>({})
-const ratios = ref<(number | undefined)[]>([])
-
-function measure() {
-  if (!root.value) {
-    return
-  }
-  const style = getComputedStyle(root.value)
-  const read = (token: KitColourToken) => style.getPropertyValue(`--cwa-color-${token}`).trim()
-  values.value = Object.fromEntries(kitColourTokens.map(({ name }) => [name, read(name)]))
-  ratios.value = kitContrastPairs.map(pair => measureKitPair(pair, read))
-}
-
-onMounted(measure)
-watch(light, () => nextTick(measure))
+const theme = computed(() => light.value ? 'light' : 'dark')
+const themeStyle = computed(() => kitThemeStyle(theme.value))
+const ratios = computed(() => kitContrastPairs.map(pair => measureKitPair(pair, theme.value)))
 
 const variants = ['solid', 'soft', 'ghost'] as const
 const tones = ['accent', 'danger'] as const
@@ -53,9 +39,8 @@ const badgeTones = [
 
 <template>
   <div
-    ref="root"
     class="kit"
-    :class="{ 'cwa:theme-light': light, 'cwa:reduce-motion': reducedMotion }"
+    :style="themeStyle"
   >
     <header class="kit-head">
       <h1>CWA admin UI kit</h1>
@@ -69,16 +54,10 @@ const badgeTones = [
           >
           <span>Light theme</span>
         </label>
-        <label class="kit-switch">
-          <input
-            v-model="reducedMotion"
-            type="checkbox"
-            role="switch"
-            data-testid="kit-reduced-motion"
-          >
-          <span>Reduced motion</span>
-        </label>
       </div>
+      <p class="kit-note">
+        To see reduced motion, use DevTools' "Emulate CSS prefers-reduced-motion".
+      </p>
     </header>
 
     <main>
@@ -116,7 +95,7 @@ const badgeTones = [
                   </span>
                 </td>
                 <td>{{ token.use }}</td>
-                <td><code>{{ values[token.name] ?? '' }}</code></td>
+                <td><code>{{ kitTokenCss(token[theme]) }}</code></td>
               </tr>
             </tbody>
           </table>
@@ -124,7 +103,7 @@ const badgeTones = [
 
         <h3>Measured contrast</h3>
         <p class="kit-note">
-          Measured in this theme from the values above. Text needs 4.5:1, glyphs and lines 3:1, against the fill they sit on; a badge's tint is its tone at 18% over the surface.
+          Measured in this theme from the values above, which come from <code>kit-tokens.ts</code>; the specs check that <code>cwa.css</code> matches them. Text needs 4.5:1, glyphs and lines 3:1, against the fill they sit on; a badge's tint is its tone at {{ badgeTintPercent }}% over the surface.
         </p>
         <div class="kit-scroll">
           <table data-testid="kit-contrast">
@@ -161,13 +140,13 @@ const badgeTones = [
                 <td><code>{{ kitColourLabel(pair.fg) }}</code> on <code>{{ kitColourLabel(pair.bg) }}</code></td>
                 <td>{{ pair.use }}</td>
                 <td class="kit-num">
-                  {{ ratios[index] === undefined ? '' : `${ratios[index]!.toFixed(2)}:1` }}
+                  {{ ratios[index]!.toFixed(2) }}:1
                 </td>
                 <td class="kit-num">
                   {{ pair.min }}:1
                 </td>
-                <td :data-result="ratios[index] === undefined ? undefined : ratios[index]! >= pair.min ? 'pass' : 'fail'">
-                  {{ ratios[index] === undefined ? '' : ratios[index]! >= pair.min ? 'Passes' : 'Fails' }}
+                <td :data-result="ratios[index]! >= pair.min ? 'pass' : 'fail'">
+                  {{ ratios[index]! >= pair.min ? 'Passes' : 'Fails' }}
                 </td>
               </tr>
             </tbody>
@@ -179,6 +158,9 @@ const badgeTones = [
         <h2 id="kit-button">
           Button
         </h2>
+        <p class="kit-note">
+          A disabled button with a reason shows it on hover and gives it to screen readers as the button's description.
+        </p>
         <template
           v-for="variant in variants"
           :key="variant"
@@ -205,6 +187,7 @@ const badgeTones = [
                 :tone="tone"
                 label="Disabled"
                 disabled
+                disabled-reason="Nothing has changed since the last save"
               />
               <CwaUiButton
                 :variant="variant"

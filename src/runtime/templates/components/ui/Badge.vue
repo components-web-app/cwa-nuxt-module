@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { Component } from 'vue'
-
-type BadgeTone = 'neutral' | 'accent' | 'success' | 'warning' | 'danger'
+import { badgeText, badgeTintPercent, badgeTones } from './kit-looks'
+import type { BadgeTone } from './kit-looks'
 
 const { tone = 'neutral', icon, dot = false } = defineProps<{
   tone?: BadgeTone
@@ -10,21 +10,16 @@ const { tone = 'neutral', icon, dot = false } = defineProps<{
   dot?: boolean
 }>()
 
-const tones: Record<BadgeTone, { fill: string, mark: string }> = {
-  neutral: { fill: 'cwa:bg-field', mark: 'cwa:text-fg-muted' },
-  accent: { fill: 'cwa:bg-accent-tint', mark: 'cwa:text-accent-fg' },
-  success: { fill: 'cwa:bg-[color-mix(in_srgb,var(--cwa-color-success)_18%,var(--cwa-color-surface))]', mark: 'cwa:text-success' },
-  warning: { fill: 'cwa:bg-[color-mix(in_srgb,var(--cwa-color-warning)_18%,var(--cwa-color-surface))]', mark: 'cwa:text-warning' },
-  danger: { fill: 'cwa:bg-[color-mix(in_srgb,var(--cwa-color-danger)_18%,var(--cwa-color-surface))]', mark: 'cwa:text-danger' },
-}
+const look = computed(() => badgeTones[tone])
 
-const look = computed(() => tones[tone])
+const tint = { '--cwa-badge-tint': `${badgeTintPercent}%` }
 </script>
 
 <template>
   <span
-    class="cwa:inline-flex cwa:max-w-full cwa:items-center cwa:gap-1.5 cwa:whitespace-nowrap cwa:px-2 cwa:py-0.5 cwa:text-flag cwa:text-fg"
-    :class="look.fill"
+    class="cwa:inline-flex cwa:max-w-full cwa:items-center cwa:gap-1.5 cwa:whitespace-nowrap cwa:px-2 cwa:py-0.5 cwa:text-flag"
+    :class="[badgeText, look.fill]"
+    :style="tint"
   >
     <component
       :is="icon"
