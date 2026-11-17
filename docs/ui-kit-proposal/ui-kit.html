@@ -1,0 +1,1125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CWA Admin UI Kit</title>
+<meta name="description" content="Visual review of the final #236 proposal: the kit gallery, current admin screens re-skinned with the kit, defineCwaConfig and the open questions.">
+<style>
+:root{
+  --bg:#f7f6f5; --panel:#ffffff; --ink:#1c1917; --ink-2:#57534e; --rule:#e7e5e4; --rule-2:#d6d3d1;
+  --link:#1d4ed8; --mag:#e30a6c; --code-bg:#f2f1ef; --code-ink:#292524; --code-str:#9a3412; --code-com:#78716c;
+  --ok-bg:#ecfccb; --ok-ink:#3f6212; --chip:#f5f5f4;
+  --shadow:0 1px 2px rgba(0,0,0,.06),0 8px 24px rgba(0,0,0,.06);
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c0a09; --panel:#171412; --ink:#f5f5f4; --ink-2:#a8a29e; --rule:#292524; --rule-2:#44403c;
+    --link:#60a5fa; --code-bg:#1f1b19; --code-ink:#e7e5e4; --code-str:#fdba74; --code-com:#a8a29e;
+    --ok-bg:#1a2e05; --ok-ink:#bef264; --chip:#292524;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c0a09; --panel:#171412; --ink:#f5f5f4; --ink-2:#a8a29e; --rule:#292524; --rule-2:#44403c;
+  --link:#60a5fa; --code-bg:#1f1b19; --code-ink:#e7e5e4; --code-str:#fdba74; --code-com:#a8a29e;
+  --ok-bg:#1a2e05; --ok-ink:#bef264; --chip:#292524;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);
+  color-scheme:dark;
+}
+
+/* Kit tokens: dark is the admin default, .kl is cwa:theme-light */
+.k{
+  --k-surface:#1c1917; --k-raised:#292524; --k-sunken:rgba(28,25,23,.85); --k-line:#44403c; --k-line-strong:#a8a29e;
+  --k-fg:#f5f5f4; --k-muted:#a8a29e; --k-accent:#2563eb; --k-accent-fg:#60a5fa; --k-success:#9cdd05; --k-warning:#ffaa00;
+  --k-danger:#ef4444; --k-danger-fg:#f87171; --k-hl:#e30a6c; --k-tab:#44403ccc;
+  --k-control:2rem; --k-control-lg:2.5rem; --k-tabs:2.25rem; --k-row:3rem; --k-bar:5.25rem;
+  color:var(--k-fg); font-size:.875rem;
+}
+.k.kl{
+  --k-surface:#ffffff; --k-raised:#f5f5f4; --k-sunken:#ffffff; --k-line:#d6d3d1; --k-line-strong:#78716c;
+  --k-fg:#1c1917; --k-muted:#57534e; --k-accent:#2563eb; --k-accent-fg:#1d4ed8; --k-success:#3f6212; --k-warning:#b45309;
+  --k-danger:#b91c1c; --k-danger-fg:#b91c1c; --k-tab:#e7e5e4;
+}
+@media (pointer:coarse){ .k{ --k-control:2.75rem; --k-control-lg:2.75rem; --k-tabs:2.75rem; --k-row:3.75rem; --k-bar:6.5rem; } }
+
+*{box-sizing:border-box}
+html{scroll-padding-top:4rem}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:var(--link)}
+code,pre,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+code{font-size:.86em;background:var(--code-bg);padding:.08em .32em;border-radius:4px}
+.i{width:1em;height:1em;flex:none;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;vertical-align:-.14em}
+.wrap{max-width:1180px;margin:0 auto;padding:0 16px}
+header.top{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--rule)}
+.top-in{display:flex;align-items:center;gap:12px;height:56px}
+.brand{font-weight:650;white-space:nowrap;display:flex;align-items:center;gap:8px}
+.brand b{display:inline-grid;place-items:center;padding:0 5px;height:26px;border-radius:6px;background:var(--mag);color:#fff;font-size:12px}
+nav.toc{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;min-width:0;flex:1}
+nav.toc::-webkit-scrollbar{display:none}
+nav.toc a{white-space:nowrap;text-decoration:none;color:var(--ink-2);padding:6px 10px;border-radius:6px;font-size:14px}
+nav.toc a:hover{color:var(--ink);background:var(--chip)}
+.theme-btn{flex:none;display:flex;align-items:center;gap:6px;border:1px solid var(--rule-2);background:var(--panel);color:var(--ink);border-radius:8px;padding:6px 10px;font:inherit;font-size:13px;cursor:pointer}
+.hero{padding:48px 0 16px}
+.hero h1{font-size:clamp(28px,5vw,42px);line-height:1.1;margin:0 0 10px;letter-spacing:-.02em}
+.hero p{color:var(--ink-2);max-width:760px;margin:0 0 8px}
+.pills{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.pill{font-size:12.5px;padding:4px 10px;border-radius:999px;background:var(--chip);color:var(--ink-2);border:1px solid var(--rule)}
+section.s{padding:40px 0 8px;border-top:1px solid var(--rule);margin-top:32px}
+section.s>h2{font-size:24px;margin:0 0 4px;letter-spacing:-.01em}
+.lede{color:var(--ink-2);margin:0 0 20px;max-width:800px}
+h3{font-size:17px;margin:28px 0 8px}
+.card{background:var(--panel);border:1px solid var(--rule);border-radius:12px;box-shadow:var(--shadow);min-width:0}
+.note{font-size:13.5px;color:var(--ink-2)}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+@media (max-width:860px){.grid2{grid-template-columns:minmax(0,1fr)}}
+.seg-p{display:inline-flex;border:1px solid var(--rule-2);border-radius:8px;overflow:hidden;background:var(--panel);max-width:100%;flex-wrap:wrap}
+.seg-p button{font:inherit;font-size:13px;border:0;background:none;color:var(--ink-2);padding:6px 12px;cursor:pointer}
+.seg-p button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.ctrls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:0 0 14px}
+.ctrls .lbl{font-size:12.5px;color:var(--ink-2);text-transform:uppercase;letter-spacing:.06em}
+ul.tight{margin:6px 0;padding-left:20px} ul.tight li{margin:3px 0}
+pre{background:var(--code-bg);color:var(--code-ink);border-radius:10px;padding:14px 16px;overflow-x:auto;font-size:12.8px;line-height:1.55;margin:0;border:1px solid var(--rule)}
+pre .c{color:var(--code-com)} pre .s{color:var(--code-str)} pre .k2{color:var(--mag)}
+table.t{width:100%;border-collapse:collapse;font-size:13.5px}
+table.t th,table.t td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--rule);vertical-align:top}
+table.t th{font-weight:600;color:var(--ink-2);font-size:12px;text-transform:uppercase;letter-spacing:.05em}
+.tscroll{overflow-x:auto;border:1px solid var(--rule);border-radius:10px;background:var(--panel)}
+.yes{color:var(--ok-ink);font-weight:700}
+
+/* ===== Kit primitives ===== */
+.kp{border-radius:12px;padding:18px 16px;background:var(--k-surface);border:1px solid var(--k-line);min-width:0;position:relative}
+.kp h4{margin:0 0 12px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--k-muted);font-weight:600}
+.krow{display:flex;flex-wrap:wrap;gap:14px 18px;align-items:center;margin-bottom:16px;min-width:0}
+.krow:last-child{margin-bottom:0}
+.k button{font:inherit}
+.f{display:flex;align-items:center;gap:8px;flex:none;position:relative;min-width:0}
+.f-l{color:var(--k-muted);white-space:nowrap;display:flex;align-items:center;gap:4px}
+.f-c{position:relative;min-width:0;display:flex;align-items:center;gap:6px}
+.w-xs .f-c{width:4rem}.w-sm .f-c{width:8rem}.w-md .f-c{width:12rem}.w-lg .f-c{width:18rem}.w-auto .f-c{width:auto}
+.st{width:1rem;height:1rem;flex:none;display:grid;place-items:center;position:relative}
+.st .i{width:14px;height:14px}
+.st .ok{color:var(--k-success);animation:tick 1.5s ease-out forwards}
+.st.hold .ok{animation:none}
+@keyframes tick{0%{opacity:0;transform:scale(.6)}12%{opacity:1;transform:scale(1)}80%{opacity:1}100%{opacity:0}}
+.st-btn{all:unset;cursor:pointer;display:grid;place-items:center;width:1rem;height:1rem;border-radius:3px}
+.st-btn::after{content:"";position:absolute;inset:-14px}
+.st-btn.err{color:var(--k-danger)} .st-btn.cf{color:var(--k-warning)}
+.st-btn:focus-visible{outline:2px solid var(--k-accent-fg);outline-offset:2px}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--k-muted)}
+.spin{width:12px;height:12px;border-radius:50%;border:2px solid color-mix(in srgb,var(--k-fg) 25%,transparent);border-top-color:var(--k-fg);animation:sp .8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.lw{color:var(--k-warning)}
+@media (prefers-reduced-motion:reduce){.spin{animation-duration:2s}.st .ok{animation:none}}
+
+.ctl{height:var(--k-control);width:100%;min-width:0;display:flex;align-items:center;gap:6px;padding:0 .5rem;border:1px dotted var(--k-line-strong);background:var(--k-sunken);color:var(--k-fg);border-radius:2px;font:inherit;font-size:.875rem;outline:none;transition:border-color .12s,box-shadow .12s}
+input.ctl{appearance:none}
+input.ctl::placeholder{color:var(--k-muted)}
+.ctl:hover{border-style:solid}
+.ctl:focus-visible,.f.s-focus .ctl{border-style:solid;box-shadow:0 0 0 2px var(--k-surface),0 0 0 4px var(--k-accent-fg)}
+button.ctl{cursor:pointer;text-align:left}
+.tv{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}
+.tv.ph{color:var(--k-muted)}
+.f.s-error .ctl{border:1px solid var(--k-danger)}
+.f.s-conflict .ctl{border:1px solid var(--k-warning)}
+.f.s-presence .ctl{border:1px solid var(--peer,#2dd4bf);box-shadow:inset 0 0 0 1px var(--peer,#2dd4bf)}
+.f.s-error.s-focus .ctl,.f.s-error .ctl:focus-visible{box-shadow:0 0 0 2px var(--k-surface),0 0 0 4px var(--k-accent-fg)}
+.f.s-disabled{opacity:.5}.f.s-disabled *{cursor:not-allowed!important}
+.f.s-readonly .ctl{border-color:transparent;background:transparent;padding-left:0}
+.flag{position:absolute;bottom:calc(100% + 3px);left:0;font-size:.75rem;line-height:1;padding:3px 6px;border-radius:3px 3px 3px 0;background:var(--peer,#2dd4bf);color:#0c0a09;font-weight:600;white-space:nowrap;pointer-events:none}
+.chip{display:inline-flex;align-items:center;gap:4px;padding:1px 6px;border-radius:999px;background:var(--k-tab);font-size:.75rem;white-space:nowrap}
+.more{font-size:.75rem;color:var(--k-muted);white-space:nowrap}
+.tg{width:2.25rem;height:1.25rem;border-radius:999px;border:1px solid var(--k-line-strong);background:transparent;position:relative;cursor:pointer;flex:none;padding:0}
+.tg::after{content:"";position:absolute;top:2px;left:2px;width:.875rem;height:.875rem;border-radius:50%;background:var(--k-muted);transition:transform .12s}
+.tg[aria-checked="true"]{background:var(--k-accent);border-color:var(--k-accent)}
+.tg[aria-checked="true"]::after{transform:translateX(1rem);background:#fff}
+.tg:focus-visible,.f.s-focus .tg{box-shadow:0 0 0 2px var(--k-surface),0 0 0 4px var(--k-accent-fg);outline:none}
+.f.s-error .tg{border-color:var(--k-danger)}.f.s-conflict .tg{border-color:var(--k-warning)}.f.s-presence .tg{box-shadow:0 0 0 2px var(--peer)}
+.sg{display:inline-flex;height:var(--k-control);border:1px solid var(--k-line-strong);border-radius:2px;overflow:hidden;flex:none}
+.sg button{border:0;background:transparent;color:var(--k-muted);padding:0 .6rem;cursor:pointer;font-size:.875rem;white-space:nowrap}
+.sg button[aria-pressed="true"]{background:var(--k-accent);color:#fff}
+.sg button+button{border-left:1px solid var(--k-line)}
+.f.s-focus .sg{box-shadow:0 0 0 2px var(--k-surface),0 0 0 4px var(--k-accent-fg)}
+.f.s-error .sg{border-color:var(--k-danger)}.f.s-conflict .sg{border-color:var(--k-warning)}.f.s-presence .sg{border-color:var(--peer)}
+.num{padding:0;overflow:hidden}
+.num input{all:unset;width:100%;min-width:0;text-align:center;font-variant-numeric:tabular-nums}
+.num button{all:unset;cursor:pointer;width:1.25rem;height:100%;display:grid;place-items:center;color:var(--k-muted);border-left:1px solid var(--k-line)}
+.num button:first-child{border-left:0;border-right:1px solid var(--k-line)}
+.up{padding:0 .25rem 0 .25rem;position:relative;overflow:hidden}
+.thumb{width:1.5rem;height:1.5rem;border-radius:2px;flex:none;background:linear-gradient(135deg,#f59e0b,#e30a6c 60%,#6d28d9);position:relative}
+.thumb.fade{opacity:.5}
+.mini{all:unset;cursor:pointer;font-size:.75rem;padding:2px 6px;border-radius:2px;color:var(--k-fg);background:var(--k-tab);white-space:nowrap;display:inline-flex;align-items:center;gap:4px}
+.mini:focus-visible{outline:2px solid var(--k-accent-fg);outline-offset:2px}
+.mini.ic{padding:3px}
+.prog{position:absolute;left:0;bottom:0;height:2px;background:var(--k-accent-fg);transition:width .2s}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:var(--k-control);padding:0 .75rem;border-radius:2px;border:1px solid transparent;font-weight:500;font-size:.875rem;cursor:pointer;white-space:nowrap;flex:none;color:var(--k-fg);background:var(--k-tab)}
+.btn.lg{height:var(--k-control-lg);padding:0 1rem}
+.btn.solid{background:var(--k-accent);color:#fff}
+.btn.outline{background:transparent;border-color:var(--k-line-strong)}
+.btn.ghost{background:transparent}
+.btn.ghost:hover{background:var(--k-tab)}
+.btn.danger{background:transparent;border-color:var(--k-danger);color:var(--k-danger-fg)}
+.btn.hl{background:var(--k-hl);color:#fff}
+.btn[aria-disabled="true"]{opacity:.5;cursor:not-allowed}
+.btn:focus-visible{outline:none;box-shadow:0 0 0 2px var(--k-surface),0 0 0 4px var(--k-accent-fg)}
+.btn .spin{border-color:rgba(255,255,255,.35);border-top-color:#fff}
+.btn.ok-flash{background:var(--k-success);color:#0c0a09}
+.hint{all:unset;cursor:pointer;color:var(--k-muted);display:inline-grid;place-items:center;width:1.1rem;height:1.1rem;border-radius:50%;position:relative}
+.hint::after{content:"";position:absolute;inset:-6px}
+.hint:hover{color:var(--k-fg)}
+.hint:focus-visible{outline:2px solid var(--k-accent-fg)}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:.75rem;font-weight:600;padding:2px 7px;border-radius:999px;white-space:nowrap;border:1px solid currentColor}
+.t-neutral{color:var(--k-muted)}.t-accent{color:var(--k-accent-fg)}.t-success{color:var(--k-success)}.t-warning{color:var(--k-warning)}.t-danger{color:var(--k-danger-fg)}.t-hl{color:var(--k-hl)}
+.stx{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:22rem;flex:none}
+.ro{display:inline-flex;align-items:center;gap:6px;min-width:0;max-width:100%}
+.ro .mono{font-size:.8rem;white-space:nowrap}
+.divider{width:1px;height:1.5rem;background:var(--k-line);margin:0 1rem;flex:none}
+.handoff{display:flex;align-items:center;gap:8px;min-width:0}
+.handoff q{color:var(--k-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:11rem;font-style:italic}
+.pop{position:absolute;z-index:40;background:var(--k-raised);color:var(--k-fg);border:1px solid var(--k-line);border-radius:6px;box-shadow:0 10px 30px rgba(0,0,0,.35);padding:12px;width:min(300px,calc(100% - 16px));font-size:.875rem}
+.pop h5{margin:0 0 4px;font-size:.875rem;display:flex;gap:6px;align-items:center}
+.pop p{margin:0 0 10px;color:var(--k-muted)}
+.pop .acts{display:flex;gap:8px;flex-wrap:wrap}
+.pop .theirs{background:var(--k-surface);border:1px solid var(--k-line);border-radius:2px;padding:6px 8px;margin:0 0 10px}
+.pop.static{position:relative;width:auto;max-width:300px;box-shadow:none}
+.optlist{list-style:none;margin:0;padding:0}
+.optlist li{display:flex;align-items:center;gap:8px;padding:6px 6px;border-radius:3px;cursor:pointer}
+.optlist li:hover,.optlist li.hi{background:var(--k-tab)}
+.optlist .box{width:14px;height:14px;border:1px solid var(--k-line-strong);border-radius:2px;display:grid;place-items:center;flex:none}
+.optlist li[aria-selected="true"] .box{background:var(--k-accent);border-color:var(--k-accent);color:#fff}
+.optlist small{display:block;color:var(--k-muted);font-size:.75rem}
+.optlist .unk{color:var(--k-warning)}
+.tabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;min-width:0}
+.tabs::-webkit-scrollbar{display:none}
+.tab{all:unset;cursor:pointer;padding:.3rem .7rem;border-radius:4px;color:var(--k-muted);white-space:nowrap;display:inline-flex;align-items:center;gap:5px;font-size:.875rem}
+.tab:hover{color:var(--k-fg)}
+.tab[aria-selected="true"]{color:var(--k-fg);background:var(--k-tab)}
+.tab:focus-visible{outline:2px solid var(--k-accent-fg)}
+.tab .tw{color:var(--k-warning)}
+.alert{border:1px solid;border-radius:6px;padding:10px 12px;display:flex;gap:10px;align-items:flex-start;background:color-mix(in srgb,currentColor 7%,transparent)}
+.alert>div{color:var(--k-fg);min-width:0}
+.alert b{display:block;margin-bottom:2px}
+.alert .acts{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+.progress{height:4px;border-radius:2px;background:var(--k-line);overflow:hidden;width:12rem;position:relative}
+.progress span{position:absolute;inset:0 auto 0 0;background:var(--k-accent-fg)}
+.progress.ind span{width:35%;animation:ind 1.2s ease-in-out infinite}
+@keyframes ind{0%{left:-35%}100%{left:100%}}
+.sweep{height:2px;background:linear-gradient(90deg,transparent,var(--k-hl),transparent);background-size:40% 100%;background-repeat:no-repeat;animation:sw 1.4s linear infinite}
+@keyframes sw{0%{background-position:-40% 0}100%{background-position:140% 0}}
+
+/* states matrix */
+.matrix{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:22px 16px}
+@media (max-width:900px){.matrix{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:480px){.matrix{grid-template-columns:minmax(0,1fr)}}
+.matrix .cell{min-width:0}
+.matrix .cap{font-size:.75rem;color:var(--k-muted);margin-bottom:22px;display:block;text-transform:uppercase;letter-spacing:.06em}
+.matrix .f{max-width:100%}
+.matrix .w-md .f-c{width:auto;flex:1}
+.matrix .f{width:100%}
+.gallery-pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+@media (max-width:980px){.gallery-pair{grid-template-columns:minmax(0,1fr)}}
+.gal .krow{flex-direction:column;align-items:flex-start;gap:6px;border-top:1px solid var(--k-line);padding-top:12px}
+.gal .krow:first-of-type{border-top:0;padding-top:0}
+.gal .krow .nm{font-size:.75rem;color:var(--k-muted);font-family:ui-monospace,Menlo,monospace}
+.gal .scrollx{max-width:100%;overflow-x:auto;padding:22px 4px 6px;margin:-16px -4px 0}
+
+/* ===== Mockup frames ===== */
+.frame{position:relative;border-radius:12px;overflow:hidden;border:1px solid var(--rule-2);background:#fff;height:520px;box-shadow:var(--shadow);isolation:isolate}
+.frame .site{position:absolute;inset:0;overflow:auto;color:#1f2937;font-family:Georgia,"Times New Roman",serif}
+.adminhead{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:10px;height:44px;padding:0 12px;background:#1c1917;color:#f5f5f4;font:13px/1 ui-sans-serif,system-ui,sans-serif}
+.adminhead .logo{width:22px;height:22px;border-radius:5px;background:#e30a6c;display:grid;place-items:center;font-weight:700;font-size:11px;color:#fff;flex:none}
+.adminhead .path{color:#a8a29e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.adminhead .sp{flex:1}
+.av{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:700;color:#0c0a09;flex:none}
+.edit-pill{display:flex;align-items:center;gap:6px;color:#a8a29e;white-space:nowrap}
+.sitenav{display:flex;justify-content:space-between;align-items:center;padding:16px 24px;font-family:ui-sans-serif,system-ui,sans-serif;font-size:14px;gap:12px}
+.sitenav .lg{font-weight:800;letter-spacing:-.02em;font-size:18px;color:#111}
+.sitenav nav{display:flex;gap:16px;color:#4b5563;flex-wrap:wrap}
+.herosite{display:grid;grid-template-columns:1.2fr 1fr;gap:24px;padding:20px 24px 140px;align-items:center}
+@media (max-width:640px){.herosite{grid-template-columns:1fr}.sitenav nav{display:none}}
+.herosite h2{font-size:clamp(24px,4vw,38px);line-height:1.1;margin:0 0 12px;color:#111}
+.herosite p{color:#4b5563;margin:0 0 18px;font-size:16px}
+.sbtn{display:inline-block;padding:10px 18px;border-radius:999px;background:#111827;color:#fff;font:600 14px ui-sans-serif,system-ui,sans-serif;position:relative}
+.sbtn.ghost{background:transparent;color:#111827;border:1px solid #111827;margin-left:8px}
+.sel-outline{outline:2px solid #e30a6c;outline-offset:4px}
+.peer-outline{outline:2px solid #2dd4bf;outline-offset:4px;position:relative}
+.peer-outline::before{content:"Jon";position:absolute;top:-24px;left:-6px;background:#2dd4bf;color:#0c0a09;font:600 11px/1 ui-sans-serif,system-ui,sans-serif;padding:3px 6px;border-radius:3px 3px 3px 0}
+.heroimg{aspect-ratio:4/3;border-radius:16px;background:linear-gradient(135deg,#fde68a,#f472b6 55%,#7c3aed);position:relative;overflow:hidden}
+.heroimg::after{content:"";position:absolute;inset:auto 10% 12% 10%;height:30%;border-radius:50% 50% 8px 8px;background:rgba(255,255,255,.25)}
+.measure{position:absolute;right:10px;z-index:30;font:600 11px/1 ui-monospace,Menlo,monospace;background:#e30a6c;color:#fff;padding:4px 6px;border-radius:4px;pointer-events:none;white-space:nowrap}
+
+.bar{position:absolute;left:0;right:0;bottom:0;z-index:20;background:color-mix(in srgb,var(--k-surface) 92%,transparent);backdrop-filter:blur(10px);font-family:ui-sans-serif,system-ui,sans-serif;box-shadow:0 -1px 0 var(--k-line)}
+.bar .sweep{position:absolute;left:0;right:0;bottom:100%}
+.bar-top{display:flex;align-items:center;gap:10px;height:var(--k-tabs);padding:.375rem 1rem 0;min-width:0}
+.bar-top .tabs{flex:1}
+.pinned{display:flex;align-items:center;gap:10px;flex:none}
+.sum{display:flex;align-items:center;gap:6px;color:var(--k-muted);white-space:nowrap;font-size:.8125rem}
+.sum .jump{all:unset;cursor:pointer;color:var(--k-warning);display:inline-flex;align-items:center;gap:4px;font-weight:600;white-space:nowrap}
+.sum .jump.err{color:var(--k-danger-fg)}
+.sum .jump:focus-visible{outline:2px solid var(--k-accent-fg)}
+@media (max-width:620px){.sum .txt{display:none}.sum .jump .lab{display:none}}
+.mrow-wrap{position:relative;height:var(--k-row)}
+.mrow{display:flex;flex-wrap:nowrap;align-items:center;gap:.75rem;height:100%;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;padding:0 1rem;scroll-padding-inline:2rem;scrollbar-width:thin}
+.mrow-wrap[data-os] .mrow{-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 2.5rem);mask-image:linear-gradient(90deg,transparent 0,#000 2.5rem)}
+.mrow-wrap[data-oe] .mrow{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 2.5rem),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 2.5rem),transparent)}
+.mrow-wrap[data-os][data-oe] .mrow{-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 2.5rem,#000 calc(100% - 2.5rem),transparent);mask-image:linear-gradient(90deg,transparent 0,#000 2.5rem,#000 calc(100% - 2.5rem),transparent)}
+.arrow{position:absolute;top:50%;transform:translateY(-50%);z-index:3;width:1.75rem;height:1.75rem;border-radius:50%;border:1px solid var(--k-line);background:var(--k-raised);color:var(--k-fg);display:none;place-items:center;cursor:pointer;padding:0}
+.arrow.l{left:4px}.arrow.r{right:4px}
+.mrow-wrap[data-os] .arrow.l,.mrow-wrap[data-oe] .arrow.r{display:grid}
+.flags{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.flags .flag{bottom:auto;animation:flagfade 3.4s ease forwards}
+@keyframes flagfade{0%,85%{opacity:1}100%{opacity:0}}
+.today .bar{background:rgba(28,25,23,.78);border-top:0}
+.today .bar-top{height:auto;padding:12px 16px 0}
+.today-row{padding:16px;min-height:74px;display:flex;align-items:center;gap:12px 24px;flex-wrap:wrap}
+.today .tab{padding:6px 12px;border-radius:4px}
+.tf{display:flex;flex-direction:column;gap:4px;min-width:0}
+.tf label{font-size:12px;color:#d6d3d1}
+.tin{height:32px;padding:0 8px;background:rgba(28,25,23,.7);color:#e7e5e4;border:0;outline:1px dotted #44403c;outline-offset:-1px;font:inherit;font-size:14px;width:220px;max-width:100%}
+.tbtn{padding:6px 14px;border:1px solid #a8a29e;background:rgba(28,25,23,.9);color:#e7e5e4;font:inherit;font-size:14px;white-space:nowrap}
+.tbtn.p{background:rgba(37,99,235,.9);border-color:transparent;color:#fff}
+.ttg{display:inline-flex;align-items:center;gap:10px;white-space:nowrap;color:#e7e5e4;font-size:14px}
+.ttg i{width:44px;height:24px;border-radius:999px;background:#57534e;position:relative;display:inline-block}
+.ttg i::after{content:"";position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff}
+.ttg i.on{background:#2563eb}.ttg i.on::after{left:22px}
+.tarea{width:280px;max-width:100%;height:56px;background:rgba(28,25,23,.7);border:0;outline:1px dotted #44403c;color:#e7e5e4;font:inherit;font-size:13px;padding:6px 8px;resize:none}
+
+/* modal */
+.mframe{position:relative;border-radius:12px;overflow:hidden;border:1px solid var(--rule-2);background:#3f3a37;box-shadow:var(--shadow);padding:24px 12px;display:grid;place-items:start center;min-height:560px}
+.mframe::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(135deg,rgba(255,255,255,.03) 0 10px,transparent 10px 20px)}
+.dlg{position:relative;width:min(640px,100%);background:var(--k-surface);border:1px solid var(--k-line);border-radius:8px;box-shadow:0 20px 60px rgba(0,0,0,.45);font-family:ui-sans-serif,system-ui,sans-serif;overflow:hidden}
+.dlg-h{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--k-line)}
+.dlg-h .ttl{font-size:1rem;font-weight:600;display:flex;align-items:center;gap:8px;min-width:0;flex:1}
+.dlg-h .ttl span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dlg-tabs{display:flex;gap:4px;padding:8px 12px 0;border-bottom:1px solid var(--k-line);overflow-x:auto}
+.dlg-tabs .tab{border-radius:4px 4px 0 0;border-bottom:2px solid transparent}
+.dlg-tabs .tab[aria-selected="true"]{background:transparent;border-bottom-color:var(--k-accent-fg)}
+.dlg-b{padding:18px 16px;display:grid;gap:16px}
+.fg{display:grid;gap:14px}
+.fg h6{margin:0;font-size:.8125rem;font-weight:600;color:var(--k-muted);text-transform:uppercase;letter-spacing:.06em}
+.fg.c2{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media (max-width:560px){.fg.c2{grid-template-columns:minmax(0,1fr)}}
+.dlg-f{display:flex;gap:8px;justify-content:flex-end;padding:12px 16px;border-top:1px solid var(--k-line);flex-wrap:wrap}
+.mf{display:grid;gap:4px;min-width:0}
+.mf-c{position:relative;display:flex;align-items:center}
+.mf-c .ctl{height:var(--k-control-lg);padding:.9rem .6rem 0;padding-right:1.8rem}
+.mf-c button.ctl{padding-top:.9rem}
+.mf-l{position:absolute;left:.6rem;top:.3rem;font-size:.75rem;color:var(--k-muted);pointer-events:none}
+.mf-c .st{position:absolute;right:.5rem;top:50%;transform:translateY(-50%)}
+.mf-h{font-size:.75rem;color:var(--k-muted);min-height:1rem}
+.mf.s-error .ctl{border:1px solid var(--k-danger)}.mf.s-error .mf-h{color:var(--k-danger-fg)}
+.mf.s-conflict .ctl{border:1px solid var(--k-warning)}
+.mrowline{display:flex;align-items:center;gap:10px;min-height:var(--k-control-lg)}
+.mrowline .lab{flex:1}
+.optdesc li{align-items:flex-start}
+
+/* list page */
+.aframe{border-radius:12px;overflow:hidden;border:1px solid var(--rule-2);box-shadow:var(--shadow);font-family:ui-sans-serif,system-ui,sans-serif;background:var(--k-surface)}
+.apage{padding:20px 16px 24px;max-width:900px;margin:0 auto}
+.lh{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.lh h4{font-size:1.4rem;margin:0;flex:1;font-weight:600}
+.lfilter{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:12px 0;border-bottom:1px solid var(--k-line)}
+.search{position:relative;flex:1 1 220px;min-width:0}
+.search .ctl{height:var(--k-control-lg);padding-left:2rem;padding-right:2rem}
+.search .i.s1{position:absolute;left:.6rem;top:50%;transform:translateY(-50%);color:var(--k-muted)}
+.search .clr{position:absolute;right:.4rem;top:50%;transform:translateY(-50%)}
+.fchip{all:unset;cursor:pointer;height:2rem;padding:0 .75rem;border-radius:999px;border:1px solid var(--k-line-strong);display:inline-flex;align-items:center;gap:6px;font-size:.8125rem;white-space:nowrap}
+.fchip[aria-pressed="true"]{background:var(--k-accent);border-color:var(--k-accent);color:#fff}
+.fchip .n{font-variant-numeric:tabular-nums;opacity:.8}
+.fchip:focus-visible{box-shadow:0 0 0 2px var(--k-surface),0 0 0 4px var(--k-accent-fg)}
+.lrow{display:flex;align-items:center;gap:14px;padding:14px 0;border-bottom:1px solid var(--k-line);min-width:0}
+.lrow .who{flex:1;min-width:0}
+.lrow .who b{font-size:1.05rem;font-weight:600}
+.lrow .who div{color:var(--k-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lrow.off{opacity:.55}
+.skel{height:14px;border-radius:3px;background:linear-gradient(90deg,var(--k-line),var(--k-tab),var(--k-line));background-size:200% 100%;animation:sk 1.2s linear infinite}
+@keyframes sk{to{background-position:-200% 0}}
+.pg{display:flex;align-items:center;gap:4px;justify-content:center;margin-top:16px;font-variant-numeric:tabular-nums;flex-wrap:wrap}
+.pg button{all:unset;cursor:pointer;min-width:2rem;height:2rem;display:grid;place-items:center;border-radius:2px;color:var(--k-muted)}
+.pg button[aria-current="page"]{background:var(--k-tab);color:var(--k-fg);font-weight:600}
+.lstate{text-align:center;padding:36px 12px;color:var(--k-muted)}
+.lstate b{display:block;color:var(--k-fg);font-size:1rem;margin-bottom:4px}
+
+/* toasts */
+.toaster{position:fixed;top:68px;right:16px;z-index:100;display:grid;gap:8px;width:min(360px,calc(100vw - 32px));pointer-events:none}
+.toast{pointer-events:auto;display:flex;gap:10px;align-items:flex-start;padding:12px;border-radius:6px;background:var(--k-raised);border:1px solid var(--k-line);box-shadow:0 10px 30px rgba(0,0,0,.35);animation:tin .2s ease-out;position:relative;overflow:hidden;font-family:ui-sans-serif,system-ui,sans-serif}
+@keyframes tin{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.toast .ti{margin-top:2px;flex:none}
+.toast .tb{flex:1;min-width:0}
+.toast .tb b{display:block;font-size:.875rem}
+.toast .tb span{color:var(--k-muted);font-size:.8125rem;display:block}
+.toast .acts{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+.toast .x{all:unset;cursor:pointer;color:var(--k-muted);padding:2px}
+.toast .life{position:absolute;left:0;bottom:0;height:2px;background:var(--k-line-strong);animation:life linear forwards}
+.toast:hover .life{animation-play-state:paused}
+@keyframes life{from{width:100%}to{width:0}}
+.toast.more{justify-content:center;padding:6px;font-size:.8125rem;color:var(--k-muted)}
+.demo-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+@media (max-width:860px){.demo-grid{grid-template-columns:minmax(0,1fr)}}
+.flow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:12.5px}
+.flow span{padding:3px 8px;border-radius:999px;border:1px solid var(--k-line);white-space:nowrap}
+.flow .on{border-color:var(--k-accent-fg);color:var(--k-accent-fg);font-weight:600}
+.flow em{color:var(--k-muted);font-style:normal}
+.log{font:12px/1.5 ui-monospace,Menlo,monospace;color:var(--k-muted);height:110px;overflow:auto;border-top:1px solid var(--k-line);margin-top:12px;padding-top:8px}
+.chk{display:inline-flex;align-items:center;gap:6px;font-size:.8125rem;color:var(--k-muted);cursor:pointer}
+
+.q{display:grid;grid-template-columns:2.2rem minmax(0,1fr);gap:4px 12px;padding:16px;border-bottom:1px solid var(--rule)}
+.q:last-child{border-bottom:0}
+.q .n{font-weight:700;color:var(--mag);font-variant-numeric:tabular-nums}
+.q h4{margin:0 0 4px;font-size:15px}
+.q p{margin:0;color:var(--ink-2);font-size:14px}
+.rec{display:inline-block;margin-top:6px;font-size:12.5px;padding:2px 8px;border-radius:999px;background:var(--ok-bg);color:var(--ok-ink);font-weight:600}
+.ladder{display:grid;gap:6px;counter-reset:l}
+.ladder div{display:flex;gap:10px;align-items:center;padding:8px 12px;border-radius:8px;border:1px solid var(--rule);background:var(--panel);font-size:14px}
+.ladder div b{font-variant-numeric:tabular-nums;color:var(--mag);width:1.2rem}
+.ladder div.top{border-color:var(--mag)}
+footer{padding:40px 0 60px;color:var(--ink-2);font-size:13px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 24 24"><path d="M12 3.5l9.5 17h-19z"/><path d="M12 10v4.5"/><path d="M12 17.5h.01"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><path d="M12 7.5h.01"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="1"/><path d="M3 10h18M8 3v4M16 3v4"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5M4 20h16"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></symbol>
+  <symbol id="i-ext" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v6H4V6h6"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-pen" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="1"/><path d="M4 16V4h12"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-left" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></symbol>
+  <symbol id="i-right" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></symbol>
+  <symbol id="i-auto" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/></symbol>
+  <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+  <symbol id="i-wifi" viewBox="0 0 24 24"><path d="M2 8.5a15 15 0 0 1 20 0M5.5 12a10 10 0 0 1 13 0M9 15.5a5 5 0 0 1 6 0M12 19h.01M3 3l18 18"/></symbol>
+</svg>
+
+<header class="top">
+  <div class="wrap top-in">
+    <div class="brand"><b>CWA</b><span>Admin UI Kit</span></div>
+    <nav class="toc" aria-label="Sections">
+      <a href="#gallery">Gallery</a>
+      <a href="#bar">Manager bar</a>
+      <a href="#modal">Modals</a>
+      <a href="#list">Lists</a>
+      <a href="#feedback">Feedback</a>
+      <a href="#config">defineCwaConfig</a>
+      <a href="#questions">Open questions</a>
+    </nav>
+    <button class="theme-btn" id="themeBtn" type="button" aria-label="Page theme: auto"><svg class="i"><use href="#i-auto"/></svg><span>Auto</span></button>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="hero">
+    <h1>CWA Admin UI Kit</h1>
+    <p>The final #236 proposal (<code>docs/ui-kit-proposal/04-proposal.md</code>), drawn for review. Every component is shown in its key states, then the current admin screens are rebuilt with the kit, so you can compare them with what ships today.</p>
+    <p class="note">This is a static mockup. Nothing here is built. The demos are interactive where that was cheap: switch the bar's tabs, scroll its row, publish, raise toasts and break a save.</p>
+    <div class="pills">
+      <span class="pill">reka-ui, headless</span><span class="pill">No Nuxt UI</span><span class="pill">Tailwind v4 · <code>cwa:</code></span><span class="pill">Lazy, admin-only</span><span class="pill">One row, one height</span>
+    </div>
+  </div>
+
+  <!-- ================= GALLERY ================= -->
+  <section class="s" id="gallery">
+    <h2>1 · Kit gallery</h2>
+    <p class="lede">Every field draws its state in a reserved 1rem slot at its end, so a state change never moves anything sideways or down. Dark is the admin default. Light is <code>cwa:theme-light</code>, which the auth pages use.</p>
+
+    <h3>Every state at once (bar surface)</h3>
+    <div style="display:grid;gap:16px" id="matrixPair"></div>
+
+    <h3>Every component, in the state you pick</h3>
+    <div class="ctrls">
+      <span class="lbl">State</span>
+      <div class="seg-p" id="stateSeg" role="group" aria-label="Gallery state"></div>
+    </div>
+    <div class="gallery-pair" id="galPair"></div>
+
+    <h3>Popovers behind the ⚠ and the ⓘ</h3>
+    <p class="note">Errors and conflicts never widen the row. The ⚠ in the slot opens one of these, and the bar's pinned end says "1 not saved →" or "1 conflict →".</p>
+    <div class="gallery-pair" id="popPair"></div>
+
+    <h3>Feedback, lists and structure</h3>
+    <div class="gallery-pair" id="miscPair"></div>
+  </section>
+
+  <!-- ================= MANAGER BAR ================= -->
+  <section class="s" id="bar">
+    <h2>2 · The manager bar on a selected component</h2>
+    <p class="lede">A <b>Navigation link</b> ("Book a call") is selected. Mia has the Label field open in another window, and Jon is editing the subtitle on the page, so both the subtitle and its field carry his colour. The bar is always <b>5.25rem</b> (6.5rem on touch screens), whatever the tab or state. A tab with too many fields scrolls sideways inside its row and never wraps.</p>
+    <div class="ctrls">
+      <span class="lbl">View</span>
+      <div class="seg-p" role="group" aria-label="Bar view">
+        <button type="button" data-view="after" aria-pressed="true">Proposed</button>
+        <button type="button" data-view="today" aria-pressed="false">Today</button>
+      </div>
+      <span class="lbl">Admin theme</span>
+      <div class="seg-p" role="group" aria-label="Admin theme">
+        <button type="button" data-kt="dark" aria-pressed="true">Dark</button>
+        <button type="button" data-kt="light" aria-pressed="false">Light</button>
+      </div>
+    </div>
+    <div class="frame k" id="frame">
+      <div class="site" id="site">
+        <div class="adminhead">
+          <span class="logo">C</span>
+          <span class="path">/ › services › <b style="color:#f5f5f4">consultations</b></span>
+          <span class="sp"></span>
+          <span class="av" style="background:#c4b5fd" title="Mia">M</span><span class="av" style="background:#2dd4bf" title="Jon">J</span>
+          <span class="edit-pill"><span class="tg" role="switch" aria-checked="true" style="pointer-events:none"></span> Editing</span>
+        </div>
+        <div class="sitenav"><span class="lg">Northwind Kitchens</span><nav><span>Services</span><span>Projects</span><span>About</span><span>Contact</span></nav></div>
+        <div class="herosite">
+          <div>
+            <h2>Kitchens made in our own workshop</h2>
+            <p class="peer-outline" style="display:inline-block">Free 30 minute consultation with one of our designers, at home or online.</p>
+            <div style="margin-top:14px"><span class="sbtn sel-outline" id="selBtn">Book a call</span><span class="sbtn ghost">See projects</span></div>
+          </div>
+          <div class="heroimg" aria-hidden="true"></div>
+        </div>
+      </div>
+      <div class="measure" id="measure"></div>
+      <div id="barMount"></div>
+    </div>
+    <p class="note" style="margin-top:10px">Try: the <b>Link</b> tab overflows (drag, Shift+wheel or use the arrows). <b>1 conflict →</b> jumps to Mia's change. <b>Ui</b> opens the style multi-select. <b>Image</b> → Replace runs an upload. <b>Publish</b> → toggle Schedule and see the pinned action change. Then switch to <b>Today</b>, which measures the current bar's height for the same tab.</p>
+    <div class="grid2" style="margin-top:18px">
+      <div class="card" style="padding:16px">
+        <b>What the bar enforces</b>
+        <ul class="tight note">
+          <li><code>ResourceManager.vue</code> wraps every tab in <code>CwaUiManagerRow</code>, so a tab cannot stack fields, and a <code>CwaUiTextarea</code> under the bar throws in dev.</li>
+          <li>Labels sit inline on the left. Secondary text goes in an ⓘ popover or the status slot.</li>
+          <li>The summary and the primary action are pinned at the end of the tab strip and never scroll away. Publish is not repeated inside the Publish tab.</li>
+          <li>Presence flags are portalled to a layer that follows the row's scroll, so the row needs no flag lane.</li>
+        </ul>
+      </div>
+      <div class="card" style="padding:16px">
+        <b>Where each tab comes from</b>
+        <ul class="tight note">
+          <li><b>Link</b>: a site tab (24+ link tabs in CK and SR) on <code>CwaUiLinkInput</code> + <code>CwaUiInlineHandoff</code>.</li>
+          <li><b>Image</b>: <code>CwaUiImageAlt</code> on the new <code>upload</code> binding (replaces <code>CwaUiFormFile</code>).</li>
+          <li><b>Ui</b>: <code>_tabs/component/Ui.vue</code>. Style names come from <code>defineCwaConfig</code>; an unmatched class shows as "Unknown style".</li>
+          <li><b>Publish</b>, <b>Order</b>, <b>Info</b>: <code>Publish.vue</code>, <code>Order.vue</code>, <code>ResourceInfoTab.vue</code>.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= MODAL ================= -->
+  <section class="s" id="modal">
+    <h2>3 · Resource modals</h2>
+    <p class="lede">Modals use the <b>modal</b> surface: floating labels, a helper or error line under the field, and 2.5rem controls. They are built on <code>CwaUiDialog</code> (reka <code>Dialog</code>), which replaces <code>DialogBox</code>, <code>ModalInput</code>, <code>ModalSelect</code> and <code>ModalRadioTabs</code>.</p>
+    <div class="ctrls">
+      <span class="lbl">Modal</span>
+      <div class="seg-p" role="group" aria-label="Modal">
+        <button type="button" data-modal="user" aria-pressed="true">User (/_cwa/users/[iri])</button>
+        <button type="button" data-modal="page" aria-pressed="false">Page settings</button>
+      </div>
+      <label class="chk" style="color:var(--ink-2)"><input type="checkbox" id="mConflict"> Someone saved while I edit (Q-C fallback)</label>
+    </div>
+    <div class="mframe k" id="mframe"></div>
+    <p class="note">User: change the email and the "Your current password" field appears, because the API requires it (#449). Save shows a spinner, then a tick on the button for 1.5 s. Page settings: the Layout select shows each layout's <code>description</code> from <code>defineCwaConfig</code>.</p>
+  </section>
+
+  <!-- ================= LIST ================= -->
+  <section class="s" id="list">
+    <h2>4 · Admin list pages</h2>
+    <p class="lede">This is <code>/_cwa/users</code>. <code>ListFilter</code>, <code>ListFilterButton</code> and <code>ListPagination</code> become <code>CwaUiSearchField</code>, <code>CwaUiFilterChip</code>, <code>CwaUiSelect width="sm"</code> and <code>CwaUiPagination</code>. Loading, empty and error states use <code>CwaUiListState</code>, and an error keeps the previous items on screen.</p>
+    <div class="ctrls">
+      <span class="lbl">State</span>
+      <div class="seg-p" role="group" aria-label="List state" id="listSeg">
+        <button type="button" data-ls="ok" aria-pressed="true">Loaded</button>
+        <button type="button" data-ls="loading" aria-pressed="false">Loading</button>
+        <button type="button" data-ls="empty" aria-pressed="false">Empty</button>
+        <button type="button" data-ls="error" aria-pressed="false">Error</button>
+      </div>
+    </div>
+    <div class="aframe k" id="aframe"></div>
+  </section>
+
+  <!-- ================= FEEDBACK ================= -->
+  <section class="s" id="feedback">
+    <h2>5 · Toasts and inline save feedback</h2>
+    <p class="lede">Feedback is quiet when a save works and stays visible when it fails. A routine save is never toasted; it gets a tick in its slot. Toasts appear top right, under the admin header. Errors and toasts with actions stay until you dismiss them. Hover pauses the timer.</p>
+    <div class="demo-grid">
+      <div class="kp k">
+        <h4>Inline save (bar surface)</h4>
+        <div class="krow" style="padding-top:18px">
+          <div class="f w-md" id="demoField">
+            <span class="f-l">Title</span>
+            <div class="f-c"><input class="ctl" id="demoInput" value="Kitchens made in our own workshop" aria-describedby="demoStatus"></div>
+            <span class="st" id="demoSt"></span>
+          </div>
+        </div>
+        <div class="krow">
+          <label class="chk"><input type="checkbox" id="optFail"> Next save fails (5xx)</label>
+          <label class="chk"><input type="checkbox" id="optSlow"> Slow server</label>
+          <button class="btn outline" type="button" id="optRemote">Mia changes it</button>
+        </div>
+        <div class="krow"><span class="note" style="color:var(--k-muted)">Bar summary:</span> <span class="sum" id="demoSum"><span class="txt">All changes saved</span></span></div>
+        <div class="flow" id="demoFlow" aria-hidden="true"><span data-k="edit">edit</span><em>→</em><span data-k="pending">pending</span><em>→</em><span data-k="saving">saving</span><em>→</em><span data-k="saved">saved ✓</span><em>·</em><span data-k="error">error</span><em>·</em><span data-k="conflict">conflict (save held)</span></div>
+        <div class="log" id="demoLog" aria-live="polite"></div>
+        <span class="sr" id="demoStatus"></span>
+      </div>
+      <div class="kp k">
+        <h4>Toasts: <code style="background:transparent">useCwaToast()</code></h4>
+        <div class="krow">
+          <button class="btn" type="button" data-toast="publish">Publish (upsert by id)</button>
+          <button class="btn" type="button" data-toast="schedule">Schedule</button>
+          <button class="btn" type="button" data-toast="error">Request error</button>
+          <button class="btn" type="button" data-toast="bulk">6 saves fail</button>
+          <button class="btn" type="button" data-toast="unmounted">Error on a closed tab</button>
+          <button class="btn" type="button" data-toast="offline">Go offline</button>
+          <button class="btn" type="button" data-toast="upload">Upload done off-screen</button>
+        </div>
+        <ul class="tight note" style="color:var(--k-muted)">
+          <li>At most 3 are visible; the rest collapse into "+N more".</li>
+          <li>Success and info last 4 s, warnings 6 s. Errors stay until dismissed.</li>
+          <li>Never toasted: a routine save, an error on a field that is on screen, a conflict on a mounted field, "Copied".</li>
+          <li>Replaces <code style="background:transparent">RequestErrors.vue</code>, <code style="background:transparent">Notification.vue</code> and the fixed "Oops!" copy.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= defineCwaConfig ================= -->
+  <section class="s" id="config">
+    <h2>6 · <code>defineCwaConfig</code>: decided in #453</h2>
+    <p class="lede">Agreed on <a href="https://github.com/components-web-app/cwa-nuxt-module/issues/453">#453</a> and being built in its own PR, outside this kit. The kit only reads the generated config: the Ui tab's style options and labels, and each layout's and page's description in the page settings selects.</p>
+<pre><span class="c">&lt;!-- app/cwa/components/Hero/Hero.vue --&gt;</span>
+&lt;script setup lang="ts"&gt;
+<span class="k2">defineCwaConfig</span>({
+  name: <span class="s">'Hero'</span>,
+  description: <span class="s">'Full-width banner'</span>,
+  instantAdd: true,
+  defaultData: { title: <span class="s">'New hero'</span> },
+  styles: {
+    <span class="s">'black-bg'</span>: { label: <span class="s">'Black Background'</span>, classes: <span class="s">'bg-black text-white'</span> },
+  },
+})
+&lt;/script&gt;</pre>
+    <ul class="tight note">
+      <li><b>Components</b> take <code>name</code>, <code>description</code>, <code>instantAdd</code>, <code>defaultData</code> and <code>styles</code>. <b>Layouts and pages</b> take <code>name</code> and <code>styles</code>. A <code>ui/*.vue</code> variant can declare its own <code>styles</code>. Manager tabs and UI variants stay discovered from the <code>admin/</code> and <code>ui/</code> folders.</li>
+      <li><code>cwa.resources</code>, <code>cwa.layouts</code> and <code>cwa.pages</code> are removed from <code>nuxt.config.ts</code>, as is <code>useCwaResource</code>'s <code>styles</code> option. <code>cwa.pageData</code> stays. No backward compatibility: the README has an upgrade section.</li>
+      <li>Static literals only: anything else is reported at build time, naming the file.</li>
+      <li><code>uiClassNames</code> stores <code>style:&lt;key&gt;</code>. <code>ResourceLoader</code> resolves keys against the rendering SFC's styles during the server render, so pages arrive styled. A key the SFC doesn't know renders nothing and shows as "Unknown style".</li>
+    </ul>
+  </section>
+
+  <!-- ================= QUESTIONS ================= -->
+  <section class="s" id="questions">
+    <h2>7 · Open questions for Daniel</h2>
+    <p class="lede">From §12 of the proposal. Q1–Q4 were about <code>defineCwaConfig</code> and are settled by #453. The tag under each question gives the proposal's recommendation, where it makes one.</p>
+    <div class="card" id="qList"></div>
+  </section>
+
+  <footer>Source: <code>docs/ui-kit-proposal/01-requirements.md</code> → <code>04-proposal.md</code>. Issue: components-web-app/cwa-nuxt-module#236. Mockups are drawn from <code>src/runtime/templates/components</code> and <code>src/layer/pages/_cwa</code>.</footer>
+</main>
+
+<div class="toaster k" id="toaster" role="region" aria-label="Notifications"></div>
+
+<script>
+(function(){
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const I=n=>`<svg class="i" aria-hidden="true"><use href="#i-${n}"/></svg>`;
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ---------- page theme ---------- */
+const modes=['auto','light','dark'];let mode='auto';
+$('#themeBtn').addEventListener('click',()=>{
+  mode=modes[(modes.indexOf(mode)+1)%3];
+  if(mode==='auto')document.documentElement.removeAttribute('data-theme');else document.documentElement.setAttribute('data-theme',mode);
+  const b=$('#themeBtn');b.querySelector('use').setAttribute('href','#i-'+(mode==='auto'?'auto':mode==='light'?'sun':'moon'));
+  b.querySelector('span').textContent=mode[0].toUpperCase()+mode.slice(1);b.setAttribute('aria-label','Page theme: '+mode);
+});
+
+/* ---------- builders ---------- */
+const PEER={Mia:'#c4b5fd',Jon:'#2dd4bf'};
+function ST(s){
+  if(s==='saving')return '<span class="spin" role="img" aria-label="Saving"></span>';
+  if(s==='saved')return `<span class="ok" role="img" aria-label="Saved">${I('check')}</span>`;
+  if(s==='error')return `<button type="button" class="st-btn err" data-pop="error" aria-label="Not saved: show details">${I('warn')}</button>`;
+  if(s==='conflict')return `<button type="button" class="st-btn cf" data-pop="conflict" aria-label="Mia changed this: choose a version">${I('warn')}</button>`;
+  if(s==='pending')return '<span class="dot" role="img" aria-label="Not saved yet"></span>';
+  if(s==='longwait')return `<span class="lw" role="img" aria-label="Still saving: the server is slow">${I('clock')}</span>`;
+  if(s==='loading')return '<span class="spin" role="img" aria-label="Loading"></span>';
+  return '';
+}
+function F(label,ctl,o={}){
+  const s=o.s||'default',w=o.w||'md',peer=o.peer||(s==='presence'?'Jon':'');
+  const st=s==='saved'&&o.hold?'st hold':'st';
+  return `<div class="f s-${s} w-${w}"${o.id?` id="${o.id}"`:''}${peer?` data-peer="${peer}" style="--peer:${PEER[peer]}"`:''}>`+
+    (o.lh?`<span class="sr">${label}</span>`:`<span class="f-l">${label}${o.hint?`<button type="button" class="hint" data-pop="hint" data-text="${esc(o.hint)}" aria-label="About ${esc(label)}">${I('info')}</button>`:''}</span>`)+
+    `<div class="f-c">${ctl}${peer&&o.inlineFlag!==false?`<span class="flag">${peer}</span>`:''}</div><span class="${st}">${ST(s)}</span></div>`;
+}
+const dis=s=>s==='disabled'?' disabled aria-disabled="true"':'';
+const C={
+  input:(v,s,ph)=>`<input class="ctl" value="${esc(v||'')}" placeholder="${esc(ph||'')}"${dis(s)}${s==='readonly'?' readonly':''}>`,
+  select:(v,s,ic)=>`<button type="button" class="ctl" aria-haspopup="listbox"${dis(s)}>${ic?I(ic):''}<span class="tv${v?'':' ph'}">${esc(v||'None')}</span>${I('chev')}</button>`,
+  multi:(arr,s,id)=>`<button type="button" class="ctl"${id?` id="${id}"`:''} aria-haspopup="listbox" aria-label="Style: ${esc(arr.join(', ')||'Default')}"${dis(s)}>${arr.length?`<span class="chip">${esc(arr[0])}</span>${arr.length>1?`<span class="more">+${arr.length-1}</span>`:''}<span class="tv"></span>`:'<span class="tv ph">Default</span>'}${I('chev')}</button>`,
+  toggle:(on,s,id)=>`<button type="button" class="tg" role="switch" aria-checked="${!!on}"${id?` id="${id}"`:''}${dis(s)}></button>`,
+  seg:(opts,sel,s)=>`<div class="sg" role="group">${opts.map(x=>`<button type="button" aria-pressed="${x===sel}"${dis(s)}>${x}</button>`).join('')}</div>`,
+  num:(v,s)=>`<div class="ctl num"><button type="button" aria-label="Decrease"${dis(s)}>${I('minus')}</button><input value="${v}" inputmode="numeric"${dis(s)}><button type="button" aria-label="Increase"${dis(s)}>${I('plus')}</button></div>`,
+  date:(v,s)=>`<button type="button" class="ctl"${dis(s)}>${I('cal')}<span class="tv${v?'':' ph'}">${v||'Pick a date and time'}</span></button>`,
+  upload:(o,s)=>o&&o.empty?`<button type="button" class="btn outline"${dis(s)}>${I('upload')} Upload image</button>`:
+    `<div class="ctl up"${o&&o.id?` id="${o.id}"`:''}><span class="thumb${o&&o.fade?' fade':''}"></span><span class="tv">${esc((o&&o.text)||'hero-kitchen.jpg · 240 KB')}</span><button type="button" class="mini" data-act="replace"${dis(s)}>Replace</button><button type="button" class="mini ic" aria-label="Remove image"${dis(s)}>${I('trash')}</button>${o&&o.prog!=null?`<span class="prog" style="width:${o.prog}%"></span>`:''}</div>`,
+  search:(v,sub,s)=>`<button type="button" class="ctl" aria-haspopup="listbox"${dis(s)}>${I('search')}<span class="tv">${esc(v)} <span style="color:var(--k-muted)">${esc(sub||'')}</span></span>${I('chev')}</button>`,
+  ro:(v)=>`<span class="ro"><span class="mono">${esc(v)}</span><button type="button" class="mini ic" aria-label="Copy">${I('copy')}</button></span>`,
+};
+C.link=(s,mode)=>`${C.seg(['Page','URL'],mode||'Page',s)}${mode==='URL'?C.input('https://calendly.com/northwind',s):C.search('Contact us','/contact',s)}<span style="color:var(--k-muted)" title="Opens in a new tab">${I('ext')}</span>`;
+C.handoff=(text,s)=>`<span class="handoff"><q>${esc(text)}</q><button type="button" class="btn ghost" data-act="handoff"${dis(s)}>${I('pen')} Edit on page</button></span>`;
+
+/* ---------- 1. matrix ---------- */
+const STATES=['default','focus','disabled','saving','saved','error','conflict','presence'];
+function matrix(light){
+  const cells=STATES.map(s=>`<div class="cell"><span class="cap">${s}</span>${F('Title',C.input('Book a call',s),{s,w:'md',hold:true})}<div style="height:12px"></div>${F('Page',C.select('Contact us',s),{s,w:'md',hold:true,inlineFlag:false})}</div>`).join('');
+  return `<div class="kp k${light?' kl':''}"><h4>${light?'Light · cwa:theme-light':'Dark · default'}</h4><div class="matrix">${cells}</div></div>`;
+}
+$('#matrixPair').innerHTML=matrix(false)+matrix(true);
+
+/* ---------- gallery by state ---------- */
+let gState='default';
+$('#stateSeg').innerHTML=[...STATES,'pending','longwait','loading','readonly'].map(s=>`<button type="button" data-gs="${s}" aria-pressed="${s==='default'}">${s==='longwait'?'long wait':s}</button>`).join('');
+$('#stateSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;gState=b.dataset.gs;$$('#stateSeg button').forEach(x=>x.setAttribute('aria-pressed',x===b));renderGal();});
+function gal(light){
+  const s=gState,o=(w,x={})=>Object.assign({s,w,hold:true},x);
+  const rows=[
+    ['CwaUiInput','Title',C.input('Kitchens made in our own workshop',s),o('md')],
+    ['CwaUiInput type="url" nullable','URL',C.input('',s,'https://'),o('lg')],
+    ['CwaUiNumber width="xs"','Position',C.num(3,s),o('xs')],
+    ['CwaUiToggle','New tab',C.toggle(true,s),o('auto')],
+    ['CwaUiSegmented','Align',C.seg(['Left','Centre','Right'],'Centre',s),o('auto')],
+    ['CwaUiSelect source="/_/layouts"','Layout',C.select('Primary',s),o('sm')],
+    ['CwaUiMultiSelect (first chip + N)','Style',C.multi(['Primary','Large','Rounded'],s),o('md')],
+    ['CwaUiResourceSearch','Page',C.search('Contact us','/contact',s),o('lg')],
+    ['CwaUiLinkInput','Link',C.link(s),o('auto')],
+    ['CwaUiDatePicker','Go live',C.date('24 Nov 2026, 09:00',s),o('md')],
+    ['CwaUiDayPicker nullable','Event day',C.date(s==='default'?'':'12 Dec 2026',s),o('sm')],
+    ['CwaUiFileUpload (upload binding)','Image',C.upload(s==='saving'?{text:'Uploading 40%',prog:40,fade:true}:{},s),o('lg')],
+    ['CwaUiFileUpload (empty)','Image',C.upload({empty:true},s),o('auto')],
+    ['CwaUiInlineHandoff','Subtitle',C.handoff('Free 30 minute consultation with one of our designers',s),o('auto')],
+    ['CwaUiReadonly (middle ellipsis, copy)','IRI',C.ro('/component/navigation_links/7f3a…c21'),Object.assign(o('auto'),{s:s==='disabled'?'disabled':'readonly'})],
+  ];
+  const r=rows.map(([nm,l,c,op])=>`<div class="krow"><span class="nm">${nm}</span><div class="scrollx">${F(l,c,op)}</div></div>`).join('');
+  const btnLoading=s==='saving'||s==='loading';
+  const btns=`<div class="krow"><span class="nm">CwaUiButton · tone × variant · loading · disabledReason</span><div class="scrollx" style="display:flex;gap:8px;flex-wrap:wrap;margin:0;padding:4px">
+    <button class="btn solid" type="button"${btnLoading?' aria-busy="true"':''}>${btnLoading?'<span class="spin"></span>':''}Publish now</button>
+    <button class="btn outline" type="button">Cancel schedule</button>
+    <button class="btn ghost" type="button">${I('pen')} Edit on page</button>
+    <button class="btn danger" type="button">${I('trash')} Delete</button>
+    <button class="btn hl" type="button">Clone</button>
+    <span style="display:inline-flex;align-items:center;gap:4px"><button class="btn" type="button" aria-disabled="true">Add component</button><button type="button" class="hint" data-pop="hint" data-text="This group is full: it allows 4 components." aria-label="Why is this disabled?">${I('info')}</button></span>
+  </div></div>`;
+  return `<div class="kp k gal${light?' kl':''}"><h4>${light?'Light':'Dark'} · state: ${s}</h4>${r}${btns}</div>`;
+}
+function renderGal(){$('#galPair').innerHTML=gal(false)+gal(true);}
+renderGal();
+
+/* popover samples */
+function popSamples(light){
+  return `<div class="kp k${light?' kl':''}"><h4>${light?'Light':'Dark'}</h4><div style="display:grid;gap:12px">
+  <div class="pop static" role="dialog" aria-label="Not saved"><h5 style="color:var(--k-danger-fg)">${I('warn')} Not saved</h5><p>The server couldn't save this. Retry, or undo your change.</p><div class="acts"><button class="btn solid" type="button">Retry</button><button class="btn outline" type="button">Undo my change</button></div></div>
+  <div class="pop static" role="dialog" aria-label="Mia changed this"><h5 style="color:var(--k-warning)">${I('warn')} Mia changed this</h5><p>Your edit is held until you choose.</p><div class="theirs">"Book a consultation"</div><div class="acts"><button class="btn solid" type="button">Use Mia's</button><button class="btn outline" type="button">Keep yours</button></div></div>
+  <div class="pop static" role="dialog" aria-label="Hint"><p style="margin:0">Changes go live immediately. Other admins see them at once.</p></div>
+  </div></div>`;
+}
+$('#popPair').innerHTML=popSamples(false)+popSamples(true);
+
+function misc(light){
+  return `<div class="kp k${light?' kl':''}"><h4>${light?'Light':'Dark'}</h4>
+  <div class="krow"><span class="badge t-neutral">Draft</span><span class="badge t-success">${I('check')} Live</span><span class="badge t-accent">Scheduled 24 Nov</span><span class="badge t-warning">${I('warn')} 1 conflict</span><span class="badge t-danger">Not saved</span><span class="badge t-hl">Shared · 3 pages</span></div>
+  <div class="krow"><span class="stx t-neutral">Draft · not live</span><span class="stx">${I('check')} All changes saved</span><span class="stx"><span class="spin"></span> Saving…</span></div>
+  <div class="krow"><div class="progress"><span style="width:62%"></span></div><div class="progress ind"><span></span></div><span class="spin"></span></div>
+  <div class="krow" style="display:block"><div class="tabs" role="tablist" style="border-bottom:1px solid var(--k-line);padding-bottom:6px"><button class="tab" role="tab" aria-selected="true">Link <span class="tw">${I('warn')}</span></button><button class="tab" role="tab" aria-selected="false">Image</button><button class="tab" role="tab" aria-selected="false">Ui</button><button class="tab" role="tab" aria-selected="false">Publish</button><button class="tab" role="tab" aria-selected="false">Order</button></div></div>
+  <div class="krow" style="display:block"><div class="alert t-warning" role="status">${I('warn')}<div><b>Mia changed this page while you were editing.</b>Reload to see her version, or keep your edits and save over it.<div class="acts"><button class="btn solid" type="button">Reload</button><button class="btn outline" type="button">Keep my edits</button></div></div></div></div>
+  <div class="krow" style="display:block"><div class="alert t-accent">${I('info')}<div><b>No scan yet</b>Scan the API to find orphaned resources.</div></div></div>
+  <div class="krow"><div class="search" style="flex:1 1 200px"><svg class="i s1"><use href="#i-search"/></svg><input class="ctl" placeholder="Search users" aria-label="Search users"></div><button class="fchip" aria-pressed="true" type="button">Admins <span class="n">3</span></button><button class="fchip" aria-pressed="false" type="button">Disabled <span class="n">1</span></button></div>
+  <div class="krow"><div class="pg" style="margin:0"><button type="button" aria-label="Previous page">${I('left')}</button><button type="button">1</button><button type="button" aria-current="page">2</button><button type="button">3</button><span style="color:var(--k-muted)">…</span><button type="button">9</button><button type="button" aria-label="Next page">${I('right')}</button></div></div>
+  </div>`;
+}
+$('#miscPair').innerHTML=misc(false)+misc(true);
+
+/* ---------- generic popover (portalled into a container) ---------- */
+let openPop=null;
+function closePop(){if(openPop){openPop.el.remove();openPop.anchor&&openPop.anchor.setAttribute('aria-expanded','false');openPop=null;}}
+function showPop(anchor,html,container){
+  closePop();
+  container=container||anchor.closest('.frame,.mframe,.kp,.aframe')||document.body;
+  const el=document.createElement('div');el.className='pop';el.setAttribute('role','dialog');el.innerHTML=html;
+  container.appendChild(el);
+  const cr=container.getBoundingClientRect(),ar=anchor.getBoundingClientRect(),pr=el.getBoundingClientRect();
+  let left=ar.left-cr.left+ar.width/2-pr.width/2;left=Math.max(8,Math.min(left,cr.width-pr.width-8));
+  let top=ar.top-cr.top-pr.height-8;if(top<8)top=ar.bottom-cr.top+8;
+  el.style.left=left+'px';el.style.top=top+'px';
+  anchor.setAttribute('aria-expanded','true');
+  openPop={el,anchor};
+  const f=el.querySelector('button');f&&f.focus({preventScroll:true});
+  return el;
+}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&openPop){const a=openPop.anchor;closePop();a&&a.focus();}});
+document.addEventListener('pointerdown',e=>{if(openPop&&!openPop.el.contains(e.target)&&!openPop.anchor.contains(e.target))closePop();});
+const POP={
+  error:()=>`<h5 style="color:var(--k-danger-fg)">${I('warn')} Not saved</h5><p>The server couldn't save this. Retry, or undo your change.</p><div class="acts"><button class="btn solid" type="button" data-pa="close">Retry</button><button class="btn outline" type="button" data-pa="close">Undo my change</button></div>`,
+  conflict:()=>`<h5 style="color:var(--k-warning)">${I('warn')} Mia changed this</h5><p>Your edit is held until you choose.</p><div class="theirs">"Book a consultation"</div><div class="acts"><button class="btn solid" type="button" data-pa="theirs">Use Mia's</button><button class="btn outline" type="button" data-pa="mine">Keep yours</button></div>`,
+};
+document.addEventListener('click',e=>{
+  const pb=e.target.closest('[data-pop]');
+  if(pb&&!pb.closest('#barMount')&&!pb.closest('#demoField')&&!pb.closest('#mframe')){
+    const k=pb.dataset.pop;showPop(pb,k==='hint'?`<p style="margin:0">${esc(pb.dataset.text)}</p>`:POP[k]());return;
+  }
+  const pa=e.target.closest('[data-pa]');if(pa&&!pa.closest('#frame')&&!pa.closest('.demo-pop'))closePop();
+});
+
+/* ---------- 2. manager bar ---------- */
+const B={tab:'link',view:'after',schedule:false,editLive:false,conflict:true,styles:['Primary','Large'],linkMode:'Page',up:null,published:false,light:false};
+const TABS=[['link','Link'],['image','Image'],['ui','Ui'],['publish','Publish'],['order','Order'],['info','Info']];
+const DIV='<span class="divider" aria-hidden="true"></span>';
+function rowAfter(){
+  switch(B.tab){
+    case 'link':return [
+      F('Label',C.input(B.conflict?'Book a call':(B.took?'Book a consultation':'Book a call')),{s:B.conflict?'conflict':(B.justSaved?'saved':'default'),w:'md',id:'fLabel',inlineFlag:false,peer:B.conflict?'Mia':''}),
+      DIV,
+      F('Link',C.link('default',B.linkMode),{w:'auto',hint:'A page link follows the page if its URL changes.'}),
+      DIV,
+      F('Subtitle',C.handoff('Free 30 minute consultation with one of our designers, at home or online.'),{w:'auto',s:'presence',peer:'Jon',inlineFlag:false}),
+      F('New tab',C.toggle(false),{w:'auto'}),
+      F('Icon',C.select('Arrow right'),{w:'sm'}),
+      F('Aria label',C.input('','default','Same as the label'),{w:'md'}),
+      F('Tracking id',C.input('cta-hero'),{w:'sm'}),
+    ].join('');
+    case 'image':{
+      const u=B.up;const txt=!u?'hero-kitchen.jpg · 240 KB':u.phase==='preparing'?'Preparing image…':u.phase==='uploading'?`Uploading ${u.p}%`:u.phase==='storing'?'Storing…':'kitchen-2026.jpg · 198 KB';
+      const s=!u?'default':u.phase==='done'?'saved':'saving';
+      return [
+        F('Image',C.upload({id:'upChip',text:txt,prog:u&&u.phase!=='done'?u.p:null,fade:u&&u.phase!=='done'}),{s,w:'lg'}),
+        F('Alt text',`<button type="button" class="ctl"><span class="tv">Two people at an oak kitchen island</span>${I('pen')}</button>`,{w:'md'}),
+        DIV,
+        F('Crop',C.seg(['Fill','Fit'],'Fill'),{w:'auto'}),
+        F('Focal point',C.select('Centre'),{w:'sm'}),
+      ].join('');}
+    case 'ui':return [
+      F('UI',C.select('Button'),{w:'sm',hint:'Variants come from NavigationLink/ui/*.vue.'}),
+      F('Style',C.multi(B.styles,'default','styleMs'),{w:'md'}),
+    ].join('');
+    case 'publish':return [
+      F('Edit published version',C.toggle(B.editLive,'','tgLive'),{w:'auto',hint:'Changes go live immediately.'}),
+      DIV,
+      F('Schedule',C.toggle(B.schedule,'','tgSched'),{w:'auto'}),
+      B.schedule?F('Go live',C.date('24 Nov 2026, 09:00'),{w:'md',hint:'Your computer\'s time: Europe/London (GMT+0) on that date.'}):'',
+      `<span class="stx t-neutral">${B.published?'Live · no draft changes':B.schedule?'Draft · goes live 24 Nov':'Draft · not live'}</span>`,
+    ].join('');
+    case 'order':return [
+      F('Position',C.num(3),{w:'xs'}),
+      `<button class="btn ghost" type="button">Move up</button><button class="btn ghost" type="button">Move down</button>`,
+      `<span class="stx t-neutral">3 of 5 in Hero · Actions</span>`,
+    ].join('');
+    case 'info':return [
+      F('Component',C.ro('/component/navigation_links/7f3a…c21'),{w:'auto',s:'readonly'}),
+      F('Position',C.ro('/_/component_positions/91be…0d4'),{w:'auto',s:'readonly'}),
+      `<span class="badge t-neutral">Draft</span><span class="badge t-hl">Shared · 3 pages</span>`,
+    ].join('');
+  }
+}
+function rowToday(){
+  const tin=(l,v,w)=>`<div class="tf"><label>${l}</label><input class="tin" value="${esc(v)}" style="${w?`width:${w}px`:''}"></div>`;
+  const btn=(t,p)=>`<button class="tbtn${p?' p':''}" type="button">${t}</button>`;
+  const tg=(l,on)=>`<span class="ttg"><i class="${on?'on':''}"></i>${l}</span>`;
+  switch(B.tab){
+    case 'link':return tin('Label','Book a call')+`<div class="tf"><label>Link type</label><span>${tg('Page',true)}</span></div>`+tin('Page','/contact',260)+`<div class="tf"><label>Subtitle</label><textarea class="tarea">Free 30 minute consultation with one of our designers, at home or online.</textarea></div>`+tg('Open in new tab',false)+tin('Icon','Arrow right',140)+tin('Aria label','',200)+tin('Tracking id','cta-hero',140);
+    case 'image':return `<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">${btn('Select file')}<span style="font-size:14px;color:#e7e5e4">hero-kitchen.jpg</span>${btn('Remove File')}</div>`+tin('Alt text','Two people at an oak kitchen island',300);
+    case 'ui':return `<div style="display:flex;gap:24px;flex-wrap:wrap"><span class="ttg">UI: ${btn('Button ▾')}</span><span class="ttg">Style: ${btn('Primary, Large ▾')}</span></div>`;
+    case 'publish':return tg('Edit live version',B.editLive)+`<span style="color:#e7e5e4">Draft</span>`+tg('Schedule',B.schedule)+(B.schedule?`<div class="tf"><label>Go live</label><input class="tin" value="24/11/2026 09:00" style="width:170px"><span style="font-size:12px;color:#a8a29e">Europe/London</span></div>`:'')+btn(B.schedule?'Schedule':'Publish now');
+    case 'order':return tg('Enable reordering',true)+`<input class="tin" value="3" style="width:80px">`+btn('Move Up')+btn('Move Down');
+    case 'info':return `<div class="tf"><label>IRI</label><span style="font-family:ui-monospace,monospace;font-size:13px;color:#e7e5e4;word-break:break-all">/component/navigation_links/7f3a9c21-4c1d-4b4e-9d1a-2e6f0a8b5c21</span></div><div class="tf"><label>Position</label><span style="font-family:ui-monospace,monospace;font-size:13px;color:#e7e5e4;word-break:break-all">/_/component_positions/91be44a0-1b2c-4d3e-8f90-a1b2c3d4e0d4</span></div>`;
+  }
+}
+function summary(){
+  const parts=[];
+  if(B.conflict)parts.push(`<button type="button" class="jump" id="jumpConflict">${I('warn')}<span class="lab">1 conflict →</span></button>`);
+  parts.push(`<span class="txt">${B.published?'Live':B.schedule?'Draft · scheduled':'Draft · not live'}</span>`);
+  return `<span class="sum">${parts.join('<span class="txt"> · </span>')}</span>`;
+}
+function cta(){
+  if(B.published)return `<button class="btn outline" type="button" id="ctaBtn">Edit</button>`;
+  if(B.publishing)return `<button class="btn solid" type="button" id="ctaBtn" aria-busy="true"><span class="spin"></span>${B.schedule?'Schedule':'Publish now'}</button>`;
+  return `<button class="btn solid" type="button" id="ctaBtn">${B.schedule?'Schedule':'Publish now'}</button>`;
+}
+function renderBar(){
+  closePop();
+  const f=$('#frame');f.classList.toggle('kl',B.light);f.classList.toggle('today',B.view==='today');
+  let h;
+  if(B.view==='today'){
+    h=`<div class="bar"><div class="bar-top"><div class="tabs" role="tablist">${TABS.map(([k,n])=>`<button class="tab" role="tab" type="button" data-tab="${k}" aria-selected="${k===B.tab}">${n}</button>`).join('')}</div><div class="pinned"><button class="tbtn" type="button">⋯</button></div></div><div class="today-row">${rowToday()}</div></div>`;
+  }else{
+    h=`<div class="bar" id="barEl"><div class="sweep" aria-hidden="true"></div><div class="bar-top"><div class="tabs" role="tablist" aria-label="Manager tabs">${TABS.map(([k,n])=>`<button class="tab" role="tab" type="button" data-tab="${k}" aria-selected="${k===B.tab}">${n}${k==='link'&&B.conflict?`<span class="tw" aria-label="has a conflict">${I('warn')}</span>`:''}</button>`).join('')}</div><div class="pinned">${summary()}${cta()}</div></div>
+    <div class="mrow-wrap" id="mrowWrap"><button type="button" class="arrow l" tabindex="-1" aria-label="Scroll fields left">${I('left')}</button><div class="mrow" id="mrow" role="tabpanel">${rowAfter()}</div><button type="button" class="arrow r" tabindex="-1" aria-label="Scroll fields right">${I('right')}</button><div class="flags" id="flags" aria-hidden="true"></div></div></div>`;
+  }
+  $('#barMount').innerHTML=h;
+  if(B.view==='after'){
+    const sw=$('.sweep',$('#barMount'));if(!B.publishing&&!(B.up&&B.up.phase!=='done'))sw.style.visibility='hidden';
+    const row=$('#mrow');row.addEventListener('scroll',()=>{updFades();placeFlags();},{passive:true});
+    requestAnimationFrame(()=>{updFades();placeFlags();});
+  }
+  requestAnimationFrame(measure);
+}
+function updFades(){const w=$('#mrowWrap'),r=$('#mrow');if(!w)return;const os=r.scrollLeft>2,oe=r.scrollLeft+r.clientWidth<r.scrollWidth-2;w.toggleAttribute('data-os',os);w.toggleAttribute('data-oe',oe);}
+function placeFlags(){
+  const L=$('#flags');if(!L)return;const wr=$('#mrowWrap').getBoundingClientRect();
+  const bar=$('#barEl');
+  let html='';
+  $$('#mrow [data-peer]').forEach(f=>{
+    const c=$('.f-c',f).getBoundingClientRect();const x=c.left-wr.left;
+    if(x<-20||x>wr.width-20)return;
+    html+=`<span class="flag" style="--peer:${PEER[f.dataset.peer]};left:${Math.max(0,x)}px;top:0;transform:translateY(-1px)">${f.dataset.peer}</span>`;
+  });
+  L.innerHTML=html;
+  L.style.top='-8px';L.style.overflow='visible';
+}
+function measure(){
+  const b=$('#barMount .bar'),m=$('#measure');if(!b)return;
+  const h=b.offsetHeight;m.textContent=(B.view==='today'?'Today · ':'Proposed · ')+h+'px'+(B.view==='after'?' on every tab':'');
+  m.style.bottom=(h+6)+'px';
+}
+window.addEventListener('resize',()=>{if(B.view==='after'){updFades();placeFlags();}measure();});
+$$('[data-view]').forEach(b=>b.addEventListener('click',()=>{B.view=b.dataset.view;$$('[data-view]').forEach(x=>x.setAttribute('aria-pressed',x===b));renderBar();}));
+$$('[data-kt]').forEach(b=>b.addEventListener('click',()=>{B.light=b.dataset.kt==='light';$$('[data-kt]').forEach(x=>x.setAttribute('aria-pressed',x===b));renderBar();}));
+$('#barMount').addEventListener('click',e=>{
+  const t=e.target;
+  const tab=t.closest('[data-tab]');if(tab){B.tab=tab.dataset.tab;B.justSaved=false;renderBar();return;}
+  const ar=t.closest('.arrow');if(ar){$('#mrow').scrollBy({left:(ar.classList.contains('l')?-1:1)*240,behavior:'smooth'});return;}
+  if(t.closest('#jumpConflict')){B.tab='link';renderBar();const fld=$('#fLabel');fld.scrollIntoView({block:'nearest',inline:'center'});setTimeout(()=>{placeFlags();const btn=$('#fLabel .st-btn');btn&&btn.click();},250);return;}
+  const sb=t.closest('.st-btn');if(sb){const k=sb.dataset.pop;const el=showPop(sb,POP[k](),$('#frame'));return;}
+  const hint=t.closest('.hint');if(hint){showPop(hint,`<p style="margin:0">${esc(hint.dataset.text)}</p>`,$('#frame'));return;}
+  const seg=t.closest('.sg button');if(seg&&B.tab==='link'&&(seg.textContent==='Page'||seg.textContent==='URL')){B.linkMode=seg.textContent;renderBar();return;}
+  const tg=t.closest('.tg');
+  if(tg&&tg.id==='tgSched'){B.schedule=!B.schedule;renderBar();return;}
+  if(tg&&tg.id==='tgLive'){B.editLive=!B.editLive;renderBar();return;}
+  if(tg){tg.setAttribute('aria-checked',tg.getAttribute('aria-checked')!=='true');return;}
+  if(t.closest('#styleMs')){openStyles(t.closest('#styleMs'));return;}
+  if(t.closest('[data-act="replace"]')){runUpload();return;}
+  if(t.closest('[data-act="handoff"]')){
+    const p=$('#site .peer-outline');p.scrollIntoView({block:'center',behavior:'smooth'});p.style.transition='outline-color .6s';p.style.outlineColor='#60a5fa';setTimeout(()=>p.style.outlineColor='',700);
+    toast({tone:'info',title:'Editing on the page',description:'The subtitle is edited where it appears. Escape returns you here.'});return;}
+  if(t.closest('#ctaBtn')){
+    if(B.published){B.published=false;renderBar();return;}
+    B.publishing=true;renderBar();
+    toast({id:'pub',tone:'info',title:B.schedule?'Scheduling…':'Publishing…',duration:null});
+    setTimeout(()=>{B.publishing=false;
+      if(B.schedule)toast({id:'pub',tone:'success',title:'Scheduled',description:'Goes live 24 Nov 2026, 09:00 (Europe/London).'});
+      else{B.published=true;toast({id:'pub',tone:'success',title:'Published',description:'Book a call is live.'});}
+      renderBar();},1100);
+    return;}
+});
+$('#frame').addEventListener('click',e=>{
+  const pa=e.target.closest('[data-pa]');if(!pa)return;
+  if(pa.dataset.pa==='theirs'){B.conflict=false;B.took=true;B.justSaved=false;closePop();renderBar();}
+  else if(pa.dataset.pa==='mine'){B.conflict=false;B.took=false;B.justSaved=true;closePop();renderBar();}
+  else closePop();
+});
+const STYLE_OPTS=[['Primary','btn btn-primary'],['Ghost','btn btn-ghost'],['Large','btn-lg · from ui/Button.vue'],['Rounded','rounded-full']];
+function openStyles(anchor){
+  const html=`<div style="font-size:.75rem;color:var(--k-muted);margin-bottom:6px">Style · from defineCwaConfig</div><ul class="optlist" role="listbox" aria-multiselectable="true">${STYLE_OPTS.map(([n,c])=>`<li role="option" data-opt="${n}" aria-selected="${B.styles.includes(n)}"><span class="box">${B.styles.includes(n)?I('check'):''}</span><span>${n}<small>${c}</small></span></li>`).join('')}<li role="option" aria-selected="false" aria-disabled="true" style="cursor:default"><span class="box"></span><span class="unk">Unknown style<small>style:old-key is in uiClassNames but not in this component's styles</small></span></li></ul>`;
+  const el=showPop(anchor,html,$('#frame'));
+  el.addEventListener('click',ev=>{const li=ev.target.closest('[data-opt]');if(!li)return;const n=li.dataset.opt;
+    B.styles=B.styles.includes(n)?B.styles.filter(x=>x!==n):[...B.styles,n];
+    li.setAttribute('aria-selected',B.styles.includes(n));li.querySelector('.box').innerHTML=B.styles.includes(n)?I('check'):'';
+    const ms=$('#styleMs');ms.outerHTML=C.multi(B.styles,'default','styleMs');openPop.anchor=$('#styleMs');
+    const fs=$('#styleMs').closest('.f').querySelector('.st');fs.innerHTML='<span class="spin"></span>';setTimeout(()=>{fs.innerHTML=ST('saved');},500);
+  });
+}
+function runUpload(){
+  if(B.up&&B.up.phase!=='done')return;
+  B.up={phase:'preparing',p:0};renderBar();
+  let p=0;setTimeout(()=>{B.up.phase='uploading';const iv=setInterval(()=>{p+=20;B.up.p=p;if(B.tab==='image')softUpload();if(p>=100){clearInterval(iv);B.up.phase='storing';softUpload();setTimeout(()=>{B.up.phase='done';if(B.tab==='image')renderBar();else toast({tone:'success',title:'Image uploaded',description:'kitchen-2026.jpg is stored on Book a call.'});},500);}},260);},500);
+}
+function softUpload(){if(B.tab!=='image'||B.view!=='after')return;const sl=$('#mrow').scrollLeft;$('#mrow').innerHTML=rowAfter();$('#mrow').scrollLeft=sl;const sw=$('#barMount .sweep');if(sw)sw.style.visibility='visible';}
+renderBar();
+
+/* ---------- 3. modals ---------- */
+const M={which:'user',email:'daniel@example.com',orig:'daniel@example.com',enabled:true,saving:false,saved:false,mtab:'details',layoutOpen:false,layout:'Primary'};
+function MF(label,ctl,o={}){
+  const s=o.s||'default';
+  return `<div class="mf s-${s}"><div class="mf-c">${ctl}<label class="mf-l">${label}</label><span class="st">${ST(s)}</span></div><div class="mf-h">${o.help||''}</div></div>`;
+}
+function renderModal(){
+  const conflict=$('#mConflict').checked;
+  let title,tabs,body;
+  if(M.which==='user'){
+    title='daniel';tabs=[['details','Details'],['password','Password']];
+    const changing=M.email!==M.orig;
+    body=`${conflict?`<div class="alert t-warning" role="status">${I('warn')}<div><b>Mia changed this user while you were editing.</b>Reload to see her version, or keep your edits and save over it.<div class="acts"><button class="btn solid" type="button">Reload</button><button class="btn outline" type="button">Keep my edits</button></div></div></div>`:''}
+    <div class="fg"><h6>Account</h6>
+      <div class="mrowline"><span class="lab">User enabled</span>${C.toggle(M.enabled,'','mEnabled')}</div>
+      ${MF('Email',`<input class="ctl" id="mEmail" type="email" value="${esc(M.email)}">`,{help:changing?'A confirmation link goes to the new address. The change waits until it is clicked.':'Used to sign in and for password resets.'})}
+      ${changing?MF('Your current password',`<input class="ctl" type="password" placeholder="Needed to change an email" autocomplete="current-password">`,{help:'Your own password, not this user\'s.'}):''}
+    </div>
+    <div class="fg c2"><h6 style="grid-column:1/-1">Details</h6>
+      ${MF('Username',`<input class="ctl" value="daniel">`,{})}
+      ${MF('Role',C.select('Administrator'),{})}
+    </div>
+    <div class="fg"><h6>Record</h6><div class="mrowline"><span class="lab" style="color:var(--k-muted)">IRI</span>${C.ro('/users/0f9c…2b71')}</div></div>`;
+  }else{
+    title='Consultations';tabs=[['details','Details'],['routes','Routes'],['info','Info']];
+    body=`<div class="fg c2"><h6 style="grid-column:1/-1">Page</h6>
+      ${MF('Title',`<input class="ctl" value="Consultations">`,{help:'Shown in the browser tab and in search results.'})}
+      ${MF('Reference',`<input class="ctl" value="consultations">`,{s:'error',help:'This reference is already used by another page.'})}
+      ${MF('Layout',`<button type="button" class="ctl" id="mLayout" aria-haspopup="listbox"><span class="tv">${M.layout}</span>${I('chev')}</button>`,{help:'Header, footer, full width.'})}
+      ${MF('Page template',C.select('Service'),{})}
+    </div>
+    <div class="fg"><h6>Visibility</h6>
+      <div class="mrowline"><span class="lab">Reachable</span>${C.seg(['Public','Admins only'],'Public')}</div>
+      ${MF('Meta description',`<textarea class="ctl" style="height:4.5rem;padding-top:1.2rem;resize:none">Book a free consultation with one of our kitchen designers.</textarea>`,{help:'Multi-line text is fine here: a textarea is allowed in modals, never in the bar. 57 / 160'})}
+    </div>`;
+  }
+  const save=M.saving?`<button class="btn solid lg" type="button" aria-busy="true"><span class="spin"></span>Save</button>`:M.saved?`<button class="btn solid lg ok-flash" type="button">${I('check')} Saved</button>`:`<button class="btn solid lg" type="button" id="mSave">Save</button>`;
+  $('#mframe').innerHTML=`<div class="dlg" role="dialog" aria-label="${title}">
+    <div class="dlg-h"><div class="ttl"><span>${title}</span><button class="mini ic" type="button" aria-label="Rename">${I('pen')}</button></div><button class="btn ghost" type="button" aria-label="Close">${I('x')}</button></div>
+    <div class="dlg-tabs" role="tablist">${tabs.map(([k,n])=>`<button type="button" class="tab" role="tab" aria-selected="${k==='details'}">${n}</button>`).join('')}</div>
+    <div class="dlg-b">${body}</div>
+    <div class="dlg-f">${M.which==='user'?`<button class="btn danger lg" type="button">${I('trash')} Delete user</button><span style="flex:1"></span>`:''}<button class="btn outline lg" type="button">Cancel</button>${save}</div></div>`;
+}
+$$('[data-modal]').forEach(b=>b.addEventListener('click',()=>{M.which=b.dataset.modal;$$('[data-modal]').forEach(x=>x.setAttribute('aria-pressed',x===b));renderModal();}));
+$('#mConflict').addEventListener('change',renderModal);
+$('#mframe').addEventListener('input',e=>{if(e.target.id==='mEmail'){const pos=e.target.selectionStart;M.email=e.target.value;renderModal();const n=$('#mEmail');n.focus();n.setSelectionRange(pos,pos);}});
+$('#mframe').addEventListener('click',e=>{
+  if(e.target.closest('#mEnabled')){M.enabled=!M.enabled;renderModal();return;}
+  if(e.target.closest('#mSave')){M.saving=true;renderModal();setTimeout(()=>{M.saving=false;M.saved=true;renderModal();setTimeout(()=>{M.saved=false;renderModal();},1500);},900);return;}
+  if(e.target.closest('#mLayout')){
+    const opts=[['Primary','Header, footer, full width.'],['Landing','No navigation. For campaign pages.'],['Blog','Narrow column with a sidebar.']];
+    const el=showPop(e.target.closest('#mLayout'),`<ul class="optlist optdesc" role="listbox">${opts.map(([n,d])=>`<li role="option" data-lay="${n}" aria-selected="${n===M.layout}"><span class="box">${n===M.layout?I('check'):''}</span><span>${n}<small>${d}</small></span></li>`).join('')}</ul><div style="font-size:.75rem;color:var(--k-muted);margin-top:6px">Descriptions from each layout's defineCwaConfig</div>`,$('#mframe'));
+    el.addEventListener('click',ev=>{const li=ev.target.closest('[data-lay]');if(li){M.layout=li.dataset.lay;closePop();renderModal();}});
+    return;}
+  const sb=e.target.closest('.st-btn');if(sb)showPop(sb,POP[sb.dataset.pop](),$('#mframe'));
+});
+renderModal();
+
+/* ---------- 4. list ---------- */
+let LS='ok';
+const USERS=[['daniel','Administrator','daniel@example.com',true],['mia','Administrator','mia@northwind.test',true],['jon','Editor','jon@northwind.test',true],['sam','User','sam@example.org',false],['priya','User','priya@example.org',true]];
+function renderList(){
+  let items='';
+  const row=u=>`<div class="lrow${u[3]?'':' off'}"><div class="who"><b>${u[0]}</b> <span class="badge ${u[1]==='Administrator'?'t-accent':'t-neutral'}" style="margin-left:6px">${u[1]}</span>${u[3]?'':' <span class="badge t-neutral">Disabled</span>'}<div>${u[2]}</div></div><button class="btn outline" type="button" aria-label="Edit ${u[0]}">${I('pen')}<span>Edit</span></button></div>`;
+  if(LS==='ok')items=USERS.map(row).join('');
+  if(LS==='loading')items=[1,2,3,4].map(()=>`<div class="lrow"><div class="who" style="display:grid;gap:8px"><div class="skel" style="width:30%"></div><div class="skel" style="width:55%"></div></div></div>`).join('');
+  if(LS==='empty')items=`<div class="lstate"><b>No users match "zz"</b>Try another search, or clear the filters.<div style="margin-top:12px"><button class="btn outline" type="button">Clear filters</button></div></div>`;
+  if(LS==='error')items=`<div class="alert t-danger" role="alert" style="margin:12px 0">${I('warn')}<div><b>Couldn't load the next page.</b>The server didn't answer. The list below is from before.<div class="acts"><button class="btn solid" type="button">Retry</button></div></div></div>`+USERS.map(row).join('');
+  $('#aframe').innerHTML=`<div class="adminhead"><span class="logo">C</span><span class="path">/_cwa › <b style="color:#f5f5f4">users</b></span><span class="sp"></span><span class="av" style="background:#c4b5fd">M</span></div>
+  <div class="apage"><div class="lh"><h4>Users</h4><button class="btn solid lg" type="button">${I('plus')} Add user</button></div>
+  <div class="lfilter"><div class="search"><svg class="i s1"><use href="#i-search"/></svg><input class="ctl" value="${LS==='empty'?'zz':''}" placeholder="Search name or email" aria-label="Search users">${LS==='loading'?'<span class="clr"><span class="spin"></span></span>':`<button type="button" class="mini ic clr" aria-label="Clear search">${I('x')}</button>`}</div>
+  <button class="fchip" type="button" aria-pressed="false">Admins <span class="n">2</span></button><button class="fchip" type="button" aria-pressed="false">Disabled <span class="n">1</span></button>
+  ${F('Sort',C.select('Newest'),{w:'sm'})}</div>
+  ${items}
+  ${LS==='empty'?'':`<div class="pg"><button type="button" aria-label="Previous page">${I('left')}</button><button type="button" aria-current="page">1</button><button type="button">2</button><button type="button">3</button><button type="button" aria-label="Next page">${I('right')}</button></div>`}
+  </div>`;
+}
+$('#listSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;LS=b.dataset.ls;$$('#listSeg button').forEach(x=>x.setAttribute('aria-pressed',x===b));renderList();});
+$('#aframe').addEventListener('click',e=>{const c=e.target.closest('.fchip');if(c)c.setAttribute('aria-pressed',c.getAttribute('aria-pressed')!=='true');});
+renderList();
+
+/* ---------- 5. toasts ---------- */
+const T=[];
+function toast(o){
+  const id=o.id||('t'+Math.random().toString(36).slice(2));
+  const ex=T.find(t=>t.id===id);
+  const d=o.duration!==undefined?o.duration:(o.tone==='danger'||o.actions)?null:o.tone==='warning'?6000:4000;
+  const t=Object.assign(ex||{id},o,{id,duration:d,born:Date.now()});
+  if(!ex)T.unshift(t);
+  clearTimeout(t.timer);if(d)t.timer=setTimeout(()=>dismiss(id),d);
+  renderToasts();return id;
+}
+function dismiss(id){const i=T.findIndex(t=>t.id===id);if(i>-1){clearTimeout(T[i].timer);T.splice(i,1);renderToasts();}}
+const TI={success:['check','t-success'],info:['info','t-accent'],warning:['warn','t-warning'],danger:['warn','t-danger']};
+function renderToasts(){
+  const vis=T.slice(0,3);
+  $('#toaster').innerHTML=vis.map(t=>`<div class="toast" role="${t.tone==='danger'?'alert':'status'}" data-id="${t.id}"><span class="ti ${TI[t.tone][1]}">${t.title.endsWith('…')?'<span class="spin" style="display:inline-block"></span>':I(TI[t.tone][0])}</span><div class="tb"><b>${esc(t.title)}</b>${t.description?`<span>${esc(t.description)}</span>`:''}${t.actions?`<div class="acts">${t.actions.map((a,i)=>`<button type="button" class="btn ${i?'outline':'solid'}" data-ta="${i}">${a.label}</button>`).join('')}</div>`:''}</div><button type="button" class="x" aria-label="Dismiss">${I('x')}</button>${t.duration?`<span class="life" style="animation-duration:${t.duration}ms"></span>`:''}</div>`).join('')+(T.length>3?`<div class="toast more">+${T.length-3} more</div>`:'');
+}
+$('#toaster').addEventListener('click',e=>{
+  const el=e.target.closest('.toast');if(!el||!el.dataset.id)return;const t=T.find(x=>x.id===el.dataset.id);
+  if(e.target.closest('.x')){dismiss(t.id);return;}
+  const a=e.target.closest('[data-ta]');if(a){t.actions[a.dataset.ta].onClick();}
+});
+$$('[data-toast]').forEach(b=>b.addEventListener('click',()=>{
+  const k=b.dataset.toast;
+  if(k==='publish'){toast({id:'pub2',tone:'info',title:'Publishing…',duration:null});setTimeout(()=>toast({id:'pub2',tone:'success',title:'Published',description:'Kitchens made in our own workshop is live.'}),1200);}
+  if(k==='schedule')toast({tone:'success',title:'Scheduled',description:'Goes live 24 Nov 2026, 09:00 (Europe/London).'});
+  if(k==='error')toast({tone:'danger',title:'Couldn\'t purge the page cache',description:'The server couldn\'t do this. Try again in a minute.',actions:[{label:'Retry',onClick(){toast({tone:'success',title:'Page cache purged'});}}]});
+  if(k==='bulk')toast({id:'bulk',tone:'danger',title:'6 saves failed',description:'Offline. Not saved. Retry when you\'re back.',actions:[{label:'Retry all',onClick(){dismiss('bulk');toast({tone:'success',title:'6 changes saved'});}},{label:'Show me',onClick(){location.hash='#bar';}}]});
+  if(k==='unmounted')toast({id:'um',tone:'danger',title:'Heading on Hero section not saved',description:'You moved on before it saved. The server couldn\'t save it.',actions:[{label:'Show me',onClick(){dismiss('um');location.hash='#bar';}},{label:'Retry',onClick(){dismiss('um');toast({tone:'success',title:'Heading saved'});}}]});
+  if(k==='offline')toast({id:'network',tone:'warning',title:'You\'re offline',description:'Changes aren\'t saved until you\'re back. Nothing is resent automatically.'});
+  if(k==='upload')toast({tone:'success',title:'Image uploaded',description:'kitchen-2026.jpg is stored on Book a call.'});
+}));
+
+/* ---------- inline save demo ---------- */
+const D={stored:$('#demoInput').value,state:'idle',held:false,timer:null};
+const dSt=$('#demoSt'),dF=$('#demoField'),dIn=$('#demoInput');
+function dLog(m){const l=$('#demoLog');l.innerHTML=`<div>${new Date().toLocaleTimeString()} · ${esc(m)}</div>`+l.innerHTML;}
+function dFlow(k){$$('#demoFlow span').forEach(s=>s.classList.toggle('on',s.dataset.k===k));}
+function dSet(s){
+  dF.className='f w-md s-'+(s==='saved'||s==='saving'||s==='pending'||s==='longwait'?'default':s);
+  dSt.innerHTML=ST(s);
+  const sum=$('#demoSum');
+  sum.innerHTML=s==='error'?`<button type="button" class="jump err">${I('warn')}<span class="lab">1 not saved →</span></button>`:s==='conflict'?`<button type="button" class="jump">${I('warn')}<span class="lab">1 conflict →</span></button>`:s==='saving'||s==='longwait'?'<span class="txt">Saving…</span>':s==='pending'?'<span class="txt">Unsaved changes</span>':'<span class="txt">All changes saved</span>';
+  dFlow(s==='longwait'?'saving':s==='default'?'':s);
+}
+let pendTimer,graceTimer,lwTimer;
+dIn.addEventListener('input',()=>{
+  dFlow('edit');
+  if(D.held){dLog('typing while held: the save waits for your choice');return;}
+  clearTimeout(pendTimer);dSt.innerHTML='';
+  pendTimer=setTimeout(dSubmit,700);
+});
+dIn.addEventListener('blur',()=>{if(dIn.value!==D.stored&&!D.held&&dSt.innerHTML===''){dSet('pending');}});
+function dSubmit(){
+  if(dIn.value===D.stored){dSet('default');return;}
+  const val=dIn.value,fail=$('#optFail').checked,slow=$('#optSlow').checked;
+  dLog('PATCH title (changed field only)');
+  graceTimer=setTimeout(()=>dSet('saving'),300);
+  if(slow)lwTimer=setTimeout(()=>{dSet('longwait');dLog('isLongWait: still saving');},2000);
+  setTimeout(()=>{
+    clearTimeout(graceTimer);clearTimeout(lwTimer);
+    if(fail){$('#optFail').checked=false;dSet('error');dLog('500: error kept on the field, nothing toasted');$('#demoStatus').textContent='Title not saved';return;}
+    D.stored=val;dSet('saved');dLog('200: tick for 1.5 s');
+  },slow?3200:900);
+}
+$('#optRemote').addEventListener('click',()=>{
+  D.held=true;D.theirs='Kitchens built by hand in Leeds';dSet('conflict');dLog('Mercure: Mia saved title. Your edit is held');$('#demoStatus').textContent='Mia changed Title';
+});
+function demoPop(anchor,kind){
+  const el=showPop(anchor,kind==='error'?POP.error():`<h5 style="color:var(--k-warning)">${I('warn')} Mia changed this</h5><p>Your edit is held until you choose.</p><div class="theirs">"${esc(D.theirs)}"</div><div class="acts"><button class="btn solid" type="button" data-pa="theirs">Use Mia's</button><button class="btn outline" type="button" data-pa="mine">Keep yours</button></div>`,anchor.closest('.kp'));
+  el.classList.add('demo-pop');
+  el.addEventListener('click',ev=>{
+    const b=ev.target.closest('button');if(!b)return;const txt=b.textContent;closePop();
+    if(txt==='Retry'){dLog('retry()');dSubmit();}
+    if(txt==='Undo my change'){dIn.value=D.stored;dSet('default');dLog('undo(): back to the stored value');}
+    if(txt==="Use Mia's"){D.held=false;dIn.value=D.theirs;D.stored=D.theirs;dSet('default');dLog('took Mia\'s value; nothing sent');}
+    if(txt==='Keep yours'){D.held=false;dLog('kept yours: the held save is sent');dSubmit();}
+  });
+}
+$('#demoField').addEventListener('click',e=>{const b=e.target.closest('.st-btn');if(b)demoPop(b,b.dataset.pop);});
+$('#demoSum').addEventListener('click',e=>{if(e.target.closest('.jump')){dIn.focus();const b=$('#demoSt .st-btn');b&&demoPop(b,b.dataset.pop);}});
+
+/* ---------- 7. questions ---------- */
+const Q=[
+ ['Page data config','#453 keeps cwa.pageData in nuxt.config.ts. Add app/cwa/page-data/<Class>.ts for metaFields later, with 6b field declarations?','Later, with 6b'],
+ ['Field-state registry','Per-Cwa and keyed by (iri, field), so it survives unmount, with a persistent toast and a NavigationGuard.','Yes'],
+ ['The link input\'s write','One updateResource carrying both fields, or two ordered PATCHes through the If-Match queue.','One updateResource'],
+ ['Bar height','Portalled flags and a 3rem row, or keep the 20px flag lane. Does one constant height per pointer class meet R1?','Portalled flags; 5.25rem / 6.5rem'],
+ ['Palette','Approve blue-400, blue-700, amber-700, lime-800, red-700 and red-400, or name replacements.','Your call: approve, or name replacements'],
+ ['field="…" shorthand','Let kit inputs inside a tab take field="title" (153 title tabs), keeping the :model name.','Add it'],
+ ['Q-B: model names','lastSavedAt, error with retry() and undo(), the updateResource result object, and errors per (endpoint, field).','Your call: no recommendation in the proposal'],
+ ['Q-C: conflicts in modals','Per-field conflicts in modals now (useItemPage must stop replacing localResourceData wholesale), or the alert fallback first.','Undecided: the alert fallback ships meanwhile'],
+];
+$('#qList').innerHTML=Q.map((q,i)=>`<div class="q"><span class="n">Q${i+5}</span><div><h4>${esc(q[0])}</h4><p>${esc(q[1])}</p><span class="rec">Recommended: ${esc(q[2])}</span></div></div>`).join('');
+})();
+</script>
+</body>
+</html>
