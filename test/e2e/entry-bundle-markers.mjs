@@ -30,6 +30,7 @@ const forbidden = [
   { marker: 'field-presence-flag', source: 'ui/FieldPresence.vue' },
   { marker: 'remote-change-accept', source: 'ui/RemoteChangeConflict.vue' },
   { marker: 'path:`/kit`', source: 'playground/app/pages/kit.vue, which is dev only' },
+  { marker: 'cwa-fullscreen-dialog', source: 'core/ui/Toaster.vue' },
 ]
 
 async function readEntryChunks() {

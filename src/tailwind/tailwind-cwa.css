@@ -180,6 +180,45 @@
 }
 
 @layer components {
+  .cwa\:toast {
+    --cwa-toast-tone: var(--cwa-color-accent-fg);
+    background: color-mix(in srgb, color-mix(in srgb, var(--cwa-color-surface-menu) 88%, var(--cwa-toast-tone)) 85%, transparent);
+    -webkit-backdrop-filter: blur(16px) saturate(1.5);
+    backdrop-filter: blur(16px) saturate(1.5);
+    box-shadow: var(--cwa-shadow-popover), inset 3px 0 0 var(--cwa-toast-tone);
+    line-height: 1.45;
+  }
+
+  .cwa\:toast-success {
+    --cwa-toast-tone: var(--cwa-color-success);
+  }
+
+  .cwa\:toast-warning {
+    --cwa-toast-tone: var(--cwa-color-warning);
+  }
+
+  .cwa\:toast-error {
+    --cwa-toast-tone: var(--cwa-color-danger);
+  }
+
+  .cwa\:toast-glyph {
+    color: var(--cwa-toast-tone);
+  }
+
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .cwa\:toast {
+      background: color-mix(in srgb, var(--cwa-color-surface-menu) 88%, var(--cwa-toast-tone));
+    }
+  }
+
+  @media (prefers-reduced-transparency: reduce) {
+    .cwa\:toast {
+      background: color-mix(in srgb, var(--cwa-color-surface-menu) 88%, var(--cwa-toast-tone));
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+    }
+  }
+
   .cwa\:dark {
     @apply cwa:bg-dark cwa:text-light;
   }

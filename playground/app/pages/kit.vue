@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { definePageMeta, useHead } from '#imports'
+import { definePageMeta, useCwaToast, useHead } from '#imports'
 import {
   CwaUiBadge,
   CwaUiButton,
@@ -10,6 +10,8 @@ import {
   CwaUiIconXMarkIcon,
   CwaUiSpinner,
 } from '#components'
+import Toast from '../../../src/runtime/templates/components/core/ui/Toast.vue'
+import type { CwaToastOptions } from '../../../src/runtime/composables/cwa-toast'
 import { badgeTintPercent } from '../../../src/runtime/templates/components/ui/kit-looks'
 import { kitColourLabel, kitColourTokens, kitContrastPairs, kitThemeStyle, kitTokenCss, measureKitPair } from '../../../src/tailwind/kit-tokens'
 
@@ -19,15 +21,49 @@ definePageMeta({
   },
 })
 
-useHead({ title: 'CWA admin UI kit' })
-
 const light = ref(false)
 const theme = computed(() => light.value ? 'light' : 'dark')
 const themeStyle = computed(() => kitThemeStyle(theme.value))
+
+useHead({
+  title: 'CWA admin UI kit',
+  htmlAttrs: { style: themeStyle },
+})
+
 const ratios = computed(() => kitContrastPairs.map(pair => measureKitPair(pair, theme.value)))
 
 const variants = ['solid', 'soft', 'ghost'] as const
 const tones = ['accent', 'danger'] as const
+const toast = useCwaToast()
+const noop = () => {}
+const toastSamples = {
+  success: { tone: 'success', title: 'Published', description: 'Hero section on Kitchens.' },
+  info: { tone: 'info', title: 'Updated from your other window', description: 'Title and Intro on Hero section.' },
+  warning: { tone: 'warning', title: 'Mercure reconnected', description: '3 components on this page changed while you were away.' },
+  error: {
+    id: 'kit-unmounted',
+    tone: 'error',
+    title: 'Title wasn’t saved',
+    description: 'You switched tabs before it could save.',
+    actions: [{ label: 'Show me', primary: true, onClick: noop }, { label: 'Retry', onClick: noop }, { label: 'Reset', onClick: noop }],
+  },
+  errors: {
+    id: 'kit-unmounted-many',
+    tone: 'error',
+    title: '2 changes weren’t saved',
+    description: 'Title and Subtitle, on Hero section. Reset puts back their last saved values.',
+    actions: [{ label: 'Show me', primary: true, onClick: noop }, { label: 'Retry all', onClick: noop }, { label: 'Reset all', onClick: noop }],
+  },
+} satisfies Record<string, CwaToastOptions>
+const toastButtons = [
+  { key: 'success', label: 'Success' },
+  { key: 'info', label: 'Info' },
+  { key: 'warning', label: 'Warning' },
+  { key: 'error', label: 'Error with actions' },
+  { key: 'errors', label: 'Several errors' },
+] as const
+const staticToasts = [toastSamples.success, toastSamples.warning, toastSamples.errors]
+
 const badgeTones = [
   { tone: 'success', label: 'Live' },
   { tone: 'neutral', label: 'Draft' },
@@ -299,6 +335,41 @@ const badgeTones = [
           </CwaUiBadge>
         </div>
       </section>
+
+      <section aria-labelledby="kit-toasts">
+        <h2 id="kit-toasts">
+          Toasts
+        </h2>
+        <p class="kit-note">
+          Raised with <code>useCwaToast()</code>. Success and info go after 4 seconds, warnings after 6; errors and toasts with actions stay until dismissed. At most 3 show, the newest on top. Raising the same toast again changes nothing; the stack turns see-through while it entirely hides the focused element.
+        </p>
+        <div
+          class="kit-row"
+          data-testid="kit-toast-raise"
+        >
+          <CwaUiButton
+            v-for="button in toastButtons"
+            :key="button.key"
+            :label="button.label"
+            size="sm"
+            @click="toast.show(toastSamples[button.key])"
+          />
+        </div>
+        <h3>Samples</h3>
+        <div
+          class="kit-toasts"
+          data-testid="kit-toast-samples"
+        >
+          <Toast
+            v-for="sample in staticToasts"
+            :key="sample.title"
+            :tone="sample.tone"
+            :title="sample.title"
+            :description="sample.description"
+            :actions="'actions' in sample ? sample.actions : undefined"
+          />
+        </div>
+      </section>
     </main>
   </div>
 </template>
@@ -456,6 +527,12 @@ code {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
+}
+
+.kit-toasts {
+  display: grid;
+  gap: 0.75rem;
+  max-width: 22rem;
 }
 
 .kit-accent {
