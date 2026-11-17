@@ -68,3 +68,12 @@ Starts after round 4 has been reviewed and published to the shared link.
 ## 7. Open questions list (§13 / artifact section 9)
 - Remove as settled: Q1 page data fields (#455, defineCwaPageData), Q3 field fill contrast (darken the fill in the WCAG pass, §1 above), Q4 `field="…"` (yes, with `CwaUiManagerTab`, §5 above).
 - Still open: Q2 palette, Q5 model names, Q6 bottom-sheet menus on phones (recommend yes), plus §6 above (Open vs View on site).
+
+## 8. Daniel's round 4 review (2026-11-17)
+- Create buttons: a plus icon plus the noun ("+ Page", "+ Article") instead of the word "Create". Accessible name "Create page" (WCAG 2.5.3 label in name holds: the name contains the visible "Page"). Update §8.2's "names what it creates" rule.
+- The new component's main action: "+ Draft" when publishable (accessible name "Add draft"), "+ Add" otherwise (match today's module: `NewResourceCta.vue`).
+- Phone bar: no gap between the status and Publish; the status shows its glyph only (the word goes, giving tabs more room). The glyph keeps a screen-reader name ("Draft", "Saving", "1 not saved") and distinct shapes per state, so it is never colour alone (1.4.1).
+- Desktop bar: the space to the right of the split button equals the space above and below it.
+- Read-only values in a row of fields: centre them on the same line as the neighbouring field's value text (they currently sit top-aligned). Check every mixed row at bar, modal and touch sizes.
+- Settled: Q2 palette approved; Q5 model names approved; Q6 bottom-sheet menus on phones, yes.
+- §6 Open vs View on site: use the proposed "Edit settings" / "Go to page" unless Daniel says otherwise.
