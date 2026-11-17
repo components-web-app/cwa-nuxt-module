@@ -1,5 +1,5 @@
 import path from 'node:path'
-import { babelParse, MagicString, parse } from 'vue/compiler-sfc'
+import { babelParse, parse } from 'vue/compiler-sfc'
 import type { CwaComponentConfig, CwaTemplateConfig, CwaUiVariantConfig } from './runtime/types'
 
 interface RegisteredComponent {
@@ -199,34 +199,4 @@ export function scanCwaConfigDeclarations(options: ScanCwaConfigDeclarationsOpti
     }
   }
   return result
-}
-
-export function stripDefineCwaConfig(code: string, id: string): { code: string, map: ReturnType<MagicString['generateMap']> } | undefined {
-  if (!id.endsWith('.vue') || !code.includes(MACRO)) {
-    return
-  }
-  const { descriptor, errors } = parse(code, { filename: id })
-  if (errors.length) {
-    return
-  }
-  const output = new MagicString(code)
-  for (const script of [descriptor.script, descriptor.scriptSetup]) {
-    if (!script) {
-      continue
-    }
-    let program
-    try {
-      program = babelParse(script.content, { sourceType: 'module', plugins: babelPlugins(script.lang) }).program
-    }
-    catch {
-      return
-    }
-    for (const statement of (program.body as Node[]).filter(isMacroCall)) {
-      output.remove(script.loc.start.offset + statement.start!, script.loc.start.offset + statement.end!)
-    }
-  }
-  if (!output.hasChanged()) {
-    return
-  }
-  return { code: output.toString(), map: output.generateMap({ hires: true, source: id, includeContent: true }) }
 }

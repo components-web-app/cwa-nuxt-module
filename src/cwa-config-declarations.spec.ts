@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, test } from 'vitest'
-import { scanCwaConfigDeclarations, stripDefineCwaConfig } from './cwa-config-declarations'
+import { scanCwaConfigDeclarations } from './cwa-config-declarations'
 
 const APP = '/site/app'
 
@@ -174,27 +174,5 @@ defineCwaConfig({ name: 'Again' })`,
       ])
       expect(result.components).toEqual({})
     })
-  })
-})
-
-describe('stripDefineCwaConfig', () => {
-  test('removes the macro call from the SFC, so its config never reaches the browser', () => {
-    const source = sfc(`defineCwaConfig({
-  description: '<p>Admin only</p>',
-})
-const props = defineProps<{ iri: string }>()`)
-
-    const result = stripDefineCwaConfig(source, '/site/app/cwa/components/Hero/Hero.vue')
-
-    expect(result?.code).not.toContain('defineCwaConfig')
-    expect(result?.code).not.toContain('Admin only')
-    expect(result?.code).toContain('const props = defineProps<{ iri: string }>()')
-    expect(result?.code).toContain('<template>')
-  })
-
-  test('leaves files without the macro, and Vue sub-requests, alone', () => {
-    expect(stripDefineCwaConfig(sfc(`const a = 1`), '/site/app/cwa/components/Hero/Hero.vue')).toBeUndefined()
-    expect(stripDefineCwaConfig(sfc(`defineCwaConfig({})`), '/site/app/cwa/components/Hero/Hero.vue?vue&type=script')).toBeUndefined()
-    expect(stripDefineCwaConfig(`defineCwaConfig({})`, '/site/app/composables/thing.ts')).toBeUndefined()
   })
 })

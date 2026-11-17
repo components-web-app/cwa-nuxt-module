@@ -5,7 +5,7 @@ import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vi
 import type { Mock } from 'vitest'
 import * as nuxtKit from '@nuxt/kit'
 import { scanComponentGroupDeclarations } from './component-group-declarations'
-import { scanCwaConfigDeclarations, stripDefineCwaConfig } from './cwa-config-declarations'
+import { scanCwaConfigDeclarations } from './cwa-config-declarations'
 
 vi.mock('@nuxt/kit', async () => {
   const actual = await vi.importActual<typeof nuxtKit>('@nuxt/kit')
@@ -21,7 +21,6 @@ vi.mock('@nuxt/kit', async () => {
     addServerHandler: vi.fn(),
     addServerPlugin: vi.fn(),
     addTypeTemplate: vi.fn(),
-    addVitePlugin: vi.fn(),
     updateTemplates: vi.fn(),
     extendPages: vi.fn(),
     defineNuxtModule: vi.fn(),
@@ -43,7 +42,6 @@ vi.mock('./component-group-declarations', () => ({
 
 vi.mock('./cwa-config-declarations', () => ({
   scanCwaConfigDeclarations: vi.fn(() => ({ components: {}, ui: {}, layouts: {}, pages: {} })),
-  stripDefineCwaConfig: vi.fn(),
 }))
 
 vi.mock('node:fs', () => {
@@ -1076,16 +1074,6 @@ export const styleClasses: CwaStyleClasses = {
         expect(await regenerates('unlink', 'cwa/components/Hero/admin/Tab.vue')).toEqual([true, true])
         expect(await regenerates('change', 'components/HeaderMenuLinks.vue')).toEqual([false, false])
         expect(await regenerates('change', 'cwa/components/Hero/useHero.ts')).toEqual([false, false])
-      })
-
-      test('registers a Vite plugin that strips the macro from Vue files before they are compiled', async () => {
-        await prepareMockNuxt()
-
-        const [plugin] = vi.mocked(nuxtKit.addVitePlugin).mock.lastCall! as [any]
-        expect(plugin.enforce).toBe('pre')
-        vi.mocked(stripDefineCwaConfig).mockReturnValueOnce({ code: 'stripped', map: {} as any })
-        expect(plugin.transform('source', '/site/app/cwa/components/Hero/Hero.vue')).toEqual({ code: 'stripped', map: {} })
-        expect(stripDefineCwaConfig).toHaveBeenCalledWith('source', '/site/app/cwa/components/Hero/Hero.vue')
       })
 
       test('auto-imports neither generated template', async () => {

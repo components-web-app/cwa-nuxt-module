@@ -10,7 +10,6 @@ import {
   addServerTemplate,
   addTemplate,
   addTypeTemplate,
-  addVitePlugin,
   createResolver,
   defineNuxtModule,
   extendPages,
@@ -26,7 +25,7 @@ import type { Component, ModuleDependencies, Nuxt, NuxtPage, ViteConfig } from '
 import { READINESS_DEFAULTS } from './runtime/server/readiness'
 import { defaultSiteConfig } from './runtime/composables/useCwaSiteConfig'
 import { scanComponentGroupDeclarations } from './component-group-declarations'
-import { scanCwaConfigDeclarations, stripDefineCwaConfig } from './cwa-config-declarations'
+import { scanCwaConfigDeclarations } from './cwa-config-declarations'
 import type { CwaModuleOptions, CwaResourcesMeta, CwaStyleClasses, CwaStyles, GlobalComponentNames } from './runtime/types'
 
 declare module 'nuxt/schema' {
@@ -650,12 +649,6 @@ declare module 'vue-router' {
           filter: template => filenames.includes(template.filename),
         })
       }
-    })
-
-    addVitePlugin({
-      name: 'cwa:define-cwa-config',
-      enforce: 'pre',
-      transform: (code: string, id: string) => stripDefineCwaConfig(code, id),
     })
 
     nuxt.hook('vite:extendConfig', (config: Readonly<ViteConfig>) => {

@@ -30,6 +30,8 @@ const forbidden = [
   { marker: 'field-presence-flag', source: 'ui/FieldPresence.vue' },
   { marker: 'remote-change-accept', source: 'ui/RemoteChangeConflict.vue' },
   { marker: 'remoteCursors', source: 'playground/app/tiptap/co-editing.ts' },
+  { marker: 'Easily create a body of text', source: 'defineCwaConfig description in playground HtmlContent.vue (#453)' },
+  { marker: 'Blue Background', source: 'defineCwaConfig style label in playground layouts/primary.vue (#453)' },
 ]
 
 let stub
