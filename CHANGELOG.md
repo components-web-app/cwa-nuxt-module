@@ -4,7 +4,7 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
-- Admin UI kit, step 2: `useCwaToast()` raises toasts (success, info, warning, error; actions; upsert by `id`; at most 3), loaded on the first toast; request errors use them and now stay until dismissed instead of going after 6 seconds ([#464](https://github.com/components-web-app/cwa-nuxt-module/pull/464), [#457](https://github.com/components-web-app/cwa-nuxt-module/issues/457))
+- Admin UI kit, step 2: `useCwaToast()` raises toasts (success, info, warning, error; actions; upsert by `id`; at most 3 at once, the rest waiting), loaded when the admin header mounts; request errors use them and now stay until dismissed instead of going after 6 seconds ([#464](https://github.com/components-web-app/cwa-nuxt-module/pull/464), [#457](https://github.com/components-web-app/cwa-nuxt-module/issues/457))
 - Admin UI kit, step 1: the kit's colour, type, spacing and motion tokens (dark, contrast checked in a spec; only the tokens a utility uses are in `cwa.css`), and `CwaUiButton` (with `disabledReason`), `CwaUiSpinner` and `CwaUiBadge`. The admin's `danger` colour was an undefined variable, so its error text was the surrounding colour; it is now red, the kit's red-300. `danger-dark` (the warning alert's fill and outline) was transparent for the same reason and is now red-800 at 80%. `ease-out` is the kit's curve ([#463](https://github.com/components-web-app/cwa-nuxt-module/pull/463), [#456](https://github.com/components-web-app/cwa-nuxt-module/issues/456))
 
 ## [2.0.0-alpha.32] - 2026-10-31
