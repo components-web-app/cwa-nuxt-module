@@ -15,6 +15,52 @@ https://github.com/components-web-app/components-web-app/tree/v3
 ### Template application deployed online
 https://cwa-v3-silverback-web-apps.vercel.app/
 
+## Upgrading
+
+### To `defineCwaConfig` and keyed styles ([#453](https://github.com/components-web-app/cwa-nuxt-module/issues/453))
+
+Components, UI variants, layouts and pages now declare their own config in the SFC with the `defineCwaConfig` macro. `cwa.resources`, `cwa.layouts` and `cwa.pages` are no longer read from `nuxt.config.ts` (`cwa.pageData` stays there), and the `styles` option of `useCwaResource` / `useCwaComponent` is gone.
+
+1. **Move each config entry into its SFC.** `cwa.resources.<Type>` goes into `app/cwa/components/<Type>/<Type>.vue`, `cwa.layouts.<Name>` into `app/cwa/layouts/<Name>.vue` and `cwa.pages.<Name>` into `app/cwa/pages/<Name>.vue`:
+
+   ```vue
+   <script setup lang="ts">
+   defineCwaConfig({
+     name: 'Body Text',
+     description: '<p>Rich text for the page body</p>',
+     instantAdd: true,
+     defaultData: { html: '<p>New text</p>' },
+   })
+   </script>
+   ```
+
+   Components take `name`, `description`, `instantAdd`, `defaultData`, `styles` and `multipleStyles`. Layouts and pages take `name` and `styles`. A `ui/<Variant>.vue` takes its own `styles` and `multipleStyles`. Manager tabs and UI variants are still found from the `admin/` and `ui/` folders. The argument must be a single object literal: a variable, spread, function call, computed key or interpolated template literal, or a second call in the same file, is reported when the app builds and that file's config is ignored. With implicit auto-imports off, import it: `import { defineCwaConfig } from '#imports'`.
+
+2. **Convert each style to a key with a label and classes.** The key is what content stores, so pick one you will not need to rename; the label can change freely.
+
+   ```ts
+   // before: useCwaComponent(props, [], { styles: { multiple: true, classes: { 'Black Background': ['bg-black', 'text-white'] } } })
+   defineCwaConfig({
+     multipleStyles: true,
+     styles: {
+       'black-bg': { label: 'Black Background', classes: 'bg-black text-white' },
+     },
+   })
+   ```
+
+   Layout and page `classes: { 'Label': '…' }` become `styles: { key: { label: 'Label', classes: '…' } }` in the same way. A style's classes are resolved when the page renders (on the server too), against the styles of the SFC that renders the resource: the component, or the UI variant it uses, the layout, the page. Changing a style's classes in code changes every component using it on the next deploy.
+
+3. **Update the content that already has a style.** `uiClassNames` now stores `style:<key>`, and anything else in it renders nothing. Either re-select the styles in the admin, or rewrite the stored values once, for example:
+
+   ```js
+   const keys = { HtmlContent: { 'bg-black text-white': 'black-bg' } }
+   const migrated = resource.uiClassNames.map(entry => keys[resource['@type']]?.[entry] ? `style:${keys[resource['@type']][entry]}` : entry)
+   ```
+
+   and `PATCH` `{ uiClassNames: migrated }` to each resource, adding `?published=true` for a live publishable component so no draft is created.
+
+4. **Removed with no replacement:** `useCwaAutoClass` and the `autoClass` option (the root layout and `ResourceLoader` apply the classes), and `$cwa.resourcesConfig`, `$cwa.setResourceMeta`, `$cwa.layoutsConfig` and `$cwa.pagesConfig`. `getCurrentStyleName(resource)` now returns the first stored style key, so compare it with your keys rather than your labels.
+
 ## Development
 
 - Run `pnpm run dev:prepare` to generate type stubs.

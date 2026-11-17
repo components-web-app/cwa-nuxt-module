@@ -160,7 +160,7 @@ app/cwa/layouts/<Name>.vue                → CwaLayout<Name> (global)
 app/cwa/pages/<Name>.vue                  → CwaPage<Name> (global)
 ```
 
-The module scans `admin/` and `ui/` subdirectories at build time and populates `managerTabs` / `ui` in the generated `cwa-options.ts`. Adding or removing these files in dev triggers a `builder:watch` hook that re-generates the options template automatically.
+Each of these SFCs declares its own config with `defineCwaConfig({...})`. The module scans `admin/` and `ui/` subdirectories at build time and populates `managerTabs` / `ui` in the generated `cwa-config.ts`. Editing a `.vue` under `app/cwa` in dev triggers a `builder:watch` hook that re-generates `cwa-config.ts` and `cwa-styles.ts`.
 
 ### Composables (`src/runtime/composables/`)
 
@@ -188,8 +188,7 @@ Registered by `module.ts` via `addServerHandler` / `addServerPlugin`:
 
 Configured in the consuming app's `nuxt.config.ts` under the `cwa` key:
 
-- `resources` — per-resource-type config (`name`, `description`, `instantAdd`, `managerTabs`, `ui`, `defaultData`)
-- `layouts` / `pages` / `pageData` — UI metadata for admin dropdowns
+- `pageData` — UI metadata for admin dropdowns (component, layout and page config is `defineCwaConfig` in the SFC, #453)
 - `siteConfig` — default site-wide settings
 - `pagesDepth` — depth of nested CWA route segments (default 4)
 - `layoutName` — override the default `cwa-root-layout` layout
@@ -341,7 +340,7 @@ CSS-first config in `src/tailwind/tailwind-cwa.css`; every class uses the `cwa:`
 - **Manager tabs keep the manager bar the same height between tab switches.** Lay a tab's controls out in one row — an inline `CwaUiFormLabelWrapper` label beside its control, then buttons — as the Ui, Order and Publish tabs do. Secondary text (a time zone, a status) goes inline or in a tooltip, never on its own line. Kit components used in tabs must not force a label or helper line.
 - **Date and time** ([#320](https://github.com/components-web-app/cwa-nuxt-module/issues/320)): `CwaUiCalendar` and `CwaUiInputDate` are ports of Nuxt UI's Calendar and InputDate; `CwaUiDatePicker` combines them and is the one to use in the admin. Its value is always a UTC ISO string or `null`; the editor picks on their computer's clock (`toLocalDateTime`/`fromLocalDateTime` in `resources/date-time-input.ts`), the zone and its offset **at the chosen date** are named in the calendar button's hover text — deliberately not in the field, where it took space and shifted width as the date changed, and nothing before `min` (rounded up to the minute step) is ever emitted. The dynamic single/range variants are typed as `Component`, because their props differ and Vue cannot check a union at one binding.
 - **Two copies of `@internationalized/date` silently break the picker**: reka-ui checks values with `instanceof`, so a value built by another copy loses its time segments with no error. This repo's lockfile was deduped for it; an app can hit it when its lockfile already holds reka-ui (Nuxt UI apps) on an older copy. `CwaUiDatePicker` warns once, naming `pnpm dedupe`, by checking its value with reka-ui's own `isZonedDateTime`. Keep our range no higher than needed so it can share reka-ui's copy.
-- **Component styles**: `styles: { multiple?, classes: { name: string } }`; `uiClassNames` stores one class string per selected style (`mergeSelectedStyles` / `deriveSelectedStyles`). `useCwaAutoClass` removes only classes it added itself.
+- **SFC config and styles** ([#453](https://github.com/components-web-app/cwa-nuxt-module/issues/453)): components, UI variants, layouts and pages declare their config with the `defineCwaConfig` macro, read at build time by `src/cwa-config-declarations.ts` (one object literal per file, else warned once per file and reason and ignored); the runtime macro is an empty function the production build drops. Names, descriptions, default data and labels go to `cwa-config.ts`, which only admin code may import (`visitor-page-preloads.mjs` forbids a playground description); classes go to `cwa-styles.ts`, read by `ResourceLoader` and `CwaRootLayout` during the server render. `uiClassNames` stores `style:<key>`, resolved against the **rendering** SFC's styles (component, UI variant, layout, page), never globally. An unknown key renders nothing and is kept, so the Ui tab never clears styles on a UI switch and keeps keys another SFC knows. Trap: a resource type rendered only by a differently named SFC (the bundle's `Form` through `uiComponent: 'ExampleForm'`) has no `<Type>/<Type>.vue` to hold its config.
 - **Updates are merge-patch with changed fields only** (`useItemPage.saveResource`). `localResourceData` is a shallow copy — replace nested values, never mutate in place. A not-yet-persisted component merges locally with the same semantics: arrays and `null` replace ([#319](https://github.com/components-web-app/cwa-nuxt-module/issues/319)).
 - `useCwaResourceEndpoint`'s `query`/`applyPostfix` are plain computeds — never watcher-written.
 - **`ManageableResource.getAllEls()` walks from the component's own fragment anchor (`$.subTree.el`), never `$el`**: since Vue 3.5.42 a dev-mode root of comments plus one child resolves `$el` to that child, which is past `<!--cwa-start-->`, so a component rendering nothing yet picked up the next position's elements.

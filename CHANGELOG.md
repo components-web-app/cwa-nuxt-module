@@ -4,6 +4,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+- **Breaking:** components, UI variants, layouts and pages declare their config in the SFC with the `defineCwaConfig` macro, replacing `cwa.resources`, `cwa.layouts` and `cwa.pages` in `nuxt.config.ts` and the `styles` option of `useCwaResource`; styles are `{ key: { label, classes } }`, `uiClassNames` stores `style:<key>`, and the classes are resolved against the rendering SFC during the server render, so a style changed in code reaches every component on the next deploy. `useCwaAutoClass` and `$cwa.resourcesConfig`/`layoutsConfig`/`pagesConfig` are removed; see the README's upgrade section ([#PR](https://github.com/components-web-app/cwa-nuxt-module/pull/PR), [#453](https://github.com/components-web-app/cwa-nuxt-module/issues/453))
+
 ## [2.0.0-alpha.32] - 2026-10-31
 
 - Changing a user's email in the admin asks for your own current password and sends it as `oldPassword`; a wrong or missing password is shown on the field. Needs api-components-bundle 2.0.0-alpha.40, which also sends the email-change confirmation to the new address ([#451](https://github.com/components-web-app/cwa-nuxt-module/pull/451), [#449](https://github.com/components-web-app/cwa-nuxt-module/issues/449))
