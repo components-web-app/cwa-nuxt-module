@@ -1,0 +1,402 @@
+[
+ {
+  "title": "CwaUiResourceStack's shell contradicts itself: a reka DropdownMenu cannot hold a role=\"tree\"",
+  "where": "Spec \u00a75.3 CwaUiResourceStack (\"It uses the CwaUiMenu shell\") vs \u00a712 phase 7 (\"Popover (the stack)\"); \u00a75.3 CwaUiMenu (\"on reka-ui's DropdownMenu\")",
+  "problem": "\u00a75.3 says the stack uses the CwaUiMenu shell, and CwaUiMenu is reka's DropdownMenu. DropdownMenuContent always renders role=\"menu\" and brings its own roving focus and typeahead over DropdownMenuItem children. The stack needs role=\"tree\" with aria-activedescendant and its own Up/Down/Home/End/letter keys. \u00a712 phase 7 lists Popover for the stack instead. A developer can't build both: a tree inside a menu gives nested conflicting roles, and two key handlers fight over the arrow keys.",
+  "fix": "Say the stack is built on reka Popover (PopoverContent with a virtual reference for the pointer, and the selector element for the header) with the tree as its only child. Give it the same outside-pointerdown, focus-return and below-sm sheet behaviour as CwaUiMenu, through a shared internal `core/ui/MenuSurface.vue`. Change \u00a75.3's \"uses the CwaUiMenu shell\" to \"shares CwaUiMenu's surface and sheet\". The Popover role=\"dialog\" also keeps clone mode's Escape guard working, as ClonePlacementMenu relies on.",
+  "severity": "high",
+  "role": "dx",
+  "real": true,
+  "evidence": "05-proposal-v2.md l.565: the stack \"uses the CwaUiMenu shell\". l.563: CwaUiMenu is \"on reka-ui's DropdownMenu\". l.1152 (phase 7) lists \"Popover (the stack), DropdownMenu\". l.569 asks for role=\"tree\" with aria-activedescendant and its own arrow keys. In the mockup, stackMenu() (ui-kit.html l.1848) is a separate panel with its own role=tree and key handler, so it matches Popover and not DropdownMenu. The spec's \"shell\" lists only behaviours (surface, focus, outside pointerdown, sheet), so this is a wording conflict rather than a design flaw. The finding is still correct: the text points developers at two different primitives, and severity is closer to medium than high."
+ },
+ {
+  "title": "Every saving bar control on one save path is not implementable for Style and the file group as written",
+  "where": "Spec \u00a77, \"Every saving control in the bar goes through the one save path\" (Style, Replace/Remove); \u00a73 field binding; \u00a78.4 fieldStates keyed by (iri, field)",
+  "problem": "Two controls named in the list cannot use useCwaResourceModel the way the spec says. (1) Style binds `uiClassNames`, which stores class strings, while the control shows style names (Ui.vue maps them both ways with deriveSelectedStyles and mergeSelectedStyles). `field=\"uiClassNames\"` has no way to transform the value, `v-model` loses `state`, and \u00a73 allows only one of the three. Consuming apps have the same need, for example a price stored in pence and shown in pounds. (2) The file group's Replace is `updateResource` with FormData to `<iri>/upload`, and Remove is `updateResource` with no `iri` (cwa-resource-upload.ts). Neither goes through the model, neither has the (iri, field) that fieldStates is keyed on, and Retry would have to keep the File. FormData writes also skip If-Match.",
+  "fix": "Add a typed mapping to the binding contract, for example `useCwaResourceModel(iri, field, { get, set })` or `mapFieldModel(model, get, set)`, which returns a ResourceModelField with the same `state`, `retry` and `reset`. List Style as its first consumer. For uploads, say that useCwaResourceUpload writes `fieldStates[(iri, fileProp)]` itself (saving, saved, error), that Remove passes `iri`, and that Retry re-sends the last downscaled File held in a closure. Without that, take the file group out of the \"one path\" list and say why.",
+  "severity": "high",
+  "role": "dx",
+  "real": true,
+  "evidence": "\u00a77 l.775 lists the multi-select (Style) and the file group (Replace, Remove), \"In the module that is useCwaResourceModel plus CwaFieldStatus for each one, never a control's own request\". src/runtime/composables/cwa-resource-upload.ts: Replace calls updateResource with FormData to the '/upload' endpoint (l.58-65), and Remove calls updateResource with no iri (l.88-93). Neither goes through useCwaResourceModel. deriveSelectedStyles/mergeSelectedStyles live in Ui.vue and cwa-styles.ts, which map style names to class strings. The spec defines no mapped-model helper. \u00a73 (l.321) allows exactly one of field, :model or v-model, so a mapping needs a hand-built ResourceModelField, and that is not specified."
+ },
+ {
+  "title": "Stack keyboard moves against the screen, and \"Show N more parents\" hides the visible levels from screen readers",
+  "where": "Spec \u00a75.3 CwaUiResourceStack Keyboard and Semantics; ui-kit.html stackMenu() (around lines 1860-1890); shots v6-context-menu-deep-1280-light.png",
+  "problem": "(a) Each parent's name sits below the child it contains, so the innermost level is at the top and the outermost at the bottom. The spec and mockup still map Up to the parent, so ArrowUp moves the highlight down the screen. Left and Right are mapped the same as Up and Down, which also breaks the ARIA tree convention a tree role announces (Left goes to the parent, Right to the child). (b) The mockup wraps every shown level inside the \"Show 3 more parents\" treeitem, which has aria-expanded=\"false\". Assistive technology treats the children of a collapsed node as hidden, so the five visible levels are announced as collapsed or skipped. Expanding it also renumbers every aria-level (in the mockup, level = shown - j + 1).",
+  "fix": "Map the arrow keys to where each name sits: Down and Left go to the parent (outward and lower), Up and Right go to the child, and Home and End go to the innermost and outermost as seen. Or, if Up must stay \"parent\", say why in \u00a75.3 and test it. Make \"Show N more parents\" a leaf treeitem (or a button row) that contains nothing, at the outermost position. Give each real level its true depth as aria-level from the start (the page is always 1), so expanding only adds items and never renumbers. Add a Vitest test that the visible levels never sit inside an aria-expanded=\"false\" node.",
+  "severity": "medium",
+  "role": "dx",
+  "real": true,
+  "evidence": "Part (b) is confirmed in ui-kit.html l.1871. The nmore treeitem has aria-expanded=\"false\" and wraps every shown level in its role=group. Spec l.571 also describes it as an outer box with aria-expanded=false. aria-level is computed as shown - j + (more?1:0) (l.1867), so expanding (S.all) renumbers every level. Part (a) is weak. The DOM order is outermost first and `order` puts parents before children, so Up=previous node=parent and Down=next=child follows the ARIA tree convention. Left to parent and Right to child also match ARIA. The 'against the screen' claim is only about where the name labels sit (v6-context-menu-deep-1280-light.png), and it is subjective. Keep (b) and drop or soften (a)."
+ },
+ {
+  "title": "Choosing a level is async and can be cancelled, but the spec closes, announces and returns focus at once",
+  "where": "Spec \u00a75.3 \"Choosing a level\" and the typed catalogue `CwaUiResourceStack emits: select(level)`; src/runtime/admin/resource-stack-manager.ts selectStackIndex()",
+  "problem": "selectStackIndex(index, fromContext) is async. When the chosen stack is layout and the editor is on the page (or the other way round), it opens the \"switch and edit the layout?\" confirm, and on cancel it calls resetStack(true) and selects nothing. The spec says choosing selects, outlines, announces \"Main content group selected\" and returns focus to the selector. Built literally, it announces a selection that was then cancelled, and sends focus back to the selector while the confirm is open. `select(level)` also emits `{ key, label }`, but the manager needs the stack index. From the header, any choice also slices the stack (`fromStack.value.slice(index)`), so the children of the chosen level are gone afterwards. That is worth stating, so nobody expects to come back down from the header.",
+  "fix": "State the sequence: on choose, close the stack, await `selectStackIndex(index, fromContext)` and let the confirm take focus. Announce and return focus only when the selection actually changed (have selectStackIndex return a boolean). On cancel, return focus to the selector or the clicked component and announce nothing. Make `select` emit `(level, index)`, or document that `key` is the stack index (levels are innermost first, matching `resourceStack` and `contextStack`). Add a line that choosing a parent from the header drops its children from the stack.",
+  "severity": "medium",
+  "role": "dx",
+  "real": true,
+  "evidence": "src/runtime/admin/resource-stack-manager.ts l.205-237: selectStackIndex is async and awaits confirmStackChange when _isEditingLayout differs from isLayoutStack. On cancel it resets isLayoutStack and returns without selecting. Then currentResourceStack = fromStack.slice(index), so the children are dropped. Spec l.574 says choosing selects, outlines, names it and announces, with no cancel path. The typed emit is select(level) with key (l.642-644), and the stack index is not defined. One detail in the finding is wrong: on cancel the code does not call resetStack(true). The resetStack(true) call happens only after a successful context selection."
+ },
+ {
+  "title": "Add component dialog: a component listed twice has no defined value or selection identity",
+  "where": "Spec \u00a75.6 Sections (\"A component in the group appears in both sections\") and \u00a75.5 `CwaUiCombobox { options: MenuEntry[] }`; ui-kit.html addComponentDialog() rows()/choose()",
+  "problem": "reka's Combobox keys items by `value`. Two ComboboxItems with the same value (Image under \"In this group\" and under Media) are both marked selected and both get the check, and the highlight and `aria-activedescendant` mapping becomes ambiguous. The mockup works around this with row ids (`in-image` and `image`), so only the clicked row is checked. The typed API has no such key, and \u00a75.6 doesn't say whether one row or both show the check. Section headings in the mockup are `role=\"presentation\"` divs, so a screen reader hears \"Image\" twice with no section. `filter(item, q)` is meant to match on group, but a MenuItem has no group field: the group is the parent entry's heading.",
+  "fix": "Add a `key` to MenuItem, unique per list and defaulting to `value`, used for the item id and highlight. Say that the chosen state shows on every row with the same value. Render each section as reka ComboboxGroup with ComboboxLabel, so a role=\"group\" is labelled \"In this group\" or \"Media\". Pass the group heading to `filter` as `filter(item, q, group)`. Add an `ariaLabel` (or `count`) to MenuItem for \"Image, 3 in this group\" rather than leaving it to a slot.",
+  "severity": "medium",
+  "role": "dx",
+  "real": true,
+  "evidence": "Spec l.616: MenuItem has label, value and others, but no key or id. l.637: filter(item, q) has no group argument, while the group heading lives on the parent MenuEntry. l.703 says a component in the group appears in both sections, and does not say which row shows the check. The mockup works around this with row ids 'in-'+k and k (ui-kit.html rows()), and section headings are role=\"presentation\" divs (l.4060), so screen readers get no labelled group."
+ },
+ {
+  "title": "Enter in the add dialog: one press adds in the mockup, two presses in the spec",
+  "where": "Spec \u00a75.6 Choosing (\"Arrow keys plus Enter on the highlight chooses \u2026 Enter on the chosen one \u2026 adds\"), \u00a75.5 `select` emit; ui-kit.html keydown handler (`choose(S.hl, true)` \u2192 doAdd) and the section note (\"arrows move, Enter adds\")",
+  "problem": "The spec makes Enter two steps: the first chooses, the second adds. The mockup's handler calls choose(i, true), which adds immediately for every component except Dynamic, and its own note says \"Enter adds\". A developer building from the mockup ships one-press add, and a tester writing to the spec fails it. The typed `select` emit (\"Enter on the chosen item\") only fits the two-step version.",
+  "fix": "Pick one and make the spec, the note and the mockup agree. If two-step stays, fix the mockup's keydown to `choose(S.hl, false)` when the highlighted row is not chosen, and update the section note. If one-press is wanted, drop \"Enter on the chosen one\" and have `select` fire on Enter on the highlight. Either way, keep Dynamic's Enter moving focus to Data type.",
+  "severity": "medium",
+  "role": "dx",
+  "real": true,
+  "evidence": "Spec \u00a75.6 l.700: \"Arrow keys plus Enter on the highlight chooses ...; Enter on the chosen one ... adds\". The catalogue (l.638) also says select fires on Enter on the chosen item. Mockup keydown (ui-kit.html l.4111) calls choose(S.hl, true), and choose() (l.4083-4094) calls doAdd() when go is true for any non-Dynamic row, so one Enter adds. The section note (l.1443) says \"arrows move, Enter adds\"."
+ },
+ {
+  "title": "\u00a75.6 changes today's add dialog in two unlisted ways: plain-text descriptions and Dynamic's condition",
+  "where": "Spec \u00a75.6 Rows (\"`description`, rendered as text, never HTML\") and Sections (\"then Dynamic last\"); AddComponentDialog.vue (v-html on description; enableDynamicPosition); playground/nuxt.config.ts",
+  "problem": "Today `description` is rendered with v-html, and the playground config itself uses `'<p>Use this component\u2026</p>'`. With text rendering every existing app shows literal `<p>` tags, and nothing in \u00a75.6, \u00a712 or the migration notes records this as a breaking change. Today Dynamic is offered only when `!isEditingLayout && resources.isDynamicPage`, but \u00a75.6 lists it unconditionally, and the mockup shows it on every open.",
+  "fix": "Add to \u00a75.6: descriptions are plain text, with HTML tags stripped and a one-time dev warning when a description contains markup. Add a CHANGELOG line and a DEPRECATIONS.md entry for the change, and update the playground config. Add: \"Dynamic is listed only on a page-data page outside layout editing, as today\". Let the mockup's Dynamic toggle hide it.",
+  "severity": "medium",
+  "role": "dx",
+  "real": true,
+  "evidence": "AddComponentDialog.vue l.41 renders the description with v-html=\"resourceDescription\". playground/nuxt.config.ts l.74-82 uses '<p>\u2026</p>' descriptions. Spec l.698 says \"rendered as text, never HTML\", and the migration notes (l.1156) do not mention it. AddComponentDialog.vue l.218 sets enableDynamicPosition = !isEditingLayout && resources.isDynamicPage, and the Dynamic option is shown only under v-if=enableDynamicPosition (l.27). Spec l.703 lists Dynamic last with no condition."
+ },
+ {
+  "title": "The icon, group and image keys land in the visitor entry, and the icon set and preview serving are undefined",
+  "where": "Spec \u00a75.6 New optional config keys; \u00a712 phase 6a+ budget (\"0 B \u2026 option URLs live in cwa-options.ts\"); src/runtime/plugin.ts imports `#build/cwa-options`",
+  "problem": "cwa-options.ts is imported by plugin.ts, which is in every visitor's entry chunk. Putting `icon`, `group`, `image` and the preview.webp URLs there grows the visitor entry for each component, so the 6a+ budget of \"0 B\" is wrong, and entry-bundle-markers/visitor-page-preloads will catch it. \u00a75.6 also doesn't say how `app/cwa/components/<Name>/preview.webp` gets a URL: a Vite asset import, a Nitro publicAssets dir, or a copy into public. \"The admin's icon set\" doesn't exist: there are ten ad-hoc SFCs in ui/icon and no name registry, so an author has no list of valid names and no type checking.",
+  "fix": "Emit the admin-only keys into a separate template (for example `cwa-admin-resources.ts`, `write: true`, regenerated by builder:watch) imported only by the lazy add dialog. Add its marker to entry-bundle-markers.mjs and keep 6a+ at 0 B. Specify serving, for example `import preview from '<abs>/preview.webp'` in that template so Vite hashes and emits the asset. Define the icon set as a typed union exported from the module (`CwaAdminIconName`), with a dev warning for an unknown name, and record a named consumer for it (R7).",
+  "severity": "medium",
+  "role": "dx",
+  "real": true,
+  "evidence": "src/runtime/plugin.ts l.6 imports options from '#build/cwa-options', and the plugin is in the entry. Spec l.709 says the preview.webp URL is emitted \"into cwa-options.ts, so no image is in the entry bundle\". Phase 6a+ (l.1147) claims \"0 B (... option URLs live in cwa-options.ts)\". The extra strings are in the entry, so the claim of 0 B for the entry is wrong, though the growth is small per component. How preview.webp is served or hashed is not specified. src/runtime/templates/components/ui/icon/ holds 10 ad-hoc icon SFCs and no name registry, while l.707 refers to \"the admin's icon set\"."
+ },
+ {
+  "title": "Caret rule: \"same offset\" is wrong for edits before the caret, and it ignores IME and input types",
+  "where": "Spec \u00a74.3 \"A focused field updated remotely\"; round-6-backlog.md Pending spec additions",
+  "problem": "Keeping the caret at the same numeric offset moves it relative to the text whenever a peer inserts or deletes before it: a peer adds \"New \" at the start and the caret lands four characters to the left of where the editor was typing. The HTML editor avoids this with a minimal replace, so the two fields behave differently. The rule also says nothing about an active IME composition (writing to `el.value` mid-composition cancels it on Safari and Chrome). `setSelectionRange` throws an InvalidStateError on `type=\"email\"` (a CwaUiInput type). The spec doesn't say what the input shows while this field's own save is in flight, the window where a remote value arrives and is then overwritten by this tab's own response.",
+  "fix": "Specify a common prefix and suffix diff, as the HTML editor does: a caret or selection end before the changed range keeps its offset, one after it shifts by the length delta, and one inside it moves to the end of the inserted text. Defer applying until `compositionend`. Skip caret restoration for types without selection support (email, number). Say that with a request in flight the input keeps showing the local value until the response settles. Put this in the kit input's own v-model handling (not Vue's vModelText, which only rewrites `el.value`), and test with a mocked selection API in happy-dom.",
+  "severity": "medium",
+  "role": "dx",
+  "real": true,
+  "evidence": "Spec \u00a74.3 l.414 and round-6-backlog 'Pending spec additions' both say the caret is kept at the same numeric offset, or at the end if the text got shorter. That moves the caret relative to the text when a remote insert or delete lands before it, while the HTML editor uses a minimal replace (same paragraph). The spec says nothing about IME composition, about input types where setSelectionRange throws (email, number; CwaUiInput takes a type), or about an in-flight own save. These are technical gaps, not a relitigated decision, because the backlog marks the rule as a pending spec addition and does not record it as decided."
+ },
+ {
+  "title": "Phone header: the path selector collapses to \"R\u2026\" when the status keeps its words, against the 6rem minimum",
+  "where": "Spec \u00a77.2 (\"On phones the box keeps at least 6rem \u2026 except 'N changes not saved', which keeps its words\"); shot v6-header-status-error-390-light.png",
+  "problem": "In the 390px error state the header shows \"Done  R\u2026  Menu  \u25b2 1 change not saved\": the selector has shrunk to about 2rem and lost its dashed box. Both rules in \u00a77.2 can't hold at 390px with Done and Menu present, and the spec doesn't say which gives way. A developer will set `min-width: 6rem` and overflow the header, or copy the mockup and break the rule.",
+  "fix": "Say which yields at phone width. For example: the not-saved button shortens to the triangle plus \"1 not saved\" (the full text stays its accessible name), or Menu becomes an icon, so the selector keeps 6rem. Fix the mockup to match. Add a browser measurement at 390px in each status (saved, saving, 1 and 2 not saved) that the selector is at least 96px wide and the header doesn't overflow.",
+  "severity": "low",
+  "role": "dx",
+  "real": true,
+  "evidence": "shots/v6-header-status-error-390-light.png shows \"Done  R...  Menu  \u25b2 1 change not saved\": the selector is roughly 2rem wide and its dashed box is gone. Spec \u00a77.2 l.805 requires \"On phones the box keeps at least 6rem\" and also lets 'N changes not saved' keep its words. The spec does not say which gives way, and the mockup breaks the 6rem rule."
+ },
+ {
+  "title": "Typing \"text\" then Enter adds Image, not Rich text",
+  "where": "\u00a75.6 add component dialog: search ranking and Enter (ui-kit.html addComponentDialog, keydown Enter \u2192 choose(hl, true))",
+  "problem": "Search matches name, description and group equally and keeps section order, so \"text\" puts Image first (its description says \"alt text\") under In this group and highlights it. Enter on a highlighted row that is not yet chosen chooses and adds it in one go. The log confirmed it: \"New Image after Intro text\". The spec says Enter on the highlighted row only chooses it (a check, and the footer reads \"Image, ready to add\"), and a second Enter adds, so the mockup and the spec disagree. As an editor I type the name I want and press Enter, and I get the wrong component inserted with no chance to see it first.",
+  "fix": "Rank name matches (prefix first) above description and group matches, across sections, so the first highlight is the best name match. Then pick one Enter behaviour and use it in both places: either the spec's two-step (first Enter chooses, second adds) or one-step only when the highlight is a name match. Add a test that \"text\" + Enter adds Rich text.",
+  "severity": "high",
+  "role": "editor",
+  "real": true,
+  "evidence": "Ran it in playwright at 1280: after filling #acd-q with 'text' the list reads [Image \u00b7 3, Rich text \u00b7 2, Image, Quote, Rich text] and Image is highlighted, because the description 'alt text' matches. One Enter logged 'New Image after Intro text (draft\u2026)' straight away. The cause is the keydown handler in addComponentDialog: `if (S.hl>=0 && S.picked !== opts[S.hl].id) choose(S.hl, true)`, and go=true calls doAdd(). Spec \u00a75.6 line 700 says Enter on the highlight only chooses it ('Image, ready to add'), and Enter on the chosen row adds it. So the mockup and the spec disagree, and the ranking problem is real too."
+ },
+ {
+  "title": "Phone header in error state squeezes the selected name to \"R\"",
+  "where": "\u00a77.2 path selector at < 640px with \"1 change not saved\" showing (mockup .ip-head grid, .pathsel min-width 6rem)",
+  "problem": "At 390px, once a save fails, the header shows Done, a dashed box holding only \"R\", Menu, and \"1 change not saved\". getComputedStyle reports min-width 96px, but the minmax(0,1fr) grid column clips the box to about 22px. This is exactly when I most need to know which component failed, and the header no longer says. The spec's \"box keeps at least 6rem\" is not honoured. (The saved v6-header-status-error-390 shot shows the same \"R\u2026\".)",
+  "fix": "Give the centre column a real minimum, e.g. minmax(6rem,1fr), and make the other items give way. On phones shorten the not-saved button to the triangle plus \"1 not saved\", and make Menu an icon button. Add a 390px test that the selector's visible width is at least 6rem in every status.",
+  "severity": "high",
+  "role": "editor",
+  "real": true,
+  "evidence": "At 390 with 'Next save fails' on, I typed into the component. My clip of the header shows the dashed box cut down to 'R', with Menu drawn over it. v6-header-status-error-390-light.png shows the same 'R\u2026'. getBoundingClientRect still reports 96px because .pathsel has min-width 6rem, but the .ip-head grid column is minmax(0,1fr), so the box overflows its column and is covered. Spec \u00a77.2 says the box keeps at least 6rem, and on screen it doesn't."
+ },
+ {
+  "title": "Caret rule keeps the same character offset, so my caret can land in someone else's words",
+  "where": "\u00a74.3 \"A focused field updated remotely\" (and round-6-backlog \"Pending spec additions\")",
+  "problem": "Keeping the caret at the same numeric offset is only right when the remote change comes after it. If Mia adds or deletes words before my caret, the same offset now sits in different text, and my next keystrokes go in the wrong place. Nothing tells me the field changed under me either: there is no flag or line, because a focused field with no unsent change just takes the value silently. On a phone I may not even see that it happened.",
+  "fix": "Map the caret and selection through the text diff, like the TipTap minimal replace: an insert before the caret shifts it by the inserted length, and a deletion that spans it moves it to the deletion point. Also show the peer's flag (\"Mia changed this\") for about 3 s when a remote value is applied to the field you are in, and add a test with an insert before the caret.",
+  "severity": "medium",
+  "role": "editor",
+  "real": true,
+  "evidence": "Spec \u00a74.3 line 414 and the backlog's pending addition both say a plain text field 'keeps the caret at the same offset'. When the remote insert or delete comes before the caret, that offset now points into different text. The HTML editor gets this right with a minimal replace and a plain field does not. The backlog lists the caret rule as an item for this panel to review, so it is in scope and not a closed decision. The spec also gives no signal for a value applied silently to the focused field."
+ },
+ {
+  "title": "A component that isn't allowed in the group reads as not existing",
+  "where": "\u00a75.6 No matches, together with \"Disallowed components stay out of the list\"",
+  "problem": "If I search for Video in a group that doesn't allow it, I'm told \"No component called \u201cVideo\u201d\". That is false: Video exists and I've used it on other pages. I'll assume it was deleted or misspelt and ask a developer, when the real answer is \"not allowed here\". Typos also get no help (\"galery\" gives nothing, and there is no way back except clearing the field).",
+  "fix": "When the query matches a component that is filtered out by allowedComponents or explicitAllowOnly, say \"Video can't be added to Main content\" (and, when known, which groups take it). For no match at all, keep the message and add a \"Clear search\" option. Matching that tolerates a one-letter typo would be nice to have.",
+  "severity": "medium",
+  "role": "editor",
+  "real": true,
+  "evidence": "Spec \u00a75.6: disallowed components 'stay out of the list', and the no-matches message is always 'No component called \u201c\u2026\u201d' (render() writes ac-none with that text whenever opts is empty). Searching for a component that exists but is filtered out therefore produces a false message. Keeping disallowed components out of the list can stay as it is; only the copy for an empty result that matched a filtered component needs to change. That doesn't conflict with any backlog decision."
+ },
+ {
+  "title": "Resource stack opens with the hover look on a level that isn't selected",
+  "where": "\u00a75.3 CwaUiResourceStack: highlight on open, and the selected level's accent edge",
+  "problem": "With Main content group selected, right-clicking the component opens the stack with Rich text highlighted (dark fill and solid border), while the selected group has only a thin blue edge and a check. The fill is the loudest thing in the panel, so Rich text looks like the current selection. An accidental Enter or Space then silently moves my selection to Rich text. The group's 3px edge also runs the whole height of the group box, past Rich text and Component position, so it is unclear which level it marks.",
+  "fix": "From the header path selector, open with the selected level highlighted (from the pointer, innermost is right). Make the highlight lighter than the selection: keep the solid border but use a fainter fill. Limit the selected level's accent edge to its own name row (the .nl label), not the whole box.",
+  "severity": "medium",
+  "role": "editor",
+  "real": true,
+  "evidence": "In playwright I picked Main content group from the header, then right-clicked the component. The stack opened with Rich text highlighted (solid border and field-hover fill) while the group was selected. The group's selection mark is `.nbox.sel{box-shadow:inset 3px 0 0}`, a 3px edge measured 167px tall that runs past Rich text and Component position (my screenshot ctx-group.png). Opening on the innermost level from the pointer follows the spec (\u00a75.3). From the header, the innermost box is already the selected level (hdrOpen hl = sel = Rich text), so that part of the fix is already done. What still holds is the execution: the highlight fill outweighs the selection mark, and the edge spans the whole box."
+ },
+ {
+  "title": "Phone add dialog cuts off descriptions and hides why Add is disabled",
+  "where": "\u00a75.6 phone layout (#ac-phone): .ac-d ellipsis and .fstate display:none",
+  "problem": "At 390px every description is clipped (\"One image with alt tex\u2026\", \"Paragraphs, headings, lists and \u2026\"), because \"3 styles\" takes the right side, and the description is the only thing telling me what a component is. The footer's \"Choose a component\" and \"Choose a data type and a field\" are hidden on the phone, so Add sits disabled with no reason given. With Dynamic chosen I can't tell what is still missing.",
+  "fix": "On phones let the description wrap to two lines and move \"3 styles\" under it, or drop it there. Keep the footer reason visible (above the buttons or as the disabled Add's helper line).",
+  "severity": "medium",
+  "role": "editor",
+  "real": true,
+  "evidence": "At 390, in #ac-phone, 9 of 11 .ac-d descriptions report scrollWidth > clientWidth ('One image with alt tex\u2026'). v6-add-component-390-light.png shows the same. The CSS rules `.dlg-f .fstate{display:none}` under max-width 639px and the dlgframe container query hide 'Choose a component', and Add is disabled with no reason shown."
+ },
+ {
+  "title": "Removing the bar's image saves at once with no Undo",
+  "where": "\u00a77 one save path: file group Remove (mockup imgEp; \u00a75.2 CwaUiFileUpload)",
+  "problem": "Remove now goes through the save path and sends file: null immediately; the line only shows saved. Removing a style chip and switching an either/or both offer Undo, but removing an image doesn't. Reset only exists after a failure. One mistaken tap on a phone (Remove sits right next to Replace) loses the image, and I'd have to find the file again by name.",
+  "fix": "Treat Remove like a chip removal: after a successful remove, show the saved-with-Undo state (\u00a74.2), with Undo in the popover until the next edit in the group, restoring the previous file IRI in one save.",
+  "severity": "medium",
+  "role": "editor",
+  "real": true,
+  "evidence": "In the mockup, Remove does imgSet(''); imgEp.change(), a plain episode with delay 0 that sends { file: null }. It has no undo state. The spec's own rule (line 88: 'Undo is kept for things that happened and can be reversed (removing a chip, a successful either/or switch)') and \u00a74.2's 'saved with Undo' state leave file Remove out, and \u00a75.2 CwaUiFileUpload doesn't mention Undo either. That is a gap, not a decision."
+ },
+ {
+  "title": "Nothing shows that the header name can be clicked to choose a parent",
+  "where": "\u00a77.2 path selector; \u00a75.3 phone long press",
+  "problem": "On desktop the selected name is a dashed box like the outlines on the page. It only changes on hover, and nothing says \"click to choose a parent\". On touch there is no hover at all. Long press is the other way in, but nothing hints at it, and it does nothing while the in-page text is being edited (which is most of the time). So on a phone I'd struggle to select the group or position to reorder or remove it.",
+  "fix": "Add a small chevron or \"parent\" glyph inside the selector when it has parents. On first selection, a one-time hint could say \"Tap the name to select what contains it\". The accessible name already says it, so put the same words on screen.",
+  "severity": "low",
+  "role": "editor",
+  "real": true,
+  "evidence": "In playwright, .pathsel has no glyph (0 svg). The only affordance is a solid border and fill on hover or while open (CSS .pathsel.can:hover). The long-press handler returns when document.activeElement === bodyEl, which is the text being edited, and that matches spec \u00a75.3 ('left to the browser's text selection inside text being edited'). On touch, the selector is therefore the only way in and it has no visible cue. Low severity, but accurate."
+ },
+ {
+  "title": "Phone header \"saved\" tick alone can't be read on touch",
+  "where": "\u00a77.2 header status below 640px (.ip-hs: glyph only, text in title)",
+  "problem": "At rest the phone header shows only a green tick next to Menu. The words live in the accessible name and the hover title, and a phone has no hover, so a sighted phone user can't confirm what the tick means. A lone green tick beside Menu can read as a \"Done\" or confirm button, though tapping it does nothing. This is the \"safe to leave?\" signal I rely on before closing the tab.",
+  "fix": "Keep the short word \"Saved\" next to the tick on phones (the bar already uses short words below lg), or make the status a button that shows the full text in a popover on tap.",
+  "severity": "low",
+  "role": "editor",
+  "real": true,
+  "evidence": "At 390 in playwright, '#ip-hs .ht' ('All changes saved') is clip-path inset(50%), 1px wide, so only the tick shows, and the text survives only in the title attribute. Spec \u00a77.2 asks for this ('the status shows its glyph alone \u2026 hover title'), but this round's task lists the header's phone icon-only status for review, so it is in scope. A title tooltip doesn't appear on touch. Note that v6-header-status-saved-390-light.png is stale: it still shows the words."
+ },
+ {
+  "title": "Jargon in the stack and the Dynamic row",
+  "where": "\u00a75.3 stack labels (\"Component position\", \"Main content group\"); \u00a75.6 Dynamic row and its Data type / Field selects",
+  "problem": "As an editor I don't know what a \"Component position\" is or how selecting it differs from selecting \"Rich text\". \"3 of 6 in Main content\" helps, but not what I can do there. \"Shows the component each page's data chooses\", \"Data type\" and \"Field\" are developer words, so I'd avoid Dynamic or pick it by accident.",
+  "fix": "Use editor-facing second lines that say what you can do at that level: position \"Its place in Main content: move or remove\", group \"Main content: add or reorder components\". For Dynamic: \"Changes per article: each article picks what shows here\", with labels such as \"For which pages\" and \"Which part of each page\". This is copy only, no behaviour change.",
+  "severity": "low",
+  "role": "editor",
+  "real": true,
+  "evidence": "The mockup's levels use 'Component position' / '3 of 6 in Main content' and 'Main content group' / '6 components' (SHORT array). The Dynamic row reads 'Shows the component each page's data chooses', with selects labelled 'Data type' and 'Field' (spec \u00a75.6 lines 698-700). This is a copy-only suggestion that doesn't conflict with any backlog decision. Low severity."
+ },
+ {
+  "title": "Header path selector: the innermost box can't sit over the selector when the header is at the top of the viewport, and the boxes move when you expand",
+  "where": "\u00a75.3 Opening / \u00a77.2 path selector; ui-kit.html stackMenu() placement (at.nodeType branch) and render() on 'Show N more parents'",
+  "problem": "I moved the stand-in header to y=0, where the real admin header sits. The selector was at y=7.6 but the innermost box opened at y=51. The parent padding above the innermost box is about 0.375rem per level plus the panel padding, so the clamp to the viewport pushes the panel down, and the selected box ends up covering page content about 43px below the selector. The mockup only looks right because its header sits mid-page. When 'Show 3 more parents' is expanded, render() does not re-place the panel, so the innermost box jumps 14px right and 14px down (485,51 \u2192 499,65) under the pointer.",
+  "fix": "Add a collision rule to \u00a75.3. When parents can't wrap above the selector, open the stack below the header with its innermost box aligned to the selector horizontally, and add a 1px connector or caret so it still reads as coming from the selector. Recalculate placement after expanding so the boxes already on screen keep their positions and the new parents grow outward (or the panel scrolls). Test both at y=0.",
+  "severity": "high",
+  "role": "visual",
+  "real": true,
+  "evidence": "Checked with Playwright on ui-kit.html at 1280px, with the stand-in header scrolled to y=0. The selector box was at y=8.05. With the 4-level stack the innermost box opened at y=37, and with 'Deep nesting (8 levels)' at y=51. The cause is the `top = Math.min(Math.max(8, top), \u2026)` clamp in stackMenu(). After 'Show 3 more parents' the innermost box moved from (514,51) to (528,65), because act('m') calls render() and never places the panel again. \u00a75.3 has no rule for this case. Today's PathSelector.vue uses a negative marginTop, so at the top of the viewport its parents would be clipped above it, so the problem exists today too."
+ },
+ {
+  "title": "Phone header: the path selector collapses to 'R' under Menu, and its label disappears while the sheet is open",
+  "where": "\u00a77.2 phones; ui-kit.html .ip-head grid (minmax(0,1fr)) with .pathsel{min-width:6rem}, and .pathsel[aria-expanded=true]>span{opacity:0}",
+  "problem": "At 390px with '1 change not saved' showing, the title cell is 22px wide while the selector is 96px. The dashed box is cut to 'R' and runs under 'Menu' (my screenshot phone-hdr-err-light). The spec's '6rem minimum' is overridden by the grid track. When the stack opens as a bottom sheet, the opacity:0 rule (written so the desktop popover can cover the selector) also applies, so behind the scrim the header shows an empty grey box. The selector is also only 2rem tall at coarse pointer sizes, below the kit's 2.75rem touch rule.",
+  "fix": "Give the centre track minmax(6rem,1fr). When it can't fit, shorten 'N changes not saved' to its glyph plus 'N' on phones, or move Menu into an icon button. Limit the opacity rule to the anchored popover, not the sheet. Make the selector 2.75rem tall on coarse pointers.",
+  "severity": "high",
+  "role": "visual",
+  "real": true,
+  "evidence": "Checked with Playwright at 390px with the '1 change not saved' button showing (it measured 154px wide). The #ip-ttl cell was 22.4px wide and the .pathsel button 96px wide, so the button overflows it. The header screenshot shows a dashed box with only 'R' in it, running into 'Menu'. Spec \u00a77.2 says the box keeps at least 6rem, and the `minmax(0,1fr)` track overrides that. Opened from the selector on a phone, the stack is a sheet (class 'stackm sheet') and the selector's span has opacity 0, because `.pathsel[aria-expanded=true]>span{opacity:0}` (line 237) is not limited to the popover. The .pathsel height is a fixed 2rem with no coarse-pointer override (line 233), so it is below the 2.75rem touch rule."
+ },
+ {
+  "title": "Accent edges and rings mean different things in the two new components",
+  "where": "\u00a75.3 stack (.nbox.sel inset 3px edge; .nbox.hl.kb 2px outline + accent border) vs \u00a75.6 combobox (.ac-o.hl.kb inset 2px accent edge)",
+  "problem": "In CwaUiResourceStack, a leading accent edge means 'selected' and keyboard focus is a full 2px ring. In CwaUiCombobox, the same leading accent edge means 'keyboard-highlighted', and selection is a check plus 600 weight. An editor who meets both in one session learns opposite meanings for the same mark. In the stack, selection and focus also share the accent hue, so a focused level next to the selected level reads as two active items. The focused level stacks a 1px accent border, a 1px gap and a 2px outline, which is heavier than any other focus ring in the kit. When the stack opens from Shift+F10 or the Menu key, the highlighted level has no ring at all (S.kb starts false; measured outline: none), so a keyboard user has no visible focus at first.",
+  "fix": "Pick one language for both. Recommended: selection = check + 600 weight (as in the combobox), with no accent edge in the stack. Keyboard highlight = the kit's standard 2px focus ring in both, and the combobox drops its edge. Use only the outline for the stack's ring, not the border recolour as well. When the stack is opened by keyboard, start with S.kb=true.",
+  "severity": "medium",
+  "role": "visual",
+  "real": true,
+  "evidence": "The CSS confirms both meanings. In the stack, `.nbox.sel{box-shadow:inset 3px 0 0 accent}` marks the selected level and `.nbox.hl.kb{outline:2px solid accent;outline-offset:1px;border-color:accent}` marks keyboard focus. In the combobox, `.ac-o.hl.kb{box-shadow:inset 2px 0 0 accent}` marks the keyboard highlight, and selection is a check. Checked with Playwright: after Shift+F10 the highlighted level's class was 'nbox sel inmost hl' with outline-style 'none'. The ring (solid 2px, border rgb(29,78,216)) only appeared after an Arrow key. This contradicts \u00a75.3, which says it opens with the innermost level highlighted and that the keyboard highlight adds the ring."
+ },
+ {
+  "title": "Header stack is rebuilt from the new selection, so you can't get back to the child you came from",
+  "where": "\u00a77.2 path selector \u2192 CwaUiResourceStack; ui-kit.html hdrTtlDraw() passes curStackOf() for the current selection",
+  "problem": "I chose 'Left column group' from the header and reopened it. The stack now starts at the group: Rich text and its position are gone, and the only way back is to click the page again. Opened from the header, the selected level is also always the innermost box, so its accent edge and check always mark the same box and tell the user nothing.",
+  "fix": "Keep the stack the selection started from (the clicked component as the innermost level) for as long as the selection stays inside it, and mark the selected level within it. The marker then shows where you are, and Down returns to the child. Reset the stack only when the user selects something outside it on the page.",
+  "severity": "medium",
+  "role": "visual",
+  "real": false,
+  "evidence": "The behaviour is real: Playwright showed the levels going from [Rich text, Component position, Main content group, Page] to [Main content group, Page] after choosing the group. But it is the design as specified, and it is today's behaviour. \u00a75.3 says the innermost box is 'the selected resource, from the header'. \u00a77.2 opens the stack 'with the current stack'. Today's ResourceStackManager.selectStackIndex sets `currentResourceStack = fromStack.slice(index)`. The kept-from-today table says 'Header open: kept', and \u00a75.3 leaves the stack logic to the resource manager, not the kit. The finding asks to change stack logic, which is outside this round's restyle into the kit."
+ },
+ {
+  "title": "Add component: the 'chosen, ready to add' state can't be reached by keyboard, and the mockup and spec disagree",
+  "where": "\u00a75.6 Choosing; ui-kit.html add dialog keydown: Enter \u2192 choose(S.hl, true)",
+  "problem": "The spec says Enter on the highlighted row chooses it (check, 600 weight, footer 'Image, ready to add') and a second Enter adds. In the mockup, ArrowDown \u00d72 then Enter added Hero section at once (log: 'New Hero section after Intro text'), and the mockup's note says 'Enter adds'. So the footer status and the check state a keyboard user would see are never shown, and reviewers are judging two different interactions.",
+  "fix": "Choose one model. For a list that is about picking and adding, one Enter to add is the lighter option: then drop the check and 'ready to add' and keep Add for pointer users. Or implement the spec's two steps. Update the mockup's note and \u00a75.6 to match.",
+  "severity": "medium",
+  "role": "visual",
+  "real": true,
+  "evidence": "In the mockup's keydown handler (line 4111), Enter calls choose(S.hl, true) and `go` calls doAdd(). Checked with Playwright: ArrowDown \u00d72 then Enter gave the toast 'Adding Hero section', and the footer reset to 'Choose a component'. The 'ready to add' state was never shown. Spec \u00a75.6 says Enter chooses and a second Enter adds. The mockup's note (line 1443) says 'Enter adds'."
+ },
+ {
+  "title": "Dynamic sits under 'Other' instead of its own section, and its selects don't line up with anything",
+  "where": "\u00a75.6 Sections and Choosing; add dialog list (desktop and phone)",
+  "problem": "Scrolled to the bottom, Dynamic appears as the last row of 'Other' after Spacer, so it reads as just another component. The spec gives it its own last section because it is a binding, not a component. When chosen, the 'Data type' select is inset 24\u201328px (x\u224853 on desktop, 44 on phone), which lines up with neither the icon column (28) nor the name column (97). The 'Field' select is not shown until a data type is picked, so the two-step requirement isn't visible. Separately, rows scrolling under the sticky search field are cut off with no edge or shadow (half a description line shows under the field).",
+  "fix": "Give Dynamic its own section heading with the same spacing as the others. Indent the in-place panel to the name column so it reads as belonging to that row, and show both selects at once with Field disabled until Data type is set. Add a 1px line or a scroll shadow under the sticky search area once the list has scrolled.",
+  "severity": "medium",
+  "role": "visual",
+  "real": true,
+  "evidence": "In rows(), Dynamic is pushed with `{ h: '' }`, which renders as an empty string, so it has no heading. The Playwright row dump ends '\u2026ac-gh:Other, ac-o:Spacer, ac-o:Dynamic\u2026', so Dynamic sits under Other. \u00a75.6 lists Dynamic as the last section. The Field select is hidden until a data type is set (`df.closest('.fb').hidden = true`, shown only on dt commit), while the spec says choosing Dynamic 'opens its two selects (Data type, then Field)'. I did not measure the inset of the selects or the sticky search edge."
+ },
+ {
+  "title": "Add component rows: two unlabelled numbers, a ragged mix of thumbnails and icons, and phone descriptions cut to a few words",
+  "where": "\u00a75.6 Rows and the image/preview.webp convention",
+  "problem": "'Image \u00b7 3 \u2026 3 styles' puts two numbers in one row, and the '\u00b7 3' (count in this group) has no visible label, so it reads as another styles count. In 'In this group', Image and Hero have 2.5\u00d71.625rem thumbnails while Rich text has a bare 16px glyph, which gives a jagged left column in both themes. At 390px the '3 styles' column plus a reserved check slot (~44px) cuts descriptions to about 16 characters ('A heading and one but\u2026'). The preview.webp convention gives no size or aspect ratio, so site-supplied images will be cropped unpredictably at 40\u00d726 and 56\u00d736.",
+  "fix": "Show the count in words ('3 here') or move it to the right-hand column ('3 here \u00b7 3 styles'). In any section that has at least one thumbnail, draw the icon inside a neutral thumbnail tile of the same size so the column is even. Below sm, drop 'N styles' or move it to the second line, and only reserve the check slot on the chosen row. In \u00a75.6, specify the preview at 112\u00d772 (3.5:2.25 at 2\u00d7), object-fit: cover on a neutral fill, and say it must read in both themes.",
+  "severity": "medium",
+  "role": "visual",
+  "real": true,
+  "evidence": "The v6-add-component-390-light.png screenshot shows 'Image \u00b7 3 \u2026 3 styles' with the '\u00b7 3' unlabelled, and descriptions cut short, such as 'A heading and one but\u2026' and 'One image with alt tex\u2026'. In the code, the `right` variable builds '3 here \u00b7 3 styles' but is never used. The row renders `<span class=\"ac-r\">\u00b7 ${c.n}</span>` instead, and the '3 here' wording reaches only the aria-label. Names do line up (.ac-ic and .ac-th are both 3.5rem wide), so 'jagged' applies only to the lead images, which mix grey thumbnails with bare glyphs. \u00a75.6/\u00a7709 gives no size or aspect ratio for preview.webp."
+ },
+ {
+  "title": "Grey section headings in light are the same colour as helper text and lighter than the field labels beneath them",
+  "where": "\u00a72.1 fg-secondary / \u00a72.3; ui-kit.html --k-fg-2 (light) = #57534e = --k-muted",
+  "problem": "In the light theme, fg-secondary and muted are the same value, #57534e. In the Info tab, 'History' is grey while the 'Created' and 'Updated' labels below it are #1c1917 at 600 weight, so the labels look higher in the hierarchy than their heading. 'Search engines' is exactly the same colour as its description line (measured rgb(87,83,78) for both), so they run together. Dark mode doesn't have this problem (#d6d3d1 vs muted #a8a29e).",
+  "fix": "Keep the decided grey heading but make the light value a step darker than muted, e.g. stone-700 #44403c, so heading > description in colour as well as size. Check that field labels in light don't outweigh it: 500 weight, or the same fg-secondary.",
+  "severity": "medium",
+  "role": "visual",
+  "real": true,
+  "evidence": "In the mockup, light --k-fg-2 is #57534e and --k-muted is #57534e (line 14). Playwright measured the .fsec>.fsh colour as rgb(87,83,78). Spec \u00a72.1 also sets fg-secondary to stone-600 #57534e and fg-muted to stone-600 #57534e in light, so the heading and helper text are identical in light by spec. The .fl labels are fg at weight 500. Caveat: v5 decided 'slightly grey, stone-600'. A darker value such as stone-700 keeps 'slightly grey' but changes the decided number, so Daniel should confirm it."
+ },
+ {
+  "title": "Newly wired bar controls: a failed image remove contradicts itself, and Note sits between two read-only values",
+  "where": "\u00a77 'Every saving control in the bar goes through the one save path'; Content tab Image file group, Info tab Note",
+  "problem": "When Remove fails ('Make the next save fail' then Remove), the group shows 'No image' next to the old thumbnail. Remove is gone and the red line runs under the whole group, so the editor can't tell whether the image is still attached. In the Info tab, the one editable field (Note) sits between 'Created 12 Nov 2026' and 'Updated 2 min ago' with no divider, so a field fill appears among read-only metadata and the row's grouping is unclear.",
+  "fix": "For a file group that fails, show the value being attempted consistently: either keep the last saved file (name, thumbnail and Remove) with the error line and 'Retry remove' in the popover, or show an empty placeholder thumbnail with 'No image'. Never mix the two. Move Note to the start of the Info row (or after a divider at the end) so the read-only ID, Created and Updated stay together.",
+  "severity": "low",
+  "role": "visual",
+  "real": true,
+  "evidence": "In the Image field markup (line 3606), `<span class=\"thumb\">` is static. imgSet('') changes only .fname to 'No image', .fsize, and Remove's hidden state, never the thumbnail. So 'No image' sits next to the old thumbnail after any remove, whether it fails or succeeds. In the Info tab markup (lines 3624\u20133628), the order is ID, divider, Created, Note (an editable input), Updated, divider, badge. Note sits between the two read-only dates with no divider."
+ },
+ {
+  "title": "One 'not saved' state is shown in three different reds on one screen",
+  "where": "\u00a77.1 outline (red-600/red-500), \u00a77.2 header (danger-strong red-400 in dark), \u00a77 bar status (danger-fg red-300 in dark)",
+  "problem": "In dark admin over a light site, a single failed save shows a red-600 outline on the page, a red-400 '1 change not saved' in the header, and a pink red-300 '1 not saved \u2192' in the bar status, all visible together. The v6 change to a saturated red only reached the outline and the header, so the bar status, which is the primary indicator, now looks the weakest and closest to pink.",
+  "fix": "Use danger-strong for the bar status's error text and glyph in both themes, the same as the header. Keep red-300 only for text that sits on a red tint (modal field errors), so 'not saved' has one colour per theme across the header, the bar and the outline.",
+  "severity": "low",
+  "role": "visual",
+  "real": true,
+  "evidence": "The bar status uses `.ip-sum.err{color:var(--k-danger-fg)}` (line 400), which is #fca5a5 (red-300) in dark. The header uses `--k-danger-strong` (#f87171, red-400, line 337). Spec \u00a77.2 brings in danger-strong precisely so the text 'reads as red, not brown or pink', but \u00a77 still gives the bar status danger-fg. This is the status text, not the bar line whose contrast is already being changed. The outline sits on the site's own background, so its red-600 has a different context. Low severity: red-300 for dark error text was a v5 contrast decision, and the fix only applies danger-strong to the bar status."
+ },
+ {
+  "title": "Show toggle's error text becomes part of the switch's accessible name",
+  "where": "Bar, Content tab: the Show toggle (setLine/setStatus when the slot sits inside label.tgl). The same applies to any control whose .st slot is inside its <label>",
+  "problem": "After a failed save, the hidden 'Not saved. The server couldn't save this\u2026 Retry and Reset follow.' span is added inside the <label> that names the checkbox. Playwright reports the switch as switch \"Show Not saved. The server couldn't save this. Reset puts back the last saved value. Retry and Reset follow.\" [invalid], and the same text is linked again through aria-describedby. A screen reader reads the error twice, Voice Control users have to say a whole sentence to reach 'Show', and the name changes with the state. That breaks the spec's own CwaUiToggle rule ('the label never changes with state') and WCAG 2.5.3 and 4.1.2.",
+  "fix": "Put the line's message, and the .st slot itself, outside the <label>, as a sibling inside the .bf wrapper, and link it only through aria-describedby. Add a Vitest check that the switch's accessible name is exactly 'Show' in every state.",
+  "severity": "high",
+  "role": "a11y",
+  "real": true,
+  "evidence": "ui-kit.html:3602 puts the Show toggle's `<span class=\"st\">` inside `<label class=\"tgl\">`. setStatus (2807) resolves `f = slot.closest('.f, .tgl, .file')`, which is the label, and lineField(.tgl) is true (2543). setLine then calls `el.append(msg)` (around 2632), so the hidden 'Not saved. \u2026 Retry and Reset follow.' span lands inside the label that names the checkbox. The same span is also added to the input's aria-describedby. This breaks \u00a711.3's CwaUiToggle row, 'the label never changes with state'."
+ },
+ {
+  "title": "File group's error state sits on the Replace button only, as unsupported aria-invalid",
+  "where": "Bar, Content tab: the Image file group (ctlOf picks the first button); also any group control resolved by ctlOf, such as the either/or segments",
+  "problem": "With Image in error, Replace gets aria-invalid=\"true\" and the description, and Remove gets neither. aria-invalid is not a supported state on role=button, so most screen readers say nothing about it. Someone who tabs to Remove, or who lands on the thumbnail, never hears that the image did not save. The spec says the line 'sits under the whole control', but the semantics are tied to one child.",
+  "fix": "For composite controls (file group, segmented, either/or), make the wrapper a role=\"group\" named by the field label ('Image'), and link the hidden status message from that group with aria-describedby so it is read when focus enters the group. Drop aria-invalid from buttons. Add a \u00a711.3 row for the file group.",
+  "severity": "high",
+  "role": "a11y",
+  "real": true,
+  "evidence": "ctlOf (2546) resolves the `.file` div (3606) to its first `button`, which is Replace. setLine sets aria-invalid and aria-describedby on that one button only, so Remove and the thumbnail get neither. ARIA 1.2 deprecates aria-invalid as a global attribute and does not support it on role=button. Segmented and either/or controls resolve to the `[aria-pressed=\"true\"]` button the same way. \u00a711.3 has no file-group row."
+ },
+ {
+  "title": "Tab inside the resource stack loses focus to the top of the document",
+  "where": "CwaUiResourceStack, keydown handler: Tab calls closeStack() without refocusing (both anchors)",
+  "problem": "The panel is portalled to the end of the document and removed during the Tab keydown. Focus then falls back to the document's sequential start: in the probe it landed on the first page-level button ('Auto'), not near the component or the path selector. Keyboard users lose their place (WCAG 2.4.3). Using Tab to leave a popup is common.",
+  "fix": "On Tab, call preventDefault, close the stack, return focus to returnTo (the path selector, or the element that had focus before the right-click), then move focus once in the Tab direction from there. Or simply return focus to returnTo, as Escape does. Add a keyboard test: Tab and Shift+Tab from an open stack put focus next to the trigger.",
+  "severity": "high",
+  "role": "a11y",
+  "real": true,
+  "evidence": "In the keydown handler (1895), Tab calls `closeStack()` with no refocus and no preventDefault, and the panel is removed from the portal. Playwright probe: I opened the stack from the header path selector and pressed Tab, and document.activeElement was BODY. The spec's 'Tab closes' (\u00a75.3) never says where focus goes, and the mockup drops it."
+ },
+ {
+  "title": "A tap at an outer box's centre activates a nested child, so screen-reader taps pick the wrong level",
+  "where": "CwaUiResourceStack click handler (e.target.closest('.nbox')), right-click sheet and header popover alike",
+  "problem": "Each treeitem's box contains its children's boxes. In the probe, hit-testing the centre of 'Page', 'Main content group' and 'Component position' landed on an inner box every time. iOS VoiceOver and TalkBack activate an element with a tap at its centre, so double-tapping 'Page' would select 'Component position' or the component instead. On the phone sheet this is the only way in, because aria-activedescendant is not followed on iOS.",
+  "fix": "Make each level's own name row (.nl) the activation target: handle clicks only from e.target.closest('.nl') (plus the box's own padding, not its children). Expose the row as the treeitem's activation point, for example by giving it the click handler and a pointer cursor. Test by dispatching a click at each treeitem's centre and checking that its own level is chosen.",
+  "severity": "high",
+  "role": "a11y",
+  "real": true,
+  "evidence": "Playwright probe, elementFromPoint at the centre of each treeitem: 'Page, Kitchens' gives Component position, 'Main content group' gives Component position, and 'Component position' gives Rich text. Only the innermost box resolves to itself. The click handler (1903) uses `e.target.closest('.nbox')`, so a tap at the centre, which is where VoiceOver and TalkBack activate, chooses the inner level."
+ },
+ {
+  "title": "'Show N more parents' is a fake collapsed parent that holds the visible levels, and expanding it is silent",
+  "where": "CwaUiResourceStack, the long-stack cap (nmore treeitem), 'Deep nesting (8 levels)'",
+  "problem": "The overflow node is a level-1 treeitem with aria-expanded=\"false\", but its group holds all five visible levels. A screen reader hears 'collapsed' on a node whose children are rendered and focusable, and 'Show 3 more parents' sounds like an ancestor resource. After Enter, the whole tree is rebuilt: every level is renumbered (Rich text goes from 6 to 8), the highlight jumps to 'Layout, Default', and nothing is announced, so the user does not know what happened or where they are.",
+  "fix": "Model the overflow as the outermost treeitem's collapsed parents, not as a container: render it as a sibling-free outer treeitem with no group children, or as a button outside the tree's nesting. Keep aria-level stable (give the hidden parents levels 1 to 3 from the start, so the shown levels keep their numbers). After expanding, keep the highlight on the newly revealed innermost hidden parent, and announce politely '3 more parents shown'.",
+  "severity": "medium",
+  "role": "a11y",
+  "real": true,
+  "evidence": "render() (1871) wraps all the shown levels in the `nmore` treeitem's `role=group` and still sets `aria-expanded=\"false\"`. Levels are computed as `shown - j + (more?1:0)`: with 8 levels the innermost is 6 while capped and 8 once expanded. act('m') sets `S.hl = 0`, which moves the highlight to the outermost level, and nothing is written to a live region."
+ },
+ {
+  "title": "Arrow direction is the reverse of where the names appear",
+  "where": "CwaUiResourceStack keyboard (Up = parent, Down = child), both anchors",
+  "problem": "Each name sits below the child it contains, so the child's name is higher on screen (measured: Rich text at 406px, its position at 457, the group at 508, the page at 558). ArrowUp moves the highlight down to the parent and ArrowDown moves it up to the child. For sighted keyboard users and screen magnifier users this is unpredictable (WCAG 3.2 predictability, 2.4.3). Up and Down also both duplicate Left and Right.",
+  "fix": "Keep Left = parent and Right = child, as the ARIA tree pattern intends. Map Up and Down to the visual order of the names: Up goes to the child, whose name is above, and Down goes to the parent. Or state the mapping in the popover's title or hint ('\u2191\u2193 move, Enter selects'). Write it down in \u00a75.3 and test it.",
+  "severity": "medium",
+  "role": "a11y",
+  "real": true,
+  "evidence": "\u00a75.3 says each name sits below the child it contains, and also 'Up = parent, Down = child'. The code (1892-1893) does this: ArrowUp decrements the index into `order`, which runs outermost first. Because names render after their children (`.nkids` before `.nl`), the parent's name is lower on screen, so ArrowUp moves the highlighted name down. round-6-backlog.md only fixes the nested layout, not the key mapping, so this is not a decided point."
+ },
+ {
+  "title": "Add component list hides its sections from screen readers, so duplicate entries are ambiguous",
+  "where": "CwaUiCombobox, add component dialog: section headings (div role=presentation), option names, Dynamic row, live count",
+  "problem": "Section headings are plain text inside the listbox, so a screen reader moving with aria-activedescendant never hears 'In this group', 'Media' and so on. 'Image' and 'Hero section' are each listed twice with no section context. Option names run together without separators ('Image One image with alt text and a caption 3 styles'). The in-group aria-label drops the description and the style count. Dynamic is named 'Dynamic Dynamic Shows\u2026' because its square has role=img aria-label=\"Dynamic\". The live count counts duplicates and Dynamic: 'image' gives '5 components' for 3 distinct ones.",
+  "fix": "Wrap each section's options in role=\"group\" with aria-labelledby pointing at its heading. Name each option with aria-labelledby on the name element only, and put the description and 'N styles' in aria-describedby, joined with commas. Make the Dynamic square aria-hidden. Announce the distinct component count ('3 components'), or 'N results in M sections'.",
+  "severity": "medium",
+  "role": "a11y",
+  "real": true,
+  "evidence": "In addComponentDialog render(), section headings are `div.ac-gh role=\"presentation\"`, with no role=group or aria-labelledby. The Dynamic option holds `span.ac-dynsq role=\"img\" aria-label=\"Dynamic\"` and the name text 'Dynamic', so its name repeats the word. Only in-group rows get an aria-label, and it leaves out the description and the style count. The live count uses `opts.length`, which counts in-group duplicates and Dynamic: 'image' matches Image and Hero section (by its description) in both sections."
+ },
+ {
+  "title": "One Enter adds the component at once, unlike the spec's two-step choose then add",
+  "where": "CwaUiCombobox keydown: Enter on an unchosen highlight calls choose(i, true), which calls doAdd",
+  "problem": "The spec (\u00a75.6) says Enter on the highlight chooses (check, footer 'Image, ready to add') and Enter on the chosen one adds. In the mockup a single Enter after typing 'image' logged 'New Image after Intro text' and reset the dialog, while a click only chooses. Keyboard and screen-reader users get a different and irreversible commit path from pointer users, with no chance to hear the footer confirmation (WCAG 3.2.2 predictability). The highlight is set automatically to the first match, so Enter commits something the user may not have heard yet.",
+  "fix": "Either follow the spec (first Enter chooses and announces 'Image chosen, press Enter to add'; second Enter adds), or change the spec to say Enter adds directly and make the click path match. Whichever is chosen, give both input methods the same path and test it.",
+  "severity": "medium",
+  "role": "a11y",
+  "real": true,
+  "evidence": "In the keydown handler, Enter with an unchosen highlight calls `choose(S.hl, true)`, and choose() ends with `if (go) doAdd()`. A click calls `choose(i, false)`, which only chooses. \u00a75.6 says 'Arrow keys plus Enter on the highlight chooses \u2026 Enter on the chosen one \u2026 adds', so the mockup does not follow its own spec, and keyboard and pointer users get different commit paths."
+ },
+ {
+  "title": "Add is natively disabled, and its reason and the chosen state are never announced",
+  "where": "Add a component dialog footer: <button id=\u2026-add disabled> and span.fstate ('Choose a component', 'Image, ready to add', 'Choose a data type and a field')",
+  "problem": "The Add button uses the disabled attribute, so it is taken out of the Tab order and its reason is not linked. \u00a711.3 requires aria-disabled with the reason reachable. The footer status changes when a row is chosen by click, or when Dynamic's selects are filled, but it is not a live region and not linked to Add. A screen-reader user does not learn that the choice was made, or why Add is still off after choosing Dynamic.",
+  "fix": "Use aria-disabled=\"true\" on Add, with aria-describedby pointing at the footer status, and block activation in the handler. Announce a choice through the dialog's single polite region ('Image chosen'; 'Dynamic chosen, choose a data type and a field' already exists for Dynamic).",
+  "severity": "medium",
+  "role": "a11y",
+  "real": true,
+  "evidence": "The footer markup is `<button \u2026 id=\"${p}-add\" disabled>`, and paint() sets `add.disabled = !ok`. `span.fstate#${p}-fs` has no aria-live and is not linked to Add by aria-describedby, unlike the page modal's footer (4747), which links its Save to fstate. Only the Dynamic choice writes to the live region. \u00a711.3's CwaUiButton row requires 'disabled is aria-disabled with the reason reachable'."
+ },
+ {
+  "title": "Phone stack sheet has no dialog semantics, and its Close button cannot be reached by keyboard",
+  "where": "CwaUiResourceStack below sm (sheet: true): panel 'menu kit stackm sheet' with scrim and Close",
+  "problem": "The sheet panel has no role=\"dialog\", no aria-modal and no name, so VoiceOver and TalkBack swipes leave it for the page behind the scrim. Tab from the tree closes the sheet (see the Tab focus finding), so the visible Close button is never reachable by keyboard or switch access. \u00a75.3 says the CwaUiMenu shell gives a phone sheet 'its title and Close', but the stack's sheet does not follow the dialog rules in \u00a711.1 (trap and return focus).",
+  "fix": "Render the sheet as role=\"dialog\" aria-modal=\"true\", labelled by its 'Select a resource' header. Trap focus between the tree and Close (Tab moves between them instead of closing), make the page behind it inert, and return focus to returnTo on close.",
+  "severity": "medium",
+  "role": "a11y",
+  "real": true,
+  "evidence": "stackMenu (1854-1857) builds the sheet as `div.menu.kit.stackm.sheet` with no role, no aria-modal and no name. The 'Select a resource' title is in a plain `.sh-h` span, and only the inner tree carries the label. Tab in the tree calls closeStack() (1895), so the `.sh-done` Close button can never be reached from the tree. Nothing makes the page behind the scrim inert."
+ }
+]

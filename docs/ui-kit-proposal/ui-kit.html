@@ -11,7 +11,7 @@
 
   --k-surface:#ffffff;--k-raised:#f5f5f4;--k-field:#d6d3d1;--k-field-hover:#c9c4c0;--k-chip:#b8b2ad;--k-menu:#ffffff;--k-menu-hl:#e7e5e4;
   --k-field-danger:#dabfbd;--k-field-warning:#dcc9ad;--k-line:#d6d3d1;--k-line-dash:#78716c;--k-tree-line:#8a837e;
-  --k-fg:#1c1917;--k-fg-2:#57534e;--k-muted:#57534e;--k-muted-on-field:#4f4a45;
+  --k-fg:#1c1917;--k-fg-2:#44403c;--k-muted:#57534e;--k-muted-on-field:#4f4a45;
   --k-accent:#2563eb;--k-accent-hover:#1d4ed8;--k-accent-fg:#1d4ed8;--k-line-saving:#1d4ed8;--k-line-saved:#3f6212;--k-line-danger:#991b1b;--k-line-warning:#92400e;--k-accent-tint:rgb(37 99 235 / .12);
   --k-success:#3f6212;--k-warning:#b45309;--k-danger:#b91c1c;--k-danger-fg:#b91c1c;--k-danger-strong:#dc2626;--k-danger-fill:#dc2626;
   --k-highlight:#e30a6c;--k-toggle-off:#78716c;--k-shadow:0 8px 24px rgb(0 0 0 / .14);
@@ -20,6 +20,7 @@
 
   --k-control:2.25rem;--k-control-lg:2.75rem;--k-option:2.25rem;--k-tabs:2.5rem;--k-hit:2rem;
   --d-fast:120ms;--d-base:200ms;--d-slow:300ms;--ease:cubic-bezier(.2,.8,.2,1);
+  --sk-frame:#f5f5f4;--sk-stroke:#d6d3d1;--sk-bar:#d6d3d1;--sk-img:#a8a29e;--sk-accent:#3b82f6;
   color-scheme:light;
 }
 @media (prefers-color-scheme: dark){
@@ -27,11 +28,11 @@
     --bg:#0c0a09;--text:#f5f5f4;--text-muted:#a8a29e;--card:#1c1917;--border:#3a3532;--code:#292524;--link:#60a5fa;
     --k-surface:#1c1917;--k-raised:#292524;--k-field:#57534e;--k-field-hover:#625d58;--k-chip:#6e6964;--k-menu:#292524;--k-menu-hl:#57534e;
     --k-field-danger:#6f514c;--k-field-warning:#6d5e45;--k-line:#44403c;--k-line-dash:#78716c;--k-tree-line:#78716c;
-    --k-fg:#f5f5f4;--k-fg-2:#d6d3d1;--k-muted:#a8a29e;--k-muted-on-field:#e7e5e4;
+    --k-fg:#f5f5f4;--k-fg-2:#e7e5e4;--k-muted:#a8a29e;--k-muted-on-field:#e7e5e4;
     --k-accent:#2563eb;--k-accent-hover:#1d4ed8;--k-accent-fg:#60a5fa;--k-line-saving:#93c5fd;--k-line-saved:#9cdd05;--k-line-danger:#fecaca;--k-line-warning:#fcd34d;--k-accent-tint:rgb(37 99 235 / .28);
     --k-success:#9cdd05;--k-warning:#ffaa00;--k-danger:#fca5a5;--k-danger-fg:#fca5a5;--k-danger-strong:#f87171;--k-danger-fill:#dc2626;
     --k-toggle-off:#78716c;--k-shadow:0 8px 24px rgb(0 0 0 / .28);--k-scrim:rgb(0 0 0 / .6);--k-btn:#44403c;--k-shimmer:rgb(255 255 255 / .24);
-    --k-step-hover:rgb(255 255 255 / .17);--k-step-press:rgb(255 255 255 / .3);--k-type-static:#60a5fa;--k-type-dynamic:#facc15;
+    --k-step-hover:rgb(255 255 255 / .17);--k-step-press:rgb(255 255 255 / .3);--k-type-static:#60a5fa;--k-type-dynamic:#facc15;--sk-frame:#292524;--sk-stroke:#44403c;--sk-bar:#57534e;--sk-img:#78716c;--sk-accent:#3b82f6;
     color-scheme:dark;
   }
 }
@@ -39,26 +40,26 @@
   --bg:#0c0a09;--text:#f5f5f4;--text-muted:#a8a29e;--card:#1c1917;--border:#3a3532;--code:#292524;--link:#60a5fa;
   --k-surface:#1c1917;--k-raised:#292524;--k-field:#57534e;--k-field-hover:#625d58;--k-chip:#6e6964;--k-menu:#292524;--k-menu-hl:#57534e;
   --k-field-danger:#6f514c;--k-field-warning:#6d5e45;--k-line:#44403c;--k-line-dash:#78716c;--k-tree-line:#78716c;
-  --k-fg:#f5f5f4;--k-fg-2:#d6d3d1;--k-muted:#a8a29e;--k-muted-on-field:#e7e5e4;
+  --k-fg:#f5f5f4;--k-fg-2:#e7e5e4;--k-muted:#a8a29e;--k-muted-on-field:#e7e5e4;
   --k-accent:#2563eb;--k-accent-hover:#1d4ed8;--k-accent-fg:#60a5fa;--k-line-saving:#93c5fd;--k-line-saved:#9cdd05;--k-line-danger:#fecaca;--k-line-warning:#fcd34d;--k-accent-tint:rgb(37 99 235 / .28);
   --k-success:#9cdd05;--k-warning:#ffaa00;--k-danger:#fca5a5;--k-danger-fg:#fca5a5;--k-danger-strong:#f87171;--k-danger-fill:#dc2626;
   --k-toggle-off:#78716c;--k-shadow:0 8px 24px rgb(0 0 0 / .28);--k-scrim:rgb(0 0 0 / .6);--k-btn:#44403c;--k-shimmer:rgb(255 255 255 / .24);
-    --k-step-hover:rgb(255 255 255 / .17);--k-step-press:rgb(255 255 255 / .3);--k-type-static:#60a5fa;--k-type-dynamic:#facc15;
+    --k-step-hover:rgb(255 255 255 / .17);--k-step-press:rgb(255 255 255 / .3);--k-type-static:#60a5fa;--k-type-dynamic:#facc15;--sk-frame:#292524;--sk-stroke:#44403c;--sk-bar:#57534e;--sk-img:#78716c;--sk-accent:#3b82f6;
   color-scheme:dark;
 }
 .kit-dark{
   --k-surface:#1c1917;--k-raised:#292524;--k-field:#57534e;--k-field-hover:#625d58;--k-chip:#6e6964;--k-menu:#292524;--k-menu-hl:#57534e;
   --k-field-danger:#6f514c;--k-field-warning:#6d5e45;--k-line:#44403c;--k-line-dash:#78716c;--k-tree-line:#78716c;
-  --k-fg:#f5f5f4;--k-fg-2:#d6d3d1;--k-muted:#a8a29e;--k-muted-on-field:#e7e5e4;
+  --k-fg:#f5f5f4;--k-fg-2:#e7e5e4;--k-muted:#a8a29e;--k-muted-on-field:#e7e5e4;
   --k-accent-fg:#60a5fa;--k-line-saving:#93c5fd;--k-line-saved:#9cdd05;--k-line-danger:#fecaca;--k-line-warning:#fcd34d;--k-accent-tint:rgb(37 99 235 / .28);
   --k-success:#9cdd05;--k-warning:#ffaa00;--k-danger:#fca5a5;--k-danger-fg:#fca5a5;--k-danger-strong:#f87171;
   --k-toggle-off:#78716c;--k-shadow:0 8px 24px rgb(0 0 0 / .28);color-scheme:dark;--k-btn:#44403c;--k-shimmer:rgb(255 255 255 / .24);
   --k-step-hover:rgb(255 255 255 / .17);--k-step-press:rgb(255 255 255 / .3);--k-type-static:#60a5fa;--k-type-dynamic:#facc15;
-}
+--sk-frame:#292524;--sk-stroke:#44403c;--sk-bar:#57534e;--sk-img:#78716c;--sk-accent:#3b82f6;}
 .kit-light{
   --k-surface:#ffffff;--k-raised:#f5f5f4;--k-field:#d6d3d1;--k-field-hover:#c9c4c0;--k-chip:#b8b2ad;--k-menu:#ffffff;--k-menu-hl:#e7e5e4;
   --k-field-danger:#dabfbd;--k-field-warning:#dcc9ad;--k-line:#d6d3d1;--k-line-dash:#78716c;--k-tree-line:#8a837e;
-  --k-fg:#1c1917;--k-fg-2:#57534e;--k-muted:#57534e;--k-muted-on-field:#4f4a45;
+  --k-fg:#1c1917;--k-fg-2:#44403c;--k-muted:#57534e;--k-muted-on-field:#4f4a45;
   --k-accent-fg:#1d4ed8;--k-line-saving:#1d4ed8;--k-line-saved:#3f6212;--k-line-danger:#991b1b;--k-line-warning:#92400e;--k-accent-tint:rgb(37 99 235 / .12);
   --k-success:#3f6212;--k-warning:#b45309;--k-danger:#b91c1c;--k-danger-fg:#b91c1c;--k-danger-strong:#dc2626;
   --k-toggle-off:#78716c;--k-shadow:0 8px 24px rgb(0 0 0 / .14);color-scheme:light;--k-btn:#e7e5e4;--k-shimmer:rgb(255 255 255 / .9);
@@ -188,7 +189,7 @@ button.f{cursor:pointer;width:100%}
 .f:focus-within,.f.is-focus,.f.open,button.f:focus-visible{outline:2px solid var(--k-accent-fg);outline-offset:2px}
 .f.pres{box-shadow:inset 0 0 0 2px var(--peer)}
 .f.pres:focus-within{box-shadow:none}
-.f.dis{opacity:.5}
+.f.dis{opacity:.5;cursor:not-allowed}
 .f.dis input{cursor:not-allowed}
 .f.ro{background:transparent;padding-left:0}
 .f input,.f textarea{all:unset;display:block;flex:1;min-width:0;height:100%;font:inherit;color:inherit}
@@ -207,34 +208,36 @@ button.f{cursor:pointer;width:100%}
 .w-xs,.f.w-xs{width:4.5rem}.w-sm,.f.w-sm{width:9rem}.w-md,.f.w-md{width:13rem}.w-lg,.f.w-lg{width:19rem}.w-auto,.f.w-auto{width:auto}
 .st{flex:none;width:1rem;height:1rem;display:grid;place-items:center;color:var(--k-muted-on-field);position:relative}
 .st:empty{display:none}
+.tglw{display:inline-flex;align-items:center;gap:.25rem;position:relative}
 .f.num>.st{margin-right:.5rem}
 .st-btn{position:absolute;inset:50% auto auto 50%;transform:translate(-50%,-50%);width:var(--k-hit);height:var(--k-hit);display:grid;place-items:center;background:none;border:0;padding:0;cursor:pointer;color:inherit}
 .st-btn:focus-visible{outline-offset:-2px}
 /* v6: bar text inputs and steppers show state as a 2px line inside the field's bottom edge */
-.stackm{min-width:0;padding:.5rem;line-height:1.35}
+.menu.stackm{min-width:0;padding:0;line-height:1.35;animation:none;transition:none}
 .stackm.sheet{padding:0}
 .stackm.sheet .ntree{padding:.75rem;overflow:auto}
 .ntree{outline:none}
-.nbox{display:flex;flex-direction:column;gap:.375rem;padding:.375rem;border:1px dashed var(--k-line-dash);background:var(--k-menu);cursor:pointer;min-width:0}
+.nbox{display:flex;flex-direction:column;gap:.375rem;padding:.375rem;border:1px dashed var(--k-line-dash);background:var(--k-menu);min-width:0}
 .nbox>.nkids{display:flex;flex-direction:column}
 .nbox.hl{border-style:solid;border-color:var(--k-fg);background:var(--k-field-hover)}
 .nbox.hl>.nkids>.nbox:not(.hl){background:var(--k-menu)}
 .nbox.hl.kb{outline:2px solid var(--k-accent-fg);outline-offset:1px;border-color:var(--k-accent-fg)}
-.nbox.sel{box-shadow:inset 3px 0 0 var(--k-accent-fg)}
-.nl{display:flex;align-items:flex-start;gap:.5rem;padding:0 .25rem 0 .375rem;min-height:1.5rem}
-.nl .ni{flex:none;width:.875rem;height:.875rem;margin-top:.1875rem;color:var(--k-muted)}
-.nm{display:flex;flex-direction:column;min-width:0;flex:1}
-.nn{font-size:.875rem;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nbox.sel>.nl{box-shadow:inset 3px 0 0 var(--k-accent-fg)}
+.nl{display:flex;align-items:center;gap:.5rem;padding:0 .25rem 0 .5rem;min-height:1.75rem;cursor:pointer}
+.nn{flex:1;min-width:0;font-size:.875rem;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .nbox.sel>.nl .nn{font-weight:600}
-.nd{font-size:.8125rem;color:var(--k-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.nbox.hl>.nl .nd{color:var(--k-muted-on-field)}
-.nck{flex:none;width:.875rem;height:.875rem;margin-top:.1875rem}
-.nlink{color:var(--k-accent-fg)}
+.nck{flex:none;width:.875rem;height:.875rem}
+.nfoot{display:flex;align-items:center;gap:.75rem;padding:.25rem .5rem;font-size:.75rem;color:var(--k-muted)}
+.nfoot:has(.nmore[hidden]){display:none}
+.nmore{font:inherit;font-size:.8125rem;color:var(--k-accent-fg);background:none;border:0;padding:.25rem 0;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.nmore:focus-visible{outline:2px solid var(--k-accent-fg);outline-offset:2px}
+
 .pathsel{display:inline-flex;align-items:center;max-width:100%;min-width:0;height:2rem;padding:0 .75rem;border:1px dashed var(--k-line-dash);background:none;color:var(--k-fg);font:inherit;font-size:.875rem;font-weight:500;cursor:default}
 .pathsel>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pathsel.can{cursor:pointer}
 .pathsel.can:hover,.pathsel[aria-expanded=true]{border-style:solid;border-color:var(--k-fg);background:var(--k-field-hover)}
-.pathsel[aria-expanded=true]>span{opacity:0}
+.pathsel.anch>span,.pathsel.anch>.pchev{opacity:0}
+.pchev{flex:none;margin-left:.375rem;font-weight:400;font-size:.75rem;color:var(--k-muted)}
 .ac .dlg-b{padding:0;display:flex;flex-direction:column}
 .dlg-inline .dlg.ac{height:40rem}
 .ac-top{position:sticky;top:0;z-index:1;background:var(--k-surface);padding:1.25rem 1.75rem .75rem}
@@ -245,29 +248,44 @@ button.f{cursor:pointer;width:100%}
 .ac-gh{padding:.75rem 1rem .25rem;font-size:.8125rem;color:var(--k-muted)}
 .ac-o{display:flex;align-items:center;gap:.75rem;min-height:2.75rem;padding:.375rem 1rem;cursor:pointer;position:relative}
 .ac-o:hover,.ac-o.hl{background:var(--k-menu-hl)}
-.ac-o.hl.kb{box-shadow:inset 2px 0 0 var(--k-accent-fg)}
-.ac-o[aria-selected=true] .ac-n{font-weight:600}
-.ac-o .ac-ic{flex:none;width:3.5rem;height:1rem;display:flex;justify-content:center;align-items:center;color:var(--k-muted)}
-.ac-o .ac-ic .g{width:1rem;height:1rem}
+.ac-o.hl.kb{outline:2px solid var(--k-accent-fg);outline-offset:-2px}
+.ac-lead{flex:none;width:3rem;height:2rem;display:flex;justify-content:center;align-items:center;color:var(--k-muted)}
+.ac-lead .g,.ac-chip .g.lu{width:1rem;height:1rem}
+.g.lu{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.ac-lead .sk{display:block;width:3rem;height:2rem}
+.ac-lead i{display:block;width:100%;height:100%;background:var(--thumb);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--k-fg) 12%,transparent)}
 .ac-m{flex:1;min-width:0;display:flex;flex-direction:column}
 .ac-n{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ac-n mark{background:none;color:inherit;font-weight:650}
 .ac-d{font-size:.8125rem;color:var(--k-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ac-r{flex:none;font-size:.8125rem;color:var(--k-muted)}
 .ac-o.hl .ac-d,.ac-o.hl .ac-r,.ac-o:hover .ac-d,.ac-o:hover .ac-r{color:var(--k-muted-on-field)}
-.ac-o .ac-ck{flex:none;width:1rem;height:1rem}
-.ac-th{flex:none;width:3.5rem;height:2.25rem;display:flex;align-items:center;justify-content:center}
-.ac-th i{display:block;width:2.5rem;height:1.625rem;background:var(--thumb);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--k-fg) 12%,transparent);transition:width var(--d-fast,120ms) ease-out,height var(--d-fast,120ms) ease-out}
-.ac-o.hl .ac-th i{width:3.5rem;height:2.25rem}
-@media (prefers-reduced-motion: reduce){.ac-th i{transition:none}}
-.ac-dynsq{display:block;flex:none;width:.75rem;height:.75rem;background:var(--k-type-dynamic);margin:0 .125rem}
-.ac-none{padding:1.5rem 1rem;color:var(--k-muted)}
-.ac-none b{color:var(--k-fg);font-weight:600}
-.ac-dyn{padding:.25rem 1.75rem 1.5rem 3.5rem;display:grid;gap:1rem}
-.ac-dyn[hidden]{display:none}
+.ac-dynsq{display:block;flex:none;width:.75rem;height:.75rem;background:var(--k-type-dynamic)}
+.ac-none{padding:.5rem 1rem;color:var(--k-muted);display:flex;flex-wrap:wrap;align-items:center;gap:.25rem 1rem;min-height:2.75rem}
+.ac-none b{color:var(--k-fg);font-weight:500}
+.ac-quick{padding:0 1rem .75rem;margin:0 .75rem;box-shadow:inset 0 -1px 0 var(--k-line)}
+.ac-quick[hidden]{display:none}
+.ac-quick .ac-gh{padding:.25rem 0 .5rem}
+.ac-chips{display:flex;flex-wrap:wrap;gap:.5rem}
+.ac-chip{display:inline-flex;align-items:center;gap:.5rem;height:2.25rem;padding:0 .875rem 0 .75rem;border:0;background:var(--k-btn);color:var(--k-fg);font:inherit;font-size:.875rem;font-weight:500;cursor:pointer}
+.ac-chip:hover{background:var(--k-field-hover)}
+.ac-chip .g{width:1rem;height:1rem;color:var(--k-muted);flex:none}
+.coarse .ac-chip{height:2.75rem}
+.phone-dlg .ac-quick{margin:0 .25rem}
+.ac-list[hidden],.ac-det[hidden]{display:none}
+.ac-lb>[role=group]:first-child>.ac-gh{padding-top:.75rem}
+.ac-det{padding:1.25rem 1.75rem 1.5rem;display:flex;flex-direction:column;gap:1rem}
+.ac-big{width:100%;max-width:18rem;aspect-ratio:16/9;background:var(--thumb);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--k-fg) 12%,transparent)}
+.ac-dd{margin:0}
+.ac-to{margin:0;color:var(--k-muted)}
+.ac-to b{color:var(--k-fg);font-weight:600}
+.ac-fs{display:grid;gap:1rem}
+.ac-fs .f{width:100%}
+.phone-dlg .ac-d{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.phone-dlg .ac-uis{display:none}
+.phone-dlg .ac-det{padding:1rem 1.25rem 1.5rem}
 .coarse .ac-top,.phone-dlg .ac-top{padding:1rem 1.25rem .75rem}
 .phone-dlg .ac-lb{padding:0 .25rem 1rem}
-.phone-dlg .ac-dyn{padding:.25rem 1.25rem 1.5rem 2.75rem}
 [data-line]{position:relative}
 [data-line]::before,[data-line]::after{content:'';position:absolute;bottom:0;height:2px;pointer-events:none;opacity:0}
 [data-line]::before{left:0;right:0;background:currentColor;color:var(--k-line-saved)}
@@ -326,7 +344,7 @@ button.f{cursor:pointer;width:100%}
 .kit-row .tgl,.mgr .tgl{height:var(--h)}
 /* v6: editing on the page */
 .ipstage{position:relative;height:36rem;overflow:hidden;border:1px solid var(--border);background:#f7f3ee;--hh:3rem;--bh:calc(var(--k-tabs) + var(--k-control) + 1.5rem)}
-.ip-head{position:absolute;inset:0 0 auto 0;height:var(--hh);z-index:3;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:.75rem;padding:0 .5rem 0 .75rem;background:var(--k-surface);color:var(--k-fg);box-shadow:0 1px 0 var(--k-line)}
+.ip-head{position:absolute;inset:0 0 auto 0;height:var(--hh);z-index:3;display:grid;grid-template-columns:auto minmax(6rem,1fr) auto;align-items:center;gap:.75rem;padding:0 .5rem 0 .75rem;background:var(--k-surface);color:var(--k-fg);box-shadow:0 1px 0 var(--k-line)}
 .ip-head .ttl{text-align:center;font-size:.875rem;color:var(--k-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ip-head .right{display:flex;align-items:center;gap:.25rem;min-width:0}
 .ip-hs{font:inherit;font-size:.8125rem;color:var(--k-muted);background:none;border:0;padding:0 .5rem;min-height:2rem;display:inline-flex;align-items:center;gap:.375rem;white-space:nowrap}
@@ -336,6 +354,8 @@ button.f{cursor:pointer;width:100%}
 .ip-hb{--bh:2rem;padding:0 .5rem;gap:.375rem;font-size:.8125rem}
 .btn.ghost.danger.ip-hb,.ip-hb .c-danger{color:var(--k-danger-strong)}
 .ip-hb:hover{background:var(--k-field-danger)}
+.ip-menu .mi{display:none;font-size:1rem;line-height:1}
+.ip-tip{position:fixed;z-index:95;padding:.25rem .5rem;font-size:.8125rem;background:var(--k-fg);color:var(--k-surface);pointer-events:none;white-space:nowrap}
 .ip-site{position:absolute;top:var(--hh);left:0;right:0;bottom:0;overflow:auto;color:#2b2420;font-family:Georgia,"Times New Roman",serif;padding-bottom:calc(var(--bh) + 2rem);scroll-padding-top:1rem;scroll-padding-bottom:calc(var(--bh) + 1rem)}
 .ipstage.desel .ip-site{padding-bottom:2rem}
 .ip-site nav{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:1rem 1.5rem;font-family:system-ui,sans-serif;font-size:.875rem;border-bottom:1px solid #e4dcd2}
@@ -397,12 +417,12 @@ button.f{cursor:pointer;width:100%}
 .coarse .ip-pin{--cta-inset:0px}
 .ip-sum{display:inline-flex;align-items:center;gap:.375rem;height:calc(var(--k-tabs) - 1px - 2 * var(--cta-inset));padding:0 .5rem;font:inherit;font-size:.8125rem;color:var(--k-muted);background:none;border:0;cursor:pointer;white-space:nowrap}
 .ip-sum:hover{background:var(--k-step-hover)}
-.ip-sum.err{color:var(--k-danger-fg);font-weight:600}
+.ip-sum.err{color:var(--k-danger-strong);font-weight:600}
 .ip-sum .g{width:1rem;height:1rem;flex:none}
 .ip-row{display:flex;align-items:center;gap:.75rem;padding:0 1rem;min-width:0}
 .ip-row .bl{white-space:nowrap}
 .ip-row .hv{color:var(--k-muted);font-size:.875rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
-@media (max-width: 639px){.ip-hs .ht{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}.pathsel{min-width:6rem}.ip-pin{--cta-inset:0px}.ip-head{grid-template-columns:auto minmax(0,1fr) auto}.ip-sum .sl{display:none}.ip-row .hv{display:none}.ip-comp{margin:1.75rem .75rem;padding:1.25rem 1rem}}
+@media (max-width: 639px){.ip-hs .ht{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}.pathsel{min-width:6rem}.ip-pin{--cta-inset:0px}.ip-head{grid-template-columns:auto minmax(6rem,1fr) auto}.ip-hb .ht{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}.ip-menu .mt{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}.ip-menu .mi{display:inline}.ip-menu{--bh:2rem;padding:0;width:2.75rem;justify-content:center}.ip-hb{min-width:2.75rem;justify-content:center}.ip-hs{min-width:2.75rem;justify-content:center;padding:0}.pathsel{height:2.75rem}.ip-sum .sl{display:none}.ip-row .hv{display:none}.ip-comp{margin:1.75rem .75rem;padding:1.25rem 1rem}}
 
 .tgl input{position:absolute;opacity:0;width:1px;height:1px}
 .tg{position:relative;flex:none;width:2.25rem;height:1.25rem;border-radius:9999px;background:var(--k-toggle-off);transition:background-color var(--d-base) var(--ease)}
@@ -644,6 +664,8 @@ button.f{cursor:pointer;width:100%}
 .bsum{display:inline-flex;align-items:center;gap:.5rem;height:calc(var(--k-tabs) - 1px - 2 * var(--cta-inset));padding:0 .5rem;background:none;border:0;color:var(--k-muted);font:500 .875rem/1 inherit;white-space:nowrap;cursor:pointer}
 .bsum:hover{background:var(--k-btn)}
 .bsum.act{color:var(--k-fg);font-weight:600}
+.bsum[data-state=error]{color:var(--k-danger-strong)}
+.bsum .c-danger,.ip-sum .c-danger,.ip-hs .c-danger{color:var(--k-danger-strong)}
 .bsum .dot{background:var(--k-muted)}
 .bsum .dot.live{background:var(--k-success)}
 .sum-short,.pa-short{display:none}
@@ -744,7 +766,8 @@ button.f{cursor:pointer;width:100%}
 .cfm-box .cfm-lead{color:var(--k-fg)}
 .cfm-acts{display:flex;justify-content:flex-end;gap:.75rem;margin-top:1.25rem}
 .cfm-acts .btn{--bh:var(--k-control-lg)}
-.cfm-acts .btn[aria-disabled="true"]{opacity:.5;cursor:not-allowed}
+.cfm-acts .btn[aria-disabled="true"],.ac .dlg-f .btn[aria-disabled="true"]{opacity:.5;cursor:not-allowed}
+.ac .dlg-f .btn.solid[aria-disabled="true"]:hover{background:var(--k-accent)}
 .cfm-acts .btn.danger[aria-disabled="true"]:hover{background:var(--k-danger-fill)}
 .cfm-type{display:flex;flex-direction:column;gap:.375rem;margin-top:1rem}
 .cfm-type .fl{color:var(--k-fg);font-weight:600}
@@ -795,7 +818,7 @@ button.f{cursor:pointer;width:100%}
 .ptl .ptitle{min-width:0;padding:.125rem 0}
 .tone-success{background:var(--k-success)}.tone-neutral{background:var(--k-muted)}.tone-warning{background:var(--k-warning)}.tone-accent{background:var(--k-accent-fg)}
 .count{margin-left:auto;color:var(--k-muted);font-variant-numeric:tabular-nums;white-space:nowrap}
-.lgrid{--cols:2.75rem minmax(0,1fr) 11rem 7.5rem 5.5rem 5.75rem;display:block}
+.lgrid{--cols:2.75rem minmax(0,1fr) 11rem 7.5rem 5.5rem;display:block}
 .lrow{position:relative;display:grid;grid-template-columns:var(--cols);column-gap:1rem;align-items:center;min-height:4rem;padding:0 1rem;box-shadow:inset 0 -1px 0 var(--k-line)}
 .lrow.head{min-height:2.5rem;font-size:.8125rem;color:var(--k-muted)}
 .lrow:not(.head):hover{background:color-mix(in srgb,var(--k-field) 45%,transparent)}
@@ -830,7 +853,7 @@ button.f{cursor:pointer;width:100%}
 .pager .btn.cur:hover{background:var(--k-accent-hover)}
 .pager-n{display:none;align-items:center;gap:.75rem;width:100%;justify-content:space-between}
 @container list (max-width: 47.99rem){
-  .lgrid{--cols:minmax(0,1fr) 2.75rem}
+  .lgrid{--cols:minmax(0,1fr)}
   .lrow .c-sel,.lrow .c-badge,.lrow .c-meta,.lrow .a-wide{display:none}
   .lrow.head{display:none}
   .psub.wide{display:none}.psub.narrow{display:flex}
@@ -952,8 +975,10 @@ button.f{cursor:pointer;width:100%}
 .rt-status{display:grid;grid-template-columns:1rem 1fr;gap:.25rem .75rem;align-items:start;padding:.75rem 1rem;margin:0 0 1.5rem;font-size:.8125rem;line-height:1.45;background:color-mix(in srgb,var(--k-success) 14%,var(--k-surface))}
 .rt-status .g{margin-top:.125rem}
 .rt-status:empty{display:none}
-.rt-path{display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;min-height:var(--h)}
-.rt-path .rov{max-width:100%}
+.rt-path{display:flex;align-items:center;gap:.25rem .75rem;flex-wrap:wrap;margin:0}
+.fb:has(>.rt-path){gap:.25rem}
+.rt-path .rov{max-width:100%;min-height:0}
+.rt-path .rov .btn{margin-block:-.375rem}
 .rt-path .rv{font-weight:500}
 .rt-path .sp{flex:1}
 .rt-acts{display:flex;gap:.75rem;flex-wrap:wrap;align-items:center}
@@ -1001,8 +1026,9 @@ button.f{cursor:pointer;width:100%}
 .dlg-subh .subt:focus-visible{outline:2px solid var(--k-accent-fg);outline-offset:2px}
 @container dlgframe (max-width: 39.99rem){.dlg-subh{padding:.75rem 1.25rem 1rem}}
 @media (max-width: 639px){.dlg-subh{padding:.75rem 1.25rem 1rem}}
-.rt-sub.in{animation:k-sub var(--d-base) var(--ease)}
-.rt-view.back{animation:k-sub-back var(--d-base) var(--ease)}
+.subv.in{animation:k-sub var(--d-base) var(--ease)}
+.subv-main.back{animation:k-sub-back var(--d-base) var(--ease)}
+@media (prefers-reduced-motion: reduce){.subv.in,.subv-main.back{animation:none}}
 @keyframes k-sub{from{opacity:0;transform:translateX(2rem)}}
 @keyframes k-sub-back{from{opacity:0;transform:translateX(-2rem)}}
 .rt-sub{display:flex;flex-direction:column;gap:1rem}
@@ -1105,19 +1131,8 @@ button.f{cursor:pointer;width:100%}
 .ts-a .toast{background:color-mix(in srgb,var(--k-menu) 85%,transparent)}
 .ts-b .toast{background:color-mix(in srgb,color-mix(in srgb,var(--tone) 12%,var(--k-menu)) 85%,transparent)}
 .ts-a .toast p,.ts-b .toast p{color:var(--k-fg)}
-.ts-c .toast{background:var(--tone-solid);color:#fff}
-.ts-c .toast p,.ts-c .toast .x,.ts-c .toast .g{color:#fff}
-.ts-c .toast .btn.soft{background:rgb(255 255 255 / .18);color:#fff}
-.ts-c .toast .btn.soft:hover{background:rgb(255 255 255 / .28)}
-.ts-c .toast .btn.solid{background:#fff;color:var(--tone-solid)}
-.ts-c .toast .x:hover{background:rgb(255 255 255 / .16)}
-.ts-c .toast .btn:focus-visible,.ts-c .toast .x:focus-visible{outline-color:#fff}
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.ts-a .toast{background:var(--k-menu)}.ts-b .toast{background:color-mix(in srgb,var(--tone) 12%,var(--k-menu))}}
 @media (prefers-reduced-transparency:reduce){.ts-a .toast{background:var(--k-menu);backdrop-filter:none;-webkit-backdrop-filter:none}.ts-b .toast{background:color-mix(in srgb,var(--tone) 12%,var(--k-menu));backdrop-filter:none;-webkit-backdrop-filter:none}}
-.topts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1.5rem;margin-top:1rem}
-@media (max-width:1100px){.topts{grid-template-columns:1fr}}
-.topt h4{margin:0 0 .25rem;font-size:1rem}
-.topt>p{margin:0 0 .75rem;color:var(--k-muted);font-size:.875rem}
 .tbg{position:relative;overflow:hidden;padding:1rem;margin-bottom:1rem;display:grid;gap:.75rem;align-content:start;color:var(--k-fg)}
 .tbg.plain{background:var(--k-surface);box-shadow:inset 0 0 0 1px var(--k-line)}
 .tbg.busy{background:
@@ -1178,6 +1193,16 @@ button.f{cursor:pointer;width:100%}
   <symbol id="g-cal" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M1 3h3V1h2v2h4V1h2v2h3v12H1V3Zm2 4v6h10V7H3Z"/></symbol>
   <symbol id="g-up" viewBox="0 0 16 16"><path d="M8 3 2.5 9.5h11z"/></symbol>
   <symbol id="g-down" viewBox="0 0 16 16"><path d="M8 13 2.5 6.5h11z"/></symbol>
+  <symbol id="g-lu-component" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 11.293a1 1 0 0 0 0 1.414l2.376 2.377a1 1 0 0 0 1.414 0l2.377-2.377a1 1 0 0 0 0-1.414l-2.377-2.377a1 1 0 0 0-1.414 0zm-13.239 0a1 1 0 0 0 0 1.414l2.377 2.377a1 1 0 0 0 1.414 0l2.377-2.377a1 1 0 0 0 0-1.414L6.088 8.916a1 1 0 0 0-1.414 0zm6.619 6.619a1 1 0 0 0 0 1.415l2.377 2.376a1 1 0 0 0 1.414 0l2.377-2.376a1 1 0 0 0 0-1.415l-2.377-2.376a1 1 0 0 0-1.414 0zm0-13.238a1 1 0 0 0 0 1.414l2.377 2.376a1 1 0 0 0 1.414 0l2.377-2.376a1 1 0 0 0 0-1.414l-2.377-2.377a1 1 0 0 0-1.414 0z"/></symbol>
+  <symbol id="g-lu-form" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M4 14h6M4 2h10"/><rect width="16" height="4" x="4" y="18" rx="1"/><rect width="16" height="4" x="4" y="6" rx="1"/></g></symbol>
+  <symbol id="g-lu-image" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15l-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></g></symbol>
+  <symbol id="g-lu-images" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="m22 11l-1.296-1.296a2.4 2.4 0 0 0-3.408 0L11 16"/><path d="M4 8a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2"/><circle cx="13" cy="7" r="1" fill="currentColor"/><rect width="14" height="14" x="8" y="2" rx="2"/></g></symbol>
+  <symbol id="g-lu-layout-grid" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></g></symbol>
+  <symbol id="g-lu-layout-list" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/><path d="M14 4h7m-7 5h7m-7 6h7m-7 5h7"/></g></symbol>
+  <symbol id="g-lu-letter-text" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12h6m-6-6h6M3 13l3.553-7.724a.5.5 0 0 1 .894 0L11 13m-8 5h18M3.92 11h6.16"/></symbol>
+  <symbol id="g-lu-list-collapse" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 5h11m-11 7h11m-11 7h11M3 10l3-3l-3-3m0 16l3-3l-3-3"/></symbol>
+  <symbol id="g-lu-map-pin" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></g></symbol>
+  <symbol id="g-lu-panel-top" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/></g></symbol>
   <symbol id="g-ac-text" viewBox="0 0 16 16"><path d="M2 2h12v3h-2V4H9v8h2v2H5v-2h2V4H4v1H2z"/></symbol>
   <symbol id="g-ac-image" viewBox="0 0 16 16"><path d="M1 2h14v12H1zm2 2v6.6L6 7l3 3.5 2-2 2 2.4V4zm8 1.5a1.5 1.5 0 1 1 0 .01z"/></symbol>
   <symbol id="g-ac-video" viewBox="0 0 16 16"><path d="M1 3h14v10H1zm5 2.5v5l4.5-2.5z"/></symbol>
@@ -1191,6 +1216,7 @@ button.f{cursor:pointer;width:100%}
   <symbol id="g-plus" viewBox="0 0 16 16"><path d="M7 2h2v5h5v2H9v5H7V9H2V7h5z"/></symbol>
   <symbol id="g-new" viewBox="0 0 16 16"><path d="M7 .55h2v2.1H7zM12.1 2.5l1.4 1.4-1.5 1.5-1.4-1.4zM13.35 7h2.1v2h-2.1zM12 10.6l1.5 1.5-1.4 1.4-1.5-1.5zM7 13.35h2v2.1H7zM4 10.6l1.4 1.4-1.5 1.5-1.4-1.4zM.55 7h2.1v2H.55zM2.5 3.9l1.4-1.4 1.5 1.5L4 5.4z"/></symbol>
   <symbol id="g-trash" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M5.5 1h5v1.5H14v2H2v-2h3.5V1ZM3 5.5h10L12 15H4L3 5.5Zm3 2v5.5h1.5V7.5H6Zm2.5 0v5.5H10V7.5H8.5Z"/></symbol>
+  <symbol id="g-eye" viewBox="0 0 16 16"><path d="M8 3C4.4 3 1.6 5.4.5 8c1.1 2.6 3.9 5 7.5 5s6.4-2.4 7.5-5C14.4 5.4 11.6 3 8 3zm0 8.2A3.2 3.2 0 1 1 8 4.8a3.2 3.2 0 0 1 0 6.4zM8 6.4a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2z"/></symbol>
   <symbol id="g-go" viewBox="0 0 16 16"><path d="M8.6 2.4 14.2 8l-5.6 5.6-1.4-1.4L10.4 9H2V7h8.4L7.2 3.8z"/></symbol>
 </svg>
 
@@ -1228,12 +1254,12 @@ button.f{cursor:pointer;width:100%}
     <li><strong>WCAG 2.2 AA.</strong> Darker field fills, 24px minimum targets, focus never hidden behind the bar, header or toasts, shapes as well as colours, one quiet live region per surface, and a checklist per component in the spec.</li>
     <li><strong>The Routes tab</strong> (section 6) with the kit's new tree for redirects and child routes. Route actions save at once; the modal's Save is only for the page's fields.</li>
     <li><strong>Search asks the API</strong> (section 2): first load, searching, slow, many results, no matches, offline and server errors, and a chosen page that isn't in the results.</li>
-    <li><strong>A page's status in lists comes from its route</strong>: Live, Scheduled, Not live, Held back by parent, No route. Templates say what uses them. Row actions are Edit settings and Go to page.</li>
+    <li><strong>A page's status in lists comes from its route</strong>: Live, Scheduled, Not live, Held back by parent, No route. Templates say what uses them. A click on the row opens its settings; the modal’s eye button views the page on the site. Rows have no ⋮.</li>
     <li><strong>Section headings read as headings</strong>: larger and heavier than labels, with a rule and more space above.</li>
     <li><strong>A conflict is a notice under its field</strong>, with both versions as plain quoted text and Use Mia's / Keep mine; a summary at the top says why Save is blocked.</li>
     <li><strong>Every ⓘ opens a popover</strong>, so nothing on the page moves.</li>
     <li><strong>Create buttons are “+ Page”, “+ Article”</strong>; a new component's action is “+ Draft” or “+ Add”. On a phone the bar's status is a glyph right next to Publish.</li>
-    <li><strong>Toasts are tinted frosted glass</strong> (option B, chosen from three in section 8), and never move.</li>
+    <li><strong>Toasts are tinted frosted glass</strong> (option B), and never move.</li>
   </ul>
   <p class="lede"><strong>From v4:</strong></p>
   <ul class="changes">
@@ -1264,7 +1290,7 @@ button.f{cursor:pointer;width:100%}
     <li><strong>Friendlier spacing</strong>, a rebuilt modal form layout, a list on one grid, and phone layouts for all of them, with 44px touch targets.</li>
   </ul>
   <nav class="toc" aria-label="Sections">
-    <a href="#gallery">1 Gallery</a><a href="#menus">2 Menus and search</a><a href="#errors">3 Errors and info</a><a href="#eitheror">4 Either/or</a><a href="#bar">5 Manager bar</a><a href="#modal">6 Modals and pages</a><a href="#list">7 Lists</a><a href="#feedback">8 Feedback</a><a href="#questions">9 Open questions</a>
+    <a href="#gallery">1 Gallery</a><a href="#menus">2 Menus and search</a><a href="#errors">3 Errors and info</a><a href="#eitheror">4 Either/or</a><a href="#bar">5 Manager bar</a><a href="#modal">6 Modals and pages</a><a href="#list">7 Lists</a><a href="#feedback">8 Feedback</a><a href="#questions">9 Decisions</a>
   </nav>
 
   <section class="sec" id="gallery" aria-labelledby="h-gallery">
@@ -1358,7 +1384,7 @@ button.f{cursor:pointer;width:100%}
     <p class="note" style="margin:0 0 1rem">The same bar with 2.75rem controls and no arrows. The status stays in the tab row as a glyph only, right against Publish with no gap, so the tabs get more room; each state has its own shape (a dot for Draft, a clock for Scheduled, a dashed ring for New, the spinner, the tick, the triangle, the diamond; a plus only ever means create), and its name is read out. Fields are sized so the next one peeks in, and the row snaps to fields.</p>
     <div class="phone" id="bar-phone"></div>
     <h3 class="sub" id="inpage">Editing on the page</h3>
-    <p class="note" style="margin:0 0 .75rem"><strong>Right-click the component</strong> (Shift+F10 or the Menu key while it has focus; a long press on a phone, which opens a sheet), or <strong>click the name at the top of the header</strong>, to get the resource stack as boxes inside boxes: each name sits under what it contains, Up goes to the parent, Down to the child, and choosing one selects it. A long component edited in place: click into its text and type. The <strong>bar's status</strong> is the main indicator and the only place an error opens while the component is selected. The <strong>selection outline</strong> carries the same states in the real selection colours (green when published, orange for a draft; switch below), drawn in the admin overlay at the selection's own width, with no name tag: the admin header names the selection at its top centre. Saved, an error and a conflict each start with a soft glow round the outline (the outline only; bar controls have none). The <strong>admin header</strong>'s status, top right, answers "is it safe to leave?": "All changes saved" at rest, "Saving…" from your first keystroke, "1 change not saved" until a save succeeds.</p>
+    <p class="note" style="margin:0 0 .75rem"><strong>Right-click the component</strong> (Shift+F10 or the Menu key while it has focus; a long press on a phone, which opens a sheet), or <strong>click the name at the top of the header</strong>, to get the resource stack as boxes inside boxes: each level shows just its name, under what it contains, and the innermost box opens at the pointer. Up and Down follow the names on screen (Up to the child, Down to the parent), Left goes to the parent and Right to the child, and choosing one selects it. A long component edited in place: click into its text and type. The <strong>bar's status</strong> is the main indicator and the only place an error opens while the component is selected. The <strong>selection outline</strong> carries the same states in the real selection colours (green when published, orange for a draft; switch below), drawn in the admin overlay at the selection's own width, with no name tag: the admin header names the selection at its top centre. Saved, an error and a conflict each start with a soft glow round the outline (the outline only; bar controls have none). The <strong>admin header</strong>'s status, top right, answers "is it safe to leave?": "All changes saved" at rest, "Saving…" from your first keystroke, "1 change not saved" until a save succeeds.</p>
     <div class="sim" id="ip-sim">
       <button type="button" data-ips="type">Type a sentence for me</button>
       <button type="button" data-ips="fail" aria-pressed="false">Next save fails</button>
@@ -1367,13 +1393,13 @@ button.f{cursor:pointer;width:100%}
       <button type="button" data-ips="desel">Deselect</button>
       <span role="group" aria-label="Component" style="display:contents"><button type="button" data-ips="pub" aria-pressed="true">Published</button><button type="button" data-ips="draft" aria-pressed="false">Draft</button></span>
       <button type="button" data-ips="dark" aria-pressed="false">Dark site</button>
-      <button type="button" data-ips="deep" aria-pressed="false">Deep nesting (8 levels)</button>
+      <button type="button" data-ips="deep" aria-pressed="false">Deep nesting (9 levels)</button>
     </div>
     <div class="ipstage kit" id="ip-stage">
       <div class="ip-head" role="group" aria-label="Admin header, example">
         <button type="button" class="btn soft">Done</button>
         <span class="ttl" id="ip-ttl"></span>
-        <span class="right"><button type="button" class="btn ghost">Menu</button><span class="ip-hs" id="ip-hs"><span class="hg"></span><span class="ht"></span></span><button type="button" class="btn ghost danger ip-hb" id="ip-hb" hidden><span class="hg"></span><span class="ht"></span></button></span>
+        <span class="right"><button type="button" class="btn ghost ip-menu"><span class="mi" aria-hidden="true">☰</span><span class="mt">Menu</span></button><span class="ip-hs" id="ip-hs"><span class="hg"></span><span class="ht"></span></span><button type="button" class="btn ghost danger ip-hb" id="ip-hb" hidden><span class="hg"></span><span class="ht"></span></button></span>
       </div>
       <div class="ip-site" id="ip-site" tabindex="0" role="region" aria-label="Example page, editing on the page">
         <nav aria-label="Example site, editing on the page"><b>Hartley &amp; Finch</b><span>Kitchens · Worktops · Contact</span></nav>
@@ -1440,11 +1466,15 @@ button.f{cursor:pointer;width:100%}
       <div><p class="panel-cap"><b>Phone</b></p><div class="phone-dlg kit coarse"><div class="dlg-host" id="routes-edit-phone"></div></div></div>
     </div>
     <h3 class="sub" id="addcomp">Adding a component: <code>CwaUiCombobox</code>, open inline</h3>
-    <p class="note" style="margin:0 0 1rem">The search field has focus when the dialog opens and the list is always visible. <strong>In this group</strong> comes first with counts, then every other component by its configured <code>group</code> (or A to Z), then <strong>Dynamic</strong>, whose two selects open in place. Type to filter by name, description and group; arrows move, Enter adds, a double-click adds. A thumbnail shows when a component has a preview image, larger on the highlighted row. On a phone the dialog is full screen and the search stays at the top.</p>
+    <p class="note" style="margin:0 0 1rem">The search field has focus when the dialog opens and the list is always visible. <strong>Already in this group</strong> is a quick list of chips at the top (Tab reaches it, arrows move along it, Down goes to the list); the full list under it, by configured <code>group</code> (or A to Z), does not repeat them, then <strong>Dynamic</strong> in its own section. While you type, the chips hide and the results are one list. Type to filter: name matches come first (start, then word start, then anywhere), then group, then description. Arrows move; a click or Enter opens the component’s <strong>detail</strong> (“‹ Components”, its preview and description when configured, where it will go, its UI and Style when it has them, and Dynamic’s Data type and Field), where <strong>Add</strong> has focus. Back (‹ Components, Escape or Alt+←) returns to the list as you left it. Every row’s leading visual (thumbnail, icon or an empty slot) is one fixed size. A search that only matches a component this group doesn’t allow says so. On a phone the dialog is full screen and the search stays at the top.</p>
     <div class="sim" id="ac-sim">
       <button type="button" data-acs="gal">Type “gal”</button>
       <button type="button" data-acs="galery">Type “galery”</button>
-      <button type="button" data-acs="dyn">Choose Dynamic</button>
+      <button type="button" data-acs="text">Type “text”</button>
+      <button type="button" data-acs="map">Type “map”</button>
+      <button type="button" data-acs="hero">Open Hero section</button>
+      <button type="button" data-acs="spacer">Open Spacer</button>
+      <button type="button" data-acs="dyn">Open Dynamic</button>
       <button type="button" data-acs="empty" aria-pressed="false">Empty group</button>
       <button type="button" data-acs="reset">Reset</button>
     </div>
@@ -1492,19 +1522,13 @@ button.f{cursor:pointer;width:100%}
         <div class="kit toastdemo" id="toast-static"></div>
       </div>
     </div>
-    <h3 class="sub">Toast styles: B chosen</h3>
-    <p class="note" style="margin:0 0 .5rem">Each option over a busy page (a photo and text) and a plain one, in light and dark. The region holding the toasts has no background, padding, shadow or blur of its own and lets clicks through; only the toasts take them. Toasts never move: when the focused element is entirely hidden behind the stack, the stack turns see-through in place until focus moves on. Daniel chose B, tinted frosted; the live toasts use it. A and C stay here for the record, and the buttons below switch the live toasts to compare.</p>
-    <div class="sim" id="toast-style" role="group" aria-label="Style for live toasts">
-      <button type="button" data-ts="a" aria-pressed="false">A · Frosted</button><button type="button" data-ts="b" aria-pressed="true">B · Tinted frosted (chosen)</button><button type="button" data-ts="c" aria-pressed="false">C · Solid tone</button>
-    </div>
-    <div class="topts" id="toast-opts"></div>
   </section>
 
   <section class="sec" id="questions" aria-labelledby="h-questions">
-    <h2 id="h-questions">9 · Open questions for Daniel</h2>
-    <p class="lede">The v5 questions are settled: the palette additions and the treegrid are approved, and route edits use the sub-view. Buttons have their own fill, ⋮ is the only “more” glyph, <code>updateResource</code> keeps its return, and the screen-reader pass runs once per new component and before each release.</p>
+    <h2 id="h-questions">9 · Decisions</h2>
+    <p class="lede">Nothing is open. The v5 questions are settled: the palette additions and the treegrid are approved, and route edits use the sub-view. Buttons have their own fill, ⋮ is the only “more” glyph, <code>updateResource</code> keeps its return, and the screen-reader pass runs once per new component and before each release.</p>
     <ol class="qs">
-      <li><b>Held back by parent in lists.</b> A list row can only say “Held back by parent” if the pages collection carries each page's route with its effective go-live (<code>_metadata.effectiveLiveAt</code>), which is admin-only and today comes with the route, not the page. Ask the bundle to embed it in the admin pages collection, or show the page's own route status in lists and leave “Held back” to the Routes tab?</li>
+      <li><b>Held back by parent in lists: settled.</b> Lists read the routes of the pages on screen in one request, <code>GET /_/routes?pages[]=…&amp;perPage=100</code> (api-components-bundle#588, bundle 2.0.0-alpha.42), whose <code>_metadata.effectiveLiveAt</code> gives “Held back by parent”.</li>
     </ol>
   </section>
 </main>
@@ -1841,98 +1865,155 @@ function closeStack (refocus) {
   if (!s) return
   curStack = null
   s.panel.remove(); s.scrim && s.scrim.remove()
+  s.inerted && s.inerted.forEach(el => { el.inert = false })
   removeEventListener('scroll', s.onScroll, true)
   s.onClose && s.onClose()
-  if (refocus && s.returnTo && s.returnTo.isConnected) s.returnTo.focus({ preventScroll: true })
+  const back = typeof s.returnTo === 'function' ? s.returnTo() : s.returnTo
+  if (refocus && back && back.isConnected) back.focus({ preventScroll: true })
 }
-function stackMenu ({ at, levels, selected, returnTo, onPick, onClose, label = 'Select a resource', limit = 5, minW = 0 }) {
+function stackMenu ({ at, levels, selected, returnTo, onPick, onClose, label = 'Select a resource', limit = 5, minW = 0, avoid = null }) {
   closeMenu(); closePop(); closeStack()
   const sheet = isSheet()
   const id = nid('rs')
-  const S = { all: false, hl: -1, kb: false }
+  const si = levels.findIndex(l => l.key === selected)
+  const S = { all: false, hl: si >= 0 ? si : 0, kb: false, hov: false, busy: false }
+  const rt = () => typeof returnTo === 'function' ? returnTo() : returnTo
   const panel = document.createElement('div')
-  panel.className = 'menu kit stackm ' + themeOf(at.nodeType ? at : returnTo) + (sheet ? ' sheet' : '')
-  let scrim = null
-  if (sheet) { scrim = document.createElement('div'); scrim.className = 'scrim'; scrim.addEventListener('click', () => closeStack(true)); portal.append(scrim) }
-  panel.innerHTML = (sheet ? `<div class="sh-h"><span>${esc(label)}</span><button type="button" class="btn ghost sh-done">Close</button></div>` : '') + `<div class="ntree" role="tree" tabindex="-1" aria-label="${esc(label)}" id="${id}"></div>`
+  panel.className = 'menu kit stackm ' + themeOf(at.nodeType ? at : rt()) + (sheet ? ' sheet' : '')
+  let scrim = null; let inerted = null
+  if (sheet) {
+    panel.setAttribute('role', 'dialog'); panel.setAttribute('aria-modal', 'true'); panel.setAttribute('aria-labelledby', id + '-h')
+    scrim = document.createElement('div'); scrim.className = 'scrim'; scrim.addEventListener('click', () => closeStack(true)); portal.append(scrim)
+    inerted = [...document.body.children].filter(el => el !== portal && !el.inert)
+    inerted.forEach(el => { el.inert = true })
+  }
+  panel.innerHTML = (sheet ? `<div class="sh-h"><span id="${id}-h">${esc(label)}</span><button type="button" class="btn ghost sh-done">Close</button></div>` : '') +
+    `<div class="ntree" role="tree" tabindex="-1" aria-label="${esc(label)}" id="${id}"></div>` +
+    `<div class="nfoot"><button type="button" class="nmore" tabindex="-1" hidden></button></div><span class="sr" role="status" aria-live="polite"></span>`
   portal.append(panel)
-  const tree = $('.ntree', panel)
-  let order = []
+  const tree = $('.ntree', panel); const moreBtn = $('.nmore', panel); const live = $('[role=status]', panel)
+  let shown = 0
   function render () {
-    const shown = S.all ? levels.length : Math.min(limit, levels.length)
+    shown = S.all ? levels.length : Math.min(limit, levels.length)
     const more = levels.length - shown
     let inner = ''
     for (let j = 0; j < shown; j++) {
       const l = levels[j]
-      const lvl = shown - j + (more ? 1 : 0)
       const isSel = l.key === selected
-      inner = `<div class="nbox${isSel ? ' sel' : ''}${j === 0 ? ' inmost' : ''}" role="treeitem" id="${id}-${j}" data-j="${j}" aria-level="${lvl}" aria-label="${esc(l.label)}${l.desc ? ', ' + esc(l.desc) : ''}${isSel ? ', selected' : ''}" aria-selected="${isSel}"${inner ? ' aria-expanded="true"' : ''}${j === 0 && minW ? ` style="min-width:${minW}px"` : ''}>${inner ? `<div class="nkids" role="group">${inner}</div>` : ''}<span class="nl">${l.icon ? g(l.icon, 'ni') : ''}<span class="nm"><span class="nn">${esc(l.label)}</span>${l.desc ? `<span class="nd">${esc(l.desc)}</span>` : ''}</span>${isSel ? g('check', 'nck') : ''}</span></div>`
+      inner = `<div class="nbox${isSel ? ' sel' : ''}${j === 0 ? ' inmost' : ''}" role="treeitem" id="${id}-${j}" data-j="${j}" aria-level="${levels.length - j}" aria-label="${esc(l.label)}" aria-selected="${isSel}"${inner ? ' aria-expanded="true"' : ''}${j === 0 && minW ? ` style="min-width:${minW}px"` : ''}>${inner ? `<div class="nkids" role="group">${inner}</div>` : ''}<span class="nl"><span class="nn">${esc(l.label)}</span>${isSel ? g('check', 'nck') : ''}</span></div>`
     }
-    if (more) inner = `<div class="nbox nmore" role="treeitem" id="${id}-m" data-j="m" aria-level="1" aria-expanded="false" aria-label="Show ${more} more ${more === 1 ? 'parent' : 'parents'}"><div class="nkids" role="group">${inner}</div><span class="nl"><span class="nm"><span class="nn nlink">Show ${more} more ${more === 1 ? 'parent' : 'parents'}</span></span></span></div>`
     tree.innerHTML = inner
-    order = (more ? ['m'] : []).concat([...Array(shown).keys()].reverse())
-    if (S.hl < 0 || S.hl >= order.length) S.hl = order.length - 1
+    moreBtn.hidden = !more
+    moreBtn.textContent = `Show ${more} more ${more === 1 ? 'parent' : 'parents'}`
+    if (S.hl >= shown) S.hl = shown - 1
     paint()
   }
   function paint (scroll) {
-    $$('.nbox', tree).forEach(b => { const on = b.dataset.j === String(order[S.hl]); b.classList.toggle('hl', on); b.classList.toggle('kb', on && S.kb) })
-    const el = $(`#${id}-${order[S.hl]}`)
+    $$('.nbox', tree).forEach(b => { const on = +b.dataset.j === S.hl; b.classList.toggle('hl', on && S.hov); b.classList.toggle('kb', on && S.kb) })
+    const el = $(`#${id}-${S.hl}`)
     if (el) { tree.setAttribute('aria-activedescendant', el.id); if (scroll) el.scrollIntoView({ block: 'nearest' }) }
   }
-  function act (k) {
-    if (k === 'm') { S.all = true; S.hl = 0; render(); return }
-    const l = levels[+k]
-    closeStack(true)
-    onPick(l)
+  function expand () {
+    const n = levels.length - shown
+    S.all = true; render(); position()
+    tree.focus({ preventScroll: true })
+    live.textContent = `${n} more ${n === 1 ? 'parent' : 'parents'} shown`
   }
+  async function act (j) {
+    if (S.busy) return
+    S.busy = true
+    let ok
+    try { ok = await onPick(levels[j]) } finally { S.busy = false }
+    if (ok === false) { if (panel.isConnected) { tree.focus({ preventScroll: true }); paint() } return }
+    closeStack(true)
+  }
+  const move = (j, scroll = true) => { S.kb = true; S.hov = false; S.hl = Math.min(shown - 1, Math.max(0, j)); paint(scroll) }
+  const tabTrap = e => {
+    if (!sheet) { e.preventDefault(); closeStack(true); return }
+    const f = [tree, moreBtn.hidden ? null : moreBtn, $('.sh-done', panel)].filter(Boolean)
+    const i = f.indexOf(document.activeElement)
+    e.preventDefault(); f[(i + (e.shiftKey ? -1 : 1) + f.length) % f.length].focus({ preventScroll: true })
+  }
+  panel.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closeStack(true) }
+    else if (e.key === 'Tab') tabTrap(e)
+  })
   tree.addEventListener('keydown', e => {
     const k = e.key
-    if (k === 'ArrowUp' || k === 'ArrowLeft') { e.preventDefault(); S.kb = true; S.hl = Math.max(0, S.hl - 1); paint(true) }
-    else if (k === 'ArrowDown' || k === 'ArrowRight') { e.preventDefault(); S.kb = true; S.hl = Math.min(order.length - 1, S.hl + 1); paint(true) }
-    else if (k === 'Home' || k === 'End') { e.preventDefault(); S.kb = true; S.hl = k === 'Home' ? 0 : order.length - 1; paint(true) }
-    else if (k === 'Enter' || k === ' ') { e.preventDefault(); act(order[S.hl]) }
-    else if (k === 'Escape') { e.preventDefault(); e.stopPropagation(); closeStack(true) }
-    else if (k === 'Tab') { closeStack() }
+    if (k === 'ArrowUp' || k === 'ArrowRight') { e.preventDefault(); move(S.hl - 1) }
+    else if (k === 'ArrowDown' || k === 'ArrowLeft') {
+      e.preventDefault()
+      if (S.hl === shown - 1 && !moreBtn.hidden && k === 'ArrowDown') moreBtn.focus({ preventScroll: true })
+      else move(S.hl + 1)
+    }
+    else if (k === 'Home' || k === 'End') { e.preventDefault(); move(k === 'Home' ? 0 : shown - 1) }
+    else if (k === 'Enter' || k === ' ') { e.preventDefault(); act(S.hl) }
     else if (k.length === 1 && !e.metaKey && !e.ctrlKey) {
-      const i = order.findIndex(j => j !== 'm' && levels[j].label.toLowerCase().startsWith(k.toLowerCase()))
-      if (i >= 0) { S.hl = i; S.kb = true; paint(true) }
+      const i = levels.slice(0, shown).findIndex(l => l.label.toLowerCase().startsWith(k.toLowerCase()))
+      if (i >= 0) move(i)
     }
   })
+  moreBtn.addEventListener('keydown', e => { if (e.key === 'ArrowUp') { e.preventDefault(); tree.focus({ preventScroll: true }) } })
+  moreBtn.addEventListener('click', expand)
   tree.addEventListener('mousedown', e => e.preventDefault())
-  tree.addEventListener('pointermove', e => { const b = e.target.closest('.nbox'); if (!b) return; const i = order.indexOf(b.dataset.j === 'm' ? 'm' : +b.dataset.j); if (i !== S.hl || S.kb) { S.hl = i; S.kb = false; paint() } })
-  tree.addEventListener('click', e => { const b = e.target.closest('.nbox'); if (b) act(b.dataset.j === 'm' ? 'm' : +b.dataset.j) })
+  tree.addEventListener('pointermove', e => {
+    const nl = e.target.closest('.nl')
+    if (!nl) { if (S.hov) { S.hov = false; paint() } return }
+    const j = +nl.parentElement.dataset.j
+    if (j !== S.hl || !S.hov || S.kb) { S.hl = j; S.hov = true; S.kb = false; paint() }
+  })
+  tree.addEventListener('pointerleave', () => { if (S.hov) { S.hov = false; paint() } })
+  tree.addEventListener('click', e => { const nl = e.target.closest('.nl'); if (nl) act(+nl.parentElement.dataset.j) })
   if (sheet) $('.sh-done', panel).addEventListener('click', () => closeStack(true))
-  render()
-  if (!sheet) {
+  function position () {
+    if (sheet) return
+    panel.style.left = '0px'; panel.style.top = '0px'
     const vw = document.documentElement.clientWidth
     const pw = panel.offsetWidth; const ph = panel.offsetHeight
-    const ib = $('.inmost', tree).getBoundingClientRect()
+    const pr = panel.getBoundingClientRect(); const ib = $('.inmost', tree).getBoundingClientRect()
+    const ox = ib.left - pr.left; const oy = ib.top - pr.top
     let left; let top
     if (at.nodeType) {
       const a = at.getBoundingClientRect()
-      const pr = panel.getBoundingClientRect()
-      left = a.left + a.width / 2 - (ib.left - pr.left + ib.width / 2)
-      top = a.top + a.height / 2 - (ib.top - pr.top + ib.height / 2)
+      left = a.left + a.width / 2 - (ox + ib.width / 2)
+      top = a.top + a.height / 2 - (oy + ib.height / 2)
     } else {
-      left = at.x; top = at.y
-      if (left + pw > vw - 8) left = at.x - pw
-      if (top + ph > innerHeight - 8) top = at.y - ph
+      const vh = innerHeight
+      const iw = ib.width; const ih = ib.height
+      const tl = at.x - ox; const tr = at.x - ox - iw
+      const tt = at.y - oy; const tb = at.y - oy - ih
+      const overX = l => Math.max(0, 8 - l) + Math.max(0, l + pw - (vw - 8))
+      const overY = t => Math.max(0, 8 - t) + Math.max(0, t + ph - (vh - 8))
+      left = overX(tl) === 0 || overX(tl) <= overX(tr) ? tl : tr
+      top = overY(tt) === 0 || overY(tt) <= overY(tb) ? tt : tb
+      S.corner = (top === tt ? 'top' : 'bottom') + '-' + (left === tl ? 'left' : 'right')
     }
     left = Math.min(Math.max(8, left), vw - pw - 8)
     top = Math.min(Math.max(8, top), innerHeight - ph - 8)
+    const av = avoid && avoid()
+    if (av) {
+      const r = av.getBoundingClientRect()
+      if (r.width && left + pw > r.left - 8 && left < r.right && top < r.bottom && top + ph > r.top) {
+        if (r.left - 8 - pw >= 8) left = r.left - 8 - pw
+        else top = r.bottom + 8
+      }
+    }
     panel.style.left = left + 'px'; panel.style.top = top + 'px'
     const ib2 = $('.inmost', tree).getBoundingClientRect()
     panel.style.transformOrigin = `${ib2.left - left + ib2.width / 2}px ${ib2.top - top + ib2.height / 2}px`
-    if (!reduced()) panel.animate([{ transform: 'scale(.9)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 150, easing: 'cubic-bezier(.2,.8,.2,1)' })
   }
+  render()
+  position()
+  if (!sheet && !reduced()) panel.animate([{ transform: 'scale(.9)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 150, easing: 'cubic-bezier(.2,.8,.2,1)' })
   setTimeout(() => tree.focus({ preventScroll: true }), sheet ? 30 : 0)
-  const onScroll = e => { if (!panel.contains(e.target) && !sheet) closeStack() }
+  const opened = Date.now()
+  const onScroll = e => { if (!panel.contains(e.target) && !sheet && !S.busy && Date.now() - opened > 300) closeStack() }
   addEventListener('scroll', onScroll, true)
-  curStack = { panel, scrim, returnTo, onClose, onScroll, at }
+  curStack = { panel, scrim, returnTo, onClose, onScroll, at, S, inerted }
   return curStack
 }
 document.addEventListener('pointerdown', e => {
-  if (curStack && !curStack.panel.contains(e.target) && !(curStack.at.nodeType && curStack.at.contains(e.target)) && curStack.scrim !== e.target) closeStack()
+  if (curStack && !curStack.S.busy && !curStack.panel.contains(e.target) && !(curStack.at.nodeType && curStack.at.contains(e.target)) && curStack.scrim !== e.target) closeStack()
 }, true)
 document.addEventListener('pointerdown', e => {
   if (openPop && !openPop.p.contains(e.target) && !openPop.anchor.contains(e.target)) closePop()
@@ -2618,7 +2699,9 @@ function setLine (el, state, o = {}) {
   if (LINE[state]) el.dataset.line = state; else delete el.dataset.line
   if (cap) morphLine(el, state, cap)
   if (el.matches('.f')) { el.classList.toggle('err', state === 'error'); el.classList.toggle('conf', state === 'conflict') }
-  const ctl = ctlOf(el)
+  const ctl0 = ctlOf(el)
+  const ctl = el.getAttribute('role') === 'group' ? el : ($(':scope > [role=group]', el) || ctl0)
+  const textual = ctl.matches('input:not([type=checkbox]):not([type=radio]),textarea,[contenteditable],[role=combobox]')
   const old = el._lineMsg
   if (old) { old.remove(); el._lineMsg = null; const d = (ctl.getAttribute('aria-describedby') || '').split(' ').filter(x => x && x !== old.id).join(' '); d ? ctl.setAttribute('aria-describedby', d) : ctl.removeAttribute('aria-describedby') }
   el._lineState = { state, o }
@@ -2632,7 +2715,7 @@ function setLine (el, state, o = {}) {
   el.append(msg)
   el._lineMsg = msg
   ctl.setAttribute('aria-describedby', ((ctl.getAttribute('aria-describedby') || '') + ' ' + msg.id).trim())
-  if (state === 'error') ctl.setAttribute('aria-invalid', 'true')
+  if (state === 'error' && textual) ctl.setAttribute('aria-invalid', 'true')
   if (el._lineWired) return
   el._lineWired = true
   let hideT
@@ -3001,7 +3084,6 @@ function settingsPage (host, logEl) {
     sv.textContent = ks.length ? `Save ${ks.length} ${ks.length === 1 ? 'change' : 'changes'}` : 'Save'
     sv.disabled = !ks.length
     $('[data-cancel]', host).disabled = !ks.length
-    $('[data-fstate]', host).textContent = ks.length ? `${ks.length} unsaved` : ''
   }
   function leave (a) {
     const to = a.getAttribute('href')
@@ -3279,11 +3361,14 @@ function setupEitherOr (root, logEl, iri) {
     })
   }
   search.addEventListener('commit', e => { commit({ route: e.detail }); if (st.rawPath === null) url.value = '' })
+  const urlOk = v => /^\/\S*$/.test(v) || /^https?:\/\/[^\s/]+\S*$/.test(v)
+  let urlT = null
   const commitUrl = () => {
+    clearTimeout(urlT)
     const v = url.value.trim()
     if (v === (st.rawPath || '')) return
     const s = visibleSlot()
-    if (!/^(\/|https?:\/\/)/.test(v)) {
+    if (!urlOk(v)) {
       const msg = 'Start with / for a page on this site, or https:// for another site.'
       if (s.closest('.s-modal')) {
         s.closest('.f').classList.add('err')
@@ -3300,7 +3385,7 @@ function setupEitherOr (root, logEl, iri) {
     commit({ rawPath: v })
     search.api.set(null)
   }
-  url.addEventListener('input', () => { offsite(); clearUndo() })
+  url.addEventListener('input', () => { offsite(); clearUndo(); clearTimeout(urlT); urlT = setTimeout(() => { if (urlOk(url.value.trim()) && document.activeElement === url) commitUrl() }, 250) })
   url.addEventListener('change', commitUrl)
   url.addEventListener('keydown', e => { if (e.key === 'Enter') commitUrl() })
 }
@@ -3336,31 +3421,30 @@ function initInpage () {
   const blog = s => { logEl.textContent = (logEl.textContent === 'Requests appear here.' ? '' : logEl.textContent + '\n') + s; logEl.scrollTop = logEl.scrollHeight }
   const wrap = $('.ip-wrap', stage)
   const SHORT = [
-    { key: 'comp', box: 'comp', icon: 'rs-comp', label: 'Rich text', desc: 'Component' },
-    { key: 'pos', box: 'pos', icon: 'rs-pos', label: 'Component position', desc: '3 of 6 in Main content' },
-    { key: 'group', box: 'group', icon: 'group', label: 'Main content group', desc: '6 components' },
-    { key: 'page', box: 'page', icon: 'rs-page', label: 'Page', desc: 'Kitchens' }
+    { key: 'comp', box: 'comp', label: 'Rich text' },
+    { key: 'pos', box: 'pos', label: 'Component position' },
+    { key: 'group', box: 'group', label: 'Main content group' }
   ]
   const DEEP = [
-    { key: 'comp', box: 'comp', icon: 'rs-comp', label: 'Rich text', desc: 'Component' },
-    { key: 'pos', box: 'pos', icon: 'rs-pos', label: 'Component position', desc: '1 of 2 in Left column' },
-    { key: 'lcol', box: 'pos', icon: 'group', label: 'Left column group', desc: '2 components' },
-    { key: 'cols', box: 'pos', icon: 'rs-comp', label: 'Two columns', desc: 'Component' },
-    { key: 'cpos', box: 'group', icon: 'rs-pos', label: 'Component position', desc: '3 of 6 in Main content' },
-    { key: 'group', box: 'group', icon: 'group', label: 'Main content group', desc: '6 components' },
-    { key: 'page', box: 'page', icon: 'rs-page', label: 'Page', desc: 'Kitchens' },
-    { key: 'layout', box: 'page', icon: 'rs-page', label: 'Layout', desc: 'Default' }
+    { key: 'comp', box: 'comp', label: 'Rich text' },
+    { key: 'pos', box: 'pos', label: 'Component position' },
+    { key: 'lcol', box: 'pos', label: 'Left column group' },
+    { key: 'cols', box: 'pos', label: 'Two columns' },
+    { key: 'cpos', box: 'pos', label: 'Component position' },
+    { key: 'tabg', box: 'group', label: 'Tab panel group' },
+    { key: 'tabs', box: 'group', label: 'Tabs' },
+    { key: 'tpos', box: 'group', label: 'Component position' },
+    { key: 'group', box: 'group', label: 'Main content group' }
   ]
   let STACK = SHORT
   const P = { k: 'comp' }
   const lvOf = k => STACK.find(s => s.key === k) || STACK[0]
-  const nameOf = k => k === 'page' ? 'Page · Kitchens' : lvOf(k).label
+  const nameOf = k => lvOf(k).label
   const place = () => {
     const k = lvOf(P.k).box
     let b = [comp.offsetLeft, comp.offsetTop, comp.offsetWidth, comp.offsetHeight]
     if (k === 'pos') b = [b[0] - 6, b[1] - 6, b[2] + 12, b[3] + 12]
     if (k === 'group') b = [4, 4, wrap.offsetWidth - 8, wrap.offsetHeight - 8]
-    if (k === 'page') b = [4 - wrap.offsetLeft, 4 - wrap.offsetTop, site.clientWidth - 8, Math.max(site.scrollHeight, site.clientHeight) - 8]
     sel.classList.toggle('core', k !== 'comp')
     sel.style.left = b[0] + 'px'; sel.style.top = b[1] + 'px'; sel.style.width = b[2] + 'px'; sel.style.height = b[3] + 'px'
   }
@@ -3486,6 +3570,17 @@ function initInpage () {
     if (e.key === 'Escape' && bodyEl.getAttribute('aria-invalid') === 'true') { e.preventDefault(); e.stopPropagation(); sum.focus({ preventScroll: true }); openSum() }
   })
   hb.addEventListener('click', showIt)
+  const tipFor = el => {
+    if (!isSheet()) return
+    const t = (el === hb ? $('.ht', hb) : $('.ht', hs)).textContent.trim()
+    if (!t) return
+    $$('.ip-tip').forEach(x => x.remove())
+    const tp = document.createElement('div'); tp.className = 'ip-tip'; tp.setAttribute('aria-hidden', 'true'); tp.textContent = t; portal.append(tp)
+    const r = el.getBoundingClientRect()
+    tp.style.top = r.bottom + 6 + 'px'; tp.style.left = Math.max(8, Math.min(r.right - tp.offsetWidth, document.documentElement.clientWidth - tp.offsetWidth - 8)) + 'px'
+    setTimeout(() => tp.remove(), 2000)
+  }
+  ;[hs, hb].forEach(el => el.addEventListener('pointerdown', e => { if (e.pointerType !== 'mouse') tipFor(el) }))
   const ttl = $('#ip-ttl')
   const curStackOf = () => STACK.slice(STACK.indexOf(lvOf(P.k)))
   const hdrTtl = () => {
@@ -3496,12 +3591,13 @@ function initInpage () {
   const hdrTtlDraw = () => {
     if (!E.selected) { ttl.textContent = 'Kitchens · About our workshop'; return }
     const can = curStackOf().length > 1
-    ttl.innerHTML = `<button type="button" class="pathsel${can ? ' can' : ''}" aria-haspopup="tree" aria-expanded="false"${can ? '' : ' aria-disabled="true"'} aria-label="${esc(nameOf(P.k))}${can ? ', choose a parent' : ''}"><span>${esc(nameOf(P.k))}</span></button>`
+    ttl.innerHTML = `<button type="button" class="pathsel${can ? ' can' : ''}" aria-haspopup="tree" aria-expanded="false"${can ? '' : ' aria-disabled="true"'} aria-label="${esc(nameOf(P.k))}${can ? ', choose a parent' : ''}"><span>${esc(nameOf(P.k))}</span>${can ? '<b class="pchev" aria-hidden="true">▾</b>' : ''}</button>`
     const btn = $('button', ttl)
     btn.addEventListener('click', () => {
       if (!can || btn.getAttribute('aria-expanded') === 'true') return
       btn.setAttribute('aria-expanded', 'true')
-      stackMenu({ at: btn, levels: curStackOf(), selected: P.k, returnTo: btn, minW: btn.offsetWidth, onPick: l => pickRes(l.key), onClose: () => btn.isConnected && btn.setAttribute('aria-expanded', 'false') })
+      const st = stackMenu({ at: btn, levels: curStackOf(), selected: P.k, returnTo: () => $('button', ttl), minW: btn.offsetWidth, avoid: () => $('.ip-head .right'), onPick: l => pickRes(l.key), onClose: () => { if (btn.isConnected) { btn.setAttribute('aria-expanded', 'false'); btn.classList.remove('anch') } } })
+      if (!st.scrim) btn.classList.add('anch')
     })
   }
   const select = () => { E.selected = true; stage.classList.remove('desel'); sel.hidden = false; hdrTtl(); place() }
@@ -3512,6 +3608,7 @@ function initInpage () {
     $('#ip-alt-n').textContent = k === 'comp' ? '' : `${nameOf(k)}. Its tabs show here.`
     select()
     say.say(`${nameOf(k)} selected`, 0)
+    return true
   }
   const openCtx = (pt, back) => stackMenu({ at: pt, levels: STACK, selected: E.selected ? P.k : null, returnTo: back, onPick: l => pickRes(l.key) })
   const ctxOpen = () => !!curStack
@@ -3599,11 +3696,11 @@ function buildBar (host, p, { coarse } = {}) {
             <div class="bf"><span class="bl">Description</span><span class="handoff-q">“Every kitchen we fit is drawn, cut and finished…”</span><button type="button" class="btn soft" data-handoff>Edit on page</button></div>
             <span class="dv"></span>
             <div class="bf"><label class="bl" for="${p}-btn">Button</label><div class="f w-sm" data-field="button"><input id="${p}-btn" value="Book a visit"><span class="st"></span></div></div>
-            ${toggle({ label: 'Show', checked: true }).replace('<label class="tgl', '<label data-field="show" class="tgl').replace('</label>', '<span class="st"></span></label>')}
+            <span class="tglw" data-field="show">${toggle({ label: 'Show', checked: true })}<span class="st"></span></span>
             <span class="dv"></span>
             ${eitherOrHTML(p + '-lk', { bar: true, route: '/showrooms' })}
             <span class="dv"></span>
-            <div class="bf"><span class="bl">Image</span><div class="file" data-field="image"><span class="thumb" role="img" aria-label="Thumbnail"></span><span class="fname">workshop-bench.jpg</span><span class="fsize">240 KB</span><button type="button" class="btn soft" data-img="replace">Replace</button><button type="button" class="btn ghost" data-img="remove">Remove</button><span class="st"></span></div></div>
+            <div class="bf"><span class="bl" id="${p}-img-l">Image</span><div class="file" data-field="image" role="group" aria-labelledby="${p}-img-l"><span class="thumb" role="img" aria-label="Thumbnail"></span><span class="fname">workshop-bench.jpg</span><span class="fsize">240 KB</span><button type="button" class="btn soft" data-img="replace">Replace</button><button type="button" class="btn ghost" data-img="remove">Remove</button><span class="st"></span></div></div>
           </div>
           <div class="row" tabindex="0" role="tabpanel" id="${p}-pn-ui" aria-labelledby="${p}-tab-ui" data-panel="ui" hidden>
             <div class="bf"><span class="bl">UI</span>${selectHTML({ key: 'ui', value: 'split', label: 'UI', width: 'w-md' }).replace('<button', '<button data-field="ui"')}</div>
@@ -3621,10 +3718,10 @@ function buildBar (host, p, { coarse } = {}) {
             <div class="bf"><button type="button" class="f w-md dis" data-cal aria-label="Go live date" id="${p}-date" disabled><span class="sv">18 Nov 2026, 09:00</span>${g('cal', 'end')}<span class="st"></span></button></div>
           </div>
           <div class="row" tabindex="0" role="tabpanel" id="${p}-pn-info" aria-labelledby="${p}-tab-info" data-panel="info" hidden>
-            <div class="bf"><span class="bl">ID</span><span class="rov"><span class="rv mono">/_/component/hero_sections/4f1c…a9e2</span><button type="button" class="btn ghost icon" aria-label="Copy ID">${g('copy')}</button></span></div>
-            <span class="dv"></span>
-            <div class="bf"><span class="bl">Created</span><span class="rov"><span class="rv">12 Nov 2026</span></span></div>
             <div class="bf"><label class="bl" for="${p}-note">Note</label><div class="f w-sm" data-field="note"><input id="${p}-note" value="Spring launch"><span class="st"></span></div></div>
+            <span class="dv"></span>
+            <div class="bf"><span class="bl">ID</span><span class="rov"><span class="rv mono">/_/component/hero_sections/4f1c…a9e2</span><button type="button" class="btn ghost icon" aria-label="Copy ID">${g('copy')}</button></span></div>
+            <div class="bf"><span class="bl">Created</span><span class="rov"><span class="rv">12 Nov 2026</span></span></div>
             <div class="bf"><span class="bl">Updated</span><span class="rov"><span class="rv">2 min ago</span></span></div>
             <span class="dv"></span>
             <span class="badge accent">Shared · 3 places</span>
@@ -3757,7 +3854,7 @@ function buildBar (host, p, { coarse } = {}) {
     sum.dataset.state = conf.length ? 'conflict' : err.length ? 'error' : busy ? 'saving' : 'idle'
     sum.classList.toggle('act', !!goto)
     sum.setAttribute('aria-label', 'Status: ' + full.replace(' →', '') + (goto ? ', show the field' : ''))
-    sum.onclick = () => goto ? jump(goto) : popover(sum, `<p>${esc(full)}.${B.mode === 'live' ? ' Visitors see this version. Editing a field makes a draft.' : B.mode === 'group' ? ' A group has nothing to publish; add components from ⋮.' : sched ? ' It goes live on 18 Nov at 09:00.' : ' Visitors still see the published version.'}</p>`, { label: 'Status', title: 'Status', icon: glyph, focus: false })
+    sum.onclick = () => goto ? jump(goto) : popover(sum, `<p>${esc(full)}.${B.mode === 'live' ? ' Visitors see this version. Editing a field makes a draft.' : B.mode === 'group' ? ' A group has nothing to publish.' : sched ? ' It goes live on 18 Nov at 09:00.' : ' Visitors still see the published version.'}</p>`, { label: 'Status', title: 'Status', icon: glyph, focus: false })
     tabs.forEach(t => {
       const b = badgeFor(vals.filter(([k]) => TAB_OF[k] === t.dataset.tab).map(([, s]) => s))
       t.dataset.badge = b.kind
@@ -3775,7 +3872,7 @@ function buildBar (host, p, { coarse } = {}) {
   const barLog = p === 'bd' ? $('#bar-log') : null
   let reqN = 0
   const blog = s => { if (!barLog) return; barLog.textContent = (barLog.textContent === 'Requests appear here.' ? '' : barLog.textContent + '\n') + s; barLog.scrollTop = barLog.scrollHeight }
-  function episode ({ key, label, slot, get, set, delay = 250, body, theirs, show = v => v }) {
+  function episode ({ key, label, slot, get, set, delay = 250, body, theirs, show = v => v, onFail, onSaved }) {
     const S = typeof slot === 'function' ? slot : () => slot
     const E = { timer: null, inFlight: false, queued: false, on: false, sent: get(), done: [] }
     const settle = ok => { const d = E.done; E.done = []; d.forEach(f => f(ok)) }
@@ -3799,11 +3896,13 @@ function buildBar (host, p, { coarse } = {}) {
         if (fail) {
           blog(`#${id} ← 500`)
           clearTimeout(E.timer); E.timer = null; E.queued = false; E.on = false
-          setStatus(S(), 'error', { field: label, title: 'not saved', msg: "The server couldn't save this. Reset puts back the last saved value.", actions: [{ label: 'Retry', fn: () => { E.retry = true; send() } }, { label: 'Reset', fn: () => { set(E.sent); setStatus(S(), ''); st('') } }] })
+          const fo = onFail ? onFail(v, E.sent) : null
+          setStatus(S(), 'error', { field: label, title: 'not saved', msg: (fo && fo.msg) || "The server couldn't save this. Reset puts back the last saved value.", actions: [{ label: (fo && fo.retry) || 'Retry', fn: () => { fo && fo.beforeRetry && fo.beforeRetry(); E.retry = true; send() } }, { label: 'Reset', fn: () => { set(E.sent); setStatus(S(), ''); st('') } }] })
           st('error'); tell(key, label, 'error')
           settle(false)
           return
         }
+        E.prev = E.sent
         E.sent = v
         blog(`#${id} ← 200`)
         const after = () => {
@@ -3817,6 +3916,8 @@ function buildBar (host, p, { coarse } = {}) {
       if (!E.on) { if (S().dataset.state === 'pending') { setStatus(S(), ''); st('') } settle(true); return }
       if (E.hold) return
       E.on = false
+      const un = onSaved && onSaved(E.sent, E.prev)
+      if (un) { setStatus(S(), 'undo', { field: label, msg: un.msg, actions: [{ label: 'Undo', fn: () => { set(un.value); change() } }] }); B.savedAt = Date.now(); st('saved'); tell(key, label, 'saved'); settle(true); return }
       setStatus(S(), 'saved'); B.savedAt = Date.now(); st('saved'); tell(key, label, 'saved')
       settle(true)
       setTimeout(() => { if (S().dataset.state === 'saved' && !E.on) { setStatus(S(), ''); st('') } }, 1500)
@@ -3888,9 +3989,15 @@ function buildBar (host, p, { coarse } = {}) {
     if (!v && document.activeElement === rm) $('[data-img="replace"]', fileG).focus({ preventScroll: true })
     rm.hidden = !v
   }
-  const imgEp = episode({ key: 'image', label: 'Image', slot: $('.st', fileG), theirs: 'oak-doors.jpg', show: v => v || 'No image', get: () => imgV, set: imgSet, delay: 0, body: v => `/component/hero_sections/4f1c  { file: ${v ? JSON.stringify('/_/files/' + v) : 'null'} }` })
-  $('[data-img="replace"]', fileG).addEventListener('click', () => { imgSet(imgV === 'workshop-bench.jpg' ? 'oak-doors.jpg' : 'workshop-bench.jpg'); imgEp.change() })
-  $('[data-img="remove"]', fileG).addEventListener('click', () => { imgSet(''); imgEp.change() })
+  let imgShown = null
+  const imgEp = episode({
+    key: 'image', label: 'Image', slot: $('.st', fileG), theirs: 'oak-doors.jpg', show: v => v || 'No image', get: () => imgShown !== null ? '' : imgV, set: v => { imgShown = null; imgSet(v) }, delay: 0,
+    body: v => `/component/hero_sections/4f1c  { file: ${v ? JSON.stringify('/_/files/' + v) : 'null'} }`,
+    onFail: (v, saved) => v ? null : (imgShown = saved, imgSet(saved), { msg: 'The image is still attached: the server couldn’t remove it.', retry: 'Retry remove', beforeRetry: () => { imgShown = null; imgSet('') } }),
+    onSaved: (v, prev) => !v && prev ? { msg: `This removed ${prev}. Undo stays here until your next edit.`, value: prev } : null
+  })
+  $('[data-img="replace"]', fileG).addEventListener('click', () => { imgShown = null; imgSet(imgV === 'workshop-bench.jpg' ? 'oak-doors.jpg' : 'workshop-bench.jpg'); imgEp.change() })
+  $('[data-img="remove"]', fileG).addEventListener('click', () => { imgShown = null; imgSet(''); imgEp.change() })
   B.image = { slot: $('.st', fileG), f: fileG, save: imgEp.save, conflict: imgEp.conflict }
   const eo = $('[data-eo]', mgr)
   setupEitherOr(eo, null, '/component/hero_sections/4f1c')
@@ -3991,139 +4098,226 @@ function buildBar (host, p, { coarse } = {}) {
   return B
 }
 
-/* add a component: CwaUiCombobox, inline-open */
+/* add a component: CwaUiCombobox, inline-open, then a detail sub-view */
 const AC_LIST = [
-  { k: 'RichText', name: 'Rich text', icon: 'ac-text', group: 'Text', desc: 'Paragraphs, headings, lists and links', uis: 1 },
-  { k: 'Quote', name: 'Quote', icon: 'ac-quote', group: 'Text', uis: 2 },
-  { k: 'Image', name: 'Image', icon: 'ac-image', group: 'Media', desc: 'One image with alt text and a caption', uis: 3, thumb: 'linear-gradient(135deg,#a8a29e 0 40%,#78716c 40% 70%,#d6d3d1 70%)' },
-  { k: 'Gallery', name: 'Gallery', icon: 'ac-image', group: 'Media', desc: 'A grid of images that opens full screen', uis: 2, thumb: 'repeating-linear-gradient(90deg,#a8a29e 0 30%,#e7e5e4 30% 35%)' },
-  { k: 'Video', name: 'Video', icon: 'ac-video', group: 'Media', desc: 'A YouTube or Vimeo video', uis: 1 },
-  { k: 'HeroSection', name: 'Hero section', icon: 'ac-layout', group: 'Layout', desc: 'Title, subtitle, button and image', uis: 3, thumb: 'linear-gradient(90deg,#57534e 0 55%,#d6d3d1 55%)' },
-  { k: 'CallToAction', name: 'Call to action', icon: 'ac-layout', group: 'Layout', desc: 'A heading and one button', uis: 2 },
-  { k: 'ContactForm', name: 'Contact form', icon: 'ac-form', group: 'Forms', desc: 'Name, email and message', uis: 1 },
-  { k: 'Spacer', name: 'Spacer', icon: 'ac-space', uis: 1 }
+  { k: 'RichText', name: 'Body text', icon: 'rich-text', group: 'Text', desc: 'Paragraphs, headings, lists and links', uis: 1 },
+  { k: 'Accordion', name: 'Accordion', icon: 'accordion', group: 'Text', desc: 'Questions that open to show their answers', uis: 2 },
+  { k: 'TestimonialSlider', name: 'Testimonial slider', group: 'Text', desc: 'Quotes from customers, one at a time', uis: 1 },
+  { k: 'Button', name: 'Button', group: 'Text', uis: 2 },
+  { k: 'Image', name: 'Image', icon: 'image', group: 'Media', desc: 'One image with alt text and a caption', uis: 1 },
+  { k: 'Gallery', name: 'Gallery', icon: 'gallery', group: 'Media', desc: 'A grid of images that opens full screen', uis: 2, thumb: 'repeating-linear-gradient(90deg,#a8a29e 0 30%,#e7e5e4 30% 35%)' },
+  { k: 'HeroSection', name: 'Hero section', icon: 'hero', group: 'Layout', desc: 'Title, subtitle, button and image', uis: 3, styles: true, thumb: 'linear-gradient(90deg,#57534e 0 55%,#d6d3d1 55%)' },
+  { k: 'CardGrid', name: 'Card grid', icon: 'card-grid', group: 'Layout', desc: 'Cards in rows of three', uis: 2 },
+  { k: 'Collection', name: 'Collection', icon: 'collection', group: 'Layout', desc: 'A paged list of pages or articles', uis: 1 },
+  { k: 'ContactForm', name: 'Contact form', icon: 'form', group: 'Forms', desc: 'Name, email and message', uis: 1 },
+  { k: 'Spacer', name: 'Spacer', uis: 1 },
+  { k: 'MapLocation', name: 'Map location', icon: 'map', group: 'Media', desc: 'A location on a map', uis: 1, allowed: false }
 ]
-const AC_IN_GROUP = [['Image', 3], ['RichText', 2], ['HeroSection', 1]]
+const AC_KIND = {"rich-text": "letter-text", "image": "image", "gallery": "images", "hero": "panel-top", "card-grid": "layout-grid", "collection": "layout-list", "accordion": "list-collapse", "form": "form", "map": "map-pin"}
+const AC_SK = {
+  'card-grid': '<rect x="5" y="5" width="11" height="10" rx="1" fill="var(--sk-img)"/><rect x="18.5" y="5" width="11" height="10" rx="1" fill="var(--sk-img)"/><rect x="32" y="5" width="11" height="10" rx="1" fill="var(--sk-img)"/><rect x="5" y="18" width="11" height="9" rx="1" fill="var(--sk-bar)"/><rect x="18.5" y="18" width="11" height="9" rx="1" fill="var(--sk-bar)"/><rect x="32" y="18" width="11" height="9" rx="1" fill="var(--sk-accent)"/>',
+  collection: '<rect x="5" y="5" width="7" height="5" rx="1" fill="var(--sk-img)"/><rect x="15" y="6.5" width="26" height="2" rx="1" fill="var(--sk-bar)"/><rect x="5" y="13.5" width="7" height="5" rx="1" fill="var(--sk-img)"/><rect x="15" y="15" width="20" height="2" rx="1" fill="var(--sk-bar)"/><rect x="5" y="22" width="7" height="5" rx="1" fill="var(--sk-img)"/><rect x="15" y="23.5" width="23" height="2" rx="1" fill="var(--sk-bar)"/><rect x="38" y="23" width="5" height="3" rx="1.5" fill="var(--sk-accent)"/>',
+  hero: '<rect x="1" y="1" width="46" height="16" fill="var(--sk-img)"/><rect x="6" y="20" width="24" height="3" rx="1" fill="var(--sk-bar)"/><rect x="6" y="25.5" width="10" height="3.5" rx="1.75" fill="var(--sk-accent)"/>'
+}
+const acSk = k => `<svg class="sk" viewBox="0 0 48 32" aria-hidden="true" focusable="false"><rect x=".5" y=".5" width="47" height="31" rx="2" fill="var(--sk-frame)" stroke="var(--sk-stroke)"/>${AC_SK[k]}</svg>`
+const acIcon = c => `<svg class="g lu" aria-hidden="true" focusable="false"><use href="#g-lu-${AC_KIND[c.icon] || 'component'}"/></svg>`
+const acLead = c => c.thumb ? `<i style="--thumb:${c.thumb}"></i>` : AC_SK[c.icon] ? acSk(c.icon) : acIcon(c)
+const AC_IN_GROUP = [['Image', 3], ['RichText', 2], ['Button', 1]]
 OPTS.dynType = [{ value: 'BlogArticleData', label: 'Blog article' }, { value: 'ProductData', label: 'Product' }]
 OPTS.dynField = [{ value: 'heroImage', label: 'Hero image' }, { value: 'intro', label: 'Intro' }]
+OPTS.acUi = [{ value: 'CwaComponentHeroSection', label: 'Default' }, { value: 'CwaComponentHeroSectionSplit', label: 'Split image' }, { value: 'CwaComponentHeroSectionCentred', label: 'Centred' }]
+OPTS.acUi2 = [{ value: 'default', label: 'Default' }, { value: 'alt', label: 'Alternative' }]
 const acHit = (t, q) => { if (!q) return esc(t); const i = t.toLowerCase().indexOf(q.toLowerCase()); return i < 0 ? esc(t) : esc(t.slice(0, i)) + '<mark>' + esc(t.slice(i, i + q.length)) + '</mark>' + esc(t.slice(i + q.length)) }
+const acScore = (c, q) => {
+  if (!q) return 0
+  const n = c.name.toLowerCase(); const x = q.toLowerCase()
+  if (n.startsWith(x)) return 1
+  if (n.split(/\s+/).some(w => w.startsWith(x))) return 2
+  if (n.includes(x)) return 3
+  if ((c.group || '').toLowerCase().includes(x)) return 4
+  if ((c.desc || '').toLowerCase().includes(x)) return 5
+  return 0
+}
+const AC_DYN = { k: 'dyn', name: 'Dynamic', desc: 'Changes per article: each article picks what shows here', dyn: true }
 function addComponentDialog (host, p, { logEl = null } = {}) {
-  const S = { q: '', hl: -1, kb: false, picked: null, empty: false, dynT: null, dynF: null }
+  const S = { q: '', hl: -1, kb: false, empty: false, view: 'list', cur: null, dynT: null, dynF: null }
   const log = m => { if (!logEl) return; logEl.textContent = (logEl.textContent === 'Requests appear here.' ? '' : logEl.textContent + '\n') + m }
   host.innerHTML = `<div class="dlg ac s-modal" role="dialog" aria-labelledby="${p}-t" aria-describedby="${p}-ctx">
     <div class="dlg-h"><h2 class="dt" id="${p}-t">Add a component</h2><button type="button" class="btn ghost icon" aria-label="Close" data-x>${g('x')}</button></div>
     <div class="dlg-b">
-      <div class="ac-top"><p class="ac-ctx" id="${p}-ctx">To <b>Main content</b>, after Intro text</p>
-        <div class="f">${g('search', 'lead')}<input id="${p}-q" type="text" role="combobox" aria-expanded="true" aria-controls="${p}-lb" aria-autocomplete="list" aria-label="Search components" placeholder="Search components" autocomplete="off" spellcheck="false"></div></div>
-      <div class="ac-lb" id="${p}-lb" role="listbox" aria-label="Components"></div>
-      <div class="ac-dyn" id="${p}-dyn" hidden>
-        ${fb({ id: `${p}-dt`, label: 'Data type', control: selectHTML({ key: 'dynType', value: null, label: 'Data type', placeholder: 'Choose a data type' }).replace('<button', `<button id="${p}-dt" data-dyn="t"`) })}
-        ${fb({ id: `${p}-df`, label: 'Field', control: selectHTML({ key: 'dynField', value: null, label: 'Field', placeholder: 'Choose a field' }).replace('<button', `<button id="${p}-df" data-dyn="f"`) })}
+      <div class="ac-list subv-main">
+        <div class="ac-top"><p class="ac-ctx" id="${p}-ctx">To <b>Main content</b>, after Intro text</p>
+          <div class="f">${g('search', 'lead')}<input id="${p}-q" type="text" role="combobox" aria-expanded="true" aria-controls="${p}-lb" aria-autocomplete="list" aria-label="Search components" placeholder="Search components" autocomplete="off" spellcheck="false"></div></div>
+        <div class="ac-quick" id="${p}-qk" role="group" aria-labelledby="${p}-qkh"><div class="ac-gh" id="${p}-qkh">Already in this group</div><div class="ac-chips"></div></div>
+        <div class="ac-lb" id="${p}-lb" role="listbox" aria-label="Components"></div>
       </div>
+      <div class="ac-det subv" hidden></div>
       <span class="sr" aria-live="polite" id="${p}-live"></span>
     </div>
-    <div class="dlg-f"><span class="fstate" id="${p}-fs">Choose a component</span><span class="spacer"></span><button type="button" class="btn soft" data-cancel>Cancel</button><button type="button" class="btn solid" id="${p}-add" disabled>Add</button></div>
+    <div class="dlg-f"><span class="spacer"></span><button type="button" class="btn soft" data-cancel>Cancel</button><button type="button" class="btn solid" id="${p}-add" aria-disabled="true" aria-describedby="${p}-why">Add</button><span class="sr" id="${p}-why">Choose a component first.</span></div>
   </div>`
-  const q = $(`#${p}-q`, host); const lb = $(`#${p}-lb`, host); const dyn = $(`#${p}-dyn`, host)
-  const add = $(`#${p}-add`, host); const fs = $(`#${p}-fs`, host); const live = $(`#${p}-live`, host)
-  const dt = $('[data-dyn="t"]', host); const df = $('[data-dyn="f"]', host)
-  setupSelect(dt); setupSelect(df)
-  df.closest('.fb').hidden = true
+  const q = $(`#${p}-q`, host); const lb = $(`#${p}-lb`, host); const list = $('.ac-list', host); const det = $('.ac-det', host)
+  const add = $(`#${p}-add`, host); const why = $(`#${p}-why`, host); const live = $(`#${p}-live`, host)
+  const body = $('.dlg-b', host); const dlgEl = $('.dlg', host)
   let opts = []
-  const hits = c => !S.q || [c.name, c.desc || '', c.group || ''].some(t => t.toLowerCase().includes(S.q.toLowerCase()))
+  const allowed = c => c.allowed !== false
+  const quick = $(`#${p}-qk`, host); const chips = $('.ac-chips', quick)
+  const inGroup = () => S.empty ? [] : AC_IN_GROUP.map(([k, n]) => ({ ...AC_LIST.find(c => c.k === k), n }))
+  function renderQuick () {
+    const qs = inGroup()
+    quick.hidden = !!S.q || !qs.length
+    chips.innerHTML = qs.map((c, i) => `<button type="button" class="ac-chip" data-k="${c.k}" tabindex="${i ? -1 : 0}" aria-describedby="${p}-qd-${c.k}">${acIcon(c)}<span>${esc(c.name)}</span><span class="sr" id="${p}-qd-${c.k}">${c.n} here</span></button>`).join('')
+  }
   function rows () {
-    const out = []
     const by = k => AC_LIST.find(c => c.k === k)
-    if (!S.empty) {
-      const ing = AC_IN_GROUP.map(([k, n]) => ({ ...by(k), n })).filter(hits)
-      if (ing.length) out.push({ h: 'In this group' }, ...ing.map(c => ({ c, id: 'in-' + c.k })))
-    }
+    const hit = c => !S.q || acScore(c, S.q) > 0
+    const rank = (a, b) => acScore(a, S.q) - acScore(b, S.q) || a.name.localeCompare(b.name)
+    const secs = []
+    const quickKs = S.q ? [] : inGroup().map(c => c.k)
+    const nOf = k => (AC_IN_GROUP.find(([x]) => x === k) || [])[1]
     const groups = [...new Set(AC_LIST.map(c => c.group).filter(Boolean))].sort()
     for (const gname of [...groups, null]) {
-      const cs = AC_LIST.filter(c => (c.group || null) === gname).filter(hits).sort((a, b) => a.name.localeCompare(b.name))
-      if (cs.length) out.push({ h: gname || 'Other' }, ...cs.map(c => ({ c, id: c.k })))
+      const cs = AC_LIST.filter(c => allowed(c) && (c.group || null) === gname && hit(c) && !quickKs.includes(c.k)).map(c => S.empty ? c : { ...c, n: nOf(c.k) }).sort(rank)
+      if (cs.length) secs.push({ h: gname || 'Other', id: (gname || 'other').toLowerCase(), cs })
     }
-    const dynHit = !S.q || 'dynamic'.includes(S.q.toLowerCase()) || 'chosen by each page'.includes(S.q.toLowerCase())
-    if (dynHit) out.push({ h: '' }, { dyn: true, id: 'dyn' })
-    return out
+    if (!S.q || acScore(AC_DYN, S.q) > 0) secs.push({ h: 'Dynamic', id: 'dyn', cs: [AC_DYN] })
+    if (S.q) {
+      const best = sec => Math.min(...sec.cs.map(c => acScore(c, S.q)))
+      secs.sort((a, b) => best(a) - best(b))
+    }
+    return secs
   }
   function render (keepHl) {
-    const rs = rows()
-    opts = rs.filter(x => !x.h && x.h !== '')
-    const sel = S.picked
-    if (!opts.length) {
-      lb.innerHTML = `<div class="ac-none" role="presentation">No component called “<b>${esc(S.q)}</b>”</div>`
+    renderQuick()
+    const secs = rows()
+    opts = []
+    if (!secs.length) {
+      const blocked = AC_LIST.filter(c => !allowed(c) && acScore(c, S.q) > 0)
+      lb.innerHTML = `<div class="ac-none" role="presentation"><span>${blocked.length ? `<b>${esc(blocked[0].name)}</b> isn’t allowed in <b>Main content</b>` : `No component called <b>${esc(S.q)}</b>`}</span><button type="button" class="tbtn" data-clear>Clear search</button></div>`
+      $('[data-clear]', lb).addEventListener('click', () => { q.value = ''; S.q = ''; render(); q.focus({ preventScroll: true }) })
       S.hl = -1
     } else {
-      let i = -1
-      lb.innerHTML = rs.map(x => {
-        if (x.h !== undefined) return x.h ? `<div class="ac-gh" role="presentation" id="${p}-g-${esc(x.h).replace(/\s/g, '')}">${esc(x.h)}</div>` : ''
-        i++
-        if (x.dyn) return `<div class="ac-o" role="option" id="${p}-o-dyn" data-i="${i}" aria-selected="${sel === 'dyn'}"><span class="ac-ic"><span class="ac-dynsq" role="img" aria-label="Dynamic"></span></span><span class="ac-m"><span class="ac-n">${acHit('Dynamic', S.q)}</span><span class="ac-d">Shows the component each page's data chooses</span></span>${sel === 'dyn' ? g('check', 'ac-ck') : '<span class="ac-ck"></span>'}</div>`
-        const c = x.c
-        const lead = c.thumb ? `<span class="ac-th"><i style="--thumb:${c.thumb}"></i></span>` : `<span class="ac-ic">${c.icon ? g(c.icon) : ''}</span>`
-        const right = [c.n ? `${c.n} here` : '', c.uis > 1 ? `${c.uis} styles` : ''].filter(Boolean).join(' · ')
-        return `<div class="ac-o" role="option" id="${p}-o-${x.id}" data-i="${i}" data-k="${c.k}" aria-selected="${sel === x.id}"${c.n ? ` aria-label="${esc(c.name)}, ${c.n} in this group"` : ''}>${lead}<span class="ac-m"><span class="ac-n">${acHit(c.name, S.q)}${c.n ? ` <span class="ac-r">· ${c.n}</span>` : ''}</span>${c.desc ? `<span class="ac-d">${acHit(c.desc, S.q)}</span>` : ''}</span>${c.uis > 1 ? `<span class="ac-r">${c.uis} styles</span>` : ''}${sel === x.id ? g('check', 'ac-ck') : '<span class="ac-ck"></span>'}</div>`
-      }).join('')
-      if (!keepHl || S.hl >= opts.length) S.hl = opts.length ? 0 : -1
+      lb.innerHTML = secs.map(sec => `<div role="group" aria-labelledby="${p}-g-${sec.id}"><div class="ac-gh" role="presentation" id="${p}-g-${sec.id}">${esc(sec.h)}</div>${sec.cs.map(c => {
+        const i = opts.push({ c, sec: sec.id }) - 1
+        const oid = `${p}-o-${sec.id}-${c.k}`
+        const lead = c.dyn ? '<span class="ac-lead"><span class="ac-dynsq"></span></span>' : `<span class="ac-lead">${acLead(c)}</span>`
+        const right = [c.n ? `${c.n} here` : '', c.uis > 1 ? `<span class="ac-uis">${c.uis} UIs</span>` : ''].filter(Boolean).join('<span class="ac-uis"> · </span>')
+        return `<div class="ac-o" role="option" id="${oid}" data-i="${i}" data-value="${c.k}" aria-selected="false" aria-labelledby="${oid}-n" aria-describedby="${c.desc || right ? `${oid}-d` : ''}">${lead}<span class="ac-m"><span class="ac-n" id="${oid}-n">${acHit(c.name, S.q)}</span>${c.desc ? `<span class="ac-d">${acHit(c.desc, S.q)}</span>` : ''}</span>${right ? `<span class="ac-r">${right}</span>` : ''}<span class="sr" id="${oid}-d">${esc([c.desc, c.n ? `${c.n} here` : '', c.uis > 1 ? `${c.uis} UIs` : '', sec.h].filter(Boolean).join(', '))}</span></div>`
+      }).join('')}</div>`).join('')
+      if (!keepHl || S.hl >= opts.length) S.hl = 0
     }
     paint()
   }
   function paint (scroll) {
-    $$('.ac-o', lb).forEach((o, i) => { o.classList.toggle('hl', i === S.hl); o.classList.toggle('kb', i === S.hl && S.kb) })
+    $$('.ac-o', lb).forEach((o, i) => { o.classList.toggle('hl', i === S.hl); o.classList.toggle('kb', i === S.hl && S.kb); o.setAttribute('aria-selected', String(i === S.hl)) })
     const h = $$('.ac-o', lb)[S.hl]
     if (h) { q.setAttribute('aria-activedescendant', h.id); if (scroll) h.scrollIntoView({ block: 'nearest' }) } else q.removeAttribute('aria-activedescendant')
-    const pk = S.picked
-    dyn.hidden = pk !== 'dyn'
-    const ok = pk && (pk !== 'dyn' || (S.dynT && S.dynF))
-    add.disabled = !ok
-    const c = pk && pk !== 'dyn' && AC_LIST.find(x => x.k === pk.replace(/^in-/, ''))
-    fs.textContent = !pk ? 'Choose a component' : pk === 'dyn' ? (ok ? 'Dynamic, ready to add' : 'Choose a data type and a field') : `${c.name}, ready to add`
+    const c = S.view === 'detail' && S.cur
+    const ok = c && (!c.dyn || (S.dynT && S.dynF))
+    add.setAttribute('aria-disabled', String(!ok))
+    why.textContent = !c ? 'Choose a component first.' : ok ? `Adds ${c.name} to Main content, after Intro text.` : 'Choose a data type and a field first.'
   }
-  function choose (i, go) {
-    const o = opts[i]
-    if (!o) return
-    S.hl = i
-    S.picked = o.id
-    $$('.ac-o', lb).forEach((el, j) => { const on = j === i; el.setAttribute('aria-selected', String(on)); $('.ac-ck', el).outerHTML = on ? g('check', 'ac-ck') : '<span class="ac-ck"></span>' })
+  function open (i, from) {
+    const o = typeof i === 'number' ? opts[i] : { c: i }
+    if (!o || !o.c) return
+    if (typeof i === 'number') S.hl = i
+    S.view = 'detail'; S.cur = o.c; S.dynT = null; S.dynF = null; S.from = from || null
+    S.scroll = body.scrollTop
+    const c = o.c
+    const did = `${p}-dh`
+    const ui = c.uis > 1 ? fb({ id: `${p}-ui`, label: 'UI', control: selectHTML({ key: c.uis > 2 ? 'acUi' : 'acUi2', value: c.uis > 2 ? 'CwaComponentHeroSection' : 'default', label: 'UI' }).replace('<button', `<button id="${p}-ui"`) }) : ''
+    const st = c.styles ? fb({ id: `${p}-st`, label: 'Style', optional: true, control: multiHTML({ key: 'styles', label: 'Style', placeholder: 'No style' }).replace('<input', `<input id="${p}-st"`) }) : ''
+    const dyn = c.dyn ? fb({ id: `${p}-dt`, label: 'Data type', control: selectHTML({ key: 'dynType', value: null, label: 'Data type', placeholder: 'Choose a data type' }).replace('<button', `<button id="${p}-dt" data-dyn="t"`) }) +
+      fb({ id: `${p}-df`, label: 'Field', help: 'Choose a data type first.', control: selectHTML({ key: 'dynField', value: null, label: 'Field', placeholder: 'Choose a field' }).replace('<button', `<button id="${p}-df" data-dyn="f" aria-disabled="true" %DESC%`).replace('class="f ', 'class="f dis ') }) : ''
+    $$(':scope > .dlg-subh', dlgEl).forEach(x => x.remove())
+    $('.dlg-h', dlgEl).insertAdjacentHTML('afterend', `<div class="dlg-subh"><div class="subrow"><button type="button" class="sback" data-back aria-label="Back to Components">${g('lt')}Components</button></div><h3 class="subt" id="${did}" tabindex="-1">${esc(c.name)}</h3></div>`)
+    det.innerHTML = '' +
+      (c.thumb ? `<div class="ac-big" style="--thumb:${c.thumb}" role="img" aria-label="Preview of ${esc(c.name)}"></div>` : '') +
+      (c.desc ? `<p class="ac-dd">${esc(c.desc)}</p>` : '') +
+      `<p class="ac-to" id="${p}-to">Adding to <b>Main content</b>, after Intro text</p>` +
+      (ui || st || dyn ? `<div class="ac-fs">${ui}${st}${dyn}</div>` : '')
+    det.setAttribute('role', 'group'); det.setAttribute('aria-labelledby', did)
+    list.hidden = true; list.inert = true; det.hidden = false
+    list.classList.remove('back'); det.classList.remove('in'); void det.offsetWidth; det.classList.add('in')
+    body.scrollTop = 0
+    $$('[data-select]', det).forEach(setupSelect); $$('[data-multi]', det).forEach(setupMulti)
+    $('[data-back]', dlgEl).addEventListener('click', back)
+    const dt = $('[data-dyn="t"]', det); const df = $('[data-dyn="f"]', det)
+    if (dt) {
+      dt.addEventListener('commit', () => { S.dynT = dt.api.get(); df.setAttribute('aria-disabled', String(!S.dynT)); df.classList.toggle('dis', !S.dynT); const h = $(`#${p}-df-h .msg`, det); if (h) h.textContent = S.dynT ? 'The page data property that holds the component.' : 'Choose a data type first.'; paint() })
+      df.addEventListener('click', e => { if (df.getAttribute('aria-disabled') === 'true') { e.stopImmediatePropagation(); e.preventDefault() } }, true)
+      df.addEventListener('keydown', e => { if (df.getAttribute('aria-disabled') === 'true' && /^(Enter| |ArrowDown|ArrowUp)$/.test(e.key)) { e.stopImmediatePropagation(); e.preventDefault() } }, true)
+      df.addEventListener('commit', () => { S.dynF = df.api.get(); paint() })
+    }
     paint()
-    if (o.dyn) { live.textContent = 'Dynamic chosen. Choose a data type and a field below.'; if (go) dt.focus(); return }
-    if (go) doAdd()
+    live.textContent = `${c.name}. Adding to Main content, after Intro text.`
+    ;(dt || add).focus({ preventScroll: true })
+  }
+  function back () {
+    if (S.view !== 'detail') return
+    S.view = 'list'; S.cur = null; S.dynT = null; S.dynF = null
+    det.hidden = true; det.innerHTML = ''; list.hidden = false; list.inert = false
+    $$(':scope > .dlg-subh', dlgEl).forEach(x => x.remove())
+    list.classList.remove('back'); void list.offsetWidth; list.classList.add('back')
+    body.scrollTop = S.scroll || 0
+    paint()
+    ;(S.from && S.from.isConnected ? S.from : q).focus({ preventScroll: true })
   }
   function doAdd () {
-    if (add.disabled) return
-    const pk = S.picked
-    const c = pk !== 'dyn' && AC_LIST.find(x => x.k === pk.replace(/^in-/, ''))
-    log(pk === 'dyn' ? `POST /_/component_positions  { componentGroup: "/_/component_groups/main", after: "…/intro", pageDataProperty: "${S.dynF}" }` : `New ${c.name} after Intro text (draft, nothing sent until + Draft)`)
-    toast({ tone: 'success', title: pk === 'dyn' ? 'Dynamic position added' : `Adding ${c.name}`, desc: pk === 'dyn' ? 'Main content, after Intro text.' : 'Fill it in, then choose + Draft.' })
+    if (add.getAttribute('aria-disabled') === 'true') { live.textContent = why.textContent; return }
+    const c = S.cur
+    if (c.dyn) {
+      log(`POST /_/component_positions  { componentGroup: "/_/component_groups/main", after: "…/intro", pageDataProperty: "${S.dynF}" }`)
+      toast({ tone: 'success', title: 'Dynamic position added', desc: 'Main content, after Intro text.' })
+    } else {
+      const uiEl = $(`#${p}-ui`, det); const stEl = $('[data-multi]', det)
+      const uiC = uiEl ? uiEl.api.get() : null
+      const cls = stEl && stEl.api ? stEl.api.get().split(',').filter(Boolean) : []
+      const extra = [uiC && uiC !== OPTS.acUi[0].value && uiC !== 'default' ? `uiComponent: "${uiC}"` : '', cls && cls.length ? `uiClassNames: ${JSON.stringify(cls)}` : ''].filter(Boolean).join(', ')
+      log(`New ${c.name} after Intro text${extra ? `, with { ${extra} } in its create request` : ''} (draft, nothing sent until + Draft)`)
+      toast({ tone: 'success', title: `Adding ${c.name}`, desc: 'Fill it in, then choose + Draft.' })
+    }
     reset()
   }
-  function reset () { S.q = ''; S.picked = null; S.hl = -1; S.kb = false; S.dynT = null; S.dynF = null; q.value = ''; dt.api.set(null); df.api.set(null); df.closest('.fb').hidden = true; render() }
+  function reset () { back(); S.q = ''; S.hl = -1; S.kb = false; q.value = ''; render() }
   q.addEventListener('input', () => {
-    S.q = q.value.trim(); S.kb = false
+    S.q = q.value.trim().replace(/\s+/g, ' '); S.kb = false
     render()
     clearTimeout(S.t)
-    S.t = setTimeout(() => { live.textContent = opts.length ? `${opts.length} ${opts.length === 1 ? 'component' : 'components'}` : `No component called ${S.q}` }, 400)
+    S.t = setTimeout(() => { live.textContent = opts.length ? `${opts.length} ${opts.length === 1 ? 'component' : 'components'}` : lb.textContent.replace('Clear search', '') }, 400)
   })
   q.addEventListener('keydown', e => {
-    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); if (!opts.length) return; S.kb = true; S.hl = S.hl < 0 ? 0 : (S.hl + (e.key === 'ArrowDown' ? 1 : -1) + opts.length) % opts.length; paint(true) }
+    if (e.key === 'ArrowUp' && S.hl === 0 && S.kb && !quick.hidden) { e.preventDefault(); S.kb = false; paint(); $('.ac-chip[tabindex="0"]', quick).focus({ preventScroll: true }) }
+    else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); if (!opts.length) return; S.kb = true; S.hl = S.hl < 0 ? 0 : (S.hl + (e.key === 'ArrowDown' ? 1 : -1) + opts.length) % opts.length; paint(true) }
     else if ((e.key === 'Home' || e.key === 'End') && e.ctrlKey) { e.preventDefault(); S.kb = true; S.hl = e.key === 'Home' ? 0 : opts.length - 1; paint(true) }
-    else if (e.key === 'Enter') { e.preventDefault(); if (S.hl >= 0 && opts[S.hl] && S.picked !== opts[S.hl].id) choose(S.hl, true); else doAdd() }
+    else if (e.key === 'Enter') { e.preventDefault(); if (S.hl >= 0) open(S.hl) }
     else if (e.key === 'Escape' && q.value) { e.preventDefault(); e.stopPropagation(); q.value = ''; S.q = ''; render() }
   })
-  lb.addEventListener('mousedown', e => e.preventDefault())
+  host.addEventListener('keydown', e => {
+    if (S.view !== 'detail' || e.defaultPrevented) return
+    if (e.key === 'Escape' || (e.altKey && e.key === 'ArrowLeft')) { e.preventDefault(); e.stopPropagation(); back() }
+  })
+  chips.addEventListener('click', e => { const b = e.target.closest('.ac-chip'); if (b) open(AC_LIST.find(c => c.k === b.dataset.k), b) })
+  chips.addEventListener('keydown', e => {
+    const bs = $$('.ac-chip', chips); const i = bs.indexOf(document.activeElement)
+    if (i < 0) return
+    const go = j => { bs.forEach((b, k) => { b.tabIndex = k === j ? 0 : -1 }); bs[j].focus({ preventScroll: true }) }
+    if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); go((i + (e.key === 'ArrowRight' ? 1 : -1) + bs.length) % bs.length) }
+    else if (e.key === 'Home' || e.key === 'End') { e.preventDefault(); go(e.key === 'Home' ? 0 : bs.length - 1) }
+    else if (e.key === 'ArrowDown' || (e.key === 'Tab' && !e.shiftKey)) { e.preventDefault(); S.kb = true; S.hl = 0; q.focus({ preventScroll: true }); paint(true) }
+  })
+  lb.addEventListener('mousedown', e => { if (e.target.closest('.ac-o')) e.preventDefault() })
   lb.addEventListener('pointermove', e => { const o = e.target.closest('.ac-o'); if (o && +o.dataset.i !== S.hl) { S.hl = +o.dataset.i; S.kb = false; paint() } })
-  lb.addEventListener('click', e => { const o = e.target.closest('.ac-o'); if (o) { choose(+o.dataset.i, false); q.focus({ preventScroll: true }) } })
-  lb.addEventListener('dblclick', e => { const o = e.target.closest('.ac-o'); if (o) choose(+o.dataset.i, true) })
-  dt.addEventListener('commit', () => { S.dynT = dt.api.get(); df.closest('.fb').hidden = !S.dynT; paint() })
-  df.addEventListener('commit', () => { S.dynF = df.api.get(); paint() })
+  lb.addEventListener('click', e => { const o = e.target.closest('.ac-o'); if (o) open(+o.dataset.i) })
   add.addEventListener('click', doAdd)
   $('[data-cancel]', host).addEventListener('click', reset)
   $('[data-x]', host).addEventListener('click', reset)
   render()
+  const openBy = k => { reset(); const i = opts.findIndex(o => o.c.k === k); i >= 0 ? open(i) : open(AC_LIST.find(c => c.k === k)) }
   return {
-    type (s) { q.focus({ preventScroll: true }); q.value = s; q.dispatchEvent(new Event('input')) },
-    dyn () { reset(); const i = opts.findIndex(o => o.dyn); choose(i, false); S.hl = i; paint(true) },
+    type (s) { back(); q.focus({ preventScroll: true }); q.value = s; q.dispatchEvent(new Event('input')) },
+    dyn () { openBy('dyn') },
+    open: openBy,
     empty (on) { S.empty = on; render() },
     reset,
     focus () { q.focus({ preventScroll: true }) }
@@ -4428,7 +4622,7 @@ function routesPanel (el, R, ctx) {
 
   function render (focusSel, anim) {
     const sub = R.sub ? (hasForm() ? formHTML() : browseHTML()) : ''
-    el.innerHTML = `<div class="rt-busy rt-view${anim === 'back' ? ' back' : ''}" aria-busy="${!!R.busy && !R.sub}"${R.sub ? ' hidden inert' : ''}>${viewHTML()}</div>${R.sub ? `<div class="rt-sub${anim === 'in' ? ' in' : ''}" role="region" aria-labelledby="${pid}-subt">${sub}</div>` : ''}`
+    el.innerHTML = `<div class="rt-busy rt-view subv-main${anim === 'back' ? ' back' : ''}" aria-busy="${!!R.busy && !R.sub}"${R.sub ? ' hidden inert' : ''}>${viewHTML()}</div>${R.sub ? `<div class="rt-sub subv${anim === 'in' ? ' in' : ''}" role="region" aria-labelledby="${pid}-subt">${sub}</div>` : ''}`
     chrome()
     $$('.tree [data-del]', el).forEach(b => b.setAttribute('aria-label', `Delete the redirect from ${$('.tp', b.closest('.tnode')).textContent}`))
     $$('.tree .tnode', el).forEach(row => {
@@ -4741,7 +4935,7 @@ function pageModal (host, p, { mode = 'edit', logEl = null, onClose, hl = 2, tit
     const create = spec.mode === 'create'
     host.innerHTML = `<div class="dlg has-tabs s-modal kit" role="dialog" aria-modal="true" aria-labelledby="${p}-t">
       <div class="dlg-h"><h${hl} class="dt" id="${p}-t">${esc(spec.title)}</h${hl}>
-        <button type="button" class="btn ghost icon" aria-label="Close" data-close>${g('x')}</button></div>
+        ${create ? '' : `<button type="button" class="btn ghost icon dlg-view" aria-label="View page on site" data-view>${g('eye')}</button>`}<button type="button" class="btn ghost icon" aria-label="Close" data-close>${g('x')}</button></div>
       <div class="dlg-tabs" role="tablist" aria-label="${esc(spec.title)}">${spec.tabs.map(t => `<button type="button" role="tab" class="tab" id="${p}-tab-${t.k}" aria-controls="${p}-pn-${t.k}" aria-selected="${t.k === tab}" tabindex="${t.k === tab ? 0 : -1}" data-tab="${t.k}"${t.disabled ? ' aria-disabled="true"' : ''}>${t.n}<span class="tb"></span></button>`).join('')}</div>
       <div class="dlg-b"><div data-notice></div>${spec.tabs.map(t => `<div class="dpanel" role="tabpanel" id="${p}-pn-${t.k}" aria-labelledby="${p}-tab-${t.k}" data-pn="${t.k}"${t.k === tab ? '' : ' hidden'}>${panelHTML(t)}</div>`).join('')}</div>
       <div class="dlg-f"><span class="spacer"></span><span class="fstate" data-fstate id="${p}-fstate" aria-live="polite"></span><button type="button" class="btn soft" data-cancel>Cancel</button><button type="button" class="btn solid" data-save aria-describedby="${p}-fstate"></button></div>
@@ -4864,6 +5058,8 @@ function pageModal (host, p, { mode = 'edit', logEl = null, onClose, hl = 2, tit
   }
   function wire () {
     $$('[data-close],[data-cancel]', host).forEach(b => b.addEventListener('click', () => requestClose()))
+    const vw = $('[data-view]', host)
+    if (vw) vw.addEventListener('click', () => { toast({ tone: 'info', title: `Going to ${spec.title}`, desc: 'The page opens on the site (with cwa_force) and this modal closes.' }); requestClose() })
     $('.dlg', host).addEventListener('keydown', e => {
       if (e.key === 'Escape' && !e.defaultPrevented && !cur && !openPop && !$('.cfm', host)) { e.preventDefault(); rtp && rtp.isOpen() ? rtp.back() : requestClose() }
     })
@@ -5142,7 +5338,6 @@ function listHTML (p) {
         <span class="c c-badge" role="columnheader">Status</span>
         <span class="c c-meta num" role="columnheader" aria-sort="descending"><button type="button" class="sorth">Updated ${g('down')}</button></span>
         <span class="c c-meta num" role="columnheader">Components</span>
-        <span class="c" role="columnheader"><span class="sr">Actions</span></span>
       </div>
       <div data-rows role="rowgroup"></div>
     </div>
@@ -5162,7 +5357,6 @@ function rowHTML (r) {
     <span class="c c-badge" role="cell"><span class="badge ${tone}">${tpl ? '' : badgeMark(r.st)}${esc(label)}</span></span>
     <span class="c c-meta num" role="cell">${r.d}</span>
     <span class="c c-meta num" role="cell">${r.n}</span>
-    <span class="c acts" role="cell"><button type="button" class="btn ghost icon a-wide" aria-label="Go to page: ${esc(r.t)}" data-go="${esc(r.t)}">${g('go')}</button><button type="button" class="btn ghost icon" aria-label="More actions for ${esc(r.t)}" data-title="${esc(r.t)}" data-more>${g('more')}</button></span>
   </div>`
 }
 const SKEL = n => '<div class="skel" aria-hidden="true"><span><i class="l1"></i><i class="l2"></i></span><i></i></div>'.repeat(n)
@@ -5198,8 +5392,6 @@ function wireList (root) {
     $('.lgrid', root).hidden = rows.length === 0
     count.textContent = ql || filters.size ? `${rows.length} ${rows.length === 1 ? 'match' : 'matches'}` : '143 pages'
     clear.hidden = !q.value
-    $$('[data-more]', rowsEl).forEach(b => b.addEventListener('click', () => actionMenu(b, b.dataset.title, [{ label: 'Edit settings', fn: () => toast({ tone: 'info', title: `Editing the settings of ${b.dataset.title}`, desc: 'The same modal a click on the row opens.' }) }, { label: 'Go to page', fn: () => toast({ tone: 'info', title: `Going to ${b.dataset.title}`, desc: 'The page opens in the site, with the admin.' }) }, { type: 'sep' }, { label: 'Delete', danger: true }])))
-    $$('[data-go]', rowsEl).forEach(b => b.addEventListener('click', () => toast({ tone: 'info', title: `Going to ${b.dataset.go}`, desc: 'The page opens in the site, with the admin. A page without a route opens through its internal link.' })))
     $$('.lrow .cb', rowsEl).forEach(c => c.addEventListener('change', () => c.closest('.lrow').classList.toggle('sel', c.checked)))
   }
   const paintTog = (c, on) => { c.setAttribute('aria-pressed', String(on)); c.innerHTML = togInner(on) + typeName(c.dataset.f) }
@@ -5256,7 +5448,9 @@ function boot () {
   $$('#ac-sim [data-acs]').forEach(b => b.addEventListener('click', () => {
     const k = b.dataset.acs
     for (const a of [acD, acP]) {
-      if (k === 'gal' || k === 'galery') a.type(k)
+      if (['gal', 'galery', 'text', 'map'].includes(k)) a.type(k)
+      if (k === 'hero') a.open('HeroSection')
+      if (k === 'spacer') a.open('Spacer')
       if (k === 'dyn') a.dyn()
       if (k === 'reset') a.reset()
       if (k === 'empty') { const on = b.getAttribute('aria-pressed') !== 'true'; a.empty(on) }
@@ -5264,6 +5458,7 @@ function boot () {
     if (k === 'empty') b.setAttribute('aria-pressed', String(b.getAttribute('aria-pressed') !== 'true'))
   }))
   window.__ac = [acD, acP]
+  window.__stack = { stackMenu, closeStack }
   const me = pageModal($('#modal-edit'), 'ma', { logEl: $('#modal-log'), hl: 3 })
   const mp = pageModal($('#modal-edit-phone'), 'mb', { hl: 3 })
   $$('#modal-sim [data-sim]').forEach(x => x.addEventListener('click', () => { me.sim(x.dataset.sim); mp.sim(x.dataset.sim) }))
@@ -5330,18 +5525,9 @@ function boot () {
     errors: { tone: 'error', id: 'unmounted-many', title: '2 changes weren’t saved', desc: 'Title and Subtitle, on Hero section. Reset puts back their last saved values.', actions: [{ label: 'Show me', primary: true }, { label: 'Retry all' }, { label: 'Reset all' }] }
   }
   $$('#toast-sim [data-t]').forEach(b => b.addEventListener('click', () => toast(TOASTS[b.dataset.t])))
-  $('#toast-static').innerHTML = ['success', 'warning', 'errors'].map(k => toastSample(TOASTS[k])).join('')
-  const OPTN = { a: ['A · Frosted', 'The menu surface at 85% with a blur. The tone is only in the glyph and a 3px start edge. Solid when blur is unsupported or transparency is reduced.'], b: ['B · Tinted frosted (chosen)', 'The same blur, with the surface mixed 12% toward the tone. Actions are underlined in the text colour. Worst-case text over the photo: 6.73:1.'], c: ['C · Solid tone', 'The tone as the background with white text. Each tone is dark enough for 4.5:1.'] }
-  const bgTx = '<div class="bgtx" aria-hidden="true">Hand-built kitchens<span>Designed in Bath and made in our own workshop, every kitchen is drawn for the room it goes in.</span><span>Book a visit to the showroom and see the finishes in daylight.</span><span>Oak, walnut and painted tulipwood, with worktops in quartz and marble.</span><span>Every cabinet is assembled by hand and fitted by the people who built it.</span></div>'
-  const demoSet = ['success', 'info', 'warning', 'error']
-  $('#toast-opts').innerHTML = Object.entries(OPTN).map(([k, [n, d]]) => `<div class="topt"><h4>${n}</h4><p>${d}</p>${[['busy', 'kit-light', 'Photo, light'], ['busy', 'kit-dark', 'Photo, dark'], ['plain', 'kit-light', 'Plain, light'], ['plain', 'kit-dark', 'Plain, dark']].map(([bg, th, cap]) => `<div class="kit ${th} tbg ${bg} ts-${k}" data-tbg="${bg}" role="group" aria-label="${n}, ${cap}">${bg === 'busy' ? bgTx : ''}<span class="tbg-cap">${cap}</span>${demoSet.map(t => toastSample(TOASTS[t])).join('')}</div>`).join('')}</div>`).join('')
+  $('#toast-static').innerHTML = ['success', 'info', 'warning', 'error', 'errors'].map(k => toastSample(TOASTS[k])).join('')
   toastsEl.classList.add('ts-b')
   $('#toast-static').classList.add('ts-b')
-  $$('#toast-style [data-ts]').forEach(b => b.addEventListener('click', () => {
-    $$('#toast-style [data-ts]').forEach(x => x.setAttribute('aria-pressed', String(x === b)))
-    for (const el of [toastsEl, $('#toast-static')]) { el.classList.remove('ts-a', 'ts-b', 'ts-c'); el.classList.add('ts-' + b.dataset.ts) }
-    toast(TOASTS.success)
-  }))
   $$('#search-sim [data-ss]').forEach(b => b.addEventListener('click', () => {
     $$('#search-sim [data-ss]').forEach(x => x.setAttribute('aria-pressed', String(x === b)))
     SEARCH_SIM.mode = b.dataset.ss
