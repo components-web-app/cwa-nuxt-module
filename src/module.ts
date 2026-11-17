@@ -90,7 +90,15 @@ const BUILT_IN_RESOURCES_CONFIG: CwaResourcesMeta = {
   ComponentGroup: {
     name: 'Group',
   },
+  Form: {
+    name: 'Form',
+    description: '<p>A form from the API, shown as a list of its text fields unless a UI variant lays it out.</p>',
+  },
 }
+
+const BUILT_IN_RENDERERS = {
+  Form: './runtime/templates/components/resources/Form/Form.vue',
+} as const
 
 const OG_IMAGE_RENDERER_PACKAGES = ['satori', '@resvg/resvg-js'] as const
 
@@ -327,7 +335,13 @@ export default defineNuxtModule<CwaModuleOptions>({
 
       const { allUserComponents, userComponents } = resolveUserComponents(components)
       const componentsByPath: { [key: string]: Component } = allUserComponents.reduce((obj, value) => ({ ...obj, [value.filePath]: value }), {})
-      for (const component of userComponents) {
+      const resourceTypes = userComponents.map(component => ({ resourceType: toResourceType(component), primaryDir: path.dirname(component.filePath), declared: true }))
+      for (const resourceType of Object.keys(BUILT_IN_RENDERERS)) {
+        if (!resourceTypes.some(type => type.resourceType === resourceType)) {
+          resourceTypes.push({ resourceType, primaryDir: join(userComponentsPath, resourceType), declared: false })
+        }
+      }
+      for (const { resourceType, primaryDir, declared } of resourceTypes) {
         const isDirectory = (p: string) => {
           try {
             return statSync(p).isDirectory()
@@ -351,22 +365,17 @@ export default defineNuxtModule<CwaModuleOptions>({
           return componentNames
         }
 
-        const tabsDir = resolveAlias(resolve(path.dirname(component.filePath), 'admin'))
+        const tabsDir = resolveAlias(resolve(primaryDir, 'admin'))
         const managerTabs: GlobalComponentNames[] = resolveComponentNames(tabsDir)
 
-        const primaryDir = path.dirname(component.filePath)
         const ui = allUserComponents
           .filter(({ filePath, global }) => global && path.dirname(path.dirname(filePath)) === primaryDir && isUiVariant(filePath))
           .map(({ pascalName }) => pascalName as GlobalComponentNames)
 
-        const resourceType = toResourceType(component)
-        const primary = declarations.components[resourceType] ?? {}
-        resourcesConfig[resourceType] = {
-          name: resourceType.replace(/(?!^)([A-Z])/g, ' $1'),
-          managerTabs,
-          ui,
-          ...primary,
-        }
+        const primary = declared ? declarations.components[resourceType] ?? {} : {}
+        resourcesConfig[resourceType] = declared
+          ? { name: resourceType.replace(/(?!^)([A-Z])/g, ' $1'), managerTabs, ui, ...primary }
+          : { ...BUILT_IN_RESOURCES_CONFIG[resourceType], managerTabs, ui }
         for (const name of ui) {
           const own = declarations.ui[name] ?? {}
           uiConfig[name] = own.styles
@@ -614,6 +623,31 @@ declare module 'vue-router' {
         route: '/_cwa/readiness',
         handler: resolve('./runtime/server/cwa-readiness.get'),
       })
+    })
+
+    nuxt.hook('components:extend', (components) => {
+      for (const [resourceType, filePath] of Object.entries(BUILT_IN_RENDERERS)) {
+        const pascalName = `CwaComponent${resourceType}`
+        if (components.some(component => component.pascalName === pascalName)) {
+          continue
+        }
+        const kebabName = `cwa-component-${resourceType.replace(/(?!^)([A-Z])/g, '-$1').toLowerCase()}`
+        const resolved = resolve(filePath)
+        components.push({
+          pascalName,
+          kebabName,
+          export: 'default',
+          filePath: resolved,
+          shortPath: resolved,
+          chunkName: `components/${kebabName}`,
+          prefetch: false,
+          preload: false,
+          global: true,
+          mode: 'all',
+          priority: 0,
+          meta: {},
+        })
+      }
     })
 
     nuxt.hook('components:dirs', (dirs) => {

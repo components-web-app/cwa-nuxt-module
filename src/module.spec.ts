@@ -933,6 +933,12 @@ export const resourcesConfig: CwaResourcesMeta = {
   "ComponentGroup": {
     "name": "Group"
   },
+  "Form": {
+    "name": "Form",
+    "description": "<p>A form from the API, shown as a list of its text fields unless a UI variant lays it out.</p>",
+    "managerTabs": [],
+    "ui": []
+  },
   "HtmlContent": {
     "name": "Body Text",
     "managerTabs": [
@@ -1131,39 +1137,76 @@ export const styleClasses: CwaStyleClasses = {
       })
 
       describe('the Form type and its parts', () => {
-        const formComponents = [
-          { filePath: 'cwa/components/Form/Form.vue', pascalName: 'CwaComponentForm' },
+        const appVariants = [
           { filePath: 'cwa/components/Form/ui/ExampleForm.vue', pascalName: 'CwaComponentFormUiExampleForm', global: true },
           { filePath: 'cwa/components/Form/_parts/FormChildEntry.vue', pascalName: 'CwaComponentFormPartsFormChildEntry', global: true },
         ]
+        const appForm = { filePath: 'cwa/components/Form/Form.vue', pascalName: 'CwaComponentForm', global: true }
 
-        beforeEach(() => {
+        async function extendComponents(scanned: { pascalName: string, filePath: string }[]) {
+          let extend: ((components: any[]) => void) | undefined
+          await prepareMockNuxt({}, {
+            hook: vi.fn((hookName, callback) => {
+              if (hookName === 'components:extend') {
+                extend = callback
+              }
+            }),
+          })
+          const components = [...scanned]
+          extend!(components)
+          return components.filter(({ pascalName }) => pascalName === 'CwaComponentForm')
+        }
+
+        describe('with no app Form/Form.vue', () => {
+          test('the Form type has the module\'s config and resolves to the module\'s renderer', async () => {
+            const { resourcesConfig } = await generate([])
+            expect(resourcesConfig.Form).toEqual({
+              name: 'Form',
+              description: expect.stringMatching(/^<p>.+<\/p>$/),
+              managerTabs: [],
+              ui: [],
+            })
+
+            const forms = await extendComponents([])
+            expect(forms).toHaveLength(1)
+            expect(forms[0]).toMatchObject({ global: true, export: 'default', kebabName: 'cwa-component-form' })
+            expect(forms[0].filePath).toMatch(/runtime\/templates\/components\/resources\/Form\/Form\.vue$/)
+          })
+
+          test('an app\'s Form/ui/X.vue is offered as a Form variant', async () => {
+            const { resourcesConfig, uiConfig } = await generate(appVariants)
+
+            expect(resourcesConfig.Form.ui).toEqual(['CwaComponentFormUiExampleForm'])
+            expect(resourcesConfig.Form.name).toBe('Form')
+            expect(Object.keys(uiConfig)).toEqual(['CwaComponentFormUiExampleForm'])
+          })
+        })
+
+        test('an app\'s own Form/Form.vue overrides the module\'s config and renderer', async () => {
           vi.mocked(scanCwaConfigDeclarations).mockReturnValue({
-            components: { Form: { name: 'Form', description: '<p>A form</p>' } },
+            components: { Form: { name: 'Enquiry' } },
             ui: {},
             layouts: {},
             pages: {},
           })
-        })
-
-        test('Form/Form.vue config configures the Form type', async () => {
-          const { resourcesConfig } = await generate(formComponents)
-
-          expect(Object.keys(resourcesConfig)).toEqual(['ComponentPosition', 'ComponentGroup', 'Form'])
+          const { resourcesConfig } = await generate([appForm, ...appVariants])
           expect(resourcesConfig.Form).toEqual({
-            name: 'Form',
-            description: '<p>A form</p>',
+            name: 'Enquiry',
             managerTabs: [],
             ui: ['CwaComponentFormUiExampleForm'],
           })
+
+          expect(await extendComponents([appForm])).toEqual([appForm])
         })
 
         test('a _parts/ SFC is never offered as a variant', async () => {
           const { resourcesConfig, uiConfig } = await generate([
-            ...formComponents,
+            appForm,
+            ...appVariants,
             { filePath: 'cwa/components/Form/ui/_parts/Label.vue', pascalName: 'CwaComponentFormUiPartsLabel', global: true },
           ])
 
+          expect(Object.keys(resourcesConfig)).toEqual(['ComponentPosition', 'ComponentGroup', 'Form'])
           expect(resourcesConfig.Form.ui).toEqual(['CwaComponentFormUiExampleForm'])
           expect(Object.keys(uiConfig)).toEqual(['CwaComponentFormUiExampleForm'])
         })
