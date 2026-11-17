@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { toDisplayString, watch } from 'vue'
+import { onBeforeUnmount, toDisplayString, watch } from 'vue'
 import { useCwa } from '#cwa/composables/cwa'
 import { useCwaToast } from '#cwa/composables/cwa-toast'
 import { ErrorType } from '#cwa/storage/stores/error/state'
@@ -34,6 +34,12 @@ watch(() => [...$cwa.resourcesManager.errors], (errors, previous = []) => {
     })
   }
 }, { immediate: true })
+
+onBeforeUnmount(() => {
+  for (const error of [...$cwa.resourcesManager.errors]) {
+    toast.dismiss(toastId(error))
+  }
+})
 </script>
 
 <template>

@@ -1,4 +1,5 @@
 import { consola } from 'consola'
+import { getCurrentInstance, onMounted } from 'vue'
 import type { App } from 'vue'
 import { useNuxtApp } from '#app/nuxt'
 import type { CwaToaster, CwaToastOptions } from '#cwa/admin/toaster'
@@ -20,6 +21,9 @@ export const useCwaToast = () => {
       })
     }
     return toaster
+  }
+  if (!ssrContext && getCurrentInstance()) {
+    onMounted(() => load().then(undefined, () => {}))
   }
   return {
     show: (options: CwaToastOptions) => {

@@ -341,7 +341,7 @@ const badgeTones = [
           Toasts
         </h2>
         <p class="kit-note">
-          Raised with <code>useCwaToast()</code>. Success and info go after 4 seconds, warnings after 6; errors and toasts with actions stay until dismissed. At most 3 show, the newest on top. Raising the same toast again changes nothing; the stack turns see-through while it entirely hides the focused element.
+          Raised with <code>useCwaToast()</code>. Success and info go after 4 seconds, warnings after 6; errors and toasts with actions stay until dismissed. At most 3 show, the newest on top; the rest wait and show when room frees up. Raising the same toast again changes nothing; the stack turns see-through while it entirely hides the focused element.
         </p>
         <div
           class="kit-row"

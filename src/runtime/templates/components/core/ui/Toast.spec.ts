@@ -2,6 +2,7 @@
 import { describe, expect, test } from 'vitest'
 import { mount } from '@vue/test-utils'
 import Button from '../../ui/Button.vue'
+import { axe } from '../../../../../../test/utils/axe'
 import Toast from './Toast.vue'
 
 describe('Toast (#457)', () => {
@@ -67,5 +68,18 @@ describe('Toast (#457)', () => {
 
   test('with no actions there is no actions row', () => {
     expect(mount(Toast, { props: { tone: 'error', title: 'Failed', actions: [] } }).find('[data-testid="toast-actions"]').exists()).toBe(false)
+  })
+
+  describe('has no axe violations', () => {
+    const tones = ['success', 'info', 'warning', 'error'] as const
+    const actions = { 'without actions': undefined, 'with actions': [{ label: 'Show me', primary: true }, { label: 'Retry' }] }
+    const cases = tones.flatMap(tone => Object.entries(actions).map(([name, list]) => [`${tone}, ${name}`, { tone, actions: list }] as const))
+
+    test.each(cases)('%s', async (_, props) => {
+      const wrapper = mount(Toast, { props: { title: 'Title wasn’t saved', description: 'You switched tabs before it could save.', ...props }, attachTo: document.body })
+
+      expect(await axe(wrapper.element)).toHaveNoViolations()
+      wrapper.unmount()
+    })
   })
 })

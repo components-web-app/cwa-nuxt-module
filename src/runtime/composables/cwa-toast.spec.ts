@@ -1,6 +1,8 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import { consola } from 'consola'
+import { defineComponent, h } from 'vue'
+import { mount } from '@vue/test-utils'
 import { useCwaToast } from '#cwa/composables/cwa-toast'
 
 const nuxtApp = vi.hoisted(() => ({ current: {} as { vueApp: object, ssrContext?: object } }))
@@ -63,6 +65,37 @@ describe('useCwaToast (#457)', () => {
     await settle()
 
     expect(toaster.mount.mock.calls.map(([app]) => app)).toEqual([one.vueApp, two.vueApp])
+  })
+
+  test('a component using it mounts the toaster when it mounts, so the live region is in the page before the first toast', async () => {
+    const app = freshApp()
+    const mounted = { show: vi.fn(), dismiss: vi.fn() }
+    toaster.mount.mockReturnValue(mounted)
+    const wrapper = mount(defineComponent({
+      setup() {
+        useCwaToast()
+        return () => h('span')
+      },
+    }))
+    await settle()
+
+    expect(toaster.mount).toHaveBeenCalledTimes(1)
+    expect(toaster.mount).toHaveBeenCalledWith(app.vueApp)
+    expect(mounted.show).not.toHaveBeenCalled()
+    wrapper.unmount()
+  })
+
+  test('a component using it during a server render mounts nothing', async () => {
+    freshApp({})
+    mount(defineComponent({
+      setup() {
+        useCwaToast()
+        return () => h('span')
+      },
+    })).unmount()
+    await settle()
+
+    expect(toaster.mount).not.toHaveBeenCalled()
   })
 
   test('dismissing before any toast was shown loads nothing', async () => {

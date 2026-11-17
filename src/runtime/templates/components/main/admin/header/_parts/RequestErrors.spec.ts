@@ -32,6 +32,7 @@ function shown(): CwaToastOptions[] {
 
 afterEach(() => {
   store.errors = []
+  toast.dismiss.mockReset()
 })
 
 describe('RequestErrors (#457)', () => {
@@ -92,5 +93,16 @@ describe('RequestErrors (#457)', () => {
     store.errors.push(serverError(2, 404, 'Not Found'))
     await nextTick()
     expect(shown()).toContainEqual(expect.objectContaining({ id: 'cwa-request-error-2', description: '404: Not Found' }))
+  })
+
+  test('leaving the admin dismisses the toasts it raised, so no error stays on the public page', async () => {
+    store.errors = reactive([serverError(1, 500, 'One'), serverError(2, 500, 'Two')])
+    const wrapper = mount(RequestErrors)
+    store.errors.splice(0, 1)
+    await nextTick()
+    toast.dismiss.mockClear()
+
+    wrapper.unmount()
+    expect(toast.dismiss.mock.calls).toEqual([['cwa-request-error-2']])
   })
 })
