@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>CWA Admin UI Kit</title>
-<meta name="description" content="Proposal v5 for the @cwa/nuxt admin UI kit (#236): a WCAG 2.2 AA pass, the Routes tab and a tree, API-backed search, route status in lists, conflicts attached to their field, info popovers, three toast styles, and everything agreed in v4.">
+<meta name="description" content="Proposal v6 for the @cwa/nuxt admin UI kit (#236): a route sub-view inside the page modal, stepper range rules, list loading shimmer, buttons with their own fill, one more-actions glyph, and everything agreed in v5.">
 <style>
 :root{
   --bg:#f5f5f4;--text:#1c1917;--text-muted:#57534e;--card:#ffffff;--border:#d6d3d1;--code:#e7e5e4;--link:#1d4ed8;
@@ -16,7 +16,7 @@
   --k-success:#3f6212;--k-warning:#b45309;--k-danger:#b91c1c;--k-danger-fg:#b91c1c;--k-danger-fill:#dc2626;
   --k-highlight:#e30a6c;--k-toggle-off:#78716c;--k-shadow:0 8px 24px rgb(0 0 0 / .14);
   --k-step-hover:rgb(28 25 23 / .16);--k-step-press:rgb(28 25 23 / .3);--k-type-static:#2563eb;--k-type-dynamic:#a16207;
-  --k-scrim:rgb(28 25 23 / .45);
+  --k-scrim:rgb(28 25 23 / .45);--k-btn:#e7e5e4;--k-shimmer:rgb(255 255 255 / .9);
 
   --k-control:2.25rem;--k-control-lg:2.75rem;--k-option:2.25rem;--k-tabs:2.5rem;--k-hit:2rem;
   --d-fast:120ms;--d-base:200ms;--d-slow:300ms;--ease:cubic-bezier(.2,.8,.2,1);
@@ -30,7 +30,7 @@
     --k-fg:#f5f5f4;--k-muted:#a8a29e;--k-muted-on-field:#e7e5e4;
     --k-accent:#2563eb;--k-accent-hover:#1d4ed8;--k-accent-fg:#60a5fa;--k-accent-tint:rgb(37 99 235 / .28);
     --k-success:#9cdd05;--k-warning:#ffaa00;--k-danger:#fca5a5;--k-danger-fg:#fca5a5;--k-danger-fill:#dc2626;
-    --k-toggle-off:#78716c;--k-shadow:0 8px 24px rgb(0 0 0 / .28);--k-scrim:rgb(0 0 0 / .6);
+    --k-toggle-off:#78716c;--k-shadow:0 8px 24px rgb(0 0 0 / .28);--k-scrim:rgb(0 0 0 / .6);--k-btn:#44403c;--k-shimmer:rgb(255 255 255 / .24);
     --k-step-hover:rgb(255 255 255 / .17);--k-step-press:rgb(255 255 255 / .3);--k-type-static:#60a5fa;--k-type-dynamic:#facc15;
     color-scheme:dark;
   }
@@ -42,7 +42,7 @@
   --k-fg:#f5f5f4;--k-muted:#a8a29e;--k-muted-on-field:#e7e5e4;
   --k-accent:#2563eb;--k-accent-hover:#1d4ed8;--k-accent-fg:#60a5fa;--k-accent-tint:rgb(37 99 235 / .28);
   --k-success:#9cdd05;--k-warning:#ffaa00;--k-danger:#fca5a5;--k-danger-fg:#fca5a5;--k-danger-fill:#dc2626;
-  --k-toggle-off:#78716c;--k-shadow:0 8px 24px rgb(0 0 0 / .28);--k-scrim:rgb(0 0 0 / .6);
+  --k-toggle-off:#78716c;--k-shadow:0 8px 24px rgb(0 0 0 / .28);--k-scrim:rgb(0 0 0 / .6);--k-btn:#44403c;--k-shimmer:rgb(255 255 255 / .24);
     --k-step-hover:rgb(255 255 255 / .17);--k-step-press:rgb(255 255 255 / .3);--k-type-static:#60a5fa;--k-type-dynamic:#facc15;
   color-scheme:dark;
 }
@@ -52,7 +52,7 @@
   --k-fg:#f5f5f4;--k-muted:#a8a29e;--k-muted-on-field:#e7e5e4;
   --k-accent-fg:#60a5fa;--k-accent-tint:rgb(37 99 235 / .28);
   --k-success:#9cdd05;--k-warning:#ffaa00;--k-danger:#fca5a5;--k-danger-fg:#fca5a5;
-  --k-toggle-off:#78716c;--k-shadow:0 8px 24px rgb(0 0 0 / .28);color-scheme:dark;
+  --k-toggle-off:#78716c;--k-shadow:0 8px 24px rgb(0 0 0 / .28);color-scheme:dark;--k-btn:#44403c;--k-shimmer:rgb(255 255 255 / .24);
   --k-step-hover:rgb(255 255 255 / .17);--k-step-press:rgb(255 255 255 / .3);--k-type-static:#60a5fa;--k-type-dynamic:#facc15;
 }
 .kit-light{
@@ -61,7 +61,7 @@
   --k-fg:#1c1917;--k-muted:#57534e;--k-muted-on-field:#4f4a45;
   --k-accent-fg:#1d4ed8;--k-accent-tint:rgb(37 99 235 / .12);
   --k-success:#3f6212;--k-warning:#b45309;--k-danger:#b91c1c;--k-danger-fg:#b91c1c;
-  --k-toggle-off:#78716c;--k-shadow:0 8px 24px rgb(0 0 0 / .14);color-scheme:light;
+  --k-toggle-off:#78716c;--k-shadow:0 8px 24px rgb(0 0 0 / .14);color-scheme:light;--k-btn:#e7e5e4;--k-shimmer:rgb(255 255 255 / .9);
   --k-step-hover:rgb(28 25 23 / .16);--k-step-press:rgb(28 25 23 / .3);--k-type-static:#2563eb;--k-type-dynamic:#a16207;
 }
 @media (pointer: coarse){:root{--k-control:2.75rem;--k-option:2.75rem;--k-tabs:2.75rem;--k-hit:2.75rem}}
@@ -138,19 +138,21 @@ h3.sub{font-size:1.0625rem;margin:2.5rem 0 .5rem}
 @keyframes spin{to{transform:rotate(360deg)}}
 
 /* buttons */
-.btn{--bh:var(--h);display:inline-flex;align-items:center;justify-content:center;gap:.5rem;height:var(--bh);min-width:0;padding:0 1rem;border:0;border-radius:0;font:500 .875rem/1 inherit;white-space:nowrap;cursor:pointer;background:var(--k-field);color:var(--k-fg);flex:none;transition:background-color var(--d-fast) ease-out;text-decoration:none}
+.btn{--bh:var(--h);display:inline-flex;align-items:center;justify-content:center;gap:.5rem;height:var(--bh);min-width:0;padding:0 1rem;border:0;border-radius:0;font:600 .875rem/1 inherit;white-space:nowrap;cursor:pointer;background:var(--k-btn);color:var(--k-fg);flex:none;transition:background-color var(--d-fast) ease-out;text-decoration:none}
 .btn:hover{background:var(--k-field-hover)}
 .btn.solid{background:var(--k-accent);color:#fff}
 .btn.solid:hover{background:var(--k-accent-hover)}
 .btn.solid.danger{background:var(--k-danger-fill)}
 .btn.solid.danger:hover{background:#b91c1c}
 .btn.ghost{background:transparent}
-.btn.ghost:hover{background:var(--k-field)}
+.btn.ghost:hover{background:var(--k-btn)}
 .btn.ghost.danger{color:var(--k-danger-fg)}
+.tacts .btn.ghost.danger{color:var(--k-muted)}
 .btn.icon{width:var(--bh);padding:0}
 .btn.withicon{padding-left:.75rem}
 .btn[disabled]{opacity:.5;cursor:not-allowed}
-.btn[disabled]:hover{background:var(--k-field)}
+.btn[disabled]:hover{background:var(--k-btn)}
+.btn.ghost[disabled]:hover{background:transparent}
 .btn.solid[disabled]:hover{background:var(--k-accent)}
 .btn.lg{--bh:var(--k-control-lg)}
 .split{display:inline-flex;gap:1px}
@@ -232,6 +234,10 @@ button.f{cursor:pointer;width:100%}
 .nb:hover,.nb.is-hover{background:var(--k-step-hover)}
 .nb:active,.nb.is-press{background:var(--k-step-press)}
 .nb:focus-visible{outline-offset:-2px}
+.nb[aria-disabled="true"]{color:color-mix(in srgb,var(--k-fg) 38%,transparent);cursor:not-allowed}
+.nb[aria-disabled="true"]:hover,.nb[aria-disabled="true"].is-hover{background:none}
+.rng-err{color:var(--k-danger-fg)}
+.bl.rng-err{display:inline-flex;align-items:center;gap:.375rem}
 .f .in-btn:hover,.f .in-btn.is-hover{background:var(--k-step-hover)}
 .f .in-btn:active{background:var(--k-step-press)}
 .st-btn:hover,.st-btn.is-hover{background:var(--k-step-hover)}
@@ -284,8 +290,9 @@ button.f{cursor:pointer;width:100%}
 .fl{display:flex;align-items:center;gap:.375rem;font-size:.875rem;font-weight:500;line-height:1.3;min-height:1.25rem}
 .fl label{cursor:default}
 .fl .optl{font-weight:400;color:var(--k-muted)}
-.fl .chg{display:none;font:600 .75rem/1 inherit;color:var(--k-accent-fg)}
-.fb.changed>.fl .chg{display:inline}
+.fl .chg{display:none;align-items:center;gap:.375rem;font:500 .75rem/1 inherit;color:var(--k-muted)}
+.chg::before{content:"";width:.5rem;height:.5rem;border-radius:50%;background:var(--k-accent-fg);flex:none}
+.fb.changed>.fl .chg{display:inline-flex}
 .fb>.seg,.fb>.badge{align-self:flex-start}
 .infop{display:grid;grid-template-columns:1fr auto;align-items:start;gap:.25rem .5rem;padding:.75rem .5rem .75rem 1rem;background:var(--k-accent-tint);font-size:.8125rem;line-height:1.5;color:var(--k-fg)}
 .infop p{margin:0}
@@ -348,8 +355,9 @@ button.f{cursor:pointer;width:100%}
 .alert b{font-weight:600}
 .alert p{margin:0;grid-column:2;color:var(--k-fg)}
 .alert .acts{grid-column:2;display:flex;gap:.75rem;margin-top:.5rem;flex-wrap:wrap}
-.alert.warning{background:var(--k-field-warning)}
-.alert.danger{background:var(--k-field-danger)}
+.alert.warning{background:color-mix(in srgb,var(--k-warning) 10%,var(--k-surface));box-shadow:inset 3px 0 0 var(--k-warning)}
+.alert.danger{background:color-mix(in srgb,var(--k-danger) 10%,var(--k-surface));box-shadow:inset 3px 0 0 var(--k-danger)}
+.alert.warning,.alert.danger{padding-left:calc(1rem + 3px)}
 
 /* gallery */
 .gal h3{font-size:.8125rem;font-weight:600;color:var(--k-muted);margin:2rem 0 .75rem;letter-spacing:.01em}
@@ -408,12 +416,12 @@ button.f{cursor:pointer;width:100%}
 .pop.nocaret::before{display:none}
 .pop p{margin:0;color:var(--k-fg)}
 .pop .q{margin:.5rem 0 0;padding:.5rem .75rem;background:var(--k-field);font-size:.8125rem}
-.pop .acts{display:flex;gap:.75rem;margin-top:1rem;flex-wrap:wrap}
+.pop .acts{display:flex;justify-content:flex-end;gap:.75rem;margin-top:1rem;flex-wrap:wrap}
 .cal{display:grid;grid-template-columns:repeat(7,2.25rem);gap:.25rem;font-variant-numeric:tabular-nums;text-align:center;font-size:.8125rem}
 .cal span{display:grid;place-items:center;height:2.25rem}
 .cal .dow{color:var(--k-muted);height:1.5rem}
 .cal button{height:2.25rem;border:0;background:none;color:var(--k-fg);cursor:pointer;font:inherit}
-.cal button:hover{background:var(--k-field)}
+.cal button:hover{background:var(--k-btn)}
 .cal .today{text-decoration:underline;text-decoration-color:var(--k-accent-fg);text-decoration-thickness:2px;text-underline-offset:3px}
 .cal .sel{background:var(--k-accent);color:#fff}
 .cal .sel:hover{background:var(--k-accent-hover)}
@@ -478,7 +486,7 @@ button.f{cursor:pointer;width:100%}
 .coarse .pin{padding:0 0 0 .25rem;gap:.25rem}
 .coarse .pin .btn{--bh:calc(var(--k-tabs) - 1px)}
 .bsum{display:inline-flex;align-items:center;gap:.5rem;height:calc(var(--k-tabs) - 1px - .5rem);padding:0 .5rem;background:none;border:0;color:var(--k-muted);font:500 .875rem/1 inherit;white-space:nowrap;cursor:pointer}
-.bsum:hover{background:var(--k-field)}
+.bsum:hover{background:var(--k-btn)}
 .bsum.act{color:var(--k-fg);font-weight:600}
 .bsum .dot{background:var(--k-muted)}
 .bsum .dot.live{background:var(--k-success)}
@@ -623,7 +631,7 @@ button.f{cursor:pointer;width:100%}
 .ftog.t-dynamic .sw{border-radius:0;width:.5625rem;height:.5625rem}
 .ptl{display:flex;align-items:center;gap:.5rem;min-width:0}
 .ptl .ptitle{min-width:0;padding:.125rem 0}
-.tone-success{background:var(--k-success)}.tone-neutral{background:var(--k-muted)}.tone-accent{background:var(--k-accent-fg)}
+.tone-success{background:var(--k-success)}.tone-neutral{background:var(--k-muted)}.tone-warning{background:var(--k-warning)}.tone-accent{background:var(--k-accent-fg)}
 .count{margin-left:auto;color:var(--k-muted);font-variant-numeric:tabular-nums;white-space:nowrap}
 .lgrid{--cols:2.75rem minmax(0,1fr) 11rem 7.5rem 5.5rem 5.75rem;display:block}
 .lrow{position:relative;display:grid;grid-template-columns:var(--cols);column-gap:1rem;align-items:center;min-height:4rem;padding:0 1rem;box-shadow:inset 0 -1px 0 var(--k-line)}
@@ -642,7 +650,10 @@ button.f{cursor:pointer;width:100%}
 .lrow:has(.ptitle:focus-visible){outline:2px solid var(--k-accent-fg);outline-offset:-2px}
 .psub{display:block;font-size:.8125rem;color:var(--k-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:.125rem}
 .psub.narrow{display:none;align-items:center;gap:.375rem;overflow:visible}
+.psub.narrow .slot{width:.75rem;height:.75rem;display:grid;place-items:center;flex:none}
 .psub.narrow .bd{width:.5rem;height:.5rem;border-radius:50%;flex:none}
+.psub.narrow .slot .g{width:.75rem;height:.75rem}
+.badge .bg{width:.625rem;height:.625rem;flex:none}
 .psub.narrow .stw{color:var(--k-fg);font-weight:500;flex:none}
 .psub.narrow .pth{min-width:0;overflow:hidden;text-overflow:ellipsis}
 .psub.narrow .sep{flex:none}
@@ -654,6 +665,7 @@ button.f{cursor:pointer;width:100%}
 .pager{display:flex;gap:.25rem}
 .pager .btn{--bh:2.75rem;width:2.75rem;padding:0;font-variant-numeric:tabular-nums}
 .pager .btn.cur{background:var(--k-accent);color:#fff}
+.pager .btn.cur:hover{background:var(--k-accent-hover)}
 .pager-n{display:none;align-items:center;gap:.75rem;width:100%;justify-content:space-between}
 @container list (max-width: 47.99rem){
   .lgrid{--cols:minmax(0,1fr) 2.75rem}
@@ -676,9 +688,13 @@ button.f{cursor:pointer;width:100%}
 .lstate{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:.75rem;padding:3rem 1rem;color:var(--k-muted)}
 .lstate b{color:var(--k-fg);font-weight:600}
 .skel{display:grid;grid-template-columns:1fr 6rem;gap:1rem;align-items:center;min-height:4rem;padding:0 1rem;box-shadow:inset 0 -1px 0 var(--k-line)}
-.skel i{display:block;height:.75rem;background:var(--k-field)}
-.skel i.sq{height:2.5rem}
-.skel i.two{box-shadow:0 1.125rem 0 var(--k-field);width:70%}
+.skel>span{display:flex;flex-direction:column;gap:.5rem}
+.skel i{display:block;height:.75rem;background-color:var(--k-field)}
+.skel i.l1{width:70%}
+.skel i.l2{width:45%;height:.625rem}
+.lload{display:flex;align-items:center;gap:.5rem;min-height:2.75rem;padding:0 1rem;color:var(--k-muted);font-size:.8125rem;box-shadow:inset 0 -1px 0 var(--k-line)}
+.lload .spin{color:var(--k-accent-fg)}
+@container list (max-width: 47.99rem){.skel{grid-template-columns:1fr 2.75rem;padding:0 .25rem 0 .75rem;min-height:4.25rem}.skel>i{width:1.5rem;justify-self:center}}
 .states3{display:grid;gap:1.5rem}
 @media (min-width:900px){.states3{grid-template-columns:repeat(3,1fr)}}
 .states3>div{border:1px solid var(--border)}
@@ -687,14 +703,14 @@ button.f{cursor:pointer;width:100%}
 /* toasts */
 .toasts,.toasts.kit{background:none;padding:0;box-shadow:none}
 .toasts{position:fixed;top:5rem;right:1rem;z-index:100;display:flex;flex-direction:column;gap:.75rem;width:22rem;max-width:calc(100vw - 2rem);pointer-events:none}
-@media (max-width:639px){.toasts{top:3.5rem;left:.5rem;right:.5rem;width:auto;max-width:none}}
+@media (max-width:639px){.toasts{top:3.5rem;left:.5rem;right:.5rem;width:auto;max-width:none}body.fs-dialog .toasts{top:6.5rem}}
 .toast{pointer-events:auto;display:grid;grid-template-columns:1rem 1fr auto;gap:.25rem .75rem;padding:1rem;background:var(--k-menu);color:var(--k-fg);box-shadow:var(--k-shadow);font-size:.875rem;line-height:1.45;animation:tin var(--d-base) var(--ease)}
 .toast .g{margin-top:.1875rem}
 .toast b{font-weight:600}
 .toast p{margin:0;grid-column:2;color:var(--k-muted)}
 .toast .acts{grid-column:2;display:flex;gap:1rem;margin-top:.25rem}
 .toast .x{grid-column:3;grid-row:1;width:2rem;height:2rem;margin:-.5rem -.5rem 0 0;display:grid;place-items:center;border:0;background:none;color:var(--k-muted);cursor:pointer}
-.toast .x:hover{color:var(--k-fg);background:var(--k-field)}
+.toast .x:hover{color:var(--k-fg);background:var(--k-step-hover)}
 .toast.static{animation:none}
 @keyframes tin{from{opacity:0;transform:translateY(-.5rem)}}
 .toastdemo{display:grid;gap:.75rem;max-width:22rem}
@@ -705,8 +721,8 @@ button.f{cursor:pointer;width:100%}
 .f>.sv,.f .sum>.ph{text-box:trim-both cap alphabetic}
 @supports not (overflow-x: clip){.f>.sv,.f .sum>.ph{text-box:normal}}
 /* toggles in forms: unsaved tag; footer state on phones */
-.trow .tt b .chg{display:none;font:600 .75rem/1 inherit;color:var(--k-accent-fg);margin:0}
-.fb.changed .trow .tt b .chg{display:inline}
+.trow .tt b .chg{display:none;align-items:center;gap:.375rem;font:500 .75rem/1 inherit;color:var(--k-muted);margin:0 0 0 .25rem;vertical-align:middle}
+.fb.changed .trow .tt b .chg{display:inline-flex}
 @container dlgframe (max-width: 39.99rem){.dlg-f .fstate{display:none}}
 @media (max-width: 639px){.dlg-f .fstate{display:none}}
 .chipsrow{gap:.375rem}
@@ -762,7 +778,9 @@ button.f{cursor:pointer;width:100%}
 .tlab .tp{min-width:0;white-space:nowrap;overflow-x:clip;overflow-y:visible;text-overflow:ellipsis;line-height:1.25rem}
 .tlab .badge{flex:none}
 .tacts{display:flex;flex:none}
-.tacts .btn{--bh:2.5rem;width:2.5rem;padding:0}
+.tacts .btn{--bh:2.5rem;width:2.5rem;padding:0;color:var(--k-muted)}
+.tacts .btn:hover,.tacts .btn:focus-visible{background:var(--k-step-hover);color:var(--k-fg)}
+.tacts .btn.ghost.danger:hover,.tacts .btn.ghost.danger:focus-visible{color:var(--k-danger-fg)}
 .coarse .tacts .btn{--bh:2.75rem;width:2.75rem}
 .tempty{color:var(--k-muted);margin:0;padding:.5rem 0}
 
@@ -785,7 +803,7 @@ button.f{cursor:pointer;width:100%}
 .fsh-row .btn{--bh:var(--k-control-lg)}
 .rt-rec{font-size:.8125rem;line-height:1.45;color:var(--k-muted);display:flex;gap:.25rem .5rem;flex-wrap:wrap;align-items:center}
 .rt-rec .mono{color:var(--k-fg)}
-.rt-warn{display:grid;grid-template-columns:1rem 1fr;gap:.25rem .75rem;padding:.75rem 1rem;background:var(--k-field-warning);font-size:.8125rem;line-height:1.45}
+.rt-warn{display:grid;grid-template-columns:1rem 1fr;gap:.25rem .75rem;padding:.75rem 1rem .75rem calc(1rem + 3px);background:color-mix(in srgb,var(--k-warning) 10%,var(--k-surface));box-shadow:inset 3px 0 0 var(--k-warning);font-size:.8125rem;line-height:1.45}
 .rt-warn .g{margin-top:.125rem}
 .rt-warn p{margin:0;grid-column:2}
 .rt-edit{display:flex;flex-direction:column;gap:1.5rem}
@@ -802,10 +820,73 @@ button.f{cursor:pointer;width:100%}
 .rt-busy[aria-busy="true"] .btn:not([data-busy]){pointer-events:none;opacity:.5}
 .rt-fail{margin:0 0 1.5rem}
 
+/* v6: the route sub-view takes the tab strip's and the footer's place */
+.dlg.sub-on>.dlg-f:not(.dlg-subf),.dlg.sub-on>.dlg-h .ovf{display:none}
+.dlg-subh{display:flex;flex-direction:column;align-items:flex-start;padding:.75rem 1.75rem 1rem;box-shadow:inset 0 -1px 0 var(--k-line);flex:none;min-width:0;animation:k-fade var(--d-fast) ease-out}
+.dlg-subh .subrow{display:flex;align-items:center;justify-content:space-between;align-self:stretch;min-height:1.5rem}
+.sback{display:inline-flex;align-items:center;gap:.25rem;min-height:1.5rem;padding:0;margin:0;border:0;background:none;font:inherit;font-size:.875rem;font-weight:500;color:var(--k-muted);cursor:pointer}
+.sback .g{width:.75rem;height:.75rem}
+.sback:hover{color:var(--k-fg);text-decoration:underline;text-underline-offset:3px}
+.sback:focus-visible{outline:2px solid var(--k-accent-fg);outline-offset:2px}
+.coarse .sback{min-height:2.75rem}
+@media (pointer: coarse){.sback{min-height:2.75rem}}
+.dlg-subh .subt{margin:.25rem 0 0;font-size:1.125rem;font-weight:650;line-height:1.3;letter-spacing:-.01em;color:var(--k-fg);max-width:100%;overflow-wrap:anywhere}
+.dlg-subh .subt:focus{outline:none}
+.dlg-subh .subt:focus-visible{outline:2px solid var(--k-accent-fg);outline-offset:2px}
+.dlg-subh .ovf{display:none;--bh:2.75rem;margin:-.625rem -.75rem -.625rem 0}
+@container dlgframe (max-width: 39.99rem){.dlg-subh{padding:.75rem 1.25rem 1rem}.dlg-subh .ovf{display:inline-flex}}
+@media (max-width: 639px){.dlg-subh{padding:.75rem 1.25rem 1rem}.dlg-subh .ovf{display:inline-flex}}
+.rt-sub.in{animation:k-sub var(--d-base) var(--ease)}
+.rt-view.back{animation:k-sub-back var(--d-base) var(--ease)}
+@keyframes k-sub{from{opacity:0;transform:translateX(2rem)}}
+@keyframes k-sub-back{from{opacity:0;transform:translateX(-2rem)}}
+.rt-sub{display:flex;flex-direction:column;gap:1rem}
+.rt-sub>.form{margin:0}
+.rt-help{margin:0}
+.rt-target{display:flex;flex-direction:column;gap:.75rem}
+.rt-target .fsd{margin:0}
+.rt-off{margin:0;font-size:.875rem;color:var(--k-fg)}
+.rt-sub .rt-status{margin:0}
+.navrows{margin-top:2rem;box-shadow:inset 0 1px 0 var(--k-line)}
+.navrows>div{box-shadow:inset 0 -1px 0 var(--k-line)}
+.navrow{display:grid;grid-template-columns:auto minmax(0,1fr) 1rem;align-items:center;gap:1rem;width:100%;min-height:3rem;padding:.5rem .5rem .5rem 0;border:0;background:none;font:inherit;text-align:left;color:var(--k-fg);cursor:pointer}
+.navrow .nl{font-size:.9375rem;font-weight:600}
+.navrow .ns{justify-self:end;min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.875rem;color:var(--k-muted)}
+.navrow .nc{width:.75rem;height:.75rem;color:var(--k-muted);justify-self:end}
+.navrow:hover{background:var(--k-step-hover)}
+.navrow:hover .nc{color:var(--k-fg)}
+.navrow:focus-visible{outline:2px solid var(--k-accent-fg);outline-offset:-2px}
+.coarse .navrow{min-height:3.25rem}
+.rt-cons{display:flex;flex-direction:column;gap:.75rem;font-size:.8125rem;line-height:1.45}
+.rt-cons>p{display:grid;grid-template-columns:1rem 1fr;gap:.75rem;margin:0;color:var(--k-fg)}
+.rt-cons>p .g{margin-top:.125rem}
+.rt-cons .cblab{min-height:2.75rem;font-size:.875rem}
+.rt-cons .rt-dir{display:flex}
+.fsec>.rt-status{margin:1rem 0 0}
+.fsec[data-sec=route] .rt-acts{margin-top:.25rem}
+.rt-cons .cblab{align-items:flex-start}
+.rt-cons .cblab .cb{margin-top:.75rem}
+.rt-cons .cblab>span{padding:.6875rem 0}
+.rt-status{margin:1rem 0 0}
+.rt-dir{display:flex;align-items:center;flex-wrap:wrap;gap:.25rem .5rem;margin:0;font-size:.875rem;color:var(--k-fg)}
+.rt-arr{display:inline-grid;place-items:center;color:var(--k-muted);flex:none}
+.rt-arr .g{width:.75rem;height:.75rem}
+.tlab .rt-arr{margin:0 .125rem}
+.rt-to{color:var(--k-muted)}
+.tlab .rt-to.tp{color:var(--k-muted)}
+.rt-rec .brk{display:none}
+@container dbody (max-width: 25rem){.rt-rec .dotsep{display:none}.rt-rec .brk{display:block;flex-basis:100%;height:0}}
+.rt-rec>span:first-child{min-width:0;overflow-wrap:anywhere}
+
+/* v6: skeletons shimmer: one band, in sync across rows, 1.4 s */
+.skel i,.opt.sk i,.f .lbl-sk{background-image:linear-gradient(100deg,transparent 0,transparent 30%,var(--k-shimmer) 50%,transparent 70%,transparent 100%);background-size:50vw 100%;background-repeat:no-repeat;background-attachment:fixed;animation:k-shimmer 1.4s linear infinite}
+@keyframes k-shimmer{from{background-position:-50vw 0}to{background-position:100vw 0}}
+@media (prefers-reduced-motion: reduce){.skel i,.opt.sk i,.f .lbl-sk{animation:none!important;background-image:none}}
+
 /* v5: search states */
 .mlist.dim .opt:not(.sk):not(.act){opacity:.5}
 .opt.sk{cursor:default}
-.opt.sk i{display:block;height:.625rem;background:var(--k-field);width:var(--w,60%)}
+.opt.sk i{display:block;height:.625rem;background-color:var(--k-field);width:var(--w,60%)}
 .opt.sk i+i{height:.5rem;margin-top:.5rem;width:calc(var(--w,60%) - 20%)}
 .opt.act .o-l{color:var(--k-accent-fg);font-weight:600}
 .mstate.tight{padding:.5rem .75rem;font-size:.8125rem}
@@ -814,7 +895,7 @@ button.f{cursor:pointer;width:100%}
 .spin.sm{width:.75rem;height:.75rem;border-width:1.5px}
 .f .lv{flex:1;min-width:0}
 .f.loading-label input::placeholder{color:transparent}
-.f .lbl-sk{position:absolute;left:2.25rem;top:50%;height:.625rem;width:8rem;margin-top:-.3125rem;background:var(--k-field-hover)}
+.f .lbl-sk{position:absolute;left:2.25rem;top:50%;height:.625rem;width:8rem;margin-top:-.3125rem;background-color:var(--k-field-hover)}
 .s-modal .f .lbl-sk{left:2.375rem}
 
 /* v5: a conflict is attached to its field */
@@ -829,7 +910,7 @@ button.f{cursor:pointer;width:100%}
 .cfx-vals dd::before{content:"“"}.cfx-vals dd::after{content:"”"}
 .cfx-vals dd i{color:var(--k-muted)}
 .cfx-vals.clamp:not(.all) dd{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;padding-bottom:.125rem}
-.cfx-vals mark{background:color-mix(in srgb,var(--k-warning) 26%,transparent);color:inherit;font-weight:650;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}
+.cfx-vals mark{background:color-mix(in srgb,var(--k-warning) 26%,transparent);color:inherit;font-weight:650;text-decoration:none}
 .cfx-b>.tbtn{align-self:flex-start}
 .cfx-acts{display:flex;justify-content:flex-end;gap:.75rem;flex-wrap:wrap}
 .cfx-acts .btn{--bh:var(--k-control);flex:0 0 auto;max-width:100%;height:auto;min-height:var(--bh);white-space:normal;text-align:center;padding-top:.375rem;padding-bottom:.375rem;overflow-wrap:break-word}
@@ -913,7 +994,11 @@ button.f{cursor:pointer;width:100%}
   <symbol id="g-vmore" viewBox="0 0 16 16"><path d="M6.75 1.75h2.5v2.5h-2.5zM6.75 6.75h2.5v2.5h-2.5zM6.75 11.75h2.5v2.5h-2.5z"/></symbol>
   <symbol id="g-live" viewBox="0 0 16 16"><path d="M8 1.5a6.5 6.5 0 1 1 0 13 6.5 6.5 0 0 1 0-13zm0 1.75a4.75 4.75 0 1 0 0 9.5 4.75 4.75 0 0 0 0-9.5zM8 5a3 3 0 1 1 0 6 3 3 0 0 1 0-6z"/></symbol>
   <symbol id="g-group" viewBox="0 0 16 16"><path d="M2 2.5h12v3H2zM2 6.5h12v3H2zM2 10.5h12v3H2z"/></symbol>
-  <symbol id="g-more" viewBox="0 0 16 16"><path d="M2 6.75h2.5v2.5H2zM6.75 6.75h2.5v2.5h-2.5zM11.5 6.75H14v2.5h-2.5z"/></symbol>
+  <symbol id="g-more" viewBox="0 0 16 16"><path d="M6.75 1.75h2.5v2.5h-2.5zM6.75 6.75h2.5v2.5h-2.5zM6.75 11.75h2.5v2.5h-2.5z"/></symbol>
+  <symbol id="g-next" viewBox="0 0 16 16"><path d="M5.5 2.5v11l6-5.5z"/></symbol>
+  <symbol id="g-lt" viewBox="0 0 16 16"><path d="M10.3 2.3 4.6 8l5.7 5.7 1.4-1.4L7.4 8l4.3-4.3z"/></symbol>
+  <symbol id="g-back" viewBox="0 0 16 16"><path d="M7.4 2.4 1.8 8l5.6 5.6 1.4-1.4L5.6 9H14V7H5.6l3.2-3.2z"/></symbol>
+  <symbol id="g-tpl" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M3 3h10v10H3V3Zm1.75 1.75v6.5h6.5v-6.5h-6.5Z"/></symbol>
   <symbol id="g-edit" viewBox="0 0 16 16"><path d="M11.2 1.4 14.6 4.8 5.6 13.8H2.2v-3.4z"/></symbol>
   <symbol id="g-ext" viewBox="0 0 16 16"><path d="M6 2h8v8h-2V5.4l-7.3 7.3-1.4-1.4L10.6 4H6z"/></symbol>
   <symbol id="g-copy" viewBox="0 0 16 16"><path d="M5 1h10v10H5zM1 5h3v7h7v3H1z"/></symbol>
@@ -921,14 +1006,14 @@ button.f{cursor:pointer;width:100%}
   <symbol id="g-up" viewBox="0 0 16 16"><path d="M8 3 2.5 9.5h11z"/></symbol>
   <symbol id="g-down" viewBox="0 0 16 16"><path d="M8 13 2.5 6.5h11z"/></symbol>
   <symbol id="g-plus" viewBox="0 0 16 16"><path d="M7 2h2v5h5v2H9v5H7V9H2V7h5z"/></symbol>
-  <symbol id="g-new" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8 .5a7.5 7.5 0 1 1 0 15 7.5 7.5 0 0 1 0-15ZM7.1 4h1.8v3.1H12v1.8H8.9V12H7.1V8.9H4V7.1h3.1V4Z"/></symbol>
+  <symbol id="g-new" viewBox="0 0 16 16"><path d="M7 .55h2v2.1H7zM12.1 2.5l1.4 1.4-1.5 1.5-1.4-1.4zM13.35 7h2.1v2h-2.1zM12 10.6l1.5 1.5-1.4 1.4-1.5-1.5zM7 13.35h2v2.1H7zM4 10.6l1.4 1.4-1.5 1.5-1.4-1.4zM.55 7h2.1v2H.55zM2.5 3.9l1.4-1.4 1.5 1.5L4 5.4z"/></symbol>
   <symbol id="g-trash" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M5.5 1h5v1.5H14v2H2v-2h3.5V1ZM3 5.5h10L12 15H4L3 5.5Zm3 2v5.5h1.5V7.5H6Zm2.5 0v5.5H10V7.5H8.5Z"/></symbol>
   <symbol id="g-go" viewBox="0 0 16 16"><path d="M8.6 2.4 14.2 8l-5.6 5.6-1.4-1.4L10.4 9H2V7h8.4L7.2 3.8z"/></symbol>
 </svg>
 
 <header class="top">
   <div class="wrap">
-    <div class="brand">CWA Admin UI Kit <small>Proposal v5 · #236 · UI kit only</small></div>
+    <div class="brand">CWA Admin UI Kit <small>Proposal v6 · #236 · UI kit only</small></div>
     <div class="themes" role="group" aria-label="Page theme">
       <button type="button" data-theme-set="auto" aria-pressed="true">Auto</button>
       <button type="button" data-theme-set="light" aria-pressed="false">Light</button>
@@ -938,12 +1023,22 @@ button.f{cursor:pointer;width:100%}
 </header>
 
 <main class="wrap">
-  <h1>The admin UI kit, v5</h1>
+  <h1>The admin UI kit, v6</h1>
   <p class="lede">Every control is shown here in the state it will ship with. Only the kit is covered: how components declare their fields, styles and UI variants is a separate job. The menus, popovers, bar, modal and list all work, so try them with a mouse, a keyboard and a phone.</p>
-  <p class="lede"><strong>New in v5, after review:</strong></p>
+  <p class="lede"><strong>New in v6, after the v5 review panel:</strong></p>
+  <ul class="changes">
+    <li><strong>The Routes tab is the Route, then three rows that open sub-views</strong> (section 6): Redirect to, Redirected from and Child routes, each with a one-line summary and ▸. A sub-view keeps the modal's tabs, with a stacked “‹ Routes” and title above its content; while a form is open its own Cancel and Save replace the footer, so only one Save is ever on screen and nothing opens on top. Back, Escape or another tab with something typed asks first.</li>
+    <li><strong>Redirect to and Redirected from</strong> replace Forwarding and Redirects, and rows show the direction: <code>/shaker → this page</code>. “Not redirecting. Visitors to /kitchens/shaker see this page.” replaces the old “Off.” line, and no button ends in “…”.</li>
+    <li><strong>Steppers keep to their range</strong>: type 9 into a 1 to 6 position and the field says “Between 1 and 6”; leave it or press Enter and it snaps to 6 and says so. − and + are disabled at the ends, with the reason.</li>
+    <li><strong>Loading lists shimmer</strong>: one soft band sweeps across every skeleton row in step, and that is the only sign until “Still loading…” after about five seconds. With reduced motion there is no band, so a spinner and “Loading pages…” show at once instead.</li>
+    <li><strong>Buttons have their own fill</strong>, lighter than a field's, with a semi-bold label, so an action never looks like an input.</li>
+    <li><strong>⋮ is the only “more” glyph</strong>: the bar, list rows, the tree and the phone modal header.</li>
+    <li><strong>Design fixes</strong>: section actions sit on the heading's line without making it taller; the conflict diff is tint and weight only, and none when most of the value differs; alerts get a tinted surface and a coloured edge rather than the field tint; delete icons are grey until hovered; “Unsaved” is muted with a dot; phone list rows start their status at one place, Scheduled has a clock, and a date says what it is; the phone New status is a dashed ring, not a plus; the phone recommendation keeps “Use this” on its own line; phone toasts sit below a full-screen dialog's header.</li>
+  </ul>
+  <p class="lede"><strong>From v5:</strong></p>
   <ul class="changes">
     <li><strong>WCAG 2.2 AA.</strong> Darker field fills, 24px minimum targets, focus never hidden behind the bar, header or toasts, shapes as well as colours, one quiet live region per surface, and a checklist per component in the spec.</li>
-    <li><strong>The Routes tab</strong> (section 6) with the kit's new tree for redirects and child routes. Route actions save at once, each after its own confirm; the modal's Save is only for the page's fields.</li>
+    <li><strong>The Routes tab</strong> (section 6) with the kit's new tree for redirects and child routes. Route actions save at once; the modal's Save is only for the page's fields.</li>
     <li><strong>Search asks the API</strong> (section 2): first load, searching, slow, many results, no matches, offline and server errors, and a chosen page that isn't in the results.</li>
     <li><strong>A page's status in lists comes from its route</strong>: Live, Scheduled, Not live, Held back by parent, No route. Templates say what uses them. Row actions are Edit settings and Go to page.</li>
     <li><strong>Section headings read as headings</strong>: larger and heavier than labels, with a rule and more space above.</li>
@@ -1070,14 +1165,14 @@ button.f{cursor:pointer;width:100%}
   &lt;CwaUiToggle field="openInNewTab" label="Open in a new tab" /&gt;
 &lt;/CwaUiManagerTab&gt;</code></pre>
     <h3 class="sub">On a phone</h3>
-    <p class="note" style="margin:0 0 1rem">The same bar with 2.75rem controls and no arrows. The status stays in the tab row as a glyph only, right against Publish with no gap, so the tabs get more room; each state has its own shape (a dot for Draft, a clock for Scheduled, a circled plus for New, the spinner, the tick, the triangle, the diamond), and its name is read out. Fields are sized so the next one peeks in, and the row snaps to fields.</p>
+    <p class="note" style="margin:0 0 1rem">The same bar with 2.75rem controls and no arrows. The status stays in the tab row as a glyph only, right against Publish with no gap, so the tabs get more room; each state has its own shape (a dot for Draft, a clock for Scheduled, a dashed ring for New, the spinner, the tick, the triangle, the diamond; a plus only ever means create), and its name is read out. Fields are sized so the next one peeks in, and the row snaps to fields.</p>
     <div class="phone" id="bar-phone"></div>
   </section>
 
   <section class="sec" id="modal" aria-labelledby="h-modal">
     <h2 id="h-modal">6 · Modals and admin pages</h2>
     <p class="lede"><strong>A modal edits a local copy and keeps a Save button.</strong> Nothing is sent as you type. A changed field says “Unsaved” after its label (nothing is drawn inside the field), its tab shows a dot, and Save counts the changes. Cancel, ×, Escape or a click outside with unsaved changes asks “Discard 3 unsaved changes?” first; with nothing changed it just closes. Save sends only the changed fields, in one request per resource. Errors returned by Save go on their fields, linked below them, and each tab holding one gets the triangle and is opened. If someone else saved first (a 412), nothing is saved and each field you both changed asks which version to keep. Creating uses the same button and the same flow.</p>
-    <p class="lede">Layout: a label, 0.375rem, the field, 0.5rem, the helper line; fields 1.5rem apart; sections 2.5rem apart with space and no rules. The header, the tabs and the footer stay put while the body scrolls. Below 640px the dialog fills the screen, Delete moves to the header's ⋯ menu, and Cancel and Save share the footer row.</p>
+    <p class="lede">Layout: a label, 0.375rem, the field, 0.5rem, the helper line; fields 1.5rem apart; sections 2.5rem apart with space and no rules. The header, the tabs and the footer stay put while the body scrolls. Below 640px the dialog fills the screen, Delete moves to the header's ⋮ menu, and Cancel and Save share the footer row.</p>
     <div class="sim" id="modal-sim">
       <button type="button" data-sim="edit">Change three fields</button>
       <button type="button" data-sim="fail">Save from the Info tab, and it fails</button>
@@ -1096,7 +1191,7 @@ button.f{cursor:pointer;width:100%}
       <div><p class="panel-cap"><b>Phone</b></p><div class="phone-dlg kit coarse"><div class="dlg-host" id="modal-create-phone"></div></div></div>
     </div>
     <h3 class="sub">The Routes tab</h3>
-    <p class="note" style="margin:0 0 1rem">Route actions are saved at once, each after its own confirm, with their own saving state on the tab: editing the route (path and go-live), using the recommended path, adding or deleting a redirect, forwarding, and deleting the route. The modal's Save is only for the page's fields. The recommendation is the page's title under its parent's path, shown under the path until it matches. Redirects and child routes are trees: click a row, then use the arrow keys (Right opens a row or moves to its button, Left closes it or goes to its parent; Delete removes a redirect).</p>
+    <p class="note" style="margin:0 0 1rem">The tab shows the <strong>Route</strong> (path, status, recommendation and Edit route), then three rows that open sub-views, like a phone's settings: <strong>Redirect to</strong> (“Off” or “→ /kitchens/shaker-range”), <strong>Redirected from</strong> (“3 old addresses”) and <strong>Child routes</strong> (“2 routes”). A sub-view is a page of the Routes tab: the tab strip stays, with Routes selected, and only the tab's content changes, under a stacked header (“‹ Routes”, then the sub-view's title, which takes focus). <strong>Edit route</strong>, <strong>Use this</strong>, <strong>Redirect to another page</strong>, <strong>Change</strong> and <strong>+ Add</strong> open a form there, and while a form is open its own Cancel and Save replace the modal's footer, so only one Save is ever on screen. What saving will do is said above the buttons, so Save route is the confirmation and nothing opens on top; only deleting and removing ask again. Back, Cancel, Escape or another tab with something typed asks “Discard your route changes?”; with nothing typed they go at once, and coming back to Routes shows its main view. Focus returns to the row or button that opened the sub-view. No browser history is added, and the tab's hidden main view is inert (the tab strip is not). The modal's Save is only for the page's fields. Redirected from and child routes are trees: click a row, then use the arrow keys (Right opens a row or moves to its button, Left closes it or goes to its parent; Delete removes an old address).</p>
     <div class="sim" id="routes-sim">
       <span role="group" aria-label="Route state" style="display:contents">
         <button type="button" data-rsim="live" aria-pressed="true">Live</button>
@@ -1107,6 +1202,7 @@ button.f{cursor:pointer;width:100%}
         <button type="button" data-rsim="none" aria-pressed="false">No route yet</button>
       </span>
       <button type="button" data-rsim="fail">Make the next route action fail</button>
+      <button type="button" data-rsim="details">Open Details from elsewhere</button>
       <button type="button" data-rsim="reset">Reset</button>
     </div>
     <div class="dlg-row">
@@ -1120,7 +1216,12 @@ button.f{cursor:pointer;width:100%}
   </section>
   <section class="sec" id="list" aria-labelledby="h-list">
     <h2 id="h-list">7 · Lists</h2>
-    <p class="lede">Every list uses one grid, and the header row uses the same columns, so badges, dates and actions line up down the page. The whole row is the link. Rows are 4rem tall when they have two lines. There are no per-row thumbnails: a small dot after the name gives the page's type, Static (blue) or Dynamic (yellow), and the toggles above the list filter by it. A toggle is a square filled button with its colour as a dot when off, and filled in that colour with a check when on; none on shows every type. Below 768px a row becomes title and ⋯, with the status dot and word first on the second line and the path last, so only the path is cut. On a phone the toggles and sort share one scrolling row, and row actions open as a bottom sheet. Search, the filters and the checkboxes work.</p>
+    <p class="lede">Every list uses one grid, and the header row uses the same columns, so badges, dates and actions line up down the page. The whole row is the link. Rows are 4rem tall when they have two lines. There are no per-row thumbnails: a small dot after the name gives the page's type, Static (blue) or Dynamic (yellow), and the toggles above the list filter by it. A toggle is a square filled button with its colour as a dot when off, and filled in that colour with a check when on; none on shows every type. Below 768px a row becomes title and ⋮, with the status first on the second line (a dot, a clock for Scheduled, a hollow square for a template, always in the same place), then “edited 15 Nov” unless the status already carries a date, and the path last, so only the path is cut. <strong>Loading</strong>: skeleton rows at the real row height with one shimmering band, and nothing else until “Still loading…” after about five seconds. With reduced motion the band is off, so a spinner and “Loading pages…” sit above the rows from the start. Use the buttons below to hold the loading state. A template's count (“Template · 14 pages”, or “Template · unused”) needs api-components-bundle#587; until it ships the row says “Template”. On a phone the toggles and sort share one scrolling row, and row actions open as a bottom sheet. Search, the filters and the checkboxes work.</p>
+    <div class="sim" id="list-sim" role="group" aria-label="List loading">
+      <button type="button" data-lsim="hold" aria-pressed="false">Show loading (held until pressed again)</button>
+      <button type="button" data-lsim="once">Load once (7 s)</button>
+      <button type="button" data-lsim="states">Restart the loading example</button>
+    </div>
     <div class="kit panel" style="padding:1.5rem" id="list-wide"></div>
     <div class="cols" style="margin-top:2rem">
       <div><p class="panel-cap"><b>Phone</b></p><div class="narrow-list kit list coarse" id="list-narrow"></div></div>
@@ -1158,11 +1259,9 @@ button.f{cursor:pointer;width:100%}
 
   <section class="sec" id="questions" aria-labelledby="h-questions">
     <h2 id="h-questions">9 · Open questions for Daniel</h2>
-    <p class="lede">The v4 questions are settled: page data fields are part of the configuration job, <code>field="…"</code> is in, the model names stand, phones get bottom sheets, the round 4 palette is approved, and the fills are darkened, with WCAG 1.4.11 met by each field's visible label.</p>
+    <p class="lede">The v5 questions are settled: the palette additions and the treegrid are approved, and route edits use the sub-view. Buttons have their own fill, ⋮ is the only “more” glyph, <code>updateResource</code> keeps its return, and the screen-reader pass runs once per new component and before each release.</p>
     <ol class="qs">
-            <li><b>Palette additions for contrast.</b> The round 4 palette is approved; these are new: red-300 (#fca5a5) for dark error text, yellow-700 (#a16207) for the light Dynamic colour, and stone-300 (#d6d3d1) for the light field. Approved?</li>
-      <li><b>Editing a route</b> happens in place on the Routes tab and is saved by its own Save route button after a confirm. Is a second Save inside the modal clear enough, or should route edits open their own small dialog?</li>
-      <li><b>Tree pattern.</b> The tree is an ARIA treegrid, because its rows have buttons; a plain tree can't hold them. Fine?</li>
+      <li><b>Held back by parent in lists.</b> A list row can only say “Held back by parent” if the pages collection carries each page's route with its effective go-live (<code>_metadata.effectiveLiveAt</code>), which is admin-only and today comes with the route, not the page. Ask the bundle to embed it in the admin pages collection, or show the page's own route status in lists and leave “Held back” to the Routes tab?</li>
     </ol>
   </section>
 </main>
@@ -1744,7 +1843,7 @@ function setupSearch (f) {
   let q = ''
   let S = { status: 'idle', items: [], total: 0, page: 1, q: '', err: null }
   let cache = null
-  let timer; let req = 0; let inflight = null; let slowT
+  let timer; let req = 0; let inflight = null; let slowT; let firstT1; let firstT5
   input.setAttribute('role', 'combobox')
   input.setAttribute('aria-autocomplete', 'list')
   input.setAttribute('aria-expanded', 'false')
@@ -1766,7 +1865,7 @@ function setupSearch (f) {
   function itemsFor () {
     const st = S.status
     const out = []
-    if (st === 'first') { for (let i = 0; i < 5; i++) out.push({ type: 'state', html: `<span class="opt sk" style="--w:${[70, 55, 80, 62, 48][i]}%;display:block;width:100%;padding:.5rem 0"><i></i><i></i></span>` }); return out }
+    if (st === 'first') { if (S.firstMsg) out.push({ type: 'state', html: `<span class="spin sm" aria-hidden="true"></span><span>${S.firstMsg}</span>`, tight: true }); for (let i = 0; i < 5; i++) out.push({ type: 'state', html: `<span class="opt sk" style="--w:${[70, 55, 80, 62, 48][i]}%;display:block;width:100%;padding:.5rem 0"><i></i><i></i></span>` }); return out }
     if (st === 'searching' || st === 'slow') out.push({ type: 'state', html: `<span class="spin sm" aria-hidden="true"></span><span>${st === 'slow' ? 'Still searching…' : 'Searching…'}</span>`, tight: true })
     if (st === 'offline' || st === 'error') {
       out.push({ type: 'state', html: `${g('error', 'c-danger')}<span>${st === 'offline' ? "You're offline, so this search didn't run." : "The server couldn't search just now."}${S.items.length ? ' These results are from before.' : ''}</span>` })
@@ -1799,15 +1898,21 @@ function setupSearch (f) {
     if (inflight) { inflight.abort(); searchLog(`  cancelled the previous request (#${n - 1})`) }
     const qq = q
     S = { ...S, status: S.items.length ? 'searching' : 'first' }
+    S.firstMsg = S.status === 'first' && reducedMotion() ? 'Loading pages…' : ''
     repaint('keep')
     clearTimeout(slowT)
     slowT = setTimeout(() => { if (n === req && (S.status === 'searching' || S.status === 'first')) { S.status = S.items.length ? 'slow' : 'first'; if (S.status === 'slow') { repaint(); pageLive.say('Still searching', 0) } } }, 3000)
+    if (S.status === 'first') {
+      clearTimeout(firstT1); clearTimeout(firstT5)
+      pageLive.say('Loading pages', 0)
+      firstT5 = setTimeout(() => { if (n === req && S.status === 'first') { S.firstMsg = 'Still loading…'; repaint() } }, 5000)
+    }
     searchLog(`#${n} GET /_/routes?search=${encodeURIComponent(qq)}&page=${page}&perPage=20`)
     const call = fakeApi(qq, page)
     inflight = call
     call.p.then(r => {
       if (n !== req) { searchLog(`#${n} answered late, ignored`); return }
-      inflight = null; clearTimeout(slowT)
+      inflight = null; clearTimeout(slowT); clearTimeout(firstT1); clearTimeout(firstT5)
       S = { status: 'ok', items: r.items, total: r.total, page, q: qq }
       if (!qq) cache = { ...S }
       searchLog(`#${n} ← ${r.total} found, ${r.items.length} shown`)
@@ -1920,11 +2025,81 @@ function setupStepper (f) {
   if (f.dataset.ready) return
   f.dataset.ready = 1
   const input = $('input', f)
-  $$('.nb', f).forEach(b => b.addEventListener('click', () => {
-    const v = Math.max(1, Math.min(7, (parseInt(input.value, 10) || 0) + +b.dataset.step))
-    input.value = v
-    input.dispatchEvent(new Event('input', { bubbles: true }))
+  const min = +(f.dataset.min ?? 1)
+  const max = +(f.dataset.max ?? 6)
+  const noun = f.dataset.noun || 'position'
+  const [dn, up] = $$('.nb', f)
+  const msgEl = f.dataset.msgFor ? document.getElementById(f.dataset.msgFor) : null
+  if (msgEl) { input.setAttribute('aria-describedby', msgEl.id); msgEl.dataset.orig = msgEl.innerHTML; msgEl.dataset.cls = msgEl.className }
+  const ok = /^-?\d+$/
+  let last = Math.max(min, Math.min(max, parseInt(input.value, 10) || min))
+  const live = () => (f.closest('.mgr') && $('[data-live]', f.closest('.mgr'))) || document.getElementById('page-live')
+  const announce = m => { const el = live(); el.textContent = ''; setTimeout(() => { el.textContent = m }, 60) }
+  const paintBtns = v => {
+    [[dn, v <= min, f.dataset.minReason || `Already the lowest ${noun}`], [up, v >= max, f.dataset.maxReason || `Already the highest ${noun}`]].forEach(([b, off, why]) => {
+      b.setAttribute('aria-disabled', String(off))
+      if (!b.id) b.id = nid('nbr')
+      let r = document.getElementById(b.id + '-r')
+      if (!r) { r = document.createElement('span'); r.className = 'sr'; r.id = b.id + '-r'; f.append(r) }
+      r.textContent = off ? why : ''
+      off ? b.setAttribute('aria-describedby', r.id) : b.removeAttribute('aria-describedby')
+    })
+  }
+  const paint = () => {
+    const raw = input.value.trim()
+    const v = parseInt(raw, 10)
+    const bad = raw !== '' && ok.test(raw) && (v < min || v > max)
+    f.classList.toggle('err', bad)
+    bad ? input.setAttribute('aria-invalid', 'true') : input.removeAttribute('aria-invalid')
+    if (msgEl) {
+      if (bad) { msgEl.className = msgEl.dataset.cls + ' err rng-err'; msgEl.hidden = false; msgEl.innerHTML = `${g('error')}<span class="msg">Between ${min} and ${max}</span>` }
+      else { msgEl.className = msgEl.dataset.cls; msgEl.innerHTML = f.rangeText ? f.rangeText(last) : msgEl.dataset.orig }
+    }
+    const now = raw !== '' && ok.test(raw) && !bad ? v : last
+    input.setAttribute('aria-valuenow', String(now))
+    input.setAttribute('aria-valuetext', `${now} of ${max}`)
+    paintBtns(now)
+  }
+  const commit = (to, quiet) => {
+    const raw = input.value.trim()
+    const v = to ?? (ok.test(raw) ? parseInt(raw, 10) : last)
+    const c = Math.max(min, Math.min(max, v))
+    if (c !== v && !quiet) announce(`Set to ${c}, the ${c === max ? 'highest' : 'lowest'} ${noun}`)
+    input.value = c
+    const changed = c !== last
+    last = c
+    paint()
+    if (changed) f.dispatchEvent(new CustomEvent('commit', { detail: c, bubbles: true }))
+  }
+  input.setAttribute('role', 'spinbutton')
+  input.setAttribute('aria-valuemin', String(min))
+  input.setAttribute('aria-valuemax', String(max))
+  input.setAttribute('autocomplete', 'off')
+  input.addEventListener('beforeinput', e => {
+    if (!e.data) return
+    const allowMinus = min < 0 && e.data === '-' && input.selectionStart === 0 && !input.value.includes('-')
+    if (!/^\d+$/.test(e.data) && !allowMinus) e.preventDefault()
+  })
+  input.addEventListener('input', () => {
+    const clean = input.value.replace(min < 0 ? /(?!^-)[^\d]/g : /[^\d]/g, '')
+    if (clean !== input.value) input.value = clean
+    paint()
+  })
+  input.addEventListener('blur', () => commit())
+  input.addEventListener('keydown', e => {
+    const raw = parseInt(input.value, 10)
+    const base = Number.isNaN(raw) ? last : Math.max(min, Math.min(max, raw))
+    const k = e.key
+    const to = k === 'ArrowUp' ? base + 1 : k === 'ArrowDown' ? base - 1 : k === 'PageUp' ? base + 5 : k === 'PageDown' ? base - 5 : k === 'Home' ? min : k === 'End' ? max : null
+    if (k === 'Enter') { e.preventDefault(); commit() }
+    else if (to !== null) { e.preventDefault(); commit(Math.max(min, Math.min(max, to)), true) }
+  })
+  ;[dn, up].forEach(b => b.addEventListener('click', () => {
+    if (b.getAttribute('aria-disabled') === 'true') return
+    commit(last + +b.dataset.step, true)
   }))
+  f.stepper = { commit, paint, get: () => last }
+  paint()
 }
 function setupCmp (root) {
   $$('.cmp', root).forEach(c => {
@@ -1972,7 +2147,7 @@ function fb ({ id, label, optional, info, help, control, err, conf, cmp, full, c
   if (err) line = `<div class="fh err" id="${hid}">${g('error')}<span class="msg">${err.msg}</span>${err.acts ? `<span class="acts">${err.acts}</span>` : ''}</div>`
   else if (conf) line = `<div class="fh conf" id="${hid}">${g('conflict', 'c-warning')}<span class="msg">${conf}</span>${cmp ? '' : `<span class="acts"><button type="button" class="tbtn">Use Mia's</button><button type="button" class="tbtn">Keep mine</button></span>`}</div>`
   else if (help || counter) line = `<div class="fh" id="${hid}"><span class="msg" data-help>${help || ''}</span>${counter ? `<span class="counter">${counter}</span>` : ''}</div>`
-  const head = `<div class="fl"><label for="${id}">${esc(label)}</label>${optional ? '<span class="optl">· Optional</span>' : ''}${info ? infoBtn(label, info) : ''}<span class="chg">· Unsaved</span></div>`
+  const head = `<div class="fl"><label for="${id}">${esc(label)}</label>${optional ? '<span class="optl">· Optional</span>' : ''}${info ? infoBtn(label, info) : ''}<span class="chg">Unsaved</span></div>`
   if (cmp) {
     const ctl = control.replace('%DESC%', `aria-describedby="${hid}-q-n"`)
     return `<div class="fb${full ? ' full' : ''}${changed ? ' changed' : ''}"${key ? ` data-k="${key}"` : ''}>${head}<div class="cfxw on">${ctl}<div data-cmp>${cfxBody(cmp.theirs, cmp.yours, hid + '-q', cmp.who)}</div></div><div class="fh" id="${hid}" hidden></div></div>`
@@ -1987,6 +2162,9 @@ function wordDiff (a, b) {
   while (i < A.length && i < B.length && A[i] === B[i]) i++
   let j = 0
   while (j < A.length - i && j < B.length - i && A[A.length - 1 - j] === B[B.length - 1 - j]) j++
+  const words = X => X.filter(w => w.trim()).length
+  const diff = Math.max(words(A.slice(i, A.length - j)), words(B.slice(i, B.length - j)))
+  if (diff * 2 > Math.max(words(A), words(B))) return [esc(String(a ?? '')), esc(String(b ?? ''))]
   const h = X => esc(X.slice(0, i).join('')) + (X.length - i - j > 0 ? `<mark>${esc(X.slice(i, X.length - j).join(''))}</mark>` : '') + esc(X.slice(X.length - j).join(''))
   return [h(A), h(B)]
 }
@@ -2006,8 +2184,8 @@ document.addEventListener('click', e => {
   b.setAttribute('aria-expanded', String(all))
   b.textContent = all ? 'Show less' : 'Show all'
 })
-const stepperHTML = (id, { hover, cls = '', label = ['Decrease', 'Increase'], value = 3, width = '9rem', aria } = {}) =>
-  `<div class="f num ${cls}${hover ? ' is-hover' : ''}" style="width:${width}"><button type="button" class="nb${hover === 'down' ? ' is-hover' : ''}" aria-label="${label[0]}" data-step="-1">−</button><input id="${id}" inputmode="numeric" value="${value}"${aria ? ` aria-label="${aria}"` : ''}><span class="st"></span><button type="button" class="nb${hover === 'up' ? ' is-hover' : ''}" aria-label="${label[1]}" data-step="1">+</button></div>`
+const stepperHTML = (id, { hover, cls = '', label = ['Decrease', 'Increase'], value = 3, width = '9rem', aria, min = 1, max = 6, msgFor = '', minReason = '', maxReason = '' } = {}) =>
+  `<div class="f num ${cls}${hover ? ' is-hover' : ''}" style="width:${width}" data-min="${min}" data-max="${max}"${msgFor ? ` data-msg-for="${msgFor}"` : ''}${minReason ? ` data-min-reason="${esc(minReason)}"` : ''}${maxReason ? ` data-max-reason="${esc(maxReason)}"` : ''}><button type="button" class="nb${hover === 'down' ? ' is-hover' : ''}" aria-label="${label[0]}" data-step="-1">−</button><input id="${id}" inputmode="numeric" value="${value}"${aria ? ` aria-label="${aria}"` : ''}><span class="st"></span><button type="button" class="nb${hover === 'up' ? ' is-hover' : ''}" aria-label="${label[1]}" data-step="1">+</button></div>`
 const LONG_TEXT = 'Every kitchen we fit is drawn, cut and finished by the same small team, a mile from our Bath showroom.\n\nWe start with a visit: we measure, listen and sketch, and you leave with drawings the same week. Cabinets are built from solid oak and birch ply in our own workshop, then hand-painted in any colour you like.\n\nFitting takes about two weeks, and the people who built your kitchen are the ones who fit it. When we finish, we come back after a month to adjust doors and drawers as the timber settles.\n\nCome and see the bench where yours will be made. The workshop is open on Saturdays, and the kettle is always on.'
 const textareaHTML = (id, value) => `<div class="f ta"><textarea id="${id}" %DESC% rows="3">${esc(value)}</textarea></div>`
 const inputF = ({ id, value = '', placeholder = '', cls = '', status = '', attrs = '' }) =>
@@ -2077,9 +2255,10 @@ function galleryHTML (p) {
   <div class="tiles">
     ${T('Select', fb({ id: `${p}-sel`, label: 'Layout', control: selectHTML({ key: 'layouts', value: 'default', label: 'Layout' }).replace('<button', `<button id="${p}-sel"`) }))}
     ${T('Resource search', fb({ id: `${p}-rs`, label: 'Parent page', optional: true, control: searchHTML({ id: `${p}-rs`, value: '/kitchens', label: 'Parent page' }) }))}
-    ${T('Number', fb({ id: `${p}-nm`, label: 'Position', control: stepperHTML(`${p}-nm`) }))}
-    ${T('Number, pointer on +', fb({ id: `${p}-nh`, label: 'Position', control: stepperHTML(`${p}-nh`, { hover: 'up' }) }))}
-    ${T('Number in error, pointer on −', fb({ id: `${p}-ne`, label: 'Position', control: stepperHTML(`${p}-ne`, { hover: 'down', cls: 'err' }), err: { msg: 'Choose 1 to 7.' } }))}
+    ${T('Number: type 9, then leave it', fb({ id: `${p}-nm`, label: 'Position', help: '1 to 6. A number outside that snaps to the nearest end when you leave the field.', control: stepperHTML(`${p}-nm`, { msgFor: `${p}-nm-h` }) }))}
+    ${T('Number, pointer on +', fb({ id: `${p}-nh`, label: 'Position', help: '1 to 6.', control: stepperHTML(`${p}-nh`, { hover: 'up', msgFor: `${p}-nh-h` }) }))}
+    ${T('Number, 9 typed into 1 to 6', fb({ id: `${p}-ne`, label: 'Position', help: '1 to 6.', control: stepperHTML(`${p}-ne`, { value: 9, msgFor: `${p}-ne-h` }) }))}
+    ${T('Number at its highest: + disabled', fb({ id: `${p}-nx`, label: 'Position', help: '1 to 6.', control: stepperHTML(`${p}-nx`, { value: 6, msgFor: `${p}-nx-h` }) }))}
     ${T('Date', fb({ id: `${p}-dt`, label: 'Go live', control: `<button type="button" id="${p}-dt" class="f" data-cal><span class="sv">18 Nov 2026, 09:00</span>${g('cal', 'end')}<span class="st"></span></button>` }))}
     ${T('Segmented', `<div class="fb"><div class="fl">Link</div><div class="seg" role="group" aria-label="Link type"><button type="button" aria-pressed="true">Page</button><button type="button" aria-pressed="false">URL</button></div></div>`)}
     ${T('Toggles', `<div class="fb" style="gap:.75rem"><div class="gl" style="gap:1.5rem">${toggle({ label: 'Off', hidden: false })}${toggle({ label: 'On', checked: true })}${toggle({ label: 'Disabled', disabled: true })}</div><label class="cblab"><input type="checkbox" class="cb" checked> Checkbox</label><label class="cblab"><input type="checkbox" class="cb"> Unchecked</label></div>`)}
@@ -2107,7 +2286,7 @@ function galleryHTML (p) {
     <span class="dv"></span>
     <div class="bf"><span class="bl">Date, saving</span><button type="button" class="f w-md" data-cal aria-label="Go live date"><span class="sv">18 Nov 2026, 09:00</span>${g('cal', 'end')}<span class="st" data-s="saving"></span></button></div>
     <span class="dv"></span>
-    <div class="bf"><span class="bl">Position, saved</span>${stepperHTML(`${p}-sts`, { width: '9rem', aria: 'Position' }).replace('<span class="st"></span>', '<span class="st" data-s="saved"></span>')}</div>
+    <div class="bf"><span class="bl">Position, saved</span>${stepperHTML(`${p}-sts`, { width: '9rem', aria: 'Position', label: ['Move up', 'Move down'] }).replace('<span class="st"></span>', '<span class="st" data-s="saved"></span>')}</div>
   </div>
   <p class="fh" style="margin-top:.5rem">The state takes the end icon's place while it lasts: the chevron becomes the spinner, then the tick, then the chevron again. The bar saves each field as you type. Modals and pages never do: they keep a local copy until Save, and show no glyph inside the field.</p>
   <h3>Bar size, inline labels <span class="scrolls">· scrolls sideways</span></h3>
@@ -2128,7 +2307,7 @@ function galleryHTML (p) {
     <div class="bf"><span class="bl">UI</span>${selectHTML({ key: 'ui', value: 'split', label: 'UI', width: 'w-sm' })}</div>
     <div class="bf">${multiHTML({ values: 'dark,pad', label: 'Style', mode: 'bar', width: 'w-sm' })}</div>
     <div class="bf"><span class="bl">Go live</span><button type="button" class="f w-md" data-cal aria-label="Go live date"><span class="sv">18 Nov 2026, 09:00</span>${g('cal', 'end')}<span class="st"></span></button></div>
-    <div class="bf"><span class="bl">Position</span>${stepperHTML(`${p}-c2`, { width: '10rem', aria: 'Position' })}</div>
+    <div class="bf"><span class="bl">Position</span>${stepperHTML(`${p}-c2`, { width: '10rem', aria: 'Position', label: ['Move up', 'Move down'] })}</div>
     <div class="bf"><span class="bl">Created</span><span class="rov"><span class="rv">12 Nov 2026</span></span></div>
     <div class="bf"><span class="bl">Link</span><div class="seg" role="group" aria-label="Link type"><button type="button" aria-pressed="true">Page</button><button type="button" aria-pressed="false">URL</button></div></div>
   </div>
@@ -2157,7 +2336,7 @@ function setStatus (slot, state, o = {}) {
     b.addEventListener('mousedown', e => e.stopPropagation())
     b.addEventListener('click', e => {
       e.stopPropagation()
-      const head = state === 'error' ? [g('error', 'c-danger'), `${name}: ${o.title || 'not saved'}`] : state === 'conflict' ? [g('conflict', 'c-warning'), `${name}: ${PEER.name} changed this`] : [g('saved', 'c-success'), `${name}: saved`]
+      const head = state === 'error' ? [g('error', 'c-danger'), `${name}: ${o.title || 'not saved'}`] : state === 'conflict' ? [g('conflict', 'c-warning'), `${name}: changed by ${PEER.name}`] : [g('saved', 'c-success'), `${name}: saved`]
       const pop = popover(b, popBody(state, o), { label: aria, icon: head[0], title: head[1] })
       if (!pop) return
       $$('[data-act]', pop).forEach((x, i) => x.addEventListener('click', () => { closePop(true); (o.actions[i].fn || (() => {}))() }))
@@ -2183,7 +2362,7 @@ function setStatus (slot, state, o = {}) {
 }
 function popBody (state, o) {
   const conf = state === 'conflict'
-  return `<p>${o.msg || ''}</p>${o.theirs ? cfxVals(o.theirs, o.yours) : ''}<div class="acts">${(o.actions || []).map((a, i) => `<button type="button" class="btn ${conf || i > 0 ? 'soft' : 'solid'}" data-act="${i}">${esc(a.label)}</button>`).join('')}</div>`
+  return `${conf ? '' : `<p>${o.msg || ''}</p>`}${o.theirs ? cfxVals(o.theirs, o.yours) : ''}<div class="acts">${(o.actions || []).map((a, i) => `<button type="button" class="btn ${conf || i > 0 ? 'soft' : 'solid'}" data-act="${i}">${esc(a.label)}</button>`).join('')}</div>`
 }
 function fakeSave (slots, { fail = false, field = 'Field', onState = () => {}, retry, undo, ms = 900 } = {}) {
   slots.forEach(s => setStatus(s, 'pending'))
@@ -2252,7 +2431,7 @@ function settingsPage (host, logEl) {
     v = { ...orig }
     const field = k => {
       const f = F[k]
-      if (f.type === 'toggle') return `<div class="fb" data-k="${k}"><label class="trow"><span class="tt"><b>${esc(f.label)} <span class="chg">· Unsaved</span></b><span id="${fid(k)}-h">${esc(f.help)}</span></span><span class="tgl"><input type="checkbox" role="switch" id="${fid(k)}" aria-describedby="${fid(k)}-h"><span class="tg"></span></span></label></div>`
+      if (f.type === 'toggle') return `<div class="fb" data-k="${k}"><label class="trow"><span class="tt"><b>${esc(f.label)} <span class="chg">Unsaved</span></b><span id="${fid(k)}-h">${esc(f.help)}</span></span><span class="tgl"><input type="checkbox" role="switch" id="${fid(k)}" aria-describedby="${fid(k)}-h"><span class="tg"></span></span></label></div>`
       const ctl = f.type === 'select'
         ? selectHTML({ key: f.key, value: f.value, label: f.label }).replace('<button', `<button id="${fid(k)}"`)
         : `<div class="f"><input id="${fid(k)}" value="${esc(f.value)}" %DESC% autocomplete="off"><span class="st"></span></div>`
@@ -2435,7 +2614,7 @@ function eitherOrHTML (p, { bar, route = '/showrooms', raw = '' }) {
     </div>`
   }
   return `<div class="fb eo" data-eo data-route="${route}" data-raw="${esc(raw)}">
-    <div class="fl"><span id="${p}-l">Link</span>${infoBtn('Link', 'A link goes to a page on this site or to a URL. Saving one clears the other.')}<span class="chg">· Unsaved</span></div>
+    <div class="fl"><span id="${p}-l">Link</span>${infoBtn('Link', 'A link goes to a page on this site or to a URL. Saving one clears the other.')}<span class="chg">Unsaved</span></div>
     <div class="seg" role="group" aria-labelledby="${p}-l" style="align-self:flex-start"><button type="button" data-opt="page">Page</button><button type="button" data-opt="url">URL</button></div>
     <div data-panel="page">${searchHTML({ id: `${p}-pg`, value: route, label: 'Link page' })}</div>
     <div data-panel="url"><div class="f"><input id="${p}-url" data-url aria-label="Link URL" aria-describedby="${p}-h" placeholder="/path or https://" inputmode="url"><span class="suffix" hidden>${g('ext', 'sm')}</span><span class="st"></span></div></div>
@@ -2629,8 +2808,8 @@ function buildBar (host, p, { coarse } = {}) {
             <div class="bf"><span class="bl">Style</span>${multiHTML({ values: 'dark,pad', label: 'Style', mode: 'bar', width: 'w-md' })}</div>
           </div>
           <div class="row" tabindex="0" role="tabpanel" id="${p}-pn-order" aria-labelledby="${p}-tab-order" data-panel="order" hidden>
-            <div class="bf"><label class="bl" for="${p}-pos">Position</label>${stepperHTML(`${p}-pos`, { label: ['Move up', 'Move down'], width: '8.25rem' }).replace('<div class="f num', '<div data-field="pos" class="f num')}</div>
-            <span class="bl">3 of 7 in Main content</span>
+            <div class="bf"><label class="bl" for="${p}-pos">Position</label>${stepperHTML(`${p}-pos`, { label: ['Move up', 'Move down'], width: '8.25rem', msgFor: `${p}-posr`, minReason: 'Already first in Main content', maxReason: 'Already last in Main content' }).replace('<div class="f num', '<div data-field="pos" class="f num')}</div>
+            <span class="bl" id="${p}-posr">3 of 6 in Main content</span>
           </div>
           <div class="row" tabindex="0" role="tabpanel" id="${p}-pn-publish" aria-labelledby="${p}-tab-publish" data-panel="publish" hidden>
             <div class="bf">${toggle({ label: 'Edit published version' })}${infoBtn('Edit published version', 'Changes go live as soon as they are saved, without a draft.')}</div>
@@ -2780,7 +2959,7 @@ function buildBar (host, p, { coarse } = {}) {
   }
   setInterval(() => { if (B.savedAt && Date.now() - B.savedAt < 6000) summary() }, 1000)
 
-  function wireField (key, input, onLive) {
+  function wireField (key, input, onLive, onCommit) {
     const f = input.closest('.f')
     const slot = $('.st', f)
     const label = $(`label[for="${input.id}"]`, mgr).textContent
@@ -2798,6 +2977,11 @@ function buildBar (host, p, { coarse } = {}) {
         undo: () => { input.value = prev; onLive && onLive(prev); last = prev; B.fieldStates[key] = ''; setStatus(slot, ''); summary() }
       })
     }
+    if (onCommit) {
+      f.addEventListener('commit', () => { setStatus(slot, 'pending'); B.fieldStates[key] = 'pending'; summary(); save() })
+      B[key] = { slot, input, f, save }
+      return
+    }
     input.addEventListener('input', () => {
       onLive && onLive(input.value)
       setStatus(slot, 'pending'); B.fieldStates[key] = 'pending'; summary()
@@ -2808,7 +2992,8 @@ function buildBar (host, p, { coarse } = {}) {
   wireField('title', $('#' + p + '-title'), v => { $('#' + p + '-htitle').textContent = v })
   wireField('subtitle', $('#' + p + '-sub'), v => { $('#' + p + '-hsub').textContent = v.toUpperCase() })
   wireField('button', $('#' + p + '-btn'), v => { $('#' + p + '-cta').textContent = v })
-  wireField('pos', $('#' + p + '-pos'))
+  $('[data-field="pos"]', mgr).rangeText = v => `${v} of 6 in Main content`
+  wireField('pos', $('#' + p + '-pos'), null, true)
   const uiSel = $('[data-field="ui"]', mgr)
   setupSelect(uiSel)
   let uiLast = uiSel.api.get()
@@ -3015,18 +3200,18 @@ function routesData (kind, extra = {}) {
 const ROUTE_BADGE = {
   live: ['success', 'Live'], scheduled: ['accent', 'Scheduled'], draft: ['neutral', 'Not live'], held: ['warning', 'Held back by parent'], none: ['neutral', 'No route']
 }
-const routeBadge = (st, at) => { const [t, l] = ROUTE_BADGE[st]; return `<span class="badge ${t}"><span class="bd"></span>${l}${st === 'scheduled' && at ? ` · ${esc(at)}` : ''}</span>` }
+const routeBadge = (st, at) => { const [t, l] = ROUTE_BADGE[st]; return `<span class="badge ${t}">${st === 'scheduled' ? g('wait', 'bg') : '<span class="bd"></span>'}${l}${st === 'scheduled' && at ? ` · ${esc(at)}` : ''}</span>` }
 
 /* CwaUiTree: a treegrid, because its rows carry actions */
-function flattenTree (nodes, lvl = 0, cont = [], out = []) {
+function flattenTree (nodes, lvl = 0, cont = [], out = [], parent = null) {
   nodes.forEach((n, i) => {
     const last = i === nodes.length - 1
-    out.push({ n, lvl, cont: cont.slice(), last, pos: i + 1, size: nodes.length })
-    if (n.kids && n.kids.length && n.open !== false) flattenTree(n.kids, lvl + 1, [...cont, !last], out)
+    out.push({ n, lvl, cont: cont.slice(), last, pos: i + 1, size: nodes.length, parent })
+    if (n.kids && n.kids.length && n.open !== false) flattenTree(n.kids, lvl + 1, [...cont, !last], out, n)
   })
   return out
 }
-function treeHTML (label, nodes, { actions, badge } = {}) {
+function treeHTML (label, nodes, { actions, badge, text } = {}) {
   const rows = flattenTree(nodes)
   if (!rows.length) return ''
   return `<div class="tree" role="treegrid" aria-label="${esc(label)}">${rows.map((r, i) => {
@@ -3035,7 +3220,7 @@ function treeHTML (label, nodes, { actions, badge } = {}) {
     for (let x = 0; x < r.lvl - 1; x++) if (r.cont[x + 1]) guides += `<span class="tg-v" style="--x:${x}"></span>`
     if (r.lvl > 0) guides += (r.last ? '' : `<span class="tg-v" style="--x:${r.lvl - 1}"></span>`) + `<span class="tg-e" style="--x:${r.lvl - 1}"></span>`
     const acts = actions ? actions(r.n) : []
-    return `<div class="tnode" role="row" style="--lvl:${r.lvl}" aria-level="${r.lvl + 1}" aria-setsize="${r.size}" aria-posinset="${r.pos}"${has ? ` aria-expanded="${r.n.open !== false}"` : ''} tabindex="${i === 0 ? 0 : -1}" data-ti="${i}">${guides}<span class="tlab" role="gridcell">${has ? `<span class="ttog" aria-hidden="true">${g('chev')}</span>` : '<span class="tsp"></span>'}<span class="tp mono">${esc(r.n.path)}</span>${badge ? badge(r.n) : ''}</span><span class="tacts" role="gridcell">${acts.map((a, k) => `<button type="button" class="btn ghost icon${a.danger ? ' danger' : ''}" tabindex="-1" aria-label="${esc(a.label)}" data-ta="${k}">${g(a.icon)}</button>`).join('')}</span></div>`
+    return `<div class="tnode" role="row" style="--lvl:${r.lvl}" aria-level="${r.lvl + 1}" aria-setsize="${r.size}" aria-posinset="${r.pos}"${has ? ` aria-expanded="${r.n.open !== false}"` : ''} tabindex="${i === 0 ? 0 : -1}" data-ti="${i}">${guides}<span class="tlab" role="gridcell">${has ? `<span class="ttog" aria-hidden="true">${g('chev')}</span>` : '<span class="tsp"></span>'}${text ? text(r) : `<span class="tp mono">${esc(r.n.path)}</span>`}${badge ? badge(r.n) : ''}</span><span class="tacts" role="gridcell">${acts.map((a, k) => `<button type="button" class="btn ghost icon${a.danger ? ' danger' : ''}" tabindex="-1" aria-label="${esc(a.label)}" data-ta="${k}">${g(a.icon)}</button>`).join('')}</span></div>`
   }).join('')}</div>`
 }
 function wireTree (el, nodes, { actions, onChange, onDelete } = {}) {
@@ -3076,72 +3261,139 @@ function wireTree (el, nodes, { actions, onChange, onDelete } = {}) {
   })
 }
 
-/* the Routes tab: route actions save at once, each after its own confirm */
+/* the Routes tab: Route at the top, then navigation rows; each opens a sub-view that takes the tab strip's and the footer's place */
 function routesPanel (el, R, ctx) {
   const h = ctx.hl
   const pid = ctx.p + '-rt'
   const dlg = () => ctx.dlg()
   const what = ctx.what || 'page'
   const effective = () => R.gate ? 'held' : (R.path ? R.live : 'none')
-  const action = (key, label) => R.busy === key ? `<span class="spin"></span>${label}` : null
-  const btn = (key, cls, text, extra = '') => `<button type="button" class="btn ${cls}" data-rk="${key}"${R.busy === key ? ' data-busy aria-disabled="true"' : ''}${extra}>${action(key, 'Saving…') || text}</button>`
-  function render (focusSel) {
-    const parts = []
-    parts.push(`<p class="rt-note">${g('info')}<span>Changes on this tab are saved as soon as you confirm them. The ${esc(what)}'s Save button doesn't include them.</span></p>`)
-    parts.push(`<div class="rt-status" role="status" tabindex="-1" data-rstat>${R.status ? `${g('saved', 'c-success')}<span>${R.status}</span>` : ''}</div>`)
-    if (R.fail) parts.push(`<div class="alert danger rt-fail" role="alert" tabindex="-1" data-rfail>${g('error', 'c-danger')}<b>${esc(R.fail.title)}</b><p>The server couldn't save it. Nothing changed.</p><div class="acts"><button type="button" class="btn soft" data-rretry>Retry</button></div></div>`)
-    const sec = []
-    if (R.editing) {
-      const cur = R.editing
-      const full = cur.prefix + cur.suffix
-      const recMatch = full === R.recommended
-      const recP = R.prefixes.find(x => R.recommended.startsWith(x) && x !== '/') || '/'
-      sec.push(`<div class="fsec"><h${h} class="fsh">Route</h${h}><div class="fields rt-edit">
-        <div class="fb"><div class="fl"><label for="${pid}-suf">Path</label></div>
-          <div class="pathctl">${selectHTML({ key: 'pfx-' + pid, value: cur.prefix, label: 'Path prefix' }).replace('<button', `<button id="${pid}-pfx" data-pfx`)}<div class="f"><input id="${pid}-suf" value="${esc(cur.suffix)}" aria-describedby="${pid}-sufh" autocomplete="off" spellcheck="false"><span class="st"></span></div></div>
-          <div class="fh" id="${pid}-sufh"><span class="msg">${recMatch ? 'This is the recommended path.' : `Recommended: <span class="mono">${esc(R.recommended)}</span> · <button type="button" class="tbtn" data-rec-fill aria-label="Use this: the recommended path, ${esc(R.recommended)}">Use this</button>`}${R.path ? `<br>The old path, <span class="mono">${esc(R.path)}</span>, keeps working: it redirects here.` : ''}</span></div>
+  const arrow = `<span class="rt-arr" aria-hidden="true">${g('go')}</span>`
+  const rec = (attr, extra = '') => `<div class="rt-rec"${extra}><span>Recommended: <span class="mono">${esc(R.recommended)}</span></span><span class="dotsep" aria-hidden="true">·</span><span class="brk" aria-hidden="true"></span><button type="button" class="tbtn" ${attr} aria-label="Use this: the recommended path, ${esc(R.recommended)}">Use this</button></div>`
+  const status = sec => R.status && R.status.sec === sec ? `<div class="rt-status" role="status" tabindex="-1" data-rstat>${g('saved', 'c-success')}<span>${R.status.html}</span></div>` : ''
+  const failBox = () => R.viewFail ? `<div class="alert danger rt-fail" role="alert" tabindex="-1" data-rfail>${g('error', 'c-danger')}<b>${esc(R.viewFail.title)}</b><p>The server couldn't save it. Nothing changed.</p><div class="acts"><button type="button" class="btn soft" data-rretry>Retry</button></div></div>` : ''
+  const count = ns => ns.reduce((n, x) => n + 1 + (x.kids ? count(x.kids) : 0), 0)
+  const kidsUnder = from => { let n = 0; const w = ns => ns.forEach(x => { if (from && x.path.startsWith(from + '/')) n++; x.kids && w(x.kids) }); w(R.children); return n }
+  const TITLE = { route: () => R.path ? 'Edit route' : 'Add a route', to: () => 'Redirect to', from: () => 'Redirected from', kids: () => 'Child routes' }
+  const SAVE = { route: () => R.path ? 'Save route' : 'Add route', to: () => 'Redirect', from: () => 'Add' }
+  const hasForm = () => R.sub && (R.sub.kind === 'route' || R.sub.form)
+  const dirty = () => hasForm() && JSON.stringify(R.sub.draft) !== R.sub.init
+  const NAV = {
+    to: () => ({ label: 'Redirect to', sum: R.forward ? `<span aria-hidden="true">→ </span><span class="sr">to </span><span class="mono">${esc(R.forward)}</span>` : 'Off' }),
+    from: () => { const n = count(R.redirects); return { label: 'Redirected from', sum: n ? `${n} old ${n === 1 ? 'address' : 'addresses'}` : 'None' } },
+    kids: () => { const n = count(R.children); return { label: 'Child routes', sum: n ? `${n} ${n === 1 ? 'route' : 'routes'}` : 'None' } }
+  }
+
+  function viewHTML () {
+    if (R.parentNoRoute) {
+      return `<div class="form"><div class="fsec" data-sec="route"><h${h} class="fsh">Route</h${h}><div class="fields"><div class="fb"><div class="fl">Path</div><div class="rt-path"><span class="rov"><span class="rv">None</span></span>${routeBadge('none')}</div></div>
+        <div class="alert">${g('info', 'c-accent')}<b>The parent page, ${esc(R.parentNoRoute)}, has no route yet.</b><p>A route here would start with the parent's path, so add a route to ${esc(R.parentNoRoute)} first.</p><div class="acts"><button type="button" class="btn soft" data-ropen>Open ${esc(R.parentNoRoute)}</button></div></div></div></div></div>`
+    }
+    const route = !R.path
+      ? `<div class="fsec" data-sec="route"><h${h} class="fsh">Route</h${h}>${status('route')}<div class="fields"><div class="fb"><div class="fl">Path</div><div class="rt-path"><span class="rov"><span class="rv">None</span></span>${routeBadge('none')}</div>
+        ${rec('data-rec')}<div class="fh"><span class="msg">Without a route, visitors can only reach this ${esc(what)} through a page nested under it.</span></div></div>
+        <div class="rt-acts"><button type="button" class="btn soft" data-rk="new">${g('plus')}Add a route</button></div></div></div>`
+      : `<div class="fsec" data-sec="route"><h${h} class="fsh">Route</h${h}>${status('route')}<div class="fields"><div class="fb"><div class="fl">Path</div><div class="rt-path"><span class="rov"><span class="rv mono">${esc(R.path)}</span><button type="button" class="btn ghost icon" aria-label="Copy path" style="--bh:2rem">${g('copy')}</button></span>${routeBadge(effective(), R.liveAt)}</div>
+        ${R.path !== R.recommended ? rec('data-rec') : ''}</div>
+        ${R.gate ? `<div class="rt-warn" role="note">${g('conflict', 'c-warning')}<b>Held back by a parent route.</b><p><span class="mono">${esc(R.gate.path)}</span> goes live on ${esc(R.gate.at)}, so visitors can't reach this page before then, whatever its own go-live says.</p></div>` : ''}
+        <div class="rt-acts"><button type="button" class="btn soft" data-rk="edit">Edit route</button></div></div></div>`
+    const rows = R.path ? `<div class="navrows" role="list" aria-label="More route settings">${['to', 'from', 'kids'].map(k => { const n = NAV[k](); return `<div role="listitem"><button type="button" class="navrow" data-nav="${k}"><span class="nl">${n.label}</span><span class="sr">: </span><span class="ns">${n.sum}</span>${g('next', 'nc')}</button></div>` }).join('')}</div>` : ''
+    return `${failBox()}<div class="form">${route}</div>${rows}`
+  }
+
+  function formHTML () {
+    const S = R.sub
+    const d = S.draft
+    const fail = R.fail ? `<div class="alert danger rt-fail" role="alert" tabindex="-1" data-sfail>${g('error', 'c-danger')}<b>${esc(R.fail)}</b><p>The server couldn't save it. Nothing changed, and what you typed is still here.</p><div class="acts"><button type="button" class="btn soft" data-sretry>Retry</button></div></div>` : ''
+    let body = ''
+    if (S.kind === 'route') {
+      OPTS['pfx-' + pid] = R.prefixes.map(v => ({ value: v, label: v }))
+      const full = d.prefix + d.suffix
+      body = `<div class="fb"><div class="fl"><label for="${pid}-suf">Path</label></div>
+          <div class="pathctl">${selectHTML({ key: 'pfx-' + pid, value: d.prefix, label: 'Path prefix' }).replace('<button', `<button id="${pid}-pfx" data-pfx`)}<div class="f${S.err ? ' err' : ''}"><input id="${pid}-suf" value="${esc(d.suffix)}" aria-describedby="${pid}-sufh" autocomplete="off" spellcheck="false"${S.err ? ' aria-invalid="true"' : ''}><span class="st"></span></div></div>
+          <div class="fh${S.err ? ' err' : ''}" id="${pid}-sufh">${S.err ? `${g('error')}<span class="msg">${esc(S.err)}</span>` : `<span class="msg">${full === R.recommended ? 'This is the recommended path.' : ''}</span>`}</div>
+          ${full === R.recommended || S.err ? '' : rec('data-rec-fill', ' data-recline')}
         </div>
         <div class="fb"><div class="fl" id="${pid}-gl">Go live</div>
-          <div class="seg" role="group" aria-labelledby="${pid}-gl" style="align-self:flex-start">${[['live', 'Live'], ['scheduled', 'Scheduled'], ['draft', 'Not live']].map(([k, n]) => `<button type="button" data-live="${k}" aria-pressed="${cur.live === k}">${n}</button>`).join('')}</div>
-          ${cur.live === 'scheduled' ? `<button type="button" class="f" data-cal id="${pid}-date" aria-label="Go-live date and time"><span class="sv">${esc(cur.liveAt || '20 Nov 2026, 09:00')}</span>${g('cal', 'end')}<span class="st"></span></button>` : ''}
-          ${R.gate ? `<div class="fh"><span class="msg">A parent route goes live later, on ${esc(R.gate.at)}. Visitors can't reach this page before then.</span></div>` : ''}
-        </div>
-        <div class="rt-edit-acts">${R.path ? btn('del', 'ghost danger del', 'Delete route') : ''}<span class="sp"></span><button type="button" class="btn soft" data-rcancel>Cancel edit</button>${btn('save', 'solid', R.path ? 'Save route' : `${g('plus')}Route`, R.path ? '' : ' aria-label="Create route"')}</div>
-      </div></div>`)
-      OPTS['pfx-' + pid] = R.prefixes.map(v => ({ value: v, label: v }))
-      void recP
-    } else if (R.parentNoRoute) {
-      sec.push(`<div class="fsec"><h${h} class="fsh">Route</h${h}><div class="fields"><div class="fb"><div class="fl">Path</div><div class="rt-path"><span class="rov"><span class="rv">None</span></span>${routeBadge('none')}</div></div>
-        <div class="alert">${g('info', 'c-accent')}<b>The parent page, ${esc(R.parentNoRoute)}, has no route yet.</b><p>A route here would start with the parent's path, so add a route to ${esc(R.parentNoRoute)} first.</p><div class="acts"><button type="button" class="btn soft" data-ropen>Open ${esc(R.parentNoRoute)}</button></div></div></div></div>`)
-    } else if (!R.path) {
-      sec.push(`<div class="fsec"><h${h} class="fsh">Route</h${h}><div class="fields"><div class="fb"><div class="fl">Path</div><div class="rt-path"><span class="rov"><span class="rv">None</span></span>${routeBadge('none')}<span class="sp"></span>${btn('new', 'soft', `${g('plus')}Route`, ' aria-label="Create route"')}</div>
-        <div class="fh"><span class="msg">Without a route, visitors can only reach this ${esc(what)} through a page nested under it.</span></div>
-        <div class="rt-rec">Recommended: <span class="mono">${esc(R.recommended)}</span> · ${R.busy === 'rec' ? '<span class="spin sm"></span>Saving…' : `<button type="button" class="tbtn" data-rec aria-label="Use this: the recommended path, ${esc(R.recommended)}">Use this</button>`}</div></div></div></div>`)
+          <div class="seg" role="group" aria-labelledby="${pid}-gl" style="align-self:flex-start">${[['live', 'Live'], ['scheduled', 'Scheduled'], ['draft', 'Not live']].map(([k, n]) => `<button type="button" data-live="${k}" aria-pressed="${d.live === k}">${n}</button>`).join('')}</div>
+          ${d.live === 'scheduled' ? `<button type="button" class="f" data-cal id="${pid}-date" aria-label="Go-live date and time"><span class="sv">${esc(d.liveAt)}</span>${g('cal', 'end')}<span class="st"></span></button>` : ''}
+        </div>`
+    } else if (S.kind === 'to') {
+      body = `<div class="fb"><div class="fl"><label for="${pid}-fwd">Send visitors to</label></div>${searchHTML({ id: pid + '-fwd', value: d.pick || '', label: 'Send visitors to' }).replace('<input', `<input aria-describedby="${pid}-fwdh"`).replace('class="f ', `class="f ${S.err ? 'err ' : ''}`)}<div class="fh${S.err ? ' err' : ''}" id="${pid}-fwdh">${S.err ? `${g('error')}<span class="msg">${esc(S.err)}</span>` : '<span class="msg">Any page on this site.</span>'}</div></div>`
     } else {
-      const eff = effective()
-      sec.push(`<div class="fsec"><h${h} class="fsh">Route</h${h}><div class="fields"><div class="fb"><div class="fl">Path</div><div class="rt-path"><span class="rov"><span class="rv mono">${esc(R.path)}</span><button type="button" class="btn ghost icon" aria-label="Copy path" style="--bh:2rem">${g('copy')}</button></span>${routeBadge(eff, R.liveAt)}<span class="sp"></span><button type="button" class="btn soft" data-redit>Edit route</button></div>
-        ${R.path !== R.recommended ? `<div class="rt-rec">Recommended: <span class="mono">${esc(R.recommended)}</span> · ${R.busy === 'rec' ? '<span class="spin sm"></span>Saving…' : `<button type="button" class="tbtn" data-rec aria-label="Use this: the recommended path, ${esc(R.recommended)}">Use this</button>`}</div>` : ''}</div>
-        ${R.gate ? `<div class="rt-warn" role="note">${g('conflict', 'c-warning')}<b>Held back by a parent route.</b><p><span class="mono">${esc(R.gate.path)}</span> goes live on ${esc(R.gate.at)}, so visitors can't reach this page before then, whatever its own go-live says.</p></div>` : ''}
-      </div></div>`)
+      body = `<div class="fb"><div class="fl"><label for="${pid}-red">Old address</label></div><div class="f${S.err ? ' err' : ''}"><input id="${pid}-red" value="${esc(d.path)}" placeholder="/old-path" aria-describedby="${pid}-redh" autocomplete="off" spellcheck="false"${S.err ? ' aria-invalid="true"' : ''}><span class="st"></span></div><div class="fh${S.err ? ' err' : ''}" id="${pid}-redh">${S.err ? `${g('error')}<span class="msg">${esc(S.err)}</span>` : '<span class="msg">A path on this site, starting with /.</span>'}</div></div>`
     }
-    if (R.path && !R.editing) {
-      sec.push(`<div class="fsec"><div class="fsh-row"><h${h} class="fsh">Forwarding</h${h}>${R.forward || R.inline === 'forward' ? '' : btn('fwd-open', 'soft', 'Forward to…')}</div><div class="fields" style="margin-top:1rem">
-        ${R.inline === 'forward' ? `<div class="rt-inline"><div class="fb"><div class="fl"><label for="${pid}-fwd">Forward visitors to</label></div>${searchHTML({ id: pid + '-fwd', value: R.fwdPick || '', label: 'Forward visitors to' })}</div><div class="row2">${btn('fwd', 'solid', 'Forward')}<button type="button" class="btn soft" data-rinline-x>Cancel</button></div></div>` : ''}
-        ${R.forward ? `<div class="fb"><p class="tempty" style="color:var(--k-fg)">Visitors to <span class="mono">${esc(R.path)}</span> are sent to <span class="mono">${esc(R.forward)}</span>, and never see this page.</p><div class="rt-acts"><button type="button" class="btn soft" data-rfwd-change>Change</button>${btn('fwd-stop', 'ghost danger', 'Stop forwarding')}</div></div>` : (R.inline === 'forward' ? '' : `<p class="tempty">Visitors see this page.</p>`)}
-      </div></div>`)
-      sec.push(`<div class="fsec"><div class="fsh-row"><h${h} class="fsh">Redirects to this page</h${h}>${R.inline === 'redirect' ? '' : btn('red-open', 'soft', `${g('plus')}Redirect`, ' aria-label="Add a redirect"')}</div><p class="fsd">Old addresses that send visitors here. A redirect to a redirect is shown under it.</p><div class="fields" style="margin-top:1rem">
-        ${R.inline === 'redirect' ? `<div class="rt-inline"><div class="fb"><div class="fl"><label for="${pid}-red">Redirect from</label></div><div class="f${R.redErr ? ' err' : ''}"><input id="${pid}-red" value="${esc(R.redDraft || '')}" placeholder="/old-path" aria-describedby="${pid}-redh" autocomplete="off" spellcheck="false"${R.redErr ? ' aria-invalid="true"' : ''}><span class="st"></span></div><div class="fh${R.redErr ? ' err' : ''}" id="${pid}-redh">${R.redErr ? `${g('error')}<span class="msg">${esc(R.redErr)}</span>` : `<span class="msg" data-redprev>${R.redDraft ? `<span class="mono">${esc(R.redDraft)}</span> will send visitors to <span class="mono">${esc(R.path)}</span>.` : 'A path on this site, starting with /.'}</span>`}</div></div><div class="row2">${btn('red', 'solid', 'Add redirect')}<button type="button" class="btn soft" data-rinline-x>Cancel</button></div></div>` : ''}
-        ${R.redirects.length ? treeHTML('Redirects to this page', R.redirects, { actions: () => [{ icon: 'trash', label: 'Delete', danger: true }] }).replace(/aria-label="Delete"/g, 'data-del') : '<p class="tempty">No other addresses send visitors here.</p>'}
-      </div></div>`)
-      sec.push(`<div class="fsec"><h${h} class="fsh">Child routes</h${h}><p class="fsd">Routes of the pages nested under this one. Their badges show when visitors can reach them.</p><div class="fields" style="margin-top:1rem">
-        ${R.children.length ? treeHTML('Child routes', R.children, { actions: () => [{ icon: 'more', label: 'More actions' }], badge: n => routeBadge(n.st, n.at) }) : '<p class="tempty">No pages are nested under this one.</p>'}
-      </div></div>`)
+    return `${fail}<div class="form"><div class="fsec"><div class="fields">${body}<div class="rt-cons" data-cons></div></div></div></div>`
+  }
+
+  function browseHTML () {
+    const S = R.sub
+    const busy = R.busy && R.busy !== 'sub'
+    if (S.kind === 'to') {
+      return `${failBox()}${status('to')}<p class="fsd rt-help">Sends visitors from this page's address to another page instead.</p>
+        ${R.forward
+          ? `<div class="rt-target"><p class="rt-dir"><span class="mono">${esc(R.path)}</span>${arrow}<span class="sr"> redirects to </span><span class="mono">${esc(R.forward)}</span></p><p class="fsd">Visitors never see this page.</p><div class="rt-acts"><button type="button" class="btn soft" data-rk="to-change">Change</button>${R.busy === 'fwd-stop' ? '<button type="button" class="btn ghost danger" aria-disabled="true" data-busy><span class="spin"></span>Removing…</button>' : '<button type="button" class="btn ghost danger" data-rk="fwd-stop">Remove</button>'}</div></div>`
+          : `<div class="rt-target"><p class="rt-off">Not redirecting. Visitors to <span class="mono">${esc(R.path)}</span> see this page.</p><div class="rt-acts"><button type="button" class="btn soft" data-rk="to-new">Redirect to another page</button></div></div>`}`
     }
-    el.innerHTML = `<div class="rt-busy" aria-busy="${!!R.busy}">${parts.join('')}<div class="form">${sec.join('')}</div></div>`
-    $$('.tree [data-del]', el).forEach(b => {
-      const row = b.closest('.tnode')
-      b.setAttribute('aria-label', `Delete the redirect from ${$('.tp', row).textContent}`)
-    })
+    if (S.kind === 'from') {
+      return `${failBox()}${status('from')}<p class="fsd rt-help">Old addresses that send visitors here. One that sends visitors to another is shown under it.</p>
+        <div class="rt-acts rt-acts-top"><button type="button" class="btn soft" data-rk="from-new"${busy ? ' aria-disabled="true"' : ''}>${g('plus')}Add</button></div>
+        <div class="rt-busy" aria-busy="${!!busy}">${R.redirects.length ? treeHTML('Redirected from', R.redirects, { actions: () => [{ icon: 'trash', label: 'Delete', danger: true }], text: r => `<span class="tp mono">${esc(r.n.path)}</span>${arrow}<span class="sr"> redirects to </span>${r.parent ? `<span class="tp mono rt-to">${esc(r.parent.path)}</span>` : '<span class="rt-to">this page</span>'}` }).replace(/aria-label="Delete"/g, 'data-del') : '<p class="tempty">No old addresses send visitors here.</p>'}</div>`
+    }
+    return `<p class="fsd rt-help">Routes of the pages nested under this one. Their badges show when visitors can reach them.</p>
+      ${R.children.length ? treeHTML('Child routes', R.children, { actions: () => [{ icon: 'more', label: 'More actions' }], badge: n => routeBadge(n.st, n.at) }) : '<p class="tempty">No pages are nested under this one.</p>'}`
+  }
+
+  function consHTML () {
+    const S = R.sub
+    const d = S.draft
+    const line = (glyph, html) => `<p>${glyph}<span>${html}</span></p>`
+    if (S.kind === 'route') {
+      const to = (d.prefix + d.suffix).replace(/\/+$/, '') || '/'
+      const out = []
+      if (R.path && to !== R.path) {
+        out.push(line(g('info', 'c-accent'), `The old path, <span class="mono">${esc(R.path)}</span>, keeps working: it will redirect here.`))
+        const n = kidsUnder(R.path)
+        if (n) out.push(`<label class="cblab"><input type="checkbox" class="cb" data-cascade${d.cascade ? ' checked' : ''}><span>Also change the ${n} child ${n === 1 ? 'route' : 'routes'} that ${n === 1 ? 'starts' : 'start'} with <span class="mono">${esc(R.path)}/</span></span></label>`)
+      }
+      if (!R.path) out.push(line(g('info', 'c-accent'), `Visitors will reach this ${esc(what)} at <span class="mono">${esc(to)}</span>${d.live === 'scheduled' ? ` from ${esc(d.liveAt)}` : d.live === 'draft' ? ' once it is set live' : ''}.`))
+      else if (d.live !== R.live || (d.live === 'scheduled' && d.liveAt !== R.liveAt)) out.push(line(g('info', 'c-accent'), d.live === 'live' ? 'The route goes live as soon as you save.' : d.live === 'scheduled' ? `The route goes live on ${esc(d.liveAt)}.` : 'Visitors can no longer reach this page once you save.'))
+      if (R.gate) out.push(line(g('conflict', 'c-warning'), `A parent route, <span class="mono">${esc(R.gate.path)}</span>, goes live later, on ${esc(R.gate.at)}. Visitors can't reach this page before then.`))
+      return out.join('')
+    }
+    if (S.kind === 'to') return d.pick ? `<div class="rt-warn">${g('conflict', 'c-warning')}<b>Visitors will no longer see this page.</b><p>Visitors to <span class="mono">${esc(R.path)}</span> will be sent to <span class="mono">${esc(d.pick)}</span>.</p></div>` : ''
+    const from = (d.path || '').trim()
+    return from ? `<p class="rt-dir"><span class="mono">${esc(from)}</span>${arrow}<span class="sr"> will redirect to </span><span>this page</span> <span class="mono rt-to">(${esc(R.path)})</span></p>` : ''
+  }
+
+  function chrome () {
+    const d = dlg()
+    if (!d) return
+    $$(':scope > .dlg-subh, :scope > .dlg-subf', d).forEach(x => x.remove())
+    d.classList.toggle('sub-on', !!R.sub)
+    if (!R.sub) return
+    const S = R.sub
+    const busy = R.busy === 'sub'
+    const tabs = $(':scope > .dlg-tabs', d)
+    tabs.insertAdjacentHTML('afterend', `<div class="dlg-subh"><div class="subrow"><button type="button" class="sback" data-sback aria-label="Back to Routes">${g('lt')}Routes</button>${S.kind === 'route' && R.path ? `<button type="button" class="btn ghost icon ovf" aria-label="More route actions" data-sovf>${g('more')}</button>` : ''}</div><h${h} class="subt" id="${pid}-subt" tabindex="-1">${esc(TITLE[S.kind]())}</h${h}></div>`)
+    $('[data-sback]', d).addEventListener('click', () => leave(null, true))
+    const ovf = $('[data-sovf]', d)
+    ovf && ovf.addEventListener('click', () => actionMenu(ovf, 'Route actions', [{ label: 'Delete route', danger: true, fn: delRoute }]))
+    if (!hasForm()) return
+    const n = ctx.pending ? ctx.pending() : 0
+    const foot = $$(':scope > .dlg-f', d).pop()
+    foot.insertAdjacentHTML('afterend', `<div class="dlg-f dlg-subf">${S.kind === 'route' && R.path ? (R.busy === 'del' ? '<button type="button" class="btn ghost danger del" aria-disabled="true"><span class="spin"></span>Deleting…</button>' : '<button type="button" class="btn ghost danger del" data-sdel>Delete route</button>') : ''}<span class="spacer"></span><span class="fstate">${n ? `${n} unsaved page ${n === 1 ? 'change' : 'changes'} kept` : ''}</span><button type="button" class="btn soft" data-scancel>Cancel</button><button type="button" class="btn solid" data-ssave${busy ? ' aria-disabled="true" data-busy' : ''}>${busy ? '<span class="spin"></span>Saving…' : esc(SAVE[S.kind]())}</button></div>`)
+    $('[data-scancel]', d).addEventListener('click', () => leave())
+    $('[data-ssave]', d).addEventListener('click', save)
+    const del = $('[data-sdel]', d)
+    del && del.addEventListener('click', delRoute)
+  }
+
+  function render (focusSel, anim) {
+    const sub = R.sub ? (hasForm() ? formHTML() : browseHTML()) : ''
+    el.innerHTML = `<div class="rt-busy rt-view${anim === 'back' ? ' back' : ''}" aria-busy="${!!R.busy && !R.sub}"${R.sub ? ' hidden inert' : ''}>${viewHTML()}</div>${R.sub ? `<div class="rt-sub${anim === 'in' ? ' in' : ''}" role="region" aria-labelledby="${pid}-subt">${sub}</div>` : ''}`
+    chrome()
+    $$('.tree [data-del]', el).forEach(b => b.setAttribute('aria-label', `Delete the redirect from ${$('.tp', b.closest('.tnode')).textContent}`))
     $$('.tree .tnode', el).forEach(row => {
       const b = $('[data-ta]', row)
       if (b && !b.hasAttribute('data-del')) b.setAttribute('aria-label', `More actions for ${$('.tp', row).textContent}`)
@@ -3149,154 +3401,260 @@ function routesPanel (el, R, ctx) {
     wire()
     hydrate(el)
     setupAll(el)
-    if (focusSel) { const f = $(focusSel, el); f && f.focus({ preventScroll: false }) }
+    if (hasForm()) paintCons()
+    if (focusSel) {
+      const f = typeof focusSel === 'string' ? (dlg() && $(focusSel, dlg())) || $(focusSel, el) : null
+      f && f.focus({ preventScroll: false })
+    }
   }
-  function run (key, title, apply, okMsg) {
-    R.busy = key
+  function paintCons () {
+    const c = $('[data-cons]', el)
+    if (!c) return
+    c.innerHTML = consHTML()
+    c.hidden = !c.innerHTML
+    const cb = $('[data-cascade]', c)
+    cb && cb.addEventListener('change', () => { R.sub.draft.cascade = cb.checked })
+  }
+
+  const body = () => dlg() && $('.dlg-b', dlg())
+  const focusTitle = () => { const t = $(`#${pid}-subt`, dlg()); t && t.focus({ preventScroll: true }) }
+  function open (kind, trigger, draft) {
+    const b = body()
+    R.sub = { kind, trigger, draft, form: !!draft && kind !== 'route', init: JSON.stringify(draft || null), scroll: b ? b.scrollTop : 0 }
+    R.fail = null; R.status = null; R.viewFail = null
+    render(null, 'in')
+    if (b) b.scrollTop = 0
+    focusTitle()
+  }
+  function startForm (trigger, draft) {
+    Object.assign(R.sub, { form: true, formTrigger: trigger, draft, init: JSON.stringify(draft), err: null })
+    R.fail = null; R.status = null; R.viewFail = null
+    render(null, 'in')
+    focusTitle()
+  }
+  function endForm (focusSel) {
+    const S = R.sub
+    Object.assign(S, { form: false, draft: null, err: null })
     R.fail = null
-    R.status = null
+    render(null, 'back')
+    const f = (focusSel && $(focusSel, el)) || $('[data-rstat]', el) || (S.formTrigger && $(S.formTrigger, el))
+    f ? f.focus() : focusTitle()
+  }
+  function close (focusSel) {
+    const S = R.sub
+    R.sub = null; R.fail = null
+    render(null, 'back')
+    const b = body()
+    if (b && S) b.scrollTop = S.scroll
+    const want = focusSel || (S && S.trigger)
+    const f = (want && $(want, el)) || $('[data-rstat]', el)
+    f && f.focus({ preventScroll: !!(S && !focusSel) })
+  }
+  function leave (then, toRoutes) {
+    if (!R.sub) { then && then(); return }
+    if (R.busy) return
+    const inner = R.sub.form && !toRoutes && !then
+    const go = () => { if (inner) endForm(); else close(); then && then() }
+    if (!dirty()) { go(); return }
+    if ($('.cfm', dlg())) return
+    askConfirm(dlg(), {
+      title: 'Discard your route changes?',
+      desc: 'What you changed here will be lost. Changes on the other tabs are kept.',
+      go: 'Discard',
+      onGo: go
+    })
+  }
+
+  function validate () {
+    const S = R.sub
+    const d = S.draft
+    S.err = null
+    if (S.kind === 'route') {
+      if (!d.suffix.trim() && d.prefix === '/' && R.path !== '/') S.err = 'Type the end of the path, or use the recommended one.'
+      else if (/\s/.test(d.suffix)) S.err = 'Leave out spaces, for example shaker-kitchens.'
+    } else if (S.kind === 'to') {
+      if (!d.pick) S.err = 'Choose the page visitors should see instead.'
+      else if (d.pick === R.path) S.err = 'That is this page\'s own address.'
+    } else {
+      const from = (d.path || '').trim()
+      if (!/^\/[^\s]*$/.test(from)) S.err = from ? 'Start with / and leave out spaces, for example /old-kitchens.' : 'Type the old address, for example /old-kitchens.'
+      else if (from === R.path) S.err = 'That is this page\'s own path.'
+    }
+    return !S.err
+  }
+  function save () {
+    if (R.busy || !hasForm()) return
+    const S = R.sub
+    const d = S.draft
+    if (S.kind === 'route') {
+      const to = (d.prefix + d.suffix).replace(/\/+$/, '') || '/'
+      if (R.path && to === R.path && d.live === R.live && (d.live !== 'scheduled' || d.liveAt === R.liveAt)) { close(); return }
+    }
+    if (!validate()) {
+      render(S.kind === 'route' ? `#${pid}-suf` : S.kind === 'to' ? `#${pid}-fwd` : `#${pid}-red`)
+      return
+    }
+    R.busy = 'sub'; R.fail = null
     render()
     setTimeout(() => {
       R.busy = null
       if (R.failNext) {
         R.failNext = false
-        R.fail = { title, retry: () => run(key, title, apply, okMsg) }
-        render('[data-rfail]')
-        ctx.log && ctx.log(`${title}\n← 500. Nothing changed.`)
+        R.fail = S.kind === 'route' ? (R.path ? 'The route wasn\'t changed.' : 'The route wasn\'t added.') : S.kind === 'to' ? 'The redirect wasn\'t saved.' : 'The old address wasn\'t added.'
+        ctx.log && ctx.log(`${R.fail}\n← 500. Nothing changed.`)
+        render('[data-sfail]')
         return
       }
-      const req = apply()
-      R.status = okMsg
-      ctx.log && ctx.log(req + '\n← 200')
-      render('[data-rstat]')
+      let req = ''
+      if (S.kind === 'route') {
+        const from = R.path
+        const to = (d.prefix + d.suffix).replace(/\/+$/, '') || '/'
+        const n = from && to !== from && d.cascade ? kidsUnder(from) : 0
+        if (from && from !== to) R.redirects = [{ path: from, kids: [] }, ...R.redirects]
+        if (n) { const w = ns => ns.forEach(x => { if (x.path.startsWith(from + '/')) x.path = to + x.path.slice(from.length); x.kids && w(x.kids) }); w(R.children) }
+        const liveBody = d.live !== R.live || d.liveAt !== R.liveAt ? { liveAt: d.live === 'live' ? 'now' : d.live === 'scheduled' ? '2026-11-20T09:00:00Z' : null } : {}
+        req = from ? `PATCH ${ROUTE_IRI}\n${JSON.stringify({ ...(to !== from ? { path: to } : {}), ...liveBody, ...(n ? { cascadeChildPaths: true } : {}) })}` : `POST /_/routes\n${JSON.stringify({ path: to, page: PAGE_IRI, ...liveBody })}`
+        R.path = to; R.live = d.live; R.liveAt = d.live === 'scheduled' ? d.liveAt : ''
+        R.status = { sec: 'route', html: from ? (from !== to ? `Route changed to <span class="mono">${esc(to)}</span>. <span class="mono">${esc(from)}</span> now redirects here${n ? `, and ${n} child ${n === 1 ? 'route was' : 'routes were'} changed too` : ''}.` : d.live === 'scheduled' ? `Goes live on ${esc(d.liveAt)}.` : d.live === 'live' ? 'The route is live.' : 'The route is no longer live.') : `Route added: <span class="mono">${esc(to)}</span>.` }
+        ctx.log && ctx.log(req + '\n← 200   (no confirm: the sub-view showed what would happen)')
+        close()
+        return
+      }
+      if (S.kind === 'to') {
+        R.forward = d.pick
+        req = `PATCH ${ROUTE_IRI}\n${JSON.stringify({ redirect: '/_/routes/' + slug(d.pick) })}`
+        R.status = { sec: 'to', html: `Visitors to <span class="mono">${esc(R.path)}</span> are now sent to <span class="mono">${esc(d.pick)}</span>.` }
+      } else {
+        const from = d.path.trim()
+        R.redirects = [...R.redirects, { path: from }]
+        req = `POST /_/routes\n${JSON.stringify({ path: from, redirect: ROUTE_IRI })}`
+        R.status = { sec: 'from', html: `<span class="mono">${esc(from)}</span> now sends visitors here.` }
+      }
+      ctx.log && ctx.log(req + '\n← 200   (no confirm: the sub-view showed what would happen)')
+      endForm('[data-rstat]')
     }, 800)
   }
-  function changePath (to, live, liveAt, cascade) {
-    const from = R.path
-    const kids = from ? R.children : []
-    return () => {
-      if (from && from !== to) R.redirects = [{ path: from, kids: [] }, ...R.redirects]
-      if (cascade && from) {
-        const walk = ns => ns.forEach(n => { if (n.path.startsWith(from + '/')) n.path = to + n.path.slice(from.length); n.kids && walk(n.kids) })
-        walk(kids)
-      }
-      R.path = to
-      if (live) { R.live = live; R.liveAt = liveAt }
-      R.editing = null
-      return from ? `PATCH ${ROUTE_IRI}\n${JSON.stringify({ path: to, ...(live ? { liveAt: live === 'live' ? 'now' : live === 'scheduled' ? '2026-11-20T09:00:00Z' : null } : {}), ...(cascade ? { cascadeChildPaths: true, oldPath: from } : {}) })}` : `POST /_/routes\n${JSON.stringify({ path: to, page: PAGE_IRI })}`
-    }
-  }
-  const countKids = () => { let n = 0; const w = ns => ns.forEach(x => { if (R.path && x.path.startsWith(R.path + '/')) n++; x.kids && w(x.kids) }); w(R.children); return n }
-  function confirmPath (to, live, liveAt) {
-    const from = R.path
-    const n = from && to !== from ? countKids() : 0
-    if (!from) {
-      askConfirm(dlg(), { title: `Add the route ${to}?`, desc: `Visitors will reach this ${what} at ${to}${live === 'scheduled' ? ` from ${liveAt}` : live === 'draft' ? ' once it is set live' : ''}.`, keep: 'Cancel', go: 'Add route', tone: 'primary', onGo: () => run('save', `The route ${to} wasn't added.`, changePath(to, live || 'live', liveAt), `Route added: <span class="mono">${esc(to)}</span>.`) })
-      return
-    }
-    if (to === from) {
-      run('save', 'The go-live change wasn\'t saved.', changePath(to, live, liveAt), live === 'scheduled' ? `Goes live on ${esc(liveAt)}.` : live === 'live' ? 'The route is live.' : 'The route is no longer live.')
-      return
-    }
+  function delRoute () {
+    if (R.busy) return
+    const p = R.path
+    const routed = R.children.length
     askConfirm(dlg(), {
-      title: `Change the route to ${to}?`,
-      desc: `The old path, ${from}, will redirect here, so links to it keep working.`,
-      extra: n ? `<label class="cblab"><input type="checkbox" class="cb" name="cascade" checked> Also change the ${n} child ${n === 1 ? 'route' : 'routes'} that ${n === 1 ? 'starts' : 'start'} with ${esc(from)}/</label>` : '',
-      keep: 'Cancel', go: 'Change route', tone: 'primary',
-      onGo: v => run('save', `The route wasn't changed to ${to}.`, changePath(to, live, liveAt, v.cascade), `Route changed to <span class="mono">${esc(to)}</span>. <span class="mono">${esc(from)}</span> now redirects here${v.cascade ? `, and ${n} child ${n === 1 ? 'route was' : 'routes were'} changed too` : ''}.`)
+      title: `Delete the route ${p}?`,
+      desc: `Visitors to ${p} will get “Page not found”.${routed ? ` This ${what} stays reachable through the ${routed} ${routed === 1 ? 'page' : 'pages'} nested under it.` : ''}`,
+      keep: 'Don\'t delete', go: 'Delete route',
+      onGo: () => {
+        R.busy = 'del'; chrome()
+        setTimeout(() => {
+          R.busy = null
+          if (R.failNext) { R.failNext = false; R.fail = `The route ${p} wasn't deleted.`; render('[data-sfail]'); ctx.log && ctx.log(`DELETE ${ROUTE_IRI}\n← 500. Nothing changed.`); return }
+          R.path = null; R.redirects = []; R.forward = null
+          R.status = { sec: 'route', html: `Route deleted. This ${esc(what)} has no route now.` }
+          ctx.log && ctx.log(`DELETE ${ROUTE_IRI}   (${p})\n← 204`)
+          close('[data-rstat]')
+        }, 800)
+      }
     })
+  }
+  function runAction (key, title, apply, st, focusSel) {
+    R.busy = key; R.viewFail = null; R.status = null
+    render()
+    setTimeout(() => {
+      R.busy = null
+      if (R.failNext) {
+        R.failNext = false
+        R.viewFail = { title, retry: () => runAction(key, title, apply, st, focusSel) }
+        ctx.log && ctx.log(`${title}\n← 500. Nothing changed.`)
+        render('[data-rfail]')
+        return
+      }
+      ctx.log && ctx.log(apply() + '\n← 200')
+      R.status = st
+      render(focusSel || '[data-rstat]')
+    }, 800)
   }
   function findParent (ns, target) { for (const n of ns) { if (n === target) return ns; if (n.kids) { const r = findParent(n.kids, target); if (r) return r } } return null }
+  const routeDraft = (over = {}) => {
+    const path = over.path ?? R.path ?? ''
+    const p = R.prefixes.slice().sort((a, b) => b.length - a.length).find(x => path.startsWith(x)) || R.prefixes[R.prefixes.length - 1]
+    return { prefix: p, suffix: path ? path.slice(p.length) : '', live: R.path ? R.live : 'live', liveAt: R.liveAt || '20 Nov 2026, 09:00', cascade: true }
+  }
+
   function wire () {
     const on = (sel, fn) => { const x = $(sel, el); x && x.addEventListener('click', fn) }
-    on('[data-rretry]', () => R.fail && R.fail.retry())
-    on('[data-redit]', () => {
-      const p = R.prefixes.slice().sort((a, b) => b.length - a.length).find(x => R.path.startsWith(x)) || '/'
-      R.editing = { prefix: p, suffix: R.path.slice(p.length), live: R.live, liveAt: R.liveAt || '20 Nov 2026, 09:00' }
-      R.status = null
-      render(`#${pid}-suf`)
+    on('[data-rretry]', () => R.viewFail && R.viewFail.retry())
+    on('[data-sretry]', save)
+    on('[data-rk="edit"]', () => open('route', '[data-rk="edit"]', routeDraft()))
+    on('[data-rk="new"]', () => open('route', '[data-rk="new"]', routeDraft()))
+    on('[data-rec]', () => {
+      const d = routeDraft()
+      Object.assign(d, routeDraft({ path: R.recommended }), { live: d.live, liveAt: d.liveAt })
+      open('route', '[data-rec]', d)
     })
-    on('[data-rk="new"]', () => { R.editing = { prefix: R.prefixes[R.prefixes.length - 1], suffix: '', live: 'live', liveAt: '20 Nov 2026, 09:00' }; R.status = null; render(`#${pid}-suf`) })
-    on('[data-rcancel]', () => { R.editing = null; render(R.path ? '[data-redit]' : '[data-rk="new"]') })
-    on('[data-rec]', () => confirmPath(R.recommended, R.path ? null : 'live', ''))
+    $$('[data-nav]', el).forEach(b => b.addEventListener('click', () => open(b.dataset.nav, `[data-nav="${b.dataset.nav}"]`)))
     on('[data-ropen]', () => toast({ tone: 'info', title: `Opening ${R.parentNoRoute}`, desc: 'Its settings open, on the Routes tab.' }))
-    const suf = $(`#${pid}-suf`, el)
-    if (suf) {
-      suf.addEventListener('input', () => {
-        R.editing.suffix = suf.value.replace(/^\/+/, '')
-        const msg = $(`#${pid}-sufh .msg`, el)
-        const full = R.editing.prefix + R.editing.suffix
-        if (msg) msg.innerHTML = full === R.recommended ? 'This is the recommended path.' + (R.path ? `<br>The old path, <span class="mono">${esc(R.path)}</span>, keeps working: it redirects here.` : '') : msg.innerHTML.replace(/^This is the recommended path\./, `Recommended: <span class="mono">${esc(R.recommended)}</span> · <button type="button" class="tbtn" data-rec-fill aria-label="Use this: the recommended path, ${esc(R.recommended)}">Use this</button>`)
-        const f = $('[data-rec-fill]', el)
-        f && !f.dataset.w && (f.dataset.w = 1, f.addEventListener('click', fill))
-      })
-      suf.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('[data-rk="save"]', el).click() } })
+    on('[data-rk="to-new"]', () => startForm('[data-rk="to-new"]', { pick: '' }))
+    on('[data-rk="to-change"]', () => startForm('[data-rk="to-change"]', { pick: R.forward }))
+    on('[data-rk="from-new"]', () => { if (!R.busy) startForm('[data-rk="from-new"]', { path: '' }) })
+    on('[data-rk="fwd-stop"]', () => askConfirm(dlg(), {
+      title: 'Stop redirecting?', desc: `Visitors to ${R.path} will see this ${what} again.`, keep: 'Keep redirecting', go: 'Stop redirecting', tone: 'primary',
+      onGo: () => runAction('fwd-stop', 'The redirect wasn\'t removed.', () => { R.forward = null; return `PATCH ${ROUTE_IRI}\n${JSON.stringify({ redirect: null })}` }, { sec: 'to', html: `Visitors to <span class="mono">${esc(R.path)}</span> see this page again.` })
+    }))
+    if (hasForm()) {
+      const S = R.sub
+      const d = S.draft
+      const suf = $(`#${pid}-suf`, el)
+      const fill = () => { Object.assign(d, { prefix: routeDraft({ path: R.recommended }).prefix, suffix: routeDraft({ path: R.recommended }).suffix }); S.err = null; render(`#${pid}-suf`) }
+      if (suf) {
+        suf.addEventListener('input', () => {
+          d.suffix = suf.value.replace(/^\/+/, '')
+          if (S.err) { S.err = null; render(`#${pid}-suf`); const r2 = $(`#${pid}-suf`, el); const n = r2.value.length; r2.setSelectionRange(n, n); return }
+          const full = d.prefix + d.suffix
+          const msg = $(`#${pid}-sufh .msg`, el)
+          msg.textContent = full === R.recommended ? 'This is the recommended path.' : ''
+          const rl = $('[data-recline]', el)
+          if (rl) rl.hidden = full === R.recommended
+          else if (full !== R.recommended) { $(`#${pid}-sufh`, el).insertAdjacentHTML('afterend', rec('data-rec-fill', ' data-recline')); $('[data-rec-fill]', el).addEventListener('click', fill) }
+          paintCons()
+        })
+        suf.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); save() } })
+      }
+      on('[data-rec-fill]', fill)
+      const pfx = $('[data-pfx]', el)
+      pfx && pfx.addEventListener('commit', e => { d.prefix = e.detail; render(`#${pid}-pfx`) })
+      $$('[data-live]', el).forEach(b => b.addEventListener('click', () => { d.live = b.dataset.live; render(`[data-live="${b.dataset.live}"]`) }))
+      const date = $(`#${pid}-date .sv`, el)
+      date && new MutationObserver(() => { d.liveAt = date.textContent; paintCons() }).observe(date, { childList: true, characterData: true, subtree: true })
+      const fwd = $(`#${pid}-fwd`, el)
+      if (fwd) fwd.closest('[data-search]').addEventListener('commit', e => { d.pick = e.detail; S.err = null; render(`#${pid}-fwd`) })
+      const red = $(`#${pid}-red`, el)
+      if (red) {
+        red.addEventListener('input', () => {
+          d.path = red.value
+          if (S.err) { S.err = null; render(`#${pid}-red`); const r2 = $(`#${pid}-red`, el); const n = r2.value.length; r2.setSelectionRange(n, n); return }
+          paintCons()
+        })
+        red.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); save() } })
+      }
+      return
     }
-    const fill = () => {
-      const p = R.prefixes.slice().sort((a, b) => b.length - a.length).find(x => R.recommended.startsWith(x)) || '/'
-      R.editing.prefix = p
-      R.editing.suffix = R.recommended.slice(p.length)
-      render(`#${pid}-suf`)
-    }
-    on('[data-rec-fill]', fill)
-    const pfx = $('[data-pfx]', el)
-    pfx && pfx.addEventListener('commit', e => { R.editing.prefix = e.detail; render(`#${pid}-pfx`) })
-    $$('[data-live]', el).forEach(b => b.addEventListener('click', () => { R.editing.live = b.dataset.live; render(`[data-live="${b.dataset.live}"]`) }))
-    on('[data-rk="save"]', () => {
-      if (R.busy) return
-      const e = R.editing
-      const to = e.prefix + e.suffix.replace(/\/+$/, '')
-      if (!e.suffix.trim() && e.prefix === '/' && R.path !== '/') { toast({ tone: 'warning', title: 'Add a path first', desc: 'Type the end of the path, or use the recommended one.' }); return }
-      const liveAt = e.live === 'scheduled' ? ($(`#${pid}-date .sv`, el) || {}).textContent || e.liveAt : ''
-      if (to === R.path && e.live === R.live && liveAt === (R.live === 'scheduled' ? R.liveAt : '')) { R.editing = null; render('[data-redit]'); return }
-      confirmPath(to, e.live, liveAt)
-    })
-    on('[data-rk="del"]', () => askConfirm(dlg(), { title: `Delete the route ${R.path}?`, desc: `Visitors to ${R.path} will get “Page not found”, and the ${what} can only be reached through a page nested under it.`, keep: 'Cancel', go: 'Delete route', onGo: () => run('del', `The route ${R.path} wasn't deleted.`, () => { const p = R.path; R.path = null; R.editing = null; R.redirects = []; return `DELETE ${ROUTE_IRI}   (${p})` }, 'Route deleted. The page has no route now.') }))
-    on('[data-rk="fwd-open"]', () => { R.inline = 'forward'; R.fwdPick = ''; render(`#${pid}-fwd`) })
-    on('[data-rfwd-change]', () => { R.inline = 'forward'; R.fwdPick = R.forward; R.forward = R.forward; render(`#${pid}-fwd`) })
-    $$('[data-rinline-x]', el).forEach(b => b.addEventListener('click', () => { const was = R.inline; R.inline = null; R.redErr = null; render(was === 'redirect' ? '[data-rk="red-open"]' : '[data-rk="fwd-open"],[data-rfwd-change]') }))
-    const fwd = $(`#${pid}-fwd`, el)
-    if (fwd) fwd.closest('[data-search]').addEventListener('commit', e => { R.fwdPick = e.detail })
-    on('[data-rk="fwd"]', () => {
-      const to = R.fwdPick
-      if (!to) { toast({ tone: 'warning', title: 'Choose a page to forward to' }); return }
-      if (to === R.path) { toast({ tone: 'warning', title: 'A route cannot forward to itself' }); return }
-      askConfirm(dlg(), { title: `Forward visitors to ${to}?`, desc: `Visitors to ${R.path} will be sent to ${to}, and will no longer see this ${what}.`, keep: 'Cancel', go: 'Forward', tone: 'primary', onGo: () => run('fwd', `Forwarding to ${to} wasn't saved.`, () => { R.forward = to; R.inline = null; return `PATCH ${ROUTE_IRI}\n${JSON.stringify({ redirect: '/_/routes/' + slug(to) })}` }, `Visitors to <span class="mono">${esc(R.path)}</span> are now sent to <span class="mono">${esc(to)}</span>.`) })
-    })
-    on('[data-rk="fwd-stop"]', () => askConfirm(dlg(), { title: 'Stop forwarding?', desc: `Visitors to ${R.path} will see this ${what} again.`, keep: 'Cancel', go: 'Stop forwarding', onGo: () => run('fwd-stop', 'Forwarding wasn\'t stopped.', () => { R.forward = null; return `PATCH ${ROUTE_IRI}\n${JSON.stringify({ redirect: null })}` }, 'Visitors see this page again.') }))
-    on('[data-rk="red-open"]', () => { R.inline = 'redirect'; R.redDraft = ''; R.redErr = null; render(`#${pid}-red`) })
-    const red = $(`#${pid}-red`, el)
-    if (red) {
-      red.addEventListener('input', () => {
-        R.redDraft = red.value.trim()
-        if (R.redErr) { R.redErr = null; render(`#${pid}-red`); const r2 = $(`#${pid}-red`, el); const n = r2.value.length; r2.setSelectionRange(n, n); return }
-        const pv = $('[data-redprev]', el)
-        if (pv) pv.innerHTML = R.redDraft ? `<span class="mono">${esc(R.redDraft)}</span> will send visitors to <span class="mono">${esc(R.path)}</span>.` : 'A path on this site, starting with /.'
-      })
-      red.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('[data-rk="red"]', el).click() } })
-    }
-    on('[data-rk="red"]', () => {
-      const from = (R.redDraft || '').trim()
-      if (!/^\/[^\s]*$/.test(from)) { R.redErr = from ? 'Start with / and leave out spaces, for example /old-kitchens.' : 'Type the old path, for example /old-kitchens.'; render(`#${pid}-red`); return }
-      if (from === R.path) { R.redErr = 'That is this page\'s own path.'; render(`#${pid}-red`); return }
-      askConfirm(dlg(), { title: `Add a redirect from ${from}?`, desc: `Visitors to ${from} will be sent to ${R.path}.`, keep: 'Cancel', go: 'Add redirect', tone: 'primary', onGo: () => run('red', `The redirect from ${from} wasn't added.`, () => { R.redirects = [...R.redirects, { path: from }]; R.inline = null; R.redDraft = ''; return `POST /_/routes\n${JSON.stringify({ path: from, redirect: ROUTE_IRI })}` }, `Redirect added: <span class="mono">${esc(from)}</span> now sends visitors here.`) })
-    })
     const del = n => askConfirm(dlg(), {
       title: `Delete the redirect from ${n.path}?`,
-      desc: `Visitors to ${n.path} will get “Page not found”.${n.kids && n.kids.length ? ` The ${n.kids.length} ${n.kids.length === 1 ? 'redirect' : 'redirects'} to it are deleted too.` : ''}`,
-      keep: 'Cancel', go: 'Delete redirect',
-      onGo: () => run('tree', `The redirect from ${n.path} wasn't deleted.`, () => { const list = findParent(R.redirects, n); list.splice(list.indexOf(n), 1); return `DELETE /_/routes/${slug(n.path)}   (${n.path})` }, `Redirect from <span class="mono">${esc(n.path)}</span> deleted.`)
+      desc: `Visitors to ${n.path} will get “Page not found”.${n.kids && n.kids.length ? ` The ${n.kids.length} ${n.kids.length === 1 ? 'address' : 'addresses'} under it ${n.kids.length === 1 ? 'goes' : 'go'} too.` : ''}`,
+      keep: 'Don\'t delete', go: 'Delete redirect',
+      onGo: () => runAction('tree', `The redirect from ${n.path} wasn't deleted.`, () => { const list = findParent(R.redirects, n); list.splice(list.indexOf(n), 1); return `DELETE /_/routes/${slug(n.path)}   (${n.path})` }, { sec: 'from', html: `<span class="mono">${esc(n.path)}</span> no longer sends visitors here.` })
     })
     const trees = $$('.tree', el)
-    if (trees[0] && R.redirects.length) wireTree(trees[0].parentElement, R.redirects, { actions: n => [{ fn: () => del(n) }], onChange: (n, i) => render(`.tree[aria-label="Redirects to this page"] [data-ti="${i}"]`), onDelete: n => del(n) })
+    const rt = trees.find(t => t.getAttribute('aria-label') === 'Redirected from')
+    if (rt) wireTree(rt.parentElement, R.redirects, { actions: n => [{ fn: () => del(n) }], onChange: (n, i) => render(`.tree[aria-label="Redirected from"] [data-ti="${i}"]`), onDelete: n => del(n) })
     const ct = trees.find(t => t.getAttribute('aria-label') === 'Child routes')
     if (ct) wireTree(ct.parentElement, R.children, { actions: n => [{ fn: b => actionMenu(b, n.path, [{ label: 'Edit settings', fn: () => toast({ tone: 'info', title: `Opening ${n.page}`, desc: 'Its settings open in this modal.' }) }, { label: 'Go to page', fn: () => toast({ tone: 'info', title: `Going to ${n.path}`, desc: 'Edit mode stays on.' }) }]) }], onChange: (n, i) => render(`.tree[aria-label="Child routes"] [data-ti="${i}"]`) })
   }
   render()
-  return { render }
+  return { render, isOpen: () => !!R.sub, leave, back: () => leave() }
 }
+
 function pageModal (host, p, { mode = 'edit', logEl = null, onClose, hl = 2, title, routes = 'kitchens', tab: startTab } = {}) {
-  let spec, F, orig, v, err, conf, tab, notice, sim, busy, RT
+  let spec, F, orig, v, err, conf, tab, notice, sim, busy, RT, rtp
   const log = (s) => { if (logEl) logEl.textContent = s + (logEl.textContent && logEl.textContent !== 'Requests appear here.' ? '\n\n' + logEl.textContent.split('\n\n').slice(0, 3).join('\n\n') : '') }
   function init (m) {
     spec = modalSpec(m, { title })
@@ -3324,9 +3682,9 @@ function pageModal (host, p, { mode = 'edit', logEl = null, onClose, hl = 2, tit
   function fieldHTML (k) {
     const f = F[k]
     if (f.type === 'toggle') {
-      return `<div class="fb" data-k="${k}"><label class="trow"><span class="tt"><b>${esc(f.label)} <span class="chg">· Unsaved</span></b><span id="${fid(k)}-h">${esc(f.help)}</span></span><span class="tgl"><input type="checkbox" role="switch" id="${fid(k)}" aria-describedby="${fid(k)}-h"${v[k] ? ' checked' : ''}><span class="tg"></span></span></label></div>`
+      return `<div class="fb" data-k="${k}"><label class="trow"><span class="tt"><b>${esc(f.label)} <span class="chg">Unsaved</span></b><span id="${fid(k)}-h">${esc(f.help)}</span></span><span class="tgl"><input type="checkbox" role="switch" id="${fid(k)}" aria-describedby="${fid(k)}-h"${v[k] ? ' checked' : ''}><span class="tg"></span></span></label></div>`
     }
-    return `<div class="fb" data-k="${k}"><div class="fl"><label for="${fid(k)}">${esc(f.label)}</label>${f.optional ? '<span class="optl">· Optional</span>' : ''}${f.info ? infoBtn(f.label, f.info) : ''}<span class="chg">· Unsaved</span></div><div class="cfxw">${control(k, f)}<div data-cmp></div></div><div class="fh" id="${fid(k)}-h"></div></div>`
+    return `<div class="fb" data-k="${k}"><div class="fl"><label for="${fid(k)}">${esc(f.label)}</label>${f.optional ? '<span class="optl">· Optional</span>' : ''}${f.info ? infoBtn(f.label, f.info) : ''}<span class="chg">Unsaved</span></div><div class="cfxw">${control(k, f)}<div data-cmp></div></div><div class="fh" id="${fid(k)}-h"></div></div>`
   }
   function panelHTML (t) {
     if (t.disabled) return `<div class="tabnote" role="note"><b>${esc(t.disabled.title)}</b><p>${esc(t.disabled.text)}</p></div>`
@@ -3349,11 +3707,12 @@ function pageModal (host, p, { mode = 'edit', logEl = null, onClose, hl = 2, tit
     setupAll(host)
     wire()
     const rp = $('[data-routes]', host)
-    if (rp) routesPanel(rp, RT, { hl: hl + 1, p, what: spec.what, dlg: () => $('.dlg', host), log })
+    rtp = rp ? routesPanel(rp, RT, rctx()) : null
     Object.keys(F).forEach(paint)
     paintNotice()
     paintChrome()
   }
+  const rctx = () => ({ hl: hl + 1, p, what: spec.what, dlg: () => $('.dlg', host), log, pending: () => changedKeys().length })
   const blockOf = k => $(`[data-k="${k}"]`, host)
   function setValue (k, val) {
     v[k] = val
@@ -3426,6 +3785,7 @@ function pageModal (host, p, { mode = 'edit', logEl = null, onClose, hl = 2, tit
     $$('[data-go]', el).forEach(a => a.addEventListener('click', e => { e.preventDefault(); goTo(a.dataset.go) }))
   }
   function selectTab (k, focus) {
+    if (rtp && rtp.isOpen() && k !== 'routes') { rtp.leave(() => selectTab(k, focus)); return }
     tab = k
     $$('.tab', host).forEach(t => { const on = t.dataset.tab === k; t.setAttribute('aria-selected', on); t.tabIndex = on ? 0 : -1; if (on && focus) t.focus() })
     $$('[data-pn]', host).forEach(pn => { pn.hidden = pn.dataset.pn !== k })
@@ -3433,6 +3793,7 @@ function pageModal (host, p, { mode = 'edit', logEl = null, onClose, hl = 2, tit
     $$('.f.ta textarea', host).forEach(autosize)
   }
   function goTo (k) {
+    if (rtp && rtp.isOpen() && tabOf(k) !== 'routes') { rtp.leave(() => goTo(k)); return }
     selectTab(tabOf(k))
     const el = $('#' + fid(k), host)
     const body = $('.dlg-b', host)
@@ -3460,7 +3821,7 @@ function pageModal (host, p, { mode = 'edit', logEl = null, onClose, hl = 2, tit
   function wire () {
     $$('[data-close],[data-cancel]', host).forEach(b => b.addEventListener('click', () => requestClose()))
     $('.dlg', host).addEventListener('keydown', e => {
-      if (e.key === 'Escape' && !e.defaultPrevented && !cur && !openPop && !$('.cfm', host)) { e.preventDefault(); requestClose() }
+      if (e.key === 'Escape' && !e.defaultPrevented && !cur && !openPop && !$('.cfm', host)) { e.preventDefault(); rtp && rtp.isOpen() ? rtp.back() : requestClose() }
     })
     const ovf = $('[data-ovf]', host)
     ovf && ovf.addEventListener('click', e => actionMenu(e.currentTarget, 'Page actions', [{ label: 'Duplicate' }, { label: 'Delete page', danger: true }]))
@@ -3496,6 +3857,7 @@ function pageModal (host, p, { mode = 'edit', logEl = null, onClose, hl = 2, tit
   }
   function requestClose () {
     if (busy) return
+    if (rtp && rtp.isOpen()) { rtp.leave(() => requestClose()); return }
     const ks = changedKeys()
     const done = () => onClose ? onClose() : (init(mode), render())
     if (!ks.length) { done(); return }
@@ -3618,9 +3980,10 @@ function pageModal (host, p, { mode = 'edit', logEl = null, onClose, hl = 2, tit
     },
     requestClose,
     routes (k) {
+      if (k === 'details') { selectTab('details'); return }
       const base = routesData(routes)
       const keep = ['redirects', 'children']
-      if (k === 'reset') Object.assign(RT, base, { gate: null, parentNoRoute: null, status: null, fail: null, editing: null, inline: null, failNext: false })
+      if (k === 'reset') Object.assign(RT, base, { gate: null, parentNoRoute: null, status: null, fail: null, viewFail: null, sub: null, busy: null, failNext: false })
       if (!RT.path && ['live', 'scheduled', 'draft', 'gate'].includes(k)) { RT.path = base.path; keep.forEach(x => { RT[x] = base[x] }) }
       if (k === 'live') Object.assign(RT, { live: 'live', liveAt: '', gate: null, parentNoRoute: null })
       if (k === 'scheduled') Object.assign(RT, { live: 'scheduled', liveAt: '20 Nov 2026, 09:00', gate: null, parentNoRoute: null })
@@ -3628,11 +3991,11 @@ function pageModal (host, p, { mode = 'edit', logEl = null, onClose, hl = 2, tit
       if (k === 'gate') Object.assign(RT, { live: 'live', gate: { path: '/kitchens', at: '1 Dec 2026, 09:00' }, parentNoRoute: null })
       if (k === 'noparent') Object.assign(RT, { path: null, gate: null, parentNoRoute: 'Kitchens', redirects: [], children: [] })
       if (k === 'none') Object.assign(RT, { path: null, gate: null, parentNoRoute: null, redirects: [], children: [] })
-      if (k === 'fail') { RT.failNext = true; toast({ tone: 'info', id: 'rsim', title: 'The next route action will fail', desc: 'Add a redirect, use the recommendation or edit the route.' }) }
-      if (k !== 'fail') { RT.status = null; RT.fail = null; RT.editing = null; RT.inline = null }
-      selectTab('routes')
+      if (k === 'fail') { RT.failNext = true; toast({ tone: 'info', id: 'rsim', title: 'The next route action will fail', desc: 'Save a sub-view, or delete a redirect.' }) }
+      if (k !== 'fail') { RT.status = null; RT.fail = null; RT.viewFail = null; RT.sub = null; RT.busy = null }
+      if (k !== 'fail' || !(rtp && rtp.isOpen())) selectTab('routes')
       const rp = $('[data-routes]', host)
-      rp && routesPanel(rp, RT, { hl: hl + 1, p, what: spec.what, dlg: () => $('.dlg', host), log })
+      if (k !== 'fail' || !(rtp && rtp.isOpen())) rtp = rp ? routesPanel(rp, RT, rctx()) : null
     },
     focusFirst () { const el = $('input,button.f', $('[data-pn]:not([hidden])', host)); el && el.focus() }
   }
@@ -3647,7 +4010,8 @@ function openModal () {
   ov.className = 'overlay kit'
   ov.innerHTML = '<div class="dlg-host"></div>'
   document.body.append(ov)
-  const close = () => { ov.remove(); document.documentElement.style.overflow = ''; lastFocus && lastFocus.focus() }
+  const close = () => { ov.remove(); document.body.classList.remove('fs-dialog'); document.documentElement.style.overflow = ''; lastFocus && lastFocus.focus() }
+  document.body.classList.add('fs-dialog')
   const m = pageModal($('.dlg-host', ov), 'dlg', { onClose: close, hl: 2 })
   document.documentElement.style.overflow = 'hidden'
   ov.addEventListener('mousedown', e => { if (e.target === ov) m.requestClose() })
@@ -3666,17 +4030,19 @@ function openModal () {
 const PAGES = [
   { t: 'Home', path: '/', st: 'live', d: '17 Nov 2026', n: 12, type: 'static' },
   { t: 'Kitchens', path: '/kitchens', st: 'live', d: '17 Nov 2026', n: 9, type: 'static' },
-  { t: 'Blog article', path: 'Template for blog articles', uses: '14 articles', d: '16 Nov 2026', n: 7, type: 'dynamic' },
+  { t: 'Blog article', path: 'Template for blog articles', uses: '14 pages', d: '16 Nov 2026', n: 7, type: 'dynamic' },
   { t: 'Handleless kitchens', path: '/kitchens/handleless', st: 'scheduled', at: '20 Nov', d: '15 Nov 2026', n: 6, type: 'static' },
   { t: 'Handleless oak', path: '/kitchens/handleless/oak', st: 'held', d: '14 Nov 2026', n: 4, type: 'static' },
   { t: 'Our workshop', path: '/our-workshop', st: 'draft', d: '11 Nov 2026', n: 5, type: 'static' },
-  { t: 'Showroom', path: 'Template for showrooms', uses: '3 showrooms', d: '8 Nov 2026', n: 8, type: 'dynamic' },
+  { t: 'Showroom', path: 'Template for showrooms', uses: 'unused', d: '8 Nov 2026', n: 8, type: 'dynamic' },
   { t: 'Brochure request', path: 'Private: nothing routed links to it', st: 'none', d: '2 Nov 2026', n: 3, type: 'static' },
-  { t: 'Kitchen range', path: 'Template for kitchen ranges', uses: '6 ranges', d: '29 Oct 2026', n: 14, type: 'dynamic' },
+  { t: 'Kitchen range', path: 'Template for kitchen ranges', uses: '6 pages', d: '29 Oct 2026', n: 14, type: 'dynamic' },
   { t: 'Privacy policy', path: '/privacy', st: 'live', d: '3 Sep 2026', n: 1, type: 'static' }
 ]
 const STATUS = { live: ['success', 'Live'], scheduled: ['accent', 'Scheduled'], draft: ['neutral', 'Not live'], held: ['warning', 'Held back by parent'], none: ['neutral', 'No route'] }
 const statusOf = r => r.uses ? ['neutral', `Template · ${r.uses}`, true] : [STATUS[r.st][0], STATUS[r.st][1] + (r.st === 'scheduled' ? ` · ${r.at}` : '')]
+const stGlyph = (r, tone) => r.uses ? g('tpl', 'c-muted') : r.st === 'scheduled' ? g('wait', 'c-accent') : `<span class="bd tone-${tone}"></span>`
+const badgeMark = st => st === 'scheduled' ? g('wait', 'bg') : '<span class="bd"></span>'
 const TYPES = [['static', 'Static'], ['dynamic', 'Dynamic']]
 const typeName = t => (TYPES.find(x => x[0] === t) || [])[1]
 function listHTML (p) {
@@ -3714,13 +4080,27 @@ function rowHTML (r) {
   const [tone, label, tpl] = statusOf(r)
   return `<div class="lrow" role="row">
     <span class="c cc c-sel" role="cell"><label class="cbhit"><input type="checkbox" class="cb" aria-label="Select ${esc(r.t)}"></label></span>
-    <span class="c" role="cell"><span class="ptl"><a class="ptitle" href="#list" onclick="return false" aria-label="${esc(r.t)}, edit settings">${esc(r.t)}</a><span class="tdot t-${r.type}" role="img" aria-label="${typeName(r.type)}"></span></span><span class="psub wide">${esc(r.path)}</span><span class="psub narrow">${tpl ? '' : `<span class="bd tone-${tone}"></span>`}<span class="stw">${esc(label)}</span><span class="sep">·</span><span class="sep">${esc(r.d.replace(' 2026', ''))}</span>${tpl ? '' : `<span class="sep">·</span><span class="pth">${esc(r.path)}</span>`}</span></span>
-    <span class="c c-badge" role="cell"><span class="badge ${tone}">${tpl ? '' : '<span class="bd"></span>'}${esc(label)}</span></span>
+    <span class="c" role="cell"><span class="ptl"><a class="ptitle" href="#list" onclick="return false" aria-label="${esc(r.t)}, edit settings">${esc(r.t)}</a><span class="tdot t-${r.type}" role="img" aria-label="${typeName(r.type)}"></span></span><span class="psub wide">${esc(r.path)}</span><span class="psub narrow"><span class="slot" aria-hidden="true">${stGlyph(r, tone)}</span><span class="stw">${esc(label)}</span>${r.st === 'scheduled' ? '' : `<span class="sep">·</span><span class="sep">edited ${esc(r.d.replace(' 2026', ''))}</span>`}${tpl ? '' : `<span class="sep">·</span><span class="pth">${esc(r.path)}</span>`}</span></span>
+    <span class="c c-badge" role="cell"><span class="badge ${tone}">${tpl ? '' : badgeMark(r.st)}${esc(label)}</span></span>
     <span class="c c-meta num" role="cell">${r.d}</span>
     <span class="c c-meta num" role="cell">${r.n}</span>
     <span class="c acts" role="cell"><button type="button" class="btn ghost icon a-wide" aria-label="Go to page: ${esc(r.t)}" data-go="${esc(r.t)}">${g('go')}</button><button type="button" class="btn ghost icon" aria-label="More actions for ${esc(r.t)}" data-title="${esc(r.t)}" data-more>${g('more')}</button></span>
   </div>`
 }
+const SKEL = n => '<div class="skel" aria-hidden="true"><span><i class="l1"></i><i class="l2"></i></span><i></i></div>'.repeat(n)
+const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches
+function loadingState (busyEl, msgEl, { noun = 'pages', announce = true } = {}) {
+  busyEl.setAttribute('aria-busy', 'true')
+  const txt = $('[data-lt]', msgEl)
+  msgEl.hidden = true
+  txt.textContent = `Loading ${noun}…`
+  if (announce) pageLive.say(`Loading ${noun}`, 0)
+  msgEl.hidden = !reducedMotion()
+  const t1 = 0
+  const t5 = setTimeout(() => { txt.textContent = 'Still loading…'; msgEl.hidden = false }, 5000)
+  return () => { clearTimeout(t1); clearTimeout(t5); busyEl.removeAttribute('aria-busy') }
+}
+const lloadHTML = () => '<div class="lload" data-lmsg hidden><span class="spin sm" aria-hidden="true"></span><span data-lt>Loading pages…</span></div>'
 function wireList (root) {
   const rowsEl = $('[data-rows]', root)
   const q = $('[data-q]', root)
@@ -3755,6 +4135,19 @@ function wireList (root) {
     draw()
   }))
   $('[data-select]', root).addEventListener('commit', e => { sort = e.detail; draw() })
+  let stop = null
+  let doneT = null
+  root.loading = (on, ms) => {
+    clearTimeout(doneT)
+    stop && stop(); stop = null
+    if (!on) { draw(); return }
+    const grid = $('.lgrid', root)
+    grid.hidden = false
+    empty.hidden = true
+    rowsEl.innerHTML = lloadHTML() + SKEL(6)
+    stop = loadingState(grid, $('[data-lmsg]', rowsEl))
+    if (ms) doneT = setTimeout(() => { stop && stop(); stop = null; draw(); pageLive.say(`${PAGES.length} pages loaded`, 0) }, ms)
+  }
   draw()
 }
 
@@ -3798,10 +4191,25 @@ function boot () {
   $('#list-narrow').innerHTML = listHTML('n')
   wireList($('#list-narrow'))
   $('#list-states').innerHTML = `
-    <div class="kit list" role="region" aria-busy="true" aria-label="Loading pages">${'<div class="skel"><i class="two"></i><i></i></div>'.repeat(3)}</div>
+    <div class="kit list" role="region" aria-label="Pages, loading" data-lstate>${lloadHTML()}${SKEL(3)}</div>
     <div class="kit list"><div class="lstate"><b>No pages yet</b><span>Pages you add appear here.</span><button type="button" class="btn solid withicon" aria-label="Create page">${g('plus')}Page</button></div></div>
     <div class="kit list" style="padding:1rem"><div class="alert danger" role="alert">${g('error', 'c-danger')}<b>Pages couldn't be loaded.</b><p>The list below is from 2 minutes ago.</p><div class="acts"><button type="button" class="btn soft">Retry</button></div></div><div class="lgrid" role="table" style="margin-top:.5rem" aria-label="Pages, 2 minutes old">${PAGES.slice(0, 3).map(rowHTML).join('')}</div></div>`
 
+  const lst = $('[data-lstate]')
+  const lstStart = () => loadingState(lst, $('[data-lmsg]', lst), { announce: false })
+  let lstStop = lstStart()
+  const lists = [$('#list-wide'), $('#list-narrow')]
+  $$('#list-sim [data-lsim]').forEach(b => b.addEventListener('click', () => {
+    const k = b.dataset.lsim
+    if (k === 'hold') {
+      const on = b.getAttribute('aria-pressed') !== 'true'
+      b.setAttribute('aria-pressed', String(on))
+      lists.forEach(l => l.loading(on))
+    } else if (k === 'once') {
+      $('[data-lsim="hold"]').setAttribute('aria-pressed', 'false')
+      lists.forEach(l => l.loading(true, 7000))
+    } else if (k === 'states') { lstStop(); lstStop = lstStart() }
+  }))
   $('#fb-row').innerHTML = `
     <div class="bf"><label class="bl" for="fb-title">Title</label><div class="f w-lg"><input id="fb-title" value="Summer opening hours"><span class="st"></span></div></div>
     <span class="dv"></span>
