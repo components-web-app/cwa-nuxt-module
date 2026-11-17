@@ -85,9 +85,11 @@
 </template>
 
 <script setup lang="ts">
+import { layoutsConfig } from '#build/cwa-config'
+import { styleSelectOptions } from '#cwa/admin/style-options'
 import { computed } from 'vue'
 import { useItemPage } from '#cwa-layer/_composables/useItemPage'
-import { definePageMeta, useCwa } from '#imports'
+import { definePageMeta } from '#imports'
 import type { SelectOption } from '#cwa/composables/cwa-select-input'
 import ResourceModal from '#cwa/templates/components/core/admin/ResourceModal.vue'
 import ResourceModalTabs from '#cwa/templates/components/core/admin/ResourceModalTabs.vue'
@@ -118,7 +120,7 @@ const layoutComponentOptions = computed(() => {
   for (const componentName of layoutComponentNames.value) {
     const cleanName = cleanUiName(componentName)
     options.push({
-      label: $cwa.layoutsConfig?.[cleanName]?.name || cleanName,
+      label: layoutsConfig[cleanName]?.name || cleanName,
       value: componentName,
     })
   }
@@ -150,24 +152,7 @@ const layoutStyleOptions = computed(() => {
   if (!localResourceData.value?.uiComponent) {
     return []
   }
-  const cleanName = cleanUiName(localResourceData.value?.uiComponent)
-  const configuredClasses = $cwa.layoutsConfig?.[cleanName]?.classes
-  if (!configuredClasses) {
-    return []
-  }
-  const options: SelectOption[] = [
-    {
-      label: 'Default',
-      value: null,
-    },
-  ]
-  for (const [label, value] of Object.entries(configuredClasses)) {
-    options.push({
-      label,
-      value,
-    })
-  }
-  return options
+  return styleSelectOptions(layoutsConfig[cleanUiName(localResourceData.value.uiComponent)]?.styles)
 })
 
 const tabs = computed<ResourceModalTab[]>(() => {
@@ -185,8 +170,6 @@ const tabs = computed<ResourceModalTab[]>(() => {
   }
   return t
 })
-
-const $cwa = useCwa()
 
 const { isAdding, isLoading, isUpdating, localResourceData, formatDate, deleteResource, saveResource, saveTitle } = useItemPage({
   createEndpoint: '/_/layouts',

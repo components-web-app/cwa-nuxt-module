@@ -68,45 +68,6 @@ export default defineNuxtConfig({
   },
   aiReady: { enabled: false },
   cwa: {
-    resources: {
-      Form: {
-        name: 'Example Form',
-        description: '<p>Demonstrates all form field types: text, password, select, radio, checkbox, multi-select, and collections.</p>',
-      },
-      NavigationLink: {
-        name: 'Link',
-        description: '<p>Use this component to display a link for a website user to click so they can visit another page or URL</p>',
-      },
-      HtmlContent: {
-        name: 'Body Text',
-        description: '<p>Easily create a body of text with the ability to style and format the content using themes in keeping with your website.</p>',
-      },
-      Image: {
-        instantAdd: true,
-      },
-    },
-    layouts: {
-      Primary: {
-        name: 'Primary Layout',
-        classes: {
-          'Blue Background': ['bg-blue-600'],
-        },
-      },
-    },
-    pages: {
-      PrimaryPageTemplate: {
-        name: 'Primary Page',
-        classes: {
-          'Big Text': ['text-2xl'],
-        },
-      },
-      NestedTopicTemplate: {
-        name: 'Nested Topic Page',
-      },
-      NestedSubPageTemplate: {
-        name: 'Nested Sub-Page',
-      },
-    },
     pageData: {
       BlogArticleData: {
         name: 'Blog Articles',

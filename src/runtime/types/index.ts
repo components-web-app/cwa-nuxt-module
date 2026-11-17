@@ -10,11 +10,32 @@ export type CwaAllowedComponent = CwaComponentName | `/${string}`
 export type ManagerTab = GlobalComponentNames | DefineComponent<object, object, any>
 export type ComponentUi = GlobalComponentNames
 
-export interface CwaResourceMeta {
+export interface CwaStyle {
+  label: string
+  classes: string
+}
+
+export interface CwaStyles {
+  [key: string]: CwaStyle
+}
+
+export interface CwaTemplateConfig {
   name?: string
+  styles?: CwaStyles
+}
+
+export interface CwaUiVariantConfig {
+  styles?: CwaStyles
+  multipleStyles?: boolean
+}
+
+export interface CwaComponentConfig extends CwaTemplateConfig, CwaUiVariantConfig {
   description?: string
   instantAdd?: boolean
   defaultData?: Record<any, any>
+}
+
+export interface CwaResourceMeta extends CwaComponentConfig {
   managerTabs?: ManagerTab[]
   ui?: ComponentUi[]
 }
@@ -23,10 +44,9 @@ export interface CwaResourcesMeta {
   [type: string]: CwaResourceMeta
 }
 
-export interface CwaUiMeta {
-  name?: string
-  classes?: {
-    [name: string]: string[] | string
+export interface CwaStyleClasses {
+  [componentName: string]: {
+    [key: string]: string
   }
 }
 
@@ -48,7 +68,6 @@ export type SiteConfigParams = {
 export interface CwaModuleOptions {
   storeName: string
   siteConfig: Partial<SiteConfigParams>
-  resources: CwaResourcesMeta
   pagesDepth?: number
   routeCacheLimit?: number
   staticRender?: boolean
@@ -70,14 +89,9 @@ export interface CwaModuleOptions {
     sharedMaxAge?: number
     staleWhileRevalidate?: number
   }
-  layouts?: {
-    [type: string]: CwaUiMeta
-  }
-  pages?: {
-    [type: string]: CwaUiMeta
-  }
   pageData?: {
-    [resourceClass: string]: Pick<CwaUiMeta, 'name'> & {
+    [resourceClass: string]: {
+      name?: string
       properties?: { [propertyName: string]: string }
       metaFields?: {
         field: string

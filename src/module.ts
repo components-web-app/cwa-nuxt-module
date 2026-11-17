@@ -2,8 +2,6 @@ import { join } from 'path'
 import path from 'node:path'
 import { statSync, readFileSync } from 'node:fs'
 import { defu } from 'defu'
-import mergeWith from 'lodash-es/mergeWith'
-import isArray from 'lodash-es/isArray'
 import {
   addImports,
   addImportsDir,
@@ -12,6 +10,7 @@ import {
   addServerTemplate,
   addTemplate,
   addTypeTemplate,
+  addVitePlugin,
   createResolver,
   defineNuxtModule,
   extendPages,
@@ -27,7 +26,8 @@ import type { Component, ModuleDependencies, Nuxt, NuxtPage, ViteConfig } from '
 import { READINESS_DEFAULTS } from './runtime/server/readiness'
 import { defaultSiteConfig } from './runtime/composables/useCwaSiteConfig'
 import { scanComponentGroupDeclarations } from './component-group-declarations'
-import type { CwaModuleOptions, CwaResourcesMeta, GlobalComponentNames } from './runtime/types'
+import { scanCwaConfigDeclarations, stripDefineCwaConfig } from './cwa-config-declarations'
+import type { CwaModuleOptions, CwaResourcesMeta, CwaStyleClasses, CwaStyles, GlobalComponentNames } from './runtime/types'
 
 declare module 'nuxt/schema' {
   interface PublicRuntimeConfig {
@@ -81,6 +81,17 @@ function createDefaultCwaPages(
 }
 
 export const NAME = '@cwa/nuxt' as const
+
+const BUILT_IN_RESOURCES_CONFIG: CwaResourcesMeta = {
+  ComponentPosition: {
+    name: 'Position',
+    description: '<p>Dynamic components can be used on dynamic pages to specify what component should be displayed from a data page in any given location.</p><p>You must select the reference from the data page to load into this position below.</p>',
+    instantAdd: true,
+  },
+  ComponentGroup: {
+    name: 'Group',
+  },
+}
 
 const OG_IMAGE_RENDERER_PACKAGES = ['satori', '@resvg/resvg-js'] as const
 
@@ -147,16 +158,6 @@ export default defineNuxtModule<CwaModuleOptions>({
   },
   defaults: {
     storeName: 'cwa',
-    resources: {
-      ComponentPosition: {
-        name: 'Position',
-        description: '<p>Dynamic components can be used on dynamic pages to specify what component should be displayed from a data page in any given location.</p><p>You must select the reference from the data page to load into this position below.</p>',
-        instantAdd: true,
-      },
-      ComponentGroup: {
-        name: 'Group',
-      },
-    },
     siteConfig: defaultSiteConfig,
   },
   async setup(options, nuxt) {
@@ -234,7 +235,8 @@ export default defineNuxtModule<CwaModuleOptions>({
     })
 
     logger.info(`Registering user components for CWA...`)
-    const userComponentsPath = join(appDir, 'cwa', 'components')
+    const cwaAppDir = join(appDir, 'cwa')
+    const userComponentsPath = join(cwaAppDir, 'components')
     nuxt.options.alias['#cwaComponents'] = userComponentsPath
 
     function resolveUserComponents(components: Component[]) {
@@ -285,8 +287,25 @@ export default defineNuxtModule<CwaModuleOptions>({
       return component.pascalName.replace(/^CwaComponent/, '')
     }
 
-    function extendCwaOptions(components: Component[]) {
-      const defaultResourcesConfig: CwaResourcesMeta = {}
+    const reportedConfigUncheckable = new Set<string>()
+    function scanCwaConfig(components: Component[]) {
+      return scanCwaConfigDeclarations({
+        templates: components.filter(isCwaTemplate),
+        readFile: readSource,
+        onUncheckable: (filePath, reason) => {
+          const key = `${filePath}\0${reason}`
+          if (reportedConfigUncheckable.has(key)) {
+            return
+          }
+          reportedConfigUncheckable.add(key)
+          logger.warn(`${NAME}: the defineCwaConfig in ${filePath} is ignored, because it ${reason}. Pass a single object literal.`)
+        },
+      })
+    }
+
+    function resolveCwaConfig(components: Component[]) {
+      const declarations = scanCwaConfig(components)
+      const resourcesConfig: CwaResourcesMeta = { ...BUILT_IN_RESOURCES_CONFIG }
 
       const { allUserComponents, userComponents } = resolveUserComponents(components)
       const componentsByPath: { [key: string]: Component } = allUserComponents.reduce((obj, value) => ({ ...obj, [value.filePath]: value }), {})
@@ -321,19 +340,36 @@ export default defineNuxtModule<CwaModuleOptions>({
         const ui: GlobalComponentNames[] = resolveComponentNames(uiDir)
 
         const resourceType = toResourceType(component)
-        defaultResourcesConfig[resourceType] = {
-          // auto name with spaces in place of pascal/camel case
+        resourcesConfig[resourceType] = {
           name: resourceType.replace(/(?!^)([A-Z])/g, ' $1'),
           managerTabs,
           ui,
+          ...declarations.components[resourceType],
         }
       }
-      const resources = mergeWith({}, defaultResourcesConfig, options.resources, (a, b) => {
-        if (isArray(a)) {
-          return b.concat(a)
-        }
-      })
-      return { ...options, resources, staticRender: options.staticRender ?? hasStaticRouteRules() }
+      return {
+        resourcesConfig,
+        uiConfig: declarations.ui,
+        layoutsConfig: declarations.layouts,
+        pagesConfig: declarations.pages,
+      }
+    }
+
+    function resolveStyleClasses(components: Component[]): CwaStyleClasses {
+      const { components: componentConfigs, ui, layouts, pages } = scanCwaConfig(components)
+      const byComponent: [string, CwaStyles | undefined][] = [
+        ...Object.entries(componentConfigs).map(([type, config]): [string, CwaStyles | undefined] => [`CwaComponent${type}`, config.styles]),
+        ...Object.entries(ui).map(([name, config]): [string, CwaStyles | undefined] => [name, config.styles]),
+        ...Object.entries(layouts).map(([name, config]): [string, CwaStyles | undefined] => [`CwaLayout${name}`, config.styles]),
+        ...Object.entries(pages).map(([name, config]): [string, CwaStyles | undefined] => [`CwaPage${name}`, config.styles]),
+      ]
+      return Object.fromEntries(byComponent
+        .filter(([, styles]) => styles && Object.keys(styles).length)
+        .map(([name, styles]) => [name, Object.fromEntries(Object.entries(styles!).map(([key, style]) => [key, style.classes]))]))
+    }
+
+    function extendCwaOptions() {
+      return { ...options, staticRender: options.staticRender ?? hasStaticRouteRules() }
     }
 
     function resolveSessionEndCaches(): string[] {
@@ -413,10 +449,34 @@ export const componentGroupDeclarations: ComponentGroupDeclarations = ${JSON.str
       })
 
       addTemplate({
-        filename: 'cwa-options.ts',
+        filename: 'cwa-config.ts',
+        write: true,
         getContents: ({ app }) => {
+          const { resourcesConfig, uiConfig, layoutsConfig, pagesConfig } = resolveCwaConfig(app.components)
+          return `import type { CwaResourcesMeta, CwaTemplateConfig, CwaUiVariantConfig } from '#cwa/types'
+export const resourcesConfig: CwaResourcesMeta = ${JSON.stringify(resourcesConfig, undefined, 2)}
+export const uiConfig: Record<string, CwaUiVariantConfig> = ${JSON.stringify(uiConfig, undefined, 2)}
+export const layoutsConfig: Record<string, CwaTemplateConfig> = ${JSON.stringify(layoutsConfig, undefined, 2)}
+export const pagesConfig: Record<string, CwaTemplateConfig> = ${JSON.stringify(pagesConfig, undefined, 2)}
+`
+        },
+      })
+
+      addTemplate({
+        filename: 'cwa-styles.ts',
+        write: true,
+        getContents: ({ app }) => {
+          return `import type { CwaStyleClasses } from '#cwa/types'
+export const styleClasses: CwaStyleClasses = ${JSON.stringify(resolveStyleClasses(app.components), undefined, 2)}
+`
+        },
+      })
+
+      addTemplate({
+        filename: 'cwa-options.ts',
+        getContents: () => {
           return `import type { CwaModuleOptions } from '#cwa/types';
-export const options:CwaModuleOptions = ${JSON.stringify(extendCwaOptions(app.components), undefined, 2)}
+export const options:CwaModuleOptions = ${JSON.stringify(extendCwaOptions(), undefined, 2)}
 export const currentModulePackageInfo:{ version: string, name: string } = ${JSON.stringify({ version, name }, undefined, 2)}
 `
         },
@@ -581,12 +641,21 @@ declare module 'vue-router' {
       }
       if (['add', 'change', 'unlink'].includes(event) && relativePath.endsWith('.vue')) {
         filenames.push('cwa-component-group-declarations.ts')
+        if (path.startsWith(cwaAppDir + '/')) {
+          filenames.push('cwa-config.ts', 'cwa-styles.ts')
+        }
       }
       if (filenames.length) {
         await updateTemplates({
           filter: template => filenames.includes(template.filename),
         })
       }
+    })
+
+    addVitePlugin({
+      name: 'cwa:define-cwa-config',
+      enforce: 'pre',
+      transform: (code: string, id: string) => stripDefineCwaConfig(code, id),
     })
 
     nuxt.hook('vite:extendConfig', (config: Readonly<ViteConfig>) => {

@@ -1,10 +1,16 @@
 // @vitest-environment nuxt
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { computed, reactive } from 'vue'
-import { flushPromises, mount } from '@vue/test-utils'
+import { flushPromises, mount, renderToString } from '@vue/test-utils'
 import { mockNuxtImport } from '@nuxt/test-utils/runtime'
 import CwaRootLayout from './CwaRootLayout.vue'
 import * as cwaComposable from '#cwa/composables/cwa'
+
+const styleClasses = vi.hoisted(() => ({
+  CwaLayoutPrimary: { blue: 'bg-blue-600' },
+  CwaLayoutSecondary: { dark: 'bg-black' },
+}))
+vi.mock('#build/cwa-styles', () => ({ styleClasses }))
 
 const headOptions: Record<string, any>[] = []
 const mockUseHead = vi.hoisted(() => vi.fn())
@@ -22,6 +28,7 @@ vi.mock('vue-router', async (importOriginal) => {
 type SetupOpts = {
   concatTitle?: boolean
   uiComponent?: string
+  uiClassNames?: string[]
   layoutIri?: string
   registeredComponents?: string[]
   isAdmin?: boolean
@@ -29,7 +36,7 @@ type SetupOpts = {
   stubs?: Record<string, unknown>
 }
 
-function setup(opts: SetupOpts = {}) {
+function mockCwa(opts: SetupOpts) {
   headOptions.length = 0
   mockUseHead.mockImplementation((options: Record<string, any>) => {
     headOptions.push(options)
@@ -42,7 +49,7 @@ function setup(opts: SetupOpts = {}) {
     auth: { isAdmin: computed(() => opts.isAdmin ?? false) },
     admin: reactive({ isEditing: opts.isEditing ?? false }),
     resources: {
-      layout: computed(() => opts.uiComponent ? { data: { uiComponent: opts.uiComponent } } : undefined),
+      layout: computed(() => opts.uiComponent ? { data: { uiComponent: opts.uiComponent, uiClassNames: opts.uiClassNames } } : undefined),
       layoutIri: computed(() => opts.layoutIri),
     },
     siteConfig: {
@@ -51,9 +58,11 @@ function setup(opts: SetupOpts = {}) {
       },
     },
   } as unknown as ReturnType<typeof cwaComposable.useCwa>))
+  return state
+}
 
-  const wrapper = mount(CwaRootLayout, {
-    shallow: true,
+function mountOptions(opts: SetupOpts) {
+  return {
     slots: { default: '<div class="page-content" />' },
     global: {
       components: Object.fromEntries((opts.registeredComponents ?? []).map(name => [name, { name, template: '<div><slot /></div>' }])),
@@ -63,7 +72,12 @@ function setup(opts: SetupOpts = {}) {
         ...opts.stubs,
       },
     },
-  })
+  }
+}
+
+function setup(opts: SetupOpts = {}) {
+  const state = mockCwa(opts)
+  const wrapper = mount(CwaRootLayout, { shallow: true, ...mountOptions(opts) })
 
   const titleTemplate = headOptions.find(o => o.titleTemplate)?.titleTemplate
   return { wrapper, state, titleTemplate }
@@ -144,5 +158,31 @@ describe('CwaRootLayout unresolvable uiComponent', () => {
     const { wrapper } = setup({ registeredComponents: ['CwaLayoutPrimary'] })
     expect(wrapper.findComponent({ name: 'CwaUiAlertWarning' }).exists()).toBe(false)
     expect(wrapper.find('.page-content').exists()).toBe(true)
+  })
+})
+
+describe('CwaRootLayout style keys (#453)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  function render(opts: SetupOpts) {
+    mockCwa(opts)
+    return renderToString(CwaRootLayout, mountOptions({ ...opts, stubs: { LazyCwaAdminHeader: true, OutdatedContentNotice: true, ...opts.stubs } }))
+  }
+
+  test('the server render of the layout resolves the stored keys against the layout\'s own styles', async () => {
+    const html = await render({ uiComponent: 'CwaLayoutPrimary', uiClassNames: ['style:blue', 'style:dark'], layoutIri: '/_/layouts/1', registeredComponents: ['CwaLayoutPrimary', 'CwaLayoutSecondary'] })
+
+    expect(html).toContain('<div class="cwa:relative bg-blue-600">')
+    expect(html).not.toContain('bg-black')
+    expect(html).not.toContain('style:')
+  })
+
+  test('another layout resolves the same keys against its own styles', async () => {
+    const html = await render({ uiComponent: 'CwaLayoutSecondary', uiClassNames: ['style:blue', 'style:dark'], layoutIri: '/_/layouts/1', registeredComponents: ['CwaLayoutPrimary', 'CwaLayoutSecondary'] })
+
+    expect(html).toContain('<div class="cwa:relative bg-black">')
+    expect(html).not.toContain('bg-blue-600')
   })
 })

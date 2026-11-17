@@ -1,3 +1,4 @@
+import { resourcesConfig } from '#build/cwa-config'
 import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/resources/resource-utils'
 import { NEW_RESOURCE_IRI } from '#cwa/storage/stores/resources/state'
 import { consola } from 'consola'
@@ -20,13 +21,7 @@ import type { CwaCurrentResourceInterface } from '#cwa/storage/stores/resources/
 
 const manageableInstances = lazyImport(() => import('./manageable-instances'))
 
-export type StyleOptions = {
-  multiple?: boolean
-  classes: { [name: string]: string | string[] }
-}
-
 export type ManageableResourceOps = Ref<{
-  styles?: StyleOptions
   disabled?: boolean
 }>
 
@@ -327,7 +322,6 @@ export default class ManageableResource {
         resource: this.currentResource,
       })),
       ui: this.resourceConfig?.ui,
-      styles: computed(() => this.ops.value.styles),
       childIris: this.childIris,
     }
   }
@@ -349,10 +343,10 @@ export default class ManageableResource {
     if (!currentResource) {
       return
     }
-    if (!this.$cwa.resourcesConfig || !this.resourceType) {
+    if (!this.resourceType) {
       return
     }
-    return this.$cwa.resourcesConfig[this.resourceType]
+    return resourcesConfig[this.resourceType]
   }
 
   private get displayName() {

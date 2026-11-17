@@ -1,6 +1,5 @@
 <script lang="ts" setup>
-import { computed, onMounted, ref, watch, watchEffect } from 'vue'
-import { watchOnce } from '@vueuse/core'
+import { computed, onMounted, ref, watchEffect } from 'vue'
 import {
   useCwaResourceManagerTab,
 } from '#cwa/composables/cwa-resource-manager-tab'
@@ -10,14 +9,16 @@ import { useCwaResourceModel } from '#cwa/composables/cwa-resource-model'
 import { useCwaSelect } from '#cwa/composables/cwa-select'
 import { useDataResolver } from '#cwa/templates/components/core/useDataResolver'
 import type { SelectOption } from '#cwa/composables/cwa-select-input'
-import { deriveSelectedStyles, mergeSelectedStyles } from '#cwa/composables/cwa-styles'
+import { selectStyleKeys, selectedStyleKeys } from '#cwa/composables/cwa-styles'
+import type { CwaUiVariantConfig } from '#cwa/types'
+import { resourcesConfig, uiConfig } from '#build/cwa-config'
 
 const { exposeMeta, $cwa, iri } = useCwaResourceManagerTab({
   name: 'UI',
   order: DEFAULT_TAB_ORDER,
 })
 
-const savedUiComponent = computed(() => iri.value ? $cwa.resources.getResource(iri.value).value?.data?.uiComponent : undefined)
+const savedData = computed(() => iri.value ? $cwa.resources.getResource(iri.value).value?.data : undefined)
 
 const uiComponentModel = useCwaResourceModel<string>(iri, 'uiComponent', {
   debounceTime: 0,
@@ -47,12 +48,20 @@ const uiOptions = computed(() => {
   return options
 })
 
-const styleClasses = computed<Record<string, string | string[]>>(() => current.value?.styles?.value?.classes || {})
-const isMultipleStyles = computed(() => !!current.value?.styles?.value?.multiple)
-const showStyleSelect = computed(() => Object.keys(styleClasses.value).length > 0)
+const styleConfig = computed<CwaUiVariantConfig | undefined>(() => {
+  const uiComponent = savedData.value?.uiComponent
+  if (uiComponent) {
+    return uiConfig[uiComponent]
+  }
+  const type = savedData.value?.['@type']
+  return type ? resourcesConfig[type] : undefined
+})
+const styles = computed(() => styleConfig.value?.styles ?? {})
+const isMultipleStyles = computed(() => !!styleConfig.value?.multipleStyles)
+const showStyleSelect = computed(() => Object.keys(styles.value).length > 0)
 
 const styleNameOptions = computed<SelectOption[]>(() =>
-  Object.keys(styleClasses.value).map(name => ({ label: name, value: name })),
+  Object.entries(styles.value).map(([key, style]) => ({ label: style.label, value: key })),
 )
 const singleStyleOptions = computed<SelectOption[]>(() => [
   { label: 'Default', value: null },
@@ -60,24 +69,22 @@ const singleStyleOptions = computed<SelectOption[]>(() => [
 ])
 
 const selectedStyleNames = computed<string[]>({
-  get: () => deriveSelectedStyles(uiClassNamesModel.model.value, styleClasses.value),
-  set: (names) => {
-    const merged = mergeSelectedStyles(names, styleClasses.value)
-    uiClassNamesModel.model.value = merged.length ? merged : null
+  get: () => selectedStyleKeys(uiClassNamesModel.model.value, styles.value),
+  set: (keys) => {
+    uiClassNamesModel.model.value = selectStyleKeys(uiClassNamesModel.model.value, styles.value, keys)
   },
 })
 const selectedStyleName = computed<string | null>({
-  get: () => deriveSelectedStyles(uiClassNamesModel.model.value, styleClasses.value)[0] ?? null,
-  set: (name) => {
-    uiClassNamesModel.model.value = name ? mergeSelectedStyles([name], styleClasses.value) : null
+  get: () => selectedStyleKeys(uiClassNamesModel.model.value, styles.value)[0] ?? null,
+  set: (key) => {
+    uiClassNamesModel.model.value = selectStyleKeys(uiClassNamesModel.model.value, styles.value, key ? [key] : [])
   },
 })
 
 const disabled = exposeMeta.disabled
 
 watchEffect(() => {
-  const classesObj = current.value?.styles?.value?.classes
-  disabled.value = (!classesObj || !Object.keys(classesObj).length) && !current.value?.ui?.length
+  disabled.value = !showStyleSelect.value && !current.value?.ui?.length
 })
 
 const components = computed(() => {
@@ -101,15 +108,6 @@ const { startDataResolver } = useDataResolver(componentMeta, {
 startDataResolver()
 
 onMounted(() => {
-  // trying to update ui class names too early, as the result may be a different IRI and sending in another
-  // request before database is updated can result in sql error
-  // when watching uiSelect.model
-  watch(uiSelect.model, () => {
-    watchOnce(savedUiComponent, () => {
-      uiClassNamesModel.model.value = null
-    })
-  })
-
   watchEffect(() => {
     uiSelect.options.value = uiOptions.value
   })

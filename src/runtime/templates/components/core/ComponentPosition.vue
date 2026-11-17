@@ -67,7 +67,6 @@ watchEffect(() => {
   if (!component) {
     return
   }
-  resourceManagerOps.value.styles = component.cwaResource?.styles
   resourceManagerOps.value.disabled = !!component.disableManager
 })
 

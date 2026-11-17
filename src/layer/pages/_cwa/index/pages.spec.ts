@@ -5,9 +5,13 @@ import { mount } from '@vue/test-utils'
 import { mockNuxtImport } from '@nuxt/test-utils/runtime'
 import PagesListPage from './pages.vue'
 
-const { mockUseCwa } = vi.hoisted(() => ({
-  mockUseCwa: vi.fn(),
+const cwaConfig = vi.hoisted(() => ({
+  resourcesConfig: {} as Record<string, any>,
+  uiConfig: {} as Record<string, any>,
+  layoutsConfig: {} as Record<string, any>,
+  pagesConfig: {} as Record<string, any>,
 }))
+vi.mock('#build/cwa-config', () => cwaConfig)
 
 vi.mock('#cwa-layer/_composables/useListPage', () => ({
   useListPage: () => ({ goToAdd: vi.fn(), triggerReload: vi.fn(), computedItemLink: vi.fn(() => '/_cwa/pages/x') }),
@@ -16,15 +20,12 @@ vi.mock('#cwa/composables/cwa-query-bound-model', () => ({
   useQueryBoundModel: () => ({ model: ref(['true', 'false']) }),
 }))
 
-mockNuxtImport('useCwa', () => mockUseCwa)
 mockNuxtImport('useCwaResourceRoute', () => () => ({ getInternalResourceLink: vi.fn() }))
 
 function setup(uiComponent: string) {
-  mockUseCwa.mockReturnValue({
-    pagesConfig: {
-      PrimaryPageTemplate: { name: 'Primary Page' },
-    },
-  })
+  cwaConfig.pagesConfig = {
+    PrimaryPageTemplate: { name: 'Primary Page' },
+  }
   const item = { '@id': '/_/pages/1', 'reference': 'Home', 'isTemplate': false, uiComponent }
   return mount(PagesListPage, {
     shallow: true,
@@ -48,7 +49,6 @@ describe('/_cwa/pages page UI label', () => {
 
   test('shows the configured page UI name for a page stored with the full CwaPage name', () => {
     const wrapper = setup('CwaPagePrimaryPageTemplate')
-    expect(mockUseCwa).toHaveBeenCalled()
     expect(wrapper.text()).toContain('UI: Primary Page')
   })
 

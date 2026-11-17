@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { resourcesConfig } from '#build/cwa-config'
 import { computed, ref } from 'vue'
 import { PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { navigateTo, useRouter } from '#app/composables/router'
@@ -87,7 +88,7 @@ function activity(peer: PresencePeer) {
     return 'Viewing'
   }
   const type = stored(peer.component)?.['@type']
-  return `${peer.state === 'editing' ? 'Editing' : 'Selected'} ${type ? $cwa.resourcesConfig[type]?.name || type : 'a component'}`
+  return `${peer.state === 'editing' ? 'Editing' : 'Selected'} ${type ? resourcesConfig[type]?.name || type : 'a component'}`
 }
 
 function locationOf(page: string) {

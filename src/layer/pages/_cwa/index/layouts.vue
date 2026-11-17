@@ -28,17 +28,17 @@
 </template>
 
 <script lang="ts" setup>
+import { layoutsConfig } from '#build/cwa-config'
 import { ref } from 'vue'
 import ListHeading from '#cwa/templates/components/core/admin/ListHeading.vue'
 import ListContent from '#cwa/templates/components/core/admin/ListContent.vue'
 import ListFilter from '#cwa/templates/components/core/admin/ListFilter.vue'
 import ResourceModalOverlay from '#cwa/templates/components/core/admin/ResourceModalOverlay.vue'
 import { useListPage } from '#cwa-layer/_composables/useListPage'
-import { definePageMeta, useCwa, useHead } from '#imports'
+import { definePageMeta, useHead } from '#imports'
 
 const listContent = ref<InstanceType<typeof ListContent> | null>(null)
 
-const $cwa = useCwa()
 const { goToAdd, triggerReload, computedItemLink } = useListPage(listContent)
 
 const orderOptions = [
@@ -62,7 +62,7 @@ const orderOptions = [
 
 function getDisplayLayoutUi(ui: string) {
   const cleanName = ui.replace(/^CwaLayout/, '')
-  return $cwa.layoutsConfig?.[cleanName]?.name || cleanName
+  return layoutsConfig[cleanName]?.name || cleanName
 }
 
 useHead({

@@ -4,7 +4,14 @@ import { ref } from 'vue'
 import { mount } from '@vue/test-utils'
 import LayoutItemPage from './[iri].vue'
 import { componentNames } from '#components'
-import * as cwaComposable from '#cwa/composables/cwa'
+
+const cwaConfig = vi.hoisted(() => ({
+  resourcesConfig: {} as Record<string, any>,
+  uiConfig: {} as Record<string, any>,
+  layoutsConfig: {} as Record<string, any>,
+  pagesConfig: {} as Record<string, any>,
+}))
+vi.mock('#build/cwa-config', () => cwaConfig)
 
 const { mockUseItemPage } = vi.hoisted(() => ({
   mockUseItemPage: vi.fn(),
@@ -53,10 +60,7 @@ function setup(opts: { uiComponent?: string | null } = {}) {
     saveTitle: vi.fn(),
   })
 
-  // @ts-expect-error partial mock
-  vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => ({
-    layoutsConfig,
-  }))
+  cwaConfig.layoutsConfig = layoutsConfig
 
   const wrapper = mount(LayoutItemPage, {
     shallow: true,

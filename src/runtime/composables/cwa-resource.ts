@@ -2,9 +2,6 @@ import type { CwaResource } from '#cwa/resources/resource-utils'
 import { computed, getCurrentInstance, onMounted, onUpdated } from 'vue'
 import type { ComputedRef, Ref } from 'vue'
 import { useCwa } from './cwa'
-import { useCwaAutoClass } from './cwa-auto-class'
-import { deriveSelectedStyles } from './cwa-styles'
-import type { StyleOptions } from '#cwa/admin/manageable-resource'
 
 export type IriProp = {
   iri: string
@@ -12,8 +9,6 @@ export type IriProp = {
 
 export interface CwaResourceUtilsOps {
   name?: string
-  styles?: StyleOptions
-  autoClass?: boolean
   manager?: {
     disabled?: boolean
   }
@@ -26,7 +21,6 @@ export interface CwaResourceUiClassNames {
 export interface CwaResourceMeta {
   cwaResource: {
     name?: string
-    styles?: StyleOptions
   }
   disableManager: boolean
 }
@@ -60,11 +54,9 @@ export const useCwaResource = (iri: Ref<string>, ops?: CwaResourceUtilsOps) => {
     $cwa.admin.eventBus.emit('componentUpdated', iri.value)
   })
 
-  const uiStyles = ops?.styles
   const exposeMeta: CwaResourceMeta = {
     cwaResource: {
       name: ops?.name,
-      styles: uiStyles,
     },
     disableManager,
   }
@@ -77,11 +69,8 @@ export const useCwaResource = (iri: Ref<string>, ops?: CwaResourceUtilsOps) => {
     return $cwa.resources.getResource(iri.value)?.value?.data?.uiClassNames
   })
 
-  useCwaAutoClass(uiClassNames, ops)
-
-  const getCurrentStyleName = (resource: CwaResource) => {
-    if (!uiStyles?.classes) return
-    return deriveSelectedStyles(resource.uiClassNames, uiStyles.classes)[0]
+  const getCurrentStyleName = (resource: CwaResource): string | undefined => {
+    return (resource.uiClassNames as string[] | undefined)?.find(entry => entry.startsWith('style:'))?.slice('style:'.length)
   }
 
   return {

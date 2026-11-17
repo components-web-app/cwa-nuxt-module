@@ -22,18 +22,20 @@
 <script setup lang="ts">
 import { computed, ref, toRef } from 'vue'
 import type { IriProp } from '#cwa/composables/cwa-resource'
-import { useCwaComponent, useHtmlContent } from '#imports'
+import { useCwaComponent, useHtmlContent, defineCwaConfig } from '#imports'
 import { useCustomHtmlComponent } from '~/composables/useCustomHtmlComponent'
 
-const props = defineProps<IriProp>()
-const { resource, exposeMeta, $cwa } = useCwaComponent(props, undefined, {
+defineCwaConfig({
+  name: 'Body Text',
+  description: '<p>Easily create a body of text with the ability to style and format the content using themes in keeping with your website.</p>',
+  multipleStyles: true,
   styles: {
-    multiple: true,
-    classes: {
-      'Black Background': 'bg-black border border-white p-2',
-    },
+    'black-bg': { label: 'Black Background', classes: 'bg-black border border-white p-2' },
   },
 })
+
+const props = defineProps<IriProp>()
+const { resource, exposeMeta, $cwa } = useCwaComponent(props)
 defineExpose(exposeMeta)
 
 const htmlContainer = ref<null | HTMLElement>(null)

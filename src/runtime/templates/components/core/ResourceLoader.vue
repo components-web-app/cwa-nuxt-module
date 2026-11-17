@@ -28,6 +28,8 @@ import {
   getResourceTypeFromIri,
 } from '#cwa/resources/resource-utils'
 import Spinner from '#cwa/templates/components/utils/Spinner.vue'
+import { resolveStyleClasses } from '#cwa/composables/cwa-styles'
+import { styleClasses } from '#build/cwa-styles'
 
 const $cwa = useCwa()
 const instance = getCurrentInstance()
@@ -103,7 +105,9 @@ const resourceUiComponent = computed(() => {
 })
 
 const resourceClassNames = computed(() => {
-  return resource.value?.data?.uiClassNames
+  const componentName = typeof resolvedComponent.value === 'string' ? resolvedComponent.value : undefined
+  const classes = resolveStyleClasses(styleClasses, componentName, resource.value?.data?.uiClassNames)
+  return classes.length ? classes : undefined
 })
 
 const hasError = computed(() => {

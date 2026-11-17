@@ -6,6 +6,14 @@ import PageAdminModal from './PageAdminModal.vue'
 import * as cwaComposable from '#cwa/composables/cwa'
 import { componentNames } from '#components'
 
+const cwaConfig = vi.hoisted(() => ({
+  resourcesConfig: {} as Record<string, any>,
+  uiConfig: {} as Record<string, any>,
+  layoutsConfig: {} as Record<string, any>,
+  pagesConfig: {} as Record<string, any>,
+}))
+vi.mock('#build/cwa-config', () => cwaConfig)
+
 const { mockUseItemPage, mockUseParentPageLoader, mockUseParentPageDataLoader } = vi.hoisted(() => ({
   mockUseItemPage: vi.fn(),
   mockUseParentPageLoader: vi.fn(),
@@ -79,9 +87,9 @@ function setup(
     }),
   })
 
+  cwaConfig.pagesConfig = { PrimaryPageTemplate: { name: 'Primary Page Template' } }
   // @ts-expect-error
   vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => ({
-    pagesConfig: { PrimaryPageTemplate: { name: 'Primary Page Template' } },
     fetch: vi.fn().mockReturnValue({
       response: Promise.resolve({ _data: { member: mockLayouts } }),
     }),
@@ -321,9 +329,9 @@ function setupRich(opts: {
     response: Promise.resolve({ _data: { member: opts.layoutsMember ?? mockLayouts } }),
   })
 
+  cwaConfig.pagesConfig = opts.pagesConfig ?? { PrimaryPageTemplate: { name: 'Primary Page Template' } }
   // @ts-expect-error
   vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => ({
-    pagesConfig: opts.pagesConfig ?? { PrimaryPageTemplate: { name: 'Primary Page Template' } },
     fetch,
     getApiDocumentation: vi.fn().mockResolvedValue({}),
     resources: { getResource: vi.fn(opts.getResource ?? (() => ref(null))) },
@@ -503,24 +511,28 @@ describe('PageAdminModal additional coverage', () => {
   })
 
   describe('pageStyleOptions', () => {
-    test('renders Style select with configured classes plus a Default option', () => {
+    test('renders the Style select with each style\'s label, storing style:<key>, plus a Default option (#453)', () => {
       const { wrapper } = setupRich({
         pagesConfig: {
           PrimaryPageTemplate: {
             name: 'Primary',
-            classes: { Wide: 'cwa:max-w-full', Narrow: 'cwa:max-w-prose' },
+            styles: {
+              wide: { label: 'Wide', classes: 'cwa:max-w-full' },
+              narrow: { label: 'Narrow', classes: 'cwa:max-w-prose' },
+            },
           },
         },
       })
       const styleSelect = wrapper.findAllComponents({ name: 'ModalSelect' }).find(s => s.props('label') === 'Style')
       expect(styleSelect).toBeTruthy()
-      const options = styleSelect!.props('options') as Array<{ label: string, value: string | null }>
-      expect(options).toContainEqual({ label: 'Default', value: null })
-      expect(options).toContainEqual({ label: 'Wide', value: 'cwa:max-w-full' })
-      expect(options).toContainEqual({ label: 'Narrow', value: 'cwa:max-w-prose' })
+      expect(styleSelect!.props('options')).toEqual([
+        { label: 'Default', value: null },
+        { label: 'Wide', value: ['style:wide'] },
+        { label: 'Narrow', value: ['style:narrow'] },
+      ])
     })
 
-    test('hides Style select when no classes configured', () => {
+    test('hides Style select when no styles configured', () => {
       const { wrapper } = setupRich({
         pagesConfig: { PrimaryPageTemplate: { name: 'Primary' } },
       })
@@ -654,10 +666,10 @@ describe('Page UI select stores the full CwaPage component name (#384)', () => {
 
   test('style options come from pagesConfig for a full-name uiComponent', () => {
     const { wrapper } = setupRich({
-      pagesConfig: { PrimaryPageTemplate: { name: 'Primary', classes: { Wide: 'cwa:max-w-full' } } },
+      pagesConfig: { PrimaryPageTemplate: { name: 'Primary', styles: { wide: { label: 'Wide', classes: 'cwa:max-w-full' } } } },
       localDataOverrides: { uiComponent: 'CwaPagePrimaryPageTemplate' },
     })
     const styleSelect = wrapper.findAllComponents({ name: 'ModalSelect' }).find(s => s.props('label') === 'Style')
-    expect(styleSelect?.props('options')).toContainEqual({ label: 'Wide', value: 'cwa:max-w-full' })
+    expect(styleSelect?.props('options')).toContainEqual({ label: 'Wide', value: ['style:wide'] })
   })
 })

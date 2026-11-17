@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import { useCookie, useNuxtApp, useRuntimeConfig } from '#imports'
 import type { RouteLocationNormalizedLoaded, Router } from 'vue-router'
-import type { CwaModuleOptions, CwaResourcesMeta } from '#cwa/types'
+import type { CwaModuleOptions } from '#cwa/types'
 import { Storage } from './storage/storage'
 import type { FetchEvent, FetchResourceEvent } from './api/fetcher/fetcher'
 import Fetcher from './api/fetcher/fetcher'
@@ -149,23 +149,6 @@ export default class Cwa {
 
   public get isStaticRender(): boolean {
     return this.prerendered.value || !!this.options.staticRender
-  }
-
-  public get resourcesConfig(): CwaResourcesMeta {
-    return this.options.resources || {}
-  }
-
-  // @internal
-  public setResourceMeta(meta: CwaResourcesMeta) {
-    this.options.resources = meta
-  }
-
-  public get layoutsConfig() {
-    return this.options.layouts
-  }
-
-  public get pagesConfig() {
-    return this.options.pages
   }
 
   public get pageDataConfig() {

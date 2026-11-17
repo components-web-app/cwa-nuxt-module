@@ -11,6 +11,14 @@ import { Presence, presenceColour, SELF_COLOUR } from '#cwa/admin/presence'
 import { ResourcesStore } from '#cwa/storage/stores/resources/resources-store'
 import type Cwa from '#cwa/cwa'
 
+const cwaConfig = vi.hoisted(() => ({
+  resourcesConfig: { HtmlContent: { name: 'Rich text' } } as Record<string, any>,
+  uiConfig: {} as Record<string, any>,
+  layoutsConfig: {} as Record<string, any>,
+  pagesConfig: {} as Record<string, any>,
+}))
+vi.mock('#build/cwa-config', () => cwaConfig)
+
 vi.mock('#app/composables/router', () => ({
   navigateTo: vi.fn(),
   useRouter: () => ({
@@ -43,7 +51,6 @@ function mockCwa(byId: Record<string, Record<string, unknown>> = {}) {
     apiUrlBase: 'https://api.test',
     auth: { user: { '@id': ME.id } },
     cwaFetch: { fetch: vi.fn().mockResolvedValue(undefined) },
-    resourcesConfig: { HtmlContent: { name: 'Rich text' } },
     resources: {
       displayPageIri: computed(() => HOME),
       pageDataIriOf: () => computed(() => undefined),

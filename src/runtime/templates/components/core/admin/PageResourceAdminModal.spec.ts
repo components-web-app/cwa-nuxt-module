@@ -9,6 +9,14 @@ import ModalSelect from '#cwa/templates/components/core/admin/form/ModalSelect.v
 import * as cwaComposable from '#cwa/composables/cwa'
 import { componentNames } from '#components'
 
+const cwaConfig = vi.hoisted(() => ({
+  resourcesConfig: {} as Record<string, any>,
+  uiConfig: {} as Record<string, any>,
+  layoutsConfig: {} as Record<string, any>,
+  pagesConfig: {} as Record<string, any>,
+}))
+vi.mock('#build/cwa-config', () => cwaConfig)
+
 const mockNavigateTo = vi.hoisted(() => vi.fn())
 mockNuxtImport('navigateTo', () => mockNavigateTo)
 
@@ -75,13 +83,13 @@ function setup(opts: {
   mockUseDataType.mockReturnValue({ pageDataConfig: ref(opts.pageDataConfig ?? null) })
 
   // @ts-expect-error
+  cwaConfig.pagesConfig = opts.pagesConfig ?? {}
   vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => ({
     resources: {
       displayPageIri: ref(opts.displayPageIri),
       getResource: vi.fn(() => ref(null)),
     },
     fetch: vi.fn().mockReturnValue({ response: Promise.resolve({ _data: null }) }),
-    pagesConfig: opts.pagesConfig ?? {},
     admin: { toggleEdit: vi.fn() },
   }))
 

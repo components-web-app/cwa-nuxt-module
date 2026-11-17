@@ -4,6 +4,14 @@ import { ref } from 'vue'
 import { flushPromises, mount } from '@vue/test-utils'
 import { mockNuxtImport } from '@nuxt/test-utils/runtime'
 
+const cwaConfig = vi.hoisted(() => ({
+  resourcesConfig: { Title: { name: 'Title' } } as Record<string, any>,
+  uiConfig: {} as Record<string, any>,
+  layoutsConfig: {} as Record<string, any>,
+  pagesConfig: {} as Record<string, any>,
+}))
+vi.mock('#build/cwa-config', () => cwaConfig)
+
 vi.mock('consola')
 
 vi.mock('#cwa/templates/components/main/admin/_common/useDynamicPositionSelectOptions', () => ({
@@ -34,7 +42,6 @@ function makeCwa() {
   const addResourceEvent = ref<any>(undefined)
   return {
     getComponentMetadata: vi.fn(),
-    resourcesConfig: { Title: { name: 'Title' } },
     resourcesManager: {
       addResourceEvent,
       clearAddResource: vi.fn(() => {

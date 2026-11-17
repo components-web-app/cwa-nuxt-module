@@ -6,13 +6,21 @@ import Ui from './Ui.vue'
 
 const uiComponentModel = ref<string | null>(null)
 const uiClassNamesModel = ref<string[] | null>(null)
+const savedResource = ref<any>({ data: { '@type': 'Hero', 'uiComponent': null } })
 
 const currentStackItem = ref<any>(null)
 
 const mockCwa = {
-  resources: { getResource: vi.fn(() => ref({ data: { uiComponent: null } })) },
+  resources: { getResource: vi.fn(() => savedResource) },
   admin: { resourceStackManager: { currentStackItem, currentIri: ref('/component/1') } },
 }
+
+const config = vi.hoisted(() => ({
+  resourcesConfig: {} as Record<string, any>,
+  uiConfig: {} as Record<string, any>,
+}))
+
+vi.mock('#build/cwa-config', () => config)
 
 vi.mock('#cwa/composables/cwa-resource-manager-tab', () => ({
   useCwaResourceManagerTab: () => ({
@@ -29,7 +37,7 @@ vi.mock('#cwa/composables/cwa-resource-model', () => ({
 }))
 
 vi.mock('#cwa/composables/cwa-select', () => ({
-  useCwaSelect: (model: any) => ({ model: ref(model.value), options: ref([]) }),
+  useCwaSelect: (model: any) => ({ model, options: ref([]) }),
 }))
 
 vi.mock('#cwa/templates/components/core/useDataResolver', () => ({
@@ -56,48 +64,61 @@ function mountUi() {
   return mount(Ui, { global: { stubs } })
 }
 
-function setStyles(multiple: boolean) {
+function styleSelect(wrapper: ReturnType<typeof mountUi>) {
+  return wrapper.findAllComponents(CwaUiSelectStub).at(-1)!
+}
+
+function setStyles(multipleStyles: boolean) {
   uiComponentModel.value = null
   uiClassNamesModel.value = null
-  currentStackItem.value = {
-    ui: [],
-    styles: { value: { multiple, classes: {
-      Bordered: 'border border-gray-200',
-      Rounded: 'rounded',
-    } } },
+  savedResource.value = { data: { '@type': 'Hero', 'uiComponent': null } }
+  currentStackItem.value = { ui: ['CwaComponentHeroUiTall'] }
+  config.resourcesConfig = {
+    Hero: {
+      multipleStyles,
+      styles: {
+        bordered: { label: 'Bordered', classes: 'border border-gray-200' },
+        rounded: { label: 'Rounded', classes: 'rounded' },
+      },
+    },
+  }
+  config.uiConfig = {
+    CwaComponentHeroUiTall: {
+      styles: { tall: { label: 'Tall', classes: 'h-screen' } },
+    },
   }
 }
 
 describe('Ui tab — multiple styles', () => {
   beforeEach(() => setStyles(true))
 
-  test('renders the styles select in multiple mode with style-name options', () => {
+  test('renders the styles select in multiple mode, with the labels as options, not the class strings', () => {
     const wrapper = mountUi()
-    const select = wrapper.findComponent(CwaUiSelectStub)
+    const select = styleSelect(wrapper)
     expect(select.props('multiple')).toBe(true)
     expect(select.props('options')).toEqual([
-      { label: 'Bordered', value: 'Bordered' },
-      { label: 'Rounded', value: 'Rounded' },
+      { label: 'Bordered', value: 'bordered' },
+      { label: 'Rounded', value: 'rounded' },
     ])
   })
 
-  test('reflects the currently-selected styles derived from uiClassNames', () => {
-    uiClassNamesModel.value = ['rounded']
+  test('reflects the selected styles from the stored keys', () => {
+    uiClassNamesModel.value = ['style:rounded']
     const wrapper = mountUi()
-    expect(wrapper.findComponent(CwaUiSelectStub).props('modelValue')).toEqual(['Rounded'])
+    expect(styleSelect(wrapper).props('modelValue')).toEqual(['rounded'])
   })
 
-  test('selecting styles writes one merged uiClassNames entry per style', async () => {
+  test('stores each chosen key as style:<key>', async () => {
     const wrapper = mountUi()
-    wrapper.findComponent(CwaUiSelectStub).vm.$emit('update:modelValue', ['Bordered', 'Rounded'])
+    styleSelect(wrapper).vm.$emit('update:modelValue', ['bordered', 'rounded'])
     await nextTick()
-    expect(uiClassNamesModel.value).toEqual(['border border-gray-200', 'rounded'])
+    expect(uiClassNamesModel.value).toEqual(['style:bordered', 'style:rounded'])
   })
 
   test('clearing the selection writes null', async () => {
-    uiClassNamesModel.value = ['rounded']
+    uiClassNamesModel.value = ['style:rounded']
     const wrapper = mountUi()
-    wrapper.findComponent(CwaUiSelectStub).vm.$emit('update:modelValue', [])
+    styleSelect(wrapper).vm.$emit('update:modelValue', [])
     await nextTick()
     expect(uiClassNamesModel.value).toBeNull()
   })
@@ -106,35 +127,81 @@ describe('Ui tab — multiple styles', () => {
 describe('Ui tab — single style', () => {
   beforeEach(() => setStyles(false))
 
-  test('renders a single (non-multiple) select with a Default option plus style names', () => {
+  test('renders a single select with a Default option plus the labels', () => {
     const wrapper = mountUi()
-    const select = wrapper.findComponent(CwaUiSelectStub)
+    const select = styleSelect(wrapper)
     expect(select.props('multiple')).toBe(false)
     expect(select.props('options')).toEqual([
       { label: 'Default', value: null },
-      { label: 'Bordered', value: 'Bordered' },
-      { label: 'Rounded', value: 'Rounded' },
+      { label: 'Bordered', value: 'bordered' },
+      { label: 'Rounded', value: 'rounded' },
     ])
   })
 
-  test('selecting one style stores a one-element uiClassNames', async () => {
+  test('choosing a style stores style:<key>', async () => {
     const wrapper = mountUi()
-    wrapper.findComponent(CwaUiSelectStub).vm.$emit('update:modelValue', 'Bordered')
+    styleSelect(wrapper).vm.$emit('update:modelValue', 'bordered')
     await nextTick()
-    expect(uiClassNamesModel.value).toEqual(['border border-gray-200'])
+    expect(uiClassNamesModel.value).toEqual(['style:bordered'])
   })
 
-  test('reflects the current single selection as its style name', () => {
-    uiClassNamesModel.value = ['border border-gray-200']
+  test('reflects the current single selection as its key', () => {
+    uiClassNamesModel.value = ['style:bordered']
     const wrapper = mountUi()
-    expect(wrapper.findComponent(CwaUiSelectStub).props('modelValue')).toBe('Bordered')
+    expect(styleSelect(wrapper).props('modelValue')).toBe('bordered')
   })
 
   test('selecting Default (null) clears uiClassNames', async () => {
-    uiClassNamesModel.value = ['rounded']
+    uiClassNamesModel.value = ['style:rounded']
     const wrapper = mountUi()
-    wrapper.findComponent(CwaUiSelectStub).vm.$emit('update:modelValue', null)
+    styleSelect(wrapper).vm.$emit('update:modelValue', null)
     await nextTick()
     expect(uiClassNamesModel.value).toBeNull()
+  })
+})
+
+describe('Ui tab — styles come from the generated config (#453)', () => {
+  beforeEach(() => setStyles(false))
+
+  test('the tab no longer mounts components to find out their styles: the stack item carries none, and the options still show', () => {
+    expect(currentStackItem.value.styles).toBeUndefined()
+    const wrapper = mountUi()
+    expect(styleSelect(wrapper).props('options')).toEqual([
+      { label: 'Default', value: null },
+      { label: 'Bordered', value: 'bordered' },
+      { label: 'Rounded', value: 'rounded' },
+    ])
+  })
+
+  test('a UI variant offers its own styles', () => {
+    savedResource.value = { data: { '@type': 'Hero', 'uiComponent': 'CwaComponentHeroUiTall' } }
+    const wrapper = mountUi()
+    expect(styleSelect(wrapper).props('options')).toEqual([
+      { label: 'Default', value: null },
+      { label: 'Tall', value: 'tall' },
+    ])
+  })
+
+  test('a key the variant does not know shows no style selected, and choosing one keeps the other key', async () => {
+    savedResource.value = { data: { '@type': 'Hero', 'uiComponent': 'CwaComponentHeroUiTall' } }
+    uiClassNamesModel.value = ['style:bordered']
+    const wrapper = mountUi()
+    expect(styleSelect(wrapper).props('modelValue')).toBeNull()
+
+    styleSelect(wrapper).vm.$emit('update:modelValue', 'tall')
+    await nextTick()
+    expect(uiClassNamesModel.value).toEqual(['style:bordered', 'style:tall'])
+  })
+
+  test('switching the UI keeps the stored keys, so switching back restores them', async () => {
+    uiClassNamesModel.value = ['style:bordered']
+    mountUi()
+
+    uiComponentModel.value = 'CwaComponentHeroUiTall'
+    await nextTick()
+    savedResource.value = { data: { '@type': 'Hero', 'uiComponent': 'CwaComponentHeroUiTall' } }
+    await nextTick()
+
+    expect(uiClassNamesModel.value).toEqual(['style:bordered'])
   })
 })

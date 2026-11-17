@@ -181,6 +181,8 @@
 </template>
 
 <script setup lang="ts">
+import { pagesConfig } from '#build/cwa-config'
+import { styleSelectOptions } from '#cwa/admin/style-options'
 import { computed, onMounted, ref, watch } from 'vue'
 import ResourceModal from '#cwa/templates/components/core/admin/ResourceModal.vue'
 import ResourceModalTabs from '#cwa/templates/components/core/admin/ResourceModalTabs.vue'
@@ -301,7 +303,7 @@ const pageComponentOptions = computed(() => {
   for (const componentName of pageComponentNames.value) {
     const cleanName = cleanUiName(componentName)
     options.push({
-      label: $cwa.pagesConfig?.[cleanName]?.name || cleanName,
+      label: pagesConfig[cleanName]?.name || cleanName,
       value: componentName,
     })
   }
@@ -321,24 +323,7 @@ const pageStyleOptions = computed(() => {
   if (!localResourceData.value?.uiComponent) {
     return []
   }
-  const cleanName = cleanUiName(localResourceData.value?.uiComponent)
-  const configuredClasses = $cwa.pagesConfig?.[cleanName]?.classes
-  if (!configuredClasses) {
-    return []
-  }
-  const options: SelectOption[] = [
-    {
-      label: 'Default',
-      value: null,
-    },
-  ]
-  for (const [label, value] of Object.entries(configuredClasses)) {
-    options.push({
-      label,
-      value,
-    })
-  }
-  return options
+  return styleSelectOptions(pagesConfig[cleanUiName(localResourceData.value.uiComponent)]?.styles)
 })
 
 const layoutOptions = computed(() => {

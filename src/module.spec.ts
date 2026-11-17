@@ -5,6 +5,7 @@ import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vi
 import type { Mock } from 'vitest'
 import * as nuxtKit from '@nuxt/kit'
 import { scanComponentGroupDeclarations } from './component-group-declarations'
+import { scanCwaConfigDeclarations, stripDefineCwaConfig } from './cwa-config-declarations'
 
 vi.mock('@nuxt/kit', async () => {
   const actual = await vi.importActual<typeof nuxtKit>('@nuxt/kit')
@@ -20,6 +21,7 @@ vi.mock('@nuxt/kit', async () => {
     addServerHandler: vi.fn(),
     addServerPlugin: vi.fn(),
     addTypeTemplate: vi.fn(),
+    addVitePlugin: vi.fn(),
     updateTemplates: vi.fn(),
     extendPages: vi.fn(),
     defineNuxtModule: vi.fn(),
@@ -37,6 +39,11 @@ vi.mock('@nuxt/kit', async () => {
 
 vi.mock('./component-group-declarations', () => ({
   scanComponentGroupDeclarations: vi.fn(() => ({})),
+}))
+
+vi.mock('./cwa-config-declarations', () => ({
+  scanCwaConfigDeclarations: vi.fn(() => ({ components: {}, ui: {}, layouts: {}, pages: {} })),
+  stripDefineCwaConfig: vi.fn(),
 }))
 
 vi.mock('node:fs', () => {
@@ -101,16 +108,6 @@ describe('CWA module', () => {
 
       expect(defaults).toEqual({
         storeName: 'cwa',
-        resources: {
-          ComponentPosition: {
-            name: 'Position',
-            description: '<p>Dynamic components can be used on dynamic pages to specify what component should be displayed from a data page in any given location.</p><p>You must select the reference from the data page to load into this position below.</p>',
-            instantAdd: true,
-          },
-          ComponentGroup: {
-            name: 'Group',
-          },
-        },
         siteConfig: {
           canonicalUrl: '',
           indexable: true,
@@ -437,9 +434,9 @@ describe('CWA module', () => {
 
       expect((nuxtKit.addTemplate as Mock)).toHaveBeenCalled()
 
-      const { lastCall: [{ filename, getContents }] } = (nuxtKit.addTemplate as Mock).mock
-
-      expect(filename).toEqual('cwa-options.ts')
+      const { getContents } = (nuxtKit.addTemplate as Mock).mock.calls
+        .map(([template]) => template)
+        .findLast(({ filename }) => filename === 'cwa-options.ts')
 
       const components = [
         {
@@ -469,17 +466,6 @@ describe('CWA module', () => {
 export const options:CwaModuleOptions = {
   "mock": true,
   "foo": "bar",
-  "resources": {
-    "HtmlContent": {
-      "name": "Html Content",
-      "managerTabs": [
-        "CwaComponentHtmlContentAdminGlobalTab"
-      ],
-      "ui": [
-        "CwaComponentHtmlContentUiAltUi"
-      ]
-    }
-  },
   "staticRender": false
 }
 export const currentModulePackageInfo:{ version: string, name: string } = {
@@ -881,6 +867,232 @@ export const componentGroupDeclarations: ComponentGroupDeclarations = {
         const [{ filter }] = vi.mocked(nuxtKit.updateTemplates).mock.lastCall!
         expect(filter!({ filename: 'cwa-options.ts' } as any)).toBe(false)
         expect(filter!({ filename: 'cwa-component-names.ts' } as any)).toBe(false)
+      })
+    })
+
+    describe('SFC config from defineCwaConfig (#453)', () => {
+      const components = [
+        { filePath: 'cwa/components/HtmlContent/HtmlContent.vue', pascalName: 'CwaComponentHtmlContent' },
+        { filePath: 'cwa/components/HtmlContent/admin/GlobalTab.vue', pascalName: 'CwaComponentHtmlContentAdminGlobalTab', global: true },
+        { filePath: 'cwa/components/HtmlContent/ui/AltUi.vue', pascalName: 'CwaComponentHtmlContentUiAltUi', global: true },
+        { filePath: 'cwa/components/Image/Image.vue', pascalName: 'CwaComponentImage' },
+        { filePath: 'cwa/layouts/primary.vue', pascalName: 'CwaLayoutPrimary' },
+        { filePath: 'cwa/pages/PrimaryPageTemplate.vue', pascalName: 'CwaPagePrimaryPageTemplate' },
+        { filePath: 'cwa/pages/admin/PageTab.vue', pascalName: 'CwaPageAdminPageTab' },
+        { filePath: 'components/HeaderMenuLinks.vue', pascalName: 'HeaderMenuLinks' },
+      ]
+
+      const declarations = {
+        components: {
+          HtmlContent: {
+            name: 'Body Text',
+            description: '<p>Rich text</p>',
+            defaultData: { html: '<p>New</p>' },
+            multipleStyles: true,
+            styles: { 'black-bg': { label: 'Black Background', classes: 'bg-black' } },
+          },
+        },
+        ui: {
+          CwaComponentHtmlContentUiAltUi: { styles: { tall: { label: 'Tall', classes: 'h-screen' } } },
+        },
+        layouts: {
+          Primary: { name: 'Primary Layout', styles: { blue: { label: 'Blue', classes: 'bg-blue-600' } } },
+        },
+        pages: {
+          PrimaryPageTemplate: { name: 'Primary Page' },
+        },
+      }
+
+      async function prepare() {
+        await prepareMockNuxt({}, {
+          hook: vi.fn((hookName, callback) => {
+            if (hookName === 'modules:done') {
+              callback()
+            }
+          }),
+        })
+        const templates = (nuxtKit.addTemplate as Mock).mock.calls.map(([template]) => template)
+        return (filename: string) => templates.findLast(template => template.filename === filename)
+      }
+
+      afterEach(() => {
+        vi.mocked(scanCwaConfigDeclarations).mockReset()
+        vi.mocked(scanCwaConfigDeclarations).mockImplementation(() => ({ components: {}, ui: {}, layouts: {}, pages: {} }))
+      })
+
+      test('the generated resources config combines the SFC config with the automatic name and the managerTabs and ui found in the folders', async () => {
+        vi.mocked(scanCwaConfigDeclarations).mockReturnValue(declarations)
+        const template = (await prepare())('cwa-config.ts')
+
+        expect(template.write).toBe(true)
+        expect(await template.getContents({ app: { components } })).toEqual(`import type { CwaResourcesMeta, CwaTemplateConfig, CwaUiVariantConfig } from '#cwa/types'
+export const resourcesConfig: CwaResourcesMeta = {
+  "ComponentPosition": {
+    "name": "Position",
+    "description": "<p>Dynamic components can be used on dynamic pages to specify what component should be displayed from a data page in any given location.</p><p>You must select the reference from the data page to load into this position below.</p>",
+    "instantAdd": true
+  },
+  "ComponentGroup": {
+    "name": "Group"
+  },
+  "HtmlContent": {
+    "name": "Body Text",
+    "managerTabs": [
+      "CwaComponentHtmlContentAdminGlobalTab"
+    ],
+    "ui": [
+      "CwaComponentHtmlContentUiAltUi"
+    ],
+    "description": "<p>Rich text</p>",
+    "defaultData": {
+      "html": "<p>New</p>"
+    },
+    "multipleStyles": true,
+    "styles": {
+      "black-bg": {
+        "label": "Black Background",
+        "classes": "bg-black"
+      }
+    }
+  },
+  "Image": {
+    "name": "Image",
+    "managerTabs": [],
+    "ui": []
+  }
+}
+export const uiConfig: Record<string, CwaUiVariantConfig> = {
+  "CwaComponentHtmlContentUiAltUi": {
+    "styles": {
+      "tall": {
+        "label": "Tall",
+        "classes": "h-screen"
+      }
+    }
+  }
+}
+export const layoutsConfig: Record<string, CwaTemplateConfig> = {
+  "Primary": {
+    "name": "Primary Layout",
+    "styles": {
+      "blue": {
+        "label": "Blue",
+        "classes": "bg-blue-600"
+      }
+    }
+  }
+}
+export const pagesConfig: Record<string, CwaTemplateConfig> = {
+  "PrimaryPageTemplate": {
+    "name": "Primary Page"
+  }
+}
+`)
+      })
+
+      test('scans the CWA layouts, pages, components and their ui variants', async () => {
+        const template = (await prepare())('cwa-config.ts')
+        await template.getContents({ app: { components } })
+
+        const [scanOptions] = vi.mocked(scanCwaConfigDeclarations).mock.lastCall!
+        expect(scanOptions.templates.map(({ pascalName }) => pascalName)).toEqual([
+          'CwaComponentHtmlContent',
+          'CwaComponentHtmlContentUiAltUi',
+          'CwaComponentImage',
+          'CwaLayoutPrimary',
+          'CwaPagePrimaryPageTemplate',
+        ])
+      })
+
+      test('styles go into their own template, keyed by the component that renders them, without names, descriptions or default data', async () => {
+        vi.mocked(scanCwaConfigDeclarations).mockReturnValue(declarations)
+        const template = (await prepare())('cwa-styles.ts')
+
+        expect(template.write).toBe(true)
+        expect(await template.getContents({ app: { components } })).toEqual(`import type { CwaStyleClasses } from '#cwa/types'
+export const styleClasses: CwaStyleClasses = {
+  "CwaComponentHtmlContent": {
+    "black-bg": "bg-black"
+  },
+  "CwaComponentHtmlContentUiAltUi": {
+    "tall": "h-screen"
+  },
+  "CwaLayoutPrimary": {
+    "blue": "bg-blue-600"
+  }
+}
+`)
+      })
+
+      test('the module options template no longer carries resources, layouts or pages', async () => {
+        vi.mocked(scanCwaConfigDeclarations).mockReturnValue(declarations)
+        const template = (await prepare())('cwa-options.ts')
+
+        const contents = await template.getContents({ app: { components } })
+        expect(contents).not.toContain('Rich text')
+        expect(contents).not.toContain('"resources"')
+      })
+
+      test('warns once per file and reason that its config is ignored, naming both', async () => {
+        const logger = { info: vi.fn(), warn: vi.fn(), debug: vi.fn(), error: vi.fn(), success: vi.fn() }
+        vi.spyOn(nuxtKit, 'useLogger').mockReturnValue(logger as any)
+        vi.mocked(scanCwaConfigDeclarations).mockImplementation(({ onUncheckable }) => {
+          onUncheckable?.('/site/app/cwa/components/Hero/Hero.vue', 'uses a spread in defineCwaConfig')
+          return { components: {}, ui: {}, layouts: {}, pages: {} }
+        })
+        const find = await prepare()
+        await find('cwa-config.ts').getContents({ app: { components } })
+        await find('cwa-styles.ts').getContents({ app: { components } })
+
+        const warnings = logger.warn.mock.calls.map(([message]) => message).filter(message => message.includes('Hero.vue'))
+        expect(warnings).toHaveLength(1)
+        expect(warnings[0]).toContain('uses a spread in defineCwaConfig')
+        expect(warnings[0]).toContain('is ignored')
+      })
+
+      test('editing a .vue under app/cwa in dev regenerates the config and styles, and nothing else does', async () => {
+        vi.spyOn(nuxtKit, 'createResolver').mockReturnValue({
+          resolve: vi.fn((...args: string[]) => join(...args)),
+          resolvePath: vi.fn(),
+        })
+        let watchCallback: ((event: string, path: string) => Promise<void>) | undefined
+        await prepareMockNuxt({}, {
+          hook: vi.fn((hookName, callback) => {
+            if (hookName === 'builder:watch') {
+              watchCallback = callback
+            }
+          }),
+        })
+        const regenerates = async (event: string, path: string) => {
+          vi.mocked(nuxtKit.updateTemplates).mockClear()
+          await watchCallback!(event, path)
+          const call = vi.mocked(nuxtKit.updateTemplates).mock.lastCall
+          return ['cwa-config.ts', 'cwa-styles.ts'].map(filename => !!call?.[0]?.filter?.({ filename } as any))
+        }
+
+        expect(await regenerates('change', 'cwa/components/Hero/Hero.vue')).toEqual([true, true])
+        expect(await regenerates('change', 'cwa/layouts/primary.vue')).toEqual([true, true])
+        expect(await regenerates('add', 'cwa/pages/Landing.vue')).toEqual([true, true])
+        expect(await regenerates('unlink', 'cwa/components/Hero/admin/Tab.vue')).toEqual([true, true])
+        expect(await regenerates('change', 'components/HeaderMenuLinks.vue')).toEqual([false, false])
+        expect(await regenerates('change', 'cwa/components/Hero/useHero.ts')).toEqual([false, false])
+      })
+
+      test('registers a Vite plugin that strips the macro from Vue files before they are compiled', async () => {
+        await prepareMockNuxt()
+
+        const [plugin] = vi.mocked(nuxtKit.addVitePlugin).mock.lastCall! as [any]
+        expect(plugin.enforce).toBe('pre')
+        vi.mocked(stripDefineCwaConfig).mockReturnValueOnce({ code: 'stripped', map: {} as any })
+        expect(plugin.transform('source', '/site/app/cwa/components/Hero/Hero.vue')).toEqual({ code: 'stripped', map: {} })
+        expect(stripDefineCwaConfig).toHaveBeenCalledWith('source', '/site/app/cwa/components/Hero/Hero.vue')
+      })
+
+      test('auto-imports neither generated template', async () => {
+        await prepare()
+
+        const imported = vi.mocked(nuxtKit.addImports).mock.calls.flatMap(([imports]) => [imports].flat())
+        expect(imported.some(({ from }) => ['#build/cwa-config', '#build/cwa-styles'].includes(from))).toBe(false)
       })
     })
 

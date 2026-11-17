@@ -63,6 +63,7 @@
 </template>
 
 <script lang="ts" setup>
+import { pagesConfig } from '#build/cwa-config'
 import { useRouter } from 'vue-router'
 import { ref } from 'vue'
 import { useListPage } from '#cwa-layer/_composables/useListPage'
@@ -74,11 +75,10 @@ import FilterFormWrapper from '#cwa/templates/components/core/admin/form/FilterF
 import ListFilterButton from '#cwa/templates/components/core/admin/ListFilterButton.vue'
 import { useQueryBoundModel } from '#cwa/composables/cwa-query-bound-model'
 import ResourceModalOverlay from '#cwa/templates/components/core/admin/ResourceModalOverlay.vue'
-import { definePageMeta, useCwa, useCwaResourceRoute, useHead } from '#imports'
+import { definePageMeta, useCwaResourceRoute, useHead } from '#imports'
 
 const listContent = ref<InstanceType<typeof ListContent> | null>(null)
 
-const $cwa = useCwa()
 const { goToAdd, triggerReload, computedItemLink } = useListPage(listContent)
 const { getInternalResourceLink } = useCwaResourceRoute()
 
@@ -113,7 +113,7 @@ function goToPage(page: string) {
 
 function getDisplayPageUi(ui: string) {
   const cleanName = ui.replace(/^CwaPage/, '')
-  return $cwa.pagesConfig?.[cleanName]?.name || cleanName
+  return pagesConfig[cleanName]?.name || cleanName
 }
 
 useHead({

@@ -64,6 +64,7 @@
 </template>
 
 <script setup lang="ts">
+import { resourcesConfig } from '#build/cwa-config'
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { consola as logger } from 'consola'
 import DialogBox from '#cwa/templates/components/core/DialogBox.vue'
@@ -173,8 +174,8 @@ async function findAvailableComponents(allowedComponents: undefined | string[], 
     ([_, value]) => isComponentAllowedInGroup(value, normalizedAllowed),
   )
   // if no config, the front-end component does not exist to add
-  const filteredHasResourceConfig = filteredAllowed.filter(([name]) => $cwa.resourcesConfig?.[name])
-  const mapped = filteredHasResourceConfig.map(([name, apiMetadata]) => ([name, { apiMetadata, config: $cwa.resourcesConfig[name] }]))
+  const filteredHasResourceConfig = filteredAllowed.filter(([name]) => resourcesConfig[name])
+  const mapped = filteredHasResourceConfig.map(([name, apiMetadata]) => ([name, { apiMetadata, config: resourcesConfig[name] }]))
   return Object.fromEntries(mapped)
 }
 
@@ -182,7 +183,7 @@ const selectedResourceMeta = computed(() => {
   if (!selectedComponent.value) {
     return
   }
-  return $cwa.resourcesConfig?.[selectedComponent.value]
+  return resourcesConfig[selectedComponent.value]
 })
 
 const selectedResourceDescription = computed(() => {
