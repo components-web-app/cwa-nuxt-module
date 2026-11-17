@@ -4,18 +4,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>CWA Admin UI Kit</title>
-<meta name="description" content="Proposal v4 for the @cwa/nuxt admin UI kit (#236): filled square fields, status glyphs that take no reserved space, working menus, the either/or group, the one-row manager bar, modals and admin pages with Save, lists and feedback.">
+<meta name="description" content="Proposal v5 for the @cwa/nuxt admin UI kit (#236): a WCAG 2.2 AA pass, the Routes tab and a tree, API-backed search, route status in lists, conflicts attached to their field, info popovers, three toast styles, and everything agreed in v4.">
 <style>
 :root{
   --bg:#f5f5f4;--text:#1c1917;--text-muted:#57534e;--card:#ffffff;--border:#d6d3d1;--code:#e7e5e4;--link:#1d4ed8;
 
-  --k-surface:#ffffff;--k-raised:#f5f5f4;--k-field:#e7e5e4;--k-field-hover:#d6d3d1;--k-menu:#ffffff;--k-menu-hl:#e7e5e4;
-  --k-field-danger:#e8cece;--k-field-warning:#ead8bd;--k-line:#d6d3d1;
-  --k-fg:#1c1917;--k-muted:#57534e;--k-muted-on-field:#57534e;
+  --k-surface:#ffffff;--k-raised:#f5f5f4;--k-field:#d6d3d1;--k-field-hover:#c9c4c0;--k-chip:#b8b2ad;--k-menu:#ffffff;--k-menu-hl:#e7e5e4;
+  --k-field-danger:#dabfbd;--k-field-warning:#dcc9ad;--k-line:#d6d3d1;--k-tree-line:#8a837e;
+  --k-fg:#1c1917;--k-muted:#57534e;--k-muted-on-field:#4f4a45;
   --k-accent:#2563eb;--k-accent-hover:#1d4ed8;--k-accent-fg:#1d4ed8;--k-accent-tint:rgb(37 99 235 / .12);
   --k-success:#3f6212;--k-warning:#b45309;--k-danger:#b91c1c;--k-danger-fg:#b91c1c;--k-danger-fill:#dc2626;
-  --k-highlight:#e30a6c;--k-toggle-off:#a8a29e;--k-shadow:0 8px 24px rgb(0 0 0 / .14);
-  --k-step-hover:rgb(28 25 23 / .16);--k-step-press:rgb(28 25 23 / .3);--k-type-static:#2563eb;--k-type-dynamic:#ca8a04;
+  --k-highlight:#e30a6c;--k-toggle-off:#78716c;--k-shadow:0 8px 24px rgb(0 0 0 / .14);
+  --k-step-hover:rgb(28 25 23 / .16);--k-step-press:rgb(28 25 23 / .3);--k-type-static:#2563eb;--k-type-dynamic:#a16207;
   --k-scrim:rgb(28 25 23 / .45);
 
   --k-control:2.25rem;--k-control-lg:2.75rem;--k-option:2.25rem;--k-tabs:2.5rem;--k-hit:2rem;
@@ -25,11 +25,11 @@
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
     --bg:#0c0a09;--text:#f5f5f4;--text-muted:#a8a29e;--card:#1c1917;--border:#3a3532;--code:#292524;--link:#60a5fa;
-    --k-surface:#1c1917;--k-raised:#292524;--k-field:#44403c;--k-field-hover:#57534e;--k-menu:#292524;--k-menu-hl:#57534e;
-    --k-field-danger:#66413e;--k-field-warning:#625132;--k-line:#44403c;
-    --k-fg:#f5f5f4;--k-muted:#a8a29e;--k-muted-on-field:#d6d3d1;
+    --k-surface:#1c1917;--k-raised:#292524;--k-field:#57534e;--k-field-hover:#625d58;--k-chip:#6e6964;--k-menu:#292524;--k-menu-hl:#57534e;
+    --k-field-danger:#6f514c;--k-field-warning:#6d5e45;--k-line:#44403c;--k-tree-line:#78716c;
+    --k-fg:#f5f5f4;--k-muted:#a8a29e;--k-muted-on-field:#e7e5e4;
     --k-accent:#2563eb;--k-accent-hover:#1d4ed8;--k-accent-fg:#60a5fa;--k-accent-tint:rgb(37 99 235 / .28);
-    --k-success:#9cdd05;--k-warning:#ffaa00;--k-danger:#f87171;--k-danger-fg:#f87171;--k-danger-fill:#dc2626;
+    --k-success:#9cdd05;--k-warning:#ffaa00;--k-danger:#fca5a5;--k-danger-fg:#fca5a5;--k-danger-fill:#dc2626;
     --k-toggle-off:#78716c;--k-shadow:0 8px 24px rgb(0 0 0 / .28);--k-scrim:rgb(0 0 0 / .6);
     --k-step-hover:rgb(255 255 255 / .17);--k-step-press:rgb(255 255 255 / .3);--k-type-static:#60a5fa;--k-type-dynamic:#facc15;
     color-scheme:dark;
@@ -37,38 +37,38 @@
 }
 :root[data-theme="dark"]{
   --bg:#0c0a09;--text:#f5f5f4;--text-muted:#a8a29e;--card:#1c1917;--border:#3a3532;--code:#292524;--link:#60a5fa;
-  --k-surface:#1c1917;--k-raised:#292524;--k-field:#44403c;--k-field-hover:#57534e;--k-menu:#292524;--k-menu-hl:#57534e;
-  --k-field-danger:#66413e;--k-field-warning:#625132;--k-line:#44403c;
-  --k-fg:#f5f5f4;--k-muted:#a8a29e;--k-muted-on-field:#d6d3d1;
+  --k-surface:#1c1917;--k-raised:#292524;--k-field:#57534e;--k-field-hover:#625d58;--k-chip:#6e6964;--k-menu:#292524;--k-menu-hl:#57534e;
+  --k-field-danger:#6f514c;--k-field-warning:#6d5e45;--k-line:#44403c;--k-tree-line:#78716c;
+  --k-fg:#f5f5f4;--k-muted:#a8a29e;--k-muted-on-field:#e7e5e4;
   --k-accent:#2563eb;--k-accent-hover:#1d4ed8;--k-accent-fg:#60a5fa;--k-accent-tint:rgb(37 99 235 / .28);
-  --k-success:#9cdd05;--k-warning:#ffaa00;--k-danger:#f87171;--k-danger-fg:#f87171;--k-danger-fill:#dc2626;
+  --k-success:#9cdd05;--k-warning:#ffaa00;--k-danger:#fca5a5;--k-danger-fg:#fca5a5;--k-danger-fill:#dc2626;
   --k-toggle-off:#78716c;--k-shadow:0 8px 24px rgb(0 0 0 / .28);--k-scrim:rgb(0 0 0 / .6);
     --k-step-hover:rgb(255 255 255 / .17);--k-step-press:rgb(255 255 255 / .3);--k-type-static:#60a5fa;--k-type-dynamic:#facc15;
   color-scheme:dark;
 }
 .kit-dark{
-  --k-surface:#1c1917;--k-raised:#292524;--k-field:#44403c;--k-field-hover:#57534e;--k-menu:#292524;--k-menu-hl:#57534e;
-  --k-field-danger:#66413e;--k-field-warning:#625132;--k-line:#44403c;
-  --k-fg:#f5f5f4;--k-muted:#a8a29e;--k-muted-on-field:#d6d3d1;
+  --k-surface:#1c1917;--k-raised:#292524;--k-field:#57534e;--k-field-hover:#625d58;--k-chip:#6e6964;--k-menu:#292524;--k-menu-hl:#57534e;
+  --k-field-danger:#6f514c;--k-field-warning:#6d5e45;--k-line:#44403c;--k-tree-line:#78716c;
+  --k-fg:#f5f5f4;--k-muted:#a8a29e;--k-muted-on-field:#e7e5e4;
   --k-accent-fg:#60a5fa;--k-accent-tint:rgb(37 99 235 / .28);
-  --k-success:#9cdd05;--k-warning:#ffaa00;--k-danger:#f87171;--k-danger-fg:#f87171;
+  --k-success:#9cdd05;--k-warning:#ffaa00;--k-danger:#fca5a5;--k-danger-fg:#fca5a5;
   --k-toggle-off:#78716c;--k-shadow:0 8px 24px rgb(0 0 0 / .28);color-scheme:dark;
   --k-step-hover:rgb(255 255 255 / .17);--k-step-press:rgb(255 255 255 / .3);--k-type-static:#60a5fa;--k-type-dynamic:#facc15;
 }
 .kit-light{
-  --k-surface:#ffffff;--k-raised:#f5f5f4;--k-field:#e7e5e4;--k-field-hover:#d6d3d1;--k-menu:#ffffff;--k-menu-hl:#e7e5e4;
-  --k-field-danger:#e8cece;--k-field-warning:#ead8bd;--k-line:#d6d3d1;
-  --k-fg:#1c1917;--k-muted:#57534e;--k-muted-on-field:#57534e;
+  --k-surface:#ffffff;--k-raised:#f5f5f4;--k-field:#d6d3d1;--k-field-hover:#c9c4c0;--k-chip:#b8b2ad;--k-menu:#ffffff;--k-menu-hl:#e7e5e4;
+  --k-field-danger:#dabfbd;--k-field-warning:#dcc9ad;--k-line:#d6d3d1;--k-tree-line:#8a837e;
+  --k-fg:#1c1917;--k-muted:#57534e;--k-muted-on-field:#4f4a45;
   --k-accent-fg:#1d4ed8;--k-accent-tint:rgb(37 99 235 / .12);
   --k-success:#3f6212;--k-warning:#b45309;--k-danger:#b91c1c;--k-danger-fg:#b91c1c;
-  --k-toggle-off:#a8a29e;--k-shadow:0 8px 24px rgb(0 0 0 / .14);color-scheme:light;
-  --k-step-hover:rgb(28 25 23 / .16);--k-step-press:rgb(28 25 23 / .3);--k-type-static:#2563eb;--k-type-dynamic:#ca8a04;
+  --k-toggle-off:#78716c;--k-shadow:0 8px 24px rgb(0 0 0 / .14);color-scheme:light;
+  --k-step-hover:rgb(28 25 23 / .16);--k-step-press:rgb(28 25 23 / .3);--k-type-static:#2563eb;--k-type-dynamic:#a16207;
 }
 @media (pointer: coarse){:root{--k-control:2.75rem;--k-option:2.75rem;--k-tabs:2.75rem;--k-hit:2.75rem}}
 .coarse{--k-control:2.75rem;--k-option:2.75rem;--k-tabs:2.75rem;--k-hit:2.75rem}
 
 *,*::before,*::after{box-sizing:border-box}
-html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth;scroll-padding-top:5rem}
 body{margin:0;background:var(--bg);color:var(--text);font:15px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;overflow-x:hidden}
 a{color:var(--link)}
 :focus-visible{outline:2px solid var(--k-accent-fg);outline-offset:2px}
@@ -211,7 +211,7 @@ button.f{cursor:pointer;width:100%}
 .f.multi input{flex:1 0 6.5rem;height:2.25rem;min-width:0;padding-left:.5rem}
 .f.multi .chips{display:contents}
 .f.multi .tail{position:absolute;right:.75rem;top:0;height:var(--h);display:flex;align-items:center;gap:.5rem}
-.chip{display:inline-flex;align-items:center;gap:.25rem;height:2.25rem;padding:0 .25rem 0 .75rem;background:var(--k-field-hover);font-size:.875rem;max-width:100%;white-space:nowrap;flex:none}
+.chip{display:inline-flex;align-items:center;gap:.25rem;height:2.25rem;padding:0 .25rem 0 .75rem;background:var(--k-chip);font-size:.875rem;max-width:100%;white-space:nowrap;flex:none}
 .chip.armed{outline:2px solid var(--k-accent-fg);outline-offset:-2px}
 .chip-x{position:relative;width:1.75rem;height:1.75rem;display:grid;place-items:center;background:none;border:0;color:inherit;cursor:pointer;padding:0}
 .chip-x::after{content:"";position:absolute;left:50%;top:50%;width:2.75rem;height:2.75rem;transform:translate(-50%,-50%)}
@@ -240,7 +240,7 @@ button.f{cursor:pointer;width:100%}
 .f.conf:not(.dis):not(.ro):has(.nb:hover,.nb.is-hover,.chip-x:hover,.chip-x.is-hover,.st-btn:hover,.in-btn:hover){background:var(--k-field-warning)}
 
 /* toggle: the one rounded control */
-.tgl{position:relative;display:inline-flex;align-items:center;gap:.75rem;cursor:pointer;flex:none}
+.tgl{position:relative;display:inline-flex;align-items:center;gap:.75rem;cursor:pointer;flex:none;min-height:1.5rem}
 .tgl input{position:absolute;opacity:0;width:1px;height:1px}
 .tg{position:relative;flex:none;width:2.25rem;height:1.25rem;border-radius:9999px;background:var(--k-toggle-off);transition:background-color var(--d-base) var(--ease)}
 .tg::after{content:"";position:absolute;top:.125rem;left:.125rem;width:1rem;height:1rem;border-radius:9999px;background:#fff;transition:transform var(--d-base) var(--ease)}
@@ -268,12 +268,13 @@ button.f{cursor:pointer;width:100%}
 .cb:checked{background:var(--k-accent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%23fff' d='M2.5 8.3 4.2 6.6 6.6 9l5.2-5.2 1.7 1.7-6.9 6.9z'/%3E%3C/svg%3E") center/.875rem no-repeat}
 
 /* field block (modal, page) */
-.form{display:flex;flex-direction:column;gap:2.5rem}
+.form{display:flex;flex-direction:column}
+.fsec+.fsec{margin-top:2rem;padding-top:2rem;box-shadow:inset 0 1px 0 var(--k-line)}
 .fsec{display:flex;flex-direction:column}
-.fsec>h3{font-size:1rem;font-weight:650;margin:0;line-height:1.35;letter-spacing:-.005em}
+.fsec>.fsh{font-size:1.125rem;font-weight:650;margin:0;line-height:1.3;letter-spacing:-.01em;color:var(--k-fg)}
 .fsec>.fsd{font-size:.8125rem;line-height:1.45;color:var(--k-muted);margin:.25rem 0 0}
 .fsec>.fields{display:flex;flex-direction:column;gap:1.5rem}
-.fsec>h3+.fields{margin-top:1rem}
+.fsec>.fsh+.fields,.fsec>.fsh+.fsh-row+.fields{margin-top:1rem}
 .fsec>.fsd+.fields{margin-top:1.25rem}
 .fsec.cols2>.fields{display:grid;grid-template-columns:1fr 1fr;column-gap:1rem;row-gap:1.5rem}
 .fsec.cols2>.fields>.full{grid-column:1/-1}
@@ -285,14 +286,6 @@ button.f{cursor:pointer;width:100%}
 .fl .optl{font-weight:400;color:var(--k-muted)}
 .fl .chg{display:none;font:600 .75rem/1 inherit;color:var(--k-accent-fg)}
 .fb.changed>.fl .chg{display:inline}
-.cmp{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(11rem,100%),1fr));gap:.5rem}
-.cmp button{display:grid;grid-template-columns:1rem 1fr;align-items:start;gap:.125rem .625rem;padding:.625rem .75rem;border:0;background:var(--k-field);color:var(--k-fg);font:inherit;font-size:.875rem;text-align:left;cursor:pointer;min-height:2.75rem;min-width:0}
-.cmp button:hover{background:var(--k-field-hover)}
-.cmp .rd{grid-row:span 2;width:1rem;height:1rem;margin-top:.125rem;border-radius:50%;box-shadow:inset 0 0 0 1.5px var(--k-muted);background:transparent}
-.cmp button[aria-checked="true"]{background:var(--k-accent-tint)}
-.cmp button[aria-checked="true"] .rd{box-shadow:inset 0 0 0 5px var(--k-accent)}
-.cmp .who{font-weight:600;font-size:.8125rem}
-.cmp .v{min-width:0;overflow-wrap:anywhere;color:var(--k-fg)}
 .fb>.seg,.fb>.badge{align-self:flex-start}
 .infop{display:grid;grid-template-columns:1fr auto;align-items:start;gap:.25rem .5rem;padding:.75rem .5rem .75rem 1rem;background:var(--k-accent-tint);font-size:.8125rem;line-height:1.5;color:var(--k-fg)}
 .infop p{margin:0}
@@ -327,13 +320,17 @@ button.f{cursor:pointer;width:100%}
 .kit-row.oe{-webkit-mask-image:linear-gradient(to left,transparent,#000 2.5rem);mask-image:linear-gradient(to left,transparent,#000 2.5rem)}
 .kit-row.os.oe{-webkit-mask-image:linear-gradient(to right,transparent,#000 2.5rem,#000 calc(100% - 2.5rem),transparent);mask-image:linear-gradient(to right,transparent,#000 2.5rem,#000 calc(100% - 2.5rem),transparent)}
 .scrolls{font-size:.75rem;color:var(--text-muted);font-weight:400}
+.kit .scrolls{color:var(--k-muted)}
 .kit-row.framed{border:1px solid var(--k-line)}
 .kit-row{--h:var(--k-control)}
 .s-modal .kit-row .f{--fx:.75rem;font-size:.875rem}
 
 /* readonly */
-.rov{display:inline-flex;align-items:center;gap:.5rem;min-width:0;max-width:19rem}
-.rov .mono{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rov{display:inline-flex;align-items:center;gap:.5rem;min-width:0;max-width:19rem;min-height:var(--h)}
+.fb>.rov{align-self:flex-start;max-width:100%}
+.rov>.rv{line-height:1.25rem;text-box:trim-both cap alphabetic;white-space:nowrap;overflow-x:clip;overflow-y:visible;text-overflow:ellipsis;min-width:0}
+@supports not (overflow-x: clip){.rov>.rv{text-box:normal}}
+.rov .mono{white-space:nowrap;overflow:hidden;overflow-x:clip;overflow-y:visible;text-overflow:ellipsis}
 
 /* file */
 .file{display:flex;align-items:center;gap:.75rem;flex:none}
@@ -424,14 +421,16 @@ button.f{cursor:pointer;width:100%}
 
 /* manager bar mockup */
 .stage{position:relative;height:36rem;overflow:hidden;border:1px solid var(--border);background:#f7f3ee}
-.site{position:absolute;inset:0;overflow:auto;color:#2b2420;font-family:Georgia,"Times New Roman",serif;padding-bottom:calc(var(--k-tabs) + var(--k-control) + 1.5rem + 2rem)}
+.site{position:absolute;inset:0;overflow:auto;color:#2b2420;font-family:Georgia,"Times New Roman",serif;padding-bottom:calc(var(--k-tabs) + var(--k-control) + 1.5rem + 2rem);scroll-padding-bottom:calc(var(--k-tabs) + var(--k-control) + 1.5rem + .5rem)}
+.site:focus-visible{outline-offset:-2px}
 .site nav{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:1rem 1.5rem;font-family:system-ui,sans-serif;font-size:.875rem;border-bottom:1px solid #e4dcd2}
 .site nav b{font-family:Georgia,serif;font-size:1.125rem;white-space:nowrap}
 .site nav span{color:#6b5f55;display:flex;gap:1.25rem}
+.site nav a{color:#1d4ed8}
 @media (max-width:639px){.site nav span{display:none}}
 .hero{margin:1.5rem;padding:2.5rem 2rem;position:relative;display:grid;gap:1.5rem;background:#2f2924;color:#f7f3ee;outline:2px solid #e30a6c;outline-offset:3px}
 @media (min-width:900px){.hero{grid-template-columns:1.2fr 1fr;align-items:center}}
-.hero h4{font-size:2rem;line-height:1.15;margin:0;font-weight:400}
+.hero .hh{font-size:2rem;line-height:1.15;margin:0;font-weight:400}
 .hero .sub{font-family:system-ui,sans-serif;font-size:.8125rem;letter-spacing:.06em;color:#d9c7b4;margin:0 0 .75rem}
 .hero p.desc{margin:1rem 0 1.5rem;line-height:1.6;color:#e7ddd2}
 .hero p.desc:focus{outline:2px solid #60a5fa;outline-offset:4px}
@@ -468,29 +467,33 @@ button.f{cursor:pointer;width:100%}
 .row-arrow{position:absolute;top:50%;transform:translateY(-50%);z-index:2;width:2rem;height:2rem;display:none;place-items:center;border:0;background:var(--k-menu);color:var(--k-fg);box-shadow:var(--k-shadow);cursor:pointer;padding:0}
 .row-arrow.l{left:.25rem}.row-arrow.r{right:.25rem}
 @media (hover:hover) and (pointer:fine){.row-wrap.os:hover .row-arrow.l,.row-wrap.oe:hover .row-arrow.r{display:grid}}
-.coarse .bsum{height:var(--k-tabs)}
+.coarse .bsum{height:calc(var(--k-tabs) - 1px)}
 .coarse .row-arrow,.row-wrap:focus-within .row-arrow{display:none!important}
-.pin{grid-area:pin;display:flex;align-items:center;gap:.5rem;padding:0 .75rem 0 .5rem;min-width:0;box-shadow:inset 1px 0 0 var(--k-line)}
-.pin .btn{--bh:calc(var(--k-tabs) - .5rem)}
+.pin{grid-area:pin;align-self:start;height:calc(var(--k-tabs) - 1px);display:flex;align-items:center;gap:.5rem;padding:0 .25rem 0 .5rem;min-width:0;box-shadow:inset 1px 0 0 var(--k-line)}
+.pin .btn{--bh:calc(var(--k-tabs) - 1px - .5rem)}
 .pin-split{display:inline-flex;gap:1px;flex:none}
 .pin-split .pin-more{width:var(--bh);padding:0}
-.pin-split .pin-more .g{width:.75rem;height:.75rem}
-.coarse .pin{padding:0 .25rem;gap:.25rem}
-.coarse .pin .btn{--bh:var(--k-tabs)}
-.bsum{display:inline-flex;align-items:center;gap:.5rem;height:calc(var(--k-tabs) - .5rem);padding:0 .5rem;background:none;border:0;color:var(--k-muted);font:500 .875rem/1 inherit;white-space:nowrap;cursor:pointer}
+.pin-split .pin-more .g{width:1rem;height:1rem}
+.pin-act[hidden]{display:none}
+.coarse .pin{padding:0 0 0 .25rem;gap:.25rem}
+.coarse .pin .btn{--bh:calc(var(--k-tabs) - 1px)}
+.bsum{display:inline-flex;align-items:center;gap:.5rem;height:calc(var(--k-tabs) - 1px - .5rem);padding:0 .5rem;background:none;border:0;color:var(--k-muted);font:500 .875rem/1 inherit;white-space:nowrap;cursor:pointer}
 .bsum:hover{background:var(--k-field)}
 .bsum.act{color:var(--k-fg);font-weight:600}
 .bsum .dot{background:var(--k-muted)}
 .bsum .dot.live{background:var(--k-success)}
 .sum-short,.pa-short{display:none}
+.pa-full{display:inline-flex;align-items:center;gap:.375rem}
 @container mgr (max-width: 63.99rem){.sum-full{display:none}.sum-short{display:inline}}
 @container mgr (max-width: 39.99rem){
-  .pin,.coarse .pin{padding:0 0 0 .25rem;gap:.125rem}
+  .pin,.coarse .pin{padding:0 0 0 .25rem;gap:0}
+  .bsum,.coarse .bsum{width:calc(var(--k-tabs) - 1px);height:calc(var(--k-tabs) - 1px);padding:0;justify-content:center}
+  .bsum .sum-short{display:none!important}
   .pin .pin-split .pin-more{width:calc(var(--bh) + env(safe-area-inset-right));padding:0 env(safe-area-inset-right) 0 0}
   .pin .pin-split .pin-act{padding:0 .875rem}
-  .pin .btn,.coarse .pin .btn{--bh:var(--k-tabs);padding:0 calc(.875rem + env(safe-area-inset-right)) 0 .875rem}
+  .pin .btn,.coarse .pin .btn{--bh:calc(var(--k-tabs) - 1px);padding:0 calc(.875rem + env(safe-area-inset-right)) 0 .875rem}
   .bsum{padding:0 .5rem;gap:.375rem}
-  .pa-full{display:none}.pa-short{display:inline}
+  .pa-full{display:none}.pa-short{display:inline-flex;align-items:center;gap:.375rem}
   .row{scroll-snap-type:x proximity}
   .row>*{scroll-snap-align:start}
   .row .f.w-lg,.row .f.w-md{width:calc(100cqw - 9.5rem)}
@@ -502,14 +505,14 @@ button.f{cursor:pointer;width:100%}
 .phone .stage{height:44rem;border:8px solid #292524}
 .phone .site nav span{display:none}
 .phone .hero{margin:2.5rem 1rem 1rem;padding:1.5rem 1.25rem}
-.phone .hero h4{font-size:1.5rem}
+.phone .hero .hh{font-size:1.5rem}
 
 /* modal */
 .dlg-host{display:flex;justify-content:center}
 .dlg{background:var(--k-surface);color:var(--k-fg);width:min(36rem,100%);display:flex;flex-direction:column;max-height:min(48rem,calc(100dvh - 4rem));box-shadow:var(--k-shadow);font-size:.875rem;line-height:1.45}
 .dlg-inline .dlg{max-height:none}
 .dlg-h{display:flex;align-items:center;gap:.75rem;height:3.75rem;padding:0 .75rem 0 1.75rem;box-shadow:inset 0 -1px 0 var(--k-line);flex:none}
-.dlg-h h2{font-size:1.125rem;font-weight:600;margin:0;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:0}
+.dlg-h .dt{font-size:1.375rem;font-weight:650;line-height:1.75rem;margin:0;flex:1;min-width:0;white-space:nowrap;overflow:hidden;overflow-x:clip;overflow-y:visible;text-overflow:ellipsis;letter-spacing:-.01em}
 .dlg-h .btn{--bh:2.75rem}
 .dlg-h .ovf{display:none}
 .dlg-b{padding:1.75rem 1.75rem 2.25rem;overflow:auto;flex:1;container-type:inline-size;container-name:dbody}
@@ -536,7 +539,7 @@ button.f{cursor:pointer;width:100%}
 .alert ul{grid-column:2;margin:.25rem 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:.125rem}
 .alert li a{color:var(--k-fg);font-weight:500;text-underline-offset:3px}
 .alert li a:hover{color:var(--k-accent-fg)}
-.alert li span{color:var(--k-muted)}
+.alert li span{color:var(--k-muted-on-field)}
 @container dlgframe (max-width: 39.99rem){
   .dlg{width:100%;max-height:none;box-shadow:none}
   .dlg-h{padding-left:1.25rem;padding-right:.25rem}
@@ -575,7 +578,7 @@ button.f{cursor:pointer;width:100%}
 /* in-page confirm (discard, leave) */
 .cfm{position:absolute;inset:0;z-index:20;display:grid;place-items:center;padding:1rem;background:var(--k-scrim);animation:k-fade var(--d-base) ease-out}
 .cfm-box{background:var(--k-menu);color:var(--k-fg);box-shadow:var(--k-shadow);width:min(24rem,100%);padding:1.25rem 1.25rem 1rem;font-size:.875rem;line-height:1.5;animation:k-dlg var(--d-slow) var(--ease)}
-.cfm-box h3{margin:0;font-size:1rem;font-weight:600;line-height:1.35}
+.cfm-box .cfm-t{margin:0;font-size:1.0625rem;font-weight:650;line-height:1.35;color:var(--k-fg)}
 .cfm-box p{margin:.5rem 0 0;color:var(--k-muted)}
 .cfm-acts{display:flex;justify-content:flex-end;gap:.75rem;margin-top:1.25rem}
 .cfm-acts .btn{--bh:var(--k-control-lg)}
@@ -592,7 +595,7 @@ button.f{cursor:pointer;width:100%}
 .anav a:focus-visible{outline-offset:-2px}
 .apage-b{padding:1.75rem;max-width:40rem}
 .apage-head{display:flex;align-items:baseline;gap:.75rem;flex-wrap:wrap;margin:0 0 1.75rem}
-.apage-head h3{font-size:1.125rem;font-weight:600;margin:0}
+.apage-head .pt{font-size:1.375rem;font-weight:650;line-height:1.75rem;margin:0;letter-spacing:-.01em}
 .apage-head .mono{color:var(--k-muted)}
 .apage-acts{display:flex;gap:.75rem;align-items:center;justify-content:flex-end;margin-top:2rem}
 .apage-acts .btn{--bh:var(--k-control-lg)}
@@ -616,15 +619,16 @@ button.f{cursor:pointer;width:100%}
 .t-static{--tc:var(--k-type-static);--tc-fill:#2563eb;--tc-on:#fff}
 .t-dynamic{--tc:var(--k-type-dynamic);--tc-fill:#facc15;--tc-on:#1c1917}
 .tdot{width:.5rem;height:.5rem;border-radius:50%;flex:none;display:inline-block}
-.tdot.t-static{background:var(--k-type-static)}.tdot.t-dynamic{background:var(--k-type-dynamic)}
+.tdot.t-static{background:var(--k-type-static)}.tdot.t-dynamic{background:var(--k-type-dynamic);border-radius:0;width:.5rem;height:.5rem}
+.ftog.t-dynamic .sw{border-radius:0;width:.5625rem;height:.5625rem}
 .ptl{display:flex;align-items:center;gap:.5rem;min-width:0}
-.ptl .ptitle{min-width:0}
+.ptl .ptitle{min-width:0;padding:.125rem 0}
 .tone-success{background:var(--k-success)}.tone-neutral{background:var(--k-muted)}.tone-accent{background:var(--k-accent-fg)}
 .count{margin-left:auto;color:var(--k-muted);font-variant-numeric:tabular-nums;white-space:nowrap}
-.lgrid{--cols:2.75rem minmax(0,1fr) 7rem 8rem 5.5rem 6.5rem;display:block}
+.lgrid{--cols:2.75rem minmax(0,1fr) 11rem 7.5rem 5.5rem 5.75rem;display:block}
 .lrow{position:relative;display:grid;grid-template-columns:var(--cols);column-gap:1rem;align-items:center;min-height:4rem;padding:0 1rem;box-shadow:inset 0 -1px 0 var(--k-line)}
 .lrow.head{min-height:2.5rem;font-size:.8125rem;color:var(--k-muted)}
-.lrow:not(.head):hover{background:color-mix(in srgb,var(--k-field-hover) 50%,transparent)}
+.lrow:not(.head):hover{background:color-mix(in srgb,var(--k-field) 45%,transparent)}
 .lrow.sel{background:var(--k-accent-tint)}
 .lrow .c{min-width:0}
 .lrow .cc{display:grid;place-items:center}
@@ -642,7 +646,7 @@ button.f{cursor:pointer;width:100%}
 .psub.narrow .stw{color:var(--k-fg);font-weight:500;flex:none}
 .psub.narrow .pth{min-width:0;overflow:hidden;text-overflow:ellipsis}
 .psub.narrow .sep{flex:none}
-.sorth{display:inline-flex;align-items:center;gap:.25rem;background:none;border:0;color:inherit;font:inherit;padding:0;cursor:pointer}
+.sorth{display:inline-flex;align-items:center;gap:.25rem;background:none;border:0;color:inherit;font:inherit;padding:0;cursor:pointer;min-height:2.5rem}
 .sorth .g{width:.75rem;height:.75rem}
 .lrow .num .sorth{justify-content:flex-end;width:100%}
 .lfoot{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-top:1.25rem;flex-wrap:wrap}
@@ -681,6 +685,7 @@ button.f{cursor:pointer;width:100%}
 .narrow-list{width:390px;max-width:100%;border:8px solid #292524;padding:1rem;margin:0 auto;overflow:hidden}
 
 /* toasts */
+.toasts,.toasts.kit{background:none;padding:0;box-shadow:none}
 .toasts{position:fixed;top:5rem;right:1rem;z-index:100;display:flex;flex-direction:column;gap:.75rem;width:22rem;max-width:calc(100vw - 2rem);pointer-events:none}
 @media (max-width:639px){.toasts{top:3.5rem;left:.5rem;right:.5rem;width:auto;max-width:none}}
 .toast{pointer-events:auto;display:grid;grid-template-columns:1rem 1fr auto;gap:.25rem .75rem;padding:1rem;background:var(--k-menu);color:var(--k-fg);box-shadow:var(--k-shadow);font-size:.875rem;line-height:1.45;animation:tin var(--d-base) var(--ease)}
@@ -735,8 +740,148 @@ button.f{cursor:pointer;width:100%}
 .eo [data-panel]:not([hidden]){animation:k-fade var(--d-fast) ease-out}
 .seg button{transition:background-color var(--d-fast) ease-out,box-shadow var(--d-fast) ease-out,color var(--d-fast) ease-out}
 .fh{transition:color var(--d-fast) ease-out}
-.cmp button,.ftog,.nb,.chip-x,.st-btn{transition:background-color var(--d-fast) ease-out,color var(--d-fast) ease-out}
+.ftog,.nb,.chip-x,.st-btn{transition:background-color var(--d-fast) ease-out,color var(--d-fast) ease-out}
 .dlg-b>[data-notice]>.alert{animation:k-fade var(--d-base) ease-out}
+
+
+/* v5: tree (CwaUiTree, treegrid pattern) */
+.tree{--ti:1.25rem;display:flex;flex-direction:column;font-size:.875rem}
+.tnode{position:relative;display:flex;align-items:center;gap:.5rem;min-height:2.5rem;padding:0 0 0 calc(var(--lvl) * var(--ti));box-shadow:inset 0 -1px 0 var(--k-line);outline:none}
+.coarse .tnode{min-height:2.75rem}
+.tnode:hover{background:color-mix(in srgb,var(--k-field) 40%,transparent)}
+.tnode:focus-visible,.tnode.kbf{box-shadow:inset 0 0 0 2px var(--k-accent-fg)}
+.tg-v,.tg-e{position:absolute;pointer-events:none}
+.tg-v{top:0;bottom:0;left:calc(var(--x) * var(--ti) + .6875rem);width:1px;background:var(--k-tree-line)}
+.tg-e{top:0;height:50%;left:calc(var(--x) * var(--ti) + .6875rem);width:.5rem;border-left:1px solid var(--k-tree-line);border-bottom:1px solid var(--k-tree-line)}
+.ttog{position:relative;flex:none;width:1.5rem;height:1.5rem;display:grid;place-items:center;border:0;background:none;color:var(--k-muted);padding:0;cursor:pointer}
+.ttog:hover{background:var(--k-step-hover);color:var(--k-fg)}
+.ttog .g{width:.75rem;height:.75rem;transition:transform var(--d-fast) var(--ease)}
+.tnode[aria-expanded="false"] .ttog .g{transform:rotate(-90deg)}
+.tsp{flex:none;width:1.5rem}
+.tlab{flex:1;min-width:0;display:flex;align-items:center;gap:.5rem}
+.tlab .tp{min-width:0;white-space:nowrap;overflow-x:clip;overflow-y:visible;text-overflow:ellipsis;line-height:1.25rem}
+.tlab .badge{flex:none}
+.tacts{display:flex;flex:none}
+.tacts .btn{--bh:2.5rem;width:2.5rem;padding:0}
+.coarse .tacts .btn{--bh:2.75rem;width:2.75rem}
+.tempty{color:var(--k-muted);margin:0;padding:.5rem 0}
+
+/* v5: Routes tab */
+.rt-note{display:flex;gap:.5rem;align-items:flex-start;font-size:.8125rem;line-height:1.45;color:var(--k-muted);margin:0 0 1.75rem}
+.rt-note .g{margin-top:.125rem;color:var(--k-muted)}
+.rt-status{display:grid;grid-template-columns:1rem 1fr;gap:.25rem .75rem;align-items:start;padding:.75rem 1rem;margin:0 0 1.5rem;font-size:.8125rem;line-height:1.45;background:color-mix(in srgb,var(--k-success) 14%,var(--k-surface))}
+.rt-status .g{margin-top:.125rem}
+.rt-status:empty{display:none}
+.rt-path{display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;min-height:var(--h)}
+.rt-path .rov{max-width:100%}
+.rt-path .rv{font-weight:500}
+.rt-path .sp{flex:1}
+.rt-acts{display:flex;gap:.75rem;flex-wrap:wrap;align-items:center}
+.rt-acts .btn,.rt-path .btn,.rt-h .btn{--bh:var(--k-control-lg)}
+.rt-h{display:flex;align-items:center;gap:1rem;justify-content:space-between}
+.rt-h .fsh{margin:0}
+.fsh-row{display:flex;align-items:center;justify-content:space-between;gap:1rem}
+.fsh-row .fsh{margin:0;font-size:1.125rem;font-weight:650;line-height:1.3;letter-spacing:-.01em}
+.fsh-row .btn{--bh:var(--k-control-lg)}
+.rt-rec{font-size:.8125rem;line-height:1.45;color:var(--k-muted);display:flex;gap:.25rem .5rem;flex-wrap:wrap;align-items:center}
+.rt-rec .mono{color:var(--k-fg)}
+.rt-warn{display:grid;grid-template-columns:1rem 1fr;gap:.25rem .75rem;padding:.75rem 1rem;background:var(--k-field-warning);font-size:.8125rem;line-height:1.45}
+.rt-warn .g{margin-top:.125rem}
+.rt-warn p{margin:0;grid-column:2}
+.rt-edit{display:flex;flex-direction:column;gap:1.5rem}
+.pathctl{display:grid;grid-template-columns:minmax(0,max-content) minmax(0,1fr);gap:1px}
+.pathctl>button.f{width:auto;max-width:13rem}
+@container dbody (max-width: 25rem){.pathctl{grid-template-columns:1fr;gap:.5rem}.pathctl>button.f{max-width:none;width:100%}}
+.rt-edit-acts{display:flex;gap:.75rem;align-items:center;flex-wrap:wrap}
+.rt-edit-acts .sp{flex:1}
+.rt-edit-acts .btn{--bh:var(--k-control-lg)}
+@container dbody (max-width: 25rem){.rt-edit-acts{justify-content:flex-end}.rt-edit-acts .sp{display:none}.rt-edit-acts .del{order:3;flex-basis:100%;justify-content:flex-start;padding-left:0}}
+.rt-inline{display:flex;flex-direction:column;gap:.75rem;padding:1rem;background:var(--k-raised);margin:0 0 .75rem}
+.rt-inline .row2{display:flex;gap:.75rem;flex-wrap:wrap}
+.rt-inline .row2 .btn{--bh:var(--k-control-lg)}
+.rt-busy[aria-busy="true"] .btn:not([data-busy]){pointer-events:none;opacity:.5}
+.rt-fail{margin:0 0 1.5rem}
+
+/* v5: search states */
+.mlist.dim .opt:not(.sk):not(.act){opacity:.5}
+.opt.sk{cursor:default}
+.opt.sk i{display:block;height:.625rem;background:var(--k-field);width:var(--w,60%)}
+.opt.sk i+i{height:.5rem;margin-top:.5rem;width:calc(var(--w,60%) - 20%)}
+.opt.act .o-l{color:var(--k-accent-fg);font-weight:600}
+.mstate.tight{padding:.5rem .75rem;font-size:.8125rem}
+.mfoot{display:block;padding:.5rem .75rem .25rem;font-size:.8125rem;color:var(--k-muted);border-top:1px solid var(--k-line);margin-top:.25rem}
+.menu.sheet .mfoot{padding-left:1rem;padding-right:1rem}
+.spin.sm{width:.75rem;height:.75rem;border-width:1.5px}
+.f .lv{flex:1;min-width:0}
+.f.loading-label input::placeholder{color:transparent}
+.f .lbl-sk{position:absolute;left:2.25rem;top:50%;height:.625rem;width:8rem;margin-top:-.3125rem;background:var(--k-field-hover)}
+.s-modal .f .lbl-sk{left:2.375rem}
+
+/* v5: a conflict is attached to its field */
+.cfxw{display:flex;flex-direction:column;min-width:0}
+.cfx-b{display:flex;flex-direction:column;gap:.75rem;margin-top:.5rem;padding:.875rem 1rem 1rem calc(3px + .875rem);background:color-mix(in srgb,var(--k-warning) 10%,var(--k-surface));box-shadow:inset 3px 0 0 var(--k-warning);min-width:0}
+.cfx-h{margin:0;display:flex;align-items:center;gap:.5rem;font-weight:600;font-size:.875rem;line-height:1.35;color:var(--k-fg)}
+.pav{width:1.25rem;height:1.25rem;display:grid;place-items:center;background:var(--peer);color:#fff;font:600 .6875rem/1 system-ui,sans-serif;flex:none}
+.cfx-vals{margin:0;display:grid;grid-template-columns:auto minmax(0,1fr);gap:.5rem .75rem;align-items:baseline}
+.cfx-vals>div{display:contents}
+.cfx-vals dt{font-size:.75rem;font-weight:600;color:var(--k-muted);line-height:1.5}
+.cfx-vals dd{margin:0;font-size:.875rem;line-height:1.5;color:var(--k-fg);overflow-wrap:anywhere}
+.cfx-vals dd::before{content:"“"}.cfx-vals dd::after{content:"”"}
+.cfx-vals dd i{color:var(--k-muted)}
+.cfx-vals.clamp:not(.all) dd{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;padding-bottom:.125rem}
+.cfx-vals mark{background:color-mix(in srgb,var(--k-warning) 26%,transparent);color:inherit;font-weight:650;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}
+.cfx-b>.tbtn{align-self:flex-start}
+.cfx-acts{display:flex;justify-content:flex-end;gap:.75rem;flex-wrap:wrap}
+.cfx-acts .btn{--bh:var(--k-control);flex:0 0 auto;max-width:100%;height:auto;min-height:var(--bh);white-space:normal;text-align:center;padding-top:.375rem;padding-bottom:.375rem;overflow-wrap:break-word}
+@container dbody (max-width: 25rem){.cfx-acts .btn{flex:1 1 auto}}
+@media (max-width:639px){.cfx-acts .btn{flex:1 1 auto}}
+.pop .cfx-vals{margin:.25rem 0 0}
+.cfm-box .cblab{margin-top:.5rem;color:var(--k-fg)}
+
+/* v5: code sample */
+.code{background:var(--code);color:var(--text);padding:1rem;margin:.75rem 0 0;font:12.5px/1.6 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;overflow-x:auto;max-width:46rem}
+
+/* v5: the bar's status glyph for a new component */
+.bsum .g{flex:none}
+
+/* v5: toasts move aside from the focused element */
+.toast.t-success{--tone:var(--k-success);--tone-solid:#15803d}
+.toast.t-info{--tone:var(--k-accent-fg);--tone-solid:#1d4ed8}
+.toast.t-warning{--tone:var(--k-warning);--tone-solid:#b45309}
+.toast.t-error{--tone:var(--k-danger);--tone-solid:#b91c1c}
+.ts-a .toast,.ts-b .toast{-webkit-backdrop-filter:blur(16px) saturate(1.5);backdrop-filter:blur(16px) saturate(1.5);box-shadow:var(--k-shadow),inset 3px 0 0 var(--tone)}
+.ts-a .toast{background:color-mix(in srgb,var(--k-menu) 85%,transparent)}
+.ts-b .toast{background:color-mix(in srgb,color-mix(in srgb,var(--tone) 12%,var(--k-menu)) 85%,transparent)}
+.ts-a .toast p,.ts-b .toast p{color:var(--k-fg)}
+.ts-a .toast .tbtn,.ts-b .toast .tbtn{color:var(--k-fg);text-decoration:underline;text-decoration-thickness:1px}
+.ts-c .toast{background:var(--tone-solid);color:#fff}
+.ts-c .toast p,.ts-c .toast .x,.ts-c .toast .tbtn,.ts-c .toast .g{color:#fff}
+.ts-c .toast .x:hover{background:rgb(255 255 255 / .16)}
+.ts-c .toast .tbtn:focus-visible,.ts-c .toast .x:focus-visible{outline-color:#fff}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.ts-a .toast{background:var(--k-menu)}.ts-b .toast{background:color-mix(in srgb,var(--tone) 12%,var(--k-menu))}}
+@media (prefers-reduced-transparency:reduce){.ts-a .toast{background:var(--k-menu);backdrop-filter:none;-webkit-backdrop-filter:none}.ts-b .toast{background:color-mix(in srgb,var(--tone) 12%,var(--k-menu));backdrop-filter:none;-webkit-backdrop-filter:none}}
+.topts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1.5rem;margin-top:1rem}
+@media (max-width:1100px){.topts{grid-template-columns:1fr}}
+.topt h4{margin:0 0 .25rem;font-size:1rem}
+.topt>p{margin:0 0 .75rem;color:var(--k-muted);font-size:.875rem}
+.tbg{position:relative;overflow:hidden;padding:1rem;margin-bottom:1rem;display:grid;gap:.75rem;align-content:start;color:var(--k-fg)}
+.tbg.plain{background:var(--k-surface);box-shadow:inset 0 0 0 1px var(--k-line)}
+.tbg.busy{background:
+  radial-gradient(circle at 18% 22%,#ffffff 0 9%,rgb(255 255 255 / 0) 22%),
+  radial-gradient(circle at 82% 78%,#000000 0 12%,rgb(0 0 0 / 0) 30%),
+  radial-gradient(ellipse at 70% 15%,#fde68a 0 10%,rgb(253 230 138 / 0) 35%),
+  repeating-linear-gradient(115deg,#e7c9a0 0 18px,#3b2414 18px 26px,#94a3b8 26px 40px,#f8fafc 40px 46px,#14532d 46px 58px),
+  #78350f}
+.tbg .bgtx{position:absolute;inset:0;padding:1rem;pointer-events:none;font:700 1.5rem/1.2 Georgia,serif;color:#111;overflow:hidden}
+.tbg .bgtx span{display:block;font:400 .9375rem/1.5 Georgia,serif;color:#fafafa;margin-top:.5rem}
+.tbg .bgtx span:nth-child(odd){color:#0a0a0a}
+.tbg .toast{position:relative;animation:none;max-width:22rem;margin-left:auto;width:100%}
+.tbg-cap{position:relative;font-size:.75rem;font-weight:600;color:var(--k-fg);background:var(--k-surface);justify-self:start;padding:.125rem .5rem}
+.tregion-demo{outline:1px dashed transparent}
+.toasts{transition:opacity 120ms ease-out}
+.toasts.seethru{opacity:.15}
+.toasts.seethru .toast{pointer-events:none}
+@media (prefers-reduced-motion:reduce){.toasts{transition:none}}
 
 @media (prefers-reduced-motion: reduce){
   .tab-ind.anim{transition:none}
@@ -765,6 +910,9 @@ button.f{cursor:pointer;width:100%}
   <symbol id="g-check" viewBox="0 0 16 16"><path d="M1.8 8.4 3.6 6.6 6.4 9.4 12.4 3.4l1.8 1.8L6.4 13z"/></symbol>
   <symbol id="g-x" viewBox="0 0 16 16"><path d="m3.5 2.1 4.5 4.5 4.5-4.5 1.4 1.4L9.4 8l4.5 4.5-1.4 1.4L8 9.4l-4.5 4.5-1.4-1.4L6.6 8 2.1 3.5z"/></symbol>
   <symbol id="g-search" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M6.8 1a5.8 5.8 0 0 1 4.7 9.2l3.6 3.6-1.4 1.4-3.6-3.6A5.8 5.8 0 1 1 6.8 1Zm0 2a3.8 3.8 0 1 0 0 7.6 3.8 3.8 0 0 0 0-7.6Z"/></symbol>
+  <symbol id="g-vmore" viewBox="0 0 16 16"><path d="M6.75 1.75h2.5v2.5h-2.5zM6.75 6.75h2.5v2.5h-2.5zM6.75 11.75h2.5v2.5h-2.5z"/></symbol>
+  <symbol id="g-live" viewBox="0 0 16 16"><path d="M8 1.5a6.5 6.5 0 1 1 0 13 6.5 6.5 0 0 1 0-13zm0 1.75a4.75 4.75 0 1 0 0 9.5 4.75 4.75 0 0 0 0-9.5zM8 5a3 3 0 1 1 0 6 3 3 0 0 1 0-6z"/></symbol>
+  <symbol id="g-group" viewBox="0 0 16 16"><path d="M2 2.5h12v3H2zM2 6.5h12v3H2zM2 10.5h12v3H2z"/></symbol>
   <symbol id="g-more" viewBox="0 0 16 16"><path d="M2 6.75h2.5v2.5H2zM6.75 6.75h2.5v2.5h-2.5zM11.5 6.75H14v2.5h-2.5z"/></symbol>
   <symbol id="g-edit" viewBox="0 0 16 16"><path d="M11.2 1.4 14.6 4.8 5.6 13.8H2.2v-3.4z"/></symbol>
   <symbol id="g-ext" viewBox="0 0 16 16"><path d="M6 2h8v8h-2V5.4l-7.3 7.3-1.4-1.4L10.6 4H6z"/></symbol>
@@ -772,11 +920,15 @@ button.f{cursor:pointer;width:100%}
   <symbol id="g-cal" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M1 3h3V1h2v2h4V1h2v2h3v12H1V3Zm2 4v6h10V7H3Z"/></symbol>
   <symbol id="g-up" viewBox="0 0 16 16"><path d="M8 3 2.5 9.5h11z"/></symbol>
   <symbol id="g-down" viewBox="0 0 16 16"><path d="M8 13 2.5 6.5h11z"/></symbol>
+  <symbol id="g-plus" viewBox="0 0 16 16"><path d="M7 2h2v5h5v2H9v5H7V9H2V7h5z"/></symbol>
+  <symbol id="g-new" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8 .5a7.5 7.5 0 1 1 0 15 7.5 7.5 0 0 1 0-15ZM7.1 4h1.8v3.1H12v1.8H8.9V12H7.1V8.9H4V7.1h3.1V4Z"/></symbol>
+  <symbol id="g-trash" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M5.5 1h5v1.5H14v2H2v-2h3.5V1ZM3 5.5h10L12 15H4L3 5.5Zm3 2v5.5h1.5V7.5H6Zm2.5 0v5.5H10V7.5H8.5Z"/></symbol>
+  <symbol id="g-go" viewBox="0 0 16 16"><path d="M8.6 2.4 14.2 8l-5.6 5.6-1.4-1.4L10.4 9H2V7h8.4L7.2 3.8z"/></symbol>
 </svg>
 
 <header class="top">
   <div class="wrap">
-    <div class="brand">CWA Admin UI Kit <small>Proposal v4 · #236 · UI kit only</small></div>
+    <div class="brand">CWA Admin UI Kit <small>Proposal v5 · #236 · UI kit only</small></div>
     <div class="themes" role="group" aria-label="Page theme">
       <button type="button" data-theme-set="auto" aria-pressed="true">Auto</button>
       <button type="button" data-theme-set="light" aria-pressed="false">Light</button>
@@ -786,13 +938,24 @@ button.f{cursor:pointer;width:100%}
 </header>
 
 <main class="wrap">
-  <h1>The admin UI kit, v4</h1>
+  <h1>The admin UI kit, v5</h1>
   <p class="lede">Every control is shown here in the state it will ship with. Only the kit is covered: how components declare their fields, styles and UI variants is a separate job. The menus, popovers, bar, modal and list all work, so try them with a mouse, a keyboard and a phone.</p>
-  <p class="lede"><strong>New in v4, after review:</strong></p>
+  <p class="lede"><strong>New in v5, after review:</strong></p>
+  <ul class="changes">
+    <li><strong>WCAG 2.2 AA.</strong> Darker field fills, 24px minimum targets, focus never hidden behind the bar, header or toasts, shapes as well as colours, one quiet live region per surface, and a checklist per component in the spec.</li>
+    <li><strong>The Routes tab</strong> (section 6) with the kit's new tree for redirects and child routes. Route actions save at once, each after its own confirm; the modal's Save is only for the page's fields.</li>
+    <li><strong>Search asks the API</strong> (section 2): first load, searching, slow, many results, no matches, offline and server errors, and a chosen page that isn't in the results.</li>
+    <li><strong>A page's status in lists comes from its route</strong>: Live, Scheduled, Not live, Held back by parent, No route. Templates say what uses them. Row actions are Edit settings and Go to page.</li>
+    <li><strong>Section headings read as headings</strong>: larger and heavier than labels, with a rule and more space above.</li>
+    <li><strong>A conflict is a notice under its field</strong>, with both versions as plain quoted text and Use Mia's / Keep mine; a summary at the top says why Save is blocked.</li>
+    <li><strong>Every ⓘ opens a popover</strong>, so nothing on the page moves.</li>
+    <li><strong>Create buttons are “+ Page”, “+ Article”</strong>; a new component's action is “+ Draft” or “+ Add”. On a phone the bar's status is a glyph right next to Publish.</li>
+    <li><strong>Toasts are tinted frosted glass</strong> (option B, chosen from three in section 8), and never move.</li>
+  </ul>
+  <p class="lede"><strong>From v4:</strong></p>
   <ul class="changes">
     <li><strong>No space is reserved for a status glyph.</strong> On a control with an end icon (a select's chevron, a date's calendar), the state takes the icon's place while it lasts: spinner, then tick, then the chevron again; error and conflict are a solid glyph button there. On a plain text input or stepper in the bar, the end padding widens only while a state shows, so the field's outer size never changes. Modal and page fields show no glyph inside at all.</li>
     <li><strong>Admin pages with forms use the modal's Save model</strong>: a local copy, a Save button, nothing saved as you type.</li>
-    <li><strong>Create buttons name what they create</strong>: “Create page”, “Create article”.</li>
     <li><strong>Unsaved changes are never lost silently.</strong> Cancel, ×, Escape and a click outside ask “Discard 3 unsaved changes?”; leaving an admin page or modal asks “Leave without saving?”; closing the browser tab gets the browser's own prompt. Nothing asks when nothing changed.</li>
     <li><strong>On touch screens every control's value is 1rem</strong>, so a select sits at the same size as the text input beside it.</li>
     <li><strong>Values are never clipped.</strong> A value that ends in an ellipsis is clipped sideways only, so ascenders and descenders show in full.</li>
@@ -818,7 +981,7 @@ button.f{cursor:pointer;width:100%}
     <li><strong>Friendlier spacing</strong>, a rebuilt modal form layout, a list on one grid, and phone layouts for all of them, with 44px touch targets.</li>
   </ul>
   <nav class="toc" aria-label="Sections">
-    <a href="#gallery">1 Gallery</a><a href="#menus">2 Menus</a><a href="#errors">3 Errors and info</a><a href="#eitheror">4 Either/or</a><a href="#bar">5 Manager bar</a><a href="#modal">6 Modals and pages</a><a href="#list">7 Lists</a><a href="#feedback">8 Feedback</a><a href="#questions">9 Open questions</a>
+    <a href="#gallery">1 Gallery</a><a href="#menus">2 Menus and search</a><a href="#errors">3 Errors and info</a><a href="#eitheror">4 Either/or</a><a href="#bar">5 Manager bar</a><a href="#modal">6 Modals and pages</a><a href="#list">7 Lists</a><a href="#feedback">8 Feedback</a><a href="#questions">9 Open questions</a>
   </nav>
 
   <section class="sec" id="gallery" aria-labelledby="h-gallery">
@@ -832,7 +995,14 @@ button.f{cursor:pointer;width:100%}
 
   <section class="sec" id="menus" aria-labelledby="h-menus">
     <h2 id="h-menus">2 · Select, multi-select and search menus</h2>
-    <p class="lede">These follow the page theme. Open them with a click, a tap, or Arrow Down. Arrow keys move the highlight, typing jumps (select) or filters (search), Enter picks and Escape closes. When the window is narrower than 640px, menus open as a bottom sheet with the search pinned at the top, anything already typed carried into it, and the chosen styles shown as chips under the search. The sheet sits above the on-screen keyboard. In the page search, type <code>fail</code> to see a failed load.</p>
+    <p class="lede">These follow the page theme. Open them with a click, a tap, or Arrow Down. Arrow keys move the highlight, typing jumps (select) or filters (search), Enter picks and Escape closes. When the window is narrower than 640px, menus open as a bottom sheet with the search pinned at the top, anything already typed carried into it, and the chosen styles shown as chips under the search. The sheet sits above the on-screen keyboard.</p>
+    <p class="lede"><strong>Page searches ask the API.</strong> The first open shows skeleton rows; typing waits 250 ms, keeps the previous results dimmed with a small spinner, and says “Still searching…” after 3 seconds. Each search cancels the one before it, a late answer is ignored, and closing the menu cancels the request in flight. Long lists say “Showing 20 of 143” with Show 20 more; there is no infinite scroll. Offline and server errors keep the previous results, with Retry. The Parent page's chosen value is not on the first page, so its label is fetched on its own. Focus stays in the search, and the result count is announced once the search settles, never per keystroke. Choose how the next searches answer, or type <code>slow</code>, <code>offline</code> or <code>fail</code>:</p>
+    <div class="sim" id="search-sim" role="group" aria-label="Next searches">
+      <button type="button" data-ss="normal" aria-pressed="true">Normal</button>
+      <button type="button" data-ss="slow" aria-pressed="false">Slow (4 s)</button>
+      <button type="button" data-ss="offline" aria-pressed="false">Offline</button>
+      <button type="button" data-ss="error" aria-pressed="false">Server error</button>
+    </div>
     <div class="cols">
       <div>
         <p class="panel-cap"><b>Modal and page</b> labels above</p>
@@ -844,6 +1014,8 @@ button.f{cursor:pointer;width:100%}
           <div class="kit-row" id="menus-bar"></div>
         </div>
         <p class="note">In the bar a multi-select shows the first choice and “+N”, and lists the chosen options first when it opens. Disabled options give their reason on a second line, never on hover.</p>
+        <p class="panel-cap" style="margin-top:1.5rem"><b>Requests</b> the page searches</p>
+        <pre class="log" id="search-log">Requests appear here.</pre>
       </div>
     </div>
   </section>
@@ -882,13 +1054,23 @@ button.f{cursor:pointer;width:100%}
       <button type="button" data-sim="reset">Reset</button>
     </div>
     <div class="sim" id="bar-mode" role="group" aria-label="Selected component">
-      <button type="button" data-sim="mode-existing" aria-pressed="true">Existing component</button>
-      <button type="button" data-sim="mode-full" aria-pressed="false">Existing, in a full group</button>
-      <button type="button" data-sim="mode-new" aria-pressed="false">New component</button>
+      <button type="button" data-sim="mode-existing" aria-pressed="true">Draft</button>
+      <button type="button" data-sim="mode-live" aria-pressed="false">Live (⋮ only)</button>
+      <button type="button" data-sim="mode-group" aria-pressed="false">Group (⋮ only)</button>
+      <button type="button" data-sim="mode-full" aria-pressed="false">Draft, in a full group</button>
+      <button type="button" data-sim="mode-new" aria-pressed="false">New component, publishable</button>
+      <button type="button" data-sim="mode-newplain" aria-pressed="false">New component, not publishable</button>
     </div>
     <div id="bar-desktop"></div>
+    <h3 class="sub">Writing a tab</h3>
+    <p class="note" style="margin:0 0 .5rem">A manager tab's single root is <code>CwaUiManagerTab</code>, which is the one-row layout. Fields are its direct children and lay themselves out for the bar: inline label, bar control size, the state in the end icon's place, errors as a popover. Kit inputs take <code>field="…"</code> and build their model from the tab's resource; <code>:model</code> stays for page data, a custom debounce and other unusual cases. A tab whose root is anything else gets a development warning.</p>
+<pre class="code" tabindex="0" aria-label="Example: a NavigationLink tab"><code>&lt;CwaUiManagerTab&gt;
+  &lt;CwaUiInput field="label" label="Label" /&gt;
+  &lt;CwaUiLinkInput :fields="['route', 'rawPath']" label="Link" /&gt;
+  &lt;CwaUiToggle field="openInNewTab" label="Open in a new tab" /&gt;
+&lt;/CwaUiManagerTab&gt;</code></pre>
     <h3 class="sub">On a phone</h3>
-    <p class="note" style="margin:0 0 1rem">The same bar with 2.75rem controls and no arrows. The status stays in the tab row as a glyph and a short word (Draft, Saving…, Saved, 1 not saved), beside Publish, so the field row has the full width. Fields are sized so the next one peeks in, and the row snaps to fields.</p>
+    <p class="note" style="margin:0 0 1rem">The same bar with 2.75rem controls and no arrows. The status stays in the tab row as a glyph only, right against Publish with no gap, so the tabs get more room; each state has its own shape (a dot for Draft, a clock for Scheduled, a circled plus for New, the spinner, the tick, the triangle, the diamond), and its name is read out. Fields are sized so the next one peeks in, and the row snaps to fields.</p>
     <div class="phone" id="bar-phone"></div>
   </section>
 
@@ -912,6 +1094,24 @@ button.f{cursor:pointer;width:100%}
     <div class="dlg-row">
       <div class="dlg-inline"><p class="panel-cap"><b>Create</b></p><div class="dlg-host" id="modal-create"></div><pre class="log" id="modal-create-log" aria-live="polite">Requests appear here.</pre></div>
       <div><p class="panel-cap"><b>Phone</b></p><div class="phone-dlg kit coarse"><div class="dlg-host" id="modal-create-phone"></div></div></div>
+    </div>
+    <h3 class="sub">The Routes tab</h3>
+    <p class="note" style="margin:0 0 1rem">Route actions are saved at once, each after its own confirm, with their own saving state on the tab: editing the route (path and go-live), using the recommended path, adding or deleting a redirect, forwarding, and deleting the route. The modal's Save is only for the page's fields. The recommendation is the page's title under its parent's path, shown under the path until it matches. Redirects and child routes are trees: click a row, then use the arrow keys (Right opens a row or moves to its button, Left closes it or goes to its parent; Delete removes a redirect).</p>
+    <div class="sim" id="routes-sim">
+      <span role="group" aria-label="Route state" style="display:contents">
+        <button type="button" data-rsim="live" aria-pressed="true">Live</button>
+        <button type="button" data-rsim="scheduled" aria-pressed="false">Scheduled</button>
+        <button type="button" data-rsim="draft" aria-pressed="false">Not live</button>
+        <button type="button" data-rsim="gate" aria-pressed="false">Held back by a parent</button>
+        <button type="button" data-rsim="noparent" aria-pressed="false">Parent has no route</button>
+        <button type="button" data-rsim="none" aria-pressed="false">No route yet</button>
+      </span>
+      <button type="button" data-rsim="fail">Make the next route action fail</button>
+      <button type="button" data-rsim="reset">Reset</button>
+    </div>
+    <div class="dlg-row">
+      <div class="dlg-inline"><p class="panel-cap"><b>Routes tab</b> Shaker kitchens, under Kitchens</p><div class="dlg-host" id="routes-edit"></div><pre class="log" id="routes-log" aria-live="polite">Requests appear here.</pre></div>
+      <div><p class="panel-cap"><b>Phone</b></p><div class="phone-dlg kit coarse"><div class="dlg-host" id="routes-edit-phone"></div></div></div>
     </div>
     <h3 class="sub">Admin pages: the same Save model</h3>
     <p class="note" style="margin:0 0 1rem">A <code>/_cwa</code> page with a form (here, site settings) works like a modal: it edits a local copy, nothing is sent as you type, and Save counts and sends the changes in one request. Change a field, then click Pages, Layouts or Users: leaving with unsaved changes asks first (in the module this is the existing <code>NavigationGuard</code>). Cancel asks too. Closing or reloading the browser tab with unsaved changes gets the browser's own prompt, whose wording we cannot change. When nothing has changed, nothing asks.</p>
@@ -948,22 +1148,27 @@ button.f{cursor:pointer;width:100%}
         <div class="kit toastdemo" id="toast-static"></div>
       </div>
     </div>
+    <h3 class="sub">Toast styles: B chosen</h3>
+    <p class="note" style="margin:0 0 .5rem">Each option over a busy page (a photo and text) and a plain one, in light and dark. The region holding the toasts has no background, padding, shadow or blur of its own and lets clicks through; only the toasts take them. Toasts never move: when the focused element is entirely hidden behind the stack, the stack turns see-through in place until focus moves on. Daniel chose B, tinted frosted; the live toasts use it. A and C stay here for the record, and the buttons below switch the live toasts to compare.</p>
+    <div class="sim" id="toast-style" role="group" aria-label="Style for live toasts">
+      <button type="button" data-ts="a" aria-pressed="false">A · Frosted</button><button type="button" data-ts="b" aria-pressed="true">B · Tinted frosted (chosen)</button><button type="button" data-ts="c" aria-pressed="false">C · Solid tone</button>
+    </div>
+    <div class="topts" id="toast-opts"></div>
   </section>
 
   <section class="sec" id="questions" aria-labelledby="h-questions">
     <h2 id="h-questions">9 · Open questions for Daniel</h2>
+    <p class="lede">The v4 questions are settled: page data fields are part of the configuration job, <code>field="…"</code> is in, the model names stand, phones get bottom sheets, the round 4 palette is approved, and the fills are darkened, with WCAG 1.4.11 met by each field's visible label.</p>
     <ol class="qs">
-      <li><b>Page data fields.</b> Page data has no SFC, but its fields should still be easy to configure for the page data modal. Where that configuration lives is part of the separate configuration job. The kit only needs the modal layout in section 6 to render whatever is declared. Still open.</li>
-      <li><b>Palette.</b> Can stone-200 (the light field fill), blue-400, blue-700, amber-700, lime-800, red-700 and red-400 be approved, or should they be replaced?</li>
-      <li><b>Filled fields and WCAG 1.4.11.</b> Against the surface, a field's fill is 1.7:1 in dark and 1.3:1 in light. The mitigations are an always-visible label, 4.5:1 value and placeholder text, 3:1 glyphs and a forced-colors outline. Is that acceptable, or should the dark fill go to stone-600 (2.3:1) and look heavier?</li>
-      <li><b><code>field="…"</code> shorthand</b> on kit inputs inside a tab, with <code>:model</code> kept: yes or no?</li>
-      <li><b>Model names</b>: are <code>state</code>, <code>retry</code> and <code>reset</code> on the model, the <code>updateResource</code> result object, and <code>fieldStates</code> stored next to <code>apiState</code> in the resources store the right names?</li>
-      <li><b>Bottom-sheet menus on phones</b>: yes, or keep anchored popovers everywhere?</li>
+            <li><b>Palette additions for contrast.</b> The round 4 palette is approved; these are new: red-300 (#fca5a5) for dark error text, yellow-700 (#a16207) for the light Dynamic colour, and stone-300 (#d6d3d1) for the light field. Approved?</li>
+      <li><b>Editing a route</b> happens in place on the Routes tab and is saved by its own Save route button after a confirm. Is a second Save inside the modal clear enough, or should route edits open their own small dialog?</li>
+      <li><b>Tree pattern.</b> The tree is an ARIA treegrid, because its rows have buttons; a plain tree can't hold them. Fine?</li>
     </ol>
   </section>
 </main>
 <div id="portal"></div>
-<div class="toasts kit" id="toasts" aria-live="polite"></div>
+<div class="toasts kit" id="toasts"></div>
+<div class="sr" id="page-live" aria-live="polite" aria-atomic="true"></div>
 
 <script>
 (() => {
@@ -1198,16 +1403,17 @@ function renderMenu (mode) {
   for (const it of items) {
     if (it.type === 'group') html += `<div class="mgroup" role="presentation">${esc(it.label)}</div>`
     else if (it.type === 'sep') html += '<div class="msep" role="separator"></div>'
-    else if (it.type === 'state') html += `<div class="mstate" role="presentation">${it.html}</div>`
+    else if (it.type === 'state') html += `<div class="mstate${it.tight ? ' tight' : ''}${it.foot ? ' mfoot' : ''}" role="presentation">${it.html}</div>`
     else {
       const i = m.opts.length
       m.opts.push(it)
       const sel = !m.isMenu && m.cfg.selected(it)
       const two = it.desc || it.descHtml
-      html += `<div class="opt${two ? ' two' : ''}${it.disabled ? ' dis' : ''}${it.muted ? ' muted' : ''}${it.danger ? ' c-danger' : ''}" role="${m.isMenu ? 'menuitem' : 'option'}" id="${m.lid}-${i}" data-i="${i}"${m.isMenu ? '' : ` aria-selected="${sel}"`}${it.disabled ? ' aria-disabled="true"' : ''}><span class="o-main"><span class="o-l">${it.html || esc(it.label)}</span>${two ? `<span class="o-d">${it.descHtml || esc(it.desc)}</span>` : ''}</span>${sel ? g('check', 'o-c') : '<span class="o-c"></span>'}</div>`
+      html += `<div class="opt${it.act ? ' act' : ''}${two ? ' two' : ''}${it.disabled ? ' dis' : ''}${it.muted ? ' muted' : ''}${it.danger ? ' c-danger' : ''}" role="${m.isMenu ? 'menuitem' : 'option'}" id="${m.lid}-${i}" data-i="${i}"${m.isMenu ? '' : ` aria-selected="${sel}"`}${it.disabled ? ' aria-disabled="true"' : ''}><span class="o-main"><span class="o-l">${it.html || esc(it.label)}</span>${two ? `<span class="o-d">${it.descHtml || esc(it.desc)}</span>` : ''}</span>${sel ? g('check', 'o-c') : '<span class="o-c"></span>'}</div>`
     }
   }
   m.list.innerHTML = html
+  m.list.classList.toggle('dim', !!(m.cfg.dim && m.cfg.dim()))
   const chipsEl = $('.sh-chips', m.panel)
   if (chipsEl) chipsEl.innerHTML = m.cfg.extra()
   const firstEnabled = m.opts.findIndex(o => !o.disabled)
@@ -1469,81 +1675,198 @@ function setupMulti (f) {
   draw()
 }
 
+/* one polite live region per surface; nothing is said while typing */
+function announcer (el) {
+  let slow = {}; let batch = { saved: [], failed: [] }; let t; let tm
+  const put = m => { clearTimeout(tm); el.textContent = ''; tm = setTimeout(() => { el.textContent = m }, 50) }
+  const flush = () => {
+    const f = batch.failed; const s = batch.saved
+    const parts = []
+    if (f.length) parts.push(f.length === 1 ? `${f[0]} wasn't saved` : `${f.length} fields weren't saved`)
+    if (s.length) parts.push(s.length === 1 ? `${s[0]} saved` : `${s.length} fields saved`)
+    batch = { saved: [], failed: [] }
+    if (parts.length) put(parts.join('. '))
+  }
+  return {
+    saving (k) { clearTimeout(slow[k]); slow[k] = setTimeout(() => put('Saving…'), 1000) },
+    done (k, name, ok) { clearTimeout(slow[k]); (ok ? batch.saved : batch.failed).push(name); clearTimeout(t); t = setTimeout(flush, 1000) },
+    say (m, wait = 250) { clearTimeout(t); t = setTimeout(() => put(m), wait) },
+    cancel () { clearTimeout(t) }
+  }
+}
+const pageLive = announcer(document.getElementById('page-live'))
+
+/* resource search: the API is simulated with delays, failures and many results */
+const SEARCH_SIM = { mode: 'normal' }
+const searchLogEl = () => document.getElementById('search-log')
+let searchLogLines = []
+function searchLog (line) { const el = searchLogEl(); if (!el) return; searchLogLines.unshift(line); searchLogLines = searchLogLines.slice(0, 6); el.textContent = searchLogLines.join('\n') }
+const PAGESET = (() => {
+  const out = OPTS.routes.map(r => ({ ...r }))
+  const topics = ['Choosing a worktop', 'Oak or walnut', 'Painted finishes', 'Small kitchens', 'Island or peninsula', 'Larder cupboards', 'Lighting a kitchen', 'Utility rooms', 'Boot rooms', 'Sinks and taps', 'Range cookers', 'Open shelving', 'Pantry design', 'Kitchen flooring', 'Splashbacks', 'Handles and knobs', 'Colour of the year', 'Planning permission', 'A day in the workshop', 'Meet the fitters']
+  const kinds = [['Blog', '/blog/'], ['Showroom', '/showrooms/'], ['Range', '/kitchens/']]
+  let i = 0
+  while (out.length < 143) {
+    const tpc = topics[i % topics.length]
+    const [k, base] = kinds[Math.floor(i / topics.length) % kinds.length]
+    const n = Math.floor(i / (topics.length * kinds.length))
+    const label = k === 'Blog' ? tpc + (n ? ` (part ${n + 1})` : '') : k === 'Showroom' ? `${tpc.split(' ')[0]} showroom ${n + 1}` : `${tpc} range${n ? ' ' + (n + 1) : ''}`
+    out.push({ value: base + label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''), label })
+    i++
+  }
+  return out
+})()
+function fakeApi (q, page) {
+  const ql = q.trim().toLowerCase()
+  const mode = ql.includes('offline') ? 'offline' : ql.includes('fail') ? 'error' : ql.includes('slow') ? 'slow' : SEARCH_SIM.mode
+  const ms = mode === 'slow' ? 4200 : 260 + Math.round(Math.random() * 380)
+  let abort
+  const p = new Promise((resolve, reject) => {
+    const t = setTimeout(() => {
+      if (mode === 'offline') return reject({ kind: 'offline' })
+      if (mode === 'error') return reject({ kind: 'server' })
+      const words = ql.replace(/\b(slow|fail|offline)\b/g, '').trim()
+      const all = PAGESET.filter(i => !words || i.label.toLowerCase().includes(words) || i.value.toLowerCase().includes(words))
+      resolve({ total: all.length, items: all.slice(0, page * 20) })
+    }, ms)
+    abort = () => { clearTimeout(t); reject({ kind: 'abort' }) }
+  })
+  return { p, abort }
+}
 function setupSearch (f) {
   if (f.dataset.ready) return
   f.dataset.ready = 1
-  const items = OPTS[f.dataset.search]
   const label = f.dataset.label
   const input = $('input', f)
+  const creatable = f.hasAttribute('data-creatable')
   let value = f.dataset.value || null
+  let valueLabel = null
   let q = ''
-  let state = 'ok'
-  let results = items
-  let timer; let req = 0
+  let S = { status: 'idle', items: [], total: 0, page: 1, q: '', err: null }
+  let cache = null
+  let timer; let req = 0; let inflight = null; let slowT
   input.setAttribute('role', 'combobox')
   input.setAttribute('aria-autocomplete', 'list')
   input.setAttribute('aria-expanded', 'false')
-  const sel = () => items.find(i => i.value === value)
-  const show = () => { input.value = sel() ? sel().label : '' }
-  show()
-  function itemsFor () {
-    if (state === 'loading') return [{ type: 'state', html: '<span class="spin"></span><span>Searching…</span>' }]
-    if (state === 'error') return [{ type: 'state', html: `${g('error', 'c-danger')}<span>Pages couldn't be loaded.</span><button type="button" class="tbtn" data-retry>Retry</button>` }]
-    if (!results.length) return [{ type: 'state', html: `No matches for “${esc(q)}”` }]
-    return results.map(i => ({ ...i, html: hlText(i.label, q.trim()), descHtml: hlText(i.value, q.trim()) }))
+  const known = v => PAGESET.find(i => i.value === v)
+  const show = () => { input.value = value ? (valueLabel || '') : '' }
+  const loadLabel = () => {
+    if (!value) { valueLabel = null; show(); return }
+    const hit = known(value)
+    if (OPTS.routes.some(r => r.value === value) || !hit) { valueLabel = hit ? hit.label : value; show(); return }
+    f.classList.add('loading-label')
+    const sk = document.createElement('span'); sk.className = 'lbl-sk'; sk.setAttribute('aria-hidden', 'true'); f.append(sk)
+    input.setAttribute('aria-busy', 'true')
+    searchLog(`GET ${hit.value.replace(/^\//, '/_/routes/')}   ← the chosen page's label, fetched on its own`)
+    setTimeout(() => { valueLabel = hit.label; f.classList.remove('loading-label'); sk.remove(); input.removeAttribute('aria-busy'); show() }, 900)
   }
-  function run () {
+  loadLabel()
+  const isOpen = () => cur && cur.cfg.owner === input
+  const repaint = mode => { if (isOpen()) renderMenu(mode || 'keep') }
+  function itemsFor () {
+    const st = S.status
+    const out = []
+    if (st === 'first') { for (let i = 0; i < 5; i++) out.push({ type: 'state', html: `<span class="opt sk" style="--w:${[70, 55, 80, 62, 48][i]}%;display:block;width:100%;padding:.5rem 0"><i></i><i></i></span>` }); return out }
+    if (st === 'searching' || st === 'slow') out.push({ type: 'state', html: `<span class="spin sm" aria-hidden="true"></span><span>${st === 'slow' ? 'Still searching…' : 'Searching…'}</span>`, tight: true })
+    if (st === 'offline' || st === 'error') {
+      out.push({ type: 'state', html: `${g('error', 'c-danger')}<span>${st === 'offline' ? "You're offline, so this search didn't run." : "The server couldn't search just now."}${S.items.length ? ' These results are from before.' : ''}</span>` })
+      out.push({ label: 'Retry', act: 'retry', html: 'Retry' })
+    }
+    if (!S.q && value && !S.items.some(i => i.value === value) && valueLabel) {
+      out.push({ type: 'group', label: 'Chosen' })
+      out.push({ value, label: valueLabel, html: esc(valueLabel), descHtml: esc(value) })
+      out.push({ type: 'group', label: 'All pages' })
+    }
+    if (st === 'ok' && !S.items.length) {
+      out.push({ type: 'state', html: `No pages match “${esc(S.q)}”.` })
+      if (creatable && S.q.trim()) out.push({ label: `Create page “${S.q.trim()}”`, act: 'create', html: `${g('plus')} Create page “${esc(S.q.trim())}”` })
+      return out
+    }
+    S.items.forEach(i => out.push({ ...i, html: hlText(i.label, S.q.trim()), descHtml: hlText(i.value, S.q.trim()) }))
+    if (S.total > S.items.length && S.items.length) {
+      out.push({ type: 'state', html: `<span>Showing ${S.items.length} of ${S.total}. Keep typing to narrow it down.</span>`, foot: true })
+      out.push({ label: 'Show 20 more', act: 'more', html: 'Show 20 more' })
+    }
+    return out
+  }
+  function say () {
+    if (S.status === 'ok') pageLive.say(!S.items.length ? `No pages match ${S.q}` : S.total > S.items.length ? `${S.items.length} of ${S.total} pages` : `${S.total} ${S.total === 1 ? 'page' : 'pages'}`, 400)
+    else if (S.status === 'offline') pageLive.say("You're offline. The search didn't run.", 400)
+    else if (S.status === 'error') pageLive.say("The server couldn't search.", 400)
+  }
+  function run (page = 1) {
     const n = ++req
-    state = 'loading'
-    if (cur && cur.cfg.owner === input) renderMenu('filter')
-    setTimeout(() => {
+    if (inflight) { inflight.abort(); searchLog(`  cancelled the previous request (#${n - 1})`) }
+    const qq = q
+    S = { ...S, status: S.items.length ? 'searching' : 'first' }
+    repaint('keep')
+    clearTimeout(slowT)
+    slowT = setTimeout(() => { if (n === req && (S.status === 'searching' || S.status === 'first')) { S.status = S.items.length ? 'slow' : 'first'; if (S.status === 'slow') { repaint(); pageLive.say('Still searching', 0) } } }, 3000)
+    searchLog(`#${n} GET /_/routes?search=${encodeURIComponent(qq)}&page=${page}&perPage=20`)
+    const call = fakeApi(qq, page)
+    inflight = call
+    call.p.then(r => {
+      if (n !== req) { searchLog(`#${n} answered late, ignored`); return }
+      inflight = null; clearTimeout(slowT)
+      S = { status: 'ok', items: r.items, total: r.total, page, q: qq }
+      if (!qq) cache = { ...S }
+      searchLog(`#${n} ← ${r.total} found, ${r.items.length} shown`)
+      repaint(page > 1 ? 'keep' : 'filter'); say()
+    }, e => {
+      if (e.kind === 'abort') return
       if (n !== req) return
-      const ql = q.trim().toLowerCase()
-      if (ql.includes('fail')) state = 'error'
-      else { state = 'ok'; results = items.filter(i => !ql || i.label.toLowerCase().includes(ql) || i.value.toLowerCase().includes(ql)) }
-      if (cur && cur.cfg.owner === input) renderMenu('filter')
-    }, 380)
+      inflight = null; clearTimeout(slowT)
+      S = { ...S, status: e.kind === 'offline' ? 'offline' : 'error' }
+      searchLog(`#${n} ← ${e.kind === 'offline' ? 'no connection' : '500'}`)
+      repaint('keep'); say()
+    })
   }
   function query (v) {
     q = v
     clearTimeout(timer)
-    timer = setTimeout(run, 250)
+    pageLive.cancel()
+    timer = setTimeout(() => run(1), 250)
   }
   function open (seed) {
-    if (cur && cur.cfg.owner === input) return
+    if (isOpen()) return
     q = typeof seed === 'string' ? seed : ''
-    state = 'ok'
-    results = q ? items.filter(i => i.label.toLowerCase().includes(q.trim().toLowerCase()) || i.value.toLowerCase().includes(q.trim().toLowerCase())) : items
+    if (!q && cache) S = { ...cache }
+    else S = { status: 'idle', items: [], total: 0, page: 1, q: '' }
     openMenu({
       searchPlaceholder: 'Search pages',
       anchor: f, owner: input, label, searchable: true,
       items: itemsFor,
-      selected: o => o.value === value,
+      dim: () => S.status === 'searching' || S.status === 'slow',
+      selected: o => !o.act && o.value === value,
       onPick: o => {
+        if (o.act === 'more') { run(S.page + 1); return true }
+        if (o.act === 'retry') { run(S.page); return true }
+        if (o.act === 'create') { toast({ tone: 'info', title: `Creating page “${S.q.trim()}”`, desc: 'A page modal opens with the title filled in.' }); return }
         const changed = o.value !== value
-        value = o.value
+        value = o.value; valueLabel = o.label
         show()
         if (changed) f.dispatchEvent(new CustomEvent('commit', { detail: value }))
       },
       onQuery: query,
       getQuery: () => q,
-      onRetry: run,
-      onClose: () => { clearTimeout(timer); req++; show() }
+      onClose: () => { clearTimeout(timer); clearTimeout(slowT); if (inflight) { inflight.abort(); inflight = null; searchLog(`#${req} cancelled: the menu closed`) } req++; pageLive.cancel(); show() }
     })
+    if (S.status === 'idle') run(1)
+    else if (q) query(q)
     if (!isSheet()) input.select()
   }
-  f.api = { set: v => { value = v; show() }, get: () => value, label: v => (items.find(i => i.value === v) || {}).label || v }
+  f.api = { set: v => { value = v; valueLabel = v ? (known(v) || {}).label || v : null; show() }, get: () => value, label: v => (known(v) || {}).label || v }
   f.addEventListener('mousedown', e => { if (e.target !== input || isSheet()) e.preventDefault() })
   f.addEventListener('click', () => {
-    if (isSheet()) { open(input.value === (sel() ? sel().label : '') ? '' : input.value); return }
+    if (isSheet()) { open(input.value === (valueLabel || '') ? '' : input.value); return }
     input.focus(); open()
   })
   input.addEventListener('input', () => {
-    if (!cur || cur.cfg.owner !== input) { open(input.value); if (isSheet()) { input.blur(); return } }
+    if (!isOpen()) { open(input.value); if (isSheet()) { input.blur(); return } }
     query(input.value)
   })
   input.addEventListener('keydown', e => {
-    if (cur && cur.cfg.owner === input) return menuKey(e)
+    if (isOpen()) return menuKey(e)
     if (e.key === 'ArrowDown') { e.preventDefault(); open() }
   })
 }
@@ -1555,26 +1878,7 @@ function setupInfo (root) {
     b.setAttribute('aria-haspopup', 'dialog')
     b.setAttribute('aria-expanded', 'false')
     const name = b.dataset.name
-    const row = b.closest('.fl')
-    if (row) {
-      const pid = nid('info')
-      b.setAttribute('aria-controls', pid)
-      b.removeAttribute('aria-haspopup')
-      b.addEventListener('click', () => {
-        const ex = document.getElementById(pid)
-        if (ex) { ex.remove(); b.setAttribute('aria-expanded', 'false'); return }
-        const d = document.createElement('div')
-        d.className = 'infop'
-        d.id = pid
-        d.setAttribute('role', 'note')
-        d.innerHTML = `<p>${esc(b.dataset.info)}</p><button type="button" class="btn ghost icon" aria-label="Close the note about ${esc(name)}">${g('x', 'sm')}</button>`
-        row.after(d)
-        b.setAttribute('aria-expanded', 'true')
-        $('button', d).addEventListener('click', () => { d.remove(); b.setAttribute('aria-expanded', 'false'); b.focus() })
-      })
-    } else {
-      b.addEventListener('click', () => popover(b, `<p>${esc(b.dataset.info)}</p>`, { label: b.getAttribute('aria-label'), title: name, icon: g('info', 'c-accent'), focus: false }))
-    }
+    b.addEventListener('click', () => popover(b, `<p>${esc(b.dataset.info)}</p>`, { label: b.getAttribute('aria-label'), title: name, icon: g('info', 'c-accent'), focus: false }))
   })
 }
 function setupCal (root) {
@@ -1582,6 +1886,10 @@ function setupCal (root) {
     if (b.dataset.ready) return
     b.dataset.ready = 1
     b.setAttribute('aria-haspopup', 'dialog')
+    const base = b.getAttribute('aria-label')
+    const name = () => { if (base) b.setAttribute('aria-label', `${base}, ${$('.sv', b).textContent}`) }
+    name()
+    new MutationObserver(name).observe($('.sv', b), { childList: true, characterData: true, subtree: true })
     b.addEventListener('click', () => {
       if (b.closest('.dis')) return
       const days = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'].map(d => `<span class="dow">${d}</span>`).join('')
@@ -1625,7 +1933,6 @@ function setupCmp (root) {
     c.addEventListener('click', e => {
       const b = e.target.closest('[data-c]')
       if (!b) return
-      $$('[data-c]', c).forEach(x => x.setAttribute('aria-checked', String(x === b)))
       c.dispatchEvent(new CustomEvent('choose', { detail: b.dataset.c, bubbles: true }))
     })
   })
@@ -1644,9 +1951,9 @@ function setupAll (root) {
 /* markup helpers */
 const infoBtn = (label, text) => `<span class="ib"><button type="button" aria-label="About ${esc(label)}" data-name="${esc(label)}" data-info="${esc(text)}">${g('info')}</button></span>`
 const selectHTML = ({ key, value = '', label, width = '', nullable, placeholder, status = '' }) =>
-  `<button type="button" class="f ${width}" data-select="${key}" data-value="${esc(value)}" data-label="${esc(label)}" aria-label="${esc(label)}"${nullable ? ' data-nullable' : ''}${placeholder ? ` data-placeholder="${esc(placeholder)}"` : ''}><span class="sv"></span>${g('chev', 'chev end')}<span class="st" data-s="${status}"></span></button>`
-const searchHTML = ({ key = 'routes', value = '', label, width = '', id = nid('s'), placeholder = 'Search pages' }) =>
-  `<div class="f ${width}" data-search="${key}" data-value="${esc(value)}" data-label="${esc(label)}">${g('search', 'lead')}<input id="${id}" aria-label="${esc(label)}" placeholder="${esc(placeholder)}" autocomplete="off">${g('chev', 'chev end')}<span class="st"></span></div>`
+  `<button type="button" role="combobox" class="f ${width}" data-select="${key}" data-value="${esc(value)}" data-label="${esc(label)}" aria-label="${esc(label)}"${nullable ? ' data-nullable' : ''}${placeholder ? ` data-placeholder="${esc(placeholder)}"` : ''}><span class="sv"></span>${g('chev', 'chev end')}<span class="st" data-s="${status}"></span></button>`
+const searchHTML = ({ key = 'routes', value = '', label, width = '', id = nid('s'), placeholder = 'Search pages', creatable }) =>
+  `<div class="f ${width}" data-search="${key}" data-value="${esc(value)}" data-label="${esc(label)}"${creatable ? ' data-creatable' : ''}>${g('search', 'lead')}<input id="${id}" aria-label="${esc(label)}" placeholder="${esc(placeholder)}" autocomplete="off">${g('chev', 'chev end')}<span class="st"></span></div>`
 const multiHTML = ({ key = 'styles', values = '', label, mode = 'chips', width = '', placeholder }) =>
   mode === 'chips'
     ? `<div class="f multi ${width}" data-multi="${key}" data-values="${values}" data-label="${esc(label)}" data-mode="chips"${placeholder ? ` data-placeholder="${esc(placeholder)}"` : ''}><span class="chips"></span><input aria-label="${esc(label)}" autocomplete="off"><span class="tail">${g('chev', 'chev end')}<span class="st"></span></span></div>`
@@ -1663,18 +1970,44 @@ function fb ({ id, label, optional, info, help, control, err, conf, cmp, full, c
   const hid = id + '-h'
   let line = ''
   if (err) line = `<div class="fh err" id="${hid}">${g('error')}<span class="msg">${err.msg}</span>${err.acts ? `<span class="acts">${err.acts}</span>` : ''}</div>`
-  else if (conf) line = `<div class="fh conf" id="${hid}">${g('conflict', 'c-warning')}<span class="msg">${conf}</span>${cmp ? '' : `<span class="acts"><button type="button" class="tbtn">Use Mia's</button><button type="button" class="tbtn">Keep yours</button></span>`}</div>`
+  else if (conf) line = `<div class="fh conf" id="${hid}">${g('conflict', 'c-warning')}<span class="msg">${conf}</span>${cmp ? '' : `<span class="acts"><button type="button" class="tbtn">Use Mia's</button><button type="button" class="tbtn">Keep mine</button></span>`}</div>`
   else if (help || counter) line = `<div class="fh" id="${hid}"><span class="msg" data-help>${help || ''}</span>${counter ? `<span class="counter">${counter}</span>` : ''}</div>`
-  const cmpEl = cmp ? cmpHTML(label, cmp.theirs, cmp.yours, cmp.choice) : ''
-  return `<div class="fb${full ? ' full' : ''}${changed ? ' changed' : ''}"${key ? ` data-k="${key}"` : ''}><div class="fl"><label for="${id}">${esc(label)}</label>${optional ? '<span class="optl">· Optional</span>' : ''}${info ? infoBtn(label, info) : ''}<span class="chg">· Unsaved</span></div>${control.replace('%DESC%', line ? `aria-describedby="${hid}"` : '')}${line}${cmpEl}</div>`
+  const head = `<div class="fl"><label for="${id}">${esc(label)}</label>${optional ? '<span class="optl">· Optional</span>' : ''}${info ? infoBtn(label, info) : ''}<span class="chg">· Unsaved</span></div>`
+  if (cmp) {
+    const ctl = control.replace('%DESC%', `aria-describedby="${hid}-q-n"`)
+    return `<div class="fb${full ? ' full' : ''}${changed ? ' changed' : ''}"${key ? ` data-k="${key}"` : ''}>${head}<div class="cfxw on">${ctl}<div data-cmp>${cfxBody(cmp.theirs, cmp.yours, hid + '-q', cmp.who)}</div></div><div class="fh" id="${hid}" hidden></div></div>`
+  }
+  return `<div class="fb${full ? ' full' : ''}${changed ? ' changed' : ''}"${key ? ` data-k="${key}"` : ''}>${head}${control.replace('%DESC%', line ? `aria-describedby="${hid}"` : '')}${line}</div>`
 }
 const lc = s => /^[A-Z][a-z]/.test(s) ? s[0].toLowerCase() + s.slice(1) : s
-function cmpHTML (label, theirs, yours, choice) {
-  const b = (k, who, v) => `<button type="button" role="radio" aria-checked="${choice === k}" data-c="${k}"><span class="rd"></span><span class="who">${who}</span><span class="v">${v === '' || v == null ? '<i>Empty</i>' : esc(v)}</span></button>`
-  return `<div class="cmp" role="radiogroup" aria-label="Which ${esc(lc(label))} to keep">${b('theirs', `Use ${PEER.name}'s`, theirs)}${b('yours', 'Keep yours', yours)}</div>`
+function wordDiff (a, b) {
+  const A = String(a ?? '').split(/(\s+)/)
+  const B = String(b ?? '').split(/(\s+)/)
+  let i = 0
+  while (i < A.length && i < B.length && A[i] === B[i]) i++
+  let j = 0
+  while (j < A.length - i && j < B.length - i && A[A.length - 1 - j] === B[B.length - 1 - j]) j++
+  const h = X => esc(X.slice(0, i).join('')) + (X.length - i - j > 0 ? `<mark>${esc(X.slice(i, X.length - j).join(''))}</mark>` : '') + esc(X.slice(X.length - j).join(''))
+  return [h(A), h(B)]
 }
-const stepperHTML = (id, { hover, cls = '', label = ['Decrease', 'Increase'], value = 3, width = '9rem' } = {}) =>
-  `<div class="f num ${cls}${hover ? ' is-hover' : ''}" style="width:${width}"><button type="button" class="nb${hover === 'down' ? ' is-hover' : ''}" aria-label="${label[0]}" data-step="-1">−</button><input id="${id}" inputmode="numeric" value="${value}"><span class="st"></span><button type="button" class="nb${hover === 'up' ? ' is-hover' : ''}" aria-label="${label[1]}" data-step="1">+</button></div>`
+function cfxVals (theirs, yours, who = PEER.name) {
+  const [t, y] = wordDiff(theirs, yours)
+  const long = Math.max(String(theirs ?? '').length, String(yours ?? '').length) > 90
+  return `<dl class="cfx-vals${long ? ' clamp' : ''}"><div><dt>${esc(who)}'s</dt><dd>${theirs ? t : '<i>Empty</i>'}</dd></div><div><dt>Yours</dt><dd>${yours ? y : '<i>Empty</i>'}</dd></div></dl>${long ? '<button type="button" class="tbtn" data-showall aria-expanded="false">Show all</button>' : ''}`
+}
+function cfxBody (theirs, yours, qid, who = PEER.name) {
+  return `<div class="cfx-b" role="group" aria-labelledby="${qid}" id="${qid}-n"><p class="cfx-h" id="${qid}">${g('conflict', 'c-warning')}<span class="pav" style="--peer:${PEER.flag}" aria-hidden="true">${esc(who[0])}</span><span>${esc(who)} changed this while you were editing.</span></p>${cfxVals(theirs, yours, who)}<div class="cfx-acts cmp"><button type="button" class="btn soft" data-c="theirs">Use ${esc(who)}'s</button><button type="button" class="btn soft" data-c="yours">Keep mine</button></div></div>`
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-showall]')
+  if (!b) return
+  const v = b.previousElementSibling
+  const all = v.classList.toggle('all')
+  b.setAttribute('aria-expanded', String(all))
+  b.textContent = all ? 'Show less' : 'Show all'
+})
+const stepperHTML = (id, { hover, cls = '', label = ['Decrease', 'Increase'], value = 3, width = '9rem', aria } = {}) =>
+  `<div class="f num ${cls}${hover ? ' is-hover' : ''}" style="width:${width}"><button type="button" class="nb${hover === 'down' ? ' is-hover' : ''}" aria-label="${label[0]}" data-step="-1">−</button><input id="${id}" inputmode="numeric" value="${value}"${aria ? ` aria-label="${aria}"` : ''}><span class="st"></span><button type="button" class="nb${hover === 'up' ? ' is-hover' : ''}" aria-label="${label[1]}" data-step="1">+</button></div>`
 const LONG_TEXT = 'Every kitchen we fit is drawn, cut and finished by the same small team, a mile from our Bath showroom.\n\nWe start with a visit: we measure, listen and sketch, and you leave with drawings the same week. Cabinets are built from solid oak and birch ply in our own workshop, then hand-painted in any colour you like.\n\nFitting takes about two weeks, and the people who built your kitchen are the ones who fit it. When we finish, we come back after a month to adjust doors and drawers as the timber settles.\n\nCome and see the bench where yours will be made. The workshop is open on Saturdays, and the kettle is always on.'
 const textareaHTML = (id, value) => `<div class="f ta"><textarea id="${id}" %DESC% rows="3">${esc(value)}</textarea></div>`
 const inputF = ({ id, value = '', placeholder = '', cls = '', status = '', attrs = '' }) =>
@@ -1701,7 +2034,7 @@ function galleryHTML (p) {
     <button type="button" class="btn ghost danger">Remove</button>
     <button type="button" class="btn soft" aria-busy="true" disabled><span class="spin"></span>Saving</button>
     <button type="button" class="btn soft" disabled>Disabled</button>
-    <span class="split"><button type="button" class="btn solid">Publish now</button><button type="button" class="btn solid icon" aria-label="More publish options">${g('chev', 'sm')}</button></span>
+    <span class="split"><button type="button" class="btn solid">Publish now</button><button type="button" class="btn solid icon" aria-label="More actions">${g('vmore')}</button></span>
     <button type="button" class="btn soft icon" aria-label="More actions">${g('more')}</button>
     <button type="button" class="btn ghost icon" aria-label="Close">${g('x')}</button>
   </div>
@@ -1736,6 +2069,8 @@ function galleryHTML (p) {
     ${T('Unsaved change', fb({ id: `${p}-uc`, label: 'Title', changed: true, control: inputF({ id: `${p}-uc`, value: 'Made in our Bath workshop', status: 'pending' }) }))}
     ${T('Error returned by Save', fb({ id: `${p}-er`, label: 'Title', changed: true, control: inputF({ id: `${p}-er`, value: '', placeholder: 'Add a title', cls: 'err', status: 'error', attrs: 'aria-invalid="true"' }), err: { msg: 'Add a title. Every page needs one.' } }))}
     ${T('Conflict found by Save', fb({ id: `${p}-cf`, label: 'Title', changed: true, control: inputF({ id: `${p}-cf`, value: 'Made in our Bath workshop', cls: 'conf', status: 'conflict' }), conf: 'Mia saved a different title.', cmp: { theirs: 'Built in our Bath workshop', yours: 'Made in our Bath workshop' } }))}
+    ${T('Conflict, long values', fb({ id: `${p}-cl`, label: 'Intro', changed: true, control: inputF({ id: `${p}-cl`, value: 'Every kitchen we fit is drawn, cut and finished by our own small team…', cls: 'conf' }), cmp: { theirs: 'Every kitchen we fit is drawn, cut and finished by the same small team, a mile from our Bath showroom, and fitted by the people who built it.', yours: 'Every kitchen we fit is drawn, cut and finished by our own small team, a mile from our Bath showroom, and fitted by the people who built it.' } }))}
+    ${T('Conflict, a long name', fb({ id: `${p}-cn`, label: 'Button label', changed: true, control: inputF({ id: `${p}-cn`, value: 'Book a visit', cls: 'conf' }), cmp: { theirs: 'Book a showroom visit', yours: 'Book a visit', who: 'Alexandra' } }))}
     ${T('Someone else is here', `<div style="position:relative;padding-top:0">${fb({ id: `${p}-pr`, label: 'Title', control: `<div class="f pres" style="--peer:${PEER.ring}"><span class="flag-static" style="--peer-flag:${PEER.flag};left:0;bottom:calc(100% + 2px)">Mia</span><input id="${p}-pr" value="Made in our own workshop"><span class="st"></span></div>` })}</div>`)}
   </div>
   <h3>Controls</h3>
@@ -1751,9 +2086,14 @@ function galleryHTML (p) {
     ${T('Textarea, grows with its text', fb({ id: `${p}-ta`, label: 'SEO meta description', optional: true, counter: '96 / 160', control: textareaHTML(`${p}-ta`, 'Hand-built kitchens, designed in Bath and made in our own workshop.') }))}
     ${T('Textarea, long: scrolls after 8 lines', fb({ id: `${p}-tl`, label: 'Intro', optional: true, changed: true, control: textareaHTML(`${p}-tl`, LONG_TEXT) }))}
     ${T('Truncation, on purpose', fb({ id: `${p}-tr`, label: 'Layout', help: 'A long value ends in an ellipsis before the chevron.', control: `<button type="button" class="f" id="${p}-tr" %DESC%><span class="sv">Kitchens made in our own workshop, a mile from the showroom</span>${g('chev', 'chev end')}<span class="st" data-s="saved"></span></button>` }))}
-    ${T('Read-only value', `<div class="fb"><div class="fl">ID</div><span class="rov"><span class="mono">/_/component/hero_sections/4f1c…a9e2</span><button type="button" class="btn ghost icon" aria-label="Copy ID" style="--bh:2rem">${g('copy')}</button></span></div>`)}
+    ${T('Read-only value', `<div class="fb"><div class="fl">ID</div><span class="rov"><span class="rv mono">/_/component/hero_sections/4f1c…a9e2</span><button type="button" class="btn ghost icon" aria-label="Copy ID" style="--bh:2rem">${g('copy')}</button></span></div>`)}
     ${T('Progress and spinner', `<div class="fb"><div class="fl">Uploading workshop-bench.jpg</div><div class="prog" role="progressbar" aria-label="Upload" aria-valuenow="62" aria-valuemin="0" aria-valuemax="100"><span style="width:62%"></span></div><div class="gl" style="gap:1rem;margin-top:.25rem"><span class="spin"></span><span class="spin" style="width:1.5rem;height:1.5rem"></span><span class="fh" style="margin:0">62%</span></div></div>`)}
   </div>
+  <div class="fsec cols2" style="margin-top:1.75rem" data-mixed="modal"><div class="fields">
+    <div class="fb"><div class="fl">Created</div><span class="rov"><span class="rv">12 Nov 2026, 14:02</span></span></div>
+    ${fb({ id: `${p}-mx`, label: 'Layout', control: selectHTML({ key: 'layouts', value: 'default', label: 'Layout' }).replace('<button', `<button id="${p}-mx"`) })}
+  </div></div>
+  <p class="fh" style="margin-top:.5rem">A read-only value in a row of fields sits on the same line as the values beside it.</p>
   <div style="margin-top:1.5rem">${fb({ id: `${p}-ms`, label: 'Style', info: 'Styles add classes to this component. Some combinations are not available here.', control: multiHTML({ values: 'dark,pad', label: 'Style', placeholder: 'Add a style' }) })}</div>
   <div style="margin-top:1.5rem" data-chiphover>${fb({ id: `${p}-mh`, label: 'Style, pointer on a chip’s ×', help: 'Only the × shows hover. The field and the chip keep their fill.', control: multiHTML({ values: 'dark,pad,wide', label: 'Style', placeholder: 'Add a style' }) })}</div>
   <h3>Save states, bar only: text inputs <span class="scrolls">· scrolls sideways</span></h3>
@@ -1767,7 +2107,7 @@ function galleryHTML (p) {
     <span class="dv"></span>
     <div class="bf"><span class="bl">Date, saving</span><button type="button" class="f w-md" data-cal aria-label="Go live date"><span class="sv">18 Nov 2026, 09:00</span>${g('cal', 'end')}<span class="st" data-s="saving"></span></button></div>
     <span class="dv"></span>
-    <div class="bf"><span class="bl">Position, saved</span>${stepperHTML(`${p}-sts`, { width: '8.25rem' }).replace('<span class="st"></span>', '<span class="st" data-s="saved"></span>')}</div>
+    <div class="bf"><span class="bl">Position, saved</span>${stepperHTML(`${p}-sts`, { width: '9rem', aria: 'Position' }).replace('<span class="st"></span>', '<span class="st" data-s="saved"></span>')}</div>
   </div>
   <p class="fh" style="margin-top:.5rem">The state takes the end icon's place while it lasts: the chevron becomes the spinner, then the tick, then the chevron again. The bar saves each field as you type. Modals and pages never do: they keep a local copy until Save, and show no glyph inside the field.</p>
   <h3>Bar size, inline labels <span class="scrolls">· scrolls sideways</span></h3>
@@ -1788,7 +2128,8 @@ function galleryHTML (p) {
     <div class="bf"><span class="bl">UI</span>${selectHTML({ key: 'ui', value: 'split', label: 'UI', width: 'w-sm' })}</div>
     <div class="bf">${multiHTML({ values: 'dark,pad', label: 'Style', mode: 'bar', width: 'w-sm' })}</div>
     <div class="bf"><span class="bl">Go live</span><button type="button" class="f w-md" data-cal aria-label="Go live date"><span class="sv">18 Nov 2026, 09:00</span>${g('cal', 'end')}<span class="st"></span></button></div>
-    <div class="bf"><span class="bl">Position</span>${stepperHTML(`${p}-c2`, { width: '9rem' })}</div>
+    <div class="bf"><span class="bl">Position</span>${stepperHTML(`${p}-c2`, { width: '10rem', aria: 'Position' })}</div>
+    <div class="bf"><span class="bl">Created</span><span class="rov"><span class="rv">12 Nov 2026</span></span></div>
     <div class="bf"><span class="bl">Link</span><div class="seg" role="group" aria-label="Link type"><button type="button" aria-pressed="true">Page</button><button type="button" aria-pressed="false">URL</button></div></div>
   </div>
   <p class="fh" style="margin-top:.5rem">On a touch screen the text in every control is 1rem, the size iOS needs to not zoom on focus, so a select, a chip or a date sits at the same size as the text input beside it. Labels stay 0.875rem.</p>
@@ -1841,7 +2182,8 @@ function setStatus (slot, state, o = {}) {
   }
 }
 function popBody (state, o) {
-  return `<p>${o.msg || ''}</p>${o.theirs ? `<div class="q">${esc(o.theirs)}</div>` : ''}<div class="acts">${(o.actions || []).map((a, i) => `<button type="button" class="btn ${i === 0 ? 'solid' : 'soft'}" data-act="${i}">${esc(a.label)}</button>`).join('')}</div>`
+  const conf = state === 'conflict'
+  return `<p>${o.msg || ''}</p>${o.theirs ? cfxVals(o.theirs, o.yours) : ''}<div class="acts">${(o.actions || []).map((a, i) => `<button type="button" class="btn ${conf || i > 0 ? 'soft' : 'solid'}" data-act="${i}">${esc(a.label)}</button>`).join('')}</div>`
 }
 function fakeSave (slots, { fail = false, field = 'Field', onState = () => {}, retry, undo, ms = 900 } = {}) {
   slots.forEach(s => setStatus(s, 'pending'))
@@ -1867,22 +2209,26 @@ function fakeSave (slots, { fail = false, field = 'Field', onState = () => {}, r
 
 /* in-page confirm */
 const andList = a => a.length < 2 ? (a[0] || '') : a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1]
-function askConfirm (host, { title, desc, keep = 'Keep editing', go, onGo, onKeep }) {
+function askConfirm (host, { title, desc, keep = 'Keep editing', go, onGo, onKeep, tone = 'danger', extra = '' }) {
   const prev = document.activeElement
   const id = nid('cfm')
   const layer = document.createElement('div')
   layer.className = 'cfm'
-  layer.innerHTML = `<div class="cfm-box" role="alertdialog" aria-modal="true" aria-labelledby="${id}-t" aria-describedby="${id}-d"><h3 id="${id}-t">${esc(title)}</h3><p id="${id}-d">${esc(desc)}</p><div class="cfm-acts"><button type="button" class="btn soft" data-keep>${esc(keep)}</button><button type="button" class="btn solid danger" data-go>${esc(go)}</button></div></div>`
+  layer.innerHTML = `<div class="cfm-box" role="alertdialog" aria-modal="true" aria-labelledby="${id}-t" aria-describedby="${id}-d"><p class="cfm-t" id="${id}-t">${esc(title)}</p><p id="${id}-d">${esc(desc)}</p>${extra}<div class="cfm-acts"><button type="button" class="btn soft" data-keep>${esc(keep)}</button><button type="button" class="btn solid${tone === 'danger' ? ' danger' : ''}" data-go>${esc(go)}</button></div></div>`
   host.append(layer)
   const keepB = $('[data-keep]', layer)
   const goB = $('[data-go]', layer)
   const close = back => { layer.remove(); if (back && prev && prev.isConnected) prev.focus({ preventScroll: true }) }
   keepB.addEventListener('click', () => { close(true); onKeep && onKeep() })
-  goB.addEventListener('click', () => { close(false); onGo() })
+  goB.addEventListener('click', () => { const vals = Object.fromEntries($$('input[type=checkbox][name]', layer).map(c => [c.name, c.checked])); close(false); onGo(vals) })
   layer.addEventListener('mousedown', e => { if (e.target === layer) { e.preventDefault(); e.stopPropagation(); close(true) } })
   layer.addEventListener('keydown', e => {
     if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close(true) }
-    if (e.key === 'Tab') { e.preventDefault(); (document.activeElement === keepB ? goB : keepB).focus() }
+    if (e.key === 'Tab') {
+      const fs = $$('button,input', layer)
+      const i = fs.indexOf(document.activeElement)
+      e.preventDefault(); fs[(i + (e.shiftKey ? -1 : 1) + fs.length) % fs.length].focus()
+    }
   })
   keepB.focus({ preventScroll: true })
   return layer
@@ -1915,8 +2261,8 @@ function settingsPage (host, logEl) {
     host.innerHTML = `<div class="apage kit s-modal">
       <nav class="anav" aria-label="Admin"><a href="/_cwa/pages" data-nav>Pages</a><a href="/_cwa/layouts" data-nav>Layouts</a><a href="/_cwa/users" data-nav>Users</a><a href="/_cwa/settings" aria-current="page">Settings</a></nav>
       <div class="apage-b">
-        <div class="apage-head"><h3>Site settings</h3><span class="mono">/_cwa/settings</span></div>
-        <div class="form"><div class="fsec"><h3>General</h3><div class="fields">${Object.keys(F).map(field).join('')}</div></div></div>
+        <div class="apage-head"><h4 class="pt">Site settings</h4><span class="mono">/_cwa/settings</span></div>
+        <div class="form"><div class="fsec"><h5 class="fsh">General</h5><div class="fields">${Object.keys(F).map(field).join('')}</div></div></div>
         <div class="apage-acts"><span class="fstate" aria-live="polite" data-fstate></span><button type="button" class="btn soft" data-cancel>Cancel</button><button type="button" class="btn solid" data-save>Save</button></div>
       </div>
     </div>`
@@ -1989,12 +2335,13 @@ function toast (o) {
   let el = o.id ? $(`[data-tid="${o.id}"]`, toastsEl) : null
   if (!el) {
     el = document.createElement('div')
-    el.className = 'toast'
-    el.setAttribute('role', o.tone === 'error' ? 'alert' : 'status')
+    el.className = 'toast t-' + o.tone
     if (o.id) el.dataset.tid = o.id
     toastsEl.prepend(el)
   }
+  el.className = 'toast t-' + o.tone
   el.innerHTML = toastHTML(o)
+  pageLive.say(o.title + (o.desc ? '. ' + o.desc : ''), 0)
   const kill = () => { clearTimeout(el._t); el.classList.add('out'); setTimeout(() => el.remove(), 160) }
   el.classList.remove('out')
   $('.x', el).addEventListener('click', kill)
@@ -2011,7 +2358,7 @@ function initMenus () {
     ${fb({ id: 'mm-layout', label: 'Layout', help: 'Options with a reason are unavailable.', control: selectHTML({ key: 'layouts', value: 'default', label: 'Layout' }).replace('<button', '<button id="mm-layout" %DESC%') })}
     ${fb({ id: 'mm-ui', label: 'Page UI', optional: true, control: selectHTML({ key: 'pageUi', label: 'Page UI', nullable: true, placeholder: 'None' }).replace('<button', '<button id="mm-ui"') })}
     ${fb({ id: 'mm-style', label: 'Style', help: 'Backspace in an empty search marks the last style, and a second Backspace removes it.', control: multiHTML({ values: 'dark,pad', label: 'Style', placeholder: 'Add a style' }).replace('<input', '<input id="mm-style" %DESC%') })}
-    ${fb({ id: 'mm-page', label: 'Parent page', optional: true, help: 'Search by title or path.', control: searchHTML({ id: 'mm-page', value: '/kitchens', label: 'Parent page' }).replace('<input', '<input %DESC%') })}
+    ${fb({ id: 'mm-page', label: 'Parent page', optional: true, help: 'Search by title or path.', control: searchHTML({ id: 'mm-page', value: '/showrooms/oak-showroom-1', label: 'Parent page', creatable: true }).replace('<input', '<input %DESC%') })}
   </div></div></div>`
   $('#menus-bar').innerHTML = `
     <div class="bf"><span class="bl" id="mb-ui-l">UI</span>${selectHTML({ key: 'ui', value: 'split', label: 'UI', width: 'w-md' })}</div>
@@ -2052,7 +2399,14 @@ function initErrors () {
     const slot = sub.parentElement.querySelector('.st')
     setStatus(slot, e.detail === 'theirs' ? '' : 'pending')
     sub.closest('.fb').classList.toggle('changed', e.detail === 'yours')
-    const line = $('.fh', sub.closest('.fb'))
+    const blk = sub.closest('.fb')
+    const w = $('.cfxw', blk)
+    w.classList.remove('on')
+    $('[data-cmp]', blk).innerHTML = ''
+    sub.closest('.f').classList.remove('conf')
+    const line = $('.fh', blk)
+    line.hidden = false
+    sub.setAttribute('aria-describedby', line.id)
     line.className = 'fh'
     line.innerHTML = `<span class="msg">${e.detail === 'theirs' ? "Using Mia's version. Nothing to send for this field." : 'Keeping yours. Save sends it over Mia’s.'}</span>`
   })
@@ -2068,7 +2422,7 @@ function initErrors () {
   const ss = $('#eb-sub').parentElement.querySelector('.st')
   const errOpts = { field: 'Title', title: 'not saved', msg: "The server couldn't save this. Reset puts back the last saved value.", actions: [{ label: 'Retry', fn: () => fakeSave([ts], { field: 'Title' }) }, { label: 'Reset', fn: () => { $('#eb-title').value = 'Made in our workshop'; setStatus(ts, '') } }] }
   setStatus(ts, 'error', errOpts)
-  setStatus(ss, 'conflict', { field: 'Subtitle', msg: 'Their version:', theirs: 'Made in Bath', actions: [{ label: "Use Mia's", fn: () => { $('#eb-sub').value = 'Made in Bath'; fakeSave([ss], { field: 'Subtitle' }) } }, { label: 'Keep yours', fn: () => fakeSave([ss], { field: 'Subtitle' }) }] })
+  setStatus(ss, 'conflict', { field: 'Subtitle', msg: 'Mia changed this while you were editing.', theirs: 'Made in Bath', yours: 'Designed in Bath', actions: [{ label: "Use Mia's", fn: () => { $('#eb-sub').value = 'Made in Bath'; fakeSave([ss], { field: 'Subtitle' }) } }, { label: 'Keep mine', fn: () => fakeSave([ss], { field: 'Subtitle' }) }] })
 }
 
 /* section 4: either/or */
@@ -2239,10 +2593,10 @@ function initEitherOr () {
 /* section 5: manager bar */
 function buildBar (host, p, { coarse } = {}) {
   host.innerHTML = `<div class="stage kit${coarse ? ' coarse' : ''}">
-    <div class="site" id="${p}-site">
-      <nav><b>Hartley &amp; Finch</b><span><a>Kitchens</a><a>Worktops</a><a>Showrooms</a><a>Contact</a></span></nav>
+    <div class="site" id="${p}-site" tabindex="0" aria-label="Example page behind the bar">
+      <nav aria-label="Example site, ${coarse ? 'phone' : 'desktop'}"><b>Hartley &amp; Finch</b><span><a>Kitchens</a><a>Worktops</a><a>Showrooms</a><a>Contact</a></span></nav>
       <div class="hero"><span class="sel-tag">Hero section</span>
-        <div><p class="sub" id="${p}-hsub">DESIGNED IN BATH</p><h4 id="${p}-htitle">Made in our own workshop</h4>
+        <div><p class="sub" id="${p}-hsub">DESIGNED IN BATH</p><h3 class="hh" id="${p}-htitle">Made in our own workshop</h3>
         <p class="desc" id="${p}-desc" contenteditable="true" spellcheck="true" aria-label="Description, edited on the page">Every kitchen we fit is drawn, cut and finished by the same small team, a mile from our Bath showroom. Come and see the bench where yours will be made.</p>
         <span class="cta" id="${p}-cta">Book a visit</span></div><div class="img" role="img" aria-label="Workshop bench"></div>
       </div>
@@ -2255,7 +2609,7 @@ function buildBar (host, p, { coarse } = {}) {
       </div>
         <div class="row-wrap">
           <button type="button" class="row-arrow l" aria-label="Scroll fields left" tabindex="-1">${g('chevl')}</button>
-          <div class="row" role="tabpanel" id="${p}-pn-content" aria-labelledby="${p}-tab-content" data-panel="content">
+          <div class="row" tabindex="0" role="tabpanel" id="${p}-pn-content" aria-labelledby="${p}-tab-content" data-panel="content">
             <div class="bf"><label class="bl" for="${p}-title">Title</label><div class="f w-lg" data-field="title"><input id="${p}-title" value="Made in our own workshop"><span class="st"></span></div></div>
             <span class="dv"></span>
             <div class="bf"><label class="bl" for="${p}-sub">Subtitle</label><div class="f w-md" data-field="subtitle"><input id="${p}-sub" value="Designed in Bath"><span class="st"></span></div></div>
@@ -2269,26 +2623,27 @@ function buildBar (host, p, { coarse } = {}) {
             <span class="dv"></span>
             <div class="bf"><span class="bl">Image</span><div class="file"><span class="thumb" role="img" aria-label="Thumbnail"></span><span class="fname">workshop-bench.jpg</span><span class="fsize">240 KB</span><button type="button" class="btn soft">Replace</button><button type="button" class="btn ghost">Remove</button><span class="st"></span></div></div>
           </div>
-          <div class="row" role="tabpanel" id="${p}-pn-ui" aria-labelledby="${p}-tab-ui" data-panel="ui" hidden>
+          <div class="row" tabindex="0" role="tabpanel" id="${p}-pn-ui" aria-labelledby="${p}-tab-ui" data-panel="ui" hidden>
             <div class="bf"><span class="bl">UI</span>${selectHTML({ key: 'ui', value: 'split', label: 'UI', width: 'w-md' }).replace('<button', '<button data-field="ui"')}</div>
             <span class="dv"></span>
             <div class="bf"><span class="bl">Style</span>${multiHTML({ values: 'dark,pad', label: 'Style', mode: 'bar', width: 'w-md' })}</div>
           </div>
-          <div class="row" role="tabpanel" id="${p}-pn-order" aria-labelledby="${p}-tab-order" data-panel="order" hidden>
+          <div class="row" tabindex="0" role="tabpanel" id="${p}-pn-order" aria-labelledby="${p}-tab-order" data-panel="order" hidden>
             <div class="bf"><label class="bl" for="${p}-pos">Position</label>${stepperHTML(`${p}-pos`, { label: ['Move up', 'Move down'], width: '8.25rem' }).replace('<div class="f num', '<div data-field="pos" class="f num')}</div>
             <span class="bl">3 of 7 in Main content</span>
           </div>
-          <div class="row" role="tabpanel" id="${p}-pn-publish" aria-labelledby="${p}-tab-publish" data-panel="publish" hidden>
+          <div class="row" tabindex="0" role="tabpanel" id="${p}-pn-publish" aria-labelledby="${p}-tab-publish" data-panel="publish" hidden>
             <div class="bf">${toggle({ label: 'Edit published version' })}${infoBtn('Edit published version', 'Changes go live as soon as they are saved, without a draft.')}</div>
             <span class="dv"></span>
             <div class="bf">${toggle({ id: p + '-sched', label: 'Schedule' })}</div>
             <div class="bf"><button type="button" class="f w-md dis" data-cal aria-label="Go live date" id="${p}-date" disabled><span class="sv">18 Nov 2026, 09:00</span>${g('cal', 'end')}<span class="st"></span></button></div>
           </div>
-          <div class="row" role="tabpanel" id="${p}-pn-info" aria-labelledby="${p}-tab-info" data-panel="info" hidden>
-            <div class="bf"><span class="bl">ID</span><span class="rov"><span class="mono">/_/component/hero_sections/4f1c…a9e2</span><button type="button" class="btn ghost icon" aria-label="Copy ID">${g('copy')}</button></span></div>
+          <div class="row" tabindex="0" role="tabpanel" id="${p}-pn-info" aria-labelledby="${p}-tab-info" data-panel="info" hidden>
+            <div class="bf"><span class="bl">ID</span><span class="rov"><span class="rv mono">/_/component/hero_sections/4f1c…a9e2</span><button type="button" class="btn ghost icon" aria-label="Copy ID">${g('copy')}</button></span></div>
             <span class="dv"></span>
-            <div class="bf"><span class="bl">Created</span><span>12 Nov 2026</span></div>
-            <div class="bf"><span class="bl">Updated</span><span>2 min ago</span></div>
+            <div class="bf"><span class="bl">Created</span><span class="rov"><span class="rv">12 Nov 2026</span></span></div>
+            <div class="bf"><label class="bl" for="${p}-note">Note</label><div class="f w-sm"><input id="${p}-note" value="Spring launch"><span class="st"></span></div></div>
+            <div class="bf"><span class="bl">Updated</span><span class="rov"><span class="rv">2 min ago</span></span></div>
             <span class="dv"></span>
             <span class="badge accent">Shared · 3 places</span>
           </div>
@@ -2297,7 +2652,7 @@ function buildBar (host, p, { coarse } = {}) {
         <div class="pin">
           <button type="button" class="bsum" aria-haspopup="dialog"></button>
           <span class="sr" aria-live="polite" data-live></span>
-          <span class="split pin-split"><button type="button" class="btn solid pin-act"></button><button type="button" class="btn solid icon pin-more" aria-label="More actions" aria-haspopup="menu" aria-expanded="false">${g('chev')}</button></span>
+          <span class="split pin-split"><button type="button" class="btn solid pin-act"></button><button type="button" class="btn solid icon pin-more" aria-label="More actions" aria-haspopup="menu" aria-expanded="false">${g('vmore')}</button></span>
         </div>
       </div>
       <div class="flags"></div>
@@ -2313,11 +2668,13 @@ function buildBar (host, p, { coarse } = {}) {
   const rows = $$('.row', mgr)
   const sum = $('.bsum', mgr)
   const live = $('[data-live]', mgr)
+  const say = announcer(live)
+  const tell = (key, name, st) => { if (st === 'saving') say.saving(key); else if (st === 'saved') say.done(key, name, true); else if (st === 'error') say.done(key, name, false) }
   const act = $('.pin-act', mgr)
   const B = { fieldStates: {}, failNext: false, savedAt: 0 }
   const TAB_OF = { title: 'content', subtitle: 'content', button: 'content', link: 'content', ui: 'ui', pos: 'order' }
   const activeRow = () => rows.find(r => !r.hidden)
-  const setAct = (full, short) => { act.innerHTML = `<span class="pa-full">${full}</span><span class="pa-short">${short}</span>`; act.setAttribute('aria-label', full) }
+  const setAct = (full, short, aria) => { act.hidden = !full; if (!full) return; act.innerHTML = `<span class="pa-full">${full}</span><span class="pa-short">${short}</span>`; act.setAttribute('aria-label', aria || full) }
   setAct('Publish now', 'Publish')
 
   function measure () {
@@ -2401,13 +2758,14 @@ function buildBar (host, p, { coarse } = {}) {
     else if (conf.length) { full = `${conf.length} conflict →`; short = `${conf.length} conflict`; glyph = g('conflict', 'c-warning'); goto = conf[0][0] }
     else if (busy) { full = 'Saving…'; short = 'Saving…'; glyph = '<span class="spin c-accent"></span>' }
     else if (Date.now() - B.savedAt < 4000) { full = 'All changes saved'; short = 'Saved'; glyph = g('saved', 'c-success') }
-    else if (B.mode === 'new') { full = 'New · not added yet'; short = 'New'; glyph = '<span class="dot"></span>' }
-    else { full = sched ? 'Draft · scheduled' : 'Draft · not live'; short = sched ? 'Scheduled' : 'Draft'; glyph = '<span class="dot"></span>' }
+    else if (B.mode === 'live') { full = 'Live · published'; short = 'Live'; glyph = g('live', 'c-success') }
+    else if (B.mode === 'group') { full = 'Group · 4 of 6 components'; short = 'Group'; glyph = g('group', 'c-muted') }
+    else if (B.mode.startsWith('new')) { full = 'New · not added yet'; short = 'New'; glyph = g('new', 'c-muted') }
+    else { full = sched ? 'Draft · scheduled' : 'Draft · not live'; short = sched ? 'Scheduled' : 'Draft'; glyph = sched ? g('wait', 'c-accent') : '<span class="dot"></span>' }
     sum.innerHTML = `${glyph}<span class="sum-full">${esc(full)}</span><span class="sum-short">${esc(short)}</span>`
     sum.classList.toggle('act', !!goto)
     sum.setAttribute('aria-label', 'Status: ' + full.replace(' →', '') + (goto ? ', show the field' : ''))
-    if (live.textContent !== full.replace(' →', '')) live.textContent = full.replace(' →', '')
-    sum.onclick = () => goto ? jump(goto) : popover(sum, `<p>${esc(full)}.${sched ? ' It goes live on 18 Nov at 09:00.' : ' Visitors still see the published version.'}</p>`, { label: 'Status', title: 'Status', icon: glyph, focus: false })
+    sum.onclick = () => goto ? jump(goto) : popover(sum, `<p>${esc(full)}.${B.mode === 'live' ? ' Visitors see this version. Editing a field makes a draft.' : B.mode === 'group' ? ' A group has nothing to publish; add components from ⋮.' : sched ? ' It goes live on 18 Nov at 09:00.' : ' Visitors still see the published version.'}</p>`, { label: 'Status', title: 'Status', icon: glyph, focus: false })
     tabs.forEach(t => {
       const mine = vals.filter(([k]) => TAB_OF[k] === t.dataset.tab).map(([, s]) => s)
       $('.tb', t).innerHTML = mine.includes('error') ? g('error', 'c-danger', 'has an unsaved field') : mine.includes('conflict') ? g('conflict', 'c-warning', 'has a conflict') : ''
@@ -2435,7 +2793,7 @@ function buildBar (host, p, { coarse } = {}) {
       last = input.value
       return fakeSave([slot], {
         fail, field: label,
-        onState: s => { B.fieldStates[key] = s; if (s === 'saved') B.savedAt = Date.now(); summary() },
+        onState: s => { B.fieldStates[key] = s; if (s === 'saved') B.savedAt = Date.now(); tell(key, label, s); summary() },
         retry: () => save(),
         undo: () => { input.value = prev; onLive && onLive(prev); last = prev; B.fieldStates[key] = ''; setStatus(slot, ''); summary() }
       })
@@ -2462,7 +2820,7 @@ function buildBar (host, p, { coarse } = {}) {
     const slot = $(':scope > .st', uiSel)
     return fakeSave([slot], {
       fail, field: 'UI',
-      onState: s => { B.fieldStates.ui = s; if (s === 'saved') B.savedAt = Date.now(); summary() },
+      onState: s => { B.fieldStates.ui = s; if (s === 'saved') B.savedAt = Date.now(); tell('ui', 'UI', s); summary() },
       retry: () => uiSave(),
       undo: () => { uiSel.api.set(prev); uiLast = prev; B.fieldStates.ui = ''; setStatus(slot, ''); summary() }
     })
@@ -2487,18 +2845,21 @@ function buildBar (host, p, { coarse } = {}) {
     const d = $('#' + p + '-date')
     d.disabled = !sched.checked
     d.classList.toggle('dis', !sched.checked)
-    sched.checked ? setAct('Schedule', 'Schedule') : setAct('Publish now', 'Publish')
+    setAct(...ctaLabel())
     summary()
   })
   B.mode = 'existing'
   const more = $('.pin-more', mgr)
-  const ctaLabel = () => B.mode === 'new' ? ['Add', 'Add'] : sched.checked ? ['Schedule', 'Schedule'] : ['Publish now', 'Publish']
+  const ctaLabel = () => B.mode === 'live' || B.mode === 'group' ? [null] : B.mode === 'new' ? [`${g('plus')}Draft`, `${g('plus')}Draft`, 'Add draft'] : B.mode === 'newplain' ? [`${g('plus')}Add`, `${g('plus')}Add`, 'Add'] : sched.checked ? ['Schedule', 'Schedule'] : ['Publish now', 'Publish']
   B.paintCta = () => { setAct(...ctaLabel()); summary() }
   act.addEventListener('click', () => {
     if (B.mode === 'new') { toast({ tone: 'success', title: 'Added as a draft', desc: 'Hero section, after Intro text.' }); return }
+    if (B.mode === 'newplain') { toast({ tone: 'success', title: 'Added', desc: 'Spacer, after Intro text.' }); return }
     toast({ tone: 'success', title: sched.checked ? 'Scheduled for 18 Nov, 09:00' : 'Published', desc: 'Hero section on Kitchens.' })
   })
   const ctaItems = () => {
+    if (B.mode === 'group') return [{ label: 'Add to start', fn: () => toast({ tone: 'info', title: 'Choose a component to add at the start of Main content' }) }, { label: 'Add to end', fn: () => toast({ tone: 'info', title: 'Choose a component to add at the end of Main content' }) }]
+    if (B.mode === 'newplain') return [{ label: 'Discard', danger: true, fn: () => askConfirm(stage, { title: 'Discard this new component?', desc: 'The Spacer you are adding has not been saved, and will be removed.', go: 'Discard', onGo: () => toast({ tone: 'info', title: 'New component discarded' }) }) }]
     if (B.mode === 'new') {
       return [
         { label: 'Add and publish', fn: () => toast({ tone: 'success', title: 'Added and published', desc: 'Hero section, after Intro text.' }) },
@@ -2529,12 +2890,13 @@ function buildBar (host, p, { coarse } = {}) {
     if (k === 'fail') { B.failNext = true; toast({ tone: 'info', id: 'sim', title: 'The next save will fail', desc: 'Type in Title, Subtitle or Button, change UI, or step Position.' }) }
     if (k === 'flag') { peerOn = true; T.f.classList.add('pres'); T.f.style.setProperty('--peer', PEER.ring); selectTab(tabs[0]); placeFlags(true) }
     if (k === 'conflict') {
+      say.say(`${PEER.name} changed Title while you were editing`, 0)
       B.fieldStates.title = 'conflict'
       setStatus(T.slot, 'conflict', {
-        field: 'Title', msg: 'Their version:', theirs: 'Built in our Bath workshop',
+        field: 'Title', msg: 'Mia changed this while you were editing.', theirs: 'Built in our Bath workshop', yours: T.input.value,
         actions: [
           { label: "Use Mia's", fn: () => { T.input.value = 'Built in our Bath workshop'; $('#' + p + '-htitle').textContent = T.input.value; B.fieldStates.title = ''; setStatus(T.slot, ''); summary() } },
-          { label: 'Keep yours', fn: () => T.save() }
+          { label: 'Keep mine', fn: () => T.save() }
         ]
       })
       summary()
@@ -2559,10 +2921,10 @@ function buildBar (host, p, { coarse } = {}) {
 /* section 6: modal */
 const PAGE_IRI = '/_/pages/8a1f'
 const ROUTE_IRI = '/_/routes/2c9d'
-function modalSpec (mode) {
+function modalSpec (mode, o = {}) {
   if (mode === 'create') {
     return {
-      mode, title: 'New article', what: 'article', action: 'Create article', iri: '/page_data/blog_article_data',
+      mode, title: 'New article', what: 'article', action: 'Article', iri: '/page_data/blog_article_data',
       tabs: [
         { k: 'details', n: 'Details' },
         { k: 'routes', n: 'Routes', disabled: { title: 'Routes open once the article is created.', text: 'A route points at a saved article, so there is nothing to attach it to yet. Create the article and this tab lets you add its address.' } },
@@ -2582,58 +2944,369 @@ function modalSpec (mode) {
       }
     }
   }
-  const created = mode === 'created'
-  if (created) {
+  if (mode === 'created') {
     const s = modalSpec('create')
     s.mode = 'created'
     s.action = null
     s.iri = '/page_data/blog_article_data/5e0b'
     s.tabs = [{ k: 'details', n: 'Details' }, { k: 'routes', n: 'Routes' }, { k: 'info', n: 'Info' }, { k: 'article', n: 'Article' }]
-    s.sections.push({ tab: 'routes', fields: ['rt'] })
-    s.fields.rt = { label: 'Route path', type: 'text', value: '', placeholder: '/blog/…', optional: true, help: 'The address of this article. Leave it empty to make it reachable only through a parent.', res: 'route' }
     return s
   }
+  const title = o.title || 'Kitchens'
   return {
-    mode: 'edit', title: 'Kitchens', what: 'page', action: null, iri: PAGE_IRI,
+    mode: 'edit', title, what: 'page', action: null, iri: PAGE_IRI,
     tabs: [{ k: 'details', n: 'Details' }, { k: 'routes', n: 'Routes' }, { k: 'info', n: 'Info' }],
     sections: [
       { tab: 'details', fields: ['ref'] },
       { tab: 'details', title: 'Appearance', cols: true, fields: ['lay', 'ui'] },
       { tab: 'details', title: 'Search engines', desc: 'What people see in search results.', fields: ['seo', 'desc'] },
-      { tab: 'details', title: 'Nesting', fields: ['par', 'pub'] },
-      { tab: 'routes', fields: ['rt'], after: '<div class="fb"><div class="fl">Redirects here</div><div class="fh" style="margin:0"><span class="msg"><span class="mono">/kitchen</span> and <span class="mono">/our-kitchens</span> redirect to this page.</span></div></div>' }
+      { tab: 'details', title: 'Nesting', fields: ['par', 'pub'] }
     ],
     fields: {
-      ref: { label: 'Reference', type: 'text', value: 'Kitchens', required: true, help: 'Only admins see this. It names the page in lists.', res: 'page' },
+      ref: { label: 'Reference', type: 'text', value: title, required: true, help: 'Only admins see this. It names the page in lists.', res: 'page' },
       lay: { label: 'Layout', type: 'select', key: 'layouts', value: 'default', res: 'page' },
       ui: { label: 'Page UI', type: 'select', key: 'pageUi', value: 'primary', nullable: true, optional: true, res: 'page' },
       seo: { label: 'SEO page title', type: 'text', value: 'Hand-built kitchens | Hartley & Finch', optional: true, max: 60, info: 'This is the link text in search results. When it is empty, the reference is used.', help: 'Up to 60 characters.', res: 'page' },
       desc: { label: 'SEO meta description', type: 'textarea', value: 'Hand-built kitchens, designed in Bath and made in our own workshop.', optional: true, counter: 160, res: 'page' },
       par: { label: 'Parent page', type: 'search', value: '/', optional: true, res: 'page' },
-      pub: { label: 'Public without a route', type: 'toggle', value: false, help: 'Visitors can reach it through a nested page, even when it has no route of its own.', res: 'page' },
-      rt: { label: 'Route path', type: 'text', value: '/kitchens', help: 'The address of this page.', res: 'route' }
+      pub: { label: 'Public without a route', type: 'toggle', value: false, help: 'Visitors can reach it through a nested page, even when it has no route of its own.', res: 'page' }
     }
   }
 }
-function infoTabHTML (spec) {
+function infoTabHTML (spec, hl) {
+  const now = spec.mode === 'created'
   return `<div class="form"><div class="fsec"><div class="fields">
-    <div class="fb"><div class="fl">ID</div><span class="rov"><span class="mono">${esc(spec.iri)}</span><button type="button" class="btn ghost icon" aria-label="Copy ID" style="--bh:2rem">${g('copy')}</button></span></div>
-    <div class="fb"><div class="fl">Created</div><span>${spec.mode === 'created' ? 'Just now' : '12 Nov 2026, 14:02'}</span></div>
-    <div class="fb"><div class="fl">Updated</div><span>${spec.mode === 'created' ? 'Just now' : '2 minutes ago'}</span></div>
-    <div class="fb"><div class="fl">Cache</div><div><button type="button" class="btn soft lg">Clear this page from the cache</button></div></div>
+    <div class="fb"><div class="fl">ID</div><span class="rov"><span class="rv mono">${esc(spec.iri)}</span><button type="button" class="btn ghost icon" aria-label="Copy ID" style="--bh:2rem">${g('copy')}</button></span></div>
+  </div></div><div class="fsec cols2"><h${hl} class="fsh">History</h${hl}><div class="fields">
+    <div class="fb"><div class="fl">Created</div><span class="rov"><span class="rv">${now ? 'Just now' : '12 Nov 2026, 14:02'}</span></span></div>
+    <div class="fb"><div class="fl">Updated</div><span class="rov"><span class="rv">${now ? 'Just now' : '2 minutes ago'}</span></span></div>
+    <div class="fb"><div class="fl">Updated by</div><span class="rov"><span class="rv">Daniel</span></span></div>
+    <div class="fb"><div class="fl">Version</div><span class="rov"><span class="rv">${now ? '1' : '7'}</span></span></div>
+  </div></div><div class="fsec"><h${hl} class="fsh">Cache</h${hl}><p class="fsd">Visitors may see a cached copy for up to an hour after a change.</p><div class="fields">
+    <div><button type="button" class="btn soft lg">Clear this page from the cache</button></div>
   </div></div></div>`
 }
-function pageModal (host, p, { mode = 'edit', logEl = null, onClose } = {}) {
-  let spec, F, orig, v, err, conf, tab, notice, sim, busy
+
+/* routes: data for the Routes tab */
+const slug = s => String(s || '').toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+function routesData (kind, extra = {}) {
+  if (kind === 'kitchens') {
+    return {
+      page: 'Kitchens', path: '/kitchens', prefixes: ['/'], live: 'live', liveAt: '', recommended: '/kitchens', forward: null,
+      redirects: [{ path: '/kitchen', kids: [{ path: '/kitchen-units' }, { path: '/fitted-kitchens' }] }, { path: '/our-kitchens' }],
+      children: [
+        { path: '/kitchens/shaker', st: 'live', page: 'Shaker kitchens' },
+        { path: '/kitchens/handleless', st: 'scheduled', at: '20 Nov, 09:00', page: 'Handleless kitchens', kids: [{ path: '/kitchens/handleless/oak', st: 'held', page: 'Handleless oak' }] },
+        { path: '/kitchens/bespoke', st: 'draft', page: 'Bespoke kitchens' }
+      ],
+      ...extra
+    }
+  }
+  if (kind === 'shaker') {
+    return {
+      page: 'Shaker kitchens', path: '/kitchens/shaker', prefixes: ['/', '/kitchens/'], live: 'live', liveAt: '', recommended: '/kitchens/shaker-kitchens', forward: null,
+      redirects: [{ path: '/shaker', kids: [{ path: '/shaker-style' }] }, { path: '/kitchens/shaker-range' }],
+      children: [{ path: '/kitchens/shaker/painted', st: 'live', page: 'Painted shaker' }, { path: '/kitchens/shaker/oak', st: 'draft', page: 'Oak shaker' }],
+      ...extra
+    }
+  }
+  return { page: extra.page || 'New article', path: null, prefixes: ['/', '/blog/'], live: 'draft', liveAt: '', recommended: '/blog/' + slug(extra.page || 'new-article'), forward: null, redirects: [], children: [], ...extra }
+}
+const ROUTE_BADGE = {
+  live: ['success', 'Live'], scheduled: ['accent', 'Scheduled'], draft: ['neutral', 'Not live'], held: ['warning', 'Held back by parent'], none: ['neutral', 'No route']
+}
+const routeBadge = (st, at) => { const [t, l] = ROUTE_BADGE[st]; return `<span class="badge ${t}"><span class="bd"></span>${l}${st === 'scheduled' && at ? ` · ${esc(at)}` : ''}</span>` }
+
+/* CwaUiTree: a treegrid, because its rows carry actions */
+function flattenTree (nodes, lvl = 0, cont = [], out = []) {
+  nodes.forEach((n, i) => {
+    const last = i === nodes.length - 1
+    out.push({ n, lvl, cont: cont.slice(), last, pos: i + 1, size: nodes.length })
+    if (n.kids && n.kids.length && n.open !== false) flattenTree(n.kids, lvl + 1, [...cont, !last], out)
+  })
+  return out
+}
+function treeHTML (label, nodes, { actions, badge } = {}) {
+  const rows = flattenTree(nodes)
+  if (!rows.length) return ''
+  return `<div class="tree" role="treegrid" aria-label="${esc(label)}">${rows.map((r, i) => {
+    const has = r.n.kids && r.n.kids.length
+    let guides = ''
+    for (let x = 0; x < r.lvl - 1; x++) if (r.cont[x + 1]) guides += `<span class="tg-v" style="--x:${x}"></span>`
+    if (r.lvl > 0) guides += (r.last ? '' : `<span class="tg-v" style="--x:${r.lvl - 1}"></span>`) + `<span class="tg-e" style="--x:${r.lvl - 1}"></span>`
+    const acts = actions ? actions(r.n) : []
+    return `<div class="tnode" role="row" style="--lvl:${r.lvl}" aria-level="${r.lvl + 1}" aria-setsize="${r.size}" aria-posinset="${r.pos}"${has ? ` aria-expanded="${r.n.open !== false}"` : ''} tabindex="${i === 0 ? 0 : -1}" data-ti="${i}">${guides}<span class="tlab" role="gridcell">${has ? `<span class="ttog" aria-hidden="true">${g('chev')}</span>` : '<span class="tsp"></span>'}<span class="tp mono">${esc(r.n.path)}</span>${badge ? badge(r.n) : ''}</span><span class="tacts" role="gridcell">${acts.map((a, k) => `<button type="button" class="btn ghost icon${a.danger ? ' danger' : ''}" tabindex="-1" aria-label="${esc(a.label)}" data-ta="${k}">${g(a.icon)}</button>`).join('')}</span></div>`
+  }).join('')}</div>`
+}
+function wireTree (el, nodes, { actions, onChange, onDelete } = {}) {
+  const tree = $('.tree', el) || (el.classList.contains('tree') ? el : null)
+  if (!tree) return
+  const rows = flattenTree(nodes)
+  const rowEls = $$('.tnode', tree)
+  const focusRow = i => { const r = rowEls[Math.max(0, Math.min(rowEls.length - 1, i))]; rowEls.forEach(x => { x.tabIndex = x === r ? 0 : -1 }); r.focus() }
+  const toggle = (i, open) => { const n = rows[i].n; if (!(n.kids && n.kids.length)) return false; if ((n.open !== false) === open) return false; n.open = open; onChange && onChange(n, i); return true }
+  rowEls.forEach((r, i) => {
+    const n = rows[i].n
+    const btns = $$('[data-ta]', r)
+    btns.forEach((b, k) => {
+      b.addEventListener('click', e => { e.stopPropagation(); actions(n)[k].fn(b) })
+      b.addEventListener('keydown', e => {
+        if (e.key === 'ArrowRight' && btns[k + 1]) { e.preventDefault(); e.stopPropagation(); btns[k + 1].focus() }
+        else if (e.key === 'ArrowLeft' || e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); k > 0 && e.key === 'ArrowLeft' ? btns[k - 1].focus() : r.focus() }
+        else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); e.stopPropagation(); focusRow(i + (e.key === 'ArrowDown' ? 1 : -1)) }
+      })
+    })
+    const tg = $('.ttog', r)
+    tg && tg.addEventListener('click', e => { e.stopPropagation(); toggle(i, n.open === false) })
+    r.addEventListener('keydown', e => {
+      if (e.target !== r) return
+      const k = e.key
+      if (k === 'ArrowDown') { e.preventDefault(); focusRow(i + 1) }
+      else if (k === 'ArrowUp') { e.preventDefault(); focusRow(i - 1) }
+      else if (k === 'Home') { e.preventDefault(); focusRow(0) }
+      else if (k === 'End') { e.preventDefault(); focusRow(rowEls.length - 1) }
+      else if (k === 'ArrowRight') { e.preventDefault(); if (!toggle(i, true) && btns[0]) btns[0].focus() }
+      else if (k === 'ArrowLeft') {
+        e.preventDefault()
+        if (!toggle(i, false)) { for (let j = i - 1; j >= 0; j--) if (rows[j].lvl < rows[i].lvl) { focusRow(j); break } }
+      } else if ((k === 'Delete' || k === 'Backspace') && onDelete) { e.preventDefault(); onDelete(n, r) }
+      else if (k === 'Enter' && btns[0]) { e.preventDefault(); btns[0].click() }
+    })
+    r.addEventListener('click', () => { rowEls.forEach(x => { x.tabIndex = x === r ? 0 : -1 }) })
+  })
+}
+
+/* the Routes tab: route actions save at once, each after its own confirm */
+function routesPanel (el, R, ctx) {
+  const h = ctx.hl
+  const pid = ctx.p + '-rt'
+  const dlg = () => ctx.dlg()
+  const what = ctx.what || 'page'
+  const effective = () => R.gate ? 'held' : (R.path ? R.live : 'none')
+  const action = (key, label) => R.busy === key ? `<span class="spin"></span>${label}` : null
+  const btn = (key, cls, text, extra = '') => `<button type="button" class="btn ${cls}" data-rk="${key}"${R.busy === key ? ' data-busy aria-disabled="true"' : ''}${extra}>${action(key, 'Saving…') || text}</button>`
+  function render (focusSel) {
+    const parts = []
+    parts.push(`<p class="rt-note">${g('info')}<span>Changes on this tab are saved as soon as you confirm them. The ${esc(what)}'s Save button doesn't include them.</span></p>`)
+    parts.push(`<div class="rt-status" role="status" tabindex="-1" data-rstat>${R.status ? `${g('saved', 'c-success')}<span>${R.status}</span>` : ''}</div>`)
+    if (R.fail) parts.push(`<div class="alert danger rt-fail" role="alert" tabindex="-1" data-rfail>${g('error', 'c-danger')}<b>${esc(R.fail.title)}</b><p>The server couldn't save it. Nothing changed.</p><div class="acts"><button type="button" class="btn soft" data-rretry>Retry</button></div></div>`)
+    const sec = []
+    if (R.editing) {
+      const cur = R.editing
+      const full = cur.prefix + cur.suffix
+      const recMatch = full === R.recommended
+      const recP = R.prefixes.find(x => R.recommended.startsWith(x) && x !== '/') || '/'
+      sec.push(`<div class="fsec"><h${h} class="fsh">Route</h${h}><div class="fields rt-edit">
+        <div class="fb"><div class="fl"><label for="${pid}-suf">Path</label></div>
+          <div class="pathctl">${selectHTML({ key: 'pfx-' + pid, value: cur.prefix, label: 'Path prefix' }).replace('<button', `<button id="${pid}-pfx" data-pfx`)}<div class="f"><input id="${pid}-suf" value="${esc(cur.suffix)}" aria-describedby="${pid}-sufh" autocomplete="off" spellcheck="false"><span class="st"></span></div></div>
+          <div class="fh" id="${pid}-sufh"><span class="msg">${recMatch ? 'This is the recommended path.' : `Recommended: <span class="mono">${esc(R.recommended)}</span> · <button type="button" class="tbtn" data-rec-fill aria-label="Use this: the recommended path, ${esc(R.recommended)}">Use this</button>`}${R.path ? `<br>The old path, <span class="mono">${esc(R.path)}</span>, keeps working: it redirects here.` : ''}</span></div>
+        </div>
+        <div class="fb"><div class="fl" id="${pid}-gl">Go live</div>
+          <div class="seg" role="group" aria-labelledby="${pid}-gl" style="align-self:flex-start">${[['live', 'Live'], ['scheduled', 'Scheduled'], ['draft', 'Not live']].map(([k, n]) => `<button type="button" data-live="${k}" aria-pressed="${cur.live === k}">${n}</button>`).join('')}</div>
+          ${cur.live === 'scheduled' ? `<button type="button" class="f" data-cal id="${pid}-date" aria-label="Go-live date and time"><span class="sv">${esc(cur.liveAt || '20 Nov 2026, 09:00')}</span>${g('cal', 'end')}<span class="st"></span></button>` : ''}
+          ${R.gate ? `<div class="fh"><span class="msg">A parent route goes live later, on ${esc(R.gate.at)}. Visitors can't reach this page before then.</span></div>` : ''}
+        </div>
+        <div class="rt-edit-acts">${R.path ? btn('del', 'ghost danger del', 'Delete route') : ''}<span class="sp"></span><button type="button" class="btn soft" data-rcancel>Cancel edit</button>${btn('save', 'solid', R.path ? 'Save route' : `${g('plus')}Route`, R.path ? '' : ' aria-label="Create route"')}</div>
+      </div></div>`)
+      OPTS['pfx-' + pid] = R.prefixes.map(v => ({ value: v, label: v }))
+      void recP
+    } else if (R.parentNoRoute) {
+      sec.push(`<div class="fsec"><h${h} class="fsh">Route</h${h}><div class="fields"><div class="fb"><div class="fl">Path</div><div class="rt-path"><span class="rov"><span class="rv">None</span></span>${routeBadge('none')}</div></div>
+        <div class="alert">${g('info', 'c-accent')}<b>The parent page, ${esc(R.parentNoRoute)}, has no route yet.</b><p>A route here would start with the parent's path, so add a route to ${esc(R.parentNoRoute)} first.</p><div class="acts"><button type="button" class="btn soft" data-ropen>Open ${esc(R.parentNoRoute)}</button></div></div></div></div>`)
+    } else if (!R.path) {
+      sec.push(`<div class="fsec"><h${h} class="fsh">Route</h${h}><div class="fields"><div class="fb"><div class="fl">Path</div><div class="rt-path"><span class="rov"><span class="rv">None</span></span>${routeBadge('none')}<span class="sp"></span>${btn('new', 'soft', `${g('plus')}Route`, ' aria-label="Create route"')}</div>
+        <div class="fh"><span class="msg">Without a route, visitors can only reach this ${esc(what)} through a page nested under it.</span></div>
+        <div class="rt-rec">Recommended: <span class="mono">${esc(R.recommended)}</span> · ${R.busy === 'rec' ? '<span class="spin sm"></span>Saving…' : `<button type="button" class="tbtn" data-rec aria-label="Use this: the recommended path, ${esc(R.recommended)}">Use this</button>`}</div></div></div></div>`)
+    } else {
+      const eff = effective()
+      sec.push(`<div class="fsec"><h${h} class="fsh">Route</h${h}><div class="fields"><div class="fb"><div class="fl">Path</div><div class="rt-path"><span class="rov"><span class="rv mono">${esc(R.path)}</span><button type="button" class="btn ghost icon" aria-label="Copy path" style="--bh:2rem">${g('copy')}</button></span>${routeBadge(eff, R.liveAt)}<span class="sp"></span><button type="button" class="btn soft" data-redit>Edit route</button></div>
+        ${R.path !== R.recommended ? `<div class="rt-rec">Recommended: <span class="mono">${esc(R.recommended)}</span> · ${R.busy === 'rec' ? '<span class="spin sm"></span>Saving…' : `<button type="button" class="tbtn" data-rec aria-label="Use this: the recommended path, ${esc(R.recommended)}">Use this</button>`}</div>` : ''}</div>
+        ${R.gate ? `<div class="rt-warn" role="note">${g('conflict', 'c-warning')}<b>Held back by a parent route.</b><p><span class="mono">${esc(R.gate.path)}</span> goes live on ${esc(R.gate.at)}, so visitors can't reach this page before then, whatever its own go-live says.</p></div>` : ''}
+      </div></div>`)
+    }
+    if (R.path && !R.editing) {
+      sec.push(`<div class="fsec"><div class="fsh-row"><h${h} class="fsh">Forwarding</h${h}>${R.forward || R.inline === 'forward' ? '' : btn('fwd-open', 'soft', 'Forward to…')}</div><div class="fields" style="margin-top:1rem">
+        ${R.inline === 'forward' ? `<div class="rt-inline"><div class="fb"><div class="fl"><label for="${pid}-fwd">Forward visitors to</label></div>${searchHTML({ id: pid + '-fwd', value: R.fwdPick || '', label: 'Forward visitors to' })}</div><div class="row2">${btn('fwd', 'solid', 'Forward')}<button type="button" class="btn soft" data-rinline-x>Cancel</button></div></div>` : ''}
+        ${R.forward ? `<div class="fb"><p class="tempty" style="color:var(--k-fg)">Visitors to <span class="mono">${esc(R.path)}</span> are sent to <span class="mono">${esc(R.forward)}</span>, and never see this page.</p><div class="rt-acts"><button type="button" class="btn soft" data-rfwd-change>Change</button>${btn('fwd-stop', 'ghost danger', 'Stop forwarding')}</div></div>` : (R.inline === 'forward' ? '' : `<p class="tempty">Visitors see this page.</p>`)}
+      </div></div>`)
+      sec.push(`<div class="fsec"><div class="fsh-row"><h${h} class="fsh">Redirects to this page</h${h}>${R.inline === 'redirect' ? '' : btn('red-open', 'soft', `${g('plus')}Redirect`, ' aria-label="Add a redirect"')}</div><p class="fsd">Old addresses that send visitors here. A redirect to a redirect is shown under it.</p><div class="fields" style="margin-top:1rem">
+        ${R.inline === 'redirect' ? `<div class="rt-inline"><div class="fb"><div class="fl"><label for="${pid}-red">Redirect from</label></div><div class="f${R.redErr ? ' err' : ''}"><input id="${pid}-red" value="${esc(R.redDraft || '')}" placeholder="/old-path" aria-describedby="${pid}-redh" autocomplete="off" spellcheck="false"${R.redErr ? ' aria-invalid="true"' : ''}><span class="st"></span></div><div class="fh${R.redErr ? ' err' : ''}" id="${pid}-redh">${R.redErr ? `${g('error')}<span class="msg">${esc(R.redErr)}</span>` : `<span class="msg" data-redprev>${R.redDraft ? `<span class="mono">${esc(R.redDraft)}</span> will send visitors to <span class="mono">${esc(R.path)}</span>.` : 'A path on this site, starting with /.'}</span>`}</div></div><div class="row2">${btn('red', 'solid', 'Add redirect')}<button type="button" class="btn soft" data-rinline-x>Cancel</button></div></div>` : ''}
+        ${R.redirects.length ? treeHTML('Redirects to this page', R.redirects, { actions: () => [{ icon: 'trash', label: 'Delete', danger: true }] }).replace(/aria-label="Delete"/g, 'data-del') : '<p class="tempty">No other addresses send visitors here.</p>'}
+      </div></div>`)
+      sec.push(`<div class="fsec"><h${h} class="fsh">Child routes</h${h}><p class="fsd">Routes of the pages nested under this one. Their badges show when visitors can reach them.</p><div class="fields" style="margin-top:1rem">
+        ${R.children.length ? treeHTML('Child routes', R.children, { actions: () => [{ icon: 'more', label: 'More actions' }], badge: n => routeBadge(n.st, n.at) }) : '<p class="tempty">No pages are nested under this one.</p>'}
+      </div></div>`)
+    }
+    el.innerHTML = `<div class="rt-busy" aria-busy="${!!R.busy}">${parts.join('')}<div class="form">${sec.join('')}</div></div>`
+    $$('.tree [data-del]', el).forEach(b => {
+      const row = b.closest('.tnode')
+      b.setAttribute('aria-label', `Delete the redirect from ${$('.tp', row).textContent}`)
+    })
+    $$('.tree .tnode', el).forEach(row => {
+      const b = $('[data-ta]', row)
+      if (b && !b.hasAttribute('data-del')) b.setAttribute('aria-label', `More actions for ${$('.tp', row).textContent}`)
+    })
+    wire()
+    hydrate(el)
+    setupAll(el)
+    if (focusSel) { const f = $(focusSel, el); f && f.focus({ preventScroll: false }) }
+  }
+  function run (key, title, apply, okMsg) {
+    R.busy = key
+    R.fail = null
+    R.status = null
+    render()
+    setTimeout(() => {
+      R.busy = null
+      if (R.failNext) {
+        R.failNext = false
+        R.fail = { title, retry: () => run(key, title, apply, okMsg) }
+        render('[data-rfail]')
+        ctx.log && ctx.log(`${title}\n← 500. Nothing changed.`)
+        return
+      }
+      const req = apply()
+      R.status = okMsg
+      ctx.log && ctx.log(req + '\n← 200')
+      render('[data-rstat]')
+    }, 800)
+  }
+  function changePath (to, live, liveAt, cascade) {
+    const from = R.path
+    const kids = from ? R.children : []
+    return () => {
+      if (from && from !== to) R.redirects = [{ path: from, kids: [] }, ...R.redirects]
+      if (cascade && from) {
+        const walk = ns => ns.forEach(n => { if (n.path.startsWith(from + '/')) n.path = to + n.path.slice(from.length); n.kids && walk(n.kids) })
+        walk(kids)
+      }
+      R.path = to
+      if (live) { R.live = live; R.liveAt = liveAt }
+      R.editing = null
+      return from ? `PATCH ${ROUTE_IRI}\n${JSON.stringify({ path: to, ...(live ? { liveAt: live === 'live' ? 'now' : live === 'scheduled' ? '2026-11-20T09:00:00Z' : null } : {}), ...(cascade ? { cascadeChildPaths: true, oldPath: from } : {}) })}` : `POST /_/routes\n${JSON.stringify({ path: to, page: PAGE_IRI })}`
+    }
+  }
+  const countKids = () => { let n = 0; const w = ns => ns.forEach(x => { if (R.path && x.path.startsWith(R.path + '/')) n++; x.kids && w(x.kids) }); w(R.children); return n }
+  function confirmPath (to, live, liveAt) {
+    const from = R.path
+    const n = from && to !== from ? countKids() : 0
+    if (!from) {
+      askConfirm(dlg(), { title: `Add the route ${to}?`, desc: `Visitors will reach this ${what} at ${to}${live === 'scheduled' ? ` from ${liveAt}` : live === 'draft' ? ' once it is set live' : ''}.`, keep: 'Cancel', go: 'Add route', tone: 'primary', onGo: () => run('save', `The route ${to} wasn't added.`, changePath(to, live || 'live', liveAt), `Route added: <span class="mono">${esc(to)}</span>.`) })
+      return
+    }
+    if (to === from) {
+      run('save', 'The go-live change wasn\'t saved.', changePath(to, live, liveAt), live === 'scheduled' ? `Goes live on ${esc(liveAt)}.` : live === 'live' ? 'The route is live.' : 'The route is no longer live.')
+      return
+    }
+    askConfirm(dlg(), {
+      title: `Change the route to ${to}?`,
+      desc: `The old path, ${from}, will redirect here, so links to it keep working.`,
+      extra: n ? `<label class="cblab"><input type="checkbox" class="cb" name="cascade" checked> Also change the ${n} child ${n === 1 ? 'route' : 'routes'} that ${n === 1 ? 'starts' : 'start'} with ${esc(from)}/</label>` : '',
+      keep: 'Cancel', go: 'Change route', tone: 'primary',
+      onGo: v => run('save', `The route wasn't changed to ${to}.`, changePath(to, live, liveAt, v.cascade), `Route changed to <span class="mono">${esc(to)}</span>. <span class="mono">${esc(from)}</span> now redirects here${v.cascade ? `, and ${n} child ${n === 1 ? 'route was' : 'routes were'} changed too` : ''}.`)
+    })
+  }
+  function findParent (ns, target) { for (const n of ns) { if (n === target) return ns; if (n.kids) { const r = findParent(n.kids, target); if (r) return r } } return null }
+  function wire () {
+    const on = (sel, fn) => { const x = $(sel, el); x && x.addEventListener('click', fn) }
+    on('[data-rretry]', () => R.fail && R.fail.retry())
+    on('[data-redit]', () => {
+      const p = R.prefixes.slice().sort((a, b) => b.length - a.length).find(x => R.path.startsWith(x)) || '/'
+      R.editing = { prefix: p, suffix: R.path.slice(p.length), live: R.live, liveAt: R.liveAt || '20 Nov 2026, 09:00' }
+      R.status = null
+      render(`#${pid}-suf`)
+    })
+    on('[data-rk="new"]', () => { R.editing = { prefix: R.prefixes[R.prefixes.length - 1], suffix: '', live: 'live', liveAt: '20 Nov 2026, 09:00' }; R.status = null; render(`#${pid}-suf`) })
+    on('[data-rcancel]', () => { R.editing = null; render(R.path ? '[data-redit]' : '[data-rk="new"]') })
+    on('[data-rec]', () => confirmPath(R.recommended, R.path ? null : 'live', ''))
+    on('[data-ropen]', () => toast({ tone: 'info', title: `Opening ${R.parentNoRoute}`, desc: 'Its settings open, on the Routes tab.' }))
+    const suf = $(`#${pid}-suf`, el)
+    if (suf) {
+      suf.addEventListener('input', () => {
+        R.editing.suffix = suf.value.replace(/^\/+/, '')
+        const msg = $(`#${pid}-sufh .msg`, el)
+        const full = R.editing.prefix + R.editing.suffix
+        if (msg) msg.innerHTML = full === R.recommended ? 'This is the recommended path.' + (R.path ? `<br>The old path, <span class="mono">${esc(R.path)}</span>, keeps working: it redirects here.` : '') : msg.innerHTML.replace(/^This is the recommended path\./, `Recommended: <span class="mono">${esc(R.recommended)}</span> · <button type="button" class="tbtn" data-rec-fill aria-label="Use this: the recommended path, ${esc(R.recommended)}">Use this</button>`)
+        const f = $('[data-rec-fill]', el)
+        f && !f.dataset.w && (f.dataset.w = 1, f.addEventListener('click', fill))
+      })
+      suf.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('[data-rk="save"]', el).click() } })
+    }
+    const fill = () => {
+      const p = R.prefixes.slice().sort((a, b) => b.length - a.length).find(x => R.recommended.startsWith(x)) || '/'
+      R.editing.prefix = p
+      R.editing.suffix = R.recommended.slice(p.length)
+      render(`#${pid}-suf`)
+    }
+    on('[data-rec-fill]', fill)
+    const pfx = $('[data-pfx]', el)
+    pfx && pfx.addEventListener('commit', e => { R.editing.prefix = e.detail; render(`#${pid}-pfx`) })
+    $$('[data-live]', el).forEach(b => b.addEventListener('click', () => { R.editing.live = b.dataset.live; render(`[data-live="${b.dataset.live}"]`) }))
+    on('[data-rk="save"]', () => {
+      if (R.busy) return
+      const e = R.editing
+      const to = e.prefix + e.suffix.replace(/\/+$/, '')
+      if (!e.suffix.trim() && e.prefix === '/' && R.path !== '/') { toast({ tone: 'warning', title: 'Add a path first', desc: 'Type the end of the path, or use the recommended one.' }); return }
+      const liveAt = e.live === 'scheduled' ? ($(`#${pid}-date .sv`, el) || {}).textContent || e.liveAt : ''
+      if (to === R.path && e.live === R.live && liveAt === (R.live === 'scheduled' ? R.liveAt : '')) { R.editing = null; render('[data-redit]'); return }
+      confirmPath(to, e.live, liveAt)
+    })
+    on('[data-rk="del"]', () => askConfirm(dlg(), { title: `Delete the route ${R.path}?`, desc: `Visitors to ${R.path} will get “Page not found”, and the ${what} can only be reached through a page nested under it.`, keep: 'Cancel', go: 'Delete route', onGo: () => run('del', `The route ${R.path} wasn't deleted.`, () => { const p = R.path; R.path = null; R.editing = null; R.redirects = []; return `DELETE ${ROUTE_IRI}   (${p})` }, 'Route deleted. The page has no route now.') }))
+    on('[data-rk="fwd-open"]', () => { R.inline = 'forward'; R.fwdPick = ''; render(`#${pid}-fwd`) })
+    on('[data-rfwd-change]', () => { R.inline = 'forward'; R.fwdPick = R.forward; R.forward = R.forward; render(`#${pid}-fwd`) })
+    $$('[data-rinline-x]', el).forEach(b => b.addEventListener('click', () => { const was = R.inline; R.inline = null; R.redErr = null; render(was === 'redirect' ? '[data-rk="red-open"]' : '[data-rk="fwd-open"],[data-rfwd-change]') }))
+    const fwd = $(`#${pid}-fwd`, el)
+    if (fwd) fwd.closest('[data-search]').addEventListener('commit', e => { R.fwdPick = e.detail })
+    on('[data-rk="fwd"]', () => {
+      const to = R.fwdPick
+      if (!to) { toast({ tone: 'warning', title: 'Choose a page to forward to' }); return }
+      if (to === R.path) { toast({ tone: 'warning', title: 'A route cannot forward to itself' }); return }
+      askConfirm(dlg(), { title: `Forward visitors to ${to}?`, desc: `Visitors to ${R.path} will be sent to ${to}, and will no longer see this ${what}.`, keep: 'Cancel', go: 'Forward', tone: 'primary', onGo: () => run('fwd', `Forwarding to ${to} wasn't saved.`, () => { R.forward = to; R.inline = null; return `PATCH ${ROUTE_IRI}\n${JSON.stringify({ redirect: '/_/routes/' + slug(to) })}` }, `Visitors to <span class="mono">${esc(R.path)}</span> are now sent to <span class="mono">${esc(to)}</span>.`) })
+    })
+    on('[data-rk="fwd-stop"]', () => askConfirm(dlg(), { title: 'Stop forwarding?', desc: `Visitors to ${R.path} will see this ${what} again.`, keep: 'Cancel', go: 'Stop forwarding', onGo: () => run('fwd-stop', 'Forwarding wasn\'t stopped.', () => { R.forward = null; return `PATCH ${ROUTE_IRI}\n${JSON.stringify({ redirect: null })}` }, 'Visitors see this page again.') }))
+    on('[data-rk="red-open"]', () => { R.inline = 'redirect'; R.redDraft = ''; R.redErr = null; render(`#${pid}-red`) })
+    const red = $(`#${pid}-red`, el)
+    if (red) {
+      red.addEventListener('input', () => {
+        R.redDraft = red.value.trim()
+        if (R.redErr) { R.redErr = null; render(`#${pid}-red`); const r2 = $(`#${pid}-red`, el); const n = r2.value.length; r2.setSelectionRange(n, n); return }
+        const pv = $('[data-redprev]', el)
+        if (pv) pv.innerHTML = R.redDraft ? `<span class="mono">${esc(R.redDraft)}</span> will send visitors to <span class="mono">${esc(R.path)}</span>.` : 'A path on this site, starting with /.'
+      })
+      red.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('[data-rk="red"]', el).click() } })
+    }
+    on('[data-rk="red"]', () => {
+      const from = (R.redDraft || '').trim()
+      if (!/^\/[^\s]*$/.test(from)) { R.redErr = from ? 'Start with / and leave out spaces, for example /old-kitchens.' : 'Type the old path, for example /old-kitchens.'; render(`#${pid}-red`); return }
+      if (from === R.path) { R.redErr = 'That is this page\'s own path.'; render(`#${pid}-red`); return }
+      askConfirm(dlg(), { title: `Add a redirect from ${from}?`, desc: `Visitors to ${from} will be sent to ${R.path}.`, keep: 'Cancel', go: 'Add redirect', tone: 'primary', onGo: () => run('red', `The redirect from ${from} wasn't added.`, () => { R.redirects = [...R.redirects, { path: from }]; R.inline = null; R.redDraft = ''; return `POST /_/routes\n${JSON.stringify({ path: from, redirect: ROUTE_IRI })}` }, `Redirect added: <span class="mono">${esc(from)}</span> now sends visitors here.`) })
+    })
+    const del = n => askConfirm(dlg(), {
+      title: `Delete the redirect from ${n.path}?`,
+      desc: `Visitors to ${n.path} will get “Page not found”.${n.kids && n.kids.length ? ` The ${n.kids.length} ${n.kids.length === 1 ? 'redirect' : 'redirects'} to it are deleted too.` : ''}`,
+      keep: 'Cancel', go: 'Delete redirect',
+      onGo: () => run('tree', `The redirect from ${n.path} wasn't deleted.`, () => { const list = findParent(R.redirects, n); list.splice(list.indexOf(n), 1); return `DELETE /_/routes/${slug(n.path)}   (${n.path})` }, `Redirect from <span class="mono">${esc(n.path)}</span> deleted.`)
+    })
+    const trees = $$('.tree', el)
+    if (trees[0] && R.redirects.length) wireTree(trees[0].parentElement, R.redirects, { actions: n => [{ fn: () => del(n) }], onChange: (n, i) => render(`.tree[aria-label="Redirects to this page"] [data-ti="${i}"]`), onDelete: n => del(n) })
+    const ct = trees.find(t => t.getAttribute('aria-label') === 'Child routes')
+    if (ct) wireTree(ct.parentElement, R.children, { actions: n => [{ fn: b => actionMenu(b, n.path, [{ label: 'Edit settings', fn: () => toast({ tone: 'info', title: `Opening ${n.page}`, desc: 'Its settings open in this modal.' }) }, { label: 'Go to page', fn: () => toast({ tone: 'info', title: `Going to ${n.path}`, desc: 'Edit mode stays on.' }) }]) }], onChange: (n, i) => render(`.tree[aria-label="Child routes"] [data-ti="${i}"]`) })
+  }
+  render()
+  return { render }
+}
+function pageModal (host, p, { mode = 'edit', logEl = null, onClose, hl = 2, title, routes = 'kitchens', tab: startTab } = {}) {
+  let spec, F, orig, v, err, conf, tab, notice, sim, busy, RT
   const log = (s) => { if (logEl) logEl.textContent = s + (logEl.textContent && logEl.textContent !== 'Requests appear here.' ? '\n\n' + logEl.textContent.split('\n\n').slice(0, 3).join('\n\n') : '') }
   function init (m) {
-    spec = modalSpec(m)
+    spec = modalSpec(m, { title })
     F = spec.fields
+    RT = m === 'edit' ? routesData(routes) : routesData('new', { page: 'New article', parentNoRoute: null })
     orig = Object.fromEntries(Object.entries(F).map(([k, f]) => [k, f.value]))
     v = { ...orig }
     err = {}; conf = {}; notice = null; busy = false
     sim = sim || {}
-    tab = spec.tabs[0].k
+    tab = startTab && spec.tabs.some(t => t.k === startTab) ? startTab : spec.tabs[0].k
   }
   const changed = k => v[k] !== orig[k]
   const changedKeys = () => Object.keys(F).filter(changed)
@@ -2653,27 +3326,30 @@ function pageModal (host, p, { mode = 'edit', logEl = null, onClose } = {}) {
     if (f.type === 'toggle') {
       return `<div class="fb" data-k="${k}"><label class="trow"><span class="tt"><b>${esc(f.label)} <span class="chg">· Unsaved</span></b><span id="${fid(k)}-h">${esc(f.help)}</span></span><span class="tgl"><input type="checkbox" role="switch" id="${fid(k)}" aria-describedby="${fid(k)}-h"${v[k] ? ' checked' : ''}><span class="tg"></span></span></label></div>`
     }
-    return `<div class="fb" data-k="${k}"><div class="fl"><label for="${fid(k)}">${esc(f.label)}</label>${f.optional ? '<span class="optl">· Optional</span>' : ''}${f.info ? infoBtn(f.label, f.info) : ''}<span class="chg">· Unsaved</span></div>${control(k, f)}<div class="fh" id="${fid(k)}-h"></div><div data-cmp></div></div>`
+    return `<div class="fb" data-k="${k}"><div class="fl"><label for="${fid(k)}">${esc(f.label)}</label>${f.optional ? '<span class="optl">· Optional</span>' : ''}${f.info ? infoBtn(f.label, f.info) : ''}<span class="chg">· Unsaved</span></div><div class="cfxw">${control(k, f)}<div data-cmp></div></div><div class="fh" id="${fid(k)}-h"></div></div>`
   }
   function panelHTML (t) {
     if (t.disabled) return `<div class="tabnote" role="note"><b>${esc(t.disabled.title)}</b><p>${esc(t.disabled.text)}</p></div>`
-    if (t.k === 'info') return infoTabHTML(spec)
+    if (t.k === 'info') return infoTabHTML(spec, hl + 1)
+    if (t.k === 'routes') return '<div data-routes></div>'
     const secs = spec.sections.filter(s => s.tab === t.k)
-    return `<div class="form">${secs.map(s => `<div class="fsec${s.cols ? ' cols2' : ''}">${s.title ? `<h3>${esc(s.title)}</h3>` : ''}${s.desc ? `<p class="fsd">${esc(s.desc)}</p>` : ''}<div class="fields">${s.fields.map(fieldHTML).join('')}${s.after || ''}</div></div>`).join('')}</div>`
+    return `<div class="form">${secs.map(s => `<div class="fsec${s.cols ? ' cols2' : ''}">${s.title ? `<h${hl + 1} class="fsh">${esc(s.title)}</h${hl + 1}>` : ''}${s.desc ? `<p class="fsd">${esc(s.desc)}</p>` : ''}<div class="fields">${s.fields.map(fieldHTML).join('')}${s.after || ''}</div></div>`).join('')}</div>`
   }
   function render () {
     const create = spec.mode === 'create'
     host.innerHTML = `<div class="dlg has-tabs s-modal kit" role="dialog" aria-modal="true" aria-labelledby="${p}-t">
-      <div class="dlg-h"><h2 id="${p}-t">${esc(spec.title)}</h2>
+      <div class="dlg-h"><h${hl} class="dt" id="${p}-t">${esc(spec.title)}</h${hl}>
         ${create ? '' : `<button type="button" class="btn ghost icon ovf" aria-label="More actions" data-ovf>${g('more')}</button>`}
         <button type="button" class="btn ghost icon" aria-label="Close" data-close>${g('x')}</button></div>
       <div class="dlg-tabs" role="tablist" aria-label="${esc(spec.title)}">${spec.tabs.map(t => `<button type="button" role="tab" class="tab" id="${p}-tab-${t.k}" aria-controls="${p}-pn-${t.k}" aria-selected="${t.k === tab}" tabindex="${t.k === tab ? 0 : -1}" data-tab="${t.k}"${t.disabled ? ' aria-disabled="true"' : ''}>${t.n}<span class="tb"></span></button>`).join('')}</div>
       <div class="dlg-b"><div data-notice></div>${spec.tabs.map(t => `<div class="dpanel" role="tabpanel" id="${p}-pn-${t.k}" aria-labelledby="${p}-tab-${t.k}" data-pn="${t.k}"${t.k === tab ? '' : ' hidden'}>${panelHTML(t)}</div>`).join('')}</div>
-      <div class="dlg-f">${create ? '' : '<button type="button" class="btn ghost danger del">Delete page</button>'}<span class="spacer"></span><span class="fstate" data-fstate aria-live="polite"></span><button type="button" class="btn soft" data-cancel>Cancel</button><button type="button" class="btn solid" data-save></button></div>
+      <div class="dlg-f">${create ? '' : '<button type="button" class="btn ghost danger del">Delete page</button>'}<span class="spacer"></span><span class="fstate" data-fstate id="${p}-fstate" aria-live="polite"></span><button type="button" class="btn soft" data-cancel>Cancel</button><button type="button" class="btn solid" data-save aria-describedby="${p}-fstate"></button></div>
     </div>`
     hydrate(host)
     setupAll(host)
     wire()
+    const rp = $('[data-routes]', host)
+    if (rp) routesPanel(rp, RT, { hl: hl + 1, p, what: spec.what, dlg: () => $('.dlg', host), log })
     Object.keys(F).forEach(paint)
     paintNotice()
     paintChrome()
@@ -2703,7 +3379,7 @@ function pageModal (host, p, { mode = 'edit', logEl = null, onClose } = {}) {
     if (f.type === 'toggle') return
     const line = $('#' + fid(k) + '-h', host)
     if (err[k]) { line.className = 'fh err'; line.innerHTML = `${g('error')}<span class="msg">${esc(err[k])}</span>` }
-    else if (c && !c.choice) { line.className = 'fh conf'; line.innerHTML = `${g('conflict', 'c-warning')}<span class="msg">${PEER.name} saved a different ${esc(lc(f.label))} while you were editing. Choose which to keep.</span>` }
+    else if (c && !c.choice) { line.className = 'fh'; line.innerHTML = '' }
     else if (c) { line.className = 'fh'; line.innerHTML = `<span class="msg">${c.choice === 'theirs' ? `Using ${PEER.name}'s. Nothing to send for this field.` : `Keeping yours. Save sends it over ${PEER.name}'s.`}</span>` }
     else {
       line.className = 'fh'
@@ -2712,9 +3388,13 @@ function pageModal (host, p, { mode = 'edit', logEl = null, onClose } = {}) {
     }
     line.hidden = !line.innerHTML
     const cm = $('[data-cmp]', b)
-    if (c) {
-      if (!cm.firstChild) { cm.innerHTML = cmpHTML(f.label, c.theirs, c.yours, c.choice); setupCmp(cm) }
-    } else cm.innerHTML = ''
+    const w = $('.cfxw', b)
+    const open = !!(c && !c.choice)
+    if (open) {
+      if (!cm.firstChild) { cm.innerHTML = cfxBody(c.theirs, c.yours, fid(k) + '-q'); delete cm.dataset.ready; setupCmp(cm) }
+      ctl && ctl.setAttribute('aria-describedby', fid(k) + '-q-n')
+    } else { cm.innerHTML = ''; ctl && ctl.setAttribute('aria-describedby', fid(k) + '-h') }
+    w.classList.toggle('on', open)
   }
   function paintChrome () {
     spec.tabs.forEach(t => {
@@ -2730,13 +3410,13 @@ function pageModal (host, p, { mode = 'edit', logEl = null, onClose } = {}) {
     const u = unresolved().length
     const fs = $('[data-fstate]', host)
     if (busy) return
-    if (spec.action) { sv.textContent = spec.action; sv.disabled = false }
+    if (spec.action) { sv.innerHTML = g('plus') + esc(spec.action); sv.setAttribute('aria-label', `Create ${spec.what}`); sv.disabled = false }
     else {
       sv.textContent = n ? `Save ${n} ${n === 1 ? 'change' : 'changes'}` : 'Save'
       sv.disabled = !n || u > 0
       sv.setAttribute('aria-label', n ? `Save ${n} unsaved ${n === 1 ? 'change' : 'changes'}` : 'Save, nothing has changed')
     }
-    fs.textContent = u ? `Choose ${u} ${u === 1 ? 'version' : 'versions'}` : Object.keys(err).length ? `${Object.keys(err).length} to fix` : ''
+    fs.textContent = u ? `Choose ${u} ${u === 1 ? 'version' : 'versions'} to save` : Object.keys(err).length ? `${Object.keys(err).length} to fix` : ''
   }
   function paintNotice () {
     const el = $('[data-notice]', host)
@@ -2885,7 +3565,8 @@ function pageModal (host, p, { mode = 'edit', logEl = null, onClose } = {}) {
           ifMatch.page = 8
           lines.push(`${head}\n← 412: ${PEER.name} saved version 8 first. Nothing was saved.`)
           failed++
-          notice = { tone: 'warning', title: `${PEER.name} saved this ${spec.what} while you were editing, so nothing was saved.`, text: `Choose which version to keep for each field below, then Save again.${adopted.length ? ` ${PEER.name} also changed ${adopted.join(' and ')}, which now shows her version.` : ''}`, keys: [] }
+          const nc = Object.keys(conf).length
+          notice = { tone: 'warning', title: `${nc} ${nc === 1 ? 'field' : 'fields'} changed by ${PEER.name} while you were editing.`, text: `Nothing was saved. Choose which version to keep before saving.${adopted.length ? ` ${PEER.name} also changed ${adopted.join(' and ')}, which now shows her version.` : ''}`, keys: [] }
           return
         }
         if (sim.fail) {
@@ -2928,7 +3609,6 @@ function pageModal (host, p, { mode = 'edit', logEl = null, onClose } = {}) {
       const prefill = (long = true) => {
         if (!changed('ref')) setValue('ref', 'Our kitchens')
         if (!changed('seo')) setValue('seo', long ? 'Hand-built kitchens, designed and made in Bath | Hartley & Finch' : 'Kitchens made in Bath | Hartley & Finch')
-        if (!changed('rt')) setValue('rt', '/kitchens/shaker')
         Object.keys(F).forEach(paint); paintChrome()
       }
       if (k === 'edit') prefill()
@@ -2937,6 +3617,23 @@ function pageModal (host, p, { mode = 'edit', logEl = null, onClose } = {}) {
       if (k === 'reset') { sim = {}; init(mode); render() }
     },
     requestClose,
+    routes (k) {
+      const base = routesData(routes)
+      const keep = ['redirects', 'children']
+      if (k === 'reset') Object.assign(RT, base, { gate: null, parentNoRoute: null, status: null, fail: null, editing: null, inline: null, failNext: false })
+      if (!RT.path && ['live', 'scheduled', 'draft', 'gate'].includes(k)) { RT.path = base.path; keep.forEach(x => { RT[x] = base[x] }) }
+      if (k === 'live') Object.assign(RT, { live: 'live', liveAt: '', gate: null, parentNoRoute: null })
+      if (k === 'scheduled') Object.assign(RT, { live: 'scheduled', liveAt: '20 Nov 2026, 09:00', gate: null, parentNoRoute: null })
+      if (k === 'draft') Object.assign(RT, { live: 'draft', liveAt: '', gate: null, parentNoRoute: null })
+      if (k === 'gate') Object.assign(RT, { live: 'live', gate: { path: '/kitchens', at: '1 Dec 2026, 09:00' }, parentNoRoute: null })
+      if (k === 'noparent') Object.assign(RT, { path: null, gate: null, parentNoRoute: 'Kitchens', redirects: [], children: [] })
+      if (k === 'none') Object.assign(RT, { path: null, gate: null, parentNoRoute: null, redirects: [], children: [] })
+      if (k === 'fail') { RT.failNext = true; toast({ tone: 'info', id: 'rsim', title: 'The next route action will fail', desc: 'Add a redirect, use the recommendation or edit the route.' }) }
+      if (k !== 'fail') { RT.status = null; RT.fail = null; RT.editing = null; RT.inline = null }
+      selectTab('routes')
+      const rp = $('[data-routes]', host)
+      rp && routesPanel(rp, RT, { hl: hl + 1, p, what: spec.what, dlg: () => $('.dlg', host), log })
+    },
     focusFirst () { const el = $('input,button.f', $('[data-pn]:not([hidden])', host)); el && el.focus() }
   }
   init(mode)
@@ -2951,7 +3648,7 @@ function openModal () {
   ov.innerHTML = '<div class="dlg-host"></div>'
   document.body.append(ov)
   const close = () => { ov.remove(); document.documentElement.style.overflow = ''; lastFocus && lastFocus.focus() }
-  const m = pageModal($('.dlg-host', ov), 'dlg', { onClose: close })
+  const m = pageModal($('.dlg-host', ov), 'dlg', { onClose: close, hl: 2 })
   document.documentElement.style.overflow = 'hidden'
   ov.addEventListener('mousedown', e => { if (e.target === ov) m.requestClose() })
   ov.addEventListener('keydown', e => {
@@ -2967,18 +3664,19 @@ function openModal () {
 
 /* section 7: list */
 const PAGES = [
-  { t: 'Home', path: '/', s: 'Live', d: '17 Nov 2026', n: 12, type: 'static' },
-  { t: 'Kitchens', path: '/kitchens', s: 'Draft', d: '17 Nov 2026', n: 9, type: 'static' },
-  { t: 'Blog article', path: 'Template for 14 articles', s: 'Live', d: '16 Nov 2026', n: 7, type: 'dynamic' },
-  { t: 'Handleless kitchens', path: '/kitchens/handleless', s: 'Scheduled', d: '15 Nov 2026', n: 6, type: 'static' },
-  { t: 'Our workshop', path: '/our-workshop', s: 'Live', d: '11 Nov 2026', n: 5, type: 'static' },
-  { t: 'Showroom', path: 'Template for 3 showrooms', s: 'Live', d: '8 Nov 2026', n: 8, type: 'dynamic' },
-  { t: 'Brochure request', path: 'No route', s: 'Draft', d: '2 Nov 2026', n: 3, type: 'static' },
-  { t: 'Kitchen range', path: 'Template for 6 ranges', s: 'Draft', d: '29 Oct 2026', n: 14, type: 'dynamic' },
-  { t: 'Careers', path: '/careers', s: 'Draft', d: '21 Oct 2026', n: 2, type: 'static' },
-  { t: 'Privacy policy', path: '/privacy', s: 'Live', d: '3 Sep 2026', n: 1, type: 'static' }
+  { t: 'Home', path: '/', st: 'live', d: '17 Nov 2026', n: 12, type: 'static' },
+  { t: 'Kitchens', path: '/kitchens', st: 'live', d: '17 Nov 2026', n: 9, type: 'static' },
+  { t: 'Blog article', path: 'Template for blog articles', uses: '14 articles', d: '16 Nov 2026', n: 7, type: 'dynamic' },
+  { t: 'Handleless kitchens', path: '/kitchens/handleless', st: 'scheduled', at: '20 Nov', d: '15 Nov 2026', n: 6, type: 'static' },
+  { t: 'Handleless oak', path: '/kitchens/handleless/oak', st: 'held', d: '14 Nov 2026', n: 4, type: 'static' },
+  { t: 'Our workshop', path: '/our-workshop', st: 'draft', d: '11 Nov 2026', n: 5, type: 'static' },
+  { t: 'Showroom', path: 'Template for showrooms', uses: '3 showrooms', d: '8 Nov 2026', n: 8, type: 'dynamic' },
+  { t: 'Brochure request', path: 'Private: nothing routed links to it', st: 'none', d: '2 Nov 2026', n: 3, type: 'static' },
+  { t: 'Kitchen range', path: 'Template for kitchen ranges', uses: '6 ranges', d: '29 Oct 2026', n: 14, type: 'dynamic' },
+  { t: 'Privacy policy', path: '/privacy', st: 'live', d: '3 Sep 2026', n: 1, type: 'static' }
 ]
-const TONES = { Live: 'success', Draft: 'neutral', Scheduled: 'accent' }
+const STATUS = { live: ['success', 'Live'], scheduled: ['accent', 'Scheduled'], draft: ['neutral', 'Not live'], held: ['warning', 'Held back by parent'], none: ['neutral', 'No route'] }
+const statusOf = r => r.uses ? ['neutral', `Template · ${r.uses}`, true] : [STATUS[r.st][0], STATUS[r.st][1] + (r.st === 'scheduled' ? ` · ${r.at}` : '')]
 const TYPES = [['static', 'Static'], ['dynamic', 'Dynamic']]
 const typeName = t => (TYPES.find(x => x[0] === t) || [])[1]
 function listHTML (p) {
@@ -2991,7 +3689,7 @@ function listHTML (p) {
         </div>
         <div class="sortsel">${selectHTML({ key: 'sort', value: 'updated', label: 'Sort by', width: 'w-sm' }).replace('<span class="st" data-s=""></span>', '')}</div>
       </div>
-      <span class="count" data-count>143 pages</span><button type="button" class="btn solid create" data-create>Create page</button>
+      <span class="count" data-count role="status">143 pages</span><button type="button" class="btn solid create withicon" data-create aria-label="Create page">${g('plus')}Page</button>
     </div>
     <div class="lgrid" role="table" aria-label="Pages">
       <div class="lrow head" role="row">
@@ -3002,25 +3700,25 @@ function listHTML (p) {
         <span class="c c-meta num" role="columnheader">Components</span>
         <span class="c" role="columnheader"><span class="sr">Actions</span></span>
       </div>
-      <div data-rows></div>
+      <div data-rows role="rowgroup"></div>
     </div>
     <div class="lstate" data-empty hidden><b>No pages match “<span data-eq></span>”.</b><span>Try another word, or clear the filters.</span><button type="button" class="btn soft" data-reset>Clear search</button></div>
     <div class="lfoot"><span class="rng">1–10 of 143</span>
-      <div class="pager"><button type="button" class="btn ghost" aria-label="Previous page" disabled>${g('chevl')}</button><button type="button" class="btn cur" aria-current="page">1</button><button type="button" class="btn ghost">2</button><button type="button" class="btn ghost">3</button><button type="button" class="btn ghost" aria-hidden="true" tabindex="-1">…</button><button type="button" class="btn ghost">15</button><button type="button" class="btn ghost" aria-label="Next page">${g('chevr')}</button></div>
+      <div class="pager"><button type="button" class="btn ghost" aria-label="Previous page" disabled>${g('chevl')}</button><button type="button" class="btn cur" aria-current="page" aria-label="Page 1">1</button><button type="button" class="btn ghost" aria-label="Page 2">2</button><button type="button" class="btn ghost" aria-label="Page 3">3</button><span class="btn ghost" aria-hidden="true" style="cursor:default">…</span><button type="button" class="btn ghost" aria-label="Page 15">15</button><button type="button" class="btn ghost" aria-label="Next page">${g('chevr')}</button></div>
       <div class="pager-n"><button type="button" class="btn soft" disabled>Previous</button><span class="rng" style="display:inline">Page 1 of 15</span><button type="button" class="btn soft">Next</button></div>
     </div>
   </div>`
 }
 const togInner = on => on ? g('check') : '<span class="sw" aria-hidden="true"></span>'
 function rowHTML (r) {
-  const tone = TONES[r.s]
+  const [tone, label, tpl] = statusOf(r)
   return `<div class="lrow" role="row">
     <span class="c cc c-sel" role="cell"><label class="cbhit"><input type="checkbox" class="cb" aria-label="Select ${esc(r.t)}"></label></span>
-    <span class="c" role="cell"><span class="ptl"><a class="ptitle" href="#list" onclick="return false">${esc(r.t)}</a><span class="tdot t-${r.type}" role="img" aria-label="${typeName(r.type)}"></span></span><span class="psub wide">${esc(r.path)}</span><span class="psub narrow"><span class="bd tone-${tone}"></span><span class="stw">${esc(r.s)}</span><span class="sep">·</span><span class="sep">${esc(r.d.replace(' 2026', ''))}</span><span class="sep">·</span><span class="pth">${esc(r.path)}</span></span></span>
-    <span class="c c-badge" role="cell"><span class="badge ${tone}"><span class="bd"></span>${r.s}</span></span>
+    <span class="c" role="cell"><span class="ptl"><a class="ptitle" href="#list" onclick="return false" aria-label="${esc(r.t)}, edit settings">${esc(r.t)}</a><span class="tdot t-${r.type}" role="img" aria-label="${typeName(r.type)}"></span></span><span class="psub wide">${esc(r.path)}</span><span class="psub narrow">${tpl ? '' : `<span class="bd tone-${tone}"></span>`}<span class="stw">${esc(label)}</span><span class="sep">·</span><span class="sep">${esc(r.d.replace(' 2026', ''))}</span>${tpl ? '' : `<span class="sep">·</span><span class="pth">${esc(r.path)}</span>`}</span></span>
+    <span class="c c-badge" role="cell"><span class="badge ${tone}">${tpl ? '' : '<span class="bd"></span>'}${esc(label)}</span></span>
     <span class="c c-meta num" role="cell">${r.d}</span>
     <span class="c c-meta num" role="cell">${r.n}</span>
-    <span class="c acts" role="cell"><button type="button" class="btn ghost icon a-wide" aria-label="Edit ${esc(r.t)}">${g('edit')}</button><button type="button" class="btn ghost icon" aria-label="More actions for ${esc(r.t)}" data-title="${esc(r.t)}" data-more>${g('more')}</button></span>
+    <span class="c acts" role="cell"><button type="button" class="btn ghost icon a-wide" aria-label="Go to page: ${esc(r.t)}" data-go="${esc(r.t)}">${g('go')}</button><button type="button" class="btn ghost icon" aria-label="More actions for ${esc(r.t)}" data-title="${esc(r.t)}" data-more>${g('more')}</button></span>
   </div>`
 }
 function wireList (root) {
@@ -3042,7 +3740,8 @@ function wireList (root) {
     $('.lgrid', root).hidden = rows.length === 0
     count.textContent = ql || filters.size ? `${rows.length} ${rows.length === 1 ? 'match' : 'matches'}` : '143 pages'
     clear.hidden = !q.value
-    $$('[data-more]', rowsEl).forEach(b => b.addEventListener('click', () => actionMenu(b, b.dataset.title, [{ label: 'Open' }, { label: 'View on site' }, { label: 'Delete', danger: true }])))
+    $$('[data-more]', rowsEl).forEach(b => b.addEventListener('click', () => actionMenu(b, b.dataset.title, [{ label: 'Edit settings', fn: () => toast({ tone: 'info', title: `Editing the settings of ${b.dataset.title}`, desc: 'The same modal a click on the row opens.' }) }, { label: 'Go to page', fn: () => toast({ tone: 'info', title: `Going to ${b.dataset.title}`, desc: 'The page opens in the site, with the admin.' }) }, { type: 'sep' }, { label: 'Delete', danger: true }])))
+    $$('[data-go]', rowsEl).forEach(b => b.addEventListener('click', () => toast({ tone: 'info', title: `Going to ${b.dataset.go}`, desc: 'The page opens in the site, with the admin. A page without a route opens through its internal link.' })))
     $$('.lrow .cb', rowsEl).forEach(c => c.addEventListener('change', () => c.closest('.lrow').classList.toggle('sel', c.checked)))
   }
   const paintTog = (c, on) => { c.setAttribute('aria-pressed', String(on)); c.innerHTML = togInner(on) + typeName(c.dataset.f) }
@@ -3080,11 +3779,17 @@ function boot () {
     desk.sim(b.dataset.sim); phone.sim(b.dataset.sim)
   }))
 
-  const me = pageModal($('#modal-edit'), 'ma', { logEl: $('#modal-log') })
-  const mp = pageModal($('#modal-edit-phone'), 'mb')
+  const me = pageModal($('#modal-edit'), 'ma', { logEl: $('#modal-log'), hl: 3 })
+  const mp = pageModal($('#modal-edit-phone'), 'mb', { hl: 3 })
   $$('#modal-sim [data-sim]').forEach(x => x.addEventListener('click', () => { me.sim(x.dataset.sim); mp.sim(x.dataset.sim) }))
-  pageModal($('#modal-create'), 'mc', { mode: 'create', logEl: $('#modal-create-log') })
-  pageModal($('#modal-create-phone'), 'md', { mode: 'create' })
+  pageModal($('#modal-create'), 'mc', { mode: 'create', logEl: $('#modal-create-log'), hl: 4 })
+  pageModal($('#modal-create-phone'), 'md', { mode: 'create', hl: 4 })
+  const rw = pageModal($('#routes-edit'), 'mr', { logEl: $('#routes-log'), hl: 4, title: 'Shaker kitchens', routes: 'shaker', tab: 'routes' })
+  const rph = pageModal($('#routes-edit-phone'), 'ms', { hl: 4, title: 'Shaker kitchens', routes: 'shaker', tab: 'routes' })
+  $$('#routes-sim [data-rsim]').forEach(x => x.addEventListener('click', () => {
+    if (x.closest('[role=group]')) $$('[data-rsim]', x.closest('[role=group]')).forEach(y => y.setAttribute('aria-pressed', String(y === x)))
+    rw.routes(x.dataset.rsim); rph.routes(x.dataset.rsim)
+  }))
   $('#open-modal').addEventListener('click', openModal)
   settingsPage($('#settings-page'), $('#settings-log'))
 
@@ -3093,9 +3798,9 @@ function boot () {
   $('#list-narrow').innerHTML = listHTML('n')
   wireList($('#list-narrow'))
   $('#list-states').innerHTML = `
-    <div class="kit list" aria-busy="true" aria-label="Loading pages">${'<div class="skel"><i class="two"></i><i></i></div>'.repeat(3)}</div>
-    <div class="kit list"><div class="lstate"><b>No pages yet</b><span>Pages you add appear here.</span><button type="button" class="btn solid">Create page</button></div></div>
-    <div class="kit list" style="padding:1rem"><div class="alert danger" role="alert">${g('error', 'c-danger')}<b>Pages couldn't be loaded.</b><p>The list below is from 2 minutes ago.</p><div class="acts"><button type="button" class="btn soft">Retry</button></div></div><div class="lgrid" style="margin-top:.5rem;opacity:.7" aria-label="Pages, 2 minutes old">${PAGES.slice(0, 3).map(rowHTML).join('')}</div></div>`
+    <div class="kit list" role="region" aria-busy="true" aria-label="Loading pages">${'<div class="skel"><i class="two"></i><i></i></div>'.repeat(3)}</div>
+    <div class="kit list"><div class="lstate"><b>No pages yet</b><span>Pages you add appear here.</span><button type="button" class="btn solid withicon" aria-label="Create page">${g('plus')}Page</button></div></div>
+    <div class="kit list" style="padding:1rem"><div class="alert danger" role="alert">${g('error', 'c-danger')}<b>Pages couldn't be loaded.</b><p>The list below is from 2 minutes ago.</p><div class="acts"><button type="button" class="btn soft">Retry</button></div></div><div class="lgrid" role="table" style="margin-top:.5rem" aria-label="Pages, 2 minutes old">${PAGES.slice(0, 3).map(rowHTML).join('')}</div></div>`
 
   $('#fb-row').innerHTML = `
     <div class="bf"><label class="bl" for="fb-title">Title</label><div class="f w-lg"><input id="fb-title" value="Summer opening hours"><span class="st"></span></div></div>
@@ -3110,7 +3815,7 @@ function boot () {
     fakeSave([fslot], { fail, field: 'Title', retry: fsave, undo: () => setStatus(fslot, '') })
   }
   ft.addEventListener('input', () => { setStatus(fslot, 'pending'); clearTimeout(fT); fT = setTimeout(fsave, 700) })
-  $('#fb-btns').innerHTML = '<button type="button" class="btn soft">Cancel</button><button type="button" class="btn solid" disabled>Save</button><button type="button" class="btn solid" data-save>Save 3 changes</button><button type="button" class="btn solid" disabled aria-busy="true"><span class="spin"></span>Saving…</button><button type="button" class="btn solid" disabled>' + g('saved') + 'Saved</button><button type="button" class="btn solid">Create article</button>'
+  $('#fb-btns').innerHTML = '<button type="button" class="btn soft">Cancel</button><button type="button" class="btn solid" disabled>Save</button><button type="button" class="btn solid" data-save>Save 3 changes</button><button type="button" class="btn solid" disabled aria-busy="true"><span class="spin"></span>Saving…</button><button type="button" class="btn solid" disabled>' + g('saved') + 'Saved</button><button type="button" class="btn solid withicon" aria-label="Create article">' + g('plus') + 'Article</button>'
   wireModalSaveOnly($('#fb-btns'))
   $('#fb-alerts').innerHTML = `
     <div class="alert warning" role="status">${g('conflict', 'c-warning')}<b>Mia saved this page while you were editing, so nothing was saved.</b><p>Choose which version to keep for each field below, then Save again.</p></div>
@@ -3118,13 +3823,39 @@ function boot () {
     <div class="alert">${g('info', 'c-accent')}<b>This page has no route.</b><p>Visitors can only reach it through a nested page.</p></div>`
   const TOASTS = {
     success: { tone: 'success', title: 'Published', desc: 'Hero section on Kitchens.' },
-    info: { tone: 'info', title: 'Copied to clipboard? No.', desc: 'Copy confirms in place. This is just an info toast.' },
+    info: { tone: 'info', title: 'Updated from your other window', desc: 'Title and Intro on Hero section.' },
     warning: { tone: 'warning', title: 'Mercure reconnected', desc: '3 components on this page changed while you were away.' },
     error: { tone: 'error', id: 'unmounted', title: 'Title wasn’t saved', desc: 'You switched tabs before it could save.', actions: [{ label: 'Show me' }, { label: 'Retry' }, { label: 'Reset' }] },
     errors: { tone: 'error', id: 'unmounted-many', title: '2 changes weren’t saved', desc: 'Title and Subtitle, on Hero section. Reset puts back their last saved values.', actions: [{ label: 'Show me' }, { label: 'Retry all' }, { label: 'Reset all' }] }
   }
   $$('#toast-sim [data-t]').forEach(b => b.addEventListener('click', () => toast(TOASTS[b.dataset.t])))
-  $('#toast-static').innerHTML = ['success', 'warning', 'errors'].map(k => `<div class="toast static">${toastHTML(TOASTS[k])}</div>`).join('')
+  $('#toast-static').innerHTML = ['success', 'warning', 'errors'].map(k => `<div class="toast static t-${TOASTS[k].tone}">${toastHTML(TOASTS[k])}</div>`).join('')
+  const OPTN = { a: ['A · Frosted', 'The menu surface at 85% with a blur. The tone is only in the glyph and a 3px start edge. Solid when blur is unsupported or transparency is reduced.'], b: ['B · Tinted frosted (chosen)', 'The same blur, with the surface mixed 12% toward the tone. Actions are underlined in the text colour. Worst-case text over the photo: 6.73:1.'], c: ['C · Solid tone', 'The tone as the background with white text. Each tone is dark enough for 4.5:1.'] }
+  const bgTx = '<div class="bgtx" aria-hidden="true">Hand-built kitchens<span>Designed in Bath and made in our own workshop, every kitchen is drawn for the room it goes in.</span><span>Book a visit to the showroom and see the finishes in daylight.</span><span>Oak, walnut and painted tulipwood, with worktops in quartz and marble.</span><span>Every cabinet is assembled by hand and fitted by the people who built it.</span></div>'
+  const demoSet = ['success', 'info', 'warning', 'error']
+  $('#toast-opts').innerHTML = Object.entries(OPTN).map(([k, [n, d]]) => `<div class="topt"><h4>${n}</h4><p>${d}</p>${[['busy', 'kit-light', 'Photo, light'], ['busy', 'kit-dark', 'Photo, dark'], ['plain', 'kit-light', 'Plain, light'], ['plain', 'kit-dark', 'Plain, dark']].map(([bg, th, cap]) => `<div class="kit ${th} tbg ${bg} ts-${k}" data-tbg="${bg}" role="group" aria-label="${n}, ${cap}">${bg === 'busy' ? bgTx : ''}<span class="tbg-cap">${cap}</span>${demoSet.map(t => `<div class="toast static t-${t}">${toastHTML(TOASTS[t])}</div>`).join('')}</div>`).join('')}</div>`).join('')
+  toastsEl.classList.add('ts-b')
+  $$('#toast-style [data-ts]').forEach(b => b.addEventListener('click', () => {
+    $$('#toast-style [data-ts]').forEach(x => x.setAttribute('aria-pressed', String(x === b)))
+    toastsEl.classList.remove('ts-a', 'ts-b', 'ts-c'); toastsEl.classList.add('ts-' + b.dataset.ts)
+    toast(TOASTS.success)
+  }))
+  $$('#search-sim [data-ss]').forEach(b => b.addEventListener('click', () => {
+    $$('#search-sim [data-ss]').forEach(x => x.setAttribute('aria-pressed', String(x === b)))
+    SEARCH_SIM.mode = b.dataset.ss
+  }))
+  document.addEventListener('focusin', e => {
+    const t = e.target
+    if (toastsEl.contains(t)) return
+    toastsEl.classList.remove('seethru')
+    if (!toastsEl.children.length || !t.getBoundingClientRect) return
+    const a = t.getBoundingClientRect()
+    if (!a.width || !a.height) return
+    const covered = [...toastsEl.children].some(x => { const b = x.getBoundingClientRect(); return a.left >= b.left && a.right <= b.right && a.top >= b.top && a.bottom <= b.bottom })
+    const pts = [[a.left + 1, a.top + 1], [a.right - 1, a.top + 1], [a.left + 1, a.bottom - 1], [a.right - 1, a.bottom - 1], [(a.left + a.right) / 2, (a.top + a.bottom) / 2]]
+    const all = covered || pts.every(([x, y]) => { const e = document.elementFromPoint(x, y); return e && toastsEl.contains(e) })
+    if (all) toastsEl.classList.add('seethru')
+  })
 
   hydrate(document)
   setupAll(document)
