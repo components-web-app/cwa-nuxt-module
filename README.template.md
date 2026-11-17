@@ -53,7 +53,7 @@ Components, UI variants, layouts and pages now declare their own config in the S
 
    and `PATCH` `{ uiClassNames: migrated }` to each resource, adding `?published=true` for a live publishable component so no draft is created.
 
-4. **Forms become UI variants of `Form`.** The bundle's form resource is the `Form` type, so its config lives in `app/cwa/components/Form/Form.vue`, which also renders a form with no variant. Each form layout moves to `app/cwa/components/Form/ui/<Name>.vue`, its helper SFCs to `Form/_parts/`, and stored `uiComponent` values change to the variant's full global name (`ExampleForm` becomes `CwaComponentFormUiExampleForm`).
+4. **Forms become UI variants of `Form`.** The module ships the bundle's `Form` type: its config and a default renderer that lists a form's text fields. Delete any copy of a Form renderer from your app and keep only your forms, each as `app/cwa/components/Form/ui/<Name>.vue` with its helper SFCs in `Form/_parts/`; they are found as Form variants without an app `Form/Form.vue`. Stored `uiComponent` values change to the variant's full global name (`ExampleForm` becomes `CwaComponentFormUiExampleForm`). An app that adds its own `Form/Form.vue` replaces both the module's renderer and its config.
 
 5. **`getCurrentStyleName` is replaced by `styleKeys`**, a computed from `useCwaResource` / `useCwaComponent` listing every stored style key, in stored order:
 
