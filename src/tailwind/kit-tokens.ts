@@ -1,0 +1,153 @@
+export const kitColourTokens = [
+  { name: 'surface', use: 'Bar, modal and page' },
+  { name: 'surface-raised', use: 'Modal footer' },
+  { name: 'surface-menu', use: 'Menu, popover and toast' },
+  { name: 'button', use: 'Soft button fill' },
+  { name: 'shimmer', use: 'The band sweeping across skeletons' },
+  { name: 'menu-highlight', use: 'Highlighted menu option' },
+  { name: 'field', use: 'Every input\'s fill' },
+  { name: 'field-hover', use: 'Field hover, soft button hover' },
+  { name: 'chip', use: 'Chips inside a field' },
+  { name: 'field-danger', use: 'Field in error, soft danger button hover' },
+  { name: 'field-warning', use: 'Field in conflict' },
+  { name: 'muted-on-field', use: 'Placeholders and muted text on a fill' },
+  { name: 'tree-line', use: 'Tree connector lines' },
+  { name: 'toggle-off', use: 'Toggle track when off' },
+  { name: 'step-hover', use: 'Hover on a control nested in a field' },
+  { name: 'step-press', use: 'A nested control while pressed' },
+  { name: 'type-static', use: 'Static page type' },
+  { name: 'type-dynamic', use: 'Dynamic page type' },
+  { name: 'line', use: 'Dividers only' },
+  { name: 'fg', use: 'Text and values' },
+  { name: 'fg-secondary', use: 'Section headings in modals and admin pages' },
+  { name: 'fg-muted', use: 'Labels in the bar, helper text' },
+  { name: 'accent', use: 'Primary button fill, selected tab, toggle on' },
+  { name: 'accent-hover', use: 'Primary button hover' },
+  { name: 'accent-fg', use: 'Focus ring, links, accent text' },
+  { name: 'accent-tint', use: 'Accent badge fill' },
+  { name: 'success', use: 'Saved glyph' },
+  { name: 'line-saving', use: 'Bar status line while saving' },
+  { name: 'line-saved', use: 'Bar status line once saved' },
+  { name: 'line-danger', use: 'Bar status line, error' },
+  { name: 'line-warning', use: 'Bar status line, conflict' },
+  { name: 'warning', use: 'Conflict and long-wait glyph' },
+  { name: 'danger', use: 'Error glyph' },
+  { name: 'danger-fill', use: 'Destructive button fill' },
+  { name: 'danger-fill-hover', use: 'Destructive button hover' },
+  { name: 'danger-fg', use: 'Error text' },
+  { name: 'highlight', use: 'Reorder, clone and selection' },
+] as const
+
+export type KitColourToken = typeof kitColourTokens[number]['name']
+
+export type KitColour = KitColourToken | 'white' | { tint: KitColourToken, amount: number }
+
+export interface KitContrastPair {
+  fg: KitColour
+  bg: KitColour
+  min: 3 | 4.5
+  use: string
+}
+
+export const kitBadgeTintAmount = 0.18
+
+const badgeTones = ['success', 'warning', 'danger'] as const
+
+export const kitContrastPairs: KitContrastPair[] = [
+  { fg: 'fg', bg: 'surface', min: 4.5, use: 'Text' },
+  { fg: 'fg', bg: 'surface-raised', min: 4.5, use: 'Text on a modal footer' },
+  { fg: 'fg', bg: 'surface-menu', min: 4.5, use: 'Text in a menu' },
+  { fg: 'fg', bg: 'menu-highlight', min: 4.5, use: 'Highlighted option' },
+  { fg: 'fg', bg: 'field', min: 4.5, use: 'Field value, neutral badge' },
+  { fg: 'fg', bg: 'field-hover', min: 4.5, use: 'Field value on hover' },
+  { fg: 'muted-on-field', bg: 'field', min: 4.5, use: 'Placeholder' },
+  { fg: 'muted-on-field', bg: 'field-hover', min: 4.5, use: 'Placeholder on hover' },
+  { fg: 'fg-secondary', bg: 'surface', min: 4.5, use: 'Section heading' },
+  { fg: 'fg-muted', bg: 'surface', min: 4.5, use: 'Bar label, helper text' },
+  { fg: 'accent-fg', bg: 'surface', min: 4.5, use: 'Link, focus ring' },
+  { fg: 'danger-fg', bg: 'surface', min: 4.5, use: 'Error text' },
+  { fg: 'success', bg: 'field', min: 3, use: 'Saved glyph' },
+  { fg: 'line-saving', bg: 'field', min: 3, use: 'Saving line' },
+  { fg: 'line-saving', bg: 'field-hover', min: 3, use: 'Saving line on hover' },
+  { fg: 'line-saved', bg: 'field', min: 3, use: 'Saved line' },
+  { fg: 'line-saved', bg: 'field-hover', min: 3, use: 'Saved line on hover' },
+  { fg: 'line-danger', bg: 'field-danger', min: 3, use: 'Error line' },
+  { fg: 'line-warning', bg: 'field-warning', min: 3, use: 'Conflict line' },
+  { fg: 'danger', bg: 'field-danger', min: 3, use: 'Error glyph' },
+  { fg: 'warning', bg: 'field-warning', min: 3, use: 'Conflict glyph' },
+  { fg: 'type-static', bg: 'surface', min: 3, use: 'Static page marker' },
+  { fg: 'type-dynamic', bg: 'surface', min: 3, use: 'Dynamic page marker' },
+  { fg: 'toggle-off', bg: 'surface', min: 3, use: 'Toggle track, off' },
+  { fg: 'tree-line', bg: 'surface', min: 3, use: 'Tree line' },
+  { fg: 'white', bg: 'accent', min: 4.5, use: 'Solid button' },
+  { fg: 'white', bg: 'accent-hover', min: 4.5, use: 'Solid button on hover' },
+  { fg: 'white', bg: 'danger-fill', min: 4.5, use: 'Solid danger button' },
+  { fg: 'white', bg: 'danger-fill-hover', min: 4.5, use: 'Solid danger button on hover' },
+  { fg: 'fg', bg: 'button', min: 4.5, use: 'Soft button' },
+  { fg: 'danger-fg', bg: 'button', min: 4.5, use: 'Soft danger button, ghost danger on hover' },
+  { fg: 'fg', bg: 'field-danger', min: 4.5, use: 'Soft danger button on hover' },
+  { fg: 'fg', bg: 'accent-tint', min: 4.5, use: 'Accent badge' },
+  { fg: 'accent-fg', bg: 'accent-tint', min: 3, use: 'Accent badge dot' },
+  { fg: 'fg-muted', bg: 'field', min: 3, use: 'Neutral badge dot' },
+  ...badgeTones.flatMap(tone => [
+    { fg: 'fg' as const, bg: { tint: tone, amount: kitBadgeTintAmount }, min: 4.5 as const, use: `${tone[0]!.toUpperCase()}${tone.slice(1)} badge` },
+    { fg: tone, bg: { tint: tone, amount: kitBadgeTintAmount }, min: 3 as const, use: `${tone[0]!.toUpperCase()}${tone.slice(1)} badge dot` },
+  ]),
+]
+
+export type Rgba = [number, number, number, number]
+
+export function parseColour(value: string): Rgba {
+  const colour = value.trim()
+  const hex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(colour)
+  if (hex) {
+    const digits = hex[1]!.length === 3 ? [...hex[1]!].map(d => d + d).join('') : hex[1]!
+    return [0, 2, 4].map(i => Number.parseInt(digits.slice(i, i + 2), 16)).concat(1) as Rgba
+  }
+  const rgb = /^rgba?\(\s*([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)(?:\s*[/,]\s*([\d.]+%?))?\s*\)$/i.exec(colour)
+  if (rgb) {
+    const alpha = rgb[4] === undefined ? 1 : rgb[4].endsWith('%') ? Number.parseFloat(rgb[4]) / 100 : Number.parseFloat(rgb[4])
+    return [Number(rgb[1]), Number(rgb[2]), Number(rgb[3]), alpha]
+  }
+  throw new Error(`Unsupported colour "${value}"`)
+}
+
+function over(top: Rgba, bottom: Rgba): Rgba {
+  const a = top[3]
+  return [0, 1, 2].map(i => top[i]! * a + bottom[i]! * (1 - a)).concat(1) as Rgba
+}
+
+function luminance([r, g, b]: Rgba): number {
+  const [lr, lg, lb] = [r, g, b].map((channel) => {
+    const c = channel / 255
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
+  })
+  return 0.2126 * lr! + 0.7152 * lg! + 0.0722 * lb!
+}
+
+export function contrastRatio(fg: Rgba, bg: Rgba): number {
+  const front = fg[3] < 1 ? over(fg, bg) : fg
+  const [high, low] = [luminance(front), luminance(bg)].sort((a, b) => b - a)
+  return (high! + 0.05) / (low! + 0.05)
+}
+
+export function resolveKitColour(colour: KitColour, read: (token: KitColourToken) => string): Rgba {
+  const surface = parseColour(read('surface'))
+  if (colour === 'white') {
+    return [255, 255, 255, 1]
+  }
+  if (typeof colour === 'object') {
+    const tone = over(parseColour(read(colour.tint)), surface)
+    return [0, 1, 2].map(i => tone[i]! * colour.amount + surface[i]! * (1 - colour.amount)).concat(1) as Rgba
+  }
+  const value = parseColour(read(colour))
+  return value[3] < 1 ? over(value, surface) : value
+}
+
+export function measureKitPair(pair: KitContrastPair, read: (token: KitColourToken) => string): number {
+  return contrastRatio(resolveKitColour(pair.fg, read), resolveKitColour(pair.bg, read))
+}
+
+export function kitColourLabel(colour: KitColour): string {
+  return typeof colour === 'object' ? `${colour.tint} tint` : colour
+}

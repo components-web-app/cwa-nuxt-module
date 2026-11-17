@@ -335,6 +335,10 @@ On by default (`cwa.pageCache.enabled`; the `?? true` in `module.ts` and `resolv
 
 CSS-first config in `src/tailwind/tailwind-cwa.css`; every class uses the `cwa:` prefix (`prefix(cwa)`). Compiled CSS is committed. Apps import it into a low `@layer cwa` by design, so an app's unscoped global element styles beat admin styles — apps should scope their globals ([#247](https://github.com/components-web-app/cwa-nuxt-module/issues/247)).
 
+- **Kit tokens** ([#456](https://github.com/components-web-app/cwa-nuxt-module/issues/456)): the kit's colours are a `@theme static` block (dark, the default), so every `--cwa-color-*` is emitted even unused; `.cwa:theme-light` overrides them in `@layer base`. Every token and contrast pair is listed in `src/tailwind/kit-tokens.ts`, which `kit-tokens.spec.ts` checks against the **compiled** `cwa.css` in both themes and `/kit` measures live: add a token there, or the spec fails. `danger` is now the kit's error glyph (red-300 on dark), no longer red-500.
+- Reduced motion in kit components uses the `cwa:reduced-motion:` variant, never `motion-reduce:`: it also matches inside `.cwa:reduce-motion`, which `/kit`'s switch sets.
+- Classes in spec files are scanned too, so they compile into `cwa.css`; the `/kit` page uses scoped CSS on `var(--cwa-*)`, not `cwa:` utilities, to keep its layout out of the shipped CSS.
+
 ## Admin UI
 
 - **Component kit ([#236](https://github.com/components-web-app/cwa-nuxt-module/issues/236))**: no Nuxt UI (it would inject theme into apps). **New kit components build on `reka-ui`** (headless, MIT, no theme injection — decided for #320, because Headless UI has no calendar or date field and its Vue version is frozen at 1.7.23). Existing Headless UI components (`CwaUiSelect`) stay until moved over. Nuxt UI (MIT) is the reference to port from: keep the MIT header in a ported file, restyle with `cwa:` utilities, and leave out its `color`/`variant`/`size` theming until the kit has a theme system.
