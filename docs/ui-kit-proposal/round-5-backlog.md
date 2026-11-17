@@ -64,3 +64,7 @@ Starts after round 4 has been reviewed and published to the shared link.
 
 ## 6. List row actions: Open vs View on site
 - The v4 mockup's row menu (Open, View on site, Delete) was invented without a defined difference. Decide and name them: the row click opens the page's settings modal, so the menu's "Open" is redundant. Proposed: "Edit settings" (modal, also the row click) and "Go to page" (navigates to the page in the site with the admin; a page without a route uses the internal resource link, `getInternalResourceLink`; a template page previews through the same link). Awaiting Daniel.
+
+## 7. Open questions list (§13 / artifact section 9)
+- Remove as settled: Q1 page data fields (#455, defineCwaPageData), Q3 field fill contrast (darken the fill in the WCAG pass, §1 above), Q4 `field="…"` (yes, with `CwaUiManagerTab`, §5 above).
+- Still open: Q2 palette, Q5 model names, Q6 bottom-sheet menus on phones (recommend yes), plus §6 above (Open vs View on site).
