@@ -13,6 +13,8 @@ What changed in v6 (the v5 review panel and Daniel's decisions, `round-6-backlog
 - **Buttons have their own fill** (`button` token, §2.1), not the field's, with a 600 label (§5.1).
 - **⋮ is the only "more" glyph**: the bar, list rows, the tree and the modal header (§5.1, §5.3, §5.4, §9.1).
 - **`updateResource` keeps its return** (§8.4): the saved resource or `undefined`. Per-field outcomes go into `fieldStates` keyed by `(iri, field)`, so one field's success never clears another's error.
+- **Delete leaves the footer** (§8.6): every modal's footer is only Cancel and Save; deleting is the last section of the Info (or last) tab, and Delete route the last section of the Edit route form. **Type to confirm** for deletes that are hard to recover from, the simple confirm for the rest (a decision Daniel can adjust).
+- **A ghost button never sits at a container's start or end edge** (§5.1).
 - **Spec precision** for developers: the model's shape and the migration from today's `states` (§4.1); what `field="…"` binds to under each provider and "exactly one of `field`, `:model`, `v-model`" (§3); off-screen tab renders resolve metadata only (§3); one either/or API with a group model sending one PATCH (§6); a typed catalogue for every public component (§5.5); the bar owns the live region (§7, §11.2); the `/kit` fake model (§12).
 - **§12 is rewritten**: editors see something in the second PR, phase 6 is split into 6a to 6d, each PR states its entry and visitor bundle budget and whether it adds a reka-ui consumer, the root warning is switched on when the tabs migrate, and removals land in one late PR.
 - **Screen readers** (§11.4): a manual VoiceOver and NVDA pass once per new component and before each release; axe and keyboard tests on every PR.
@@ -35,9 +37,16 @@ What changed in v5 (Daniel's review of v4):
 - **Read-only values sit on the same line as their neighbours' values** at bar, modal and touch sizes.
 - **Toasts are tinted frosted glass** (option B, Daniel's choice from three, §10.1); the toast region has no background, padding, shadow or blur of its own and lets clicks through; toasts never move, and turn see-through while they entirely cover the focused element.
 - **A kit reference page**, `/kit` in the playground (§12), is phase 1.
+- **One saving episode per field** (§7): 250 ms debounce, one request in flight with a single newest-value follow-up, and one uninterrupted sweep from the first send until nothing is waiting or in flight, then one "saved".
+- **One bar episode for the pinned status** (§7): "Saving…" and its spinner run from the first send until nothing in the bar is in flight or waiting, gaps of up to 300 ms included, then "All changes saved" once. The spinner element is never re-created during an episode.
+- **Tab badges are derived** (§7): the most severe unresolved state of the tab's fields, conflict before error; saving, pending and saved never touch it, and it re-renders only when that value changes.
+- **Editing on the page** (§7.1): the bar's status stays primary; the selection outline carries the field states (two variants to choose from: the left edge, or the whole outline); no toast while the component is selected.
+- **The admin header says whether it is safe to leave** (§7.2): "Saving…", then "All changes saved" for 2 s, or "1 change not saved" as a button; it replaces `SpinnerTick`.
+- **Bar status is an edge line, on every bar control** (§1, §4.2, §4.4, §7; Daniel's decision): no status glyph inside any bar control and no glyph button anywhere in the bar. The value, the chevron and the calendar icon never move or change. A 2px line inside the control's bottom edge shows the state: an accent sweep while saving, success then a fade once saved, and a solid danger or warning line, with the field tint, for an error or a conflict. The error or conflict popover opens when the control is focused or hovered; Tab goes into it and Escape closes it with focus left on the control. Pending shows nothing on the control: the bar's status says it. This replaces v4's in-place glyph swap and widened end padding. Modals and pages are unchanged.
+- **Deleting a page states the bundle's cascade** (§8.6): page data built from it as a template is deleted too (with the count), its route stays without a page, nested pages lose their parent.
 
 What changed in v4 (Daniel's review of v3):
-- **No reserved status slot.** Controls with an end icon (select and multi-select chevrons, the date picker's calendar, resource search) show a state in that icon's place while it lasts: the chevron becomes the spinner while saving, the tick once saved, then the chevron again; error and conflict show their solid glyph there, still a button. Plain text inputs and steppers in the bar widen their end padding only while a state shows; the outer size never changes. Modal and page fields show no glyph inside at all (§4.2).
+- **No reserved status slot.** *(Superseded in v6 by the edge line, §4.2.)* Controls with an end icon (select and multi-select chevrons, the date picker's calendar, resource search) show a state in that icon's place while it lasts: the chevron becomes the spinner while saving, the tick once saved, then the chevron again; error and conflict show their solid glyph there, still a button. Plain text inputs and steppers in the bar widen their end padding only while a state shows; the outer size never changes. Modal and page fields show no glyph inside at all (§4.2).
 - **The textarea's corner glyph is gone** (textareas are modal and page only).
 - **Admin pages with forms use the modal's Save model** (§8.2). Decided.
 - **Create buttons name what they create**: "Create page", "Create article" (§8.2). Decided.
@@ -52,7 +61,7 @@ What changed in v3 (Daniel's review of v2):
 - **Modals and pages edit a local copy and keep a Save button** (§8.2). Changed fields and their tabs are marked, Save counts the changes and sends only those, errors from Save go on their fields, and a 412 on Save asks per field which version to keep. Live per-field saving stays in the bar only. Q6 is settled by this.
 - **The page modal has tabs again** (Details, Routes, Info, then page data tabs), with create, required-field and failed-save flows across tabs (§8.3).
 - **The bar's status and primary action are pinned in the tab row on every tab**, on desktop and phone (§7).
-- **Only the innermost control under the pointer shows hover** (§2.7). The stepper buttons, a chip's ×, clear buttons and status glyph buttons have their own hover and pressed shades (`step-hover`, `step-press`).
+- **Only the innermost control under the pointer shows hover** (§2.7). The stepper buttons, a chip's × and clear buttons (and, until v6, status glyph buttons) have their own hover and pressed shades (`step-hover`, `step-press`).
 - **Textareas grow with their text** up to 8 lines and then scroll, with no resize handle (§5.2).
 - **Lists filter by type with square coloured toggles** and a matching dot per row; per-row thumbnails are gone (§9).
 - **A failed save offers Retry and Reset**, never Undo. Undo is kept for things that happened and can be reversed (removing a chip, a successful either/or switch).
@@ -61,7 +70,7 @@ What changed in v3 (Daniel's review of v2):
 What changed in v2 (from v1):
 - **Fields are filled, not bordered.** Borders and rings are used only for focus and for another editor's presence.
 - **Every box is square.** The only rounded thing is the toggle switch.
-- **Status glyphs are solid** shapes, legible at 1rem.
+- **Status glyphs are solid** shapes, legible at 1rem. *(In the bar's fields, superseded in v6 by the edge line; the glyphs remain for tab badges, the pinned status and modal error lines.)*
 - **Errors and info have one pattern each**, for the bar and for modals and pages.
 - **Spacing is friendlier**, with explicit values and mobile breakpoints. The modal form layout and the list grid are respecified.
 - **Selects, searches and menus have a full open-state spec**, and the artifact must show them working.
@@ -85,7 +94,7 @@ What changed in v2 (from v1):
    ```
 
    Kit inputs inside it take `field="…"` and build their model from the tab's resource; `:model` stays for page data, a custom debounce and other unusual cases. What `field` binds to depends on the provider (§3).
-2. **State lives at the field, without reserved space.** No field keeps empty room for a glyph that is usually absent. In the bar a state replaces the control's end icon, or sits in end padding that widens only while it shows; the field's outer size never changes, so nothing around it moves. In modals and pages a field's state is shown by its label ("● Unsaved") and the line below it, never inside the field.
+2. **State lives at the field, without reserved space, and never moves the value.** No field keeps empty room for a glyph that is usually absent. In the bar a state is a 2px line inside the control's bottom edge (with the field's tint for an error or a conflict); nothing inside the control changes, so the value and the end icon never move and the outer size never changes. In modals and pages a field's state is shown by its label ("● Unsaved") and the line below it, never inside the field.
 3. **The bar saves as you type; modals and pages save on Save.** The bar edits one selected component in place, so each field saves on its own. A modal or page edits a local copy and sends it when the editor presses Save (§8.2).
 4. **Bind once.** `:model="title"` wires the value, presence, conflict, save state and errors. `v-model` remains for values that are not resource fields.
 5. **Quiet when it works, visible when it fails.** A save shows a tick. A failure stays until it is resolved, and nothing blocks typing. A failed save offers **Retry** and **Reset** (back to the last saved value); nothing happened, so there is nothing to undo.
@@ -120,7 +129,7 @@ Shades marked † are outside R5's palette list; Daniel approved them in v5.
 | `muted-on-field` | placeholders and muted text on a fill | stone-200 `#e7e5e4` (6.08:1 on `field`, 5.18:1 on hover) | `#4f4a45` (5.88:1, 5.06:1 on hover) |
 | `tree-line` | tree connector lines | stone-500 `#78716c` | `#8a837e` (3.73:1) |
 | `toggle-off` | toggle track when off | unchanged (3.65:1) | stone-500 `#78716c` (4.80:1) |
-| `step-hover` | hover on a control nested in a field (stepper −/+, chip ×, clear ×, status glyph button), laid over whatever fill the field has, tinted ones included | white 17% | stone-900 16% |
+| `step-hover` | hover on a control nested in a field (stepper −/+, chip ×, clear ×), laid over whatever fill the field has, tinted ones included | white 17% | stone-900 16% |
 | `step-press` | the same controls while pressed | white 30% | stone-900 30% |
 | `type-static` | Static page type: row dot, filter toggle swatch (the pressed toggle fills blue-600 with white text) | blue-400 † | blue-600 |
 | `type-dynamic` | Dynamic page type: a **square** row marker and filter swatch (Static is a circle, so the type never depends on colour, WCAG 1.4.1); the pressed toggle fills yellow-400 with stone-900 text | yellow-400 † `#facc15` | yellow-700 † `#a16207` (4.92:1) |
@@ -130,6 +139,10 @@ Shades marked † are outside R5's palette list; Daniel approved them in v5.
 | `accent` | primary button fill, selected tab, toggle on | blue-600 `#2563eb` (fill only) | blue-600 |
 | `accent-fg` | **focus ring**, links, accent text | blue-400 † `#60a5fa` (6.9:1) | blue-700 † `#1d4ed8` (6.7:1) |
 | `success` | saved glyph | green `#9cdd05` (6.2:1 on `field`) | lime-800 † `#3f6212` (5.6:1) |
+| `line-saving` | bar status line while saving (v6) | blue-300 `#93c5fd` (4.23:1 on `field`, 3.61:1 on `field-hover`) | blue-700 `#1d4ed8` (4.50:1, 3.87:1) |
+| `line-saved` | bar status line once saved; Undo is available | `#9cdd05` (6.2:1, 3.96:1) | `#3f6212` (4.75:1, 4.09:1) |
+| `line-danger` | bar status line, error | red-200 `#fecaca` (4.91:1 on `field-danger`, 3.67:1 on its hover) | red-800 `#991b1b` (4.82:1, 3.85:1) |
+| `line-warning` | bar status line, conflict | amber-300 `#fcd34d` (4.36:1 on `field-warning`, 3.31:1 on its hover) | amber-800 `#92400e` (4.39:1, 3.50:1) |
 | `warning` | conflict, long-wait glyph | orange `#ffaa00` (3.3:1 on `field-warning`) | amber-700 † `#b45309` (3.11:1) |
 | `danger` | error glyph | red-300 † `#fca5a5` (3.74:1 on `field-danger`) | red-700 † `#b91c1c` (3.75:1 on `field-danger`) |
 | `danger-fill` | destructive button fill | red-600 `#dc2626` | red-700 |
@@ -138,6 +151,7 @@ Shades marked † are outside R5's palette list; Daniel approved them in v5.
 
 Rules:
 - **Fields have no border.** The fill identifies the field, and an always-visible label names it. The fill is 2.29:1 against `surface` in dark and 1.49:1 in light: WCAG 1.4.11 is met by the visible label, which identifies the control, not by the fill. A 3:1 fill would be a mid grey that fights the values.
+- **Status lines** (v6) have their own tokens because the tone tokens drop under 3:1 on hover fills (`accent-fg` on dark `field-hover` 2.56:1, `danger` on light `field-danger` hover 2.99:1, `warning` on either `field-warning` hover 2.5:1). Each line is measured against its resting fill and its hover fill, and on `surface` under a toggle (all ≥ 5:1).
 - **Measured pairs** (v5): `fg` on `field` 6.99:1 (dark); the pending dot 3.00:1; focus ring `accent-fg` on `surface` 6.9:1 (dark), 6.7:1 (light); every glyph and state tint at least 3:1 against the fill it sits on; all text at least 4.5:1.
 - `accent` is never text or a thin line. A selected option or toggle on `surface-raised` also gets an `fg` glyph.
 - Text targets 4.5:1 and glyphs 3:1, against the fill they sit on (tinted fills included). PR 1 keeps the table in a spec.
@@ -204,7 +218,7 @@ The kit uses Tailwind's 0.25rem step and only these values: **0.25, 0.375, 0.5, 
 | `--spacing-manager-tabs` | 2.5rem | 2.75rem |
 | `--spacing-manager-row` (control + 2 × `row-y`) | 3.75rem | 4.25rem |
 | `--spacing-manager` (tabs + row; the bar and its spacer) | 6.25rem | 7rem |
-| `--spacing-status` (status glyph, bar only; no space is reserved for it) | 1rem glyph, 2rem hit area | 1rem glyph, 2.75rem hit area |
+| `--spacing-status-line` (bar status line, v6; inside the control's box) | 2px | 2px |
 | `--spacing-list-row` | 3.5rem (one line), 4rem (two lines) | 4rem |
 
 Breakpoints (Tailwind's defaults, used with the `pointer` media query):
@@ -231,8 +245,8 @@ Breakpoints (Tailwind's defaults, used with the `pointer` media query):
 
 **Only the innermost interactive element under the pointer shows hover.** A field is hoverable, and some fields hold their own buttons, so the kit never shows two hovers at once.
 
-- A nested control (a stepper's −/+, a chip's ×, a search field's clear ×, the status glyph button in the bar, an inline ⓘ) shows its own `step-hover`, and `step-press` while pressed. These are translucent, so they read on any fill.
-- While the pointer is on one, the field's own hover is suppressed: `.f:has(.nb:hover, .chip-x:hover, .in-btn:hover, .st-btn:hover)` keeps the field at its resting fill.
+- A nested control (a stepper's −/+, a chip's ×, a search field's clear ×, an inline ⓘ) shows its own `step-hover`, and `step-press` while pressed. These are translucent, so they read on any fill.
+- While the pointer is on one, the field's own hover is suppressed: `.f:has(.nb:hover, .chip-x:hover, .in-btn:hover)` keeps the field at its resting fill.
 - Error, conflict and presence keep their colour throughout: a tinted field stays tinted, and the nested control's shade sits on top of the tint.
 - A chip that does nothing on its own gets no hover. Only its × does, with a 2.75rem tap area.
 - Focus is unaffected: the focus ring follows focus, not the pointer.
@@ -249,6 +263,7 @@ CSS only, no animation library. Only opacity, transform, size and colour animate
 | Dialog | overlay fades in 200 ms; dialog rises 0.5rem and scales from 0.98, 300 ms |
 | Saved check, tab badges | scale from 0.6 and fade, 200 ms |
 | Unsaved marker, error and conflict glyphs | fade, 120–200 ms |
+| Bar status line | saving: a 40%-wide band sweeps across, 1.1 s, linear, repeating; saved: holds 0.9 s then fades, 0.6 s; error and conflict: no motion. Reduced motion: a still `line-saving` line while saving, and the saved line stays its 1.5 s without fading |
 | Field tint (error, conflict), segmented control, toggle, buttons | colour transition, 120 ms (toggle thumb 200 ms) |
 | Chip added | scale from 0.6 and fade, 120 ms (only the new chip) |
 | Either/or switch | the newly shown field fades in, 120 ms |
@@ -263,7 +278,7 @@ Left still on purpose: closing a menu, popover or dialog (instant, so focus retu
 
 | Surface | Provided by | Label | Helper text | Error | Control |
 |---|---|---|---|---|---|
-| `bar` | `CwaUiManagerTab` | inline, left, `fg-muted` | in the ⓘ popover only | glyph button + popover (§4.4) | `control` |
+| `bar` | `CwaUiManagerTab` | inline, left, `fg-muted` | in the ⓘ popover only | edge line, tint + popover on focus or hover (§4.4) | `control` |
 | `modal` | `CwaUiDialog` | above, `text-label` | below | line below, from Save (§4.4) | `control-lg` |
 | `page` | `CwaUiFormGroup` | above, `text-label` | below | line below, from Save (§4.4) | `control-lg` |
 
@@ -323,38 +338,46 @@ Shared props: `label` (required; with `labelHidden` it is only the accessible na
 
 ### 4.2 Field shell (`core/ui/Field.vue`, internal)
 
-- **Bar:** `Label ⓘ [ value ………… ▾ ]`. The label and ⓘ sit outside the fill. No space is reserved for a status glyph.
+- **Bar:** `Label ⓘ [ value ………… ▾ ]`. The label and ⓘ sit outside the fill. Nothing inside the control shows its save state.
 - **Modal and page:**
   ```
   Label · Optional ⓘ  ● Unsaved
   [ value ……………………………………… ▾ ]
   Helper text, or the error line
   ```
-- The status glyph (`core/ui/FieldStatus.vue`) is its own component, reads only its field's state and owns the timers. It renders nothing in modals and pages, and nothing in the bar while the field is idle.
+- The state (`core/ui/FieldStatus.vue`) is its own component, reads only its field's state and owns the timers. In the bar it renders the line, the hidden description and the popover; in modals and pages it renders nothing inside the field.
 
-**Where the glyph goes in the bar (no reserved space):**
+**The bar's status line (v6, every bar control):**
 
-1. **Controls with an end icon** (Select and MultiSelect chevrons, the DatePicker's calendar icon, which sits at the trailing edge, ResourceSearch's chevron, an input's trailing suffix such as ↗): the state **replaces the icon in place** while it lasts. The chevron becomes the spinner while saving, the tick for 1.5 s once saved, then the chevron returns. Error and conflict show their solid glyph there, as the button that opens the popover. The end icon sits in a 1rem box (a 0.75rem chevron has 0.125rem either side), the same as the glyph, so nothing moves. While the state shows, the icon is hidden, and a click on the control's body still opens its menu. The glyph button is a sibling of the trigger button, never inside it.
-2. **Plain text inputs and steppers:** the field's **inner end padding widens only while a state shows**, from `field-x` (0.75rem) to 2.25rem (the 1rem glyph and a 0.5rem gap), and the glyph sits in it. The field's outer width is fixed by its `width` token, so nothing around it moves; long text inside truncates 1.5rem earlier while the glyph shows. In a stepper the glyph sits between the value and the + button. Error and conflict also tint the whole field.
-3. **Modals and pages:** no glyph inside any field. "● Unsaved" stays after the label; errors and conflicts stay on the line below (§4.4, §8.2). The error and conflict tints remain.
+```
+Title [ Summer menu, served all day ]
+      ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔   ← 2px, inside the control's box
+```
 
-| State | Fill | Line | Bar glyph (modal and page: none) |
-|---|---|---|---|
-| default | `field` | none | none; the end icon, if any, shows |
-| hover | `field-hover`; on an error or conflict field the tint darkens slightly and never reverts to grey; suppressed while the pointer is on a nested control (§2.7) | none | — |
-| focus | `field` | 2px `accent-fg` ring | — |
-| disabled | `field` at 50% opacity | none | — (a reason goes in `info`) |
-| read-only | transparent, value in `fg` | none | copy button where useful |
-| unsaved (modal, page) | `field` | none | none; the label row adds "Unsaved" in `fg-muted`, 500, after a 0.5rem `accent-fg` dot (v6: in the link colour it read as a link) |
-| pending (bar) | `field` | — | solid dot, 0.625rem, `accent-fg` (never used alone as a summary without a word) |
-| saving (bar, > 300 ms) | `field` | — | spinner, `aria-busy` |
-| long wait (bar) | `field` | — | **solid circle with knocked-out clock hands**, `warning` |
-| saved (bar) | `field` | — | **solid circle with knocked-out check**, `success`, 1.5 s, then the end icon returns |
-| error | `field-danger` | none | **solid triangle with knocked-out "!"**, `danger`, a button (modal: the line below, from Save or a client check) |
-| conflict | `field-warning` | none | **solid diamond with knocked-out "!"**, `warning`, a button (modal: found by Save, until a version is chosen) |
-| presence | `field` | 2px inset peer-colour ring | flag on the field's top edge, portalled, fades after 3 s |
+1. **Where:** a 2px line along the bottom edge, **inside** the control's box (an absolutely positioned `::after`, `inset-inline: 0; bottom: 0`), so the outer size never changes. It covers the bottom 2px of the fill; no padding changes.
+2. **Which controls:** every bar control. TextInput, Number (stepper), Select, MultiSelect, DatePicker, ResourceSearch and an input with a suffix take it across the field. Toggle takes it under the whole control (switch and its label), and SegmentedControl under its segments, each inside its own box.
+3. **Nothing inside changes:** no glyph, no padding change. The value, a stepper's number, a select's chevron and the date picker's calendar keep their position and look in every state (measured, below).
+4. **Modals and pages:** no line and nothing inside any field. "● Unsaved" stays after the label; errors and conflicts stay on the line below (§4.4, §8.2). The error and conflict tints remain.
 
-Glyphs are 1rem solid shapes with a knocked-out mark, never outline strokes. Each state differs by shape as well as colour. The swap between the end icon and a glyph is instant; the glyph itself fades or scales in (§2.8).
+| State | Fill | Bar status line (modal and page: none) |
+|---|---|---|
+| default | `field` | none |
+| hover | `field-hover`; on an error or conflict field the tint darkens slightly and never reverts to grey; suppressed while the pointer is on a nested control (§2.7) | unchanged |
+| focus | `field` | unchanged; the focus ring is outside the box (2px `accent-fg`, offset 2px) |
+| disabled | `field` at 50% opacity | — (a reason goes in `info`) |
+| read-only | transparent, value in `fg` | none |
+| unsaved (modal, page) | `field` | none; the label row adds "Unsaved" in `fg-muted`, 500, after a 0.5rem `accent-fg` dot |
+| pending (bar) | `field` | **none**: the pinned status counts it |
+| saving (bar, > 300 ms), long wait | `field` | `line-saving` band sweeping, `aria-busy`; reduced motion: a still `line-saving` line, plus the pinned "Saving…" |
+| saved (bar) | `field` | solid `line-saved`, fades out by 1.5 s |
+| error | `field-danger` | solid `line-danger`; popover on focus or hover (modal: the line below, from Save or a client check) |
+| conflict | `field-warning` | solid `line-warning`; popover on focus or hover (modal: found by Save, until a version is chosen) |
+| saved with Undo (§5.6) | `field` | solid `line-saved`, kept until the next edit; Undo in the popover on focus or hover |
+| presence | `field` | 2px inset peer-colour ring (the status line is drawn over its bottom edge); flag on the field's top edge, portalled, fades after 3 s |
+
+**Measured (v6, `ui-kit.html`, 1280px):** the outer box and the value's x offset are identical in every state for each kind: text input 144 × 36, value at 12px; stepper 144 × 36, value at 36px; select 144 × 36, value at 12px and chevron at 118px; toggle 24px high, switch at the same x; segmented 36px high, segments at 0. The line is 2px at `bottom: 0`. Contrast is in §2.1 (`line-*`): every line at least 3:1 against its resting and hover fills in both themes.
+
+**Colour alone:** error and conflict lines differ by colour and tint only. The state is also given by the pinned status ("1 not saved", "1 conflict"), the tab's badge glyph (triangle, diamond), the popover's title and glyph, and the control's description, so it does not rely on colour (WCAG 1.4.1).
 
 ### 4.3 Presence
 
@@ -378,10 +401,11 @@ Title  ● Unsaved
 - Editing the field clears its error at once.
 - Should a field need an inline action on its line, it is a text button: `accent-fg`, 600 weight, no underline until hover, with a 2.75rem tap area. Popovers, alerts and toasts use real buttons.
 
-**Bar: a clickable glyph, a tinted fill and a popover.**
+**Bar: an edge line, a tinted fill and a popover on focus or hover.**
 
 ```
-Title [ Summer menu …  ▲ ]          … 1 not saved →  [Publish]   ← end padding widened for ▲
+Title [ Summer menu, served all day ]   … 1 not saved →  [Publish]
+      ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔   ← line-danger, 2px, inside the box
                     ┌─────────────────────────────┐
                     │ ▲ Title: not saved         × │
                     │ The server couldn't save it. │
@@ -389,11 +413,12 @@ Title [ Summer menu …  ▲ ]          … 1 not saved →  [Publish]   ← end
                     └─────────────────────────────┘
 ```
 
-- The triangle sits where the end icon was (a select's chevron) or in the widened end padding (a text input), and is a button named "Title: not saved, show details", with a 2rem (coarse 2.75rem) hit area. Click or tap opens the popover; it never opens on hover.
-- The field's fill turns `field-danger`, and stays tinted on hover and while the popover is open.
-- The popover is titled with the field's name and state, has a close ×, and a square caret points at the glyph.
+- There is **no glyph and no glyph button** in the control. The field's fill turns `field-danger` (conflict: `field-warning`) and a solid 2px `line-danger` (`line-warning`) runs inside its bottom edge. Both stay while hovered and while the popover is open.
+- **The popover opens when the control is focused or hovered**, anchored to the control, without taking focus, so typing carries on. A pointer can move into it (it closes 300 ms after the pointer leaves both, unless focus is in either). **Tab** from the control moves into the popover's first action (Retry; Use Mia's for a conflict), Shift+Tab from there returns to the control, and **Escape** closes it with focus left in the control. To reopen it, focus the control again or hover it. While a select's or a search's own menu is open, the popover does not open.
+- The control has `aria-invalid="true"` (error only) and `aria-describedby` pointing at a hidden description: "Not saved. The server couldn't save this. Press Tab for Retry and Reset." (conflict: "Changed by Mia while you were editing. Press Tab to choose a version.").
+- The popover is titled with the field's name and state, has a close ×, and a square caret points at the control.
 - **Retry** sends the same value again. **Reset** puts the field back to its last saved value and clears the error; nothing is sent. The save failed, so nothing happened that could be undone, and the kit never calls this Undo.
-- The pinned summary reads "1 not saved →" and the tab gets the triangle badge, so an error is visible from anywhere in the bar.
+- The pinned summary reads "1 not saved →" and the tab gets the triangle badge, so an error is visible from anywhere in the bar. "Show the field" focuses the control, which opens its popover.
 - Errors are announced once through the surface's polite live region.
 
 In the bar, conflicts use the same popover with the diamond and `field-warning`: "Mia changed this while you were editing.", then both values as read-only quoted text labelled "Mia's" and "Yours" (the same block as in modals, §8.2), then **Use Mia's** and **Keep mine** as two soft buttons. In modals and pages a conflict is found by Save and shown as a notice under the field (§8.2).
@@ -418,7 +443,7 @@ Files are under `src/runtime/templates/components/`. `CwaUi` names come from the
 
 | Component | Base | API and look |
 |---|---|---|
-| `CwaUiButton` | reka `Primitive` | `tone`, `variant: 'solid' \| 'soft' \| 'ghost'`, `icon`, `iconOnly`, `label`, `loading`, `disabled`, `disabledReason`, `to`, `type`, `options` (split button, below). Square, label 600. `solid` = tone fill; `soft` = the `button` fill (v6: its own fill, lighter than a field in light and darker in dark, so an action never reads as an input; `field-hover` on hover; replaces "outline": no borders); `ghost` = no fill until hover (`button`). Height follows the surface's control token; padding-x 1rem (0.75rem with an icon). No label ends in "…": a button names its action ("Redirect to another page"), and one that opens something more says so in its words, not with an ellipsis. |
+| `CwaUiButton` | reka `Primitive` | `tone`, `variant: 'solid' \| 'soft' \| 'ghost'`, `icon`, `iconOnly`, `label`, `loading`, `disabled`, `disabledReason`, `to`, `type`, `options` (split button, below). Square, label 600. `solid` = tone fill; `soft` = the `button` fill (v6: its own fill, lighter than a field in light and darker in dark, so an action never reads as an input; `field-hover` on hover; replaces "outline": no borders); `ghost` = no fill until hover (`button`). Height follows the surface's control token; padding-x 1rem (0.75rem with an icon). **A ghost button never sits at a container's start or end edge** (v6): with no fill, its padding insets the text from the content edge while nothing shows the box, so it looks misaligned. At an edge use `soft` or `solid`, or, where a text button is the convention (a sheet's Done), keep `ghost` and pull it out by its padding (`margin-inline-end: -1rem`) so the text lines up with the content edge. Icon-only ghost buttons (the close ×, a tree row's bin) are square and their glyph is centred, so they are aligned by the container's own padding instead. No label ends in "…": a button names its action ("Redirect to another page"), and one that opens something more says so in its words, not with an ellipsis. |
 | `CwaUiSpinner` | — | `size: 'sm' \| 'md'`, `aria-hidden` |
 | `CwaUiProgress` | reka `Progress` | `value?`, `label`; a 0.25rem square-ended bar |
 | `CwaUiBadge` | — | `tone`, `icon?`; square, `text-flag`, padding 0.125rem 0.5rem, tinted fill |
@@ -438,7 +463,7 @@ Files are under `src/runtime/templates/components/`. `CwaUi` names come from the
 | Component | Base | Bar | Notes |
 |---|---|---|---|
 | `CwaUiInput` | native | yes | `type`, `inputmode`, `nullable`, `prefix`/`suffix` slots |
-| `CwaUiNumber` | reka `NumberField` | yes | `min`, `max` and the range rules below; commits on blur, Enter, step or unmount; in the bar a state glyph appears between the value and the + button only while it shows (§4.2); the −/+ buttons are the field's full height, with `step-hover` and `step-press` over the field's fill (error and conflict tints included), and the field's own hover is suppressed while the pointer is on one (§2.7) |
+| `CwaUiNumber` | reka `NumberField` | yes | `min`, `max` and the range rules below; commits on blur, Enter, step or unmount; in the bar its state is the edge line (§4.2), so the number never moves; the displayed number moves at once on every press, presses within 250 ms are one save, and moves made while a request is in flight become one follow-up with the newest position (#316, #374), so five quick presses send at most two requests and the line sweeps once; the −/+ buttons are the field's full height, with `step-hover` and `step-press` over the field's fill (error and conflict tints included), and the field's own hover is suppressed while the pointer is on one (§2.7) |
 | `CwaUiTextarea` | native | **no** (modals and pages only) | `maxlength`, `counter`, `maxRows` (default 8). No resize handle (`resize: none`). It grows with its content (`field-sizing: content`, min 3 lines) up to `maxRows`, then scrolls inside; where `field-sizing` is unsupported a small script sets the height from `scrollHeight` on input and resize. The textarea fills the whole field box, so its text and scrollbar reach the field's edges, with `field-x` padding on both sides. It has no status glyph (modals and pages only). |
 | `CwaUiToggle` | reka `Switch` | yes | the one rounded control: track 2.25 × 1.25rem, thumb 1rem; the label never changes with state |
 | `CwaUiSegmented` | reka `ToggleGroup` | yes | 2–5 options, square, `field` fill, selected = `surface` fill + `fg` + 500 weight |
@@ -448,7 +473,7 @@ Files are under `src/runtime/templates/components/`. `CwaUi` names come from the
 | `CwaUiEitherOr` | Segmented + children | yes | §6 |
 | `CwaUiLinkInput` | `CwaUiEitherOr` preset | yes | §6.3 |
 | `CwaUiDatePicker`, `CwaUiDayPicker`, `CwaUiDayRangePicker` | reka | yes | the calendar icon sits at the trailing edge, and a state replaces it (§4.2); calendar popover square; selected day = `accent` fill + `fg`, today = `accent-fg` underline |
-| `CwaUiFileUpload`, `CwaUiImageAlt`, `CwaUiImageSlots` | native + Popover | yes | bar anatomy `[thumb] filename · 240 KB [Replace] [Remove]`, with the state glyph after Remove only while it shows (it is last in its group, so nothing moves); square thumbnail |
+| `CwaUiFileUpload`, `CwaUiImageAlt`, `CwaUiImageSlots` | native + Popover | yes | bar anatomy `[thumb] filename · 240 KB [Replace] [Remove]`, with the status line under the whole group (§4.2), so nothing moves); square thumbnail |
 | `CwaUiInlineEdit` | — | no | the modal title |
 | `CwaUiInlineHandoff` | — | yes | §7 |
 
@@ -579,7 +604,7 @@ CwaUiDialog      { title: string; size?: 'sm' | 'md' | 'lg'; tabs?: { key: strin
                  slots: default, [tab key], 'header-actions', footer-start
 CwaUiFormSection { title?: string; description?: string; columns?: 1 | 2 }       slots: default, action
 CwaUiFormGroup   { resource?: string; saveLabel?: string }                        emits: saved(resource); slots: default
-CwaUiConfirm     via useCwaConfirm(): ({ title, description, keep = 'Keep editing', go, tone = 'danger', extra? }) => Promise<boolean>
+CwaUiConfirm     via useCwaConfirm(): ({ title, description, keep = 'Keep editing', go, tone = 'danger', typed?: boolean, extra? }) => Promise<boolean>
 CwaUiAlert       { tone: Tone; title: string }                                     slots: default, actions
 CwaUiSearchField { modelValue: string; label: string }                           emits: 'update:modelValue'
 CwaUiFilterToggle{ modelValue: boolean; label: string; colour: string }          emits: 'update:modelValue'
@@ -615,10 +640,10 @@ Some resources store **exactly one of several fields**: a link is a `route` *or*
 
 - **The segmented control picks which option is shown. Switching writes nothing**, so flipping to URL and back loses nothing.
 - **Committing a value in one option clears the other options' fields in the same save:** one `updateResource` carrying the chosen field plus `null` for every non-null field of the other options (still merge-patch with changed fields only). There is never a moment with both set, and the API's either/or validator never sees a half state.
-- **In the bar, Undo** restores the cleared fields, again in one save. It stays available until the next edit in the group (not on a timer), in the status glyph's popover.
+- **In the bar, Undo** restores the cleared fields, again in one save. It stays available until the next edit in the group (not on a timer): the visible field keeps a solid `line-saved` line, and Undo is in the popover that opens when it is focused or hovered.
 - **In modals and pages** the group edits the local copy like any field: choosing a value clears the other options' fields in the local copy, the helper line says what Save will clear ("Save sends this and clears the URL (…) in the same request."), and Save sends the chosen field and the `null`s in one request. There is no Undo there: nothing was saved, and Cancel discards the copy.
 - **Initial option:** the first option with a non-null field. When more than one holds a value (old data), it shows the first, and a `warning` badge on the segmented control says "Both are set. Saving one clears the other."
-- **One status glyph** for the group (bar only), at the visible field's end: saving, saved and error cover the whole save. A conflict on a hidden option puts the diamond on that segment and never switches the segment.
+- **One status line** for the group (bar only), on the visible field: saving, saved and error cover the whole save. A conflict on a hidden option puts the warning line under that segment and never switches the segment; focusing or hovering the segment opens the conflict popover.
 - **Presence** is per field: a peer in the hidden option shows their flag on that segment.
 - Bar: `Link ⓘ [Page | URL] [ /about-us ▾ ]`. Modal: the label, then the segmented control, then the field 0.375rem below.
 - The segmented control has no inner padding: each segment is the control's full height (2.75rem on touch), and the pressed segment draws its inset with a `field`-coloured inner shadow.
@@ -633,16 +658,47 @@ A preset of the group with the Page and URL options and `route`/`rawPath` defaul
 
 - **One row, never stacked.** Height is `h-manager`, as is its spacer. The row scrolls horizontally with 2.5rem edge fades (a `mask-image` from `data-overflow-start/end`, set by a `ResizeObserver` and a passive scroll listener with injectable measurements). "Scroll fields left/right" arrows appear only at a hovered edge on a fine pointer, and never while a field in the row has focus, so they never cover what you type. Coarse pointers have no arrows: the fade and a visible peek of the next field carry the hint. Native Shift+wheel, trackpad and touch pans (including one starting on an input) scroll it. **Focus scrolls the whole field into view, label included**, clear of the fades (2.5rem). Every sample row of bar controls, wherever it appears, uses the same fades.
 - **Row:** inline padding `row-x`, block `row-y`, gap `row-gap`. `CwaUiManagerRowDivider` is a 1px `line` rule, 1.5rem tall, centred in the gap. Labels and fields are vertically centred on one baseline.
+- **One saving episode per field** (v6), for every bar control, driven by "this field has a change waiting or a request in flight", never per request:
+  - **Debounce:** a save is sent 250 ms after the last change (`useCwaResourceModel`'s debounce), never per keystroke or per press. A select or page pick sends at once (`debounceTime: 0`).
+  - **Coalesce:** one request in flight per field; changes made meanwhile become a single follow-up carrying the newest value, and the latest value wins (the reorder rule of #316 and #374 applies to the Order tab's position).
+  - **The line:** nothing shows while a change is only waiting (pending is invisible). The sweep starts when the first request is sent and keeps running, as the same animation, until nothing is in flight and nothing is waiting; a keystroke or a press during the episode never restarts it. Then "saved" shows once and fades.
+  - **Announcements:** "Saving…" at most once per episode (only when slow, §11.2), and one outcome at its end ("Position saved").
+  - Measured in the mockup: a sentence typed at about 7 characters a second sends 1 request; the same sentence typed word by word with pauses sends one request per pause that outlasts the request, never one per key; five quick presses on the position stepper send 1 request; each case keeps one `Animation` object for the whole sweep with no restart.
+- **Field state in the row** (v6) is the 2px status line inside each control's bottom edge (§4.2), on every bar control: never a glyph, never a glyph button, never a change of padding or end icon. Error and conflict popovers open on focus or hover (§4.4). The pinned status is the only place in the bar with a state glyph, and it always has words with it (below).
 - **Tab strip** (`core/admin/ManagerTabs.vue`, reka `Tabs`): tab names in `text-label`, padding 0 1rem, selected = `fg` text with a 2px `accent` bar along the bottom edge (a selection indicator, not a field border). The bar is one sliding indicator (reka `TabsIndicator`, §2.8), shared by the bar and modal tabs. Scrolls with the same fades, and selecting a tab scrolls it fully into view. A tab with an error or held conflict shows the solid triangle or diamond, read from the store, so it survives the tab unmounting.
-- **Pinned end** (`core/admin/BarSummary.vue`): the status button and the primary action as a **split button** (Publish now, Schedule, Cancel schedule, or "+ Draft"/"+ Add" for a new component, plus ⋮; or ⋮ alone; §5.1), **always in the tab row, top right, level with the tabs, on every tab and at every width**. They never move into the field row, so the field row always has the bar's full width and the action never jumps when the tab changes. The tab strip scrolls (with fades) in the space to their left. A divider separates them from the tabs. Buttons are the tab row's height less 0.5rem on fine pointers, so the space to the right of the split button equals the space above and below it (measured: 4px each); on coarse pointers they are the full tab row height (2.75rem). ⋮ is square at the same height. The status is always a solid glyph **plus words**: ≥ `lg` "Draft · not live", "Saving…", "All changes saved", "1 not saved →", "1 conflict →"; below `lg` a short word ("Draft", "Saving…", "Saved", "1 not saved", "1 conflict"). It is a button: with an error or conflict it jumps to the field and opens its popover; otherwise it opens a popover with the full status. A spinner is never shown without "Saving…".
+- **Tab badges are derived, never toggled** (v6). A badge shows the most severe **unresolved** state among the tab's fields, in the order **conflict > error > nothing**; saving, pending and saved never affect it. A field's retry changes only that field's state, so with a conflict on Title and a failed Subtitle, retrying Subtitle (error → saving → saved) leaves the badge on "conflict" throughout. The badge is a computed value: its element re-renders only when that value changes, so its entrance animation plays only when it first appears or changes kind. (The v5 mockup rewrote the badge's markup on every status refresh, including a once-a-second timer, so the glyph's entrance animation replayed each time and the badge appeared to flash; it also ranked error above conflict, so the badge switched kind as Subtitle went from error to saving.)
+- **Pinned end** (`core/admin/BarSummary.vue`): the status button and the primary action as a **split button** (Publish now, Schedule, Cancel schedule, or "+ Draft"/"+ Add" for a new component, plus ⋮; or ⋮ alone; §5.1), **always in the tab row, top right, level with the tabs, on every tab and at every width**. They never move into the field row, so the field row always has the bar's full width and the action never jumps when the tab changes. The tab strip scrolls (with fades) in the space to their left. A divider separates them from the tabs. Buttons are the tab row's height less 0.5rem on fine pointers, so the space to the right of the split button equals the space above and below it (measured: 4px each); on coarse pointers they are the full tab row height (2.75rem). ⋮ is square at the same height. The status is always a solid glyph **plus words**: ≥ `lg` "Draft · not live", "Saving…", "All changes saved", "1 not saved →", "1 conflict →"; below `lg` a short word ("Draft", "Saving…", "Saved", "1 not saved", "1 conflict"). **One bar episode** (v6): the status shows "Saving…" with its spinner from the first request sent by anything in the bar (every field, the order PATCH and its `GET <group>/order`, debounced changes) until nothing in the bar is in flight or waiting; a gap of up to 300 ms between one request settling and the next starting is part of the same episode, so "All changes saved" shows once, at the end, and never between requests. The spinner is one persistent element for the whole episode: the status updates only its text nodes and a `data-state` attribute, and only when they change; it never swaps its markup or toggles a class that would restart the animation. Measured in the mockup: one press of +, five quick presses, three presses 500 ms apart and a typed phrase each give exactly one spinner `Animation` and the text sequence Saving… → All changes saved (1, 1, 2 and 10 requests). It is a button: with an error or conflict it jumps to the field and focuses it, which opens its popover; otherwise it opens a popover with the full status. A spinner is never shown without "Saving…".
 - **Phones** (bar narrower than 40rem): the same place, compact: the status is **a glyph only**, a square button the tab row's height, right against the split button with **no gap** (measured: 0px), and the action is shortened to "Publish". Each state has its own shape (a dot for Draft, a clock for Scheduled, a ringed dot for Live, bars for a group, a dashed ring for New (v6: a plus only ever means create, and it sat next to "+ Draft"), the spinner, the tick, the triangle, the diamond), so colour is never the only cue, and the button's accessible name is the full status ("Status: Draft · not live"). The split button sits **flush against the right edge**, ⋮ last, both 2.75rem tall and ⋮ 2.75rem wide, and its menu opens as a bottom sheet. It meets the right edge of the window with no gap (the tab row's end has no padding at this width, on touch as well: v3's mockup kept 0.25rem there because the coarse-pointer padding outranked the narrow-bar rule), at the tab row's full height (2.75rem, thumb-sized) and with its own inner padding; the tab strip keeps the row's left padding. With a right-side safe-area inset (a landscape notch), ⋮'s fill extends into the inset and its glyph stays clear of it: `width: calc(2.75rem + env(safe-area-inset-right))` with the inset as its right padding. Text fields are sized `calc(100cqw - 9.5rem)`, so a field and its label take most of the row and the next field peeks in; the row uses `scroll-snap-type: x proximity` with each field as a snap point. Controls are 2.75rem.
-- **Multi-line content** is edited in-line on the page. The bar shows `CwaUiInlineHandoff`: `Description "Our kitchens are made in…" [Edit on page]`. Edit on page scrolls the template's registered editor clear of the bar, focuses it and flashes an `accent-fg` outline for 600 ms; Escape returns focus to the button. With no registered editor, the button reads **Edit…** and opens a dialog with `CwaUiTextarea`.
+- **Editing on the page** (v6, §7.1, below). **Multi-line content** is edited in-line on the page. The bar shows `CwaUiInlineHandoff`: `Description "Our kitchens are made in…" [Edit on page]`. Edit on page scrolls the template's registered editor clear of the bar, focuses it and flashes an `accent-fg` outline for 600 ms; Escape returns focus to the button. With no registered editor, the button reads **Edit…** and opens a dialog with `CwaUiTextarea`.
 - **Escape order:** confirm, popover or menu, inline edit, on-page editor, a dialog's sub-view (asks when dirty, §8.3), dialog, clone mode, deselect.
 - **The bar owns the live region** (`ResourceManager`, announced through `BarSummary`), never the tab: a tab unmounts when another is chosen, and its region would go with it mid-announcement. Kit controls announce through an injected `announce()`.
 - **Read-only values** (`CwaUiReadonly`) are centred on the same line as the neighbouring fields' values at bar, modal and touch sizes: the value box is the control's height with the same trimmed line box (measured: 0.01px apart).
 - **The row scrolls by keyboard too:** the row and the tab strip are focusable scroll regions (`tabindex="0"`, named) when they overflow, so arrow keys scroll them (WCAG 2.1.1).
 
 Module tabs on the row: `DynamicPage` (three selects · divider · status text), `Publish` (`Edit published version` toggle with `info`, `Schedule` toggle, date picker; the action is pinned), `Group`, `ResourceInfoTab` (`CwaUiReadonly`, badges), `Ui` (UI select, Style select or multi-select; where the options come from is the separate configuration job), `Order` (`CwaUiNumber width="xs"`).
+
+
+### 7.1 Editing on the page (v6)
+
+An in-page editor (`CwaInlineText`, the TipTap HTML editor) saves like a bar field: 250 ms debounce, one request in flight, one newest-value follow-up, one episode (§7).
+
+- **The bar status is primary.** The bar is fixed and always visible, and its pinned status covers every save of the selected component, in-page editors included. An error from an in-page editor opens from the bar status ("1 not saved →", then its popover with Retry and Reset), never from a popover over the page content.
+- **The selection outline carries the field's state**, drawn in the admin overlay (never in site CSS), with the same rules as a bar control's line: nothing while pending; a sweep from the first send until nothing is in flight or waiting, as one animation that typing never restarts; success, then back to normal, once saved; a solid danger or warning colour for an error or conflict. Under reduced motion the saving state is a still line. Two variants are in the mockup for Daniel to choose from:
+  - **Left edge:** a 4px line over the outline's left edge. Saving is a downward sweep of 6rem bands repeating every 18rem, so some of it is visible wherever the component is scrolled; saved is a success line that fades by 1.5 s. The left edge rather than the bottom, because in a long component the bottom is usually off-screen while typing, but part of each side edge is always in view.
+  - **Whole outline** (revised after Daniel's first look: a lone segment was easy to miss): the outline is four 4px side strips in the overlay. **Start:** on the first send all four cross-fade from the selection colour to `line-saving` over 200 ms, so the border changes at once. **While saving:** a light highlight segment, 25% of its side, runs along every side at the same time, clockwise (top left to right, right downward, bottom right to left, left upward), one 1.6 s cycle shared by all four so they read as one motion; whichever sides are in view always move. The strips and their four animations persist for the whole episode and typing never restarts them. **End:** on success the segments fade out (200 ms) while the strips cross-fade to `line-saved`, then back to the selection colour (200 ms) after about 1.3 s; on error or conflict they cross-fade to `line-danger` or `line-warning` and the segments stop. **Reduced motion:** the colour changes only, instantly, with no segments.
+- **Colours:** the overlay uses `line-saving`, `line-saved`, `line-danger` and `line-warning` as set for the page under the overlay (the sample site is light: blue-700 6.6:1, lime-800 6.97:1, red-700 6.37:1 and amber-700 4.94:1 on the component's #fffdf9, and at least 4.55:1 on the page's #f7f3ee).
+- **Errors:** while the component is selected there is **no toast**; the outline and the bar status show it, and the bar status opens the message. If the component is deselected, or scrolled out of view, while the error is unresolved, the persistent toast applies: "Text wasn't saved", naming the component, with **Show me** (selects it, scrolls to it and opens the bar status), **Retry** and **Reset**.
+- **Announcements:** the bar's region, by the §11.2 rules: "Saving…" only when slow, then one outcome per episode.
+
+### 7.2 The admin header's status (v6)
+
+The header's spinner and tick (`SpinnerTick`, driven by `requestCount`) become a short text status that answers "is it safe to leave?":
+
+- **"Saving…"** while any request is in flight (field saves, publishing, reorders, saves still finishing after deselecting, background requests), held through gaps of up to 300 ms like the bar (§7), as one episode with no restarts.
+- **"All changes saved"** for about 2 s once nothing is in flight or waiting, then nothing.
+- **"1 change not saved"** ("2 changes not saved") while anything has failed or is held unsent (a conflict waiting for a choice, an offline queue). It is a button: it focuses the first one, selecting its component when needed and opening the bar status.
+- A change still inside its 250 ms debounce before an episode has started shows nothing, like a field.
+- Announced once through the region rules (§11.2); the text itself is not a live region of its own.
 
 ---
 
@@ -660,7 +716,7 @@ Module tabs on the row: `DynamicPage` (three selects · divider · status text),
 | Sections | `CwaUiFormSection`: heading `text-section` (1.125rem / 650, `fg`) as an `h3`, optional description `text-helper` `fg-muted` 0.25rem below, then 1rem to the first field. Each section after the first has 2rem of space, a 1px `line` rule, then 2rem before its heading. A section with no heading adds no top space, so an untitled form's padding is even on all sides. |
 | Columns | `columns: 2` on a section puts short fields side by side, 1rem column gap, 1.5rem row gap; it collapses to one column when the dialog's content box is under 32rem (container query) and at 200% zoom |
 | Toggles | a toggle row is label left, toggle right, helper below the label; the row is 2.75rem tall and the whole row toggles |
-| Footer | sticky, `surface-raised` fill, padding 1rem `--spacing-dialog` (0.75rem plus the safe-area inset on a phone); actions right-aligned with 0.75rem gap: a short state text in `fg-muted` ("Choose 2 versions to save", "2 to fix"; hidden on a phone, where the alert says it), secondary (`soft`) then primary (`solid`); a destructive action sits alone on the left (`ghost`, `danger`). Below `sm`: secondary and primary share the row 50/50, destructive moves into the header's overflow menu. |
+| Footer | sticky, `surface-raised` fill, padding 1rem `--spacing-dialog` (0.75rem plus the safe-area inset on a phone); actions right-aligned with 0.75rem gap: a short state text in `fg-muted` ("Choose 2 versions to save", "2 to fix"; hidden on a phone, where the alert says it), secondary (`soft`) then primary (`solid`); **only Cancel and Save, on every tab** (v6): a destructive action never sits in a footer (§8.6). Below `sm`: secondary and primary share the row 50/50. |
 | Keyboard | the sticky header and footer are sized against `visualViewport`; the focused field scrolls above the on-screen keyboard |
 
 Whether a dialog uses its phone layout is decided by the **viewport or overlay width** (a named container on the overlay), never by the dialog's own width: a 36rem dialog on a desktop is not a phone.
@@ -711,15 +767,15 @@ Redirected from              3 old addresses  ▸
 Child routes                        2 routes  ▸
 ```
 
-- **Route**, at the top of the tab: the path (mono, with Copy), its status badge from the route (Live, Scheduled · date with a clock, Not live; Held back by parent when an ancestor's go-live is later, from `isRouteGatedByAncestor`), the recommendation line when the path isn't the recommended one (an info note: the ⓘ glyph, `accent-fg` mixed 10% over `surface` with a 3px `accent-fg` edge, like the v6 alerts, reading "Recommended: /kitchens/shaker-kitchens" with a small soft **Use this** button at its end; below a 25rem container the button drops under the text; the note is not rendered when the path matches), a `warning` note when held back, and **Edit route** below them, never on the heading's line. **No route**: "None", the No route badge, the recommendation and **Add a route**. **Parent has no route**: an info alert with a button that opens the parent, and no rows.
-- **Navigation rows** below it, in a list: **Redirect to** ("Off" or "→ /kitchens/shaker-range"), **Redirected from** ("3 old addresses" or "None") and **Child routes** ("2 routes" or "None"). They start 2.5rem below the Route section. Each is one full-width `button`, at least 3.5rem tall, with 0.75rem block and 1rem inline padding inside its hover fill; the row bleeds 1rem past the content edge on both sides, so its text still lines up with the content above while the hover fill gives it room, with the label, a muted one-line summary that truncates, and a solid ▸; its accessible name is the label and the summary ("Redirected from: 3 old addresses"). The whole row is the target.
+- **Route**, at the top of the tab: the path (mono, with Copy), its status badge from the route (Live, Scheduled · date with a clock, Not live; Held back by parent when an ancestor's go-live is later, from `isRouteGatedByAncestor`), the recommendation line when the path isn't the recommended one (an info note: the ⓘ glyph, `accent-fg` mixed 10% over `surface` with a 3px `accent-fg` edge, like the v6 alerts, reading "Recommended: /kitchens/shaker-kitchens" with a small soft **Use this** button at its end; below a 25rem container the button drops under the text; the note is not rendered when the path matches), a `warning` note when held back, and **Edit route** below them, never on the heading's line. **No route** is an empty state, never a "Path" label with nothing beside it: a muted sentence, "No route yet. Visitors can't open this page at its own address." (plus "It is reachable through a nested page." when a routed child makes it public), a primary **Add a route** that opens the same sub-view as Edit route, and the recommendation note below it, whose **Use this** opens Add a route with the path filled in and saves nothing on its own. Below, **Redirected from** and **Child routes** still show (an unrouted page can have both); **Redirect to** is hidden, because there is no address to redirect. **Parent has no route**: the same sentence, then an info alert with a button that opens the parent, and no rows. The "Path" label renders only beside a path.
+- **Navigation rows** below it, in a list: **Redirect to** ("Off" or "→ /kitchens/shaker-range"), **Redirected from** ("3 old addresses" or "None") and **Child routes** ("2 routes" or "None"). They start 2.5rem below the Route section. Each is one `button` spanning exactly the content width, at least 3.5rem tall, with 0.75rem block and 1rem inline padding inside its hover fill, so the label and ▸ sit 1rem in from the content edge; its divider is the row's own bottom line, so fill and line are always the same width, with the label, a muted one-line summary that truncates, and a solid ▸; its accessible name is the label and the summary ("Redirected from: 3 old addresses"). The whole row is the target.
 
 **Sub-views.** A row, Edit route, Add a route and Use this open a sub-view: a page of the Routes tab, inside the modal.
-- **The modal's tabs stay**, with Routes selected; only the tab's own content changes. Under the tab strip a stacked header: a ghost back link "‹ Routes" (`fg-muted`, 0.875rem, its hit area 1.5rem tall, 2.75rem on coarse pointers), 0.5rem of space, then the sub-view's title as a heading at the section heading size, both aligned to the body's inline padding. Focus moves to the title (`tabindex="-1"`). On a phone, Delete route sits in a ⋮ at the end of the back link's line.
+- **The modal's tabs stay**, with Routes selected; only the tab's own content changes. Under the tab strip a stacked header: a ghost back link "‹ Routes" (`fg-muted`, 0.875rem, its hit area 1.5rem tall, 2.75rem on coarse pointers), 0.5rem of space, then the sub-view's title as a heading at the section heading size, both aligned to the body's inline padding. Focus moves to the title (`tabindex="-1"`). 
 - **The tab's main view is `hidden` and `inert`** while a sub-view is open; the tab strip is not. The sub-view slides in from 2rem to the right and fades (`d-base`), and the main view comes back from the left; both are instant under reduced motion. The body scrolls to the top, and its scroll is restored on the way back.
 - **Leaving:** "‹ Routes" or Escape returns to the main view, and focus returns to the row or button that opened the sub-view. Another tab simply switches, and coming back to Routes shows its main view. **With unsaved input** in a sub-view's form, each of these asks "Discard your route changes?" (**Keep editing** / **Discard**; changes on other tabs are kept). The sub-view adds no router history: it is the tab's state, not a route.
-- **Footer:** while a form is open in a sub-view, its own footer replaces the modal's: [Delete route on the left, Edit route only] … "2 unsaved page changes kept" · **Cancel** · **Save route** (or **Add route**, **Redirect**, **Add**). There is never more than one Save on screen. A sub-view showing a list (Redirected from, Child routes, Redirect to without a form) has no footer: its actions save at once, and the modal's Save would have nothing to do there, so it is hidden too, along with the header's page ⋮.
-- **Saving needs no confirm**: what will happen is said in the form, above the footer, as it is typed ("The old path, /kitchens/shaker, keeps working: it will redirect here."; "Visitors to /kitchens/shaker will be sent to /kitchens/shaker-range." as a `warning` note; "/old-kitchens → this page"). Save route is the confirmation. Only destructive actions confirm, and none with a bare "Cancel": Delete route (**Don't delete**), delete an old address (**Don't delete**), Remove a redirect (**Keep redirecting** / **Stop redirecting**).
+- **Footer:** while a form is open in a sub-view, its own footer replaces the modal's: "2 unsaved page changes kept" · **Cancel** · **Save route** (or **Add route**, **Redirect**, **Add**). There is never more than one Save on screen. A sub-view showing a list (Redirected from, Child routes, Redirect to without a form) has no footer: its actions save at once, and the modal's Save would have nothing to do there, so it is hidden too, along with the header's page ⋮.
+- **Saving needs no confirm**: what will happen is said in the form, above the footer, as it is typed ("The old path, /kitchens/shaker, keeps working: it will redirect here."; "Visitors to /kitchens/shaker will be sent to /kitchens/shaker-range." as a `warning` note; "/old-kitchens → this page"). Save route is the confirmation. Only destructive actions confirm, and none with a bare "Cancel": Delete route (**Don't delete**; typed when old addresses or child routes depend on it, §8.6), delete an old address (**Don't delete**, simple), Remove a redirect (**Keep redirecting** / **Stop redirecting**). Delete route is the last section of the Edit route form ("Delete this route"), never in the footer.
 - **Outcome:** on success the form closes and a status line with a tick says what happened ("Route changed to /kitchens/shaker-kitchens. /kitchens/shaker now redirects here."), where the change shows: at the top of the tab for the route, at the top of the sub-view otherwise, with focus on it. On failure the form stays open with what was typed, under a `danger` alert with Retry ("The server couldn't save it. Nothing changed, and what you typed is still here."). Each sends its own request and is never part of the modal's Save.
 
 | Sub-view | Content | Form |
@@ -754,7 +810,7 @@ interface CwaFieldState {
 - **Plain data only.** `retry()` and `reset()` are model methods and store actions, so the state stays serialisable and devtools-readable.
 - **Follows the resource:** when a save turns live into a draft, or a 412 moves a value with `moveTo`, the field states move to the new IRI with it (#429).
 - **Errors are per field, and `updateResource` keeps its return** (v6, replacing v3's `{ ok }` wording): it still resolves to the saved resource, or `undefined` on failure. Per-field outcomes are written to `fieldStates` keyed by `(iri, field)`, from the fields the request sent, so one field's success never clears another field's error (today's `removeByEndpoint` clears every error for the endpoint). The callers checked: the field model needs the returned resource's `@id` (a save on a live component returns a new draft IRI); `useItemPage` returns it to its own caller; stranded merge, clone, remote changes and the Info tab only test for success; outside the module only bcio calls it (ArticlesCollection, result unused). The code that writes `fieldStates` is admin-only and lives in a lazy module, out of the entry (§12).
-- **What reads it:** the bar's status glyph, the tab badges, the pinned summary and Retry after returning to a tab. Getters read by `(iri, field)`, so work scales with fields on screen (#259).
+- **What reads it:** the bar's status line, the tab badges, the pinned summary and Retry after returning to a tab. Getters read by `(iri, field)`, so work scales with fields on screen (#259).
 - **Unmounting a field in error or held** (tab switch, deselect) raises a persistent toast with **Show me**, **Retry** and **Reset** (**Retry all** and **Reset all** when there are several), and `NavigationGuard` asks before leaving the page. Route-cache eviction never evicts a resource with an unresolved field state.
 
 ### 8.5 Unsaved changes: discard and leave
@@ -771,6 +827,27 @@ Decided in v4. A modal or admin page with unsaved changes never drops them witho
 - The count and the field names come from the local copy (§8.2), so they match the Save button.
 - **Leaving goes through the existing `NavigationGuard`** (`src/runtime/admin/navigation-guard.ts`): a modal or page with a dirty local copy registers with it, and the guard awaits the confirm before letting Nuxt navigate. Leave discards the copy and continues; Keep editing cancels the navigation.
 - `beforeunload` is added only while a local copy is dirty and removed when it is saved or discarded, so a clean page never makes the browser ask.
+
+### 8.6 Deleting (v6)
+
+**Delete is never in a footer.** A modal's footer is only Cancel and Save, on every tab, so the button beside Save is never destructive.
+
+- **Where it goes:** the last section of the modal's **Info** tab, or its last tab when it has no Info: page, layout, page data and user modals alike. The section is titled "Delete this page" (layout, article, user), has one sentence saying what goes and what stays, and a `solid` `danger` **Delete page** button. For the page modal it follows the bundle's cascade: **page data built from the page as its template is deleted with it** (`AbstractPageData::$page` is `onDelete: CASCADE`), so that comes first and in bold, with the count from `_metadata.pageDataCount` (api-components-bundle#587): "14 pages built from this template are deleted too.", or "Pages built from this template are deleted too." while the count is unknown, and nothing for a page that is not a template; **the route is kept** (`AbstractPage::$route` is `SET NULL`), so "Its route /kitchens/shaker stays but no longer shows a page." (with its old addresses); **nested pages are kept** and lose their parent (`parent_page_id` is `SET NULL`). A route's delete is the last section of the Edit route form. The phone ⋮ in the modal header no longer holds Delete.
+- **The confirm says the consequence** in its text: what visitors will get, and what is kept. Its buttons are **Don't delete** (soft, first) and the action (solid `danger`).
+
+**Two tiers of confirm** (decided in v6; Daniel can move an action between tiers):
+
+| Tier | Actions |
+|---|---|
+| **Type to confirm** | deleting a page, layout, page data or user; deleting a route that has old addresses or child routes; **Delete all** and **Delete everything** in the orphan reports; removing a component used in more than one place (`/usage` total > 1) |
+| **Simple confirm** | deleting a route with neither; removing a component used in one place; deleting one old address (a redirect row); deleting one orphan |
+
+**Type to confirm:**
+- A field labelled **"Type delete to confirm"** (a visible label), never pre-filled, with a helper line linked by `aria-describedby`: "Delete page stays off until the word matches."; "That doesn't match. Type delete." with the error look once the text can no longer become "delete"; "Matches. Delete page is on." with the tick.
+- The match is case-insensitive and ignores surrounding spaces; paste works.
+- The danger button stays `aria-disabled` (focusable, 50% opacity) with its reason linked ("Type delete in the field above to turn this on."), and does nothing until the field matches. **Enter** in the field submits once it matches.
+- Focus starts in the field. Escape, Don't delete or the scrim cancel, as in every confirm (§8.5).
+- The word is always "delete", in English copy, never the resource's name: names are long and can't always be typed.
 
 ---
 
@@ -792,6 +869,7 @@ Every admin list uses one CSS grid, with the header row on the same columns:
 - **Row actions** for pages: **Go to page** (an arrow icon button; it navigates to the page, through `getInternalResourceLink(iri)` for a page without a route) and ⋮ with **Edit settings** (the modal, also the row click), **Go to page** and **Delete**.
 - **Rows:** 3.5rem with one line, 4rem with two (4rem on coarse pointers). Padding 0 1rem, column gap 1rem, content vertically centred. Rows are separated by a 1px `line` divider; hover is `field-hover` at 50%; the selected row is an `accent` tint.
 - **The whole row is the link** (to the item's modal); action buttons stop propagation.
+- **A hover fill never extends past its list's dividers** (v6), in every hoverable row in the kit: list rows, tree rows, navigation rows and menu options. The divider is the row's own bottom line and the fill is the row's box, so they are always the same width; content sits inside the row's padding, never bled past the edge with a negative margin.
 - **Header row:** 2.5rem, `text-helper`, `fg-muted`, sentence case, same alignment as its column; sortable headers have a solid chevron.
 - **Below `md`:** the grid becomes `lead · primary · actions(⋮)` (`primary · actions` in the page list). The second line is **status first**, its glyph in a fixed 0.75rem slot so every row's status starts at the same place (a coloured dot; a clock for Scheduled, so it never reads as the Static type's blue dot; a hollow square for a template), then the date with what it is ("edited 15 Nov"), left out when the status already carries one ("Scheduled · 20 Nov"), then the path last, so only the path truncates: `● Live · edited 17 Nov · /kitchens`. Rows are 4.25rem. Selection checkboxes are hidden, and a row is only highlighted while its checkbox is checked. The ⋮ menu opens as a bottom sheet.
 - The checkbox sits in a 2.75rem label, so the whole cell is its tap area.
@@ -862,14 +940,14 @@ The kit targets **WCAG 2.2 AA**.
 ### 11.1 Rules
 
 - **Contrast** (1.4.3, 1.4.11): text 4.5:1; focus rings, glyphs, state tints and control boundaries 3:1, measured against the fill each sits on (§2.1). Fields meet 1.4.11 through their visible label.
-- **Use of colour** (1.4.1): every state has a shape as well as a colour (glyphs, the phone status), the Static/Dynamic marker is a circle and a square, and links in text are underlined.
+- **Use of colour** (1.4.1): every state has a shape or words as well as a colour (glyphs, the phone status; a bar control's status line is colour, so its state is also in the pinned status, the tab badge's shape and the control's description, §4.2), the Static/Dynamic marker is a circle and a square, and links in text are underlined.
 - **Target size** (2.5.8): every target is at least 24px (`--spacing-target`), or has 24px of space around it; 2.75rem on coarse pointers.
 - **Focus not obscured** (2.4.11): scroll padding for the admin header and the bar (§2.6); a toast stack that entirely covers the focused element turns see-through in place, and never moves (§10); popovers never cover the field that opened them.
 - **Dragging** (2.5.7): every drag has a single-pointer alternative. Reordering has the Order tab's number and Move; resizing has none in the kit.
 - **Accessible authentication** (3.3.8): sign-in allows paste and password managers (`autocomplete="username"` and `current-password`), has no cognitive test, and a reset link instead of a puzzle.
 - **Redundant entry** (3.3.7): a form never asks again for what the editor already gave in the same process (the add page data form takes defaults from its link, #390; Create keeps everything typed when it fails).
 - **Consistent help** (3.2.6): the ⓘ always sits straight after the label, and the admin's help link is in the same place on every admin page.
-- **Content on hover or focus** (1.4.13): popovers are dismissible (Escape), hoverable and persistent until dismissed; nothing opens on hover alone.
+- **Content on hover or focus** (1.4.13): popovers are dismissible (Escape, with focus left where it was), hoverable and persistent until dismissed. The only popovers that open on hover or focus are a bar control's error, conflict and Undo popovers (§4.4); they do not take focus, do not cover the control, and reopen on the next focus or hover.
 - **Status messages** (4.1.3): §11.2.
 - **Keyboard** (2.1.1, 2.4.3): every control works by keyboard, including scrolling the bar row and tab strip (focusable scroll regions), the tree (§5.4), the menus (§5.3) and the split button. Modals and confirms trap focus and return it on close.
 - **Reflow** (1.4.10): everything works at 320px wide with no horizontal page scroll, and at 200% zoom.
@@ -883,7 +961,7 @@ Fast typing must never produce a stream of speech.
 - **No speech while typing.** Nothing is announced while a field is pending or debouncing.
 - **"Saving…" only when it's slow:** announced only when a save takes longer than about 1 second; otherwise only the outcome is.
 - **Outcomes are combined.** Outcomes within about 1 second are merged into one message ("3 fields saved", "Title wasn't saved. 2 fields saved"), and the newest message replaces one still waiting rather than queueing behind it.
-- **Errors** are announced once, politely, never `assertive`; after that the error glyph, `aria-invalid` and `aria-describedby` carry them. A failed save the editor isn't focused on says which field. A modal's conflict alert is announced once.
+- **Errors** are announced once, politely, never `assertive`; after that `aria-invalid` and `aria-describedby` carry them (in the bar, the hidden description that also says "Press Tab for Retry and Reset"; in modals and pages, the error line). A failed save the editor isn't focused on says which field. A modal's conflict alert is announced once.
 - **Search** announces the result count after the search settles, never per keystroke (§5.3).
 
 ### 11.3 Checklist per component
@@ -902,19 +980,20 @@ Fast typing must never produce a stream of speech.
 | Navigation row, sub-view | a `button` named by label and summary; the sub-view is a region named by its title, which takes focus; the hidden main view is `inert`; focus returns to the opener |
 | Skeleton | `aria-busy` on the list; skeletons `aria-hidden`; one "Loading pages" |
 | `CwaUiDialog` | `role="dialog"`, `aria-modal`, named by its title; focus trapped and returned; Escape asks when dirty |
-| `CwaUiConfirm` | `role="alertdialog"`, title and text linked, focus on the safe action |
+| `CwaUiConfirm` | `role="alertdialog"`, title and text linked, focus on the safe action; the typed tier (§8.6): a labelled field that takes focus, the danger button `aria-disabled` with its reason until it matches, Enter submits once it matches |
 | Popover (info, status, error) | named; Escape and outside click close; stays open on hover; never moves layout |
 | Toast | announced through the surface's region; dismiss button named; actions are buttons; never moves; turns see-through (15%, no pointer events) while it entirely covers the focused element; errors persist |
 | `CwaUiAlert` | announced once on appearing; links go to fields and tabs |
 | List | table semantics or a grid with named columns; row title is a link (≥ 24px); checkboxes labelled per row; status in text |
 | Manager bar | tab strip with `role="tablist"`; row is a focusable scroll region when it overflows; status button named with the full status |
 | Conflict notice | `role="group"` named by its heading, linked to its field; values as text; buttons wrap and never clip |
+| Bar status line (`FieldStatus`) | no glyph or button inside the control; error: `aria-invalid` and `aria-describedby` to the hidden description; conflict: `aria-describedby`; the popover opens on focus without moving focus, Tab enters it, Shift+Tab returns, Escape closes it with focus kept; saving sets `aria-busy`; each line 3:1 against its resting and hover fill |
 
 ### 11.4 Tests
 
 - **axe** runs in Vitest (per component, `vitest-axe` on the mounted kit component in each state) and in the browser tests (on `/kit`, §12, and on each scenario's admin screens), at WCAG 2.2 AA. The mockup passes axe-core 4.14 (`wcag2a`, `wcag2aa`, `wcag21aa`, `wcag22aa`, best practice) at 1280 and 390 in light and dark.
 - **Screen readers** (decided in v6): **axe and keyboard tests run on every PR**. A **manual VoiceOver (macOS and iOS) and NVDA (Windows) pass** happens once for each new component, in the PR that adds it, following its checklist rows (§11.3), and again over the whole kit before each release.
-- **Browser scenarios:** the bar's height and the page's scroll are unchanged across every tab and state at 1280, 1024, 768 and 390px wide, and the status and primary action are in the tab row on every tab; a modal sends nothing until Save, Save sends only changed fields in one request, a 422 badges and opens the failing tab, a 412 shows a notice under each conflicting field and the next Save carries the new version, and Create disables Routes and hides Info; a route sub-view replaces the footer only while its form is open, keeps the tab strip, asks before discarding typed input on Back, Escape or another tab, returns focus to its opener and leaves the main view `inert`; route saves send their own request without a confirm and are never part of Save; a stepper never saves an out-of-range value and snaps on blur; a loading list shows only the shimmer for 5 s under normal motion and the spinner with "Loading pages…" at once under reduced motion; only one element shows hover when the pointer is on a stepper button or a chip's ×; a textarea grows to 8 lines and then scrolls; a 10-field row scrolls and never wraps; a Select, MultiSelect and ResourceSearch open, filter and select by keyboard and by touch, and a search cancels its request on close; the either/or group clears the other field in one request; an error's glyph opens its popover by tap; an ⓘ popover moves nothing (0px); a bar field's outer box is identical in every state; Cancel, Escape, the backdrop and a navigation ask only when the local copy is dirty; no control's value is clipped vertically; no text in a conflict notice overflows (`scrollWidth ≤ clientWidth`) at 1280, 390 and 320; read-only values are within 1px of their neighbours' value line; the desktop split button has equal space above, below and to its right; the phone status meets the split button (0px) and the split button meets the window's edge (0px); ⋮ opens its menu by click, Enter, Space and ArrowDown, and ⋮ alone shows for a live component and a group; every target is at least 24px; under reduced motion only the spinners animate (the shimmer stops); a list aligns its columns at 1280 and collapses at 390; one run at 200% zoom and one at 320px.
+- **Browser scenarios:** the bar's height and the page's scroll are unchanged across every tab and state at 1280, 1024, 768 and 390px wide, and the status and primary action are in the tab row on every tab; a modal sends nothing until Save, Save sends only changed fields in one request, a 422 badges and opens the failing tab, a 412 shows a notice under each conflicting field and the next Save carries the new version, and Create disables Routes and hides Info; a route sub-view replaces the footer only while its form is open, keeps the tab strip, asks before discarding typed input on Back, Escape or another tab, returns focus to its opener and leaves the main view `inert`; route saves send their own request without a confirm and are never part of Save; a stepper never saves an out-of-range value and snaps on blur; a loading list shows only the shimmer for 5 s under normal motion and the spinner with "Loading pages…" at once under reduced motion; only one element shows hover when the pointer is on a stepper button or a chip's ×; a textarea grows to 8 lines and then scrolls; a 10-field row scrolls and never wraps; a Select, MultiSelect and ResourceSearch open, filter and select by keyboard and by touch, and a search cancels its request on close; the either/or group clears the other field in one request; an error's or conflict's popover opens on focus and on hover, Tab reaches Retry and Escape closes it with focus still in the control; a bar control's outer box, value position and end icon position are identical in idle, saving, saved, error and conflict (text input, stepper, select, date picker, toggle, segmented); an ⓘ popover moves nothing (0px); a bar field's outer box is identical in every state; Cancel, Escape, the backdrop and a navigation ask only when the local copy is dirty; no control's value is clipped vertically; no text in a conflict notice overflows (`scrollWidth ≤ clientWidth`) at 1280, 390 and 320; read-only values are within 1px of their neighbours' value line; the desktop split button has equal space above, below and to its right; the phone status meets the split button (0px) and the split button meets the window's edge (0px); ⋮ opens its menu by click, Enter, Space and ArrowDown, and ⋮ alone shows for a live component and a group; every target is at least 24px; under reduced motion only the spinners animate (the shimmer stops); a list aligns its columns at 1280 and collapses at 390; one run at 200% zoom and one at 320px.
 - **Vitest per control:** states and `:model` wiring with real `computed` refs (#260); the store's `fieldStates` survive a re-fetch; the announcer merges outcomes and stays silent while pending.
 
 ---

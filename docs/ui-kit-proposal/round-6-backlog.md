@@ -46,4 +46,26 @@ Verified by a checker per role and spot-checked by Claude. Apply in round 6 unle
 - Needs api-components-bundle#587 (admin-only `_metadata.pageDataCount` on template pages). Until it ships, the list shows "Template" with no number. Bundle contract (2026-11-17): total only, admins only, template pages only, 0 when unused; the list says "Template · 14 pages" and "Template · unused".
 
 ## 7. Route status in page lists (decided 2026-11-17)
-- The Pages list reads statuses from `GET /_/routes?page[]=<page IRI>…` (`pageData[]=` for page data lists), one request per list page alongside `/_/pages`, joined on `route`; every match returned. No route data on Page (bundle rule: relations are IRIs; go-live state is owned and cache-managed by Route). A page with no match is "No route". api-components-bundle#588: `itemsPerPage` up to 100 with either filter, every match returned, more than 100 IRIs is a 422; admins get `path`, `liveAt`, `_metadata.effectiveLiveAt`.
+- The Pages list reads statuses from `GET /_/routes?pages[]=<page IRI>…&perPage=100` (`pageData[]=` for page data lists; PR bundle#590), one request per list page alongside `/_/pages`, joined on `route`; every match returned. No route data on Page (bundle rule: relations are IRIs; go-live state is owned and cache-managed by Route). A page with no match is "No route". api-components-bundle#588: `perPage` up to 100 with either filter, every match returned, more than 100 IRIs is a 422; admins get `path`, `liveAt`, `_metadata.effectiveLiveAt`.
+
+## After the v6 polish: review panel (Daniel, 2026-11-17)
+
+Run the review panel again (the same roles as after round 5, each finding checked) once the polish round is in:
+- delete in the Info tab and the two confirm tiers;
+- the bar's edge-line status on every control, with one saving episode (field line, bar spinner, header);
+- the in-page indicators (left edge vs whole outline);
+- the header's "safe to leave" status;
+- the tab badge rule;
+- the caret rule for a focused field updated remotely.
+
+Daniel picks from the confirmed findings before the next round.
+
+## Pending spec additions
+
+- **Caret on a remote update:** a focused field with no unsent change takes the remote value. A plain text field keeps the caret at the same offset, or at the end if the text got shorter, never at the start. The HTML editor already uses a minimal replace.
+- **The admin header in the mockup is a stand-in:** only its status changes (§7.2). A header restyle is not in scope.
+
+## Bundle shapes, final
+
+- **#587 (merged as bundle PR #589, not yet tagged):** `_metadata.pageDataCount` is an integer, the total page data of any class using the page as its template. It is on the `Page` item and each `GET /_/pages` member, only when `isTemplate: true` and the caller has the publishable permission; 0 when unused. It is absent for visitors, for ROLE_USER, for non-template pages and in manifests. Side effects: every authenticated `Page` GET is now `private, no-store`, and a template's private draft Mercure update is always sent. Nothing republishes the template when page data is created or deleted, so the list and the delete confirm must read the count fresh (re-fetch the page when opening the confirm).
+- **#588 (bundle PR #590):** `GET /_/routes?pages[]=…&perPage=100` / `pageData[]=…`; see §7 above.
