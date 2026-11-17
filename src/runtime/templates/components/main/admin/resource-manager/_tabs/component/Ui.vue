@@ -1,15 +1,13 @@
 <script lang="ts" setup>
-import { computed, onMounted, ref, watchEffect } from 'vue'
+import { computed, onMounted, ref, watch, watchEffect } from 'vue'
 import {
   useCwaResourceManagerTab,
 } from '#cwa/composables/cwa-resource-manager-tab'
 import { DEFAULT_TAB_ORDER } from '#cwa/admin/manager-tabs-resolver'
-import type { CwaResourceMeta } from '#cwa/composables/cwa-resource'
 import { useCwaResourceModel } from '#cwa/composables/cwa-resource-model'
 import { useCwaSelect } from '#cwa/composables/cwa-select'
-import { useDataResolver } from '#cwa/templates/components/core/useDataResolver'
 import type { SelectOption } from '#cwa/composables/cwa-select-input'
-import { selectStyleKeys, selectedStyleKeys } from '#cwa/composables/cwa-styles'
+import { keepDefinedStyleKeys, selectStyleKeys, selectedStyleKeys } from '#cwa/composables/cwa-styles'
 import type { CwaUiVariantConfig } from '#cwa/types'
 import { resourcesConfig, uiConfig } from '#build/cwa-config'
 
@@ -29,7 +27,14 @@ const uiClassNamesModel = useCwaResourceModel<string[]>(iri, 'uiClassNames', {
 
 const uiSelect = useCwaSelect(uiComponentModel.model)
 
-const componentMeta = ref<(CwaResourceMeta | null)[]>([])
+const switchingTo = ref<string | null>()
+const selectedUi = computed({
+  get: () => uiSelect.model.value,
+  set: (value) => {
+    switchingTo.value = (value as string | null | undefined) ?? null
+    uiSelect.model.value = value
+  },
+})
 
 const current = computed(() => $cwa.admin.resourceStackManager.currentStackItem.value)
 
@@ -38,13 +43,12 @@ const uiOptions = computed(() => {
     label: 'Default',
     value: null,
   }]
-  componentMeta.value.forEach((meta, index) => {
-    // it seems meta can be null when re-mounting the meta resolver when changing to a draft from live (editing)
+  for (const ui of current.value?.ui ?? []) {
     options.push({
-      label: meta?.cwaResource.name || current.value?.ui?.[index] || 'Unknown',
-      value: current.value?.ui?.[index],
+      label: uiConfig[ui]?.name || ui,
+      value: ui,
     })
-  })
+  }
   return options
 })
 
@@ -87,25 +91,17 @@ watchEffect(() => {
   disabled.value = !showStyleSelect.value && !current.value?.ui?.length
 })
 
-const components = computed(() => {
-  return current.value?.ui
-})
-
-const resolverProps = computed(() => {
-  return {
-    iri: iri.value,
+watch(() => savedData.value?.uiComponent ?? null, (uiComponent) => {
+  if (switchingTo.value === undefined || uiComponent !== switchingTo.value) {
+    return
+  }
+  switchingTo.value = undefined
+  const stored = uiClassNamesModel.model.value
+  const kept = keepDefinedStyleKeys(stored, styles.value)
+  if ((kept?.length ?? 0) !== (stored?.length ?? 0)) {
+    uiClassNamesModel.model.value = kept
   }
 })
-
-const { startDataResolver } = useDataResolver(componentMeta, {
-  components,
-  props: resolverProps,
-  propsValidator: (props: typeof resolverProps.value) => {
-    return !!props.iri
-  },
-})
-// seem to need to start here for these to be consistent
-startDataResolver()
 
 onMounted(() => {
   watchEffect(() => {
@@ -124,7 +120,7 @@ defineExpose(exposeMeta)
         label="UI:"
       >
         <CwaUiSelect
-          v-model="uiSelect.model.value"
+          v-model="selectedUi"
           :options="uiSelect.options.value"
         />
       </CwaUiFormLabelWrapper>

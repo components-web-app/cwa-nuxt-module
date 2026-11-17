@@ -96,6 +96,54 @@ const props = defineProps<IriProp>()`),
     })
   })
 
+  test('a variant\'s name comes from its defineCwaConfig', () => {
+    const result = scan({
+      [`${APP}/cwa/components/Hero/ui/Wide.vue`]: sfc(`defineCwaConfig({ name: 'Wide hero', multipleStyles: true })`),
+    }, [template('CwaComponentHeroUiWide', 'cwa/components/Hero/ui/Wide.vue')])
+
+    expect(result.ui).toEqual({ CwaComponentHeroUiWide: { name: 'Wide hero', multipleStyles: true } })
+  })
+
+  describe('a key the file kind does not allow', () => {
+    function ignoredKeys(files: Record<string, string>, templates: Entry[]) {
+      const reported: [string, string[]][] = []
+      const result = scanCwaConfigDeclarations({
+        templates,
+        readFile: file => files[file],
+        onIgnoredKeys: (filePath, keys) => reported.push([filePath, keys]),
+      })
+      return { result, reported }
+    }
+
+    test('a variant declaring description is reported, naming the key, and the key is ignored', () => {
+      const file = `${APP}/cwa/components/Hero/ui/Wide.vue`
+      const { result, reported } = ignoredKeys({
+        [file]: sfc(`defineCwaConfig({ name: 'Wide hero', description: '<p>Wide</p>', instantAdd: true })`),
+      }, [template('CwaComponentHeroUiWide', 'cwa/components/Hero/ui/Wide.vue')])
+
+      expect(result.ui).toEqual({ CwaComponentHeroUiWide: { name: 'Wide hero' } })
+      expect(reported).toEqual([[file, ['description', 'instantAdd']]])
+    })
+
+    test('a layout declaring instantAdd is reported and the key is ignored', () => {
+      const file = `${APP}/cwa/layouts/primary.vue`
+      const { result, reported } = ignoredKeys({
+        [file]: sfc(`defineCwaConfig({ name: 'Primary', instantAdd: true })`),
+      }, [template('CwaLayoutPrimary', 'cwa/layouts/primary.vue')])
+
+      expect(result.layouts).toEqual({ Primary: { name: 'Primary' } })
+      expect(reported).toEqual([[file, ['instantAdd']]])
+    })
+
+    test('a file declaring only allowed keys reports nothing', () => {
+      const { reported } = ignoredKeys({
+        [`${APP}/cwa/components/Hero/Hero.vue`]: sfc(`defineCwaConfig({ name: 'Hero', description: '<p>Hero</p>', instantAdd: true })`),
+      }, [template('CwaComponentHero', 'cwa/components/Hero/Hero.vue')])
+
+      expect(reported).toEqual([])
+    })
+  })
+
   test('a file without the macro gives no entry, so the component keeps its automatic name', () => {
     const result = scan({
       [`${APP}/cwa/components/Plain/Plain.vue`]: sfc(`const props = defineProps<{ iri: string }>()`),

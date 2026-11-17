@@ -1076,6 +1076,117 @@ export const styleClasses: CwaStyleClasses = {
         expect(await regenerates('change', 'cwa/components/Hero/useHero.ts')).toEqual([false, false])
       })
 
+      function generated(contents: string) {
+        return Object.fromEntries([...contents.matchAll(/^export const (\w+): [^=]+ = (.*?)(?=^export |(?![\s\S]))/gms)]
+          .map(([, name, json]) => [name, JSON.parse(json!)]))
+      }
+
+      async function generate(templateComponents: { filePath: string, pascalName: string, global?: boolean }[]) {
+        const find = await prepare()
+        return {
+          ...generated(await find('cwa-config.ts').getContents({ app: { components: templateComponents } })),
+          ...generated(await find('cwa-styles.ts').getContents({ app: { components: templateComponents } })),
+        }
+      }
+
+      describe('UI variant styles', () => {
+        const heroComponents = [
+          { filePath: 'cwa/components/Hero/Hero.vue', pascalName: 'CwaComponentHero' },
+          { filePath: 'cwa/components/Hero/ui/Plain.vue', pascalName: 'CwaComponentHeroUiPlain', global: true },
+          { filePath: 'cwa/components/Hero/ui/Unconfigured.vue', pascalName: 'CwaComponentHeroUiUnconfigured', global: true },
+          { filePath: 'cwa/components/Hero/ui/Tall.vue', pascalName: 'CwaComponentHeroUiTall', global: true },
+        ]
+        const heroStyles = {
+          bordered: { label: 'Bordered', classes: 'border' },
+          rounded: { label: 'Rounded', classes: 'rounded' },
+        }
+
+        beforeEach(() => {
+          vi.mocked(scanCwaConfigDeclarations).mockReturnValue({
+            components: { Hero: { name: 'Hero', multipleStyles: true, styles: heroStyles } },
+            ui: {
+              CwaComponentHeroUiPlain: { name: 'Plain hero' },
+              CwaComponentHeroUiTall: { name: 'Tall hero', styles: { tall: { label: 'Tall', classes: 'h-screen' } } },
+            },
+            layouts: {},
+            pages: {},
+          })
+        })
+
+        test('a variant without styles offers and renders the primary\'s styles', async () => {
+          const { uiConfig, styleClasses } = await generate(heroComponents)
+
+          expect(uiConfig.CwaComponentHeroUiPlain).toEqual({ name: 'Plain hero', multipleStyles: true, styles: heroStyles })
+          expect(uiConfig.CwaComponentHeroUiUnconfigured).toEqual({ multipleStyles: true, styles: heroStyles })
+          expect(styleClasses.CwaComponentHeroUiPlain).toEqual({ bordered: 'border', rounded: 'rounded' })
+          expect(styleClasses.CwaComponentHeroUiUnconfigured).toEqual({ bordered: 'border', rounded: 'rounded' })
+        })
+
+        test('a variant with styles offers only its own', async () => {
+          const { uiConfig, styleClasses } = await generate(heroComponents)
+
+          expect(uiConfig.CwaComponentHeroUiTall).toEqual({ name: 'Tall hero', styles: { tall: { label: 'Tall', classes: 'h-screen' } } })
+          expect(styleClasses.CwaComponentHeroUiTall).toEqual({ tall: 'h-screen' })
+        })
+      })
+
+      describe('the Form type and its parts', () => {
+        const formComponents = [
+          { filePath: 'cwa/components/Form/Form.vue', pascalName: 'CwaComponentForm' },
+          { filePath: 'cwa/components/Form/ui/ExampleForm.vue', pascalName: 'CwaComponentFormUiExampleForm', global: true },
+          { filePath: 'cwa/components/Form/_parts/FormChildEntry.vue', pascalName: 'CwaComponentFormPartsFormChildEntry', global: true },
+        ]
+
+        beforeEach(() => {
+          vi.mocked(scanCwaConfigDeclarations).mockReturnValue({
+            components: { Form: { name: 'Form', description: '<p>A form</p>' } },
+            ui: {},
+            layouts: {},
+            pages: {},
+          })
+        })
+
+        test('Form/Form.vue config configures the Form type', async () => {
+          const { resourcesConfig } = await generate(formComponents)
+
+          expect(Object.keys(resourcesConfig)).toEqual(['ComponentPosition', 'ComponentGroup', 'Form'])
+          expect(resourcesConfig.Form).toEqual({
+            name: 'Form',
+            description: '<p>A form</p>',
+            managerTabs: [],
+            ui: ['CwaComponentFormUiExampleForm'],
+          })
+        })
+
+        test('a _parts/ SFC is never offered as a variant', async () => {
+          const { resourcesConfig, uiConfig } = await generate([
+            ...formComponents,
+            { filePath: 'cwa/components/Form/ui/_parts/Label.vue', pascalName: 'CwaComponentFormUiPartsLabel', global: true },
+          ])
+
+          expect(resourcesConfig.Form.ui).toEqual(['CwaComponentFormUiExampleForm'])
+          expect(Object.keys(uiConfig)).toEqual(['CwaComponentFormUiExampleForm'])
+        })
+      })
+
+      test('warns once per file naming the keys its kind does not allow', async () => {
+        const logger = { info: vi.fn(), warn: vi.fn(), debug: vi.fn(), error: vi.fn(), success: vi.fn() }
+        vi.spyOn(nuxtKit, 'useLogger').mockReturnValue(logger as any)
+        vi.mocked(scanCwaConfigDeclarations).mockImplementation(({ onIgnoredKeys }) => {
+          onIgnoredKeys?.('/site/app/cwa/components/Hero/ui/Wide.vue', ['description', 'instantAdd'])
+          return { components: {}, ui: {}, layouts: {}, pages: {} }
+        })
+        const find = await prepare()
+        await find('cwa-config.ts').getContents({ app: { components } })
+        await find('cwa-styles.ts').getContents({ app: { components } })
+
+        const warnings = logger.warn.mock.calls.map(([message]) => message).filter(message => message.includes('Wide.vue'))
+        expect(warnings).toHaveLength(1)
+        expect(warnings[0]).toContain('description')
+        expect(warnings[0]).toContain('instantAdd')
+        expect(warnings[0]).toContain('ignored')
+      })
+
       test('auto-imports neither generated template', async () => {
         await prepare()
 

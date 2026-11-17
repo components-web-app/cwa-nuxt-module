@@ -25,7 +25,7 @@ export const useCwaComponent = <P extends CwaResourcePlugin<any>[]>(
   ops?: CwaResourceUtilsOps,
 ) => {
   const iri = toRef(props, 'iri')
-  const { getResource, $cwa, exposeMeta, getCurrentStyleName, uiClassNames } = useCwaResource(iri, ops)
+  const { getResource, $cwa, exposeMeta, styleKeys, uiClassNames } = useCwaResource(iri, ops)
   const resource = getResource()
   const publishedIri = computed(() => $cwa.resources.findPublishedComponentIri(iri.value).value ?? iri.value)
   const ctx: CwaResourcePluginContext = { iri, resource, $cwa }
@@ -35,12 +35,12 @@ export const useCwaComponent = <P extends CwaResourcePlugin<any>[]>(
     resource: typeof resource
     exposeMeta: typeof exposeMeta
     $cwa: typeof $cwa
-    getCurrentStyleName: typeof getCurrentStyleName
+    styleKeys: typeof styleKeys
     uiClassNames: typeof uiClassNames
     publishedIri: typeof publishedIri
   }
 
-  const merged: Record<string, unknown> = { resource, exposeMeta, $cwa, getCurrentStyleName, uiClassNames, publishedIri } satisfies BaseReturn
+  const merged: Record<string, unknown> = { resource, exposeMeta, $cwa, styleKeys, uiClassNames, publishedIri } satisfies BaseReturn
   const files: Record<string, unknown> = {}
   for (const pluginResult of pluginResults) {
     if (pluginResult && typeof pluginResult === 'object' && 'files' in pluginResult) {

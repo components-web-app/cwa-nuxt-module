@@ -11,6 +11,7 @@ export interface ScanCwaConfigDeclarationsOptions {
   templates: RegisteredComponent[]
   readFile: (filePath: string) => string | undefined
   onUncheckable?: (filePath: string, reason: string) => void
+  onIgnoredKeys?: (filePath: string, keys: string[]) => void
 }
 
 export interface CwaConfigDeclarations {
@@ -23,7 +24,7 @@ export interface CwaConfigDeclarations {
 const MACRO = 'defineCwaConfig'
 
 const COMPONENT_KEYS = ['name', 'description', 'instantAdd', 'defaultData', 'styles', 'multipleStyles'] as const
-const UI_KEYS = ['styles', 'multipleStyles'] as const
+const UI_KEYS = ['name', 'styles', 'multipleStyles'] as const
 const TEMPLATE_KEYS = ['name', 'styles'] as const
 
 interface Node {
@@ -170,7 +171,11 @@ function readConfig(filePath: string, source: string | undefined): Record<string
   }
 }
 
-function pick<K extends string>(config: Record<string, unknown>, keys: readonly K[]) {
+function pick<K extends string>(config: Record<string, unknown>, keys: readonly K[], onIgnored: (keys: string[]) => void) {
+  const ignored = Object.keys(config).filter(key => !(keys as readonly string[]).includes(key))
+  if (ignored.length) {
+    onIgnored(ignored)
+  }
   return Object.fromEntries(keys.filter(key => key in config).map(key => [key, config[key]]))
 }
 
@@ -185,17 +190,18 @@ export function scanCwaConfigDeclarations(options: ScanCwaConfigDeclarationsOpti
       options.onUncheckable?.(filePath, config)
       continue
     }
+    const onIgnored = (keys: string[]) => options.onIgnoredKeys?.(filePath, keys)
     if (pascalName.startsWith('CwaLayout')) {
-      result.layouts[pascalName.replace(/^CwaLayout/, '')] = pick(config, TEMPLATE_KEYS)
+      result.layouts[pascalName.replace(/^CwaLayout/, '')] = pick(config, TEMPLATE_KEYS, onIgnored)
     }
     else if (pascalName.startsWith('CwaPage')) {
-      result.pages[pascalName.replace(/^CwaPage/, '')] = pick(config, TEMPLATE_KEYS)
+      result.pages[pascalName.replace(/^CwaPage/, '')] = pick(config, TEMPLATE_KEYS, onIgnored)
     }
     else if (path.basename(path.dirname(filePath)) === 'ui') {
-      result.ui[pascalName] = pick(config, UI_KEYS)
+      result.ui[pascalName] = pick(config, UI_KEYS, onIgnored)
     }
     else {
-      result.components[pascalName.replace(/^CwaComponent/, '')] = pick(config, COMPONENT_KEYS)
+      result.components[pascalName.replace(/^CwaComponent/, '')] = pick(config, COMPONENT_KEYS, onIgnored)
     }
   }
   return result

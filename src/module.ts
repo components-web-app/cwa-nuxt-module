@@ -26,7 +26,7 @@ import { READINESS_DEFAULTS } from './runtime/server/readiness'
 import { defaultSiteConfig } from './runtime/composables/useCwaSiteConfig'
 import { scanComponentGroupDeclarations } from './component-group-declarations'
 import { scanCwaConfigDeclarations } from './cwa-config-declarations'
-import type { CwaModuleOptions, CwaResourcesMeta, CwaStyleClasses, CwaStyles, GlobalComponentNames } from './runtime/types'
+import type { CwaModuleOptions, CwaResourcesMeta, CwaStyleClasses, CwaStyles, CwaUiVariantConfig, GlobalComponentNames } from './runtime/types'
 
 declare module 'nuxt/schema' {
   interface PublicRuntimeConfig {
@@ -238,13 +238,26 @@ export default defineNuxtModule<CwaModuleOptions>({
     const userComponentsPath = join(cwaAppDir, 'components')
     nuxt.options.alias['#cwaComponents'] = userComponentsPath
 
+    function userComponentPath(filePath: string) {
+      const [name, ...rest] = path.relative(userComponentsPath, filePath).split('/')
+      return { name, rest }
+    }
+
+    function isPrimaryComponent(filePath: string) {
+      const { name, rest } = userComponentPath(filePath)
+      return rest.length === 1 && rest[0] === `${name}.vue`
+    }
+
+    function isUiVariant(filePath: string) {
+      const { rest } = userComponentPath(filePath)
+      return rest.length === 2 && rest[0] === 'ui'
+    }
+
     function resolveUserComponents(components: Component[]) {
-      // exclude files within admin and ui folders which will not need a configuration
-      const regex = /^(?!.+\/(admin|ui)\/).+.vue$/
       const allUserComponents = components.filter(({ filePath }) => filePath.startsWith(userComponentsPath))
       return {
         allUserComponents,
-        userComponents: allUserComponents.filter(({ filePath }) => regex.test(filePath)),
+        userComponents: allUserComponents.filter(({ filePath }) => isPrimaryComponent(filePath)),
       }
     }
 
@@ -259,8 +272,7 @@ export default defineNuxtModule<CwaModuleOptions>({
       if (!within(userComponentsPath)) {
         return false
       }
-      const [name, ...rest] = path.relative(userComponentsPath, filePath).split('/')
-      return (rest.length === 1 && rest[0] === `${name}.vue`) || (rest.length === 2 && rest[0] === 'ui')
+      return isPrimaryComponent(filePath) || isUiVariant(filePath)
     }
 
     function resolveComponentImport(source: string, importer: string) {
@@ -287,17 +299,23 @@ export default defineNuxtModule<CwaModuleOptions>({
     }
 
     const reportedConfigUncheckable = new Set<string>()
+    function warnConfigOnce(key: string, message: string) {
+      if (reportedConfigUncheckable.has(key)) {
+        return
+      }
+      reportedConfigUncheckable.add(key)
+      logger.warn(message)
+    }
+
     function scanCwaConfig(components: Component[]) {
       return scanCwaConfigDeclarations({
         templates: components.filter(isCwaTemplate),
         readFile: readSource,
         onUncheckable: (filePath, reason) => {
-          const key = `${filePath}\0${reason}`
-          if (reportedConfigUncheckable.has(key)) {
-            return
-          }
-          reportedConfigUncheckable.add(key)
-          logger.warn(`${NAME}: the defineCwaConfig in ${filePath} is ignored, because it ${reason}. Pass a single object literal.`)
+          warnConfigOnce(`${filePath}\0${reason}`, `${NAME}: the defineCwaConfig in ${filePath} is ignored, because it ${reason}. Pass a single object literal.`)
+        },
+        onIgnoredKeys: (filePath, keys) => {
+          warnConfigOnce(`${filePath}\0keys\0${keys.join(',')}`, `${NAME}: ${keys.join(', ')} in the defineCwaConfig in ${filePath} ${keys.length > 1 ? 'are' : 'is'} ignored, because this kind of file cannot declare ${keys.length > 1 ? 'them' : 'it'}. A component may declare name, description, instantAdd, defaultData, styles and multipleStyles; a UI variant name, styles and multipleStyles; a layout or page name and styles.`)
         },
       })
     }
@@ -305,6 +323,7 @@ export default defineNuxtModule<CwaModuleOptions>({
     function resolveCwaConfig(components: Component[]) {
       const declarations = scanCwaConfig(components)
       const resourcesConfig: CwaResourcesMeta = { ...BUILT_IN_RESOURCES_CONFIG }
+      const uiConfig: Record<string, CwaUiVariantConfig> = {}
 
       const { allUserComponents, userComponents } = resolveUserComponents(components)
       const componentsByPath: { [key: string]: Component } = allUserComponents.reduce((obj, value) => ({ ...obj, [value.filePath]: value }), {})
@@ -335,32 +354,41 @@ export default defineNuxtModule<CwaModuleOptions>({
         const tabsDir = resolveAlias(resolve(path.dirname(component.filePath), 'admin'))
         const managerTabs: GlobalComponentNames[] = resolveComponentNames(tabsDir)
 
-        const uiDir = resolveAlias(resolve(path.dirname(component.filePath), 'ui'))
-        const ui: GlobalComponentNames[] = resolveComponentNames(uiDir)
+        const primaryDir = path.dirname(component.filePath)
+        const ui = allUserComponents
+          .filter(({ filePath, global }) => global && path.dirname(path.dirname(filePath)) === primaryDir && isUiVariant(filePath))
+          .map(({ pascalName }) => pascalName as GlobalComponentNames)
 
         const resourceType = toResourceType(component)
+        const primary = declarations.components[resourceType] ?? {}
         resourcesConfig[resourceType] = {
           name: resourceType.replace(/(?!^)([A-Z])/g, ' $1'),
           managerTabs,
           ui,
-          ...declarations.components[resourceType],
+          ...primary,
+        }
+        for (const name of ui) {
+          const own = declarations.ui[name] ?? {}
+          uiConfig[name] = own.styles
+            ? own
+            : { ...own, multipleStyles: own.multipleStyles ?? primary.multipleStyles, styles: primary.styles }
         }
       }
       return {
         resourcesConfig,
-        uiConfig: declarations.ui,
+        uiConfig,
         layoutsConfig: declarations.layouts,
         pagesConfig: declarations.pages,
       }
     }
 
     function resolveStyleClasses(components: Component[]): CwaStyleClasses {
-      const { components: componentConfigs, ui, layouts, pages } = scanCwaConfig(components)
+      const { resourcesConfig, uiConfig, layoutsConfig, pagesConfig } = resolveCwaConfig(components)
       const byComponent: [string, CwaStyles | undefined][] = [
-        ...Object.entries(componentConfigs).map(([type, config]): [string, CwaStyles | undefined] => [`CwaComponent${type}`, config.styles]),
-        ...Object.entries(ui).map(([name, config]): [string, CwaStyles | undefined] => [name, config.styles]),
-        ...Object.entries(layouts).map(([name, config]): [string, CwaStyles | undefined] => [`CwaLayout${name}`, config.styles]),
-        ...Object.entries(pages).map(([name, config]): [string, CwaStyles | undefined] => [`CwaPage${name}`, config.styles]),
+        ...Object.entries(resourcesConfig).map(([type, config]): [string, CwaStyles | undefined] => [`CwaComponent${type}`, config.styles]),
+        ...Object.entries(uiConfig).map(([name, config]): [string, CwaStyles | undefined] => [name, config.styles]),
+        ...Object.entries(layoutsConfig).map(([name, config]): [string, CwaStyles | undefined] => [`CwaLayout${name}`, config.styles]),
+        ...Object.entries(pagesConfig).map(([name, config]): [string, CwaStyles | undefined] => [`CwaPage${name}`, config.styles]),
       ]
       return Object.fromEntries(byComponent
         .filter(([, styles]) => styles && Object.keys(styles).length)
@@ -407,9 +435,7 @@ export default defineNuxtModule<CwaModuleOptions>({
         filename: 'cwa-component-names.ts',
         write: true,
         getContents: ({ app }) => {
-          const names = resolveUserComponents(app.components).userComponents
-            .filter(({ filePath }) => path.basename(filePath, '.vue') === path.basename(path.dirname(filePath)))
-            .map(toResourceType)
+          const names = resolveUserComponents(app.components).userComponents.map(toResourceType)
           const constant = JSON.stringify(Object.fromEntries(names.map(name => [name, name])), undefined, 2)
           return `export const CwaComponentNames = ${constant} as const
 export type CwaComponentName = typeof CwaComponentNames[keyof typeof CwaComponentNames]

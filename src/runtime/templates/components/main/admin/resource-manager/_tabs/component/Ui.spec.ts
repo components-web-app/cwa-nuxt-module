@@ -40,10 +40,6 @@ vi.mock('#cwa/composables/cwa-select', () => ({
   useCwaSelect: (model: any) => ({ model, options: ref([]) }),
 }))
 
-vi.mock('#cwa/templates/components/core/useDataResolver', () => ({
-  useDataResolver: () => ({ startDataResolver: vi.fn() }),
-}))
-
 const CwaUiSelectStub = {
   name: 'CwaUiSelect',
   props: {
@@ -62,6 +58,10 @@ const stubs = {
 
 function mountUi() {
   return mount(Ui, { global: { stubs } })
+}
+
+function uiSelect(wrapper: ReturnType<typeof mountUi>) {
+  return wrapper.findAllComponents(CwaUiSelectStub).at(0)!
 }
 
 function styleSelect(wrapper: ReturnType<typeof mountUi>) {
@@ -173,6 +173,18 @@ describe('Ui tab — styles come from the generated config (#453)', () => {
     ])
   })
 
+  test('a variant\'s name comes from its defineCwaConfig', async () => {
+    config.uiConfig.CwaComponentHeroUiTall.name = 'Tall hero'
+    currentStackItem.value = { ui: ['CwaComponentHeroUiTall', 'CwaComponentHeroUiWide'] }
+    const wrapper = mountUi()
+    await nextTick()
+    expect(uiSelect(wrapper).props('options')).toEqual([
+      { label: 'Default', value: null },
+      { label: 'Tall hero', value: 'CwaComponentHeroUiTall' },
+      { label: 'CwaComponentHeroUiWide', value: 'CwaComponentHeroUiWide' },
+    ])
+  })
+
   test('a UI variant offers its own styles', () => {
     savedResource.value = { data: { '@type': 'Hero', 'uiComponent': 'CwaComponentHeroUiTall' } }
     const wrapper = mountUi()
@@ -193,15 +205,40 @@ describe('Ui tab — styles come from the generated config (#453)', () => {
     expect(uiClassNamesModel.value).toEqual(['style:bordered', 'style:tall'])
   })
 
-  test('switching the UI keeps the stored keys, so switching back restores them', async () => {
-    uiClassNamesModel.value = ['style:bordered']
-    mountUi()
+  test('switching UI variant keeps the stored keys the new variant defines and drops the rest', async () => {
+    config.uiConfig.CwaComponentHeroUiTall.styles.bordered = { label: 'Bordered', classes: 'border-4' }
+    uiClassNamesModel.value = ['style:bordered', 'style:rounded', 'legacy classes']
+    const wrapper = mountUi()
+    await nextTick()
 
-    uiComponentModel.value = 'CwaComponentHeroUiTall'
+    uiSelect(wrapper).vm.$emit('update:modelValue', 'CwaComponentHeroUiTall')
+    await nextTick()
+    expect(uiComponentModel.value).toBe('CwaComponentHeroUiTall')
+    expect(uiClassNamesModel.value).toEqual(['style:bordered', 'style:rounded', 'legacy classes'])
+
+    savedResource.value = { data: { '@type': 'Hero', 'uiComponent': 'CwaComponentHeroUiTall' } }
+    await nextTick()
+    expect(uiClassNamesModel.value).toEqual(['style:bordered'])
+  })
+
+  test('switching UI variant to one defining none of the stored keys stores null', async () => {
+    uiClassNamesModel.value = ['style:rounded']
+    const wrapper = mountUi()
+    await nextTick()
+
+    uiSelect(wrapper).vm.$emit('update:modelValue', 'CwaComponentHeroUiTall')
     await nextTick()
     savedResource.value = { data: { '@type': 'Hero', 'uiComponent': 'CwaComponentHeroUiTall' } }
     await nextTick()
+    expect(uiClassNamesModel.value).toBeNull()
+  })
 
-    expect(uiClassNamesModel.value).toEqual(['style:bordered'])
+  test('selecting another component with a different UI variant leaves its stored keys alone', async () => {
+    uiClassNamesModel.value = ['style:rounded']
+    mountUi()
+
+    savedResource.value = { data: { '@type': 'Hero', 'uiComponent': 'CwaComponentHeroUiTall' } }
+    await nextTick()
+    expect(uiClassNamesModel.value).toEqual(['style:rounded'])
   })
 })

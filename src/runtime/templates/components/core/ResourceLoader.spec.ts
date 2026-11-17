@@ -536,7 +536,7 @@ describe('ResourceLoader', () => {
       expect(html).toBe('<div class="root bg-neutral-900">CwaComponentCard</div>')
     })
 
-    test('keys resolve against the rendered UI variant\'s styles, and switching back restores the classes', async () => {
+    test('keys resolve against the styles of the SFC that renders, the UI variant or the primary', async () => {
       const data = { '@type': 'Hero', 'uiComponent': 'CwaComponentHeroUiTall', 'uiClassNames': ['style:black-bg', 'style:tall'] }
       const components = ['CwaComponentHero', 'CwaComponentHeroUiTall']
 

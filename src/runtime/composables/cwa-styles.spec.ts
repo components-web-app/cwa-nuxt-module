@@ -64,7 +64,7 @@ describe('selectStyleKeys', () => {
     expect(selectStyleKeys(null, styles, ['black-bg', 'wide'])).toEqual(['style:black-bg', 'style:wide'])
   })
 
-  test('keeps keys the styles do not know, so switching back to the SFC that knows them restores them', () => {
+  test('choosing a style keeps entries the styles do not know', () => {
     expect(selectStyleKeys(['style:tall', 'style:wide'], styles, ['black-bg'])).toEqual(['style:tall', 'style:black-bg'])
   })
 

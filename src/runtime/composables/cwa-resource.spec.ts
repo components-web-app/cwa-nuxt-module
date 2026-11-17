@@ -106,16 +106,28 @@ describe('CWA resources composable', () => {
     })
   })
 
-  describe('getCurrentStyleName', () => {
-    test('returns the first stored style key without its prefix (#453)', () => {
-      const { getCurrentStyleName } = useCwaResource(ref('mock-iri'))
-      expect(getCurrentStyleName({ uiClassNames: ['legacy classes', 'style:filled', 'style:outlined'] } as any)).toBe('filled')
+  describe('styleKeys', () => {
+    test('lists every selected style key in stored order (#453)', () => {
+      mockCwa.resources.getResource.mockReturnValue(ref({ data: { uiClassNames: ['style:outlined', 'style:filled'] } }))
+      const { styleKeys } = useCwaResource(ref('mock-iri'))
+      expect(styleKeys.value).toEqual(['outlined', 'filled'])
     })
 
-    test('returns undefined when no style key is stored', () => {
-      const { getCurrentStyleName } = useCwaResource(ref('mock-iri'))
-      expect(getCurrentStyleName({ uiClassNames: ['text-xl'] } as any)).toBeUndefined()
-      expect(getCurrentStyleName({} as any)).toBeUndefined()
+    test('updates when uiClassNames changes', () => {
+      const resource = ref<{ data: { uiClassNames: string[] | null } }>({ data: { uiClassNames: ['style:filled'] } })
+      mockCwa.resources.getResource.mockReturnValue(resource)
+      const { styleKeys } = useCwaResource(ref('mock-iri'))
+      expect(styleKeys.value).toEqual(['filled'])
+      resource.value = { data: { uiClassNames: ['style:outlined'] } }
+      expect(styleKeys.value).toEqual(['outlined'])
+      resource.value = { data: { uiClassNames: null } }
+      expect(styleKeys.value).toEqual([])
+    })
+
+    test('leaves out entries without the style prefix', () => {
+      mockCwa.resources.getResource.mockReturnValue(ref({ data: { uiClassNames: ['legacy classes', 'style:filled', 'filled'] } }))
+      const { styleKeys } = useCwaResource(ref('mock-iri'))
+      expect(styleKeys.value).toEqual(['filled'])
     })
   })
 

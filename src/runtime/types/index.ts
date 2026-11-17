@@ -25,6 +25,7 @@ export interface CwaTemplateConfig {
 }
 
 export interface CwaUiVariantConfig {
+  name?: string
   styles?: CwaStyles
   multipleStyles?: boolean
 }

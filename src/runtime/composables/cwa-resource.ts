@@ -1,7 +1,7 @@
-import type { CwaResource } from '#cwa/resources/resource-utils'
 import { computed, getCurrentInstance, onMounted, onUpdated } from 'vue'
 import type { ComputedRef, Ref } from 'vue'
 import { useCwa } from './cwa'
+import { storedStyleKeys } from './cwa-styles'
 
 export type IriProp = {
   iri: string
@@ -69,16 +69,14 @@ export const useCwaResource = (iri: Ref<string>, ops?: CwaResourceUtilsOps) => {
     return $cwa.resources.getResource(iri.value)?.value?.data?.uiClassNames
   })
 
-  const getCurrentStyleName = (resource: CwaResource): string | undefined => {
-    return (resource.uiClassNames as string[] | undefined)?.find(entry => entry.startsWith('style:'))?.slice('style:'.length)
-  }
+  const styleKeys = computed<string[]>(() => storedStyleKeys(uiClassNames.value))
 
   return {
     $cwa,
     // this needs to be a function so useCwa is not called early - would get issues from ComponentPosition and more
     getResource,
     exposeMeta,
-    getCurrentStyleName,
+    styleKeys,
     uiClassNames,
   }
 }

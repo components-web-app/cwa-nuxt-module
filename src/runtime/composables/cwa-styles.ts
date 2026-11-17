@@ -2,7 +2,7 @@ import type { CwaStyleClasses, CwaStyles } from '#cwa/types'
 
 const STYLE_PREFIX = 'style:'
 
-function styleKeys(uiClassNames: string[] | null | undefined): string[] {
+export function storedStyleKeys(uiClassNames: string[] | null | undefined): string[] {
   return (uiClassNames ?? [])
     .filter(entry => entry.startsWith(STYLE_PREFIX))
     .map(entry => entry.slice(STYLE_PREFIX.length))
@@ -13,7 +13,7 @@ export function resolveStyleClasses(styleClasses: CwaStyleClasses, componentName
   if (!own) {
     return []
   }
-  return styleKeys(uiClassNames)
+  return storedStyleKeys(uiClassNames)
     .filter(key => Object.hasOwn(own, key))
     .map(key => own[key]!)
 }
@@ -22,7 +22,7 @@ export function selectedStyleKeys(uiClassNames: string[] | null | undefined, sty
   if (!styles) {
     return []
   }
-  const stored = styleKeys(uiClassNames)
+  const stored = storedStyleKeys(uiClassNames)
   return Object.keys(styles).filter(key => stored.includes(key))
 }
 
@@ -31,4 +31,9 @@ export function selectStyleKeys(uiClassNames: string[] | null | undefined, style
   const kept = (uiClassNames ?? []).filter(entry => !known.includes(entry))
   const next = [...kept, ...keys.map(key => `${STYLE_PREFIX}${key}`)]
   return next.length ? next : null
+}
+
+export function keepDefinedStyleKeys(uiClassNames: string[] | null | undefined, styles: CwaStyles | undefined): string[] | null {
+  const kept = (uiClassNames ?? []).filter(entry => entry.startsWith(STYLE_PREFIX) && Object.hasOwn(styles ?? {}, entry.slice(STYLE_PREFIX.length)))
+  return kept.length ? kept : null
 }
