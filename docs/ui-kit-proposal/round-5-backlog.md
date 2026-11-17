@@ -38,3 +38,13 @@ Starts after round 4 has been reviewed and published to the shared link.
   - the selected value not in the results (label fetched separately, as `SearchResource` does today).
 - Accessibility: announce "Searching", the result count and "No matches"; focus stays in the input; arrow keys move through results without losing the typed text.
 - Phone search sheet: the same states, and it stays clear of the on-screen keyboard.
+
+## 4. Page status in lists comes from routes
+- Pages are not publishable, so "Draft" is the wrong word for a page. The list's status column is derived from the page's route (`resources/route-publication.ts`, badges show the effective state):
+  - **Live**
+  - **Scheduled · <date>**
+  - **Not live** (the route exists but isn't live)
+  - **Held back by parent** (a parent route's later go-live gates it, #378)
+  - **No route** (private, unless a routed child page makes it reachable, bundle #225)
+- Dynamic pages (templates) show what uses them ("Template · 14 articles") instead of a route status.
+- Draft/Live stays for components, which are publishable.
