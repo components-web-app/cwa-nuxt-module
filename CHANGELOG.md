@@ -4,6 +4,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+- Admin UI kit, step 1: the kit's colour, type, spacing and motion tokens (dark by default, `cwa:theme-light` for light, contrast checked in a spec), and `CwaUiButton`, `CwaUiSpinner` and `CwaUiBadge`; the admin's `danger` colour is now the kit's lighter red-300 and `ease-out` the kit's curve ([#463](https://github.com/components-web-app/cwa-nuxt-module/pull/463), [#456](https://github.com/components-web-app/cwa-nuxt-module/issues/456))
+
 ## [2.0.0-alpha.32] - 2026-10-31
 
 - Changing a user's email in the admin asks for your own current password and sends it as `oldPassword`; a wrong or missing password is shown on the field. Needs api-components-bundle 2.0.0-alpha.40, which also sends the email-change confirmation to the new address ([#451](https://github.com/components-web-app/cwa-nuxt-module/pull/451), [#449](https://github.com/components-web-app/cwa-nuxt-module/issues/449))
