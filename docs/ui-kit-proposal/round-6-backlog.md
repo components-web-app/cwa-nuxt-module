@@ -13,3 +13,9 @@ Starts after the round 5 review panel has reported and Daniel has added his view
 - Keep route actions immediate (decided), so the sub-view has its own Save route / Cancel; it must not look like the modal's footer Save.
 - Motion: slide under the motion rules, instant under reduced motion. Focus moves to the sub-view heading, and back to the triggering button on return.
 - Phone: the same sub-view, full screen within the modal.
+
+## 2. Stepper range (the Order tab's position input)
+- Bug from Daniel: the stepper accepts typed values outside its range.
+- Rule: typing is never blocked (no swallowed keystrokes). Only digits are accepted (and `-` only when min < 0). An out-of-range value is **never saved**: while typed, the field shows its error state with "Between 1 and 6". On Enter or blur it snaps to the nearest bound and saves that, with the polite announcement "Set to 6, the highest position".
+- − is disabled at min and + at max, each with its reason. ArrowUp/Down, PageUp/Down, Home and End step within range. `role="spinbutton"` with `aria-valuemin`, `aria-valuemax`, `aria-valuenow` and `aria-valuetext`.
+- Applies to every kit stepper. Show in the mockup: typing 9 into a 1–6 position, the error, then the snap on blur.
