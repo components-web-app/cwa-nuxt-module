@@ -48,3 +48,16 @@ Starts after round 4 has been reviewed and published to the shared link.
   - **No route** (private, unless a routed child page makes it reachable, bundle #225)
 - Dynamic pages (templates) show what uses them ("Template · 14 articles") instead of a route status.
 - Draft/Live stays for components, which are publishable.
+
+## 5. Manager tab authoring: one root, laid out for you
+- **Decision:** a manager tab's single root is `CwaUiManagerTab`, which *is* the one-row layout; fields are its direct children and lay themselves out for the bar (inline label, bar control size, status in the end-icon place, errors as a popover). Keeps Vue's single-root rule, so attributes the bar passes (today `class="cwa:w-full"` in `ResourceManager.vue`) still land. Replaces the v3 idea of `ResourceManager.vue` wrapping every tab invisibly.
+- A dev-mode warning names any tab whose root is not `CwaUiManagerTab`.
+- Kit inputs take `field="…"` to build their model from the tab's resource (`:model` stays for page data, custom debounce and other unusual cases). Closes open question 4.
+- Show it in the spec with the NavigationLink example:
+  ```vue
+  <CwaUiManagerTab>
+    <CwaUiInput field="label" label="Label" />
+    <CwaUiLinkInput :fields="['route', 'rawPath']" label="Link" />
+    <CwaUiToggle field="openInNewTab" label="Open in a new tab" />
+  </CwaUiManagerTab>
+  ```
