@@ -4201,8 +4201,8 @@ function addComponentDialog (host, p, { logEl = null } = {}) {
         const i = opts.push({ c, sec: sec.id }) - 1
         const oid = `${p}-o-${sec.id}-${c.k}`
         const lead = c.dyn ? '<span class="ac-lead"><span class="ac-dynsq"></span></span>' : `<span class="ac-lead">${acLead(c)}</span>`
-        const right = [c.n ? `${c.n} here` : '', c.uis > 1 ? `<span class="ac-uis">${c.uis} UIs</span>` : ''].filter(Boolean).join('<span class="ac-uis"> · </span>')
-        return `<div class="ac-o" role="option" id="${oid}" data-i="${i}" data-value="${c.k}" aria-selected="false" aria-labelledby="${oid}-n" aria-describedby="${c.desc || right ? `${oid}-d` : ''}">${lead}<span class="ac-m"><span class="ac-n" id="${oid}-n">${acHit(c.name, S.q)}</span>${c.desc ? `<span class="ac-d">${acHit(c.desc, S.q)}</span>` : ''}</span>${right ? `<span class="ac-r">${right}</span>` : ''}<span class="sr" id="${oid}-d">${esc([c.desc, c.n ? `${c.n} here` : '', c.uis > 1 ? `${c.uis} UIs` : '', sec.h].filter(Boolean).join(', '))}</span></div>`
+        const right = c.n ? `${c.n} here` : ''
+        return `<div class="ac-o" role="option" id="${oid}" data-i="${i}" data-value="${c.k}" aria-selected="false" aria-labelledby="${oid}-n" aria-describedby="${c.desc || right ? `${oid}-d` : ''}">${lead}<span class="ac-m"><span class="ac-n" id="${oid}-n">${acHit(c.name, S.q)}</span>${c.desc ? `<span class="ac-d">${acHit(c.desc, S.q)}</span>` : ''}</span>${right ? `<span class="ac-r">${right}</span>` : ''}<span class="sr" id="${oid}-d">${esc([c.desc, c.n ? `${c.n} here` : '', sec.h].filter(Boolean).join(', '))}</span></div>`
       }).join('')}</div>`).join('')
       if (!keepHl || S.hl >= opts.length) S.hl = 0
     }
