@@ -194,7 +194,10 @@ export default defineNuxtConfig({
         {
           // Anchored to the API path prefix so the Mercure SSE stream (a different path) is NOT
           // matched — a broad API-origin pattern would swallow it and break real-time updates.
-          urlPattern: ({ url }) => /\/_api\/(?:_\/(?:routes|resource_manifest|pages|layouts|component_groups|component_positions)|page_data|component)\b/.test(url.pathname),
+          urlPattern: ({ url }) => {
+            const apiResourcePath = /\/_api\/(?:_\/(?:routes|resource_manifest|pages|layouts|component_groups|component_positions)|page_data|component)\b/
+            return apiResourcePath.test(url.pathname)
+          },
           handler: 'NetworkFirst',
           options: {
             cacheName: 'cwa-api',
@@ -209,7 +212,10 @@ export default defineNuxtConfig({
             plugins: [
               {
                 // The authoritative gate: never store a response the API flagged as personalised.
-                cacheWillUpdate: async ({ response }) => /no-store|private/.test(response.headers.get('cache-control') || '') || response.status !== 200 ? null : response,
+                cacheWillUpdate: async ({ response }) => {
+                  const notStorable = /no-store|private/
+                  return notStorable.test(response.headers.get('cache-control') || '') || response.status !== 200 ? null : response
+                },
               },
             ],
             expiration: {
