@@ -88,6 +88,7 @@ const IDLE: CwaFieldState = { status: 'idle', waiting: false, slow: false }
 
 export interface LiveFieldModel<T> extends ResourceModelField<T> {
   model: { value: T | null | undefined }
+  state: NonNullable<ResourceModelField<T>['state']>
   saved: { readonly value: T | null | undefined }
   peers: { value: FocusedPeer[] }
   remote: (value: T, peer?: FocusedPeer) => void
