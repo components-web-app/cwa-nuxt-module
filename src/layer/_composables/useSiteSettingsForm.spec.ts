@@ -1,56 +1,70 @@
 // @vitest-environment nuxt
-import { afterEach, describe, expect, test, vi } from 'vitest'
-import { computed, effectScope, ref } from 'vue'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
+import { computed, effectScope } from 'vue'
+import { createPinia, setActivePinia } from 'pinia'
 import { flushPromises } from '@vue/test-utils'
+import { mockNuxtImport } from '@nuxt/test-utils/runtime'
 import { useSiteSettingsForm } from './useSiteSettingsForm'
 import * as cwaComposable from '#cwa/composables/cwa'
+import SiteConfig from '#cwa/api/site-config'
+import { SiteConfigStore } from '#cwa/storage/stores/site-config/site-config-store'
 
-const stored = {
+const mockUpdateSiteConfig = vi.hoisted(() => vi.fn())
+mockNuxtImport('updateSiteConfig', () => mockUpdateSiteConfig)
+
+const stored: Record<string, string> = {
   siteName: 'Kitchens',
-  concatTitle: true,
+  concatTitle: 'true',
   canonicalUrl: '',
-  sitemapXml: '',
-  robotsText: '',
-  maintenanceModeEnabled: false,
+  robotsText: 'User-agent: *\nAllow: /',
+  maintenanceModeEnabled: 'false',
 }
 
-function setup(opts: { loadError?: unknown, failures?: { key: string, error: unknown }[] } = {}) {
-  const config = ref<Record<string, any>>({ ...stored })
-  const saveConfig = vi.fn(async (changed: Record<string, any>) => ({
-    totalConfigsChanged: Object.keys(changed).length,
-    done: Promise.resolve().then(() => {
-      const failed = opts.failures ?? []
-      const saved = Object.fromEntries(Object.entries(changed).filter(([key]) => !failed.some(failure => failure.key === key)))
-      config.value = { ...config.value, ...saved }
-      return failed
-    }),
-  }))
-  const loadConfig = opts.loadError ? vi.fn().mockRejectedValue(opts.loadError) : vi.fn(async () => ({ ...config.value }))
+function setup(opts: { loadError?: unknown, refuse?: Record<string, unknown>, hold?: Promise<void> } = {}) {
+  const refuse = opts.refuse ?? {}
+  const fetch = vi.fn(async (_path: string, options?: { body?: { key: string, value: unknown } }) => {
+    if (!options?.body) {
+      if (opts.loadError) {
+        throw opts.loadError
+      }
+      return { member: Object.entries(stored).map(([key, value]) => ({ key, value })) }
+    }
+    await opts.hold
+    const { key, value } = options.body
+    if (key in refuse) {
+      throw refuse[key]
+    }
+    return { key, value }
+  })
+  const cwaFetch = { fetch, getRequestOptions: vi.fn((method: string) => ({ method, headers: {} })) }
+  const storeDefinition = new SiteConfigStore('settings-form')
+  // @ts-expect-error partial CwaFetch
+  const siteConfig = new SiteConfig(cwaFetch, storeDefinition, {})
+  const saveConfig = vi.spyOn(siteConfig, 'saveConfig')
   // @ts-expect-error partial mock
-  vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => ({
-    siteConfig: {
-      get config() { return config.value },
-      loadConfig,
-      saveConfig,
-    },
-  }))
+  vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => ({ siteConfig }))
   const scope = effectScope()
   const settings = scope.run(() => useSiteSettingsForm())!
-  return { settings, config, saveConfig, loadConfig, scope }
+  const sent = () => fetch.mock.calls.filter(([, options]) => options?.body).map(([path, options]) => [path, options!.body])
+  return { settings, siteConfig, store: storeDefinition.useStore(), saveConfig, sent, scope }
 }
 
 describe('useSiteSettingsForm (#461)', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   afterEach(() => {
     vi.restoreAllMocks()
   })
 
   test('loads a local copy, so editing it changes nothing stored and counts as unsaved', async () => {
-    const { settings, config } = setup()
+    const { settings, siteConfig } = setup()
     await settings.load()
 
     settings.form.model<string>('siteName').model.value = 'Our kitchens'
 
-    expect(config.value.siteName).toBe('Kitchens')
+    expect(siteConfig.config.siteName).toBe('Kitchens')
     expect(settings.form.unsavedFields).toEqual(['siteName'])
   })
 
@@ -63,7 +77,7 @@ describe('useSiteSettingsForm (#461)', () => {
   })
 
   test('Save sends only the changed settings, in one save, then reads saved', async () => {
-    const { settings, saveConfig } = setup()
+    const { settings, saveConfig, sent } = setup()
     await settings.load()
     settings.form.model('siteName').model.value = 'Our kitchens'
     settings.form.model('maintenanceModeEnabled').model.value = true
@@ -72,6 +86,10 @@ describe('useSiteSettingsForm (#461)', () => {
 
     expect(saveConfig).toHaveBeenCalledTimes(1)
     expect(saveConfig).toHaveBeenCalledWith({ siteName: 'Our kitchens', maintenanceModeEnabled: true })
+    expect(sent()).toEqual([
+      ['/_/site_config_parameters/siteName', { key: 'siteName', value: 'Our kitchens' }],
+      ['/_/site_config_parameters/maintenanceModeEnabled', { key: 'maintenanceModeEnabled', value: 'true' }],
+    ])
     expect(settings.form.unsavedFields).toEqual([])
     expect(settings.form.savedAt).toEqual(expect.any(Number))
     expect(settings.form.saving).toBe(false)
@@ -88,9 +106,45 @@ describe('useSiteSettingsForm (#461)', () => {
     expect(settings.form.saving).toBe(false)
   })
 
+  test.each([
+    ['siteName', 'CWA Web App'],
+    ['robotsText', ''],
+  ])('clearing %s saves it empty, the field shows the setting now in effect, and nothing is left unsaved', async (field, inEffect) => {
+    const { settings, sent } = setup()
+    await settings.load()
+    settings.form.model(field).model.value = ''
+
+    await settings.save()
+    await flushPromises()
+
+    expect(sent()).toEqual([[`/_/site_config_parameters/${field}`, { key: field, value: '' }]])
+    expect(settings.local.value?.[field]).toBe(inEffect)
+    expect(settings.form.unsavedFields).toEqual([])
+  })
+
+  test('a change typed while the save is in flight is kept and still unsaved', async () => {
+    let release!: () => void
+    const hold = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    const { settings } = setup({ hold })
+    await settings.load()
+    settings.form.model('siteName').model.value = ''
+
+    const saving = settings.save()
+    await flushPromises()
+    settings.form.model('siteName').model.value = 'Typed meanwhile'
+    release()
+    await saving
+    await flushPromises()
+
+    expect(settings.local.value?.siteName).toBe('Typed meanwhile')
+    expect(settings.form.unsavedFields).toEqual(['siteName'])
+  })
+
   test('a setting the API refuses with a 422 keeps its value and shows the API\'s message on it; the rest save', async () => {
     const error = Object.assign(new Error('422'), { statusCode: 422, data: { violations: [{ propertyPath: 'value', message: 'This value is not a valid URL.' }] } })
-    const { settings } = setup({ failures: [{ key: 'canonicalUrl', error }] })
+    const { settings } = setup({ refuse: { canonicalUrl: error } })
     await settings.load()
     settings.form.model('siteName').model.value = 'Our kitchens'
     settings.form.model('canonicalUrl').model.value = 'https://kitchens.example'
@@ -107,7 +161,7 @@ describe('useSiteSettingsForm (#461)', () => {
     [500, 'The server couldn\'t save 1 setting. What you typed is still here: press Save to try again.'],
     [undefined, 'You\'re offline. 1 setting wasn\'t saved, and what you typed is still here.'],
   ])('a failure with status %s says so for the form', async (statusCode, message) => {
-    const { settings } = setup({ failures: [{ key: 'siteName', error: Object.assign(new Error('x'), { statusCode }) }] })
+    const { settings } = setup({ refuse: { siteName: Object.assign(new Error('x'), { statusCode }) } })
     await settings.load()
     settings.form.model('siteName').model.value = 'Our kitchens'
 
@@ -116,6 +170,17 @@ describe('useSiteSettingsForm (#461)', () => {
     expect(settings.form.formError).toBe(message)
     expect(settings.form.fieldErrors).toEqual({})
     expect(settings.form.unsavedFields).toEqual(['siteName'])
+  })
+
+  test('a setting that was never stored and failed is created again on the retry', async () => {
+    const { settings, sent } = setup({ refuse: { sitemapXml: Object.assign(new Error('x'), { statusCode: 500 }) } })
+    await settings.load()
+    settings.form.model('sitemapXml').model.value = '<urlset></urlset>'
+    await settings.save()
+
+    await settings.save()
+
+    expect(sent().map(([path]) => path)).toEqual(['/_/site_config_parameters', '/_/site_config_parameters'])
   })
 
   test.each([
@@ -134,8 +199,31 @@ describe('useSiteSettingsForm (#461)', () => {
     expect(settings.form.failures).toBe(1)
   })
 
-  test('an empty canonical URL is allowed', async () => {
+  test('the canonical URL is trimmed before it is checked and sent', async () => {
+    const { settings, sent } = setup()
+    await settings.load()
+    settings.form.model('canonicalUrl').model.value = '  https://kitchens.example \n'
+
+    await settings.save()
+
+    expect(settings.form.fieldErrors).toEqual({})
+    expect(sent()).toEqual([['/_/site_config_parameters/canonicalUrl', { key: 'canonicalUrl', value: 'https://kitchens.example' }]])
+    expect(settings.form.unsavedFields).toEqual([])
+  })
+
+  test('a canonical URL of only spaces is no change', async () => {
     const { settings, saveConfig } = setup()
+    await settings.load()
+    settings.form.model('canonicalUrl').model.value = '   '
+
+    await settings.save()
+
+    expect(saveConfig).not.toHaveBeenCalled()
+    expect(settings.form.unsavedFields).toEqual([])
+  })
+
+  test('an empty canonical URL is allowed', async () => {
+    const { settings, sent } = setup()
     await settings.load()
     settings.form.model('canonicalUrl').model.value = 'https://kitchens.example'
     await settings.save()
@@ -143,7 +231,7 @@ describe('useSiteSettingsForm (#461)', () => {
 
     await settings.save()
 
-    expect(saveConfig).toHaveBeenLastCalledWith({ canonicalUrl: '' })
+    expect(sent().at(-1)).toEqual(['/_/site_config_parameters/canonicalUrl', { key: 'canonicalUrl', value: '' }])
   })
 
   test('editing a field clears its error', async () => {
@@ -186,11 +274,11 @@ describe('useSiteSettingsForm (#461)', () => {
   })
 
   test('a stored change made elsewhere arrives, keeping what is being edited here', async () => {
-    const { settings, config } = setup()
+    const { settings, store } = setup()
     await settings.load()
     settings.form.model('siteName').model.value = 'Our kitchens'
 
-    config.value = { ...config.value, maintenanceModeEnabled: true, siteName: 'Their kitchens' }
+    store.$patch({ config: { ...store.config, maintenanceModeEnabled: true, siteName: 'Their kitchens' } })
     await flushPromises()
 
     expect(settings.local.value?.maintenanceModeEnabled).toBe(true)
@@ -198,12 +286,12 @@ describe('useSiteSettingsForm (#461)', () => {
   })
 
   test('the stored settings are read inside the reactive callbacks, so a later change is seen (#285)', async () => {
-    const { settings, config } = setup()
+    const { settings, store } = setup()
     await settings.load()
     const unsaved = computed(() => settings.form.unsavedFields.length)
     expect(unsaved.value).toBe(0)
 
-    config.value = { ...config.value, siteName: 'Elsewhere' }
+    store.$patch({ config: { ...store.config, siteName: 'Elsewhere' } })
     await flushPromises()
     settings.form.model('siteName').model.value = 'Kitchens'
 

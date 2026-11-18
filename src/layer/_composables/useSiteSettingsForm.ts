@@ -120,8 +120,14 @@ export function useSiteSettingsForm() {
   }
 
   async function save() {
+    if (!local.value || saving.value) {
+      return
+    }
+    if (typeof local.value.canonicalUrl === 'string') {
+      local.value.canonicalUrl = local.value.canonicalUrl.trim()
+    }
     const keys = changed()
-    if (!local.value || !keys.length || saving.value) {
+    if (!keys.length) {
       return
     }
     saving.value = true
@@ -135,8 +141,14 @@ export function useSiteSettingsForm() {
         return
       }
       const copy = local.value
-      const { done } = await $cwa.siteConfig.saveConfig(Object.fromEntries(keys.map(key => [key, copy[key]])) as Partial<SiteConfigParams>)
-      const failed = await done
+      const sent: Settings = Object.fromEntries(keys.map(key => [key, copy[key]]))
+      const failed = await $cwa.siteConfig.saveConfig(sent as Partial<SiteConfigParams>)
+      const now = local.value ?? copy
+      keys
+        .filter(key => !failed.some(failure => failure.key === key) && isEqual(now[key], sent[key]))
+        .forEach((key) => {
+          now[key] = stored.value[key]
+        })
       const refused = failed.filter(({ error }) => (error as { statusCode?: number } | undefined)?.statusCode === 422)
       const others = failed.filter(failure => !refused.includes(failure))
       fieldErrors.value = Object.fromEntries(refused.map(({ key, error }) => [key, violationMessage(error)]))
