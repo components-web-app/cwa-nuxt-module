@@ -738,6 +738,9 @@
 .cwa\:w-control {
   width: var(--cwa-spacing-control);
 }
+.cwa\:w-fit {
+  width: fit-content;
+}
 .cwa\:w-full {
   width: 100%;
 }
@@ -1675,6 +1678,9 @@
 }
 .cwa\:text-start {
   text-align: start;
+}
+.cwa\:align-top {
+  vertical-align: top;
 }
 .cwa\:font-mono {
   font-family: var(--cwa-font-mono);

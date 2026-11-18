@@ -118,3 +118,24 @@ for (const [name, open] of floatingSurfaces) {
     expect(misplaced).toEqual([])
   })
 }
+
+for (const width of widths) {
+  test(`kit at ${width}: a segmented control in a dialog is only as wide as its options (#461)`, async ({ page }) => {
+    await openKit(page, width)
+    await page.waitForLoadState('networkidle')
+    await page.getByRole('button', { name: 'Dialog', exact: true }).first().click()
+    const group = page.getByRole('group', { name: 'Align', exact: true }).first()
+    await group.waitFor()
+
+    const sizes = await group.evaluate((element) => {
+      const field = element.closest('[data-cwa-field]') ?? element.parentElement.parentElement
+      return {
+        group: element.getBoundingClientRect().width,
+        options: [...element.querySelectorAll('button')].reduce((sum, option) => sum + option.getBoundingClientRect().width, 0),
+        column: field.getBoundingClientRect().width,
+      }
+    })
+    expect(Math.abs(sizes.group - sizes.options)).toBeLessThanOrEqual(1)
+    expect(sizes.group).toBeLessThan(sizes.column)
+  })
+}

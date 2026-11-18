@@ -56,6 +56,7 @@ function choose(next: unknown) {
     :control-id="id"
     :inactive="disabled || unbound"
     :name="field"
+    hug
   >
     <template #default="{ describedBy, busy, labelId }">
       <ToggleGroupRoot
@@ -68,7 +69,7 @@ function choose(next: unknown) {
         :aria-describedby="describedBy"
         :aria-busy="busy ? 'true' : undefined"
         data-testid="segmented"
-        class="cwa:flex cwa:h-control cwa:bg-field cwa:pointer-coarse:h-hit"
+        class="cwa:inline-flex cwa:h-control cwa:max-w-full cwa:overflow-x-auto cwa:bg-field cwa:align-top cwa:[scrollbar-width:none] cwa:pointer-coarse:h-hit"
         :class="{ 'cwa:opacity-50': disabled || unbound }"
         @update:model-value="choose"
       >
@@ -76,7 +77,7 @@ function choose(next: unknown) {
           v-for="option in options"
           :key="option.value"
           :value="option.value"
-          class="cwa:h-full cwa:cursor-pointer cwa:whitespace-nowrap cwa:px-4 cwa:text-control cwa:text-fg-secondary cwa:outline-1 cwa:outline-transparent cwa:transition-colors cwa:duration-(--cwa-duration-fast) cwa:hover:bg-field-hover cwa:focus-visible:z-1 cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-accent-fg cwa:disabled:cursor-not-allowed cwa:data-[state=on]:bg-surface cwa:data-[state=on]:font-medium cwa:data-[state=on]:text-fg cwa:data-[state=on]:shadow-[inset_0_0_0_3px_var(--cwa-color-field)] cwa:motion-reduce:transition-none"
+          class="cwa:h-full cwa:cursor-pointer cwa:whitespace-nowrap cwa:px-4 cwa:text-control cwa:text-fg-secondary cwa:outline-1 cwa:outline-transparent cwa:transition-colors cwa:duration-(--cwa-duration-fast) cwa:hover:bg-field-hover cwa:focus-visible:z-1 cwa:focus-visible:outline-2 cwa:focus-visible:-outline-offset-2 cwa:focus-visible:outline-accent-fg cwa:disabled:cursor-not-allowed cwa:data-[state=on]:bg-surface cwa:data-[state=on]:font-medium cwa:data-[state=on]:text-fg cwa:data-[state=on]:shadow-[inset_0_0_0_3px_var(--cwa-color-field)] cwa:motion-reduce:transition-none"
         >
           {{ option.label }}
         </ToggleGroupItem>

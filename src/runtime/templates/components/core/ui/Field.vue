@@ -12,7 +12,7 @@ import type { CwaFieldState } from '#cwa/storage/stores/resources/state'
 
 export type FieldWidth = 'xs' | 'sm' | 'md' | 'lg' | 'full'
 
-const { label, labelHidden = false, info, description, optional = false, width, state, model, controlId, ownLabel = false, name, inactive = false, invalid, format } = defineProps<{
+const { label, labelHidden = false, info, description, optional = false, width, state, model, controlId, ownLabel = false, name, inactive = false, invalid, format, hug = false } = defineProps<{
   label: string
   labelHidden?: boolean
   info?: string
@@ -27,6 +27,7 @@ const { label, labelHidden = false, info, description, optional = false, width, 
   inactive?: boolean
   invalid?: string
   format?: FieldValueFormat
+  hug?: boolean
 }>()
 
 defineSlots<{
@@ -129,6 +130,7 @@ watch(() => inactive, (now) => {
       />
       <CwaUiFieldPresence
         :model="model"
+        :class="{ 'cwa:w-fit cwa:max-w-full': hug }"
         v-bind="inactive ? undefined : model?.focusListeners"
       >
         <slot
@@ -201,6 +203,7 @@ watch(() => inactive, (now) => {
     >
       <CwaUiFieldPresence
         :model="model"
+        :class="{ 'cwa:w-fit cwa:max-w-full': hug }"
         v-bind="inactive ? undefined : model?.focusListeners"
       >
         <slot

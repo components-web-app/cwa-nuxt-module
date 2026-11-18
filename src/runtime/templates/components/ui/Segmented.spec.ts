@@ -5,6 +5,7 @@ import { axe } from '../../../../../test/utils/axe'
 import { drawsFocusRing } from '../../../../../test/utils/focus-ring'
 import { fakeFieldModel } from '../../../../../playground/app/kit/fake-field-model'
 import Segmented from './Segmented.vue'
+import { formSurfaceKey } from '../core/ui/field-keys'
 
 enableAutoUnmount(afterEach)
 
@@ -50,5 +51,20 @@ describe('CwaUiSegmented (#460)', () => {
     const wrapper = mount(Segmented, { props: { label: 'Link', options, modelValue: 'page' } })
 
     expect(wrapper.findAll('button').map(button => drawsFocusRing(button.classes()))).toEqual([true, true])
+  })
+
+  test.each([
+    ['in the bar', {}],
+    ['in a dialog\'s field column', { [formSurfaceKey as symbol]: { unsaved: () => false, register: () => () => {} } }],
+  ])('%s it is only as wide as its options, never stretched across the column, and scrolls rather than overflow when narrow (#461)', (_, provide) => {
+    const wrapper = mount(Segmented, { props: { label: 'Parent type', options, modelValue: 'page' }, global: { provide } })
+    const group = wrapper.get('[data-testid="segmented"]')
+
+    expect(group.classes()).toEqual(expect.arrayContaining(['cwa:inline-flex', 'cwa:max-w-full', 'cwa:overflow-x-auto']))
+    expect(group.classes()).not.toContain('cwa:flex')
+    expect(group.element.parentElement!.classList).toContain('cwa:w-fit')
+    expect(group.element.parentElement!.classList).toContain('cwa:max-w-full')
+    expect(drawsFocusRing(group.findAll('button')[0]!.classes())).toBe(true)
+    expect(group.findAll('button')[0]!.classes()).toContain('cwa:focus-visible:-outline-offset-2')
   })
 })
