@@ -12,7 +12,7 @@ describe('InfoPopover (#461)', () => {
 
     expect(drawsFocusRing(wrapper.get('[data-testid="field-info"]').classes())).toBe(true)
   })
-  test('the popover is the kit artifact\'s: the menu surface, text colour and shadow, 1rem padding at 1.5 line height, an accent ⓘ before its title and a square caret in the panel\'s fill (#461)', async () => {
+  test('the popover is the kit artifact\'s: the menu surface, text colour and shadow, 1rem padding at 1.5 line height, an accent ⓘ before its title and a square caret in the panel\'s fill, with a 1px line ring on the panel and on the caret\'s two outer edges so both stand out on dark surfaces (#461)', async () => {
     const wrapper = mount(InfoPopover, { props: { label: 'Reference', text: 'Only admins see this.', textId: 'reference-info' }, attachTo: document.body })
 
     await wrapper.get('[data-testid="field-info"]').trigger('click')
@@ -27,5 +27,11 @@ describe('InfoPopover (#461)', () => {
     const caret = [...popover.querySelectorAll('svg')].at(-1)!
     expect(caret.getAttribute('class')).toContain('cwa:fill-surface-menu')
     expect([caret.getAttribute('width'), caret.getAttribute('height')]).toEqual(['14', '7'])
+    expect(popover.classList).toContain('cwa:ring-1')
+    expect(popover.classList).toContain('cwa:ring-line')
+    expect(caret.getAttribute('class')).toContain('cwa:stroke-line')
+    const edge = caret.querySelector('path')!
+    expect(edge.getAttribute('d')).toBe('M0 0L6 6L12 0')
+    expect(edge.getAttribute('vector-effect')).toBe('non-scaling-stroke')
   })
 })
