@@ -299,6 +299,52 @@ describe('TipTapHtmlEditor: the co-editing reference editor (#429)', () => {
   })
 })
 
+describe('TipTapHtmlEditor: links (#461)', () => {
+  test('Link opens the kit link popover, never a prompt, and Apply links the selection with the new tab choice saved', async () => {
+    const prompt = vi.fn()
+    vi.stubGlobal('prompt', prompt)
+    const { wrapper, editor, stored } = await mountEditor('<p>Hello there</p>')
+    editor().commands.setTextSelection({ from: 1, to: 6 })
+    const link = wrapper.getComponent(BubbleMenu).findAll('button').find(button => button.text() === 'Link')!
+
+    await link.trigger('click')
+    await vi.waitFor(() => expect(document.querySelector('[data-testid="link-popover"]')).not.toBeNull())
+    expect(prompt).not.toHaveBeenCalled()
+    const url = document.querySelector<HTMLInputElement>('[data-testid="link-popover"] input[type="url"]')!
+    url.value = '/kitchens'
+    url.dispatchEvent(new Event('input'))
+    url.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
+
+    await vi.waitFor(() => expect(stored.value).toContain('href="/kitchens"'))
+    expect(stored.value).not.toContain('target=')
+
+    await link.trigger('click')
+    await vi.waitFor(() => expect(document.querySelector<HTMLInputElement>('[data-testid="link-popover"] input[type="url"]')?.value).toBe('/kitchens'))
+    const newTab = document.querySelector<HTMLButtonElement>('[data-testid="link-popover"] [role="switch"]')!
+    expect(newTab.getAttribute('aria-checked')).toBe('false')
+    newTab.click()
+    await vi.waitFor(() => expect(newTab.getAttribute('aria-checked')).toBe('true'))
+    document.querySelector<HTMLInputElement>('[data-testid="link-popover"] input[type="url"]')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
+    await vi.waitFor(() => expect(stored.value).toContain('target="_blank"'))
+    expect(stored.value).toContain('>Hello</a>')
+    vi.unstubAllGlobals()
+  })
+
+  test('the popover shows the link under the caret and Remove link unlinks it', async () => {
+    const { wrapper, editor, stored } = await mountEditor('<p><a target="_blank" rel="noopener noreferrer nofollow" href="/about">Hello</a> there</p>')
+    editor().commands.setTextSelection(3)
+
+    await wrapper.getComponent(BubbleMenu).findAll('button').find(button => button.text() === 'Link')!.trigger('click')
+    await vi.waitFor(() => expect(document.querySelector('[data-testid="link-popover"]')).not.toBeNull())
+    const panel = document.querySelector<HTMLElement>('[data-testid="link-popover"]')!
+    expect(panel.querySelector<HTMLInputElement>('input[type="url"]')!.value).toBe('/about')
+    expect(panel.querySelector('[role="switch"]')!.getAttribute('aria-checked')).toBe('true')
+    ;[...panel.querySelectorAll<HTMLButtonElement>('button')].find(button => button.textContent?.trim() === 'Remove link')!.click()
+
+    await vi.waitFor(() => expect(stored.value).toBe('<p>Hello there</p>'))
+  })
+})
+
 describe('TipTapHtmlEditor: edits that merge, over Yjs (#435)', () => {
   test('opening the editor saves nothing, even when the stored HTML is not written the way TipTap writes it', async () => {
     const { writes } = await mountEditor('<p>Hello</p>\n')

@@ -61,6 +61,15 @@
       </floating-menu>
     </div>
     <editor-content :editor="editor" />
+    <CwaUiLinkPopover
+      v-if="linkAt"
+      v-model:open="linkOpen"
+      :at="linkAt"
+      :href="linkHref"
+      :new-tab="linkNewTab"
+      @apply="applyLink"
+      @remove="removeLink"
+    />
     <CwaUiRemoteChangeConflict
       v-if="remoteChange"
       :change="remoteChange"
@@ -153,6 +162,7 @@ function extensions(shared?: Shared) {
     Link.configure({
       openOnClick: false,
       defaultProtocol: 'https',
+      HTMLAttributes: { target: null },
     }),
     ...(shared ? [Collaboration.configure({ document: shared.doc }), YRemoteCursors.configure({ channel: shared.channel })] : []),
   ]
@@ -359,36 +369,32 @@ watch(() => props.disabled, (disabled) => {
   startSession(true)
 })
 
-function showLinkManager() {
+const linkAt = ref<{ x: number, y: number }>()
+const linkOpen = ref(false)
+const linkHref = ref<string | null>(null)
+const linkNewTab = ref(false)
+
+function showLinkManager(event: MouseEvent) {
   if (!editor.value) return
-  const previousUrl = editor.value.getAttributes('link').href
-  const url = window.prompt('URL', previousUrl)
-
-  // cancelled
-  if (url === null) {
-    return
-  }
-
-  // empty
-  if (url === '') {
-    editor.value
-      .chain()
-      .focus()
-      .extendMarkRange('link')
-      .unsetLink()
-      .run()
-
-    return
-  }
-
-  // update link
-  editor.value
-    .chain()
-    .focus()
-    .extendMarkRange('link')
-    .setLink({ href: url })
-    .run()
+  const { href, target } = editor.value.getAttributes('link')
+  const { left, bottom } = (event.currentTarget as HTMLElement).getBoundingClientRect()
+  linkHref.value = href ?? null
+  linkNewTab.value = target === '_blank'
+  linkAt.value = { x: left, y: bottom }
+  linkOpen.value = true
 }
+
+function applyLink({ href, newTab }: { href: string, newTab: boolean }) {
+  editor.value?.chain().focus().extendMarkRange('link').setLink({ href, target: newTab ? '_blank' : null }).run()
+}
+
+function removeLink() {
+  editor.value?.chain().focus().extendMarkRange('link').unsetLink().run()
+}
+
+watch(linkOpen, (open) => {
+  !open && editor.value?.commands.focus()
+})
 
 // Common menu item props
 const buttonBubbleMenuProps = computed(() => (call: keyof ChainedCommands, isActiveName: string, editorArgs?: (string | number | object)[]) => {
