@@ -89,6 +89,66 @@ describe('CwaUiMultiSelect (#460)', () => {
     expect(wrapper.emitted('update:modelValue')).toEqual([[['padding']]])
   })
 
+  test('open, the chips give way to the search after an "N selected" count, which describes the input; closing brings the chips back (#461)', async () => {
+    const wrapper = mountMulti()
+    const input = wrapper.get('[data-testid="multi-input"]')
+    const described = () => (input.attributes('aria-describedby') ?? '').split(' ').filter(Boolean).map(ref => document.getElementById(ref)?.textContent?.trim())
+    expect(described()).toContain('2 selected')
+
+    await open(wrapper)
+    const count = wrapper.get('[data-testid="multi-count"]')
+    expect(count.text()).toBe('2 selected')
+    expect(count.classes()).not.toContain('cwa:sr-only')
+    expect(count.element.nextElementSibling).toBe(input.element)
+    expect(wrapper.find('[data-testid="multi-chip"]').exists()).toBe(false)
+    expect(described()).toContain('2 selected')
+    await input.setValue('wid')
+    expect(count.text()).toBe('2 selected')
+
+    await input.trigger('keydown', { key: 'Escape' })
+    await flushPromises()
+    expect(wrapper.get('[data-testid="multi-chip"]').text()).toBe('Extra padding')
+    expect(wrapper.get('[data-testid="multi-count"]').classes()).toContain('cwa:sr-only')
+  })
+
+  test('with nothing chosen there is no count, open or closed, only the placeholder (#461)', async () => {
+    const wrapper = mountMulti({ modelValue: [] })
+    await open(wrapper)
+
+    expect(wrapper.find('[data-testid="multi-count"]').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="multi-input"]').attributes('placeholder')).toBe('Search')
+    expect(wrapper.get('[data-testid="multi-input"]').attributes('aria-describedby') ?? '').not.toContain('count')
+  })
+
+  test('while a search filters the list, chosen matches still come first, ticked (#461)', async () => {
+    const wrapper = mountMulti({ modelValue: ['wide'] })
+    const menu = await open(wrapper)
+    await wrapper.get('[data-testid="multi-input"]').setValue('i')
+    await flushPromises()
+
+    expect(labels(menu)).toEqual(['Wide', 'Extra padding'])
+    expect([...menu.querySelectorAll('[role="option"]')].map(option => option.getAttribute('aria-selected'))).toEqual(['true', 'false'])
+  })
+
+  test('a choice that changes the count announces it (#461)', async () => {
+    const said: string[] = []
+    const wrapper = mountMulti({ 'modelValue': ['padding'], 'onUpdate:modelValue': (value: string[]) => wrapper.setProps({ modelValue: value }) }, message => said.push(message))
+    const menu = await open(wrapper)
+    const pick = async (label: string) => {
+      const option = [...menu.querySelectorAll<HTMLElement>('[role="option"]')].find(item => item.textContent!.includes(label))!
+      option.dispatchEvent(new PointerEvent('pointerup', { bubbles: true }))
+      option.click()
+      await flushPromises()
+    }
+
+    await pick('Wide')
+    expect(said).toEqual(['2 selected'])
+    expect(wrapper.get('[data-testid="multi-count"]').text()).toBe('2 selected')
+    await pick('Wide')
+    await pick('Extra padding')
+    expect(said).toEqual(['2 selected', '1 selected', 'None selected'])
+  })
+
   test('a model shows its save state on the edge line', () => {
     const wrapper = mount(MultiSelect, { props: { label: 'Style', options, model: fakeFieldModel(['dark'], 'saving') } })
 

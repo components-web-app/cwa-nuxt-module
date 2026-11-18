@@ -60,6 +60,7 @@ async function handleOption({ value }: MenuItem) {
     :aria-label="isPublishable ? 'Add draft' : 'Add'"
     variant="solid"
     size="sm"
+    large-icon
     stretch
     :options="buttonOptions"
     :loading="isAdding"

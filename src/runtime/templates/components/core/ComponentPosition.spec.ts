@@ -30,8 +30,9 @@ vi.mock('./ComponentPlaceholder.vue', () => {
 })
 
 const mockComponentIri = 'test'
+const draftOnlyIri = '/component/html_contents/draft-only'
 
-function createWrapper({ isAdmin = false, positionData = { 'component': mockComponentIri, '@id': '/position-iri' } as any, resolvedComponentIri = positionData?.component as string | undefined, mountFn = shallowMount } = {}) {
+function createWrapper({ isAdmin = false, isEditing = false, positionData = { 'component': mockComponentIri, '@id': '/position-iri' } as any, resolvedComponentIri = positionData?.component as string | undefined, mountFn = shallowMount } = {}) {
   // @ts-expect-error
   vi.spyOn(cwaResourceComposables, 'useCwaResource').mockImplementation(() => ({
     getResource: vi.fn(() => ref({ data: positionData })),
@@ -43,12 +44,13 @@ function createWrapper({ isAdmin = false, positionData = { 'component': mockComp
       isAdmin: computed(() => isAdmin),
     },
     admin: {
-      isEditing: false,
+      isEditing,
+      resourceStackManager: { currentIri: ref(undefined) },
     },
     resources: {
       positionComponentIri: vi.fn(() => computed(() => resolvedComponentIri)),
-      findPublishedComponentIri: vi.fn((iri?: string) => ref(iri === mockComponentIri ? mockComponentIri : iri)),
-      findDraftComponentIri: vi.fn(() => ref(undefined)),
+      findPublishedComponentIri: vi.fn((iri?: string) => ref(iri === draftOnlyIri ? undefined : iri)),
+      findDraftComponentIri: vi.fn((iri?: string) => ref(iri === draftOnlyIri ? draftOnlyIri : undefined)),
       getResource: vi.fn(() => undefined),
     },
     resourcesManager: {
@@ -72,8 +74,8 @@ describe('ComponentPosition', () => {
       expect(placeholderModule.loads).toBe(0)
     })
 
-    test('is loaded and rendered when an admin sees a position with no component', async () => {
-      const wrapper = createWrapper({ isAdmin: true, positionData: { '@id': '/position-iri' }, mountFn: mount })
+    test('is loaded and rendered when an admin in edit mode sees a position with no component', async () => {
+      const wrapper = createWrapper({ isAdmin: true, isEditing: true, positionData: { '@id': '/position-iri' }, mountFn: mount })
       await vi.dynamicImportSettled()
       await flushPromises()
       expect(placeholderModule.loads).toBe(1)
@@ -99,9 +101,37 @@ describe('ComponentPosition', () => {
       expect(wrapper.findComponent({ name: 'ResourceLoader' }).exists()).toBe(false)
     })
 
-    test('is rendered for an admin', () => {
-      const wrapper = createWrapper({ isAdmin: true, positionData: noComponent })
+    test('is rendered for an admin in edit mode', () => {
+      const wrapper = createWrapper({ isAdmin: true, isEditing: true, positionData: noComponent })
       expect(wrapper.findComponent({ name: 'ComponentPlaceholder' }).exists()).toBe(true)
+    })
+
+    test('is NOT rendered for an admin outside edit mode, who sees what a visitor sees', () => {
+      const wrapper = createWrapper({ isAdmin: true, positionData: noComponent })
+      expect(wrapper.findComponent({ name: 'ComponentPlaceholder' }).exists()).toBe(false)
+      expect(wrapper.findComponent({ name: 'ResourceLoader' }).exists()).toBe(false)
+    })
+
+    test('a position whose component is only a draft shows nothing to an admin outside edit mode, and the draft in edit mode', () => {
+      const draftOnly = { 'component': draftOnlyIri, '@id': '/position-iri' }
+      const viewing = createWrapper({ isAdmin: true, positionData: draftOnly })
+      expect(viewing.findComponent({ name: 'ComponentPlaceholder' }).exists()).toBe(false)
+      expect(viewing.findComponent({ name: 'ResourceLoader' }).exists()).toBe(false)
+
+      const editing = createWrapper({ isAdmin: true, isEditing: true, positionData: draftOnly })
+      expect(editing.findComponent({ name: 'ComponentPlaceholder' }).exists()).toBe(false)
+      expect(editing.findComponent({ name: 'ResourceLoader' }).props('iri')).toBe(draftOnlyIri)
+    })
+
+    test('is NOT rendered for a signed-in non-admin, even with edit mode on', () => {
+      const wrapper = createWrapper({ isAdmin: false, isEditing: true, positionData: noComponent })
+      expect(wrapper.findComponent({ name: 'ComponentPlaceholder' }).exists()).toBe(false)
+    })
+
+    test('a draft-only position shows nothing to a visitor', () => {
+      const wrapper = createWrapper({ isAdmin: false, positionData: { 'component': draftOnlyIri, '@id': '/position-iri' } })
+      expect(wrapper.findComponent({ name: 'ComponentPlaceholder' }).exists()).toBe(false)
+      expect(wrapper.findComponent({ name: 'ResourceLoader' }).exists()).toBe(false)
     })
 
     test('is not rendered for an admin when the component resolves', () => {
@@ -133,7 +163,7 @@ describe('ComponentPosition', () => {
       vi.restoreAllMocks()
     })
 
-    async function renderThroughGroupLoader(isAdmin: boolean) {
+    async function renderThroughGroupLoader(isAdmin: boolean, isEditing = false) {
       setActivePinia(createPinia())
       const resourcesStoreDef = new ResourcesStore('cwa')
       const resources = new Resources(resourcesStoreDef, new FetcherStore('cwa'))
@@ -148,7 +178,7 @@ describe('ComponentPosition', () => {
       vi.spyOn(cwaResourceManageableComposable, 'useCwaResourceManageable').mockImplementation(() => ({}) as never)
       vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => ({
         auth: { isAdmin: computed(() => isAdmin), user: isAdmin ? { roles: [] } : undefined, signedIn: ref(isAdmin) },
-        admin: { isEditing: false, resourceStackManager: { currentIri: ref(undefined) } },
+        admin: { isEditing, resourceStackManager: { currentIri: ref(undefined) } },
         resources,
         resourcesManager: { addResourceEvent: ref(undefined) },
         fetchResource: vi.fn(),
@@ -175,11 +205,18 @@ describe('ComponentPosition', () => {
       expect(warn).not.toHaveBeenCalled()
     })
 
-    test('still renders the placeholder for an admin', async () => {
-      const { wrapper } = await renderThroughGroupLoader(true)
+    test('renders the placeholder for an admin in edit mode', async () => {
+      const { wrapper } = await renderThroughGroupLoader(true, true)
 
       expect(wrapper.findAllComponents(ResourceLoader)).toHaveLength(1)
       expect(wrapper.find('.placeholder').exists()).toBe(true)
+    })
+
+    test('renders only its comment anchors for an admin outside edit mode', async () => {
+      const { wrapper } = await renderThroughGroupLoader(true)
+
+      expect(wrapper.find('.placeholder').exists()).toBe(false)
+      expect(wrapper.html().replace(/<!--[\s\S]*?-->/g, '').trim()).toBe('')
     })
   })
 

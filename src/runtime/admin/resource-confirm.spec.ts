@@ -1,7 +1,7 @@
 import { describe, expect, test, vi } from 'vitest'
 import { createApp, shallowRef } from 'vue'
 import { createConfirmDialog } from 'vuejs-confirm-dialog'
-import { confirmResourceAction, editingNotice } from './resource-confirm'
+import { confirmChoice, confirmResourceAction, editingNotice } from './resource-confirm'
 import type { RealtimePeer } from './presence'
 import type Cwa from '#cwa/cwa'
 
@@ -10,7 +10,7 @@ vi.mock('vuejs-confirm-dialog', () => ({
   install: vi.fn(),
   createConfirmDialog: vi.fn(() => ({ reveal })),
 }))
-vi.mock('#cwa/templates/components/core/ConfirmDialog.vue', () => ({ default: { name: 'ConfirmDialog' } }))
+vi.mock('#cwa/templates/components/core/ui/Confirm.vue', () => ({ default: { name: 'Confirm' } }))
 
 const realtime = vi.hoisted(() => ({ loaders: new WeakMap<object, unknown>() }))
 vi.mock('#cwa/resources/realtime-view', () => ({
@@ -30,28 +30,29 @@ function cwaWith(peers: RealtimePeer[] | undefined) {
   return { $cwa, view }
 }
 
-describe('confirmResourceAction: the resource manager\'s prompts, loaded only when asked (#429)', () => {
+describe('confirmResourceAction: the resource manager\'s prompts, in the kit confirm, loaded only when asked (#429, #461)', () => {
   test.each([
-    { action: 'delete' as const, title: 'Delete this resource?', content: '<p>Are you sure you want to permanently delete this resource?</p>' },
-    { action: 'discard' as const, title: 'Discard new resource?', content: '<p>Are you sure you want to discard your new resource. It will NOT be saved.</p>' },
-  ])('$action asks with ConfirmDialog and is confirmed unless cancelled', async ({ action, title, content }) => {
-    reveal.mockResolvedValueOnce({ isCanceled: false }).mockResolvedValueOnce({ isCanceled: true })
+    { action: 'delete' as const, options: { title: 'Delete this resource?', description: 'This can\'t be undone.', keep: 'Don\'t delete', go: 'Delete' } },
+    { action: 'discard' as const, options: { title: 'Discard this new component?', description: 'It hasn\'t been saved.', keep: 'Keep editing', go: 'Discard' } },
+  ])('$action asks with the kit confirm and is confirmed unless cancelled', async ({ action, options }) => {
+    reveal.mockResolvedValueOnce({ isCanceled: false, data: 'go' }).mockResolvedValueOnce({ isCanceled: true })
     const app = createApp({})
 
     expect(await confirmResourceAction(app, action)).toBe(true)
     expect(await confirmResourceAction(app, action)).toBe(false)
-    expect(createConfirmDialog).toHaveBeenCalledWith({ name: 'ConfirmDialog' })
-    expect(reveal).toHaveBeenCalledWith({ title, content })
+    expect(createConfirmDialog).toHaveBeenCalledWith({ name: 'Confirm' })
+    expect(reveal).toHaveBeenCalledWith(options)
   })
+
   test('any other prompt is asked as given', async () => {
     reveal.mockResolvedValueOnce({ isCanceled: true })
 
-    expect(await confirmResourceAction(createApp({}), { title: 't', content: 'c' })).toBe(false)
-    expect(reveal).toHaveBeenCalledWith({ title: 't', content: 'c' })
+    expect(await confirmResourceAction(createApp({}), { title: 't', description: 'c', go: 'Go' })).toBe(false)
+    expect(reveal).toHaveBeenCalledWith({ title: 't', description: 'c', go: 'Go' })
   })
 
-  test('a delete names who else is on the resource', async () => {
-    reveal.mockResolvedValueOnce({ isCanceled: false })
+  test('a delete names who else is on the resource, as its first line', async () => {
+    reveal.mockResolvedValueOnce({ isCanceled: false, data: 'go' })
     const app = createApp({})
     const { $cwa, view } = cwaWith([peer('Sam', '/users/sam', 'editing')])
     app.config.globalProperties.$cwa = $cwa
@@ -61,9 +62,71 @@ describe('confirmResourceAction: the resource manager\'s prompts, loaded only wh
     expect(view!.peers).toHaveBeenCalledWith(COMPONENT)
     expect(reveal).toHaveBeenCalledWith({
       title: 'Delete this resource?',
-      content: '<p>Are you sure you want to permanently delete this resource?</p>',
-      notice: 'Sam is editing this.',
+      description: 'This can\'t be undone.',
+      keep: 'Don\'t delete',
+      go: 'Delete',
+      lines: [{ text: 'Sam is editing this.' }],
     })
+  })
+})
+
+describe('deleting a draft (#461)', () => {
+  function appWith(data: Record<string, unknown> | undefined) {
+    const app = createApp({})
+    const { $cwa } = cwaWith([])
+    const getResource = vi.fn(() => ({ value: data ? { data } : undefined }))
+    Object.assign($cwa, { resources: { getResource } })
+    app.config.globalProperties.$cwa = $cwa
+    return { app, getResource }
+  }
+
+  test('a draft of a live component asks to discard its unpublished changes, never to delete the resource', async () => {
+    reveal.mockResolvedValueOnce({ isCanceled: false, data: 'go' })
+    const { app, getResource } = appWith({ '@id': COMPONENT, 'publishedResource': '/component/html_contents/live', '_metadata': { publishable: { published: false } } })
+
+    expect(await confirmResourceAction(app, 'delete', COMPONENT)).toBe(true)
+    expect(getResource).toHaveBeenCalledWith(COMPONENT)
+    expect(reveal).toHaveBeenCalledWith({
+      title: 'Discard the unpublished changes?',
+      description: 'The live version stays as it is.',
+      keep: 'Keep changes',
+      go: 'Discard changes',
+    })
+  })
+
+  test('another prompt about a draft of a live component is asked as given', async () => {
+    reveal.mockResolvedValueOnce({ isCanceled: true })
+    const { app } = appWith({ '@id': COMPONENT, 'publishedResource': '/component/html_contents/live', '_metadata': { publishable: { published: false } } })
+
+    await confirmResourceAction(app, { title: 't', go: 'Go' }, COMPONENT)
+    expect(reveal).toHaveBeenCalledWith({ title: 't', go: 'Go' })
+  })
+
+  test.each([
+    ['a draft never published', { '@id': COMPONENT, '_metadata': { publishable: { published: false } } }],
+    ['the live resource', { '@id': COMPONENT, 'draftResource': '/component/html_contents/draft', '_metadata': { publishable: { published: true } } }],
+    ['a resource not in the store', undefined],
+  ])('%s keeps the delete confirm', async (_, data) => {
+    reveal.mockResolvedValueOnce({ isCanceled: false, data: 'go' })
+    const { app } = appWith(data)
+
+    await confirmResourceAction(app, 'delete', COMPONENT)
+    expect(reveal).toHaveBeenCalledWith(expect.objectContaining({ title: 'Delete this resource?', go: 'Delete' }))
+  })
+})
+
+describe('confirmChoice (#461)', () => {
+  test.each([
+    [{ isCanceled: false, data: 'extra' }, 'extra'],
+    [{ isCanceled: false, data: 'alternative' }, 'alternative'],
+    [{ isCanceled: false, data: 'go' }, 'go'],
+    [{ isCanceled: false }, 'go'],
+    [{ isCanceled: true }, undefined],
+  ])('answers %o as %s', async (answer, choice) => {
+    reveal.mockResolvedValueOnce(answer)
+
+    expect(await confirmChoice(createApp({}), { title: 't', extra: 'Here', go: 'All' })).toBe(choice)
+    expect(reveal).toHaveBeenCalledWith({ title: 't', extra: 'Here', go: 'All' })
   })
 })
 

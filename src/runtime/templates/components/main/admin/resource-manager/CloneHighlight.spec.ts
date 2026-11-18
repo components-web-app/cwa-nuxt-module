@@ -183,8 +183,8 @@ describe('CloneHighlight', () => {
     await flushPromises()
 
     const classes = wrapper.get('[data-testid="clone-highlight"]').classes()
-    expect(classes).toContain('cwa:outline-dashed')
-    expect(classes).toContain('cwa:outline-yellow')
+    expect(classes).toEqual(expect.arrayContaining(['cwa:outline-solid', 'cwa:outline-1', 'cwa:outline-yellow']))
+    expect(classes).not.toContain('cwa:outline-dashed')
     expect(classes).not.toContain('cwa:animate-pulse')
     expect(classes).not.toContain('cwa:outline-green')
     expect(classes).not.toContain('cwa:outline-orange')
@@ -194,7 +194,7 @@ describe('CloneHighlight', () => {
   test.each([
     ['a clone', undefined],
     ['a move', { positionIri: '/_/component_positions/from', fromLayout: false, from: { componentPosition: '/_/component_positions/from' } }],
-  ] as const)('in %s the instance the editor started from is outlined solid, the others dashed', async (_label, move) => {
+  ] as const)('in %s the instance the editor started from is outlined 4px, the others with a 1px solid line', async (_label, move) => {
     const { cwa } = mockCwa()
     const origin = elementAt({ top: 10, left: 20, right: 120, bottom: 60 })
     registerInstance(cwa, SOURCE_IRI, ref([elementAt({ top: 300, left: 40, right: 240, bottom: 380 })]))
@@ -210,11 +210,11 @@ describe('CloneHighlight', () => {
     const [other, from] = highlights
     expect(from!.attributes('style')).toBe('top: 10px; left: 20px; width: 100px; height: 50px;')
     expect(from!.attributes('data-origin')).toBe('true')
-    expect(from!.classes()).toContain('cwa:outline-solid')
-    expect(from!.classes()).not.toContain('cwa:outline-dashed')
+    expect(from!.classes()).toEqual(expect.arrayContaining(['cwa:outline-solid', 'cwa:outline-4']))
+    expect(from!.classes()).not.toContain('cwa:outline-1')
     expect(other!.attributes('data-origin')).toBeUndefined()
-    expect(other!.classes()).toContain('cwa:outline-dashed')
-    expect(other!.classes()).not.toContain('cwa:outline-solid')
+    expect(other!.classes()).toEqual(expect.arrayContaining(['cwa:outline-solid', 'cwa:outline-1']))
+    expect(other!.classes()).not.toContain('cwa:outline-4')
   })
 
   test('an instance whose elements sit inside the starting position counts as the one started from', async () => {
@@ -233,7 +233,7 @@ describe('CloneHighlight', () => {
     expect(wrapper.get('[data-testid="clone-highlight"]').attributes('data-origin')).toBe('true')
   })
 
-  test('outlines the target clicked for placing in blue dashed, apart from the yellow source outline, until it is cleared (#426)', async () => {
+  test('outlines the target clicked for placing in solid blue, apart from the yellow source outline, until it is cleared (#426)', async () => {
     const { cwa } = mockCwa()
     registerInstance(cwa, SOURCE_IRI, ref([elementAt({ top: 10, left: 20, right: 120, bottom: 60 })]))
     const cloneMode = useCloneMode(cwa)
@@ -247,7 +247,8 @@ describe('CloneHighlight', () => {
 
     const target = wrapper.get('[data-testid="clone-target"]')
     expect(target.attributes('style')).toBe('top: 200px; left: 30px; width: 150px; height: 60px;')
-    expect(target.classes()).toEqual(expect.arrayContaining(['cwa:outline-dashed', 'cwa:outline-blue-600']))
+    expect(target.classes()).toEqual(expect.arrayContaining(['cwa:outline-solid', 'cwa:outline-2', 'cwa:outline-blue-600']))
+    expect(target.classes()).not.toContain('cwa:outline-dashed')
     expect(target.classes()).not.toContain('cwa:outline-yellow')
     expect(target.classes()).not.toContain('cwa:outline-green')
     expect(wrapper.findAll('[data-testid="clone-highlight"]')).toHaveLength(1)

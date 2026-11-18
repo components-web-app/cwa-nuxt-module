@@ -1,13 +1,19 @@
 <template>
-  <div class="cwa:flex cwa:relative cwa:h-full cwa:items-center cwa:z-dialog">
+  <div
+    class="cwa:flex cwa:relative cwa:h-full cwa:items-center cwa:z-dialog"
+    @keydown.esc="closeToToggle"
+    @focusout="closeOnFocusLeaving"
+  >
     <CwaUiHamburger
       ref="hamburger"
       v-model="showMenu"
+      :controls="panelId"
       class="cwa:relative cwa:z-20"
     />
     <Transition v-bind="menuTransition">
       <div
         v-show="showMenu"
+        :id="panelId"
         ref="menu"
         class="cwa:absolute cwa:z-10 cwa:-top-1.5 cwa:-right-2 cwa:bg-dark cwa:pt-6 cwa:pb-12 cwa:px-12 cwa:w-[90vw] cwa:max-w-lg cwa:origin-top-right"
       >
@@ -112,11 +118,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, useTemplateRef, watch } from 'vue'
+import { nextTick, ref, useId, useTemplateRef, watch } from 'vue'
 import { onClickOutside } from '@vueuse/core'
 import MenuPrimaryLink from './MenuPrimaryLink.vue'
 import CwaLogo from '#cwa/templates/components/core/assets/CwaLogo.vue'
-import { useCwa, useRoute } from '#imports'
+import { useCwa } from '#cwa/composables/cwa'
+import { useRoute } from '#app/composables/router'
 import { useTransitions } from '#cwa/composables/transitions'
 import IconLayouts from '#cwa/templates/components/core/assets/IconLayouts.vue'
 import IconPages from '#cwa/templates/components/core/assets/IconPages.vue'
@@ -132,11 +139,41 @@ const route = useRoute()
 const showMenu = ref(false)
 
 const menu = useTemplateRef('menu')
-const hamburger = ref()
+const hamburger = ref<{ $el?: HTMLElement }>()
+const panelId = useId()
+
+function toggleElement() {
+  return hamburger.value?.$el
+}
+
+function closeToToggle() {
+  if (!showMenu.value) {
+    return
+  }
+  showMenu.value = false
+  toggleElement()?.focus()
+}
+
+function closeOnFocusLeaving(event: FocusEvent) {
+  const next = event.relatedTarget
+  if (!showMenu.value || !(next instanceof Node)) {
+    return
+  }
+  if (menu.value?.contains(next) || toggleElement()?.contains(next)) {
+    return
+  }
+  showMenu.value = false
+}
+
+watch(showMenu, async (open) => {
+  if (!open) {
+    return
+  }
+  await nextTick()
+  menu.value?.querySelector<HTMLElement>('a[href], button')?.focus()
+})
 onClickOutside(menu, () => {
   showMenu.value = false
-}, {
-  ignore: [hamburger],
 })
 
 async function signOut() {

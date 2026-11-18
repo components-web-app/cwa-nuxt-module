@@ -2,6 +2,7 @@
 import { describe, expect, test } from 'vitest'
 import { mount } from '@vue/test-utils'
 import PageListStatus from './PageListStatus.vue'
+import { formatDateTime } from '#cwa/resources/date-time-input'
 import { axe } from '../../../../../../test/utils/axe'
 
 const now = new Date('2026-11-18T12:00:00Z')
@@ -56,9 +57,15 @@ describe('PageListStatus (#461)', () => {
     expect(await axe(wrapper.element as HTMLElement)).toHaveNoViolations()
   })
 
-  test('a route held back by a parent says so', () => {
-    const route = { liveAt: '2026-11-01T00:00:00Z', _metadata: { effectiveLiveAt: '2026-12-01T00:00:00Z' } }
+  test('a route a parent schedules says it inherits the schedule', () => {
+    const route = { liveAt: '2026-11-01T00:00:00Z', _metadata: { effectiveLiveAt: '2999-12-01T00:00:00Z' } }
 
-    expect(status({ route: '/_/routes/x' }, route)).toBe('Held back by parent')
+    expect(status({ route: '/_/routes/x' }, route)).toBe(`Inherited scheduled · ${formatDateTime('2999-12-01T00:00:00Z')}`)
+  })
+
+  test('a route under a parent with no go-live date says it inherits not live', () => {
+    const route = { liveAt: '2026-11-01T00:00:00Z', _metadata: {} }
+
+    expect(status({ route: '/_/routes/x' }, route)).toBe('Inherited not live')
   })
 })

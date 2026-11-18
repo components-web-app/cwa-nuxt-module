@@ -42,10 +42,12 @@ const labelOf = (resource: CwaResource) => resource.path ?? resource['@id']
         v-model="pick"
         label="Send visitors to"
         endpoint="/_/routes"
+        :search-params="['search', 'path']"
+        :order="{ path: 'asc' }"
         noun="routes"
         width="full"
         :label-of="labelOf"
-        :description="isSelf ? undefined : 'Any page on this site.'"
+        :info="isSelf ? undefined : 'Any page on this site.'"
         data-testid="route-forward-search"
       />
       <CwaUiAlert

@@ -14,7 +14,10 @@ const { publication, now } = defineProps<{
 const status = computed(() => {
   const at = now ?? new Date()
   if (isRouteGatedByAncestor(publication, at)) {
-    return { tone: 'warning' as const, text: 'Held back by parent' }
+    const reachableAt = routeReachableAt(publication)
+    return reachableAt
+      ? { tone: 'accent' as const, text: `Inherited scheduled · ${formatDateTime(reachableAt)}`, clock: true }
+      : { tone: 'neutral' as const, text: 'Inherited not live' }
   }
   const state = getRouteLiveState(publication, at)
   const label = routeLiveStateLabel(publication, at)

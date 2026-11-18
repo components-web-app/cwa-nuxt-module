@@ -3,8 +3,11 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { resetLocalTimeZone } from '@internationalized/date'
 import { axe } from '../../../../../test/utils/axe'
+import { drawsOpenState } from '../../../../../test/utils/kit-css'
 import { fakeFieldModel } from '../../../../../playground/app/kit/fake-field-model'
 import DatePicker from './DatePicker.vue'
+import Field from '../core/ui/Field.vue'
+import { formatDateTime } from '#cwa/resources/date-time-input'
 
 const originalTz = process.env.TZ
 
@@ -103,6 +106,21 @@ describe('CwaUiDatePicker', () => {
     })
   })
 
+  test('the calendar button shows itself selected while the calendar is open, and not once it closes, with no axe violations open', async () => {
+    const wrapper = mountPicker()
+    const button = () => wrapper.get('[data-date-picker-trigger]').element
+    expect(drawsOpenState(button())).toBe(false)
+
+    await openCalendar(wrapper)
+    expect(drawsOpenState(button())).toBe(true)
+    expect(await axe(document.body, { rules: { region: { enabled: false } } })).toHaveNoViolations()
+
+    await wrapper.get('[data-date-picker-trigger]').trigger('click')
+    await flushPromises()
+    expect(drawsOpenState(button())).toBe(false)
+    wrapper.unmount()
+  })
+
   describe('the calendar', () => {
     test('opens on the month of the value with that day selected', async () => {
       const wrapper = mountPicker({ modelValue: '2026-10-01T08:00:00.000Z' })
@@ -198,5 +216,14 @@ describe('CwaUiDatePicker', () => {
 
       expect(await axe(wrapper.element as HTMLElement)).toHaveNoViolations()
     })
+  })
+})
+
+describe('DatePicker in a conflict (#461)', () => {
+  test('hands the field a format, so theirs and yours read as the control shows them', () => {
+    const wrapper = mount(DatePicker, { props: { label: 'Go live', modelValue: '2026-11-20T09:00:00.000Z' } })
+    const format = wrapper.findComponent(Field).props('format') as (value: unknown) => string
+    expect(format('2026-11-20T09:00:00.000Z')).toBe(formatDateTime('2026-11-20T09:00:00.000Z'))
+    expect(format('2026-11-20T09:00:00.000Z')).not.toContain('T09')
   })
 })

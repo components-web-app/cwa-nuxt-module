@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { describe, test, expect, vi, beforeAll, beforeEach } from 'vitest'
+import { describe, test, expect, vi, beforeAll, beforeEach, afterEach } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
 import { flushPromises, mount } from '@vue/test-utils'
@@ -7,6 +7,7 @@ import ComponentFocus from './ComponentFocus.vue'
 import * as cwaComposable from '#cwa/composables/cwa'
 import { registerInstance, unregisterInstance } from '#cwa/admin/manageable-instances'
 import type Cwa from '#cwa/cwa'
+import { ResourceTypeFromIri } from '#cwa/resources/resource-utils'
 
 vi.mock('uuid', () => ({ v4: vi.fn(() => 'mock-reorder-id') }))
 
@@ -300,6 +301,34 @@ describe('ComponentFocus', () => {
       expect(wrapper.find('div.cwa\\:animate-pulse').classes()).toContain('cwa:outline-magenta')
     })
 
+    describe('behind an API path prefix', () => {
+      beforeEach(() => {
+        ResourceTypeFromIri.setPathPrefix('/_api')
+      })
+
+      afterEach(() => {
+        ResourceTypeFromIri.setPathPrefix()
+      })
+
+      test.each([
+        '/_api/_/component_positions/abc',
+        '/_api/_/component_groups/abc',
+        '/_api/_/pages/abc',
+        '/_api/_/layouts/abc',
+        '/_api/_/routes/abc',
+      ])('%s is magenta, as it is with no prefix', (iri) => {
+        mockCwa(() => ref({ data: { _metadata: {} } }))
+        const { wrapper } = mountFocus({ iri })
+        expect(wrapper.find('div.cwa\\:animate-pulse').classes()).toContain('cwa:outline-magenta')
+      })
+
+      test('a component is still green', () => {
+        mockCwa(() => ref({ data: { _metadata: {} } }))
+        const { wrapper } = mountFocus({ iri: '/_api/component/foo' })
+        expect(wrapper.find('div.cwa\\:animate-pulse').classes()).toContain('cwa:outline-green')
+      })
+    })
+
     test('is green for a non-publishable resource with a non /_/ iri', () => {
       mockCwa(() => ref({ data: { _metadata: {} } }))
       const { wrapper } = mountFocus({ iri: '/component/foo' })
@@ -434,6 +463,45 @@ describe('ComponentFocus', () => {
       const { wrapper } = mountFocus()
       expect(() => (wrapper.vm as any).redraw()).not.toThrow()
       getContextSpy.mockRestore()
+    })
+  })
+
+  describe('save state on the selection outline', () => {
+    function withFieldStates(states: Record<string, Record<string, { status: string }>>) {
+      const resources = Object.fromEntries(Object.entries(states).map(([iri, fieldStates]) => [iri, ref({ data: { '@id': iri, '_metadata': {} }, fieldStates: Object.fromEntries(Object.entries(fieldStates).map(([field, state]) => [field, { waiting: false, slow: false, ...state }])) })]))
+      const cwa = mockCwa(iri => resources[iri] ?? ref(undefined))
+      ;(cwa.resources.findAllPublishableIris as ReturnType<typeof vi.fn>).mockImplementation(() => Object.keys(states))
+      return resources
+    }
+
+    test('a field of the draft or the live copy saving sweeps every outline of the selection, which stops pulsing', async () => {
+      withFieldStates({ '/component/foo': { title: { status: 'idle' } }, '/component/foo/draft': { body: { status: 'saving' } } })
+      const { wrapper } = mountFocus()
+      await flushPromises()
+      const outlines = wrapper.findAll('[data-testid="focus-outline"]')
+      expect(outlines.length).toBeGreaterThan(0)
+      for (const outline of outlines) {
+        expect(outline.attributes('data-save')).toBe('saving')
+        expect(outline.classes()).not.toContain('cwa:animate-pulse')
+        expect(outline.find('[data-testid="focus-save"]').findAll('i').map(side => side.attributes('data-side'))).toEqual(['top', 'right', 'bottom', 'left'])
+      }
+    })
+
+    test('an error is held on the outline in the error colour set', async () => {
+      withFieldStates({ '/component/foo': { title: { status: 'error' } } })
+      const { wrapper } = mountFocus()
+      await nextTick()
+      const save = wrapper.get('[data-testid="focus-save"]')
+      expect(save.attributes('data-save')).toBe('error')
+      expect(save.attributes('data-tone')).toBe('light')
+    })
+
+    test('with nothing saving, the outline is the plain pulsing selection', async () => {
+      withFieldStates({ '/component/foo': { title: { status: 'pending' } } })
+      const { wrapper } = mountFocus()
+      await nextTick()
+      expect(wrapper.find('[data-testid="focus-save"]').exists()).toBe(false)
+      expect(wrapper.get('[data-testid="focus-outline"]').classes()).toContain('cwa:animate-pulse')
     })
   })
 })

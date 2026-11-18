@@ -125,7 +125,7 @@ export const useCwaResourceModel = <T, S = T>(iri: Ref<string | undefined>, prop
       holds(root, down.target) || holds(root, document.activeElement) || blur()
     }
     const focusMoved = (event: Event) => {
-      holds(root, event.target) || blur()
+      holds(root, event.target) || (event.target instanceof Node && event.target.contains(root)) || blur()
     }
     document.addEventListener('pointerdown', outside, true)
     document.addEventListener('focusin', focusMoved, true)
@@ -490,5 +490,7 @@ export const useCwaResourceModel = <T, S = T>(iri: Ref<string | undefined>, prop
     blur,
     focusedBy,
     focusListeners,
+    /** @internal */
+    editorKey: { iri: () => iri.value, field: rootProperty.value },
   }
 }
