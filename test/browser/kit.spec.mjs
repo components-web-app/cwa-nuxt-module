@@ -177,3 +177,52 @@ for (const [name, open] of stackOpenings) {
     expect(painted.filter(frame => frame.y > final.y + 1 || frame.y < final.y - 5)).toEqual([])
   })
 }
+
+for (const width of widths) {
+  for (const touch of [false, true]) {
+    test(`kit at ${width}${touch ? ' with touch sizes' : ''}: an image field's buttons, thumbnail and Alt button share one height and one centre, in the bar and in a dialog (#461)`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 })
+      await page.goto(`${kitBase}/kit`)
+      await page.waitForLoadState('networkidle')
+      if (touch) {
+        await page.getByTestId('kit-toolbar-touch').getByRole('switch').click()
+      }
+      const measure = scope => scope.evaluate((root) => {
+        const box = (element) => {
+          const rect = element.getBoundingClientRect()
+          return { height: rect.height, centre: rect.top + rect.height / 2 }
+        }
+        const parts = field => [
+          field.querySelector('[data-testid="file-choose"]'),
+          field.querySelector('[data-testid="file-remove"]'),
+          field.querySelector('img, span[aria-hidden="true"]'),
+        ].filter(Boolean)
+        const chips = [...root.querySelectorAll('[data-testid="image-alt-chip"]')]
+        return [
+          ...[...root.querySelectorAll('[data-testid="file-upload"]')].map(field => parts(field).map(box)),
+          ...chips.map(chip => [chip, ...parts(chip.parentElement.querySelector('[data-testid="file-upload"]'))].map(box)),
+        ]
+      })
+      const expectAligned = (groups) => {
+        expect(groups.length).toBeGreaterThan(0)
+        for (const parts of groups) {
+          expect(parts.length).toBeGreaterThanOrEqual(3)
+          for (const part of parts) {
+            expect(Math.abs(part.height - parts[0].height)).toBeLessThanOrEqual(1)
+            expect(Math.abs(part.centre - parts[0].centre)).toBeLessThanOrEqual(1)
+          }
+        }
+      }
+
+      const bar = page.getByTestId('kit-image-alt-bar')
+      await bar.scrollIntoViewIfNeeded()
+      expectAligned(await measure(bar))
+      expect(await bar.getByTestId('image-alt-chip').count()).toBe(1)
+
+      await page.getByTestId('kit-image-alt-dialog-open').click()
+      const dialog = page.getByTestId('dialog')
+      await dialog.getByTestId('image-alt-chip').waitFor()
+      expectAligned(await measure(dialog))
+    })
+  }
+}

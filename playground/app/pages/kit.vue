@@ -48,6 +48,7 @@ import { badgeTintPercent } from '../../../src/runtime/templates/components/ui/k
 import { kitColourLabel, kitColourTokens, kitContrastPairs, kitThemeStyle, kitTokenCss, measureKitPair } from '../../../src/tailwind/kit-tokens'
 import KitWorkbench from '../kit/KitWorkbench.vue'
 import KitLabs from '../kit/KitLabs.vue'
+import KitImageAlt from '../kit/KitImageAlt.vue'
 import { useKitWorkbench } from '../kit/workbench-state'
 import KitPractice from '../kit/KitPractice.vue'
 import { useKitTab } from '../kit/kit-tab'
@@ -533,6 +534,13 @@ const badgeTones = [
         </div>
       </section>
 
+      <section aria-labelledby="kit-image-alt">
+        <h2 id="kit-image-alt">
+          Image with alt text
+        </h2>
+        <KitImageAlt />
+      </section>
+
       <section aria-labelledby="kit-fields">
         <h2 id="kit-fields">
           Fields and their save state
@@ -826,23 +834,25 @@ const badgeTones = [
         <p class="kit-note">
           The Alt chip edits the image's alt text; the dot shows while it is missing. Image slots put one labelled image per slot in one row.
         </p>
-        <div class="kit-row">
-          <CwaUiImageAlt
-            label="With alt"
-            :upload="uploadSamples[0]!.upload"
-            :alt="altPresent"
-          />
-          <CwaUiImageAlt
-            label="Alt missing"
-            :upload="uploadSamples[0]!.upload"
-            :alt="altMissing"
-          />
-        </div>
-        <div class="kit-row">
-          <CwaUiImageSlots
-            label="Before and after"
-            :slots="[{ label: 'Before', upload: uploadSamples[0]!.upload }, { label: 'After', upload: uploadSamples[1]!.upload }]"
-          />
+        <div class="kit-stack">
+          <div class="kit-row">
+            <CwaUiImageAlt
+              label="With alt"
+              :upload="uploadSamples[0]!.upload"
+              :alt="altPresent"
+            />
+            <CwaUiImageAlt
+              label="Alt missing"
+              :upload="uploadSamples[0]!.upload"
+              :alt="altMissing"
+            />
+          </div>
+          <div class="kit-row">
+            <CwaUiImageSlots
+              label="Before and after"
+              :slots="[{ label: 'Before', upload: uploadSamples[0]!.upload }, { label: 'After', upload: uploadSamples[1]!.upload }]"
+            />
+          </div>
         </div>
       </section>
 

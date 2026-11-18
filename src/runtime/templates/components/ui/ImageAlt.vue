@@ -30,7 +30,7 @@ provide(formSurfaceKey, { unsaved: () => false, register: () => () => {} })
 </script>
 
 <template>
-  <span class="cwa:flex cwa:shrink-0 cwa:items-center cwa:gap-2">
+  <span class="cwa:flex cwa:shrink-0 cwa:items-end cwa:gap-2">
     <CwaUiFileUpload
       :label="label"
       :info="info"
