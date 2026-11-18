@@ -676,3 +676,21 @@ describe('PageDataAdminModal public without a route', () => {
     expect(wrapper.findComponent({ name: 'ResourceModal' }).attributes('border-color-class')).toBe(expected)
   })
 })
+
+describe('PageDataAdminModal Routes tab links (#461)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  test('opening another page from the Routes tab and going to a child route each close the modal and navigate past the editing guard', async () => {
+    const wrapper = setup()
+    const routesTab = wrapper.findComponent({ name: 'RoutesTab' })
+
+    await routesTab.vm.$emit('openPage', '/_/pages/parent')
+    await routesTab.vm.$emit('goTo', '/conference/day-1')
+
+    expect(mockNavigateTo).toHaveBeenNthCalledWith(1, { name: '_cwa-routes-iri', params: { iri: '/_/pages/parent' }, query: { cwa_force: 'true' } })
+    expect(mockNavigateTo).toHaveBeenNthCalledWith(2, { path: '/conference/day-1', query: { cwa_force: 'true' } })
+    expect(wrapper.emitted('close')).toHaveLength(2)
+  })
+})

@@ -328,6 +328,60 @@ describe('PageResourceAdminModal on the kit dialog (#461)', () => {
   })
 })
 
+describe('PageResourceAdminModal Routes tab links (#461)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    countsMock.mockResolvedValue({})
+  })
+
+  const routesTab = (wrapper: ReturnType<typeof mount>) => wrapper.findComponent({ name: 'RoutesTab' })
+
+  test('opening a parent from the Routes tab edits it in this dialog, as switching the depth does', async () => {
+    const stored = {
+      '/_/pages/uuid-self': { '@id': '/_/pages/uuid-self', 'reference': 'Child', 'parentPage': '/_/pages/parent' },
+      '/_/pages/parent': { '@id': '/_/pages/parent', 'reference': 'Parent' },
+    }
+    const { wrapper } = setup({ stored })
+    const endpoint = mockUseItemPage.mock.calls[0]![0].endpoint
+    confirmDiscard.mockResolvedValueOnce(true)
+
+    await routesTab(wrapper).vm.$emit('openPage', '/_/pages/parent')
+    await flushPromises()
+
+    expect(confirmDiscard).toHaveBeenCalledOnce()
+    expect(endpoint.value).toBe('/_/pages/parent')
+    expect(mockNavigateTo).not.toHaveBeenCalled()
+  })
+
+  test('opening a child page from the Routes tab closes this dialog, then opens its own settings past the editing guard', async () => {
+    const { wrapper } = setup()
+    requestClose.mockResolvedValueOnce(false)
+    await routesTab(wrapper).vm.$emit('openPage', '/_/pages/child')
+    await flushPromises()
+    expect(mockNavigateTo).not.toHaveBeenCalled()
+
+    requestClose.mockResolvedValueOnce(true)
+    await routesTab(wrapper).vm.$emit('openPage', '/_/pages/child')
+    await flushPromises()
+    expect(requestClose).toHaveBeenCalledTimes(2)
+    expect(confirmDiscard).not.toHaveBeenCalled()
+    expect(mockNavigateTo).toHaveBeenCalledWith({ name: '_cwa-routes-iri', params: { iri: '/_/pages/child' }, query: { cwa_force: 'true' } })
+  })
+
+  test('going to a child route closes the dialog and navigates past the editing guard', async () => {
+    const { wrapper } = setup()
+    requestClose.mockResolvedValueOnce(false)
+    await routesTab(wrapper).vm.$emit('goTo', '/conference/day-1')
+    await flushPromises()
+    expect(mockNavigateTo).not.toHaveBeenCalled()
+
+    requestClose.mockResolvedValueOnce(true)
+    await routesTab(wrapper).vm.$emit('goTo', '/conference/day-1')
+    await flushPromises()
+    expect(mockNavigateTo).toHaveBeenCalledWith({ path: '/conference/day-1', query: { cwa_force: 'true' } })
+  })
+})
+
 describe('PageResourceAdminModal delete (#461)', () => {
   beforeEach(() => {
     vi.clearAllMocks()

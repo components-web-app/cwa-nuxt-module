@@ -167,6 +167,8 @@
         v-if="resource && resource.hasOwnProperty('@id')"
         :page-resource="resource as CwaResource"
         @reload="loadResource"
+        @open-page="openPage"
+        @go-to="goToPath"
       />
     </template>
     <template #info>
@@ -492,6 +494,24 @@ async function viewOnSite() {
     return
   }
   await navigateTo({ ...getInternalResourceLink(iri), query: { cwa_force: 'true' } })
+}
+
+async function openPage(iri: string) {
+  if (depthChain.value.some(option => option.value === iri)) {
+    displayIriModel.value = iri
+    return
+  }
+  if (!await dialog.value?.requestClose()) {
+    return
+  }
+  await navigateTo({ name: '_cwa-routes-iri', params: { iri }, query: { cwa_force: 'true' } })
+}
+
+async function goToPath(path: string) {
+  if (!await dialog.value?.requestClose()) {
+    return
+  }
+  await navigateTo({ path, query: { cwa_force: 'true' } })
 }
 
 async function goToTemplate() {

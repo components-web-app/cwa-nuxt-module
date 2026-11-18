@@ -146,6 +146,24 @@ describe('CwaUiSubView (#461)', () => {
     expect(onBack).not.toHaveBeenCalled()
   })
 
+  test.each([
+    ['a text input', () => h('input', { 'aria-label': 'Path', 'data-testid': 'editable' })],
+    ['a textarea', () => h('textarea', { 'aria-label': 'Notes', 'data-testid': 'editable' })],
+    ['a contenteditable', () => h('div', { 'contenteditable': 'true', 'role': 'textbox', 'aria-label': 'Body', 'data-testid': 'editable' }, [h('p', { 'data-testid': 'editable-inner' }, 'Text')])],
+  ])('Alt+Left in %s moves the caret, and Escape there still goes back', async (_, field) => {
+    const { open, onBack } = mountSubView({}, () => [field()])
+    await openFrom(document.querySelector('[data-testid="opener"]')!, open)
+    const target = sub()!.querySelector('[data-testid="editable-inner"]') ?? sub()!.querySelector('[data-testid="editable"]')!
+
+    target.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', altKey: true, bubbles: true, cancelable: true }))
+    await flushPromises()
+    expect(onBack).not.toHaveBeenCalled()
+
+    target.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
+    await flushPromises()
+    expect(onBack).toHaveBeenCalledTimes(1)
+  })
+
   describe('a menu open in the sub-view (#461)', () => {
     const styles = [{ label: 'Dark', value: 'dark' }, { label: 'Boxed', value: 'boxed' }]
     const multi = () => document.querySelector<HTMLElement>('[data-testid="multi-input"]')!
@@ -253,6 +271,24 @@ describe('CwaUiSubView (#461)', () => {
     await openFrom(document.querySelector('[data-testid="opener"]')!, open)
 
     expect(drawsFocusRing([...sub()!.querySelector('[data-testid="sub-view-back"]')!.classList])).toBe(true)
+  })
+
+  test('inside a padded body its header still spans the body and sticks to its top edge', async () => {
+    const { open } = mountSubView({ padded: true })
+    await openFrom(document.querySelector('[data-testid="opener"]')!, open)
+    const header = sub()!.querySelector<HTMLElement>('[data-testid="sub-view-header"]')!
+
+    expect([...header.classList]).toEqual(expect.arrayContaining(['cwa:-mx-6', 'cwa:-mt-6', 'cwa:mb-6', 'cwa:-top-6', 'cwa:px-6']))
+    expect(header.classList.contains('cwa:max-sm:px-4')).toBe(false)
+  })
+
+  test('in a flush body its header keeps to its own padding', async () => {
+    const { open } = mountSubView()
+    await openFrom(document.querySelector('[data-testid="opener"]')!, open)
+    const header = sub()!.querySelector<HTMLElement>('[data-testid="sub-view-header"]')!
+
+    expect([...header.classList]).toEqual(expect.arrayContaining(['cwa:top-0', 'cwa:px-6', 'cwa:max-sm:px-4']))
+    expect(header.classList.contains('cwa:-mx-6')).toBe(false)
   })
 
   test('has no axe violations open or closed', async () => {

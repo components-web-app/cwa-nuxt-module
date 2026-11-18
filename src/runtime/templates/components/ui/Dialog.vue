@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, provide, reactive, ref, useId, useTemplateRef, watch } from 'vue'
+import { computed, nextTick, provide, reactive, ref, shallowRef, useId, useTemplateRef, watch } from 'vue'
 import { DialogContent, DialogOverlay, DialogPortal, DialogRoot, DialogTitle } from 'reka-ui'
 import CwaUiButton from './Button.vue'
 import CwaUiAlert from './Alert.vue'
@@ -8,7 +8,8 @@ import Spinner from './Spinner.vue'
 import StateGlyph from '../core/ui/StateGlyph.vue'
 import CheckGlyph from '../core/ui/CheckGlyph.vue'
 import DialogPanel from '../core/ui/DialogPanel.vue'
-import { announceKey, fieldGroupKey, formSurfaceKey } from '../core/ui/field-keys'
+import { announceKey, dialogSubViewKey, fieldGroupKey, formSurfaceKey } from '../core/ui/field-keys'
+import type { DialogSubViewClaim, DialogSubViewGuard } from '../core/ui/field-keys'
 import { changesText, dialogTabBadge, dialogTabWords, listText } from '../core/ui/dialog-form'
 import type { DialogForm, DialogTab } from '../core/ui/dialog-form'
 import { useCwaConfirm } from '#cwa/composables/cwa-confirm'
@@ -84,6 +85,60 @@ if (props.form) {
     undo: () => undefined,
   })
 }
+
+const subViews = shallowRef<DialogSubViewClaim[]>([])
+
+function claimSubView(entry: DialogSubViewClaim) {
+  subViews.value = [...subViews.value, entry]
+  return () => {
+    subViews.value = subViews.value.filter(candidate => candidate !== entry)
+  }
+}
+
+provide(dialogSubViewKey, {
+  footer: get => claimSubView({ footer: get }),
+  guard: guard => claimSubView({ guard }),
+})
+
+const subFooter = computed(() => {
+  for (const entry of subViews.value) {
+    if (entry.footer && entry.tab === currentTab.value) {
+      const footer = entry.footer()
+      if (footer) {
+        return footer
+      }
+    }
+  }
+  return undefined
+})
+
+function openGuards() {
+  return subViews.value
+    .filter(entry => entry.guard && entry.tab === (props.tabs?.length ? currentTab.value : undefined))
+    .map(entry => entry.guard as DialogSubViewGuard)
+}
+
+function subViewUnsaved() {
+  return openGuards().flatMap(guard => guard.unsaved())
+}
+
+function leaveSubViews() {
+  openGuards().forEach(guard => guard.leave())
+}
+
+function askDiscard(names: string[], otherTabsKept: boolean) {
+  return confirm({
+    title: `Discard ${names.length} unsaved ${names.length === 1 ? 'change' : 'changes'}?`,
+    description: `Your changes to ${listText(names)} will be lost.${otherTabsKept ? ' Changes on the other tabs are kept.' : ''}`,
+    keep: 'Keep editing',
+    go: 'Discard',
+  })
+}
+
+const keptText = computed(() => {
+  const n = unsavedCount.value
+  return n ? `${n} unsaved ${props.noun} ${n === 1 ? 'change' : 'changes'} kept` : undefined
+})
 
 function fieldsOf(tab: string) {
   return [...registry.entries()].filter(([, entry]) => entry.tab === tab).map(([field]) => field)
@@ -216,26 +271,21 @@ async function showField(field: string) {
 let confirming = false
 
 async function confirmDiscard() {
-  const count = unsavedCount.value
-  if (!props.form || !count) {
+  const names = [...(props.form?.unsavedFields.map(labelOf) ?? []), ...subViewUnsaved()]
+  if (!names.length) {
     return true
   }
   if (confirming) {
     return false
   }
   confirming = true
-  const names = props.form.unsavedFields.map(labelOf)
-  const discard = await confirm({
-    title: `Discard ${count} unsaved ${count === 1 ? 'change' : 'changes'}?`,
-    description: `Your changes to ${listText(names)} will be lost.`,
-    keep: 'Keep editing',
-    go: 'Discard',
-  })
+  const discard = await askDiscard(names, false)
   confirming = false
   if (!discard) {
     return false
   }
-  props.form.discard()
+  props.form?.discard()
+  leaveSubViews()
   return true
 }
 
@@ -253,11 +303,22 @@ function onOpenChange(open: boolean) {
   }
 }
 
-function selectTab(key: string) {
+async function selectTab(key: string) {
   const tab = props.tabs?.find(candidate => candidate.key === key)
-  if (tab) {
-    currentTab.value = key
+  if (!tab || key === currentTab.value || confirming) {
+    return
   }
+  const names = subViewUnsaved()
+  if (names.length) {
+    confirming = true
+    const discard = await askDiscard(names, true)
+    confirming = false
+    if (!discard) {
+      return
+    }
+  }
+  leaveSubViews()
+  currentTab.value = key
 }
 
 function onTabKey(event: KeyboardEvent, index: number) {
@@ -269,8 +330,7 @@ function onTabKey(event: KeyboardEvent, index: number) {
   event.preventDefault()
   const next = (moves[event.key]! + tabs.length) % tabs.length
   const key = tabs[next]!.key
-  selectTab(key)
-  nextTick(() => document.getElementById(`${tabsId}-${key}`)?.focus())
+  selectTab(key).then(() => nextTick(() => document.getElementById(`${tabsId}-${currentTab.value}`)?.focus()))
 }
 
 const widths = { sm: 'cwa:sm:w-[28rem]', md: 'cwa:sm:w-[36rem]', lg: 'cwa:sm:w-[48rem]' }
@@ -433,6 +493,7 @@ defineExpose({ requestClose, confirmDiscard, showField, announce })
                     :tab="item.key"
                     :unsaved="isUnsaved"
                     :register="register"
+                    :claim="claimSubView"
                   >
                     <p
                       v-if="item.disabled"
@@ -452,41 +513,68 @@ defineExpose({ requestClose, confirmDiscard, showField, announce })
           </template>
         </div>
         <footer
-          v-if="form || $slots.footer"
+          v-if="subFooter !== 'none' && (subFooter || form || $slots.footer)"
           class="cwa:flex cwa:shrink-0 cwa:items-center cwa:justify-end cwa:gap-actions cwa:bg-surface-raised cwa:px-6 cwa:py-4 cwa:max-sm:px-4 cwa:max-sm:pt-3 cwa:max-sm:pb-[calc(0.75rem+env(safe-area-inset-bottom))]"
         >
-          <p
-            v-if="blockedText"
-            data-testid="dialog-blocked"
-            class="cwa:m-0 cwa:text-helper cwa:text-fg-muted cwa:max-sm:hidden"
-          >
-            {{ blockedText }}
-          </p>
-          <slot
-            v-if="!form"
-            name="footer"
-          />
-          <div
-            v-else
-            class="cwa:grid cwa:grid-cols-2 cwa:gap-actions cwa:max-sm:w-full cwa:sm:flex"
-          >
-            <CwaUiButton
-              label="Cancel"
-              data-testid="dialog-cancel"
-              @click="requestClose"
+          <template v-if="subFooter">
+            <p
+              v-if="keptText"
+              data-testid="dialog-sub-kept"
+              class="cwa:m-0 cwa:me-auto cwa:text-helper cwa:text-fg-muted cwa:max-sm:hidden"
+            >
+              {{ keptText }}
+            </p>
+            <div class="cwa:grid cwa:grid-cols-2 cwa:gap-actions cwa:max-sm:w-full cwa:sm:flex">
+              <CwaUiButton
+                label="Cancel"
+                data-testid="dialog-sub-cancel"
+                @click="subFooter.cancel()"
+              />
+              <CwaUiButton
+                variant="solid"
+                :label="subFooter.saveLabel"
+                :loading="subFooter.saving"
+                :disabled="!!subFooter.disabledReason"
+                :disabled-reason="subFooter.disabledReason"
+                data-testid="dialog-sub-save"
+                @click="subFooter.save()"
+              />
+            </div>
+          </template>
+          <template v-else>
+            <p
+              v-if="blockedText"
+              data-testid="dialog-blocked"
+              class="cwa:m-0 cwa:text-helper cwa:text-fg-muted cwa:max-sm:hidden"
+            >
+              {{ blockedText }}
+            </p>
+            <slot
+              v-if="!form"
+              name="footer"
             />
-            <CwaUiButton
-              variant="solid"
-              :label="saveLabel"
-              :aria-label="saveName"
-              :loading="form.saving"
-              :disabled="saveDisabled"
-              :disabled-reason="saveReason"
-              :icon="justSaved && !form.saving ? CheckGlyph : undefined"
-              data-testid="dialog-save"
-              @click="emit('save')"
-            />
-          </div>
+            <div
+              v-else
+              class="cwa:grid cwa:grid-cols-2 cwa:gap-actions cwa:max-sm:w-full cwa:sm:flex"
+            >
+              <CwaUiButton
+                label="Cancel"
+                data-testid="dialog-cancel"
+                @click="requestClose"
+              />
+              <CwaUiButton
+                variant="solid"
+                :label="saveLabel"
+                :aria-label="saveName"
+                :loading="form.saving"
+                :disabled="saveDisabled"
+                :disabled-reason="saveReason"
+                :icon="justSaved && !form.saving ? CheckGlyph : undefined"
+                data-testid="dialog-save"
+                @click="emit('save')"
+              />
+            </div>
+          </template>
         </footer>
         <span
           role="status"

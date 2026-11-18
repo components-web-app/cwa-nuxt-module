@@ -142,6 +142,8 @@
           v-if="resource && resource.hasOwnProperty('@id')"
           :page-resource="resource as CwaResource"
           @reload="loadResource"
+          @open-page="openRoutePage"
+          @go-to="goToRoutePath"
         />
       </template>
       <template #info>
@@ -193,7 +195,7 @@ import { useParentPageDataLoader } from '#cwa-layer/_composables/useParentPageDa
 import { fetchAllMembers } from '#cwa-layer/_composables/fetchAllMembers'
 import { componentNames } from '#components'
 import type { SelectOption } from '#cwa/composables/cwa-select-input'
-import { useCwa } from '#imports'
+import { navigateTo, useCwa } from '#imports'
 import ModalSelect from '#cwa/templates/components/core/admin/form/ModalSelect.vue'
 import ModalRadioTabs from '#cwa/templates/components/core/admin/form/ModalRadioTabs.vue'
 import ModalReachableToggle from '#cwa/templates/components/core/admin/form/ModalReachableToggle.vue'
@@ -454,4 +456,14 @@ watch(localResourceData, (data, oldData) => {
 onMounted(async () => {
   await Promise.all([loadLayoutOptions(), loadParentPageOptions(), loadDataTypes()])
 })
+
+function openRoutePage(iri: string) {
+  emit('close')
+  return navigateTo({ name: '_cwa-routes-iri', params: { iri }, query: { cwa_force: 'true' } })
+}
+
+function goToRoutePath(path: string) {
+  emit('close')
+  return navigateTo({ path, query: { cwa_force: 'true' } })
+}
 </script>

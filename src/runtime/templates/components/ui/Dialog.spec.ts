@@ -1,7 +1,7 @@
 // @vitest-environment nuxt
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
-import { defineComponent, h } from 'vue'
+import { defineComponent, h, inject, ref } from 'vue'
 import { axe } from '../../../../../test/utils/axe'
 import { drawsFocusRing } from '../../../../../test/utils/focus-ring'
 import { fakeDialogForm } from '../../../../../playground/app/kit/fake-dialog-form'
@@ -9,6 +9,8 @@ import type { FakeDialogForm } from '../../../../../playground/app/kit/fake-dial
 import Dialog from './Dialog.vue'
 import Input from './Input.vue'
 import Toggle from './Toggle.vue'
+import { dialogSubViewKey } from '../core/ui/field-keys'
+import type { DialogSubFooter, DialogSubViewContext, DialogSubViewGuard } from '../core/ui/field-keys'
 
 const { confirmMock } = vi.hoisted(() => ({ confirmMock: vi.fn() }))
 vi.mock('#cwa/composables/cwa-confirm', () => ({ useCwaConfirm: () => confirmMock }))
@@ -340,6 +342,200 @@ describe('CwaUiDialog and the Save model (#461)', () => {
 
     expect(qa('[data-testid="dialog-alert-field"]')).toHaveLength(1)
     expect(focusable.map(element => drawsFocusRing([...element.classList]))).toEqual(focusable.map(() => true))
+  })
+  describe('a sub-view inside a tab', () => {
+    function mountWithSubView(footer: () => DialogSubFooter | 'none' | undefined, guard?: DialogSubViewGuard, claimant = ref(true)) {
+      const Claimant = defineComponent({
+        setup() {
+          const context = inject(dialogSubViewKey) as DialogSubViewContext
+          context.footer(footer)
+          guard && context.guard(guard)
+          return () => h('p', 'Edit route')
+        },
+      })
+      const Host = defineComponent({
+        setup() {
+          return () => h(Dialog, { title: 'Kitchens', tabs, form, onSave: () => form.save() }, {
+            details: () => h(Input, { label: 'Reference', field: 'reference' }),
+            seo: () => claimant.value ? h(Claimant) : h('p', 'No route'),
+            info: () => h('p', 'Created yesterday'),
+          })
+        },
+      })
+      return mount(Host, { attachTo: document.body })
+    }
+
+    function subViewGuard(unsaved: string[] = []) {
+      const names = ref(unsaved)
+      return { names, guard: { unsaved: vi.fn(() => names.value), leave: vi.fn() } }
+    }
+
+    test('a form open in a sub-view replaces the footer with its own Cancel and Save, keeping the page\'s unsaved count beside them', async () => {
+      const cancel = vi.fn()
+      const saveRoute = vi.fn()
+      mountWithSubView(() => ({ saveLabel: 'Save route', saving: false, cancel, save: saveRoute }))
+      await flushPromises()
+      await type('[data-cwa-field="reference"] input', 'Mine')
+      tab('Search engines').click()
+      await flushPromises()
+
+      expect(qa('footer button').map(shown)).toEqual(['Cancel', 'Save route'])
+      expect(q('[data-testid="dialog-sub-kept"]')?.textContent?.trim()).toBe('1 unsaved page change kept')
+      expect(q('[data-testid="dialog-save"]')).toBeNull()
+      qa('footer button')[0]!.click()
+      qa('footer button')[1]!.click()
+      expect(cancel).toHaveBeenCalledTimes(1)
+      expect(saveRoute).toHaveBeenCalledTimes(1)
+      expect(await axe(document.body)).toHaveNoViolations()
+    })
+
+    test('the sub-view\'s Save shows it is saving and says why it is off', async () => {
+      const footer = ref<DialogSubFooter>({ saveLabel: 'Add', saving: true, cancel: vi.fn(), save: vi.fn() })
+      mountWithSubView(() => footer.value)
+      await flushPromises()
+      tab('Search engines').click()
+      await flushPromises()
+
+      const button = qa('footer button')[1]!
+      expect(shown(button)).toBe('Add')
+      expect(button.getAttribute('aria-busy')).toBe('true')
+      expect(q('[data-testid="dialog-sub-kept"]')).toBeNull()
+
+      footer.value = { ...footer.value, saving: false, disabledReason: 'Type an old address first.' }
+      await flushPromises()
+      expect(qa('footer button')[1]!.getAttribute('aria-disabled')).toBe('true')
+      expect(qa('footer button')[1]!.getAttribute('title')).toBe('Type an old address first.')
+    })
+
+    test('a sub-view showing a list hides the footer, and the page\'s footer comes back with it', async () => {
+      const footer = ref<'none' | undefined>('none')
+      mountWithSubView(() => footer.value)
+      await flushPromises()
+      tab('Search engines').click()
+      await flushPromises()
+
+      expect(q('footer')).toBeNull()
+      footer.value = undefined
+      await flushPromises()
+      expect(qa('footer button').map(shown)).toEqual(['Cancel', 'Save'])
+    })
+
+    test('the sub-view\'s footer shows only while its tab is open', async () => {
+      mountWithSubView(() => ({ saveLabel: 'Save route', saving: false, cancel: vi.fn(), save: vi.fn() }))
+      await flushPromises()
+      tab('Search engines').click()
+      await flushPromises()
+      tab('Details').click()
+      await flushPromises()
+
+      expect(qa('footer button').map(shown)).toEqual(['Cancel', 'Save'])
+    })
+
+    test('a sub-view mounted while another tab is open still claims the footer of the tab it is in', async () => {
+      const claimant = ref(false)
+      mountWithSubView(() => ({ saveLabel: 'Save route', saving: false, cancel: vi.fn(), save: vi.fn() }), undefined, claimant)
+      await flushPromises()
+      tab('Search engines').click()
+      await flushPromises()
+      tab('Details').click()
+      await flushPromises()
+
+      claimant.value = true
+      await flushPromises()
+      expect(qa('footer button').map(shown)).toEqual(['Cancel', 'Save'])
+
+      tab('Search engines').click()
+      await flushPromises()
+      expect(qa('footer button').map(shown)).toEqual(['Cancel', 'Save route'])
+    })
+
+    test('another tab leaves a sub-view with nothing typed without asking', async () => {
+      const { guard } = subViewGuard()
+      mountWithSubView(() => undefined, guard)
+      await flushPromises()
+      tab('Search engines').click()
+      await flushPromises()
+      expect(guard.leave).not.toHaveBeenCalled()
+
+      tab('Info').click()
+      await flushPromises()
+
+      expect(confirmMock).not.toHaveBeenCalled()
+      expect(guard.leave).toHaveBeenCalledTimes(1)
+      expect(tab('Info').getAttribute('aria-selected')).toBe('true')
+    })
+
+    test('another tab asks before throwing away what the sub-view holds, naming it, and stays put on Keep editing', async () => {
+      const { guard } = subViewGuard(['Route path'])
+      mountWithSubView(() => undefined, guard)
+      await flushPromises()
+      tab('Search engines').click()
+      await flushPromises()
+      confirmMock.mockResolvedValueOnce(false)
+
+      tab('Info').click()
+      await flushPromises()
+
+      expect(confirmMock).toHaveBeenCalledWith({
+        title: 'Discard 1 unsaved change?',
+        description: 'Your changes to Route path will be lost. Changes on the other tabs are kept.',
+        keep: 'Keep editing',
+        go: 'Discard',
+      })
+      expect(guard.leave).not.toHaveBeenCalled()
+      expect(tab('Search engines').getAttribute('aria-selected')).toBe('true')
+
+      confirmMock.mockResolvedValueOnce(true)
+      tab('Info').click()
+      await flushPromises()
+      expect(guard.leave).toHaveBeenCalledTimes(1)
+      expect(tab('Info').getAttribute('aria-selected')).toBe('true')
+    })
+
+    test('closing asks once, naming the page\'s changes and the sub-view\'s together, and Keep editing keeps both', async () => {
+      const { guard } = subViewGuard(['Route path'])
+      const wrapper = mountWithSubView(() => undefined, guard)
+      await flushPromises()
+      await type('[data-cwa-field="reference"] input', 'Mine')
+      tab('Search engines').click()
+      await flushPromises()
+      confirmMock.mockResolvedValueOnce(false)
+
+      q<HTMLButtonElement>('[data-testid="dialog-close"]')!.click()
+      await flushPromises()
+
+      expect(confirmMock).toHaveBeenCalledTimes(1)
+      expect(confirmMock).toHaveBeenCalledWith({
+        title: 'Discard 2 unsaved changes?',
+        description: 'Your changes to Reference and Route path will be lost.',
+        keep: 'Keep editing',
+        go: 'Discard',
+      })
+      expect(guard.leave).not.toHaveBeenCalled()
+      expect(form.unsavedFields).toEqual(['reference'])
+      expect(wrapper.findComponent(Dialog).emitted('close')).toBeUndefined()
+
+      confirmMock.mockResolvedValueOnce(true)
+      q<HTMLButtonElement>('[data-testid="dialog-close"]')!.click()
+      await flushPromises()
+      expect(confirmMock).toHaveBeenCalledTimes(2)
+      expect(guard.leave).toHaveBeenCalledTimes(1)
+      expect(form.unsavedFields).toEqual([])
+      expect(wrapper.findComponent(Dialog).emitted('close')).toHaveLength(1)
+    })
+
+    test('the discard check a page switch runs asks about the sub-view too', async () => {
+      const { guard } = subViewGuard(['Route path'])
+      const wrapper = mountWithSubView(() => undefined, guard)
+      await flushPromises()
+      tab('Search engines').click()
+      await flushPromises()
+      confirmMock.mockResolvedValueOnce(false)
+
+      expect(await wrapper.findComponent(Dialog).vm.confirmDiscard()).toBe(false)
+      expect(confirmMock.mock.calls[0]![0].description).toBe('Your changes to Route path will be lost.')
+      expect(guard.leave).not.toHaveBeenCalled()
+    })
   })
 })
 

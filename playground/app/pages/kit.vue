@@ -24,6 +24,7 @@ import {
   CwaUiNumber,
   CwaUiSpinner,
   CwaUiToggle,
+  CwaUiTree,
 } from '#components'
 import { fakeFieldModel } from '../kit/fake-field-model'
 import { fakeDialogForm } from '../kit/fake-dialog-form'
@@ -147,6 +148,21 @@ const barScheduling = ref(false)
 const barPosition = ref(1)
 const barReordering = ref(true)
 const lastChoice = ref('')
+const treeChoice = ref('')
+const treeNodes = [
+  { key: '/kitchens', label: '/kitchens', children: [
+    { key: '/kitchens/shaker', label: '/kitchens/shaker', children: [{ key: '/kitchens/shaker/painted', label: '/kitchens/shaker/painted' }] },
+    { key: '/kitchens/range', label: '/kitchens/range' },
+  ] },
+  { key: '/old-kitchens', label: '/old-kitchens' },
+]
+const treeActions = (node: { key: string, label: string }) => [
+  { label: `Delete ${node.label}`, danger: true, delete: true, run: () => { treeChoice.value = `Delete ${node.label}` } },
+  { label: `More actions for ${node.label}`, menu: [
+    { label: 'Edit settings', onSelect: () => { treeChoice.value = `Edit ${node.label}` } },
+    { label: 'Go to page', onSelect: () => { treeChoice.value = `Go to ${node.label}` } },
+  ] },
+]
 const menuOptions: MenuEntry[] = [
   { label: 'Cancel schedule', value: 'cancel-schedule' },
   { group: null, items: [{ label: 'Add before', value: 'add-before' }, { label: 'Add after', value: 'add-after' }] },
@@ -724,6 +740,26 @@ const badgeTones = [
             @select="lastChoice = $event.label"
           />
         </div>
+      </section>
+
+      <section aria-labelledby="kit-tree">
+        <h2 id="kit-tree">
+          Tree
+        </h2>
+        <p class="kit-note">
+          A treegrid: arrow keys move between rows, Right and Left open, close and reach a row's actions, Delete runs its delete action. Last action: <output data-testid="kit-tree-choice">{{ treeChoice || 'nothing yet' }}</output>
+        </p>
+        <CwaUiTree
+          label="Example routes"
+          :nodes="treeNodes"
+          :actions="treeActions"
+          data-testid="kit-tree"
+        />
+        <CwaUiTree
+          label="Empty routes"
+          :nodes="[]"
+          empty="Nothing is nested here."
+        />
       </section>
 
       <section aria-labelledby="kit-bar">

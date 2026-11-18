@@ -38,3 +38,29 @@ export interface FormSurfaceContext {
 }
 
 export const formSurfaceKey: InjectionKey<FormSurfaceContext> = Symbol('cwa-form-surface')
+
+export interface DialogSubFooter {
+  saveLabel: string
+  saving: boolean
+  disabledReason?: string
+  cancel: () => void
+  save: () => void
+}
+
+export interface DialogSubViewGuard {
+  unsaved: () => string[]
+  leave: () => void
+}
+
+export interface DialogSubViewContext {
+  footer: (get: () => DialogSubFooter | 'none' | undefined) => () => void
+  guard: (entry: DialogSubViewGuard) => () => void
+}
+
+export interface DialogSubViewClaim {
+  tab?: string
+  footer?: () => DialogSubFooter | 'none' | undefined
+  guard?: DialogSubViewGuard
+}
+
+export const dialogSubViewKey: InjectionKey<DialogSubViewContext> = Symbol('cwa-dialog-sub-view')
