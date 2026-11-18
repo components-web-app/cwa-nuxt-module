@@ -345,6 +345,9 @@
 .cwa\:ms-auto {
   margin-inline-start: auto;
 }
+.cwa\:me-1 {
+  margin-inline-end: var(--cwa-spacing);
+}
 .cwa\:me-2 {
   margin-inline-end: calc(var(--cwa-spacing) * 2);
 }
@@ -2439,6 +2442,9 @@
 .cwa\:focus-visible\:outline-stone-400:focus-visible {
   outline-color: var(--cwa-color-stone-400);
 }
+.cwa\:focus-visible\:outline-white:focus-visible {
+  outline-color: var(--cwa-color-white);
+}
 .cwa\:focus-visible\:outline-yellow:focus-visible {
   outline-color: var(--cwa-color-yellow);
 }
@@ -2622,12 +2628,6 @@
   }
   .cwa\:max-sm\:left-2 {
     left: calc(var(--cwa-spacing) * 2);
-  }
-  .cwa\:max-sm\:order-1 {
-    order: 1;
-  }
-  .cwa\:max-sm\:order-2 {
-    order: 2;
   }
   .cwa\:max-sm\:mx-1 {
     margin-inline: var(--cwa-spacing);
@@ -2956,6 +2956,9 @@
   }
   .cwa\:pointer-coarse\:w-hit {
     width: var(--cwa-spacing-hit);
+  }
+  .cwa\:pointer-coarse\:min-w-hit {
+    min-width: var(--cwa-spacing-hit);
   }
   .cwa\:pointer-coarse\:text-base {
     font-size: var(--cwa-text-base);

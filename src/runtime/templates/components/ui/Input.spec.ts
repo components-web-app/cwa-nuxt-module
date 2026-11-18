@@ -5,6 +5,7 @@ import { createSSRApp, defineComponent, h, provide, ref } from 'vue'
 import type { Ref } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 import { axe } from '../../../../../test/utils/axe'
+import { drawsFocusRing } from '../../../../../test/utils/focus-ring'
 import { fieldGroupKey, formSurfaceKey } from '../core/ui/field-keys'
 import Input from './Input.vue'
 
@@ -47,6 +48,71 @@ describe('CwaUiInput (#459)', () => {
     const wrapper = mount(Input, { props: { label: 'Title', description: 'Shown as the heading.', modelValue: 'x' }, attachTo: document.body })
 
     expect(await axe(wrapper.element as HTMLElement)).toHaveNoViolations()
+  })
+
+  describe('a revealable password', () => {
+    const toggle = (wrapper: ReturnType<typeof mount>) => wrapper.find('[data-testid="input-reveal"]')
+
+    test('shows and hides the typed password with a pressed toggle named for what it does, keeping focus and the value in the field, with no axe violations either way', async () => {
+      const wrapper = mount(Input, { props: { label: 'New password', type: 'password', autocomplete: 'new-password', revealable: true, modelValue: 'secret' }, attachTo: document.body })
+      const input = wrapper.get('input')
+      const button = toggle(wrapper)
+      expect(input.attributes('type')).toBe('password')
+      expect(button.element.tagName).toBe('BUTTON')
+      expect(button.attributes('type')).toBe('button')
+      expect(button.attributes('aria-pressed')).toBe('false')
+      expect(button.attributes('aria-label')).toBe('Show password')
+      expect(button.attributes('aria-controls')).toBe(input.attributes('id'))
+      expect(button.find('[data-testid="icon-eye"]').exists()).toBe(true)
+      expect(await axe(wrapper.element as HTMLElement)).toHaveNoViolations()
+
+      input.element.focus()
+      const pointer = new MouseEvent('mousedown', { bubbles: true, cancelable: true })
+      button.element.dispatchEvent(pointer)
+      expect(pointer.defaultPrevented).toBe(true)
+      await button.trigger('click')
+      expect(input.attributes('type')).toBe('text')
+      expect(input.element.value).toBe('secret')
+      expect(input.attributes('autocomplete')).toBe('new-password')
+      expect(button.attributes('aria-pressed')).toBe('true')
+      expect(button.attributes('aria-label')).toBe('Hide password')
+      expect(button.find('[data-testid="icon-eye-off"]').exists()).toBe(true)
+      expect(await axe(wrapper.element as HTMLElement)).toHaveNoViolations()
+
+      await input.setValue('secret2')
+      expect(wrapper.emitted('update:modelValue')).toEqual([['secret2']])
+      await button.trigger('click')
+      expect(input.attributes('type')).toBe('password')
+    })
+
+    test('its toggle draws a focus ring and has a hit area on touch', () => {
+      const wrapper = mount(Input, { props: { label: 'Password', type: 'password', revealable: true, modelValue: '' } })
+      const classes = toggle(wrapper).classes()
+      expect(drawsFocusRing(classes)).toBe(true)
+      expect(classes).not.toContain('cwa:outline-none')
+      expect(classes).toEqual(expect.arrayContaining(['cwa:pointer-coarse:min-h-hit', 'cwa:pointer-coarse:min-w-hit']))
+    })
+
+    test('goes back to hidden once the field is emptied, as after a save', async () => {
+      const wrapper = mount(Input, { props: { label: 'Password', type: 'password', revealable: true, modelValue: 'secret' } })
+      await toggle(wrapper).trigger('click')
+      expect(wrapper.get('input').attributes('type')).toBe('text')
+      await wrapper.setProps({ modelValue: '' })
+      expect(wrapper.get('input').attributes('type')).toBe('password')
+    })
+
+    test.each([
+      ['a password field that did not ask for it', { type: 'password' }],
+      ['a text field', { type: 'text', revealable: true }],
+    ])('has no toggle on %s', (_, props) => {
+      const wrapper = mount(Input, { props: { label: 'Field', modelValue: '', ...props } })
+      expect(toggle(wrapper).exists()).toBe(false)
+    })
+
+    test('a disabled field\'s toggle is disabled too', () => {
+      const wrapper = mount(Input, { props: { label: 'Password', type: 'password', revealable: true, disabled: true, modelValue: '' } })
+      expect(toggle(wrapper).attributes('disabled')).toBeDefined()
+    })
   })
 
   describe('a value the browser filled into the server-rendered input before hydration (#386)', () => {
@@ -101,6 +167,14 @@ describe('CwaUiInput (#459)', () => {
       await flushPromises()
       return { input, model, writes, unmount: () => app.unmount() }
     }
+
+    test('is kept for a revealable password too', async () => {
+      const { input, model, unmount } = await hydrate('', 'filled-secret', { type: 'password', autocomplete: 'new-password', revealable: true })
+
+      expect(input.value).toBe('filled-secret')
+      expect(model.value).toBe('filled-secret')
+      unmount()
+    })
 
     test('is kept in the input and written to the model, as a password manager on /login needs', async () => {
       const { input, model, unmount } = await hydrate('', 'autofilled-user')

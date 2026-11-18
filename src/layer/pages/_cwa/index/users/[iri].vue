@@ -35,14 +35,15 @@
           width="full"
           autocomplete="off"
         />
-        <CwaUiInput
-          v-if="isChangingEmail"
-          :model="oldPasswordModel"
-          label="Your current password"
-          info="Changing the email needs your own password."
-          type="password"
-          autocomplete="current-password"
-        />
+        <CwaReveal :when="isChangingEmail">
+          <CwaUiInput
+            :model="oldPasswordModel"
+            label="Your current password"
+            info="Changing the email needs your own password."
+            type="password"
+            autocomplete="current-password"
+          />
+        </CwaReveal>
         <CwaUiAlert
           v-if="resource?.newEmailAddress"
           tone="info"
@@ -124,18 +125,19 @@
       <CwaUiFormSection
         v-if="isAdding"
         title="Password"
-        :columns="2"
       >
         <CwaUiInput
           field="plainPassword"
           label="Password"
           type="password"
+          revealable
           autocomplete="new-password"
         />
         <CwaUiInput
           field="repeatPassword"
           label="Repeat password"
           type="password"
+          revealable
           autocomplete="new-password"
         />
       </CwaUiFormSection>
@@ -143,18 +145,19 @@
     <template #password>
       <CwaUiFormSection
         description="Sets a new password for this user. Leave it empty to keep theirs."
-        :columns="2"
       >
         <CwaUiInput
           field="plainPassword"
           label="New password"
           type="password"
+          revealable
           autocomplete="new-password"
         />
         <CwaUiInput
           field="repeatPassword"
           label="Repeat password"
           type="password"
+          revealable
           autocomplete="new-password"
         />
       </CwaUiFormSection>
@@ -223,6 +226,7 @@ import CwaUiDialog from '#cwa/templates/components/ui/Dialog.vue'
 import CwaUiFormSection from '#cwa/templates/components/ui/FormSection.vue'
 import CwaUiInput from '#cwa/templates/components/ui/Input.vue'
 import CwaUiToggle from '#cwa/templates/components/ui/Toggle.vue'
+import CwaReveal from '#cwa/templates/components/core/ui/Reveal.vue'
 import CwaUiSelect from '#cwa/templates/components/ui/Select.vue'
 import CwaUiAlert from '#cwa/templates/components/ui/Alert.vue'
 import CwaUiButton from '#cwa/templates/components/ui/Button.vue'
