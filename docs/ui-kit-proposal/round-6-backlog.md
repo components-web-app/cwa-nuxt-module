@@ -95,3 +95,5 @@ The right-click menu (`CwaResourceManagerContextMenu` on `utils/ContextMenu.vue`
 - **The resource stack opens with one animation from both places**: a fade and a small downward settle, never sideways (7f).
 - **The header's hamburger is vertically centred** (7c).
 - **A page form's Save is not pinned to the bottom**: site settings puts Save and Cancel top right, level with the title or tabs; dialogs keep their pinned footer (7g).
+- **The slide-over slides out on close**, mirroring its slide in, with the backdrop fading; with reduced motion it closes at once (7d).
+- **The slide-over's header line is its loading indicator**, only while its content loads: an indeterminate sweep in the field indicators' language, settling into the line's colour when the content arrives (`danger` if it fails); no animation when nothing loads, no sweep with reduced motion (7d).
