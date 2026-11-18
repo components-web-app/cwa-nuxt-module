@@ -95,6 +95,17 @@ describe('RequestErrors (#457)', () => {
     expect(shown()).toContainEqual(expect.objectContaining({ id: 'cwa-request-error-2', description: '404: Not Found' }))
   })
 
+  test('a save failure a field model reports through onRequest shows in its field and outline, never as a toast (#461)', () => {
+    const endpoint = '/component/html_contents/one'
+    store.errors = reactive([
+      { ...serverError(1, 500, 'Field save'), event: { endpoint, data: { html: '<p>x</p>' }, onRequest: () => {} } },
+      { ...serverError(2, 500, 'Modal save'), event: { endpoint, data: { html: '<p>x</p>' } } },
+    ])
+    mount(RequestErrors)
+
+    expect(shown().map(options => options.id)).toEqual(['cwa-request-error-2'])
+  })
+
   test('leaving the admin dismisses the toasts it raised, so no error stays on the public page', async () => {
     store.errors = reactive([serverError(1, 500, 'One'), serverError(2, 500, 'Two')])
     const wrapper = mount(RequestErrors)

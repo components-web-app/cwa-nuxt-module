@@ -8,14 +8,12 @@ const outputDir = resolve(here, '../../playground/.output')
 const manifestPath = resolve(outputDir, 'server/chunks/virtual/precomputed.mjs')
 const chunkDir = resolve(outputDir, 'public/_nuxt')
 
-const gzipBudget = 164815
+const gzipBudget = 164195
 
 const forbidden = [
   { marker: 'Invalid DateTime', source: 'luxon' },
   { marker: 'InvalidXml', source: 'fast-xml-parser' },
-  { marker: 'headlessui', source: '@headlessui/vue' },
   { marker: 'data-reka-date-field-segment', source: 'reka-ui' },
-  { marker: 'preventOverflow', source: '@popperjs/core' },
   { marker: 'OES_texture_half_float', source: 'ui/BackgroundParticles.vue' },
   { marker: 'CwaLayoutSecondary:[]', source: 'cwa-component-group-declarations' },
   { marker: 'last_event_id', source: 'api/mercure-client.ts' },

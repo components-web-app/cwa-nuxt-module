@@ -4,6 +4,7 @@ import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { computed, nextTick, ref } from 'vue'
 import { axe } from '../../../../../../../../../test/utils/axe'
 import Order from './Order.vue'
+import CwaUiToggle from '#cwa/templates/components/ui/Toggle.vue'
 
 const reordering = ref(true)
 const requestCount = ref(0)
@@ -89,13 +90,15 @@ describe('Order tab on the kit (#400, #459)', () => {
     expect(emit).toHaveBeenCalledWith('reorder', { positionIri: '/_/component_positions/p1', location: 3 })
   })
 
-  test('the position is disabled while reordering is off', async () => {
+  test('Move up, Move down and the position work with Enable reordering off, which only turns on dragging', async () => {
     reordering.value = false
+    displayNumber.value = 2
     const wrapper = mount(Order)
 
-    expect(wrapper.get('input[role="spinbutton"]').attributes('disabled')).toBeDefined()
-    await step(wrapper, 'Move down').trigger('click')
-    expect(emit).not.toHaveBeenCalled()
+    expect(wrapper.get('input[role="spinbutton"]').attributes('disabled')).toBeUndefined()
+    expect(step(wrapper, 'Move up').attributes('aria-disabled')).toBeUndefined()
+    await step(wrapper, 'Move up').trigger('click')
+    expect(emit).toHaveBeenLastCalledWith('reorder', { positionIri: '/_/component_positions/p1', location: 1 })
   })
 
   test('the position shows saving on its edge line while the new order syncs, then saved', async () => {
@@ -137,14 +140,12 @@ describe('Order tab on the kit (#400, #459)', () => {
     expect(dismiss).toHaveBeenCalledWith('/_/component_groups/g1')
   })
 
-  test('while reordering is off, the position and its steppers say how to turn it on', () => {
+  test('with reordering off, nothing says to turn it on before moving, and the toggle says it is for dragging', () => {
     reordering.value = false
     const wrapper = mount(Order, { attachTo: document.body })
 
-    for (const name of ['Move up', 'Move down']) {
-      const ids = step(wrapper, name).attributes('aria-describedby')!.split(' ')
-      expect(ids.map(id => document.getElementById(id)?.textContent).join(' ')).toContain('Turn on Enable reordering to move this component.')
-    }
+    expect(document.body.textContent).not.toContain('Turn on Enable reordering')
+    expect(wrapper.findComponent(CwaUiToggle).props('info')).toBe('Lets you drag components on the page to reorder them.')
   })
 
   test('has no axe violations', async () => {

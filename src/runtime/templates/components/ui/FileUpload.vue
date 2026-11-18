@@ -25,6 +25,7 @@ const props = withDefaults(defineProps<{
   description?: string
   accept?: string
   disabled?: boolean
+  disabledReason?: string
   field?: string
   upload?: CwaUploadField
 }>(), {
@@ -33,6 +34,7 @@ const props = withDefaults(defineProps<{
   description: undefined,
   accept: undefined,
   disabled: false,
+  disabledReason: undefined,
   field: undefined,
   upload: undefined,
 })
@@ -76,6 +78,7 @@ function remove() {
 
 <template>
   <Field
+    :disabled-reason="disabled ? disabledReason : undefined"
     :label="label"
     :label-hidden="labelHidden"
     :info="info"
@@ -113,7 +116,6 @@ function remove() {
         >{{ file ? `${file.name} · ${file.size}` : 'No file' }}</span>
         <CwaUiButton
           :label="file ? 'Replace' : 'Upload'"
-          size="sm"
           :disabled="inactive"
           data-testid="file-choose"
           @click="choose"
@@ -121,7 +123,6 @@ function remove() {
         <CwaUiButton
           v-if="file"
           label="Remove"
-          size="sm"
           :disabled="inactive"
           data-testid="file-remove"
           @click="remove"

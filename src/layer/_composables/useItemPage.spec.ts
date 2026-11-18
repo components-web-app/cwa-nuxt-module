@@ -615,3 +615,139 @@ describe('useItemPage creating (#461)', () => {
     expect(errors).toHaveLength(1)
   })
 })
+
+describe('useItemPage loading', () => {
+  const child = '/_/layouts/child'
+  const parent = '/_/layouts/parent'
+  const grand = '/_/layouts/grand'
+
+  function setupLoading(stored: Record<string, any>, start = child) {
+    const store = reactive<Record<string, any>>(Object.fromEntries(Object.entries(stored).map(([iri, data]) => [iri, { data, apiState: { status: 'SUCCESS' } }])))
+    const answers: Record<string, (data?: Record<string, any>) => void> = {}
+    const fetchResource = vi.fn(({ path }: { path: string }) => new Promise<void>((resolve) => {
+      answers[path] = (data) => {
+        data && (store[path] = { data, apiState: { status: 'SUCCESS' } })
+        resolve()
+      }
+    }))
+    // @ts-expect-error
+    vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => ({
+      resources: { getResource: vi.fn((iri: string) => computed(() => store[iri])) },
+      resourcesManager: { errors: [], updateResource: vi.fn() },
+      fetchResource,
+    }))
+    const endpoint = ref(start)
+    const emit = vi.fn()
+    let itemPage!: ReturnType<typeof useItemPage>
+    mount(defineComponent({
+      setup() {
+        itemPage = useItemPage({ createEndpoint: '/_/layouts', emit, resourceType: 'Layout', defaultResource: {}, endpoint })
+        return () => null
+      },
+    }))
+    return { itemPage: () => itemPage, endpoint, answers, fetchResource, emit }
+  }
+
+  const layoutAt = (iri: string, reference: string, more: Record<string, any> = {}) => ({ ...layout, '@id': iri, reference, ...more })
+
+  test('a resource the store already holds shows at once, without loading, while it is fetched again', async () => {
+    const { itemPage } = setupLoading({ [child]: layoutAt(child, 'Child') })
+    await flushPromises()
+    expect(itemPage().isLoading.value).toBe(false)
+    expect(itemPage().localResourceData.value?.reference).toBe('Child')
+  })
+
+  test('a resource not stored is loading until its fetch answers', async () => {
+    const { itemPage, answers } = setupLoading({})
+    await flushPromises()
+    expect(itemPage().isLoading.value).toBe(true)
+    answers[child]!(layoutAt(child, 'Child'))
+    await flushPromises()
+    expect(itemPage().isLoading.value).toBe(false)
+    expect(itemPage().localResourceData.value?.reference).toBe('Child')
+  })
+
+  test('moving to a resource not stored drops the previous one at once: nothing unsaved, nothing to send, until it arrives', async () => {
+    const { itemPage, endpoint, answers } = setupLoading({ [child]: layoutAt(child, 'Child') })
+    await flushPromises()
+    itemPage().localResourceData.value!.reference = 'Edited'
+
+    endpoint.value = parent
+    await flushPromises()
+    expect(itemPage().isLoading.value).toBe(true)
+    expect(itemPage().localResourceData.value).toBeUndefined()
+    expect(itemPage().form.unsavedFields).toEqual([])
+
+    answers[parent]!(layoutAt(parent, 'Parent'))
+    await flushPromises()
+    expect(itemPage().isLoading.value).toBe(false)
+    expect(itemPage().localResourceData.value?.reference).toBe('Parent')
+  })
+
+  test('only the latest of overlapping loads ends the loading: an earlier answer arriving first never shows another resource as loaded', async () => {
+    const { itemPage, endpoint, answers } = setupLoading({ [child]: layoutAt(child, 'Child', { parentPage: '/_/pages/x' }) })
+    await flushPromises()
+    endpoint.value = parent
+    await flushPromises()
+    endpoint.value = grand
+    await flushPromises()
+
+    answers[parent]!(layoutAt(parent, 'Parent'))
+    await flushPromises()
+    expect(itemPage().isLoading.value).toBe(true)
+    expect(itemPage().localResourceData.value).toBeUndefined()
+
+    answers[grand]!(layoutAt(grand, 'Grand'))
+    await flushPromises()
+    expect(itemPage().isLoading.value).toBe(false)
+    expect(itemPage().localResourceData.value).toMatchObject({ '@id': grand, 'reference': 'Grand' })
+    expect(itemPage().loadFailed.value).toBe(false)
+  })
+
+  test('a later load that brings nothing is a failure shown in place, with nothing to send, and Retry loads it again', async () => {
+    const { itemPage, endpoint, answers, fetchResource, emit } = setupLoading({ [child]: layoutAt(child, 'Child') })
+    await flushPromises()
+    endpoint.value = parent
+    await flushPromises()
+
+    answers[parent]!()
+    await flushPromises()
+    expect(itemPage().isLoading.value).toBe(false)
+    expect(itemPage().loadFailed.value).toBe(true)
+    expect(itemPage().localResourceData.value).toBeUndefined()
+    expect(itemPage().form.unsavedFields).toEqual([])
+    expect(emit).not.toHaveBeenCalledWith('close')
+
+    itemPage().loadResource()
+    await flushPromises()
+    expect(itemPage().loadFailed.value).toBe(false)
+    expect(itemPage().isLoading.value).toBe(true)
+    answers[parent]!(layoutAt(parent, 'Parent'))
+    await flushPromises()
+    expect(itemPage().loadFailed.value).toBe(false)
+    expect(itemPage().localResourceData.value?.reference).toBe('Parent')
+    expect(fetchResource).toHaveBeenCalledTimes(3)
+  })
+
+  test('the first load that brings nothing closes the dialog, as before', async () => {
+    const { itemPage, answers, emit } = setupLoading({})
+    await flushPromises()
+    answers[child]!()
+    await flushPromises()
+    expect(emit).toHaveBeenCalledWith('close')
+    expect(itemPage().loadFailed.value).toBe(false)
+  })
+
+  test('a first load overtaken by a move does not close the dialog for the resource moved to', async () => {
+    const { itemPage, endpoint, answers, emit } = setupLoading({})
+    await flushPromises()
+    endpoint.value = parent
+    await flushPromises()
+    answers[child]!()
+    await flushPromises()
+    expect(emit).not.toHaveBeenCalledWith('close')
+    answers[parent]!(layoutAt(parent, 'Parent'))
+    await flushPromises()
+    expect(itemPage().localResourceData.value?.reference).toBe('Parent')
+  })
+})

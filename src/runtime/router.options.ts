@@ -82,6 +82,9 @@ const scrollBehavior: RouterOptions['scrollBehavior'] = (to, from, savedPosition
   const hashScrollBehaviour = (router.options as { scrollBehaviorType?: ScrollBehavior })?.scrollBehaviorType ?? 'auto'
 
   if (to.path.replace(TRAILING_SLASH_RE, '') === from.path.replace(TRAILING_SLASH_RE, '')) {
+    if (to.meta.hashIsTab) {
+      return false
+    }
     if (from.hash && !to.hash) {
       return savedPosition ?? { left: 0, top: 0 }
     }
@@ -97,13 +100,14 @@ const scrollBehavior: RouterOptions['scrollBehavior'] = (to, from, savedPosition
   }
 
   const isLoading = () => !!nuxtApp.$cwa?.resources.isLoading.value
+  const scrollTo = to.meta.hashIsTab ? { ...to, hash: '' } : to
 
   const settleScroll = async () => {
-    const deferred = await waitForContent(to, savedPosition as SavedPosition, isLoading)
+    const deferred = await waitForContent(scrollTo, savedPosition as SavedPosition, isLoading)
     if (router.currentRoute.value.fullPath !== to.fullPath) {
       return false
     }
-    return calculatePosition(to, savedPosition as SavedPosition, deferred ? 'instant' : hashScrollBehaviour)
+    return calculatePosition(scrollTo, savedPosition as SavedPosition, deferred ? 'instant' : hashScrollBehaviour)
   }
 
   if (from === START_LOCATION) {

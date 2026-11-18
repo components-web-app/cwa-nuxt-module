@@ -4,6 +4,7 @@ import { mount } from '@vue/test-utils'
 import { reactive } from 'vue'
 import { mockNuxtImport } from '@nuxt/test-utils/runtime'
 import ErrorPage from './ErrorPage.vue'
+import { drawsFocusRing } from '../../../../../test/utils/focus-ring'
 
 const mockRoute = reactive({ path: '/' })
 
@@ -37,6 +38,16 @@ const actions = (wrapper: ReturnType<typeof createWrapper>) => wrapper.find('[da
 describe('ErrorPage', () => {
   beforeEach(() => {
     mockRoute.path = '/'
+  })
+
+  test('Go back home and Sign in draw a visible focus ring without hiding the outline for forced colours', () => {
+    mockRoute.path = '/missing'
+    const wrapper = createWrapper({ statusCode: 401 }, '/missing')
+    const controls = actions(wrapper).findAll('button, a')
+    expect(controls.map(control => control.text())).toEqual(['Go back home', 'Sign in'])
+    for (const control of controls) {
+      expect(drawsFocusRing([...control.element.classList])).toBe(true)
+    }
   })
 
   test('a 404 at the site root says there is no page yet and offers a way in', () => {

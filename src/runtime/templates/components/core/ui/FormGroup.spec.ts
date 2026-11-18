@@ -87,7 +87,7 @@ describe('FormGroup and the page Save model (#461)', () => {
     form = fakeDialogForm({ siteName: 'Kitchens', maintenanceModeEnabled: false, canonicalUrl: '' })
   })
 
-  test('holds its sections, whose headings follow the page heading, and ends in a row of Cancel and Save only', async () => {
+  test('holds its sections, whose headings follow the page heading, under a row of Cancel and Save only', async () => {
     await mountRouted(form)
     await flushPromises()
 
@@ -204,8 +204,7 @@ describe('FormGroup and the page Save model (#461)', () => {
     await mountRouted(form)
     await flushPromises()
     await type('[data-cwa-field="siteName"] input', 'Our kitchens')
-    form.failNext({})
-    form.formError = 'The server couldn\'t save it. Nothing changed, and what you typed is still here.'
+    form.failNext({}, 'The server couldn\'t save it. Nothing changed, and what you typed is still here.')
 
     save().click()
     await flushPromises()
@@ -335,50 +334,17 @@ describe('FormGroup and the page Save model (#461)', () => {
     expect(unload()).toBe(false)
   })
 
-  test('while it is on the page, the scroll container keeps focused fields clear of the sticky Save row, whatever its height', async () => {
-    const observers: { callback: () => void, observed: Element[], disconnect: () => void }[] = []
-    vi.stubGlobal('ResizeObserver', class {
-      observed: Element[] = []
-      disconnect = vi.fn()
-      constructor(public callback: () => void) {
-        observers.push(this)
-      }
-
-      observe(element: Element) {
-        this.observed.push(element)
-      }
-    })
-    let rowHeight = 72.4
-    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
-      return { height: this.dataset.testid === 'form-group-actions' ? rowHeight : 0 } as DOMRect
-    })
+  test('Cancel and Save head the form, before its sections, and are never pinned to the bottom of the page', async () => {
     const scroller = document.documentElement
-    scroller.style.scrollPaddingBottom = '8px'
-    try {
-      const router = await mountRouted(form)
-      expect(scroller.style.scrollPaddingBottom).toBe('73px')
-
-      rowHeight = 140
-      observers.find(observer => observer.observed.some(element => (element as HTMLElement).dataset.testid === 'form-group-actions'))!.callback()
-      expect(scroller.style.scrollPaddingBottom).toBe('140px')
-
-      await go(router, '/pages')
-      expect(scroller.style.scrollPaddingBottom).toBe('8px')
-      expect(observers[0]!.disconnect).toHaveBeenCalled()
-    }
-    finally {
-      scroller.style.scrollPaddingBottom = ''
-      vi.unstubAllGlobals()
-      vi.restoreAllMocks()
-    }
-  })
-
-  test('the sticky Save row is painted with the page\'s own background and adds no rule of its own', async () => {
+    scroller.style.scrollPaddingBottom = ''
     await mountRouted(form)
+    await flushPromises()
 
     const row = q('[data-testid="form-group-actions"]')!
-    expect(row.className).toContain('cwa:bg-stone-800')
-    expect(row.className).not.toMatch(/cwa:bg-surface|cwa:border-t/)
+    const firstSection = q('[data-testid="form-section"]')!
+    expect(row.compareDocumentPosition(firstSection) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(row.className).not.toMatch(/cwa:sticky|cwa:bottom-0|cwa:fixed/)
+    expect(scroller.style.scrollPaddingBottom).toBe('')
   })
 
   test('a conflict blocks Save with its reason until a version is chosen', async () => {

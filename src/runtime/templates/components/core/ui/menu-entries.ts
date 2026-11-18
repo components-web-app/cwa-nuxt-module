@@ -5,8 +5,12 @@ export interface MenuItem {
   tone?: 'danger'
   disabled?: boolean
   disabledReason?: string
+  reasons?: string[]
+  reasonsLabel?: string
   testId?: string
   onSelect?: () => void
+  /** @internal */
+  dot?: string
 }
 
 export interface MenuGroup {

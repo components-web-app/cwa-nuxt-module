@@ -23,6 +23,7 @@ vi.mock('#cwa/resources/realtime-view', () => ({
 enableAutoUnmount(afterEach)
 afterEach(() => {
   confirm.mockReset()
+  vi.restoreAllMocks()
 })
 
 function setup(resourceType: string, members: Record<string, Record<string, any>[]>) {
@@ -124,6 +125,7 @@ describe('PageResourceAdminModal in the real dialog, creating (#461)', () => {
   })
 
   test('a new page left as it opened, with its layout pre-selected, closes without asking; once typed into, closing asks first', async () => {
+    vi.spyOn(window, 'matchMedia').mockImplementation((query: string) => ({ matches: query.includes('reduce'), media: query }) as unknown as MediaQueryList)
     const { wrapper } = setup('Page', { '/_/layouts': [{ '@id': '/_/layouts/a', 'reference': 'A' }] })
     await flushPromises()
 
@@ -142,5 +144,40 @@ describe('PageResourceAdminModal in the real dialog, creating (#461)', () => {
 
     expect(confirm).toHaveBeenCalledWith(expect.objectContaining({ title: 'Discard 1 unsaved change?', description: 'Your changes to Reference will be lost.' }))
     expect(wrapper.emitted('close')).toHaveLength(1)
+  })
+})
+
+describe('PageResourceAdminModal in the real dialog, editing (#461)', () => {
+  test('opening a nested page fetches it once, and its parent once for the depths', async () => {
+    const pages: Record<string, Record<string, any>> = {
+      '/_/pages/child': { '@id': '/_/pages/child', '@type': 'Page', 'reference': 'Child', 'parentPage': '/_/pages/parent', 'isTemplate': false },
+      '/_/pages/parent': { '@id': '/_/pages/parent', '@type': 'Page', 'reference': 'Parent', 'isTemplate': false },
+    }
+    const store = reactive<Record<string, any>>({})
+    const fetchResource = vi.fn(async ({ path }: { path: string }) => {
+      store[path] = { data: pages[path], apiState: { status: 'SUCCESS' } }
+      return pages[path]
+    })
+    vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => ({
+      resources: {
+        displayPageIri: ref(undefined),
+        getResource: (iri: string) => computed(() => store[iri]),
+      },
+      resourcesManager: { errors: reactive([]), removeError: vi.fn(), addError: vi.fn() },
+      fetch: vi.fn(() => ({ response: Promise.resolve({ _data: { member: [] } }) })),
+      fetchResource,
+      getApiDocumentation: vi.fn(async () => ({ entrypoint: {}, pageDataMetadata: { member: [] } })),
+      pagesConfig: {},
+      pageDataConfig: {},
+      admin: { toggleEdit: vi.fn() },
+    }) as unknown as ReturnType<typeof cwaComposable.useCwa>)
+    routeState.route.params = { iri: '/_/pages/child' }
+
+    mount(PageResourceAdminModal, { props: { resourceType: 'Page' }, attachTo: document.body })
+    await flushPromises()
+
+    expect(fetchResource.mock.calls.map(([event]) => event.path).sort()).toEqual(['/_/pages/child', '/_/pages/parent'])
+    expect(document.querySelector('h2')!.textContent!.trim()).toBe('Child')
+    routeState.route.params = { iri: 'add' }
   })
 })

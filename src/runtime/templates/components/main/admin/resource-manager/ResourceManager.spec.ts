@@ -9,6 +9,7 @@ import type Cwa from '#cwa/cwa'
 import { announceKey } from '#cwa/templates/components/core/ui/field-keys'
 import { consola } from 'consola'
 import CwaUiManagerTab from '#cwa/templates/components/ui/ManagerTab.vue'
+import Group from './_tabs/group/Group.vue'
 
 vi.mock('#cwa/templates/components/main/admin/resource-manager/_parts/ClonePlacementMenu.vue', () => ({
   __esModule: true,
@@ -45,7 +46,7 @@ vi.mock('#cwa/admin/confirm-dialog', () => ({
   createConfirmDialog: vi.fn(async () => ({ reveal: confirmState.reveal })),
 }))
 
-vi.mock('#cwa/templates/components/core/ConfirmDialog.vue', () => ({ default: {} }))
+vi.mock('#cwa/templates/components/core/ui/Confirm.vue', () => ({ default: {} }))
 
 vi.mock('#app/nuxt', async importOriginal => ({
   ...await importOriginal<typeof import('#app/nuxt')>(),
@@ -173,6 +174,17 @@ describe('ResourceManager', () => {
       cwaState.cwa = makeCwa({ stackManager })
       const wrapper = await mountManager()
       expect(wrapper.find('#cwa-manager-spacer').exists()).toBe(true)
+    })
+
+    test('the saving line above the bar sits on the notifications layer, above the page overlay and outlines, as the header\'s does', async () => {
+      const stackManager = makeStackManager({ showManager: ref(true), currentStackItem: ref({ iri: '/component/1' }) })
+      cwaState.cwa = makeCwa({ stackManager })
+      const wrapper = await mountManager()
+      resolverState.allMeta.value = [{ name: 'Tab' }]
+      await nextTick()
+      const line = wrapper.get('.rli-stub')
+      expect(line.classes()).toContain('cwa:z-notifications')
+      expect(line.classes()).toContain('cwa:bottom-full')
     })
   })
 
@@ -435,6 +447,25 @@ describe('ResourceManager', () => {
 
       expect(warn).toHaveBeenCalledOnce()
       expect(warn.mock.calls[0]![0]).toContain('"Title"')
+    })
+
+    test('says nothing on switching to the module\'s Group tab from another tab, then warns on switching to a tab without CwaUiManagerTab', async () => {
+      const warn = vi.spyOn(consola, 'warn').mockImplementation(() => {})
+      const InfoTab = { name: 'InfoTab', render: () => h(CwaUiManagerTab, null, () => h('span', 'Info')) }
+      const PlainTab = { name: 'PlainTab', render: () => h('div', 'Label') }
+      const wrapper = await show([InfoTab, Group, PlainTab], ['Info', 'Group', 'Label'])
+      const tabs = wrapper.findComponent({ name: 'ManagerTabs' })
+
+      tabs.vm.$emit('click', 1)
+      await flushPromises()
+      expect(wrapper.find('[data-testid="group-add-start"]').exists()).toBe(true)
+      expect(warn).not.toHaveBeenCalled()
+
+      tabs.vm.$emit('click', 2)
+      await flushPromises()
+      expect(wrapper.text()).toContain('Label')
+      expect(warn).toHaveBeenCalledOnce()
+      expect(warn.mock.calls[0]![0]).toContain('"Label"')
     })
 
     test('says nothing in production', async () => {

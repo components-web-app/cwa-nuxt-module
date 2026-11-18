@@ -39,6 +39,14 @@ describe('CwaUiManagerTab (#459)', () => {
     useCwaResourceModel.mockClear()
   })
 
+  test('the scrolling row is the containing block of the fields\' positioned parts (status lines, screen-reader text), so it clips them and the tab never widens the page (#461)', () => {
+    const wrapper = mount(defineComponent({ setup: () => () => h(ManagerTab, () => [h(Input, { label: 'Title', modelValue: 'Kitchens' })]) }))
+
+    const row = wrapper.get('[data-testid="manager-tab"] > .cwa\\:overflow-x-auto')
+    expect(row.classes()).toContain('cwa:relative')
+    expect(row.find('.cwa\\:sr-only, .cwa\\:status-line').exists()).toBe(true)
+  })
+
   test('a field="…" control in the tab binds to the selected resource\'s field and is listed in the tab\'s fields', () => {
     const fields: string[] = []
     const wrapper = mount(tabWith(false, fields))

@@ -1,50 +1,99 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, provide, reactive, ref, useTemplateRef, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, provide, reactive, ref, useId, useTemplateRef, watch } from 'vue'
 import { onBeforeRouteLeave, useRouter } from 'vue-router'
 import type { RouteLocationNormalized } from 'vue-router'
 import CwaUiButton from '../../ui/Button.vue'
 import CwaUiAlert from '../../ui/Alert.vue'
 import CheckGlyph from './CheckGlyph.vue'
+import StateGlyph from './StateGlyph.vue'
+import DialogPanel from './DialogPanel.vue'
 import { announceKey, fieldGroupKey, formSurfaceKey, sectionHeadingKey } from './field-keys'
-import { changesText, listText } from './dialog-form'
-import type { DialogForm } from './dialog-form'
+import { changesText, dialogTabBadge, dialogTabWords, listText } from './dialog-form'
+import type { DialogForm, DialogTab } from './dialog-form'
 import { useCwaConfirm } from '#cwa/composables/cwa-confirm'
 
 const SAVED_FOR = 1500
 
 const props = defineProps<{
   form: DialogForm
+  tabs?: DialogTab[]
+  tab?: string
 }>()
 
 const emit = defineEmits<{
-  save: []
+  'save': []
+  'update:tab': [key: string]
 }>()
 
 defineSlots<{
-  default: () => any
+  [key: string]: (() => any) | undefined
 }>()
 
 const confirm = useCwaConfirm()
 const root = useTemplateRef<HTMLElement>('root')
 const alert = useTemplateRef<InstanceType<typeof CwaUiAlert>>('alert')
-const actions = useTemplateRef<HTMLElement>('actions')
 
-const registry = reactive(new Map<string, string>())
+const tabsId = useId()
+const localTab = ref(props.tab ?? props.tabs?.[0]?.key)
+const currentTab = computed({
+  get: () => props.tab ?? localTab.value,
+  set: (key) => {
+    localTab.value = key
+    key && emit('update:tab', key)
+  },
+})
 
-function register(field: string, label: string) {
-  registry.set(field, label)
+const registry = reactive(new Map<string, { label: string, tab?: string }>())
+
+function register(field: string, label: string, tab?: string) {
+  registry.set(field, { label, tab })
   return () => {
-    registry.get(field) === label && registry.delete(field)
+    registry.get(field)?.label === label && registry.delete(field)
   }
 }
 
+function isUnsaved(field: string) {
+  return props.form.unsavedFields.includes(field)
+}
+
+function noClaim() {
+  return () => undefined
+}
+
+function fieldsOf(tab: string) {
+  return [...registry.entries()].filter(([, entry]) => entry.tab === tab).map(([field]) => field)
+}
+
+const badges = computed(() => Object.fromEntries((props.tabs ?? []).map(tab => [tab.key, dialogTabBadge(fieldsOf(tab.key), props.form)])))
+
+function glyphOf(key: string) {
+  const kind = badges.value[key]?.kind
+  return kind === 'conflict' || kind === 'error' ? kind : undefined
+}
+
+function tabLabelOf(field: string) {
+  const tab = registry.get(field)?.tab
+  return props.tabs?.find(candidate => candidate.key === tab)?.label
+}
+
+function onTabKey(event: KeyboardEvent, index: number) {
+  const tabs = props.tabs ?? []
+  const moves: Record<string, number> = { ArrowRight: index + 1, ArrowLeft: index - 1, Home: 0, End: tabs.length - 1 }
+  if (!(event.key in moves) || event.altKey || event.metaKey || event.ctrlKey) {
+    return
+  }
+  event.preventDefault()
+  currentTab.value = tabs[(moves[event.key]! + tabs.length) % tabs.length]!.key
+  nextTick(() => document.getElementById(`${tabsId}-${currentTab.value}`)?.focus())
+}
+
 provide(announceKey, text => announce(text))
-provide(formSurfaceKey, { unsaved: field => props.form.unsavedFields.includes(field), register })
+provide(formSurfaceKey, { unsaved: isUnsaved, register: (field, label) => register(field, label) })
 provide(fieldGroupKey, { model: field => props.form.model(field), undo: () => undefined })
 provide(sectionHeadingKey, 'h2')
 
 function labelOf(field: string) {
-  return registry.get(field) ?? field
+  return registry.get(field)?.label ?? field
 }
 
 const unsavedCount = computed(() => props.form.unsavedFields.length)
@@ -123,12 +172,19 @@ watch(() => props.form.failures, async (failures, previous) => {
     return
   }
   showAlert.value = true
+  const failed = alertFields.value
+  if (failed.length && !failed.some(field => registry.get(field)?.tab === currentTab.value)) {
+    const first = props.tabs?.find(tab => failed.some(field => registry.get(field)?.tab === tab.key))
+    first && (currentTab.value = first.key)
+  }
   announce(alertTitle.value)
   await nextTick()
   alert.value?.focus()
 })
 
 async function showField(field: string) {
+  const tab = registry.get(field)?.tab
+  tab && (currentTab.value = tab)
   await nextTick()
   root.value?.querySelector<HTMLElement>(`[data-cwa-field="${CSS.escape(field)}"] :is(input, textarea, button, [tabindex]:not([tabindex="-1"]))`)?.focus()
 }
@@ -203,32 +259,7 @@ watch(() => unsavedCount.value > 0, (dirty) => {
   window.removeEventListener('beforeunload', onBeforeUnload)
 }, { immediate: true })
 
-let rowObserver: ResizeObserver | undefined
-let restoreScrollPadding: (() => void) | undefined
-
-onMounted(() => {
-  const row = actions.value
-  const scroller = document.scrollingElement as HTMLElement | null ?? document.documentElement
-  if (!row) {
-    return
-  }
-  const previous = scroller.style.scrollPaddingBottom
-  const pad = () => {
-    scroller.style.scrollPaddingBottom = `${Math.ceil(row.getBoundingClientRect().height)}px`
-  }
-  pad()
-  if (typeof ResizeObserver !== 'undefined') {
-    rowObserver = new ResizeObserver(pad)
-    rowObserver.observe(row)
-  }
-  restoreScrollPadding = () => {
-    scroller.style.scrollPaddingBottom = previous
-  }
-})
-
 onBeforeUnmount(() => {
-  rowObserver?.disconnect()
-  restoreScrollPadding?.()
   stopAfterEach()
   clearTimeout(savedTimer)
   typeof window !== 'undefined' && window.removeEventListener('beforeunload', onBeforeUnload)
@@ -243,6 +274,82 @@ defineExpose({ showField, announce })
     data-testid="form-group"
     class="cwa:w-full cwa:max-w-[40rem] cwa:text-fg cwa:[--cwa-spacing-control:var(--cwa-spacing-control-lg)] cwa:[--cwa-text-control:var(--cwa-text-control-lg)]"
   >
+    <div
+      data-testid="form-group-head"
+      class="cwa:mb-section cwa:flex cwa:flex-col cwa:gap-y-3 cwa:sm:flex-row cwa:sm:items-center cwa:sm:gap-x-4"
+      :class="{ 'cwa:sm:border-b cwa:sm:border-line': tabs?.length }"
+    >
+      <div
+        v-if="tabs?.length"
+        role="tablist"
+        aria-label="Sections"
+        class="cwa:flex cwa:h-hit cwa:min-w-0 cwa:items-stretch cwa:overflow-x-auto cwa:[scrollbar-width:none] cwa:max-sm:border-b cwa:max-sm:border-line cwa:sm:flex-1"
+      >
+        <button
+          v-for="(item, index) in tabs"
+          :id="`${tabsId}-${item.key}`"
+          :key="item.key"
+          type="button"
+          role="tab"
+          :aria-selected="currentTab === item.key ? 'true' : 'false'"
+          :aria-controls="`${tabsId}-${item.key}-panel`"
+          :aria-label="badges[item.key]?.kind ? `${item.label}, ${dialogTabWords(badges[item.key]!)}` : undefined"
+          :title="badges[item.key]?.kind ? dialogTabWords(badges[item.key]!) : undefined"
+          :tabindex="currentTab === item.key ? 0 : -1"
+          :data-badge="badges[item.key]?.kind"
+          :data-tab="item.key"
+          data-testid="form-group-tab"
+          class="cwa:relative cwa:inline-flex cwa:shrink-0 cwa:cursor-pointer cwa:items-center cwa:gap-2 cwa:whitespace-nowrap cwa:px-4 cwa:text-label cwa:outline-1 cwa:outline-transparent cwa:transition-colors cwa:duration-(--cwa-duration-fast) cwa:focus-visible:outline-2 cwa:focus-visible:-outline-offset-2 cwa:focus-visible:outline-accent-fg cwa:after:absolute cwa:after:inset-x-0 cwa:after:bottom-0 cwa:after:h-0.5 cwa:after:content-['']"
+          :class="currentTab === item.key ? 'cwa:text-fg cwa:after:bg-accent' : 'cwa:text-fg-muted cwa:hover:text-fg'"
+          @click="currentTab = item.key"
+          @keydown="onTabKey($event, index)"
+        >
+          {{ item.label }}
+          <StateGlyph
+            v-if="glyphOf(item.key)"
+            :kind="glyphOf(item.key)!"
+          />
+          <span
+            v-else-if="badges[item.key]?.kind === 'unsaved'"
+            aria-hidden="true"
+            data-testid="form-group-tab-unsaved"
+            class="cwa:size-2 cwa:rounded-toggle cwa:bg-accent-fg"
+          />
+        </button>
+      </div>
+      <div
+        data-testid="form-group-actions"
+        class="cwa:flex cwa:items-center cwa:justify-end cwa:gap-actions cwa:sm:ms-auto"
+      >
+        <p
+          v-if="blockedText"
+          data-testid="form-group-blocked"
+          class="cwa:m-0 cwa:text-helper cwa:text-fg-muted cwa:max-sm:hidden"
+        >
+          {{ blockedText }}
+        </p>
+        <div class="cwa:grid cwa:grid-cols-2 cwa:gap-actions cwa:max-sm:w-full cwa:sm:flex">
+          <CwaUiButton
+            label="Cancel"
+            :disabled="!unsavedCount"
+            disabled-reason="Nothing has changed."
+            data-testid="form-group-cancel"
+            @click="cancel"
+          />
+          <CwaUiButton
+            variant="solid"
+            :label="saveLabel"
+            :aria-label="saveName"
+            :loading="form.saving"
+            :disabled="saveDisabled"
+            :disabled-reason="saveReason"
+            :icon="justSaved && !form.saving ? CheckGlyph : undefined"
+            data-testid="form-group-save"
+            @click="emit('save')"
+          />
+        </div>
+      </div>
+    </div>
     <CwaUiAlert
       v-if="showAlert && hasIssue"
       ref="alert"
@@ -279,43 +386,35 @@ defineExpose({ showField, announce })
           >
             {{ labelOf(field) }}
           </button>
+          <span
+            v-if="tabLabelOf(field)"
+            class="cwa:text-fg-muted"
+          > · {{ tabLabelOf(field) }} tab</span>
         </li>
       </ul>
     </CwaUiAlert>
-    <slot />
-    <div
-      ref="actions"
-      data-testid="form-group-actions"
-      class="cwa:sticky cwa:bottom-0 cwa:z-10 cwa:mt-section cwa:flex cwa:items-center cwa:justify-end cwa:gap-actions cwa:bg-stone-800 cwa:py-4 cwa:pb-[calc(1rem+env(safe-area-inset-bottom))]"
-    >
-      <p
-        v-if="blockedText"
-        data-testid="form-group-blocked"
-        class="cwa:m-0 cwa:text-helper cwa:text-fg-muted cwa:max-sm:hidden"
+    <template v-if="tabs?.length">
+      <div
+        v-for="item in tabs"
+        v-show="currentTab === item.key"
+        :id="`${tabsId}-${item.key}-panel`"
+        :key="item.key"
+        role="tabpanel"
+        :aria-labelledby="`${tabsId}-${item.key}`"
+        :data-tab="item.key"
+        data-testid="form-group-panel"
       >
-        {{ blockedText }}
-      </p>
-      <div class="cwa:grid cwa:grid-cols-2 cwa:gap-actions cwa:max-sm:w-full cwa:sm:flex">
-        <CwaUiButton
-          label="Cancel"
-          :disabled="!unsavedCount"
-          disabled-reason="Nothing has changed."
-          data-testid="form-group-cancel"
-          @click="cancel"
-        />
-        <CwaUiButton
-          variant="solid"
-          :label="saveLabel"
-          :aria-label="saveName"
-          :loading="form.saving"
-          :disabled="saveDisabled"
-          :disabled-reason="saveReason"
-          :icon="justSaved && !form.saving ? CheckGlyph : undefined"
-          data-testid="form-group-save"
-          @click="emit('save')"
-        />
+        <DialogPanel
+          :tab="item.key"
+          :unsaved="isUnsaved"
+          :register="register"
+          :claim="noClaim"
+        >
+          <slot :name="item.key" />
+        </DialogPanel>
       </div>
-    </div>
+    </template>
+    <slot v-else />
     <span
       role="status"
       aria-live="polite"

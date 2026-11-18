@@ -2,21 +2,21 @@
 import { useId } from 'vue'
 import StateGlyph from './StateGlyph.vue'
 import CwaUiButton from '../../ui/Button.vue'
+import { shownValue } from './field-value'
+import type { FieldValueFormat } from './field-value'
 import type { RemoteFieldChange } from '#cwa/resources/model-editors'
 
-const { change, mine, id } = defineProps<{
+const { change, mine, id, format } = defineProps<{
   change: RemoteFieldChange
   mine: unknown
   id: string
+  format?: FieldValueFormat
 }>()
 
 const headingId = useId()
 
 function shown(value: unknown) {
-  if (value === null || value === undefined || value === '') {
-    return 'Empty'
-  }
-  return typeof value === 'string' ? value : JSON.stringify(value)
+  return shownValue(value, format)
 }
 </script>
 

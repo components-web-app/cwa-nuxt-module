@@ -15,6 +15,7 @@ const props = withDefaults(defineProps<{
   description?: string
   width?: FieldWidth
   disabled?: boolean
+  disabledReason?: string
   min?: number
   max?: number
   step?: number
@@ -32,6 +33,7 @@ const props = withDefaults(defineProps<{
   description: undefined,
   width: 'sm',
   disabled: false,
+  disabledReason: undefined,
   min: Number.NEGATIVE_INFINITY,
   max: Number.POSITIVE_INFINITY,
   step: 1,
@@ -172,6 +174,7 @@ function toneOf(tone: FieldTone) {
 
 <template>
   <Field
+    :disabled-reason="disabled ? disabledReason : undefined"
     :label="label"
     :label-hidden="labelHidden"
     :info="info"

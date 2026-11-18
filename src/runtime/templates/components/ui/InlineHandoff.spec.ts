@@ -1,15 +1,17 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, test, vi } from 'vitest'
-import { computed, ref } from 'vue'
+import { computed, defineComponent, h, ref } from 'vue'
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { axe } from '../../../../../test/utils/axe'
 import { drawsFocusRing } from '../../../../../test/utils/focus-ring'
 import { registerInlineEditor } from '#cwa/admin/inline-editors'
 import type { InlineEditor } from '#cwa/admin/inline-editors'
 import type { ResourceModelField } from '#cwa/resources/model-editors'
+import { consola } from 'consola'
 import InlineHandoff from './InlineHandoff.vue'
+import ManagerTab from './ManagerTab.vue'
 
-const cwa = vi.hoisted(() => ({ resources: { isIriPublishableEquivalent: () => false } }))
+const cwa = vi.hoisted(() => ({ resources: { isIriPublishableEquivalent: () => false }, admin: { resourceStackManager: { currentIri: { value: '/component/html' } } } }))
 vi.mock('#cwa/composables/cwa', () => ({ useCwa: () => cwa }))
 vi.mock('#cwa/composables/cwa-confirm', () => ({ useCwaConfirm: () => vi.fn(async () => true) }))
 
@@ -149,5 +151,20 @@ describe('CwaUiInlineHandoff (#461)', () => {
     mountHandoff()
 
     expect(await axe(document.body)).toHaveNoViolations()
+  })
+
+  test('in a manager tab, its Edit… dialog holds the text area without the bar\'s refusal: a dialog is a form surface, not the bar row (#461)', async () => {
+    const error = vi.spyOn(consola, 'error').mockImplementation(() => undefined)
+    const model = fieldModel('<p>Long text</p>')
+    const wrapper = mount(defineComponent({ setup: () => () => h(ManagerTab, null, () => h(InlineHandoff, { label: 'Content', model })) }), { attachTo: document.body })
+    await flushPromises()
+
+    await wrapper.get('[data-testid="inline-handoff-edit"]').trigger('click')
+    await flushPromises()
+
+    await vi.waitFor(() => expect(document.querySelector('[data-testid="textarea"]')).not.toBeNull())
+    expect(error.mock.calls).toEqual([])
+    error.mockRestore()
+    wrapper.unmount()
   })
 })

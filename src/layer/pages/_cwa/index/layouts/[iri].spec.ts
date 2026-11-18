@@ -4,6 +4,7 @@ import { computed, ref } from 'vue'
 import { flushPromises, mount } from '@vue/test-utils'
 import Select from '#cwa/templates/components/ui/Select.vue'
 import Alert from '#cwa/templates/components/ui/Alert.vue'
+import Input from '#cwa/templates/components/ui/Input.vue'
 import LayoutItemPage from './[iri].vue'
 import { componentNames } from '#components'
 import * as cwaComposable from '#cwa/composables/cwa'
@@ -21,6 +22,11 @@ vi.mock('#cwa-layer/_composables/useItemPage', () => ({
   useItemPage: mockUseItemPage,
 }))
 
+const realtime = vi.hoisted(() => ({ peers: vi.fn((_iri: string): unknown[] => []) }))
+vi.mock('#cwa/resources/realtime-view', () => ({
+  realtimeView: () => ({ load: async () => ({ peers: realtime.peers }) }),
+}))
+
 const resolvableLayoutNames = componentNames.filter((n: string) => n.startsWith('CwaLayout'))
 const resolvableLayoutName = resolvableLayoutNames[0]
 const otherResolvableLayoutName = resolvableLayoutNames[1]
@@ -35,17 +41,19 @@ function expectedResolvableOptions() {
   })
 }
 
-function setup(opts: { uiComponent?: string | null, isAdding?: boolean, pages?: string[], unsavedFields?: string[] } = {}) {
-  const localResourceData = ref<any>({
-    '@id': '/_/layouts/uuid-self',
-    '@type': 'Layout',
-    'reference': 'My Layout',
-    'uiComponent': opts.uiComponent === undefined ? resolvableLayoutName : opts.uiComponent,
-    'uiClassNames': null,
-    'createdAt': '2026-01-01',
-    'updatedAt': '2026-01-02',
-  })
-  const resource = computed(() => ({ ...localResourceData.value, pages: opts.pages ?? [] }))
+function setup(opts: { uiComponent?: string | null, isAdding?: boolean, pages?: string[], unsavedFields?: string[], loading?: boolean } = {}) {
+  const localResourceData = ref<any>(opts.loading
+    ? undefined
+    : {
+        '@id': '/_/layouts/uuid-self',
+        '@type': 'Layout',
+        'reference': 'My Layout',
+        'uiComponent': opts.uiComponent === undefined ? resolvableLayoutName : opts.uiComponent,
+        'uiClassNames': null,
+        'createdAt': '2026-01-01',
+        'updatedAt': '2026-01-02',
+      })
+  const resource = computed(() => localResourceData.value && ({ ...localResourceData.value, pages: opts.pages ?? [] }))
   const discard = vi.fn()
   const form = {
     unsavedFields: opts.unsavedFields ?? [],
@@ -61,7 +69,7 @@ function setup(opts: { uiComponent?: string | null, isAdding?: boolean, pages?: 
 
   mockUseItemPage.mockReturnValue({
     isAdding: ref(!!opts.isAdding),
-    isLoading: ref(false),
+    isLoading: ref(!!opts.loading),
     isUpdating: ref(false),
     localResourceData,
     resource,
@@ -84,9 +92,9 @@ function setup(opts: { uiComponent?: string | null, isAdding?: boolean, pages?: 
       stubs: {
         CwaUiDialog: {
           name: 'Dialog',
-          props: ['title', 'tabs', 'form', 'loading', 'noun', 'createNoun'],
+          props: ['title', 'tabs', 'form', 'loading', 'noun', 'createNoun', 'placement'],
           emits: ['close', 'save'],
-          template: '<div><slot name="details" /><slot name="info" /></div>',
+          template: '<div><template v-if="!loading"><slot name="details" /><slot name="info" /></template></div>',
         },
       },
     },
@@ -112,6 +120,11 @@ function layoutUiOptions(wrapper: Wrapper) {
 describe('Layout admin page – Layout UI select', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+  })
+
+  test('the dialog opens while the layout loads, titled Layout and busy', () => {
+    const { wrapper } = setup({ loading: true })
+    expect(wrapper.findComponent({ name: 'Dialog' }).props()).toMatchObject({ title: 'Layout', loading: true })
   })
 
   test('the playground registers at least 2 layout components (fixture sanity)', () => {
@@ -196,6 +209,17 @@ describe('Layout admin dialog (#461)', () => {
 
   const dialog = (wrapper: Wrapper) => wrapper.findComponent({ name: 'Dialog' })
 
+  test('Reference explains itself behind ⓘ, not as a line under the field', () => {
+    const reference = setup().wrapper.findAllComponents(Input).find(found => found.props('label') === 'Reference')!
+    expect(reference.props('info')).toBe('Only admins see this. It names the layout in lists.')
+    expect(reference.props('description')).toBeUndefined()
+  })
+
+  test('slides over from the right, so switching tabs never moves its header or footer', () => {
+    expect(dialog(setup().wrapper).props('placement')).toBe('right')
+    expect(dialog(setup({ isAdding: true }).wrapper).props('placement')).toBe('right')
+  })
+
   test('editing, it is titled by the layout\'s reference with Details and Info', () => {
     const { wrapper } = setup()
 
@@ -232,6 +256,7 @@ describe('Layout admin dialog (#461)', () => {
     const { wrapper, deleteResource, discard } = setup({ pages: ['/_/pages/1'], unsavedFields: ['reference'] })
 
     await wrapper.get('[data-testid="layout-delete"]').trigger('click')
+    await vi.dynamicImportSettled()
     await flushPromises()
 
     expect(mockConfirm).toHaveBeenCalledWith(expect.objectContaining({
@@ -248,11 +273,44 @@ describe('Layout admin dialog (#461)', () => {
     expect(discard).toHaveBeenCalled()
   })
 
+  test('the confirm names the other admins editing the layout, as the old delete did (#429)', async () => {
+    realtime.peers.mockReturnValueOnce([
+      { user: { id: '/users/sam', name: 'Sam' }, name: 'Sam', state: 'editing', idle: false },
+    ])
+    mockConfirm.mockResolvedValue(false)
+    const { wrapper } = setup()
+
+    await wrapper.get('[data-testid="layout-delete"]').trigger('click')
+    await vi.dynamicImportSettled()
+    await flushPromises()
+
+    expect(realtime.peers).toHaveBeenCalledWith('/_/layouts/uuid-self')
+    expect(mockConfirm.mock.calls[0]![0].lines).toEqual([
+      { text: 'Sam is editing this.' },
+      { text: 'This can\'t be undone.' },
+    ])
+  })
+
+  test('when who is editing cannot be read, the confirm still asks, without naming anyone', async () => {
+    realtime.peers.mockImplementationOnce(() => {
+      throw new Error('chunk failed')
+    })
+    mockConfirm.mockResolvedValue(false)
+    const { wrapper } = setup()
+
+    await wrapper.get('[data-testid="layout-delete"]').trigger('click')
+    await vi.dynamicImportSettled()
+    await flushPromises()
+
+    expect(mockConfirm.mock.calls[0]![0].lines).toEqual([{ text: 'This can\'t be undone.' }])
+  })
+
   test('a delete that is not confirmed deletes nothing', async () => {
     mockConfirm.mockResolvedValue(false)
     const { wrapper, deleteResource } = setup()
 
     await wrapper.get('[data-testid="layout-delete"]').trigger('click')
+    await vi.dynamicImportSettled()
     await flushPromises()
 
     expect(deleteResource).not.toHaveBeenCalled()
