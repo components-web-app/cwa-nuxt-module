@@ -120,10 +120,11 @@ const isOpen = computed({
 
 <template>
   <Field
+    :disabled-reason="blocked ? disabledReason : undefined"
     :label="label"
     :label-hidden="labelHidden"
     :info="info"
-    :description="blocked ? disabledReason : description"
+    :description="description"
     :optional="optional"
     :width="width"
     :state="state"
@@ -153,6 +154,13 @@ const isOpen = computed({
             class="cwa:min-w-0 cwa:flex-1 cwa:truncate"
             :class="{ 'cwa:text-muted-on-field': !shown }"
           >{{ shown ?? placeholder }}</span>
+          <span
+            v-if="chosen?.dot"
+            aria-hidden="true"
+            data-testid="select-dot"
+            class="cwa:size-3 cwa:shrink-0 cwa:rounded-full"
+            :class="chosen.dot"
+          />
           <ChevronGlyph />
         </SelectTrigger>
         <SelectPortal>
@@ -209,6 +217,13 @@ const isOpen = computed({
                         class="cwa:text-helper cwa:text-fg-muted"
                       >{{ item.description }}</span>
                     </span>
+                    <span
+                      v-if="item.dot"
+                      aria-hidden="true"
+                      data-testid="select-dot"
+                      class="cwa:size-2 cwa:shrink-0 cwa:rounded-full"
+                      :class="item.dot"
+                    />
                     <SelectItemIndicator><CheckGlyph /></SelectItemIndicator>
                   </SelectItem>
                 </SelectGroup>

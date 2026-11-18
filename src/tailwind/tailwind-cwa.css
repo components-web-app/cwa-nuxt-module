@@ -228,6 +228,25 @@
     pointer-events: none;
   }
 
+  .cwa\:dialog-edge {
+    position: absolute;
+    inset-inline: 0;
+    bottom: -3px;
+    height: 3px;
+    pointer-events: none;
+  }
+
+  .cwa\:dialog-edge[data-edge='loading'] {
+    background: linear-gradient(90deg, transparent 0%, var(--cwa-color-accent-fg) 50%, transparent 100%) no-repeat;
+    background-size: 40% 100%;
+    animation: cwa-line-band 1.1s linear infinite;
+  }
+
+  .cwa\:dialog-edge[data-edge='arrived'] {
+    background: var(--cwa-color-line);
+    animation: cwa-edge-reveal var(--cwa-duration-slow) var(--cwa-ease-out) forwards;
+  }
+
   .cwa\:status-line::before,
   .cwa\:status-line::after {
     content: '';
@@ -256,6 +275,82 @@
     background: var(--cwa-color-warning);
     opacity: 1;
     animation: cwa-line-in 150ms ease-out;
+  }
+
+  .cwa\:focus-save {
+    --save-base: #93c5fd;
+    --save-segment: #1d4ed8;
+    --save-saved: #3f6212;
+    --save-danger: #dc2626;
+    --save-warning: #b45309;
+    position: absolute;
+    inset: -6px;
+    pointer-events: none;
+    border-radius: 1px;
+    animation: cwa-line-in 150ms ease-out;
+  }
+
+  .cwa\:focus-save[data-tone='dark'] {
+    --save-base: #3b82f6;
+    --save-segment: #bfdbfe;
+    --save-saved: #9cdd05;
+    --save-danger: #ef4444;
+    --save-warning: #fcd34d;
+  }
+
+  .cwa\:focus-save > i {
+    position: absolute;
+    background-color: var(--save-base);
+    background-repeat: no-repeat;
+  }
+
+  .cwa\:focus-save > i[data-side='top'] { inset: 0 0 auto 0; height: 2px; }
+  .cwa\:focus-save > i[data-side='right'] { inset: 0 0 0 auto; width: 2px; }
+  .cwa\:focus-save > i[data-side='bottom'] { inset: auto 0 0 0; height: 2px; }
+  .cwa\:focus-save > i[data-side='left'] { inset: 0 auto 0 0; width: 2px; }
+
+  .cwa\:focus-save[data-save='saving'] > i {
+    animation: 1.2s linear infinite;
+  }
+
+  .cwa\:focus-save[data-save='saving'] > i[data-side='top'],
+  .cwa\:focus-save[data-save='saving'] > i[data-side='bottom'] {
+    background-image: linear-gradient(90deg, transparent, var(--save-segment) 25%, var(--save-segment) 75%, transparent);
+    background-size: 25% 100%;
+  }
+
+  .cwa\:focus-save[data-save='saving'] > i[data-side='right'],
+  .cwa\:focus-save[data-save='saving'] > i[data-side='left'] {
+    background-image: linear-gradient(180deg, transparent, var(--save-segment) 25%, var(--save-segment) 75%, transparent);
+    background-size: 100% 25%;
+  }
+
+  .cwa\:focus-save[data-save='saving'] > i[data-side='top'] { animation-name: cwa-focus-sweep-x; }
+  .cwa\:focus-save[data-save='saving'] > i[data-side='bottom'] { animation-name: cwa-focus-sweep-x; animation-direction: reverse; }
+  .cwa\:focus-save[data-save='saving'] > i[data-side='right'] { animation-name: cwa-focus-sweep-y; }
+  .cwa\:focus-save[data-save='saving'] > i[data-side='left'] { animation-name: cwa-focus-sweep-y; animation-direction: reverse; }
+
+  .cwa\:focus-save[data-save='saved'] {
+    --save-end: var(--save-saved);
+    animation: cwa-line-hold 1.18s ease-out forwards;
+  }
+
+  .cwa\:focus-save[data-save='error'] { --save-end: var(--save-danger); }
+  .cwa\:focus-save[data-save='conflict'] { --save-end: var(--save-warning); }
+
+  .cwa\:focus-save[data-save='saved'] > i,
+  .cwa\:focus-save[data-save='error'] > i,
+  .cwa\:focus-save[data-save='conflict'] > i {
+    background-color: var(--save-end);
+    box-shadow: 0 0 0 transparent;
+    animation: cwa-focus-glow 600ms ease-out;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cwa\:focus-save > i {
+      background-image: none !important;
+      animation: none !important;
+    }
   }
 
   .cwa\:status-line[data-line='saving']::after {
@@ -357,6 +452,39 @@
   }
 }
 
+@keyframes cwa-focus-sweep-x {
+  from {
+    background-position: -40% 0;
+  }
+  to {
+    background-position: 140% 0;
+  }
+}
+
+@keyframes cwa-focus-sweep-y {
+  from {
+    background-position: 0 -40%;
+  }
+  to {
+    background-position: 0 140%;
+  }
+}
+
+@keyframes cwa-focus-glow {
+  from {
+    box-shadow: 0 0 6px 2px var(--save-end);
+  }
+}
+
+@keyframes cwa-edge-reveal {
+  from {
+    clip-path: inset(0);
+  }
+  to {
+    clip-path: inset(0 0 0 100%);
+  }
+}
+
 @keyframes cwa-line-in {
   from {
     opacity: 0;
@@ -384,6 +512,24 @@
   }
   100% {
     opacity: 0;
+  }
+}
+
+@keyframes cwa-slide-over-out {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes cwa-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes cwa-slide-over-in {
+  from {
+    transform: translateX(100%);
   }
 }
 

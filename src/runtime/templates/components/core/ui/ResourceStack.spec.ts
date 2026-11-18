@@ -473,7 +473,15 @@ describe('ResourceStack (#461)', () => {
     expect(placeResourceStack).toHaveBeenCalledWith({ x: 5, y: 5 }, expect.objectContaining({ inner: { left: 10, top: 10, width: 90, height: 40 } }), expect.any(Object), undefined)
   })
 
-  test('stays hidden until the panel stands where it was placed, so it never shows moving, and only then grows the panel itself, never the wrapper whose transform places it, from the anchored corner so that corner never moves', async () => {
+  test.each([
+    ['at the pointer', () => ({ x: 400, y: 300 })],
+    ['over the header\'s path selector', () => {
+      const selector = document.createElement('button')
+      selector.textContent = 'Rich text'
+      document.body.append(selector)
+      return selector
+    }],
+  ])('opened %s, stays hidden until the panel stands where it was placed, so it never shows moving, then fades in with a small downward settle on the panel itself, never the wrapper whose transform places it, and never sideways (#461)', async (_, anchor) => {
     const frames: FrameRequestCallback[] = []
     vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => frames.push(callback))
     vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: false })))
@@ -496,7 +504,7 @@ describe('ResourceStack (#461)', () => {
     })
     vi.mocked(placeResourceStack).mockReturnValueOnce({ left: 390, top: 290 })
     try {
-      const { panel } = await openStack({ at: { x: 400, y: 300 } })
+      const { panel } = await openStack({ at: anchor() })
 
       expect(panel.style.visibility).toBe('hidden')
       expect(animate).not.toHaveBeenCalled()
@@ -510,8 +518,12 @@ describe('ResourceStack (#461)', () => {
       await flushPromises()
       expect(panel.style.visibility).not.toBe('hidden')
       expect(animate).toHaveBeenCalledOnce()
+      const [keyframes] = animate.mock.calls[0] as unknown as [Keyframe[]]
+      expect(keyframes).toEqual([{ translate: '0 -4px', opacity: 0 }, { translate: '0 0', opacity: 1 }])
+      expect(keyframes.some(keyframe => 'transform' in keyframe || 'scale' in keyframe)).toBe(false)
+      expect(animate.mock.calls[0]![1]).toMatchObject({ duration: 120 })
       expect(animated).toEqual([panel])
-      expect(panel.style.transformOrigin).toBe('10px 10px')
+      expect(panel.style.transformOrigin).toBe('')
     }
     finally {
       vi.unstubAllGlobals()
@@ -548,7 +560,7 @@ describe('ResourceStack (#461)', () => {
       expect(highlighted(tree)).toBe('Component position')
     })
 
-    test('showing them finishes the grow animation before measuring again', async () => {
+    test('showing them finishes the opening animation before measuring again', async () => {
       vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: false })))
       const finish = vi.fn()
       HTMLElement.prototype.animate = vi.fn(() => ({ finish }) as unknown as Animation)
@@ -579,6 +591,107 @@ describe('ResourceStack (#461)', () => {
       expect(highlighted(tree)).toBe('Component position')
       expect(panel.querySelector('[data-testid="resource-stack-more"]')).toBeNull()
       expect(panel.querySelector('[role="status"]')!.textContent).toBe('2 more parents shown')
+    })
+  })
+
+  describe('on a phone', () => {
+    const phone = '(max-width: 639.98px)'
+
+    beforeEach(() => {
+      vi.stubGlobal('matchMedia', vi.fn((query: string) => ({ matches: query === phone, media: query, addEventListener() {}, removeEventListener() {} })))
+    })
+
+    afterEach(() => {
+      vi.unstubAllGlobals()
+    })
+
+    test('below sm it opens as a modal bottom sheet labelled by its Select a resource header, with Close, holding the same tree', async () => {
+      const { panel, tree } = await openStack()
+
+      expect(panel.getAttribute('role')).toBe('dialog')
+      expect(panel.getAttribute('aria-modal')).toBe('true')
+      expect(document.getElementById(panel.getAttribute('aria-labelledby')!)!.textContent).toBe('Select a resource')
+      expect([...panel.querySelectorAll('button')].map(button => button.textContent?.trim())).toContain('Close')
+      expect(tree.getAttribute('role')).toBe('tree')
+      expect(items(panel).map(level => level.getAttribute('aria-label'))).toEqual(['Left column group', 'Component position', 'Rich text'])
+      expect(document.activeElement).toBe(tree)
+      expect(placeResourceStack).not.toHaveBeenCalled()
+    })
+
+    test('sits along the bottom edge at full width, at most 70vh tall, square, above a scrim', async () => {
+      const { panel } = await openStack()
+
+      expect(panel.className).toContain('cwa:inset-x-0')
+      expect(panel.className).toContain('cwa:bottom-0')
+      expect(panel.className).toContain('cwa:max-h-[70vh]')
+      expect(panel.className).not.toMatch(/rounded/)
+      expect(document.querySelector('[data-testid="resource-stack-scrim"]')).not.toBeNull()
+    })
+
+    test('Tab is left to move between the tree, the overflow button and Close, and does not close it', async () => {
+      const { panel, tree, onClose } = await openStack({ levels: levels(7) })
+
+      expect(panel.querySelector('[data-testid="resource-stack-more"]')!.getAttribute('tabindex')).not.toBe('-1')
+      const tab = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true })
+      tree.dispatchEvent(tab)
+      await flushPromises()
+
+      expect(tab.defaultPrevented).toBe(false)
+      expect(onClose).not.toHaveBeenCalled()
+      expect(document.querySelector('[data-testid="resource-stack"]')).not.toBeNull()
+    })
+
+    test('Close, and Escape, close it and return focus to the opener', async () => {
+      const { panel, onClose, returnTo } = await openStack()
+
+      ;[...panel.querySelectorAll('button')].find(button => button.textContent?.trim() === 'Close')!.click()
+      await flushPromises()
+      expect(onClose).toHaveBeenCalledTimes(1)
+      expect(document.activeElement).toBe(returnTo)
+
+      const again = await openStack()
+      again.tree.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
+      await flushPromises()
+      expect(again.onClose).toHaveBeenCalledTimes(1)
+      expect(document.activeElement).toBe(again.returnTo)
+    })
+
+    test('the page behind is inert while it is open, and not after', async () => {
+      const { wrapper, panel } = await openStack()
+      const container = (wrapper.vm.$.appContext.app as unknown as { _container: HTMLElement })._container
+
+      expect(container.hasAttribute('inert')).toBe(true)
+      expect(container.contains(panel)).toBe(false)
+      ;[...panel.querySelectorAll('button')].find(button => button.textContent?.trim() === 'Close')!.click()
+      await flushPromises()
+      expect(container.hasAttribute('inert')).toBe(false)
+    })
+
+    test('choosing a level selects it and closes the sheet', async () => {
+      const { panel, select, onClose } = await openStack()
+
+      nameRow(item(panel, 'Component position')).click()
+      await flushPromises()
+
+      expect(select).toHaveBeenCalledWith('1')
+      expect(onClose).toHaveBeenCalledTimes(1)
+    })
+
+    test('a phone\'s address bar resizing the window, or a scroll, leaves it open', async () => {
+      const { onClose } = await openStack()
+
+      window.dispatchEvent(new Event('resize'))
+      window.scrollTo(0, 40)
+      document.dispatchEvent(new Event('scroll'))
+      await flushPromises()
+
+      expect(onClose).not.toHaveBeenCalled()
+    })
+
+    test('has no axe violations', async () => {
+      const { panel } = await openStack({ levels: levels(7) })
+
+      expect(await axe(panel)).toHaveNoViolations()
     })
   })
 

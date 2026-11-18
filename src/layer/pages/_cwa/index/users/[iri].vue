@@ -1,14 +1,17 @@
 <template>
   <CwaUiDialog
-    v-if="localResourceData"
+    v-if="localResourceData || isLoading || loadFailed"
+    placement="right"
     :title="dialogTitle"
     :tabs="tabs"
     :form="form"
     :loading="isLoading"
+    :load-failed="loadFailed"
     noun="user"
     :create-noun="isAdding ? 'user' : undefined"
     data-testid="user-dialog"
     @close="$emit('close')"
+    @retry="loadResource()"
     @save="save()"
   >
     <template #details>
@@ -21,7 +24,7 @@
         <CwaUiToggle
           field="enabled"
           label="User enabled"
-          description="A disabled user can't sign in."
+          info="A disabled user can't sign in."
         />
       </CwaUiFormSection>
       <CwaUiFormSection title="Email">
@@ -36,7 +39,7 @@
           v-if="isChangingEmail"
           :model="oldPasswordModel"
           label="Your current password"
-          description="Changing the email needs your own password."
+          info="Changing the email needs your own password."
           type="password"
           autocomplete="current-password"
         />
@@ -166,7 +169,7 @@
             class="cwa:m-0 cwa:mt-1.5 cwa:break-all cwa:font-mono cwa:text-control cwa:text-fg-secondary"
             data-testid="user-id"
           >
-            {{ localResourceData['@id'] }}
+            {{ localResourceData?.['@id'] }}
           </dd>
         </dl>
       </CwaUiFormSection>
@@ -243,7 +246,7 @@ const confirm = useCwaConfirm()
 
 const IDLE: CwaFieldState = { status: 'idle', waiting: false, slow: false }
 
-const { isAdding, isLoading, isUpdating, localResourceData, formatDate, deleteResource, saveResource, resource, form } = useItemPage({
+const { isAdding, isLoading, loadFailed, loadResource, isUpdating, localResourceData, formatDate, deleteResource, saveResource, resource, form } = useItemPage({
   createEndpoint: '/users',
   emit,
   resourceType: 'User',
@@ -353,7 +356,7 @@ const roleModel = {
 
 const username = computed(() => (resource.value?.username as string | undefined) || '')
 
-const dialogTitle = computed(() => isAdding.value ? 'New user' : (username.value || 'No username'))
+const dialogTitle = computed(() => isAdding.value ? 'New user' : (!localResourceData.value ? 'User' : (username.value || 'No username')))
 
 const tabs = computed<DialogTab[]>(() => isAdding.value
   ? [{ label: 'Details', key: 'details' }]

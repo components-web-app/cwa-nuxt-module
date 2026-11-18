@@ -18,6 +18,7 @@ const props = withDefaults(defineProps<{
   optional?: boolean
   placeholder?: string
   disabled?: boolean
+  disabledReason?: string
   readonly?: boolean
   maxlength?: number
   counter?: boolean
@@ -32,6 +33,7 @@ const props = withDefaults(defineProps<{
   optional: false,
   placeholder: undefined,
   disabled: false,
+  disabledReason: undefined,
   readonly: false,
   maxlength: undefined,
   counter: false,
@@ -82,6 +84,7 @@ onMounted(fit)
 <template>
   <Field
     v-if="!inBar"
+    :disabled-reason="disabled ? disabledReason : undefined"
     :label="label"
     :label-hidden="labelHidden"
     :info="info"

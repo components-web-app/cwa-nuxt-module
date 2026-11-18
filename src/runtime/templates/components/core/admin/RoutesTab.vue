@@ -18,6 +18,7 @@
         :redirect-count="redirectCount"
         :child-count="childCount"
         :recommended-path="recommendedPath"
+        :recommended-from="pageResource.title || undefined"
         :noun="noun"
         :status="status?.where === 'route' ? status.text : undefined"
         @open="open"
@@ -80,6 +81,7 @@
         :parent-route-prefix="parentRoutePrefix"
         :route-publication="routePublication"
         :recommended-path="recommendedPath"
+        :recommended-from="pageResource.title || undefined"
         :child-paths="childPaths"
         :redirect-count="redirectCount"
         :path-error="routeForm?.fieldErrors?.path"
@@ -622,12 +624,17 @@ function navigateFromDeleted(path: string | undefined) {
   }
 }
 
+async function editingNoticeFor(iri: string | undefined) {
+  return iri ? import('#cwa/admin/resource-confirm').then(({ editingNotice }) => editingNotice($cwa, iri)).catch(() => undefined) : undefined
+}
+
 async function handleDeleteRoute() {
   const deletingPath = resource.value?.path as string | undefined
   if (!deletingPath || busy.value) {
     return
   }
-  const lines = [{ text: `Visitors to ${deletingPath} get “Page not found”.` }]
+  const notice = await editingNoticeFor(resource.value?.['@id'])
+  const lines = [...(notice ? [{ text: notice }] : []), { text: `Visitors to ${deletingPath} get “Page not found”.` }]
   redirectCount.value && lines.push({ text: `Its ${redirectCount.value} old ${redirectCount.value === 1 ? 'address goes' : 'addresses go'} too.` })
   childCount.value && lines.push({ text: `The ${childCount.value} child ${childCount.value === 1 ? 'route keeps its path' : 'routes keep their paths'}.` })
   const confirmed = await confirm({
@@ -654,9 +661,13 @@ async function handleDeleteRoute() {
 
 async function handleDeleteRedirect(redirect: CwaResource) {
   const nested = countRedirects(redirect.redirectedFrom)
+  const notice = await editingNoticeFor(redirect['@id'])
   const confirmed = await confirm({
     title: `Delete the old address ${redirect.path}?`,
-    lines: nested ? [{ text: `Its ${nested} old ${nested === 1 ? 'address goes' : 'addresses go'} too.` }] : [{ text: `Visitors to ${redirect.path} get “Page not found”.` }],
+    lines: [
+      ...(notice ? [{ text: notice }] : []),
+      nested ? { text: `Its ${nested} old ${nested === 1 ? 'address goes' : 'addresses go'} too.` } : { text: `Visitors to ${redirect.path} get “Page not found”.` },
+    ],
     keep: 'Don\'t delete',
     go: 'Delete',
     typed: nested ? { noun: 'old address', value: redirect.path } : undefined,

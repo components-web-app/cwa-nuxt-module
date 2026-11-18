@@ -71,7 +71,7 @@ defineExpose({ measure })
   >
     <div
       ref="row"
-      class="cwa:flex cwa:h-full cwa:w-full cwa:items-center cwa:gap-row-gap cwa:overflow-x-auto cwa:overflow-y-hidden cwa:px-row-x cwa:py-row-y cwa:scroll-px-10 cwa:[scrollbar-width:none] cwa:focus-visible:outline-2 cwa:focus-visible:-outline-offset-2 cwa:focus-visible:outline-accent-fg cwa:[&::-webkit-scrollbar]:hidden"
+      class="cwa:relative cwa:flex cwa:h-full cwa:w-full cwa:items-center cwa:gap-row-gap cwa:overflow-x-auto cwa:overflow-y-hidden cwa:px-row-x cwa:py-row-y cwa:scroll-px-10 cwa:[scrollbar-width:none] cwa:focus-visible:outline-2 cwa:focus-visible:-outline-offset-2 cwa:focus-visible:outline-accent-fg cwa:[&::-webkit-scrollbar]:hidden"
       :tabindex="overflowStart || overflowEnd ? 0 : undefined"
       :role="overflowStart || overflowEnd ? 'region' : undefined"
       :aria-label="overflowStart || overflowEnd ? 'Fields' : undefined"

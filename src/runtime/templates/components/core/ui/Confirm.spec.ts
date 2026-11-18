@@ -56,6 +56,15 @@ describe('typed confirm matching (#461)', () => {
 })
 
 describe('CwaUiConfirm (#461)', () => {
+  test('stays centred above a slide-over editing dialog, never sliding over itself', async () => {
+    mountConfirm()
+    await flushPromises()
+
+    const classes = panel().className.split(' ')
+    expect(classes).toEqual(expect.arrayContaining(['cwa:top-1/2', 'cwa:left-1/2', 'cwa:-translate-x-1/2', 'cwa:-translate-y-1/2', 'cwa:z-context']))
+    expect(classes.some(name => name.includes('slide-over') || name.includes('right-0'))).toBe(false)
+  })
+
   test('is an alert dialog with its title and text linked, the consequence in order, and Don\'t delete first', async () => {
     mountConfirm()
     await flushPromises()

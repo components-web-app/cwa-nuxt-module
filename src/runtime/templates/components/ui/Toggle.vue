@@ -2,6 +2,7 @@
 import { useId } from 'vue'
 import { SwitchRoot, SwitchThumb } from 'reka-ui'
 import Field from '../core/ui/Field.vue'
+import InfoPopover from '../core/ui/InfoPopover.vue'
 import { useFieldModel } from '../core/ui/field-context'
 import type { ResourceModelField } from '#cwa/resources/model-editors'
 
@@ -11,6 +12,7 @@ const props = withDefaults(defineProps<{
   info?: string
   description?: string
   disabled?: boolean
+  disabledReason?: string
   field?: string
   model?: ResourceModelField<boolean>
   modelValue?: boolean | null
@@ -19,6 +21,7 @@ const props = withDefaults(defineProps<{
   info: undefined,
   description: undefined,
   disabled: false,
+  disabledReason: undefined,
   field: undefined,
   model: undefined,
   modelValue: undefined,
@@ -36,6 +39,7 @@ function onChecked(checked: boolean) {
 
 <template>
   <Field
+    :disabled-reason="disabled ? disabledReason : undefined"
     :label="label"
     :info="info"
     :description="description"
@@ -47,7 +51,7 @@ function onChecked(checked: boolean) {
     :format="value => value ? 'On' : 'Off'"
     own-label
   >
-    <template #lead="{ modal, unsaved }">
+    <template #lead="{ modal, unsaved, help, helpId }">
       <span
         v-if="modal"
         class="cwa:flex cwa:flex-wrap cwa:items-center cwa:gap-x-2"
@@ -58,6 +62,12 @@ function onChecked(checked: boolean) {
           class="cwa:text-label cwa:text-fg"
           :class="disabled || unbound ? 'cwa:cursor-not-allowed' : 'cwa:cursor-pointer'"
         >{{ label }}</label>
+        <InfoPopover
+          v-if="help && helpId"
+          :label="label"
+          :text="help"
+          :text-id="helpId"
+        />
         <span
           v-if="unsaved"
           data-testid="field-unsaved"

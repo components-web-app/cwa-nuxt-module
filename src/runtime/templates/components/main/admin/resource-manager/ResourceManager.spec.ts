@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
 import { createCommentVNode, defineAsyncComponent, h, inject, onMounted, ref, nextTick } from 'vue'
-import { flushPromises, mount } from '@vue/test-utils'
+import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { mockNuxtImport } from '@nuxt/test-utils/runtime'
 import { CwaUserRoles } from '#cwa/storage/stores/auth/state'
 import { useCloneMode } from '#cwa/admin/clone-mode'
@@ -19,6 +19,8 @@ vi.mock('#cwa/templates/components/main/admin/resource-manager/_parts/ClonePlace
     template: '<div class="clone-placement-menu-stub" />',
   },
 }))
+
+enableAutoUnmount(afterEach)
 
 const selectOriginal = vi.hoisted(() => ({ fn: (() => {}) as (index: number) => void }))
 
@@ -825,6 +827,78 @@ describe('ResourceManager', () => {
 
       wrapper.unmount()
       expect(removeSpy).toHaveBeenCalledWith('resize', cwa.admin.emitRedraw)
+    })
+  })
+  describe('long press (#461)', () => {
+    test('a long touch press on the page is a right-click while the manager is mounted, and not after', async () => {
+      cwaState.cwa = makeCwa({ hasRole: true, isEditing: true })
+      const wrapper = await mountManager()
+      const target = document.createElement('p')
+      document.body.append(target)
+      const contextMenus = vi.fn()
+      target.addEventListener('contextmenu', contextMenus)
+      vi.useFakeTimers()
+      try {
+        const press = () => {
+          const down = new MouseEvent('pointerdown', { clientX: 30, clientY: 40, bubbles: true })
+          Object.defineProperties(down, { pointerType: { value: 'touch' }, pointerId: { value: 1 } })
+          target.dispatchEvent(down)
+          vi.advanceTimersByTime(500)
+          target.dispatchEvent(new MouseEvent('pointerup', { bubbles: true }))
+          vi.advanceTimersByTime(1000)
+        }
+        press()
+        expect(contextMenus).toHaveBeenCalledTimes(1)
+        expect(contextMenus.mock.calls[0]![0]).toMatchObject({ clientX: 30, clientY: 40 })
+
+        wrapper.unmount()
+        press()
+        expect(contextMenus).toHaveBeenCalledTimes(1)
+      }
+      finally {
+        vi.useRealTimers()
+        target.remove()
+      }
+    })
+
+    test('a long press is a right-click only while editing, so outside edit mode the browser keeps its own touch menu', async () => {
+      const cwa = makeCwa({ hasRole: true })
+      const editing = ref(false)
+      Object.defineProperty(cwa.admin, 'isEditing', { get: () => editing.value })
+      cwaState.cwa = cwa
+      const wrapper = await mountManager()
+      const target = document.createElement('p')
+      document.body.append(target)
+      const contextMenus = vi.fn()
+      target.addEventListener('contextmenu', contextMenus)
+      vi.useFakeTimers()
+      try {
+        const press = () => {
+          const down = new MouseEvent('pointerdown', { clientX: 30, clientY: 40, bubbles: true })
+          Object.defineProperties(down, { pointerType: { value: 'touch' }, pointerId: { value: 1 } })
+          target.dispatchEvent(down)
+          vi.advanceTimersByTime(500)
+          target.dispatchEvent(new MouseEvent('pointerup', { bubbles: true }))
+          vi.advanceTimersByTime(1000)
+        }
+        press()
+        expect(contextMenus).not.toHaveBeenCalled()
+
+        editing.value = true
+        await nextTick()
+        press()
+        expect(contextMenus).toHaveBeenCalledTimes(1)
+
+        editing.value = false
+        await nextTick()
+        press()
+        expect(contextMenus).toHaveBeenCalledTimes(1)
+        wrapper.unmount()
+      }
+      finally {
+        vi.useRealTimers()
+        target.remove()
+      }
     })
   })
 })

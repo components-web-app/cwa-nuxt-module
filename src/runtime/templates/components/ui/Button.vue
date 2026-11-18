@@ -15,6 +15,7 @@ const {
   size = 'md',
   icon,
   iconOnly = false,
+  largeIcon = false,
   loading = false,
   disabled = false,
   disabledReason,
@@ -32,6 +33,8 @@ const {
   size?: 'sm' | 'md'
   icon?: Component
   iconOnly?: boolean
+  /** @internal */
+  largeIcon?: boolean
   loading?: boolean
   disabled?: boolean
   disabledReason?: string
@@ -64,9 +67,9 @@ const hasLead = computed(() => loading || !!icon)
 const boxClasses = computed(() => {
   const small = size === 'sm'
   if (iconOnly) {
-    return small ? 'cwa:h-8 cwa:w-8 cwa:pointer-coarse:h-hit cwa:pointer-coarse:w-hit cwa:px-0' : 'cwa:h-control cwa:w-control cwa:px-0'
+    return small ? 'cwa:h-8 cwa:w-8 cwa:pointer-coarse:h-hit cwa:pointer-coarse:w-hit cwa:px-0' : 'cwa:h-control cwa:w-control cwa:pointer-coarse:h-hit cwa:pointer-coarse:w-hit cwa:px-0'
   }
-  const height = stretch ? 'cwa:h-full' : small ? 'cwa:h-8 cwa:pointer-coarse:h-hit' : 'cwa:h-control'
+  const height = stretch ? 'cwa:h-full' : small ? 'cwa:h-8 cwa:pointer-coarse:h-hit' : 'cwa:h-control cwa:pointer-coarse:h-hit'
   const padding = small ? 'cwa:px-3' : (hasLead.value ? 'cwa:pl-3 cwa:pr-4' : 'cwa:px-4')
   return `${height} ${padding}`
 })
@@ -143,7 +146,7 @@ function onClick(event: MouseEvent) {
           viewBox="0 0 16 16"
           aria-hidden="true"
           fill="currentColor"
-          class="cwa:size-4"
+          :class="largeIcon ? 'cwa:size-[calc(var(--cwa-spacing-control)*5/9)]' : 'cwa:size-4'"
         ><circle
           cx="8"
           cy="3"
@@ -181,7 +184,8 @@ function onClick(event: MouseEvent) {
       :is="icon"
       v-else-if="icon"
       aria-hidden="true"
-      class="cwa:size-4 cwa:shrink-0"
+      class="cwa:shrink-0"
+      :class="largeIcon ? 'cwa:size-[calc(var(--cwa-spacing-control)*5/9)]' : 'cwa:size-4'"
     />
     <template v-if="!iconOnly && shortLabel">
       <span

@@ -9,6 +9,8 @@ export interface MenuItem {
   reasonsLabel?: string
   testId?: string
   onSelect?: () => void
+  /** @internal */
+  dot?: string
 }
 
 export interface MenuGroup {

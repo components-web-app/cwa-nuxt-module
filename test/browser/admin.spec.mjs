@@ -1,5 +1,5 @@
 import * as Y from 'yjs'
-import { test } from './fixtures.mjs'
+import { expect, test } from './fixtures.mjs'
 import { mercurePath } from './rehearsal.mjs'
 import { articleTexts, seedArticlePages, texts } from './seed.mjs'
 
@@ -1462,7 +1462,130 @@ test.describe('resource stack', () => {
   })
 })
 
-test('56. outside edit mode the header\'s Edit button and menu sit on the header bar\'s centre, level with the page settings button', async ({ cwa: t }) => {
+test.describe('in-page editing', () => {
+  test('56. on a phone a long press on a component opens the resource stack as a bottom sheet, and Close shuts it', async ({ cwa: t }) => {
+    const { page } = t
+    await page.setViewportSize({ width: 390, height: 844 })
+    await openEditMode(t)
+    const component = page.getByText(texts.source, { exact: true }).first()
+    await component.waitFor()
+
+    await component.evaluate((el) => {
+      const { left, top, width, height } = el.getBoundingClientRect()
+      el.dispatchEvent(new PointerEvent('pointerdown', { pointerType: 'touch', clientX: left + width / 2, clientY: top + height / 2, bubbles: true, cancelable: true }))
+    })
+    const sheet = page.getByTestId('resource-stack')
+    await eventually(async () => await sheet.count() === 1 && await sheet.getAttribute('aria-modal') === 'true', 'The long press never opened the stack as a sheet')
+    await sheet.evaluate(el => Promise.all(el.getAnimations({ subtree: true }).map(animation => animation.finished)))
+    const box = await sheet.boundingBox()
+    assert(Math.abs(box.y + box.height - 844) <= 1 && box.width >= 389, `The sheet is not along the bottom edge: ${JSON.stringify(box)}`)
+
+    await page.getByTestId('resource-stack-close').click()
+    await eventually(async () => await sheet.count() === 0, 'Close did not shut the sheet')
+  })
+
+  test('57. a title is edited where it sits on the page: Enter saves it, and while a save has failed Escape opens the bar status on Retry, which saves it', async ({ cwa: t }) => {
+    const { page, seed } = t
+    const title = (await t.api.create('/component/titles', { title: 'Title on the page' }))['@id']
+    await t.api.create('/_/component_positions', { componentGroup: seed.iris.pageAGroup, component: title })
+    await openEditMode(t)
+
+    const shown = page.getByTestId('inline-edit-value').filter({ hasText: 'Title on the page' })
+    await shown.click()
+    const input = page.getByPlaceholder('Add a title')
+    await input.fill('Title edited on the page')
+    await input.press('Enter')
+
+    await eventually(() => t.rehearsal.writes.find(w => w.method === 'PATCH' && w.path.startsWith(title) && w.body?.title === 'Title edited on the page'), `No PATCH of the title: ${JSON.stringify(t.rehearsal.writes)}`)
+    await page.getByTestId('inline-edit-value').filter({ hasText: 'Title edited on the page' }).waitFor()
+    await t.settle()
+
+    t.allowConsoleErrors(/^Failed to load resource: the server responded with a status of 500/)
+    let refused = false
+    await page.route(url => url.pathname.includes('/component/titles/'), (route) => {
+      if (refused || route.request().method() !== 'PATCH') {
+        return route.fallback()
+      }
+      refused = true
+      return route.fulfill({ status: 500, contentType: 'application/ld+json', body: '{}' })
+    })
+    await page.getByTestId('inline-edit-value').filter({ hasText: 'Title edited on the page' }).click()
+    await input.fill('Title that will not save')
+    await input.press('Enter')
+    const status = page.getByTestId('bar-summary')
+    await eventually(async () => await status.getAttribute('data-state') === 'error', 'The bar status never showed the failed save')
+
+    await page.getByTestId('inline-edit-value').filter({ hasText: 'Title that will not save' }).click()
+    expect(await input.getAttribute('aria-invalid')).toBe('true')
+    await input.press('Escape')
+    const retry = page.getByTestId('bar-summary-popover').getByRole('button', { name: 'Retry' })
+    await eventually(() => retry.evaluate(el => document.activeElement === el), 'Escape from the failed editor did not open the bar status on Retry')
+    expect(await page.getByTestId('bar-summary-popover').getAttribute('aria-label')).toBe('Title: not saved')
+
+    await page.keyboard.press('Enter')
+    await eventually(() => t.rehearsal.writes.find(w => w.method === 'PATCH' && w.body?.title === 'Title that will not save'), `Retry sent no PATCH: ${JSON.stringify(t.rehearsal.writes)}`)
+    await eventually(async () => await status.getAttribute('data-state') !== 'error' && await page.getByTestId('bar-summary-popover').count() === 0, 'Retry did not clear the failed save')
+    expect(await page.getByTestId('inline-edit-value').filter({ hasText: 'Title that will not save' }).getAttribute('aria-invalid')).toBeNull()
+  })
+
+  test('58. the Content tab\'s Edit on page focuses the rich-text editor on the page, and Escape there returns to the button', async ({ cwa: t }) => {
+    const { page } = t
+    await openEditMode(t)
+    await select(page, texts.source)
+
+    const button = page.getByTestId('inline-handoff-edit')
+    await eventually(async () => (await button.textContent()).trim() === 'Edit on page', 'The Content tab never offered Edit on page')
+    await button.click()
+    await eventually(() => page.evaluate(() => document.activeElement?.classList.contains('ProseMirror')), 'Edit on page did not focus the editor')
+
+    await page.keyboard.press('Escape')
+    await eventually(() => button.evaluate(el => document.activeElement === el), 'Escape did not return to Edit on page')
+  })
+
+  test('59. Link in the rich-text editor opens the link popover, and Enter links the selected words', async ({ cwa: t }) => {
+    const { page, settle } = t
+    await openEditMode(t)
+    await select(page, texts.source)
+
+    await placeCaret(page, texts.source, 'start')
+    await page.keyboard.press('Shift+End')
+    await page.getByRole('button', { name: 'Link', exact: true }).click()
+    const popover = page.getByTestId('link-popover')
+    await popover.waitFor()
+    const url = popover.getByRole('textbox', { name: 'URL' })
+    await eventually(() => url.evaluate(el => document.activeElement === el), 'The URL field was not focused')
+    await url.fill('/kitchens')
+    await url.press('Enter')
+
+    await eventually(() => t.rehearsal.writes.find(w => w.method === 'PATCH' && w.body?.html?.includes('href="/kitchens"')), `No PATCH with the link: ${JSON.stringify(t.rehearsal.writes)}`)
+    assert(await popover.count() === 0, 'The popover stayed open after Enter')
+    await settle()
+  })
+
+  test('60. empty placeholders show only in edit mode: a draft-only position shows nothing to an admin who is not editing, and its draft once editing', async ({ cwa: t }) => {
+    const { page, seed, settle } = t
+    const draft = (await t.api.create('/component/html_contents', { html: '<p>Draft only text</p>' }))['@id']
+    await t.api.create('/_/component_positions', { componentGroup: seed.iris.pageAGroup, component: draft })
+
+    await page.goto(`${t.base}${seed.paths.home}`)
+    await page.getByRole('button', { name: 'Edit', exact: true }).waitFor()
+    await page.getByText(texts.source, { exact: true }).first().waitFor()
+    await settle()
+    assert(await page.getByTestId('edit-placeholder').count() === 0, 'An admin who is not editing sees a placeholder')
+    assert(await page.getByText('Draft only text').count() === 0, 'An admin who is not editing sees the draft')
+
+    await page.getByRole('button', { name: 'Edit', exact: true }).click()
+    await page.getByRole('button', { name: 'Done', exact: true }).waitFor()
+    await page.getByText('Draft only text').first().waitFor()
+    const placeholder = page.getByTestId('edit-placeholder').filter({ hasText: 'Empty group' }).first()
+    await placeholder.waitFor()
+    assert(await page.getByTestId('field-info-popover').count() === 0, 'The empty group shows its explanation before the info button is hovered')
+    await placeholder.getByTestId('field-info').hover()
+    await page.getByTestId('field-info-popover').filter({ hasText: 'Visitors see nothing here' }).waitFor()
+  })
+})
+
+test('61. outside edit mode the header\'s Edit button and menu sit on the header bar\'s centre, level with the page settings button', async ({ cwa: t }) => {
   const { page, base, settle, seed } = t
   for (const width of [1280, 390]) {
     await page.setViewportSize({ width, height: 800 })
@@ -1490,7 +1613,7 @@ test('56. outside edit mode the header\'s Edit button and menu sit on the header
   }
 })
 
-test('57. with live editing paused on a phone, the header\'s status is a glyph named for it beside Edit, clear of the page settings button and the menu, and a tap shows its text', async ({ cwa: t }) => {
+test('62. with live editing paused on a phone, the header\'s status is a glyph named for it beside Edit, clear of the page settings button and the menu, and a tap shows its text', async ({ cwa: t }) => {
   const { page, base, settle, seed } = t
   t.allowConsoleErrors(/^Failed to load resource: net::ERR_FAILED/)
   await page.route(`**${mercurePath}**`, route => route.abort())
@@ -1528,7 +1651,7 @@ test('57. with live editing paused on a phone, the header\'s status is a glyph n
   }
 })
 
-test('58. the header\'s Edit or Done button and the page settings button or path selector beside it share one height and one centre, at 1280 and 390, with a fine or a coarse pointer, while live editing is paused', async ({ cwa: t }) => {
+test('63. the header\'s Edit or Done button and the page settings button or path selector beside it share one height and one centre, at 1280 and 390, with a fine or a coarse pointer, while live editing is paused', async ({ cwa: t }) => {
   const { page, base, seed } = t
   const cookies = await page.context().cookies()
   for (const hasTouch of [false, true]) {

@@ -24,6 +24,7 @@ const props = withDefaults(defineProps<{
   minuteStep?: number
   locale?: string
   disabled?: boolean
+  disabledReason?: string
   field?: string
   model?: ResourceModelField<string>
   modelValue?: string | null
@@ -36,6 +37,7 @@ const props = withDefaults(defineProps<{
   minuteStep: 5,
   locale: 'en-GB',
   disabled: false,
+  disabledReason: undefined,
   field: undefined,
   model: undefined,
   modelValue: undefined,
@@ -98,6 +100,7 @@ function onCalendarUpdate(date?: DateValue) {
 
 <template>
   <Field
+    :disabled-reason="disabled ? disabledReason : undefined"
     :label="label"
     :label-hidden="labelHidden"
     :info="info"

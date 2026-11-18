@@ -59,6 +59,28 @@ describe('CwaUiSelect (#460)', () => {
     expect(wrapper.emitted('update:modelValue')).toEqual([['wide']])
   })
 
+  test('an option with a dot shows it, round, after its name on the trigger (12px) and in the menu (8px), with no words of its own', async () => {
+    const typed = [
+      { label: 'Static', value: 'static', dot: 'cwa:bg-type-static' },
+      { label: 'Dynamic', value: 'template', dot: 'cwa:bg-type-dynamic' },
+    ]
+    const wrapper = mountSelect({ options: typed, modelValue: 'template' })
+
+    const triggerDot = wrapper.get('[data-testid="select-trigger"] [data-testid="select-dot"]')
+    expect(triggerDot.classes()).toEqual(expect.arrayContaining(['cwa:bg-type-dynamic', 'cwa:rounded-full', 'cwa:size-3']))
+    expect(triggerDot.attributes('aria-hidden')).toBe('true')
+    expect(wrapper.get('[data-testid="select-trigger"]').text()).toBe('Dynamic')
+
+    const menu = await open(wrapper)
+    const staticDot = option(menu, 'Static').querySelector('[data-testid="select-dot"]')!
+    expect([...staticDot.classList]).toEqual(expect.arrayContaining(['cwa:bg-type-static', 'cwa:rounded-full', 'cwa:size-2']))
+    expect(option(menu, 'Dynamic').querySelector('[data-testid="select-dot"]')!.classList).toContain('cwa:bg-type-dynamic')
+  })
+
+  test('options without a dot draw none', () => {
+    expect(mountSelect().find('[data-testid="select-dot"]').exists()).toBe(false)
+  })
+
   test('a nullable select lists None first, shows it for no value, and choosing it emits null', async () => {
     const wrapper = mountSelect({ nullable: true, noneLabel: 'Default', modelValue: 'wide' })
     const menu = await open(wrapper)
