@@ -501,10 +501,10 @@ async function openPage(iri: string) {
     displayIriModel.value = iri
     return
   }
-  if (!await dialog.value?.confirmDiscard()) {
+  if (!await dialog.value?.requestClose()) {
     return
   }
-  await navigateTo({ name: '_cwa-routes-iri', params: { iri } })
+  await navigateTo({ name: '_cwa-routes-iri', params: { iri }, query: { cwa_force: 'true' } })
 }
 
 async function goToPath(path: string) {

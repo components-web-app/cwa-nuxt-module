@@ -353,17 +353,19 @@ describe('PageResourceAdminModal Routes tab links (#461)', () => {
     expect(mockNavigateTo).not.toHaveBeenCalled()
   })
 
-  test('opening a child page from the Routes tab opens its own settings once unsaved edits are dealt with', async () => {
+  test('opening a child page from the Routes tab closes this dialog, then opens its own settings past the editing guard', async () => {
     const { wrapper } = setup()
-    confirmDiscard.mockResolvedValueOnce(false)
+    requestClose.mockResolvedValueOnce(false)
     await routesTab(wrapper).vm.$emit('openPage', '/_/pages/child')
     await flushPromises()
     expect(mockNavigateTo).not.toHaveBeenCalled()
 
-    confirmDiscard.mockResolvedValueOnce(true)
+    requestClose.mockResolvedValueOnce(true)
     await routesTab(wrapper).vm.$emit('openPage', '/_/pages/child')
     await flushPromises()
-    expect(mockNavigateTo).toHaveBeenCalledWith({ name: '_cwa-routes-iri', params: { iri: '/_/pages/child' } })
+    expect(requestClose).toHaveBeenCalledTimes(2)
+    expect(confirmDiscard).not.toHaveBeenCalled()
+    expect(mockNavigateTo).toHaveBeenCalledWith({ name: '_cwa-routes-iri', params: { iri: '/_/pages/child' }, query: { cwa_force: 'true' } })
   })
 
   test('going to a child route closes the dialog and navigates past the editing guard', async () => {

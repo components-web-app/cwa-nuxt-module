@@ -458,7 +458,8 @@ onMounted(async () => {
 })
 
 function openRoutePage(iri: string) {
-  return navigateTo({ name: '_cwa-routes-iri', params: { iri } })
+  emit('close')
+  return navigateTo({ name: '_cwa-routes-iri', params: { iri }, query: { cwa_force: 'true' } })
 }
 
 function goToRoutePath(path: string) {
