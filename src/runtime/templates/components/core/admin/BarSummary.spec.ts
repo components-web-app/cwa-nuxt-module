@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
-import { enableAutoUnmount, mount } from '@vue/test-utils'
+import { enableAutoUnmount, mount, flushPromises } from '@vue/test-utils'
 import { nextTick, reactive, ref } from 'vue'
 import { axe } from '../../../../../../test/utils/axe'
 import { drawsOpenState } from '../../../../../../test/utils/kit-css'
@@ -236,6 +236,26 @@ describe('BarSummary (#459)', () => {
     expect(summary().attributes('aria-expanded')).toBe('true')
     expect(wrapper.emitted('show')).toBeUndefined()
     expect(document.querySelectorAll('[aria-live]')).toHaveLength(1)
+  })
+
+  test('the status opens a popover with its full text, and clicking the status again closes it', async () => {
+    draft()
+    const { summary } = mountSummary()
+    const press = async () => {
+      summary().element.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, pointerType: 'mouse' }))
+      await flushPromises()
+      await summary().trigger('click')
+      await flushPromises()
+    }
+
+    await press()
+    expect(popover()?.textContent?.trim()).toBe('Draft · not live')
+    expect(summary().attributes('aria-expanded')).toBe('true')
+    await vi.advanceTimersByTimeAsync(0)
+
+    await press()
+    expect(popover()).toBeNull()
+    expect(summary().attributes('aria-expanded')).toBe('false')
   })
 
   test('the full status of a scheduled draft names its date', async () => {

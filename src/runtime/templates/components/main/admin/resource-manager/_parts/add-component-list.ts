@@ -71,7 +71,7 @@ export function buildAddComponentList(choices: AddComponentChoice[], query: stri
   const q = normaliseQuery(query)
   const allowed = choices.filter(choice => choice.allowed)
   const quick = q ? [] : allowed.filter(choice => choice.count > 0).sort((a, b) => b.count - a.count || byLabel(a, b))
-  const listed = allowed.filter(choice => (q ? matchRank(choice, q) > 0 : choice.count === 0))
+  const listed = q ? allowed.filter(choice => matchRank(choice, q) > 0) : allowed
   const rank = (a: AddComponentChoice, b: AddComponentChoice) => matchRank(a, q) - matchRank(b, q) || byLabel(a, b)
 
   const grouped = allowed.some(choice => choice.group)

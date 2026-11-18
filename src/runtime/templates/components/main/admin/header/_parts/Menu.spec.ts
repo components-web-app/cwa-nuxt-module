@@ -117,4 +117,18 @@ describe('the header menu is operable from the keyboard', () => {
     await flushPromises()
     expect(toggle.attributes('aria-expanded')).toBe('false')
   })
+
+  test('a click on the toggle is never taken as a click outside, which in a browser closed the menu before the toggle reopened it', async () => {
+    wrapper = mountMenu()
+    const toggle = wrapper.get('button')
+    await toggle.trigger('click')
+    await nextTask()
+    toggle.element.addEventListener('click', event => event.stopImmediatePropagation(), { capture: true })
+
+    toggle.element.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+    await toggle.trigger('click')
+    await flushPromises()
+
+    expect(toggle.attributes('aria-expanded')).toBe('true')
+  })
 })

@@ -4,6 +4,14 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+## [2.0.0-alpha.35] - 2026-11-18
+
+### Changed
+
+- The header menu's toggle closes the open menu (the click outside closed it and the toggle opened it again), and clicking the bar's status again closes its popover ([3d20810c](https://github.com/components-web-app/cwa-nuxt-module/commit/3d20810c15f41b4298072e33a25053fe65b1bffc), [#461](https://github.com/components-web-app/cwa-nuxt-module/issues/461))
+- The layout, user, page and page data slide-overs close when a save of an existing resource succeeds, and a success toast says what was saved; a failed save keeps the slide-over open ([262c6dd9](https://github.com/components-web-app/cwa-nuxt-module/commit/262c6dd9d5b20f0f20b72fc75f13d0072f3abeaf), [#461](https://github.com/components-web-app/cwa-nuxt-module/issues/461))
+- The add component dialog keeps the components already in the group in its full list as well as the chips, and its detail says where it adds in an info box again ([81e88c3a](https://github.com/components-web-app/cwa-nuxt-module/commit/81e88c3ab55f859198e24d0d367d8f9e77fb00bd), [#461](https://github.com/components-web-app/cwa-nuxt-module/issues/461))
+
 ## [2.0.0-alpha.34] - 2026-11-18
 
 - Signing out while a page is still loading no longer throws "Failed to check if the token … is current": a fetch whose token sign-out cleared is treated as no longer current ([f29e7af7](https://github.com/components-web-app/cwa-nuxt-module/commit/f29e7af72deaf563d7c7eec122f8cec2367a2ebb))
@@ -271,7 +279,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 - First tagged release of `@cwa/nuxt`; releases are now published from `v*` tags ([7c61b7c](https://github.com/components-web-app/cwa-nuxt-module/commit/7c61b7ce331ec4a0cb8e76951a5de2ff806ed07a))
 
-[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.34...HEAD
+[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.35...HEAD
+[2.0.0-alpha.35]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.34...v2.0.0-alpha.35
 [2.0.0-alpha.34]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.33...v2.0.0-alpha.34
 [2.0.0-alpha.33]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.32...v2.0.0-alpha.33
 [2.0.0-alpha.32]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.31...v2.0.0-alpha.32

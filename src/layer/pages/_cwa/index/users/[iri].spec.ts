@@ -8,14 +8,19 @@ import { fieldExplanation } from '../../../../../../test/utils/field-info'
 import * as cwaComposable from '#cwa/composables/cwa'
 import Select from '#cwa/templates/components/ui/Select.vue'
 
-const { mockUseResendVerifyEmail, mockConfirm, route } = vi.hoisted(() => ({
+const { mockUseResendVerifyEmail, mockConfirm, showToast, route } = vi.hoisted(() => ({
   mockUseResendVerifyEmail: vi.fn(),
   mockConfirm: vi.fn(),
+  showToast: vi.fn(),
   route: { name: '_cwa-users-user-iri', params: { iri: '/users/uuid-user' } as Record<string, string>, query: {}, hash: '' },
 }))
 
 vi.mock('#cwa/composables/useResendVerifyEmail', () => ({
   useResendVerifyEmail: mockUseResendVerifyEmail,
+}))
+
+vi.mock('#cwa/composables/cwa-toast', () => ({
+  useCwaToast: () => ({ show: showToast, dismiss: vi.fn() }),
 }))
 
 vi.mock('#cwa/composables/cwa-confirm', () => ({
@@ -309,6 +314,17 @@ describe('admin user dialog (#461)', () => {
         data: { newEmailAddress: 'new@example.com', oldPassword: 'my-own-password' },
         onRequest: expect.any(Function),
       })
+    })
+
+    test('a successful save closes the dialog and says User saved', async () => {
+      const { wrapper } = await setup()
+
+      await type('Email', 'new@example.com')
+      await type('Your current password', 'my-own-password')
+      await clickSave()
+
+      expect(wrapper.emitted('close')).toHaveLength(1)
+      expect(showToast).toHaveBeenCalledExactlyOnceWith({ tone: 'success', title: 'User saved' })
     })
 
     test('the password is not kept after a successful save', async () => {

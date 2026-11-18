@@ -261,6 +261,15 @@ describe('PageResourceAdminModal on the kit dialog (#461)', () => {
     expect(mockUseItemPage).toHaveBeenCalledWith(expect.objectContaining({ dismissStoredErrors: true }))
   })
 
+  test('a save closes the slide-over with a toast naming what was saved', () => {
+    setup()
+    expect(mockUseItemPage.mock.calls[0]![0].savedTitle()).toBe('Page saved')
+
+    mockUseItemPage.mockClear()
+    setupPageData()
+    expect(mockUseItemPage.mock.calls[0]![0].savedTitle()).toBe('Event saved')
+  })
+
   test('opened from /_cwa/routes/<iri> without an iri, a page opens as a page: its fields, depths, parent filter and typed delete', async () => {
     const routeIri = '/_/pages/uuid-self'
     const stored = {

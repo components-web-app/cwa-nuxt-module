@@ -32,18 +32,18 @@ function shape(list: ReturnType<typeof buildAddComponentList>) {
 }
 
 describe('the add component list', () => {
-  test('the components already in the group are the quick list, most used first, and are not repeated below', () => {
+  test('the components already in the group are the quick list, most used first, and are still listed below', () => {
     const list = buildAddComponentList(choices, '', dynamic)
 
     expect(list.quick.map(option => option.name)).toEqual(['Image', 'Button'])
-    expect(list.sections.flatMap(section => section.options.map(option => option.name))).not.toContain('Image')
-    expect(list.sections.flatMap(section => section.options.map(option => option.name))).not.toContain('Button')
+    expect(list.sections.flatMap(section => section.options.map(option => option.name))).toContain('Image')
+    expect(list.sections.flatMap(section => section.options.map(option => option.name))).toContain('Button')
   })
 
   test('sections are the configured groups A to Z, then Other, then Dynamic', () => {
     expect(shape(buildAddComponentList(choices, '', dynamic))).toEqual([
-      ['Media', ['Gallery']],
-      ['Text', ['Accordion', 'RichText']],
+      ['Media', ['Gallery', 'Image']],
+      ['Text', ['Accordion', 'Button', 'RichText']],
       ['Other', ['Spacer']],
       ['Dynamic', ['ComponentPosition']],
     ])
@@ -53,7 +53,7 @@ describe('the add component list', () => {
     const plain = [choice('Zed'), choice('Alpha'), choice('Mid', { count: 2 })]
 
     expect(shape(buildAddComponentList(plain, '', dynamic))).toEqual([
-      ['Components', ['Alpha', 'Zed']],
+      ['Components', ['Alpha', 'Mid', 'Zed']],
       ['Dynamic', ['ComponentPosition']],
     ])
   })

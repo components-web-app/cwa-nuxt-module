@@ -7,7 +7,7 @@ export type AlertTone = 'info' | 'success' | 'warning' | 'danger'
 
 const { tone = 'info', title } = defineProps<{
   tone?: AlertTone
-  title: string
+  title?: string
 }>()
 
 const titleId = useId()
@@ -30,7 +30,7 @@ defineExpose({ focus: () => root.value?.focus() })
     ref="root"
     role="group"
     tabindex="-1"
-    :aria-labelledby="titleId"
+    :aria-labelledby="title ? titleId : undefined"
     :data-tone="tone"
     data-testid="alert"
     class="cwa:flex cwa:gap-3 cwa:p-4 cwa:text-control cwa:text-fg cwa:outline-1 cwa:outline-transparent cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-accent-fg"
@@ -42,6 +42,7 @@ defineExpose({ focus: () => root.value?.focus() })
     />
     <div class="cwa:min-w-0 cwa:flex-1">
       <p
+        v-if="title"
         :id="titleId"
         class="cwa:m-0 cwa:font-semibold"
       >
@@ -49,7 +50,8 @@ defineExpose({ focus: () => root.value?.focus() })
       </p>
       <div
         v-if="$slots.default"
-        class="cwa:mt-1 cwa:text-fg-secondary"
+        class="cwa:text-fg-secondary"
+        :class="{ 'cwa:mt-1': title }"
       >
         <slot />
       </div>

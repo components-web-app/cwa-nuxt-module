@@ -259,6 +259,7 @@ const { isAdding, isLoading, loadFailed, loadResource, isUpdating, localResource
     roles: ['ROLE_USER'],
   },
   excludeFields: ['repeatPassword'],
+  savedTitle: () => 'User saved',
   validate: (data) => {
     if (data?.plainPassword && data.plainPassword !== data.repeatPassword) {
       return { repeatPassword: 'The passwords don\'t match.' }
