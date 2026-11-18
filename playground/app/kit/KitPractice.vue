@@ -202,8 +202,16 @@ async function openPageSettings() {
   document.querySelector<HTMLElement>('[data-testid="page-settings"]')?.click()
 }
 
+const eventsInSite = new WeakSet<Event>()
+
+function markInSite(event: MouseEvent) {
+  if (site.value?.contains(event.target as Node)) {
+    eventsInSite.add(event)
+  }
+}
+
 function inSite(event: MouseEvent) {
-  return !!site.value?.contains(event.target as Node)
+  return eventsInSite.has(event)
 }
 
 function onClick(event: MouseEvent) {
@@ -319,6 +327,8 @@ onBeforeUnmount(() => restore?.())
           v-if="ready"
           ref="chrome"
           class="kit-site-frame"
+          @click.capture="markInSite"
+          @contextmenu.capture="markInSite"
           @click="onClick"
           @contextmenu="onContextMenu"
         >

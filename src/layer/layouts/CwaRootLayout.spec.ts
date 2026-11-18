@@ -146,3 +146,45 @@ describe('CwaRootLayout unresolvable uiComponent', () => {
     expect(wrapper.find('.page-content').exists()).toBe(true)
   })
 })
+
+describe('CwaRootLayout page or layout click', () => {
+  async function setupClicks() {
+    const clickHandler = vi.fn()
+    const contextMenuHandler = vi.fn()
+    const { wrapper } = setup({ isAdmin: true, isEditing: true, registeredComponents: ['CwaLayoutPrimary'] })
+    await flushPromises()
+    const setupState = (wrapper.vm as unknown as { $: { setupState: Record<string, unknown> } }).$.setupState
+    setupState.resourceManager = { clickHandler, contextMenuHandler }
+    return { wrapper, clickHandler, contextMenuHandler }
+  }
+
+  function removedByItsOwnClick(element: Element) {
+    element.addEventListener('click', () => element.remove())
+    element.addEventListener('contextmenu', () => element.remove())
+  }
+
+  test('a click on an in-page editor that replaces the clicked element is still a page click, not a layout one (#461)', async () => {
+    const { wrapper, clickHandler, contextMenuHandler } = await setupClicks()
+    const content = wrapper.find('.page-content').element
+    const target = document.createElement('span')
+    content.appendChild(target)
+    removedByItsOwnClick(target)
+
+    target.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    expect(target.isConnected).toBe(false)
+    expect(clickHandler).toHaveBeenCalledWith(expect.any(MouseEvent), 'page')
+
+    const again = document.createElement('span')
+    content.appendChild(again)
+    removedByItsOwnClick(again)
+    again.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true }))
+    expect(contextMenuHandler).toHaveBeenCalledWith(expect.any(MouseEvent), 'page')
+  })
+
+  test('a click outside the page is a layout click', async () => {
+    const { wrapper, clickHandler } = await setupClicks()
+
+    wrapper.element.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    expect(clickHandler).toHaveBeenCalledWith(expect.any(MouseEvent), 'layout')
+  })
+})
