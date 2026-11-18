@@ -19,7 +19,6 @@ export const kitColourTokens = [
   { name: 'field-warning', use: 'Field in conflict', dark: '#6d5e45', light: '#dcc9ad' },
   { name: 'muted-on-field', use: 'Placeholders and muted text on a fill', dark: '#e7e5e4', light: '#4f4a45' },
   { name: 'tree-line', use: 'Tree connector lines', dark: '#78716c', light: '#8a837e' },
-  { name: 'line-dash', use: 'The resource stack\'s dashed boxes', dark: '#78716c', light: '#78716c' },
   { name: 'toggle-off', use: 'Toggle track when off', dark: '#78716c', light: '#78716c' },
   { name: 'step-hover', use: 'Hover on a control nested in a field', dark: 'rgb(255 255 255 / 0.17)', light: 'rgb(28 25 23 / 0.16)' },
   { name: 'step-press', use: 'A nested control while pressed', dark: 'rgb(255 255 255 / 0.3)', light: 'rgb(28 25 23 / 0.3)' },
@@ -132,7 +131,6 @@ export const kitContrastPairs: KitContrastPair[] = [
   { fg: 'warning', bg: 'surface', min: 3, use: 'Unreachable page data, dialog edge' },
   { fg: 'toggle-off', bg: 'surface', min: 3, use: 'Toggle track, off' },
   { fg: 'tree-line', bg: 'surface', min: 3, use: 'Tree line' },
-  { fg: 'line-dash', bg: 'surface-menu', min: 3, use: 'Resource stack box' },
   ...buttonPairs(),
   ...badgePairs(),
 ]

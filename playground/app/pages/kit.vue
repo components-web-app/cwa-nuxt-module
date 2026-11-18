@@ -1284,7 +1284,7 @@ code {
   place-items: center;
   width: 16rem;
   height: 8rem;
-  border: 1px dashed var(--cwa-color-line-dash);
+  border: 1px solid var(--cwa-color-line-strong);
   color: var(--cwa-color-fg-muted);
 }
 

@@ -35,14 +35,88 @@ describe('ListRow (#461)', () => {
     expect(wrapper.get('[role="row"]').classes()).not.toContain('cwa:hover:bg-field-hover/50')
   })
 
-  test('the type is a coloured mark named for screen readers: a circle for Static, a square for Dynamic', async () => {
-    const staticType = (await mountRow({ type: { label: 'Static', colour: 'static' } })).get('[data-testid="list-row-type"]')
-    const dynamicType = (await mountRow({ type: { label: 'Dynamic', colour: 'dynamic' } })).get('[data-testid="list-row-type"]')
+  test.each([
+    ['Static page', 'static', 'cwa:bg-type-static', 'cwa:outline-type-static'],
+    ['Dynamic template', 'dynamic', 'cwa:bg-type-dynamic', 'cwa:outline-type-dynamic'],
+  ] as const)('the type %s is a round dot after the name, 8px, filled, with a 1px outline 2px out, named for screen readers', async (label, colour, fill, outline) => {
+    const type = (await mountRow({ type: { label, colour } })).get('[data-testid="list-row-type"]')
 
-    expect(staticType.attributes()).toMatchObject({ 'role': 'img', 'aria-label': 'Static' })
-    expect(staticType.classes()).toEqual(expect.arrayContaining(['cwa:rounded-full', 'cwa:bg-type-static']))
-    expect(dynamicType.classes()).toContain('cwa:bg-type-dynamic')
-    expect(dynamicType.classes()).not.toContain('cwa:rounded-full')
+    expect(type.attributes()).toMatchObject({ 'role': 'img', 'aria-label': label })
+    expect(type.classes()).toEqual(expect.arrayContaining(['cwa:size-2', 'cwa:rounded-full', 'cwa:outline-1', 'cwa:outline-offset-2', fill, outline]))
+  })
+
+  describe('row actions', () => {
+    test('Edit goes where the row does and View to the page on the site, as icon-only links named for the row', async () => {
+      const wrapper = await mountRow({ to: '/_cwa/pages/x', view: '/kitchens', actions: true })
+      const edit = wrapper.get('[data-testid="list-row-edit"]')
+      const view = wrapper.get('[data-testid="list-row-view"]')
+
+      expect(edit.attributes()).toMatchObject({ 'href': '/_cwa/pages/x', 'aria-label': 'Edit Kitchens', 'title': 'Edit Kitchens' })
+      expect(view.attributes()).toMatchObject({ 'href': '/kitchens', 'aria-label': 'View Kitchens', 'title': 'View Kitchens' })
+      expect(edit.text()).toBe('')
+      expect(view.text()).toBe('')
+    })
+
+    test('the actions are named for the given name when the title is not it', async () => {
+      const wrapper = await mountRow({ to: '/x', view: '/y', actions: true, name: 'the Kitchens page' })
+
+      expect(wrapper.get('[data-testid="list-row-edit"]').attributes('aria-label')).toBe('Edit the Kitchens page')
+      expect(wrapper.get('[data-testid="list-row-view"]').attributes('aria-label')).toBe('View the Kitchens page')
+    })
+
+    test('keyboard users get exactly two stops, Edit then View, while the whole row still opens Edit', async () => {
+      const wrapper = await mountRow({ to: '/_cwa/pages/x', view: '/kitchens', actions: true })
+      const row = wrapper.get('[role="row"]').element
+      const stops = [...row.querySelectorAll<HTMLElement>('a, button')].filter(element => element.tabIndex >= 0)
+
+      expect(stops.map(element => element.dataset.testid)).toEqual(['list-row-edit', 'list-row-view'])
+      const link = wrapper.get('[data-testid="list-row-link"]')
+      expect(link.attributes()).toMatchObject({ href: '/_cwa/pages/x', tabindex: '-1' })
+      expect(link.classes()).toEqual(expect.arrayContaining(['cwa:after:absolute', 'cwa:after:inset-0']))
+    })
+
+    test('a row with nothing to view has Edit only', async () => {
+      const wrapper = await mountRow({ to: '/_cwa/layouts/x', actions: true })
+
+      expect(wrapper.find('[data-testid="list-row-edit"]').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="list-row-view"]').exists()).toBe(false)
+    })
+
+    test('without actions the title link stays the row\'s one stop', async () => {
+      const wrapper = await mountRow({ to: '/x' })
+
+      expect(wrapper.find('[data-testid="list-row-edit"]').exists()).toBe(false)
+      expect(wrapper.get('[data-testid="list-row-link"]').attributes('tabindex')).toBeUndefined()
+    })
+
+    test('the actions sit tight at the row end, above the stretched link, with large filled glyphs in square targets of at least 24px, 44px on coarse pointers, and focus rings', async () => {
+      const wrapper = await mountRow({ to: '/x', view: '/y', actions: true })
+      const cell = wrapper.get('[data-testid="list-row-actions"]')
+
+      expect(cell.attributes('role')).toBe('cell')
+      expect(cell.classes()).toEqual(expect.arrayContaining(['cwa:relative', 'cwa:z-[1]', 'cwa:flex', 'cwa:justify-end', 'cwa:gap-2']))
+      for (const testId of ['list-row-edit', 'list-row-view']) {
+        const action = wrapper.get(`[data-testid="${testId}"]`)
+        expect(action.classes()).toEqual(expect.arrayContaining(['cwa:size-8', 'cwa:pointer-coarse:size-hit']))
+        expect(drawsFocusRing(action.classes())).toBe(true)
+        const glyph = action.get('svg')
+        expect(glyph.attributes('aria-hidden')).toBe('true')
+        expect(glyph.classes().some(name => /^cwa:(size|h)-(5|6)$/.test(name))).toBe(true)
+        expect(glyph.find('[fill="currentColor"]').exists()).toBe(true)
+      }
+    })
+
+    test('other actions given to the row share its actions cell', async () => {
+      const wrapper = await mountRow({ to: '/x', actions: true }, { actions: () => h('button', { 'type': 'button', 'data-testid': 'extra' }, 'Delete') })
+
+      expect(wrapper.get('[data-testid="list-row-actions"]').find('[data-testid="extra"]').exists()).toBe(true)
+    })
+
+    test('has no axe violations', async () => {
+      await mountRow({ to: '/x', view: '/y', actions: true, type: { label: 'Dynamic template', colour: 'dynamic' } })
+
+      expect(await axe(document.body)).toHaveNoViolations()
+    })
   })
 
   test('the second line gives way to the phone line below md when there is one', async () => {

@@ -28,6 +28,7 @@ const { label, labelHidden = false, info, description, optional = false, width, 
 
 defineSlots<{
   default: (props: { describedBy: string | undefined, tone: 'danger' | 'warning' | undefined, busy: boolean, labelId: string, modal: boolean, unsaved: boolean }) => any
+  lead?: (props: { modal: boolean, unsaved: boolean }) => any
   after?: () => any
 }>()
 
@@ -114,8 +115,13 @@ watch(() => inactive, (now) => {
     </div>
     <div
       class="cwa:w-full cwa:min-w-0"
-      :class="{ 'cwa:mt-1.5': !ownLabel && !labelHidden }"
+      :class="{ 'cwa:mt-1.5': !ownLabel && !labelHidden, 'cwa:flex cwa:min-h-hit cwa:items-center cwa:justify-between cwa:gap-3': $slots.lead }"
     >
+      <slot
+        name="lead"
+        :modal="true"
+        :unsaved="unsaved"
+      />
       <CwaUiFieldPresence
         :model="model"
         v-bind="inactive ? undefined : model?.focusListeners"
@@ -174,6 +180,11 @@ watch(() => inactive, (now) => {
       :label="label"
       :text="help"
       :text-id="infoId"
+    />
+    <slot
+      name="lead"
+      :modal="false"
+      :unsaved="false"
     />
     <div
       ref="box"

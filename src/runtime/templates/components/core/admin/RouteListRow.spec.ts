@@ -60,6 +60,19 @@ describe('RouteListRow', () => {
       expect(wrapper.get('[data-testid="list-row-sub"]').text()).toBe('Page: My Page')
     })
 
+    test('a page\'s route offers Edit, opening the page\'s settings, and View, going to the route on the site, named by the path', async () => {
+      const wrapper = await mountRow()
+
+      expect(wrapper.get('[data-testid="list-row-edit"]').attributes()).toMatchObject({ 'href': '/_cwa/routes/%2F_%2Fpages%2Fabc', 'aria-label': 'Edit /topic-1' })
+      expect(wrapper.get('[data-testid="list-row-view"]').attributes()).toMatchObject({ 'href': '/topic-1', 'aria-label': 'View /topic-1' })
+    })
+
+    test('a page data\'s route offers View too', async () => {
+      const wrapper = await mountRow({ page: undefined, pageData: '/page_data/1' }, { pageData: 'An article' })
+
+      expect(wrapper.get('[data-testid="list-row-view"]').attributes('href')).toBe('/topic-1')
+    })
+
     test('a page data\'s route opens the page data\'s settings', async () => {
       const linkFn = vi.fn(() => '/x')
       const wrapper = await mountRow({ page: undefined, pageData: '/page_data/1' }, { pageData: 'An article', pageDataType: 'BlogArticleData' }, linkFn)
@@ -78,6 +91,8 @@ describe('RouteListRow', () => {
       const wrapper = await mountRow({ page: undefined, redirect: '/_/routes//new' }, { redirect: '/new' })
 
       expect(wrapper.find('[data-testid="list-row-link"]').exists()).toBe(false)
+      expect(wrapper.find('[data-testid="list-row-edit"]').exists()).toBe(false)
+      expect(wrapper.find('[data-testid="list-row-view"]').exists()).toBe(false)
       expect(wrapper.get('[data-testid="list-row-sub"]').text()).toBe('Redirects to /new')
       expect(wrapper.find('[data-testid="route-delete"]').exists()).toBe(false)
     })
@@ -86,7 +101,8 @@ describe('RouteListRow', () => {
       const wrapper = await mountRow({ page: undefined }, {})
 
       expect(wrapper.get('[data-testid="list-row-sub"]').text()).toBe('Nothing uses this route, so it can be deleted.')
-      const remove = wrapper.get('[data-testid="route-delete"]')
+      expect(wrapper.find('[data-testid="list-row-view"]').exists()).toBe(false)
+      const remove = wrapper.get('[data-testid="list-row-actions"] [data-testid="route-delete"]')
       expect(remove.attributes('aria-label')).toBe('Delete the route /topic-1')
       await remove.trigger('click')
       expect(wrapper.emitted('delete')).toEqual([['/_/routes//topic-1']])

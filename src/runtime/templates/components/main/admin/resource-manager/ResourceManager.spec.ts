@@ -45,7 +45,7 @@ vi.mock('#cwa/admin/confirm-dialog', () => ({
   createConfirmDialog: vi.fn(async () => ({ reveal: confirmState.reveal })),
 }))
 
-vi.mock('#cwa/templates/components/core/ConfirmDialog.vue', () => ({ default: {} }))
+vi.mock('#cwa/templates/components/core/ui/Confirm.vue', () => ({ default: {} }))
 
 vi.mock('#app/nuxt', async importOriginal => ({
   ...await importOriginal<typeof import('#app/nuxt')>(),

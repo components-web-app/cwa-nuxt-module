@@ -48,8 +48,8 @@ export function placeResourceStack(anchor: StackPoint | StackRect, { panel, inne
   let left: number
   let top: number
   if ('width' in anchor) {
-    left = anchor.left + anchor.width / 2 - (inner.left + inner.width / 2)
-    top = anchor.top + anchor.height / 2 - (inner.top + inner.height / 2)
+    left = anchor.left - inner.left
+    top = anchor.top - inner.top
   }
   else {
     const fromLeft = anchor.x - inner.left

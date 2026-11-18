@@ -154,7 +154,7 @@ async function goTo(event: MouseEvent, page: string) {
         align="start"
         :side-offset="8"
         data-testid="presence-list"
-        class="cwa:z-context cwa:min-w-[220px] cwa:max-w-sm cwa:max-h-[50vh] cwa:overflow-y-auto cwa:p-3 cwa:rounded-lg cwa:dark-blur cwa:outline-dotted cwa:outline-1 cwa:outline-stone-400 cwa:shadow-lg cwa:text-sm cwa:text-light"
+        class="cwa:z-context cwa:min-w-[220px] cwa:max-w-sm cwa:max-h-[50vh] cwa:overflow-y-auto cwa:p-3 cwa:rounded-lg cwa:bg-surface-menu cwa:border cwa:border-line cwa:shadow-lg cwa:text-sm cwa:text-light"
       >
         <ul class="cwa:flex cwa:flex-col cwa:gap-y-2">
           <li

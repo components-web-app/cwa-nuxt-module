@@ -3,7 +3,10 @@
     v-if="showLoader"
     class="component-group-placeholder"
   >
-    <Spinner :show="true" />
+    <span
+      role="status"
+      class="cwa:inline-flex"
+    ><Spinner /><span class="cwa:sr-only">Loading</span></span>
   </div>
   <template v-else-if="componentPositions?.length">
     <!--cwa-start-->
@@ -73,7 +76,7 @@ import ResourceLoader from '#cwa/templates/components/core/ResourceLoader.vue'
 import { CwaResourceApiStatuses, NEW_RESOURCE_IRI } from '#cwa/storage/stores/resources/state'
 import { useCwa } from '#cwa/composables/cwa'
 import { useCwaResourceManageable } from '#cwa/composables/cwa-resource-manageable'
-import Spinner from '#cwa/templates/components/utils/Spinner.vue'
+import Spinner from '#cwa/templates/components/ui/Spinner.vue'
 
 const LazyHotSpot = defineAsyncComponent({
   suspensible: false,

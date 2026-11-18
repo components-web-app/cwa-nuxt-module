@@ -195,9 +195,10 @@ describe('SharedInstancesHighlight', () => {
     await flushPromises()
 
     const classes = wrapper.get('[data-testid="shared-instance-outline"]').classes()
-    expect(classes).toContain('cwa:outline-dotted')
+    expect(classes).toEqual(expect.arrayContaining(['cwa:outline-solid', 'cwa:outline-1', 'cwa:outline-white/60']))
+    expect(classes).not.toContain('cwa:outline-2')
     expect(classes).not.toContain('cwa:outline-yellow')
-    expect(classes).not.toContain('cwa:outline-dashed')
+    expect(classes).not.toContain('cwa:outline-dotted')
   })
 
   test('stops listening once unmounted', async () => {

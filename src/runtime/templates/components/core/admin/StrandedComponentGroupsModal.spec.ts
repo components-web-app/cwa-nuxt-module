@@ -11,7 +11,7 @@ vi.mock('#app/nuxt', async importOriginal => ({
   ...await importOriginal<typeof import('#app/nuxt')>(),
   useNuxtApp: () => ({ vueApp: {} }),
 }))
-vi.mock('#cwa/templates/components/core/ConfirmDialog.vue', () => ({ default: {} }))
+vi.mock('#cwa/templates/components/core/ui/Confirm.vue', () => ({ default: {} }))
 vi.mock('vuejs-confirm-dialog', () => ({
   install: vi.fn(),
   createConfirmDialog: vi.fn(),
@@ -54,23 +54,37 @@ function confirmWith(isCanceled: boolean) {
   return reveal
 }
 
-function mountModal() {
+function mountModal(options: { realDialog?: boolean, attachTo?: HTMLElement } = {}) {
   return mount(StrandedComponentGroupsModal, {
     props: { groups, targets },
+    attachTo: options.attachTo,
     global: {
       stubs: {
-        CwaUiFormSelect: {
-          name: 'CwaUiFormSelect',
-          props: ['options', 'modelValue'],
+        CwaUiDialog: options.realDialog
+          ? false
+          : {
+              name: 'CwaUiDialog',
+              props: ['title', 'size'],
+              emits: ['close'],
+              template: '<div class="dialog-stub"><button type="button" data-testid="dialog-close" @click="$emit(\'close\')">Close</button><slot /><slot name="footer" /></div>',
+            },
+        CwaUiSelect: {
+          name: 'CwaUiSelect',
+          props: ['options', 'modelValue', 'label', 'placeholder', 'disabled', 'disabledReason'],
           emits: ['update:modelValue'],
           template: '<div class="select-stub" />',
         },
-        CwaUiFormButton: {
-          name: 'CwaUiFormButton',
-          props: ['color', 'disabled'],
-          template: '<button type="button" :disabled="disabled" @click="$emit(\'click\', $event)"><slot /></button>',
+        CwaUiButton: {
+          name: 'CwaUiButton',
+          props: ['label', 'variant', 'tone', 'disabled', 'disabledReason', 'loading'],
+          emits: ['click'],
+          template: '<button type="button" :aria-disabled="disabled ? \'true\' : undefined" @click="disabled || $emit(\'click\', $event)">{{ label }}</button>',
         },
-        CwaUiIconXMarkIcon: { template: '<svg />' },
+        CwaUiAlert: {
+          name: 'CwaUiAlert',
+          props: ['tone', 'title'],
+          template: '<div class="alert-stub">{{ title }}<slot /></div>',
+        },
       },
     },
   })
@@ -85,7 +99,7 @@ function button(wrapper: ReturnType<typeof mountModal>, index: number, label: st
 }
 
 async function chooseTarget(wrapper: ReturnType<typeof mountModal>, index: number, iri: string) {
-  section(wrapper, index).findComponent({ name: 'CwaUiFormSelect' }).vm.$emit('update:modelValue', iri)
+  section(wrapper, index).findComponent({ name: 'CwaUiSelect' }).vm.$emit('update:modelValue', iri)
   await wrapper.vm.$nextTick()
 }
 
@@ -117,7 +131,7 @@ describe('StrandedComponentGroupsModal', () => {
 
   test('offers only shown groups as merge targets, never the group itself', () => {
     const wrapper = mountModal()
-    const options = section(wrapper, 0).findComponent({ name: 'CwaUiFormSelect' }).props('options')
+    const options = section(wrapper, 0).findComponent({ name: 'CwaUiSelect' }).props('options')
     expect(options).toEqual([{ label: 'hero', value: '/_/component_groups/hero' }])
   })
 
@@ -129,17 +143,19 @@ describe('StrandedComponentGroupsModal', () => {
   ])('offers a target with %s only when it can take them all (#398)', (_label, data, offered) => {
     groupData['/_/component_groups/hero'] = data
     const wrapper = mountModal()
-    const options = section(wrapper, 0).findComponent({ name: 'CwaUiFormSelect' }).props('options')
+    const options = section(wrapper, 0).findComponent({ name: 'CwaUiSelect' }).props('options')
     expect(options).toEqual(offered ? [{ label: 'hero', value: '/_/component_groups/hero' }] : [])
   })
 
   test('cannot merge before a target is chosen, or an empty group at all', async () => {
     const wrapper = mountModal()
-    expect(button(wrapper, 0, 'Merge').attributes('disabled')).toBeDefined()
+    expect(button(wrapper, 0, 'Merge').attributes('aria-disabled')).toBe('true')
+    expect(section(wrapper, 0).findAllComponents({ name: 'CwaUiButton' })[0]!.props('disabledReason')).toBe('Choose a group to merge into first.')
     await chooseTarget(wrapper, 0, '/_/component_groups/hero')
-    expect(button(wrapper, 0, 'Merge').attributes('disabled')).toBeUndefined()
+    expect(button(wrapper, 0, 'Merge').attributes('aria-disabled')).toBeUndefined()
     await chooseTarget(wrapper, 1, '/_/component_groups/hero')
-    expect(button(wrapper, 1, 'Merge').attributes('disabled')).toBeDefined()
+    expect(button(wrapper, 1, 'Merge').attributes('aria-disabled')).toBe('true')
+    expect(section(wrapper, 1).findAllComponents({ name: 'CwaUiButton' })[0]!.props('disabledReason')).toBe('This group is empty.')
   })
 
   test('merging asks for confirmation first, and cancelling sends nothing', async () => {
@@ -147,8 +163,15 @@ describe('StrandedComponentGroupsModal', () => {
     const wrapper = mountModal()
     await chooseTarget(wrapper, 0, '/_/component_groups/hero')
     await button(wrapper, 0, 'Merge').trigger('click')
+    await vi.waitFor(() => expect(createConfirmDialog).toHaveBeenCalled())
     await flushPromises()
-    expect(reveal).toHaveBeenCalledTimes(1)
+    expect(reveal).toHaveBeenCalledWith({
+      title: 'Merge component group?',
+      description: 'Move the 2 components in “top” to the end of “hero”, then delete the empty “top” group?',
+      keep: 'Cancel',
+      go: 'Merge',
+      tone: 'accent',
+    })
     expect(mergeComponentGroup).not.toHaveBeenCalled()
   })
 
@@ -158,6 +181,7 @@ describe('StrandedComponentGroupsModal', () => {
     const wrapper = mountModal()
     await chooseTarget(wrapper, 0, '/_/component_groups/hero')
     await button(wrapper, 0, 'Merge').trigger('click')
+    await vi.waitFor(() => expect(createConfirmDialog).toHaveBeenCalled())
     await flushPromises()
     expect(mergeComponentGroup).toHaveBeenCalledWith($cwa, '/_/component_groups/top', '/_/component_groups/hero')
     expect(section(wrapper, 0).find('[data-testid="stranded-group-outcome"]').exists()).toBe(false)
@@ -169,8 +193,10 @@ describe('StrandedComponentGroupsModal', () => {
     const wrapper = mountModal()
     await chooseTarget(wrapper, 0, '/_/component_groups/hero')
     await button(wrapper, 0, 'Merge').trigger('click')
+    await vi.waitFor(() => expect(createConfirmDialog).toHaveBeenCalled())
     await flushPromises()
     const outcome = section(wrapper, 0).find('[data-testid="stranded-group-outcome"]')
+    expect(outcome.findComponent({ name: 'CwaUiAlert' }).props('tone')).toBe('danger')
     expect(outcome.text()).toContain('kept')
     expect(outcome.text()).toContain('/_/component_positions/a')
   })
@@ -181,6 +207,7 @@ describe('StrandedComponentGroupsModal', () => {
     const wrapper = mountModal()
     await chooseTarget(wrapper, 0, '/_/component_groups/hero')
     await button(wrapper, 0, 'Merge').trigger('click')
+    await vi.waitFor(() => expect(createConfirmDialog).toHaveBeenCalled())
     await flushPromises()
     expect(section(wrapper, 0).find('[data-testid="stranded-group-outcome"]').text()).toContain('could not be deleted')
   })
@@ -194,9 +221,32 @@ describe('StrandedComponentGroupsModal', () => {
     expect(createConfirmDialog).not.toHaveBeenCalled()
   })
 
-  test('the close button emits close', async () => {
+  test('is a kit dialog titled Stranded component groups, whose close emits close', async () => {
     const wrapper = mountModal()
-    await wrapper.find('[data-testid="stranded-groups-close"]').trigger('click')
+    expect(wrapper.findComponent({ name: 'CwaUiDialog' }).props('title')).toBe('Stranded component groups')
+    await wrapper.find('[data-testid="dialog-close"]').trigger('click')
     expect(wrapper.emitted('close')).toHaveLength(1)
+  })
+
+  test('each merge target is chosen in a labelled kit select', () => {
+    const wrapper = mountModal()
+    expect(section(wrapper, 0).findComponent({ name: 'CwaUiSelect' }).props('label')).toBe('Merge into')
+  })
+
+  test('is portalled out of the page, so a click inside it does not reach the root layout (#380)', async () => {
+    const root = document.createElement('div')
+    const rootClick = vi.fn()
+    root.addEventListener('click', rootClick)
+    const mountPoint = document.createElement('div')
+    root.appendChild(mountPoint)
+    document.body.appendChild(root)
+    const wrapper = mountModal({ realDialog: true, attachTo: mountPoint })
+    await vi.waitFor(() => expect(document.querySelector('[data-testid="dialog"]')).not.toBeNull())
+    const dialog = document.querySelector<HTMLElement>('[data-testid="dialog"]')!
+    expect(root.contains(dialog)).toBe(false)
+    dialog.click()
+    expect(rootClick).not.toHaveBeenCalled()
+    wrapper.unmount()
+    root.remove()
   })
 })
