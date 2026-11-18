@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
 import { createCommentVNode, defineAsyncComponent, h, inject, onMounted, ref, nextTick } from 'vue'
-import { flushPromises, mount } from '@vue/test-utils'
+import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { mockNuxtImport } from '@nuxt/test-utils/runtime'
 import { CwaUserRoles } from '#cwa/storage/stores/auth/state'
 import { useCloneMode } from '#cwa/admin/clone-mode'
@@ -18,6 +18,8 @@ vi.mock('#cwa/templates/components/main/admin/resource-manager/_parts/ClonePlace
     template: '<div class="clone-placement-menu-stub" />',
   },
 }))
+
+enableAutoUnmount(afterEach)
 
 const selectOriginal = vi.hoisted(() => ({ fn: (() => {}) as (index: number) => void }))
 
@@ -43,7 +45,7 @@ vi.mock('#cwa/admin/confirm-dialog', () => ({
   createConfirmDialog: vi.fn(async () => ({ reveal: confirmState.reveal })),
 }))
 
-vi.mock('#cwa/templates/components/core/ConfirmDialog.vue', () => ({ default: {} }))
+vi.mock('#cwa/templates/components/core/ui/Confirm.vue', () => ({ default: {} }))
 
 vi.mock('#app/nuxt', async importOriginal => ({
   ...await importOriginal<typeof import('#app/nuxt')>(),
@@ -171,6 +173,17 @@ describe('ResourceManager', () => {
       cwaState.cwa = makeCwa({ stackManager })
       const wrapper = await mountManager()
       expect(wrapper.find('#cwa-manager-spacer').exists()).toBe(true)
+    })
+
+    test('the saving line above the bar sits on the notifications layer, above the page overlay and outlines, as the header\'s does', async () => {
+      const stackManager = makeStackManager({ showManager: ref(true), currentStackItem: ref({ iri: '/component/1' }) })
+      cwaState.cwa = makeCwa({ stackManager })
+      const wrapper = await mountManager()
+      resolverState.allMeta.value = [{ name: 'Tab' }]
+      await nextTick()
+      const line = wrapper.get('.rli-stub')
+      expect(line.classes()).toContain('cwa:z-notifications')
+      expect(line.classes()).toContain('cwa:bottom-full')
     })
   })
 
@@ -794,6 +807,38 @@ describe('ResourceManager', () => {
 
       wrapper.unmount()
       expect(removeSpy).toHaveBeenCalledWith('resize', cwa.admin.emitRedraw)
+    })
+  })
+  describe('long press (#461)', () => {
+    test('a long touch press on the page is a right-click while the manager is mounted, and not after', async () => {
+      cwaState.cwa = makeCwa({ hasRole: true, isEditing: true })
+      const wrapper = await mountManager()
+      const target = document.createElement('p')
+      document.body.append(target)
+      const contextMenus = vi.fn()
+      target.addEventListener('contextmenu', contextMenus)
+      vi.useFakeTimers()
+      try {
+        const press = () => {
+          const down = new MouseEvent('pointerdown', { clientX: 30, clientY: 40, bubbles: true })
+          Object.defineProperties(down, { pointerType: { value: 'touch' }, pointerId: { value: 1 } })
+          target.dispatchEvent(down)
+          vi.advanceTimersByTime(500)
+          target.dispatchEvent(new MouseEvent('pointerup', { bubbles: true }))
+          vi.advanceTimersByTime(1000)
+        }
+        press()
+        expect(contextMenus).toHaveBeenCalledTimes(1)
+        expect(contextMenus.mock.calls[0]![0]).toMatchObject({ clientX: 30, clientY: 40 })
+
+        wrapper.unmount()
+        press()
+        expect(contextMenus).toHaveBeenCalledTimes(1)
+      }
+      finally {
+        vi.useRealTimers()
+        target.remove()
+      }
     })
   })
 })

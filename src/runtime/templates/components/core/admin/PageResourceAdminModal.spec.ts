@@ -11,11 +11,13 @@ import Input from '#cwa/templates/components/ui/Input.vue'
 import Select from '#cwa/templates/components/ui/Select.vue'
 import Toggle from '#cwa/templates/components/ui/Toggle.vue'
 import Segmented from '#cwa/templates/components/ui/Segmented.vue'
+import EyeGlyph from '#cwa/templates/components/ui/icon/EyeIcon.vue'
 import * as cwaComposable from '#cwa/composables/cwa'
 import { componentNames } from '#components'
 import { consola } from 'consola'
 import { drawsFocusRing } from '../../../../../../test/utils/focus-ring'
 import { axe } from '../../../../../../test/utils/axe'
+import { fieldExplanation } from '../../../../../../test/utils/field-info'
 
 const mockNavigateTo = vi.hoisted(() => vi.fn())
 const routeState = vi.hoisted(() => ({ route: undefined as unknown as { params: Record<string, string>, query: Record<string, string>, hash: string } }))
@@ -62,13 +64,13 @@ afterEach(() => {
 
 const DialogStub = defineComponent({
   name: 'CwaUiDialog',
-  props: ['title', 'tabs', 'form', 'loading', 'noun', 'createNoun', 'tab'],
+  props: ['title', 'tabs', 'form', 'loading', 'noun', 'createNoun', 'tab', 'kind', 'placement'],
   emits: ['close', 'save', 'update:tab'],
   setup(props, { slots, expose }) {
     provide(fieldGroupKey, { model: (field: string) => props.form.model(field), undo: () => undefined })
     provide(formSurfaceKey, { unsaved: (field: string) => props.form.unsavedFields.includes(field), register: () => () => {} })
     expose({ requestClose, confirmDiscard })
-    return () => h('div', { 'data-testid': 'dialog-stub' }, [slots['header-actions']?.(), slots.details?.(), slots.routes?.(), slots.info?.()])
+    return () => h('div', { 'data-testid': 'dialog-stub' }, [h('div', { 'data-testid': 'stub-header' }, slots['header-actions']?.()), h('div', { 'data-testid': 'stub-subheader' }, slots.subheader?.()), slots.details?.(), slots.routes?.(), slots.info?.()])
   },
 })
 
@@ -96,6 +98,7 @@ function setup(opts: {
   loadDynamicPageOptions?: () => Promise<unknown>
   loadParentPageOptions?: () => Promise<unknown>
   fetchData?: (path: string) => unknown
+  attach?: boolean
 } = {}) {
   const iri = opts.iri ?? opts.routeIri ?? '/_/pages/uuid-self'
   routeState.route.params = opts.routeIri ? { iri: opts.routeIri } : {}
@@ -156,6 +159,7 @@ function setup(opts: {
 
   const wrapper = mount(PageResourceAdminModal, {
     props: { ...(opts.routeIri ? {} : { iri }), resourceType: opts.resourceType ?? 'Page', hideViewLink: opts.hideViewLink ?? true },
+    attachTo: opts.attach ? document.body : undefined,
     global: {
       stubs: {
         CwaUiDialog: DialogStub,
@@ -226,7 +230,7 @@ describe('PageResourceAdminModal on the kit dialog (#461)', () => {
 
     expect(mockUseItemPage.mock.calls[0]![0].endpoint.value).toBe(routeIri)
     expect(wrapper.find('[data-cwa-field="reference"]').exists()).toBe(true)
-    expect(field(wrapper, Segmented, 'Page type')).toBeDefined()
+    expect(field(wrapper, Select, 'Page type')).toBeDefined()
     expect(field(wrapper, Select, 'Layout')).toBeDefined()
     expect(field(wrapper, Select, 'Page UI')).toBeDefined()
     expect(field(wrapper, Segmented, 'Editing').props('options')).toEqual([{ label: 'Parent', value: '/_/pages/parent' }, { label: 'Child', value: routeIri }])
@@ -265,14 +269,75 @@ describe('PageResourceAdminModal on the kit dialog (#461)', () => {
     expect(wrapper.find('[data-cwa-field="reference"] [data-testid="field-unsaved"]').exists()).toBe(true)
   })
 
+  const pageType = (wrapper: ReturnType<typeof mount>) => field(wrapper, Select, 'Page type')
+
+  test('the page type is a select in the dialog header, Static or Dynamic, each with its round dot in the list\'s colours', () => {
+    const { wrapper } = setup({ local: { isTemplate: false } })
+
+    const select = pageType(wrapper)
+    expect(wrapper.get('[data-testid="stub-header"]').element.contains(select.element)).toBe(true)
+    expect(select.props()).toMatchObject({ labelHidden: true })
+    expect(select.props('options')).toEqual([
+      { label: 'Static', value: 'static', dot: 'cwa:bg-type-static' },
+      { label: 'Dynamic', value: 'template', dot: 'cwa:bg-type-dynamic' },
+    ])
+    expect(select.props('model').model.value).toBe('static')
+    expect(field(wrapper, Segmented, 'Page type')).toBeUndefined()
+  })
+
+  test('the page type select is in the header when the view link is not, and while creating a page', () => {
+    expect(pageType(setup({ hideViewLink: true }).wrapper)).toBeDefined()
+    expect(pageType(setup({ routeIri: 'add', isAdding: true }).wrapper)).toBeDefined()
+    expect(pageType(setupPageData().wrapper)).toBeUndefined()
+  })
+
   test('changing the page type is a change to save, never saved on its own', async () => {
     const { wrapper, form, handlers } = setup({ local: { isTemplate: false } })
 
-    await field(wrapper, Segmented, 'Page type').findAll('button').find(b => b.text() === 'Template')!.trigger('click')
+    pageType(wrapper).props('model').model.value = 'template'
+    await flushPromises()
 
     expect(form.local.isTemplate).toBe(true)
     expect(form.unsavedFields).toEqual(['isTemplate'])
     expect(handlers.saveResource).not.toHaveBeenCalled()
+  })
+
+  test.each([
+    [false, { tone: 'static' }],
+    [true, { tone: 'dynamic' }],
+  ])('a page with isTemplate %s colours the header line %o, the select beside it saying the type', (isTemplate, kind) => {
+    const { wrapper } = setup({ local: { isTemplate } })
+
+    expect(wrapper.findComponent(DialogStub).props('kind')).toEqual(kind)
+  })
+
+  test('switching the page type recolours the header line at once, before it is saved', async () => {
+    const { wrapper, handlers } = setup({ local: { isTemplate: false } })
+
+    pageType(wrapper).props('model').model.value = 'template'
+    await flushPromises()
+
+    expect(wrapper.findComponent(DialogStub).props('kind')).toEqual({ tone: 'dynamic' })
+    expect(handlers.saveResource).not.toHaveBeenCalled()
+  })
+
+  test('a page public without a route keeps its page type line', () => {
+    const { wrapper } = setup({ local: { isTemplate: false, isReachableWithoutRoute: true } })
+
+    expect(wrapper.findComponent(DialogStub).props('kind')).toEqual({ tone: 'static' })
+  })
+
+  test.each([
+    [{ route: '/_/routes/r' }, { isReachableWithoutRoute: false }, { tone: 'success', label: 'Reachable' }],
+    [{ route: null }, { isReachableWithoutRoute: true }, { tone: 'success', label: 'Reachable' }],
+    [{ route: null }, { isReachableWithoutRoute: false }, { tone: 'warning', label: 'Not reachable' }],
+  ])('page data with %o and %o gives the dialog the %o kind', (saved, local, kind) => {
+    const { wrapper } = setupPageData({
+      resource: { '@id': '/page_data/uuid-self', '@type': 'App\\Entity\\EventData', 'title': 'An event', ...saved },
+      local,
+    })
+
+    expect(wrapper.findComponent(DialogStub).props('kind')).toEqual(kind)
   })
 
   test('choosing to nest under nothing clears the parent in the local copy, so Save counts it', async () => {
@@ -298,15 +363,23 @@ describe('PageResourceAdminModal on the kit dialog (#461)', () => {
     expect(field(wrapper, Select, 'Parent page').props('options')).toEqual([{ label: 'A', value: '/_/pages/a' }])
   })
 
-  test('public without a route is a field, off while the page has a route', () => {
-    const routed = setup({ resource: { '@id': '/_/pages/uuid-self', '@type': 'Page', 'reference': 'My Page', 'route': '/_/routes/r' } })
-    expect(field(routed.wrapper, Toggle, 'Public without a route').props()).toMatchObject({ field: 'isReachableWithoutRoute', disabled: true })
-
-    const unrouted = setupPageData()
-    expect(field(unrouted.wrapper, Toggle, 'Public without a route').props('disabled')).toBe(false)
+  test('Reference explains itself behind ⓘ, not as a line under the field', () => {
+    const reference = field(setup().wrapper, Input, 'Reference')
+    expect(fieldExplanation(reference.element, 'Only admins see this. It names the page in lists.')).toEqual({ info: true, line: false })
   })
 
-  test('switching the depth being edited asks the dialog to confirm discarding unsaved edits, and switches only on Discard', async () => {
+  test('the page and page data dialogs slide over from the right, so switching tabs never moves its header or footer, while creating too', () => {
+    expect(setup().wrapper.findComponent(DialogStub).props('placement')).toBe('right')
+    expect(setupPageData().wrapper.findComponent(DialogStub).props('placement')).toBe('right')
+    expect(setup({ routeIri: 'add', isAdding: true }).wrapper.findComponent(DialogStub).props('placement')).toBe('right')
+  })
+
+  test('public without a route is not a Details field: it lives on the Routes tab, with the route it stands in for (bundle#381)', () => {
+    expect(field(setup().wrapper, Toggle, 'Public without a route')).toBeUndefined()
+    expect(field(setupPageData().wrapper, Toggle, 'Public without a route')).toBeUndefined()
+  })
+
+  test('switching the depth being edited asks the dialog to confirm discarding unsaved edits, and switches only on Discard; a long chain scrolls sideways under the header instead of widening the dialog', async () => {
     const stored = {
       '/_/pages/uuid-self': { '@id': '/_/pages/uuid-self', 'reference': 'Child', 'parentPage': '/_/pages/parent' },
       '/_/pages/parent': { '@id': '/_/pages/parent', 'reference': 'Parent' },
@@ -315,6 +388,8 @@ describe('PageResourceAdminModal on the kit dialog (#461)', () => {
     const endpoint = mockUseItemPage.mock.calls[0]![0].endpoint
     const editing = field(wrapper, Segmented, 'Editing')
     expect(editing.props('options')).toEqual([{ label: 'Parent', value: '/_/pages/parent' }, { label: 'Child', value: '/_/pages/uuid-self' }])
+    expect(wrapper.get('[data-testid="stub-subheader"]').element.contains(editing.element)).toBe(true)
+    expect(wrapper.get('[data-testid="page-depths"]').classes()).toContain('cwa:overflow-x-auto')
 
     confirmDiscard.mockResolvedValueOnce(false)
     await editing.findAll('button').find(b => b.text() === 'Parent')!.trigger('click')
@@ -779,7 +854,7 @@ describe('PageResourceAdminModal creating from a list (#461)', () => {
     ['a page with no layouts', { layouts: [] }, 'Create a layout first', 'Create a layout', { name: '_cwa-layouts-iri', params: { iri: 'add' }, query: { cwa_force: 'true' } }],
     ['a page data with no template pages', { resourceType: 'BlogArticleData', dynamicPages: [] }, 'Create a template page first', 'Create a template page', { name: '_cwa-pages-iri', params: { iri: 'add' }, query: { cwa_force: 'true' } }],
   ])('creating %s shows what to create first in place of the form, and goes there once the dialog closes', async (_kind, opts, title, action, to) => {
-    const { wrapper } = setup({ routeIri: 'add', isAdding: true, ...opts })
+    const { wrapper } = setup({ routeIri: 'add', isAdding: true, attach: true, ...opts })
     await flushPromises()
 
     const alert = wrapper.get('[data-testid="page-missing-prerequisite"]')
@@ -806,6 +881,16 @@ describe('PageResourceAdminModal creating from a list (#461)', () => {
     await flushPromises()
 
     expect(wrapper.find('[data-testid="page-missing-prerequisite"]').exists()).toBe(false)
+  })
+
+  test('Go to dynamic template carries the eye, and page data with no template says so instead', () => {
+    const chosen = setupPageData({ local: { page: '/_/pages/template' } }).wrapper
+    expect(chosen.getComponent('[data-testid="go-to-template"]').props('icon')).toBe(EyeGlyph)
+    expect(chosen.find('[data-testid="no-template"]').exists()).toBe(false)
+
+    const none = setupPageData({ local: { page: null } }).wrapper
+    expect(none.find('[data-testid="go-to-template"]').exists()).toBe(false)
+    expect(none.get('[data-testid="no-template"]').text()).toBe('No template selected')
   })
 
   test('going to the template asks the dialog to close first, so unsaved input is never dropped without asking', async () => {

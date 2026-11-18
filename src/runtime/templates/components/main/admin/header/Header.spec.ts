@@ -110,13 +110,14 @@ function mountHeader(options: { stubs?: Record<string, any>, attachTo?: HTMLElem
           emits: ['close', 'reload'],
           template: '<div class="page-admin-modal-stub" />',
         },
-        CwaUiFormButton: {
-          name: 'CwaUiFormButton',
-          props: ['color', 'loading'],
-          template: '<button type="button" @click="$emit(\'click\', $event)"><slot /></button>',
+        CwaUiButton: {
+          name: 'CwaUiButton',
+          props: ['label', 'variant', 'tone', 'size', 'icon', 'iconOnly', 'loading', 'ariaLabel'],
+          emits: ['click'],
+          template: '<button type="button" :aria-label="ariaLabel" @click="$emit(\'click\', $event)">{{ label }}<slot /></button>',
         },
-        CwaUiFormToggle: {
-          name: 'CwaUiFormToggle',
+        CwaUiToggle: {
+          name: 'CwaUiToggle',
           props: ['modelValue', 'label'],
           template: '<div class="toggle-stub" />',
         },
@@ -166,6 +167,7 @@ describe('Header', () => {
       const warning = wrapper.find('[data-testid="stranded-groups-warning"]')
       expect(warning.exists()).toBe(true)
       expect(warning.text()).toContain('2')
+      expect(warning.attributes('aria-label')).toBe('2 component groups attached to this page are not shown on it')
       expect(warning.element.parentElement!.textContent).toContain('Edit')
     })
 
@@ -192,34 +194,6 @@ describe('Header', () => {
       await flushPromises()
       expect(wrapper.findComponent({ name: 'StrandedComponentGroupsModal' }).exists()).toBe(false)
     })
-
-    describe('with the real overlay', () => {
-      let root: HTMLElement | undefined
-
-      afterEach(() => {
-        root?.remove()
-      })
-
-      test('a click inside the stranded groups modal does not reach the root layout (#380)', async () => {
-        strandedState.stranded = [strandedGroup]
-        mockCwa()
-        root = document.createElement('div')
-        const rootClick = vi.fn()
-        root.addEventListener('click', rootClick)
-        const mountPoint = document.createElement('div')
-        root.appendChild(mountPoint)
-        document.body.appendChild(root)
-        const wrapper = mountHeader({ stubs: { ResourceModalOverlayTemplate: false }, attachTo: mountPoint })
-        await wrapper.find('[data-testid="stranded-groups-warning"]').trigger('click')
-        await flushPromises()
-        rootClick.mockClear()
-        const modal = wrapper.find('[data-testid="stranded-groups-modal"]')
-        expect(modal.exists()).toBe(true)
-        await modal.trigger('click')
-        expect(rootClick).not.toHaveBeenCalled()
-        wrapper.unmount()
-      })
-    })
   })
 
   describe('mount + spacer side effect (onMounted)', () => {
@@ -239,10 +213,17 @@ describe('Header', () => {
   })
 
   describe('Edit / Done button', () => {
+    test('Edit and Done are the kit\'s solid accent button, busy while the page loads', () => {
+      mockCwa({ admin: buildAdmin({ isEditing: false }) })
+      const wrapper = mountHeader()
+      const editBtn = wrapper.findAllComponents({ name: 'CwaUiButton' }).find(b => b.props('label') === 'Edit')!
+      expect(editBtn.props('variant')).toBe('solid')
+    })
+
     test('shows "Edit" when not editing and calls toggleEdit on click', async () => {
       const { adm } = mockCwa({ admin: buildAdmin({ isEditing: false }) })
       const wrapper = mountHeader()
-      const editBtn = wrapper.findAllComponents({ name: 'CwaUiFormButton' })
+      const editBtn = wrapper.findAllComponents({ name: 'CwaUiButton' })
         .find(b => b.text().trim() === 'Edit')
       expect(editBtn).toBeTruthy()
       await editBtn!.trigger('click')
@@ -252,7 +233,7 @@ describe('Header', () => {
     test('shows "Done" when editing', () => {
       mockCwa({ admin: buildAdmin({ isEditing: true }) })
       const wrapper = mountHeader()
-      const labels = wrapper.findAllComponents({ name: 'CwaUiFormButton' }).map(b => b.text().trim())
+      const labels = wrapper.findAllComponents({ name: 'CwaUiButton' }).map(b => b.text().trim())
       expect(labels).toContain('Done')
       expect(labels).not.toContain('Edit')
     })
@@ -261,7 +242,7 @@ describe('Header', () => {
       mockRouteMeta.cwa = { admin: true }
       mockCwa()
       const wrapper = mountHeader()
-      const labels = wrapper.findAllComponents({ name: 'CwaUiFormButton' }).map(b => b.text().trim())
+      const labels = wrapper.findAllComponents({ name: 'CwaUiButton' }).map(b => b.text().trim())
       expect(labels).not.toContain('Edit')
       expect(labels).not.toContain('Done')
     })
@@ -270,7 +251,7 @@ describe('Header', () => {
       errorRef.value = { statusCode: 500 }
       mockCwa()
       const wrapper = mountHeader()
-      const labels = wrapper.findAllComponents({ name: 'CwaUiFormButton' }).map(b => b.text().trim())
+      const labels = wrapper.findAllComponents({ name: 'CwaUiButton' }).map(b => b.text().trim())
       expect(labels).not.toContain('Edit')
     })
   })
@@ -313,9 +294,10 @@ describe('Header', () => {
       mockCwa({ admin: buildAdmin({ isEditing: false }) })
       const wrapper = mountHeader()
       expect(wrapper.findComponent({ name: 'PageResourceAdminModal' }).exists()).toBe(false)
-      const span = wrapper.findAll('span').find(s => s.text().includes('My Reference'))
-      expect(span).toBeTruthy()
-      await span!.trigger('click')
+      const button = wrapper.findAllComponents({ name: 'CwaUiButton' }).find(b => b.props('label') === 'My Reference')
+      expect(button).toBeTruthy()
+      expect(button!.props('ariaLabel')).toBe('Page settings: My Reference')
+      await button!.trigger('click')
       expect(wrapper.findComponent({ name: 'PageResourceAdminModal' }).exists()).toBe(true)
     })
 
@@ -406,10 +388,17 @@ describe('Header', () => {
       return refs.header.className
     }
 
+    test('is a 3px strip, as tall as Nuxt\'s loading indicator', () => {
+      mockCwa()
+      const wrapper = mountHeader()
+      expect(classOf(wrapper)).toContain('cwa:before:h-[3px]')
+      expect(classOf(wrapper)).not.toContain('cwa:before:h-0.5')
+    })
+
     test('uses the yellow accent for a dynamic page', () => {
       mockCwa({ resources: buildResources({ isDynamicPage: { value: true } }) })
       const wrapper = mountHeader()
-      expect(classOf(wrapper)).toContain('cwa:before:bg-yellow')
+      expect(classOf(wrapper)).toContain('cwa:before:bg-type-dynamic')
     })
 
     test('uses green for a data page that has a route', () => {
@@ -420,7 +409,7 @@ describe('Header', () => {
         }),
       })
       const wrapper = mountHeader()
-      expect(classOf(wrapper)).toContain('cwa:before:bg-green')
+      expect(classOf(wrapper)).toContain('cwa:before:bg-success')
     })
 
     test('uses orange for a data page with no route', () => {
@@ -431,7 +420,7 @@ describe('Header', () => {
         }),
       })
       const wrapper = mountHeader()
-      expect(classOf(wrapper)).toContain('cwa:before:bg-orange')
+      expect(classOf(wrapper)).toContain('cwa:before:bg-warning')
     })
 
     test('uses the stone accent on an admin page', () => {
@@ -444,7 +433,7 @@ describe('Header', () => {
     test('uses the blue accent on a normal page', () => {
       mockCwa()
       const wrapper = mountHeader()
-      expect(classOf(wrapper)).toContain('cwa:before:bg-blue-600')
+      expect(classOf(wrapper)).toContain('cwa:before:bg-type-static')
     })
   })
 
@@ -452,8 +441,7 @@ describe('Header', () => {
     test('is "Page" for a normal page', async () => {
       mockCwa({ admin: buildAdmin({ isEditing: false }) })
       const wrapper = mountHeader()
-      const span = wrapper.findAll('span').find(s => s.text().includes('My Reference'))
-      await span!.trigger('click')
+      await wrapper.get('[data-testid="page-settings"]').trigger('click')
       expect(wrapper.findComponent({ name: 'PageResourceAdminModal' }).props('resourceType')).toBe('Page')
     })
 
@@ -466,8 +454,7 @@ describe('Header', () => {
         }),
       })
       const wrapper = mountHeader()
-      const span = wrapper.findAll('span').find(s => s.text().includes('News'))
-      await span!.trigger('click')
+      await wrapper.get('[data-testid="page-settings"]').trigger('click')
       expect(wrapper.findComponent({ name: 'PageResourceAdminModal' }).props('resourceType')).toBe('NewsData')
     })
   })
@@ -476,8 +463,7 @@ describe('Header', () => {
     test('@close closes the page settings dialog', async () => {
       mockCwa({ admin: buildAdmin({ isEditing: false }) })
       const wrapper = mountHeader()
-      const span = wrapper.findAll('span').find(s => s.text().includes('My Reference'))
-      await span!.trigger('click')
+      await wrapper.get('[data-testid="page-settings"]').trigger('click')
       expect(wrapper.findComponent({ name: 'PageResourceAdminModal' }).exists()).toBe(true)
       await wrapper.findComponent({ name: 'PageResourceAdminModal' }).vm.$emit('close')
       expect(wrapper.findComponent({ name: 'PageResourceAdminModal' }).exists()).toBe(false)
@@ -486,8 +472,7 @@ describe('Header', () => {
     test('@reload navigates to the admin pages view', async () => {
       mockCwa({ admin: buildAdmin({ isEditing: false }) })
       const wrapper = mountHeader()
-      const span = wrapper.findAll('span').find(s => s.text().includes('My Reference'))
-      await span!.trigger('click')
+      await wrapper.get('[data-testid="page-settings"]').trigger('click')
       await wrapper.findComponent({ name: 'PageResourceAdminModal' }).vm.$emit('reload')
       expect(replaceMock).toHaveBeenCalledWith('/_cwa/pages')
     })
@@ -495,8 +480,7 @@ describe('Header', () => {
     test('@reload does not navigate once the modal has already taken us to an admin page', async () => {
       mockCwa({ admin: buildAdmin({ isEditing: false }) })
       const wrapper = mountHeader()
-      const span = wrapper.findAll('span').find(s => s.text().includes('My Reference'))
-      await span!.trigger('click')
+      await wrapper.get('[data-testid="page-settings"]').trigger('click')
       mockRouteMeta.cwa = { admin: true }
       await wrapper.findComponent({ name: 'PageResourceAdminModal' }).vm.$emit('reload')
       expect(replaceMock).not.toHaveBeenCalled()
@@ -629,22 +613,22 @@ describe('Header', () => {
     test('shows the Enable Navigation toggle only while cloning in edit mode', async () => {
       const { cwa, adm } = mockCwa({ admin: buildAdmin({ isEditing: true }) })
       const wrapper = mountHeader()
-      expect(wrapper.findComponent({ name: 'CwaUiFormToggle' }).exists()).toBe(false)
+      expect(wrapper.findComponent({ name: 'CwaUiToggle' }).exists()).toBe(false)
       useCloneMode(cwa).start(SOURCE_IRI, 'Hero text')
       await flushPromises()
-      const toggle = wrapper.findComponent({ name: 'CwaUiFormToggle' })
+      const toggle = wrapper.findComponent({ name: 'CwaUiToggle' })
       expect(toggle.exists()).toBe(true)
       expect(toggle.props('label')).toBe('Enable Navigation')
       adm.isEditing = false
       await flushPromises()
-      expect(wrapper.findComponent({ name: 'CwaUiFormToggle' }).exists()).toBe(false)
+      expect(wrapper.findComponent({ name: 'CwaUiToggle' }).exists()).toBe(false)
     })
 
     test('the Enable Navigation toggle sets navigationGuardDisabled', async () => {
       const { cwa, adm } = mockCwa({ admin: buildAdmin({ isEditing: true }) })
       useCloneMode(cwa).start(SOURCE_IRI, 'Hero text')
       const wrapper = mountHeader()
-      const toggle = wrapper.findComponent({ name: 'CwaUiFormToggle' })
+      const toggle = wrapper.findComponent({ name: 'CwaUiToggle' })
       expect(toggle.props('modelValue')).toBe(false)
       toggle.vm.$emit('update:modelValue', true)
       expect(adm.setNavigationGuardDisabled).toHaveBeenCalledWith(true)

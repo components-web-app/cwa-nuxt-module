@@ -5,6 +5,7 @@ import { axe } from '../../../../../test/utils/axe'
 import { drawsFocusRing } from '../../../../../test/utils/focus-ring'
 import { fakeFieldModel } from '../../../../../playground/app/kit/fake-field-model'
 import Toggle from './Toggle.vue'
+import Field from '../core/ui/Field.vue'
 
 enableAutoUnmount(afterEach)
 
@@ -46,5 +47,14 @@ describe('CwaUiToggle (#459)', () => {
     const wrapper = mount(Toggle, { props: { label: 'Schedule', modelValue: false } })
 
     expect(drawsFocusRing(wrapper.get('[role="switch"]').classes())).toBe(true)
+  })
+})
+
+describe('Toggle in a conflict (#461)', () => {
+  test('hands the field a format, so theirs and yours read as the control shows them', () => {
+    const wrapper = mount(Toggle, { props: { label: 'Featured', modelValue: true } })
+    const format = wrapper.findComponent(Field).props('format') as (value: unknown) => string
+    expect(format(true)).toBe('On')
+    expect(format(false)).toBe('Off')
   })
 })

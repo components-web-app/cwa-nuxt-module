@@ -2,6 +2,7 @@
 import { useId } from 'vue'
 import { SwitchRoot, SwitchThumb } from 'reka-ui'
 import Field from '../core/ui/Field.vue'
+import InfoPopover from '../core/ui/InfoPopover.vue'
 import { useFieldModel } from '../core/ui/field-context'
 import type { ResourceModelField } from '#cwa/resources/model-editors'
 
@@ -44,38 +45,47 @@ function onChecked(checked: boolean) {
     :control-id="id"
     :inactive="disabled || unbound"
     :name="field"
+    :format="value => value ? 'On' : 'Off'"
     own-label
   >
-    <template #default="{ describedBy, busy, modal, unsaved }">
-      <div
-        class="cwa:flex cwa:items-center cwa:gap-3"
-        :class="[modal ? 'cwa:min-h-hit cwa:w-full cwa:justify-between' : 'cwa:h-control cwa:pointer-coarse:h-hit', { 'cwa:opacity-50': disabled || unbound }]"
+    <template #lead="{ modal, unsaved, help, helpId }">
+      <span
+        v-if="modal"
+        class="cwa:flex cwa:flex-wrap cwa:items-center cwa:gap-x-2"
+        :class="[{ 'cwa:sr-only': labelHidden }, { 'cwa:opacity-50': disabled || unbound }]"
       >
-        <span
-          v-if="modal"
-          class="cwa:flex cwa:flex-wrap cwa:items-center cwa:gap-x-2"
-          :class="{ 'cwa:sr-only': labelHidden }"
-        >
-          <label
-            :for="id"
-            class="cwa:text-label cwa:text-fg"
-            :class="disabled || unbound ? 'cwa:cursor-not-allowed' : 'cwa:cursor-pointer'"
-          >{{ label }}</label>
-          <span
-            v-if="unsaved"
-            data-testid="field-unsaved"
-            class="cwa:inline-flex cwa:items-center cwa:gap-1.5 cwa:text-helper cwa:font-medium cwa:text-fg-muted"
-          ><span
-            aria-hidden="true"
-            class="cwa:size-2 cwa:rounded-toggle cwa:bg-accent-fg"
-          />Unsaved</span>
-        </span>
         <label
-          v-else
           :for="id"
-          class="cwa:whitespace-nowrap cwa:text-label cwa:text-fg-muted"
-          :class="[labelHidden ? 'cwa:sr-only' : '', disabled || unbound ? 'cwa:cursor-not-allowed' : 'cwa:cursor-pointer']"
+          class="cwa:text-label cwa:text-fg"
+          :class="disabled || unbound ? 'cwa:cursor-not-allowed' : 'cwa:cursor-pointer'"
         >{{ label }}</label>
+        <InfoPopover
+          v-if="help && helpId"
+          :label="label"
+          :text="help"
+          :text-id="helpId"
+        />
+        <span
+          v-if="unsaved"
+          data-testid="field-unsaved"
+          class="cwa:inline-flex cwa:items-center cwa:gap-1.5 cwa:text-helper cwa:font-medium cwa:text-fg-muted"
+        ><span
+          aria-hidden="true"
+          class="cwa:size-2 cwa:rounded-toggle cwa:bg-accent-fg"
+        />Unsaved</span>
+      </span>
+      <label
+        v-else
+        :for="id"
+        class="cwa:whitespace-nowrap cwa:text-label cwa:text-fg-muted"
+        :class="[labelHidden ? 'cwa:sr-only' : '', disabled || unbound ? 'cwa:cursor-not-allowed cwa:opacity-50' : 'cwa:cursor-pointer']"
+      >{{ label }}</label>
+    </template>
+    <template #default="{ describedBy, busy, modal }">
+      <div
+        class="cwa:flex cwa:items-center"
+        :class="[modal ? 'cwa:min-h-hit cwa:px-1' : 'cwa:h-control cwa:px-1 cwa:pointer-coarse:h-hit', { 'cwa:opacity-50': disabled || unbound }]"
+      >
         <SwitchRoot
           :id="id"
           :model-value="!!value"

@@ -5,6 +5,8 @@ import CwaUiButton from '../../ui/Button.vue'
 import XMarkIcon from '../../ui/icon/XMarkIcon.vue'
 import StateGlyph from './StateGlyph.vue'
 import type { FieldUndo } from './field-keys'
+import { shownValue } from './field-value'
+import type { FieldValueFormat } from './field-value'
 import type { ResourceModelField } from '#cwa/resources/model-editors'
 import type { CwaFieldState } from '#cwa/storage/stores/resources/state'
 
@@ -13,13 +15,14 @@ export type LineState = 'saving' | 'saved' | 'error' | 'conflict' | 'undo'
 const SAVED_FOR = 1180
 const HOVER_DELAY = 300
 
-const { state, name, box, model, descriptionId, undo } = defineProps<{
+const { state, name, box, model, descriptionId, undo, format } = defineProps<{
   state: CwaFieldState
   name: string
   box: HTMLElement | null | undefined
   model?: ResourceModelField<any>
   descriptionId: string
   undo?: FieldUndo
+  format?: FieldValueFormat
 }>()
 
 const now = ref(Date.now())
@@ -219,10 +222,7 @@ function runUndo() {
 }
 
 function quoted(value: unknown) {
-  if (value === null || value === undefined || value === '') {
-    return 'Empty'
-  }
-  return typeof value === 'string' ? value : JSON.stringify(value)
+  return shownValue(value, format)
 }
 
 onBeforeUnmount(() => {

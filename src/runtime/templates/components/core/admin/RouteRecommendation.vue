@@ -2,9 +2,10 @@
 import CwaUiButton from '#cwa/templates/components/ui/Button.vue'
 import StateGlyph from '#cwa/templates/components/core/ui/StateGlyph.vue'
 
-const { path, action = 'Use this' } = defineProps<{
+const { path, action = 'Use this', from } = defineProps<{
   path: string
   action?: string
+  from?: string
 }>()
 
 const emit = defineEmits<{ use: [] }>()
@@ -21,9 +22,17 @@ const emit = defineEmits<{ use: [] }>()
         kind="info"
         class="cwa:text-accent-fg"
       />
-      <p class="cwa:m-0 cwa:min-w-0 cwa:flex-1 cwa:text-control cwa:text-fg">
-        Recommended: <span class="cwa:break-all cwa:font-mono">{{ path }}</span>
-      </p>
+      <div class="cwa:min-w-0 cwa:flex-1">
+        <p class="cwa:m-0 cwa:text-control cwa:text-fg">
+          Recommended: <span class="cwa:break-all cwa:font-mono">{{ path }}</span>
+        </p>
+        <p
+          v-if="from"
+          class="cwa:m-0 cwa:text-helper cwa:text-fg-muted"
+        >
+          Based on the page title, “{{ from }}”.
+        </p>
+      </div>
       <CwaUiButton
         size="sm"
         :label="action"

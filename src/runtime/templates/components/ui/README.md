@@ -2,5 +2,5 @@ Components in this directory are available to the application automatically with
 
 For example:
 ```vue
-<CwaUiFormToggle />
+<CwaUiToggle label="Enable Navigation" />
 ```

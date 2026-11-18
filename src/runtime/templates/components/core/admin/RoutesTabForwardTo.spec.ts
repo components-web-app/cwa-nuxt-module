@@ -18,6 +18,12 @@ function mountForward(props: Record<string, unknown> = {}) {
 const text = (wrapper: ReturnType<typeof mountForward>, selector: string) => wrapper.find(selector).text().replace(/\s+/g, ' ').trim()
 
 describe('RoutesTabForwardTo', () => {
+  test('the search explains itself behind ⓘ, not as a line under the field (#461)', () => {
+    const search = mountForward({ form: true }).findComponent(CwaUiResourceSearch)
+    expect(search.props('info')).toBe('Any page on this site.')
+    expect(search.props('description')).toBeUndefined()
+  })
+
   test('when not redirecting it says visitors see this page and offers Redirect to another page', async () => {
     const wrapper = mountForward()
     expect(text(wrapper, '[data-testid="route-forward-off"]')).toBe('Not redirecting. Visitors to /kitchens/shaker see this page.')
@@ -42,11 +48,12 @@ describe('RoutesTabForwardTo', () => {
     expect(wrapper.find('[data-edit-forward]').attributes('aria-disabled')).toBe('true')
   })
 
-  test('the form searches routes by path, and warns that visitors will no longer see this page once one is chosen', async () => {
+  test('the form searches routes by path, sending the legacy path filter too until every app has migrated (#328), and warns that visitors will no longer see this page once one is chosen', async () => {
     const wrapper = mountForward({ form: true })
     const search = wrapper.findComponent(CwaUiResourceSearch)
     expect(search.props('endpoint')).toBe('/_/routes')
     expect(search.props('label')).toBe('Send visitors to')
+    expect(search.props('searchParams')).toEqual(['search', 'path'])
     expect((search.props('labelOf') as (resource: Record<string, string>) => string)({ '@id': '/_/routes//a', 'path': '/a' })).toBe('/a')
     expect(wrapper.find('[data-testid="route-forward-warning"]').exists()).toBe(false)
 

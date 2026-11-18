@@ -3,21 +3,30 @@
     v-if="localResourceData"
     ref="dialog"
     v-model:tab="tab"
+    placement="right"
     :title="dialogTitle"
     :tabs="tabs"
     :form="form"
     :loading="isLoading"
+    :kind="kind"
     noun="page"
     :create-noun="isAdding ? createNoun : undefined"
     data-testid="page-dialog"
     @close="$emit('close')"
     @save="saveResource()"
   >
-    <template
-      v-if="!hideViewLink && !isAdding"
-      #header-actions
-    >
+    <template #header-actions>
+      <CwaUiSelect
+        v-if="isDisplayingPage"
+        :model="pageTypeModel"
+        label="Page type"
+        label-hidden
+        width="xs"
+        :options="pageTypeOptions"
+        data-testid="page-type"
+      />
       <CwaUiButton
+        v-if="!hideViewLink && !isAdding"
         variant="ghost"
         icon-only
         :icon="EyeGlyph"
@@ -25,6 +34,22 @@
         data-testid="page-view-on-site"
         @click="viewOnSite"
       />
+    </template>
+    <template
+      v-if="depthChain.length > 1"
+      #subheader
+    >
+      <div
+        class="cwa:shrink-0 cwa:overflow-x-auto cwa:px-6 cwa:pt-3 cwa:max-sm:px-4"
+        data-testid="page-depths"
+      >
+        <CwaUiSegmented
+          v-model="displayIriModel"
+          label="Editing"
+          label-hidden
+          :options="depthOptions"
+        />
+      </div>
     </template>
     <template #details>
       <CwaUiAlert
@@ -42,30 +67,17 @@
         </template>
       </CwaUiAlert>
       <template v-else>
-        <CwaUiFormSection v-if="depthChain.length > 1">
-          <CwaUiSegmented
-            v-model="displayIriModel"
-            label="Editing"
-            :options="depthOptions"
-          />
-        </CwaUiFormSection>
         <CwaUiFormSection>
           <CwaUiInput
             v-if="isDisplayingPage"
             field="reference"
             label="Reference"
-            description="Only admins see this. It names the page in lists."
+            info="Only admins see this. It names the page in lists."
           />
           <CwaUiInput
             v-else
             field="title"
             label="Title"
-          />
-          <CwaUiSegmented
-            v-if="isDisplayingPage"
-            :model="pageTypeModel"
-            label="Page type"
-            :options="pageTypeOptions"
           />
         </CwaUiFormSection>
         <CwaUiFormSection
@@ -121,10 +133,18 @@
           <div v-if="localResourceData.page">
             <CwaUiButton
               label="Go to dynamic template"
+              :icon="EyeGlyph"
               data-testid="go-to-template"
               @click="goToTemplate"
             />
           </div>
+          <p
+            v-else
+            class="cwa:m-0 cwa:text-helper cwa:text-fg-muted"
+            data-testid="no-template"
+          >
+            No template selected
+          </p>
           <template
             v-for="metaField of pageDataConfig?.metaFields ?? []"
             :key="`field-${metaField.field}`"
@@ -170,12 +190,6 @@
               nullable
             />
           </template>
-          <CwaUiToggle
-            field="isReachableWithoutRoute"
-            label="Public without a route"
-            :disabled="!!resource?.route"
-            :description="resource?.route ? 'Has no effect while this page has a route.' : 'Visitors can reach it through a nested page, even when it has no route of its own. Any parent page must be live too.'"
-          />
         </CwaUiFormSection>
       </template>
     </template>
@@ -260,7 +274,6 @@ import CwaUiInput from '#cwa/templates/components/ui/Input.vue'
 import CwaUiTextarea from '#cwa/templates/components/ui/Textarea.vue'
 import CwaUiSelect from '#cwa/templates/components/ui/Select.vue'
 import CwaUiSegmented from '#cwa/templates/components/ui/Segmented.vue'
-import CwaUiToggle from '#cwa/templates/components/ui/Toggle.vue'
 import CwaUiButton from '#cwa/templates/components/ui/Button.vue'
 import CwaUiAlert from '#cwa/templates/components/ui/Alert.vue'
 import EyeGlyph from '#cwa/templates/components/ui/icon/EyeIcon.vue'
@@ -268,7 +281,7 @@ import RoutesTab from '#cwa/templates/components/core/admin/RoutesTab.vue'
 import PagePurgeCache from '#cwa/templates/components/core/admin/PagePurgeCache.vue'
 import type { MenuEntry } from '#cwa/templates/components/core/ui/menu-entries'
 import type { DialogTab } from '#cwa/templates/components/core/ui/dialog-form'
-import type { SelectOption } from '#cwa/composables/cwa-select-input'
+import type { SelectOption } from '#cwa/composables/cwa-select'
 import type { CwaResource } from '#cwa/resources/resource-utils'
 import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/resources/resource-utils'
 import { useCwaConfirm } from '#cwa/composables/cwa-confirm'
@@ -434,9 +447,9 @@ const dialogTitle = computed(() => {
 
 const pageName = computed(() => (isDisplayingPage.value ? resource.value?.reference : resource.value?.title) || '')
 
-const pageTypeOptions = [
-  { label: 'Static', value: 'static' },
-  { label: 'Template', value: 'template' },
+const pageTypeOptions: MenuEntry[] = [
+  { label: 'Static', value: 'static', dot: 'cwa:bg-type-static' },
+  { label: 'Dynamic', value: 'template', dot: 'cwa:bg-type-dynamic' },
 ]
 
 const pageTypeModel = {
@@ -448,6 +461,15 @@ const pageTypeModel = {
     },
   }),
 } as ReturnType<typeof form.model<string>>
+
+const kind = computed(() => {
+  if (isDisplayingPage.value) {
+    return { tone: localResourceData.value?.isTemplate ? 'dynamic' as const : 'static' as const }
+  }
+  return resource.value?.route || localResourceData.value?.isReachableWithoutRoute
+    ? { tone: 'success' as const, label: 'Reachable' }
+    : { tone: 'warning' as const, label: 'Not reachable' }
+})
 
 function saveResource(close = false) {
   return _saveResource(close)

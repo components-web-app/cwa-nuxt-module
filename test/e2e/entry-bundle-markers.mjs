@@ -13,9 +13,7 @@ const gzipBudget = 164702
 const forbidden = [
   { marker: 'Invalid DateTime', source: 'luxon' },
   { marker: 'InvalidXml', source: 'fast-xml-parser' },
-  { marker: 'headlessui', source: '@headlessui/vue' },
   { marker: 'data-reka-date-field-segment', source: 'reka-ui' },
-  { marker: 'preventOverflow', source: '@popperjs/core' },
   { marker: 'OES_texture_half_float', source: 'ui/BackgroundParticles.vue' },
   { marker: 'CwaLayoutSecondary:[]', source: 'cwa-component-group-declarations' },
   { marker: 'last_event_id', source: 'api/mercure-client.ts' },

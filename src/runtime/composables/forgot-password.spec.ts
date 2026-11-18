@@ -109,7 +109,7 @@ describe('useForgotPassword', () => {
     expect(mockNavigateTo).toHaveBeenCalledWith('/login')
   })
 
-  test('Back to Login after a success only navigates, sending no second reset request (#355)', async () => {
+  test('Back to login after a success only navigates, sending no second reset request (#355)', async () => {
     mockAuth.forgotPassword.mockResolvedValue({})
     const { doSubmit, credentials, success } = useForgotPassword()
     credentials.username = 'user@example.com'

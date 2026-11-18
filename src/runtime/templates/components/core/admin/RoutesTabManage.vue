@@ -12,11 +12,12 @@ import type { CwaRouteLiveAt, RouteLiveState } from '#cwa/resources/route-public
 import { getRouteOwnLiveState, isRouteGatedByAncestor, routeReachableAt } from '#cwa/resources/route-publication'
 import { formatDateTime } from '#cwa/resources/date-time-input'
 
-const { currentPath, parentRoutePrefix, routePublication, recommendedPath, childPaths = [], redirectCount = 0, pathError, noun = 'page', deleting = false } = defineProps<{
+const { currentPath, parentRoutePrefix, routePublication, recommendedPath, recommendedFrom, childPaths = [], redirectCount = 0, pathError, noun = 'page', deleting = false } = defineProps<{
   currentPath: string
   parentRoutePrefix?: string | null
   routePublication?: CwaRouteLiveAt
   recommendedPath?: string
+  recommendedFrom?: string
   childPaths?: string[]
   redirectCount?: number
   pathError?: string
@@ -225,6 +226,7 @@ const deleteDescription = computed(() => {
       <RouteRecommendation
         v-if="recommendedPath && !isRecommended"
         :path="recommendedPath"
+        :from="recommendedFrom"
         @use="useRecommended"
       />
       <div class="cwa:flex cwa:flex-col cwa:gap-3">

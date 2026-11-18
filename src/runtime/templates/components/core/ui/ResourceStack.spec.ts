@@ -1,10 +1,8 @@
 // @vitest-environment happy-dom
-import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { defineComponent, h } from 'vue'
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
-import { Dialog, DialogPanel } from '@headlessui/vue'
+import { AlertDialogContent, AlertDialogDescription, AlertDialogPortal, AlertDialogRoot, AlertDialogTitle } from 'reka-ui'
 import { axe } from '../../../../../../test/utils/axe'
 import { drawsFocusRing } from '../../../../../../test/utils/focus-ring'
 import { placeResourceStack } from './resource-stack'
@@ -76,10 +74,6 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-function compiledCss() {
-  return readFileSync(resolve(import.meta.dirname, '../../../assets/cwa.css'), 'utf8')
-}
-
 describe('ResourceStack (#461)', () => {
   test('is a tree titled Select a resource, each level a treeitem inside its parent\'s group, named by its display name alone, the outermost at level 1', async () => {
     const { panel, tree } = await openStack()
@@ -114,7 +108,8 @@ describe('ResourceStack (#461)', () => {
     expect([...outer.children].map(child => child.getAttribute('role') ?? (child.hasAttribute('data-stack-name') ? 'name' : ''))).toEqual(['group', 'name'])
     expect(tree.parentElement).toBe(panel)
     expect(panel.className).not.toMatch(/(^|\s)cwa:p[xytrbl]?-/)
-    expect(outer.className).toContain('cwa:border-dashed')
+    expect(outer.className.split(/\s+/)).toEqual(expect.arrayContaining(['cwa:border', 'cwa:border-line-strong']))
+    expect(panel.innerHTML).not.toMatch(/dashed|dotted/)
   })
 
   test('the selected level has a heavier name and the accent edge on its own name row only, and no check', async () => {
@@ -137,29 +132,33 @@ describe('ResourceStack (#461)', () => {
     expect(items(panel).some(level => level.className.includes('cwa:outline-accent-fg') || level.className.includes('cwa:bg-field-hover'))).toBe(false)
   })
 
-  test('opened by keyboard, the ring shows on the level it starts on', async () => {
-    const { panel } = await openStack({ selected: '1', keyboard: true })
+  test('opened by keyboard, the ring shows on the level it starts on, and the tree takes visible focus', async () => {
+    const focus = vi.spyOn(HTMLElement.prototype, 'focus')
+    const { panel, tree } = await openStack({ selected: '1', keyboard: true })
 
     const ringed = items(panel).filter(level => level.className.split(/\s+/).includes('cwa:outline-accent-fg'))
     expect(ringed.map(level => level.getAttribute('aria-label'))).toEqual(['Component position'])
     expect(ringed[0]!.className).toContain('cwa:outline-2')
+    const onTree = focus.mock.calls.filter((_call, index) => focus.mock.contexts[index] === tree)
+    expect(onTree).toEqual([[{ preventScroll: true }]])
   })
 
-  test('opened by pointer while the browser shows focus on the tree, the ring shows on the level it starts on', async () => {
+  test('opened by pointer, the tree takes focus without showing it, and no level draws a ring even where the browser would show focus', async () => {
     showsFocus(true)
-    const { panel } = await openStack({ selected: '1' })
+    const focus = vi.spyOn(HTMLElement.prototype, 'focus')
+    const { panel, tree } = await openStack({ selected: '1' })
 
-    const ringed = items(panel).filter(level => level.className.split(/\s+/).includes('cwa:outline-accent-fg'))
-    expect(ringed.map(level => level.getAttribute('aria-label'))).toEqual(['Component position'])
+    const onTree = focus.mock.calls.filter((_call, index) => focus.mock.contexts[index] === tree)
+    expect(onTree).toEqual([[{ preventScroll: true, focusVisible: false }]])
+    expect(items(panel).some(level => level.className.includes('outline-accent-fg'))).toBe(false)
   })
 
-  test('opened by pointer, the level it starts on still draws the ring whenever the tree has visible focus', async () => {
-    const { panel } = await openStack({ selected: '1' })
-    const classes = item(panel, 'Component position').className.split(/\s+/)
+  test('opened by pointer, the ring appears once the keyboard moves the highlight', async () => {
+    const { panel, tree } = await openStack({ selected: '1' })
 
-    expect(classes).toEqual(expect.arrayContaining(['cwa:in-focus-visible:outline-2', 'cwa:in-focus-visible:outline-accent-fg']))
-    expect(compiledCss()).toContain(':where(:focus-visible) .cwa\\:in-focus-visible\\:outline-2 {')
-    expect(items(panel).filter(level => level.className.includes('in-focus-visible'))).toHaveLength(1)
+    await press(tree, 'ArrowUp')
+    const ringed = items(panel).filter(level => level.className.split(/\s+/).includes('cwa:outline-accent-fg'))
+    expect(ringed.map(level => level.getAttribute('aria-label'))).toEqual(['Rich text'])
   })
 
   test('the outermost level draws its ring inside its edge, since the panel scrolls and would clip it', async () => {
@@ -229,14 +228,14 @@ describe('ResourceStack (#461)', () => {
     expect(ringed[0]!.className).not.toContain('outline-none')
   })
 
-  test('hovering a name row marks that one level with a solid border and fill, while the boxes inside it keep the surface', async () => {
+  test('hovering a name row marks that one level with a stronger border and fill, while the boxes inside it keep the surface', async () => {
     const { panel } = await openStack()
 
     nameRow(item(panel, 'Left column group')).dispatchEvent(new PointerEvent('pointermove', { bubbles: true }))
     await flushPromises()
     const hovered = items(panel).filter(level => level.className.includes('cwa:bg-field-hover'))
     expect(hovered.map(level => level.getAttribute('aria-label'))).toEqual(['Left column group'])
-    expect(hovered[0]!.className).toContain('cwa:border-solid')
+    expect(hovered[0]!.className.split(/\s+/)).toContain('cwa:border-fg')
     expect(item(panel, 'Rich text').className).toContain('cwa:bg-surface-menu')
   })
 
@@ -308,7 +307,7 @@ describe('ResourceStack (#461)', () => {
     expect(announce).not.toHaveBeenCalled()
   })
 
-  test('while a choice waits on a Headless UI confirm, Escape reaches the confirm and the stack stays open', async () => {
+  test('while a choice waits on the kit confirm, Escape reaches the confirm and the stack stays open', async () => {
     let resolve!: (value: unknown) => void
     const { tree, select, onClose, panel } = await openStack()
     select.mockImplementation(() => new Promise((done) => {
@@ -316,7 +315,7 @@ describe('ResourceStack (#461)', () => {
     }))
     await press(tree, 'Enter')
     const onDialogClose = vi.fn()
-    mount(defineComponent(() => () => h(Dialog, { open: true, onClose: onDialogClose }, () => h(DialogPanel, () => h('button', { type: 'button' }, 'Cancel')))), { attachTo: document.body })
+    mount(defineComponent(() => () => h(AlertDialogRoot, { 'open': true, 'onUpdate:open': onDialogClose }, () => h(AlertDialogPortal, () => h(AlertDialogContent, () => [h(AlertDialogTitle, () => 'Edit the page?'), h(AlertDialogDescription, () => 'Changes appear on this page only.'), h('button', { type: 'button' }, 'Cancel')])))), { attachTo: document.body })
     await flushPromises()
 
     const escape = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })
@@ -433,6 +432,89 @@ describe('ResourceStack (#461)', () => {
     expect(onClose).not.toHaveBeenCalled()
   })
 
+  test('opened over an element, it puts the innermost level\'s name text on that element, measured from the name text, not its box', async () => {
+    const anchor = document.createElement('span')
+    anchor.dataset.testid = 'opener'
+    document.body.append(anchor)
+    const rect = (left: number, top: number, width: number, height: number) => ({ left, top, width, height, x: left, y: top, right: left + width, bottom: top + height, toJSON: () => ({}) }) as DOMRect
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+      if (this.hasAttribute('data-stack-label') && this.closest('[data-stack-innermost]')) {
+        return rect(130, 120, 50, 16)
+      }
+      if (this.hasAttribute('data-stack-innermost')) {
+        return rect(110, 110, 90, 40)
+      }
+      if (this.querySelector('[data-stack-innermost]')) {
+        return rect(100, 100, 200, 120)
+      }
+      return rect(0, 0, 0, 0)
+    })
+    await openStack({ at: anchor })
+
+    expect(placeResourceStack).toHaveBeenCalledWith(expect.any(Object), expect.objectContaining({ inner: { left: 30, top: 20, width: 50, height: 16 } }), expect.any(Object), undefined)
+  })
+
+  test('opened at a point, it is still placed from the innermost box', async () => {
+    const rect = (left: number, top: number, width: number, height: number) => ({ left, top, width, height, x: left, y: top, right: left + width, bottom: top + height, toJSON: () => ({}) }) as DOMRect
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+      if (this.hasAttribute('data-stack-label') && this.closest('[data-stack-innermost]')) {
+        return rect(130, 120, 50, 16)
+      }
+      if (this.hasAttribute('data-stack-innermost')) {
+        return rect(110, 110, 90, 40)
+      }
+      if (this.querySelector('[data-stack-innermost]')) {
+        return rect(100, 100, 200, 120)
+      }
+      return rect(0, 0, 0, 0)
+    })
+    await openStack({ at: { x: 5, y: 5 } })
+
+    expect(placeResourceStack).toHaveBeenCalledWith({ x: 5, y: 5 }, expect.objectContaining({ inner: { left: 10, top: 10, width: 90, height: 40 } }), expect.any(Object), undefined)
+  })
+
+  test('stays hidden until the panel stands where it was placed, so it never shows moving, and only then grows from there, by scale alone, since a transform keyframe replaces the placement and paints it at the top left (#461)', async () => {
+    const frames: FrameRequestCallback[] = []
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => frames.push(callback))
+    vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: false })))
+    const animate = vi.fn(() => ({ finish: vi.fn() }))
+    vi.spyOn(HTMLElement.prototype, 'animate' as any).mockImplementation(animate as any)
+    const at = { left: 400, top: 300 }
+    const rect = (left: number, top: number, width: number, height: number) => ({ left, top, width, height, x: left, y: top, right: left + width, bottom: top + height, toJSON: () => ({}) }) as DOMRect
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+      if (this.hasAttribute('data-stack-innermost')) {
+        return rect(at.left + 10, at.top + 10, 90, 40)
+      }
+      if (this.querySelector('[data-stack-innermost]')) {
+        return rect(at.left, at.top, 200, 120)
+      }
+      return rect(0, 0, 0, 0)
+    })
+    vi.mocked(placeResourceStack).mockReturnValueOnce({ left: 390, top: 290 })
+    try {
+      const { panel } = await openStack({ at: { x: 400, y: 300 } })
+
+      expect(panel.style.visibility).toBe('hidden')
+      expect(animate).not.toHaveBeenCalled()
+      frames.splice(0).forEach(callback => callback(0))
+      await flushPromises()
+      expect(panel.style.visibility).toBe('hidden')
+
+      at.left = 390
+      at.top = 290
+      frames.splice(0).forEach(callback => callback(0))
+      await flushPromises()
+      expect(panel.style.visibility).not.toBe('hidden')
+      expect(animate).toHaveBeenCalledOnce()
+      const [keyframes] = animate.mock.calls[0] as unknown as [Keyframe[]]
+      expect(keyframes).toEqual([{ scale: '0.9', opacity: 0 }, { scale: '1', opacity: 1 }])
+      expect(keyframes.some(keyframe => 'transform' in keyframe)).toBe(false)
+    }
+    finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
   describe('long stacks', () => {
     test('shows the 5 innermost levels and a Show 2 more parents button outside the tree\'s nesting, levels counted from the whole stack', async () => {
       const { panel, tree } = await openStack({ levels: levels(7) })
@@ -494,6 +576,107 @@ describe('ResourceStack (#461)', () => {
       expect(highlighted(tree)).toBe('Component position')
       expect(panel.querySelector('[data-testid="resource-stack-more"]')).toBeNull()
       expect(panel.querySelector('[role="status"]')!.textContent).toBe('2 more parents shown')
+    })
+  })
+
+  describe('on a phone', () => {
+    const phone = '(max-width: 639.98px)'
+
+    beforeEach(() => {
+      vi.stubGlobal('matchMedia', vi.fn((query: string) => ({ matches: query === phone, media: query, addEventListener() {}, removeEventListener() {} })))
+    })
+
+    afterEach(() => {
+      vi.unstubAllGlobals()
+    })
+
+    test('below sm it opens as a modal bottom sheet labelled by its Select a resource header, with Close, holding the same tree', async () => {
+      const { panel, tree } = await openStack()
+
+      expect(panel.getAttribute('role')).toBe('dialog')
+      expect(panel.getAttribute('aria-modal')).toBe('true')
+      expect(document.getElementById(panel.getAttribute('aria-labelledby')!)!.textContent).toBe('Select a resource')
+      expect([...panel.querySelectorAll('button')].map(button => button.textContent?.trim())).toContain('Close')
+      expect(tree.getAttribute('role')).toBe('tree')
+      expect(items(panel).map(level => level.getAttribute('aria-label'))).toEqual(['Left column group', 'Component position', 'Rich text'])
+      expect(document.activeElement).toBe(tree)
+      expect(placeResourceStack).not.toHaveBeenCalled()
+    })
+
+    test('sits along the bottom edge at full width, at most 70vh tall, square, above a scrim', async () => {
+      const { panel } = await openStack()
+
+      expect(panel.className).toContain('cwa:inset-x-0')
+      expect(panel.className).toContain('cwa:bottom-0')
+      expect(panel.className).toContain('cwa:max-h-[70vh]')
+      expect(panel.className).not.toMatch(/rounded/)
+      expect(document.querySelector('[data-testid="resource-stack-scrim"]')).not.toBeNull()
+    })
+
+    test('Tab is left to move between the tree, the overflow button and Close, and does not close it', async () => {
+      const { panel, tree, onClose } = await openStack({ levels: levels(7) })
+
+      expect(panel.querySelector('[data-testid="resource-stack-more"]')!.getAttribute('tabindex')).not.toBe('-1')
+      const tab = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true })
+      tree.dispatchEvent(tab)
+      await flushPromises()
+
+      expect(tab.defaultPrevented).toBe(false)
+      expect(onClose).not.toHaveBeenCalled()
+      expect(document.querySelector('[data-testid="resource-stack"]')).not.toBeNull()
+    })
+
+    test('Close, and Escape, close it and return focus to the opener', async () => {
+      const { panel, onClose, returnTo } = await openStack()
+
+      ;[...panel.querySelectorAll('button')].find(button => button.textContent?.trim() === 'Close')!.click()
+      await flushPromises()
+      expect(onClose).toHaveBeenCalledTimes(1)
+      expect(document.activeElement).toBe(returnTo)
+
+      const again = await openStack()
+      again.tree.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
+      await flushPromises()
+      expect(again.onClose).toHaveBeenCalledTimes(1)
+      expect(document.activeElement).toBe(again.returnTo)
+    })
+
+    test('the page behind is inert while it is open, and not after', async () => {
+      const { wrapper, panel } = await openStack()
+      const container = (wrapper.vm.$.appContext.app as unknown as { _container: HTMLElement })._container
+
+      expect(container.hasAttribute('inert')).toBe(true)
+      expect(container.contains(panel)).toBe(false)
+      ;[...panel.querySelectorAll('button')].find(button => button.textContent?.trim() === 'Close')!.click()
+      await flushPromises()
+      expect(container.hasAttribute('inert')).toBe(false)
+    })
+
+    test('choosing a level selects it and closes the sheet', async () => {
+      const { panel, select, onClose } = await openStack()
+
+      nameRow(item(panel, 'Component position')).click()
+      await flushPromises()
+
+      expect(select).toHaveBeenCalledWith('1')
+      expect(onClose).toHaveBeenCalledTimes(1)
+    })
+
+    test('a phone\'s address bar resizing the window, or a scroll, leaves it open', async () => {
+      const { onClose } = await openStack()
+
+      window.dispatchEvent(new Event('resize'))
+      window.scrollTo(0, 40)
+      document.dispatchEvent(new Event('scroll'))
+      await flushPromises()
+
+      expect(onClose).not.toHaveBeenCalled()
+    })
+
+    test('has no axe violations', async () => {
+      const { panel } = await openStack({ levels: levels(7) })
+
+      expect(await axe(panel)).toHaveNoViolations()
     })
   })
 

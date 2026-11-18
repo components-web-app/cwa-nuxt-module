@@ -31,6 +31,8 @@ export interface ResourceModelField<T = unknown> {
   state?: { readonly value: CwaFieldState }
   retry?: () => Promise<void>
   reset?: () => Promise<void>
+  /** @internal */
+  editorKey?: { iri: () => string | undefined, field: string }
 }
 
 export interface ModelEditor {

@@ -5,6 +5,8 @@ import { resetLocalTimeZone } from '@internationalized/date'
 import { axe } from '../../../../../test/utils/axe'
 import { fakeFieldModel } from '../../../../../playground/app/kit/fake-field-model'
 import DatePicker from './DatePicker.vue'
+import Field from '../core/ui/Field.vue'
+import { formatDateTime } from '#cwa/resources/date-time-input'
 
 const originalTz = process.env.TZ
 
@@ -198,5 +200,14 @@ describe('CwaUiDatePicker', () => {
 
       expect(await axe(wrapper.element as HTMLElement)).toHaveNoViolations()
     })
+  })
+})
+
+describe('DatePicker in a conflict (#461)', () => {
+  test('hands the field a format, so theirs and yours read as the control shows them', () => {
+    const wrapper = mount(DatePicker, { props: { label: 'Go live', modelValue: '2026-11-20T09:00:00.000Z' } })
+    const format = wrapper.findComponent(Field).props('format') as (value: unknown) => string
+    expect(format('2026-11-20T09:00:00.000Z')).toBe(formatDateTime('2026-11-20T09:00:00.000Z'))
+    expect(format('2026-11-20T09:00:00.000Z')).not.toContain('T09')
   })
 })

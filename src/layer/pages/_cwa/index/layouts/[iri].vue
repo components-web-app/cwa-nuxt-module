@@ -1,6 +1,7 @@
 <template>
   <CwaUiDialog
     v-if="localResourceData"
+    placement="right"
     :title="dialogTitle"
     :tabs="tabs"
     :form="form"
@@ -16,7 +17,7 @@
         <CwaUiInput
           field="reference"
           label="Reference"
-          description="Only admins see this. It names the layout in lists."
+          info="Only admins see this. It names the layout in lists."
         />
       </CwaUiFormSection>
       <CwaUiFormSection
@@ -223,9 +224,12 @@ function saveResource() {
 }
 
 async function handleDeleteClick() {
+  const iri = resource.value?.['@id']
+  const notice = iri ? await import('#cwa/admin/resource-confirm').then(({ editingNotice }) => editingNotice($cwa, iri)) : undefined
   const confirmed = await confirm({
     title: `Delete “${layoutName.value || dialogTitle.value}”?`,
     lines: [
+      ...(notice ? [{ text: notice }] : []),
       ...(deleteSentence.value ? [{ text: deleteSentence.value, emphasis: 'strong' as const }] : []),
       ...(form.unsavedFields.length ? [{ text: `Your ${form.unsavedFields.length} unsaved ${form.unsavedFields.length === 1 ? 'change is' : 'changes are'} discarded too.` }] : []),
       { text: 'This can\'t be undone.' },

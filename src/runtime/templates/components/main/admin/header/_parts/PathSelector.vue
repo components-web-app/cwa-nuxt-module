@@ -4,28 +4,32 @@
       ref="selector"
       type="button"
       data-testid="path-selector"
-      :aria-haspopup="hasParents ? 'dialog' : undefined"
-      :aria-expanded="hasParents ? isOpen : undefined"
-      :aria-controls="hasParents && isOpen ? stack?.contentId : undefined"
-      :aria-disabled="hasParents ? undefined : 'true'"
-      :aria-label="hasParents ? `${name}, choose a parent` : undefined"
-      class="cwa:flex cwa:min-h-9 cwa:items-center cwa:gap-2 cwa:border cwa:border-dashed cwa:border-line-dash cwa:bg-neutral-800 cwa:px-3 cwa:py-1.5 cwa:text-label cwa:text-white cwa:outline-1 cwa:outline-transparent cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-accent-fg"
-      :class="hasParents ? 'cwa:cursor-pointer cwa:hover:border-solid cwa:hover:border-fg cwa:hover:bg-field-hover' : 'cwa:cursor-default'"
+      :aria-haspopup="hasLevels ? 'dialog' : undefined"
+      :aria-expanded="hasLevels ? isOpen : undefined"
+      :aria-controls="hasLevels && isOpen ? stack?.contentId : undefined"
+      :aria-disabled="hasLevels ? undefined : 'true'"
+      :aria-label="hasLevels ? `${name}, choose another level` : undefined"
+      class="cwa:flex cwa:min-h-9 cwa:items-center cwa:gap-2 cwa:border cwa:border-line-strong cwa:bg-neutral-800 cwa:px-3 cwa:py-1.5 cwa:text-label cwa:text-white cwa:outline-1 cwa:outline-transparent cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-accent-fg"
+      :class="hasLevels ? 'cwa:cursor-pointer cwa:hover:border-fg cwa:hover:bg-field-hover' : 'cwa:cursor-default'"
       @click="toggle"
     >
-      <span :class="{ 'cwa:invisible': isOpen }">{{ name }}</span>
       <span
-        v-if="hasParents"
+        ref="nameLabel"
+        data-testid="path-selector-name"
+        :class="{ 'cwa:invisible': isOpen }"
+      >{{ name }}</span>
+      <span
+        v-if="hasLevels"
         aria-hidden="true"
         class="cwa:text-fg-muted"
       >▾</span>
     </button>
     <ResourceStack
-      v-if="isOpen && selector"
+      v-if="isOpen && selector && nameLabel"
       ref="stack"
       :levels="levels"
-      :selected="levels[0]!.key"
-      :at="selector"
+      :selected="String(stackManager.pathStack.value.index)"
+      :at="nameLabel"
       :return-to="selector"
       :min-width="selector.offsetWidth"
       :avoid="avoid"
@@ -63,21 +67,22 @@ provide(announceKey, announcer.announce)
 const isOpen = ref(false)
 const openedByKeyboard = ref(false)
 const selector = useTemplateRef<HTMLButtonElement | null>('selector')
+const nameLabel = useTemplateRef<HTMLElement | null>('nameLabel')
 const stack = useTemplateRef<{ close: (refocus: boolean) => void, contentId?: string } | null>('stack')
 
-const levels = computed(() => resourceStackLevels(stackManager.resourceStack.value))
+const levels = computed(() => resourceStackLevels(stackManager.pathStack.value.stack))
 const name = computed(() => {
   const first = stackManager.resourceStack.value[0]
   return first && (first.displayName || first.iri)
 })
-const hasParents = computed(() => levels.value.length > 1)
+const hasLevels = computed(() => levels.value.length > 1)
 
 watch([() => $cwa.resources.displayPageIri.value, () => router.currentRoute.value.fullPath], () => {
   isOpen.value = false
 })
 
 async function select(key: string) {
-  const item = stackManager.resourceStack.value[Number(key)]
+  const item = stackManager.pathStack.value.stack[Number(key)]
   await stackManager.selectStackIndex(Number(key), false)
   return stackManager.currentStackItem.value?.iri === item?.iri
 }
@@ -88,6 +93,6 @@ function toggle(event: MouseEvent) {
     return
   }
   openedByKeyboard.value = event.detail === 0
-  isOpen.value = hasParents.value
+  isOpen.value = hasLevels.value
 }
 </script>

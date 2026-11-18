@@ -13,6 +13,7 @@
   --color-surface: #1c1917;
   --color-surface-raised: #292524;
   --color-surface-menu: #292524;
+  --color-surface-info: #0c0a09;
   --color-button: #44403c;
   --color-shimmer: rgb(255 255 255 / 0.24);
   --color-menu-highlight: #57534e;
@@ -23,7 +24,6 @@
   --color-field-warning: #6d5e45;
   --color-muted-on-field: #e7e5e4;
   --color-tree-line: #78716c;
-  --color-line-dash: #78716c;
   --color-toggle-off: #78716c;
   --color-step-hover: rgb(255 255 255 / 0.17);
   --color-step-press: rgb(255 255 255 / 0.3);
@@ -342,7 +342,7 @@
     @apply cwa:relative cwa:z-100;
   }
   .cwa\:is-reordering:before {
-    @apply cwa:content-[''] cwa:absolute cwa:z-dialog cwa:top-0 cwa:left-0 cwa:right-0 cwa:bottom-0 cwa:outline-2 cwa:outline-dashed cwa:outline-magenta cwa:outline-offset-[7px] cwa:rounded-sm;
+    @apply cwa:content-[''] cwa:absolute cwa:z-dialog cwa:top-0 cwa:left-0 cwa:right-0 cwa:bottom-0 cwa:outline-1 cwa:outline-solid cwa:outline-magenta cwa:outline-offset-[7px] cwa:rounded-sm;
   }
   .cwa\:is-reordering:after {
     @apply cwa:content-[attr(data-sort-value)] cwa:absolute cwa:z-dialog cwa:-top-4 cwa:-right-4 cwa:text-sm cwa:bg-magenta cwa:p-1 cwa:text-white cwa:rounded-full cwa:min-w-[25px] cwa:text-center
@@ -385,6 +385,12 @@
   }
   100% {
     opacity: 0;
+  }
+}
+
+@keyframes cwa-slide-over-in {
+  from {
+    transform: translateX(100%);
   }
 }
 

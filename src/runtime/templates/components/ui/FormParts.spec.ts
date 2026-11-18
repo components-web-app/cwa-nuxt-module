@@ -128,7 +128,7 @@ describe('CwaUiFormSection (#461)', () => {
   })
 
   test('two columns collapse to one when the section is narrow', () => {
-    const grid = mount(FormSection, { props: { columns: 2 } }).get('.cwa\\:grid')
+    const grid = mount(FormSection, { props: { columns: 2 }, slots: { default: '<p>Layout</p><p>Page UI</p>' } }).get('.cwa\\:grid')
 
     expect(grid.classes()).toEqual(expect.arrayContaining(['cwa:grid-cols-1', 'cwa:@lg:grid-cols-2']))
   })

@@ -16,4 +16,10 @@ describe('/_cwa/routes', () => {
 
     expect(wrapper.findComponent({ name: 'ResourceModalOverlay' }).props('overlay')).toBe(false)
   })
+
+  test('the Status column fits the widest status badge, Inherited scheduled with its date (#461)', () => {
+    const wrapper = mount(RoutesListPage, { shallow: true })
+    const status = wrapper.findComponent({ name: 'ListContent' }).props('columns').find((column: { label: string }) => column.label === 'Status')
+    expect(status.width).toBe('17.5rem')
+  })
 })

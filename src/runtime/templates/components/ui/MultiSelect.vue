@@ -125,6 +125,7 @@ const inactive = computed(() => props.disabled || unbound)
     :control-id="id"
     :inactive="inactive"
     :name="field"
+    :format="value => Array.isArray(value) ? value.map(labelOf).join(', ') : String(value)"
   >
     <template #default="{ describedBy, tone, busy }">
       <ComboboxRoot

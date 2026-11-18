@@ -4,6 +4,7 @@ import { computed, reactive, ref } from 'vue'
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import UserItemPage from './[iri].vue'
 import { axe } from '../../../../../../test/utils/axe'
+import { fieldExplanation } from '../../../../../../test/utils/field-info'
 import * as cwaComposable from '#cwa/composables/cwa'
 import Select from '#cwa/templates/components/ui/Select.vue'
 
@@ -146,6 +147,19 @@ describe('admin user dialog (#461)', () => {
     resendState()
   })
 
+  test('slides over from the right, so switching tabs never moves its header or footer', async () => {
+    await setup()
+
+    expect(dialog().dataset.placement).toBe('right')
+  })
+
+  test('User enabled explains itself behind ⓘ, not as a line under the switch', async () => {
+    await setup()
+
+    const label = qa('label').find(element => element.textContent?.trim() === 'User enabled')!
+    expect(fieldExplanation(label.closest('[data-cwa-field]')!, 'A disabled user can\'t sign in.')).toEqual({ info: true, line: false })
+  })
+
   test('is a kit dialog named by the username, with Details, Password and Info tabs and only Cancel and Save', async () => {
     await setup()
 
@@ -223,6 +237,7 @@ describe('admin user dialog (#461)', () => {
       await type('Email', 'new@example.com')
 
       const password = fieldByLabel('Your current password')!
+      expect(fieldExplanation(password.closest('[data-cwa-field]')!, 'Changing the email needs your own password.')).toEqual({ info: true, line: false })
       expect(password.type).toBe('password')
       expect(password.getAttribute('autocomplete')).toBe('current-password')
 
