@@ -4,6 +4,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+## [2.0.0-alpha.35] - 2026-11-18
+
 ### Changed
 
 - The header menu's toggle closes the open menu (the click outside closed it and the toggle opened it again), and clicking the bar's status again closes its popover ([3d20810c](https://github.com/components-web-app/cwa-nuxt-module/commit/3d20810c15f41b4298072e33a25053fe65b1bffc), [#461](https://github.com/components-web-app/cwa-nuxt-module/issues/461))
@@ -277,7 +279,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 - First tagged release of `@cwa/nuxt`; releases are now published from `v*` tags ([7c61b7c](https://github.com/components-web-app/cwa-nuxt-module/commit/7c61b7ce331ec4a0cb8e76951a5de2ff806ed07a))
 
-[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.34...HEAD
+[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.35...HEAD
+[2.0.0-alpha.35]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.34...v2.0.0-alpha.35
 [2.0.0-alpha.34]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.33...v2.0.0-alpha.34
 [2.0.0-alpha.33]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.32...v2.0.0-alpha.33
 [2.0.0-alpha.32]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.31...v2.0.0-alpha.32
