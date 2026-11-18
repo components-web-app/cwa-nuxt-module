@@ -1,124 +1,114 @@
 <template>
-  <div
-    class="cwa:text-light cwa:w-full cwa:bg-stone-800 cwa:max-w-4xl cwa:max-h-full cwa:flex cwa:flex-col"
+  <CwaUiDialog
+    title="Stranded component groups"
+    size="lg"
+    :kind="{ tone: 'warning' }"
     data-testid="stranded-groups-modal"
+    @close="emit('close')"
   >
-    <div class="cwa:bg-stone-900/40 cwa:border-b-2 cwa:border-b-orange cwa:p-3 cwa:flex cwa:items-center cwa:justify-between cwa:gap-x-4">
-      <h2 class="cwa:text-2xl cwa:px-3">
-        Stranded component groups
-      </h2>
-      <button
-        class="cwa:cursor-pointer cwa:text-stone-400"
-        data-testid="stranded-groups-close"
-        @click="emit('close')"
+    <div class="cwa:flex cwa:flex-col cwa:gap-stack">
+      <p class="cwa:m-0 cwa:text-control cwa:text-fg-secondary">
+        These component groups are attached to this page, but no template on it declares them, so they are not shown, for example after a group's reference was renamed in code. Merge each one into a group that is shown, or delete it.
+      </p>
+      <p
+        v-if="!groups.length"
+        class="cwa:m-0 cwa:text-control cwa:text-fg-muted"
       >
-        <CwaUiIconXMarkIcon class="cwa:h-10" />
-        <span class="cwa:sr-only">Close</span>
-      </button>
-    </div>
-    <div class="cwa:grow cwa:px-4 cwa:pt-4 cwa:pb-10 cwa:flex cwa:justify-center cwa:min-h-0">
-      <div class="cwa:w-full cwa:max-w-xl cwa:overflow-auto cwa:flex cwa:flex-col cwa:gap-y-6">
-        <p class="cwa:text-sm cwa:text-stone-300">
-          These component groups are attached to this page, but no template on it declares them, so they are not shown, for example after a group's reference was renamed in code. Merge each one into a group that is shown, or delete it.
-        </p>
+        Every component group attached to this page is shown.
+      </p>
+      <section
+        v-for="group of groups"
+        :key="group.iri"
+        data-testid="stranded-group"
+        class="cwa:flex cwa:flex-col cwa:gap-3 cwa:border-t cwa:border-line cwa:pt-stack"
+      >
+        <div class="cwa:flex cwa:flex-col cwa:gap-1">
+          <h3 class="cwa:m-0 cwa:break-all cwa:text-section cwa:text-fg-secondary">
+            {{ group.reference }}
+          </h3>
+          <span class="cwa:break-all cwa:font-mono cwa:text-helper cwa:text-fg-muted">{{ group.iri }}</span>
+        </div>
         <p
-          v-if="!groups.length"
-          class="cwa:text-sm cwa:text-stone-400"
+          v-if="!group.positions.length"
+          class="cwa:m-0 cwa:text-control cwa:text-fg-muted"
         >
-          Every component group attached to this page is shown.
+          This group is empty.
         </p>
-        <section
-          v-for="group of groups"
-          :key="group.iri"
-          data-testid="stranded-group"
-          class="cwa:border-b cwa:border-b-stone-700 cwa:pb-6 cwa:flex cwa:flex-col cwa:gap-y-3"
+        <ul
+          v-else
+          class="cwa:m-0 cwa:flex cwa:list-none cwa:flex-col cwa:gap-1 cwa:p-0"
         >
-          <div class="cwa:flex cwa:flex-col cwa:gap-y-1">
-            <h3 class="cwa:text-xl cwa:break-all">
-              {{ group.reference }}
-            </h3>
-            <span class="cwa:font-mono cwa:text-xs cwa:text-stone-400 cwa:break-all">{{ group.iri }}</span>
-          </div>
-          <p
-            v-if="!group.positions.length"
-            class="cwa:text-sm cwa:text-stone-400"
+          <li
+            v-for="position of group.positions"
+            :key="position.iri"
+            class="cwa:flex cwa:flex-wrap cwa:gap-x-2 cwa:text-control"
           >
-            This group is empty.
-          </p>
-          <ul
-            v-else
-            class="cwa:flex cwa:flex-col cwa:gap-y-1"
-          >
-            <li
-              v-for="position of group.positions"
-              :key="position.iri"
-              class="cwa:flex cwa:flex-wrap cwa:gap-x-2 cwa:text-sm"
-            >
-              <template v-if="position.pageDataProperty">
-                <span>Dynamic</span>
-                <span class="cwa:font-mono cwa:text-stone-400">{{ position.pageDataProperty }}</span>
-              </template>
-              <template v-else>
-                <span>{{ position.componentType || 'Component' }}</span>
-                <span class="cwa:font-mono cwa:text-stone-400 cwa:break-all">{{ position.component || position.iri }}</span>
-              </template>
-            </li>
-          </ul>
-          <div class="cwa:flex cwa:flex-wrap cwa:items-center cwa:gap-4">
-            <CwaUiFormSelect
-              :model-value="selectedTargets[group.iri]"
-              :options="targetOptions(group)"
-              placeholder="Merge into…"
-              @update:model-value="selectedTargets[group.iri] = $event"
-            />
-            <CwaUiFormButton
-              color="blue"
-              :disabled="busy[group.iri] || !selectedTargets[group.iri] || !group.positions.length"
-              @click="merge(group)"
-            >
-              Merge
-            </CwaUiFormButton>
-            <CwaUiFormButton
-              color="error"
-              :disabled="busy[group.iri]"
-              @click="remove(group)"
-            >
-              Delete
-            </CwaUiFormButton>
-          </div>
-          <div
-            v-if="outcomes[group.iri]"
-            data-testid="stranded-group-outcome"
-            class="cwa:text-sm cwa:text-danger cwa:font-bold cwa:flex cwa:flex-col cwa:gap-y-1"
-          >
-            <template v-if="outcomes[group.iri]!.length">
-              <p>These components could not be moved, so the group was kept:</p>
-              <ul>
-                <li
-                  v-for="positionIri of outcomes[group.iri]"
-                  :key="positionIri"
-                  class="cwa:font-mono cwa:break-all"
-                >
-                  {{ positionIri }}
-                </li>
-              </ul>
+            <template v-if="position.pageDataProperty">
+              <span>Dynamic</span>
+              <span class="cwa:font-mono cwa:text-fg-muted">{{ position.pageDataProperty }}</span>
             </template>
-            <p v-else>
-              The components were moved, but the empty group could not be deleted.
-            </p>
-          </div>
-        </section>
-      </div>
+            <template v-else>
+              <span>{{ position.componentType || 'Component' }}</span>
+              <span class="cwa:break-all cwa:font-mono cwa:text-fg-muted">{{ position.component || position.iri }}</span>
+            </template>
+          </li>
+        </ul>
+        <div class="cwa:flex cwa:flex-wrap cwa:items-end cwa:gap-actions">
+          <CwaUiSelect
+            :model-value="selectedTargets[group.iri] ?? null"
+            :options="targetOptions(group)"
+            label="Merge into"
+            placeholder="Choose a group…"
+            width="md"
+            :disabled="!group.positions.length"
+            :disabled-reason="group.positions.length ? undefined : 'This group is empty.'"
+            @update:model-value="selectedTargets[group.iri] = $event ?? undefined"
+          />
+          <CwaUiButton
+            label="Merge"
+            :loading="busy[group.iri]"
+            :disabled="!selectedTargets[group.iri] || !group.positions.length"
+            :disabled-reason="mergeReason(group)"
+            @click="merge(group)"
+          />
+          <CwaUiButton
+            label="Delete"
+            tone="danger"
+            :disabled="busy[group.iri]"
+            @click="remove(group)"
+          />
+        </div>
+        <div
+          v-if="outcomes[group.iri]"
+          data-testid="stranded-group-outcome"
+        >
+          <CwaUiAlert
+            tone="danger"
+            :title="outcomes[group.iri]!.length ? 'These components could not be moved, so the group was kept:' : 'The components were moved, but the empty group could not be deleted.'"
+          >
+            <ul
+              v-if="outcomes[group.iri]!.length"
+              class="cwa:m-0 cwa:list-none cwa:p-0"
+            >
+              <li
+                v-for="positionIri of outcomes[group.iri]"
+                :key="positionIri"
+                class="cwa:break-all cwa:font-mono cwa:text-helper"
+              >
+                {{ positionIri }}
+              </li>
+            </ul>
+          </CwaUiAlert>
+        </div>
+      </section>
     </div>
-  </div>
+  </CwaUiDialog>
 </template>
 
 <script setup lang="ts">
 import { reactive } from 'vue'
-import escape from 'lodash-es/escape'
 import { useCwa } from '#cwa/composables/cwa'
 import { useNuxtApp } from '#imports'
-import { createConfirmDialog } from '#cwa/admin/confirm-dialog'
 import { mergeComponentGroup } from '#cwa/admin/stranded-component-groups'
 import { componentGroupCapacity } from '#cwa/resources/component-group-capacity'
 import type { ShownComponentGroup, StrandedComponentGroup } from '#cwa/admin/stranded-component-groups'
@@ -150,15 +140,23 @@ function targetOptions(group: StrandedComponentGroup) {
     .map(target => ({ label: target.reference, value: target.iri }))
 }
 
+function mergeReason(group: StrandedComponentGroup) {
+  if (!group.positions.length) {
+    return 'This group is empty.'
+  }
+  return selectedTargets[group.iri] ? undefined : 'Choose a group to merge into first.'
+}
+
 async function confirmMerge(group: StrandedComponentGroup, target: ShownComponentGroup | undefined) {
-  const { default: ConfirmDialog } = await import('#cwa/templates/components/core/ConfirmDialog.vue')
-  const dialog = await createConfirmDialog(vueApp, ConfirmDialog)
+  const { confirmResourceAction } = await import('#cwa/admin/resource-confirm')
   const count = group.positions.length
-  const { isCanceled } = await dialog.reveal({
+  return confirmResourceAction(vueApp, {
     title: 'Merge component group?',
-    content: `<p>Move the ${count} ${count === 1 ? 'component' : 'components'} in “${escape(group.reference)}” to the end of “${escape(target?.reference ?? '')}”, then delete the empty “${escape(group.reference)}” group?</p>`,
+    description: `Move the ${count} ${count === 1 ? 'component' : 'components'} in “${group.reference}” to the end of “${target?.reference ?? ''}”, then delete the empty “${group.reference}” group?`,
+    keep: 'Cancel',
+    go: 'Merge',
+    tone: 'accent',
   })
-  return !isCanceled
 }
 
 async function merge(group: StrandedComponentGroup) {

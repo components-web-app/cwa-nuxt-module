@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, h, nextTick, onBeforeUnmount, onMounted, ref, useId, useTemplateRef, watch } from 'vue'
+import { computed, getCurrentInstance, h, nextTick, onBeforeUnmount, onMounted, ref, useId, useTemplateRef, watch } from 'vue'
 import type { VNode } from 'vue'
-import { PopoverAnchor, PopoverContent, PopoverPortal, PopoverRoot } from 'reka-ui'
+import { createReusableTemplate } from '@vueuse/core'
+import { DialogContent, DialogOverlay, DialogPortal, DialogRoot, DialogTitle, PopoverAnchor, PopoverContent, PopoverPortal, PopoverRoot } from 'reka-ui'
 import { placeResourceStack } from './resource-stack'
 import type { ResourceStackLevel, StackPoint } from './resource-stack'
 import { useAnnounce } from './field-context'
@@ -22,6 +23,10 @@ const { levels, selected, at, label = 'Select a resource', limit = 5, select, mi
 const emit = defineEmits<{ close: [] }>()
 
 const announce = useAnnounce()
+const [DefineBody, ReuseBody] = createReusableTemplate()
+const sheet = typeof window !== 'undefined' && !!window.matchMedia?.('(max-width: 639.98px)').matches
+const app = getCurrentInstance()?.appContext.app as { _container?: unknown } | undefined
+let behind: HTMLElement | undefined
 
 const id = useId()
 const open = ref(true)
@@ -32,12 +37,13 @@ const selectedIndex = computed(() => levels.findIndex(level => level.key === sel
 const highlight = ref(Math.max(0, selectedIndex.value))
 const highlightBy = ref<'pointer' | 'keyboard' | undefined>(keyboard ? 'keyboard' : undefined)
 const position = ref<{ left: number, top: number }>()
+const revealed = ref(false)
 const content = useTemplateRef<{ $el: HTMLElement } | null>('content')
 const tree = useTemplateRef<HTMLElement | null>('tree')
 const moreButton = useTemplateRef<HTMLElement | null>('moreButton')
 const opener = typeof document === 'undefined' ? null : document.activeElement as HTMLElement | null
 const maxWidth = typeof document === 'undefined' ? undefined : document.documentElement.clientWidth - 16
-let growing: Animation | undefined
+let settling: Animation | undefined
 
 const shown = computed(() => showAll.value ? levels.length : Math.min(limit, levels.length))
 const hiddenCount = computed(() => levels.length - shown.value)
@@ -64,7 +70,8 @@ function levelId(index: number) {
 
 function place() {
   const panel = content.value?.$el as HTMLElement | undefined
-  const inner = panel?.querySelector?.<HTMLElement>('[data-stack-innermost]')
+  const innermost = panel?.querySelector?.<HTMLElement>('[data-stack-innermost]')
+  const inner = at instanceof HTMLElement ? innermost?.querySelector<HTMLElement>(':scope > [data-stack-name] > [data-stack-label]') : innermost
   if (!panel || !inner) {
     const { x, y } = anchorPoint()
     position.value = { left: x, top: y }
@@ -82,15 +89,37 @@ function place() {
     { width: document.documentElement.clientWidth, height: window.innerHeight },
     avoid?.getBoundingClientRect(),
   )
-  return { panel, inner: { x: innerRect.left - panelRect.left + innerRect.width / 2, y: innerRect.top - panelRect.top + innerRect.height / 2 } }
+  return { panel }
 }
 
-function grow(panel: HTMLElement, origin: { x: number, y: number }) {
-  if (typeof panel.animate !== 'function' || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+function reducedMotion(panel: HTMLElement) {
+  return typeof panel.animate !== 'function' || !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+}
+
+function slideUp(panel: HTMLElement) {
+  if (reducedMotion(panel)) {
     return
   }
-  panel.style.transformOrigin = `${origin.x}px ${origin.y}px`
-  growing = panel.animate([{ transform: 'scale(0.9)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 150, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' })
+  panel.animate([{ transform: 'translateY(1.5rem)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 200, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' })
+  document.querySelector<HTMLElement>('[data-testid="resource-stack-scrim"]')?.animate?.([{ opacity: 0 }, { opacity: 1 }], { duration: 200 })
+}
+
+async function standsPlaced(panel: HTMLElement) {
+  for (let frame = 0; frame < 10; frame++) {
+    const { left, top, width } = panel.getBoundingClientRect()
+    const target = position.value
+    if (!width || !target || (Math.abs(left - target.left) < 1 && Math.abs(top - target.top) < 1)) {
+      return
+    }
+    await new Promise(resolve => requestAnimationFrame(resolve))
+  }
+}
+
+function settle(panel: HTMLElement) {
+  if (reducedMotion(panel)) {
+    return
+  }
+  settling = panel.animate([{ translate: '0 -4px', opacity: 0 }, { translate: '0 0', opacity: 1 }], { duration: 120, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' })
 }
 
 const stopPlacing = watch(tree, async (element) => {
@@ -99,32 +128,37 @@ const stopPlacing = watch(tree, async (element) => {
   }
   stopPlacing()
   await nextTick()
+  if (sheet) {
+    const container = app?._container
+    if (open.value && container instanceof HTMLElement && !container.hasAttribute('inert')) {
+      behind = container
+      container.setAttribute('inert', '')
+    }
+    position.value = { left: 0, top: 0 }
+    element.focus({ preventScroll: true })
+    const panel = content.value?.$el as HTMLElement | undefined
+    panel && slideUp(panel)
+    return
+  }
   const placed = place()
   await nextTick()
-  element.focus({ preventScroll: true })
-  if (focusVisible(element)) {
-    highlightBy.value = 'keyboard'
-  }
-  placed && grow(placed.panel, placed.inner)
+  placed && await standsPlaced(placed.panel)
+  revealed.value = true
+  await nextTick()
+  element.focus(keyboard ? { preventScroll: true } : { preventScroll: true, focusVisible: false } as FocusOptions)
+  placed && settle((placed.panel.firstElementChild as HTMLElement | null) ?? placed.panel)
 }, { flush: 'post' })
-
-function focusVisible(element: HTMLElement) {
-  try {
-    return element.matches(':focus-visible')
-  }
-  catch {
-    return false
-  }
-}
 
 function close(refocus: boolean) {
   if (!open.value) {
     return
   }
   open.value = false
+  behind?.removeAttribute('inert')
   emit('close')
   const target = returnTo ?? opener
-  refocus && target?.isConnected && target.focus({ preventScroll: true })
+  const refocusTarget = () => refocus && target?.isConnected && target.focus({ preventScroll: true })
+  sheet ? nextTick(refocusTarget) : refocusTarget()
 }
 
 async function choose(index: number) {
@@ -154,7 +188,7 @@ async function showMore() {
   const count = hiddenCount.value
   showAll.value = true
   await nextTick()
-  growing?.finish()
+  settling?.finish()
   place()
   tree.value?.focus({ preventScroll: true })
   announcement.value = `${count} more ${parentsWord(count)} shown`
@@ -262,11 +296,11 @@ function onEscape(event: KeyboardEvent) {
 }
 
 function onOpenChange(value: boolean) {
-  !value && !busy.value && close(false)
+  !value && !busy.value && close(sheet)
 }
 
 function onResize() {
-  close(false)
+  !sheet && close(false)
 }
 
 const pageScroll = { x: 0, y: 0 }
@@ -274,7 +308,7 @@ const pageScroll = { x: 0, y: 0 }
 function onScroll(event: Event) {
   const panel = content.value?.$el
   const isPage = event.target === document || event.target === window
-  if (busy.value || (panel && event.target instanceof Node && panel.contains(event.target)) || (isPage && window.scrollX === pageScroll.x && window.scrollY === pageScroll.y)) {
+  if (sheet || busy.value || (panel && event.target instanceof Node && panel.contains(event.target)) || (isPage && window.scrollX === pageScroll.x && window.scrollY === pageScroll.y)) {
     return
   }
   close(false)
@@ -287,6 +321,7 @@ onMounted(() => {
   window.addEventListener('resize', onResize)
 })
 onBeforeUnmount(() => {
+  behind?.removeAttribute('inert')
   window.removeEventListener('scroll', onScroll, true)
   window.removeEventListener('resize', onResize)
 })
@@ -310,9 +345,9 @@ function box(index: number): VNode {
     'data-testid': 'resource-stack-level',
     'class': [
       'cwa:flex cwa:min-w-0 cwa:flex-col cwa:gap-1.5 cwa:border cwa:p-1.5',
-      isHovered ? 'cwa:border-solid cwa:border-fg cwa:bg-field-hover' : 'cwa:border-dashed cwa:border-line-dash cwa:bg-surface-menu',
+      isSelected ? 'cwa:border-accent-fg' : isHovered ? 'cwa:border-fg' : 'cwa:border-line-strong',
+      isHovered ? 'cwa:bg-field-hover' : 'cwa:bg-surface-menu',
       isHighlighted && highlightBy.value === 'keyboard' ? 'cwa:outline-2 cwa:outline-accent-fg' : '',
-      isHighlighted && !highlightBy.value ? 'cwa:in-focus-visible:outline-2 cwa:in-focus-visible:outline-accent-fg' : '',
       isHighlighted ? (index === shown.value - 1 ? 'cwa:-outline-offset-2' : 'cwa:outline-offset-1') : '',
     ],
     'style': index === 0 && minWidth ? { minWidth: `${minWidth}px` } : undefined,
@@ -320,23 +355,107 @@ function box(index: number): VNode {
     ...child,
     h('div', {
       'data-stack-name': index,
-      'class': [
-        'cwa:flex cwa:min-h-7 cwa:cursor-pointer cwa:items-center cwa:gap-2 cwa:pr-1 cwa:pl-2 cwa:text-label cwa:text-fg',
-        isSelected ? 'cwa:font-semibold cwa:shadow-[inset_3px_0_0_var(--cwa-color-accent-fg)]' : '',
-      ],
+      'class': 'cwa:flex cwa:min-h-7 cwa:cursor-pointer cwa:items-center cwa:gap-2 cwa:pr-1 cwa:pl-2 cwa:text-label cwa:text-fg',
     }, [
-      h('span', { class: 'cwa:min-w-0 cwa:flex-1 cwa:truncate' }, level.label),
+      h('span', { 'data-stack-label': '', 'class': 'cwa:min-w-0 cwa:flex-1 cwa:truncate' }, level.label),
     ]),
   ])
 }
 
 const StackTree = () => shown.value ? box(shown.value - 1) : null
 
-defineExpose({ close, contentId: computed(() => position.value && content.value?.$el?.querySelector?.('[role="dialog"]')?.id) })
+function dialogId() {
+  const panel = content.value?.$el as HTMLElement | undefined
+  return panel?.matches?.('[role="dialog"]') ? panel.id : panel?.querySelector?.('[role="dialog"]')?.id
+}
+
+defineExpose({ close, contentId: computed(() => position.value && dialogId()) })
 </script>
 
 <template>
+  <DefineBody>
+    <div
+      :id="id"
+      ref="tree"
+      role="tree"
+      tabindex="-1"
+      :aria-label="label"
+      :aria-activedescendant="levelId(highlight)"
+      :aria-busy="busy || undefined"
+      class="cwa:flex cwa:max-w-full cwa:min-w-0 cwa:flex-col cwa:outline-1 cwa:outline-transparent"
+      :class="sheet ? 'cwa:w-full' : 'cwa:w-max'"
+      @keydown="onTreeKeydown"
+      @mousedown.prevent
+      @pointermove="onPointerMove"
+      @pointerleave="onPointerLeave"
+      @click="onTreeClick"
+    >
+      <StackTree />
+    </div>
+    <div
+      v-if="hiddenCount"
+      class="cwa:px-2 cwa:py-1"
+    >
+      <button
+        ref="moreButton"
+        type="button"
+        :tabindex="sheet ? 0 : -1"
+        data-testid="resource-stack-more"
+        class="cwa:min-h-6 cwa:cursor-pointer cwa:text-helper cwa:text-accent-fg cwa:underline cwa:underline-offset-2 cwa:outline-1 cwa:outline-transparent cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-accent-fg"
+        @keydown="onMoreKeydown"
+        @click="showMore"
+      >
+        Show {{ hiddenCount }} more {{ parentsWord(hiddenCount) }}
+      </button>
+    </div>
+    <span
+      role="status"
+      aria-live="polite"
+      class="cwa:sr-only"
+    >{{ announcement }}</span>
+  </DefineBody>
+  <DialogRoot
+    v-if="sheet"
+    :open="open"
+    @update:open="onOpenChange"
+  >
+    <DialogPortal>
+      <DialogOverlay
+        data-testid="resource-stack-scrim"
+        class="cwa:fixed cwa:inset-0 cwa:z-context cwa:bg-black/40"
+      />
+      <DialogContent
+        ref="content"
+        aria-modal="true"
+        :aria-describedby="undefined"
+        data-testid="resource-stack"
+        class="cwa:fixed cwa:inset-x-0 cwa:bottom-0 cwa:z-context cwa:flex cwa:max-h-[70vh] cwa:flex-col cwa:bg-surface-menu cwa:pb-[env(safe-area-inset-bottom)] cwa:text-fg cwa:shadow-popover cwa:outline-1 cwa:outline-transparent"
+        @open-auto-focus.prevent
+        @close-auto-focus.prevent
+        @pointer-down-outside="onPointerDownOutside"
+        @escape-key-down="onEscape"
+      >
+        <div class="cwa:flex cwa:min-h-11 cwa:shrink-0 cwa:items-center cwa:justify-between cwa:gap-2 cwa:pl-4 cwa:shadow-[inset_0_-1px_0_var(--cwa-color-line)]">
+          <DialogTitle class="cwa:text-label cwa:font-semibold cwa:text-fg">
+            {{ label }}
+          </DialogTitle>
+          <button
+            type="button"
+            data-testid="resource-stack-close"
+            class="cwa:min-h-11 cwa:cursor-pointer cwa:px-4 cwa:text-label cwa:text-fg cwa:outline-1 cwa:outline-transparent cwa:hover:bg-field-hover cwa:focus-visible:outline-2 cwa:focus-visible:-outline-offset-2 cwa:focus-visible:outline-accent-fg"
+            @click="close(true)"
+          >
+            Close
+          </button>
+        </div>
+        <div class="cwa:min-h-0 cwa:overflow-y-auto cwa:p-2">
+          <ReuseBody />
+        </div>
+      </DialogContent>
+    </DialogPortal>
+  </DialogRoot>
   <PopoverRoot
+    v-else
     :open="open"
     @update:open="onOpenChange"
   >
@@ -351,7 +470,7 @@ defineExpose({ close, contentId: computed(() => position.value && content.value?
         :aria-label="label"
         data-testid="resource-stack"
         class="cwa:z-context cwa:flex cwa:max-h-[calc(100dvh-1rem)] cwa:flex-col cwa:overflow-y-auto cwa:bg-surface-menu cwa:text-fg cwa:shadow-popover cwa:outline-1 cwa:outline-transparent"
-        :style="{ visibility: position ? undefined : 'hidden', maxWidth: maxWidth === undefined ? undefined : `${maxWidth}px` }"
+        :style="{ visibility: revealed ? undefined : 'hidden', maxWidth: maxWidth === undefined ? undefined : `${maxWidth}px` }"
         @open-auto-focus.prevent
         @close-auto-focus.prevent
         @focus-outside.prevent
@@ -359,44 +478,7 @@ defineExpose({ close, contentId: computed(() => position.value && content.value?
         @escape-key-down="onEscape"
         @keydown="onPanelKeydown"
       >
-        <div
-          :id="id"
-          ref="tree"
-          role="tree"
-          tabindex="-1"
-          :aria-label="label"
-          :aria-activedescendant="levelId(highlight)"
-          :aria-busy="busy || undefined"
-          class="cwa:flex cwa:w-max cwa:max-w-full cwa:min-w-0 cwa:flex-col cwa:outline-1 cwa:outline-transparent"
-          @keydown="onTreeKeydown"
-          @mousedown.prevent
-          @pointermove="onPointerMove"
-          @pointerleave="onPointerLeave"
-          @click="onTreeClick"
-        >
-          <StackTree />
-        </div>
-        <div
-          v-if="hiddenCount"
-          class="cwa:px-2 cwa:py-1"
-        >
-          <button
-            ref="moreButton"
-            type="button"
-            tabindex="-1"
-            data-testid="resource-stack-more"
-            class="cwa:min-h-6 cwa:cursor-pointer cwa:text-helper cwa:text-accent-fg cwa:underline cwa:underline-offset-2 cwa:outline-1 cwa:outline-transparent cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-accent-fg"
-            @keydown="onMoreKeydown"
-            @click="showMore"
-          >
-            Show {{ hiddenCount }} more {{ parentsWord(hiddenCount) }}
-          </button>
-        </div>
-        <span
-          role="status"
-          aria-live="polite"
-          class="cwa:sr-only"
-        >{{ announcement }}</span>
+        <ReuseBody />
       </PopoverContent>
     </PopoverPortal>
   </PopoverRoot>

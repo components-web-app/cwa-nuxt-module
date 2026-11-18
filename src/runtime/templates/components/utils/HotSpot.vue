@@ -84,4 +84,15 @@ onMounted(() => {
     z-index: 0;
   }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .cwa\:hot-spot:before {
+    animation: none;
+    transform: scale(1.8);
+  }
+  .cwa\:hot-spot:after {
+    animation: none;
+    transform: scale(1.4);
+  }
+}
 </style>

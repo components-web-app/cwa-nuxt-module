@@ -3,6 +3,7 @@ import { afterEach, describe, expect, test, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { h } from 'vue'
 import { axe } from '../../../../../test/utils/axe'
+import { drawsOpenState, trimsToLetters } from '../../../../../test/utils/kit-css'
 import Button from './Button.vue'
 import Spinner from './Spinner.vue'
 import { announceKey } from '../core/ui/field-keys'
@@ -50,7 +51,7 @@ describe('CwaUiButton (#456)', () => {
 
   test('follows the control height, which grows on touch, with 1rem of padding, or 0.75rem before an icon', () => {
     const plain = mount(Button, { props: { label: 'Go' } })
-    expect(plain.classes()).toEqual(expect.arrayContaining(['cwa:h-control', 'cwa:px-4']))
+    expect(plain.classes()).toEqual(expect.arrayContaining(['cwa:h-control', 'cwa:pointer-coarse:h-hit', 'cwa:px-4']))
 
     const withIcon = mount(Button, { props: { label: 'Page', icon: Plus } })
     expect(withIcon.classes()).toEqual(expect.arrayContaining(['cwa:h-control', 'cwa:pl-3', 'cwa:pr-4']))
@@ -75,10 +76,25 @@ describe('CwaUiButton (#456)', () => {
     expect(wrapper.attributes('aria-label')).toBe('Close')
     expect(wrapper.text()).toBe('')
     expect(wrapper.find('[data-testid="plus"]').exists()).toBe(true)
-    expect(wrapper.classes()).toEqual(expect.arrayContaining(['cwa:h-control', 'cwa:w-control', 'cwa:px-0']))
+    expect(wrapper.classes()).toEqual(expect.arrayContaining(['cwa:h-control', 'cwa:w-control', 'cwa:pointer-coarse:h-hit', 'cwa:pointer-coarse:w-hit', 'cwa:px-0']))
 
     const small = mount(Button, { props: { label: 'Close', icon: Plus, iconOnly: true, size: 'sm' } })
     expect(small.classes()).toEqual(expect.arrayContaining(['cwa:h-8', 'cwa:w-8', 'cwa:pointer-coarse:h-hit', 'cwa:pointer-coarse:w-hit']))
+  })
+
+  test('an icon-only button keeps the 16px row-action icon; a dialog header\'s asks for the large one, 5/9 of the control (24px in its 44px button), without changing its box', () => {
+    const wrapper = mount(Button, { props: { label: 'Edit', icon: Plus, iconOnly: true, variant: 'ghost' } })
+    expect(wrapper.get('[data-testid="plus"]').classes()).toContain('cwa:size-4')
+
+    const large = mount(Button, { props: { label: 'View', icon: Plus, iconOnly: true, variant: 'ghost', largeIcon: true } })
+    expect(large.get('[data-testid="plus"]').classes()).toContain('cwa:size-[calc(var(--cwa-spacing-control)*5/9)]')
+    expect(large.classes()).toEqual(expect.arrayContaining(['cwa:h-control', 'cwa:w-control']))
+
+    const small = mount(Button, { props: { label: 'View', icon: Plus, iconOnly: true, size: 'sm' } })
+    expect(small.get('[data-testid="plus"]').classes()).toContain('cwa:size-4')
+
+    const labelled = mount(Button, { props: { label: 'Page', icon: Plus } })
+    expect(labelled.get('[data-testid="plus"]').classes()).toContain('cwa:size-4')
   })
 
   test('shows a square focus ring in accent-fg, offset 2px', () => {
@@ -184,6 +200,9 @@ describe('CwaUiButton (#456)', () => {
     const popover = document.querySelector<HTMLElement>('[data-testid="button-reason"]')
     expect(popover?.textContent?.trim()).toBe('This group already holds its 3 components')
     expect(popover?.getAttribute('aria-label')).toBe('Why Add is unavailable')
+    expect([...popover!.classList]).toEqual(expect.arrayContaining(['cwa:bg-surface-menu', 'cwa:text-fg', 'cwa:leading-normal', 'cwa:ring-1', 'cwa:ring-line']))
+    expect(popover!.querySelector('svg')!.getAttribute('class')).toContain('cwa:stroke-line')
+    expect(trimsToLetters(popover!.querySelector('p')!)).toBe(true)
     expect(announce).toHaveBeenCalledWith('This group already holds its 3 components')
     expect(clicked).not.toHaveBeenCalled()
     expect(document.activeElement).toBe(wrapper.element)
@@ -267,6 +286,7 @@ describe('CwaUiButton (#456)', () => {
 
       const buttons = wrapper.findAll('button')
       expect(buttons.map(button => button.text() || button.attributes('aria-label'))).toEqual(['Publish now', 'More actions'])
+      expect(wrapper.get('[data-testid="button-options"] svg').classes()).toContain('cwa:size-4')
       await buttons[0]!.trigger('click')
       expect(onClick).toHaveBeenCalledTimes(1)
 
@@ -275,6 +295,22 @@ describe('CwaUiButton (#456)', () => {
       document.querySelector<HTMLElement>('[data-testid="menu-clone"]')!.click()
       await flushPromises()
       expect(onSelect).toHaveBeenCalledWith(expect.objectContaining({ value: 'clone' }))
+    })
+
+    test('the ⋮ shows itself selected while its menu is open, and not once it closes, with no axe violations open', async () => {
+      const wrapper = mount(Button, { props: { label: 'Publish now', options }, attachTo: document.body })
+      const more = wrapper.get('[data-testid="button-options"]')
+      expect(drawsOpenState(more.element)).toBe(false)
+
+      await more.trigger('keydown', { key: 'Enter' })
+      await flushPromises()
+      expect(drawsOpenState(more.element)).toBe(true)
+      expect(await axe(document.body, { rules: { region: { enabled: false } } })).toHaveNoViolations()
+
+      document.querySelector<HTMLElement>('[data-testid="menu-clone"]')!.click()
+      await flushPromises()
+      expect(drawsOpenState(more.element)).toBe(false)
+      wrapper.unmount()
     })
 
     test('with no main action only the ⋮ is shown, and it is held while loading', () => {
@@ -326,6 +362,29 @@ describe('CwaUiButton (#456)', () => {
     expect(short.classes()).toContain('cwa:sm:hidden')
     expect(full.classes()).toEqual(expect.arrayContaining(['cwa:hidden', 'cwa:sm:inline']))
     expect(await axe(wrapper.element as HTMLElement)).toHaveNoViolations()
+  })
+
+  test('a split button\'s ⋮ is 16px unless it asks for the large icon, which its main action does not take', () => {
+    const options = [{ group: null, items: [{ label: 'Clone', value: 'clone' }] }]
+    const large = mount(Button, { props: { label: 'Publish now', icon: Plus, options, size: 'sm', largeIcon: true } })
+    expect(large.get('[data-testid="button-options"] svg').classes()).toContain('cwa:size-[calc(var(--cwa-spacing-control)*5/9)]')
+    expect(large.get('[data-testid="plus"]').classes()).toContain('cwa:size-4')
+  })
+
+  test('a truncating button may shrink to its container and ends its label with an ellipsis, so a long page name in the phone header gives way to the items beside it', () => {
+    const wrapper = mount(Button, { props: { label: 'A very long page name', truncate: true } })
+    const label = wrapper.findAll('span').find(span => span.text() === 'A very long page name')!
+
+    expect(wrapper.classes()).toEqual(expect.arrayContaining(['cwa:min-w-0', 'cwa:max-w-full']))
+    expect(wrapper.classes()).not.toContain('cwa:shrink-0')
+    expect(label.classes()).toContain('cwa:truncate')
+  })
+
+  test('a button keeps its width by default', () => {
+    const wrapper = mount(Button, { props: { label: 'Save' } })
+
+    expect(wrapper.classes()).toContain('cwa:shrink-0')
+    expect(wrapper.findAll('span').find(span => span.text() === 'Save')!.classes()).not.toContain('cwa:truncate')
   })
 
   test('a split button passes its short label to the main action', () => {

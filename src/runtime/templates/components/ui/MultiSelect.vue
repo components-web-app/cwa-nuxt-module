@@ -18,7 +18,7 @@ import ChevronGlyph from '../core/ui/ChevronGlyph.vue'
 import CheckGlyph from '../core/ui/CheckGlyph.vue'
 import XMarkIcon from './icon/XMarkIcon.vue'
 import { useAnnounce, useFieldModel } from '../core/ui/field-context'
-import { fieldBox, fieldFill, menuPanel, optionLook } from '../core/ui/field-looks'
+import { fieldBox, fieldDisabled, fieldFill, menuPanel, optionLook, placeholderLook } from '../core/ui/field-looks'
 import type { MenuItem } from '../core/ui/menu-entries'
 import type { ResourceModelField } from '#cwa/resources/model-editors'
 
@@ -31,6 +31,7 @@ const props = withDefaults(defineProps<{
   searchPlaceholder?: string
   width?: FieldWidth
   disabled?: boolean
+  disabledReason?: string
   options: MenuItem[]
   field?: string
   model?: ResourceModelField<string[]>
@@ -43,6 +44,7 @@ const props = withDefaults(defineProps<{
   searchPlaceholder: 'Search',
   width: 'md',
   disabled: false,
+  disabledReason: undefined,
   field: undefined,
   model: undefined,
   modelValue: undefined,
@@ -86,9 +88,13 @@ function write(next: string[]) {
   value.value = next
 }
 
+const countText = (count: number) => count ? `${count} selected` : 'None selected'
+
 function choose(next: unknown) {
   armed.value = false
-  write(Array.isArray(next) ? next.filter((item): item is string => typeof item === 'string') : [])
+  const picked = Array.isArray(next) ? next.filter((item): item is string => typeof item === 'string') : []
+  write(picked)
+  announce(countText(picked.length))
 }
 
 function remove(val: string) {
@@ -115,6 +121,7 @@ const inactive = computed(() => props.disabled || unbound)
 
 <template>
   <Field
+    :disabled-reason="disabled ? disabledReason : undefined"
     :label="label"
     :label-hidden="labelHidden"
     :info="info"
@@ -125,6 +132,7 @@ const inactive = computed(() => props.disabled || unbound)
     :control-id="id"
     :inactive="inactive"
     :name="field"
+    :format="value => Array.isArray(value) ? value.map(labelOf).join(', ') : String(value)"
   >
     <template #default="{ describedBy, tone, busy }">
       <ComboboxRoot
@@ -139,7 +147,7 @@ const inactive = computed(() => props.disabled || unbound)
         @update:model-value="choose"
       >
         <ComboboxAnchor
-          :class="[fieldBox, fieldFill(tone, inactive), 'cwa:gap-1.5 cwa:pr-3', { 'cwa:opacity-50 cwa:cursor-not-allowed': inactive }]"
+          :class="[fieldBox, fieldFill(tone, inactive), 'cwa:gap-1.5 cwa:pr-3', { [fieldDisabled]: inactive }]"
         >
           <span
             v-if="!open && firstChosen"
@@ -161,19 +169,28 @@ const inactive = computed(() => props.disabled || unbound)
           </span>
           <span
             v-if="!open && more"
-            class="cwa:shrink-0 cwa:text-fg-secondary"
+            class="cwa:shrink-0"
+            :class="inactive ? undefined : 'cwa:text-fg-secondary'"
             data-testid="multi-more"
           >+{{ more }}</span>
+          <span
+            v-if="chosen.length"
+            :id="`${id}-count`"
+            aria-hidden="true"
+            data-testid="multi-count"
+            class="cwa:shrink-0 cwa:pl-3 cwa:text-control cwa:whitespace-nowrap cwa:text-fg-secondary"
+            :class="{ 'cwa:sr-only': !open }"
+          >{{ countText(chosen.length) }}</span>
           <ComboboxInput
             :id="id"
             v-model="search"
             :placeholder="open ? searchPlaceholder : (firstChosen ? '' : placeholder)"
-            :aria-describedby="describedBy"
+            :aria-describedby="[chosen.length ? `${id}-count` : '', describedBy ?? ''].filter(Boolean).join(' ') || undefined"
             :aria-invalid="tone === 'danger' ? 'true' : undefined"
             :aria-busy="busy ? 'true' : undefined"
             data-testid="multi-input"
-            class="cwa:h-full cwa:w-0 cwa:min-w-0 cwa:flex-1 cwa:appearance-none cwa:border-0 cwa:bg-transparent cwa:px-2 cwa:text-control cwa:text-inherit cwa:outline-none cwa:placeholder:text-muted-on-field cwa:focus:ring-0 cwa:disabled:cursor-not-allowed cwa:pointer-coarse:text-base"
-            :class="{ 'cwa:pl-3': open || !firstChosen }"
+            class="cwa:h-full cwa:w-0 cwa:min-w-0 cwa:flex-1 cwa:appearance-none cwa:border-0 cwa:bg-transparent cwa:px-2 cwa:text-control cwa:text-inherit cwa:outline-none cwa:focus:ring-0 cwa:disabled:cursor-not-allowed cwa:pointer-coarse:text-base"
+            :class="[placeholderLook(inactive), { 'cwa:pl-3': !open && !firstChosen }]"
             @keydown="onKeydown"
           />
           <ComboboxTrigger

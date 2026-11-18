@@ -198,7 +198,10 @@ defineExpose({ focus, highlighted })
       :model-value="undefined"
       @highlight="onHighlight"
     >
-      <div class="cwa:sticky cwa:top-0 cwa:z-1 cwa:bg-surface cwa:px-6 cwa:pt-5 cwa:pb-3 cwa:max-sm:px-4 cwa:max-sm:pt-4">
+      <div
+        data-cwa-sticky
+        class="cwa:sticky cwa:top-0 cwa:z-1 cwa:bg-surface cwa:px-6 cwa:pt-5 cwa:pb-3 cwa:max-sm:px-4 cwa:max-sm:pt-4"
+      >
         <slot name="header" />
         <div :class="[fieldBox, fieldFill(undefined, false), 'cwa:gap-2 cwa:px-3']">
           <SearchIcon

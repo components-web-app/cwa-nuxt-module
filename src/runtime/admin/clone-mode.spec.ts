@@ -157,12 +157,12 @@ describe('clone mode', () => {
     expect(mode.source.value).toEqual({ iri: SOURCE_IRI, name: undefined })
   })
 
-  test('Escape while a dialog is open closes only the dialog, not clone mode', () => {
+  test.each(['dialog', 'alertdialog', 'menu'])('Escape while a %s is open closes only it, not clone mode', (role) => {
     const { $cwa } = buildCwa()
     const mode = cloneModeOf($cwa)
     mode.start(SOURCE_IRI)
     const dialog = document.createElement('div')
-    dialog.setAttribute('role', 'dialog')
+    dialog.setAttribute('role', role)
     document.body.appendChild(dialog)
     pressEscape()
     expect(mode.source.value).toEqual({ iri: SOURCE_IRI, name: undefined })

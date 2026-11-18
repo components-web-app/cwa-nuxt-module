@@ -3,7 +3,10 @@
     v-if="showLoader"
     class="component-group-placeholder"
   >
-    <Spinner :show="true" />
+    <span
+      role="status"
+      class="cwa:inline-flex"
+    ><Spinner /><span class="cwa:sr-only">Loading</span></span>
   </div>
   <template v-else-if="componentPositions?.length">
     <!--cwa-start-->
@@ -17,18 +20,21 @@
     />
     <!--cwa-end-->
   </template>
-  <template v-else-if="isNewPosition">
+  <template v-else-if="isNewPosition && $cwa.admin.isEditing">
     <!--cwa-start-->
-    <div class="cwa:flex cwa:justify-center cwa:border-2 cwa:border-dashed cwa:border-gray-200 cwa:p-5 cwa:pb-14 cwa:relative">
-      <LazyHotSpot
-        screen-reader-action="Add component position"
-        :iri="iri"
-        disabled
-      />
-      <span class="cwa:absolute cwa:bg-stone-600 cwa:text-light cwa:text-sm cwa:px-3 cwa:py-0.5 cwa:rounded-full cwa:bottom-5">
-        Add the component to populate this component group
-      </span>
-    </div>
+    <EditPlaceholder
+      label="Empty group"
+      info="Add the component to populate this component group."
+    >
+      <template #default="cue">
+        <LazyHotSpot
+          screen-reader-action="Add component position"
+          :aria-describedby="cue?.describedBy"
+          :iri="iri"
+          disabled
+        />
+      </template>
+    </EditPlaceholder>
     <!--cwa-end-->
   </template>
   <template v-else-if="hasLocation && !locationResource && !$cwa.resources.isLoading.value">
@@ -42,13 +48,19 @@
   </template>
   <template v-else-if="signedInAndResourceExists">
     <!--cwa-start-->
-    <div class="cwa:flex cwa:justify-center cwa:border-2 cwa:border-dashed cwa:border-gray-200 cwa:p-5 cwa:relative">
-      <LazyHotSpot
-        screen-reader-action="Add component position"
-        :iri="iri"
-        :disabled="!iri || $cwa.admin.resourceStackManager.isComponentGroupDisabled(iri, resolvedLocation)"
-      />
-    </div>
+    <EditPlaceholder
+      label="Empty group"
+      info="Visitors see nothing here until a component is added. Use + to add one."
+    >
+      <template #default="cue">
+        <LazyHotSpot
+          screen-reader-action="Add component position"
+          :aria-describedby="cue?.describedBy"
+          :iri="iri"
+          :disabled="!iri || $cwa.admin.resourceStackManager.isComponentGroupDisabled(iri, resolvedLocation)"
+        />
+      </template>
+    </EditPlaceholder>
     <!--cwa-end-->
   </template>
 </template>
@@ -76,11 +88,16 @@ import ResourceLoader from '#cwa/templates/components/core/ResourceLoader.vue'
 import { CwaResourceApiStatuses, NEW_RESOURCE_IRI } from '#cwa/storage/stores/resources/state'
 import { useCwa } from '#cwa/composables/cwa'
 import { useCwaResourceManageable } from '#cwa/composables/cwa-resource-manageable'
-import Spinner from '#cwa/templates/components/utils/Spinner.vue'
+import Spinner from '#cwa/templates/components/ui/Spinner.vue'
 
 const LazyHotSpot = defineAsyncComponent({
   suspensible: false,
   loader: () => import('#cwa/templates/components/utils/HotSpot.vue'),
+})
+
+const EditPlaceholder = defineAsyncComponent({
+  suspensible: false,
+  loader: () => import('#cwa/templates/components/ui/EditPlaceholder.vue'),
 })
 
 const iri = computed<string | undefined>(() => resource.value?.data?.['@id'])

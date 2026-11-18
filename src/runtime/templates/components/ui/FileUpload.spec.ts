@@ -40,12 +40,39 @@ describe('CwaUiFileUpload (#460)', () => {
     expect(wrapper.find('[data-testid="file-remove"]').exists()).toBe(true)
   })
 
+  test('Replace and Remove are as tall as the thumbnail and the controls beside them, in the bar and in a dialog (#461)', () => {
+    const wrapper = mount(FileUpload, { props: { label: 'Image', upload: fakeUpload(bench) } })
+
+    for (const id of ['file-choose', 'file-remove']) {
+      const button = wrapper.get(`[data-testid="${id}"]`)
+      expect(button.classes()).toEqual(expect.arrayContaining(['cwa:h-control', 'cwa:pointer-coarse:h-hit']))
+      expect(button.classes()).not.toContain('cwa:h-8')
+    }
+  })
+
   test('with no file it offers Upload and no Remove', () => {
     const wrapper = mount(FileUpload, { props: { label: 'Image', upload: fakeUpload() } })
 
     expect(wrapper.get('[data-testid="file-name"]').text()).toBe('No file')
     expect(wrapper.get('[data-testid="file-choose"]').text()).toBe('Upload')
     expect(wrapper.find('[data-testid="file-remove"]').exists()).toBe(false)
+  })
+
+  test('with no file the thumbnail square, the same size, carries one hidden diagonal corner to corner in the muted text colour; a file that is not an image keeps a plain square (#461)', () => {
+    const empty = mount(FileUpload, { props: { label: 'Image', upload: fakeUpload() } })
+    const square = empty.get('[data-testid="file-thumbnail-empty"]')
+
+    expect(square.attributes('aria-hidden')).toBe('true')
+    expect(square.classes()).toEqual(expect.arrayContaining(['cwa:size-control', 'cwa:shrink-0', 'cwa:bg-field', 'cwa:pointer-coarse:size-hit']))
+    const lines = square.findAll('svg line')
+    expect(lines).toHaveLength(1)
+    expect([lines[0]!.attributes('x1'), lines[0]!.attributes('y1'), lines[0]!.attributes('x2'), lines[0]!.attributes('y2')]).toEqual(['0', '1', '1', '0'])
+    expect(lines[0]!.attributes('stroke')).toBe('currentColor')
+    expect(square.get('svg').classes()).toEqual(expect.arrayContaining(['cwa:size-full', 'cwa:text-fg-muted']))
+
+    const pdf = mount(FileUpload, { props: { label: 'File', upload: fakeUpload({ name: 'plan.pdf', size: '1 MB', url: '/files/plan.pdf', mimeType: 'application/pdf' }) } })
+    expect(pdf.find('[data-testid="file-thumbnail-empty"]').exists()).toBe(false)
+    expect(pdf.find('svg line').exists()).toBe(false)
   })
 
   test('a picked file is sent, and Remove removes', async () => {

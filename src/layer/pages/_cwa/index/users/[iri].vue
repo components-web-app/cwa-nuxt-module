@@ -1,14 +1,17 @@
 <template>
   <CwaUiDialog
-    v-if="localResourceData"
+    v-if="localResourceData || isLoading || loadFailed"
+    placement="right"
     :title="dialogTitle"
     :tabs="tabs"
     :form="form"
     :loading="isLoading"
+    :load-failed="loadFailed"
     noun="user"
     :create-noun="isAdding ? 'user' : undefined"
     data-testid="user-dialog"
     @close="$emit('close')"
+    @retry="loadResource()"
     @save="save()"
   >
     <template #details>
@@ -21,7 +24,7 @@
         <CwaUiToggle
           field="enabled"
           label="User enabled"
-          description="A disabled user can't sign in."
+          info="A disabled user can't sign in."
         />
       </CwaUiFormSection>
       <CwaUiFormSection title="Email">
@@ -32,14 +35,15 @@
           width="full"
           autocomplete="off"
         />
-        <CwaUiInput
-          v-if="isChangingEmail"
-          :model="oldPasswordModel"
-          label="Your current password"
-          description="Changing the email needs your own password."
-          type="password"
-          autocomplete="current-password"
-        />
+        <CwaReveal :when="isChangingEmail">
+          <CwaUiInput
+            :model="oldPasswordModel"
+            label="Your current password"
+            info="Changing the email needs your own password."
+            type="password"
+            autocomplete="current-password"
+          />
+        </CwaReveal>
         <CwaUiAlert
           v-if="resource?.newEmailAddress"
           tone="info"
@@ -121,18 +125,19 @@
       <CwaUiFormSection
         v-if="isAdding"
         title="Password"
-        :columns="2"
       >
         <CwaUiInput
           field="plainPassword"
           label="Password"
           type="password"
+          revealable
           autocomplete="new-password"
         />
         <CwaUiInput
           field="repeatPassword"
           label="Repeat password"
           type="password"
+          revealable
           autocomplete="new-password"
         />
       </CwaUiFormSection>
@@ -140,18 +145,19 @@
     <template #password>
       <CwaUiFormSection
         description="Sets a new password for this user. Leave it empty to keep theirs."
-        :columns="2"
       >
         <CwaUiInput
           field="plainPassword"
           label="New password"
           type="password"
+          revealable
           autocomplete="new-password"
         />
         <CwaUiInput
           field="repeatPassword"
           label="Repeat password"
           type="password"
+          revealable
           autocomplete="new-password"
         />
       </CwaUiFormSection>
@@ -166,7 +172,7 @@
             class="cwa:m-0 cwa:mt-1.5 cwa:break-all cwa:font-mono cwa:text-control cwa:text-fg-secondary"
             data-testid="user-id"
           >
-            {{ localResourceData['@id'] }}
+            {{ localResourceData?.['@id'] }}
           </dd>
         </dl>
       </CwaUiFormSection>
@@ -220,6 +226,7 @@ import CwaUiDialog from '#cwa/templates/components/ui/Dialog.vue'
 import CwaUiFormSection from '#cwa/templates/components/ui/FormSection.vue'
 import CwaUiInput from '#cwa/templates/components/ui/Input.vue'
 import CwaUiToggle from '#cwa/templates/components/ui/Toggle.vue'
+import CwaReveal from '#cwa/templates/components/core/ui/Reveal.vue'
 import CwaUiSelect from '#cwa/templates/components/ui/Select.vue'
 import CwaUiAlert from '#cwa/templates/components/ui/Alert.vue'
 import CwaUiButton from '#cwa/templates/components/ui/Button.vue'
@@ -243,7 +250,7 @@ const confirm = useCwaConfirm()
 
 const IDLE: CwaFieldState = { status: 'idle', waiting: false, slow: false }
 
-const { isAdding, isLoading, isUpdating, localResourceData, formatDate, deleteResource, saveResource, resource, form } = useItemPage({
+const { isAdding, isLoading, loadFailed, loadResource, isUpdating, localResourceData, formatDate, deleteResource, saveResource, resource, form } = useItemPage({
   createEndpoint: '/users',
   emit,
   resourceType: 'User',
@@ -353,7 +360,7 @@ const roleModel = {
 
 const username = computed(() => (resource.value?.username as string | undefined) || '')
 
-const dialogTitle = computed(() => isAdding.value ? 'New user' : (username.value || 'No username'))
+const dialogTitle = computed(() => isAdding.value ? 'New user' : (!localResourceData.value ? 'User' : (username.value || 'No username')))
 
 const tabs = computed<DialogTab[]>(() => isAdding.value
   ? [{ label: 'Details', key: 'details' }]

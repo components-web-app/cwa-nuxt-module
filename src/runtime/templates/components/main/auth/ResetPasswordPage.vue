@@ -1,33 +1,37 @@
 <template>
   <AuthTemplate
+    title="Choose a new password"
     :error="inputErrors?.form || error"
+    :field-errors="passwordError ? `Enter new password: ${passwordError}` : undefined"
+    :success="success ? 'Password reset' : undefined"
     :submitting="submitting"
-    :submit-button-text="success ? 'Go to Login' : 'Reset Password'"
+    :submit-button-text="success ? 'Go to login' : 'Reset password'"
     @submit="emitSubmit"
   >
-    <div v-if="success">
-      <h1 class="cwa:font-bold cwa:text-xl cwa:mb-2">
-        Password Reset
-      </h1>
-      <p>You have successfully reset your password.</p>
-    </div>
-    <template v-else>
-      <InputField
+    <template #success>
+      <p class="cwa:m-0">
+        You have successfully reset your password.
+      </p>
+    </template>
+    <template v-if="!success">
+      <CwaUiInput
         v-model="passwords.first"
         label="Enter new password"
         name="firstPassword"
         type="password"
+        revealable
         autocomplete="new-password"
-        :errors="inputErrors?.password"
-        :required="true"
+        :invalid="passwordError"
+        required
       />
-      <InputField
+      <CwaUiInput
         v-model="passwords.second"
         label="Repeat new password"
         name="secondPassword"
         type="password"
+        revealable
         autocomplete="new-password"
-        :required="true"
+        required
       />
     </template>
   </AuthTemplate>
@@ -36,7 +40,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import AuthTemplate from './_parts/AuthTemplate.vue'
-import InputField from './_parts/InputField.vue'
+import CwaUiInput from '../../ui/Input.vue'
 
 const props = defineProps<{
   submitting: boolean
@@ -60,6 +64,8 @@ const emit = defineEmits<{
 function emitSubmit() {
   emit('submit')
 }
+
+const passwordError = computed(() => props.inputErrors?.password?.join(' ') || undefined)
 
 const passwords = computed({
   get() {

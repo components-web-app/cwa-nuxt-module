@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
 import { createCommentVNode, defineAsyncComponent, h, inject, onMounted, ref, nextTick } from 'vue'
-import { flushPromises, mount } from '@vue/test-utils'
+import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { mockNuxtImport } from '@nuxt/test-utils/runtime'
 import { CwaUserRoles } from '#cwa/storage/stores/auth/state'
 import { useCloneMode } from '#cwa/admin/clone-mode'
@@ -9,6 +9,7 @@ import type Cwa from '#cwa/cwa'
 import { announceKey } from '#cwa/templates/components/core/ui/field-keys'
 import { consola } from 'consola'
 import CwaUiManagerTab from '#cwa/templates/components/ui/ManagerTab.vue'
+import Group from './_tabs/group/Group.vue'
 
 vi.mock('#cwa/templates/components/main/admin/resource-manager/_parts/ClonePlacementMenu.vue', () => ({
   __esModule: true,
@@ -18,6 +19,8 @@ vi.mock('#cwa/templates/components/main/admin/resource-manager/_parts/ClonePlace
     template: '<div class="clone-placement-menu-stub" />',
   },
 }))
+
+enableAutoUnmount(afterEach)
 
 const selectOriginal = vi.hoisted(() => ({ fn: (() => {}) as (index: number) => void }))
 
@@ -43,7 +46,7 @@ vi.mock('#cwa/admin/confirm-dialog', () => ({
   createConfirmDialog: vi.fn(async () => ({ reveal: confirmState.reveal })),
 }))
 
-vi.mock('#cwa/templates/components/core/ConfirmDialog.vue', () => ({ default: {} }))
+vi.mock('#cwa/templates/components/core/ui/Confirm.vue', () => ({ default: {} }))
 
 vi.mock('#app/nuxt', async importOriginal => ({
   ...await importOriginal<typeof import('#app/nuxt')>(),
@@ -114,9 +117,9 @@ async function mountManager(attachTo?: HTMLElement) {
         ResourceLoadingIndicator: { template: '<div class="rli-stub" />' },
         ManagerTabs: {
           name: 'ManagerTabs',
-          props: ['tabs'],
+          props: ['tabs', 'idPrefix', 'label'],
           methods: { resetTabs() {}, selectOriginal: (index: number) => selectOriginal.fn(index) },
-          template: '<div class="manager-tabs-stub" @click="$emit(\'click\', 1)" />',
+          template: '<div class="manager-tabs-stub" @click="$emit(\'click\', 1)"><button v-for="(tab, index) of tabs" :id="`${idPrefix}-tab-${index}`" type="button">{{ tab.name }}</button></div>',
         },
         CwaAdminResourceManagerContextMenu: {
           name: 'CwaAdminResourceManagerContextMenu',
@@ -171,6 +174,17 @@ describe('ResourceManager', () => {
       cwaState.cwa = makeCwa({ stackManager })
       const wrapper = await mountManager()
       expect(wrapper.find('#cwa-manager-spacer').exists()).toBe(true)
+    })
+
+    test('the saving line above the bar sits on the notifications layer, above the page overlay and outlines, as the header\'s does', async () => {
+      const stackManager = makeStackManager({ showManager: ref(true), currentStackItem: ref({ iri: '/component/1' }) })
+      cwaState.cwa = makeCwa({ stackManager })
+      const wrapper = await mountManager()
+      resolverState.allMeta.value = [{ name: 'Tab' }]
+      await nextTick()
+      const line = wrapper.get('.rli-stub')
+      expect(line.classes()).toContain('cwa:z-notifications')
+      expect(line.classes()).toContain('cwa:bottom-full')
     })
   })
 
@@ -264,24 +278,31 @@ describe('ResourceManager', () => {
       expect(wrapper.findComponent({ name: 'BarSummary' }).props('message')).toBe('Set to 6, the highest position')
     })
 
-    test('on touch the tab row is 2.75rem and the bar grows with it, and the CTA group\'s one inset is 0 on touch and below 40rem (#459)', async () => {
+    test('on touch the tab row is the 44px hit size plus the bar\'s line, taken from the row below so the bar keeps its height, and the CTA group\'s and the tab group\'s one inset, which keeps them the same height, is 0 on touch and below 40rem (#459)', async () => {
       cwaState.cwa = makeCwa({ stackManager: makeStackManager({ showManager: ref(true), currentStackItem: ref({ iri: '/component/1', managerTabs: [] }) }) })
       const wrapper = await mountManager()
       resolverState.allMeta.value = [{ name: 'Tab' }]
       await nextTick()
 
       expect(wrapper.get('[data-testid="manager-bar"]').classes()).toEqual(expect.arrayContaining([
-        'cwa:pointer-coarse:[--cwa-spacing-manager-tabs:2.75rem]',
-        'cwa:pointer-coarse:[--cwa-spacing-manager-row:4.25rem]',
+        'cwa:pointer-coarse:[--cwa-spacing-manager-tabs:calc(2.75rem+1px)]',
+        'cwa:pointer-coarse:[--cwa-spacing-manager-row:calc(4.25rem-1px)]',
         'cwa:pointer-coarse:[--cwa-spacing-manager:7rem]',
       ]))
       expect(wrapper.get('[data-testid="manager-pin"]').classes()).toEqual(expect.arrayContaining([
         'cwa:pt-cta-inset',
         'cwa:pr-cta-inset',
         'cwa:gap-cta-inset',
-        'cwa:pointer-coarse:[--cwa-spacing-cta-inset:0px]',
-        'cwa:@max-[40rem]:[--cwa-spacing-cta-inset:0px]',
       ]))
+      const tabs = wrapper.get('.manager-tabs-stub').element
+      expect(tabs.classList).toContain('cwa:box-border')
+      expect(tabs.classList).toContain('cwa:pt-cta-inset')
+      expect(tabs.classList).toContain('cwa:pb-[calc(var(--cwa-spacing-cta-inset)+1px)]')
+      expect(tabs.parentElement!.classList).not.toContain('cwa:pt-cta-inset')
+      const row = wrapper.get('[data-testid="manager-pin"]').element.parentElement!
+      expect(row.contains(tabs)).toBe(true)
+      expect(row.classList).toContain('cwa:pointer-coarse:[--cwa-spacing-cta-inset:0px]')
+      expect(row.classList).toContain('cwa:@max-[40rem]:[--cwa-spacing-cta-inset:0px]')
     })
 
     test('showing a field from the status selects the tab that holds it and focuses its control (#459)', async () => {
@@ -303,6 +324,93 @@ describe('ResourceManager', () => {
       expect(calls).toEqual([1])
       expect(document.activeElement).toBe(wrapper.get('[data-testid="title-input"]').element)
       wrapper.unmount()
+    })
+
+    test('the shown tab is a tabpanel labelled by the selected tab, and the tablist is named for the selection (#461)', async () => {
+      const FieldTab = { name: 'FieldTab', render: () => h('div') }
+      const stackManager = makeStackManager({
+        showManager: ref(true),
+        currentStackItem: ref({ iri: '/component/1', displayName: 'Body Text', managerTabs: [FieldTab, FieldTab] }),
+      })
+      cwaState.cwa = makeCwa({ stackManager })
+      const wrapper = await mountManager()
+      resolverState.allMeta.value = [{ name: 'Publish', fields: [] }, { name: 'Content', fields: [] }]
+      await nextTick()
+
+      const tabs = wrapper.findComponent({ name: 'ManagerTabs' })
+      const prefix = tabs.props('idPrefix') as string
+      expect(prefix).toBeTruthy()
+      expect(tabs.props('label')).toBe('Body Text settings')
+      const panel = wrapper.get('[data-testid="manager-tab-panel"]')
+      expect(panel.attributes('role')).toBe('tabpanel')
+      expect(panel.attributes('id')).toBe(`${prefix}-panel`)
+      expect(panel.attributes('aria-labelledby')).toBe(`${prefix}-tab-0`)
+
+      tabs.vm.$emit('click', 1)
+      await nextTick()
+      expect(panel.attributes('aria-labelledby')).toBe(`${prefix}-tab-1`)
+      wrapper.unmount()
+    })
+
+    test('a selection with no display name names its tablist Settings (#461)', async () => {
+      const stackManager = makeStackManager({
+        showManager: ref(true),
+        currentStackItem: ref({ iri: '/component/1', managerTabs: [{ name: 'FieldTab', render: () => h('div') }] }),
+      })
+      cwaState.cwa = makeCwa({ stackManager })
+      const wrapper = await mountManager()
+      resolverState.allMeta.value = [{ name: 'Publish', fields: [] }]
+      await nextTick()
+
+      expect(wrapper.findComponent({ name: 'ManagerTabs' }).props('label')).toBe('Settings')
+    })
+
+    test('F6 moves focus from the selected component to its selected tab and back, only while editing (#461)', async () => {
+      const component = document.createElement('div')
+      component.setAttribute('tabindex', '0')
+      document.body.append(component)
+      const outside = document.createElement('button')
+      document.body.append(outside)
+      const stackManager = makeStackManager({
+        showManager: ref(true),
+        currentStackItem: ref({ iri: '/component/1', domElements: ref([component]), managerTabs: [{ name: 'FieldTab', render: () => h('div') }, { name: 'FieldTab', render: () => h('div') }] }),
+      })
+      cwaState.cwa = makeCwa({ stackManager, isEditing: true })
+      const wrapper = await mountManager(document.body)
+      resolverState.allMeta.value = [{ name: 'Publish', fields: [] }, { name: 'Content', fields: [] }]
+      await nextTick()
+      wrapper.findComponent({ name: 'ManagerTabs' }).vm.$emit('click', 1)
+      await nextTick()
+      const press = (init: KeyboardEventInit = {}) => {
+        const event = new KeyboardEvent('keydown', { key: 'F6', bubbles: true, cancelable: true, ...init })
+        document.activeElement!.dispatchEvent(event)
+        return event
+      }
+
+      component.focus()
+      expect(press().defaultPrevented).toBe(true)
+      expect(document.activeElement?.textContent).toBe('Content')
+      expect(press({ shiftKey: true }).defaultPrevented).toBe(true)
+      expect(document.activeElement).toBe(component)
+
+      outside.focus()
+      press()
+      expect(document.activeElement?.textContent).toBe('Content')
+
+      component.focus()
+      expect(press({ key: 'F7' }).defaultPrevented).toBe(false)
+      expect(press({ ctrlKey: true }).defaultPrevented).toBe(false)
+      expect(document.activeElement).toBe(component)
+
+      cwaState.cwa.admin.isEditing = false
+      expect(press().defaultPrevented).toBe(false)
+      expect(document.activeElement).toBe(component)
+
+      cwaState.cwa.admin.isEditing = true
+      wrapper.unmount()
+      expect(press().defaultPrevented).toBe(false)
+      component.remove()
+      outside.remove()
     })
 
     test('does not render the holder when allTabsMeta is empty', async () => {
@@ -433,6 +541,25 @@ describe('ResourceManager', () => {
 
       expect(warn).toHaveBeenCalledOnce()
       expect(warn.mock.calls[0]![0]).toContain('"Title"')
+    })
+
+    test('says nothing on switching to the module\'s Group tab from another tab, then warns on switching to a tab without CwaUiManagerTab', async () => {
+      const warn = vi.spyOn(consola, 'warn').mockImplementation(() => {})
+      const InfoTab = { name: 'InfoTab', render: () => h(CwaUiManagerTab, null, () => h('span', 'Info')) }
+      const PlainTab = { name: 'PlainTab', render: () => h('div', 'Label') }
+      const wrapper = await show([InfoTab, Group, PlainTab], ['Info', 'Group', 'Label'])
+      const tabs = wrapper.findComponent({ name: 'ManagerTabs' })
+
+      tabs.vm.$emit('click', 1)
+      await flushPromises()
+      expect(wrapper.find('[data-testid="group-add-start"]').exists()).toBe(true)
+      expect(warn).not.toHaveBeenCalled()
+
+      tabs.vm.$emit('click', 2)
+      await flushPromises()
+      expect(wrapper.text()).toContain('Label')
+      expect(warn).toHaveBeenCalledOnce()
+      expect(warn.mock.calls[0]![0]).toContain('"Label"')
     })
 
     test('says nothing in production', async () => {
@@ -794,6 +921,78 @@ describe('ResourceManager', () => {
 
       wrapper.unmount()
       expect(removeSpy).toHaveBeenCalledWith('resize', cwa.admin.emitRedraw)
+    })
+  })
+  describe('long press (#461)', () => {
+    test('a long touch press on the page is a right-click while the manager is mounted, and not after', async () => {
+      cwaState.cwa = makeCwa({ hasRole: true, isEditing: true })
+      const wrapper = await mountManager()
+      const target = document.createElement('p')
+      document.body.append(target)
+      const contextMenus = vi.fn()
+      target.addEventListener('contextmenu', contextMenus)
+      vi.useFakeTimers()
+      try {
+        const press = () => {
+          const down = new MouseEvent('pointerdown', { clientX: 30, clientY: 40, bubbles: true })
+          Object.defineProperties(down, { pointerType: { value: 'touch' }, pointerId: { value: 1 } })
+          target.dispatchEvent(down)
+          vi.advanceTimersByTime(500)
+          target.dispatchEvent(new MouseEvent('pointerup', { bubbles: true }))
+          vi.advanceTimersByTime(1000)
+        }
+        press()
+        expect(contextMenus).toHaveBeenCalledTimes(1)
+        expect(contextMenus.mock.calls[0]![0]).toMatchObject({ clientX: 30, clientY: 40 })
+
+        wrapper.unmount()
+        press()
+        expect(contextMenus).toHaveBeenCalledTimes(1)
+      }
+      finally {
+        vi.useRealTimers()
+        target.remove()
+      }
+    })
+
+    test('a long press is a right-click only while editing, so outside edit mode the browser keeps its own touch menu', async () => {
+      const cwa = makeCwa({ hasRole: true })
+      const editing = ref(false)
+      Object.defineProperty(cwa.admin, 'isEditing', { get: () => editing.value })
+      cwaState.cwa = cwa
+      const wrapper = await mountManager()
+      const target = document.createElement('p')
+      document.body.append(target)
+      const contextMenus = vi.fn()
+      target.addEventListener('contextmenu', contextMenus)
+      vi.useFakeTimers()
+      try {
+        const press = () => {
+          const down = new MouseEvent('pointerdown', { clientX: 30, clientY: 40, bubbles: true })
+          Object.defineProperties(down, { pointerType: { value: 'touch' }, pointerId: { value: 1 } })
+          target.dispatchEvent(down)
+          vi.advanceTimersByTime(500)
+          target.dispatchEvent(new MouseEvent('pointerup', { bubbles: true }))
+          vi.advanceTimersByTime(1000)
+        }
+        press()
+        expect(contextMenus).not.toHaveBeenCalled()
+
+        editing.value = true
+        await nextTick()
+        press()
+        expect(contextMenus).toHaveBeenCalledTimes(1)
+
+        editing.value = false
+        await nextTick()
+        press()
+        expect(contextMenus).toHaveBeenCalledTimes(1)
+        wrapper.unmount()
+      }
+      finally {
+        vi.useRealTimers()
+        target.remove()
+      }
     })
   })
 })

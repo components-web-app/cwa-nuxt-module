@@ -1,8 +1,12 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, test } from 'vitest'
-import { enableAutoUnmount, mount } from '@vue/test-utils'
-import { h } from 'vue'
+import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
+import { createSSRApp, defineComponent, h, provide, ref } from 'vue'
+import type { Ref } from 'vue'
+import { renderToString } from 'vue/server-renderer'
 import { axe } from '../../../../../test/utils/axe'
+import { drawsFocusRing } from '../../../../../test/utils/focus-ring'
+import { fieldGroupKey, formSurfaceKey } from '../core/ui/field-keys'
 import Input from './Input.vue'
 
 enableAutoUnmount(afterEach)
@@ -44,5 +48,222 @@ describe('CwaUiInput (#459)', () => {
     const wrapper = mount(Input, { props: { label: 'Title', description: 'Shown as the heading.', modelValue: 'x' }, attachTo: document.body })
 
     expect(await axe(wrapper.element as HTMLElement)).toHaveNoViolations()
+  })
+
+  describe('a revealable password', () => {
+    const toggle = (wrapper: ReturnType<typeof mount>) => wrapper.find('[data-testid="input-reveal"]')
+
+    test('shows and hides the typed password with a pressed toggle named for what it does, keeping focus and the value in the field, with no axe violations either way', async () => {
+      const wrapper = mount(Input, { props: { label: 'New password', type: 'password', autocomplete: 'new-password', revealable: true, modelValue: 'secret' }, attachTo: document.body })
+      const input = wrapper.get('input')
+      const button = toggle(wrapper)
+      expect(input.attributes('type')).toBe('password')
+      expect(button.element.tagName).toBe('BUTTON')
+      expect(button.attributes('type')).toBe('button')
+      expect(button.attributes('aria-pressed')).toBe('false')
+      expect(button.attributes('aria-label')).toBe('Show password')
+      expect(button.attributes('aria-controls')).toBe(input.attributes('id'))
+      expect(button.find('[data-testid="icon-eye"]').exists()).toBe(true)
+      expect(await axe(wrapper.element as HTMLElement)).toHaveNoViolations()
+
+      input.element.focus()
+      const pointer = new MouseEvent('mousedown', { bubbles: true, cancelable: true })
+      button.element.dispatchEvent(pointer)
+      expect(pointer.defaultPrevented).toBe(true)
+      await button.trigger('click')
+      expect(input.attributes('type')).toBe('text')
+      expect(input.element.value).toBe('secret')
+      expect(input.attributes('autocomplete')).toBe('new-password')
+      expect(button.attributes('aria-pressed')).toBe('true')
+      expect(button.attributes('aria-label')).toBe('Hide password')
+      expect(button.find('[data-testid="icon-eye-off"]').exists()).toBe(true)
+      expect(await axe(wrapper.element as HTMLElement)).toHaveNoViolations()
+
+      await input.setValue('secret2')
+      expect(wrapper.emitted('update:modelValue')).toEqual([['secret2']])
+      await button.trigger('click')
+      expect(input.attributes('type')).toBe('password')
+    })
+
+    test('its toggle draws a focus ring and has a hit area on touch', () => {
+      const wrapper = mount(Input, { props: { label: 'Password', type: 'password', revealable: true, modelValue: '' } })
+      const classes = toggle(wrapper).classes()
+      expect(drawsFocusRing(classes)).toBe(true)
+      expect(classes).not.toContain('cwa:outline-none')
+      expect(classes).toEqual(expect.arrayContaining(['cwa:pointer-coarse:min-h-hit', 'cwa:pointer-coarse:min-w-hit']))
+    })
+
+    test('goes back to hidden once the field is emptied, as after a save', async () => {
+      const wrapper = mount(Input, { props: { label: 'Password', type: 'password', revealable: true, modelValue: 'secret' } })
+      await toggle(wrapper).trigger('click')
+      expect(wrapper.get('input').attributes('type')).toBe('text')
+      await wrapper.setProps({ modelValue: '' })
+      expect(wrapper.get('input').attributes('type')).toBe('password')
+    })
+
+    test.each([
+      ['a password field that did not ask for it', { type: 'password' }],
+      ['a text field', { type: 'text', revealable: true }],
+    ])('has no toggle on %s', (_, props) => {
+      const wrapper = mount(Input, { props: { label: 'Field', modelValue: '', ...props } })
+      expect(toggle(wrapper).exists()).toBe(false)
+    })
+
+    test('a disabled field\'s toggle is disabled too', () => {
+      const wrapper = mount(Input, { props: { label: 'Password', type: 'password', revealable: true, disabled: true, modelValue: '' } })
+      expect(toggle(wrapper).attributes('disabled')).toBeDefined()
+    })
+  })
+
+  describe('a value the browser filled into the server-rendered input before hydration (#386)', () => {
+    type Binding = { kind: 'v-model' } | { kind: 'model' } | { kind: 'field' }
+
+    function inputApp(model: Ref<string>, props: Record<string, unknown>, binding: Binding, writes: string[] = []) {
+      const resourceModel = {
+        model: {
+          get value() {
+            return model.value
+          },
+          set value(next: string) {
+            writes.push(next)
+            model.value = next
+          },
+        },
+        remoteChange: { value: undefined },
+      }
+      return createSSRApp(defineComponent({
+        setup() {
+          provide(fieldGroupKey, { model: () => resourceModel, undo: () => undefined })
+          return () => h(Input, {
+            label: 'Username',
+            name: 'username',
+            ...props,
+            ...(binding.kind === 'v-model'
+              ? {
+                  'modelValue': model.value,
+                  'onUpdate:modelValue': (value: string) => {
+                    writes.push(value)
+                    model.value = value
+                  },
+                }
+              : binding.kind === 'model' ? { model: resourceModel } : { field: 'title' }),
+          })
+        },
+      }))
+    }
+
+    async function hydrate(initial: string, filled: string | undefined, props: Record<string, unknown> = { autocomplete: 'username' }, binding: Binding = { kind: 'v-model' }) {
+      const container = document.createElement('div')
+      document.body.appendChild(container)
+      container.innerHTML = await renderToString(inputApp(ref(initial), props, binding))
+      const input = container.querySelector('input') as HTMLInputElement
+      if (filled !== undefined) {
+        input.value = filled
+      }
+      const writes: string[] = []
+      const model = ref(initial)
+      const app = inputApp(model, props, binding, writes)
+      app.mount(container)
+      await flushPromises()
+      return { input, model, writes, unmount: () => app.unmount() }
+    }
+
+    test('is kept for a revealable password too', async () => {
+      const { input, model, unmount } = await hydrate('', 'filled-secret', { type: 'password', autocomplete: 'new-password', revealable: true })
+
+      expect(input.value).toBe('filled-secret')
+      expect(model.value).toBe('filled-secret')
+      unmount()
+    })
+
+    test('is kept in the input and written to the model, as a password manager on /login needs', async () => {
+      const { input, model, unmount } = await hydrate('', 'autofilled-user')
+
+      expect(input.value).toBe('autofilled-user')
+      expect(model.value).toBe('autofilled-user')
+      unmount()
+    })
+
+    test('is kept for an app\'s v-model password field that sets no autocomplete', async () => {
+      const { input, model, unmount } = await hydrate('', 'filled-secret', { type: 'password', name: 'password' })
+
+      expect(input.value).toBe('filled-secret')
+      expect(model.value).toBe('filled-secret')
+      unmount()
+    })
+
+    test('is not read for a v-model field with autocomplete off', async () => {
+      const { writes, unmount } = await hydrate('', 'Restored by the browser', { autocomplete: 'off' })
+
+      expect(writes).toEqual([])
+      unmount()
+    })
+
+    test.each([
+      ['bound with :model', { kind: 'model' } as Binding],
+      ['bound with field', { kind: 'field' } as Binding],
+    ])('a resource field %s never takes a value the browser restored, even with autocomplete', async (_name, binding) => {
+      const { input, writes, unmount } = await hydrate('Stored title', 'Restored by the browser', { autocomplete: 'username' }, binding)
+
+      expect(writes).toEqual([])
+      expect(input.value).toBe('Stored title')
+      unmount()
+    })
+
+    test('writes nothing when the input still holds the server-rendered value', async () => {
+      const { writes, unmount } = await hydrate('admin', undefined)
+
+      expect(writes).toEqual([])
+      unmount()
+    })
+
+    test('a client-side mount does not overwrite the model with the empty new input', () => {
+      const wrapper = mount(Input, { props: { label: 'Username', autocomplete: 'username', modelValue: 'admin' } })
+
+      expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+      expect(wrapper.get('input').element.value).toBe('admin')
+    })
+  })
+
+  test('name, autocomplete and required reach the native input, for password managers and the browser\'s own check', () => {
+    const wrapper = mount(Input, { props: { label: 'Password', type: 'password', name: 'password', autocomplete: 'current-password', required: true, modelValue: '' } })
+    const input = wrapper.get('input')
+
+    expect(input.attributes('name')).toBe('password')
+    expect(input.attributes('autocomplete')).toBe('current-password')
+    expect(input.attributes('type')).toBe('password')
+    expect(input.element.required).toBe(true)
+  })
+
+  describe('on a page or modal surface', () => {
+    function onSurface(props: Record<string, unknown>) {
+      return mount(defineComponent({
+        setup() {
+          provide(formSurfaceKey, { unsaved: () => false, register: () => () => {} })
+          return () => h(Input, props)
+        },
+      }), { attachTo: document.body })
+    }
+
+    test('invalid is the error line below the field, describes the input and tints the field', async () => {
+      const wrapper = onSurface({ label: 'New password', modelValue: 'abc', invalid: 'Use at least 8 characters.' })
+      const input = wrapper.get('input')
+      const line = wrapper.get('[data-testid="field-error"]')
+
+      expect(line.text()).toBe('Use at least 8 characters.')
+      expect(input.attributes('aria-describedby')?.split(' ')).toContain(line.attributes('id'))
+      expect(input.attributes('aria-invalid')).toBe('true')
+      expect(input.element.parentElement!.classList).toContain('cwa:bg-field-danger')
+      expect(wrapper.find('[data-testid="input-invalid"]').exists()).toBe(false)
+      expect(await axe(document.body)).toHaveNoViolations()
+    })
+
+    test('without invalid it has no error line and an untinted fill', async () => {
+      const wrapper = onSurface({ label: 'New password', modelValue: 'abc' })
+
+      expect(wrapper.find('[data-testid="field-error"]').exists()).toBe(false)
+      expect(wrapper.get('input').element.parentElement!.classList).not.toContain('cwa:bg-field-danger')
+      expect(await axe(document.body)).toHaveNoViolations()
+    })
   })
 })

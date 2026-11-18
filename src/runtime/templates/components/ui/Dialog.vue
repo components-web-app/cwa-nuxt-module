@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, provide, reactive, ref, shallowRef, useId, useTemplateRef, watch } from 'vue'
-import { DialogContent, DialogOverlay, DialogPortal, DialogRoot, DialogTitle } from 'reka-ui'
+import { DialogContent, DialogDescription, DialogOverlay, DialogPortal, DialogRoot, DialogTitle } from 'reka-ui'
 import CwaUiButton from './Button.vue'
 import CwaUiAlert from './Alert.vue'
 import XMarkIcon from './icon/XMarkIcon.vue'
@@ -15,6 +15,7 @@ import type { DialogForm, DialogTab } from '../core/ui/dialog-form'
 import { useCwaConfirm } from '#cwa/composables/cwa-confirm'
 
 const SAVED_FOR = 1500
+const SLIDE_OUT_FALLBACK = 400
 
 const props = withDefaults(defineProps<{
   title: string
@@ -25,7 +26,11 @@ const props = withDefaults(defineProps<{
   noun?: string
   createNoun?: string
   loading?: boolean
+  loadFailed?: boolean
   flush?: boolean
+  /** @internal */
+  kind?: { tone: 'static' | 'dynamic' | 'success' | 'warning', label?: string }
+  placement?: 'center' | 'right'
 }>(), {
   size: 'md',
   tabs: undefined,
@@ -34,12 +39,16 @@ const props = withDefaults(defineProps<{
   noun: 'page',
   createNoun: undefined,
   loading: false,
+  loadFailed: false,
   flush: false,
+  kind: undefined,
+  placement: 'center',
 })
 
 const emit = defineEmits<{
   'close': []
   'save': []
+  'retry': []
   'update:tab': [key: string]
 }>()
 
@@ -48,9 +57,15 @@ defineSlots<{
 }>()
 
 const confirm = useCwaConfirm()
-const titleId = useId()
+const titleId = ref<string>()
+const kindEdges = { static: 'cwa:border-type-static', dynamic: 'cwa:border-type-dynamic', success: 'cwa:border-success', warning: 'cwa:border-warning' }
 const tabsId = useId()
 const body = useTemplateRef<HTMLElement>('body')
+
+function focusTitle(event: Event) {
+  event.preventDefault()
+  document.getElementById(titleId.value ?? '')?.focus({ preventScroll: true })
+}
 const presenceLayer = useTemplateRef<HTMLElement>('presenceLayer')
 provide(presenceLayerKey, { el: presenceLayer, align: 'end' })
 const alert = useTemplateRef<InstanceType<typeof CwaUiAlert>>('alert')
@@ -142,18 +157,28 @@ const keptText = computed(() => {
   return n ? `${n} unsaved ${props.noun} ${n === 1 ? 'change' : 'changes'} kept` : undefined
 })
 
+function declaringTab(field: string) {
+  return props.tabs?.find(tab => tab.fields?.[field])
+}
+
+function tabOf(field: string) {
+  return registry.get(field)?.tab ?? declaringTab(field)?.key
+}
+
 function fieldsOf(tab: string) {
-  return [...registry.entries()].filter(([, entry]) => entry.tab === tab).map(([field]) => field)
+  const registered = [...registry.entries()].filter(([, entry]) => entry.tab === tab).map(([field]) => field)
+  const declared = Object.keys(props.tabs?.find(candidate => candidate.key === tab)?.fields ?? {}).filter(field => !registry.has(field))
+  return [...registered, ...declared]
 }
 
 const badges = computed(() => Object.fromEntries((props.tabs ?? []).map(tab => [tab.key, dialogTabBadge(fieldsOf(tab.key), props.form)])))
 
 function labelOf(field: string) {
-  return registry.get(field)?.label ?? field
+  return registry.get(field)?.label ?? declaringTab(field)?.fields?.[field] ?? field
 }
 
 function tabLabelOf(field: string) {
-  const tab = registry.get(field)?.tab
+  const tab = tabOf(field)
   return props.tabs?.find(candidate => candidate.key === tab)?.label
 }
 
@@ -202,8 +227,14 @@ const saveName = computed(() => {
   return unsavedCount.value && !props.form?.saving ? `Save ${unsavedCount.value} unsaved ${unsavedCount.value === 1 ? 'change' : 'changes'}` : undefined
 })
 
-const saveDisabled = computed(() => !props.createNoun && (!unsavedCount.value || !!conflictFields.value.length))
+const saveDisabled = computed(() => props.loading || props.loadFailed || (!props.createNoun && (!unsavedCount.value || !!conflictFields.value.length)))
 const saveReason = computed(() => {
+  if (props.loading) {
+    return 'Still loading.'
+  }
+  if (props.loadFailed) {
+    return loadFailedText.value
+  }
   if (props.createNoun) {
     return undefined
   }
@@ -239,6 +270,39 @@ const alertTitle = computed(() => {
 const alertFields = computed(() => conflictFields.value.length ? conflictFields.value : errorFields.value)
 const hasIssue = computed(() => !!(conflictFields.value.length || errorFields.value.length || props.form?.formError))
 
+const loadFailedText = computed(() => `This ${props.noun} couldn't be loaded.`)
+
+const reducedMotion = !!globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+const arrived = ref(false)
+const edge = computed(() => reducedMotion ? undefined : props.loading ? 'loading' : arrived.value ? 'arrived' : undefined)
+const headerEdge = computed(() => props.loadFailed ? 'cwa:border-danger' : props.kind ? kindEdges[props.kind.tone] : 'cwa:border-line')
+
+watch(() => props.loading, (loading, was) => {
+  arrived.value = !loading && !!was
+  if (loading) {
+    announce(`Loading the ${props.noun}.`)
+  }
+  else if (was) {
+    announce(`${props.title} loaded.`)
+  }
+}, { immediate: true })
+
+const capitalise = (text: string) => `${text.charAt(0).toUpperCase()}${text.slice(1)}`
+
+watch(() => props.form?.savedAt, (savedAt, previous) => {
+  savedAt && savedAt !== previous && announce(`${capitalise(props.noun)} saved.`)
+})
+
+watch(() => props.createNoun, (createNoun, created) => {
+  if (createNoun || !created) {
+    return
+  }
+  const open = props.tabs?.find(candidate => candidate.key === currentTab.value)
+  announce(`${capitalise(created)} created.${open ? ` ${open.label} tab open.` : ''}`)
+})
+
+watch(() => props.loadFailed, failed => failed && announce(loadFailedText.value), { immediate: true })
+
 watch(hasIssue, (issue) => {
   if (!issue) {
     showAlert.value = false
@@ -252,8 +316,8 @@ watch(() => props.form?.failures, async (failures, previous) => {
   showAlert.value = true
   const failed = alertFields.value
   const current = currentTab.value
-  if (failed.length && !failed.some(field => registry.get(field)?.tab === current)) {
-    const first = props.tabs?.find(tab => failed.some(field => registry.get(field)?.tab === tab.key))
+  if (failed.length && !failed.some(field => tabOf(field) === current)) {
+    const first = props.tabs?.find(tab => failed.some(field => tabOf(field) === tab.key))
     first && (currentTab.value = first.key)
   }
   announce(alertTitle.value)
@@ -263,7 +327,7 @@ watch(() => props.form?.failures, async (failures, previous) => {
 })
 
 async function showField(field: string) {
-  const tab = registry.get(field)?.tab
+  const tab = tabOf(field)
   tab && (currentTab.value = tab)
   await nextTick()
   const target = body.value?.querySelector<HTMLElement>(`[data-cwa-field="${CSS.escape(field)}"] :is(input, textarea, button, [tabindex]:not([tabindex="-1"]))`)
@@ -291,11 +355,40 @@ async function confirmDiscard() {
   return true
 }
 
+const closing = ref(false)
+let finishClosing: (() => void) | undefined
+
+function slidesOut() {
+  const media = (query: string) => !!globalThis.matchMedia?.(query).matches
+  return props.placement === 'right' && media('(min-width: 40rem)') && !media('(prefers-reduced-motion: reduce)')
+}
+
+function closed() {
+  return new Promise<void>((resolve) => {
+    const timer = setTimeout(() => finishClosing?.(), SLIDE_OUT_FALLBACK)
+    finishClosing = () => {
+      finishClosing = undefined
+      clearTimeout(timer)
+      emit('close')
+      resolve()
+    }
+  })
+}
+
+function onAnimationEnd(event: AnimationEvent) {
+  event.animationName === 'cwa-slide-over-out' && finishClosing?.()
+}
+
 async function requestClose() {
-  if (confirming || !await confirmDiscard()) {
+  if (closing.value || confirming || !await confirmDiscard()) {
     return false
   }
-  emit('close')
+  if (!slidesOut()) {
+    emit('close')
+    return true
+  }
+  closing.value = true
+  await closed()
   return true
 }
 
@@ -326,7 +419,7 @@ async function selectTab(key: string) {
 function onTabKey(event: KeyboardEvent, index: number) {
   const tabs = props.tabs ?? []
   const moves: Record<string, number> = { ArrowRight: index + 1, ArrowLeft: index - 1, Home: 0, End: tabs.length - 1 }
-  if (!(event.key in moves)) {
+  if (!(event.key in moves) || event.altKey || event.metaKey || event.ctrlKey) {
     return
   }
   event.preventDefault()
@@ -336,6 +429,10 @@ function onTabKey(event: KeyboardEvent, index: number) {
 }
 
 const widths = { sm: 'cwa:sm:w-[28rem]', md: 'cwa:sm:w-[36rem]', lg: 'cwa:sm:w-[48rem]' }
+const centred = 'cwa:sm:inset-auto cwa:sm:top-1/2 cwa:sm:left-1/2 cwa:sm:max-h-[calc(100dvh-4rem)] cwa:sm:max-w-[calc(100vw-2rem)] cwa:sm:-translate-x-1/2 cwa:sm:-translate-y-1/2'
+const slideOver = 'cwa:sm:inset-y-0 cwa:sm:right-0 cwa:sm:left-auto cwa:sm:w-[min(40rem,100vw)]'
+const slideIn = 'cwa:sm:motion-safe:animate-[cwa-slide-over-in_var(--cwa-duration-slow)_var(--cwa-ease-out)]'
+const slideOut = 'cwa:pointer-events-none cwa:sm:motion-safe:animate-[cwa-slide-over-out_var(--cwa-duration-slow)_cubic-bezier(0.8,0,0.8,0.2)_forwards]'
 
 function glyphOf(key: string) {
   const kind = badges.value[key]?.kind
@@ -354,22 +451,47 @@ defineExpose({ requestClose, confirmDiscard, showField, announce })
       <DialogOverlay
         data-testid="dialog-overlay"
         class="cwa:fixed cwa:inset-0 cwa:z-dialog cwa:bg-black/60 cwa:backdrop-blur-sm"
+        :class="{ 'cwa:pointer-events-none cwa:motion-safe:animate-[cwa-fade-out_var(--cwa-duration-slow)_cubic-bezier(0.8,0,0.8,0.2)_forwards]': closing }"
       />
       <DialogContent
-        :aria-labelledby="titleId"
-        :aria-describedby="undefined"
+        v-bind="kind?.label ? {} : { 'aria-describedby': undefined }"
         data-testid="dialog"
-        class="cwa:fixed cwa:inset-0 cwa:z-dialog cwa:flex cwa:flex-col cwa:bg-surface cwa:text-fg cwa:shadow-popover cwa:outline-none cwa:[--cwa-spacing-control:var(--cwa-spacing-control-lg)] cwa:[--cwa-text-control:var(--cwa-text-control-lg)] cwa:sm:inset-auto cwa:sm:top-1/2 cwa:sm:left-1/2 cwa:sm:max-h-[calc(100dvh-4rem)] cwa:sm:max-w-[calc(100vw-2rem)] cwa:sm:-translate-x-1/2 cwa:sm:-translate-y-1/2"
-        :class="widths[size]"
+        :data-placement="placement"
+        :data-closing="closing ? 'true' : undefined"
+        :inert="closing || undefined"
+        class="cwa:fixed cwa:inset-0 cwa:z-dialog cwa:flex cwa:flex-col cwa:bg-surface cwa:text-fg cwa:shadow-popover cwa:outline-none cwa:[--cwa-spacing-control:var(--cwa-spacing-control-lg)] cwa:[--cwa-text-control:var(--cwa-text-control-lg)]"
+        :class="placement === 'right' ? [slideOver, closing ? slideOut : slideIn] : [centred, widths[size]]"
+        @open-auto-focus="focusTitle"
+        @animationend="onAnimationEnd"
       >
-        <header class="cwa:flex cwa:h-[3.75rem] cwa:shrink-0 cwa:items-center cwa:gap-2 cwa:ps-6 cwa:pe-3">
+        <header
+          data-testid="dialog-header"
+          class="cwa:relative cwa:flex cwa:h-[3.75rem] cwa:shrink-0 cwa:items-center cwa:gap-1 cwa:border-b-3 cwa:border-solid cwa:ps-6 cwa:pe-3"
+          :class="headerEdge"
+        >
+          <span
+            v-if="edge"
+            data-testid="dialog-edge"
+            aria-hidden="true"
+            class="cwa:dialog-edge"
+            :data-edge="edge"
+          />
           <DialogTitle
-            :id="titleId"
+            :ref="(title) => { titleId = (title as { $el?: HTMLElement } | null)?.$el?.id }"
             as="h2"
-            class="cwa:m-0 cwa:min-w-0 cwa:flex-1 cwa:truncate cwa:text-title cwa:text-fg"
+            tabindex="-1"
+            class="cwa:m-0 cwa:me-2 cwa:min-w-0 cwa:flex-1 cwa:truncate cwa:text-title cwa:text-fg cwa:outline-none"
           >
             {{ title }}
           </DialogTitle>
+          <DialogDescription
+            v-if="kind?.label"
+            as="span"
+            data-testid="dialog-kind"
+            class="cwa:me-2 cwa:shrink-0 cwa:text-helper cwa:text-fg-muted"
+          >
+            {{ kind.label }}
+          </DialogDescription>
           <slot name="header-actions" />
           <button
             type="button"
@@ -378,9 +500,10 @@ defineExpose({ requestClose, confirmDiscard, showField, announce })
             class="cwa:grid cwa:size-hit cwa:shrink-0 cwa:cursor-pointer cwa:place-items-center cwa:text-fg cwa:outline-1 cwa:outline-transparent cwa:transition-colors cwa:duration-(--cwa-duration-fast) cwa:hover:bg-button cwa:focus-visible:outline-2 cwa:focus-visible:-outline-offset-2 cwa:focus-visible:outline-accent-fg"
             @click="requestClose"
           >
-            <XMarkIcon class="cwa:size-5" />
+            <XMarkIcon class="cwa:size-6" />
           </button>
         </header>
+        <slot name="subheader" />
         <div
           v-if="tabs?.length"
           role="tablist"
@@ -430,9 +553,24 @@ defineExpose({ requestClose, confirmDiscard, showField, announce })
           <div
             v-if="loading"
             class="cwa:grid cwa:min-h-40 cwa:place-items-center"
+            data-testid="dialog-loading"
           >
             <Spinner size="md" />
           </div>
+          <CwaUiAlert
+            v-else-if="loadFailed"
+            tone="danger"
+            :title="loadFailedText"
+            data-testid="dialog-load-failed"
+          >
+            <template #actions>
+              <CwaUiButton
+                label="Retry"
+                data-testid="dialog-load-retry"
+                @click="emit('retry')"
+              />
+            </template>
+          </CwaUiAlert>
           <template v-else>
             <CwaUiAlert
               v-if="showAlert && hasIssue"

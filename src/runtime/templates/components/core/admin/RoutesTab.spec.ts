@@ -25,6 +25,10 @@ mockNuxtImport('navigateTo', () => mockNavigateTo)
 
 vi.mock('#cwa-layer/_composables/useItemPage', () => ({ useItemPage: mockUseItemPage }))
 vi.mock('#cwa/composables/cwa-confirm', () => ({ useCwaConfirm: () => confirmMock }))
+const realtime = vi.hoisted(() => ({ peers: vi.fn((_iri: string): unknown[] => []) }))
+vi.mock('#cwa/resources/realtime-view', () => ({
+  realtimeView: () => ({ load: async () => ({ peers: realtime.peers }) }),
+}))
 
 enableAutoUnmount(afterEach)
 
@@ -124,6 +128,14 @@ describe('RoutesTab', () => {
   })
 
   describe('the main view', () => {
+    test('a route added here keeps the dialog on its page or page data, never opening the route in its place (#461)', async () => {
+      setupItemPage()
+      mockCwa()
+      mountTab()
+      await flushPromises()
+      expect(mockUseItemPage).toHaveBeenCalledWith(expect.objectContaining({ createEndpoint: '/_/routes', openCreated: false }))
+    })
+
     test('summarises redirects and child routes from the route and its children', async () => {
       setupItemPage({ redirectedFrom: [{ '@id': '/_/routes//old', 'path': '/old', 'redirectedFrom': [{ '@id': '/_/routes//older', 'path': '/older' }] }] })
       const cwa = mockCwa()
@@ -219,6 +231,14 @@ describe('RoutesTab', () => {
       expect(wrapper.findComponent(RoutesTabView).props('recommendedPath')).toBe(expected)
     })
 
+    test('tells both route views which title the recommendation is based on', async () => {
+      setupItemPage()
+      mockCwa()
+      const wrapper = mountTab({ title: 'My Great Programme', parentPage: null })
+      await flushPromises()
+      expect(wrapper.findComponent(RoutesTabView).props('recommendedFrom')).toBe('My Great Programme')
+    })
+
     test('Use this opens the route form with the recommended path filled in, and saves nothing', async () => {
       const itemPage = setupItemPage()
       mockCwa()
@@ -271,6 +291,21 @@ describe('RoutesTab', () => {
 
       expect(itemPage.saveResource).toHaveBeenCalledWith(false, undefined)
       expect(confirmMock).not.toHaveBeenCalled()
+    })
+
+    test.each(['/spring?sale', '/spring#sale'])('a path “%s” cannot be saved, and says why', async (path) => {
+      const itemPage = setupItemPage()
+      mockCwa()
+      const wrapper = mountTab()
+      await flushPromises()
+      await openSub(wrapper, 'route')
+      itemPage.localResourceData.value.path = path
+      await flushPromises()
+
+      expect(save(wrapper).attributes('title')).toBe('A path can\'t contain ? or #. They start a query or a page anchor.')
+      await save(wrapper).trigger('click')
+      await flushPromises()
+      expect(itemPage.saveResource).not.toHaveBeenCalled()
     })
 
     test('scheduled with no date yet cannot be saved, and says why', async () => {
@@ -543,6 +578,44 @@ describe('RoutesTab', () => {
   })
 
   describe('deleting the route', () => {
+    test('when who is editing cannot be read, the route delete still asks, without naming anyone', async () => {
+      setupItemPage()
+      mockCwa({ fetch: vi.fn(() => ({ response: Promise.resolve({ _data: { children: [] } }) })) })
+      confirmMock.mockResolvedValueOnce(false)
+      realtime.peers.mockImplementationOnce(() => {
+        throw new Error('chunk failed')
+      })
+      const wrapper = mountTab()
+      await flushPromises()
+      await openSub(wrapper, 'route')
+
+      await wrapper.findComponent(RoutesTabManage).vm.$emit('delete')
+      await vi.dynamicImportSettled()
+      await flushPromises()
+
+      expect(confirmMock.mock.calls[0]![0].lines).toEqual([{ text: 'Visitors to /conference/programme get “Page not found”.' }])
+    })
+
+    test('names the other admins editing the route first', async () => {
+      setupItemPage()
+      mockCwa({ fetch: vi.fn(() => ({ response: Promise.resolve({ _data: { children: [] } }) })) })
+      confirmMock.mockResolvedValueOnce(false)
+      realtime.peers.mockReturnValueOnce([{ user: { id: '/users/sam' }, name: 'Sam', idle: false }, { user: { id: '/users/kim' }, name: 'Kim', idle: false }])
+      const wrapper = mountTab()
+      await flushPromises()
+      await openSub(wrapper, 'route')
+
+      await wrapper.findComponent(RoutesTabManage).vm.$emit('delete')
+      await vi.dynamicImportSettled()
+      await flushPromises()
+
+      expect(realtime.peers).toHaveBeenCalledWith(ROUTE_IRI)
+      expect(confirmMock.mock.calls[0]![0].lines).toEqual([
+        { text: 'Sam and Kim are editing this.' },
+        { text: 'Visitors to /conference/programme get “Page not found”.' },
+      ])
+    })
+
     test('asks with a simple confirm when nothing depends on it, then deletes and says so', async () => {
       const itemPage = setupItemPage()
       mockCwa({ fetch: vi.fn(() => ({ response: Promise.resolve({ _data: { children: [] } }) })) })
@@ -806,7 +879,36 @@ describe('RoutesTab', () => {
       expect(cwa.resourcesManager.createResource).not.toHaveBeenCalled()
     })
 
-    test.each(['old-shaker', '/old shaker'])('“%s” is checked before sending and the reason shown', async (typed) => {
+    test('an old address typed with spaces is sent with a hyphen for each run', async () => {
+      setupItemPage()
+      const cwa = mockCwa()
+      const wrapper = mountTab()
+      await openSub(wrapper, 'from')
+      await wrapper.find('[data-testid="route-redirect-add"]').trigger('click')
+      await wrapper.find('input').setValue(' /old  shaker ')
+
+      await save(wrapper).trigger('click')
+      await flushPromises()
+
+      expect(cwa.resourcesManager.createResource).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ path: '/old-shaker', name: '/old-shaker' }) }))
+    })
+
+    test.each(['/old?shaker', '/old#shaker'])('an old address “%s” cannot be added, and says why', async (typed) => {
+      setupItemPage()
+      const cwa = mockCwa()
+      const wrapper = mountTab()
+      await openSub(wrapper, 'from')
+      await wrapper.find('[data-testid="route-redirect-add"]').trigger('click')
+      await wrapper.find('input').setValue(typed)
+      await flushPromises()
+
+      expect(save(wrapper).attributes('title')).toBe('A path can\'t contain ? or #. They start a query or a page anchor.')
+      await save(wrapper).trigger('click')
+      await flushPromises()
+      expect(cwa.resourcesManager.createResource).not.toHaveBeenCalled()
+    })
+
+    test.each(['old-shaker'])('“%s” is checked before sending and the reason shown', async (typed) => {
       setupItemPage()
       const cwa = mockCwa()
       const wrapper = mountTab()
@@ -818,7 +920,7 @@ describe('RoutesTab', () => {
       await flushPromises()
 
       expect(cwa.resourcesManager.createResource).not.toHaveBeenCalled()
-      expect(wrapper.find('[data-testid="input-invalid"]').text()).toBe('Start with / and leave out spaces, for example /old-kitchens.')
+      expect(wrapper.find('[data-testid="input-invalid"]').text()).toBe('Start with /, for example /old-kitchens.')
     })
 
     test('a failed add keeps what was typed under an alert', async () => {
@@ -859,6 +961,23 @@ describe('RoutesTab', () => {
       })
       expect(cwa.resourcesManager.deleteResource).toHaveBeenCalledWith({ endpoint: '/_/routes//shaker', requestCompleteFn: expect.any(Function) }, true)
       expect(wrapper.find('[data-testid="routes-status"]').text()).toBe('/shaker no longer redirects here.')
+    })
+
+    test('deleting an old address names the other admins editing it first', async () => {
+      const single = { '@id': '/_/routes//old', 'path': '/old', 'redirectedFrom': [] }
+      setupItemPage({ redirectedFrom: [single] })
+      mockCwa()
+      confirmMock.mockResolvedValueOnce(false)
+      realtime.peers.mockReturnValueOnce([{ user: { id: '/users/sam' }, name: 'Sam', idle: false }])
+      const wrapper = mountTab()
+      await openSub(wrapper, 'from')
+
+      await wrapper.findComponent(RoutesTabRedirects).vm.$emit('delete', single)
+      await vi.dynamicImportSettled()
+      await flushPromises()
+
+      expect(realtime.peers).toHaveBeenCalledWith('/_/routes//old')
+      expect(confirmMock.mock.calls[0]![0].lines[0]).toEqual({ text: 'Sam is editing this.' })
     })
 
     test('an old address still there after deleting shows an alert with Retry', async () => {

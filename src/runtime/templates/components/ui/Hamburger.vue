@@ -1,7 +1,10 @@
 <template>
-  <a
-    class="cwa:inline-block cwa:h-6"
+  <button
+    type="button"
+    class="cwa:inline-block cwa:h-6 cwa:cursor-pointer cwa:rounded-sm cwa:outline-1 cwa:outline-transparent cwa:outline-offset-4 cwa:focus-visible:outline-2 cwa:focus-visible:outline-white"
     :class="{ 'is-open': model }"
+    :aria-expanded="model ? 'true' : 'false'"
+    :aria-controls="controls"
     @click.stop="toggleMenu"
   >
     <span class="cwa:sr-only">Menu</span>
@@ -61,10 +64,12 @@
         />
       </g>
     </svg>
-  </a>
+  </button>
 </template>
 
 <script setup lang="ts">
+defineProps<{ controls?: string }>()
+
 const model = defineModel<boolean>({
   required: true,
   default: false,
