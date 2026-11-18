@@ -167,7 +167,7 @@
             class="cwa:m-0 cwa:mt-1.5 cwa:break-all cwa:font-mono cwa:text-control cwa:text-fg-secondary"
             data-testid="user-id"
           >
-            {{ localResourceData['@id'] }}
+            {{ localResourceData?.['@id'] }}
           </dd>
         </dl>
       </CwaUiFormSection>

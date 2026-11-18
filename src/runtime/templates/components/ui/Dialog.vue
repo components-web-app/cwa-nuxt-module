@@ -53,7 +53,7 @@ defineSlots<{
 }>()
 
 const confirm = useCwaConfirm()
-const titleId = useId()
+const titleId = ref<string>()
 const kindId = useId()
 const kindEdges = { static: 'cwa:border-type-static', dynamic: 'cwa:border-type-dynamic', success: 'cwa:border-success', warning: 'cwa:border-warning' }
 const tabsId = useId()
@@ -379,7 +379,6 @@ defineExpose({ requestClose, confirmDiscard, showField, announce })
         class="cwa:fixed cwa:inset-0 cwa:z-dialog cwa:bg-black/60 cwa:backdrop-blur-sm"
       />
       <DialogContent
-        :aria-labelledby="titleId"
         :aria-describedby="kind?.label ? kindId : undefined"
         data-testid="dialog"
         :data-placement="placement"
@@ -392,7 +391,7 @@ defineExpose({ requestClose, confirmDiscard, showField, announce })
           :class="kind ? kindEdges[kind.tone] : 'cwa:border-line'"
         >
           <DialogTitle
-            :id="titleId"
+            :ref="(title) => { titleId = (title as { $el?: HTMLElement } | null)?.$el?.id }"
             as="h2"
             tabindex="-1"
             class="cwa:m-0 cwa:me-2 cwa:min-w-0 cwa:flex-1 cwa:truncate cwa:text-title cwa:text-fg cwa:outline-none"

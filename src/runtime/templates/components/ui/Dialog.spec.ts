@@ -97,6 +97,17 @@ describe('CwaUiDialog and the Save model (#461)', () => {
     expect(qa('footer button').map(shown)).toEqual(['Cancel', 'Save'])
   })
 
+  test.each([true, false])('opens with its title as reka\'s DialogTitle, so reka logs no warning (loading: %s)', async (loading) => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    mountDialog(form, { loading, placement: 'right' })
+    await flushPromises()
+
+    expect(warn.mock.calls.filter(call => String(call[0]).includes('DialogTitle'))).toEqual([])
+    expect(document.getElementById(dialog().getAttribute('aria-labelledby')!)?.textContent?.trim()).toBe('Kitchens')
+    expect(q('[role="tablist"]')!.getAttribute('aria-labelledby')).toBe(dialog().getAttribute('aria-labelledby'))
+    warn.mockRestore()
+  })
+
   test('while its resource loads the dialog is already open with its header and footer: the body is busy with a spinner, the loading is announced, and Save stays off even with a change waiting', async () => {
     const loading = ref(true)
     const Host = defineComponent({

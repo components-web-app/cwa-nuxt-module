@@ -1,6 +1,6 @@
 // @vitest-environment nuxt
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
-import { defineComponent, h, provide, ref } from 'vue'
+import { computed, defineComponent, h, provide, reactive, ref } from 'vue'
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { mockNuxtImport } from '@nuxt/test-utils/runtime'
 import PageResourceAdminModal from './PageResourceAdminModal.vue'
@@ -101,6 +101,7 @@ function setup(opts: {
   fetchData?: (path: string) => unknown
   attach?: boolean
   loading?: boolean
+  fetchResource?: (props: { path: string }) => Promise<unknown>
 } = {}) {
   const iri = opts.iri ?? opts.routeIri ?? '/_/pages/uuid-self'
   routeState.route.params = opts.routeIri ? { iri: opts.routeIri } : {}
@@ -145,8 +146,9 @@ function setup(opts: {
   })
   mockUseDataType.mockReturnValue({ pageDataConfig: ref(opts.pageDataConfig ?? null) })
 
-  const storedData = { ...opts.routes, ...opts.stored }
-  const getResource = vi.fn((resourceIri: string) => ref(storedData[resourceIri] ? { data: storedData[resourceIri] } : null))
+  const storedData = reactive<Record<string, any>>({ ...opts.routes, ...opts.stored })
+  const getResource = vi.fn((resourceIri: string) => computed(() => storedData[resourceIri] ? { data: storedData[resourceIri] } : null))
+  const fetchResource = vi.fn(opts.fetchResource ?? (async () => undefined))
   vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => ({
     resources: {
       displayPageIri: ref(opts.displayPageIri),
@@ -154,6 +156,7 @@ function setup(opts: {
     },
     fetch: vi.fn(({ path }: { path: string }) => ({ response: Promise.resolve({ _data: opts.fetchData ? opts.fetchData(path) : path.startsWith('/_/layouts') ? { member: opts.layouts ?? [{ '@id': '/_/layouts/default', 'reference': 'Default' }] } : null }) })),
     getApiDocumentation: vi.fn(() => opts.apiDocumentation ?? Promise.resolve({ entrypoint: { blogArticleData: '/page_data/blog_article_datas' } })),
+    fetchResource,
     pagesConfig: opts.pagesConfig ?? {},
     pageDataConfig: opts.pageDataTypes ?? {},
     admin: { toggleEdit: vi.fn() },
@@ -171,7 +174,7 @@ function setup(opts: {
     },
   })
 
-  return { wrapper, handlers, form, localResourceData }
+  return { wrapper, handlers, form, localResourceData, storedData, fetchResource }
 }
 
 function setupPageData(opts: Parameters<typeof setup>[0] = {}) {
@@ -406,6 +409,39 @@ describe('PageResourceAdminModal on the kit dialog (#461)', () => {
   test('public without a route is not a Details field: it lives on the Routes tab, with the route it stands in for (bundle#381)', () => {
     expect(field(setup().wrapper, Toggle, 'Public without a route')).toBeUndefined()
     expect(field(setupPageData().wrapper, Toggle, 'Public without a route')).toBeUndefined()
+  })
+
+  test('a parent not loaded yet is fetched once, so the depths name it; its IRI stands in while it loads or if it fails, and its own parent follows', async () => {
+    const answers: Record<string, () => void> = {}
+    const { wrapper, storedData, fetchResource } = setup({
+      stored: { '/_/pages/uuid-self': { '@id': '/_/pages/uuid-self', 'reference': 'Child', 'parentPage': '/_/pages/parent' } },
+      fetchResource: ({ path }) => new Promise<void>((resolve) => {
+        answers[path] = resolve
+      }),
+    })
+    await flushPromises()
+    const options = () => field(wrapper, Segmented, 'Editing').props('options').map((option: { label: string }) => option.label)
+
+    expect(fetchResource).toHaveBeenCalledTimes(1)
+    expect(fetchResource).toHaveBeenCalledWith(expect.objectContaining({ path: '/_/pages/parent' }))
+    expect(options()).toEqual(['/_/pages/parent', 'Child'])
+
+    storedData['/_/pages/parent'] = { '@id': '/_/pages/parent', 'reference': 'Parent', 'parentPage': '/_/pages/grandparent' }
+    answers['/_/pages/parent']!()
+    await flushPromises()
+    expect(options()).toEqual(['/_/pages/grandparent', 'Parent', 'Child'])
+    expect(fetchResource).toHaveBeenCalledWith(expect.objectContaining({ path: '/_/pages/grandparent' }))
+
+    answers['/_/pages/grandparent']!()
+    await flushPromises()
+    expect(options()).toEqual(['/_/pages/grandparent', 'Parent', 'Child'])
+    expect(fetchResource).toHaveBeenCalledTimes(2)
+  })
+
+  test('a new page fetches nothing for its depths', async () => {
+    const { fetchResource } = setup({ routeIri: 'add', isAdding: true })
+    await flushPromises()
+    expect(fetchResource).not.toHaveBeenCalled()
   })
 
   test('switching the depth being edited asks the dialog to confirm discarding unsaved edits, and switches only on Discard; a long chain scrolls sideways under the header instead of widening the dialog', async () => {

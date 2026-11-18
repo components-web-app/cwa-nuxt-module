@@ -45,7 +45,7 @@
         data-testid="layout-unresolvable"
       >
         <p class="cwa:m-0">
-          The component '{{ unresolvableUiComponent }}' for resource '{{ localResourceData['@id'] }}' cannot be resolved. Pages using it show the default layout until another is chosen.
+          The component '{{ unresolvableUiComponent }}' for resource '{{ localResourceData?.['@id'] }}' cannot be resolved. Pages using it show the default layout until another is chosen.
         </p>
       </CwaUiAlert>
     </template>
@@ -59,7 +59,7 @@
             class="cwa:m-0 cwa:mt-1.5 cwa:break-all cwa:font-mono cwa:text-control cwa:text-fg-secondary"
             data-testid="layout-id"
           >
-            {{ localResourceData['@id'] }}
+            {{ localResourceData?.['@id'] }}
           </dd>
         </dl>
       </CwaUiFormSection>
