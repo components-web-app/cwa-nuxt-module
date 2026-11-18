@@ -29,6 +29,9 @@ export interface CwaResourceMeta {
   defaultData?: Record<any, any>
   managerTabs?: ManagerTab[]
   ui?: ComponentUi[]
+}
+
+export interface CwaResourceConfig extends CwaResourceMeta {
   icon?: CwaComponentKind | `lucide:${LucideIconName}`
   group?: string
   image?: string
@@ -36,6 +39,10 @@ export interface CwaResourceMeta {
 
 export interface CwaResourcesMeta {
   [type: string]: CwaResourceMeta
+}
+
+export interface CwaResourcesConfig {
+  [type: string]: CwaResourceConfig
 }
 
 export interface CwaUiMeta {
@@ -63,7 +70,7 @@ export type SiteConfigParams = {
 export interface CwaModuleOptions {
   storeName: string
   siteConfig: Partial<SiteConfigParams>
-  resources: CwaResourcesMeta
+  resources: CwaResourcesConfig
   pagesDepth?: number
   routeCacheLimit?: number
   staticRender?: boolean
@@ -103,4 +110,8 @@ export interface CwaModuleOptions {
     }
   }
   layoutName?: string
+}
+
+export type CwaRuntimeOptions = Omit<CwaModuleOptions, 'resources'> & {
+  resources: CwaResourcesMeta
 }

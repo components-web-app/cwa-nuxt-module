@@ -3,7 +3,7 @@ import { computed, getCurrentInstance, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 import type { CwaResourceMeta } from '#cwa/composables/cwa-resource'
 import { useDataResolver } from '#cwa/templates/components/core/useDataResolver'
-import { mergeSelectedStyles } from '#cwa/composables/cwa-styles'
+import { deriveSelectedStyles, mergeSelectedStyles } from '#cwa/composables/cwa-styles'
 import { NEW_RESOURCE_IRI } from '#cwa/storage/stores/resources/state'
 import type { MenuItem } from '#cwa/templates/components/core/ui/menu-entries'
 import type { ManagerTab } from '#cwa/types'
@@ -15,12 +15,16 @@ const props = defineProps<{
   ui: string[]
 }>()
 
-const uiComponent = defineModel<string | null>('uiComponent', { default: null })
-const uiClassNames = defineModel<string[]>('uiClassNames', { default: () => [] })
+const uiComponent = defineModel<string | null | undefined>('uiComponent')
+const uiClassNames = defineModel<string[] | undefined>('uiClassNames')
+const defaultClassNames = [...(uiClassNames.value ?? [])]
 
 const globals = getCurrentInstance()?.appContext.components ?? {}
 const main = computed(() => `CwaComponent${props.name}`)
-const resolvable = computed(() => [main.value, ...props.ui].filter(name => !!globals[name]))
+const resolvable = computed<string[]>((previous) => {
+  const names = [main.value, ...props.ui].filter(name => !!globals[name])
+  return previous?.join() === names.join() ? previous : names
+})
 const meta = ref<(CwaResourceMeta | null)[]>([])
 
 useDataResolver(meta, {
@@ -48,12 +52,20 @@ const styleClasses = computed(() => styles.value?.classes ?? {})
 const styleOptions = computed<MenuItem[]>(() => Object.keys(styleClasses.value).map(name => ({ label: name, value: name })))
 const chosenStyles = ref<string[]>([])
 
-watch(uiComponent, () => {
-  chosenStyles.value = []
-})
+watch(() => uiOptions.value.length > 0, (shown) => {
+  if (shown && uiComponent.value === undefined) {
+    uiComponent.value = null
+  }
+}, { immediate: true })
+
+watch(styleClasses, (classes) => {
+  chosenStyles.value = deriveSelectedStyles(defaultClassNames, classes)
+}, { immediate: true })
 
 watch([chosenStyles, styleClasses], () => {
-  uiClassNames.value = mergeSelectedStyles(chosenStyles.value, styleClasses.value)
+  if (styleOptions.value.length) {
+    uiClassNames.value = mergeSelectedStyles(chosenStyles.value, styleClasses.value)
+  }
 }, { immediate: true, deep: true })
 
 const singleStyle = computed({

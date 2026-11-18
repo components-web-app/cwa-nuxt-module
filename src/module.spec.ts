@@ -292,7 +292,7 @@ describe('CWA module', () => {
         })
         const { lastCall: [{ getContents }] } = (nuxtKit.addTemplate as Mock).mock
         const contents = await getContents({ app: { components: [] } })
-        return JSON.parse(contents.split('export const options:CwaModuleOptions = ')[1].split('\nexport const')[0]).staticRender
+        return JSON.parse(contents.split('export const options:CwaRuntimeOptions = ')[1].split('\nexport const')[0]).staticRender
       }
 
       test('is false when the app has no routeRules', async () => {
@@ -345,7 +345,7 @@ describe('CWA module', () => {
         })
         const { lastCall: [{ getContents }] } = (nuxtKit.addTemplate as Mock).mock
         const contents = await getContents({ app: { components: [] } })
-        const generated = JSON.parse(contents.split('export const options:CwaModuleOptions = ')[1].split('\nexport const')[0])
+        const generated = JSON.parse(contents.split('export const options:CwaRuntimeOptions = ')[1].split('\nexport const')[0])
         const registered = (nuxtKit.addPlugin as Mock).mock.calls.some(([plugin]) => plugin.src === pluginSrc)
         return { mockNuxt, generated, registered }
       }
@@ -466,8 +466,8 @@ describe('CWA module', () => {
         },
       ]
 
-      expect(await getContents({ app: { components } })).toEqual(`import type { CwaModuleOptions } from '#cwa/types';
-export const options:CwaModuleOptions = {
+      expect(await getContents({ app: { components } })).toEqual(`import type { CwaRuntimeOptions } from '#cwa/types';
+export const options:CwaRuntimeOptions = {
   "mock": true,
   "foo": "bar",
   "resources": {

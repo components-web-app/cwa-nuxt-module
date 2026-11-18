@@ -115,6 +115,23 @@ describe('the admin resources template', () => {
     expect(adminResources.Hero).toEqual({ group: 'Layout', image: '/previews/hero.webp' })
   })
 
+  test.each(['/previews/hero.webp', '//cdn.example.com/hero.webp', 'https://cdn.example.com/hero.webp', 'http://cdn.example.com/hero.webp', 'HTTPS://cdn.example.com/hero.webp'])('an image URL %s is used as given', async (image) => {
+    const { adminResources, imports } = await load(generate({ Hero: { image } }).source)
+
+    expect(imports).toEqual([])
+    expect(adminResources.Hero).toEqual({ image })
+  })
+
+  test.each(['~/assets/hero.webp', '@/assets/hero.webp', 'assets/hero.webp', './hero.webp'])('any other image, %s, is imported as an asset', async (image) => {
+    const { adminResources, imports } = await load(generate(
+      { Hero: { image } },
+      { Hero: '/app/cwa/components/Hero/preview.webp' },
+    ).source)
+
+    expect(imports).toEqual([image])
+    expect(adminResources.Hero).toEqual({ image: `asset:${image}` })
+  })
+
   test('a preview.webp is imported as an asset when no image is configured', async () => {
     const { adminResources, imports } = await load(generate(
       { Hero: {}, Card: { image: '/card.webp' } },

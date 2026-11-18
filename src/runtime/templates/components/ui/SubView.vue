@@ -61,8 +61,18 @@ watch(() => open, async (isOpen, wasOpen) => {
   opener = null
 })
 
+function layerAbove() {
+  const scope = keyScope
+  return !!scope && [...document.querySelectorAll<HTMLElement>('[data-dismissable-layer]')].some(layer => layer !== scope
+    && !layer.closest('[hidden]')
+    && !!(scope.compareDocumentPosition(layer) & Node.DOCUMENT_POSITION_FOLLOWING))
+}
+
 function onKeydown(event: KeyboardEvent) {
   if (event.defaultPrevented) {
+    return
+  }
+  if ((event.target as Element | null)?.closest?.('[aria-expanded="true"]') || layerAbove()) {
     return
   }
   if (event.key === 'Escape' || (event.altKey && event.key === 'ArrowLeft')) {

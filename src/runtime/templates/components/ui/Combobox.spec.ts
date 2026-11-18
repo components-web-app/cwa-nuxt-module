@@ -161,6 +161,73 @@ describe('CwaUiCombobox, inline-open (#461)', () => {
     expect(onLeaveTop).toHaveBeenCalledTimes(1)
   })
 
+  test('Up from the first option leaves the top even when it was highlighted on opening', async () => {
+    const { onLeaveTop } = mountCombobox({ upLeaves: true })
+    await flushPromises()
+
+    expect(highlighted()).toBe('RichText')
+    const event = await key('ArrowUp')
+
+    expect(onLeaveTop).toHaveBeenCalledTimes(1)
+    expect(event.defaultPrevented).toBe(true)
+  })
+
+  test('Up from the first option wraps to the last when nothing is above', async () => {
+    const { onLeaveTop } = mountCombobox()
+    await flushPromises()
+
+    await key('ArrowUp')
+
+    expect(onLeaveTop).not.toHaveBeenCalled()
+    expect(highlighted()).toBe('Image')
+  })
+
+  test('the highlight stays when the pointer leaves the list, so Enter still chooses it', async () => {
+    const { onChoose } = mountCombobox()
+    await flushPromises()
+    options()[1]!.dispatchEvent(new Event('pointermove'))
+    await flushPromises()
+
+    input().closest('[data-testid="combobox"]')!.querySelector('[dir]')!.dispatchEvent(new PointerEvent('pointerleave'))
+    await flushPromises()
+
+    expect(highlighted()).toBe('Button')
+    await key('Enter')
+    expect(onChoose).toHaveBeenCalledWith('Button')
+  })
+
+  test('the highlight comes back when focus returns to the search', async () => {
+    const { onChoose } = mountCombobox()
+    await flushPromises()
+    const outside = document.createElement('button')
+    document.body.appendChild(outside)
+    input().focus()
+    await key('ArrowDown')
+
+    outside.focus()
+    await flushPromises()
+    input().focus()
+    await flushPromises()
+    outside.remove()
+
+    expect(highlighted()).toBe('Button')
+    await key('Enter')
+    expect(onChoose).toHaveBeenCalledWith('Button')
+  })
+
+  test('Home and End without Ctrl move the caret in the search, not the highlight', async () => {
+    mountCombobox()
+    await flushPromises()
+    await key('ArrowDown')
+
+    const home = await key('Home')
+    const end = await key('End')
+
+    expect(home.defaultPrevented).toBe(false)
+    expect(end.defaultPrevented).toBe(false)
+    expect(highlighted()).toBe('Button')
+  })
+
   test('typing highlights the first result and the match is bold', async () => {
     const { sections } = mountCombobox()
     await flushPromises()
@@ -178,6 +245,17 @@ describe('CwaUiCombobox, inline-open (#461)', () => {
     expect(options()[0]!.querySelector('mark')!.textContent).toBe('Ima')
   })
 
+  test('a search highlights its first result without the keyboard focus ring', async () => {
+    mountCombobox()
+    await flushPromises()
+    await key('ArrowDown')
+
+    await type('i')
+
+    expect(highlighted()).toBe('RichText')
+    expect(options()[0]!.className).not.toContain('cwa:outline-accent-fg')
+  })
+
   test('the count is announced once typing settles, never per keystroke', async () => {
     vi.useFakeTimers()
     const { announce } = mountCombobox()
@@ -190,6 +268,39 @@ describe('CwaUiCombobox, inline-open (#461)', () => {
     vi.advanceTimersByTime(1)
 
     expect(announce).toHaveBeenCalledTimes(1)
+    expect(announce).toHaveBeenCalledWith('3 components')
+    vi.useRealTimers()
+  })
+
+  test('the count is announced whenever the search changes, also when it is cleared without typing', async () => {
+    vi.useFakeTimers()
+    const { query, announce } = mountCombobox()
+    await flushPromises()
+
+    query.value = 'ima'
+    await flushPromises()
+    vi.advanceTimersByTime(400)
+    query.value = ''
+    await flushPromises()
+    vi.advanceTimersByTime(400)
+
+    expect(announce).toHaveBeenCalledTimes(2)
+    expect(announce).toHaveBeenLastCalledWith('3 components')
+    vi.useRealTimers()
+  })
+
+  test('Escape clearing the search announces the count', async () => {
+    vi.useFakeTimers()
+    const { query, announce } = mountCombobox()
+    await flushPromises()
+    query.value = 'ima'
+    await flushPromises()
+    vi.advanceTimersByTime(400)
+    announce.mockClear()
+
+    await key('Escape')
+    vi.advanceTimersByTime(400)
+
     expect(announce).toHaveBeenCalledWith('3 components')
     vi.useRealTimers()
   })
