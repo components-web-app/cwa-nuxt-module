@@ -17,6 +17,7 @@ overrides:
   '@tailwindcss/typography>postcss-selector-parser': ^7.1.6
 auditConfig:
   ignoreGhsas:
+    - GHSA-fc5q-39xc-vjpf
     - GHSA-gcqx-w48m-w2h4
     - GHSA-g3hv-75wg-m249
     - GHSA-3g3m-2fjr-6pw4

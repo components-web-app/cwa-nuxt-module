@@ -134,6 +134,23 @@ Until then a 404 is the normal answer, not a fault.
 
 ---
 
+## Remove when picomatch has a patched release
+
+### The ignored picomatch advisory in `pnpm-workspace.yaml`
+
+`auditConfig.ignoreGhsas` ignores `GHSA-fc5q-39xc-vjpf` (high, picomatch
+`<=4.0.7`, ReDoS through single-branch repeated extglobs). No patched version
+exists. picomatch 2 and 4 arrive through build, test and dev tooling (Vite,
+Nuxt's builders, devtools) and through `anymatch` in unstorage's `fs` driver,
+which matches only the `ignore` globs from the app's own config, never request
+input. Nothing in `src/runtime` or `src/layer` imports it.
+
+**Delete:** the ID.
+
+**When:** `pnpm audit` passes without it after `pnpm up --latest`.
+
+---
+
 ## Remove when Nuxt's build tooling takes minimatch 11 and glob 14
 
 ### The ignored minimatch and glob advisories in `pnpm-workspace.yaml`
