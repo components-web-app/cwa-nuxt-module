@@ -13,10 +13,9 @@ const { open, title = '', backLabel, initialFocus, returnFocus, padded = false }
 const emit = defineEmits<{ back: [] }>()
 
 defineSlots<{
-  'main'?: () => any
-  'lead'?: () => any
-  'title-after'?: () => any
-  'default'?: () => any
+  main?: () => any
+  lead?: () => any
+  default?: () => any
 }>()
 
 const titleId = useId()
@@ -140,7 +139,6 @@ function onKeydown(event: KeyboardEvent) {
           >
             {{ title }}
           </h3>
-          <slot name="title-after" />
         </div>
       </div>
       <slot />

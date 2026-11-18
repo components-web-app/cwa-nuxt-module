@@ -245,7 +245,7 @@ describe('the add component dialog (#461)', () => {
       expect(shown(q('[data-testid="add-component-target"]'))).toBe('To Main content, at the start')
     })
 
-    test('the components already in the group are chips, and the list never repeats them', async () => {
+    test('the components already in the group are chips, and are still in the list below', async () => {
       await mountDialog()
       await openDialog()
 
@@ -254,8 +254,8 @@ describe('the add component dialog (#461)', () => {
       expect(document.getElementById(q('[data-testid="add-component-quick"]')!.getAttribute('aria-labelledby')!)!.textContent!.trim()).toBe('Already in this group')
       const image = qa('[data-testid="add-component-chip"]')[0]!
       expect(document.getElementById(image.getAttribute('aria-describedby')!)!.textContent).toBe('2 here')
-      expect(optionValues()).not.toContain('Image')
-      expect(optionValues()).not.toContain('HtmlContent')
+      expect(optionValues()).toContain('Image')
+      expect(optionValues()).toContain('HtmlContent')
     })
 
     test('the chips are left out when the group is empty', async () => {
@@ -272,8 +272,8 @@ describe('the add component dialog (#461)', () => {
       await mountDialog()
       await openDialog()
 
-      expect(sectionLabels()).toEqual(['Layout', 'Other', 'Dynamic'])
-      expect(optionValues()).toEqual(['Hero', 'Spacer', 'ComponentPosition'])
+      expect(sectionLabels()).toEqual(['Layout', 'Media', 'Text', 'Other', 'Dynamic'])
+      expect(optionValues()).toEqual(['Hero', 'Image', 'HtmlContent', 'Spacer', 'ComponentPosition'])
       const dynamic = qa('[role="option"]').at(-1)!
       expect(document.getElementById(dynamic.getAttribute('aria-describedby')!)!.textContent).toBe('Changes per blog article: each blog article picks what shows here, Dynamic')
     })
@@ -435,25 +435,17 @@ describe('the add component dialog (#461)', () => {
       expect(q('[data-testid="add-component-style"]')).toBeNull()
     })
 
-    test('where it adds is behind an ⓘ beside the name, not a line in the detail, and is still announced', async () => {
+    test('where it adds is an info box in the detail, and is still announced', async () => {
       await mountDialog()
       await openDialog()
 
       await choose('Hero')
 
-      expect(shown(q('[data-testid="add-component-detail"]'))).not.toContain('Adding to')
-      const info = q('[data-testid="sub-view-header"] [data-testid="field-info"]')!
-      expect(info.getAttribute('aria-label')).toBe('Where it is added')
-      expect(document.querySelector('[data-testid="field-info-popover"]')).toBeNull()
-
-      info.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, pointerType: 'mouse' }))
-      info.click()
-      await flushPromises()
-
-      const popover = document.querySelector<HTMLElement>('[data-testid="field-info-popover"]')!
-      expect(popover.getAttribute('aria-label')).toBe('Where it is added')
-      expect(shown(popover.querySelector('p'))).toBe('Adding to Main content, after “Intro text”')
-      expect(popover.querySelector('p b')!.textContent).toBe('Main content')
+      const box = q('[data-testid="add-component-detail"] [data-testid="add-component-adding-to"]')!
+      expect(box.dataset.tone).toBe('info')
+      expect(shown(box)).toBe('Adding to Main content, after “Intro text”')
+      expect(box.querySelector('b')!.textContent).toBe('Main content')
+      expect(q('[data-testid="sub-view-header"] [data-testid="field-info"]')).toBeNull()
       expect(announcer()).toBe('Hero section. Adding to Main content, after “Intro text”.')
       expect(await axe(document.body)).toHaveNoViolations()
     })
