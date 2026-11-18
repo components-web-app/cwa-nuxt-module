@@ -473,7 +473,7 @@ describe('ResourceStack (#461)', () => {
     expect(placeResourceStack).toHaveBeenCalledWith({ x: 5, y: 5 }, expect.objectContaining({ inner: { left: 10, top: 10, width: 90, height: 40 } }), expect.any(Object), undefined)
   })
 
-  test('stays hidden until the panel stands where it was placed, so it never shows moving, and only then grows from there', async () => {
+  test('stays hidden until the panel stands where it was placed, so it never shows moving, and only then grows from there, by scale alone, since a transform keyframe replaces the placement and paints it at the top left (#461)', async () => {
     const frames: FrameRequestCallback[] = []
     vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => frames.push(callback))
     vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: false })))
@@ -506,6 +506,9 @@ describe('ResourceStack (#461)', () => {
       await flushPromises()
       expect(panel.style.visibility).not.toBe('hidden')
       expect(animate).toHaveBeenCalledOnce()
+      const [keyframes] = animate.mock.calls[0] as unknown as [Keyframe[]]
+      expect(keyframes).toEqual([{ scale: '0.9', opacity: 0 }, { scale: '1', opacity: 1 }])
+      expect(keyframes.some(keyframe => 'transform' in keyframe)).toBe(false)
     }
     finally {
       vi.unstubAllGlobals()
