@@ -259,7 +259,7 @@ defineExpose({
         ref="managerHolder"
         class="cwa:relative cwa:grid cwa:min-h-manager cwa:grid-cols-[minmax(0,1fr)_auto] cwa:grid-rows-[var(--cwa-spacing-manager-tabs)_minmax(var(--cwa-spacing-manager-row),auto)]"
       >
-        <ResourceLoadingIndicator class="cwa:absolute cwa:bottom-full cwa:left-0" />
+        <ResourceLoadingIndicator class="cwa:absolute cwa:bottom-full cwa:left-0 cwa:z-notifications" />
         <div class="cwa:min-w-0 cwa:shadow-[inset_0_-1px_0_var(--cwa-color-line)]">
           <ManagerTabs
             ref="managerTabs"

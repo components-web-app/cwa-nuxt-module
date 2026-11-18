@@ -217,17 +217,17 @@ const editPageResourceType = computed(() => {
 })
 
 const highlightClass = computed(() => {
-  const classes = ['cwa:before:content-[""] cwa:before:absolute cwa:before:top-0 cwa:before:left-0 cwa:before:w-full cwa:before:h-0.5 cwa:before:transition-colors']
+  const classes = ['cwa:before:content-[""] cwa:before:absolute cwa:before:top-0 cwa:before:left-0 cwa:before:w-full cwa:before:h-[3px] cwa:before:transition-colors']
   if ($cwa.resources.isDynamicPage.value) {
-    return [...classes, 'cwa:before:bg-yellow']
+    return [...classes, 'cwa:before:bg-type-dynamic']
   }
   if ($cwa.resources.isDataPage.value) {
-    return [...classes, $cwa.resources.pageData?.value?.data?.route ? 'cwa:before:bg-green' : 'cwa:before:bg-orange']
+    return [...classes, $cwa.resources.pageData?.value?.data?.route ? 'cwa:before:bg-success' : 'cwa:before:bg-warning']
   }
   if (pageIsAdmin.value) {
     return [...classes, 'cwa:before:bg-stone-400']
   }
-  return [...classes, 'cwa:before:bg-blue-600']
+  return [...classes, 'cwa:before:bg-type-static']
 })
 
 function showEditPage() {

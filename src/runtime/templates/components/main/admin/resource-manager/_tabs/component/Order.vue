@@ -78,12 +78,12 @@ const orderModel: ResourceModelField<number> = {
     <CwaUiToggle
       v-model="reordering"
       label="Enable reordering"
-      info="Lets you drag components on the page, and move this one by its position."
+      info="Lets you drag components on the page to reorder them."
     />
     <CwaUiNumber
       :model="orderModel"
       label="Position"
-      :info="reordering ? 'Its place in this group, from the top.' : 'Turn on Enable reordering to move this component.'"
+      info="Its place in this group, from the top."
       width="sm"
       :min="1"
       :max="Math.max(positions, 1)"
@@ -92,7 +92,6 @@ const orderModel: ResourceModelField<number> = {
       increment-label="Move down"
       min-reason="Already first in this group"
       max-reason="Already last in this group"
-      :disabled="!reordering"
     />
   </CwaUiManagerTab>
 </template>

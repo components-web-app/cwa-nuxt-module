@@ -1,5 +1,4 @@
 import { shallowReactive } from 'vue'
-import { CwaResourceTypes } from '#cwa/resources/resource-utils'
 import type { CwaResource } from '#cwa/resources/resource-utils'
 import { compareSortValues } from '#cwa/resources/component-position-order'
 import { NEW_RESOURCE_IRI } from '#cwa/storage/stores/resources/state'
@@ -57,7 +56,7 @@ class GroupReorder {
 
   public handleReorderEvent(event: ReorderEvent) {
     const componentPositions = this.componentPositions()
-    if (!this.isReordering() || !componentPositions) {
+    if (!componentPositions) {
       return
     }
 
@@ -114,11 +113,6 @@ class GroupReorder {
     this.syncQueue = this.syncGroupOrder().finally(() => {
       this.syncing = false
     })
-  }
-
-  private isReordering() {
-    return !!this.admin.resourceStackManager.getState('reordering')
-      && this.admin.resourceStackManager.getClosestStackItemByType(CwaResourceTypes.COMPONENT_GROUP) === this.iri
   }
 
   private componentPositions(): string[] | undefined {

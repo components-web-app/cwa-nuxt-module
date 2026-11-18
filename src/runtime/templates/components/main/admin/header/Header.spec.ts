@@ -388,10 +388,17 @@ describe('Header', () => {
       return refs.header.className
     }
 
+    test('is a 3px strip, as tall as Nuxt\'s loading indicator', () => {
+      mockCwa()
+      const wrapper = mountHeader()
+      expect(classOf(wrapper)).toContain('cwa:before:h-[3px]')
+      expect(classOf(wrapper)).not.toContain('cwa:before:h-0.5')
+    })
+
     test('uses the yellow accent for a dynamic page', () => {
       mockCwa({ resources: buildResources({ isDynamicPage: { value: true } }) })
       const wrapper = mountHeader()
-      expect(classOf(wrapper)).toContain('cwa:before:bg-yellow')
+      expect(classOf(wrapper)).toContain('cwa:before:bg-type-dynamic')
     })
 
     test('uses green for a data page that has a route', () => {
@@ -402,7 +409,7 @@ describe('Header', () => {
         }),
       })
       const wrapper = mountHeader()
-      expect(classOf(wrapper)).toContain('cwa:before:bg-green')
+      expect(classOf(wrapper)).toContain('cwa:before:bg-success')
     })
 
     test('uses orange for a data page with no route', () => {
@@ -413,7 +420,7 @@ describe('Header', () => {
         }),
       })
       const wrapper = mountHeader()
-      expect(classOf(wrapper)).toContain('cwa:before:bg-orange')
+      expect(classOf(wrapper)).toContain('cwa:before:bg-warning')
     })
 
     test('uses the stone accent on an admin page', () => {
@@ -426,7 +433,7 @@ describe('Header', () => {
     test('uses the blue accent on a normal page', () => {
       mockCwa()
       const wrapper = mountHeader()
-      expect(classOf(wrapper)).toContain('cwa:before:bg-blue-600')
+      expect(classOf(wrapper)).toContain('cwa:before:bg-type-static')
     })
   })
 
