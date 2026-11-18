@@ -4,6 +4,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+- An admin page under `/_cwa` loaded directly in dev no longer shows a 500 from nuxt-og-image: the default share image is defined only in the server render, which also drops it from the browser bundle ([#478](https://github.com/components-web-app/cwa-nuxt-module/pull/478))
+
 ## [2.0.0-alpha.32] - 2026-10-31
 
 - Changing a user's email in the admin asks for your own current password and sends it as `oldPassword`; a wrong or missing password is shown on the field. Needs api-components-bundle 2.0.0-alpha.40, which also sends the email-change confirmation to the new address ([#451](https://github.com/components-web-app/cwa-nuxt-module/pull/451), [#449](https://github.com/components-web-app/cwa-nuxt-module/issues/449))
