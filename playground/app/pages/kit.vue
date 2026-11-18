@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue'
 import { definePageMeta, useCwaToast, useHead } from '#imports'
 import {
   CwaUiAlert,
@@ -9,6 +9,13 @@ import {
   CwaUiBadge,
   CwaUiButton,
   CwaUiDatePicker,
+  CwaUiDayRangePicker,
+  CwaUiEditPlaceholder,
+  CwaUiImageAlt,
+  CwaUiImageSlots,
+  CwaUiInlineEdit,
+  CwaUiInlineHandoff,
+  CwaUiLinkPopover,
   CwaUiFileUpload,
   CwaUiMultiSelect,
   CwaUiResourceSearch,
@@ -27,6 +34,7 @@ import {
   CwaUiTree,
 } from '#components'
 import { fakeFieldModel } from '../kit/fake-field-model'
+import { listenForLongPress } from '../../../src/runtime/admin/long-press'
 import { fakeDialogForm } from '../kit/fake-dialog-form'
 import { useCwaConfirm } from '../../../src/runtime/composables/cwa-confirm'
 import type { FakeStatus } from '../kit/fake-field-model'
@@ -111,6 +119,28 @@ const plainSelect = ref<string | null>(null)
 const plainStyles = ref<string[]>([])
 const plainSegment = ref('page')
 const plainDate = ref<string | null>(null)
+const dayRange = ref<[string, string] | null>(['2026-12-01', '2026-12-14'])
+const emptyDayRange = ref<[string, string] | null>(null)
+const altPresent = fakeFieldModel<string>('A bench in the workshop')
+const altMissing = fakeFieldModel<string>(null as unknown as string)
+const inlineTitle = { ...fakeFieldModel<string>('How we build a kitchen'), editorKey: { iri: () => '/component/kit-title', field: 'title' } }
+const inlineEmpty = fakeFieldModel<string>(null as unknown as string)
+const handoffHtml = fakeFieldModel<string>('<p>Our kitchens are made in <strong>Norfolk</strong>, by hand, from timber we choose ourselves.</p>')
+const linkAt = ref<HTMLElement>()
+const linkOpen = ref(false)
+const linkHref = ref<string | null>('/kitchens')
+const linkNewTab = ref(false)
+const stackArea = useTemplateRef<HTMLElement>('stackArea')
+let stopLongPress: (() => void) | undefined
+onMounted(() => {
+  stopLongPress = stackArea.value ? listenForLongPress(stackArea.value) : undefined
+})
+onBeforeUnmount(() => stopLongPress?.())
+
+function openLink(event: MouseEvent) {
+  linkAt.value = event.currentTarget as HTMLElement
+  linkOpen.value = true
+}
 const kitPages: CwaResource[] = Array.from({ length: 42 }, (_, index) => ({ '@id': `/_/routes/${index + 1}`, '@type': 'Route', 'path': index ? `/showrooms/branch-${index}` : '/', '_metadata': { persisted: true } } as CwaResource))
 const kitPageLabel = (resource: CwaResource) => resource.path ?? ''
 const searchRoute = ref<string | null>(null)
@@ -772,6 +802,117 @@ const badgeTones = [
             label="Empty, with v-model"
           />
         </div>
+        <h3>DayRangePicker</h3>
+        <p class="kit-note">
+          Whole days, saved as <code>['YYYY-MM-DD', 'YYYY-MM-DD']</code> with no time zone. Value: <output data-testid="kit-day-range">{{ dayRange ? dayRange.join(' to ') : 'none' }}</output>
+        </p>
+        <div class="kit-row">
+          <CwaUiDayRangePicker
+            v-model="dayRange"
+            label="Show between"
+          />
+          <CwaUiDayRangePicker
+            v-model="emptyDayRange"
+            label="Empty"
+            min="2026-11-18"
+          />
+        </div>
+        <h3>ImageAlt and ImageSlots</h3>
+        <p class="kit-note">
+          The Alt chip edits the image's alt text; the dot shows while it is missing. Image slots put one labelled image per slot in one row.
+        </p>
+        <div class="kit-row">
+          <CwaUiImageAlt
+            label="With alt"
+            :upload="uploadSamples[0]!.upload"
+            :alt="altPresent"
+          />
+          <CwaUiImageAlt
+            label="Alt missing"
+            :upload="uploadSamples[0]!.upload"
+            :alt="altMissing"
+          />
+        </div>
+        <div class="kit-row">
+          <CwaUiImageSlots
+            label="Before and after"
+            :slots="[{ label: 'Before', upload: uploadSamples[0]!.upload }, { label: 'After', upload: uploadSamples[1]!.upload }]"
+          />
+        </div>
+      </section>
+
+      <section aria-labelledby="kit-in-page">
+        <h2 id="kit-in-page">
+          In-page editing
+        </h2>
+        <p class="kit-note">
+          InlineEdit edits short text where it sits, in the page's own type: click or Enter to edit, Enter or leaving it saves, Escape puts it back. InlineHandoff is the bar's side of it: Edit on page scrolls to the editor on the page and focuses it, and Escape there comes back to the button; with no editor on the page it opens a dialog.
+        </p>
+        <h3>InlineEdit</h3>
+        <div
+          class="kit-page-sample"
+          data-testid="kit-inline-edit"
+        >
+          <h1 class="kit-page-title">
+            <CwaUiInlineEdit
+              :model="inlineTitle"
+              label="Title"
+              placeholder="Add a title"
+            />
+          </h1>
+          <p>
+            <CwaUiInlineEdit
+              :model="inlineEmpty"
+              label="Strapline"
+              placeholder="Add a strapline"
+            />
+          </p>
+        </div>
+        <h3>InlineHandoff</h3>
+        <div class="kit-row">
+          <CwaUiInlineHandoff
+            label="Title"
+            :model="inlineTitle"
+          />
+          <CwaUiInlineHandoff
+            label="Content"
+            :model="handoffHtml"
+          />
+        </div>
+        <h3>EditPlaceholder</h3>
+        <p class="kit-note">
+          Shown in edit mode for an empty component or group, so there is something to select.
+        </p>
+        <div class="kit-row">
+          <CwaUiEditPlaceholder
+            label="Add an image"
+            class="kit-placeholder"
+          />
+          <CwaUiEditPlaceholder
+            label="Empty group"
+            class="kit-placeholder"
+          />
+        </div>
+        <h3>LinkPopover</h3>
+        <p class="kit-note">
+          The rich-text editor's Link button. Link: <output data-testid="kit-link">{{ linkHref ?? 'none' }}{{ linkHref && linkNewTab ? ' (new tab)' : '' }}</output>
+        </p>
+        <div class="kit-row">
+          <CwaUiButton
+            label="Link"
+            size="sm"
+            @click="openLink"
+          />
+        </div>
+        <CwaUiLinkPopover
+          v-if="linkAt"
+          v-model:open="linkOpen"
+          :at="linkAt"
+          :href="linkHref"
+          :new-tab="linkNewTab"
+          @apply="({ href, newTab }) => { linkHref = href; linkNewTab = newTab }"
+          @remove="linkHref = null"
+        />
       </section>
 
       <section aria-labelledby="kit-menu">
@@ -840,10 +981,11 @@ const badgeTones = [
           Resource stack
         </h2>
         <p class="kit-note">
-          Right-click the area, or open it over the button as the header's path selector does. The innermost box's corner sits on the pointer. Last chosen: <output data-testid="kit-stack-choice">{{ stackChoice || 'nothing yet' }}</output>
+          Right-click the area (long-press on a phone, where it opens as a sheet from the bottom), or open it over the button as the header's path selector does. The innermost box's corner sits on the pointer. Last chosen: <output data-testid="kit-stack-choice">{{ stackChoice || 'nothing yet' }}</output>
         </p>
         <div class="kit-row">
           <div
+            ref="stackArea"
             class="kit-stack-area"
             data-testid="kit-stack-area"
             @contextmenu="openStackAtPointer"
@@ -1286,6 +1428,23 @@ code {
   height: 8rem;
   border: 1px dashed var(--cwa-color-line-dash);
   color: var(--cwa-color-fg-muted);
+}
+
+.kit-page-sample {
+  max-width: 40rem;
+  padding: 1rem;
+  font-family: Georgia, 'Times New Roman', serif;
+  box-shadow: inset 0 0 0 1px var(--cwa-color-line);
+}
+
+.kit-page-title {
+  margin: 0 0 0.5rem;
+  font-size: 2rem;
+  line-height: 1.2;
+}
+
+.kit-placeholder {
+  width: 12rem;
 }
 
 .kit-row {

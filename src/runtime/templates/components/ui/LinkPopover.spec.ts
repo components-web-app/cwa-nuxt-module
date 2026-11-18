@@ -84,7 +84,7 @@ describe('CwaUiLinkPopover (#461)', () => {
     const search = wrapper.findComponent(ResourceSearch)
     expect(search.props('endpoint')).toBe('/_/routes')
 
-    const page = await search.props('load')('kit', 1)
+    const page = await search.props('load')!('kit', 1)
     expect(page.items.map((route: { path: string }) => route.path)).toEqual(['/kitchens', '/about'])
     expect(cwa.fetch).toHaveBeenCalledWith({ path: '/_/routes?perPage=20&page=1&search=kit&path=kit' })
     search.vm.$emit('update:modelValue', '/_/routes/about')

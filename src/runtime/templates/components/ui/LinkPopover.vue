@@ -80,7 +80,7 @@ const resolving = new Map<string, Promise<CwaResource | undefined>>()
 function resolveRoute(iri: string): Promise<CwaResource | undefined> {
   const known = paths.get(iri)
   if (known) {
-    return Promise.resolve({ '@id': iri, 'path': known } as CwaResource)
+    return Promise.resolve({ '@id': iri, 'path': known } as unknown as CwaResource)
   }
   let pending = resolving.get(iri)
   if (!pending) {
