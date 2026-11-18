@@ -104,7 +104,9 @@ describe('CwaRootLayout admin overlay', () => {
 
   test('renders the layout page overlay for an admin who is editing', async () => {
     const { wrapper } = setup({ isAdmin: true, isEditing: true, registeredComponents: ['CwaLayoutPrimary'] })
+    const mountedAt = Date.now()
     await flushPromises()
+    await vi.waitFor(() => expect(Date.now()).toBeGreaterThan(mountedAt))
     expect(hasOverlay(wrapper)).toBe(true)
   })
 
@@ -152,7 +154,9 @@ describe('CwaRootLayout page or layout click', () => {
     const clickHandler = vi.fn()
     const contextMenuHandler = vi.fn()
     const { wrapper } = setup({ isAdmin: true, isEditing: true, registeredComponents: ['CwaLayoutPrimary'] })
+    const mountedAt = Date.now()
     await flushPromises()
+    await vi.waitFor(() => expect(Date.now()).toBeGreaterThan(mountedAt))
     const setupState = (wrapper.vm as unknown as { $: { setupState: Record<string, unknown> } }).$.setupState
     setupState.resourceManager = { clickHandler, contextMenuHandler }
     return { wrapper, clickHandler, contextMenuHandler }
