@@ -228,6 +228,17 @@ describe('TipTapHtmlEditor: the co-editing reference editor (#429)', () => {
     expect(editor().state.selection.from).toBe(end(editor()))
   })
 
+  test('the editable editor is a multi-line textbox named for its field, and the read-only one is not (#461)', async () => {
+    const readOnly = await mountEditor('<p>Hello</p>', { disabled: true })
+    expect(readOnly.editor().view.dom.hasAttribute('aria-label')).toBe(false)
+    readOnly.wrapper.unmount()
+
+    const { editor } = await mountEditor('<p>Hello</p>')
+    await vi.waitFor(() => expect(editor().view.dom.getAttribute('aria-label')).toBe('Content'))
+    expect(editor().view.dom.getAttribute('role')).toBe('textbox')
+    expect(editor().view.dom.getAttribute('aria-multiline')).toBe('true')
+  })
+
   test('saves what is typed through the resource model', async () => {
     const { editor, stored } = await mountEditor('<p>Hello</p>')
 
@@ -749,6 +760,20 @@ describe('TipTapHtmlEditor: the caret when the editor is rebuilt (#435)', () => 
     expect(editor()).not.toBe(readOnly)
     const keys = editor().state.plugins.map(plugin => (plugin as unknown as { key: string }).key)
     expect(keys.filter(key => /^(bubbleMenu|floatingMenu)\$/.test(key)).map(key => key.replace(/\$.*/, '')).sort()).toEqual(['bubbleMenu', 'floatingMenu'])
+  })
+
+  test('a click that focused the component around the editor, a tab stop in edit mode, still lets selecting focus the editor (#461)', async () => {
+    const { wrapper, editor } = await mountEditor('<p>Hello there</p>', { disabled: true })
+    const component = wrapper.element as HTMLElement
+    component.setAttribute('tabindex', '0')
+    document.getSelection()!.collapse(editor().view.dom.querySelector('p')!.firstChild!, 5)
+
+    await wrapper.setProps({ disabled: false })
+    component.focus()
+    await vi.waitFor(() => expect(editor().isEditable).toBe(true))
+
+    await vi.waitFor(() => expect(editor().isFocused).toBe(true))
+    component.removeAttribute('tabindex')
   })
 
   test('a menu opened after selecting keeps focus when the editor becomes editable, so it stays open', async () => {

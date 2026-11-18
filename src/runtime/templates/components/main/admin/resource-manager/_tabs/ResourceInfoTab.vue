@@ -79,7 +79,8 @@ async function deleteSelected(componentIri: string) {
     endpoint: componentIri,
     refreshEndpoints: $cwa.resources.getRefreshEndpointsForDelete(componentIri),
   }
-  if (!positionIri || total <= 1) {
+  const isDraftOfLive = getPublishedResourceState(resource.value ?? {}) === false && !!resource.value?.data?.publishedResource
+  if (!positionIri || total <= 1 || isDraftOfLive) {
     return $cwa.resourcesManager.deleteResource(deleteEvent)
   }
   const choice = await chooseLocations(componentIri, total)

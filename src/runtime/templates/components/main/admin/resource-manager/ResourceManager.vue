@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, onMounted, provide, ref, shallowRef, toRaw, useTemplateRef, watch } from 'vue'
+import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, onMounted, provide, ref, shallowRef, toRaw, toValue, useId, useTemplateRef, watch } from 'vue'
 import type { ComponentPublicInstance } from 'vue'
 import { consola } from 'consola'
 import ResourceLoadingIndicator
@@ -36,6 +36,8 @@ const spacer = useTemplateRef<HTMLElement | null>('spacer')
 const managerHolder = useTemplateRef<HTMLElement | null>('managerHolder')
 const allTabsMeta = ref<CwaResourceManagerTabOptions[]>([])
 const selectedIndex = ref(0)
+const tabsId = useId()
+const tabsLabel = computed(() => currentStackItem.value?.displayName ? `${currentStackItem.value.displayName} settings` : 'Settings')
 const isOpen = ref(false)
 const contextPoint = shallowRef<{ x: number, y: number, key: number }>()
 let contextKey = 0
@@ -224,9 +226,25 @@ watch(currentStackItem, (newCurrent, oldCurrent) => {
 
 let stopLongPress: (() => void) | undefined
 
+function onPaneKey(e: KeyboardEvent) {
+  if (e.key !== 'F6' || e.defaultPrevented || e.altKey || e.metaKey || e.ctrlKey || !$cwa.admin.isEditing || !currentStackItem.value) {
+    return
+  }
+  const inBar = !!managerHolder.value?.contains(document.activeElement)
+  const target = inBar
+    ? toValue(currentStackItem.value.domElements)?.find(el => el.hasAttribute('tabindex'))
+    : document.getElementById(`${tabsId}-tab-${selectedIndex.value}`)
+  if (!target) {
+    return
+  }
+  e.preventDefault()
+  target.focus()
+}
+
 onMounted(() => {
   window.addEventListener('mousedown', mousedownHandler)
   window.addEventListener('resize', $cwa.admin.emitRedraw, false)
+  document.addEventListener('keydown', onPaneKey)
   watch(() => $cwa.admin.isEditing, (editing) => {
     stopLongPress?.()
     stopLongPress = editing ? listenForLongPress(document) : undefined
@@ -235,6 +253,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', $cwa.admin.emitRedraw)
+  document.removeEventListener('keydown', onPaneKey)
   stopLongPress?.()
   stopLongPress = undefined
 })
@@ -274,6 +293,8 @@ defineExpose({
             ref="managerTabs"
             :tabs="allTabsMeta"
             :field-states="currentFieldStates"
+            :id-prefix="tabsId"
+            :label="tabsLabel"
             @click="selectTab"
           />
         </div>
@@ -289,7 +310,11 @@ defineExpose({
           <ResourceManagerCtaButton />
         </div>
         <div
+          :id="`${tabsId}-panel`"
           ref="tabHolder"
+          role="tabpanel"
+          :aria-labelledby="`${tabsId}-tab-${selectedIndex}`"
+          data-testid="manager-tab-panel"
           class="cwa:col-span-2 cwa:grid cwa:min-w-0"
         >
           <component

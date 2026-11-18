@@ -8,6 +8,13 @@ export interface ConfirmChoiceOptions extends CwaConfirmOptions {
   extra?: string
 }
 
+const discardDraft: CwaConfirmOptions = {
+  title: 'Discard the unpublished changes?',
+  description: 'The live version stays as it is.',
+  keep: 'Keep changes',
+  go: 'Discard changes',
+}
+
 const confirmations: Record<'delete' | 'discard', CwaConfirmOptions> = {
   delete: {
     title: 'Delete this resource?',
@@ -48,6 +55,8 @@ export async function confirmChoice(app: App, options: ConfirmChoiceOptions): Pr
 export async function confirmResourceAction(app: App, action: keyof typeof confirmations | CwaConfirmOptions, iri?: string) {
   const $cwa = iri ? app.config.globalProperties.$cwa as Cwa | undefined : undefined
   const notice = iri && $cwa ? await editingNotice($cwa, iri) : undefined
-  const options = typeof action === 'string' ? confirmations[action] : action
+  const data = action === 'delete' && iri ? $cwa?.resources?.getResource(iri).value?.data : undefined
+  const isDraftOfLive = data?._metadata?.publishable?.published === false && !!data.publishedResource
+  const options = isDraftOfLive ? discardDraft : typeof action === 'string' ? confirmations[action] : action
   return !!await confirmChoice(app, notice ? { ...options, lines: [{ text: notice }, ...(options.lines ?? [])] } : options)
 }

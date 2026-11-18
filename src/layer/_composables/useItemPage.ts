@@ -34,9 +34,10 @@ type UseItemOps = {
   iri?: Ref<string | undefined>
   excludeFields?: string[]
   dismissStoredErrors?: boolean
+  openCreated?: boolean
 }
 
-export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoint, validate, endpoint: userDefinedEndpoint, routeHashAfterAdd, iri, excludeFields, dismissStoredErrors }: UseItemOps) => {
+export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoint, validate, endpoint: userDefinedEndpoint, routeHashAfterAdd, iri, excludeFields, dismissStoredErrors, openCreated = true }: UseItemOps) => {
   const $cwa = useCwa()
   const router = useRouter()
   const route = useRoute()
@@ -185,7 +186,7 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
           if (close) {
             emit('close')
           }
-          else {
+          else if (openCreated) {
             router.push({ name: route.name, params: { iri: newResource['@id'] }, query: route.query, hash: routeHashAfterAdd?.value })
           }
         }

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, inject } from 'vue'
 import { eitherOrKey, tabMetaOnlyKey } from '../core/ui/field-keys'
+import CwaReveal from '../core/ui/Reveal.vue'
 
 const { label, fields } = defineProps<{
   label: string
@@ -14,5 +15,7 @@ const shown = computed(() => metaOnly || !group || group.active.value === index)
 </script>
 
 <template>
-  <slot v-if="shown" />
+  <CwaReveal :when="shown">
+    <slot />
+  </CwaReveal>
 </template>
