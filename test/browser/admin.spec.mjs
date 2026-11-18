@@ -1597,7 +1597,7 @@ test('61. outside edit mode the header\'s Edit button and menu sit on the header
         const box = element.getBoundingClientRect()
         return box.top + box.height / 2
       }
-      const menu = [...document.querySelectorAll('a')].find(link => link.querySelector('.cwa\\:sr-only')?.textContent === 'Menu')
+      const menu = [...document.querySelectorAll('button')].find(button => button.querySelector('.cwa\\:sr-only')?.textContent === 'Menu')
       const header = menu.closest('.cwa\\:fixed')
       const box = header.getBoundingClientRect()
       return {
@@ -1629,7 +1629,7 @@ test('62. with live editing paused on a phone, the header\'s status is a glyph n
         const { left, right } = element.getBoundingClientRect()
         return { left, right }
       }
-      const menu = [...document.querySelectorAll('a')].find(link => link.querySelector('.cwa\\:sr-only')?.textContent === 'Menu')
+      const menu = [...document.querySelectorAll('button')].find(button => button.querySelector('.cwa\\:sr-only')?.textContent === 'Menu')
       return {
         edit: box([...document.querySelectorAll('button')].find(button => button.textContent.trim() === 'Edit')),
         status: box(document.querySelector('[data-testid="presence-paused"]')),
