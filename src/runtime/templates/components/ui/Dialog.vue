@@ -8,7 +8,7 @@ import Spinner from './Spinner.vue'
 import StateGlyph from '../core/ui/StateGlyph.vue'
 import CheckGlyph from '../core/ui/CheckGlyph.vue'
 import DialogPanel from '../core/ui/DialogPanel.vue'
-import { announceKey, dialogSubViewKey, fieldGroupKey, formSurfaceKey } from '../core/ui/field-keys'
+import { announceKey, dialogSubViewKey, fieldGroupKey, formSurfaceKey, presenceLayerKey } from '../core/ui/field-keys'
 import type { DialogSubViewClaim, DialogSubViewGuard } from '../core/ui/field-keys'
 import { changesText, dialogTabBadge, dialogTabWords, listText } from '../core/ui/dialog-form'
 import type { DialogForm, DialogTab } from '../core/ui/dialog-form'
@@ -51,6 +51,8 @@ const confirm = useCwaConfirm()
 const titleId = useId()
 const tabsId = useId()
 const body = useTemplateRef<HTMLElement>('body')
+const presenceLayer = useTemplateRef<HTMLElement>('presenceLayer')
+provide(presenceLayerKey, { el: presenceLayer, align: 'end' })
 const alert = useTemplateRef<InstanceType<typeof CwaUiAlert>>('alert')
 
 const localTab = ref(props.tab ?? props.tabs?.[0]?.key)
@@ -421,7 +423,7 @@ defineExpose({ requestClose, confirmDiscard, showField, announce })
           ref="body"
           data-testid="dialog-body"
           data-cwa-scroll
-          class="cwa:min-h-0 cwa:flex-1 cwa:overflow-y-auto"
+          class="cwa:relative cwa:min-h-0 cwa:flex-1 cwa:overflow-y-auto"
           :class="{ 'cwa:p-6': !flush }"
           :aria-busy="loading ? 'true' : undefined"
         >
@@ -511,6 +513,11 @@ defineExpose({ requestClose, confirmDiscard, showField, announce })
             </template>
             <slot v-else />
           </template>
+          <div
+            ref="presenceLayer"
+            data-testid="presence-layer"
+            class="cwa:pointer-events-none cwa:absolute cwa:inset-0 cwa:z-[1]"
+          />
         </div>
         <footer
           v-if="subFooter !== 'none' && (subFooter || form || $slots.footer)"

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, inject, onBeforeUnmount, onMounted, provide, ref, useTemplateRef } from 'vue'
-import { managerTabKey, managerTabMountedKey, tabFieldsKey, tabMetaOnlyKey } from '../core/ui/field-keys'
+import { managerTabKey, managerTabMountedKey, presenceLayerKey, tabFieldsKey, tabMetaOnlyKey } from '../core/ui/field-keys'
 import { useCwa } from '#cwa/composables/cwa'
 
 const { iri } = defineProps<{
@@ -21,6 +21,8 @@ provide(managerTabKey, {
 })
 
 const row = useTemplateRef<HTMLElement>('row')
+const presenceLayer = useTemplateRef<HTMLElement>('presenceLayer')
+provide(presenceLayerKey, { el: presenceLayer, align: 'start' })
 const mounted = import.meta.env.DEV ? inject(managerTabMountedKey, undefined) : undefined
 let unmounted: (() => void) | undefined
 const overflowStart = ref(false)
@@ -76,5 +78,10 @@ defineExpose({ measure })
     >
       <slot />
     </div>
+    <div
+      ref="presenceLayer"
+      data-testid="presence-layer"
+      class="cwa:pointer-events-none cwa:absolute cwa:inset-0 cwa:overflow-hidden"
+    />
   </div>
 </template>

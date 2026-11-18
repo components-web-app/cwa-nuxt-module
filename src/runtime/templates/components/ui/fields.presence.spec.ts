@@ -74,7 +74,7 @@ describe.each(cases)('$name shows co-editing presence (#461)', (item) => {
     await flushPromises()
 
     const outline = wrapper.get('[data-testid="field-presence"]')
-    expect(outline.attributes('style')).toContain('outline-color: #d946ef')
+    expect(outline.attributes('style')).toContain('box-shadow: inset 0 0 0 2px #d946ef')
     expect(wrapper.get('[data-testid="field-presence-flag"]').text()).toBe('Mia')
     expect(outline.element.parentElement!.contains(wrapper.get(item.control).element)).toBe(true)
     expect(await axe(wrapper.element as HTMLElement)).toHaveNoViolations()

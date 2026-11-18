@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import { enableAutoUnmount, mount } from '@vue/test-utils'
-import { defineComponent, h, provide, ref } from 'vue'
+import { defineComponent, h, nextTick, provide, ref } from 'vue'
 import { tabFieldsKey, tabMetaOnlyKey } from '../core/ui/field-keys'
 import ManagerTab from './ManagerTab.vue'
 import Input from './Input.vue'
@@ -24,6 +24,17 @@ function tabWith(metaOnly: boolean, fields: string[]) {
 }
 
 describe('CwaUiManagerTab (#459)', () => {
+  test('an editor\'s presence flag goes into the tab\'s own layer, outside the row that scrolls and clips, and the layer takes no clicks (#476 review 1)', async () => {
+    const model = { model: ref('Kitchens'), remoteChange: ref(undefined), focusedBy: ref([{ user: { id: '/_/users/mia', name: 'Mia' }, name: 'Mia', colour: '#d946ef', isSelf: false, clientIds: ['tab-mia'] }]) }
+    const wrapper = mount(defineComponent({ setup: () => () => h(ManagerTab, () => [h(Input, { label: 'Title', model })]) }))
+    await nextTick()
+
+    const layer = wrapper.get('[data-testid="manager-tab"] > [data-testid="presence-layer"]')
+    expect(layer.classes()).toEqual(expect.arrayContaining(['cwa:absolute', 'cwa:inset-0', 'cwa:pointer-events-none']))
+    expect(layer.get('[data-testid="field-presence-flag"]').text()).toBe('Mia')
+    expect(wrapper.find('[role="region"], .cwa\\:overflow-x-auto').find('[data-testid="field-presence-flag"]').exists()).toBe(false)
+  })
+
   afterEach(() => {
     useCwaResourceModel.mockClear()
   })
