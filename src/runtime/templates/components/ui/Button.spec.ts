@@ -3,7 +3,7 @@ import { afterEach, describe, expect, test, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { h } from 'vue'
 import { axe } from '../../../../../test/utils/axe'
-import { drawsOpenState } from '../../../../../test/utils/open-state'
+import { drawsOpenState, trimsToLetters } from '../../../../../test/utils/kit-css'
 import Button from './Button.vue'
 import Spinner from './Spinner.vue'
 import { announceKey } from '../core/ui/field-keys'
@@ -202,6 +202,7 @@ describe('CwaUiButton (#456)', () => {
     expect(popover?.getAttribute('aria-label')).toBe('Why Add is unavailable')
     expect([...popover!.classList]).toEqual(expect.arrayContaining(['cwa:bg-surface-menu', 'cwa:text-fg', 'cwa:leading-normal', 'cwa:ring-1', 'cwa:ring-line']))
     expect(popover!.querySelector('svg')!.getAttribute('class')).toContain('cwa:stroke-line')
+    expect(trimsToLetters(popover!.querySelector('p')!)).toBe(true)
     expect(announce).toHaveBeenCalledWith('This group already holds its 3 components')
     expect(clicked).not.toHaveBeenCalled()
     expect(document.activeElement).toBe(wrapper.element)

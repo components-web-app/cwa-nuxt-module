@@ -19,3 +19,9 @@ export function drawsOpenState(element: Element) {
     && classes.some(name => /^cwa:aria-expanded:shadow-\[inset_0_-2px_0_currentColor]$/.test(name))
     && classes.some(name => /^cwa:aria-expanded:bg-/.test(name))
 }
+
+export function trimsToLetters(element: Element) {
+  const rule = css.slice(css.indexOf('.cwa\\:trim-text {'))
+  return element.classList.contains('cwa:trim-text')
+    && /^\.cwa\\:trim-text \{\s*text-box: trim-both cap alphabetic;/.test(rule)
+}

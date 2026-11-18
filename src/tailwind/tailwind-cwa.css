@@ -546,3 +546,11 @@
     transform: translateX(-2rem);
   }
 }
+
+@utility trim-text {
+  text-box: trim-both cap alphabetic;
+
+  @supports not (text-box: trim-both cap alphabetic) {
+    margin-block: calc((1em - 1lh) / 2);
+  }
+}

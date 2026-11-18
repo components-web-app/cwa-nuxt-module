@@ -34,7 +34,9 @@ onMounted(() => announce(text))
         @open-auto-focus.prevent
         @close-auto-focus.prevent
       >
-        {{ text }}
+        <p class="cwa:m-0 cwa:trim-text">
+          {{ text }}
+        </p>
         <PopoverArrow
           :width="14"
           :height="7"
