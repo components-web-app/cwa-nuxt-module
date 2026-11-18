@@ -2,6 +2,7 @@
 import { afterEach, describe, expect, test } from 'vitest'
 import { enableAutoUnmount, mount } from '@vue/test-utils'
 import { axe } from '../../../../../../../../test/utils/axe'
+import { drawsFocusRing } from '../../../../../../../../test/utils/focus-ring'
 import ManagerTabs from './ManagerTabs.vue'
 
 enableAutoUnmount(afterEach)
@@ -42,5 +43,11 @@ describe('ManagerTabs (#459)', () => {
     const wrapper = mount(ManagerTabs, { props: { tabs, fieldStates: { title: state('error') } }, attachTo: document.body })
 
     expect(await axe(wrapper.element as HTMLElement)).toHaveNoViolations()
+  })
+
+  test('each tab draws its focus ring when focused from the keyboard', () => {
+    const wrapper = mount(ManagerTabs, { props: { tabs } })
+
+    expect(wrapper.findAll('button').map(button => drawsFocusRing(button.classes()))).toEqual([true, true, true])
   })
 })

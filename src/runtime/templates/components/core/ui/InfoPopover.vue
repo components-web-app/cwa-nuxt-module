@@ -15,7 +15,7 @@ const { label, text, textId } = defineProps<{
     <PopoverTrigger
       :aria-label="`About ${label}`"
       data-testid="field-info"
-      class="cwa:grid cwa:size-6 cwa:shrink-0 cwa:cursor-pointer cwa:place-items-center cwa:outline-none cwa:focus-visible:outline-2 cwa:focus-visible:outline-accent-fg cwa:pointer-coarse:size-hit"
+      class="cwa:grid cwa:size-6 cwa:shrink-0 cwa:cursor-pointer cwa:place-items-center cwa:outline-1 cwa:outline-transparent cwa:focus-visible:outline-2 cwa:focus-visible:outline-accent-fg cwa:pointer-coarse:size-hit"
     >
       <StateGlyph kind="info" />
     </PopoverTrigger>

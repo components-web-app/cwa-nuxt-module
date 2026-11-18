@@ -33,7 +33,7 @@ defineExpose({ focus: () => root.value?.focus() })
     :aria-labelledby="titleId"
     :data-tone="tone"
     data-testid="alert"
-    class="cwa:flex cwa:gap-3 cwa:p-4 cwa:text-control cwa:text-fg cwa:outline-none cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-accent-fg"
+    class="cwa:flex cwa:gap-3 cwa:p-4 cwa:text-control cwa:text-fg cwa:outline-1 cwa:outline-transparent cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-accent-fg"
     :class="look.box"
   >
     <StateGlyph

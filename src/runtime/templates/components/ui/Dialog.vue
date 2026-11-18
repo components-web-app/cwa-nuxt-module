@@ -310,7 +310,7 @@ defineExpose({ requestClose, confirmDiscard, showField })
             type="button"
             aria-label="Close"
             data-testid="dialog-close"
-            class="cwa:grid cwa:size-hit cwa:shrink-0 cwa:cursor-pointer cwa:place-items-center cwa:text-fg cwa:outline-none cwa:transition-colors cwa:duration-(--cwa-duration-fast) cwa:hover:bg-button cwa:focus-visible:outline-2 cwa:focus-visible:-outline-offset-2 cwa:focus-visible:outline-accent-fg"
+            class="cwa:grid cwa:size-hit cwa:shrink-0 cwa:cursor-pointer cwa:place-items-center cwa:text-fg cwa:outline-1 cwa:outline-transparent cwa:transition-colors cwa:duration-(--cwa-duration-fast) cwa:hover:bg-button cwa:focus-visible:outline-2 cwa:focus-visible:-outline-offset-2 cwa:focus-visible:outline-accent-fg"
             @click="requestClose"
           >
             <XMarkIcon class="cwa:size-5" />
@@ -336,7 +336,7 @@ defineExpose({ requestClose, confirmDiscard, showField })
             :tabindex="currentTab === item.key ? 0 : -1"
             :data-badge="badges[item.key]?.kind"
             data-testid="dialog-tab"
-            class="cwa:relative cwa:inline-flex cwa:shrink-0 cwa:cursor-pointer cwa:items-center cwa:gap-2 cwa:whitespace-nowrap cwa:px-4 cwa:text-label cwa:outline-none cwa:transition-colors cwa:duration-(--cwa-duration-fast) cwa:focus-visible:outline-2 cwa:focus-visible:-outline-offset-2 cwa:focus-visible:outline-accent-fg cwa:after:absolute cwa:after:inset-x-0 cwa:after:bottom-0 cwa:after:h-0.5 cwa:after:content-['']"
+            class="cwa:relative cwa:inline-flex cwa:shrink-0 cwa:cursor-pointer cwa:items-center cwa:gap-2 cwa:whitespace-nowrap cwa:px-4 cwa:text-label cwa:outline-1 cwa:outline-transparent cwa:transition-colors cwa:duration-(--cwa-duration-fast) cwa:focus-visible:outline-2 cwa:focus-visible:-outline-offset-2 cwa:focus-visible:outline-accent-fg cwa:after:absolute cwa:after:inset-x-0 cwa:after:bottom-0 cwa:after:h-0.5 cwa:after:content-['']"
             :class="[currentTab === item.key ? 'cwa:text-fg cwa:after:bg-accent' : 'cwa:text-fg-muted cwa:hover:text-fg', { 'cwa:opacity-60': item.disabled }]"
             @click="selectTab(item.key)"
             @keydown="onTabKey($event, index)"
@@ -398,7 +398,7 @@ defineExpose({ requestClose, confirmDiscard, showField })
                   <button
                     type="button"
                     data-testid="dialog-alert-field"
-                    class="cwa:cursor-pointer cwa:font-semibold cwa:text-fg cwa:underline cwa:underline-offset-2 cwa:outline-none cwa:focus-visible:outline-2 cwa:focus-visible:outline-accent-fg"
+                    class="cwa:cursor-pointer cwa:font-semibold cwa:text-fg cwa:underline cwa:underline-offset-2 cwa:outline-1 cwa:outline-transparent cwa:focus-visible:outline-2 cwa:focus-visible:outline-accent-fg"
                     @click="showField(field)"
                   >
                     {{ labelOf(field) }}

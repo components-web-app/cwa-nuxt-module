@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { defineComponent, h } from 'vue'
 import { axe } from '../../../../../test/utils/axe'
+import { drawsFocusRing } from '../../../../../test/utils/focus-ring'
 import { fakeDialogForm } from '../../../../../playground/app/kit/fake-dialog-form'
 import type { FakeDialogForm } from '../../../../../playground/app/kit/fake-dialog-form'
 import Dialog from './Dialog.vue'
@@ -324,5 +325,20 @@ describe('CwaUiDialog and the Save model (#461)', () => {
     await flushPromises()
 
     expect(await axe(document.body)).toHaveNoViolations()
+  })
+
+  test('the close button, the tabs and the alert\'s field links draw their focus ring', async () => {
+    mountDialog(form)
+    await flushPromises()
+    tab('Search engines').click()
+    await flushPromises()
+    await type('[data-cwa-field="title"] input', 'x'.repeat(64))
+    form.failNext({ title: 'Use 60 characters or fewer. This has 64.' })
+    save().click()
+    await flushPromises()
+    const focusable = [q('[data-testid="dialog-close"]')!, ...qa('[data-testid="dialog-tab"]'), ...qa('[data-testid="dialog-alert-field"]')]
+
+    expect(qa('[data-testid="dialog-alert-field"]')).toHaveLength(1)
+    expect(focusable.map(element => drawsFocusRing([...element.classList]))).toEqual(focusable.map(() => true))
   })
 })

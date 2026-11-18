@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { enableAutoUnmount, mount } from '@vue/test-utils'
 import { nextTick, reactive, ref } from 'vue'
 import { axe } from '../../../../../../test/utils/axe'
+import { drawsFocusRing } from '../../../../../../test/utils/focus-ring'
 import { announceKey } from '../ui/field-keys'
 import BarSummary from './BarSummary.vue'
 import type { CwaFieldState } from '#cwa/storage/stores/resources/state'
@@ -177,5 +178,9 @@ describe('BarSummary (#459)', () => {
 
     vi.useRealTimers()
     expect(await axe(wrapper.element.parentElement as HTMLElement)).toHaveNoViolations()
+  })
+
+  test('the status draws its focus ring when focused from the keyboard', () => {
+    expect(drawsFocusRing(mountSummary().summary().classes())).toBe(true)
   })
 })

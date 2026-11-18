@@ -4,6 +4,7 @@ import { enableAutoUnmount, mount } from '@vue/test-utils'
 import { defineComponent, h, provide, ref } from 'vue'
 import { consola } from 'consola'
 import { axe } from '../../../../../test/utils/axe'
+import { drawsFocusRing } from '../../../../../test/utils/focus-ring'
 import { formSurfaceKey, managerTabKey } from '../core/ui/field-keys'
 import Textarea from './Textarea.vue'
 import Alert from './Alert.vue'
@@ -72,6 +73,12 @@ describe('CwaUiTextarea (#461)', () => {
     expect(error).toHaveBeenCalledWith(expect.stringContaining('CwaUiTextarea is for modals and pages'))
     error.mockRestore()
   })
+
+  test('draws its focus ring when focused from the keyboard', () => {
+    const wrapper = inModal(() => h(Textarea, { label: 'Description', modelValue: '' }))
+
+    expect(drawsFocusRing(wrapper.get('textarea').classes())).toBe(true)
+  })
 })
 
 describe('CwaUiAlert (#461)', () => {
@@ -101,6 +108,10 @@ describe('CwaUiAlert (#461)', () => {
     ;(wrapper.vm as unknown as { focus: () => void }).focus()
 
     expect(document.activeElement).toBe(wrapper.element)
+  })
+
+  test('the focused alert draws its focus ring', () => {
+    expect(drawsFocusRing(mount(Alert, { props: { tone: 'danger', title: 'Not saved' } }).classes())).toBe(true)
   })
 })
 

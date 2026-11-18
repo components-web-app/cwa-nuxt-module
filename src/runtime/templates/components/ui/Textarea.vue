@@ -106,7 +106,7 @@ onMounted(fit)
         :aria-describedby="[describedBy, counter ? counterId : undefined].filter(Boolean).join(' ') || undefined"
         :aria-invalid="tone === 'danger' ? 'true' : undefined"
         data-testid="textarea"
-        class="cwa:block cwa:w-full cwa:resize-none cwa:appearance-none cwa:border-0 cwa:px-3 cwa:py-2.5 cwa:text-control cwa:leading-5 cwa:text-fg cwa:outline-none cwa:[field-sizing:content] cwa:placeholder:text-muted-on-field cwa:focus:ring-0 cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-accent-fg cwa:pointer-coarse:text-base"
+        class="cwa:block cwa:w-full cwa:resize-none cwa:appearance-none cwa:border-0 cwa:px-3 cwa:py-2.5 cwa:text-control cwa:leading-5 cwa:text-fg cwa:outline-1 cwa:outline-transparent cwa:[field-sizing:content] cwa:placeholder:text-muted-on-field cwa:focus:ring-0 cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-accent-fg cwa:pointer-coarse:text-base"
         :class="[readonly ? 'cwa:bg-transparent' : fieldFill(tone, disabled || unbound), { 'cwa:cursor-not-allowed cwa:opacity-50': disabled || unbound }]"
         :style="{ minHeight, maxHeight }"
         v-bind="model?.focusListeners"

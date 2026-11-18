@@ -4,6 +4,7 @@ import { consola } from 'consola'
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import { axe } from '../../../../../test/utils/axe'
+import { drawsFocusRing } from '../../../../../test/utils/focus-ring'
 import { fakeFieldModel } from '../../../../../playground/app/kit/fake-field-model'
 import Select from './Select.vue'
 import { useCwaSelect } from '#cwa/composables/cwa-select'
@@ -156,5 +157,9 @@ describe('CwaUiSelect (#460)', () => {
 
     const menu = await open(wrapper)
     expect(await axe(menu)).toHaveNoViolations()
+  })
+
+  test('the trigger draws its focus ring when focused from the keyboard', () => {
+    expect(drawsFocusRing(mountSelect().get('[data-testid="select-trigger"]').classes())).toBe(true)
   })
 })
