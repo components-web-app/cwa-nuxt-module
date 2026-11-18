@@ -28,7 +28,7 @@ definePageMeta({
 })
 
 useHead({
-  title: 'Reset Password',
+  title: 'Reset password',
   bodyAttrs: {
     class: 'cwa:h-full',
   },

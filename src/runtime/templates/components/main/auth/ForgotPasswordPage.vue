@@ -4,7 +4,7 @@
     :error="error"
     :success="success ? 'Please check your inbox' : undefined"
     :submitting="submitting"
-    :submit-button-text="success ? 'Back to Login' : 'Reset Password'"
+    :submit-button-text="success ? 'Back to login' : 'Reset password'"
     @submit="$emit('submit')"
   >
     <template #success>

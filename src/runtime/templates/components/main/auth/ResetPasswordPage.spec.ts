@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, test } from 'vitest'
 import { enableAutoUnmount, mount } from '@vue/test-utils'
-import { h } from 'vue'
+import { h, nextTick } from 'vue'
 import { axe } from '../../../../../../test/utils/axe'
 import ResetPasswordPage from './ResetPasswordPage.vue'
 
@@ -36,18 +36,39 @@ describe('ResetPasswordPage', () => {
     expect(wrapper.get('input[name="secondPassword"]').attributes('aria-invalid')).toBeUndefined()
   })
 
+  test('password errors arriving after a submit are announced with the field\'s label and focus the first field', async () => {
+    const wrapper = mountPage()
+    wrapper.get('input[name="secondPassword"]').element.focus()
+
+    await wrapper.setProps({ inputErrors: { password: ['This value is too short.'] } })
+    await nextTick()
+
+    expect(wrapper.get('[role="status"]').text()).toBe('Enter new password: This value is too short.')
+    expect(document.activeElement).toBe(wrapper.get('input[name="firstPassword"]').element)
+  })
+
+  test('once reset, focuses the success alert', async () => {
+    const wrapper = mountPage()
+    wrapper.get('input[name="firstPassword"]').element.focus()
+
+    await wrapper.setProps({ success: true })
+    await nextTick()
+
+    expect(document.activeElement).toBe(wrapper.get('[data-testid="auth-success"]').element)
+  })
+
   test('form errors take the place of the page error in the alert', () => {
     const wrapper = mountPage({ error: 'Unexpected error', inputErrors: { form: ['The passwords do not match.'] } })
 
     expect(wrapper.get('[data-testid="auth-error"]').text()).toBe('The passwords do not match.')
   })
 
-  test('once reset, says so and offers Go to Login in place of the fields', () => {
+  test('once reset, says so and offers Go to login in place of the fields', () => {
     const wrapper = mountPage({ success: true })
 
     expect(wrapper.get('[data-testid="auth-success"]').text()).toContain('You have successfully reset your password.')
     expect(wrapper.find('input').exists()).toBe(false)
-    expect(wrapper.get('button[type="submit"]').text()).toBe('Go to Login')
+    expect(wrapper.get('button[type="submit"]').text()).toBe('Go to login')
   })
 
   test.each([

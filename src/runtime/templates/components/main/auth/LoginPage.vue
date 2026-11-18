@@ -4,6 +4,7 @@
     :submitting="submitting"
     :submit-button-text="submitButtonText"
     :error="error"
+    :main="main"
     @submit="$emit('submit')"
   >
     <slot name="header" />
@@ -54,9 +55,11 @@ const props = withDefaults(defineProps<{
     password: string
   }
   error?: string
+  main?: boolean
 }>(), {
   title: 'Sign in',
   error: undefined,
+  main: true,
 })
 
 defineSlots<{

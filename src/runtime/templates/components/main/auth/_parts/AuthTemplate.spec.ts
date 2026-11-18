@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, test } from 'vitest'
 import { enableAutoUnmount, mount } from '@vue/test-utils'
-import { h } from 'vue'
+import { h, nextTick, ref } from 'vue'
 import { axe } from '../../../../../../../test/utils/axe'
 import CwaUiInput from '../../../ui/Input.vue'
 import AuthTemplate from './AuthTemplate.vue'
@@ -10,7 +10,7 @@ enableAutoUnmount(afterEach)
 
 function createWrapper(props: Record<string, unknown> = {}, slots: Record<string, () => unknown> = {}) {
   return mount(AuthTemplate, {
-    props: { submitButtonText: 'Sign In', submitting: false, ...props },
+    props: { submitButtonText: 'Sign in', submitting: false, ...props },
     slots,
     global: { stubs: { CwaLogo: { render: () => h('svg') } } },
     attachTo: document.body,
@@ -29,7 +29,7 @@ describe('AuthTemplate', () => {
   test('the submit button is the kit\'s solid button, busy while submitting so a click does not submit again', async () => {
     const idle = createWrapper()
     const button = idle.get('button[type="submit"]')
-    expect(button.text()).toBe('Sign In')
+    expect(button.text()).toBe('Sign in')
     expect(button.classes()).toContain('cwa:bg-accent')
     expect(button.attributes('aria-busy')).toBeUndefined()
 
@@ -81,6 +81,51 @@ describe('AuthTemplate', () => {
     const wrapper = createWrapper({}, { default: () => h(CwaUiInput, { label: 'Enter new password', modelValue: '', invalid: 'Too short.' }) })
 
     expect(wrapper.get('[data-testid="field-error"]').text()).toBe('Too short.')
+  })
+
+  test('field errors arriving after a submit are announced once in the status region and focus the first invalid input', async () => {
+    const invalid = ref<string>()
+    const wrapper = createWrapper({}, {
+      default: () => [
+        h(CwaUiInput, { label: 'Username', modelValue: '' }),
+        h(CwaUiInput, { label: 'Enter new password', modelValue: '', invalid: invalid.value }),
+      ],
+    })
+    expect(wrapper.get('[role="status"]').text()).toBe('')
+
+    invalid.value = 'Too short.'
+    await wrapper.setProps({ fieldErrors: 'Enter new password: Too short.' })
+    await nextTick()
+
+    expect(wrapper.findAll('[role="status"]')).toHaveLength(1)
+    expect(wrapper.get('[role="status"]').text()).toBe('Enter new password: Too short.')
+    expect(document.activeElement).toBe(wrapper.get('input[aria-invalid="true"]').element)
+  })
+
+  test('a page error is announced in place of the field errors', () => {
+    const wrapper = createWrapper({ error: 'Unexpected error', fieldErrors: 'Enter new password: Too short.' })
+
+    expect(wrapper.get('[role="status"]').text()).toBe('Unexpected error')
+  })
+
+  test('success focuses its alert, so focus does not drop to the page when the fields go', async () => {
+    const sent = ref(false)
+    const wrapper = createWrapper({}, { default: () => sent.value ? [] : h(CwaUiInput, { label: 'Username', modelValue: '' }) })
+    wrapper.get('input').element.focus()
+
+    sent.value = true
+    await wrapper.setProps({ success: 'Please check your inbox' })
+    await nextTick()
+
+    expect(document.activeElement).toBe(wrapper.get('[data-testid="auth-success"]').element)
+  })
+
+  test('the card is in a main landmark by default, and in none when the app\'s layout has its own', () => {
+    expect(createWrapper().findAll('main')).toHaveLength(1)
+
+    const nested = createWrapper({ main: false })
+    expect(nested.find('main').exists()).toBe(false)
+    expect(nested.find('[data-testid="auth-card"]').exists()).toBe(true)
   })
 
   test.each([

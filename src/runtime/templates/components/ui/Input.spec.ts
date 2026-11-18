@@ -5,7 +5,7 @@ import { createSSRApp, defineComponent, h, provide, ref } from 'vue'
 import type { Ref } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 import { axe } from '../../../../../test/utils/axe'
-import { formSurfaceKey } from '../core/ui/field-keys'
+import { fieldGroupKey, formSurfaceKey } from '../core/ui/field-keys'
 import Input from './Input.vue'
 
 enableAutoUnmount(afterEach)
@@ -50,32 +50,53 @@ describe('CwaUiInput (#459)', () => {
   })
 
   describe('a value the browser filled into the server-rendered input before hydration (#386)', () => {
-    function inputApp(model: Ref<string>, autocomplete: string | undefined, writes: string[] = []) {
-      return createSSRApp(defineComponent({
-        render: () => h(Input, {
-          'label': 'Username',
-          'name': 'username',
-          autocomplete,
-          'modelValue': model.value,
-          'onUpdate:modelValue': (value: string) => {
-            writes.push(value)
-            model.value = value
+    type Binding = { kind: 'v-model' } | { kind: 'model' } | { kind: 'field' }
+
+    function inputApp(model: Ref<string>, props: Record<string, unknown>, binding: Binding, writes: string[] = []) {
+      const resourceModel = {
+        model: {
+          get value() {
+            return model.value
           },
-        }),
+          set value(next: string) {
+            writes.push(next)
+            model.value = next
+          },
+        },
+        remoteChange: { value: undefined },
+      }
+      return createSSRApp(defineComponent({
+        setup() {
+          provide(fieldGroupKey, { model: () => resourceModel, undo: () => undefined })
+          return () => h(Input, {
+            label: 'Username',
+            name: 'username',
+            ...props,
+            ...(binding.kind === 'v-model'
+              ? {
+                  'modelValue': model.value,
+                  'onUpdate:modelValue': (value: string) => {
+                    writes.push(value)
+                    model.value = value
+                  },
+                }
+              : binding.kind === 'model' ? { model: resourceModel } : { field: 'title' }),
+          })
+        },
       }))
     }
 
-    async function hydrate(initial: string, filled: string | undefined, autocomplete: string | null = 'username') {
+    async function hydrate(initial: string, filled: string | undefined, props: Record<string, unknown> = { autocomplete: 'username' }, binding: Binding = { kind: 'v-model' }) {
       const container = document.createElement('div')
       document.body.appendChild(container)
-      container.innerHTML = await renderToString(inputApp(ref(initial), autocomplete ?? undefined))
+      container.innerHTML = await renderToString(inputApp(ref(initial), props, binding))
       const input = container.querySelector('input') as HTMLInputElement
       if (filled !== undefined) {
         input.value = filled
       }
       const writes: string[] = []
       const model = ref(initial)
-      const app = inputApp(model, autocomplete ?? undefined, writes)
+      const app = inputApp(model, props, binding, writes)
       app.mount(container)
       await flushPromises()
       return { input, model, writes, unmount: () => app.unmount() }
@@ -89,18 +110,36 @@ describe('CwaUiInput (#459)', () => {
       unmount()
     })
 
-    test('writes nothing when the input still holds the server-rendered value', async () => {
-      const { writes, unmount } = await hydrate('admin', undefined)
+    test('is kept for an app\'s v-model password field that sets no autocomplete', async () => {
+      const { input, model, unmount } = await hydrate('', 'filled-secret', { type: 'password', name: 'password' })
+
+      expect(input.value).toBe('filled-secret')
+      expect(model.value).toBe('filled-secret')
+      unmount()
+    })
+
+    test('is not read for a v-model field with autocomplete off', async () => {
+      const { writes, unmount } = await hydrate('', 'Restored by the browser', { autocomplete: 'off' })
 
       expect(writes).toEqual([])
       unmount()
     })
 
-    test('is only read for a field with autocomplete, so a restored admin field never overwrites its model', async () => {
-      const { input, writes, unmount } = await hydrate('Stored title', 'Restored by the browser', null)
+    test.each([
+      ['bound with :model', { kind: 'model' } as Binding],
+      ['bound with field', { kind: 'field' } as Binding],
+    ])('a resource field %s never takes a value the browser restored, even with autocomplete', async (_name, binding) => {
+      const { input, writes, unmount } = await hydrate('Stored title', 'Restored by the browser', { autocomplete: 'username' }, binding)
 
       expect(writes).toEqual([])
       expect(input.value).toBe('Stored title')
+      unmount()
+    })
+
+    test('writes nothing when the input still holds the server-rendered value', async () => {
+      const { writes, unmount } = await hydrate('admin', undefined)
+
+      expect(writes).toEqual([])
       unmount()
     })
 

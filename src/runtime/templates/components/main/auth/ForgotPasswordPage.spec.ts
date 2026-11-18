@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, test } from 'vitest'
 import { enableAutoUnmount, mount, RouterLinkStub } from '@vue/test-utils'
-import { h } from 'vue'
+import { h, nextTick } from 'vue'
 import { axe } from '../../../../../../test/utils/axe'
 import ForgotPasswordPage from './ForgotPasswordPage.vue'
 
@@ -22,7 +22,7 @@ describe('ForgotPasswordPage', () => {
 
     expect(input.attributes('autocomplete')).toBe('username')
     expect(input.element.required).toBe(true)
-    expect(wrapper.get('button[type="submit"]').text()).toBe('Reset Password')
+    expect(wrapper.get('button[type="submit"]').text()).toBe('Reset password')
     expect(wrapper.getComponent(RouterLinkStub).props('to')).toBe('/login')
   })
 
@@ -34,13 +34,23 @@ describe('ForgotPasswordPage', () => {
     expect((wrapper.props('modelValue') as { username: string }).username).toBe('admin')
   })
 
-  test('once sent, says to check the inbox and offers Back to Login in place of the field (#353)', () => {
+  test('once sent, says to check the inbox and offers Back to login in place of the field (#353)', () => {
     const wrapper = mountPage({ success: true })
 
     expect(wrapper.get('[data-testid="auth-success"]').text()).toContain('Please check your inbox')
     expect(wrapper.get('[data-testid="auth-success"]').text()).toContain('we\'ve sent an email with a link to reset your password')
     expect(wrapper.find('input').exists()).toBe(false)
-    expect(wrapper.get('button[type="submit"]').text()).toBe('Back to Login')
+    expect(wrapper.get('button[type="submit"]').text()).toBe('Back to login')
+  })
+
+  test('once sent, focuses the success alert, so focus does not drop to the page when the field goes', async () => {
+    const wrapper = mountPage()
+    wrapper.get('input').element.focus()
+
+    await wrapper.setProps({ success: true })
+    await nextTick()
+
+    expect(document.activeElement).toBe(wrapper.get('[data-testid="auth-success"]').element)
   })
 
   test('a throttled request shows its message as an error, with no countdown (#353)', () => {

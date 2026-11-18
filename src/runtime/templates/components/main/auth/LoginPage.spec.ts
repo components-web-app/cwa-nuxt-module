@@ -9,7 +9,7 @@ import LoginPage from './LoginPage.vue'
 function loginApp(credentials: { username: string, password: string }, onSubmit: () => void = () => {}) {
   const app = createSSRApp(defineComponent({
     render: () => h(LoginPage, {
-      'submitButtonText': 'Sign In',
+      'submitButtonText': 'Sign in',
       'submitting': false,
       'modelValue': credentials,
       'onUpdate:modelValue': (value: { username: string, password: string }) => Object.assign(credentials, value),
@@ -59,6 +59,11 @@ describe('LoginPage', () => {
     wrapper.unmount()
   })
 
+  test('passes main to the template, so an app whose layout has a main landmark can turn its own off', () => {
+    expect(mountLogin().findAll('main')).toHaveLength(1)
+    expect(mountLogin({ main: false }).find('main').exists()).toBe(false)
+  })
+
   test.each([
     ['idle', {}],
     ['submitting', { submitting: true }],
@@ -73,7 +78,7 @@ describe('LoginPage', () => {
 
 function mountLogin(props: Record<string, unknown> = {}) {
   return mount(LoginPage, {
-    props: { submitButtonText: 'Sign In', submitting: false, modelValue: { username: '', password: '' }, ...props },
+    props: { submitButtonText: 'Sign in', submitting: false, modelValue: { username: '', password: '' }, ...props },
     global: { stubs: { CwaLogo: { render: () => h('svg') }, NuxtLink: RouterLinkStub } },
     attachTo: document.body,
   })

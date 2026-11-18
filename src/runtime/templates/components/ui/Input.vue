@@ -59,7 +59,7 @@ const onSurface = !!inject(formSurfaceKey, undefined)
 
 const vKeepPrefilledValue: Directive<HTMLInputElement> = {
   created(el) {
-    if (props.autocomplete && props.autocomplete !== 'off' && el.value && el.value !== (value.value ?? '')) {
+    if (!props.field && !props.model && props.autocomplete !== 'off' && el.value && el.value !== (value.value ?? '')) {
       value.value = el.value
     }
   },

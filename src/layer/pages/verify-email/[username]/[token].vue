@@ -5,7 +5,7 @@ import CwaUiSpinner from '#cwa/templates/components/ui/Spinner.vue'
 import { definePageMeta, useHead, useVerifyEmail } from '#imports'
 
 useHead({
-  title: 'Verify Email',
+  title: 'Verify email',
   bodyAttrs: {
     class: 'cwa:h-full',
   },
@@ -36,7 +36,7 @@ onMounted(() => {
   <AuthTemplate
     title="Verify your email"
     :submitting="submitting"
-    submit-button-text="Verify Email"
+    submit-button-text="Verify email"
     :error="error"
     :success="success ? 'Your email address is now verified' : undefined"
     :hide-submit="!!(success || error)"

@@ -37,7 +37,7 @@ onMounted(() => {
   <AuthTemplate
     title="Confirm your new email"
     :submitting="submitting"
-    submit-button-text="Verify Email"
+    submit-button-text="Verify email"
     :error="error"
     :success="success ? 'New email address confirmed' : undefined"
     :hide-submit="!!(success || error)"

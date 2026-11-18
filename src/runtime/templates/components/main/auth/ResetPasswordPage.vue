@@ -2,9 +2,10 @@
   <AuthTemplate
     title="Choose a new password"
     :error="inputErrors?.form || error"
+    :field-errors="passwordError ? `Enter new password: ${passwordError}` : undefined"
     :success="success ? 'Password reset' : undefined"
     :submitting="submitting"
-    :submit-button-text="success ? 'Go to Login' : 'Reset Password'"
+    :submit-button-text="success ? 'Go to login' : 'Reset password'"
     @submit="emitSubmit"
   >
     <template #success>

@@ -3,7 +3,7 @@
     v-model="credentials"
     :error="error"
     :submitting="submitting"
-    submit-button-text="Sign In"
+    submit-button-text="Sign in"
     @submit="signIn"
   />
 </template>
