@@ -3,10 +3,9 @@ import { ref, useTemplateRef } from 'vue'
 import { CwaUiButton, CwaUiMultiSelect, CwaUiResourceSearch, CwaUiSegmented, CwaUiSelect } from '#components'
 import KitSim from './KitSim.vue'
 import KitDemo from './KitDemo.vue'
-import KitSlot from './KitSlot.vue'
 import KitLoadControls from './KitLoadControls.vue'
 import { kitLoader } from './fake-loader'
-import { kitSearchLabel, kitSearchSource, kitSelectOptions, kitStyleOptions } from './kit-data'
+import { kitPageTypeOptions, kitSearchLabel, kitSearchSource, kitSelectOptions, kitStyleOptions } from './kit-data'
 import type { KitSearchOutcome } from './kit-data'
 import { typeInto, typeableIn } from './type-into'
 
@@ -16,6 +15,7 @@ const terms = ['gal', 'galery', 'map', 'text']
 const search = kitSearchSource(kitLoader, () => outcome.value)
 const chosen = ref<string | null>(null)
 const layout = ref<string | null>('split')
+const pageType = ref('static')
 const styles = ref<string[]>(['padding'])
 const searchDemo = useTemplateRef<HTMLElement>('searchDemo')
 const typed = ref('')
@@ -90,9 +90,18 @@ async function typeTerm(term: string) {
         :options="kitStyleOptions"
       />
     </KitDemo>
-    <KitSlot
-      name="the type select"
-      from="7b or 7d"
-    />
+    <KitDemo
+      component="CwaUiSelect"
+      :state="`the page dialog's type select, label hidden, xs, with type dots: ${pageType === 'template' ? 'Dynamic' : 'Static'}`"
+    >
+      <CwaUiSelect
+        v-model="pageType"
+        label="Page type"
+        label-hidden
+        width="xs"
+        :options="kitPageTypeOptions"
+        data-testid="kit-sim-search-page-type"
+      />
+    </KitDemo>
   </KitSim>
 </template>
