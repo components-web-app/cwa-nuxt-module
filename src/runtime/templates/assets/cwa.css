@@ -1142,6 +1142,9 @@
 .cwa\:rounded-none {
   border-radius: 0;
 }
+.cwa\:rounded-sm {
+  border-radius: var(--cwa-radius-sm);
+}
 .cwa\:rounded-toggle {
   border-radius: var(--cwa-radius-toggle);
 }
@@ -2614,6 +2617,12 @@
   .cwa\:max-sm\:left-2 {
     left: calc(var(--cwa-spacing) * 2);
   }
+  .cwa\:max-sm\:order-1 {
+    order: 1;
+  }
+  .cwa\:max-sm\:order-2 {
+    order: 2;
+  }
   .cwa\:max-sm\:mx-1 {
     margin-inline: var(--cwa-spacing);
   }
@@ -2622,6 +2631,9 @@
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
+  }
+  .cwa\:max-sm\:flex {
+    display: flex;
   }
   .cwa\:max-sm\:hidden {
     display: none;
@@ -2634,6 +2646,18 @@
   }
   .cwa\:max-sm\:max-w-none {
     max-width: none;
+  }
+  .cwa\:max-sm\:min-w-0 {
+    min-width: 0px;
+  }
+  .cwa\:max-sm\:flex-1 {
+    flex: 1;
+  }
+  .cwa\:max-sm\:justify-center {
+    justify-content: center;
+  }
+  .cwa\:max-sm\:gap-x-2 {
+    column-gap: calc(var(--cwa-spacing) * 2);
   }
   .cwa\:max-sm\:border-b {
     border-bottom-style: var(--tw-border-style);
@@ -2671,6 +2695,9 @@
     overflow: visible;
     clip-path: none;
     white-space: normal;
+  }
+  .cwa\:sm\:absolute {
+    position: absolute;
   }
   .cwa\:sm\:inset-auto {
     inset: auto;

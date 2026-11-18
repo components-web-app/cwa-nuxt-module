@@ -1,5 +1,6 @@
 import * as Y from 'yjs'
 import { expect, test } from './fixtures.mjs'
+import { mercurePath } from './rehearsal.mjs'
 import { articleTexts, seedArticlePages, texts } from './seed.mjs'
 
 const notFoundResource = /^Failed to load resource: the server responded with a status of 404/
@@ -1609,5 +1610,43 @@ test('56. outside edit mode the header\'s Edit button and menu sit on the header
     for (const name of ['menu', 'edit', 'settings']) {
       assert(Math.abs(centres[name] - centres.bar) < 0.5, `At ${width}px the ${name} is centred at ${centres[name]}, the bar at ${centres.bar}`)
     }
+  }
+})
+
+test('57. with live editing paused on a phone, the header\'s status is a glyph named for it beside Edit, clear of the page settings button and the menu, and a tap shows its text', async ({ cwa: t }) => {
+  const { page, base, settle, seed } = t
+  t.allowConsoleErrors(/^Failed to load resource: net::ERR_FAILED/)
+  await page.route(`**${mercurePath}**`, route => route.abort())
+  for (const width of [390, 320]) {
+    await page.setViewportSize({ width, height: 800 })
+    await page.goto(`${base}${seed.paths.home}`)
+    await page.getByRole('button', { name: 'Edit', exact: true }).waitFor()
+    const glyph = page.getByTestId('presence-paused-glyph')
+    await glyph.waitFor()
+    await settle()
+    const boxes = await page.evaluate(() => {
+      const box = (element) => {
+        const { left, right } = element.getBoundingClientRect()
+        return { left, right }
+      }
+      const menu = [...document.querySelectorAll('a')].find(link => link.querySelector('.cwa\\:sr-only')?.textContent === 'Menu')
+      return {
+        edit: box([...document.querySelectorAll('button')].find(button => button.textContent.trim() === 'Edit')),
+        status: box(document.querySelector('[data-testid="presence-paused"]')),
+        settings: box(document.querySelector('[data-testid="page-settings"]')),
+        menu: box(menu.querySelector('svg')),
+      }
+    })
+    const order = ['edit', 'status', 'settings', 'menu']
+    for (let index = 1; index < order.length; index++) {
+      const [before, after] = [order[index - 1], order[index]]
+      assert(boxes[before].right <= boxes[after].left, `At ${width}px the ${before} (${boxes[before].left}–${boxes[before].right}) overlaps the ${after} (${boxes[after].left}–${boxes[after].right})`)
+    }
+    assert(boxes.menu.right <= width, `At ${width}px the menu ends at ${boxes.menu.right}`)
+    assert(await glyph.getAttribute('aria-label') === null && (await glyph.textContent()).trim() === 'Live editing paused', 'The glyph is named "Live editing paused"')
+    assert(await page.evaluate(() => getComputedStyle(document.querySelector('[data-testid="presence-paused"] > span')).display) === 'none', 'The status text is hidden on a phone')
+    await glyph.click()
+    await page.getByTestId('presence-paused-tip').waitFor()
+    await page.getByTestId('presence-paused-tip').waitFor({ state: 'detached', timeout: 4000 })
   }
 })
