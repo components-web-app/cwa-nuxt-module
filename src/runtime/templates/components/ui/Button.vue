@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { computed, useId } from 'vue'
+import { computed, useId, useTemplateRef } from 'vue'
 import type { Component } from 'vue'
 import Spinner from './Spinner.vue'
+import Menu from './Menu.vue'
+import type { MenuEntry, MenuItem } from '../core/ui/menu-entries'
 import { buttonLooks } from './kit-looks'
 import type { ButtonTone, ButtonVariant } from './kit-looks'
 
@@ -16,8 +18,11 @@ const {
   disabled = false,
   disabledReason,
   type = 'button',
+  options,
+  optionsLabel = 'More actions',
+  ariaLabel,
 } = defineProps<{
-  label: string
+  label?: string
   variant?: ButtonVariant
   tone?: ButtonTone
   size?: 'sm' | 'md'
@@ -27,9 +32,14 @@ const {
   disabled?: boolean
   disabledReason?: string
   type?: 'button' | 'submit' | 'reset'
+  options?: MenuEntry[]
+  optionsLabel?: string
+  ariaLabel?: string
 }>()
 
-const emit = defineEmits<{ click: [event: MouseEvent] }>()
+const emit = defineEmits<{ click: [event: MouseEvent], select: [item: MenuItem] }>()
+
+const split = useTemplateRef<HTMLElement>('split')
 
 const inactive = computed(() => loading || disabled)
 
@@ -47,6 +57,12 @@ const boxClasses = computed(() => {
   const height = small ? 'cwa:h-8 cwa:pointer-coarse:h-hit' : 'cwa:h-control'
   const padding = small ? 'cwa:px-3' : (hasLead.value ? 'cwa:pl-3 cwa:pr-4' : 'cwa:px-4')
   return `${height} ${padding}`
+})
+
+const moreClasses = computed(() => {
+  const look = buttonLooks[variant][tone]
+  const box = size === 'sm' ? 'cwa:size-8 cwa:pointer-coarse:size-hit' : 'cwa:size-control cwa:pointer-coarse:size-hit'
+  return [box, look.rest, 'cwa:cursor-pointer']
 })
 
 const classes = computed(() => {
@@ -70,9 +86,65 @@ function onClick(event: MouseEvent) {
 </script>
 
 <template>
+  <div
+    v-if="options"
+    ref="split"
+    class="cwa:inline-flex cwa:shrink-0 cwa:gap-px"
+  >
+    <Button
+      v-if="label"
+      :label="label"
+      :variant="variant"
+      :tone="tone"
+      :size="size"
+      :icon="icon"
+      :icon-only="iconOnly"
+      :loading="loading"
+      :disabled="disabled"
+      :disabled-reason="disabledReason"
+      :type="type"
+      :aria-label="ariaLabel"
+      @click="emit('click', $event)"
+    />
+    <Menu
+      :items="options"
+      :label="optionsLabel"
+      :at="split"
+      @select="emit('select', $event)"
+    >
+      <button
+        type="button"
+        data-testid="button-options"
+        :aria-label="optionsLabel"
+        :disabled="loading"
+        class="cwa:inline-flex cwa:shrink-0 cwa:items-center cwa:justify-center cwa:outline-1 cwa:outline-transparent cwa:transition-colors cwa:duration-(--cwa-duration-fast) cwa:ease-out cwa:motion-reduce:transition-none cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-accent-fg cwa:disabled:cursor-progress cwa:disabled:opacity-50"
+        :class="[moreClasses, loading ? '' : buttonLooks[variant][tone].hover]"
+      >
+        <svg
+          viewBox="0 0 16 16"
+          aria-hidden="true"
+          fill="currentColor"
+          class="cwa:size-4"
+        ><circle
+          cx="8"
+          cy="3"
+          r="1.6"
+        /><circle
+          cx="8"
+          cy="8"
+          r="1.6"
+        /><circle
+          cx="8"
+          cy="13"
+          r="1.6"
+        /></svg>
+      </button>
+    </Menu>
+  </div>
   <button
+    v-else
     :type="type"
-    :aria-label="iconOnly ? label : undefined"
+    :aria-label="iconOnly ? label : ariaLabel"
     :aria-disabled="inactive ? 'true' : undefined"
     :aria-busy="loading ? 'true' : undefined"
     :aria-describedby="reason ? reasonId : undefined"

@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-import { afterEach, describe, expect, test } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { afterEach, describe, expect, test, vi } from 'vitest'
+import { flushPromises, mount } from '@vue/test-utils'
 import { h } from 'vue'
 import { axe } from '../../../../../test/utils/axe'
 import Button from './Button.vue'
@@ -214,6 +214,46 @@ describe('CwaUiButton (#456)', () => {
       const wrapper = mount(Button, { props: { label: 'Publish', ...props }, attachTo: document.body })
 
       expect(await axe(wrapper.element)).toHaveNoViolations()
+    })
+  })
+
+  describe('as a split button (#459)', () => {
+    const options = [{ group: null, items: [{ label: 'Clone', value: 'clone', testId: 'menu-clone' }] }]
+
+    test('the main action and a named ⋮ sit side by side; the main action clicks, the menu selects', async () => {
+      const onClick = vi.fn()
+      const onSelect = vi.fn()
+      const wrapper = mount(Button, { props: { label: 'Publish now', options, onClick, onSelect }, attachTo: document.body })
+
+      const buttons = wrapper.findAll('button')
+      expect(buttons.map(button => button.text() || button.attributes('aria-label'))).toEqual(['Publish now', 'More actions'])
+      await buttons[0]!.trigger('click')
+      expect(onClick).toHaveBeenCalledTimes(1)
+
+      await wrapper.get('[data-testid="button-options"]').trigger('keydown', { key: 'Enter' })
+      await flushPromises()
+      document.querySelector<HTMLElement>('[data-testid="menu-clone"]')!.click()
+      await flushPromises()
+      expect(onSelect).toHaveBeenCalledWith(expect.objectContaining({ value: 'clone' }))
+    })
+
+    test('with no main action only the ⋮ is shown, and it is held while loading', () => {
+      const wrapper = mount(Button, { props: { options, loading: true } })
+
+      expect(wrapper.findAll('button')).toHaveLength(1)
+      expect(wrapper.get('[data-testid="button-options"]').attributes('disabled')).toBeDefined()
+    })
+
+    test('a disabled main action leaves the menu usable', () => {
+      const wrapper = mount(Button, { props: { label: 'Schedule', disabled: true, disabledReason: 'Choose a date first', options } })
+
+      expect(wrapper.get('[data-testid="button-options"]').attributes('disabled')).toBeUndefined()
+    })
+
+    test('has no axe violations', async () => {
+      const wrapper = mount(Button, { props: { label: 'Publish now', options }, attachTo: document.body })
+
+      expect(await axe(wrapper.element as HTMLElement)).toHaveNoViolations()
     })
   })
 })

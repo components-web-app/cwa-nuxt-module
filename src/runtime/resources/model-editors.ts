@@ -1,6 +1,7 @@
 import type Cwa from '#cwa/cwa'
 import type { CwaResource } from '#cwa/resources/resource-utils'
 import type { FocusedPeer } from '#cwa/admin/presence'
+import type { CwaFieldState } from '#cwa/storage/stores/resources/state'
 
 export interface RemoteUser {
   id: string
@@ -25,6 +26,9 @@ export interface ResourceModelField<T = unknown> {
     onFocusout: (event: FocusEvent) => void
     onPointerdown: (event: PointerEvent) => void
   }
+  state?: { readonly value: CwaFieldState }
+  retry?: () => Promise<void>
+  reset?: () => Promise<void>
 }
 
 export interface ModelEditor {

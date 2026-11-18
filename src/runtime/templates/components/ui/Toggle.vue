@@ -1,0 +1,73 @@
+<script setup lang="ts">
+import { useId } from 'vue'
+import { SwitchRoot, SwitchThumb } from 'reka-ui'
+import Field from '../core/ui/Field.vue'
+import { useFieldModel } from '../core/ui/field-context'
+import type { ResourceModelField } from '#cwa/resources/model-editors'
+
+const props = withDefaults(defineProps<{
+  label: string
+  labelHidden?: boolean
+  info?: string
+  description?: string
+  disabled?: boolean
+  field?: string
+  model?: ResourceModelField<boolean>
+  modelValue?: boolean | null
+}>(), {
+  labelHidden: false,
+  info: undefined,
+  description: undefined,
+  disabled: false,
+  field: undefined,
+  model: undefined,
+  modelValue: undefined,
+})
+
+const emit = defineEmits<{ 'update:modelValue': [value: boolean | null | undefined] }>()
+
+const { model, value, state, unbound } = useFieldModel<boolean>(props, emit)
+const id = useId()
+
+function onChecked(checked: boolean) {
+  value.value = checked
+}
+</script>
+
+<template>
+  <Field
+    :label="label"
+    :info="info"
+    :description="description"
+    :state="state"
+    :model="model"
+    :control-id="id"
+    :name="field"
+    own-label
+  >
+    <template #default="{ describedBy, busy }">
+      <div
+        class="cwa:flex cwa:h-control cwa:items-center cwa:gap-3 cwa:pointer-coarse:h-hit"
+        :class="{ 'cwa:opacity-50': disabled || unbound }"
+        v-bind="model?.focusListeners"
+      >
+        <label
+          :for="id"
+          class="cwa:whitespace-nowrap cwa:text-label cwa:text-fg-muted"
+          :class="[labelHidden ? 'cwa:sr-only' : '', disabled || unbound ? 'cwa:cursor-not-allowed' : 'cwa:cursor-pointer']"
+        >{{ label }}</label>
+        <SwitchRoot
+          :id="id"
+          :model-value="!!value"
+          :disabled="disabled || unbound"
+          :aria-describedby="describedBy"
+          :aria-busy="busy ? 'true' : undefined"
+          class="cwa:relative cwa:inline-flex cwa:h-5 cwa:w-9 cwa:shrink-0 cwa:items-center cwa:rounded-toggle cwa:bg-toggle-off cwa:p-0.5 cwa:transition-colors cwa:duration-(--cwa-duration-fast) cwa:motion-reduce:transition-none cwa:outline-none cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-accent-fg cwa:data-[state=checked]:bg-accent cwa:disabled:cursor-not-allowed cwa:cursor-pointer"
+          @update:model-value="onChecked"
+        >
+          <SwitchThumb class="cwa:block cwa:size-4 cwa:rounded-toggle cwa:bg-white cwa:transition-transform cwa:duration-(--cwa-duration-fast) cwa:motion-reduce:transition-none cwa:data-[state=checked]:translate-x-4" />
+        </SwitchRoot>
+      </div>
+    </template>
+  </Field>
+</template>

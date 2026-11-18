@@ -8,8 +8,16 @@ import {
   CwaUiIconPlusIcon,
   CwaUiIconTickIcon,
   CwaUiIconXMarkIcon,
+  CwaUiInput,
+  CwaUiManagerRowDivider,
+  CwaUiManagerTab,
+  CwaUiNumber,
   CwaUiSpinner,
+  CwaUiToggle,
 } from '#components'
+import { fakeFieldModel } from '../kit/fake-field-model'
+import type { FakeStatus } from '../kit/fake-field-model'
+import type { MenuEntry } from '../../../src/runtime/templates/components/core/ui/menu-entries'
 import Toast from '../../../src/runtime/templates/components/core/ui/Toast.vue'
 import type { CwaToastOptions } from '../../../src/runtime/composables/cwa-toast'
 import { badgeTintPercent } from '../../../src/runtime/templates/components/ui/kit-looks'
@@ -63,6 +71,25 @@ const toastButtons = [
   { key: 'errors', label: 'Several errors' },
 ] as const
 const staticToasts = [toastSamples.success, toastSamples.warning, toastSamples.errors]
+
+const fieldStatuses: FakeStatus[] = ['idle', 'pending', 'saving', 'saved', 'error', 'conflict']
+const inputModels = fieldStatuses.map(status => ({ status, model: fakeFieldModel('Kitchens', status, 'Kitchens & bathrooms') }))
+const toggleModels = fieldStatuses.map(status => ({ status, model: fakeFieldModel(true, status, false) }))
+const numberModels = fieldStatuses.map(status => ({ status, model: fakeFieldModel(3, status, 4) }))
+const plainText = ref('')
+const nullableText = ref<string | null>('Can be emptied')
+const plainToggle = ref(false)
+const position = ref(2)
+const barScheduling = ref(false)
+const barPosition = ref(1)
+const barReordering = ref(true)
+const lastChoice = ref('')
+const menuOptions: MenuEntry[] = [
+  { label: 'Cancel schedule', value: 'cancel-schedule' },
+  { group: null, items: [{ label: 'Add before', value: 'add-before' }, { label: 'Add after', value: 'add-after' }] },
+  { group: null, items: [{ label: 'Add to start or end', value: 'add-full', disabled: true, disabledReason: 'Main content is full: 6 of 6 components.' }] },
+  { group: null, items: [{ label: 'Clone', value: 'clone' }, { label: 'Move', value: 'move' }, { label: 'Discard', value: 'discard', tone: 'danger' }] },
+]
 
 const badgeTones = [
   { tone: 'success', label: 'Live' },
@@ -336,6 +363,186 @@ const badgeTones = [
         </div>
       </section>
 
+      <section aria-labelledby="kit-fields">
+        <h2 id="kit-fields">
+          Fields and their save state
+        </h2>
+        <p class="kit-note">
+          Each field binds one of <code>field="…"</code> (inside a manager tab), <code>:model</code> or <code>v-model</code>. The 2px line on the field's bottom edge is its save state: a moving band while saving, a line that grows and fades when saved, solid red when it wasn't saved and amber for a conflict. Focus or hover a red or amber field for Retry and Reset, or the two values. These samples use <code>fakeFieldModel(value, state)</code>; Retry saves and Reset puts the value back.
+        </p>
+        <h3>Input</h3>
+        <div class="kit-row">
+          <CwaUiInput
+            v-for="sample in inputModels"
+            :key="sample.status"
+            :label="sample.status"
+            :model="sample.model"
+            :data-testid="`kit-input-${sample.status}`"
+          />
+        </div>
+        <div class="kit-row">
+          <CwaUiInput
+            v-model="plainText"
+            label="With v-model"
+            placeholder="Type here"
+            info="Info is behind the ⓘ and also describes the field to screen readers."
+          />
+          <CwaUiInput
+            v-model="nullableText"
+            label="Nullable"
+            nullable
+            width="lg"
+          />
+          <CwaUiInput
+            model-value="Read only"
+            label="Read only"
+            readonly
+          />
+          <CwaUiInput
+            model-value="Disabled"
+            label="Disabled"
+            disabled
+          />
+        </div>
+        <h3>Toggle</h3>
+        <div class="kit-row">
+          <CwaUiToggle
+            v-for="sample in toggleModels"
+            :key="sample.status"
+            :label="sample.status"
+            :model="sample.model"
+          />
+          <CwaUiToggle
+            v-model="plainToggle"
+            label="With v-model and info"
+            info="A toggle's ⓘ sits after the switch."
+          />
+          <CwaUiToggle
+            :model-value="true"
+            label="Disabled"
+            disabled
+          />
+        </div>
+        <h3>Number</h3>
+        <p class="kit-note">
+          Typing past the range is allowed and marked; on blur or Enter it snaps to the nearest end and says so. The − and + stay focusable at the ends and say why they do nothing. Arrow keys step by one, Page Up and Page Down by five, Home and End go to the ends.
+        </p>
+        <div class="kit-row">
+          <CwaUiNumber
+            v-for="sample in numberModels"
+            :key="sample.status"
+            :label="sample.status"
+            :model="sample.model"
+            :min="1"
+            :max="6"
+          />
+        </div>
+        <div class="kit-row">
+          <CwaUiNumber
+            v-model="position"
+            label="Columns, 1 to 6"
+            :min="1"
+            :max="6"
+            noun="column"
+            min-reason="One column is the fewest"
+            max-reason="Six columns is the most"
+            data-testid="kit-number"
+          />
+          <CwaUiNumber
+            :model-value="3"
+            label="Disabled"
+            disabled
+          />
+        </div>
+      </section>
+
+      <section aria-labelledby="kit-menu">
+        <h2 id="kit-menu">
+          Split button and menu
+        </h2>
+        <p class="kit-note">
+          The ⋮ opens a menu anchored to the whole button. A disabled option says why on its second line. Last chosen: <output data-testid="kit-menu-choice">{{ lastChoice || 'nothing yet' }}</output>
+        </p>
+        <div class="kit-row">
+          <CwaUiButton
+            label="Publish now"
+            variant="solid"
+            size="sm"
+            :options="menuOptions"
+            data-testid="kit-split"
+            @select="lastChoice = $event.label"
+          />
+          <CwaUiButton
+            label="Schedule"
+            variant="solid"
+            size="sm"
+            disabled
+            disabled-reason="Choose a date first"
+            :options="menuOptions"
+            @select="lastChoice = $event.label"
+          />
+          <CwaUiButton
+            label="Saving"
+            variant="solid"
+            size="sm"
+            loading
+            :options="menuOptions"
+          />
+          <CwaUiButton
+            size="sm"
+            :options="menuOptions"
+            options-label="Component actions"
+            @select="lastChoice = $event.label"
+          />
+        </div>
+      </section>
+
+      <section aria-labelledby="kit-bar">
+        <h2 id="kit-bar">
+          Manager row
+        </h2>
+        <p class="kit-note">
+          A manager tab is one row that never grows the bar: controls sit side by side, and a row too wide for the screen scrolls sideways with a fade at the cut edge, becoming one tab stop.
+        </p>
+        <div
+          class="kit-bar"
+          data-testid="kit-bar"
+        >
+          <CwaUiManagerTab>
+            <CwaUiToggle
+              v-model="barReordering"
+              label="Enable reordering"
+              info="Lets you drag components on the page."
+            />
+            <CwaUiNumber
+              v-model="barPosition"
+              label="Position"
+              :min="1"
+              :max="6"
+              noun="position"
+              decrement-label="Move up"
+              increment-label="Move down"
+              min-reason="Already first in this group"
+              max-reason="Already last in this group"
+              :disabled="!barReordering"
+            />
+            <CwaUiManagerRowDivider />
+            <CwaUiToggle
+              v-model="barScheduling"
+              label="Schedule"
+            />
+            <CwaUiInput
+              :model="inputModels[4]!.model"
+              label="Title"
+            />
+            <CwaUiInput
+              :model="inputModels[5]!.model"
+              label="Subtitle"
+            />
+          </CwaUiManagerTab>
+        </div>
+      </section>
+
       <section aria-labelledby="kit-toasts">
         <h2 id="kit-toasts">
           Toasts
@@ -533,6 +740,12 @@ code {
   display: grid;
   gap: 0.75rem;
   max-width: 22rem;
+}
+
+.kit-bar {
+  max-width: 100%;
+  background: var(--cwa-color-surface);
+  box-shadow: inset 0 0 0 1px var(--cwa-color-line);
 }
 
 .kit-accent {

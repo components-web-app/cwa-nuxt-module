@@ -1,11 +1,12 @@
 // @vitest-environment happy-dom
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
-import { ref, nextTick } from 'vue'
+import { h, inject, onMounted, ref, nextTick } from 'vue'
 import { flushPromises, mount } from '@vue/test-utils'
 import { mockNuxtImport } from '@nuxt/test-utils/runtime'
 import { CwaUserRoles } from '#cwa/storage/stores/auth/state'
 import { useCloneMode } from '#cwa/admin/clone-mode'
 import type Cwa from '#cwa/cwa'
+import { announceKey } from '#cwa/templates/components/core/ui/field-keys'
 
 vi.mock('#cwa/templates/components/main/admin/resource-manager/_parts/ClonePlacementMenu.vue', () => ({
   __esModule: true,
@@ -15,6 +16,8 @@ vi.mock('#cwa/templates/components/main/admin/resource-manager/_parts/ClonePlace
     template: '<div class="clone-placement-menu-stub" />',
   },
 }))
+
+const selectOriginal = vi.hoisted(() => ({ fn: (() => {}) as (index: number) => void }))
 
 const resolverState = vi.hoisted(() => ({
   allMeta: null as any,
@@ -92,20 +95,22 @@ function makeCwa(opts: {
     resources: {
       displayPageIri: { value: undefined },
       isIriPublishableEquivalent: vi.fn(() => false),
+      getResource: vi.fn(() => ({ value: undefined })),
     },
   }
 }
 
-async function mountManager() {
+async function mountManager(attachTo?: HTMLElement) {
   const { default: ResourceManager } = await import('./ResourceManager.vue')
   return mount(ResourceManager, {
+    attachTo,
     global: {
       stubs: {
         ResourceLoadingIndicator: { template: '<div class="rli-stub" />' },
         ManagerTabs: {
           name: 'ManagerTabs',
           props: ['tabs'],
-          methods: { resetTabs() {} },
+          methods: { resetTabs() {}, selectOriginal: (index: number) => selectOriginal.fn(index) },
           template: '<div class="manager-tabs-stub" @click="$emit(\'click\', 1)" />',
         },
         CwaAdminResourceManagerContextMenu: {
@@ -114,6 +119,7 @@ async function mountManager() {
           template: '<div class="context-menu-stub" />',
         },
         ResourceManagerCtaButton: { template: '<div class="cta-stub" />' },
+        BarSummary: { name: 'BarSummary', props: ['message'], emits: ['show'], template: '<span class="bar-summary-stub" />' },
         ComponentUsageBadge: { template: '<span class="usage-badge-stub" />' },
         SharedInstancesHighlight: { template: '<div class="shared-instances-stub" />' },
         PeerOutlines: { template: '<div class="peer-outlines-stub" />' },
@@ -226,6 +232,52 @@ describe('ResourceManager', () => {
 
       expect(wrapper.find('.peer-outlines-stub').exists()).toBe(shown)
       cloning && useCloneMode(cwaState.cwa).end()
+    })
+
+    test('the pinned status sits in the tab row ahead of the usage badge and the CTA, and voices what a tab announces, so the region outlives the tab (#459)', async () => {
+      const AnnouncingTab = {
+        name: 'AnnouncingTab',
+        setup() {
+          const announce = inject(announceKey)!
+          onMounted(() => announce('Set to 6, the highest position'))
+          return () => h('div')
+        },
+      }
+      const stackManager = makeStackManager({
+        showManager: ref(true),
+        currentStackItem: ref({ iri: '/component/1', managerTabs: [AnnouncingTab] }),
+      })
+      cwaState.cwa = makeCwa({ stackManager })
+      const wrapper = await mountManager()
+      resolverState.allMeta.value = [{ name: 'Tab' }]
+      await nextTick()
+      await new Promise(resolve => setTimeout(resolve, 150))
+
+      const pin = wrapper.get('[data-testid="manager-pin"]')
+      expect(pin.element.firstElementChild?.classList.contains('bar-summary-stub')).toBe(true)
+      expect(pin.find('.usage-badge-stub').exists()).toBe(true)
+      expect(wrapper.findComponent({ name: 'BarSummary' }).props('message')).toBe('Set to 6, the highest position')
+    })
+
+    test('showing a field from the status selects the tab that holds it and focuses its control (#459)', async () => {
+      const calls: number[] = []
+      selectOriginal.fn = index => calls.push(index)
+      const FieldTab = { name: 'FieldTab', render: () => h('div', { 'data-cwa-field': 'title' }, [h('input', { 'data-testid': 'title-input' })]) }
+      const stackManager = makeStackManager({
+        showManager: ref(true),
+        currentStackItem: ref({ iri: '/component/1', managerTabs: [FieldTab, FieldTab] }),
+      })
+      cwaState.cwa = makeCwa({ stackManager })
+      const wrapper = await mountManager(document.body)
+      resolverState.allMeta.value = [{ name: 'Publish', fields: [] }, { name: 'Content', fields: ['title'] }]
+      await nextTick()
+
+      wrapper.findComponent({ name: 'BarSummary' }).vm.$emit('show', 'title')
+      await flushPromises()
+
+      expect(calls).toEqual([1])
+      expect(document.activeElement).toBe(wrapper.get('[data-testid="title-input"]').element)
+      wrapper.unmount()
     })
 
     test('does not render the holder when allTabsMeta is empty', async () => {

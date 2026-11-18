@@ -1,7 +1,7 @@
 import { useNuxtApp } from '#imports'
 import {
   defineComponent,
-  h, onBeforeUnmount, onMounted,
+  h, onBeforeUnmount, onMounted, provide,
   ref,
   toRaw,
   watch,
@@ -9,6 +9,7 @@ import {
 } from 'vue'
 import type { defineAsyncComponent, Ref, WatchStopHandle } from 'vue'
 import type { ManagerTab } from '#cwa/types'
+import { tabMetaOnlyKey } from '#cwa/templates/components/core/ui/field-keys'
 
 interface Options {
   components: Ref<ManagerTab[] | undefined>
@@ -24,6 +25,7 @@ export const useDataResolver = <T extends object>(allMeta: Ref<(T | null)[]>, op
 
   const rootDefinition = defineComponent(
     (props: { component: ManagerTab, cProps: any }, { expose }) => {
+      provide(tabMetaOnlyKey, true)
       const metadata = ref<T | null>(null)
       const resolved = ref(false)
       const possibleAsyncDefinition: ReturnType<typeof defineAsyncComponent> | undefined
