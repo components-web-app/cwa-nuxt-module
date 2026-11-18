@@ -153,6 +153,8 @@
           v-if="resource && resource.hasOwnProperty('@id')"
           :page-resource="resource as CwaResource"
           @reload="loadResource"
+          @open-page="openRoutePage"
+          @go-to="goToRoutePath"
         />
       </template>
       <template #info>
@@ -416,4 +418,13 @@ onMounted(async () => {
     localResourceData.value.page = pageOptions.value[0]?.value
   }
 })
+
+function openRoutePage(iri: string) {
+  return navigateTo({ name: '_cwa-routes-iri', params: { iri } })
+}
+
+function goToRoutePath(path: string) {
+  emit('close')
+  return navigateTo({ path, query: { cwa_force: 'true' } })
+}
 </script>

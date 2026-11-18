@@ -515,5 +515,4 @@ describe('CwaUiDialog without a Save model (#461, the add component dialog)', ()
 
     expect(q('[data-testid="dialog-announcer"]')!.textContent).toBe('3 components')
   })
-
 })

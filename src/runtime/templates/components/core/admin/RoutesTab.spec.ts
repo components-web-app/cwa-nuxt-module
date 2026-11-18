@@ -1,74 +1,86 @@
 // @vitest-environment nuxt
-import { describe, test, expect, vi, beforeEach } from 'vitest'
-import { ref, toValue } from 'vue'
-import { mount, flushPromises } from '@vue/test-utils'
+import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
+import { defineComponent, h, ref } from 'vue'
+import { enableAutoUnmount, mount, flushPromises } from '@vue/test-utils'
 import { mockNuxtImport } from '@nuxt/test-utils/runtime'
 import RoutesTab from './RoutesTab.vue'
 import RoutesTabView from './RoutesTabView.vue'
 import RoutesTabManage from './RoutesTabManage.vue'
 import RoutesTabForwardTo from './RoutesTabForwardTo.vue'
-import RoutesTabAddRedirect from './RoutesTabAddRedirect.vue'
+import RoutesTabRedirects from './RoutesTabRedirects.vue'
+import RoutesTabChildRoutes from './RoutesTabChildRoutes.vue'
+import CwaUiDialog from '#cwa/templates/components/ui/Dialog.vue'
 import * as cwaComposable from '#cwa/composables/cwa'
 import { CwaResourceApiStatuses } from '#cwa/storage/stores/resources/state'
+import { axe } from '../../../../../../test/utils/axe'
+import { fakeDialogForm } from '../../../../../../playground/app/kit/fake-dialog-form'
 
-const { mockUseItemPage, mockReveal, mockNavigateTo } = vi.hoisted(() => ({
+const { mockUseItemPage, confirmMock, mockNavigateTo } = vi.hoisted(() => ({
   mockUseItemPage: vi.fn(),
-  mockReveal: vi.fn(),
+  confirmMock: vi.fn(),
   mockNavigateTo: vi.fn(),
 }))
 
 mockNuxtImport('navigateTo', () => mockNavigateTo)
 
 vi.mock('#cwa-layer/_composables/useItemPage', () => ({ useItemPage: mockUseItemPage }))
-vi.mock('vuejs-confirm-dialog', () => ({
-  install: vi.fn(),
-  createConfirmDialog: vi.fn(() => ({ reveal: mockReveal })),
-}))
+vi.mock('#cwa/composables/cwa-confirm', () => ({ useCwaConfirm: () => confirmMock }))
 
-function mockCwa(getResourceImpl: (iri: string) => any = () => ref(null), resourcesManagerOverrides: Record<string, any> = {}) {
-  // @ts-expect-error
-  vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => ({
-    resources: { getResource: vi.fn(getResourceImpl) },
-    resourcesManager: { createResource: vi.fn(), deleteResource: vi.fn(), updateResource: vi.fn(), ...resourcesManagerOverrides },
+enableAutoUnmount(afterEach)
+
+const ROUTE_IRI = '/_/routes//conference/programme'
+
+const children = [
+  { route: '/_/routes//conference/programme/day-1', path: '/conference/programme/day-1', children: [
+    { route: '/_/routes//conference/programme/day-1/am', path: '/conference/programme/day-1/am', children: [] },
+  ] },
+  { route: '/_/routes//conference/elsewhere', path: '/conference/elsewhere', children: [] },
+]
+
+function mockCwa(overrides: Record<string, any> = {}, store: Record<string, any> = {}) {
+  const fetch = vi.fn((options: { path: string }) => ({
+    response: Promise.resolve({ _data: options.path.endsWith('/children') ? { children } : { '@id': options.path, 'liveAt': '2020-01-01T00:00:00Z', '_metadata': { effectiveLiveAt: '2020-01-01T00:00:00Z' }, 'page': `/_/pages/${options.path.split('/').pop()}` } }),
   }))
-}
-
-function mockCwaFull(overrides: Record<string, any> = {}) {
-  const fetchResource = vi.fn()
-  const fetch = vi.fn(() => ({ response: Promise.resolve({ _data: { children: [] } }) }))
-  const navigateTo = vi.fn()
   const cwa = {
     resources: {
-      getResource: vi.fn(() => ref(null)),
+      getResource: vi.fn((iri: string) => ref(store[iri] ?? null)),
       isDataPage: ref(false),
       pageDataIri: ref('/_/page_data/data-uuid'),
       pageIri: ref('/_/pages/page-uuid'),
     },
-    resourcesManager: { createResource: vi.fn(), deleteResource: vi.fn(), updateResource: vi.fn() },
-    fetchResource,
+    resourcesManager: { createResource: vi.fn().mockResolvedValue({ '@id': '/_/routes//new' }), deleteResource: vi.fn().mockResolvedValue(undefined), updateResource: vi.fn().mockResolvedValue({ '@id': ROUTE_IRI }) },
+    fetchResource: vi.fn(),
     fetch,
     ...overrides,
   }
   // @ts-expect-error
   vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => cwa)
-  return { cwa, fetchResource, fetch, navigateTo }
+  return cwa
 }
 
-function setupItemPage({ path = '/conference/programme', currentPath = '/conference/programme', liveAt, effectiveLiveAt }: { path?: string, currentPath?: string, liveAt?: string | null, effectiveLiveAt?: string | null } = {}) {
-  const saveResource = vi.fn().mockResolvedValue({ '@id': `/_/routes/${currentPath}`, 'path': currentPath })
-  const localResourceData = ref<Record<string, any>>({ path, liveAt })
-  mockUseItemPage.mockReturnValue({
+function setupItemPage(options: { path?: string, liveAt?: string | null, effectiveLiveAt?: string | null, redirect?: string | null, redirectedFrom?: any[], adding?: boolean } = {}) {
+  const path = options.path ?? '/conference/programme'
+  const stored = options.adding
+    ? undefined
+    : { '@id': ROUTE_IRI, path, 'liveAt': options.liveAt ?? '2020-01-01T00:00:00Z', 'redirect': options.redirect ?? null, 'redirectedFrom': options.redirectedFrom ?? [], '_metadata': { persisted: true, effectiveLiveAt: options.effectiveLiveAt ?? options.liveAt ?? '2020-01-01T00:00:00Z' } }
+  const resource = ref<any>(stored)
+  const localResourceData = ref<Record<string, any>>(options.adding ? { '@type': 'Route', 'path': '' } : { ...stored })
+  const itemPage = {
     isLoading: ref(false),
     isUpdating: ref(false),
     localResourceData,
-    resource: ref({ '@id': `/_/routes/${currentPath}`, 'path': currentPath, 'route': null, liveAt, '_metadata': { persisted: true, effectiveLiveAt } }),
+    resource,
     loadResource: vi.fn(),
-    deleteResource: vi.fn(),
-    saveResource,
-    resetResource: vi.fn(),
-    apiState: ref({ status: 'SUCCESS', path: `/_/routes/${currentPath}/redirects` }),
-  })
-  return { saveResource, localResourceData }
+    deleteResource: vi.fn().mockResolvedValue(undefined),
+    saveResource: vi.fn().mockResolvedValue({ '@id': ROUTE_IRI, 'path': path }),
+    resetResource: vi.fn(() => {
+      localResourceData.value = { ...resource.value }
+    }),
+    apiState: ref({ status: 'SUCCESS', path: `${ROUTE_IRI}/redirects` }),
+    form: { fieldErrors: {} },
+  }
+  mockUseItemPage.mockReturnValue(itemPage)
+  return itemPage
 }
 
 function mountTab(pageResourceOverrides: Record<string, any> = {}) {
@@ -77,812 +89,804 @@ function mountTab(pageResourceOverrides: Record<string, any> = {}) {
       pageResource: {
         '@id': '/_/pages/programme-uuid',
         '@type': 'Page',
-        'route': '/_/routes//conference/programme',
+        'title': 'My Programme',
+        'route': ROUTE_IRI,
         'parentPage': null,
         'parentPageData': null,
         ...pageResourceOverrides,
       } as any,
     },
-    shallow: true,
+    global: { stubs: { ResourceSearch: true } },
+    attachTo: document.body,
   })
 }
+
+type Wrapper = ReturnType<typeof mountTab>
+
+async function openSub(wrapper: Wrapper, view: string, recommended?: boolean) {
+  await wrapper.findComponent(RoutesTabView).vm.$emit('open', view, recommended)
+  await flushPromises()
+}
+
+const subTitle = (wrapper: Wrapper) => wrapper.find('[data-testid="sub-view-title"]')
+const save = (wrapper: Wrapper) => wrapper.find('[data-testid="dialog-sub-save"]')
+const cancel = (wrapper: Wrapper) => wrapper.find('[data-testid="dialog-sub-cancel"]')
+const labelOf = (element: Element) => (element.textContent ?? '').replace(element.getAttribute('title') ?? '', '').trim()
 
 describe('RoutesTab', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    confirmMock.mockResolvedValue(true)
   })
 
-  describe('parent route prefix', () => {
-    test('passes the parent route path as parentRoutePrefix to RoutesTabManage', async () => {
-      setupItemPage()
-      mockCwa((iri) => {
-        if (iri === '/_/pages/conference-uuid') {
-          return ref({ data: { route: '/_/routes//conference' } })
-        }
-        return ref(null)
-      })
-      const wrapper = mountTab({ parentPage: '/_/pages/conference-uuid' })
-      await wrapper.findComponent(RoutesTabView).vm.$emit('changePage', 'manage-route')
-      expect(wrapper.findComponent(RoutesTabManage).props('parentRoutePrefix')).toBe('/conference')
-    })
-
-    test('passes null parentRoutePrefix when parent has no route', async () => {
-      setupItemPage()
-      mockCwa((iri) => {
-        if (iri === '/_/pages/conference-uuid') {
-          return ref({ data: { route: null } })
-        }
-        return ref(null)
-      })
-      const wrapper = mountTab({ parentPage: '/_/pages/conference-uuid' })
-      await wrapper.findComponent(RoutesTabView).vm.$emit('changePage', 'manage-route')
-      expect(wrapper.findComponent(RoutesTabManage).props('parentRoutePrefix')).toBeNull()
-    })
-
-    test('passes null parentRoutePrefix when no parent is set', async () => {
-      setupItemPage()
-      mockCwa()
-      const wrapper = mountTab({ parentPage: null, parentPageData: null })
-      await wrapper.findComponent(RoutesTabView).vm.$emit('changePage', 'manage-route')
-      expect(wrapper.findComponent(RoutesTabManage).props('parentRoutePrefix')).toBeNull()
-    })
+  afterEach(() => {
+    confirmMock.mockReset()
   })
 
-  describe('parentHasNoRoute', () => {
-    test('passes parentHasNoRoute=true to RoutesTabView when parent exists but has no route', () => {
+  describe('the main view', () => {
+    test('summarises redirects and child routes from the route and its children', async () => {
+      setupItemPage({ redirectedFrom: [{ '@id': '/_/routes//old', 'path': '/old', 'redirectedFrom': [{ '@id': '/_/routes//older', 'path': '/older' }] }] })
+      const cwa = mockCwa()
+      const wrapper = mountTab()
+      await flushPromises()
+
+      expect(cwa.fetch).toHaveBeenCalledWith({ path: `${ROUTE_IRI}/children` })
+      const view = wrapper.findComponent(RoutesTabView)
+      expect(view.props('redirectCount')).toBe(2)
+      expect(view.props('childCount')).toBe(3)
+      expect(await axe(wrapper.element as HTMLElement)).toHaveNoViolations()
+    })
+
+    test('a page with no route shows no route and no Redirect to', async () => {
+      setupItemPage({ adding: true })
+      mockCwa()
+      const wrapper = mountTab({ route: null })
+      await flushPromises()
+
+      expect(wrapper.findComponent(RoutesTabView).props('resource')).toBeUndefined()
+      expect(wrapper.find('[data-nav="to"]').exists()).toBe(false)
+    })
+
+    test('a child route whose children fail to load summarises none', async () => {
       setupItemPage()
-      mockCwa((iri) => {
-        if (iri === '/_/pages/conference-uuid') {
-          return ref({ data: { route: null } })
-        }
-        return ref(null)
-      })
-      const wrapper = mountTab({ parentPage: '/_/pages/conference-uuid' })
-      expect(wrapper.findComponent(RoutesTabView).props('parentHasNoRoute')).toBe(true)
-    })
-
-    test('passes parentHasNoRoute=false to RoutesTabView when parent has a route', () => {
-      setupItemPage()
-      mockCwa((iri) => {
-        if (iri === '/_/pages/conference-uuid') {
-          return ref({ data: { route: '/_/routes//conference' } })
-        }
-        return ref(null)
-      })
-      const wrapper = mountTab({ parentPage: '/_/pages/conference-uuid' })
-      expect(wrapper.findComponent(RoutesTabView).props('parentHasNoRoute')).toBe(false)
-    })
-
-    test('passes parentHasNoRoute=false when no parent', () => {
-      setupItemPage()
-      mockCwa()
-      const wrapper = mountTab({ parentPage: null, parentPageData: null })
-      expect(wrapper.findComponent(RoutesTabView).props('parentHasNoRoute')).toBe(false)
-    })
-  })
-
-  describe('publication state', () => {
-    test('shows the editor the go-live date the route currently has', async () => {
-      setupItemPage({ liveAt: '2999-01-01T00:00:00+00:00' })
-      mockCwa()
-      const wrapper = mountTab()
-      await wrapper.findComponent(RoutesTabView).vm.$emit('changePage', 'manage-route')
-      expect(wrapper.findComponent(RoutesTabManage).props('liveAt')).toBe('2999-01-01T00:00:00+00:00')
-    })
-
-    test('scheduling a route carries the go-live date into the resource that gets saved', async () => {
-      const { localResourceData, saveResource } = setupItemPage({ liveAt: null })
-      mockCwa()
-      const wrapper = mountTab()
-      await wrapper.findComponent(RoutesTabView).vm.$emit('changePage', 'manage-route')
-      await wrapper.findComponent(RoutesTabManage).vm.$emit('update:liveAt', '2999-01-01T00:00:00.000Z')
-      expect(localResourceData.value.liveAt).toBe('2999-01-01T00:00:00.000Z')
-      await wrapper.findComponent(RoutesTabManage).vm.$emit('save')
-      await flushPromises()
-      expect(saveResource).toHaveBeenCalled()
-    })
-
-    test('hands the manage control the date the page actually becomes reachable', async () => {
-      setupItemPage({ liveAt: '2020-01-01T00:00:00+00:00', effectiveLiveAt: '2999-01-01T00:00:00+00:00' })
-      mockCwa()
-      const wrapper = mountTab()
-      await wrapper.findComponent(RoutesTabView).vm.$emit('changePage', 'manage-route')
-      expect(wrapper.findComponent(RoutesTabManage).props('routePublication')).toEqual({
-        liveAt: '2020-01-01T00:00:00+00:00',
-        effectiveLiveAt: '2999-01-01T00:00:00+00:00',
-      })
-    })
-  })
-
-  describe('cascade child path update on save', () => {
-    test('does not show cascade dialog when path has not changed', async () => {
-      const { saveResource } = setupItemPage({ path: '/conference/programme', currentPath: '/conference/programme' })
-      mockCwa()
-      const wrapper = mountTab()
-      await wrapper.findComponent(RoutesTabView).vm.$emit('changePage', 'manage-route')
-      await wrapper.findComponent(RoutesTabManage).vm.$emit('save')
-      await flushPromises()
-      expect(mockReveal).not.toHaveBeenCalled()
-      expect(saveResource).toHaveBeenCalled()
-      expect((saveResource.mock.calls[0][0] as any)?.cascadeChildPaths).toBeUndefined()
-    })
-
-    test('shows cascade dialog when path has changed', async () => {
-      mockReveal.mockResolvedValue({ isCanceled: true })
-      setupItemPage({ path: '/conference/new-slug', currentPath: '/conference/programme' })
-      mockCwa()
-      const wrapper = mountTab()
-      await wrapper.findComponent(RoutesTabView).vm.$emit('changePage', 'manage-route')
-      await wrapper.findComponent(RoutesTabManage).vm.$emit('save')
-      await flushPromises()
-      expect(mockReveal).toHaveBeenCalledOnce()
-    })
-
-    test('saves with cascadeChildPaths when cascade is confirmed', async () => {
-      mockReveal.mockResolvedValue({ isCanceled: false })
-      const { saveResource } = setupItemPage({ path: '/conference/new-slug', currentPath: '/conference/programme' })
-      mockCwa()
-      const wrapper = mountTab()
-      await wrapper.findComponent(RoutesTabView).vm.$emit('changePage', 'manage-route')
-      await wrapper.findComponent(RoutesTabManage).vm.$emit('save')
-      await flushPromises()
-      expect(saveResource).toHaveBeenCalledWith(false, { cascadeChildPaths: true })
-    })
-
-    test('saves without cascadeChildPaths when cascade is declined', async () => {
-      mockReveal.mockResolvedValue({ isCanceled: true })
-      const { saveResource } = setupItemPage({ path: '/conference/new-slug', currentPath: '/conference/programme' })
-      mockCwa()
-      const wrapper = mountTab()
-      await wrapper.findComponent(RoutesTabView).vm.$emit('changePage', 'manage-route')
-      await wrapper.findComponent(RoutesTabManage).vm.$emit('save')
-      await flushPromises()
-      expect(saveResource).toHaveBeenCalledWith(false, undefined)
-    })
-  })
-
-  describe('generate+cascade two-step flow', () => {
-    test('does not offer cascade when generated path matches current path', async () => {
-      setupItemPage({ path: '/conference', currentPath: '/conference' })
-      const createResource = vi.fn().mockResolvedValue({ '@id': '/_/routes//conference', 'path': '/conference' })
-      const updateResource = vi.fn()
-      mockCwa(() => ref(null), { createResource, updateResource })
-      mockReveal.mockResolvedValue({ isCanceled: false })
-      const wrapper = mountTab()
-      await wrapper.findComponent(RoutesTabView).vm.$emit('changePage', 'manage-route')
-      await wrapper.findComponent(RoutesTabManage).vm.$emit('generate')
-      await flushPromises()
-      expect(mockReveal).not.toHaveBeenCalled()
-      expect(updateResource).not.toHaveBeenCalled()
-    })
-
-    test('offers cascade when generated path differs from current path', async () => {
-      setupItemPage({ path: '/conference', currentPath: '/conference' })
-      const createResource = vi.fn().mockResolvedValue({ '@id': '/_/routes//summit', 'path': '/summit' })
-      mockCwa(() => ref(null), { createResource, updateResource: vi.fn() })
-      mockReveal.mockResolvedValue({ isCanceled: true })
-      const wrapper = mountTab()
-      await wrapper.findComponent(RoutesTabView).vm.$emit('changePage', 'manage-route')
-      await wrapper.findComponent(RoutesTabManage).vm.$emit('generate')
-      await flushPromises()
-      expect(mockReveal).toHaveBeenCalledOnce()
-    })
-
-    test('patches new route with cascade data when confirmed', async () => {
-      setupItemPage({ path: '/conference', currentPath: '/conference' })
-      const createResource = vi.fn().mockResolvedValue({ '@id': '/_/routes//summit', 'path': '/summit' })
-      const updateResource = vi.fn().mockResolvedValue({})
-      mockCwa(() => ref(null), { createResource, updateResource })
-      mockReveal.mockResolvedValue({ isCanceled: false })
-      const wrapper = mountTab()
-      await wrapper.findComponent(RoutesTabView).vm.$emit('changePage', 'manage-route')
-      await wrapper.findComponent(RoutesTabManage).vm.$emit('generate')
-      await flushPromises()
-      expect(updateResource).toHaveBeenCalledWith({
-        endpoint: '/_/routes//summit',
-        data: { path: '/summit', cascadeChildPaths: true, oldPath: '/conference' },
-      })
-    })
-
-    test('does not patch when cascade declined', async () => {
-      setupItemPage({ path: '/conference', currentPath: '/conference' })
-      const createResource = vi.fn().mockResolvedValue({ '@id': '/_/routes//summit', 'path': '/summit' })
-      const updateResource = vi.fn()
-      mockCwa(() => ref(null), { createResource, updateResource })
-      mockReveal.mockResolvedValue({ isCanceled: true })
-      const wrapper = mountTab()
-      await wrapper.findComponent(RoutesTabView).vm.$emit('changePage', 'manage-route')
-      await wrapper.findComponent(RoutesTabManage).vm.$emit('generate')
-      await flushPromises()
-      expect(updateResource).not.toHaveBeenCalled()
-    })
-  })
-
-  describe('forward-to outbound redirect', () => {
-    function setupForwardItemPage(redirect: string | null = null) {
-      mockUseItemPage.mockReturnValue({
-        isLoading: ref(false),
-        isUpdating: ref(false),
-        localResourceData: ref({ path: '/topic-1' }),
-        resource: ref({ '@id': '/_api/_/routes//topic-1', 'path': '/topic-1', 'redirect': redirect }),
-        loadResource: vi.fn(),
-        deleteResource: vi.fn(),
-        saveResource: vi.fn().mockResolvedValue({ '@id': '/_api/_/routes//topic-1', 'path': '/topic-1' }),
-        resetResource: vi.fn(),
-        apiState: ref({ status: 'SUCCESS', path: '/_api/_/routes//topic-1/redirects' }),
-      })
-    }
-
-    test('shows RoutesTabForwardTo when view emits changePage "forward-to"', async () => {
-      setupForwardItemPage()
-      mockCwa()
-      const wrapper = mountTab()
-      await wrapper.findComponent(RoutesTabView).vm.$emit('changePage', 'forward-to')
-      expect(wrapper.findComponent(RoutesTabForwardTo).exists()).toBe(true)
-    })
-
-    test('patches current route with the selected redirect IRI', async () => {
-      setupForwardItemPage()
-      const updateResource = vi.fn().mockResolvedValue({})
-      mockCwa(() => ref(null), { updateResource })
-      const wrapper = mountTab()
-      await wrapper.findComponent(RoutesTabView).vm.$emit('changePage', 'forward-to')
-      await wrapper.findComponent(RoutesTabForwardTo).vm.$emit('create', '/_api/_/routes//topic-1/chapter-one')
-      await flushPromises()
-      expect(updateResource).toHaveBeenCalledWith({
-        endpoint: '/_api/_/routes//topic-1',
-        data: { redirect: '/_api/_/routes//topic-1/chapter-one' },
-      })
-    })
-
-    test('returns to view screen after setting forward', async () => {
-      setupForwardItemPage()
-      mockCwa(() => ref(null), { updateResource: vi.fn().mockResolvedValue({}) })
-      const wrapper = mountTab()
-      await wrapper.findComponent(RoutesTabView).vm.$emit('changePage', 'forward-to')
-      await wrapper.findComponent(RoutesTabForwardTo).vm.$emit('create', '/_api/_/routes//topic-1/chapter-one')
-      await flushPromises()
-      expect(wrapper.findComponent(RoutesTabView).exists()).toBe(true)
-    })
-
-    test('patches redirect to null when view emits remove-forward', async () => {
-      setupForwardItemPage('/_api/_/routes//topic-1/chapter-one')
-      const updateResource = vi.fn().mockResolvedValue({})
-      mockCwa(() => ref(null), { updateResource })
-      const wrapper = mountTab()
-      await wrapper.findComponent(RoutesTabView).vm.$emit('remove-forward')
-      await flushPromises()
-      expect(updateResource).toHaveBeenCalledWith({
-        endpoint: '/_api/_/routes//topic-1',
-        data: { redirect: null },
-      })
-    })
-
-    test('passes forwardToPath derived from resource.redirect IRI to RoutesTabView', () => {
-      setupForwardItemPage('/_api/_/routes//topic-1/chapter-one')
-      mockCwa()
-      const wrapper = mountTab()
-      expect(wrapper.findComponent(RoutesTabView).props('forwardToPath')).toBe('/topic-1/chapter-one')
-    })
-
-    test('passes undefined forwardToPath when resource has no redirect', () => {
-      setupForwardItemPage(null)
-      mockCwa()
-      const wrapper = mountTab()
-      expect(wrapper.findComponent(RoutesTabView).props('forwardToPath')).toBeUndefined()
-    })
-
-    test('passes currentRouteIri to RoutesTabForwardTo for self-redirect guard', async () => {
-      setupForwardItemPage()
-      mockCwa()
-      const wrapper = mountTab()
-      await wrapper.findComponent(RoutesTabView).vm.$emit('changePage', 'forward-to')
-      expect(wrapper.findComponent(RoutesTabForwardTo).props('currentRouteIri')).toBe('/_api/_/routes//topic-1')
-    })
-
-    test('passes initialIri from existing redirect to RoutesTabForwardTo', async () => {
-      setupForwardItemPage('/_api/_/routes//topic-1/chapter-one')
-      mockCwa()
-      const wrapper = mountTab()
-      await wrapper.findComponent(RoutesTabView).vm.$emit('changePage', 'forward-to')
-      expect(wrapper.findComponent(RoutesTabForwardTo).props('initialIri')).toBe('/_api/_/routes//topic-1/chapter-one')
-    })
-  })
-
-  describe('child routes loading and flattening', () => {
-    test('loads and flattens nested child routes into the template', async () => {
-      setupItemPage()
-      const fetch = vi.fn(() => ({
-        response: Promise.resolve({
-          _data: {
-            children: [
-              { route: '/_/routes//conference/programme/a', path: '/conference/programme/a', children: [
-                { route: '/_/routes//conference/programme/a/b', path: '/conference/programme/a/b', children: [] },
-              ] },
-              { route: '/_/routes//conference/programme/c', path: '/conference/programme/c', children: [] },
-            ],
-          },
-        }),
-      }))
-      mockCwaFull({ fetch })
+      mockCwa({ fetch: vi.fn(() => ({ response: Promise.reject(new Error('boom')) })) })
       const wrapper = mountTab()
       await flushPromises()
-      expect(fetch).toHaveBeenCalledWith({ path: '/_/routes//conference/programme/children' })
-      const text = wrapper.text()
-      expect(text).toContain('Child routes')
-      expect(text).toContain('/conference/programme/a')
-      expect(text).toContain('/conference/programme/a/b')
-      expect(text).toContain('/conference/programme/c')
+      expect(wrapper.findComponent(RoutesTabView).props('childCount')).toBe(0)
     })
 
-    test('clears child routes when fetch rejects', async () => {
-      setupItemPage()
-      const fetch = vi.fn(() => ({ response: Promise.reject(new Error('boom')) }))
-      mockCwaFull({ fetch })
-      const wrapper = mountTab()
-      await flushPromises()
-      expect(wrapper.text()).not.toContain('Child routes')
-    })
-
-    test('does not load child routes when the page has no route IRI', async () => {
-      setupItemPage()
-      const fetch = vi.fn(() => ({ response: Promise.resolve({ _data: { children: [] } }) }))
-      mockCwaFull({ fetch })
+    test('loads no child routes when the page has no route', async () => {
+      setupItemPage({ adding: true })
+      const cwa = mockCwa()
       mountTab({ route: null })
       await flushPromises()
-      expect(fetch).not.toHaveBeenCalled()
-    })
-
-    test('clears child routes when resource has no @id', async () => {
-      mockUseItemPage.mockReturnValue({
-        isLoading: ref(false),
-        isUpdating: ref(false),
-        localResourceData: ref({ path: '/x' }),
-        resource: ref(null),
-        loadResource: vi.fn(),
-        deleteResource: vi.fn(),
-        saveResource: vi.fn(),
-        resetResource: vi.fn(),
-        apiState: ref(null),
-      })
-      const fetch = vi.fn(() => ({ response: Promise.resolve({ _data: { children: [] } }) }))
-      mockCwaFull({ fetch })
-      const wrapper = mountTab()
-      await flushPromises()
-      expect(fetch).not.toHaveBeenCalled()
-      expect(wrapper.text()).not.toContain('Child routes')
+      expect(cwa.fetch).not.toHaveBeenCalled()
     })
   })
 
-  describe('parent shallow fetch', () => {
-    test('fetches the parent resource shallowly when not yet loaded', async () => {
+  describe('the parent route', () => {
+    test('passes the parent route path as the prefix and names the parent', async () => {
       setupItemPage()
-      const fetchResource = vi.fn()
-      mockCwaFull({
-        fetchResource,
-        resources: {
-          getResource: vi.fn(() => ref({ data: null })),
-          isDataPage: ref(false),
-          pageDataIri: ref(''),
-          pageIri: ref(''),
-        },
-      })
+      mockCwa({}, { '/_/pages/conference-uuid': { data: { route: '/_/routes//conference', reference: 'Conference' } } })
+      const wrapper = mountTab({ parentPage: '/_/pages/conference-uuid' })
+      await openSub(wrapper, 'route')
+
+      expect(wrapper.findComponent(RoutesTabManage).props('parentRoutePrefix')).toBe('/conference')
+      expect(wrapper.findComponent(RoutesTabView).props('parentHasNoRoute')).toBe(false)
+    })
+
+    test('an unrouted page under a parent with no route says so, and opening the parent opens its settings', async () => {
+      setupItemPage({ adding: true })
+      mockCwa({}, { '/_/pages/conference-uuid': { data: { reference: 'Conference' } } })
+      const wrapper = mountTab({ route: null, parentPage: '/_/pages/conference-uuid' })
+      await flushPromises()
+
+      const view = wrapper.findComponent(RoutesTabView)
+      expect(view.props('parentHasNoRoute')).toBe(true)
+      expect(view.props('parentName')).toBe('Conference')
+      await view.vm.$emit('openParent')
+      expect(wrapper.emitted('openPage')).toEqual([['/_/pages/conference-uuid']])
+    })
+
+    test('a routed page under a parent with no route keeps its route', async () => {
+      setupItemPage()
+      mockCwa({}, { '/_/pages/conference-uuid': { data: { reference: 'Conference' } } })
+      const wrapper = mountTab({ parentPage: '/_/pages/conference-uuid' })
+      await flushPromises()
+      expect(wrapper.findComponent(RoutesTabView).props('parentHasNoRoute')).toBe(false)
+    })
+
+    test('fetches the parent shallowly when it is not loaded yet', async () => {
+      setupItemPage()
+      const cwa = mockCwa()
       mountTab({ parentPage: '/_/pages/conference-uuid' })
       await flushPromises()
-      expect(fetchResource).toHaveBeenCalledWith({ path: '/_/pages/conference-uuid', shallowFetch: true })
+      expect(cwa.fetchResource).toHaveBeenCalledWith({ path: '/_/pages/conference-uuid', shallowFetch: true })
     })
   })
 
-  describe('endpoint computed', () => {
-    test('uses the page route redirects endpoint when a route exists', async () => {
+  describe('the recommended path', () => {
+    test.each([
+      ['My Great Programme', '/conference', '/conference/my-great-programme'],
+      ['My Great Programme', undefined, '/my-great-programme'],
+      ['Version 2.0 Release', undefined, '/version-20-release'],
+      ['Q&A: Session (Live!)', undefined, '/qanda-session-live'],
+    ])('“%s” under %s recommends %s', async (title, parentRoute, expected) => {
       setupItemPage()
-      mockCwaFull()
-      mountTab()
+      mockCwa({}, parentRoute ? { '/_/pages/conference-uuid': { data: { route: `/_/routes/${parentRoute}` } } } : {})
+      const wrapper = mountTab({ title, parentPage: parentRoute ? '/_/pages/conference-uuid' : null })
       await flushPromises()
-      const lastArgs = mockUseItemPage.mock.calls.at(-1)?.[0]
-      expect(lastArgs.endpoint.value).toBe('/_/routes//conference/programme/redirects')
+      expect(wrapper.findComponent(RoutesTabView).props('recommendedPath')).toBe(expected)
     })
 
-    test('falls back to "add" endpoint when the page has no route', async () => {
-      setupItemPage()
-      mockCwaFull()
-      mountTab({ route: null })
-      await flushPromises()
-      const lastArgs = mockUseItemPage.mock.calls.at(-1)?.[0]
-      expect(lastArgs.endpoint.value).toBe('add')
-    })
-  })
-
-  describe('validate and defaultResource', () => {
-    test('validate copies path into name and returns true', async () => {
-      setupItemPage()
-      mockCwaFull()
-      mountTab()
-      await flushPromises()
-      const lastArgs = mockUseItemPage.mock.calls.at(-1)?.[0]
-      const data: Record<string, any> = { path: '/foo' }
-      expect(lastArgs.validate(data)).toBe(true)
-      expect(data.name).toBe('/foo')
-    })
-
-    test('defaultResource sets page for a Page resource', async () => {
-      setupItemPage()
-      mockCwaFull()
-      mountTab({ '@type': 'Page', '@id': '/_/pages/p1' })
-      await flushPromises()
-      const lastArgs = mockUseItemPage.mock.calls.at(-1)?.[0]
-      expect(toValue(lastArgs.defaultResource)).toEqual({ path: '', page: '/_/pages/p1' })
-    })
-
-    test('defaultResource sets pageData for a non-Page resource', async () => {
-      setupItemPage()
-      mockCwaFull()
-      mountTab({ '@type': 'PageData', '@id': '/_/page_data/d1' })
-      await flushPromises()
-      const lastArgs = mockUseItemPage.mock.calls.at(-1)?.[0]
-      expect(toValue(lastArgs.defaultResource)).toEqual({ path: '', pageData: '/_/page_data/d1' })
-    })
-  })
-
-  describe('create redirect flow', () => {
-    test('creates a redirect resource then returns to view and reloads', async () => {
-      const loadResource = vi.fn()
-      mockUseItemPage.mockReturnValue({
-        isLoading: ref(false),
-        isUpdating: ref(false),
-        localResourceData: ref({ path: '/conference/programme' }),
-        resource: ref({ '@id': '/_/routes//conference/programme', 'path': '/conference/programme', 'route': null }),
-        loadResource,
-        deleteResource: vi.fn(),
-        saveResource: vi.fn(),
-        resetResource: vi.fn(),
-        apiState: ref({ status: 'SUCCESS', path: '/_/routes//conference/programme/redirects' }),
-      })
-      const createResource = vi.fn().mockResolvedValue({ '@id': '/_/routes//new-redirect' })
-      mockCwaFull({ resourcesManager: { createResource, deleteResource: vi.fn(), updateResource: vi.fn() } })
+    test('Use this opens the route form with the recommended path filled in, and saves nothing', async () => {
+      const itemPage = setupItemPage()
+      mockCwa()
       const wrapper = mountTab()
-      await wrapper.findComponent(RoutesTabView).vm.$emit('changePage', 'create-redirect')
-      await wrapper.findComponent(RoutesTabAddRedirect).vm.$emit('create', '/from-here')
-      await flushPromises()
-      expect(createResource).toHaveBeenCalledWith({
-        endpoint: '/_/routes',
-        data: { name: '/from-here', path: '/from-here', redirect: '/_/routes//conference/programme' },
-      })
-      expect(wrapper.findComponent(RoutesTabView).exists()).toBe(true)
-      expect(loadResource).toHaveBeenCalled()
-    })
+      await openSub(wrapper, 'route', true)
 
-    test('does not return to view when redirect creation fails', async () => {
-      setupItemPage()
-      const createResource = vi.fn().mockResolvedValue(undefined)
-      mockCwaFull({ resourcesManager: { createResource, deleteResource: vi.fn(), updateResource: vi.fn() } })
-      const wrapper = mountTab()
-      await wrapper.findComponent(RoutesTabView).vm.$emit('changePage', 'create-redirect')
-      await wrapper.findComponent(RoutesTabAddRedirect).vm.$emit('create', '/from-here')
-      await flushPromises()
-      expect(wrapper.findComponent(RoutesTabAddRedirect).exists()).toBe(true)
+      expect(itemPage.localResourceData.value.path).toBe('/my-programme')
+      expect(wrapper.findComponent(RoutesTabManage).props('modelValue')).toBe('/my-programme')
+      expect(itemPage.saveResource).not.toHaveBeenCalled()
     })
   })
 
-  describe('delete route flow', () => {
-    test('deletes the route and returns to view', async () => {
-      const deleteResource = vi.fn().mockResolvedValue(undefined)
-      mockUseItemPage.mockReturnValue({
-        isLoading: ref(false),
-        isUpdating: ref(false),
-        localResourceData: ref({ path: '/conference/programme' }),
-        resource: ref({ '@id': '/_/routes//conference/programme', 'path': '/conference/programme', 'route': null }),
-        loadResource: vi.fn(),
-        deleteResource,
-        saveResource: vi.fn(),
-        resetResource: vi.fn(),
-        apiState: ref({ status: 'SUCCESS', path: '/_/routes//conference/programme/redirects' }),
-      })
-      mockCwaFull()
+  describe('the route sub-view', () => {
+    test('opens as Edit route under Routes, with its own Cancel and Save route', async () => {
+      setupItemPage()
+      mockCwa()
       const wrapper = mountTab()
-      await wrapper.findComponent(RoutesTabView).vm.$emit('changePage', 'manage-route')
-      await wrapper.findComponent(RoutesTabManage).vm.$emit('delete')
-      await flushPromises()
-      expect(deleteResource).toHaveBeenCalled()
-      expect(wrapper.findComponent(RoutesTabView).exists()).toBe(true)
+      await openSub(wrapper, 'route')
+
+      expect(subTitle(wrapper).text()).toBe('Edit route')
+      expect(wrapper.find('[data-testid="sub-view-back"]').attributes('aria-label')).toBe('Back to Routes')
+      expect(document.activeElement).toBe(subTitle(wrapper).element)
+      expect(labelOf(save(wrapper).element)).toBe('Save route')
+      expect(save(wrapper).attributes('title')).toBe('Nothing has changed.')
+      expect(await axe(wrapper.element as HTMLElement)).toHaveNoViolations()
     })
 
-    test('requestCompleteFn navigates to page IRI when deleting the currently-viewed route', async () => {
-      let capturedFn: ((r?: any) => void) | undefined
-      const deleteResource = vi.fn((_: any, fn: (r?: any) => void) => {
-        capturedFn = fn
-        return Promise.resolve()
-      })
-      mockUseItemPage.mockReturnValue({
-        isLoading: ref(false),
-        isUpdating: ref(false),
-        localResourceData: ref({ path: '/' }),
-        resource: ref({ '@id': '/_/routes//', 'path': '/', 'route': null }),
-        loadResource: vi.fn(),
-        deleteResource,
-        saveResource: vi.fn(),
-        resetResource: vi.fn(),
-        apiState: ref({ status: 'SUCCESS', path: '/_/routes///redirects' }),
-      })
-      mockCwaFull({
-        resources: {
-          getResource: vi.fn(() => ref(null)),
-          isDataPage: ref(false),
-          pageDataIri: ref('/_/page_data/d'),
-          pageIri: ref('/_/pages/p'),
-        },
-      })
+    test('for a page with no route it is Add a route with Add route', async () => {
+      setupItemPage({ adding: true })
+      mockCwa()
       const wrapper = mountTab({ route: null })
-      await wrapper.findComponent(RoutesTabView).vm.$emit('changePage', 'manage-route')
-      await wrapper.findComponent(RoutesTabManage).vm.$emit('delete')
-      await flushPromises()
-      expect(capturedFn).toBeTypeOf('function')
-      capturedFn!()
-      expect(mockNavigateTo).toHaveBeenCalledWith({ name: '_cwa-resource-page', params: { cwaPage0: '/_/pages/p' } })
+      await openSub(wrapper, 'route')
+
+      expect(subTitle(wrapper).text()).toBe('Add a route')
+      expect(labelOf(save(wrapper).element)).toBe('Add route')
+      expect(save(wrapper).attributes('title')).toBe('Type a path first.')
     })
 
-    test('requestCompleteFn uses the page data IRI on a data page', async () => {
-      let capturedFn: ((r?: any) => void) | undefined
-      const deleteResource = vi.fn((_: any, fn: (r?: any) => void) => {
-        capturedFn = fn
-        return Promise.resolve()
-      })
-      mockUseItemPage.mockReturnValue({
-        isLoading: ref(false),
-        isUpdating: ref(false),
-        localResourceData: ref({ path: '/' }),
-        resource: ref({ '@id': '/_/routes//', 'path': '/', 'route': null }),
-        loadResource: vi.fn(),
-        deleteResource,
-        saveResource: vi.fn(),
-        resetResource: vi.fn(),
-        apiState: ref({ status: 'SUCCESS', path: '/_/routes///redirects' }),
-      })
-      mockCwaFull({
-        resources: {
-          getResource: vi.fn(() => ref(null)),
-          isDataPage: ref(true),
-          pageDataIri: ref('/_/page_data/d'),
-          pageIri: ref('/_/pages/p'),
-        },
-      })
-      const wrapper = mountTab({ route: null })
-      await wrapper.findComponent(RoutesTabView).vm.$emit('changePage', 'manage-route')
-      await wrapper.findComponent(RoutesTabManage).vm.$emit('delete')
+    test('saving an unchanged path sends no cascade', async () => {
+      const itemPage = setupItemPage({ liveAt: '2020-01-01T00:00:00Z' })
+      mockCwa()
+      const wrapper = mountTab()
       await flushPromises()
-      capturedFn!()
-      expect(mockNavigateTo).toHaveBeenCalledWith({ name: '_cwa-resource-page', params: { cwaPage0: '/_/page_data/d' } })
+      await openSub(wrapper, 'route')
+      itemPage.localResourceData.value.liveAt = null
+      await flushPromises()
+
+      await save(wrapper).trigger('click')
+      await flushPromises()
+
+      expect(itemPage.saveResource).toHaveBeenCalledWith(false, undefined)
+      expect(confirmMock).not.toHaveBeenCalled()
     })
 
-    test('requestCompleteFn does not navigate when there is no page IRI to fall back to', async () => {
-      let capturedFn: ((r?: any) => void) | undefined
-      const deleteResource = vi.fn((_: any, fn: (r?: any) => void) => {
-        capturedFn = fn
-        return Promise.resolve()
-      })
-      mockUseItemPage.mockReturnValue({
-        isLoading: ref(false),
-        isUpdating: ref(false),
-        localResourceData: ref({ path: '/' }),
-        resource: ref({ '@id': '/_/routes//', 'path': '/', 'route': null }),
-        loadResource: vi.fn(),
-        deleteResource,
-        saveResource: vi.fn(),
-        resetResource: vi.fn(),
-        apiState: ref({ status: 'SUCCESS', path: '/_/routes///redirects' }),
-      })
-      mockCwaFull({
-        resources: {
-          getResource: vi.fn(() => ref(null)),
-          isDataPage: ref(false),
-          pageDataIri: ref(undefined),
-          pageIri: ref(undefined),
-        },
-      })
+    test('a new path with child routes under the old one also changes them, as the form offers, and says what happened', async () => {
+      const itemPage = setupItemPage()
+      itemPage.saveResource.mockResolvedValue({ '@id': '/_/routes//conference/schedule', 'path': '/conference/schedule' })
+      mockCwa()
+      const wrapper = mountTab()
+      await flushPromises()
+      await openSub(wrapper, 'route')
+      itemPage.localResourceData.value.path = '/conference/schedule'
+      await flushPromises()
+
+      await save(wrapper).trigger('click')
+      await flushPromises()
+
+      expect(itemPage.saveResource).toHaveBeenCalledWith(false, { cascadeChildPaths: true })
+      expect(wrapper.emitted('reload')).toHaveLength(1)
+      expect(wrapper.find('[data-testid="sub-view"]').exists()).toBe(false)
+      const status = wrapper.find('[data-testid="routes-status"]')
+      expect(status.text()).toBe('Route changed to /conference/schedule. /conference/programme now redirects here.')
+      expect(document.activeElement).toBe(status.element)
+    })
+
+    test('unticking the child routes leaves them as they are', async () => {
+      const itemPage = setupItemPage()
+      mockCwa()
+      const wrapper = mountTab()
+      await flushPromises()
+      await openSub(wrapper, 'route')
+      itemPage.localResourceData.value.path = '/conference/schedule'
+      await flushPromises()
+      await wrapper.find('[data-testid="route-cascade"]').setValue(false)
+
+      await save(wrapper).trigger('click')
+      await flushPromises()
+
+      expect(itemPage.saveResource).toHaveBeenCalledWith(false, undefined)
+    })
+
+    test('a route whose path only starts with the same letters is not a child route', async () => {
+      const itemPage = setupItemPage({ path: '/conference/programme/day' })
+      mockCwa()
+      const wrapper = mountTab()
+      await flushPromises()
+      await openSub(wrapper, 'route')
+      itemPage.localResourceData.value.path = '/conference/renamed'
+      await flushPromises()
+
+      await save(wrapper).trigger('click')
+      await flushPromises()
+
+      expect(itemPage.saveResource).toHaveBeenCalledWith(false, undefined)
+    })
+
+    test('a new path with no child routes under the old one sends no cascade', async () => {
+      const itemPage = setupItemPage({ path: '/conference/other' })
+      mockCwa()
+      const wrapper = mountTab()
+      await flushPromises()
+      await openSub(wrapper, 'route')
+      itemPage.localResourceData.value.path = '/conference/renamed'
+      await flushPromises()
+
+      await save(wrapper).trigger('click')
+      await flushPromises()
+
+      expect(itemPage.saveResource).toHaveBeenCalledWith(false, undefined)
+    })
+
+    test('a failed save keeps the form open with what was typed, under an alert with Retry', async () => {
+      const itemPage = setupItemPage()
+      itemPage.saveResource.mockResolvedValueOnce(undefined)
+      mockCwa()
+      const wrapper = mountTab()
+      await flushPromises()
+      await openSub(wrapper, 'route')
+      itemPage.localResourceData.value.path = '/conference/renamed'
+      await flushPromises()
+
+      await save(wrapper).trigger('click')
+      await flushPromises()
+
+      const alert = wrapper.find('[data-testid="routes-failure"]')
+      expect(alert.text()).toContain('The route wasn\'t saved.')
+      expect(alert.text()).toContain('what you typed is still here')
+      expect(document.activeElement).toBe(alert.element)
+      expect(itemPage.localResourceData.value.path).toBe('/conference/renamed')
+      expect(await axe(wrapper.element as HTMLElement)).toHaveNoViolations()
+
+      await wrapper.find('[data-testid="routes-retry"]').trigger('click')
+      await flushPromises()
+      expect(itemPage.saveResource).toHaveBeenCalledTimes(2)
+      expect(wrapper.find('[data-testid="routes-failure"]').exists()).toBe(false)
+    })
+
+    test('adding a route says where the page is now', async () => {
+      const itemPage = setupItemPage({ adding: true })
+      mockCwa()
       const wrapper = mountTab({ route: null })
-      await wrapper.findComponent(RoutesTabView).vm.$emit('changePage', 'manage-route')
+      await openSub(wrapper, 'route', true)
+
+      await save(wrapper).trigger('click')
+      await flushPromises()
+
+      expect(itemPage.saveResource).toHaveBeenCalledWith(false, undefined)
+      expect(wrapper.find('[data-testid="routes-status"]').text()).toBe('Route added: /my-programme.')
+    })
+
+    test('Back with nothing typed goes straight back', async () => {
+      setupItemPage()
+      mockCwa()
+      const wrapper = mountTab()
+      await openSub(wrapper, 'route')
+
+      await wrapper.find('[data-testid="sub-view-back"]').trigger('click')
+      await flushPromises()
+
+      expect(confirmMock).not.toHaveBeenCalled()
+      expect(wrapper.find('[data-testid="sub-view"]').exists()).toBe(false)
+    })
+
+    test.each([
+      ['Back', (wrapper: Wrapper) => wrapper.find('[data-testid="sub-view-back"]').trigger('click')],
+      ['Cancel', (wrapper: Wrapper) => cancel(wrapper).trigger('click')],
+      ['Escape', (wrapper: Wrapper) => wrapper.find('[data-testid="route-form"]').trigger('keydown', { key: 'Escape' })],
+    ])('%s with something typed asks first, and Keep editing keeps it', async (_how, leave) => {
+      const itemPage = setupItemPage()
+      mockCwa()
+      const wrapper = mountTab()
+      await flushPromises()
+      await openSub(wrapper, 'route')
+      itemPage.localResourceData.value.path = '/conference/renamed'
+      await flushPromises()
+      confirmMock.mockResolvedValueOnce(false)
+
+      await leave(wrapper)
+      await flushPromises()
+
+      expect(confirmMock).toHaveBeenCalledWith({
+        title: 'Discard your route changes?',
+        description: 'What you changed here will be lost. Changes on the other tabs are kept.',
+        keep: 'Keep editing',
+        go: 'Discard',
+      })
+      expect(wrapper.find('[data-testid="sub-view"]').exists()).toBe(true)
+      expect(itemPage.localResourceData.value.path).toBe('/conference/renamed')
+    })
+
+    test('Discard throws the typed path away', async () => {
+      const itemPage = setupItemPage()
+      mockCwa()
+      const wrapper = mountTab()
+      await flushPromises()
+      await openSub(wrapper, 'route')
+      itemPage.localResourceData.value.path = '/conference/renamed'
+      await flushPromises()
+
+      await cancel(wrapper).trigger('click')
+      await flushPromises()
+
+      expect(wrapper.find('[data-testid="sub-view"]').exists()).toBe(false)
+      expect(itemPage.localResourceData.value.path).toBe('/conference/programme')
+    })
+  })
+
+  describe('deleting the route', () => {
+    test('asks with a simple confirm when nothing depends on it, then deletes and says so', async () => {
+      const itemPage = setupItemPage()
+      mockCwa({ fetch: vi.fn(() => ({ response: Promise.resolve({ _data: { children: [] } }) })) })
+      const wrapper = mountTab()
+      await flushPromises()
+      await openSub(wrapper, 'route')
+
       await wrapper.findComponent(RoutesTabManage).vm.$emit('delete')
       await flushPromises()
-      capturedFn!()
+
+      expect(confirmMock).toHaveBeenCalledWith({
+        title: 'Delete the route /conference/programme?',
+        lines: [{ text: 'Visitors to /conference/programme get “Page not found”.' }],
+        keep: 'Don\'t delete',
+        go: 'Delete route',
+        typed: undefined,
+      })
+      expect(itemPage.deleteResource).toHaveBeenCalledWith(undefined, expect.any(Function), true)
+      expect(wrapper.find('[data-testid="sub-view"]').exists()).toBe(false)
+      expect(wrapper.find('[data-testid="routes-status"]').text()).toBe('Route /conference/programme deleted.')
+    })
+
+    test('asks to type the path when old addresses or child routes depend on it', async () => {
+      setupItemPage({ redirectedFrom: [{ '@id': '/_/routes//old', 'path': '/old' }] })
+      mockCwa()
+      const wrapper = mountTab()
+      await flushPromises()
+      await openSub(wrapper, 'route')
+
+      await wrapper.findComponent(RoutesTabManage).vm.$emit('delete')
+      await flushPromises()
+
+      expect(confirmMock.mock.calls[0]![0].typed).toEqual({ noun: 'path', value: '/conference/programme' })
+      expect(confirmMock.mock.calls[0]![0].lines.map((line: { text: string }) => line.text)).toEqual([
+        'Visitors to /conference/programme get “Page not found”.',
+        'Its 1 old address goes too.',
+        'The 3 child routes keep their paths.',
+      ])
+    })
+
+    test('asks to type the path when only child routes depend on it', async () => {
+      setupItemPage()
+      mockCwa()
+      const wrapper = mountTab()
+      await flushPromises()
+      await openSub(wrapper, 'route')
+
+      await wrapper.findComponent(RoutesTabManage).vm.$emit('delete')
+      await flushPromises()
+
+      expect(confirmMock.mock.calls[0]![0].typed).toEqual({ noun: 'path', value: '/conference/programme' })
+    })
+
+    test('Don\'t delete deletes nothing', async () => {
+      const itemPage = setupItemPage()
+      mockCwa()
+      const wrapper = mountTab()
+      await openSub(wrapper, 'route')
+      confirmMock.mockResolvedValueOnce(false)
+
+      await wrapper.findComponent(RoutesTabManage).vm.$emit('delete')
+      await flushPromises()
+
+      expect(itemPage.deleteResource).not.toHaveBeenCalled()
+      expect(wrapper.find('[data-testid="sub-view"]').exists()).toBe(true)
+    })
+
+    test.each([
+      [false, '/_/pages/p'],
+      [true, '/_/page_data/d'],
+    ])('deleting the route being viewed goes to the page by its IRI (data page: %s)', async (isDataPage, iri) => {
+      const itemPage = setupItemPage({ path: '/' })
+      mockCwa({ resources: { getResource: vi.fn(() => ref(null)), isDataPage: ref(isDataPage), pageDataIri: ref('/_/page_data/d'), pageIri: ref('/_/pages/p') } })
+      const wrapper = mountTab()
+      await openSub(wrapper, 'route')
+
+      await wrapper.findComponent(RoutesTabManage).vm.$emit('delete')
+      await flushPromises()
+      itemPage.deleteResource.mock.calls[0]![1]()
+
+      expect(mockNavigateTo).toHaveBeenCalledWith({ name: '_cwa-resource-page', params: { cwaPage0: iri } })
+    })
+
+    test('deleting the route being viewed goes nowhere when there is no page to fall back to', async () => {
+      const itemPage = setupItemPage({ path: '/' })
+      mockCwa({ resources: { getResource: vi.fn(() => ref(null)), isDataPage: ref(false), pageDataIri: ref(undefined), pageIri: ref(undefined) } })
+      const wrapper = mountTab()
+      await openSub(wrapper, 'route')
+
+      await wrapper.findComponent(RoutesTabManage).vm.$emit('delete')
+      await flushPromises()
+      itemPage.deleteResource.mock.calls[0]![1]()
+
       expect(mockNavigateTo).not.toHaveBeenCalled()
     })
   })
 
-  describe('redirect deleted handler', () => {
-    test('reloads the resource when a redirect is deleted', async () => {
-      const loadResource = vi.fn()
-      const isLoading = ref(false)
-      mockUseItemPage.mockReturnValue({
-        isLoading,
-        isUpdating: ref(false),
-        localResourceData: ref({ path: '/conference/programme' }),
-        resource: ref({ '@id': '/_/routes//conference/programme', 'path': '/conference/programme', 'route': null }),
-        loadResource,
-        deleteResource: vi.fn(),
-        saveResource: vi.fn(),
-        resetResource: vi.fn(),
-        apiState: ref({ status: 'SUCCESS', path: '/_/routes//conference/programme/redirects' }),
-      })
-      mockCwaFull()
+  describe('Redirect to', () => {
+    test('shows where the route sends visitors, and the sub-view has no footer while it is a list', async () => {
+      setupItemPage({ redirect: '/_/routes//kitchens/range' })
+      mockCwa()
       const wrapper = mountTab()
-      await wrapper.findComponent(RoutesTabView).vm.$emit('deleted')
+      await openSub(wrapper, 'to')
+
+      expect(subTitle(wrapper).text()).toBe('Redirect to')
+      expect(wrapper.findComponent(RoutesTabForwardTo).props('forwardToPath')).toBe('/kitchens/range')
+      expect(save(wrapper).exists()).toBe(false)
+      expect(await axe(wrapper.element as HTMLElement)).toHaveNoViolations()
+    })
+
+    test('choosing a page and Redirect sends the redirect alone, then says what happened', async () => {
+      setupItemPage()
+      const cwa = mockCwa()
+      const wrapper = mountTab()
+      await openSub(wrapper, 'to')
+      await wrapper.find('[data-set-forward]').trigger('click')
       await flushPromises()
-      expect(isLoading.value).toBe(true)
-      expect(loadResource).toHaveBeenCalled()
+      expect(labelOf(save(wrapper).element)).toBe('Redirect')
+      expect(save(wrapper).attributes('title')).toBe('Choose a page first.')
+
+      await wrapper.findComponent(RoutesTabForwardTo).vm.$emit('update:modelValue', '/_/routes//kitchens/range')
+      await flushPromises()
+      expect(wrapper.findComponent(RoutesTabForwardTo).props('pickedPath')).toBe('/kitchens/range')
+      await save(wrapper).trigger('click')
+      await flushPromises()
+
+      expect(cwa.resourcesManager.updateResource).toHaveBeenCalledWith({ endpoint: ROUTE_IRI, data: { redirect: '/_/routes//kitchens/range' } })
+      expect(wrapper.find('[data-testid="routes-status"]').text()).toBe('Visitors to /conference/programme are now sent to /kitchens/range.')
+      expect(wrapper.findComponent(RoutesTabForwardTo).props('form')).toBe(false)
+    })
+
+    test('a route cannot be sent to itself', async () => {
+      setupItemPage()
+      const cwa = mockCwa()
+      const wrapper = mountTab()
+      await openSub(wrapper, 'to')
+      await wrapper.find('[data-set-forward]').trigger('click')
+      await wrapper.findComponent(RoutesTabForwardTo).vm.$emit('update:modelValue', ROUTE_IRI)
+      await flushPromises()
+
+      expect(save(wrapper).attributes('title')).toBe('A route cannot redirect to itself.')
+      await save(wrapper).trigger('click')
+      expect(cwa.resourcesManager.updateResource).not.toHaveBeenCalled()
+    })
+
+    test('Remove asks Keep redirecting or Stop redirecting, and only Stop redirecting sends it', async () => {
+      setupItemPage({ redirect: '/_/routes//kitchens/range' })
+      const cwa = mockCwa()
+      const wrapper = mountTab()
+      await openSub(wrapper, 'to')
+      confirmMock.mockResolvedValueOnce(false)
+
+      await wrapper.find('[data-remove-forward]').trigger('click')
+      await flushPromises()
+      expect(confirmMock).toHaveBeenCalledWith({
+        title: 'Stop redirecting?',
+        description: 'Visitors to /conference/programme will see this page again.',
+        keep: 'Keep redirecting',
+        go: 'Stop redirecting',
+      })
+      expect(cwa.resourcesManager.updateResource).not.toHaveBeenCalled()
+
+      await wrapper.find('[data-remove-forward]').trigger('click')
+      await flushPromises()
+      expect(cwa.resourcesManager.updateResource).toHaveBeenCalledWith({ endpoint: ROUTE_IRI, data: { redirect: null } })
+    })
+
+    test('a failed redirect keeps the choice under an alert', async () => {
+      setupItemPage()
+      const cwa = mockCwa()
+      cwa.resourcesManager.updateResource.mockResolvedValueOnce(undefined)
+      const wrapper = mountTab()
+      await openSub(wrapper, 'to')
+      await wrapper.find('[data-set-forward]').trigger('click')
+      await wrapper.findComponent(RoutesTabForwardTo).vm.$emit('update:modelValue', '/_/routes//kitchens/range')
+      await flushPromises()
+
+      await save(wrapper).trigger('click')
+      await flushPromises()
+
+      expect(wrapper.find('[data-testid="routes-failure"]').text()).toContain('The redirect wasn\'t saved.')
+      expect(wrapper.findComponent(RoutesTabForwardTo).props('modelValue')).toBe('/_/routes//kitchens/range')
     })
   })
 
-  describe('apiState watcher re-fetch', () => {
-    test('reloads when apiState becomes SUCCESS without the /redirects suffix', async () => {
-      const loadResource = vi.fn()
-      const isLoading = ref(false)
-      const apiState = ref<any>(null)
-      mockUseItemPage.mockReturnValue({
-        isLoading,
-        isUpdating: ref(false),
-        localResourceData: ref({ path: '/conference/programme' }),
-        resource: ref({ '@id': '/_/routes//conference/programme', 'path': '/conference/programme', 'route': null }),
-        loadResource,
-        deleteResource: vi.fn(),
-        saveResource: vi.fn(),
-        resetResource: vi.fn(),
-        apiState,
+  describe('Redirected from', () => {
+    test('Add sends the old address pointing at this page\'s route, then says it now redirects here', async () => {
+      const itemPage = setupItemPage()
+      const cwa = mockCwa()
+      const wrapper = mountTab()
+      await openSub(wrapper, 'from')
+      expect(save(wrapper).exists()).toBe(false)
+      await wrapper.find('[data-testid="route-redirect-add"]').trigger('click')
+      await flushPromises()
+      expect(document.activeElement?.tagName).toBe('INPUT')
+      expect(labelOf(save(wrapper).element)).toBe('Add')
+
+      await wrapper.find('input').setValue('/old-shaker')
+      await save(wrapper).trigger('click')
+      await flushPromises()
+
+      expect(cwa.resourcesManager.createResource).toHaveBeenCalledWith({ endpoint: '/_/routes', data: { name: '/old-shaker', path: '/old-shaker', redirect: ROUTE_IRI } })
+      expect(itemPage.loadResource).toHaveBeenCalled()
+      expect(wrapper.find('[data-testid="routes-status"]').text()).toBe('/old-shaker now redirects here.')
+      expect(wrapper.findComponent(RoutesTabRedirects).props('form')).toBe(false)
+    })
+
+    test.each(['old-shaker', '/old shaker'])('“%s” is checked before sending and the reason shown', async (typed) => {
+      setupItemPage()
+      const cwa = mockCwa()
+      const wrapper = mountTab()
+      await openSub(wrapper, 'from')
+      await wrapper.find('[data-testid="route-redirect-add"]').trigger('click')
+      await wrapper.find('input').setValue(typed)
+
+      await save(wrapper).trigger('click')
+      await flushPromises()
+
+      expect(cwa.resourcesManager.createResource).not.toHaveBeenCalled()
+      expect(wrapper.find('[data-testid="input-invalid"]').text()).toBe('Start with / and leave out spaces, for example /old-kitchens.')
+    })
+
+    test('a failed add keeps what was typed under an alert', async () => {
+      setupItemPage()
+      const cwa = mockCwa()
+      cwa.resourcesManager.createResource.mockResolvedValueOnce(undefined)
+      const wrapper = mountTab()
+      await openSub(wrapper, 'from')
+      await wrapper.find('[data-testid="route-redirect-add"]').trigger('click')
+      await wrapper.find('input').setValue('/old-shaker')
+
+      await save(wrapper).trigger('click')
+      await flushPromises()
+
+      expect(wrapper.find('[data-testid="routes-failure"]').text()).toContain('The old address wasn\'t added.')
+      expect((wrapper.find('input').element as HTMLInputElement).value).toBe('/old-shaker')
+    })
+
+    test('deleting an old address asks Don\'t delete or Delete, typing it only when others sit under it, and goes without the API\'s own confirm', async () => {
+      const nested = { '@id': '/_/routes//shaker', 'path': '/shaker', 'redirectedFrom': [{ '@id': '/_/routes//shaker-style', 'path': '/shaker-style', 'redirectedFrom': [] }] }
+      const itemPage = setupItemPage({ redirectedFrom: [nested] })
+      const cwa = mockCwa()
+      itemPage.loadResource.mockImplementation(() => {
+        itemPage.resource.value = { ...itemPage.resource.value, redirectedFrom: [] }
       })
-      mockCwaFull()
+      const wrapper = mountTab()
+      await openSub(wrapper, 'from')
+
+      await wrapper.findComponent(RoutesTabRedirects).vm.$emit('delete', nested)
+      await flushPromises()
+
+      expect(confirmMock).toHaveBeenCalledWith({
+        title: 'Delete the old address /shaker?',
+        lines: [{ text: 'Its 1 old address goes too.' }],
+        keep: 'Don\'t delete',
+        go: 'Delete',
+        typed: { noun: 'old address', value: '/shaker' },
+      })
+      expect(cwa.resourcesManager.deleteResource).toHaveBeenCalledWith({ endpoint: '/_/routes//shaker', requestCompleteFn: expect.any(Function) }, true)
+      expect(wrapper.find('[data-testid="routes-status"]').text()).toBe('/shaker no longer redirects here.')
+    })
+
+    test('an old address still there after deleting shows an alert with Retry', async () => {
+      const single = { '@id': '/_/routes//old', 'path': '/old', 'redirectedFrom': [] }
+      setupItemPage({ redirectedFrom: [single] })
+      mockCwa()
+      const wrapper = mountTab()
+      await openSub(wrapper, 'from')
+
+      await wrapper.findComponent(RoutesTabRedirects).vm.$emit('delete', single)
+      await flushPromises()
+
+      expect(confirmMock.mock.calls[0]![0].typed).toBeUndefined()
+      expect(wrapper.find('[data-testid="routes-failure"]').text()).toContain('The old address wasn\'t deleted.')
+    })
+
+    test('deleting the old address being viewed goes to the page by its IRI', async () => {
+      const single = { '@id': '/_/routes//', 'path': '/', 'redirectedFrom': [] }
+      setupItemPage({ redirectedFrom: [single] })
+      const cwa = mockCwa()
+      const wrapper = mountTab()
+      await openSub(wrapper, 'from')
+
+      await wrapper.findComponent(RoutesTabRedirects).vm.$emit('delete', single)
+      await flushPromises()
+      cwa.resourcesManager.deleteResource.mock.calls[0]![0].requestCompleteFn()
+
+      expect(mockNavigateTo).toHaveBeenCalledWith({ name: '_cwa-resource-page', params: { cwaPage0: '/_/pages/page-uuid' } })
+    })
+  })
+
+  describe('Child routes', () => {
+    test('loads each child route for its status and page when opened, and its actions go to the modal', async () => {
+      setupItemPage()
+      const cwa = mockCwa()
+      const wrapper = mountTab()
+      await flushPromises()
+      expect(cwa.fetch).toHaveBeenCalledTimes(1)
+
+      await openSub(wrapper, 'kids')
+
+      expect(subTitle(wrapper).text()).toBe('Child routes')
+      expect(cwa.fetch).toHaveBeenCalledWith({ path: '/_/routes//conference/programme/day-1/am' })
+      const details = wrapper.findComponent(RoutesTabChildRoutes).props('details') as Record<string, { page?: string }>
+      expect(Object.keys(details)).toHaveLength(3)
+      expect(details['/_/routes//conference/elsewhere']!.page).toBe('/_/pages/elsewhere')
+      expect(save(wrapper).exists()).toBe(false)
+
+      await wrapper.findComponent(RoutesTabChildRoutes).vm.$emit('edit', '/_/pages/elsewhere')
+      await wrapper.findComponent(RoutesTabChildRoutes).vm.$emit('go', '/conference/elsewhere')
+      expect(wrapper.emitted('openPage')).toEqual([['/_/pages/elsewhere']])
+      expect(wrapper.emitted('goTo')).toEqual([['/conference/elsewhere']])
+      expect(await axe(wrapper.element as HTMLElement)).toHaveNoViolations()
+    })
+  })
+
+  describe('the route resource', () => {
+    test('reloads when the store holds the route without its redirects', async () => {
+      const itemPage = setupItemPage()
+      mockCwa()
       mountTab()
       await flushPromises()
-      loadResource.mockClear()
-      apiState.value = { status: CwaResourceApiStatuses.SUCCESS, path: '/_/routes//conference/programme' }
+      itemPage.loadResource.mockClear()
+
+      itemPage.apiState.value = { status: CwaResourceApiStatuses.SUCCESS, path: ROUTE_IRI }
       await flushPromises()
-      expect(isLoading.value).toBe(true)
-      expect(loadResource).toHaveBeenCalled()
+
+      expect(itemPage.isLoading.value).toBe(true)
+      expect(itemPage.loadResource).toHaveBeenCalled()
     })
 
-    test('does not reload when apiState path already ends with /redirects', async () => {
-      const loadResource = vi.fn()
-      const apiState = ref<any>(null)
-      mockUseItemPage.mockReturnValue({
-        isLoading: ref(false),
-        isUpdating: ref(false),
-        localResourceData: ref({ path: '/conference/programme' }),
-        resource: ref({ '@id': '/_/routes//conference/programme', 'path': '/conference/programme', 'route': null }),
-        loadResource,
-        deleteResource: vi.fn(),
-        saveResource: vi.fn(),
-        resetResource: vi.fn(),
-        apiState,
-      })
-      mockCwaFull()
+    test('does not reload when it holds the redirects', async () => {
+      const itemPage = setupItemPage()
+      mockCwa()
       mountTab()
       await flushPromises()
-      loadResource.mockClear()
-      apiState.value = { status: CwaResourceApiStatuses.SUCCESS, path: '/_/routes//conference/programme/redirects' }
-      await flushPromises()
-      expect(loadResource).not.toHaveBeenCalled()
-    })
-  })
+      itemPage.loadResource.mockClear()
 
-  describe('switching page', () => {
-    test('switching page while the route form is open returns to the routes view', async () => {
+      itemPage.apiState.value = { status: CwaResourceApiStatuses.SUCCESS, path: `${ROUTE_IRI}/redirects` }
+      await flushPromises()
+
+      expect(itemPage.loadResource).not.toHaveBeenCalled()
+    })
+
+    test('reloads when the page\'s route changes', async () => {
+      const itemPage = setupItemPage()
+      mockCwa()
+      const wrapper = mountTab()
+      await flushPromises()
+      itemPage.loadResource.mockClear()
+
+      await wrapper.setProps({ pageResource: { '@id': '/_/pages/programme-uuid', '@type': 'Page', 'route': '/_/routes//conference/renamed' } as any })
+      await flushPromises()
+
+      expect(itemPage.loadResource).toHaveBeenCalled()
+    })
+
+    test('switching page while a sub-view is open returns to the main view', async () => {
       setupItemPage()
-      mockCwaFull()
-      const wrapper = mountTab({ '@id': '/_/page_data/conference-uuid', '@type': 'ConferenceData', 'route': undefined })
-      await wrapper.findComponent(RoutesTabView).vm.$emit('changePage', 'manage-route')
-      expect(wrapper.findComponent(RoutesTabManage).exists()).toBe(true)
-      await wrapper.setProps({
-        pageResource: {
-          '@id': '/_/pages/overview-uuid',
-          '@type': 'Page',
-          'route': '/_/routes//2027-overview',
-          'parentPage': null,
-          'parentPageData': '/_/page_data/conference-uuid',
-        } as any,
-      })
-      await flushPromises()
-      expect(wrapper.findComponent(RoutesTabManage).exists()).toBe(false)
-      expect(wrapper.findComponent(RoutesTabView).exists()).toBe(true)
-    })
-  })
-
-  describe('route IRI change', () => {
-    test('reloads the resource when the page route IRI changes', async () => {
-      const loadResource = vi.fn()
-      mockUseItemPage.mockReturnValue({
-        isLoading: ref(false),
-        isUpdating: ref(false),
-        localResourceData: ref({ path: '/conference/programme' }),
-        resource: ref({ '@id': '/_/routes//conference/programme', 'path': '/conference/programme', 'route': null }),
-        loadResource,
-        deleteResource: vi.fn(),
-        saveResource: vi.fn(),
-        resetResource: vi.fn(),
-        apiState: ref({ status: 'SUCCESS', path: '/_/routes//conference/programme/redirects' }),
-      })
-      mockCwaFull()
+      mockCwa()
       const wrapper = mountTab()
-      await flushPromises()
-      loadResource.mockClear()
-      await wrapper.setProps({
-        pageResource: {
-          '@id': '/_/pages/programme-uuid',
-          '@type': 'Page',
-          'route': '/_/routes//conference/programme-renamed',
-          'parentPage': null,
-          'parentPageData': null,
-        } as any,
-      })
-      await flushPromises()
-      expect(loadResource).toHaveBeenCalled()
-    })
-  })
+      await openSub(wrapper, 'route')
 
-  describe('back button and manage screen rendering', () => {
-    test('renders RoutesTabManage with localResourceData and clicking back returns to view', async () => {
+      await wrapper.setProps({ pageResource: { '@id': '/_/pages/overview-uuid', '@type': 'Page', 'route': '/_/routes//2027-overview' } as any })
+      await flushPromises()
+
+      expect(wrapper.find('[data-testid="sub-view"]').exists()).toBe(false)
+    })
+
+    test('the route form binds to the page or page data it belongs to', () => {
       setupItemPage()
-      mockCwaFull()
-      const wrapper = mountTab()
-      await wrapper.findComponent(RoutesTabView).vm.$emit('changePage', 'manage-route')
-      expect(wrapper.findComponent(RoutesTabManage).exists()).toBe(true)
-      await wrapper.find('button').trigger('click')
-      expect(wrapper.findComponent(RoutesTabView).exists()).toBe(true)
+      mockCwa()
+      mountTab({ '@type': 'ConferenceData', '@id': '/_/page_data/c', 'route': null })
+      const options = mockUseItemPage.mock.calls[0]![0]
+      expect(options.defaultResource.value).toEqual({ path: '', pageData: '/_/page_data/c' })
+      expect(options.endpoint.value).toBe('add')
+      const data = { path: '/x' } as Record<string, string>
+      expect(options.validate(data)).toBe(true)
+      expect(data.name).toBe('/x')
     })
 
-    test('writes back to localResourceData.path via v-model when RoutesTabManage updates the model', async () => {
-      const localResourceData = ref({ path: '/conference/programme' })
-      mockUseItemPage.mockReturnValue({
-        isLoading: ref(false),
-        isUpdating: ref(false),
-        localResourceData,
-        resource: ref({ '@id': '/_/routes//conference/programme', 'path': '/conference/programme', 'route': null }),
-        loadResource: vi.fn(),
-        deleteResource: vi.fn(),
-        saveResource: vi.fn(),
-        resetResource: vi.fn(),
-        apiState: ref({ status: 'SUCCESS', path: '/_/routes//conference/programme/redirects' }),
+    test('the route form loads the route with its redirects', () => {
+      setupItemPage()
+      mockCwa()
+      mountTab()
+      const options = mockUseItemPage.mock.calls[0]![0]
+      expect(options.endpoint.value).toBe(`${ROUTE_IRI}/redirects`)
+      expect(options.defaultResource.value).toEqual({ path: '', page: '/_/pages/programme-uuid' })
+    })
+  })
+
+  describe('inside the page dialog', () => {
+    function mountInDialog() {
+      const form = fakeDialogForm({ reference: 'Programme' })
+      const Host = defineComponent({
+        setup() {
+          return () => h(CwaUiDialog, { title: 'Programme', tabs: [{ key: 'details', label: 'Details' }, { key: 'routes', label: 'Routes' }], tab: 'routes', form }, {
+            details: () => h('p', 'Details'),
+            routes: () => h(RoutesTab, { pageResource: { '@id': '/_/pages/programme-uuid', '@type': 'Page', 'title': 'My Programme', 'route': ROUTE_IRI } as any }),
+          })
+        },
       })
-      mockCwaFull()
-      const wrapper = mountTab()
-      await wrapper.findComponent(RoutesTabView).vm.$emit('changePage', 'manage-route')
-      await wrapper.findComponent(RoutesTabManage).vm.$emit('update:modelValue', '/conference/renamed')
+      return mount(Host, { attachTo: document.body, global: { stubs: { ResourceSearch: true } } })
+    }
+
+    const dialog = () => document.querySelector<HTMLElement>('[data-testid="dialog"]')!
+    const footerButtons = () => [...dialog().querySelectorAll<HTMLElement>('footer button')].map(labelOf)
+
+    test('the route form\'s Cancel and Save route replace the dialog\'s, and a list sub-view hides the footer', async () => {
+      setupItemPage()
+      mockCwa()
+      const wrapper = mountInDialog()
       await flushPromises()
-      expect(localResourceData.value.path).toBe('/conference/renamed')
+      expect(footerButtons()).toEqual(['Cancel', 'Save'])
+
+      await openSub(wrapper as unknown as Wrapper, 'route')
+      expect(footerButtons()).toEqual(['Cancel', 'Save route'])
+      expect(dialog().querySelector('[data-testid="sub-view-header"]')!.classList.contains('cwa:-mx-6')).toBe(true)
+
+      dialog().querySelector<HTMLElement>('[data-testid="sub-view-back"]')!.click()
+      await flushPromises()
+      await openSub(wrapper as unknown as Wrapper, 'kids')
+      expect(dialog().querySelector('footer')).toBeNull()
+      expect(await axe(document.body)).toHaveNoViolations()
     })
 
-    test('shows critical error alert when localResourceData is missing on manage screen', async () => {
-      mockUseItemPage.mockReturnValue({
-        isLoading: ref(false),
-        isUpdating: ref(false),
-        localResourceData: ref(null),
-        resource: ref({ '@id': '/_/routes//conference/programme', 'path': '/conference/programme', 'route': null }),
-        loadResource: vi.fn(),
-        deleteResource: vi.fn(),
-        saveResource: vi.fn(),
-        resetResource: vi.fn(),
-        apiState: ref({ status: 'SUCCESS', path: '/_/routes//conference/programme/redirects' }),
+    test('Escape in an open Select closes the Select and stays in the sub-view', async () => {
+      setupItemPage()
+      mockCwa({}, { '/_/pages/conference-uuid': { data: { route: '/_/routes//conference' } } })
+      const form = fakeDialogForm({ reference: 'Programme' })
+      const Host = defineComponent({
+        setup() {
+          return () => h(CwaUiDialog, { title: 'Programme', tabs: [{ key: 'routes', label: 'Routes' }], form }, {
+            routes: () => h(RoutesTab, { pageResource: { '@id': '/_/pages/programme-uuid', '@type': 'Page', 'title': 'My Programme', 'route': ROUTE_IRI, 'parentPage': '/_/pages/conference-uuid' } as any }),
+          })
+        },
       })
-      mockCwaFull()
-      const wrapper = mountTab()
-      await wrapper.findComponent(RoutesTabView).vm.$emit('changePage', 'manage-route')
-      expect(wrapper.findComponent(RoutesTabManage).exists()).toBe(false)
-      expect(wrapper.text()).toContain('Critical Errors')
-    })
+      const wrapper = mount(Host, { attachTo: document.body, global: { stubs: { ResourceSearch: true } } })
+      await flushPromises()
+      await openSub(wrapper as unknown as Wrapper, 'route')
+      const trigger = dialog().querySelector<HTMLElement>('[data-testid="select-trigger"]')!
+      trigger.focus()
+      trigger.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
+      await flushPromises()
+      expect(trigger.getAttribute('aria-expanded')).toBe('true')
 
-    test('shows internal error alert when no resource is loaded on a non-view screen', async () => {
-      mockUseItemPage.mockReturnValue({
-        isLoading: ref(false),
-        isUpdating: ref(false),
-        localResourceData: ref(null),
-        resource: ref(null),
-        loadResource: vi.fn(),
-        deleteResource: vi.fn(),
-        saveResource: vi.fn(),
-        resetResource: vi.fn(),
-        apiState: ref(null),
-      })
-      mockCwaFull()
-      const wrapper = mountTab()
-      await wrapper.findComponent(RoutesTabView).vm.$emit('changePage', 'manage-route')
-      expect(wrapper.text()).toContain('Internal Error: No Route Resource Loaded')
+      trigger.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
+      await flushPromises()
+
+      expect(dialog().querySelector('[data-testid="sub-view"]')).not.toBeNull()
     })
   })
 })

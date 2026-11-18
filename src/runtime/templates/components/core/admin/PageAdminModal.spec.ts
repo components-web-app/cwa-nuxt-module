@@ -2,9 +2,13 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { nextTick, ref } from 'vue'
 import { mount, flushPromises } from '@vue/test-utils'
+import { mockNuxtImport } from '@nuxt/test-utils/runtime'
 import PageAdminModal from './PageAdminModal.vue'
 import * as cwaComposable from '#cwa/composables/cwa'
 import { componentNames } from '#components'
+
+const mockNavigateTo = vi.hoisted(() => vi.fn())
+mockNuxtImport('navigateTo', () => mockNavigateTo)
 
 const { mockUseItemPage, mockUseParentPageLoader, mockUseParentPageDataLoader } = vi.hoisted(() => ({
   mockUseItemPage: vi.fn(),
@@ -659,5 +663,23 @@ describe('Page UI select stores the full CwaPage component name (#384)', () => {
     })
     const styleSelect = wrapper.findAllComponents({ name: 'ModalSelect' }).find(s => s.props('label') === 'Style')
     expect(styleSelect?.props('options')).toContainEqual({ label: 'Wide', value: 'cwa:max-w-full' })
+  })
+})
+
+describe('PageAdminModal Routes tab links (#461)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  test('opening another page from the Routes tab opens its settings, and going to a child route closes the dialog and navigates past the editing guard', async () => {
+    const wrapper = setup()
+    const routesTab = wrapper.findComponent({ name: 'RoutesTab' })
+
+    await routesTab.vm.$emit('openPage', '/_/pages/parent')
+    await routesTab.vm.$emit('goTo', '/conference/day-1')
+
+    expect(mockNavigateTo).toHaveBeenNthCalledWith(1, { name: '_cwa-routes-iri', params: { iri: '/_/pages/parent' } })
+    expect(mockNavigateTo).toHaveBeenNthCalledWith(2, { path: '/conference/day-1', query: { cwa_force: 'true' } })
+    expect(wrapper.emitted('close')).toHaveLength(1)
   })
 })

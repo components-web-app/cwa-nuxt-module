@@ -195,7 +195,7 @@ const actionClasses = 'cwa:grid cwa:size-10 cwa:shrink-0 cwa:cursor-pointer cwa:
       :aria-level="row.level"
       :aria-setsize="row.setSize"
       :aria-posinset="row.posInSet"
-      :aria-expanded="hasChildren(row) ? String(!collapsed.has(row.node.key)) : undefined"
+      :aria-expanded="hasChildren(row) ? !collapsed.has(row.node.key) : undefined"
       :tabindex="tabStop === row.node.key ? 0 : -1"
       :data-tree-key="row.node.key"
       class="cwa:relative cwa:flex cwa:min-h-hit cwa:items-center cwa:border-b cwa:border-line cwa:text-control cwa:text-fg cwa:outline-1 cwa:outline-transparent cwa:focus-visible:outline-2 cwa:focus-visible:-outline-offset-2 cwa:focus-visible:outline-accent-fg cwa:pointer-coarse:min-h-12"
