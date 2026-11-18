@@ -61,13 +61,16 @@ defineSlots<{
   flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem 0.75rem;
+  max-width: 100%;
   margin-bottom: 1rem;
   padding: 0.75rem;
+  overflow-x: auto;
   background: var(--cwa-color-surface-raised);
 }
 
 .kit-sim-demos {
   display: flex;
+  max-width: 100%;
   flex-wrap: wrap;
   align-items: flex-start;
   gap: 1rem 1.5rem;
