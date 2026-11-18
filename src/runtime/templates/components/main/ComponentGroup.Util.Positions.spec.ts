@@ -119,12 +119,12 @@ describe('useComponentGroupPositions', () => {
       }
     })
 
-    test('does nothing when groupIsReordering is false', () => {
+    test('moves the position with Enable reordering off, as it only turns on dragging on the page', () => {
       const { mockCwa, getCapturedHandler } = buildCwa(positions, resources)
       mockCwa.admin.resourceStackManager.getState.mockReturnValue(false)
       useComponentGroupPositions(iriRef, mockCwa)
       getCapturedHandler()({ positionIri: '/_/component_positions/a', location: 'next' })
-      expect(mockCwa.resourcesManager.storeResource).not.toHaveBeenCalled()
+      expect(mockCwa.resourcesManager.storeResource).toHaveBeenCalledTimes(3)
     })
 
     test('does nothing when positionIri is not in positions', () => {
