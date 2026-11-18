@@ -5,6 +5,7 @@ import { computed, reactive, ref } from 'vue'
 import { resetLocalTimeZone } from '@internationalized/date'
 import { axe } from '../../../../../../../../../test/utils/axe'
 import Publish from './Publish.vue'
+import DatePicker from '#cwa/templates/components/ui/DatePicker.vue'
 
 const iri = ref('/component/draft')
 const resourceData = ref<Record<string, any>>({})
@@ -42,15 +43,8 @@ vi.mock('#cwa/composables/cwa-resource-manager-tab', () => ({
   }),
 }))
 
-const DatePicker = {
-  name: 'DatePicker',
-  props: ['modelValue', 'min', 'label'],
-  emits: ['update:modelValue'],
-  template: '<input :aria-label="label" :value="modelValue">',
-}
-
 function mountPublish(attachTo?: HTMLElement) {
-  return mount(Publish, { attachTo, global: { stubs: { DatePicker } } })
+  return mount(Publish, { attachTo })
 }
 
 function draft(publishedAt?: string | null) {
@@ -117,6 +111,18 @@ describe('Publish tab on the kit (#459)', () => {
     expect(wrapper.findComponent(DatePicker).props('min')).toBe('2026-09-25T12:00:00.000Z')
     await wrapper.findComponent(DatePicker).vm.$emit('update:modelValue', '2026-10-01T08:00:00.000Z')
     expect(state.publishScheduleValue).toBe('2026-10-01T08:00:00.000Z')
+  })
+
+  test('switching scheduling off again removes the date picker', async () => {
+    draft()
+    const wrapper = mountPublish(document.body)
+
+    await switchNamed(wrapper, 'Schedule')!.trigger('click')
+    expect(wrapper.findComponent(DatePicker).exists()).toBe(true)
+    await switchNamed(wrapper, 'Schedule')!.trigger('click')
+
+    expect(state.publishScheduling).toBe(false)
+    expect(wrapper.findComponent(DatePicker).exists()).toBe(false)
   })
 
   test('a scheduled draft opens with scheduling on and has its date in the picker', () => {
