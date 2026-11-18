@@ -22,6 +22,7 @@ import BarSummary from '#cwa/templates/components/core/admin/BarSummary.vue'
 import { createAnnouncer } from '#cwa/templates/components/core/ui/field-context'
 import { announceKey, managerTabMountedKey } from '#cwa/templates/components/core/ui/field-keys'
 import { resourceStackLevels } from '#cwa/templates/components/core/ui/resource-stack'
+import { listenForLongPress } from '#cwa/admin/long-press'
 
 const ComponentUsageBadge = defineAsyncComponent(() => import('#cwa/templates/components/main/admin/resource-manager/cta/ComponentUsageBadge.vue'))
 const SharedInstancesHighlight = defineAsyncComponent(() => import('#cwa/templates/components/main/admin/resource-manager/SharedInstancesHighlight.vue'))
@@ -219,13 +220,17 @@ watch(currentStackItem, (newCurrent, oldCurrent) => {
   currentManagerTabs.value = newCurrent?.managerTabs
 })
 
+let stopLongPress: (() => void) | undefined
+
 onMounted(() => {
   window.addEventListener('mousedown', mousedownHandler)
   window.addEventListener('resize', $cwa.admin.emitRedraw, false)
+  stopLongPress = listenForLongPress(document)
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', $cwa.admin.emitRedraw)
+  stopLongPress?.()
 })
 
 defineExpose({

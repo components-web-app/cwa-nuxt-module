@@ -213,6 +213,9 @@
 .cwa\:inset-0 {
   inset: 0px;
 }
+.cwa\:inset-x-0 {
+  inset-inline: 0px;
+}
 .cwa\:inset-y-0 {
   inset-block: 0px;
 }
@@ -638,6 +641,9 @@
 .cwa\:max-h-\[50vh\] {
   max-height: 50vh;
 }
+.cwa\:max-h-\[70vh\] {
+  max-height: 70vh;
+}
 .cwa\:max-h-\[calc\(100dvh-1rem\)\] {
   max-height: calc(100dvh - 1rem);
 }
@@ -658,6 +664,9 @@
 }
 .cwa\:min-h-9 {
   min-height: calc(var(--cwa-spacing) * 9);
+}
+.cwa\:min-h-11 {
+  min-height: calc(var(--cwa-spacing) * 11);
 }
 .cwa\:min-h-14 {
   min-height: calc(var(--cwa-spacing) * 14);
@@ -1412,6 +1421,12 @@
     background-color: color-mix(in oklab, var(--cwa-color-black) 30%, transparent);
   }
 }
+.cwa\:bg-black\/40 {
+  background-color: var(--cwa-color-black);
+  @supports (color: color-mix(in lab, red, red)) {
+    background-color: color-mix(in oklab, var(--cwa-color-black) 40%, transparent);
+  }
+}
 .cwa\:bg-black\/60 {
   background-color: var(--cwa-color-black);
   @supports (color: color-mix(in lab, red, red)) {
@@ -1841,11 +1856,17 @@
 .cwa\:pb-\[calc\(var\(--cwa-spacing-cta-inset\)\+1px\)\] {
   padding-bottom: calc(var(--cwa-spacing-cta-inset) + 1px);
 }
+.cwa\:pb-\[env\(safe-area-inset-bottom\)\] {
+  padding-bottom: env(safe-area-inset-bottom);
+}
 .cwa\:pl-2 {
   padding-left: calc(var(--cwa-spacing) * 2);
 }
 .cwa\:pl-3 {
   padding-left: calc(var(--cwa-spacing) * 3);
+}
+.cwa\:pl-4 {
+  padding-left: calc(var(--cwa-spacing) * 4);
 }
 .cwa\:pl-5 {
   padding-left: calc(var(--cwa-spacing) * 5);
