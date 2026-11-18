@@ -719,7 +719,7 @@ describe('the add component dialog (#461)', () => {
       const field = q('[data-testid="add-component-field"] [data-testid="select-trigger"]')!
       expect(field.getAttribute('aria-disabled')).toBe('true')
       expect(field.hasAttribute('disabled')).toBe(false)
-      expect(field.className).toContain('cwa:opacity-50')
+      expect(field.className).toContain('cwa:text-fg-disabled')
       expect(q('[data-testid="add-component-field"] [data-testid="field-info"]')).not.toBeNull()
       expect(field.getAttribute('aria-describedby')!.split(' ').map(id => document.getElementById(id)?.textContent).join(' ')).toContain('Choose a data type first.')
       expect(document.activeElement).toBe(q('[data-testid="add-component-data-type"] [data-testid="select-trigger"]'))

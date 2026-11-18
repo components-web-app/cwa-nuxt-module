@@ -4,7 +4,7 @@ import Field from '../core/ui/Field.vue'
 import type { FieldWidth } from '../core/ui/Field.vue'
 import StateGlyph from '../core/ui/StateGlyph.vue'
 import { useAnnounce, useFieldModel } from '../core/ui/field-context'
-import { fieldBox, fieldFill } from '../core/ui/field-looks'
+import { fieldBox, fieldDisabled, fieldFill } from '../core/ui/field-looks'
 import type { FieldTone } from '../core/ui/field-looks'
 import type { ResourceModelField } from '#cwa/resources/model-editors'
 
@@ -158,7 +158,7 @@ onBeforeUnmount(() => {
 const stepButton = 'cwa:grid cwa:h-full cwa:w-control cwa:shrink-0 cwa:place-items-center cwa:text-base cwa:text-fg cwa:outline-1 cwa:outline-transparent cwa:focus-visible:outline-2 cwa:focus-visible:-outline-offset-2 cwa:focus-visible:outline-accent-fg cwa:pointer-coarse:w-hit'
 
 function stepLook(blocked: boolean) {
-  return blocked || inactive.value ? 'cwa:text-fg/40 cwa:cursor-not-allowed' : 'cwa:cursor-pointer cwa:hover:bg-step-hover cwa:active:bg-step-press'
+  return inactive.value ? fieldDisabled : blocked ? 'cwa:text-fg/40 cwa:cursor-not-allowed' : 'cwa:cursor-pointer cwa:hover:bg-step-hover cwa:active:bg-step-press'
 }
 
 const holdFill: Record<'none' | 'danger' | 'warning', string> = {
@@ -188,7 +188,7 @@ function toneOf(tone: FieldTone) {
   >
     <template #default="{ describedBy, tone, busy }">
       <div
-        :class="[fieldBox, fieldFill(toneOf(tone), inactive), holdFill[toneOf(tone) ?? 'none'], { 'cwa:opacity-50': inactive }]"
+        :class="[fieldBox, fieldFill(toneOf(tone), inactive), holdFill[toneOf(tone) ?? 'none'], { [fieldDisabled]: inactive }]"
       >
         <button
           type="button"
