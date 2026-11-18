@@ -69,9 +69,9 @@ for (const path of ['bar', 'page']) {
     }
     else {
       const heading = page.locator('[data-kit-practice="main"] h1').first()
-      await heading.getByTestId('inline-edit-value').focus()
-      await page.keyboard.press('Enter')
+      await heading.getByTestId('inline-edit-value').click()
       const input = heading.getByRole('textbox', { name: 'Title' })
+      await expect(input).toBeFocused()
       await input.pressSequentially('!')
       await input.press('Enter')
     }
@@ -79,5 +79,6 @@ for (const path of ['bar', 'page']) {
     await expect(page.locator('[data-testid="focus-outline"][data-save="error"]').first()).toBeVisible()
     await expect(chrome.getByText(/not saved/).first()).toBeVisible()
     await expect(page.getByText('Oops! There was a problem.')).toHaveCount(0)
+    await expect(page.getByText('Edit the shared layout?')).toHaveCount(0)
   })
 }
