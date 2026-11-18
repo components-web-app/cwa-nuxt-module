@@ -11,6 +11,11 @@ import type { SiteConfigParams } from '#cwa/types'
 import type { CwaResource } from '#cwa/resources/resource-utils'
 import type { PageCacheWarmProgress, PageCacheWarmSummary } from '#cwa/api/page-cache-warm'
 
+export interface SiteConfigSaveFailure {
+  key: keyof SiteConfigParams
+  error: unknown
+}
+
 export default class SiteConfig {
   private utils: ReturnType<typeof useCwaSiteConfig>
   private readonly _store: CwaSiteConfigStoreInterface
@@ -63,9 +68,10 @@ export default class SiteConfig {
     return resolvedConfig
   }
 
-  public async saveConfig(newConfig: Partial<SiteConfigParams>) {
+  public async saveConfig(newConfig: Partial<SiteConfigParams>): Promise<{ totalConfigsChanged: number, done: Promise<SiteConfigSaveFailure[]> }> {
     const returnData = {
       totalConfigsChanged: 0,
+      done: Promise.resolve<SiteConfigSaveFailure[]>([]),
     }
 
     if (newConfig.sitemapXml) {
@@ -78,11 +84,11 @@ export default class SiteConfig {
         })
         this._apiState.hasError.value = true
         this._apiState.requests.value = []
+        returnData.done = Promise.resolve([{ key: 'sitemapXml', error: validationResult }])
         return returnData
       }
     }
 
-    // only allow one update at a time
     if (this.totalRequests.value > 0 || !this.savedSiteConfig) {
       return returnData
     }
@@ -97,6 +103,10 @@ export default class SiteConfig {
       }
     }
     returnData.totalConfigsChanged = changedKeys.length
+
+    if (!changedKeys.length) {
+      return returnData
+    }
 
     const allRequests: Promise<CwaResource | undefined>[] = []
     for (const changedKey of changedKeys) {
@@ -122,44 +132,35 @@ export default class SiteConfig {
     }
     this._apiState.requests.value = allRequests
 
-    if (!changedKeys.length) {
-      return returnData
-    }
-
-    Promise.all(this._apiState.requests.value)
-      .then((responses) => {
-        if (responses.filter(r => r === undefined).length) {
-          this._apiState.hasError.value = true
+    returnData.done = Promise.allSettled(allRequests).then((outcomes) => {
+      const failures: SiteConfigSaveFailure[] = []
+      const updatedConfig: Partial<SiteConfigParams> = {}
+      outcomes.forEach((outcome, index) => {
+        const key = changedKeys[index]!
+        if (outcome.status === 'rejected' || outcome.value === undefined) {
+          failures.push({ key, error: outcome.status === 'rejected' ? outcome.reason : undefined })
+          return
         }
-
-        const updatedConfig: Partial<SiteConfigParams> = {}
-        for (const response of responses) {
-          if (response === undefined) {
-            continue
-          }
-          const configKey = response.key as keyof SiteConfigParams
-          updatedConfig[configKey] = this.utils.processApiConfigValue(response.value)
-        }
-
-        const config = this.utils.mergeConfig(this.config, updatedConfig)
-
-        this.store.$patch({
-          isLoading: false,
-          config,
-          serverConfig: this.utils.mergeConfig(this.savedSiteConfig || {}, updatedConfig),
-        })
-
-        this._apiState.requests.value = []
-        updateSiteConfig(this.utils.resolvedConfigToSiteConfig(config))
+        const configKey = (outcome.value.key ?? key) as keyof SiteConfigParams
+        updatedConfig[configKey] = this.utils.processApiConfigValue(outcome.value.value)
       })
-      .catch((err) => {
-        console.error(err)
+      if (failures.length) {
+        consola.error(failures.map(failure => failure.error))
         this._apiState.hasError.value = true
-        this.store.$patch({
-          isLoading: false,
-        })
-        this._apiState.requests.value = []
+      }
+
+      const config = this.utils.mergeConfig(this.config, updatedConfig)
+      this.store.$patch({
+        isLoading: false,
+        config,
+        serverConfig: this.utils.mergeConfig(this.savedSiteConfig || {}, updatedConfig),
       })
+      this._apiState.requests.value = []
+      if (Object.keys(updatedConfig).length) {
+        updateSiteConfig(this.utils.resolvedConfigToSiteConfig(config))
+      }
+      return failures
+    })
 
     return returnData
   }

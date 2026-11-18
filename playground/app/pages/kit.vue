@@ -33,6 +33,7 @@ import type { FakeStatus } from '../kit/fake-field-model'
 import type { CwaResource } from '../../../src/runtime/resources/resource-utils'
 import type { MenuEntry } from '../../../src/runtime/templates/components/core/ui/menu-entries'
 import Toast from '../../../src/runtime/templates/components/core/ui/Toast.vue'
+import FormGroup from '../../../src/runtime/templates/components/core/ui/FormGroup.vue'
 import type { CwaToastOptions } from '../../../src/runtime/composables/cwa-toast'
 import { badgeTintPercent } from '../../../src/runtime/templates/components/ui/kit-looks'
 import { kitColourLabel, kitColourTokens, kitContrastPairs, kitThemeStyle, kitTokenCss, measureKitPair } from '../../../src/tailwind/kit-tokens'
@@ -173,6 +174,7 @@ const menuOptions: MenuEntry[] = [
 const dialogOpen = ref(false)
 const dialogForm = fakeDialogForm({ reference: 'Shaker kitchens', title: 'Shaker kitchens | Hand-built', metaDescription: 'Hand-built shaker kitchens, made to measure.', isReachableWithoutRoute: false })
 const dialogTabs = [{ label: 'Details', key: 'details' }, { label: 'Info', key: 'info' }]
+const pageForm = fakeDialogForm({ siteName: 'Shaker kitchens', canonicalUrl: 'https://shaker.example', maintenanceModeEnabled: false })
 const confirm = useCwaConfirm()
 const confirmResult = ref('')
 
@@ -912,6 +914,48 @@ const badgeTones = [
             @click="confirmTyped"
           />
         </div>
+      </section>
+
+      <section aria-labelledby="kit-form-group">
+        <h2 id="kit-form-group">
+          Admin pages: FormGroup
+        </h2>
+        <p class="kit-note">
+          An admin page with a form (site settings) uses the dialog's Save model on the page: a local copy, nothing sent as you type, and one count, on Save. Cancel and leaving the page ask first while anything is unsaved, and closing the tab gets the browser's prompt. Its sections' headings are <code>h2</code>. This sample uses <code>fakeDialogForm()</code>.
+        </p>
+        <div class="kit-row">
+          <CwaUiButton
+            label="Fail the next Save"
+            size="sm"
+            data-testid="kit-form-group-fail"
+            @click="pageForm.failNext({ canonicalUrl: 'Enter a full address, like https://example.com.' })"
+          />
+        </div>
+        <FormGroup
+          :form="pageForm"
+          data-testid="kit-form-group"
+          @save="pageForm.save()"
+        >
+          <CwaUiFormSection title="General">
+            <CwaUiInput
+              field="siteName"
+              label="Site name"
+              width="full"
+            />
+            <CwaUiInput
+              field="canonicalUrl"
+              label="Canonical URL"
+              type="url"
+              width="full"
+            />
+          </CwaUiFormSection>
+          <CwaUiFormSection title="Maintenance">
+            <CwaUiToggle
+              field="maintenanceModeEnabled"
+              label="Enable maintenance mode"
+            />
+          </CwaUiFormSection>
+        </FormGroup>
       </section>
 
       <section aria-labelledby="kit-form-parts">

@@ -206,6 +206,54 @@ describe('SiteConfig', () => {
     })
   })
 
+  describe('saveConfig outcome (#461)', () => {
+    test('done resolves with no failures once every changed key is saved and stored', async () => {
+      const { siteConfig, mockFetch, mockPatch } = buildSiteConfig({ serverConfig: { siteName: 'Old', indexable: true } })
+      mockFetch.mockImplementation(async (_path: string, { body }: any) => ({ key: body.key, value: body.value }))
+
+      const { done } = await siteConfig.saveConfig({ siteName: 'New', indexable: false })
+
+      await expect(done).resolves.toEqual([])
+      expect(mockPatch).toHaveBeenLastCalledWith(expect.objectContaining({ serverConfig: expect.objectContaining({ siteName: 'New', indexable: false }) }))
+      expect(siteConfig.totalRequests.value).toBe(0)
+    })
+
+    test('a key that fails is named with its error, and the keys that saved are still stored', async () => {
+      const { siteConfig, mockFetch, mockPatch } = buildSiteConfig({ serverConfig: { siteName: 'Old', canonicalUrl: '' } })
+      const refused = Object.assign(new Error('422'), { statusCode: 422 })
+      mockFetch.mockImplementation(async (_path: string, { body }: any) => {
+        if (body.key === 'canonicalUrl') {
+          throw refused
+        }
+        return { key: body.key, value: body.value }
+      })
+
+      const { done } = await siteConfig.saveConfig({ siteName: 'New', canonicalUrl: 'kitchens' })
+
+      await expect(done).resolves.toEqual([{ key: 'canonicalUrl', error: refused }])
+      expect(mockPatch).toHaveBeenLastCalledWith(expect.objectContaining({ serverConfig: expect.objectContaining({ siteName: 'New', canonicalUrl: '' }) }))
+      expect(siteConfig.apiState.hasError.value).toBe(true)
+      expect(siteConfig.totalRequests.value).toBe(0)
+    })
+
+    test('an invalid sitemap XML is named as the failed key and nothing is sent', async () => {
+      const { siteConfig, mockFetch } = buildSiteConfig({ serverConfig: { sitemapXml: '' } })
+
+      const { done } = await siteConfig.saveConfig({ sitemapXml: 'not xml <<' })
+
+      await expect(done).resolves.toEqual([{ key: 'sitemapXml', error: expect.anything() }])
+      expect(mockFetch).not.toHaveBeenCalled()
+    })
+
+    test('with nothing changed, done resolves at once with no failures', async () => {
+      const { siteConfig } = buildSiteConfig({ serverConfig: { siteName: 'Same' } })
+
+      const { done } = await siteConfig.saveConfig({ siteName: 'Same' })
+
+      await expect(done).resolves.toEqual([])
+    })
+  })
+
   describe('totalRequests', () => {
     test('is 0 initially', () => {
       const { siteConfig } = buildSiteConfig({ serverConfig: {} })

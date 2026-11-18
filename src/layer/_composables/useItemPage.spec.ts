@@ -16,7 +16,7 @@ vi.mock('vue-router', async (importOriginal) => {
 
 const layoutIri = '/_/layouts/layout-uuid'
 
-function setup(stored: Record<string, any>, ops: { excludeFields?: string[], resourceType?: string | null, dismissStoredErrors?: boolean } = {}) {
+function setup(stored: Record<string, any>, ops: { excludeFields?: string[], resourceType?: string | null, dismissStoredErrors?: boolean, validate?: (data: any) => boolean | Record<string, string> | undefined } = {}) {
   const store = reactive<Record<string, any>>({
     [layoutIri]: { data: stored, apiState: { status: 'SUCCESS' } },
   })
@@ -49,6 +49,7 @@ function setup(stored: Record<string, any>, ops: { excludeFields?: string[], res
         endpoint: ref(layoutIri),
         excludeFields: ops.excludeFields,
         dismissStoredErrors: ops.dismissStoredErrors,
+        validate: ops.validate,
       })
       return () => null
     },
@@ -317,6 +318,29 @@ describe('useItemPage keeps local edits through a re-fetch (#458)', () => {
 describe('useItemPage Save model (#461)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+  })
+
+  test('a client check puts its messages on their fields, counts as a failed save and sends nothing; editing the field clears it', async () => {
+    const validate = vi.fn((data: any) => data.reference === 'Bad' ? { reference: 'Choose another reference.' } : undefined)
+    const { itemPage, updateResource } = setup({ ...layout }, { validate })
+    await flushPromises()
+    itemPage.localResourceData.value!.reference = 'Bad'
+    await flushPromises()
+
+    await itemPage.saveResource()
+
+    expect(validate).toHaveBeenCalledWith(expect.objectContaining({ reference: 'Bad' }))
+    expect(updateResource).not.toHaveBeenCalled()
+    expect(itemPage.form.fieldErrors).toEqual({ reference: 'Choose another reference.' })
+    expect(itemPage.form.failures).toBe(1)
+    expect(itemPage.form.model('reference').state.value).toMatchObject({ status: 'error', error: { message: 'Choose another reference.' } })
+
+    itemPage.localResourceData.value!.reference = 'Good'
+    await flushPromises()
+    expect(itemPage.form.fieldErrors).toEqual({})
+
+    await itemPage.saveResource()
+    expect(updateResource).toHaveBeenCalledTimes(1)
   })
 
   test('lists the fields changed in the local copy, which Save counts, and nothing for an untouched copy', async () => {
