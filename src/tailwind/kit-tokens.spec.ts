@@ -163,16 +163,17 @@ describe('kit colour tokens (#456)', () => {
     expect(compiledColours.get('danger-dark')).toBe('oklch(44.4% 0.177 26.899 / 0.8)')
   })
 
-  test('the manager bar\'s touch and narrow sizes are compiled, on the bar rather than the root, with one CTA inset, the tab row the hit size plus the bar\'s line (#459)', () => {
+  test('the manager bar\'s touch and narrow sizes are compiled, on the bar rather than the root, with one CTA inset, the tab row the control height plus the inset and the bar\'s line (the hit size on touch) and the row below the rest (#459)', () => {
     const enclosing = (at: number) => {
       const before = compiled.slice(0, at)
       return before.slice(Math.max(before.lastIndexOf('@media ('), before.lastIndexOf('@container ('))).match(/\(([^)]+)\)/)?.[1]
     }
     const setUnder = (property: string, value: string) => [...compiled.matchAll(new RegExp(`{\\s*${property}:\\s*${value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')};`, 'g'))].map(match => enclosing(match.index)).sort()
 
-    expect(compiled).toMatch(/--cwa-spacing-cta-inset:\s*0\.25rem;/)
-    expect(setUnder('--cwa-spacing-manager-tabs', 'calc(2.75rem + 1px)')).toEqual(['pointer: coarse'])
-    expect(setUnder('--cwa-spacing-manager-row', 'calc(4.25rem - 1px)')).toEqual(['pointer: coarse'])
+    expect(compiled).toMatch(/--cwa-spacing-cta-inset:\s*0\.125rem;/)
+    expect(setUnder('--cwa-spacing-manager-tabs', 'calc(var(--cwa-spacing-hit) + 1px)')).toEqual(['pointer: coarse'])
+    expect(compiled).toMatch(/--cwa-spacing-manager-tabs:\s*calc\(var\(--cwa-spacing-control\) \+ 2 \* var\(--cwa-spacing-cta-inset\) \+ 1px\);/)
+    expect(compiled).toMatch(/--cwa-spacing-manager-row:\s*calc\(var\(--cwa-spacing-manager\) - var\(--cwa-spacing-manager-tabs\)\);/)
     expect(setUnder('--cwa-spacing-manager', '7rem')).toEqual(['pointer: coarse'])
     expect(setUnder('--cwa-spacing-cta-inset', '0px')).toEqual(['pointer: coarse', 'width < 40rem'])
   })

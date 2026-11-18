@@ -112,6 +112,18 @@ describe('ResourceStack (#461)', () => {
     expect(panel.innerHTML).not.toMatch(/dashed|dotted/)
   })
 
+  test('each name is centred in its level\'s box, with equal padding either side, and a long one still ends in an ellipsis', async () => {
+    const { panel } = await openStack({ selected: '1' })
+    for (const level of items(panel)) {
+      const row = nameRow(level)
+      const name = row.querySelector<HTMLElement>('[data-stack-label]')!
+      expect(row.className.split(/\s+/)).toEqual(expect.arrayContaining(['cwa:justify-center', 'cwa:px-2']))
+      expect(row.className).not.toMatch(/(^| )cwa:p[lr]-/)
+      expect(name.className.split(/\s+/)).toEqual(expect.arrayContaining(['cwa:min-w-0', 'cwa:truncate']))
+      expect(name.className.split(/\s+/)).not.toContain('cwa:flex-1')
+    }
+  })
+
   test('the selected level is marked by an accent border on its box, and its name keeps the weight, classes and padding of every other name', async () => {
     const { panel } = await openStack({ selected: '1' })
     const selected = item(panel, 'Component position')

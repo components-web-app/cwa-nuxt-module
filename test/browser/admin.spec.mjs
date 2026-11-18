@@ -2,6 +2,7 @@ import * as Y from 'yjs'
 import { expect, test } from './fixtures.mjs'
 import { mercurePath } from './rehearsal.mjs'
 import { articleTexts, seedArticlePages, texts } from './seed.mjs'
+import { controlRows } from './control-rows.mjs'
 
 const notFoundResource = /^Failed to load resource: the server responded with a status of 404/
 const unknownResource = /^Failed to load resource: the server responded with a status of (400|404)/
@@ -1652,7 +1653,7 @@ test('62. with live editing paused on a phone, the header\'s status is a glyph n
   }
 })
 
-test('63. the header\'s Edit or Done button and the page settings button or path selector beside it share one height and one centre, at 1280 and 390, with a fine or a coarse pointer, while live editing is paused, and the manager bar\'s tabs and their group are exactly as tall as its CTA buttons', async ({ cwa: t }) => {
+test('63. the header\'s Edit or Done button and the page settings button or path selector beside it share one height and one centre, at 1280 and 390, with a fine or a coarse pointer, while live editing is paused, and the manager bar\'s tabs and their group are exactly as tall as its CTA buttons and the controls in its panel', async ({ cwa: t }) => {
   const { page, base, seed } = t
   const cookies = await page.context().cookies()
   for (const hasTouch of [false, true]) {
@@ -1707,6 +1708,7 @@ test('63. the header\'s Edit or Done button and the page settings button or path
           underline: { top: underlineBottom - Number.parseFloat(after.height), bottom: underlineBottom },
           line: tablist.parentElement.getBoundingClientRect().bottom,
           clip: tablist.getBoundingClientRect().bottom,
+          panel: [...document.querySelectorAll('[data-testid="manager-tab-panel"] :is(button, [role="combobox"], [data-testid="segmented"])')].filter(element => element.offsetParent && !element.closest('[data-testid="field-info"], [data-testid="segmented"] button, .cwa\\:sr-only')).map(element => ({ name: (element.getAttribute('aria-label') ?? element.textContent).trim().slice(0, 30), height: height(element) })),
           ctas: [...pin.querySelectorAll('button')].filter(button => button.offsetParent && /Publish|More|actions|⋮/i.test(`${button.textContent} ${button.getAttribute('aria-label') ?? ''}`)).map(button => ({ name: (button.getAttribute('aria-label') ?? button.textContent).trim(), height: height(button) })),
         }
       })
@@ -1718,6 +1720,12 @@ test('63. the header\'s Edit or Done button and the page settings button or path
         }
         assert(!hasTouch || cta.height >= 44, `${where} ${cta.name} is ${cta.height}px tall, under the 44px hit size`)
       }
+      assert(bar.panel.length >= 1, `${where} the bar's panel shows no controls`)
+      for (const control of bar.panel) {
+        assert(Math.abs(control.height - bar.ctas[0].height) <= 1, `${where} ${control.name} in the bar's panel is ${control.height}px tall and ${bar.ctas[0].name} ${bar.ctas[0].height}px`)
+      }
+      const rows = await tab.evaluate(controlRows, '[data-testid="manager-bar"]')
+      assert(rows.problems.length === 0, `${where} the bar's rows differ: ${rows.problems.join('; ')}`)
       for (const height of bar.tabs) {
         assert(!hasTouch || height >= 44, `${where} a tab is ${height}px tall, under the 44px hit size`)
       }

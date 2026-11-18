@@ -278,17 +278,18 @@ describe('ResourceManager', () => {
       expect(wrapper.findComponent({ name: 'BarSummary' }).props('message')).toBe('Set to 6, the highest position')
     })
 
-    test('on touch the tab row is the 44px hit size plus the bar\'s line, taken from the row below so the bar keeps its height, and the CTA group\'s and the tab group\'s one inset, which keeps them the same height, is 0 on touch and below 40rem (#459)', async () => {
+    test('the tab row is the control height every field shares plus the CTA inset and the bar\'s line, the hit size on touch, the row below takes the rest of the bar\'s height so it never changes, and the CTA group\'s and the tab group\'s one inset is 0 on touch and below 40rem (#459)', async () => {
       cwaState.cwa = makeCwa({ stackManager: makeStackManager({ showManager: ref(true), currentStackItem: ref({ iri: '/component/1', managerTabs: [] }) }) })
       const wrapper = await mountManager()
       resolverState.allMeta.value = [{ name: 'Tab' }]
       await nextTick()
 
-      expect(wrapper.get('[data-testid="manager-bar"]').classes()).toEqual(expect.arrayContaining([
-        'cwa:pointer-coarse:[--cwa-spacing-manager-tabs:calc(2.75rem+1px)]',
-        'cwa:pointer-coarse:[--cwa-spacing-manager-row:calc(4.25rem-1px)]',
-        'cwa:pointer-coarse:[--cwa-spacing-manager:7rem]',
-      ]))
+      expect(wrapper.get('[data-testid="manager-bar"]').classes()).toContain('cwa:pointer-coarse:[--cwa-spacing-manager:7rem]')
+      expect(wrapper.get('[data-testid="manager-bar"]').classes().filter(c => /manager-(tabs|row)/.test(c))).toEqual([])
+      const holder = wrapper.get('[data-testid="manager-pin"]').element.parentElement!
+      expect(holder.classList).toContain('cwa:[--cwa-spacing-manager-tabs:calc(var(--cwa-spacing-control)+2*var(--cwa-spacing-cta-inset)+1px)]')
+      expect(holder.classList).toContain('cwa:pointer-coarse:[--cwa-spacing-manager-tabs:calc(var(--cwa-spacing-hit)+1px)]')
+      expect(holder.classList).toContain('cwa:[--cwa-spacing-manager-row:calc(var(--cwa-spacing-manager)-var(--cwa-spacing-manager-tabs))]')
       expect(wrapper.get('[data-testid="manager-pin"]').classes()).toEqual(expect.arrayContaining([
         'cwa:pt-cta-inset',
         'cwa:pr-cta-inset',

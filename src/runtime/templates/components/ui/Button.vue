@@ -69,7 +69,7 @@ const boxClasses = computed(() => {
   if (iconOnly) {
     return small ? 'cwa:h-8 cwa:w-8 cwa:pointer-coarse:h-hit cwa:pointer-coarse:w-hit cwa:px-0' : 'cwa:h-control cwa:w-control cwa:pointer-coarse:h-hit cwa:pointer-coarse:w-hit cwa:px-0'
   }
-  const height = stretch ? 'cwa:h-full' : small ? 'cwa:h-8 cwa:pointer-coarse:h-hit' : 'cwa:h-control cwa:pointer-coarse:h-hit'
+  const height = stretch ? 'cwa:h-full' : 'cwa:h-control cwa:pointer-coarse:h-hit'
   const padding = small ? 'cwa:px-3' : (hasLead.value ? 'cwa:pl-3 cwa:pr-4' : 'cwa:px-4')
   return `${height} ${padding}`
 })
@@ -78,7 +78,7 @@ const moreVariant = computed<ButtonVariant>(() => label ? variant : 'soft')
 
 const moreClasses = computed(() => {
   const look = buttonLooks[moreVariant.value][tone]
-  const box = stretch ? 'cwa:h-full cwa:aspect-square' : size === 'sm' ? 'cwa:size-8 cwa:pointer-coarse:size-hit' : 'cwa:size-control cwa:pointer-coarse:size-hit'
+  const box = stretch ? 'cwa:h-full cwa:aspect-square' : 'cwa:size-control cwa:pointer-coarse:size-hit'
   return [box, look.rest, 'cwa:cursor-pointer']
 })
 

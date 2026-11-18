@@ -62,12 +62,20 @@ describe('CwaUiButton (#456)', () => {
     expect(withIcon.text()).toBe('Page')
   })
 
-  test('small is 2rem tall in the helper type, and still a full tap target on touch', () => {
+  test('small is the helper type with less padding, at the control height every single-line field shares, so it matches the fields beside it', () => {
     const wrapper = mount(Button, { props: { label: 'Undo', size: 'sm' } })
 
-    expect(wrapper.classes()).toEqual(expect.arrayContaining(['cwa:h-8', 'cwa:pointer-coarse:h-hit', 'cwa:px-3', 'cwa:text-helper']))
-    expect(wrapper.classes()).not.toContain('cwa:h-control')
+    expect(wrapper.classes()).toEqual(expect.arrayContaining(['cwa:h-control', 'cwa:pointer-coarse:h-hit', 'cwa:px-3', 'cwa:text-helper']))
+    expect(wrapper.classes()).not.toContain('cwa:h-8')
     expect(wrapper.classes()).not.toContain('cwa:text-label')
+  })
+
+  test('a small split button\'s ⋮ is as tall as its main action, at the control height', () => {
+    const wrapper = mount(Button, { props: { label: 'Publish now', size: 'sm', options: [{ group: null, items: [{ label: 'Schedule', value: 'schedule' }] }] } })
+    const [main, more] = wrapper.findAll('button')
+    expect(main!.classes()).toContain('cwa:h-control')
+    expect(more!.classes()).toEqual(expect.arrayContaining(['cwa:size-control', 'cwa:pointer-coarse:size-hit']))
+    expect(more!.classes()).not.toContain('cwa:size-8')
   })
 
   test('icon-only is a square named by its label, which is not shown', () => {
