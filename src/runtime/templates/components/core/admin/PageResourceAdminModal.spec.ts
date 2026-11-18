@@ -394,9 +394,37 @@ describe('PageResourceAdminModal meta fields config', () => {
 
     expect(field(wrapper, Input, 'Subtitle').props('field')).toBe('subtitle')
     expect(field(wrapper, Select, 'Subtitle')).toBeUndefined()
-    expect(field(wrapper, Select, 'Category').props()).toMatchObject({ field: 'category', options: [{ label: 'A', value: 'a' }, { label: 'None', value: null }], nullable: true })
-    expect(field(wrapper, Select, 'Status').props('field')).toBe('status')
+    const category = field(wrapper, Select, 'Category')
+    expect(category.props()).toMatchObject({ options: [{ label: 'A', value: '0' }, { label: 'None', value: null }], nullable: true })
+    expect(category.props('model')).toMatchObject({ field: 'category' })
+    expect(category.props('model').model.value).toBe('0')
+    expect(field(wrapper, Select, 'Status').props('model').field).toBe('status')
     expect(wrapper.get('[data-cwa-field="subtitle"] input').element).toHaveProperty('value', 'Hello')
+  })
+
+  test('a meta select shows and stores its options\' own values, so a number or a boolean is saved as one', () => {
+    const { wrapper, form } = setupPageData({
+      pageDataConfig: {
+        metaFields: [{ field: 'priority', type: 'select', label: 'Priority', options: [{ label: 'One', value: 1 }, { label: 'Text one', value: '1' }, { label: 'Yes', value: true }, { label: 'None', value: null }] }],
+      },
+      local: { priority: 1 },
+    })
+    form.discard()
+    const priority = field(wrapper, Select, 'Priority')
+    const keyOf = (label: string) => priority.props('options').find((option: { label: string }) => option.label === label).value
+
+    expect(priority.props('model').model.value).toBe(keyOf('One'))
+
+    priority.props('model').model.value = keyOf('Yes')
+    expect(form.local.priority).toBe(true)
+    priority.props('model').model.value = keyOf('Text one')
+    expect(form.local.priority).toBe('1')
+    expect(priority.props('model').model.value).toBe(keyOf('Text one'))
+    priority.props('model').model.value = keyOf('One')
+    expect(form.local.priority).toBe(1)
+    expect(form.unsavedFields).toEqual([])
+    priority.props('model').model.value = null
+    expect(form.local.priority).toBeNull()
   })
 
   test('typing in a meta field writes back to the local copy', async () => {
@@ -446,6 +474,46 @@ describe('PageResourceAdminModal Page UI select stores the full CwaPage componen
     model.model.value = 'CwaPageNestedTopicTemplate'
     expect(form.local.uiComponent).toBe('CwaPageNestedTopicTemplate')
     expect(model.field).toBe('uiComponent')
+  })
+})
+
+describe('PageResourceAdminModal Style select', () => {
+  const pagesConfig = { PrimaryPageTemplate: { name: 'Primary', classes: { Wide: ['is-wide', 'cwa-pad'], Dark: 'is-dark' } } }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  test('lists the configured styles by name and shows the one the stored class list holds', () => {
+    const { wrapper } = setup({ pagesConfig, local: { uiComponent: 'CwaPagePrimaryPageTemplate', uiClassNames: ['is-wide cwa-pad'] } })
+    const style = field(wrapper, Select, 'Style')
+
+    expect(style.props('options')).toEqual([{ label: 'Wide', value: 'Wide' }, { label: 'Dark', value: 'Dark' }])
+    expect(style.props('model').field).toBe('uiClassNames')
+    expect(style.props('model').model.value).toBe('Wide')
+  })
+
+  test('choosing a style stores its classes as the one class string in the list, and Default clears it', () => {
+    const { wrapper, form } = setup({ pagesConfig, local: { uiComponent: 'CwaPagePrimaryPageTemplate', uiClassNames: ['is-wide cwa-pad'] } })
+    form.discard()
+    const model = field(wrapper, Select, 'Style').props('model')
+
+    model.model.value = 'Dark'
+    expect(form.local.uiClassNames).toEqual(['is-dark'])
+    expect(form.unsavedFields).toEqual(['uiClassNames'])
+
+    model.model.value = 'Wide'
+    expect(form.local.uiClassNames).toEqual(['is-wide cwa-pad'])
+    expect(form.unsavedFields).toEqual([])
+
+    model.model.value = null
+    expect(form.local.uiClassNames).toBeNull()
+  })
+
+  test('a stored class list that matches no configured style shows Default', () => {
+    const { wrapper } = setup({ pagesConfig, local: { uiComponent: 'CwaPagePrimaryPageTemplate', uiClassNames: ['something-else'] } })
+
+    expect(field(wrapper, Select, 'Style').props('model').model.value).toBeNull()
   })
 })
 
