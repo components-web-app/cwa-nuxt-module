@@ -20,6 +20,8 @@ import type { CwaCurrentResourceInterface } from '#cwa/storage/stores/resources/
 
 const manageableInstances = lazyImport(() => import('./manageable-instances'))
 
+const NATIVELY_FOCUSABLE = 'a[href], button, input, select, textarea, summary, [contenteditable]:not([contenteditable="false"])'
+
 export type StyleOptions = {
   multiple?: boolean
   classes: { [name: string]: string | string[] }
@@ -39,6 +41,8 @@ export default class ManageableResource {
   private pendingChildMountedReInit: boolean = false
   private throttledRefreshFn: undefined | DebouncedFunc<() => void>
   private registeredIri: string | undefined
+  private stopKeyboardAccess: undefined | WatchStopHandle
+  private keyboardAccess = new Map<HTMLElement, string[]>()
 
   constructor(
     private readonly component: ComponentPublicInstance,
@@ -50,6 +54,7 @@ export default class ManageableResource {
     this.componentMountedListener = this.componentMountedListener.bind(this)
     this.selectResourceListener = this.selectResourceListener.bind(this)
     this.clickListener = this.clickListener.bind(this)
+    this.keydownListener = this.keydownListener.bind(this)
   }
 
   // PUBLIC
@@ -65,6 +70,33 @@ export default class ManageableResource {
       immediate: true,
       flush: 'post',
     })
+    this.stopKeyboardAccess = watch(
+      () => [this.domElements.value, this.$cwa.admin.isEditing, this.ops.value.disabled, this.displayName] as const,
+      ([elements, editing, disabled, name]) => this.applyKeyboardAccess(editing && disabled !== true && this.isComponent ? elements.filter(el => !el.matches?.(NATIVELY_FOCUSABLE)) : [], name),
+      { immediate: true, flush: 'post' },
+    )
+  }
+
+  private applyKeyboardAccess(elements: HTMLElement[], name: string | undefined) {
+    const label = name ? `${name} component` : 'Component'
+    for (const [el, added] of this.keyboardAccess) {
+      if (!elements.includes(el) || (added.includes('aria-label') && el.getAttribute('aria-label') !== label)) {
+        added.forEach(attribute => el.removeAttribute(attribute))
+        this.keyboardAccess.delete(el)
+      }
+    }
+    for (const el of elements) {
+      if (this.keyboardAccess.has(el) || typeof el.setAttribute !== 'function') {
+        continue
+      }
+      const values: Record<string, string> = { 'tabindex': '0', 'aria-label': label }
+      if (['DIV', 'SPAN'].includes(el.tagName)) {
+        values.role = 'group'
+      }
+      const added = Object.keys(values).filter(attribute => !el.hasAttribute(attribute))
+      added.forEach(attribute => el.setAttribute(attribute, values[attribute]!))
+      this.keyboardAccess.set(el, added)
+    }
   }
 
   private _initNewIri(iri: string | undefined) {
@@ -119,6 +151,9 @@ export default class ManageableResource {
     this.domElements.value = []
 
     if (!soft) {
+      this.stopKeyboardAccess?.()
+      this.stopKeyboardAccess = undefined
+      this.applyKeyboardAccess([], undefined)
       this.$cwa.admin.eventBus.off('componentMounted', this.componentMountedListener)
       this.$cwa.admin.eventBus.off('selectResource', this.selectResourceListener)
       if (this.unwatchCurrentIri) {
@@ -267,6 +302,7 @@ export default class ManageableResource {
     for (const el of this.domElements.value) {
       el.addEventListener('click', this.clickListener, false)
       el.addEventListener('contextmenu', this.clickListener, false)
+      el.addEventListener('keydown', this.keydownListener, false)
     }
   }
 
@@ -299,6 +335,7 @@ export default class ManageableResource {
     for (const el of this.domElements.value) {
       el.removeEventListener('click', this.clickListener)
       el.removeEventListener('contextmenu', this.clickListener)
+      el.removeEventListener('keydown', this.keydownListener)
     }
   }
 
@@ -310,6 +347,27 @@ export default class ManageableResource {
     }
 
     this.$cwa.admin.resourceStackManager.addToStack(this.getCurrentStackItem(evt.target), evt.type === 'contextmenu', this.ops)
+  }
+
+  private keydownListener(evt: KeyboardEvent) {
+    const el = evt.currentTarget as HTMLElement
+    if (evt.target !== el || !this.keyboardAccess.has(el) || evt.defaultPrevented || evt.altKey || evt.metaKey || evt.ctrlKey || evt.isComposing) {
+      return
+    }
+    const opensStack = evt.key === 'ContextMenu' || (evt.key === 'F10' && evt.shiftKey)
+    if (opensStack) {
+      evt.preventDefault()
+      const box = el.getBoundingClientRect()
+      const clientX = Math.max(0, Math.min(box.left + Math.min(16, box.width / 2), window.innerWidth - 1))
+      const clientY = Math.max(0, Math.min(box.top + Math.min(16, box.height / 2), window.innerHeight - 1))
+      el.dispatchEvent(new MouseEvent('contextmenu', { clientX, clientY, button: 2, bubbles: true, cancelable: true }))
+      return
+    }
+    if (evt.shiftKey || (evt.key !== 'Enter' && evt.key !== ' ')) {
+      return
+    }
+    evt.preventDefault()
+    this.$cwa.admin.resourceStackManager.selectFromModule(() => el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true })))
   }
 
   private getCurrentStackItem(clickTarget: EventTarget | null) {
@@ -330,6 +388,11 @@ export default class ManageableResource {
       styles: computed(() => this.ops.value.styles),
       childIris: this.childIris,
     }
+  }
+
+  private get isComponent() {
+    const iri = this.currentIri?.value
+    return !!iri && (iri === NEW_RESOURCE_IRI || getResourceTypeFromIri(iri) === CwaResourceTypes.COMPONENT)
   }
 
   private get currentResource() {

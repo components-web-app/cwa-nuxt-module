@@ -1,4 +1,4 @@
-import { onBeforeUnmount, onMounted, toValue } from 'vue'
+import { onBeforeUnmount, onMounted, toValue, watchEffect } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 import { useCwa } from '#cwa/composables/cwa'
 import { registerInlineEditor, returnFromInlineEditor } from '#cwa/admin/inline-editors'
@@ -9,6 +9,12 @@ export interface CwaInlineEditorOps {
   focus?: () => void
   enabled?: () => boolean
   label?: string
+}
+
+const NAME_ATTRIBUTES = ['role', 'aria-multiline', 'aria-label'] as const
+
+function isEditable(element: HTMLElement) {
+  return element.getAttribute('contenteditable') === 'true' || element.getAttribute('contenteditable') === ''
 }
 
 function focusAtEnd(element: HTMLElement) {
@@ -73,8 +79,38 @@ export function useCwaInlineEditor(model: ResourceModelField<any>, element: Mayb
     originalFocus()
   }
 
+  let named: { element: HTMLElement, added: string[] } | undefined
+
+  function unname() {
+    named?.added.forEach(attribute => named!.element.removeAttribute(attribute))
+    named = undefined
+  }
+
+  function componentName() {
+    const iri = key!.iri()
+    const type = iri ? $cwa.resources.getResource(iri).value?.data?.['@type'] : undefined
+    return type ? ($cwa.resourcesConfig?.[type]?.name ?? type) : undefined
+  }
+
+  const stopNaming = watchEffect(() => {
+    const el = target()
+    const wanted = !!el && !!ops.label && editor.enabled() && isEditable(el) && !el.hasAttribute('aria-label') && !el.hasAttribute('aria-labelledby')
+    if (named && (named.element !== el || !editor.enabled())) {
+      unname()
+    }
+    if (!wanted || named) {
+      return
+    }
+    const values: Record<typeof NAME_ATTRIBUTES[number], string> = { 'role': 'textbox', 'aria-multiline': 'true', 'aria-label': [ops.label, componentName()].filter(Boolean).join(', ') }
+    const added = NAME_ATTRIBUTES.filter(attribute => !el!.hasAttribute(attribute))
+    added.forEach(attribute => el!.setAttribute(attribute, values[attribute]))
+    named = { element: el!, added }
+  }, { flush: 'post' })
+
   onBeforeUnmount(() => {
     listeningOn?.removeEventListener('keydown', onKeydown)
+    stopNaming()
+    unname()
     unregister()
   })
 }

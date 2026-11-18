@@ -418,6 +418,9 @@ const routeDisabledReason = computed(() => {
   if (!localResourceData.value?.path) {
     return 'Type a path first.'
   }
+  if (/\s/.test(localResourceData.value.path)) {
+    return 'A path can\'t contain spaces. Use a hyphen instead.'
+  }
   if (awaitingDate.value) {
     return 'Choose when the route goes live.'
   }
@@ -787,6 +790,7 @@ const { isLoading: isLoadingRoute, isUpdating, resource, localResourceData, load
   iri: routeIriFromPage,
   excludeFields: ['redirectedFrom', 'redirect'],
   dismissStoredErrors: true,
+  openCreated: false,
 })
 
 const routePublication = computed(() => routePublicationFromResource(resource.value))

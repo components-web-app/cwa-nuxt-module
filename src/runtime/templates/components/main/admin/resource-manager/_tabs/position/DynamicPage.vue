@@ -10,6 +10,7 @@ import CwaUiButton from '#cwa/templates/components/ui/Button.vue'
 import CwaUiManagerRowDivider from '#cwa/templates/components/ui/ManagerRowDivider.vue'
 import CwaUiManagerTab from '#cwa/templates/components/ui/ManagerTab.vue'
 import CwaUiSelect from '#cwa/templates/components/ui/Select.vue'
+import CwaReveal from '#cwa/templates/components/core/ui/Reveal.vue'
 
 const { exposeMeta, iri, $cwa, resource } = useCwaResourceManagerTab({
   name: 'Dynamic Component',
@@ -131,15 +132,16 @@ defineExpose(exposeMeta)
       :options="typeOptions"
       @update:model-value="onTypeChange"
     />
-    <CwaUiSelect
-      v-if="selectedType"
-      :model-value="selectedProperty"
-      label="Field"
-      :options="propertyOptions"
-      :disabled="loadingProperties"
-      :placeholder="loadingProperties ? 'Loading…' : undefined"
-      @update:model-value="onPropertyChange"
-    />
+    <CwaReveal :when="!!selectedType">
+      <CwaUiSelect
+        :model-value="selectedProperty"
+        label="Field"
+        :options="propertyOptions"
+        :disabled="loadingProperties"
+        :placeholder="loadingProperties ? 'Loading…' : undefined"
+        @update:model-value="onPropertyChange"
+      />
+    </CwaReveal>
     <template v-if="isDirtyIncomplete">
       <CwaUiBadge
         tone="warning"
