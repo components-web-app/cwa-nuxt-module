@@ -14,12 +14,14 @@ function mountManage(options: {
   liveAt?: string | null
   effectiveLiveAt?: string | null
   recommendedPath?: string
+  recommendedFrom?: string
   childPaths?: string[]
   redirectCount?: number
 } = {}) {
   return mount(RoutesTabManage, {
     props: {
       recommendedPath: options.recommendedPath,
+      recommendedFrom: options.recommendedFrom,
       childPaths: options.childPaths,
       redirectCount: options.redirectCount,
       currentPath: options.currentPath ?? '/conference/programme',
@@ -137,6 +139,11 @@ describe('RoutesTabManage', () => {
       expect(getPrefixInput(wrapper).props('modelValue')).toBe('/conference')
       expect(getSuffixInput(wrapper).props('modelValue')).toBe('/my-programme')
       expect(wrapper.emitted('update:modelValue')?.at(-1)).toEqual(['/conference/my-programme'])
+    })
+
+    test('names the page title the recommendation is based on', () => {
+      const wrapper = mountManage({ modelValue: '/conference/programme', recommendedPath: '/conference/my-programme', recommendedFrom: 'My programme' })
+      expect(wrapper.findComponent(RouteRecommendation).props('from')).toBe('My programme')
     })
 
     test('says the path is the recommended one instead of offering it', () => {

@@ -18,7 +18,7 @@ import type { TempCwaResource } from '#cwa-layer/_composables/useItemPage'
 
 export type RouteSubView = 'route' | 'to' | 'from' | 'kids'
 
-const { resource, isLoading, parentHasNoRoute = false, parentName, forwardToPath, redirectCount = 0, childCount = 0, recommendedPath, noun = 'page', status } = defineProps<{
+const { resource, isLoading, parentHasNoRoute = false, parentName, forwardToPath, redirectCount = 0, childCount = 0, recommendedPath, recommendedFrom, noun = 'page', status } = defineProps<{
   resource: CwaResource | TempCwaResource | undefined
   isLoading: boolean
   parentHasNoRoute?: boolean
@@ -27,6 +27,7 @@ const { resource, isLoading, parentHasNoRoute = false, parentName, forwardToPath
   redirectCount?: number
   childCount?: number
   recommendedPath?: string
+  recommendedFrom?: string
   noun?: string
   status?: string
 }>()
@@ -131,6 +132,7 @@ defineExpose({ statusElement: () => statusLine.value?.element() ?? null })
         <RouteRecommendation
           v-if="showRecommendation"
           :path="recommendedPath!"
+          :from="recommendedFrom"
           @use="emit('open', 'route', true)"
         />
         <CwaUiAlert
@@ -203,6 +205,7 @@ defineExpose({ statusElement: () => statusLine.value?.element() ?? null })
           <RouteRecommendation
             v-if="recommendedPath"
             :path="recommendedPath"
+            :from="recommendedFrom"
             @use="emit('open', 'route', true)"
           />
         </template>

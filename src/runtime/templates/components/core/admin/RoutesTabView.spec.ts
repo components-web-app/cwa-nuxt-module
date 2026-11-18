@@ -77,6 +77,11 @@ describe('RoutesTabView', () => {
       expect(wrapper.emitted('open')).toEqual([['route', true]])
     })
 
+    test('says the recommendation is based on the page title, as the old route form did', () => {
+      const wrapper = mountView({ recommendedPath: '/topic-one', recommendedFrom: 'Topic one' })
+      expect(wrapper.find('[data-testid="route-recommendation"]').text()).toContain('Based on the page title, “Topic one”.')
+    })
+
     test('renders no recommendation when the path is the recommended one', () => {
       expect(mountView({ recommendedPath: '/topic-1' }).find('[data-testid="route-recommendation"]').exists()).toBe(false)
     })
