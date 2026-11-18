@@ -41,7 +41,7 @@ interface MediaRuleLike {
 }
 
 interface SheetLike {
-  cssRules: ArrayLike<MediaRuleLike>
+  cssRules: ArrayLike<object>
 }
 
 export interface KitMediaEmulator {
@@ -51,7 +51,7 @@ export interface KitMediaEmulator {
 
 function rulesOf(sheet: SheetLike | MediaRuleLike): MediaRuleLike[] {
   try {
-    return Array.from(sheet.cssRules ?? [])
+    return Array.from(sheet.cssRules ?? []) as MediaRuleLike[]
   }
   catch {
     return []

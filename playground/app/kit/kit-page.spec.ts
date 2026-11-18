@@ -1,9 +1,13 @@
 // @vitest-environment nuxt
-import { afterEach, describe, expect, test, vi } from 'vitest'
+import { afterEach, beforeAll, describe, expect, test, vi } from 'vitest'
 import { defineComponent, h } from 'vue'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { NuxtLayout, NuxtPage } from '#components'
 import { useNuxtApp, useRouter } from '#imports'
+
+beforeAll(async () => {
+  await import('../pages/kit.vue')
+}, 60_000)
 
 afterEach(async () => {
   vi.restoreAllMocks()
