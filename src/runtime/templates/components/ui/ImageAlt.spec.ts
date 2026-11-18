@@ -3,6 +3,7 @@ import { afterEach, describe, expect, test, vi } from 'vitest'
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { computed, ref } from 'vue'
 import { axe } from '../../../../../test/utils/axe'
+import { drawsOpenState } from '../../../../../test/utils/open-state'
 import { drawsFocusRing } from '../../../../../test/utils/focus-ring'
 import ImageAlt from './ImageAlt.vue'
 import { formSurfaceKey, managerTabKey } from '../core/ui/field-keys'
@@ -46,6 +47,20 @@ describe('CwaUiImageAlt (#461)', () => {
     expect(chip(wrapper).title).toBe('A bench in the workshop')
     expect(chip(wrapper).getAttribute('aria-label')).toBe('Alt text: A bench in the workshop')
     expect(wrapper.find('[data-testid="image-alt-missing"]').exists()).toBe(false)
+  })
+
+  test('the Alt chip shows itself selected while its popover is open, and not once it closes, with no axe violations open', async () => {
+    const wrapper = mount(ImageAlt, { props: { label: 'Image', upload: fakeUpload(), alt: altModel('A bench') }, attachTo: document.body })
+    expect(drawsOpenState(chip(wrapper))).toBe(false)
+
+    chip(wrapper).click()
+    await flushPromises()
+    expect(drawsOpenState(chip(wrapper))).toBe(true)
+    expect(await axe(document.body, { rules: { region: { enabled: false } } })).toHaveNoViolations()
+
+    chip(wrapper).click()
+    await flushPromises()
+    expect(drawsOpenState(chip(wrapper))).toBe(false)
   })
 
   test('missing alt text shows a warning dot and says so', () => {

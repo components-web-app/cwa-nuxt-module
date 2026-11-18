@@ -51,6 +51,39 @@ for (const width of widths) {
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width)
   })
 
+  test(`kit at ${width}: an information popover stands 4 to 6px from its ⓘ glyph, not from the button's hit area, with equal padding on all four sides (#461)`, async ({ page }) => {
+    await openKit(page, width)
+    await page.waitForLoadState('networkidle')
+    const trigger = page.locator('main').getByTestId('field-info').first()
+    await trigger.click()
+    const popover = page.getByTestId('field-info-popover')
+    await popover.waitFor()
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true')
+    await page.waitForFunction(() => document.querySelector('[data-testid="field-info-popover"]')?.getAnimations().every(animation => animation.playState !== 'running'))
+
+    const measured = await trigger.evaluate((button) => {
+      const glyph = button.querySelector('svg').getBoundingClientRect()
+      const panel = document.querySelector('[data-testid="field-info-popover"]')
+      const box = panel.getBoundingClientRect()
+      const caret = [...panel.querySelectorAll('svg')].at(-1).getBoundingClientRect()
+      const painted = { top: Math.min(box.top, caret.top), bottom: Math.max(box.bottom, caret.bottom) }
+      const content = [...panel.children].filter(child => getComputedStyle(child).position !== 'absolute').map(child => child.getBoundingClientRect()).filter(rect => rect.width && rect.height)
+      const inner = {
+        top: Math.min(...content.map(rect => rect.top)),
+        right: Math.max(...content.map(rect => rect.right)),
+        bottom: Math.max(...content.map(rect => rect.bottom)),
+        left: Math.min(...content.map(rect => rect.left)),
+      }
+      return {
+        gap: Math.max(glyph.top - painted.bottom, painted.top - glyph.bottom),
+        padding: [inner.top - box.top, box.right - inner.right, box.bottom - inner.bottom, inner.left - box.left],
+      }
+    })
+    expect(measured.gap).toBeGreaterThanOrEqual(4)
+    expect(measured.gap).toBeLessThanOrEqual(6)
+    expect(Math.max(...measured.padding) - Math.min(...measured.padding)).toBeLessThanOrEqual(1)
+  })
+
   test(`kit at ${width}: stacked demo rows never touch`, async ({ page }) => {
     await openKit(page, width)
     const touching = await page.locator('main').evaluate((main) => {
@@ -372,4 +405,36 @@ test('kit: a field\'s focus ring fades in from transparent, never from white (#4
   expect(new Set(frames.map(({ field }) => field)).size).toBeGreaterThanOrEqual(4)
   expect(frames.some(({ colour }) => colour === 'rgb(96, 165, 250)')).toBe(true)
   expect(white).toEqual([])
+})
+
+test('kit: a textarea beside its label lines the label up with its first line of text, and no manager row holds one (#461)', async ({ page }) => {
+  const warnings = []
+  page.on('console', message => message.text().includes('CwaUiTextarea') && warnings.push(message.text()))
+  await openKit(page, 1280)
+  const textarea = page.locator('[data-kit-field="textarea"]').first()
+  await textarea.scrollIntoViewIfNeeded()
+  const offset = await textarea.evaluate((field) => {
+    const element = field.querySelector('textarea')
+    const label = document.querySelector(`label[for="${element.id}"]`)
+    const firstLine = (box) => {
+      const style = getComputedStyle(box)
+      const top = box.getBoundingClientRect().top + Number.parseFloat(style.paddingTop) + Number.parseFloat(style.borderTopWidth)
+      return top + Number.parseFloat(style.lineHeight) / 2
+    }
+    return firstLine(label) - firstLine(element)
+  })
+  expect(Math.abs(offset)).toBeLessThanOrEqual(1)
+
+  const rows = page.locator('button', { hasText: /^Manager row$/ })
+  for (let index = 0; index < await rows.count(); index++) {
+    await rows.nth(index).scrollIntoViewIfNeeded()
+    await expect(async () => {
+      await rows.nth(index).click()
+      await expect(rows.nth(index)).toHaveAttribute('data-state', 'on', { timeout: 500 })
+    }).toPass()
+  }
+  await expect(page.locator('.kit-place-bar [data-testid="manager-tab"]')).toHaveCount(await rows.count())
+  await expect(page.locator('.kit-place-bar [data-kit-field]').first()).toBeAttached()
+  await expect(page.locator('.kit-place-bar [data-kit-field="textarea"]')).toHaveCount(0)
+  expect(warnings).toEqual([])
 })

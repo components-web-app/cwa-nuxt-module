@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref, useTemplateRef } from 'vue'
 import { PopoverArrow, PopoverClose, PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { infoArrow, infoPanel } from './field-looks'
+import { POPOVER_GAP } from './popover-gap'
+import { openTriggerMark } from '../../ui/kit-looks'
 import StateGlyph from './StateGlyph.vue'
 import XMarkIcon from '../../ui/icon/XMarkIcon.vue'
 
@@ -11,6 +13,9 @@ const { label, text, textId, hover = false } = defineProps<{
   textId: string
   hover?: boolean
 }>()
+
+const glyph = useTemplateRef<{ $el: Element }>('glyph')
+const glyphElement = computed(() => glyph.value?.$el)
 
 const HIDE_DELAY_MS = 150
 const open = ref(false)
@@ -93,19 +98,24 @@ function onOpenAutoFocus(event: Event) {
       :aria-label="`About ${label}`"
       :aria-describedby="hover ? textId : undefined"
       data-testid="field-info"
-      class="cwa:grid cwa:size-6 cwa:shrink-0 cwa:cursor-pointer cwa:place-items-center cwa:outline-1 cwa:outline-transparent cwa:focus-visible:outline-2 cwa:focus-visible:outline-accent-fg cwa:pointer-coarse:size-hit"
+      :class="['cwa:grid cwa:size-6 cwa:shrink-0 cwa:cursor-pointer cwa:place-items-center cwa:text-fg cwa:hover:bg-button cwa:aria-expanded:bg-button', openTriggerMark]"
+      class="cwa:outline-1 cwa:outline-transparent cwa:focus-visible:outline-2 cwa:focus-visible:outline-accent-fg cwa:pointer-coarse:size-hit"
       @pointerenter="onPointerenter"
       @pointerleave="onPointerleave"
       @focus="onFocus"
       @blur="onBlur"
       @click="onClick"
     >
-      <StateGlyph kind="info" />
+      <StateGlyph
+        ref="glyph"
+        kind="info"
+      />
     </PopoverTrigger>
     <PopoverPortal>
       <PopoverContent
+        :reference="glyphElement"
         side="top"
-        :side-offset="8"
+        :side-offset="POPOVER_GAP"
         :collision-padding="8"
         :aria-label="label"
         data-testid="field-info-popover"
@@ -115,7 +125,7 @@ function onOpenAutoFocus(event: Event) {
         @pointerenter="onPointerenter"
         @pointerleave="onPointerleave"
       >
-        <div class="cwa:-mt-1 cwa:-mr-2 cwa:mb-1.5 cwa:flex cwa:min-h-8 cwa:items-center cwa:gap-2 cwa:font-semibold">
+        <div class="cwa:mb-1.5 cwa:flex cwa:min-h-8 cwa:items-center cwa:gap-2 cwa:font-semibold">
           <StateGlyph
             kind="info"
             accent

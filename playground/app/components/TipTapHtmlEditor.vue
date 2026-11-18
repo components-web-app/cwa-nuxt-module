@@ -31,8 +31,10 @@
           Italic
         </BubbleMenuButton>
         <button
-          class="px-1.5 py-1 content-center items-center"
+          class="px-1.5 py-1 content-center items-center aria-expanded:shadow-[inset_0_-2px_0_currentColor]"
           :class="[editor.isActive('link') ? 'bg-black text-white' : null]"
+          aria-haspopup="dialog"
+          :aria-expanded="linkOpen ? 'true' : 'false'"
           @click="showLinkManager"
         >
           Link

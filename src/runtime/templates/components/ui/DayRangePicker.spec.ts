@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { resetLocalTimeZone } from '@internationalized/date'
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { axe } from '../../../../../test/utils/axe'
+import { drawsOpenState } from '../../../../../test/utils/open-state'
 import { drawsFocusRing } from '../../../../../test/utils/focus-ring'
 import { fakeFieldModel } from '../../../../../playground/app/kit/fake-field-model'
 import DayRangePicker from './DayRangePicker.vue'
@@ -61,6 +62,19 @@ describe('CwaUiDayRangePicker (#461)', () => {
 
     const empty = mountPicker()
     expect(trigger(empty).text()).toBe('Any dates')
+  })
+
+  test('the field shows itself selected while its calendar is open, and not once it closes, with no axe violations open', async () => {
+    const wrapper = mountPicker()
+    expect(drawsOpenState(trigger(wrapper).element)).toBe(false)
+
+    await open(wrapper)
+    expect(drawsOpenState(trigger(wrapper).element)).toBe(true)
+    expect(await axe(document.body, { rules: { region: { enabled: false } } })).toHaveNoViolations()
+
+    await trigger(wrapper).trigger('click')
+    await flushPromises()
+    expect(drawsOpenState(trigger(wrapper).element)).toBe(false)
   })
 
   test('opens a calendar on the month of the range start with the range selected', async () => {

@@ -40,17 +40,22 @@ afterEach(() => {
 function harness(initial = false, keep = false) {
   const shown = ref(initial)
   const wrapper = mount(defineComponent({
-    setup: () => () => h('div', [
-      h('button', { 'data-geometry': 'control' }, 'Nested under'),
-      h(Reveal, { when: shown.value, keep }, () => h('div', { 'data-geometry': 'revealed' }, 'Parent page')),
+    setup: () => () => h('div', { 'data-cwa-dialog': '' }, [
+      h('button', { 'data-depth-tab': '' }, 'Child page'),
+      h('button', { 'aria-controls': 'details-panel' }, 'Details'),
+      h('ul', { 'id': 'parent-menu', 'data-portalled': '' }, [h('li', { 'data-option': '' }, 'A page')]),
+      h('section', { id: 'details-panel' }, [
+        h('button', { 'data-geometry': 'control', 'aria-controls': 'parent-menu' }, 'Nested under'),
+        h(Reveal, { when: shown.value, keep }, () => h('div', { 'data-geometry': 'revealed' }, 'Parent page')),
+      ]),
     ]),
   }), { attachTo: document.body })
   return { wrapper, shown }
 }
 
-function userActs() {
+function userActs(on = '[data-geometry="control"]', type = 'pointerdown') {
   now += 5
-  document.dispatchEvent(new Event('pointerdown'))
+  document.querySelector(on)!.dispatchEvent(new Event(type, { bubbles: true }))
   now += 5
 }
 
@@ -107,7 +112,8 @@ describe('Reveal (#461)', () => {
 
   test('content shown on mount never scrolls, even when the click that opened the dialog was a moment ago', async () => {
     geometry.spans.set('revealed', { start: 560, end: 640 })
-    userActs()
+    document.body.innerHTML = '<button data-open>Edit page</button>'
+    userActs('[data-open]')
     harness(true)
     await nextTick()
     await nextTick()
@@ -117,9 +123,10 @@ describe('Reveal (#461)', () => {
 
   test('content that appears as the dialog loads, after the click that opened it, never scrolls', async () => {
     geometry.spans.set('revealed', { start: 560, end: 640 })
-    userActs()
     const { shown } = harness()
-    now += 20
+    now -= 20
+    userActs()
+    now += 40
     await reveal(shown)
 
     expect(scrollBy).not.toHaveBeenCalled()
@@ -133,6 +140,43 @@ describe('Reveal (#461)', () => {
     await reveal(shown)
 
     expect(scrollBy).not.toHaveBeenCalled()
+  })
+
+  test('content a click elsewhere shows while its data loads, as a depth tab switching to a nested child page does, never scrolls', async () => {
+    geometry.spans.set('revealed', { start: 560, end: 640 })
+    const { shown } = harness()
+    userActs('[data-depth-tab]')
+    await reveal(shown)
+
+    expect(scrollBy).not.toHaveBeenCalled()
+  })
+
+  test('a key pressed elsewhere never counts as the choice', async () => {
+    geometry.spans.set('revealed', { start: 560, end: 640 })
+    const { shown } = harness()
+    userActs('[data-depth-tab]', 'keydown')
+    await reveal(shown)
+
+    expect(scrollBy).not.toHaveBeenCalled()
+  })
+
+  test('a key pressed on the control counts as the choice', async () => {
+    geometry.spans.set('revealed', { start: 560, end: 640 })
+    const { shown } = harness()
+    userActs('[data-geometry="control"]', 'keydown')
+    await reveal(shown)
+
+    expect(scrollBy).toHaveBeenCalledWith(geometry.scroller, 'y', 40, true)
+  })
+
+  test('an option chosen in a menu portalled out of the section counts, when a control in the section names the menu in aria-controls', async () => {
+    geometry.spans.set('revealed', { start: 560, end: 640 })
+    const { shown } = harness()
+    userActs('[data-option]')
+    document.querySelector('[data-portalled]')!.remove()
+    await reveal(shown)
+
+    expect(scrollBy).toHaveBeenCalledWith(geometry.scroller, 'y', 40, true)
   })
 
   test('a re-render while shown never scrolls again', async () => {
