@@ -61,7 +61,7 @@ const body = useTemplateRef<HTMLElement>('body')
 
 function focusTitle(event: Event) {
   event.preventDefault()
-  document.getElementById(titleId)?.focus({ preventScroll: true })
+  document.getElementById(titleId.value ?? '')?.focus({ preventScroll: true })
 }
 const presenceLayer = useTemplateRef<HTMLElement>('presenceLayer')
 provide(presenceLayerKey, { el: presenceLayer, align: 'end' })
