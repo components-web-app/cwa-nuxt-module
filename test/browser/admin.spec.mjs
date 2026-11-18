@@ -1651,7 +1651,7 @@ test('62. with live editing paused on a phone, the header\'s status is a glyph n
   }
 })
 
-test('63. the header\'s Edit or Done button and the page settings button or path selector beside it share one height and one centre, at 1280 and 390, with a fine or a coarse pointer, while live editing is paused', async ({ cwa: t }) => {
+test('63. the header\'s Edit or Done button and the page settings button or path selector beside it share one height and one centre, at 1280 and 390, with a fine or a coarse pointer, while live editing is paused, and the manager bar\'s tabs and their group are exactly as tall as its CTA buttons', async ({ cwa: t }) => {
   const { page, base, seed } = t
   const cookies = await page.context().cookies()
   for (const hasTouch of [false, true]) {
@@ -1691,6 +1691,27 @@ test('63. the header\'s Edit or Done button and the page settings button or path
       await tab.getByTestId('path-selector').waitFor()
       await settle()
       await measure('path-selector')
+      await tab.getByTestId('manager-pin').getByRole('button').first().waitFor()
+      await settle()
+      const bar = await tab.evaluate(() => {
+        const height = element => element.getBoundingClientRect().height
+        const pin = document.querySelector('[data-testid="manager-pin"]')
+        const tablist = document.querySelector('[data-testid="manager-bar"] [role="tablist"]')
+        return {
+          total: height(document.querySelector('[data-testid="manager-bar"]')),
+          tablist: height(tablist),
+          tabs: [...tablist.querySelectorAll('[role="tab"]')].map(height),
+          ctas: [...pin.querySelectorAll('button')].filter(button => button.offsetParent && /Publish|More|actions|⋮/i.test(`${button.textContent} ${button.getAttribute('aria-label') ?? ''}`)).map(button => ({ name: (button.getAttribute('aria-label') ?? button.textContent).trim(), height: height(button) })),
+        }
+      })
+      const where = `At ${width}px with a ${hasTouch ? 'coarse' : 'fine'} pointer`
+      assert(bar.ctas.length >= 1, `${where} the bar shows ${bar.ctas.map(cta => cta.name).join(', ') || 'no'} CTA buttons`)
+      for (const cta of bar.ctas) {
+        assert(Math.abs(bar.tablist.valueOf() - cta.height) <= 1, `${where} the tab group is ${bar.tablist}px tall and ${cta.name} ${cta.height}px`)
+      }
+      for (const height of bar.tabs) {
+        assert(Math.abs(height - bar.tablist) <= 1, `${where} a tab is ${height}px tall in a ${bar.tablist}px group`)
+      }
       await context.close()
     }
   }

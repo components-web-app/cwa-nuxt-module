@@ -282,13 +282,13 @@ defineExpose({
       <div
         v-if="allTabsMeta.length"
         ref="managerHolder"
-        class="cwa:relative cwa:grid cwa:min-h-manager cwa:grid-cols-[minmax(0,1fr)_auto] cwa:grid-rows-[var(--cwa-spacing-manager-tabs)_minmax(var(--cwa-spacing-manager-row),auto)]"
+        class="cwa:relative cwa:grid cwa:min-h-manager cwa:grid-cols-[minmax(0,1fr)_auto] cwa:grid-rows-[var(--cwa-spacing-manager-tabs)_minmax(var(--cwa-spacing-manager-row),auto)] cwa:pointer-coarse:[--cwa-spacing-cta-inset:0px] cwa:@max-[40rem]:[--cwa-spacing-cta-inset:0px]"
       >
         <ResourceLoadingIndicator
           class="cwa:absolute cwa:bottom-full cwa:left-0 cwa:z-notifications"
           data-testid="manager-saving-line"
         />
-        <div class="cwa:min-w-0 cwa:shadow-[inset_0_-1px_0_var(--cwa-color-line)]">
+        <div class="cwa:min-w-0 cwa:pt-cta-inset cwa:pb-[calc(var(--cwa-spacing-cta-inset)+1px)] cwa:shadow-[inset_0_-1px_0_var(--cwa-color-line)]">
           <ManagerTabs
             ref="managerTabs"
             :tabs="allTabsMeta"
@@ -299,7 +299,7 @@ defineExpose({
           />
         </div>
         <div
-          class="cwa:flex cwa:h-manager-tabs cwa:items-center cwa:gap-cta-inset cwa:pt-cta-inset cwa:pr-cta-inset cwa:pb-[calc(var(--cwa-spacing-cta-inset)+1px)] cwa:pl-[calc(1px+var(--cwa-spacing-cta-inset))] cwa:shadow-[inset_1px_0_0_var(--cwa-color-line),inset_0_-1px_0_var(--cwa-color-line)] cwa:pointer-coarse:[--cwa-spacing-cta-inset:0px] cwa:@max-[40rem]:[--cwa-spacing-cta-inset:0px]"
+          class="cwa:flex cwa:h-manager-tabs cwa:items-center cwa:gap-cta-inset cwa:pt-cta-inset cwa:pr-cta-inset cwa:pb-[calc(var(--cwa-spacing-cta-inset)+1px)] cwa:pl-[calc(1px+var(--cwa-spacing-cta-inset))] cwa:shadow-[inset_1px_0_0_var(--cwa-color-line),inset_0_-1px_0_var(--cwa-color-line)]"
           data-testid="manager-pin"
         >
           <BarSummary
