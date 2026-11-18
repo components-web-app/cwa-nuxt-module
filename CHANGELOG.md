@@ -4,6 +4,10 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+## [2.0.0-alpha.34] - 2026-11-18
+
+- Signing out while a page is still loading no longer throws "Failed to check if the token … is current": a fetch whose token sign-out cleared is treated as no longer current ([f29e7af7](https://github.com/components-web-app/cwa-nuxt-module/commit/f29e7af72deaf563d7c7eec122f8cec2367a2ebb))
+
 ## [2.0.0-alpha.33] - 2026-11-18
 
 - `fast-xml-parser` ^5.12.1 for its 2026-11-18 advisory; the module is now built and tested on Nuxt 4.6.4, with `node-forge` ≥ 1.4.3 in its tooling, for that day's Nuxt and node-forge advisories ([6be45736](https://github.com/components-web-app/cwa-nuxt-module/commit/6be45736c06f06b8d3e9a17d30f21c4ffd6976c9))
@@ -267,7 +271,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 - First tagged release of `@cwa/nuxt`; releases are now published from `v*` tags ([7c61b7c](https://github.com/components-web-app/cwa-nuxt-module/commit/7c61b7ce331ec4a0cb8e76951a5de2ff806ed07a))
 
-[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.33...HEAD
+[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.34...HEAD
+[2.0.0-alpha.34]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.33...v2.0.0-alpha.34
 [2.0.0-alpha.33]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.32...v2.0.0-alpha.33
 [2.0.0-alpha.32]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.31...v2.0.0-alpha.32
 [2.0.0-alpha.31]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.30...v2.0.0-alpha.31
