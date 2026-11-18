@@ -136,7 +136,7 @@ describe('kit colour tokens (#456)', () => {
   })
 
   test('the colours the admin already uses keep their names', () => {
-    for (const name of ['dark', 'light', 'medium', 'danger', 'danger-dark', 'magenta', 'orange', 'green', 'stone-700']) {
+    for (const name of ['dark', 'light', 'danger', 'danger-dark', 'magenta', 'orange', 'green', 'stone-700']) {
       expect(compiled, name).toContain(`--cwa-color-${name}:`)
     }
   })

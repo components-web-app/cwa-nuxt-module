@@ -92,14 +92,14 @@ exports[`ComponentGroup > snapshots > should match snapshot IF user is logged in
 >
   
   <!--cwa-start-->
-  <div
-    class="cwa:flex cwa:justify-center cwa:border cwa:border-gray-300 cwa:p-5 cwa:relative"
+  <editplaceholder-stub
+    label="Empty group"
   >
     <lazyhotspot-stub
       disabled="true"
       screen-reader-action="Add component position"
     />
-  </div>
+  </editplaceholder-stub>
   <!--cwa-end-->
   
 </div>

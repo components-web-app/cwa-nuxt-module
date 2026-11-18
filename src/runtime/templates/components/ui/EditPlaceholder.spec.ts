@@ -8,12 +8,12 @@ import EditPlaceholder from './EditPlaceholder.vue'
 enableAutoUnmount(afterEach)
 
 describe('CwaUiEditPlaceholder (#461)', () => {
-  test('says what is missing in muted text inside a dashed line-dash box on the admin surface, so it reads on any site', () => {
+  test('says what is missing in muted text inside a solid line-strong box on the admin surface, so it reads on any site', () => {
     const wrapper = mount(EditPlaceholder, { props: { label: 'Add an image' } })
 
     expect(wrapper.text()).toBe('Add an image')
     expect(wrapper.attributes('data-testid')).toBe('edit-placeholder')
-    expect(wrapper.classes()).toEqual(expect.arrayContaining(['cwa:border-dashed', 'cwa:border-line-dash', 'cwa:bg-surface', 'cwa:text-fg-muted']))
+    expect(wrapper.classes()).toEqual(expect.arrayContaining(['cwa:border', 'cwa:border-line-strong', 'cwa:bg-surface', 'cwa:text-fg-muted']))
     expect(wrapper.classes().join(' ')).not.toMatch(/rounded/)
   })
 
