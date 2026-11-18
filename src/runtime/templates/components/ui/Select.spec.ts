@@ -162,4 +162,27 @@ describe('CwaUiSelect (#460)', () => {
   test('the trigger draws its focus ring when focused from the keyboard', () => {
     expect(drawsFocusRing(mountSelect().get('[data-testid="select-trigger"]').classes())).toBe(true)
   })
+
+  test('disabled with a reason stays focusable, says it is disabled and why, and does not open', async () => {
+    const wrapper = mountSelect({ label: 'Field', modelValue: null, disabled: true, disabledReason: 'Choose a data type first.' })
+    const trigger = wrapper.get('[data-testid="select-trigger"]')
+
+    expect(trigger.attributes('disabled')).toBeUndefined()
+    expect(trigger.attributes('aria-disabled')).toBe('true')
+    const described = trigger.attributes('aria-describedby')!.split(' ').map(id => document.getElementById(id)?.textContent).join(' ')
+    expect(described).toContain('Choose a data type first.')
+
+    await trigger.trigger('keydown', { key: 'Enter' })
+    await trigger.trigger('pointerdown', { button: 0, pointerType: 'mouse' })
+    await flushPromises()
+    expect(document.querySelector('[data-testid="select-menu"]')).toBeNull()
+    expect(await axe(wrapper.element as HTMLElement)).toHaveNoViolations()
+  })
+
+  test('disabled without a reason stays natively disabled', () => {
+    const trigger = mountSelect({ disabled: true }).get('[data-testid="select-trigger"]')
+
+    expect(trigger.attributes('disabled')).toBeDefined()
+    expect(trigger.attributes('aria-disabled')).toBeUndefined()
+  })
 })

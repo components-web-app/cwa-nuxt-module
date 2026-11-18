@@ -10,6 +10,18 @@ export type CwaAllowedComponent = CwaComponentName | `/${string}`
 export type ManagerTab = GlobalComponentNames | DefineComponent<object, object, any>
 export type ComponentUi = GlobalComponentNames
 
+declare global {
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
+  interface CwaLucideIconNames {}
+}
+
+export type LucideIconName = keyof CwaLucideIconNames & string
+
+export type CwaComponentKind = 'heading' | 'rich-text' | 'image' | 'gallery' | 'carousel' | 'video' | 'hero' | 'banner'
+  | 'card' | 'card-grid' | 'section' | 'media-text' | 'columns' | 'container' | 'link' | 'button' | 'link-group' | 'tabs'
+  | 'accordion' | 'quote' | 'testimonial' | 'form' | 'newsletter' | 'sign-up' | 'collection' | 'articles' | 'table'
+  | 'steps' | 'file' | 'chart' | 'heatmap' | 'map' | 'contact' | 'social' | 'person' | 'people' | 'notice'
+
 export interface CwaResourceMeta {
   name?: string
   description?: string
@@ -17,6 +29,9 @@ export interface CwaResourceMeta {
   defaultData?: Record<any, any>
   managerTabs?: ManagerTab[]
   ui?: ComponentUi[]
+  icon?: CwaComponentKind | `lucide:${LucideIconName}`
+  group?: string
+  image?: string
 }
 
 export interface CwaResourcesMeta {

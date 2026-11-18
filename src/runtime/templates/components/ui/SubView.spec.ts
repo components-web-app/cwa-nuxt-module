@@ -1,0 +1,179 @@
+// @vitest-environment happy-dom
+import { afterEach, describe, expect, test, vi } from 'vitest'
+import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
+import { defineComponent, h, ref } from 'vue'
+import { axe } from '../../../../../test/utils/axe'
+import SubView from './SubView.vue'
+
+enableAutoUnmount(afterEach)
+
+function mountSubView(props: Record<string, unknown> = {}) {
+  const open = ref(false)
+  const onBack = vi.fn(() => {
+    open.value = false
+  })
+  const Host = defineComponent({
+    setup() {
+      return () => h('div', { 'data-cwa-scroll': '', 'style': 'overflow:auto' }, [
+        h(SubView, { open: open.value, title: 'Hero section', backLabel: 'Components', onBack, ...props }, {
+          main: () => [
+            h('input', { 'aria-label': 'Search components', 'data-testid': 'search' }),
+            h('button', { 'type': 'button', 'data-testid': 'opener', 'onClick': () => (open.value = true) }, 'Hero section'),
+          ],
+          default: () => h('button', { 'type': 'button', 'data-testid': 'add' }, 'Add'),
+        }),
+      ])
+    },
+  })
+  const wrapper = mount(Host, { attachTo: document.body })
+  return { wrapper, open, onBack }
+}
+
+const main = () => document.querySelector<HTMLElement>('[data-testid="sub-view-main"]')!
+const sub = () => document.querySelector<HTMLElement>('[data-testid="sub-view"]')
+
+async function openFrom(opener: HTMLElement, open: { value: boolean }) {
+  opener.focus()
+  open.value = true
+  await flushPromises()
+}
+
+describe('CwaUiSubView (#461)', () => {
+  test('shows only the main view until it opens', async () => {
+    mountSubView()
+    await flushPromises()
+
+    expect(sub()).toBeNull()
+    expect(main().hidden).toBe(false)
+    expect(main().hasAttribute('inert')).toBe(false)
+  })
+
+  test('opening hides the main view and makes it inert, keeping it in the page with its state', async () => {
+    const { open } = mountSubView()
+    await flushPromises()
+    const search = document.querySelector<HTMLInputElement>('[data-testid="search"]')!
+    search.value = 'hero'
+
+    await openFrom(document.querySelector('[data-testid="opener"]')!, open)
+
+    expect(main().hidden).toBe(true)
+    expect(main().hasAttribute('inert')).toBe(true)
+    expect(document.querySelector<HTMLInputElement>('[data-testid="search"]')!.value).toBe('hero')
+  })
+
+  test('is a group named by its title, a level 3 heading under a back link named Back to Components', async () => {
+    const { open } = mountSubView()
+    await openFrom(document.querySelector('[data-testid="opener"]')!, open)
+
+    expect(sub()!.getAttribute('role')).toBe('group')
+    const title = document.getElementById(sub()!.getAttribute('aria-labelledby')!)!
+    expect(title.tagName).toBe('H3')
+    expect(title.textContent?.trim()).toBe('Hero section')
+    const back = sub()!.querySelector<HTMLButtonElement>('[data-testid="sub-view-back"]')!
+    expect(back.getAttribute('aria-label')).toBe('Back to Components')
+    expect(back.textContent?.trim()).toBe('Components')
+  })
+
+  test('focus goes to the title by default', async () => {
+    const { open } = mountSubView()
+    await openFrom(document.querySelector('[data-testid="opener"]')!, open)
+
+    expect(document.activeElement?.getAttribute('data-testid')).toBe('sub-view-title')
+  })
+
+  test('focus goes to the control the consumer names', async () => {
+    const { open } = mountSubView({ initialFocus: () => document.querySelector<HTMLElement>('[data-testid="add"]') })
+    await openFrom(document.querySelector('[data-testid="opener"]')!, open)
+
+    expect(document.activeElement?.getAttribute('data-testid')).toBe('add')
+  })
+
+  test.each([
+    ['the back link', () => sub()!.querySelector<HTMLButtonElement>('[data-testid="sub-view-back"]')!.click()],
+    ['Escape', () => sub()!.querySelector('[data-testid="add"]')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))],
+    ['Alt+Left', () => sub()!.querySelector('[data-testid="add"]')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', altKey: true, bubbles: true, cancelable: true }))],
+  ])('%s goes back and returns focus to what opened it', async (_, goBack) => {
+    const { open, onBack } = mountSubView()
+    await openFrom(document.querySelector('[data-testid="opener"]')!, open)
+
+    goBack()
+    await flushPromises()
+
+    expect(onBack).toHaveBeenCalledTimes(1)
+    expect(sub()).toBeNull()
+    expect(main().hidden).toBe(false)
+    expect(document.activeElement?.getAttribute('data-testid')).toBe('opener')
+  })
+
+  test('Escape in the sub-view never reaches the dialog around it', async () => {
+    const { open } = mountSubView()
+    await openFrom(document.querySelector('[data-testid="opener"]')!, open)
+    const outer = vi.fn()
+    window.addEventListener('keydown', outer)
+
+    sub()!.querySelector('[data-testid="add"]')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
+    window.removeEventListener('keydown', outer)
+
+    expect(outer).not.toHaveBeenCalled()
+  })
+
+  test('Escape goes back from anywhere in the dialog around it, such as its footer', async () => {
+    const { open, onBack } = mountSubView()
+    await openFrom(document.querySelector('[data-testid="opener"]')!, open)
+    const host = document.querySelector<HTMLElement>('[data-cwa-scroll]')!
+    host.setAttribute('role', 'dialog')
+    const footer = document.createElement('button')
+    host.appendChild(footer)
+    open.value = false
+    await flushPromises()
+    await openFrom(document.querySelector('[data-testid="opener"]')!, open)
+
+    footer.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
+
+    expect(onBack).toHaveBeenCalledTimes(1)
+  })
+
+  test('an Escape another control already handled does not go back', async () => {
+    const { open, onBack } = mountSubView()
+    await openFrom(document.querySelector('[data-testid="opener"]')!, open)
+    const event = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })
+    event.preventDefault()
+
+    sub()!.querySelector('[data-testid="add"]')!.dispatchEvent(event)
+
+    expect(onBack).not.toHaveBeenCalled()
+  })
+
+  test('focus returns to the control the consumer names', async () => {
+    const { open } = mountSubView({ returnFocus: () => document.querySelector<HTMLElement>('[data-testid="search"]') })
+    await openFrom(document.querySelector('[data-testid="opener"]')!, open)
+
+    open.value = false
+    await flushPromises()
+
+    expect(document.activeElement?.getAttribute('data-testid')).toBe('search')
+  })
+
+  test('the main view comes back scrolled where it was', async () => {
+    const { open } = mountSubView()
+    await flushPromises()
+    const container = document.querySelector<HTMLElement>('[data-cwa-scroll]')!
+    container.scrollTop = 120
+
+    await openFrom(document.querySelector('[data-testid="opener"]')!, open)
+    expect(container.scrollTop).toBe(0)
+    open.value = false
+    await flushPromises()
+
+    expect(container.scrollTop).toBe(120)
+  })
+
+  test('has no axe violations open or closed', async () => {
+    const { wrapper, open } = mountSubView()
+    await flushPromises()
+    expect(await axe(wrapper.element as HTMLElement)).toHaveNoViolations()
+
+    await openFrom(document.querySelector('[data-testid="opener"]')!, open)
+    expect(await axe(wrapper.element as HTMLElement)).toHaveNoViolations()
+  })
+})

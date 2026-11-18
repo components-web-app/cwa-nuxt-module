@@ -71,6 +71,7 @@
   },
   "dependencies": {
     "@headlessui/vue": "^1.7.23",
+    "@iconify-json/lucide": "^1.2.155",
     "@internationalized/date": "^3.12.4",
     "@nuxt/kit": "^4.6.0",
     "@nuxt/schema": "^4.6.0",

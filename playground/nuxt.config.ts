@@ -82,18 +82,34 @@ export default defineNuxtConfig({
     resources: {
       Form: {
         name: 'Example Form',
-        description: '<p>Demonstrates all form field types: text, password, select, radio, checkbox, multi-select, and collections.</p>',
+        description: 'Demonstrates all form field types: text, password, select, radio, checkbox, multi-select, and collections.',
       },
       NavigationLink: {
         name: 'Link',
-        description: '<p>Use this component to display a link for a website user to click so they can visit another page or URL</p>',
+        description: 'A link to another page or URL',
+        icon: 'link',
+        group: 'Text',
       },
       HtmlContent: {
         name: 'Body Text',
-        description: '<p>Easily create a body of text with the ability to style and format the content using themes in keeping with your website.</p>',
+        description: 'Paragraphs, headings, lists and links, styled to match the site',
+        icon: 'rich-text',
+        group: 'Text',
       },
       Image: {
         instantAdd: true,
+        icon: 'image',
+        group: 'Media',
+      },
+      Collection: {
+        description: 'A paged list of pages or articles',
+        icon: 'collection',
+        group: 'Layout',
+      },
+      UiComponent: {
+        description: 'A box holding its own group of components',
+        icon: 'card-grid',
+        group: 'Layout',
       },
     },
     layouts: {

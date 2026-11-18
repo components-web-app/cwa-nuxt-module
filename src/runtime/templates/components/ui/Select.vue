@@ -38,6 +38,7 @@ const props = withDefaults(defineProps<{
   placeholder?: string
   width?: FieldWidth
   disabled?: boolean
+  disabledReason?: string
   options: (MenuEntry | NullItem)[]
   nullable?: boolean
   noneLabel?: string
@@ -52,6 +53,7 @@ const props = withDefaults(defineProps<{
   placeholder: 'Choose…',
   width: 'md',
   disabled: false,
+  disabledReason: undefined,
   nullable: false,
   noneLabel: undefined,
   field: undefined,
@@ -104,6 +106,13 @@ function choose(next: unknown) {
 }
 
 const inactive = computed(() => props.disabled || unbound)
+const blocked = computed(() => props.disabled && !!props.disabledReason)
+const isOpen = computed({
+  get: () => open.value,
+  set: (next) => {
+    open.value = next && !blocked.value
+  },
+})
 </script>
 
 <template>
@@ -111,7 +120,7 @@ const inactive = computed(() => props.disabled || unbound)
     :label="label"
     :label-hidden="labelHidden"
     :info="info"
-    :description="description"
+    :description="blocked ? disabledReason : description"
     :optional="optional"
     :width="width"
     :state="state"
@@ -121,9 +130,9 @@ const inactive = computed(() => props.disabled || unbound)
   >
     <template #default="{ describedBy, tone, busy }">
       <SelectRoot
-        v-model:open="open"
+        v-model:open="isOpen"
         :model-value="selected"
-        :disabled="inactive"
+        :disabled="inactive && !blocked"
         @update:model-value="choose"
       >
         <CwaUiFieldPresence
@@ -135,8 +144,9 @@ const inactive = computed(() => props.disabled || unbound)
             :aria-describedby="describedBy"
             :aria-invalid="tone === 'danger' ? 'true' : undefined"
             :aria-busy="busy ? 'true' : undefined"
+            :aria-disabled="blocked ? 'true' : undefined"
             data-testid="select-trigger"
-            :class="[fieldBox, fieldFill(tone, inactive), 'cwa:cursor-pointer cwa:gap-2 cwa:px-3 cwa:text-left cwa:outline-1 cwa:outline-transparent cwa:data-[state=open]:outline-2 cwa:data-[state=open]:outline-offset-2 cwa:data-[state=open]:outline-accent-fg cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-accent-fg cwa:disabled:cursor-not-allowed', { 'cwa:opacity-50': inactive }]"
+            :class="[fieldBox, fieldFill(tone, inactive), blocked ? 'cwa:cursor-not-allowed' : 'cwa:cursor-pointer', 'cwa:gap-2 cwa:px-3 cwa:text-left cwa:outline-1 cwa:outline-transparent cwa:data-[state=open]:outline-2 cwa:data-[state=open]:outline-offset-2 cwa:data-[state=open]:outline-accent-fg cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-accent-fg cwa:disabled:cursor-not-allowed', { 'cwa:opacity-50': inactive }]"
           >
             <span
               class="cwa:min-w-0 cwa:flex-1 cwa:truncate"

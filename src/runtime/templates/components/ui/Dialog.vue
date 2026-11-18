@@ -8,7 +8,7 @@ import Spinner from './Spinner.vue'
 import StateGlyph from '../core/ui/StateGlyph.vue'
 import CheckGlyph from '../core/ui/CheckGlyph.vue'
 import DialogPanel from '../core/ui/DialogPanel.vue'
-import { fieldGroupKey, formSurfaceKey } from '../core/ui/field-keys'
+import { announceKey, fieldGroupKey, formSurfaceKey } from '../core/ui/field-keys'
 import { changesText, dialogTabBadge, dialogTabWords, listText } from '../core/ui/dialog-form'
 import type { DialogForm, DialogTab } from '../core/ui/dialog-form'
 import { useCwaConfirm } from '#cwa/composables/cwa-confirm'
@@ -24,6 +24,7 @@ const props = withDefaults(defineProps<{
   noun?: string
   createNoun?: string
   loading?: boolean
+  flush?: boolean
 }>(), {
   size: 'md',
   tabs: undefined,
@@ -32,6 +33,7 @@ const props = withDefaults(defineProps<{
   noun: 'page',
   createNoun: undefined,
   loading: false,
+  flush: false,
 })
 
 const emit = defineEmits<{
@@ -74,6 +76,7 @@ function isUnsaved(field: string) {
   return !!props.form?.unsavedFields.includes(field)
 }
 
+provide(announceKey, text => announce(text))
 provide(formSurfaceKey, { unsaved: isUnsaved, register: (field, label) => register(field, label) })
 if (props.form) {
   provide(fieldGroupKey, {
@@ -277,7 +280,7 @@ function glyphOf(key: string) {
   return kind === 'conflict' || kind === 'error' ? kind : undefined
 }
 
-defineExpose({ requestClose, confirmDiscard, showField })
+defineExpose({ requestClose, confirmDiscard, showField, announce })
 </script>
 
 <template>
@@ -357,7 +360,9 @@ defineExpose({ requestClose, confirmDiscard, showField })
         <div
           ref="body"
           data-testid="dialog-body"
-          class="cwa:min-h-0 cwa:flex-1 cwa:overflow-y-auto cwa:p-6"
+          data-cwa-scroll
+          class="cwa:min-h-0 cwa:flex-1 cwa:overflow-y-auto"
+          :class="{ 'cwa:p-6': !flush }"
           :aria-busy="loading ? 'true' : undefined"
         >
           <div
@@ -447,7 +452,7 @@ defineExpose({ requestClose, confirmDiscard, showField })
           </template>
         </div>
         <footer
-          v-if="form"
+          v-if="form || $slots.footer"
           class="cwa:flex cwa:shrink-0 cwa:items-center cwa:justify-end cwa:gap-actions cwa:bg-surface-raised cwa:px-6 cwa:py-4 cwa:max-sm:px-4 cwa:max-sm:pt-3 cwa:max-sm:pb-[calc(0.75rem+env(safe-area-inset-bottom))]"
         >
           <p
@@ -457,7 +462,14 @@ defineExpose({ requestClose, confirmDiscard, showField })
           >
             {{ blockedText }}
           </p>
-          <div class="cwa:grid cwa:grid-cols-2 cwa:gap-actions cwa:max-sm:w-full cwa:sm:flex">
+          <slot
+            v-if="!form"
+            name="footer"
+          />
+          <div
+            v-else
+            class="cwa:grid cwa:grid-cols-2 cwa:gap-actions cwa:max-sm:w-full cwa:sm:flex"
+          >
             <CwaUiButton
               label="Cancel"
               data-testid="dialog-cancel"
