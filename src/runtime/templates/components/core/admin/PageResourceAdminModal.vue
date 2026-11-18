@@ -460,11 +460,15 @@ async function handleDeleteClick() {
     return
   }
   checkingDelete.value = true
-  await refreshCounts()
+  const iri = resource.value?.['@id']
+  const [notice] = await Promise.all([
+    iri ? import('#cwa/admin/resource-confirm').then(({ editingNotice }) => editingNotice($cwa, iri)) : undefined,
+    refreshCounts(),
+  ])
   checkingDelete.value = false
   const confirmed = await confirm({
     title: `Delete “${pageName.value || dialogTitle.value}”?`,
-    lines: pageDeleteConfirmLines(deleteFacts.value, form.unsavedFields.length),
+    lines: [...(notice ? [{ text: notice }] : []), ...pageDeleteConfirmLines(deleteFacts.value, form.unsavedFields.length)],
     keep: 'Don\'t delete',
     go: 'Delete page',
     typed: pageName.value.trim() ? { noun: 'page name', value: pageName.value } : undefined,

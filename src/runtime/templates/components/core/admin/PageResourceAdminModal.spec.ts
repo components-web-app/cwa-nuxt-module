@@ -40,6 +40,10 @@ vi.mock('#cwa-layer/_composables/useParentPageLoader', () => ({ useParentPageLoa
 vi.mock('#cwa-layer/_composables/useParentPageDataLoader', () => ({ useParentPageDataLoader: mockUseParentPageDataLoader }))
 vi.mock('#cwa-layer/_composables/useDataType', () => ({ useDataType: mockUseDataType }))
 vi.mock('#cwa/composables/cwa-confirm', () => ({ useCwaConfirm: () => confirmMock }))
+const realtime = vi.hoisted(() => ({ peers: vi.fn((_iri: string): unknown[] => []) }))
+vi.mock('#cwa/resources/realtime-view', () => ({
+  realtimeView: () => ({ load: async () => ({ peers: realtime.peers }) }),
+}))
 vi.mock('#cwa/admin/page-delete', async (importOriginal) => {
   const original = await importOriginal<typeof import('#cwa/admin/page-delete')>()
   return { ...original, fetchTemplateCounts: countsMock }
@@ -156,6 +160,7 @@ const field = (wrapper: ReturnType<typeof mount>, component: any, label: string)
 
 async function clickDelete(wrapper: ReturnType<typeof mount>) {
   await wrapper.get('[data-testid="page-delete"]').trigger('click')
+  await vi.dynamicImportSettled()
   await flushPromises()
 }
 
@@ -357,6 +362,23 @@ describe('PageResourceAdminModal delete (#461)', () => {
       typed: { noun: 'page name', value: 'Shaker kitchens' },
     })
     expect(handlers.deleteResource).not.toHaveBeenCalled()
+  })
+
+  test('the confirm names the other admins editing the page (#429)', async () => {
+    realtime.peers.mockReturnValueOnce([
+      { user: { id: '/users/sam', name: 'Sam' }, name: 'Sam', state: 'editing', idle: false },
+      { user: { id: '/users/jo', name: 'Jo' }, name: 'Jo', state: 'selected', idle: true },
+    ])
+    const { wrapper } = setup()
+    confirmMock.mockResolvedValueOnce(false)
+
+    await clickDelete(wrapper)
+
+    expect(realtime.peers).toHaveBeenCalledWith('/_/pages/uuid-self')
+    expect(confirmMock.mock.calls[0]![0].lines).toEqual([
+      { text: 'Sam is editing this.' },
+      { text: 'This can\'t be undone.' },
+    ])
   })
 
   test('a page that is not a template is not counted', async () => {
