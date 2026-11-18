@@ -39,18 +39,29 @@ watch([iri, isPersistedComponent], async ([currentIri, persisted]) => {
   }
 }, { immediate: true })
 
-async function chooseLocations(componentIri: string, total: number) {
+type DeleteChoice = 'here' | 'draft' | 'all'
+
+async function chooseDelete(componentIri: string, total: number, here: boolean, draft: boolean): Promise<DeleteChoice | undefined> {
   const { confirmChoice, editingNotice } = await import('#cwa/admin/resource-confirm')
   const notice = await editingNotice($cwa, componentIri)
+  const shared = total > 1
+  const choices = [...(here ? ['here' as const] : []), ...(draft ? ['draft' as const] : [])]
+  const labels: Record<'here' | 'draft', string> = { here: 'Remove from here', draft: 'Discard unpublished changes' }
+  const said = [shared ? `It is used in ${total} places` : undefined, draft ? 'has unpublished changes' : undefined].filter(Boolean)
   const choice = await confirmChoice(vueApp, {
     title: 'Delete this component?',
-    description: `It is used in ${total} places.`,
+    description: `${shared ? said.join(' and ') : 'It has unpublished changes'}.`,
     keep: 'Don\'t delete',
-    extra: 'Remove from this location only',
-    go: `Delete from all ${total} places`,
-    lines: [...(notice ? [{ text: notice }] : []), { text: 'Deleting it from all places can\'t be undone.', emphasis: 'muted' as const }],
+    extra: labels[choices[0]!],
+    ...(choices[1] ? { alternative: labels[choices[1]] } : {}),
+    go: shared ? `Delete from all ${total} places` : 'Delete',
+    lines: [
+      ...(notice ? [{ text: notice }] : []),
+      ...(draft ? [{ text: 'Discarding the unpublished changes keeps the live version.', emphasis: 'muted' as const }] : []),
+      { text: shared ? 'Deleting it from all places can\'t be undone.' : 'Deleting it can\'t be undone.', emphasis: 'muted' as const },
+    ],
   })
-  return choice === 'go' ? 'all' : choice === 'extra' ? 'here' : undefined
+  return choice === 'go' ? 'all' : choice === 'extra' ? choices[0] : choice === 'alternative' ? choices[1] : undefined
 }
 
 function removeFromLocation(positionIri: string, groupIri?: string) {
@@ -72,21 +83,35 @@ function removeFromLocation(positionIri: string, groupIri?: string) {
   }, true))
 }
 
+async function deleteEverywhere(componentIri: string, liveIri: string | undefined, refreshEndpoints: string[]) {
+  if (!liveIri) {
+    return $cwa.resourcesManager.deleteResource({ endpoint: componentIri, refreshEndpoints }, true)
+  }
+  await $cwa.resourcesManager.deleteResource({ endpoint: componentIri, refreshEndpoints: [] }, true)
+  if ($cwa.resources.getResource(componentIri).value?.data) {
+    return false
+  }
+  return $cwa.resourcesManager.deleteResource({ endpoint: liveIri, refreshEndpoints }, true)
+}
+
 async function deleteSelected(componentIri: string) {
   const positionIri = $cwa.admin.resourceStackManager.getClosestStackItemByType(CwaResourceTypes.COMPONENT_POSITION)
   const total = isPersistedComponent.value ? (await fetchComponentUsage($cwa, componentIri))?.total ?? 0 : 0
-  const deleteEvent = {
-    endpoint: componentIri,
-    refreshEndpoints: $cwa.resources.getRefreshEndpointsForDelete(componentIri),
+  const refreshEndpoints = $cwa.resources.getRefreshEndpointsForDelete(componentIri)
+  const publishedResource = resource.value?.data?.publishedResource
+  const liveIri = getPublishedResourceState(resource.value ?? {}) === false && typeof publishedResource === 'string' ? publishedResource : undefined
+  const here = !!positionIri && total > 1
+  if (!here && !liveIri) {
+    return $cwa.resourcesManager.deleteResource({ endpoint: componentIri, refreshEndpoints })
   }
-  if (!positionIri || total <= 1) {
-    return $cwa.resourcesManager.deleteResource(deleteEvent)
-  }
-  const choice = await chooseLocations(componentIri, total)
+  const choice = await chooseDelete(componentIri, total, here, !!liveIri)
   if (choice === 'all') {
-    return $cwa.resourcesManager.deleteResource(deleteEvent, true)
+    return deleteEverywhere(componentIri, liveIri, refreshEndpoints)
   }
-  if (choice === 'here') {
+  if (choice === 'draft') {
+    return $cwa.resourcesManager.deleteResource({ endpoint: componentIri, refreshEndpoints }, true)
+  }
+  if (choice === 'here' && positionIri) {
     return removeFromLocation(positionIri, $cwa.admin.resourceStackManager.getClosestStackItemByType(CwaResourceTypes.COMPONENT_GROUP))
   }
   return false
@@ -135,17 +160,7 @@ const isAddingNew = computed(() => {
 })
 
 const deleteLabel = computed(() => {
-  if (isAddingNew.value) {
-    return 'Discard'
-  }
-  const publishableState = resource.value ? getPublishedResourceState(resource.value) : undefined
-  if (publishableState === true) {
-    return 'Delete Live'
-  }
-  if (publishableState === false) {
-    return 'Delete Draft'
-  }
-  return 'Delete'
+  return isAddingNew.value ? 'Discard' : 'Delete'
 })
 </script>
 

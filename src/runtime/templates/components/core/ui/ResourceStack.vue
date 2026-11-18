@@ -345,7 +345,8 @@ function box(index: number): VNode {
     'data-testid': 'resource-stack-level',
     'class': [
       'cwa:flex cwa:min-w-0 cwa:flex-col cwa:gap-1.5 cwa:border cwa:p-1.5',
-      isHovered ? 'cwa:border-fg cwa:bg-field-hover' : 'cwa:border-line-strong cwa:bg-surface-menu',
+      isSelected ? 'cwa:border-accent-fg' : isHovered ? 'cwa:border-fg' : 'cwa:border-line-strong',
+      isHovered ? 'cwa:bg-field-hover' : 'cwa:bg-surface-menu',
       isHighlighted && highlightBy.value === 'keyboard' ? 'cwa:outline-2 cwa:outline-accent-fg' : '',
       isHighlighted ? (index === shown.value - 1 ? 'cwa:-outline-offset-2' : 'cwa:outline-offset-1') : '',
     ],
@@ -354,12 +355,9 @@ function box(index: number): VNode {
     ...child,
     h('div', {
       'data-stack-name': index,
-      'class': [
-        'cwa:flex cwa:min-h-7 cwa:cursor-pointer cwa:items-center cwa:gap-2 cwa:pr-1 cwa:pl-2 cwa:text-label cwa:text-fg',
-        isSelected ? 'cwa:font-semibold cwa:shadow-[inset_3px_0_0_var(--cwa-color-accent-fg)]' : '',
-      ],
+      'class': 'cwa:flex cwa:min-h-7 cwa:cursor-pointer cwa:items-center cwa:justify-center cwa:gap-2 cwa:px-2 cwa:text-label cwa:text-fg',
     }, [
-      h('span', { 'data-stack-label': '', 'class': 'cwa:min-w-0 cwa:flex-1 cwa:truncate' }, level.label),
+      h('span', { 'data-stack-label': '', 'class': 'cwa:min-w-0 cwa:truncate' }, level.label),
     ]),
   ])
 }

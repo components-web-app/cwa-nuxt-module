@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, ref, toRef, watchEffect } from 'vue'
+import { computed, nextTick, ref, toRef, watchEffect } from 'vue'
 import ManagerTab from './ManagerTab.vue'
 import type { CwaResourceManagerTabOptions } from '#cwa/composables/cwa-resource-manager-tab'
 import { badgeFor } from '#cwa/admin/field-badge'
@@ -8,6 +8,8 @@ import type { CwaFieldState } from '#cwa/storage/stores/resources/state'
 const props = defineProps<{
   tabs: (CwaResourceManagerTabOptions & { fields?: string[] })[]
   fieldStates?: Record<string, CwaFieldState>
+  idPrefix: string
+  label: string
 }>()
 const reactiveTabs = toRef(props, 'tabs')
 const selectedIndex = ref(0)
@@ -27,6 +29,23 @@ const badges = computed(() => orderedTabs.value.map(tab => badgeFor((tab.fields 
 
 function selectIndex(newIndex: number) {
   selectedIndex.value = newIndex
+}
+
+function tabId(originalIndex: number) {
+  return `${props.idPrefix}-tab-${originalIndex}`
+}
+
+function onKeydown(event: KeyboardEvent, index: number) {
+  const count = orderedTabs.value.length
+  const moves: Record<string, number> = { ArrowRight: index + 1, ArrowLeft: index - 1, Home: 0, End: count - 1 }
+  if (!(event.key in moves) || event.altKey || event.metaKey || event.ctrlKey || !count) {
+    return
+  }
+  event.preventDefault()
+  const next = (moves[event.key]! + count) % count
+  selectIndex(next)
+  const originalIndex = orderedTabs.value[next]!._originalIndex
+  nextTick(() => document.getElementById(tabId(originalIndex))?.focus())
 }
 
 function resetTabs(newIndex: number = 0) {
@@ -49,14 +68,21 @@ defineExpose({ resetTabs, selectOriginal })
 </script>
 
 <template>
-  <div class="cwa:flex cwa:h-full cwa:items-stretch cwa:overflow-x-auto cwa:[scrollbar-width:none] cwa:[&::-webkit-scrollbar]:hidden">
+  <div
+    role="tablist"
+    :aria-label="label"
+    class="cwa:flex cwa:h-full cwa:items-stretch cwa:overflow-x-auto cwa:[scrollbar-width:none] cwa:[&::-webkit-scrollbar]:hidden"
+  >
     <ManagerTab
       v-for="(tab, index) of orderedTabs"
+      :id="tabId(tab._originalIndex)"
       :key="`tab_${index}_${tab.name}`"
       :tab="tab"
       :selected="index === selectedIndex"
       :badge="badges[index]"
+      :controls="`${idPrefix}-panel`"
       @click="selectIndex(index)"
+      @keydown="onKeydown($event, index)"
     />
   </div>
 </template>

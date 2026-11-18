@@ -2,6 +2,7 @@ import * as Y from 'yjs'
 import { expect, test } from './fixtures.mjs'
 import { mercurePath } from './rehearsal.mjs'
 import { articleTexts, seedArticlePages, texts } from './seed.mjs'
+import { controlRows } from './control-rows.mjs'
 
 const notFoundResource = /^Failed to load resource: the server responded with a status of 404/
 const unknownResource = /^Failed to load resource: the server responded with a status of (400|404)/
@@ -343,7 +344,7 @@ test('12. Move up in the Order tab PATCHes the group order and the page keeps th
   await openEditMode(t)
   await eventually(async () => await sourceAbove(page, texts.pageAOther) === true, 'The fixture order is wrong')
   await select(page, texts.pageAOther)
-  await page.getByRole('button', { name: 'Order', exact: true }).click()
+  await page.getByRole('tab', { name: 'Order', exact: true }).click()
   assert(await page.getByRole('switch', { name: 'Enable reordering' }).getAttribute('aria-checked') === 'false', 'Enable reordering is on')
   let release
   const held = new Promise((resolve) => {
@@ -380,10 +381,10 @@ test('13. removing a component from one location DELETEs its position without ?p
   const { page, settle } = t
   await openEditMode(t)
   await select(page, texts.source)
-  await page.getByRole('button', { name: 'Info', exact: true }).click()
-  await page.getByTestId('component-delete').getByRole('button', { name: 'Delete Live', exact: true }).click()
+  await page.getByRole('tab', { name: 'Info', exact: true }).click()
+  await page.getByTestId('component-delete').getByRole('button', { name: 'Delete', exact: true }).click()
   const dialog = dialogWith(page, 'Delete this component?')
-  await dialog.getByRole('button', { name: 'Remove from this location only', exact: true }).click()
+  await dialog.getByRole('button', { name: 'Remove from here', exact: true }).click()
   const del = await eventually(() => t.rehearsal.writes.find(w => w.method === 'DELETE'), 'Nothing was DELETEd')
   assert(del.path === t.seed.positions.aSource, `DELETEd ${del.path}`)
   await eventually(async () => (await page.getByText(texts.source, { exact: true }).count()) === 0, 'The removed instance is still on the page')
@@ -828,8 +829,8 @@ test('19. Escape on the shared delete dialog cancels it and Delete works again',
   const { page } = t
   await openEditMode(t)
   await select(page, texts.source)
-  await page.getByRole('button', { name: 'Info', exact: true }).click()
-  const deleteButton = page.getByTestId('component-delete').getByRole('button', { name: 'Delete Live', exact: true })
+  await page.getByRole('tab', { name: 'Info', exact: true }).click()
+  const deleteButton = page.getByTestId('component-delete').getByRole('button', { name: 'Delete', exact: true })
   await deleteButton.click()
   await dialogWith(page, 'Delete this component?').getByText('Delete this component?').waitFor()
   await page.keyboard.press('Escape')
@@ -840,15 +841,15 @@ test('19. Escape on the shared delete dialog cancels it and Delete works again',
   assert(!t.rehearsal.writes.some(w => w.method === 'DELETE'), 'Escape deleted something')
 })
 
-test('20. the shared delete dialog focuses Remove from this location only, so Enter removes just this one', async ({ cwa: t }) => {
+test('20. the shared delete dialog focuses Remove from here, so Enter removes just this one', async ({ cwa: t }) => {
   const { page } = t
   await openEditMode(t)
   await select(page, texts.source)
-  await page.getByRole('button', { name: 'Info', exact: true }).click()
-  await page.getByTestId('component-delete').getByRole('button', { name: 'Delete Live', exact: true }).click()
+  await page.getByRole('tab', { name: 'Info', exact: true }).click()
+  await page.getByTestId('component-delete').getByRole('button', { name: 'Delete', exact: true }).click()
   const dialog = dialogWith(page, 'Delete this component?')
-  const here = dialog.getByRole('button', { name: 'Remove from this location only', exact: true })
-  await eventually(() => here.evaluate(el => el === document.activeElement), 'Remove from this location only is not focused')
+  const here = dialog.getByRole('button', { name: 'Remove from here', exact: true })
+  await eventually(() => here.evaluate(el => el === document.activeElement), 'Remove from here is not focused')
   await page.keyboard.press('Enter')
   const del = await eventually(() => t.rehearsal.writes.find(w => w.method === 'DELETE'), 'Enter deleted nothing')
   assert(del.path === t.seed.positions.aSource, `Enter DELETEd ${del.path}`)
@@ -1116,7 +1117,7 @@ test.describe('presence', () => {
     const { page, seed } = t
     await openEditMode(t)
     const selected = await selectLayoutLink(t, 'Third')
-    await page.getByRole('button', { name: 'Label', exact: true }).click()
+    await page.getByRole('tab', { name: 'Label', exact: true }).click()
     const input = managerInput(page)
     await input.focus()
     const editing = await presenceSent(t, data => data.state === 'editing', 'No editing presence was sent on focus')
@@ -1153,7 +1154,7 @@ test.describe('presence', () => {
     const { page, seed } = t
     await openEditMode(t)
     const selected = await selectLayoutLink(t, 'Third')
-    await page.getByRole('button', { name: 'Label', exact: true }).click()
+    await page.getByRole('tab', { name: 'Label', exact: true }).click()
     await managerInput(page).waitFor()
     await eventually(() => t.rehearsal.mercureSubscriptions > 0, 'Mercure was never subscribed to')
     const peer = peerPresence(t, { key: '1', name: 'Pat Peer', page: seed.iris.pageA })
@@ -1577,11 +1578,12 @@ test.describe('in-page editing', () => {
     await page.getByRole('button', { name: 'Edit', exact: true }).click()
     await page.getByRole('button', { name: 'Done', exact: true }).waitFor()
     await page.getByText('Draft only text').first().waitFor()
-    const placeholder = page.getByTestId('edit-placeholder').filter({ hasText: 'Empty group' }).first()
+    const placeholder = page.getByRole('group', { name: 'Empty group' }).first()
     await placeholder.waitFor()
-    assert(await page.getByTestId('field-info-popover').count() === 0, 'The empty group shows its explanation before the info button is hovered')
-    await placeholder.getByTestId('field-info').hover()
-    await page.getByTestId('field-info-popover').filter({ hasText: 'Visitors see nothing here' }).waitFor()
+    assert((await placeholder.evaluate(element => element.innerText)).trim() === '', 'The empty group shows text')
+    assert(await page.getByTestId('edit-placeholder-tooltip').count() === 0, 'The empty group shows its explanation before the + is hovered')
+    await placeholder.getByRole('button', { name: 'Add component position' }).hover()
+    await page.getByTestId('edit-placeholder-tooltip').filter({ hasText: 'Visitors see nothing here' }).waitFor()
   })
 })
 
@@ -1597,7 +1599,7 @@ test('61. outside edit mode the header\'s Edit button and menu sit on the header
         const box = element.getBoundingClientRect()
         return box.top + box.height / 2
       }
-      const menu = [...document.querySelectorAll('a')].find(link => link.querySelector('.cwa\\:sr-only')?.textContent === 'Menu')
+      const menu = [...document.querySelectorAll('button')].find(button => button.querySelector('.cwa\\:sr-only')?.textContent === 'Menu')
       const header = menu.closest('.cwa\\:fixed')
       const box = header.getBoundingClientRect()
       return {
@@ -1629,7 +1631,7 @@ test('62. with live editing paused on a phone, the header\'s status is a glyph n
         const { left, right } = element.getBoundingClientRect()
         return { left, right }
       }
-      const menu = [...document.querySelectorAll('a')].find(link => link.querySelector('.cwa\\:sr-only')?.textContent === 'Menu')
+      const menu = [...document.querySelectorAll('button')].find(button => button.querySelector('.cwa\\:sr-only')?.textContent === 'Menu')
       return {
         edit: box([...document.querySelectorAll('button')].find(button => button.textContent.trim() === 'Edit')),
         status: box(document.querySelector('[data-testid="presence-paused"]')),
@@ -1651,7 +1653,7 @@ test('62. with live editing paused on a phone, the header\'s status is a glyph n
   }
 })
 
-test('63. the header\'s Edit or Done button and the page settings button or path selector beside it share one height and one centre, at 1280 and 390, with a fine or a coarse pointer, while live editing is paused', async ({ cwa: t }) => {
+test('63. the header\'s Edit or Done button and the page settings button or path selector beside it share one height and one centre, at 1280 and 390, with a fine or a coarse pointer, while live editing is paused, and the manager bar\'s tabs and their group are exactly as tall as its CTA buttons and the controls in its panel', async ({ cwa: t }) => {
   const { page, base, seed } = t
   const cookies = await page.context().cookies()
   for (const hasTouch of [false, true]) {
@@ -1691,7 +1693,143 @@ test('63. the header\'s Edit or Done button and the page settings button or path
       await tab.getByTestId('path-selector').waitFor()
       await settle()
       await measure('path-selector')
+      await tab.getByTestId('manager-pin').getByRole('button').first().waitFor()
+      await settle()
+      const bar = await tab.evaluate(() => {
+        const height = element => element.getBoundingClientRect().height
+        const pin = document.querySelector('[data-testid="manager-pin"]')
+        const tablist = document.querySelector('[data-testid="manager-bar"] [role="tablist"]')
+        const selected = tablist.querySelector('[role="tab"][aria-selected="true"]')
+        const after = getComputedStyle(selected, '::after')
+        const underlineBottom = selected.getBoundingClientRect().bottom - Number.parseFloat(after.bottom)
+        return {
+          total: height(document.querySelector('[data-testid="manager-bar"]')),
+          tabs: [...tablist.querySelectorAll('[role="tab"]')].map(height),
+          underline: { top: underlineBottom - Number.parseFloat(after.height), bottom: underlineBottom },
+          line: tablist.parentElement.getBoundingClientRect().bottom,
+          clip: tablist.getBoundingClientRect().bottom,
+          panel: [...document.querySelectorAll('[data-testid="manager-tab-panel"] :is(button, [role="combobox"], [data-testid="segmented"])')].filter(element => element.offsetParent && !element.closest('[data-testid="field-info"], [data-testid="segmented"] button, .cwa\\:sr-only')).map(element => ({ name: (element.getAttribute('aria-label') ?? element.textContent).trim().slice(0, 30), height: height(element) })),
+          ctas: [...pin.querySelectorAll('button')].filter(button => button.offsetParent && /Publish|More|actions|⋮/i.test(`${button.textContent} ${button.getAttribute('aria-label') ?? ''}`)).map(button => ({ name: (button.getAttribute('aria-label') ?? button.textContent).trim(), height: height(button) })),
+        }
+      })
+      const where = `At ${width}px with a ${hasTouch ? 'coarse' : 'fine'} pointer`
+      assert(bar.ctas.length >= 1, `${where} the bar shows ${bar.ctas.map(cta => cta.name).join(', ') || 'no'} CTA buttons`)
+      for (const cta of bar.ctas) {
+        for (const height of bar.tabs) {
+          assert(Math.abs(height - cta.height) <= 1, `${where} a tab is ${height}px tall and ${cta.name} ${cta.height}px`)
+        }
+        assert(!hasTouch || cta.height >= 44, `${where} ${cta.name} is ${cta.height}px tall, under the 44px hit size`)
+      }
+      assert(bar.panel.length >= 1, `${where} the bar's panel shows no controls`)
+      for (const control of bar.panel) {
+        assert(Math.abs(control.height - bar.ctas[0].height) <= 1, `${where} ${control.name} in the bar's panel is ${control.height}px tall and ${bar.ctas[0].name} ${bar.ctas[0].height}px`)
+      }
+      const rows = await tab.evaluate(controlRows, '[data-testid="manager-bar"]')
+      assert(rows.problems.length === 0, `${where} the bar's rows differ: ${rows.problems.join('; ')}`)
+      for (const height of bar.tabs) {
+        assert(!hasTouch || height >= 44, `${where} a tab is ${height}px tall, under the 44px hit size`)
+      }
+      assert(Math.abs(bar.underline.bottom - bar.line) <= 0.5, `${where} the selected tab's underline ends at ${bar.underline.bottom}, not on the bar's line at ${bar.line}`)
+      assert(bar.underline.bottom <= bar.clip + 0.5, `${where} the underline ends at ${bar.underline.bottom}, below the tab row it is clipped by at ${bar.clip}`)
+      assert(bar.total === (hasTouch ? 112 : 100), `${where} the bar is ${bar.total}px tall`)
       await context.close()
     }
+  }
+})
+
+test('64. by keyboard alone a rich-text component is reached with Tab, selected with Enter, its stack opened with Shift+F10, and F6 then the arrow keys reach its Publish tab', async ({ cwa: t }) => {
+  const { page } = t
+  await openEditMode(t)
+
+  let reached = false
+  for (let tabs = 0; tabs < 80 && !reached; tabs++) {
+    await page.keyboard.press('Tab')
+    reached = await page.evaluate(text => document.activeElement?.getAttribute('aria-label') === 'Body Text component' && !!document.activeElement.textContent?.includes(text), texts.source)
+  }
+  assert(reached, 'Tab never reached the Body Text component')
+
+  await page.keyboard.press('Shift+F10')
+  const stack = page.getByTestId('resource-stack')
+  await stack.waitFor()
+  await page.keyboard.press('Escape')
+  await stack.waitFor({ state: 'detached' })
+  await eventually(() => page.evaluate(() => document.activeElement?.getAttribute('aria-label') === 'Body Text component'), 'Focus did not come back to the component')
+
+  await page.keyboard.press('Enter')
+  await page.getByTestId('component-menu').waitFor()
+  await page.getByRole('textbox', { name: 'Content, Body Text' }).filter({ hasText: texts.source }).waitFor()
+
+  const tablist = page.getByRole('tablist', { name: 'Body Text settings' })
+  await tablist.getByRole('tab', { selected: true }).waitFor()
+  await page.keyboard.press('F6')
+  await eventually(() => tablist.evaluate(el => el.contains(document.activeElement)), 'F6 did not move focus to the manager bar\'s tabs')
+  for (let moves = 0; moves < 8 && (await page.evaluate(() => document.activeElement?.textContent?.trim())) !== 'Publish'; moves++) {
+    await page.keyboard.press('ArrowRight')
+  }
+  const publish = tablist.getByRole('tab', { name: 'Publish', exact: true })
+  await eventually(async () => (await publish.getAttribute('aria-selected')) === 'true', 'The arrow keys never selected Publish')
+  assert(await page.getByRole('tabpanel', { name: 'Publish' }).count() === 1, 'The shown tab is not a tabpanel named Publish')
+
+  await page.keyboard.press('Shift+F6')
+  await eventually(() => page.evaluate(() => document.activeElement?.getAttribute('aria-label') === 'Body Text component'), 'Shift+F6 did not return to the component')
+})
+
+test('65. a shared component with unpublished changes offers Remove from here, Discard unpublished changes and Delete from all 2 places, and Remove from here takes only this instance off the page (#461)', async ({ cwa: t }) => {
+  const { page, settle } = t
+  const draftText = 'Shared source component, unpublished'
+  const draft = await t.api.patch(t.seed.iris.source, { html: `<p>${draftText}</p>` })
+  t.api.track(draft['@id'])
+  await openEditMode(t)
+  await select(page, draftText)
+  await page.getByRole('tab', { name: 'Info', exact: true }).click()
+  await page.getByTestId('component-delete').getByRole('button', { name: 'Delete', exact: true }).click()
+  const dialog = dialogWith(page, 'Delete this component?')
+  await dialog.getByText('It is used in 2 places and has unpublished changes.').waitFor()
+  const labels = await dialog.getByRole('button').allInnerTexts()
+  assert(JSON.stringify(labels.map(label => label.trim())) === JSON.stringify(['Don\'t delete', 'Remove from here', 'Discard unpublished changes', 'Delete from all 2 places']), `The choices are ${JSON.stringify(labels)}`)
+  await dialog.getByRole('button', { name: 'Remove from here', exact: true }).click()
+  const del = await eventually(() => t.rehearsal.writes.find(w => w.method === 'DELETE'), 'Nothing was DELETEd')
+  assert(del.path === t.seed.positions.aSource, `DELETEd ${del.path}`)
+  await eventually(async () => (await page.getByText(draftText, { exact: true }).count()) === 0, 'The removed instance is still on the page')
+  await settle()
+  assert(t.rehearsal.writes.filter(w => w.method === 'DELETE').length === 1, `DELETEd ${JSON.stringify(t.rehearsal.writes.filter(w => w.method === 'DELETE').map(w => w.path))}`)
+  assert(await t.api.status(t.seed.iris.source) === 200, 'The live component was deleted')
+  assert(await t.api.status(draft['@id']) === 200, 'The draft was deleted')
+})
+
+test('66. at 390 wide the UI tab\'s row shows its fade and scrolls by keyboard, and focusing the Style select brings all of it into the row, with a fine or a coarse pointer', async ({ cwa: t }) => {
+  const { page, base, seed } = t
+  const cookies = await page.context().cookies()
+  for (const hasTouch of [false, true]) {
+    const context = await page.context().browser().newContext({ ignoreHTTPSErrors: true, viewport: { width: 390, height: 844 }, hasTouch })
+    await context.addCookies(cookies)
+    const tab = await context.newPage()
+    await tab.route(`**${mercurePath}**`, route => route.abort())
+    await tab.goto(`${base}${seed.paths.home}`)
+    await tab.getByRole('button', { name: 'Edit', exact: true }).waitFor()
+    await tab.waitForLoadState('networkidle')
+    await tab.getByRole('button', { name: 'Edit', exact: true }).click()
+    await tab.getByRole('button', { name: 'Done', exact: true }).waitFor()
+    await tab.getByText(texts.source, { exact: true }).first().click()
+    await tab.getByRole('tab', { name: 'UI', exact: true }).click()
+    const style = tab.getByTestId('manager-tab-panel').getByRole('combobox', { name: 'Style', exact: true })
+    await style.waitFor()
+    await tab.waitForLoadState('networkidle')
+    const fit = await style.evaluate((input) => {
+      const field = input.parentElement
+      let scroller = field.parentElement
+      while (scroller && getComputedStyle(scroller).overflowX !== 'auto') {
+        scroller = scroller.parentElement
+      }
+      const cue = { overflows: scroller.scrollWidth > scroller.clientWidth + 1, fade: scroller.parentElement.dataset.overflowEnd === 'true', tabindex: scroller.getAttribute('tabindex') }
+      scroller.scrollLeft = 0
+      input.focus()
+      const box = field.getBoundingClientRect()
+      const view = scroller.getBoundingClientRect()
+      return { ...cue, left: Math.round(box.left), right: Math.round(box.right), viewLeft: Math.round(view.left), viewRight: Math.round(view.right), page: document.documentElement.clientWidth, scrollWidth: document.documentElement.scrollWidth }
+    })
+    assert(!fit.overflows || (fit.fade && fit.tabindex === '0'), `With a ${hasTouch ? 'coarse' : 'fine'} pointer the row overflows with no fade or keyboard scroll: ${JSON.stringify(fit)}`)
+    assert(fit.left >= fit.viewLeft - 1 && fit.right <= fit.viewRight + 1 && fit.right <= fit.page, `With a ${hasTouch ? 'coarse' : 'fine'} pointer the Style select is cut off: ${JSON.stringify(fit)}`)
+    await context.close()
   }
 })

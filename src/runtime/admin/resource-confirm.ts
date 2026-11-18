@@ -6,6 +6,14 @@ import { realtimeView } from '#cwa/resources/realtime-view'
 
 export interface ConfirmChoiceOptions extends CwaConfirmOptions {
   extra?: string
+  alternative?: string
+}
+
+const discardDraft: CwaConfirmOptions = {
+  title: 'Discard the unpublished changes?',
+  description: 'The live version stays as it is.',
+  keep: 'Keep changes',
+  go: 'Discard changes',
 }
 
 const confirmations: Record<'delete' | 'discard', CwaConfirmOptions> = {
@@ -35,19 +43,21 @@ export async function editingNotice($cwa: Cwa, iri: string) {
   return `${names.slice(0, -1).join(', ')} and ${names.at(-1)} are editing this.`
 }
 
-export async function confirmChoice(app: App, options: ConfirmChoiceOptions): Promise<'go' | 'extra' | undefined> {
+export async function confirmChoice(app: App, options: ConfirmChoiceOptions): Promise<'go' | 'extra' | 'alternative' | undefined> {
   const { default: Confirm } = await import('#cwa/templates/components/core/ui/Confirm.vue')
   const dialog = await createConfirmDialog(app, Confirm)
   const { isCanceled, data } = await dialog.reveal({ ...options })
   if (isCanceled) {
     return
   }
-  return data === 'extra' ? 'extra' : 'go'
+  return data === 'extra' || data === 'alternative' ? data : 'go'
 }
 
 export async function confirmResourceAction(app: App, action: keyof typeof confirmations | CwaConfirmOptions, iri?: string) {
   const $cwa = iri ? app.config.globalProperties.$cwa as Cwa | undefined : undefined
   const notice = iri && $cwa ? await editingNotice($cwa, iri) : undefined
-  const options = typeof action === 'string' ? confirmations[action] : action
+  const data = action === 'delete' && iri ? $cwa?.resources?.getResource(iri).value?.data : undefined
+  const isDraftOfLive = data?._metadata?.publishable?.published === false && !!data.publishedResource
+  const options = isDraftOfLive ? discardDraft : typeof action === 'string' ? confirmations[action] : action
   return !!await confirmChoice(app, notice ? { ...options, lines: [{ text: notice }, ...(options.lines ?? [])] } : options)
 }

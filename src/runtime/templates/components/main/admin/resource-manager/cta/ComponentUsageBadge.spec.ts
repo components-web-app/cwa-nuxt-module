@@ -2,6 +2,9 @@
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import { computed, defineComponent, reactive } from 'vue'
 import { flushPromises, mount } from '@vue/test-utils'
+import { drawsOpenState } from '../../../../../../../../test/utils/kit-css'
+import { drawsFocusRing } from '../../../../../../../../test/utils/focus-ring'
+import { axe } from '../../../../../../../../test/utils/axe'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import ComponentUsageBadge from './ComponentUsageBadge.vue'
 import { navigateTo } from '#app/composables/router'
@@ -92,7 +95,10 @@ async function routerEditingOn(path: string) {
 }
 
 function fullText(badge: { element: Element }) {
-  return [...badge.element.childNodes].filter(node => !(node instanceof Element && node.getAttribute('aria-hidden') === 'true')).map(node => node.textContent).join('').trim()
+  const text = (node: Node): string => node instanceof Element
+    ? node.getAttribute('aria-hidden') === 'true' ? '' : [...node.childNodes].map(text).join('')
+    : node.textContent ?? ''
+  return text(badge.element).trim()
 }
 
 describe('ComponentUsageBadge', () => {
@@ -207,6 +213,28 @@ describe('ComponentUsageBadge', () => {
       expect(badge.element.tagName).toBe('BUTTON')
       expect(fullText(badge)).toBe('Shared · 2 places')
       expect(list).not.toBeNull()
+    })
+
+    test('as a button, the badge is the control height the CTA beside it shares, with its pill drawn inside, and draws its focus ring', async () => {
+      const { wrapper } = await openList({ total: 2, locations: [location({ renderedOn: [page('/_/pages/a', 'Home', '/')], renderedOnCount: 1 }), location({ renderedOn: [page('/_/pages/b', 'About', '/about')], renderedOnCount: 1 })] })
+      const badge = wrapper.get('[data-testid="component-usage-badge"]')
+      expect(badge.classes()).toEqual(expect.arrayContaining(['cwa:h-control', 'cwa:pointer-coarse:h-hit', 'cwa:inline-flex', 'cwa:items-center']))
+      expect(badge.classes()).not.toContain('cwa:rounded-full')
+      expect(badge.get('[data-testid="component-usage-pill"]').classes()).toEqual(expect.arrayContaining(['cwa:rounded-full', 'cwa:border']))
+      expect(drawsFocusRing(badge.classes())).toBe(true)
+      wrapper.unmount()
+    })
+
+    test('the badge shows itself selected while its list is open, and not once it closes, with no axe violations open', async () => {
+      const { wrapper } = await openList({ total: 2, locations: [location({ renderedOn: [page('/_/pages/a', 'Home', '/')], renderedOnCount: 1 }), location({ renderedOn: [page('/_/pages/b', 'About', '/about')], renderedOnCount: 1 })] })
+      const badge = wrapper.get('[data-testid="component-usage-badge"]')
+      expect(drawsOpenState(badge.element)).toBe(true)
+      expect(await axe(document.body, { rules: { region: { enabled: false } } })).toHaveNoViolations()
+
+      await badge.trigger('click')
+      await flushPromises()
+      expect(drawsOpenState(badge.element)).toBe(false)
+      wrapper.unmount()
     })
 
     test('lists the places in the order the API returns them, without re-sorting', async () => {

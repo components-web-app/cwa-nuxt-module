@@ -26,11 +26,14 @@
       label="Empty group"
       info="Add the component to populate this component group."
     >
-      <LazyHotSpot
-        screen-reader-action="Add component position"
-        :iri="iri"
-        disabled
-      />
+      <template #default="cue">
+        <LazyHotSpot
+          screen-reader-action="Add component position"
+          :aria-describedby="cue?.describedBy"
+          :iri="iri"
+          disabled
+        />
+      </template>
     </EditPlaceholder>
     <!--cwa-end-->
   </template>
@@ -49,11 +52,14 @@
       label="Empty group"
       info="Visitors see nothing here until a component is added. Use + to add one."
     >
-      <LazyHotSpot
-        screen-reader-action="Add component position"
-        :iri="iri"
-        :disabled="!iri || $cwa.admin.resourceStackManager.isComponentGroupDisabled(iri, resolvedLocation)"
-      />
+      <template #default="cue">
+        <LazyHotSpot
+          screen-reader-action="Add component position"
+          :aria-describedby="cue?.describedBy"
+          :iri="iri"
+          :disabled="!iri || $cwa.admin.resourceStackManager.isComponentGroupDisabled(iri, resolvedLocation)"
+        />
+      </template>
     </EditPlaceholder>
     <!--cwa-end-->
   </template>

@@ -3,6 +3,7 @@ import { afterEach, describe, expect, test, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { h } from 'vue'
 import { axe } from '../../../../../test/utils/axe'
+import { drawsOpenState, trimsToLetters } from '../../../../../test/utils/kit-css'
 import Button from './Button.vue'
 import Spinner from './Spinner.vue'
 import { announceKey } from '../core/ui/field-keys'
@@ -61,12 +62,20 @@ describe('CwaUiButton (#456)', () => {
     expect(withIcon.text()).toBe('Page')
   })
 
-  test('small is 2rem tall in the helper type, and still a full tap target on touch', () => {
+  test('small is the helper type with less padding, at the control height every single-line field shares, so it matches the fields beside it', () => {
     const wrapper = mount(Button, { props: { label: 'Undo', size: 'sm' } })
 
-    expect(wrapper.classes()).toEqual(expect.arrayContaining(['cwa:h-8', 'cwa:pointer-coarse:h-hit', 'cwa:px-3', 'cwa:text-helper']))
-    expect(wrapper.classes()).not.toContain('cwa:h-control')
+    expect(wrapper.classes()).toEqual(expect.arrayContaining(['cwa:h-control', 'cwa:pointer-coarse:h-hit', 'cwa:px-3', 'cwa:text-helper']))
+    expect(wrapper.classes()).not.toContain('cwa:h-8')
     expect(wrapper.classes()).not.toContain('cwa:text-label')
+  })
+
+  test('a small split button\'s ⋮ is as tall as its main action, at the control height', () => {
+    const wrapper = mount(Button, { props: { label: 'Publish now', size: 'sm', options: [{ group: null, items: [{ label: 'Schedule', value: 'schedule' }] }] } })
+    const [main, more] = wrapper.findAll('button')
+    expect(main!.classes()).toContain('cwa:h-control')
+    expect(more!.classes()).toEqual(expect.arrayContaining(['cwa:size-control', 'cwa:pointer-coarse:size-hit']))
+    expect(more!.classes()).not.toContain('cwa:size-8')
   })
 
   test('icon-only is a square named by its label, which is not shown', () => {
@@ -201,6 +210,7 @@ describe('CwaUiButton (#456)', () => {
     expect(popover?.getAttribute('aria-label')).toBe('Why Add is unavailable')
     expect([...popover!.classList]).toEqual(expect.arrayContaining(['cwa:bg-surface-menu', 'cwa:text-fg', 'cwa:leading-normal', 'cwa:ring-1', 'cwa:ring-line']))
     expect(popover!.querySelector('svg')!.getAttribute('class')).toContain('cwa:stroke-line')
+    expect(trimsToLetters(popover!.querySelector('p')!)).toBe(true)
     expect(announce).toHaveBeenCalledWith('This group already holds its 3 components')
     expect(clicked).not.toHaveBeenCalled()
     expect(document.activeElement).toBe(wrapper.element)
@@ -293,6 +303,22 @@ describe('CwaUiButton (#456)', () => {
       document.querySelector<HTMLElement>('[data-testid="menu-clone"]')!.click()
       await flushPromises()
       expect(onSelect).toHaveBeenCalledWith(expect.objectContaining({ value: 'clone' }))
+    })
+
+    test('the ⋮ shows itself selected while its menu is open, and not once it closes, with no axe violations open', async () => {
+      const wrapper = mount(Button, { props: { label: 'Publish now', options }, attachTo: document.body })
+      const more = wrapper.get('[data-testid="button-options"]')
+      expect(drawsOpenState(more.element)).toBe(false)
+
+      await more.trigger('keydown', { key: 'Enter' })
+      await flushPromises()
+      expect(drawsOpenState(more.element)).toBe(true)
+      expect(await axe(document.body, { rules: { region: { enabled: false } } })).toHaveNoViolations()
+
+      document.querySelector<HTMLElement>('[data-testid="menu-clone"]')!.click()
+      await flushPromises()
+      expect(drawsOpenState(more.element)).toBe(false)
+      wrapper.unmount()
     })
 
     test('with no main action only the ⋮ is shown, and it is held while loading', () => {

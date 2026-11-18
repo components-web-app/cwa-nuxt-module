@@ -52,9 +52,6 @@ export default class ResourceStackManager {
   private readonly previousResourceStack: ShallowRef<ResourceStackItem[]> = shallowRef([])
   private readonly lastContextTarget: Ref<EventTarget | null> = ref(null)
   private readonly contextResourceStack: ShallowRef<ResourceStackItem[]> = shallowRef([])
-  private readonly keptStack: ShallowRef<ResourceStackItem[]> = shallowRef([])
-  private readonly keptIndex: Ref<number> = ref(0)
-  private keptSelection: ResourceStackItem[] | undefined
   private readonly cachedCurrentStackItem = shallowRef<undefined | ResourceStackItem>()
   private readonly resourceManagerState = ref({} as Record<string, any>)
   private readonly yOffset = 100
@@ -76,8 +73,6 @@ export default class ResourceStackManager {
     watch(this.currentIri, this.listenCurrentIri.bind(this))
     watch(this.currentStackItem, this.handleCurrentStackItemChange.bind(this))
     watch(this.showManager, newValue => !newValue && this.removeFocusComponent())
-    watch(this.showManager, newValue => !newValue && this.dropKeptStack(), { flush: 'sync' })
-    watch(() => this.resources.displayPageIri?.value, () => this.dropKeptStack())
   }
 
   private async handleCurrentStackItemChange(currentStackItem: ResourceStackItem | undefined) {
@@ -109,31 +104,6 @@ export default class ResourceStackManager {
     return computed(() => {
       return this.currentClickTarget.value ? [] : this.currentResourceStack.value
     })
-  }
-
-  /** @internal */
-  public get pathStack() {
-    return computed(() => {
-      const selected = this.resourceStack.value
-      if (selected.length && selected === this.keptSelection) {
-        return { stack: this.keptStack.value, index: this.keptIndex.value }
-      }
-      return { stack: selected, index: 0 }
-    })
-  }
-
-  private dropKeptStack() {
-    this.keptSelection = undefined
-    this.keptStack.value = []
-    this.keptIndex.value = 0
-  }
-
-  private keepStack(stack: ResourceStackItem[], index: number) {
-    const selected = stack.slice(index)
-    this.keptStack.value = stack
-    this.keptIndex.value = index
-    this.keptSelection = selected
-    this.currentResourceStack.value = selected
   }
 
   public get isPopulating() {
@@ -210,9 +180,9 @@ export default class ResourceStackManager {
     this.currentResourceStack.value = this.previousResourceStack.value
   }
 
-  private async confirmStackChange(toLayout: boolean, fromContext?: boolean, swap = !fromContext) {
+  private async confirmStackChange(toLayout: boolean, fromContext?: boolean) {
     let cachedNewStack: ResourceStackItem[] | undefined
-    if (swap) {
+    if (!fromContext) {
       cachedNewStack = this.currentResourceStack.value
       this.currentResourceStack.value = this.previousResourceStack.value
     }
@@ -238,14 +208,12 @@ export default class ResourceStackManager {
     if (!this.isEditing) {
       return
     }
-    const isKept = !fromContext && !!this.keptSelection && this.currentResourceStack.value === this.keptSelection
-    const fromStack = fromContext ? this.contextResourceStack.value : isKept ? this.keptStack.value : this.currentResourceStack.value
-    const currentLength = fromStack.length
+    const fromStack = fromContext ? this.contextResourceStack : this.currentResourceStack
+    const currentLength = fromStack.value.length
 
     if (!currentLength) {
       this.isLayoutStack.value = this._isEditingLayout.value
       this.showManager.value = false
-      this.dropKeptStack()
       return
     }
     if (index < 0 || index > currentLength - 1) {
@@ -255,7 +223,7 @@ export default class ResourceStackManager {
 
     // todo: switching to edit the layout from the Dev should also be able to trigger this notice...
     if (this._isEditingLayout.value !== this.isLayoutStack.value) {
-      const confirmed = await this.confirmStackChange(this.isLayoutStack.value, fromContext, !fromContext && !isKept)
+      const confirmed = await this.confirmStackChange(this.isLayoutStack.value, fromContext)
       if (!confirmed) {
         this.isLayoutStack.value = this._isEditingLayout.value
         return
@@ -263,7 +231,7 @@ export default class ResourceStackManager {
       this._isEditingLayout.value = this.isLayoutStack.value
     }
 
-    this.keepStack(fromStack, index)
+    this.currentResourceStack.value = fromStack.value.slice(index)
     this.showManager.value = true
     if (fromContext) {
       this.resetStack(true)

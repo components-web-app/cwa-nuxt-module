@@ -51,6 +51,7 @@ import KitLabs from '../kit/KitLabs.vue'
 import KitImageAlt from '../kit/KitImageAlt.vue'
 import { useKitWorkbench } from '../kit/workbench-state'
 import KitPractice from '../kit/KitPractice.vue'
+import KitRevealSim from '../kit/KitRevealSim.vue'
 import { useKitTab } from '../kit/kit-tab'
 
 definePageMeta({
@@ -100,6 +101,17 @@ const toastButtons = [
   { key: 'error', label: 'Error with actions' },
   { key: 'errors', label: 'Several errors' },
 ] as const
+const sixToasts: CwaToastOptions[] = [
+  { id: 'kit-six-1', tone: 'error', title: 'Title wasn’t saved', description: 'Hero section on Kitchens.', actions: [{ label: 'Retry', primary: true, onClick: noop }] },
+  { id: 'kit-six-2', tone: 'error', title: 'Oops! There was a problem.', description: 'The page list could not load.' },
+  { id: 'kit-six-3', tone: 'warning', title: 'Mercure reconnected', description: '3 components on this page changed while you were away.' },
+  { id: 'kit-six-4', tone: 'error', title: 'Image wasn’t uploaded', description: 'The file is larger than 20 MB.' },
+  { id: 'kit-six-5', tone: 'success', title: 'Published', description: 'Intro text on Bathrooms.' },
+  { id: 'kit-six-6', tone: 'error', title: 'Route wasn’t saved', description: '/kitchens is already used by another page.' },
+]
+function raiseSix() {
+  sixToasts.forEach(sample => toast.show(sample))
+}
 const staticToasts = [toastSamples.success, toastSamples.warning, toastSamples.errors]
 
 const fieldStatuses: FakeStatus[] = ['idle', 'pending', 'saving', 'saved', 'error', 'conflict']
@@ -190,6 +202,7 @@ const uploadSamples = [
   { status: 'error' as const, upload: fakeUpload({ name: 'workshop-bench.jpg', size: '240 KB', url: kitImage, mimeType: 'image/jpeg' }, 'error') },
 ]
 const plainText = ref('')
+const passwordText = ref('kitchens')
 const nullableText = ref<string | null>('Can be emptied')
 const plainToggle = ref(false)
 const position = ref(2)
@@ -225,11 +238,18 @@ const stackAt = ref<HTMLElement | { x: number, y: number }>()
 const stackChoice = ref('')
 const stackKey = ref(0)
 const stackByKeyboard = ref(false)
+const stackSelected = ref('0')
+const stackSelectedOptions = [
+  { value: '0', label: 'Innermost' },
+  { value: '1', label: 'Second' },
+  { value: '4', label: 'Outermost shown' },
+]
 
 function openStackOver(event: MouseEvent) {
   stackKey.value++
   stackByKeyboard.value = event.detail === 0
-  stackAt.value = event.currentTarget as HTMLElement
+  const button = event.currentTarget as HTMLElement
+  stackAt.value = button.querySelector<HTMLElement>('span:not([aria-hidden])') ?? button
 }
 
 function openStackAtPointer(event: MouseEvent) {
@@ -582,6 +602,14 @@ const badgeTones = [
               label="Disabled"
               disabled
             />
+            <CwaUiInput
+              v-model="passwordText"
+              label="Password, revealable"
+              type="password"
+              autocomplete="new-password"
+              revealable
+              data-testid="kit-input-revealable"
+            />
           </div>
         </div>
         <h3>Toggle</h3>
@@ -710,7 +738,7 @@ const badgeTones = [
         </div>
         <h3>MultiSelect</h3>
         <p class="kit-note">
-          In the bar it shows the first choice as a chip and +N. Type to filter; Backspace in an empty search marks the last chip and a second Backspace removes it.
+          In the bar it shows the first choice as a chip and +N. Open, an "N selected" count stays before the search and chosen options come first, ticked. Type to filter; Backspace in an empty search marks the last chip and a second Backspace removes it.
         </p>
         <div class="kit-stack">
           <div class="kit-row">
@@ -835,17 +863,19 @@ const badgeTones = [
           The Alt chip edits the image's alt text; the dot shows while it is missing. Image slots put one labelled image per slot in one row.
         </p>
         <div class="kit-stack">
-          <div class="kit-row">
-            <CwaUiImageAlt
-              label="With alt"
-              :upload="uploadSamples[0]!.upload"
-              :alt="altPresent"
-            />
-            <CwaUiImageAlt
-              label="Alt missing"
-              :upload="uploadSamples[0]!.upload"
-              :alt="altMissing"
-            />
+          <div class="kit-bar">
+            <CwaUiManagerTab>
+              <CwaUiImageAlt
+                label="With alt"
+                :upload="uploadSamples[0]!.upload"
+                :alt="altPresent"
+              />
+              <CwaUiImageAlt
+                label="Alt missing"
+                :upload="uploadSamples[0]!.upload"
+                :alt="altMissing"
+              />
+            </CwaUiManagerTab>
           </div>
           <div class="kit-bar">
             <CwaUiManagerTab>
@@ -900,7 +930,7 @@ const badgeTones = [
         </div>
         <h3>EditPlaceholder</h3>
         <p class="kit-note">
-          Shown only in edit mode, for an empty component, position or group, so there is something to select. Why it is empty is behind the ⓘ: hover, focus or tap it.
+          Shown only in edit mode, for an empty component, position or group, so there is something to select. It shows no text: its name is for screen readers, and why it is empty shows as a tooltip on hovering or focusing the cue inside it (the +), which it also describes.
         </p>
         <div class="kit-row">
           <CwaUiEditPlaceholder
@@ -912,10 +942,13 @@ const badgeTones = [
             info="Visitors see nothing here until a component is added. Use + to add one."
             class="kit-placeholder"
           >
-            <CwaUiButton
-              label="Add"
-              size="sm"
-            />
+            <template #default="{ describedBy }">
+              <CwaUiButton
+                label="Add"
+                size="sm"
+                :aria-describedby="describedBy"
+              />
+            </template>
           </CwaUiEditPlaceholder>
         </div>
         <h3>LinkPopover</h3>
@@ -926,6 +959,8 @@ const badgeTones = [
           <CwaUiButton
             label="Link"
             size="sm"
+            aria-haspopup="dialog"
+            :aria-expanded="linkOpen ? 'true' : 'false'"
             @click="openLink"
           />
         </div>
@@ -1022,15 +1057,21 @@ const badgeTones = [
             </div>
             <CwaUiButton
               label="Rich text"
-              size="sm"
+              data-testid="kit-stack-open"
               @click="openStackOver"
+            />
+            <CwaUiSegmented
+              v-model="stackSelected"
+              label="Selected"
+              :options="stackSelectedOptions"
+              data-testid="kit-stack-selected"
             />
           </div>
           <ResourceStack
             v-if="stackAt"
             :key="stackKey"
             :levels="stackLevels"
-            selected="0"
+            :selected="stackSelected"
             :at="stackAt"
             :keyboard="stackByKeyboard"
             :select="chooseStackLevel"
@@ -1171,6 +1212,16 @@ const badgeTones = [
         </div>
       </section>
 
+      <section aria-labelledby="kit-reveal">
+        <h2 id="kit-reveal">
+          Revealed content
+        </h2>
+        <p class="kit-note">
+          <code>CwaReveal</code> wraps content a choice shows. When the admin's choice reveals it outside the scrolling area, the area scrolls by the least amount that brings it into view, clear of sticky rows. Nothing moves when it is already in view, on opening, or when data shows it. Focus stays on the control. Try: open the slide-over, scroll to the top, and choose Nested under: Page data.
+        </p>
+        <KitRevealSim />
+      </section>
+
       <section aria-labelledby="kit-confirm">
         <h2 id="kit-confirm">
           Confirm
@@ -1281,7 +1332,7 @@ const badgeTones = [
           Toasts
         </h2>
         <p class="kit-note">
-          Raised with <code>useCwaToast()</code>. Success and info go after 4 seconds, warnings after 6; errors and toasts with actions stay until dismissed. At most 3 show, the newest on top; the rest wait and show when room frees up. Raising the same toast again changes nothing; the stack turns see-through while it entirely hides the focused element.
+          Raised with <code>useCwaToast()</code>. Success and info go after 4 seconds, warnings after 6; errors and toasts with actions stay until dismissed. At most 3 show, the oldest on top; the rest wait behind “+N more”, which shows them all in a stack that scrolls within the window, beside Dismiss all, and show when room frees up. Escape or a click away puts the list back to 3. Raising the same toast again changes nothing; the stack turns see-through while it entirely hides the focused element.
         </p>
         <div
           class="kit-row"
@@ -1293,6 +1344,12 @@ const badgeTones = [
             :label="button.label"
             size="sm"
             @click="toast.show(toastSamples[button.key])"
+          />
+          <CwaUiButton
+            label="Six at once"
+            size="sm"
+            data-testid="kit-toast-six"
+            @click="raiseSix"
           />
         </div>
         <h3>Samples</h3>
@@ -1470,6 +1527,14 @@ code {
   flex-wrap: wrap;
   align-items: center;
   gap: 0.75rem;
+}
+
+@media (max-width: 40rem) {
+  .kit-row > * {
+    flex-shrink: 1;
+    flex-wrap: wrap;
+    max-width: 100%;
+  }
 }
 
 .kit-sample {

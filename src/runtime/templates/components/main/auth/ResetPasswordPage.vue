@@ -19,6 +19,7 @@
         label="Enter new password"
         name="firstPassword"
         type="password"
+        revealable
         autocomplete="new-password"
         :invalid="passwordError"
         required
@@ -28,6 +29,7 @@
         label="Repeat new password"
         name="secondPassword"
         type="password"
+        revealable
         autocomplete="new-password"
         required
       />

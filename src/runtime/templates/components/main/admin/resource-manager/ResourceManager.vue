@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, onMounted, provide, ref, shallowRef, toRaw, useTemplateRef, watch } from 'vue'
+import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, onMounted, provide, ref, shallowRef, toRaw, toValue, useId, useTemplateRef, watch } from 'vue'
 import type { ComponentPublicInstance } from 'vue'
 import { consola } from 'consola'
 import ResourceLoadingIndicator
@@ -36,6 +36,8 @@ const spacer = useTemplateRef<HTMLElement | null>('spacer')
 const managerHolder = useTemplateRef<HTMLElement | null>('managerHolder')
 const allTabsMeta = ref<CwaResourceManagerTabOptions[]>([])
 const selectedIndex = ref(0)
+const tabsId = useId()
+const tabsLabel = computed(() => currentStackItem.value?.displayName ? `${currentStackItem.value.displayName} settings` : 'Settings')
 const isOpen = ref(false)
 const contextPoint = shallowRef<{ x: number, y: number, key: number }>()
 let contextKey = 0
@@ -224,9 +226,25 @@ watch(currentStackItem, (newCurrent, oldCurrent) => {
 
 let stopLongPress: (() => void) | undefined
 
+function onPaneKey(e: KeyboardEvent) {
+  if (e.key !== 'F6' || e.defaultPrevented || e.altKey || e.metaKey || e.ctrlKey || !$cwa.admin.isEditing || !currentStackItem.value) {
+    return
+  }
+  const inBar = !!managerHolder.value?.contains(document.activeElement)
+  const target = inBar
+    ? toValue(currentStackItem.value.domElements)?.find(el => el.hasAttribute('tabindex'))
+    : document.getElementById(`${tabsId}-tab-${selectedIndex.value}`)
+  if (!target) {
+    return
+  }
+  e.preventDefault()
+  target.focus()
+}
+
 onMounted(() => {
   window.addEventListener('mousedown', mousedownHandler)
   window.addEventListener('resize', $cwa.admin.emitRedraw, false)
+  document.addEventListener('keydown', onPaneKey)
   watch(() => $cwa.admin.isEditing, (editing) => {
     stopLongPress?.()
     stopLongPress = editing ? listenForLongPress(document) : undefined
@@ -235,6 +253,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', $cwa.admin.emitRedraw)
+  document.removeEventListener('keydown', onPaneKey)
   stopLongPress?.()
   stopLongPress = undefined
 })
@@ -256,14 +275,14 @@ defineExpose({
   <Transition v-bind="slideUp">
     <div
       v-if="$cwa.admin.resourceStackManager.showManager.value"
-      class="cwa:@container cwa:fixed cwa:bottom-0 cwa:z-manager cwa:w-full cwa:bg-surface cwa:text-fg cwa:shadow-[0_-8px_24px_rgb(0_0_0/0.18)] cwa:pointer-coarse:[--cwa-spacing-manager-tabs:2.75rem] cwa:pointer-coarse:[--cwa-spacing-manager-row:4.25rem] cwa:pointer-coarse:[--cwa-spacing-manager:7rem]"
+      class="cwa:@container cwa:fixed cwa:bottom-0 cwa:z-manager cwa:w-full cwa:bg-surface cwa:text-fg cwa:shadow-[0_-8px_24px_rgb(0_0_0/0.18)] cwa:pointer-coarse:[--cwa-spacing-manager:7rem]"
       data-testid="manager-bar"
       @click.stop
     >
       <div
         v-if="allTabsMeta.length"
         ref="managerHolder"
-        class="cwa:relative cwa:grid cwa:min-h-manager cwa:grid-cols-[minmax(0,1fr)_auto] cwa:grid-rows-[var(--cwa-spacing-manager-tabs)_minmax(var(--cwa-spacing-manager-row),auto)]"
+        class="cwa:relative cwa:grid cwa:min-h-manager cwa:grid-cols-[minmax(0,1fr)_auto] cwa:grid-rows-[var(--cwa-spacing-manager-tabs)_minmax(var(--cwa-spacing-manager-row),auto)] cwa:[--cwa-spacing-manager-tabs:calc(var(--cwa-spacing-control)+2*var(--cwa-spacing-cta-inset)+1px)] cwa:pointer-coarse:[--cwa-spacing-manager-tabs:calc(var(--cwa-spacing-hit)+1px)] cwa:[--cwa-spacing-manager-row:calc(var(--cwa-spacing-manager)-var(--cwa-spacing-manager-tabs))] cwa:pointer-coarse:[--cwa-spacing-cta-inset:0px] cwa:@max-[40rem]:[--cwa-spacing-cta-inset:0px]"
       >
         <ResourceLoadingIndicator
           class="cwa:absolute cwa:bottom-full cwa:left-0 cwa:z-notifications"
@@ -272,13 +291,16 @@ defineExpose({
         <div class="cwa:min-w-0 cwa:shadow-[inset_0_-1px_0_var(--cwa-color-line)]">
           <ManagerTabs
             ref="managerTabs"
+            class="cwa:box-border cwa:pt-cta-inset cwa:pb-[calc(var(--cwa-spacing-cta-inset)+1px)]"
             :tabs="allTabsMeta"
             :field-states="currentFieldStates"
+            :id-prefix="tabsId"
+            :label="tabsLabel"
             @click="selectTab"
           />
         </div>
         <div
-          class="cwa:flex cwa:h-manager-tabs cwa:items-center cwa:gap-cta-inset cwa:pt-cta-inset cwa:pr-cta-inset cwa:pb-[calc(var(--cwa-spacing-cta-inset)+1px)] cwa:pl-[calc(1px+var(--cwa-spacing-cta-inset))] cwa:shadow-[inset_1px_0_0_var(--cwa-color-line),inset_0_-1px_0_var(--cwa-color-line)] cwa:pointer-coarse:[--cwa-spacing-cta-inset:0px] cwa:@max-[40rem]:[--cwa-spacing-cta-inset:0px]"
+          class="cwa:flex cwa:h-manager-tabs cwa:items-center cwa:gap-cta-inset cwa:pt-cta-inset cwa:pr-cta-inset cwa:pb-[calc(var(--cwa-spacing-cta-inset)+1px)] cwa:pl-[calc(1px+var(--cwa-spacing-cta-inset))] cwa:shadow-[inset_1px_0_0_var(--cwa-color-line),inset_0_-1px_0_var(--cwa-color-line)]"
           data-testid="manager-pin"
         >
           <BarSummary
@@ -289,7 +311,11 @@ defineExpose({
           <ResourceManagerCtaButton />
         </div>
         <div
+          :id="`${tabsId}-panel`"
           ref="tabHolder"
+          role="tabpanel"
+          :aria-labelledby="`${tabsId}-tab-${selectedIndex}`"
+          data-testid="manager-tab-panel"
           class="cwa:col-span-2 cwa:grid cwa:min-w-0"
         >
           <component

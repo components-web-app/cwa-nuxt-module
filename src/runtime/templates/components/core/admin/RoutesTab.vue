@@ -152,6 +152,7 @@ import { computed, inject, nextTick, onBeforeUnmount, ref, useTemplateRef, watch
 import slugify from 'slugify'
 import type { CwaResource } from '#cwa/resources/resource-utils'
 import { useItemPage } from '#cwa-layer/_composables/useItemPage'
+import { normaliseRoutePath, routePathProblem } from '#cwa/resources/route-path'
 import { routePublicationFromResource } from '#cwa/resources/route-publication'
 import { useCwa, navigateTo, useRoute } from '#imports'
 import CwaUiSubView from '#cwa/templates/components/ui/SubView.vue'
@@ -170,7 +171,7 @@ import { useCwaConfirm } from '#cwa/composables/cwa-confirm'
 import { useCwaResourceRoute } from '#cwa/composables/useCwaResourceRoute'
 import { CwaResourceApiStatuses } from '#cwa/storage/stores/resources/state'
 
-const OLD_ADDRESS = /^\/\S*$/
+const OLD_ADDRESS = /^\//
 const NOT_SAVED = 'The server couldn\'t save it. Nothing changed, and what you typed is still here.'
 const NOT_DELETED = 'The server couldn\'t delete it. Nothing changed.'
 const DETAILS_AT_ONCE = 6
@@ -418,6 +419,10 @@ const routeDisabledReason = computed(() => {
   if (!localResourceData.value?.path) {
     return 'Type a path first.'
   }
+  const pathProblem = routePathProblem(localResourceData.value.path)
+  if (pathProblem) {
+    return pathProblem
+  }
   if (awaitingDate.value) {
     return 'Choose when the route goes live.'
   }
@@ -451,7 +456,7 @@ const subFooter = computed<DialogSubFooter | 'none' | undefined>(() => {
     return { saveLabel: 'Redirect', saving: submitting.value, disabledReason: forwardDisabledReason.value, cancel: cancelForm, save: handleSetForwardTo }
   }
   if (sub.value === 'from' && formOpen.value) {
-    return { saveLabel: 'Add', saving: submitting.value, disabledReason: newRedirect.value.trim() ? undefined : 'Type an old address first.', cancel: cancelForm, save: handleCreateRedirect }
+    return { saveLabel: 'Add', saving: submitting.value, disabledReason: newRedirect.value.trim() ? routePathProblem(newRedirect.value) : 'Type an old address first.', cancel: cancelForm, save: handleCreateRedirect }
   }
   return 'none'
 })
@@ -554,9 +559,9 @@ async function handleCreateRedirect() {
   if (!target || busy.value) {
     return
   }
-  const path = newRedirect.value.trim()
+  const path = normaliseRoutePath(newRedirect.value)
   if (!OLD_ADDRESS.test(path)) {
-    redirectError.value = 'Start with / and leave out spaces, for example /old-kitchens.'
+    redirectError.value = 'Start with /, for example /old-kitchens.'
     focusInSub('input')
     return
   }
@@ -787,6 +792,7 @@ const { isLoading: isLoadingRoute, isUpdating, resource, localResourceData, load
   iri: routeIriFromPage,
   excludeFields: ['redirectedFrom', 'redirect'],
   dismissStoredErrors: true,
+  openCreated: false,
 })
 
 const routePublication = computed(() => routePublicationFromResource(resource.value))

@@ -33,6 +33,10 @@ function toastEl(w: VueWrapper, id: string) {
   return w.get(`[data-toast-id="${id}"]`)
 }
 
+function more(w: VueWrapper) {
+  return w.get('[data-testid="toaster-more"]')
+}
+
 function live(w: VueWrapper) {
   return w.get('[data-testid="toaster-live"]')
 }
@@ -77,25 +81,33 @@ describe('Toaster (#457)', () => {
     ]))
   })
 
-  test('the newest toast is on top, and at most 3 are shown: a fourth hides the oldest without closing it, and it shows again when room frees up', async () => {
+  test('the oldest toast is on top, and at most 3 show: a fourth waits behind "+1 more" without closing anything, and shows when room frees up', async () => {
     const { wrapper, api } = mountToaster()
     const onClose = vi.fn()
-    await show(api, { tone: 'error', title: 'One', onClose })
+    await show(api, { id: 'one', tone: 'error', title: 'One', onClose })
     await show(api, { tone: 'error', title: 'Two' })
     await show(api, { tone: 'error', title: 'Three' })
-    expect(titles(wrapper)).toEqual(['Three', 'Two', 'One'])
+    expect(titles(wrapper)).toEqual(['One', 'Two', 'Three'])
+    expect(wrapper.find('[data-testid="toaster-more"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="toaster-dismiss-all"]').exists()).toBe(false)
 
-    await show(api, { id: 'four', tone: 'error', title: 'Four' })
-    expect(titles(wrapper)).toEqual(['Four', 'Three', 'Two'])
+    await show(api, { tone: 'error', title: 'Four' })
+    expect(titles(wrapper)).toEqual(['One', 'Two', 'Three'])
+    expect(more(wrapper).text()).toBe('+1 more')
+    expect(more(wrapper).attributes('aria-label')).toBe('Show 1 more notification')
+    expect(more(wrapper).attributes('aria-expanded')).toBe('false')
     expect(onClose).not.toHaveBeenCalled()
 
-    api.dismiss('four')
+    await show(api, { tone: 'error', title: 'Five' })
+    expect(more(wrapper).attributes('aria-label')).toBe('Show 2 more notifications')
+
+    api.dismiss('one')
     await nextTick()
-    expect(titles(wrapper)).toEqual(['Three', 'Two', 'One'])
-    expect(onClose).not.toHaveBeenCalled()
+    expect(titles(wrapper)).toEqual(['Two', 'Three', 'Four'])
+    expect(onClose).toHaveBeenCalledTimes(1)
   })
 
-  test('a persistent toast hidden by the cap is never dropped, however many toasts pass while it waits', async () => {
+  test('a persistent toast is never dropped, however many toasts pass after it', async () => {
     const { wrapper, api } = mountToaster()
     const onClose = vi.fn()
     await show(api, { tone: 'error', title: 'Failed', onClose })
@@ -103,63 +115,161 @@ describe('Toaster (#457)', () => {
     for (const title of ['A', 'B', 'C', 'D', 'E']) {
       await show(api, { tone: 'success', title })
     }
-    expect(titles(wrapper)).toEqual(['E', 'D', 'C'])
+    expect(titles(wrapper)).toEqual(['Failed', 'Kept', 'A'])
 
     await vi.advanceTimersByTimeAsync(4000)
-    expect(titles(wrapper)).toEqual(['Kept', 'Failed'])
+    expect(titles(wrapper)).toEqual(['Failed', 'Kept'])
     expect(onClose).not.toHaveBeenCalled()
+    expect(wrapper.find('[data-testid="toaster-more"]').exists()).toBe(false)
   })
 
-  test('a transient toast hidden by the cap still goes after its time, and is closed then', async () => {
+  test('a transient toast waiting behind the cap still goes after its time, and is closed then', async () => {
     const { wrapper, api } = mountToaster()
     const onClose = vi.fn()
-    await show(api, { id: 'saved', tone: 'success', title: 'Saved', onClose })
     await show(api, { id: 'a', tone: 'error', title: 'A' })
     await show(api, { id: 'b', tone: 'error', title: 'B' })
     await show(api, { id: 'c', tone: 'error', title: 'C' })
-    expect(titles(wrapper)).toEqual(['C', 'B', 'A'])
+    await show(api, { id: 'saved', tone: 'success', title: 'Saved', onClose })
+    expect(titles(wrapper)).toEqual(['A', 'B', 'C'])
 
     await vi.advanceTimersByTimeAsync(3999)
     expect(onClose).not.toHaveBeenCalled()
     await vi.advanceTimersByTimeAsync(1)
     expect(onClose).toHaveBeenCalledTimes(1)
-
-    api.dismiss('c')
     await nextTick()
-    expect(titles(wrapper)).toEqual(['B', 'A'])
+    expect(wrapper.find('[data-testid="toaster-more"]').exists()).toBe(false)
+
+    api.dismiss('a')
+    await nextTick()
+    expect(titles(wrapper)).toEqual(['B', 'C'])
   })
 
-  test('a held toast hidden by the cap gets its full time again', async () => {
+  test('"+N more" expands the list in place: every toast shows, in a stack that scrolls within the viewport, and it reads "Show fewer"', async () => {
     const { wrapper, api } = mountToaster()
-    await show(api, { id: 'saved', tone: 'success', title: 'Saved' })
-    await toastEl(wrapper, 'saved').trigger('mouseenter')
-    await vi.advanceTimersByTimeAsync(10_000)
-    await show(api, { id: 'a', tone: 'error', title: 'A' })
-    await show(api, { id: 'b', tone: 'error', title: 'B' })
-    await show(api, { id: 'c', tone: 'error', title: 'C' })
+    for (const title of ['A', 'B', 'C', 'D', 'E', 'F']) {
+      await show(api, { tone: 'error', title })
+    }
+    await more(wrapper).trigger('click')
+    expect(titles(wrapper)).toEqual(['A', 'B', 'C', 'D', 'E', 'F'])
+    expect(more(wrapper).attributes('aria-expanded')).toBe('true')
+    expect(more(wrapper).attributes('aria-label')).toBe('Show fewer notifications')
+    expect(more(wrapper).attributes('aria-controls')).toBe(wrapper.get('[data-testid="toaster-list"]').attributes('id'))
+    expect(wrapper.get('[data-testid="toaster-list"]').classes()).toEqual(expect.arrayContaining(['cwa:overflow-y-auto', 'cwa:pointer-events-auto']))
+    expect(wrapper.get('[data-testid="toaster-list"]').classes().some(c => c.startsWith('cwa:max-h-[calc(100dvh'))).toBe(true)
 
-    await vi.advanceTimersByTimeAsync(3999)
-    api.dismiss('c')
-    await nextTick()
-    expect(titles(wrapper)).toEqual(['B', 'A', 'Saved'])
-    await vi.advanceTimersByTimeAsync(1)
-    expect(titles(wrapper)).toEqual(['B', 'A'])
+    await more(wrapper).trigger('click')
+    expect(titles(wrapper)).toEqual(['A', 'B', 'C'])
+    expect(wrapper.get('[data-testid="toaster-list"]').classes()).not.toContain('cwa:overflow-y-auto')
   })
 
-  test('a toast the cap hides while focus is inside it returns focus first', async () => {
+  test('expanded, it collapses once only 3 or fewer are left', async () => {
+    const { wrapper, api } = mountToaster()
+    for (const id of ['a', 'b', 'c', 'd']) {
+      await show(api, { id, tone: 'error', title: id })
+    }
+    await more(wrapper).trigger('click')
+    expect(titles(wrapper)).toHaveLength(4)
+    api.dismiss('b')
+    await nextTick()
+    await show(api, { id: 'e', tone: 'error', title: 'e' })
+    await show(api, { id: 'f', tone: 'error', title: 'f' })
+    expect(titles(wrapper)).toEqual(['a', 'c', 'd'])
+    expect(more(wrapper).attributes('aria-expanded')).toBe('false')
+  })
+
+  test('expanded, Escape or a click away collapses it, and a click inside does not', async () => {
+    const { wrapper, api } = mountToaster()
+    for (const title of ['A', 'B', 'C', 'D']) {
+      await show(api, { tone: 'error', title })
+    }
+    await more(wrapper).trigger('click')
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    await nextTick()
+    expect(titles(wrapper)).toHaveLength(3)
+
+    await more(wrapper).trigger('click')
+    wrapper.get('[data-testid="toast-title"]').element.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+    await nextTick()
+    expect(titles(wrapper)).toHaveLength(4)
+    document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+    await nextTick()
+    expect(titles(wrapper)).toHaveLength(3)
+  })
+
+  test('collapsing while focus is in a toast it hides returns focus first, and a held toast it hides gets its full time again', async () => {
     const { wrapper, api } = mountToaster()
     const field = document.createElement('input')
     document.body.appendChild(field)
-    await show(api, { id: 'a', tone: 'error', title: 'A' })
-    const dismiss = toastEl(wrapper, 'a').get('button[aria-label="Dismiss"]')
+    for (const id of ['a', 'b', 'c']) {
+      await show(api, { id, tone: 'error', title: id })
+    }
+    await show(api, { id: 'held', tone: 'success', title: 'Held' })
+    await show(api, { id: 'focused', tone: 'error', title: 'Focused' })
+    await more(wrapper).trigger('click')
+    await toastEl(wrapper, 'held').trigger('mouseenter')
+    await vi.advanceTimersByTimeAsync(10_000)
+    const dismiss = toastEl(wrapper, 'focused').get('button[aria-label="Dismiss"]')
     ;(dismiss.element as HTMLElement).focus()
-    await toastEl(wrapper, 'a').trigger('focusin', { relatedTarget: field })
+    await toastEl(wrapper, 'focused').trigger('focusin', { relatedTarget: field })
 
-    await show(api, { tone: 'error', title: 'B' })
-    await show(api, { tone: 'error', title: 'C' })
-    await show(api, { tone: 'error', title: 'D' })
-    expect(titles(wrapper)).toEqual(['D', 'C', 'B'])
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    await nextTick()
     expect(document.activeElement).toBe(field)
+    await vi.advanceTimersByTimeAsync(3999)
+    await more(wrapper).trigger('click')
+    expect(titles(wrapper)).toContain('Held')
+    await vi.advanceTimersByTimeAsync(1)
+    expect(titles(wrapper)).not.toContain('Held')
+  })
+
+  test('Dismiss all closes every toast, shown or waiting, running each one\'s onClose once, and returns focus to where it came from', async () => {
+    const { wrapper, api } = mountToaster()
+    const field = document.createElement('input')
+    document.body.appendChild(field)
+    const closes = ['a', 'b', 'c', 'd', 'e'].map(() => vi.fn())
+    for (const [index, onClose] of closes.entries()) {
+      await show(api, { id: String(index), tone: 'error', title: String(index), onClose })
+    }
+    const all = wrapper.get('[data-testid="toaster-dismiss-all"]')
+    expect(all.element.tagName).toBe('BUTTON')
+    expect(all.text()).toBe('Dismiss all')
+    expect(all.attributes('aria-label')).toBe('Dismiss all 5 notifications')
+    field.focus()
+    ;(all.element as HTMLElement).focus()
+    all.element.dispatchEvent(new FocusEvent('focusin', { bubbles: true, relatedTarget: field }))
+    await all.trigger('click')
+    await nextTick()
+
+    expect(titles(wrapper)).toEqual([])
+    for (const onClose of closes) {
+      expect(onClose).toHaveBeenCalledTimes(1)
+    }
+    expect(document.activeElement).toBe(field)
+    expect(wrapper.find('[data-testid="toaster-dismiss-all"]').exists()).toBe(false)
+  })
+
+  test('Dismiss all with nowhere to return to leaves focus on the region, never on the body', async () => {
+    const { wrapper, api } = mountToaster()
+    for (const title of ['A', 'B', 'C', 'D']) {
+      await show(api, { tone: 'error', title })
+    }
+    const all = wrapper.get('[data-testid="toaster-dismiss-all"]')
+    ;(all.element as HTMLElement).focus()
+    await all.trigger('click')
+    await nextTick()
+    expect(document.activeElement).toBe(wrapper.get('[data-testid="toaster"]').element)
+  })
+
+  test('the overflow row has no axe violations, collapsed and expanded', async () => {
+    const { wrapper, api } = mountToaster()
+    vi.useRealTimers()
+    for (const title of ['A', 'B', 'C', 'D', 'E', 'F']) {
+      api.show({ tone: 'error', title })
+    }
+    await nextTick()
+    expect(await axe(document.body)).toHaveNoViolations()
+    await more(wrapper).trigger('click')
+    expect(await axe(document.body)).toHaveNoViolations()
   })
 
   test('an unchanged upsert neither rebuilds the toast, announces it again nor restarts its time, but its newest callbacks are used', async () => {
@@ -208,7 +318,7 @@ describe('Toaster (#457)', () => {
     await vi.advanceTimersByTimeAsync(50)
 
     expect(toastEl(wrapper, 'a').element).toBe(element)
-    expect(titles(wrapper)).toEqual(['Other', 'Still saving'])
+    expect(titles(wrapper)).toEqual(['Still saving', 'Other'])
     expect(live(wrapper).text()).toBe('Still saving. Slow connection')
     await vi.advanceTimersByTimeAsync(5900)
     expect(wrapper.find('[data-toast-id="a"]').exists()).toBe(true)

@@ -418,7 +418,6 @@ describe('the add component dialog (#461)', () => {
       expect(q<HTMLImageElement>('[data-testid="add-component-image"]')!.getAttribute('src')).toBe('/hero.webp')
       expect(q<HTMLImageElement>('[data-testid="add-component-image"]')!.alt).toBe('Preview of Hero section')
       expect(shown(q('[data-testid="add-component-description"]'))).toBe('Title, subtitle and image')
-      expect(shown(q('[data-testid="add-component-adding-to"]'))).toBe('Adding to Main content, after “Intro text”')
       expect(document.activeElement).toBe(add())
       expect(q('[data-testid="sub-view-main"]')!.hidden).toBe(true)
       expect(announcer()).toBe('Hero section. Adding to Main content, after “Intro text”.')
@@ -434,7 +433,65 @@ describe('the add component dialog (#461)', () => {
       expect(q('[data-testid="add-component-description"]')).toBeNull()
       expect(q('[data-testid="add-component-ui"]')).toBeNull()
       expect(q('[data-testid="add-component-style"]')).toBeNull()
-      expect(shown(q('[data-testid="add-component-adding-to"]'))).toBe('Adding to Main content, after “Intro text”')
+    })
+
+    test('where it adds is behind an ⓘ beside the name, not a line in the detail, and is still announced', async () => {
+      await mountDialog()
+      await openDialog()
+
+      await choose('Hero')
+
+      expect(shown(q('[data-testid="add-component-detail"]'))).not.toContain('Adding to')
+      const info = q('[data-testid="sub-view-header"] [data-testid="field-info"]')!
+      expect(info.getAttribute('aria-label')).toBe('Where it is added')
+      expect(document.querySelector('[data-testid="field-info-popover"]')).toBeNull()
+
+      info.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, pointerType: 'mouse' }))
+      info.click()
+      await flushPromises()
+
+      const popover = document.querySelector<HTMLElement>('[data-testid="field-info-popover"]')!
+      expect(popover.getAttribute('aria-label')).toBe('Where it is added')
+      expect(shown(popover.querySelector('p'))).toBe('Adding to Main content, after “Intro text”')
+      expect(popover.querySelector('p b')!.textContent).toBe('Main content')
+      expect(announcer()).toBe('Hero section. Adding to Main content, after “Intro text”.')
+      expect(await axe(document.body)).toHaveNoViolations()
+    })
+
+    test('shows the icon the list row shows beside its name, hidden from assistive technology', async () => {
+      cwaState.cwa.store[GROUP].data.componentPositions = []
+      await mountDialog()
+      await openDialog()
+      const rowIcon = qa('[role="option"]').find(option => option.dataset.value === 'HtmlContent')!.querySelector('[data-lead]')!.innerHTML
+
+      await choose('HtmlContent')
+
+      const lead = q('[data-testid="sub-view-header"] [data-testid="add-component-detail-lead"]')!
+      expect(lead.dataset.lead).toBe('icon')
+      expect(lead.innerHTML).toBe(rowIcon)
+      expect(lead.querySelector('[data-icon="letter-text"]')).not.toBeNull()
+      expect(lead.getAttribute('aria-hidden')).toBe('true')
+    })
+
+    test('a component with a preview image shows that image, not a second icon in the header', async () => {
+      await mountDialog()
+      await openDialog()
+
+      await choose('Hero')
+
+      expect(q('[data-testid="add-component-image"]')!.getAttribute('src')).toBe('/hero.webp')
+      expect(q('[data-testid="add-component-detail-lead"]')).toBeNull()
+    })
+
+    test('a component with no configured icon shows none in the header, nothing inferred', async () => {
+      await mountDialog()
+      await openDialog()
+
+      expect(qa('[role="option"]').find(option => option.dataset.value === 'Spacer')!.querySelector('[data-lead="icon"]')).not.toBeNull()
+
+      await choose('Spacer')
+
+      expect(q('[data-testid="sub-view-header"] [data-lead]')).toBeNull()
     })
 
     test('Enter on the highlighted row opens it', async () => {
@@ -677,19 +734,30 @@ describe('the add component dialog (#461)', () => {
   })
 
   describe('Add before a component is chosen', () => {
-    test('is not natively disabled, says why, and activating it announces the reason and adds nothing', async () => {
+    test('is not in the footer on the list, shows on the detail and goes again after Back', async () => {
       await mountDialog()
       await openDialog()
 
-      expect(add().disabled).toBe(false)
-      expect(add().getAttribute('aria-disabled')).toBe('true')
-      expect(document.getElementById(add().getAttribute('aria-describedby')!)!.textContent).toBe('Choose a component first.')
-      expect(qa('footer button').map(shown)).toEqual(['Cancel', 'Add'])
+      expect(q('[data-testid="add-component-add"]')).toBeNull()
+      expect(qa('footer button').map(shown)).toEqual(['Cancel'])
 
-      add().click()
+      await choose('Spacer')
+
+      expect(qa('footer button').map(shown)).toEqual(['Cancel', 'Add'])
+      expect(document.activeElement).toBe(add())
+
+      await key(add(), 'Escape')
+
+      expect(q('[data-testid="sub-view"]')).toBeNull()
+      expect(q('[data-testid="add-component-add"]')).toBeNull()
+      expect(dialog()).not.toBeNull()
+      expect(document.activeElement).toBe(search())
+
+      await choose('Spacer')
+      q<HTMLButtonElement>('[data-testid="sub-view-back"]')!.click()
       await flushPromises()
 
-      expect(announcer()).toBe('Choose a component first.')
+      expect(q('[data-testid="add-component-add"]')).toBeNull()
       expect(cwaState.cwa.resourcesManager.setAddResourceEventResource).not.toHaveBeenCalled()
     })
 
@@ -719,7 +787,7 @@ describe('the add component dialog (#461)', () => {
       const field = q('[data-testid="add-component-field"] [data-testid="select-trigger"]')!
       expect(field.getAttribute('aria-disabled')).toBe('true')
       expect(field.hasAttribute('disabled')).toBe(false)
-      expect(field.className).toContain('cwa:opacity-50')
+      expect(field.className).toContain('cwa:text-fg-disabled')
       expect(q('[data-testid="add-component-field"] [data-testid="field-info"]')).not.toBeNull()
       expect(field.getAttribute('aria-describedby')!.split(' ').map(id => document.getElementById(id)?.textContent).join(' ')).toContain('Choose a data type first.')
       expect(document.activeElement).toBe(q('[data-testid="add-component-data-type"] [data-testid="select-trigger"]'))

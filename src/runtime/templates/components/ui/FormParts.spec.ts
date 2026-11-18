@@ -60,18 +60,53 @@ describe('CwaUiTextarea (#461)', () => {
     expect(await axe(document.body)).toHaveNoViolations()
   })
 
-  test('in the manager bar it renders nothing and says why in development', () => {
-    const error = vi.spyOn(consola, 'error').mockImplementation(() => {})
+  test('in a manager tab it renders nothing and warns once in development, naming the inline editor for multi-line text', () => {
+    const warn = vi.spyOn(consola, 'warn').mockImplementation(() => {})
     const wrapper = mount(defineComponent({
+      setup() {
+        provide(managerTabKey, { iri: ref('/component/x'), register: () => {} })
+        return () => [h(Textarea, { label: 'Notes', modelValue: 'x' }), h(Textarea, { label: 'Intro', modelValue: 'y' })]
+      },
+    }))
+
+    expect(wrapper.find('textarea').exists()).toBe(false)
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('useCwaInlineEditor'))
+    warn.mockRestore()
+  })
+
+  test.each([
+    ['on a page, with no manager tab', false, false],
+    ['in a dialog', false, true],
+    ['in a dialog opened from a manager tab', true, true],
+  ])('%s it renders and never warns', (_, inTab, onSurface) => {
+    const warn = vi.spyOn(consola, 'warn').mockImplementation(() => {})
+    const wrapper = mount(defineComponent({
+      setup() {
+        inTab && provide(managerTabKey, { iri: ref('/component/x'), register: () => {} })
+        onSurface && provide(formSurfaceKey, { unsaved: () => false, register: () => () => {} })
+        return () => h(Textarea, { label: 'Notes', modelValue: 'x' })
+      },
+    }))
+
+    expect(wrapper.find('textarea').exists()).toBe(true)
+    expect(warn).not.toHaveBeenCalled()
+    warn.mockRestore()
+  })
+
+  test('outside development it never warns', () => {
+    vi.stubEnv('DEV', false)
+    const warn = vi.spyOn(consola, 'warn').mockImplementation(() => {})
+    mount(defineComponent({
       setup() {
         provide(managerTabKey, { iri: ref('/component/x'), register: () => {} })
         return () => h(Textarea, { label: 'Notes', modelValue: 'x' })
       },
     }))
 
-    expect(wrapper.find('textarea').exists()).toBe(false)
-    expect(error).toHaveBeenCalledWith(expect.stringContaining('CwaUiTextarea is for modals and pages'))
-    error.mockRestore()
+    expect(warn).not.toHaveBeenCalled()
+    warn.mockRestore()
+    vi.unstubAllEnvs()
   })
 
   test('draws its focus ring when focused from the keyboard', () => {

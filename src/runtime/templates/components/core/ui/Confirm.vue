@@ -14,18 +14,19 @@ import { fieldBox, fieldFill } from './field-looks'
 import { typedCanStillMatch, typedMatches } from '#cwa/composables/cwa-confirm'
 import type { CwaConfirmLine, CwaConfirmTyped } from '#cwa/composables/cwa-confirm'
 
-const { title, description, lines = [], keep = 'Keep editing', extra, go, tone = 'danger', typed } = defineProps<{
+const { title, description, lines = [], keep = 'Keep editing', extra, alternative, go, tone = 'danger', typed } = defineProps<{
   title: string
   description?: string
   lines?: CwaConfirmLine[]
   keep?: string
   extra?: string
+  alternative?: string
   go: string
   tone?: 'danger' | 'accent'
   typed?: CwaConfirmTyped
 }>()
 
-const emit = defineEmits<{ confirm: [choice: 'go' | 'extra'], cancel: [] }>()
+const emit = defineEmits<{ confirm: [choice: 'go' | 'extra' | 'alternative'], cancel: [] }>()
 
 const open = ref(true)
 const text = ref('')
@@ -53,7 +54,7 @@ watch(matches, (now) => {
   announcement.value = now ? `Matches. ${go} is on.` : `${go} is off.`
 })
 
-function answer(choice: 'go' | 'extra' | 'cancel') {
+function answer(choice: 'go' | 'extra' | 'alternative' | 'cancel') {
   if (answered.value) {
     return
   }
@@ -183,7 +184,7 @@ function onEnter() {
         </div>
         <div
           class="cwa:mt-5 cwa:grid cwa:gap-actions cwa:sm:flex cwa:sm:flex-wrap cwa:sm:justify-end"
-          :class="extra ? 'cwa:grid-cols-1' : 'cwa:grid-cols-2'"
+          :class="extra || alternative ? 'cwa:grid-cols-1' : 'cwa:grid-cols-2'"
         >
           <CwaUiButton
             ref="keepButton"
@@ -197,6 +198,12 @@ function onEnter() {
             :label="extra"
             data-testid="confirm-extra"
             @click="answer('extra')"
+          />
+          <CwaUiButton
+            v-if="alternative"
+            :label="alternative"
+            data-testid="confirm-alternative"
+            @click="answer('alternative')"
           />
           <CwaUiButton
             :label="go"

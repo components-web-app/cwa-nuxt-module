@@ -5,12 +5,14 @@ import { mount, flushPromises } from '@vue/test-utils'
 import { useItemPage } from './useItemPage'
 import * as cwaComposable from '#cwa/composables/cwa'
 
+const push = vi.hoisted(() => vi.fn())
+
 vi.mock('vue-router', async (importOriginal) => {
   const mod = await importOriginal<typeof import('vue-router')>()
   return {
     ...mod,
     useRoute: () => ({ name: '_cwa-layouts-iri', params: {}, query: {}, hash: '' }),
-    useRouter: () => ({ push: vi.fn() }),
+    useRouter: () => ({ push }),
   }
 })
 
@@ -523,7 +525,7 @@ describe('useItemPage creating (#461)', () => {
     vi.clearAllMocks()
   })
 
-  function setupAdding(defaults: () => Record<string, any>, ops: { dismissStoredErrors?: boolean } = {}) {
+  function setupAdding(defaults: () => Record<string, any>, ops: { dismissStoredErrors?: boolean, openCreated?: boolean } = {}) {
     const createResource = vi.fn()
     const errors = reactive<any[]>([])
     const removeError = vi.fn((timestamp: number) => {
@@ -548,6 +550,7 @@ describe('useItemPage creating (#461)', () => {
           endpoint: ref('add'),
           excludeFields: ['componentGroups'],
           dismissStoredErrors: ops.dismissStoredErrors,
+          openCreated: ops.openCreated,
         })
         return () => null
       },
@@ -562,6 +565,21 @@ describe('useItemPage creating (#461)', () => {
     }
     return { itemPage, createResource, emit, errors, removeError, refuseWith }
   }
+
+  test('after Create the item page opens the new resource, unless it is a part of another resource\'s dialog, such as a route added in page data\'s Routes tab, which stays on that page data (#461)', async () => {
+    push.mockClear()
+    const opened = setupAdding(() => ({ reference: 'New' }))
+    opened.createResource.mockResolvedValueOnce({ '@id': '/_/pages/new' })
+    await opened.itemPage.saveResource()
+    expect(push).toHaveBeenCalledWith(expect.objectContaining({ params: { iri: '/_/pages/new' } }))
+
+    push.mockClear()
+    const part = setupAdding(() => ({ path: '/new' }), { openCreated: false })
+    part.createResource.mockResolvedValueOnce({ '@id': '/_/routes//new' })
+    expect(await part.itemPage.saveResource()).toEqual({ '@id': '/_/routes//new' })
+    expect(push).not.toHaveBeenCalled()
+    expect(part.emit).toHaveBeenCalledWith('reload')
+  })
 
   test('a new resource counts the fields that differ from its defaults and the pre-selected layout, so closing it asks first', async () => {
     const layouts = ref<string[]>([])
