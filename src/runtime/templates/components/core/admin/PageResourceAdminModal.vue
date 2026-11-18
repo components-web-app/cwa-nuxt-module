@@ -451,6 +451,7 @@ const { isAdding, isLoading, loadFailed, isUpdating, localResourceData, resource
   routeHashAfterAdd: computed(() => (localResourceData.value?.isTemplate ? '#details' : '#routes')),
   excludeFields: ['componentGroups'],
   dismissStoredErrors: true,
+  savedTitle: () => `${createNoun.value.charAt(0).toUpperCase()}${createNoun.value.slice(1)} saved`,
 })
 
 const createNoun = computed(() => isDisplayingPage.value ? 'page' : pageDataNoun(props.resourceType))

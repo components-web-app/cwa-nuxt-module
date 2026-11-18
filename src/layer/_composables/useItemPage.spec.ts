@@ -6,6 +6,11 @@ import { useItemPage } from './useItemPage'
 import * as cwaComposable from '#cwa/composables/cwa'
 
 const push = vi.hoisted(() => vi.fn())
+const showToast = vi.hoisted(() => vi.fn())
+
+vi.mock('#cwa/composables/cwa-toast', () => ({
+  useCwaToast: () => ({ show: showToast, dismiss: vi.fn() }),
+}))
 
 vi.mock('vue-router', async (importOriginal) => {
   const mod = await importOriginal<typeof import('vue-router')>()
@@ -18,7 +23,7 @@ vi.mock('vue-router', async (importOriginal) => {
 
 const layoutIri = '/_/layouts/layout-uuid'
 
-function setup(stored: Record<string, any>, ops: { excludeFields?: string[], resourceType?: string | null, dismissStoredErrors?: boolean, validate?: (data: any) => boolean | Record<string, string> | undefined } = {}) {
+function setup(stored: Record<string, any>, ops: { excludeFields?: string[], resourceType?: string | null, dismissStoredErrors?: boolean, validate?: (data: any) => boolean | Record<string, string> | undefined, savedTitle?: () => string } = {}) {
   const store = reactive<Record<string, any>>({
     [layoutIri]: { data: stored, apiState: { status: 'SUCCESS' } },
   })
@@ -52,6 +57,7 @@ function setup(stored: Record<string, any>, ops: { excludeFields?: string[], res
         excludeFields: ops.excludeFields,
         dismissStoredErrors: ops.dismissStoredErrors,
         validate: ops.validate,
+        savedTitle: ops.savedTitle,
       })
       return () => null
     },
@@ -439,6 +445,36 @@ describe('useItemPage Save model (#461)', () => {
 
     expect(itemPage.form.fieldErrors).toEqual({})
     expect(itemPage.form.savedAt).toEqual(expect.any(Number))
+  })
+
+  test('a slide-over that names its save closes on a successful save and says so in a success toast, and stays open with no toast when the save fails', async () => {
+    const { itemPage, emit, failWith } = setup({ ...layout }, { savedTitle: () => 'Layout saved' })
+    await flushPromises()
+    itemPage.localResourceData.value!.reference = 'Other'
+    await flushPromises()
+    failWith(500)
+
+    await itemPage.saveResource()
+
+    expect(emit).not.toHaveBeenCalledWith('close')
+    expect(showToast).not.toHaveBeenCalled()
+
+    await itemPage.saveResource()
+
+    expect(emit).toHaveBeenCalledWith('close')
+    expect(showToast).toHaveBeenCalledExactlyOnceWith({ tone: 'success', title: 'Layout saved' })
+  })
+
+  test('without a save name, a successful save leaves the dialog open and raises no toast', async () => {
+    const { itemPage, emit } = setup({ ...layout })
+    await flushPromises()
+    itemPage.localResourceData.value!.reference = 'Other'
+    await flushPromises()
+
+    await itemPage.saveResource()
+
+    expect(emit).not.toHaveBeenCalledWith('close')
+    expect(showToast).not.toHaveBeenCalled()
   })
 
   test('a 412 marks each sent field another editor changed as a conflict, stores their newer version and keeps mine', async () => {

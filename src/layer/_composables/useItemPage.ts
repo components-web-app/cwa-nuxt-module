@@ -7,6 +7,7 @@ import isEqual from 'lodash-es/isEqual'
 import { useCwaResourceRoute } from '#cwa/composables/useCwaResourceRoute'
 import type { CwaResource } from '#cwa/resources/resource-utils'
 import { useCwa } from '#cwa/composables/cwa'
+import { useCwaToast } from '#cwa/composables/cwa-toast'
 import type { ApiResourceEvent } from '#cwa/resources/resources-manager'
 import type { ResourceModelField, RemoteFieldChange } from '#cwa/resources/model-editors'
 import type { CwaFieldState } from '#cwa/storage/stores/resources/state'
@@ -35,10 +36,12 @@ type UseItemOps = {
   excludeFields?: string[]
   dismissStoredErrors?: boolean
   openCreated?: boolean
+  savedTitle?: () => string
 }
 
-export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoint, validate, endpoint: userDefinedEndpoint, routeHashAfterAdd, iri, excludeFields, dismissStoredErrors, openCreated = true }: UseItemOps) => {
+export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoint, validate, endpoint: userDefinedEndpoint, routeHashAfterAdd, iri, excludeFields, dismissStoredErrors, openCreated = true, savedTitle }: UseItemOps) => {
   const $cwa = useCwa()
+  const toast = useCwaToast()
   const router = useRouter()
   const route = useRoute()
 
@@ -229,7 +232,10 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
         }
         localResourceData.value = local as CwaResource
       }
-      if (close && updatedResource) {
+      if (updatedResource && savedTitle) {
+        toast.show({ tone: 'success', title: savedTitle() })
+      }
+      if (updatedResource && (close || savedTitle)) {
         emit('close')
       }
       return updatedResource

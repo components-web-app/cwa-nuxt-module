@@ -245,6 +245,12 @@ describe('Layout admin dialog (#461)', () => {
     expect(options.defaultResource()).toEqual({ reference: null, uiComponent: resolvableLayoutName })
   })
 
+  test('a save closes the slide-over with a Layout saved toast', () => {
+    setup()
+
+    expect(mockUseItemPage.mock.calls[0]![0].savedTitle()).toBe('Layout saved')
+  })
+
   test('the delete section says how many pages use the layout', () => {
     const { wrapper } = setup({ pages: ['/_/pages/1', '/_/pages/2'] })
 

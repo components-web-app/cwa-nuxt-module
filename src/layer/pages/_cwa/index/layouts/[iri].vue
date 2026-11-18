@@ -154,6 +154,7 @@ const { isAdding, isLoading, loadFailed, loadResource, isUpdating, localResource
     uiComponent: layoutComponentNames.value[0],
   }),
   dismissStoredErrors: true,
+  savedTitle: () => 'Layout saved',
 })
 
 const unresolvableUiComponent = computed<string | undefined>(() => {
