@@ -230,10 +230,10 @@ describe('Info tab — a component in several locations', () => {
     expect(mocks.confirmChoice).toHaveBeenCalledWith(mocks.vueApp, {
       title: 'Delete this component?',
       description: 'It is used in 3 places.',
-      keep: 'Cancel',
+      keep: 'Don\'t delete',
       extra: 'Remove from this location only',
       go: 'Delete from all 3 places',
-      lines: [],
+      lines: [{ text: 'Deleting it from all places can\'t be undone.', emphasis: 'muted' }],
     })
     expect(mockCwa.resourcesManager.deleteResource).not.toHaveBeenCalled()
     expect(mockCwa.admin.emptyStack).not.toHaveBeenCalled()
@@ -251,7 +251,7 @@ describe('Info tab — a component in several locations', () => {
     await flushPromises()
 
     expect(mocks.editingNotice).toHaveBeenCalledWith(mockCwa, '/component/abc')
-    expect(mocks.confirmChoice).toHaveBeenCalledWith(mocks.vueApp, expect.objectContaining({ lines: [{ text: 'Sam is editing this.' }] }))
+    expect(mocks.confirmChoice).toHaveBeenCalledWith(mocks.vueApp, expect.objectContaining({ lines: [{ text: 'Sam is editing this.' }, { text: 'Deleting it from all places can\'t be undone.', emphasis: 'muted' }] }))
   })
 
   test('Delete from all X locations deletes the component without a second confirmation', async () => {
