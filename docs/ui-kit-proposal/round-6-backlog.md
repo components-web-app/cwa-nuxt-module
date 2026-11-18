@@ -106,3 +106,5 @@ The right-click menu (`CwaResourceManagerContextMenu` on `utils/ContextMenu.vue`
 - **First image upload's false "not saved"** and **`collaboration_states` 500 on adding Body Text** investigated and fixed or written up (7f).
 - Decided: Add persists only with `instantAdd`; new routes stay Live by default; outline colours stay as they are.
 - Open: visible labels or tooltips on the admin nav; files chosen on an unpersisted component, sent as one multipart create; a `#cwa/kit` types entry, usage docs on /kit, packaging the TipTap editor.
+- Decided (2026-11-18): no textarea in the manager bar; multi-line text is edited inline. `CwaUiTextarea` warns in development if it renders in bar layout; /kit shows it only in dialogs and pages.
+- Decided: route paths turn spaces into hyphens (shown in the hint), refuse `?` and `#`; password fields stack, with a show-password toggle on new-password fields only; darker field fill so placeholders read as empty (checked by a fresh reviewer); the path selector no longer remembers the clicked chain; the bar's tabs switch as the arrow keys move, like the others.
