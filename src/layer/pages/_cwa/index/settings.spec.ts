@@ -2,6 +2,7 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
 import { ref } from 'vue'
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
+import { createMemoryHistory, createRouter, routerKey } from 'vue-router'
 import { axe } from '../../../../../test/utils/axe'
 import { drawsFocusRing } from '../../../../../test/utils/focus-ring'
 import SettingsPage from './settings.vue'
@@ -70,9 +71,11 @@ async function setup(opts: { loadFails?: boolean, heading?: boolean } = {}) {
     currentModulePackageInfo: { version: '1.0.0', name: '@cwa/nuxt' },
   }))
 
+  const router = createRouter({ history: createMemoryHistory(), routes: [{ path: '/:any(.*)', component: { render: () => null } }] })
   const wrapper = mount(SettingsPage, {
     attachTo: document.body,
     global: {
+      provide: { [routerKey as symbol]: router },
       stubs: {
         ...(opts.heading ? {} : { ListHeading: true }),
         RouterLink: { props: ['to'], template: '<a :data-route-name="to?.name"><slot /></a>' },

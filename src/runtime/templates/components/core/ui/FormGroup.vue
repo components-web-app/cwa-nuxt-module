@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, provide, reactive, ref, useTemplateRef, watch } from 'vue'
-import { onBeforeRouteLeave } from 'vue-router'
+import { onBeforeRouteLeave, useRouter } from 'vue-router'
+import type { RouteLocationNormalized } from 'vue-router'
 import CwaUiButton from '../../ui/Button.vue'
 import CwaUiAlert from '../../ui/Alert.vue'
 import CheckGlyph from './CheckGlyph.vue'
@@ -131,19 +132,13 @@ async function showField(field: string) {
   root.value?.querySelector<HTMLElement>(`[data-cwa-field="${CSS.escape(field)}"] :is(input, textarea, button, [tabindex]:not([tabindex="-1"]))`)?.focus()
 }
 
-let confirming = false
+let asking: Promise<boolean> | undefined
 
-async function ask(title: string, description: string, go: string) {
-  if (confirming) {
-    return false
-  }
-  confirming = true
-  try {
-    return await confirm({ title, description, keep: 'Keep editing', go })
-  }
-  finally {
-    confirming = false
-  }
+function ask(title: string, description: string, go: string) {
+  asking ??= confirm({ title, description, keep: 'Keep editing', go }).finally(() => {
+    asking = undefined
+  })
+  return asking
 }
 
 function unsavedNames() {
@@ -164,16 +159,31 @@ async function cancel() {
   }
 }
 
-onBeforeRouteLeave(async () => {
+const router = useRouter()
+let approvedLeave: string | undefined
+
+function leaveKey(to: RouteLocationNormalized) {
+  const { cwa_force: _force, ...query } = to.query
+  return router.resolve({ path: to.path, query, hash: to.hash }).fullPath
+}
+
+onBeforeRouteLeave(async (to) => {
   const names = unsavedNames()
-  if (!names.length) {
+  const key = leaveKey(to)
+  if (!names.length || approvedLeave === key) {
     return true
   }
   if (!await ask('Leave without saving?', `${unsavedText(names.length)} (${listText(names)}) will be lost.`, 'Leave')) {
     return false
   }
-  props.form.discard()
+  approvedLeave = key
   return true
+})
+
+const stopAfterEach = router.afterEach((_to, _from, failure) => {
+  if (failure) {
+    approvedLeave = undefined
+  }
 })
 
 function onBeforeUnload(event: BeforeUnloadEvent) {
@@ -193,6 +203,7 @@ watch(() => unsavedCount.value > 0, (dirty) => {
 }, { immediate: true })
 
 onBeforeUnmount(() => {
+  stopAfterEach()
   clearTimeout(savedTimer)
   typeof window !== 'undefined' && window.removeEventListener('beforeunload', onBeforeUnload)
 })
