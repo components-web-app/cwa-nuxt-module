@@ -12,10 +12,11 @@ import type { CwaFieldState } from '#cwa/storage/stores/resources/state'
 
 export type FieldWidth = 'xs' | 'sm' | 'md' | 'lg' | 'full'
 
-const { label, labelHidden = false, info, description, optional = false, width, state, model, controlId, ownLabel = false, name, inactive = false, invalid, format, hug = false } = defineProps<{
+const { label, labelHidden = false, info, disabledReason, description, optional = false, width, state, model, controlId, ownLabel = false, name, inactive = false, invalid, format, hug = false } = defineProps<{
   label: string
   labelHidden?: boolean
   info?: string
+  disabledReason?: string
   description?: string
   optional?: boolean
   width?: FieldWidth
@@ -55,7 +56,7 @@ const surface = inject(formSurfaceKey, undefined)
 const fieldName = computed(() => name ?? model?.field)
 const helperId = useId()
 
-const help = computed(() => surface ? info : [info, description].filter(Boolean).join(' ') || undefined)
+const help = computed(() => [disabledReason, ...(surface ? [info] : [info, description])].filter(Boolean).join(' ') || undefined)
 
 const tone = computed(() => state.status === 'error' || (surface && invalid) ? 'danger' : state.status === 'conflict' ? 'warning' : undefined)
 

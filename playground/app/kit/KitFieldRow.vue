@@ -30,7 +30,7 @@ const search = kitSearchSource(kitLoader, () => 'results')
 
 function stateOf(key: KitFieldKey) {
   if (disabled) {
-    return key === 'select' && disabledReason ? 'disabled, with a reason' : 'disabled, no reason prop'
+    return disabledReason ? 'disabled, with its reason behind ⓘ' : 'disabled, no reason'
   }
   const model = set[key]
   const state = model.state!.value
@@ -63,6 +63,7 @@ function stateOf(key: KitFieldKey) {
           :label="kitFieldLabels[key].label"
           :model="set.input"
           :disabled="disabled"
+          :disabled-reason="disabledReason"
           :data-kit-field="key"
         />
         <CwaUiTextarea
@@ -70,6 +71,7 @@ function stateOf(key: KitFieldKey) {
           :label="kitFieldLabels[key].label"
           :model="set.textarea"
           :disabled="disabled"
+          :disabled-reason="disabledReason"
           :data-kit-field="key"
         />
         <CwaUiNumber
@@ -79,6 +81,7 @@ function stateOf(key: KitFieldKey) {
           :min="1"
           :max="6"
           :disabled="disabled"
+          :disabled-reason="disabledReason"
           :data-kit-field="key"
         />
         <CwaUiToggle
@@ -86,6 +89,7 @@ function stateOf(key: KitFieldKey) {
           :label="kitFieldLabels[key].label"
           :model="set.toggle"
           :disabled="disabled"
+          :disabled-reason="disabledReason"
           :data-kit-field="key"
         />
         <CwaUiSelect
@@ -94,7 +98,7 @@ function stateOf(key: KitFieldKey) {
           :model="set.select"
           :options="kitSelectOptions"
           :disabled="disabled"
-          :disabled-reason="disabled ? disabledReason : undefined"
+          :disabled-reason="disabledReason"
           :data-kit-field="key"
         />
         <CwaUiMultiSelect
@@ -103,6 +107,7 @@ function stateOf(key: KitFieldKey) {
           :model="set.multi"
           :options="kitStyleOptions"
           :disabled="disabled"
+          :disabled-reason="disabledReason"
           :data-kit-field="key"
         />
         <CwaUiSegmented
@@ -111,6 +116,7 @@ function stateOf(key: KitFieldKey) {
           :model="set.segmented"
           :options="kitAlignOptions"
           :disabled="disabled"
+          :disabled-reason="disabledReason"
           :data-kit-field="key"
         />
         <CwaUiDatePicker
@@ -118,6 +124,7 @@ function stateOf(key: KitFieldKey) {
           :label="kitFieldLabels[key].label"
           :model="set.date"
           :disabled="disabled"
+          :disabled-reason="disabledReason"
           :data-kit-field="key"
         />
         <CwaUiResourceSearch
@@ -129,6 +136,7 @@ function stateOf(key: KitFieldKey) {
           :load="search.load"
           :resolve="search.resolve"
           :disabled="disabled"
+          :disabled-reason="disabledReason"
           :data-kit-field="key"
         />
         <CwaUiFileUpload
@@ -137,6 +145,7 @@ function stateOf(key: KitFieldKey) {
           :upload="set.upload"
           accept="image/*,application/pdf"
           :disabled="disabled"
+          :disabled-reason="disabledReason"
           :data-kit-field="key"
         />
       </KitDemo>

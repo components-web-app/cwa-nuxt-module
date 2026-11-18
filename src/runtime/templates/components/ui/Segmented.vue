@@ -17,6 +17,7 @@ const props = withDefaults(defineProps<{
   description?: string
   optional?: boolean
   disabled?: boolean
+  disabledReason?: string
   options: SegmentedOption[]
   field?: string
   model?: ResourceModelField<string>
@@ -27,6 +28,7 @@ const props = withDefaults(defineProps<{
   description: undefined,
   optional: false,
   disabled: false,
+  disabledReason: undefined,
   field: undefined,
   model: undefined,
   modelValue: undefined,
@@ -46,6 +48,7 @@ function choose(next: unknown) {
 
 <template>
   <Field
+    :disabled-reason="disabled ? disabledReason : undefined"
     :label="label"
     :label-hidden="labelHidden"
     :info="info"
