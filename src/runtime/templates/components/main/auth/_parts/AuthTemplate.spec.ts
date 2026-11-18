@@ -3,6 +3,7 @@ import { afterEach, describe, expect, test } from 'vitest'
 import { enableAutoUnmount, mount } from '@vue/test-utils'
 import { h, nextTick, ref } from 'vue'
 import { axe } from '../../../../../../../test/utils/axe'
+import { drawsFocusRing } from '../../../../../../../test/utils/focus-ring'
 import CwaUiInput from '../../../ui/Input.vue'
 import AuthTemplate from './AuthTemplate.vue'
 
@@ -118,6 +119,10 @@ describe('AuthTemplate', () => {
     await nextTick()
 
     expect(document.activeElement).toBe(wrapper.get('[data-testid="auth-success"]').element)
+  })
+
+  test('the focused success alert draws its focus ring', () => {
+    expect(drawsFocusRing(createWrapper({ success: 'Please check your inbox' }).get('[data-testid="auth-success"]').classes())).toBe(true)
   })
 
   test('the card is in a main landmark by default, and in none when the app\'s layout has its own', () => {
