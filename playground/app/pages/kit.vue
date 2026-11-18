@@ -836,17 +836,19 @@ const badgeTones = [
           The Alt chip edits the image's alt text; the dot shows while it is missing. Image slots put one labelled image per slot in one row.
         </p>
         <div class="kit-stack">
-          <div class="kit-row">
-            <CwaUiImageAlt
-              label="With alt"
-              :upload="uploadSamples[0]!.upload"
-              :alt="altPresent"
-            />
-            <CwaUiImageAlt
-              label="Alt missing"
-              :upload="uploadSamples[0]!.upload"
-              :alt="altMissing"
-            />
+          <div class="kit-bar">
+            <CwaUiManagerTab>
+              <CwaUiImageAlt
+                label="With alt"
+                :upload="uploadSamples[0]!.upload"
+                :alt="altPresent"
+              />
+              <CwaUiImageAlt
+                label="Alt missing"
+                :upload="uploadSamples[0]!.upload"
+                :alt="altMissing"
+              />
+            </CwaUiManagerTab>
           </div>
           <div class="kit-bar">
             <CwaUiManagerTab>
@@ -1481,6 +1483,14 @@ code {
   flex-wrap: wrap;
   align-items: center;
   gap: 0.75rem;
+}
+
+@media (max-width: 40rem) {
+  .kit-row > * {
+    flex-shrink: 1;
+    flex-wrap: wrap;
+    max-width: 100%;
+  }
 }
 
 .kit-sample {

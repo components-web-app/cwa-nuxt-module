@@ -47,6 +47,14 @@ const { component, state, wide = false, bare = false } = defineProps<{
   min-width: 0;
 }
 
+@media (max-width: 40rem) {
+  .kit-demo-stage > :deep(*) {
+    flex-shrink: 1;
+    flex-wrap: wrap;
+    max-width: 100%;
+  }
+}
+
 figcaption {
   color: var(--cwa-color-fg-muted);
   font-size: 0.75rem;
