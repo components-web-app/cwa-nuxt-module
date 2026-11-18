@@ -14,6 +14,7 @@ import { BubbleMenu, FloatingMenu } from '@tiptap/vue-3/menus'
 import { encodeUpdate } from '~/tiptap/y-sync'
 import { FIELD, seedUpdate } from '~/tiptap/y-seed'
 import { htmlHash } from '~/tiptap/y-state'
+import { NEW_RESOURCE_IRI } from '#cwa/storage/stores/resources/state'
 import TipTapHtmlEditor from './TipTapHtmlEditor.vue'
 
 const LIVE = '/component/html_contents/1'
@@ -227,6 +228,17 @@ describe('TipTapHtmlEditor: the co-editing reference editor (#429)', () => {
     expect(editor().state.selection.from).toBe(end(editor()))
   })
 
+  test('the editable editor is a multi-line textbox named for its field, and the read-only one is not (#461)', async () => {
+    const readOnly = await mountEditor('<p>Hello</p>', { disabled: true })
+    expect(readOnly.editor().view.dom.hasAttribute('aria-label')).toBe(false)
+    readOnly.wrapper.unmount()
+
+    const { editor } = await mountEditor('<p>Hello</p>')
+    await vi.waitFor(() => expect(editor().view.dom.getAttribute('aria-label')).toBe('Content'))
+    expect(editor().view.dom.getAttribute('role')).toBe('textbox')
+    expect(editor().view.dom.getAttribute('aria-multiline')).toBe('true')
+  })
+
   test('saves what is typed through the resource model', async () => {
     const { editor, stored } = await mountEditor('<p>Hello</p>')
 
@@ -351,6 +363,27 @@ describe('TipTapHtmlEditor: edits that merge, over Yjs (#435)', () => {
     await wait(50)
 
     expect(writes).toEqual([])
+  })
+
+  test('a component not added yet is edited on its own, with no collaboration state and nothing sent to others, because the API has no state for it (#461)', async () => {
+    const { editor, stored } = await mountEditor('<p>Hello</p>', { iri: NEW_RESOURCE_IRI })
+    await wait(50)
+
+    editor().commands.insertContentAt(6, ' world')
+
+    expect(stored.value).toBe('<p>Hello world</p>')
+    expect(api.fetch).not.toHaveBeenCalled()
+    expect(yjsSent()).toEqual([])
+  })
+
+  test('a component not added yet joins the shared document once it is added', async () => {
+    const { wrapper, editor } = await mountEditor('<p>Hello</p>', { iri: NEW_RESOURCE_IRI })
+
+    await wrapper.setProps({ iri: LIVE })
+
+    await vi.waitFor(() => expect(docOf(editor())).toBeDefined())
+    expect(api.fetch.mock.calls.map(([, options]) => options?.query?.component ?? options?.body?.component)).toContain(LIVE)
+    expect(yjsSent('tab-me').length).toBeGreaterThan(0)
   })
 
   test('selecting and deselecting the component swaps the editors without errors or saves', async () => {
@@ -727,6 +760,20 @@ describe('TipTapHtmlEditor: the caret when the editor is rebuilt (#435)', () => 
     expect(editor()).not.toBe(readOnly)
     const keys = editor().state.plugins.map(plugin => (plugin as unknown as { key: string }).key)
     expect(keys.filter(key => /^(bubbleMenu|floatingMenu)\$/.test(key)).map(key => key.replace(/\$.*/, '')).sort()).toEqual(['bubbleMenu', 'floatingMenu'])
+  })
+
+  test('a click that focused the component around the editor, a tab stop in edit mode, still lets selecting focus the editor (#461)', async () => {
+    const { wrapper, editor } = await mountEditor('<p>Hello there</p>', { disabled: true })
+    const component = wrapper.element as HTMLElement
+    component.setAttribute('tabindex', '0')
+    document.getSelection()!.collapse(editor().view.dom.querySelector('p')!.firstChild!, 5)
+
+    await wrapper.setProps({ disabled: false })
+    component.focus()
+    await vi.waitFor(() => expect(editor().isEditable).toBe(true))
+
+    await vi.waitFor(() => expect(editor().isFocused).toBe(true))
+    component.removeAttribute('tabindex')
   })
 
   test('a menu opened after selecting keeps focus when the editor becomes editable, so it stays open', async () => {

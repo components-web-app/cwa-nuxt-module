@@ -141,6 +141,45 @@ describe('CwaUiDialog and the Save model (#461)', () => {
     expect(form.saves).toEqual([])
   })
 
+  describe('announcing a save that worked (4.1.3)', () => {
+    const announced = () => q('[data-testid="dialog-announcer"]')!.textContent
+
+    test('a save says what was saved, each time, and a failed one does not', async () => {
+      mountDialog(form, { noun: 'blog article' })
+      await flushPromises()
+      await type('[data-cwa-field="reference"] input', 'Kitchens and baths')
+      save().click()
+      await flushPromises()
+      expect(announced()).toBe('Blog article saved.')
+
+      await type('[data-cwa-field="reference"] input', 'Baths')
+      form.failNext({ reference: 'Too short.' })
+      save().click()
+      await flushPromises()
+      expect(announced()).not.toBe('Blog article saved.')
+
+      await type('[data-cwa-field="reference"] input', 'Bathrooms')
+      save().click()
+      await flushPromises()
+      expect(announced()).toBe('Blog article saved.')
+    })
+
+    test.each([
+      ['a page, naming the tab it moved to', 'page', tabs, 'Page created. Info tab open.'],
+      ['a layout, which has no tabs', 'layout', undefined, 'Layout created.'],
+    ])('a create says so for %s', async (_, noun, dialogTabs, text) => {
+      const state = reactive({ createNoun: noun as string | undefined, tab: 'details' })
+      mount(defineComponent({ setup: () => () => h(Dialog, { title: 'New', form, noun, tabs: dialogTabs, createNoun: state.createNoun, tab: dialogTabs ? state.tab : undefined }) }), { attachTo: document.body })
+      await flushPromises()
+      expect(announced()).toBe('')
+
+      state.createNoun = undefined
+      state.tab = 'info'
+      await flushPromises()
+      expect(announced()).toBe(text)
+    })
+  })
+
   describe('the header line while its resource loads', () => {
     function reduceMotion(reduced: boolean) {
       vi.spyOn(window, 'matchMedia').mockImplementation((query: string) => ({ matches: query.includes('reduce') ? reduced : false, media: query }) as unknown as MediaQueryList)
