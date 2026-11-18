@@ -1,87 +1,61 @@
 <template>
-  <div
-    v-if="stackItem && stackSize"
-    ref="pathSelector"
-  >
-    <div
-      class="cwa:py-1.5 cwa:px-3 cwa:bg-neutral-800 cwa:border cwa:border-dashed cwa:text-white"
-      :class="[isEnabled ? 'cwa:hover:bg-dark cwa:cursor-pointer' : '']"
+  <div v-if="levels.length">
+    <button
+      ref="selector"
+      type="button"
+      data-testid="path-selector"
+      :aria-haspopup="hasParents ? 'tree' : undefined"
+      :aria-expanded="hasParents ? isOpen : undefined"
+      :aria-disabled="hasParents ? undefined : 'true'"
+      :aria-label="hasParents ? `${name}, choose a parent` : undefined"
+      class="cwa:flex cwa:min-h-9 cwa:items-center cwa:gap-2 cwa:border cwa:border-dashed cwa:border-line-dash cwa:bg-neutral-800 cwa:px-3 cwa:py-1.5 cwa:text-label cwa:text-white cwa:outline-1 cwa:outline-transparent cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-accent-fg"
+      :class="hasParents ? 'cwa:cursor-pointer cwa:hover:border-solid cwa:hover:border-fg cwa:hover:bg-field-hover' : 'cwa:cursor-default'"
       @click="openMenu"
     >
-      <span :class="{ 'cwa:opacity-0 cwa:duration-200': isOpen }">{{ stackItem.displayName }}</span>
-    </div>
-    <Transition v-bind="transitions.context">
-      <div
-        v-if="isOpen"
-        class="cwa:absolute cwa:top-0 cwa:left-1/2 cwa:-translate-x-1/2 cwa:min-w-full cwa:box-content cwa:inline-block"
-        :style="{ marginTop: marginTop, transformOrigin: tOrig }"
-      >
-        <div class="cwa:relative cwa:bg-dark cwa:inline-block">
-          <resource-context-item
-            :index="stackSize - 1"
-            :root-width="selectorWidth"
-            :use-current-stack="true"
-            @click="index => selectResource(index)"
-          />
-        </div>
-      </div>
-    </Transition>
+      <span :class="{ 'cwa:invisible': isOpen }">{{ name }}</span>
+      <span
+        v-if="hasParents"
+        aria-hidden="true"
+        class="cwa:text-fg-muted"
+      >▾</span>
+    </button>
+    <ResourceStack
+      v-if="isOpen && selector"
+      :levels="levels"
+      :selected="levels[0]!.key"
+      :at="selector"
+      :return-to="selector"
+      :min-width="selector.offsetWidth"
+      :avoid="avoid"
+      :select="select"
+      @close="isOpen = false"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, useTemplateRef } from 'vue'
-import { onClickOutside } from '@vueuse/core'
-import ResourceContextItem from '../../_common/ResourceContextItem.vue'
+import { computed, defineAsyncComponent, ref, useTemplateRef } from 'vue'
+import { resourceStackLevels } from '#cwa/templates/components/core/ui/resource-stack'
 import { useCwa } from '#cwa/composables/cwa'
-import { useTransitions } from '#cwa/composables/transitions'
 
-const $cwa = useCwa()
-const transitions = useTransitions()
+const ResourceStack = defineAsyncComponent(() => import('#cwa/templates/components/ui/ResourceStack.vue'))
+
+const { avoid } = defineProps<{ avoid?: HTMLElement | null }>()
+
+const stackManager = useCwa().admin.resourceStackManager
 
 const isOpen = ref(false)
-const pathSelector = useTemplateRef<HTMLElement | null>('pathSelector')
+const selector = useTemplateRef<HTMLButtonElement | null>('selector')
 
-const stackSize = computed(() => $cwa.admin.resourceStackManager.resourceStack.value.length)
-const spacingStackSize = computed(() => stackSize.value - 1)
-const tOrig = computed(() => {
-  const pathSelectorEl = pathSelector.value
-  if (!pathSelectorEl) {
-    return
-  }
-  const buttonOffset = Math.round(pathSelectorEl.offsetHeight / 2)
-  return `50% calc(${buttonOffset}px + ${stackSize.value}px + ${spacingStackSize.value * 0.25}rem)`
-})
+const levels = computed(() => resourceStackLevels(stackManager.resourceStack.value))
+const name = computed(() => levels.value[0]?.label)
+const hasParents = computed(() => levels.value.length > 1)
 
-const isEnabled = computed(() => {
-  return stackSize.value > 1
-})
-const marginTop = computed(() => {
-  return spacingStackSize.value ? `calc(0px - ${spacingStackSize.value}px - ${spacingStackSize.value * 0.25}rem)` : 0
-})
-const stackItem = computed(() => {
-  return $cwa.admin.resourceStackManager.resourceStack.value[0]
-})
-const selectorWidth = computed(() => {
-  const pathSelectorEl = pathSelector.value
-  // reactive to display name changing
-  return stackItem.value?.displayName && pathSelectorEl ? pathSelectorEl.clientWidth : undefined
-})
-
-function selectResource(index: number) {
-  $cwa.admin.resourceStackManager.selectStackIndex(index, false)
-  isOpen.value = false
+function select(key: string) {
+  return stackManager.selectStackIndex(Number(key), false)
 }
 
 function openMenu() {
-  if (!isEnabled.value) {
-    isOpen.value = false
-    return
-  }
-  isOpen.value = true
+  isOpen.value = !isOpen.value && hasParents.value
 }
-
-onClickOutside(pathSelector, () => {
-  isOpen.value = false
-})
 </script>

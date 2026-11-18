@@ -119,7 +119,7 @@ async function mountManager(attachTo?: HTMLElement) {
         },
         CwaAdminResourceManagerContextMenu: {
           name: 'CwaAdminResourceManagerContextMenu',
-          props: ['modelValue', 'virtualElement'],
+          props: ['modelValue', 'point'],
           template: '<div class="context-menu-stub" />',
         },
         ResourceManagerCtaButton: { template: '<div class="cta-stub" />' },
@@ -570,6 +570,24 @@ describe('ResourceManager', () => {
       expect(preventDefault).toHaveBeenCalled()
       expect(stackManager.completeStack).toHaveBeenCalledWith({ clickTarget: evt.target }, true, 'page')
       expect(wrapper.findComponent({ name: 'CwaAdminResourceManagerContextMenu' }).props('modelValue')).toBe(true)
+      expect(wrapper.findComponent({ name: 'CwaAdminResourceManagerContextMenu' }).props('point')).toEqual({ x: 20, y: 30, key: expect.any(Number) })
+    })
+
+    test('a right-click elsewhere while open reopens the menu at the new point, as a new menu (#461)', async () => {
+      const stackManager = makeStackManager({ isContextPopulating: ref(true) })
+      cwaState.cwa = makeCwa({ isEditing: true, hasRole: true, stackManager })
+      const wrapper = await mountManager()
+      const menu = () => wrapper.findComponent({ name: 'CwaAdminResourceManagerContextMenu' })
+
+      ;(wrapper.vm as any).contextMenuHandler({ clientX: 20, clientY: 30, preventDefault: vi.fn(), target: document.createElement('div') }, 'page')
+      await nextTick()
+      const first = menu().props('point')
+      ;(wrapper.vm as any).contextMenuHandler({ clientX: 200, clientY: 300, preventDefault: vi.fn(), target: document.createElement('div') }, 'page')
+      await nextTick()
+
+      expect(menu().props('modelValue')).toBe(true)
+      expect(menu().props('point')).toEqual({ x: 200, y: 300, key: expect.any(Number) })
+      expect(menu().props('point').key).not.toBe(first.key)
     })
 
     test('closes when the same position is clicked again while open (showDefaultContext)', async () => {

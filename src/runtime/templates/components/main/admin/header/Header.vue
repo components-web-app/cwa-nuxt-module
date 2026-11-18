@@ -25,7 +25,10 @@
                 />
               </span>
             </CwaUiFormButton>
-            <path-selector v-else-if="$cwa.admin.resourceStackManager.showManager.value" />
+            <path-selector
+              v-else-if="$cwa.admin.resourceStackManager.showManager.value"
+              :avoid="status"
+            />
           </template>
           <template v-else>
             <ul class="cwa:flex cwa:gap-x-8 cwa:text-stone-400 cwa:items-center">
@@ -118,6 +121,7 @@
         </div>
         <div
           v-if="$cwa.admin.isEditing"
+          ref="status"
           class="cwa:flex cwa:gap-x-4 cwa:items-center"
         >
           <SpinnerTick
@@ -186,6 +190,7 @@ const router = useRouter()
 
 const header = useTemplateRef<undefined | HTMLElement>('header')
 const spacer = useTemplateRef<undefined | HTMLElement>('spacer')
+const status = useTemplateRef<HTMLElement | null>('status')
 
 const error = useError()
 const { source: cloneSource, placed: clonePlaced } = useCloneMode($cwa)

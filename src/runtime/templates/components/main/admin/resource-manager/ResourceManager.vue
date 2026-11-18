@@ -35,7 +35,8 @@ const managerHolder = useTemplateRef<HTMLElement | null>('managerHolder')
 const allTabsMeta = ref<CwaResourceManagerTabOptions[]>([])
 const selectedIndex = ref(0)
 const isOpen = ref(false)
-const virtualElement = ref({ getBoundingClientRect: () => ({}) })
+const contextPoint = shallowRef<{ x: number, y: number, key: number }>()
+let contextKey = 0
 const managerTabs = useTemplateRef<typeof ManagerTabs | null>('managerTabs')
 const currentManagerTabs = ref<ManagerTab[] | undefined>()
 const cachedPosition = { top: 0, left: 0 }
@@ -62,12 +63,7 @@ function showDefaultContext({ top, left }: ContextPosition) {
 function openContext({ top, left }: ContextPosition) {
   cachedPosition.top = top
   cachedPosition.left = left
-  virtualElement.value.getBoundingClientRect = () => ({
-    width: 0,
-    height: 0,
-    top,
-    left,
-  })
+  contextPoint.value = { x: left, y: top, key: ++contextKey }
   isOpen.value = true
 }
 
@@ -281,7 +277,7 @@ defineExpose({
   <CwaAdminResourceManagerContextMenu
     v-if="showAdmin"
     v-model="isOpen"
-    :virtual-element="virtualElement"
+    :point="contextPoint"
   />
   <AddComponentDialog />
   <SharedInstancesHighlight v-if="showSharedInstances" />

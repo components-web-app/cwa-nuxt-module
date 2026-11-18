@@ -1,44 +1,56 @@
 <script lang="ts" setup>
-import { computed } from 'vue'
-import ResourceContextItem from '../../_common/ResourceContextItem.vue'
-import ContextMenu from '../../../../utils/ContextMenu.vue'
-import { useCwa } from '#imports'
+import { defineAsyncComponent, shallowRef, watch } from 'vue'
+import { resourceStackLevels } from '#cwa/templates/components/core/ui/resource-stack'
+import type { ResourceStackLevel, StackPoint } from '#cwa/templates/components/core/ui/resource-stack'
+import { useCwa } from '#cwa/composables/cwa'
 
-const $cwa = useCwa()
+const ResourceStack = defineAsyncComponent(() => import('#cwa/templates/components/ui/ResourceStack.vue'))
 
 const props = defineProps<{
   modelValue: boolean
-  virtualElement: any
+  point?: StackPoint & { key: number }
 }>()
 
-const emit = defineEmits(['update:modelValue'])
+const emit = defineEmits<{ 'update:modelValue': [value: boolean] }>()
 
-const stackSize = computed(() => $cwa.admin.resourceStackManager.contextStack.value.length)
+const stackManager = useCwa().admin.resourceStackManager
 
-const isOpen = computed({
-  get() {
-    return props.modelValue && stackSize.value > 0
-  },
-  set(value) {
-    emit('update:modelValue', value)
-  },
-})
+const opened = shallowRef<{ key: number, at: StackPoint, levels: ResourceStackLevel[], selected?: string }>()
 
-function selectResource(index: number) {
-  $cwa.admin.resourceStackManager.selectStackIndex(index, true)
-  isOpen.value = false
+watch(() => props.modelValue ? props.point : undefined, (point) => {
+  const stack = stackManager.contextStack.value
+  const levels = point ? resourceStackLevels(stack) : []
+  if (!point || !levels.length) {
+    opened.value = undefined
+    return
+  }
+  const currentIri = stackManager.currentStackItem.value?.iri
+  opened.value = {
+    key: point.key,
+    at: { x: point.x, y: point.y },
+    levels,
+    selected: levels.find(level => stack[Number(level.key)]?.iri === currentIri)?.key,
+  }
+}, { immediate: true })
+
+function select(key: string) {
+  return stackManager.selectStackIndex(Number(key), true)
+}
+
+function close() {
+  opened.value = undefined
+  emit('update:modelValue', false)
 }
 </script>
 
 <template>
-  <context-menu
-    v-model="isOpen"
-    :virtual-element="virtualElement"
-    @click.stop
-  >
-    <resource-context-item
-      :index="stackSize - 1"
-      @click="index => selectResource(index)"
-    />
-  </context-menu>
+  <ResourceStack
+    v-if="opened"
+    :key="opened.key"
+    :levels="opened.levels"
+    :selected="opened.selected"
+    :at="opened.at"
+    :select="select"
+    @close="close"
+  />
 </template>
