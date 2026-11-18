@@ -78,6 +78,7 @@ function setup(opts: {
   routes?: Record<string, any>
   stored?: Record<string, any>
   routeIri?: string
+  apiDocumentation?: Promise<unknown>
 } = {}) {
   const iri = opts.iri ?? opts.routeIri ?? '/_/pages/uuid-self'
   mockRoute.params = opts.routeIri ? { iri: opts.routeIri } : {}
@@ -128,7 +129,7 @@ function setup(opts: {
       getResource,
     },
     fetch: vi.fn().mockReturnValue({ response: Promise.resolve({ _data: null }) }),
-    getApiDocumentation: vi.fn().mockResolvedValue({ entrypoint: { blogArticleData: '/page_data/blog_article_datas' } }),
+    getApiDocumentation: vi.fn(() => opts.apiDocumentation ?? Promise.resolve({ entrypoint: { blogArticleData: '/page_data/blog_article_datas' } })),
     pagesConfig: opts.pagesConfig ?? {},
     admin: { toggleEdit: vi.fn() },
   }) as unknown as ReturnType<typeof cwaComposable.useCwa>)
@@ -350,7 +351,8 @@ describe('PageResourceAdminModal delete (#461)', () => {
 
     await clickDelete(wrapper)
 
-    expect(countsMock).toHaveBeenCalledWith(expect.anything(), '/_/pages/uuid-self', ['/page_data/blog_article_datas'])
+    expect(countsMock).toHaveBeenCalledWith(expect.anything(), '/_/pages/uuid-self', expect.any(Promise))
+    expect(await countsMock.mock.calls[0]![2]).toEqual(['/page_data/blog_article_datas'])
     expect(confirmMock).toHaveBeenCalledWith({
       title: 'Delete “Shaker kitchens”?',
       lines: [
@@ -379,6 +381,17 @@ describe('PageResourceAdminModal delete (#461)', () => {
       { text: 'Sam is editing this.' },
       { text: 'This can\'t be undone.' },
     ])
+  })
+
+  test('the count check starts at once, so the API docs it waits for are inside its 3 s limit (§8.6)', async () => {
+    countsMock.mockResolvedValueOnce({})
+    const { wrapper } = setup({ resource: { '@id': '/_/pages/uuid-self', '@type': 'Page', 'reference': 'T', 'isTemplate': true }, apiDocumentation: new Promise(() => {}) })
+    confirmMock.mockResolvedValueOnce(false)
+
+    await clickDelete(wrapper)
+
+    expect(countsMock).toHaveBeenCalledWith(expect.anything(), '/_/pages/uuid-self', expect.any(Promise))
+    expect(confirmMock).toHaveBeenCalledOnce()
   })
 
   test('a page that is not a template is not counted', async () => {

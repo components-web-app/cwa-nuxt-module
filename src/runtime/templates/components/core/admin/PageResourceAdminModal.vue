@@ -452,7 +452,7 @@ async function refreshCounts() {
     counts.value = {}
     return
   }
-  counts.value = await fetchTemplateCounts($cwa, iri, await dataEndpoints().catch(() => []))
+  counts.value = await fetchTemplateCounts($cwa, iri, dataEndpoints())
 }
 
 async function handleDeleteClick() {

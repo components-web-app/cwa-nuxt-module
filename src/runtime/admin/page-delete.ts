@@ -83,7 +83,7 @@ async function countAddresses($cwa: Fetch, template: string, pages: number, data
   return routes?.totalItems ?? routes?.member?.length
 }
 
-async function check($cwa: Fetch, iri: string, dataEndpoints: string[]) {
+async function check($cwa: Fetch, iri: string, dataEndpoints: Promise<string[]>) {
   const page = await data<{ _metadata?: { pageDataCount?: number } }>($cwa, iri)
   const pages = page?._metadata?.pageDataCount
   if (typeof pages !== 'number') {
@@ -92,13 +92,15 @@ async function check($cwa: Fetch, iri: string, dataEndpoints: string[]) {
   if (!pages) {
     return { templatePages: 0, addresses: 0 }
   }
-  return { templatePages: pages, addresses: await countAddresses($cwa, iri, pages, dataEndpoints).catch(() => undefined) }
+  return { templatePages: pages, addresses: await dataEndpoints.then(endpoints => countAddresses($cwa, iri, pages, endpoints)).catch(() => undefined) }
 }
 
-export function fetchTemplateCounts($cwa: Fetch, iri: string, dataEndpoints: string[], timeout = PAGE_DELETE_CHECK_TIMEOUT): Promise<Pick<PageDeleteFacts, 'templatePages' | 'addresses'>> {
+export function fetchTemplateCounts($cwa: Fetch, iri: string, dataEndpoints: string[] | Promise<string[]>, timeout = PAGE_DELETE_CHECK_TIMEOUT): Promise<Pick<PageDeleteFacts, 'templatePages' | 'addresses'>> {
   let timer: ReturnType<typeof setTimeout> | undefined
   const late = new Promise<Pick<PageDeleteFacts, 'templatePages' | 'addresses'>>((resolve) => {
     timer = setTimeout(() => resolve({}), timeout)
   })
-  return Promise.race([check($cwa, iri, dataEndpoints).catch(() => ({})), late]).finally(() => clearTimeout(timer))
+  const endpoints = Promise.resolve(dataEndpoints)
+  endpoints.catch(() => undefined)
+  return Promise.race([check($cwa, iri, endpoints).catch(() => ({})), late]).finally(() => clearTimeout(timer))
 }
