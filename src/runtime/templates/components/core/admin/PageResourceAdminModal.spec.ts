@@ -65,8 +65,8 @@ afterEach(() => {
 
 const DialogStub = defineComponent({
   name: 'CwaUiDialog',
-  props: ['title', 'tabs', 'form', 'loading', 'noun', 'createNoun', 'tab', 'kind', 'placement'],
-  emits: ['close', 'save', 'update:tab'],
+  props: ['title', 'tabs', 'form', 'loading', 'loadFailed', 'noun', 'createNoun', 'tab', 'kind', 'placement'],
+  emits: ['close', 'save', 'retry', 'update:tab'],
   setup(props, { slots, expose }) {
     provide(fieldGroupKey, { model: (field: string) => props.form.model(field), undo: () => undefined })
     provide(formSurfaceKey, { unsaved: (field: string) => props.form.unsavedFields.includes(field), register: () => () => {} })
@@ -101,6 +101,7 @@ function setup(opts: {
   fetchData?: (path: string) => unknown
   attach?: boolean
   loading?: boolean
+  loadFailed?: boolean
   fetchResource?: (props: { path: string }) => Promise<unknown>
 } = {}) {
   const iri = opts.iri ?? opts.routeIri ?? '/_/pages/uuid-self'
@@ -117,14 +118,15 @@ function setup(opts: {
     'parentPageData': null,
     ...opts.local,
   })
-  const localResourceData = ref(opts.loading ? undefined : form.local)
+  const localResourceData = ref(opts.loading || opts.loadFailed ? undefined : form.local)
 
   const handlers = {
     isAdding: ref(opts.isAdding ?? false),
     isLoading: ref(!!opts.loading),
+    loadFailed: ref(!!opts.loadFailed),
     isUpdating: ref(false),
     localResourceData,
-    resource: ref(opts.loading ? undefined : resource),
+    resource: ref(opts.loading || opts.loadFailed ? undefined : resource),
     formatDate: vi.fn(() => '1 Jan 2026'),
     deleteResource: vi.fn(),
     saveResource: vi.fn(),
@@ -215,6 +217,14 @@ describe('PageResourceAdminModal on the kit dialog (#461)', () => {
     await flushPromises()
     expect(dialog().props()).toMatchObject({ title: 'My Page', loading: false, kind: { tone: 'static' } })
     expect(wrapper.find('[data-testid="page-type"]').exists()).toBe(true)
+  })
+
+  test('a depth that failed to load keeps the dialog open, titled by its kind, and Retry loads it again', async () => {
+    const { wrapper, handlers } = setup({ loadFailed: true })
+    const dialog = wrapper.findComponent(DialogStub)
+    expect(dialog.props()).toMatchObject({ title: 'Page', loadFailed: true, kind: undefined })
+    dialog.vm.$emit('retry')
+    expect(handlers.loadResource).toHaveBeenCalledTimes(1)
   })
 
   test('page data loading is titled Page data, and a load that ends with nothing closes nothing open', async () => {
@@ -318,7 +328,7 @@ describe('PageResourceAdminModal on the kit dialog (#461)', () => {
     const select = pageType(wrapper)
     expect(wrapper.get('[data-testid="stub-header"]').element.contains(select.element)).toBe(true)
     expect(select.classes()).toContain('cwa:me-2')
-    expect(select.props()).toMatchObject({ labelHidden: true })
+    expect(select.props()).toMatchObject({ labelHidden: true, width: 'sm' })
     expect(select.props('options')).toEqual([
       { label: 'Static', value: 'static', dot: 'cwa:bg-type-static' },
       { label: 'Dynamic', value: 'template', dot: 'cwa:bg-type-dynamic' },
@@ -609,6 +619,18 @@ describe('PageResourceAdminModal delete (#461)', () => {
       { text: 'Sam is editing this.' },
       { text: 'This can\'t be undone.' },
     ])
+  })
+
+  test('when who is editing cannot be read, the confirm still asks, without naming anyone', async () => {
+    realtime.peers.mockImplementationOnce(() => {
+      throw new Error('chunk failed')
+    })
+    const { wrapper } = setup()
+    confirmMock.mockResolvedValueOnce(false)
+
+    await clickDelete(wrapper)
+
+    expect(confirmMock.mock.calls[0]![0].lines).toEqual([{ text: 'This can\'t be undone.' }])
   })
 
   test('the count check starts at once, so the API docs it waits for are inside its 3 s limit (§8.6)', async () => {

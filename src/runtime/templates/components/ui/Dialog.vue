@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, provide, reactive, ref, shallowRef, useId, useTemplateRef, watch } from 'vue'
-import { DialogContent, DialogOverlay, DialogPortal, DialogRoot, DialogTitle } from 'reka-ui'
+import { DialogContent, DialogDescription, DialogOverlay, DialogPortal, DialogRoot, DialogTitle } from 'reka-ui'
 import CwaUiButton from './Button.vue'
 import CwaUiAlert from './Alert.vue'
 import XMarkIcon from './icon/XMarkIcon.vue'
@@ -25,6 +25,7 @@ const props = withDefaults(defineProps<{
   noun?: string
   createNoun?: string
   loading?: boolean
+  loadFailed?: boolean
   flush?: boolean
   /** @internal */
   kind?: { tone: 'static' | 'dynamic' | 'success' | 'warning', label?: string }
@@ -37,6 +38,7 @@ const props = withDefaults(defineProps<{
   noun: 'page',
   createNoun: undefined,
   loading: false,
+  loadFailed: false,
   flush: false,
   kind: undefined,
   placement: 'center',
@@ -45,6 +47,7 @@ const props = withDefaults(defineProps<{
 const emit = defineEmits<{
   'close': []
   'save': []
+  'retry': []
   'update:tab': [key: string]
 }>()
 
@@ -54,7 +57,6 @@ defineSlots<{
 
 const confirm = useCwaConfirm()
 const titleId = ref<string>()
-const kindId = useId()
 const kindEdges = { static: 'cwa:border-type-static', dynamic: 'cwa:border-type-dynamic', success: 'cwa:border-success', warning: 'cwa:border-warning' }
 const tabsId = useId()
 const body = useTemplateRef<HTMLElement>('body')
@@ -224,10 +226,13 @@ const saveName = computed(() => {
   return unsavedCount.value && !props.form?.saving ? `Save ${unsavedCount.value} unsaved ${unsavedCount.value === 1 ? 'change' : 'changes'}` : undefined
 })
 
-const saveDisabled = computed(() => props.loading || (!props.createNoun && (!unsavedCount.value || !!conflictFields.value.length)))
+const saveDisabled = computed(() => props.loading || props.loadFailed || (!props.createNoun && (!unsavedCount.value || !!conflictFields.value.length)))
 const saveReason = computed(() => {
   if (props.loading) {
     return 'Still loading.'
+  }
+  if (props.loadFailed) {
+    return loadFailedText.value
   }
   if (props.createNoun) {
     return undefined
@@ -264,11 +269,18 @@ const alertTitle = computed(() => {
 const alertFields = computed(() => conflictFields.value.length ? conflictFields.value : errorFields.value)
 const hasIssue = computed(() => !!(conflictFields.value.length || errorFields.value.length || props.form?.formError))
 
-watch(() => props.loading, (loading) => {
+const loadFailedText = computed(() => `This ${props.noun} couldn't be loaded.`)
+
+watch(() => props.loading, (loading, was) => {
   if (loading) {
     announce(`Loading the ${props.noun}.`)
   }
+  else if (was) {
+    announce(`${props.title} loaded.`)
+  }
 }, { immediate: true })
+
+watch(() => props.loadFailed, failed => failed && announce(loadFailedText.value), { immediate: true })
 
 watch(hasIssue, (issue) => {
   if (!issue) {
@@ -389,7 +401,7 @@ defineExpose({ requestClose, confirmDiscard, showField, announce })
         class="cwa:fixed cwa:inset-0 cwa:z-dialog cwa:bg-black/60 cwa:backdrop-blur-sm"
       />
       <DialogContent
-        :aria-describedby="kind?.label ? kindId : undefined"
+        v-bind="kind?.label ? {} : { 'aria-describedby': undefined }"
         data-testid="dialog"
         :data-placement="placement"
         class="cwa:fixed cwa:inset-0 cwa:z-dialog cwa:flex cwa:flex-col cwa:bg-surface cwa:text-fg cwa:shadow-popover cwa:outline-none cwa:[--cwa-spacing-control:var(--cwa-spacing-control-lg)] cwa:[--cwa-text-control:var(--cwa-text-control-lg)]"
@@ -408,12 +420,14 @@ defineExpose({ requestClose, confirmDiscard, showField, announce })
           >
             {{ title }}
           </DialogTitle>
-          <span
+          <DialogDescription
             v-if="kind?.label"
-            :id="kindId"
+            as="span"
             data-testid="dialog-kind"
             class="cwa:me-2 cwa:shrink-0 cwa:text-helper cwa:text-fg-muted"
-          >{{ kind.label }}</span>
+          >
+            {{ kind.label }}
+          </DialogDescription>
           <slot name="header-actions" />
           <button
             type="button"
@@ -479,6 +493,20 @@ defineExpose({ requestClose, confirmDiscard, showField, announce })
           >
             <Spinner size="md" />
           </div>
+          <CwaUiAlert
+            v-else-if="loadFailed"
+            tone="danger"
+            :title="loadFailedText"
+            data-testid="dialog-load-failed"
+          >
+            <template #actions>
+              <CwaUiButton
+                label="Retry"
+                data-testid="dialog-load-retry"
+                @click="emit('retry')"
+              />
+            </template>
+          </CwaUiAlert>
           <template v-else>
             <CwaUiAlert
               v-if="showAlert && hasIssue"

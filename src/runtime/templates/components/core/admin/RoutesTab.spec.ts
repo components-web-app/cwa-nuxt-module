@@ -555,6 +555,24 @@ describe('RoutesTab', () => {
   })
 
   describe('deleting the route', () => {
+    test('when who is editing cannot be read, the route delete still asks, without naming anyone', async () => {
+      setupItemPage()
+      mockCwa({ fetch: vi.fn(() => ({ response: Promise.resolve({ _data: { children: [] } }) })) })
+      confirmMock.mockResolvedValueOnce(false)
+      realtime.peers.mockImplementationOnce(() => {
+        throw new Error('chunk failed')
+      })
+      const wrapper = mountTab()
+      await flushPromises()
+      await openSub(wrapper, 'route')
+
+      await wrapper.findComponent(RoutesTabManage).vm.$emit('delete')
+      await vi.dynamicImportSettled()
+      await flushPromises()
+
+      expect(confirmMock.mock.calls[0]![0].lines).toEqual([{ text: 'Visitors to /conference/programme get “Page not found”.' }])
+    })
+
     test('names the other admins editing the route first', async () => {
       setupItemPage()
       mockCwa({ fetch: vi.fn(() => ({ response: Promise.resolve({ _data: { children: [] } }) })) })

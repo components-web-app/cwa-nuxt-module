@@ -291,6 +291,20 @@ describe('Layout admin dialog (#461)', () => {
     ])
   })
 
+  test('when who is editing cannot be read, the confirm still asks, without naming anyone', async () => {
+    realtime.peers.mockImplementationOnce(() => {
+      throw new Error('chunk failed')
+    })
+    mockConfirm.mockResolvedValue(false)
+    const { wrapper } = setup()
+
+    await wrapper.get('[data-testid="layout-delete"]').trigger('click')
+    await vi.dynamicImportSettled()
+    await flushPromises()
+
+    expect(mockConfirm.mock.calls[0]![0].lines).toEqual([{ text: 'This can\'t be undone.' }])
+  })
+
   test('a delete that is not confirmed deletes nothing', async () => {
     mockConfirm.mockResolvedValue(false)
     const { wrapper, deleteResource } = setup()
