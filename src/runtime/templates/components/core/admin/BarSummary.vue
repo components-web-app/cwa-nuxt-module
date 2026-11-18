@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { PopoverAnchor, PopoverArrow, PopoverContent, PopoverPortal, PopoverRoot } from 'reka-ui'
 import Spinner from '../../ui/Spinner.vue'
 import StateGlyph from '../ui/StateGlyph.vue'
 import type { GlyphKind } from '../ui/StateGlyph.vue'
@@ -128,7 +129,17 @@ const actionable = computed(() => (!!badge.value.kind || publish.failed.value) &
 
 const actionLabel = computed(() => badge.value.kind ? `${issueText(badge.value)}, show the field` : 'Not published, retry')
 
+const open = ref(false)
+
+watch(actionable, (isActionable) => {
+  isActionable && (open.value = false)
+})
+
 function act() {
+  if (!actionable.value) {
+    open.value = !open.value
+    return
+  }
   if (badge.value.kind) {
     showFirst()
     return
@@ -149,37 +160,63 @@ function showFirst() {
 </script>
 
 <template>
-  <component
-    :is="actionable ? 'button' : 'span'"
-    :type="actionable ? 'button' : undefined"
-    :aria-label="actionable ? actionLabel : undefined"
-    :data-state="status.state"
-    data-testid="bar-summary"
-    class="cwa:inline-flex cwa:h-8 cwa:shrink-0 cwa:items-center cwa:gap-2 cwa:whitespace-nowrap cwa:px-2 cwa:text-label cwa:text-fg-muted cwa:outline-none cwa:focus-visible:outline-2 cwa:focus-visible:-outline-offset-2 cwa:focus-visible:outline-accent-fg cwa:pointer-coarse:h-hit cwa:@max-[40rem]:h-hit cwa:@max-[40rem]:w-hit cwa:@max-[40rem]:justify-center cwa:@max-[40rem]:px-0"
-    :class="actionable ? 'cwa:cursor-pointer cwa:font-semibold cwa:text-fg cwa:hover:bg-button' : ''"
-    @click="actionable && act()"
+  <PopoverRoot
+    :open="open && !actionable"
+    @update:open="open = $event"
   >
-    <Spinner
-      v-show="status.state === 'saving'"
-      data-testid="bar-summary-spinner"
-    />
-    <StateGlyph
-      v-if="status.glyph"
-      :kind="status.glyph"
-    />
-    <span
-      v-if="!actionable"
-      class="cwa:sr-only"
-    >Status: {{ status.full }}</span>
-    <span
-      aria-hidden="true"
-      class="cwa:hidden cwa:@min-[64rem]:inline"
-    >{{ status.full }}</span>
-    <span
-      aria-hidden="true"
-      class="cwa:hidden cwa:@min-[40rem]:inline cwa:@min-[64rem]:hidden"
-    >{{ status.short }}</span>
-  </component>
+    <PopoverAnchor as-child>
+      <button
+        type="button"
+        :aria-label="actionable ? actionLabel : `Status: ${status.full}`"
+        :aria-haspopup="actionable ? undefined : 'dialog'"
+        :aria-expanded="actionable ? undefined : open ? 'true' : 'false'"
+        :data-state="status.state"
+        data-testid="bar-summary"
+        class="cwa:inline-flex cwa:h-8 cwa:shrink-0 cwa:cursor-pointer cwa:items-center cwa:gap-2 cwa:whitespace-nowrap cwa:px-2 cwa:text-label cwa:text-fg-muted cwa:outline-none cwa:hover:bg-button cwa:focus-visible:outline-2 cwa:focus-visible:-outline-offset-2 cwa:focus-visible:outline-accent-fg cwa:pointer-coarse:h-hit cwa:@max-[40rem]:h-full cwa:@max-[40rem]:w-hit cwa:@max-[40rem]:justify-center cwa:@max-[40rem]:px-0"
+        :class="actionable ? 'cwa:font-semibold cwa:text-fg' : ''"
+        @click="act"
+      >
+        <Spinner
+          v-show="status.state === 'saving'"
+          data-testid="bar-summary-spinner"
+        />
+        <StateGlyph
+          v-if="status.glyph"
+          :kind="status.glyph"
+        />
+        <span
+          aria-hidden="true"
+          class="cwa:hidden cwa:@min-[64rem]:inline"
+        >{{ status.full }}</span>
+        <span
+          aria-hidden="true"
+          class="cwa:hidden cwa:@min-[40rem]:inline cwa:@min-[64rem]:hidden"
+        >{{ status.short }}</span>
+      </button>
+    </PopoverAnchor>
+    <PopoverPortal>
+      <PopoverContent
+        side="top"
+        align="end"
+        :side-offset="8"
+        :collision-padding="8"
+        aria-label="Status"
+        data-testid="bar-summary-popover"
+        class="cwa:z-context cwa:flex cwa:w-max cwa:max-w-[min(20rem,calc(100vw-1rem))] cwa:items-center cwa:gap-2 cwa:bg-surface-menu cwa:p-popover cwa:text-control cwa:text-fg cwa:shadow-popover cwa:outline-none"
+      >
+        <StateGlyph
+          v-if="status.glyph"
+          :kind="status.glyph"
+        />
+        <span>{{ status.full }}</span>
+        <PopoverArrow
+          :width="12"
+          :height="6"
+          class="cwa:fill-surface-menu"
+        />
+      </PopoverContent>
+    </PopoverPortal>
+  </PopoverRoot>
   <span
     class="cwa:sr-only"
     aria-live="polite"

@@ -69,12 +69,31 @@ describe('BarSummary (#459)', () => {
     ['a live resource', () => {
       data.value = { '@id': iri.value, '_metadata': { publishable: { published: true } } }
     }, 'Live'],
-  ])('at rest, %s reads its publish state as status text, not as a control', (_label, given, text) => {
+  ])('at rest, %s is a button named by its full status, which opens it in a popover for phones that show only the glyph', async (_label, given, text) => {
     given()
+    const { summary, wrapper } = mountSummary()
+
+    expect(summary().element.tagName).toBe('BUTTON')
+    expect(summary().attributes('aria-label')).toContain(`Status: ${text}`)
+    expect(summary().attributes('aria-expanded')).toBe('false')
+    expect(document.querySelector('[data-testid="bar-summary-popover"]')).toBeNull()
+
+    await summary().trigger('click')
+    await nextTick()
+
+    const popover = document.querySelector<HTMLElement>('[data-testid="bar-summary-popover"]')!
+    expect(popover.textContent).toContain(text)
+    expect(summary().attributes('aria-expanded')).toBe('true')
+    expect(wrapper.emitted('show')).toBeUndefined()
+    expect(document.querySelectorAll('[aria-live]')).toHaveLength(1)
+  })
+
+  test('the full status of a scheduled draft names its date', async () => {
+    draft('2026-10-01T08:00:00Z')
     const { summary } = mountSummary()
 
-    expect(summary().element.tagName).toBe('SPAN')
-    expect(summary().text()).toContain(`Status: ${text}`)
+    const date = new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date('2026-10-01T08:00:00Z'))
+    expect(summary().attributes('aria-label')).toBe(`Status: Scheduled · ${date}`)
   })
 
   test('saving shows a spinner, announces "Saving…" only after a second, then holds over a short gap and says all changes saved', async () => {
