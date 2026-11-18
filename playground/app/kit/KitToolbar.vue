@@ -4,6 +4,7 @@ import { CwaUiButton, CwaUiManagerRowDivider, CwaUiManagerTab, CwaUiMenu, CwaUiS
 import type { MenuEntry } from '../../../src/runtime/templates/components/core/ui/menu-entries'
 import type { KitThemeChoice, KitWidth } from './workbench-settings'
 import { useKitWorkbench } from './workbench-state'
+import { kitTabs, useKitTab } from './kit-tab'
 
 const { sections, frameWidth } = defineProps<{
   sections: { id: string, label: string }[]
@@ -13,6 +14,13 @@ const { sections, frameWidth } = defineProps<{
 const emit = defineEmits<{ jump: [id: string] }>()
 
 const { settings } = useKitWorkbench()
+const tab = useKitTab()
+const tabModel = computed({
+  get: () => tab.value,
+  set: (value) => {
+    tab.value = value === 'practice' ? 'practice' : 'kit'
+  },
+})
 
 const themeOptions = [{ value: 'auto', label: 'Auto' }, { value: 'light', label: 'Light' }, { value: 'dark', label: 'Dark' }]
 const widthOptions = [{ value: 'full', label: 'Full' }, { value: '1280', label: '1280' }, { value: '768', label: '768' }, { value: '390', label: '390' }]
@@ -51,6 +59,13 @@ const sectionItems = computed<MenuEntry[]>(() => sections.map(section => ({ labe
     data-testid="kit-toolbar"
   >
     <CwaUiManagerTab>
+      <CwaUiSegmented
+        v-model="tabModel"
+        label="View"
+        label-hidden
+        :options="kitTabs"
+        data-testid="kit-toolbar-tab"
+      />
       <CwaUiMenu
         :items="sectionItems"
         label="Sections"

@@ -2,11 +2,14 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, toRaw, useTemplateRef, watch } from 'vue'
 import { useRoute } from '#imports'
 import KitToolbar from './KitToolbar.vue'
+import { useKitTab } from './kit-tab'
 import { KIT_FRAME_MESSAGE, KIT_SCROLL_MESSAGE, startKitWorkbench, useKitWorkbench } from './workbench-state'
 
 const route = useRoute()
 const framed = route.query.frame === '1'
 const { settings, ready } = useKitWorkbench()
+const tab = useKitTab()
+const frameSrc = computed(() => `/kit?frame=1${tab.value === 'kit' ? '' : `&tab=${tab.value}`}`)
 
 const root = useTemplateRef<HTMLElement>('root')
 const iframe = useTemplateRef<HTMLIFrameElement>('iframe')
@@ -88,6 +91,8 @@ onBeforeUnmount(() => {
 
 watch(settings, postSettings, { deep: true })
 
+watch(tab, () => nextTick(watchSections))
+
 watch(staged, (value) => {
   if (value) {
     window.scrollTo({ top: 0 })
@@ -136,7 +141,7 @@ watch(frameBox, (box) => {
       >
         <iframe
           ref="iframe"
-          src="/kit?frame=1"
+          :src="frameSrc"
           title="Kit demos"
           data-testid="kit-frame"
           @load="onFrameLoad"

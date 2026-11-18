@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { CwaUiDialog, CwaUiFormSection, CwaUiManagerTab } from '#components'
 import KitFieldRow from './KitFieldRow.vue'
+import { computed } from 'vue'
+import { kitFieldKeys } from './kit-field-set'
 import type { KitFieldKey, KitFieldSet, KitPlace } from './kit-field-set'
 
 const { set, place, state, disabled = false, disabledReason, only, testId } = defineProps<{
@@ -14,6 +16,8 @@ const { set, place, state, disabled = false, disabledReason, only, testId } = de
 }>()
 
 const emit = defineEmits<{ closeDialog: [] }>()
+
+const inBar = computed(() => (only ?? kitFieldKeys).filter(key => key !== 'textarea'))
 </script>
 
 <template>
@@ -35,13 +39,13 @@ const emit = defineEmits<{ closeDialog: [] }>()
           :set="set"
           :disabled="disabled"
           :disabled-reason="disabledReason"
-          :only="only"
+          :only="inBar"
           :test-id="testId"
           bare
         />
       </CwaUiManagerTab>
     </div>
-    <figcaption><code>CwaUiManagerTab</code> holding every field type · {{ state }}</figcaption>
+    <figcaption><code>CwaUiManagerTab</code> holding every field type but CwaUiTextarea, which the bar refuses · {{ state }}</figcaption>
   </figure>
   <CwaUiDialog
     v-else
