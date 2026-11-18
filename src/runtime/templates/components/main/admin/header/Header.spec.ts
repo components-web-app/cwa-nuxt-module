@@ -77,7 +77,7 @@ function mockCwa({
     resources: res,
     admin: adm,
     auth: reactive({ user: { '@id': '/_/users/admin' } }),
-    resourcesManager: { requestCount: { value: requestCount } },
+    resourcesManager: { requestCount: { value: requestCount }, confirmDiscardAddingResource: vi.fn(async () => true) },
   } as unknown as Cwa
   vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => cwa)
   mockedCwas.push(cwa)
@@ -230,6 +230,38 @@ describe('Header', () => {
       expect(adm.toggleEdit).toHaveBeenCalled()
     })
 
+    test.each([
+      [false, 'Keep editing stays in edit mode with the new component still selected'],
+      [true, 'Discard leaves edit mode'],
+    ])('Done with a new component not yet added asks to discard it first: %s, %s', async (discard) => {
+      const { adm, cwa } = mockCwa({ admin: buildAdmin({ isEditing: true }) })
+      const confirm = vi.mocked(cwa.resourcesManager.confirmDiscardAddingResource)
+      let answer!: (value: boolean) => void
+      confirm.mockReturnValueOnce(new Promise((resolve) => {
+        answer = resolve
+      }))
+      const wrapper = mountHeader()
+      await wrapper.findAll('button').find(button => button.text().trim() === 'Done')!.trigger('click')
+      expect(confirm).toHaveBeenCalledTimes(1)
+      expect(adm.toggleEdit).not.toHaveBeenCalled()
+      answer(discard)
+      await flushPromises()
+      if (discard) {
+        expect(adm.toggleEdit).toHaveBeenCalledWith(false)
+      }
+      else {
+        expect(adm.toggleEdit).not.toHaveBeenCalled()
+      }
+    })
+
+    test('Edit never asks about a new component', async () => {
+      const { adm, cwa } = mockCwa({ admin: buildAdmin({ isEditing: false }) })
+      const wrapper = mountHeader()
+      await wrapper.findAll('button').find(button => button.text().trim() === 'Edit')!.trigger('click')
+      expect(cwa.resourcesManager.confirmDiscardAddingResource).not.toHaveBeenCalled()
+      expect(adm.toggleEdit).toHaveBeenCalledWith(true)
+    })
+
     test('shows "Done" when editing', () => {
       mockCwa({ admin: buildAdmin({ isEditing: true }) })
       const wrapper = mountHeader()
@@ -253,6 +285,29 @@ describe('Header', () => {
       const wrapper = mountHeader()
       const labels = wrapper.findAllComponents({ name: 'CwaUiButton' }).map(b => b.text().trim())
       expect(labels).not.toContain('Edit')
+    })
+  })
+
+  describe('focus order follows what is seen', () => {
+    test('Edit, then the page settings, then the menu, as they sit left to right', () => {
+      mockCwa({
+        admin: buildAdmin({ isEditing: false }),
+        resources: buildResources({ page: { value: { data: { reference: 'About Us' } } } }),
+      })
+      const wrapper = mountHeader()
+      const edit = wrapper.findAll('button').find(button => button.text().trim() === 'Edit')!.element
+      const settings = wrapper.get('[data-testid="page-settings"]').element
+      const menu = wrapper.get('.menu-stub').element
+      expect(edit.compareDocumentPosition(settings) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+      expect(settings.compareDocumentPosition(menu) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    })
+
+    test('while editing, Done comes before the path selector', () => {
+      mockCwa({ admin: buildAdmin({ isEditing: true, resourceStackManager: { showManager: { value: true } } }) })
+      const wrapper = mountHeader()
+      const done = wrapper.findAll('button').find(button => button.text().trim() === 'Done')!.element
+      const selector = wrapper.get('.path-selector-stub').element
+      expect(done.compareDocumentPosition(selector) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     })
   })
 
