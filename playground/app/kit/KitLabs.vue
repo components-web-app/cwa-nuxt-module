@@ -2,6 +2,8 @@
 import KitFieldStatesSim from './KitFieldStatesSim.vue'
 import KitFailuresSim from './KitFailuresSim.vue'
 import KitPresenceSim from './KitPresenceSim.vue'
+import KitSearchSim from './KitSearchSim.vue'
+import KitListSim from './KitListSim.vue'
 </script>
 
 <template>
@@ -9,5 +11,7 @@ import KitPresenceSim from './KitPresenceSim.vue'
     <KitFieldStatesSim />
     <KitFailuresSim />
     <KitPresenceSim />
+    <KitSearchSim />
+    <KitListSim />
   </div>
 </template>
