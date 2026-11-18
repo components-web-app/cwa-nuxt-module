@@ -151,7 +151,7 @@ async function assertEveryInstanceHighlighted(page, label) {
 async function highlightsWithOrigin(page) {
   return page.getByTestId('clone-highlight').evaluateAll(els => els.map((el) => {
     const r = el.getBoundingClientRect()
-    return { top: r.top, left: r.left, width: r.width, height: r.height, origin: el.dataset.origin === 'true', style: getComputedStyle(el).outlineStyle }
+    return { top: r.top, left: r.left, width: r.width, height: r.height, origin: el.dataset.origin === 'true', style: getComputedStyle(el).outlineStyle, thickness: Number.parseFloat(getComputedStyle(el).outlineWidth) }
   }).filter(r => r.width > 0 && r.height > 0))
 }
 
@@ -625,7 +625,7 @@ test('29. after a move the moved instance is selected and its outline flashes', 
   await page.getByTestId('component-menu').waitFor()
 })
 
-test('30. in clone and move mode the instance started from is outlined solid and the other instance dashed', async ({ cwa: t }) => {
+test('30. in clone and move mode the instance started from has a thicker outline than the other instance', async ({ cwa: t }) => {
   const { page, settle } = t
   await addSecondSourceOnHome(t)
   await openEditMode(t)
@@ -640,7 +640,7 @@ test('30. in clone and move mode the instance started from is outlined solid and
       const rest = highlights.filter(h => !h.origin)
       return highlights.length === 2
         && origin.length === 1 && covers(origin[0], from) && origin[0].style === 'solid'
-        && rest.length === 1 && covers(rest[0], other) && rest[0].style === 'dashed'
+        && rest.length === 1 && covers(rest[0], other) && rest[0].style === 'solid' && origin[0].thickness > rest[0].thickness
     }, `${start.name}: the instance started from is not marked apart from the other: ${JSON.stringify(await highlightsWithOrigin(page))}`)
     await page.keyboard.press('Escape')
     await assertCloneModeEnded(page, 'Escape did not end the mode')
@@ -941,7 +941,7 @@ test.describe('the list of places behind the shared badge', () => {
   })
 })
 
-test('43. a click on a target in clone mode outlines it in blue dashed at once and opens the menu at the click point, and Escape or a click outside closes the menu and keeps clone mode on', async ({ cwa: t }) => {
+test('43. a click on a target in clone mode outlines it in solid blue at once and opens the menu at the click point, and Escape or a click outside closes the menu and keeps clone mode on', async ({ cwa: t }) => {
   const { page } = t
   await openEditMode(t)
   await startClone(page)
@@ -959,7 +959,7 @@ test('43. a click on a target in clone mode outlines it in blue dashed at once a
   })
   const [targetBox] = await boxesOf(page, texts.pageAOther)
   assert(covers(drawn, targetBox), `The target outline ${JSON.stringify(drawn)} does not cover the target ${JSON.stringify(targetBox)}`)
-  assert(drawn.style === 'dashed' && drawn.color === 'rgb(37, 99, 235)', `The target outline is ${drawn.style} ${drawn.color}, not blue dashed`)
+  assert(drawn.style === 'solid' && drawn.color === 'rgb(37, 99, 235)', `The target outline is ${drawn.style} ${drawn.color}, not solid blue`)
   const sourceColors = await page.getByTestId('clone-highlight').evaluateAll(els => els.map(el => getComputedStyle(el).outlineColor))
   assert(sourceColors.length > 0 && !sourceColors.includes(drawn.color), `The target outline has the source outline's colour: ${JSON.stringify(sourceColors)}`)
   const menuBox = await menu.boundingBox()
