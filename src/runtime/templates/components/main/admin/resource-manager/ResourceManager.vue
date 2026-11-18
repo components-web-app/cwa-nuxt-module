@@ -173,7 +173,9 @@ if (import.meta.env.DEV) {
     return () => kitRows.delete(row)
   })
   const warned = new Set<unknown>()
-  watch(shownTab, (instance) => {
+  watch(shownTab, async () => {
+    await nextTick()
+    const instance = shownTab.value
     const tab = selectedTab.value
     const holder = tabHolder.value
     if (!instance || !tab || warned.has(tab) || !holder?.firstElementChild || [...kitRows].some(row => holder.contains(row))) {
