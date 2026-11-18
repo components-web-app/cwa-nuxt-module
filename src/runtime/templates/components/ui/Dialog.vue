@@ -209,8 +209,11 @@ const saveName = computed(() => {
   return unsavedCount.value && !props.form?.saving ? `Save ${unsavedCount.value} unsaved ${unsavedCount.value === 1 ? 'change' : 'changes'}` : undefined
 })
 
-const saveDisabled = computed(() => !props.createNoun && (!unsavedCount.value || !!conflictFields.value.length))
+const saveDisabled = computed(() => props.loading || (!props.createNoun && (!unsavedCount.value || !!conflictFields.value.length)))
 const saveReason = computed(() => {
+  if (props.loading) {
+    return 'Still loading.'
+  }
   if (props.createNoun) {
     return undefined
   }
@@ -245,6 +248,12 @@ const alertTitle = computed(() => {
 
 const alertFields = computed(() => conflictFields.value.length ? conflictFields.value : errorFields.value)
 const hasIssue = computed(() => !!(conflictFields.value.length || errorFields.value.length || props.form?.formError))
+
+watch(() => props.loading, (loading) => {
+  if (loading) {
+    announce(`Loading the ${props.noun}.`)
+  }
+}, { immediate: true })
 
 watch(hasIssue, (issue) => {
   if (!issue) {
@@ -450,6 +459,7 @@ defineExpose({ requestClose, confirmDiscard, showField, announce })
           <div
             v-if="loading"
             class="cwa:grid cwa:min-h-40 cwa:place-items-center"
+            data-testid="dialog-loading"
           >
             <Spinner size="md" />
           </div>

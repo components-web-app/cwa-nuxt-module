@@ -71,7 +71,7 @@ const DialogStub = defineComponent({
     provide(fieldGroupKey, { model: (field: string) => props.form.model(field), undo: () => undefined })
     provide(formSurfaceKey, { unsaved: (field: string) => props.form.unsavedFields.includes(field), register: () => () => {} })
     expose({ requestClose, confirmDiscard })
-    return () => h('div', { 'data-testid': 'dialog-stub' }, [h('div', { 'data-testid': 'stub-header' }, slots['header-actions']?.()), h('div', { 'data-testid': 'stub-subheader' }, slots.subheader?.()), slots.details?.(), slots.routes?.(), slots.info?.()])
+    return () => h('div', { 'data-testid': 'dialog-stub' }, [h('div', { 'data-testid': 'stub-header' }, slots['header-actions']?.()), h('div', { 'data-testid': 'stub-subheader' }, slots.subheader?.()), ...(props.loading ? [] : [slots.details?.(), slots.routes?.(), slots.info?.()])])
   },
 })
 
@@ -100,6 +100,7 @@ function setup(opts: {
   loadParentPageOptions?: () => Promise<unknown>
   fetchData?: (path: string) => unknown
   attach?: boolean
+  loading?: boolean
 } = {}) {
   const iri = opts.iri ?? opts.routeIri ?? '/_/pages/uuid-self'
   routeState.route.params = opts.routeIri ? { iri: opts.routeIri } : {}
@@ -115,14 +116,14 @@ function setup(opts: {
     'parentPageData': null,
     ...opts.local,
   })
-  const localResourceData = ref(form.local)
+  const localResourceData = ref(opts.loading ? undefined : form.local)
 
   const handlers = {
     isAdding: ref(opts.isAdding ?? false),
-    isLoading: ref(false),
+    isLoading: ref(!!opts.loading),
     isUpdating: ref(false),
     localResourceData,
-    resource: ref(resource),
+    resource: ref(opts.loading ? undefined : resource),
     formatDate: vi.fn(() => '1 Jan 2026'),
     deleteResource: vi.fn(),
     saveResource: vi.fn(),
@@ -194,6 +195,32 @@ describe('PageResourceAdminModal on the kit dialog (#461)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     countsMock.mockResolvedValue({})
+  })
+
+  test('the dialog opens at once while its resource loads: titled by its kind, busy, with a neutral line and no page type until it arrives', async () => {
+    const { wrapper, handlers, form, localResourceData } = setup({ loading: true, hideViewLink: false })
+    const dialog = () => wrapper.findComponent(DialogStub)
+
+    expect(dialog().exists()).toBe(true)
+    expect(dialog().props()).toMatchObject({ title: 'Page', loading: true, kind: undefined })
+    expect(wrapper.find('[data-testid="page-type"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="page-view-on-site"]').exists()).toBe(true)
+
+    handlers.isLoading.value = false
+    localResourceData.value = form.local
+    handlers.resource.value = { '@id': '/_/pages/uuid-self', '@type': 'Page', 'reference': 'My Page' }
+    await flushPromises()
+    expect(dialog().props()).toMatchObject({ title: 'My Page', loading: false, kind: { tone: 'static' } })
+    expect(wrapper.find('[data-testid="page-type"]').exists()).toBe(true)
+  })
+
+  test('page data loading is titled Page data, and a load that ends with nothing closes nothing open', async () => {
+    const { wrapper, handlers } = setupPageData({ loading: true })
+    expect(wrapper.findComponent(DialogStub).props('title')).toBe('Page data')
+
+    handlers.isLoading.value = false
+    await flushPromises()
+    expect(wrapper.findComponent(DialogStub).exists()).toBe(false)
   })
 
   test('the dialog is titled with the stored reference and gets the Save model from useItemPage', () => {

@@ -1,6 +1,6 @@
 <template>
   <CwaUiDialog
-    v-if="localResourceData"
+    v-if="localResourceData || isLoading"
     ref="dialog"
     v-model:tab="tab"
     placement="right"
@@ -17,7 +17,7 @@
   >
     <template #header-actions>
       <CwaUiSelect
-        v-if="isDisplayingPage"
+        v-if="isDisplayingPage && localResourceData"
         class="cwa:me-2"
         :model="pageTypeModel"
         label="Page type"
@@ -443,6 +443,9 @@ const dialogTitle = computed(() => {
     return `New ${createNoun.value}`
   }
   const stored = resource.value
+  if (!stored && isLoading.value) {
+    return isDisplayingPage.value ? 'Page' : 'Page data'
+  }
   const name = isDisplayingPage.value ? stored?.reference : stored?.title
   return name || (isDisplayingPage.value ? 'Untitled page' : 'Untitled')
 })
@@ -465,6 +468,9 @@ const pageTypeModel = {
 } as ReturnType<typeof form.model<string>>
 
 const kind = computed(() => {
+  if (!localResourceData.value) {
+    return undefined
+  }
   if (isDisplayingPage.value) {
     return { tone: localResourceData.value?.isTemplate ? 'dynamic' as const : 'static' as const }
   }
