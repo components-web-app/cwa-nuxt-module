@@ -14,6 +14,7 @@ import { BubbleMenu, FloatingMenu } from '@tiptap/vue-3/menus'
 import { encodeUpdate } from '~/tiptap/y-sync'
 import { FIELD, seedUpdate } from '~/tiptap/y-seed'
 import { htmlHash } from '~/tiptap/y-state'
+import { NEW_RESOURCE_IRI } from '#cwa/storage/stores/resources/state'
 import TipTapHtmlEditor from './TipTapHtmlEditor.vue'
 
 const LIVE = '/component/html_contents/1'
@@ -351,6 +352,27 @@ describe('TipTapHtmlEditor: edits that merge, over Yjs (#435)', () => {
     await wait(50)
 
     expect(writes).toEqual([])
+  })
+
+  test('a component not added yet is edited on its own, with no collaboration state and nothing sent to others, because the API has no state for it (#461)', async () => {
+    const { editor, stored } = await mountEditor('<p>Hello</p>', { iri: NEW_RESOURCE_IRI })
+    await wait(50)
+
+    editor().commands.insertContentAt(6, ' world')
+
+    expect(stored.value).toBe('<p>Hello world</p>')
+    expect(api.fetch).not.toHaveBeenCalled()
+    expect(yjsSent()).toEqual([])
+  })
+
+  test('a component not added yet joins the shared document once it is added', async () => {
+    const { wrapper, editor } = await mountEditor('<p>Hello</p>', { iri: NEW_RESOURCE_IRI })
+
+    await wrapper.setProps({ iri: LIVE })
+
+    await vi.waitFor(() => expect(docOf(editor())).toBeDefined())
+    expect(api.fetch.mock.calls.map(([, options]) => options?.query?.component ?? options?.body?.component)).toContain(LIVE)
+    expect(yjsSent('tab-me').length).toBeGreaterThan(0)
   })
 
   test('selecting and deselecting the component swaps the editors without errors or saves', async () => {

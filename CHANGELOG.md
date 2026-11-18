@@ -45,6 +45,7 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 ## [2.0.0-alpha.30] - 2026-10-23
 
 - A model-bound field (`useCwaResourceModel`) whose Keep mine is chosen while its refused save (a 412) is still settling sends its value again; before, the model dropped it as a duplicate of the refused request and showed the stored value from before the typing, which the TipTap reference then applied, losing every admin's typing for a moment ([e75b4561](https://github.com/components-web-app/cwa-nuxt-module/commit/e75b4561), [#435](https://github.com/components-web-app/cwa-nuxt-module/issues/435))
+- The playground's TipTap reference no longer starts a Yjs session for a Body Text not added yet: it asked `/_/collaboration_states` for the `__new__` placeholder, which the API answers with a 500, and now edits it on its own until it is added; an app that copied `TipTapHtmlEditor.vue` should copy it again ([#483](https://github.com/components-web-app/cwa-nuxt-module/pull/483), [#435](https://github.com/components-web-app/cwa-nuxt-module/issues/435))
 - The playground's TipTap reference: on a page showing the same field twice, the second editor no longer applies its own tab's save over what another admin typed meanwhile, which deleted that typing for everyone; an app that copied it should copy `TipTapHtmlEditor.vue` and `tiptap/y-session.ts` again ([9e2836be](https://github.com/components-web-app/cwa-nuxt-module/commit/9e2836be), [#435](https://github.com/components-web-app/cwa-nuxt-module/issues/435))
 
 ## [2.0.0-alpha.29] - 2026-10-23
