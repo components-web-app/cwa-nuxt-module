@@ -17,7 +17,7 @@ import { componentNames } from '#components'
 const mockNavigateTo = vi.hoisted(() => vi.fn())
 mockNuxtImport('navigateTo', () => mockNavigateTo)
 
-const { mockUseItemPage, mockUseDynamicPageLoader, mockUseParentPageLoader, mockUseParentPageDataLoader, mockUseDataType, confirmMock, countsMock, requestClose } = vi.hoisted(() => ({
+const { mockUseItemPage, mockUseDynamicPageLoader, mockUseParentPageLoader, mockUseParentPageDataLoader, mockUseDataType, confirmMock, countsMock, requestClose, confirmDiscard } = vi.hoisted(() => ({
   mockUseItemPage: vi.fn(),
   mockUseDynamicPageLoader: vi.fn(),
   mockUseParentPageLoader: vi.fn(),
@@ -26,6 +26,7 @@ const { mockUseItemPage, mockUseDynamicPageLoader, mockUseParentPageLoader, mock
   confirmMock: vi.fn(),
   countsMock: vi.fn(),
   requestClose: vi.fn(),
+  confirmDiscard: vi.fn(),
 }))
 
 vi.mock('#cwa-layer/_composables/useItemPage', () => ({ useItemPage: mockUseItemPage }))
@@ -48,7 +49,7 @@ const DialogStub = defineComponent({
   setup(props, { slots, expose }) {
     provide(fieldGroupKey, { model: (field: string) => props.form.model(field), undo: () => undefined })
     provide(formSurfaceKey, { unsaved: (field: string) => props.form.unsavedFields.includes(field), register: () => () => {} })
-    expose({ requestClose })
+    expose({ requestClose, confirmDiscard })
     return () => h('div', { 'data-testid': 'dialog-stub' }, [slots['header-actions']?.(), slots.details?.(), slots.routes?.(), slots.info?.()])
   },
 })
@@ -66,6 +67,7 @@ function setup(opts: {
   hideViewLink?: boolean
   parentPages?: Record<string, any>[]
   routes?: Record<string, any>
+  stored?: Record<string, any>
 } = {}) {
   const iri = opts.iri ?? '/_/pages/uuid-self'
   const resource = opts.resource ?? { '@id': iri, '@type': 'Page', 'reference': 'My Page' }
@@ -107,7 +109,8 @@ function setup(opts: {
   })
   mockUseDataType.mockReturnValue({ pageDataConfig: ref(opts.pageDataConfig ?? null) })
 
-  const getResource = vi.fn((resourceIri: string) => ref(opts.routes?.[resourceIri] ? { data: opts.routes[resourceIri] } : null))
+  const storedData = { ...opts.routes, ...opts.stored }
+  const getResource = vi.fn((resourceIri: string) => ref(storedData[resourceIri] ? { data: storedData[resourceIri] } : null))
   vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => ({
     resources: {
       displayPageIri: ref(opts.displayPageIri),
@@ -235,6 +238,28 @@ describe('PageResourceAdminModal on the kit dialog (#461)', () => {
 
     const unrouted = setupPageData()
     expect(field(unrouted.wrapper, Toggle, 'Public without a route').props('disabled')).toBe(false)
+  })
+
+  test('switching the depth being edited asks the dialog to confirm discarding unsaved edits, and switches only on Discard', async () => {
+    const stored = {
+      '/_/pages/uuid-self': { '@id': '/_/pages/uuid-self', 'reference': 'Child', 'parentPage': '/_/pages/parent' },
+      '/_/pages/parent': { '@id': '/_/pages/parent', 'reference': 'Parent' },
+    }
+    const { wrapper } = setup({ stored })
+    const endpoint = mockUseItemPage.mock.calls[0]![0].endpoint
+    const editing = field(wrapper, Segmented, 'Editing')
+    expect(editing.props('options')).toEqual([{ label: 'Parent', value: '/_/pages/parent' }, { label: 'Child', value: '/_/pages/uuid-self' }])
+
+    confirmDiscard.mockResolvedValueOnce(false)
+    await editing.findAll('button').find(b => b.text() === 'Parent')!.trigger('click')
+    await flushPromises()
+    expect(confirmDiscard).toHaveBeenCalledOnce()
+    expect(endpoint.value).toBe('/_/pages/uuid-self')
+
+    confirmDiscard.mockResolvedValueOnce(true)
+    await editing.findAll('button').find(b => b.text() === 'Parent')!.trigger('click')
+    await flushPromises()
+    expect(endpoint.value).toBe('/_/pages/parent')
   })
 
   test('the view button navigates to the page with cwa_force once the dialog has closed, and is hidden on the page on screen', async () => {

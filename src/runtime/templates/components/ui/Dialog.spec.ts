@@ -243,6 +243,50 @@ describe('CwaUiDialog and the Save model (#461)', () => {
     expect(wrapper.findComponent(Dialog).emitted('close')).toHaveLength(1)
   })
 
+  test('confirmDiscard asks the same question without closing, and only Discard throws the changes away', async () => {
+    const wrapper = mountDialog(form)
+    await flushPromises()
+    const dialogVm = wrapper.findComponent(Dialog).vm as unknown as { confirmDiscard: () => Promise<boolean> }
+
+    expect(await dialogVm.confirmDiscard()).toBe(true)
+    expect(confirmMock).not.toHaveBeenCalled()
+
+    await type('[data-cwa-field="reference"] input', 'Mine')
+    confirmMock.mockResolvedValueOnce(false)
+    expect(await dialogVm.confirmDiscard()).toBe(false)
+    expect(form.local.reference).toBe('Mine')
+
+    confirmMock.mockResolvedValueOnce(true)
+    expect(await dialogVm.confirmDiscard()).toBe(true)
+    expect(confirmMock).toHaveBeenLastCalledWith({
+      title: 'Discard 1 unsaved change?',
+      description: 'Your changes to Reference will be lost.',
+      keep: 'Keep editing',
+      go: 'Discard',
+    })
+    expect(form.local.reference).toBe('Kitchens')
+    expect(wrapper.findComponent(Dialog).emitted('close')).toBeUndefined()
+  })
+
+  test('every tab controls a panel in the document, visited or not, and only the visited ones hold their content', async () => {
+    mountDialog(form)
+    await flushPromises()
+
+    tab('Search engines').click()
+    await flushPromises()
+
+    for (const element of qa('[role="tab"]')) {
+      const panel = document.getElementById(element.getAttribute('aria-controls')!)
+      expect(panel?.getAttribute('role')).toBe('tabpanel')
+      expect(panel?.getAttribute('aria-labelledby')).toBe(element.id)
+    }
+    const info = document.getElementById(tab('Info').getAttribute('aria-controls')!)!
+    expect(info.textContent).toBe('')
+    expect(info.style.display).toBe('none')
+    expect(q('[data-tab="seo"] [data-cwa-field="title"]')).not.toBeNull()
+    expect(await axe(document.body)).toHaveNoViolations()
+  })
+
   test('arrow keys move between tabs', async () => {
     mountDialog(form)
     await flushPromises()

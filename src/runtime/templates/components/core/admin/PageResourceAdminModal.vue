@@ -297,8 +297,11 @@ const depthOptions = computed(() => depthChain.value.map(option => ({ label: opt
 
 const displayIriModel = computed({
   get: () => displayIri.value,
-  set: (iri: string | null | undefined) => {
-    iri && (displayIri.value = iri)
+  set: async (iri: string | null | undefined) => {
+    if (!iri || iri === displayIri.value || (dialog.value && !await dialog.value.confirmDiscard())) {
+      return
+    }
+    displayIri.value = iri
   },
 })
 
