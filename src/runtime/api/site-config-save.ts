@@ -44,7 +44,6 @@ export async function saveSiteConfig(
       return
     }
     const savedKey = (outcome.value.key ?? key) as keyof SiteConfigParams
-    // @ts-expect-error a value of any config key
     saved[savedKey] = processApiConfigValue(outcome.value.value)
   })
 
