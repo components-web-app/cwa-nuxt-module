@@ -728,16 +728,20 @@ const metaSelects = computed(() => Object.fromEntries((pageDataConfig.value?.met
   .filter(metaField => metaField.type !== 'input')
   .map(metaField => [metaField.field, metaSelect(metaField.field, metaField.options)])))
 
+const pageFields: Record<string, string> = { reference: 'Reference', layout: 'Layout', uiComponent: 'Page UI', uiClassNames: 'Style', title: 'SEO page title', metaDescription: 'SEO meta description', parentPage: 'Parent page', parentPageData: 'Parent data' }
+const pageDataFields: Record<string, string> = { title: 'Title', metaDescription: 'SEO meta description', page: 'Dynamic page', parentPage: 'Parent page', parentPageData: 'Parent data' }
+const detailsFields = computed(() => isDisplayingPage.value ? pageFields : pageDataFields)
+
 const tabs = computed<DialogTab[]>(() => {
   if (isAdding.value) {
     return [
-      { label: 'Details', key: 'details' },
+      { label: 'Details', key: 'details', fields: detailsFields.value },
       { label: 'Routes', key: 'routes', disabled: `Routes open once the ${createNoun.value} is created. Create the ${createNoun.value} and this tab lets you add its address.` },
     ]
   }
   return [
-    { label: 'Details', key: 'details' },
-    { label: 'Routes', key: 'routes' },
+    { label: 'Details', key: 'details', fields: detailsFields.value },
+    { label: 'Routes', key: 'routes', ...(!isDisplayingPage.value && { fields: { isReachableWithoutRoute: 'Public without a route' } }) },
     { label: 'Info', key: 'info' },
   ]
 })

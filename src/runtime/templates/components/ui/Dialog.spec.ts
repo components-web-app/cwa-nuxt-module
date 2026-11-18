@@ -220,6 +220,26 @@ describe('CwaUiDialog and the Save model (#461)', () => {
     expect(q('[data-testid="dialog-announcer"]')?.textContent).toBe('This page wasn\'t saved. 1 field needs a change.')
   })
 
+  test('a failed field on a tab never opened is listed by the label its tab declares, opens that tab and marks it, never by its raw name (#461)', async () => {
+    const declared = [tabs[0]!, { ...tabs[1]!, fields: { title: 'SEO page title' } }, tabs[2]!]
+    mountDialog(form, { tabs: declared })
+    await flushPromises()
+    await type('[data-cwa-field="reference"] input', 'Kitchens 2')
+    form.failNext({ title: 'Use 60 characters or fewer.', reference: 'Already used.' })
+
+    save().click()
+    await flushPromises()
+
+    const links = qa('[data-testid="dialog-alert-field"]').map(link => link.textContent?.trim())
+    expect(links.toSorted()).toEqual(['Reference', 'SEO page title'])
+    expect(q('[data-testid="dialog-alert"]')!.textContent).toContain('Search engines tab')
+    expect(tab('Search engines').getAttribute('data-badge')).toBe('error')
+
+    qa('[data-testid="dialog-alert-field"]').find(link => link.textContent?.trim() === 'SEO page title')!.click()
+    await flushPromises()
+    expect(tab('Search engines').getAttribute('aria-selected')).toBe('true')
+  })
+
   test('editing the failed field clears its error and the alert goes', async () => {
     mountDialog(form)
     await flushPromises()

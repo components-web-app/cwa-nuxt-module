@@ -154,18 +154,28 @@ const keptText = computed(() => {
   return n ? `${n} unsaved ${props.noun} ${n === 1 ? 'change' : 'changes'} kept` : undefined
 })
 
+function declaringTab(field: string) {
+  return props.tabs?.find(tab => tab.fields?.[field])
+}
+
+function tabOf(field: string) {
+  return registry.get(field)?.tab ?? declaringTab(field)?.key
+}
+
 function fieldsOf(tab: string) {
-  return [...registry.entries()].filter(([, entry]) => entry.tab === tab).map(([field]) => field)
+  const registered = [...registry.entries()].filter(([, entry]) => entry.tab === tab).map(([field]) => field)
+  const declared = Object.keys(props.tabs?.find(candidate => candidate.key === tab)?.fields ?? {}).filter(field => !registry.has(field))
+  return [...registered, ...declared]
 }
 
 const badges = computed(() => Object.fromEntries((props.tabs ?? []).map(tab => [tab.key, dialogTabBadge(fieldsOf(tab.key), props.form)])))
 
 function labelOf(field: string) {
-  return registry.get(field)?.label ?? field
+  return registry.get(field)?.label ?? declaringTab(field)?.fields?.[field] ?? field
 }
 
 function tabLabelOf(field: string) {
-  const tab = registry.get(field)?.tab
+  const tab = tabOf(field)
   return props.tabs?.find(candidate => candidate.key === tab)?.label
 }
 
@@ -273,8 +283,8 @@ watch(() => props.form?.failures, async (failures, previous) => {
   showAlert.value = true
   const failed = alertFields.value
   const current = currentTab.value
-  if (failed.length && !failed.some(field => registry.get(field)?.tab === current)) {
-    const first = props.tabs?.find(tab => failed.some(field => registry.get(field)?.tab === tab.key))
+  if (failed.length && !failed.some(field => tabOf(field) === current)) {
+    const first = props.tabs?.find(tab => failed.some(field => tabOf(field) === tab.key))
     first && (currentTab.value = first.key)
   }
   announce(alertTitle.value)
@@ -284,7 +294,7 @@ watch(() => props.form?.failures, async (failures, previous) => {
 })
 
 async function showField(field: string) {
-  const tab = registry.get(field)?.tab
+  const tab = tabOf(field)
   tab && (currentTab.value = tab)
   await nextTick()
   const target = body.value?.querySelector<HTMLElement>(`[data-cwa-field="${CSS.escape(field)}"] :is(input, textarea, button, [tabindex]:not([tabindex="-1"]))`)

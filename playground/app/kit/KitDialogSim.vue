@@ -41,8 +41,10 @@ const title = computed(() => {
   }
   return { static: 'Kitchens', dynamic: 'Kitchen template', data: 'Shaker kitchen 17', nested: 'Painted shaker' }[kind.value]
 })
+const pageFields: Record<string, string> = { reference: 'Reference', title: 'SEO page title', metaDescription: 'SEO meta description', layout: 'Layout' }
+const dataFields: Record<string, string> = { title: 'Title', metaDescription: 'SEO meta description', page: 'Dynamic page' }
 const tabs = computed(() => [
-  { label: 'Details', key: 'details' },
+  { label: 'Details', key: 'details', fields: isPage.value ? pageFields : dataFields },
   { label: 'Routes', key: 'routes', ...(adding.value && { disabled: `Routes open once the ${isPage.value ? 'page' : 'kitchen'} is created. Create it and this tab lets you add its address.` }) },
   { label: 'Info', key: 'info' },
 ])
