@@ -82,7 +82,7 @@
             </ul>
           </template>
         </div>
-        <div class="cwa:flex cwa:shrink-0 cwa:justify-start cwa:gap-x-4">
+        <div class="cwa:flex cwa:shrink-0 cwa:items-center cwa:justify-start cwa:gap-x-4">
           <template v-if="!pageIsAdmin && !isErrorPage">
             <CwaUiButton
               variant="solid"
