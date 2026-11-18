@@ -10,6 +10,7 @@ export type Announce = (message: string) => void
 
 export const managerTabKey: InjectionKey<ManagerTabContext> = Symbol('cwa-manager-tab')
 export const tabMetaOnlyKey = 'cwaTabMetaOnly'
+export const managerTabMountedKey: InjectionKey<(row: HTMLElement) => () => void> = Symbol('cwa-manager-tab-mounted')
 export const tabFieldsKey: InjectionKey<string[]> = Symbol('cwa-tab-fields')
 export const announceKey: InjectionKey<Announce> = Symbol('cwa-announce')
 
