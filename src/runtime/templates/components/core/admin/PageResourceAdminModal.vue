@@ -39,7 +39,7 @@
       #subheader
     >
       <div
-        class="cwa:shrink-0 cwa:px-6 cwa:pt-3 cwa:max-sm:px-4"
+        class="cwa:shrink-0 cwa:overflow-x-auto cwa:px-6 cwa:pt-3 cwa:max-sm:px-4"
         data-testid="page-depths"
       >
         <CwaUiSegmented

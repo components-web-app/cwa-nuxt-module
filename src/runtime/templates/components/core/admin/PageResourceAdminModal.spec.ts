@@ -367,7 +367,7 @@ describe('PageResourceAdminModal on the kit dialog (#461)', () => {
     expect(field(setupPageData().wrapper, Toggle, 'Public without a route')).toBeUndefined()
   })
 
-  test('switching the depth being edited asks the dialog to confirm discarding unsaved edits, and switches only on Discard', async () => {
+  test('switching the depth being edited asks the dialog to confirm discarding unsaved edits, and switches only on Discard; a long chain scrolls sideways under the header instead of widening the dialog', async () => {
     const stored = {
       '/_/pages/uuid-self': { '@id': '/_/pages/uuid-self', 'reference': 'Child', 'parentPage': '/_/pages/parent' },
       '/_/pages/parent': { '@id': '/_/pages/parent', 'reference': 'Parent' },
@@ -377,6 +377,7 @@ describe('PageResourceAdminModal on the kit dialog (#461)', () => {
     const editing = field(wrapper, Segmented, 'Editing')
     expect(editing.props('options')).toEqual([{ label: 'Parent', value: '/_/pages/parent' }, { label: 'Child', value: '/_/pages/uuid-self' }])
     expect(wrapper.get('[data-testid="stub-subheader"]').element.contains(editing.element)).toBe(true)
+    expect(wrapper.get('[data-testid="page-depths"]').classes()).toContain('cwa:overflow-x-auto')
 
     confirmDiscard.mockResolvedValueOnce(false)
     await editing.findAll('button').find(b => b.text() === 'Parent')!.trigger('click')
