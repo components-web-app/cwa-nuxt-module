@@ -137,7 +137,7 @@
     --cwa-spacing-manager-tabs: 2.5rem;
     --cwa-spacing-manager-row: 3.75rem;
     --cwa-spacing-manager: 6.25rem;
-    --cwa-spacing-cta-inset: 0.25rem;
+    --cwa-spacing-cta-inset: 0.125rem;
     --cwa-spacing-status-line: 2px;
     --cwa-radius-toggle: 9999px;
     --cwa-animate-spinner: cwa-spin 0.8s linear infinite;
@@ -1646,9 +1646,6 @@
 .cwa\:pt-stack {
   padding-top: var(--cwa-spacing-stack);
 }
-.cwa\:pr-1 {
-  padding-right: var(--cwa-spacing);
-}
 .cwa\:pr-3 {
   padding-right: calc(var(--cwa-spacing) * 3);
 }
@@ -2189,6 +2186,12 @@
 }
 .cwa\:\[--cwa-spacing-control\:var\(--cwa-spacing-control-lg\)\] {
   --cwa-spacing-control: var(--cwa-spacing-control-lg);
+}
+.cwa\:\[--cwa-spacing-manager-row\:calc\(var\(--cwa-spacing-manager\)-var\(--cwa-spacing-manager-tabs\)\)\] {
+  --cwa-spacing-manager-row: calc(var(--cwa-spacing-manager) - var(--cwa-spacing-manager-tabs));
+}
+.cwa\:\[--cwa-spacing-manager-tabs\:calc\(var\(--cwa-spacing-control\)\+2\*var\(--cwa-spacing-cta-inset\)\+1px\)\] {
+  --cwa-spacing-manager-tabs: calc(var(--cwa-spacing-control) + 2 * var(--cwa-spacing-cta-inset) + 1px);
 }
 .cwa\:\[--cwa-text-control\:var\(--cwa-text-control-lg\)\] {
   --cwa-text-control: var(--cwa-text-control-lg);
@@ -3022,11 +3025,8 @@
   .cwa\:pointer-coarse\:\[--cwa-spacing-cta-inset\:0px\] {
     --cwa-spacing-cta-inset: 0px;
   }
-  .cwa\:pointer-coarse\:\[--cwa-spacing-manager-row\:calc\(4\.25rem-1px\)\] {
-    --cwa-spacing-manager-row: calc(4.25rem - 1px);
-  }
-  .cwa\:pointer-coarse\:\[--cwa-spacing-manager-tabs\:calc\(2\.75rem\+1px\)\] {
-    --cwa-spacing-manager-tabs: calc(2.75rem + 1px);
+  .cwa\:pointer-coarse\:\[--cwa-spacing-manager-tabs\:calc\(var\(--cwa-spacing-hit\)\+1px\)\] {
+    --cwa-spacing-manager-tabs: calc(var(--cwa-spacing-hit) + 1px);
   }
   .cwa\:pointer-coarse\:\[--cwa-spacing-manager\:7rem\] {
     --cwa-spacing-manager: 7rem;

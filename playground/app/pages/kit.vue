@@ -248,7 +248,8 @@ const stackSelectedOptions = [
 function openStackOver(event: MouseEvent) {
   stackKey.value++
   stackByKeyboard.value = event.detail === 0
-  stackAt.value = event.currentTarget as HTMLElement
+  const button = event.currentTarget as HTMLElement
+  stackAt.value = button.querySelector<HTMLElement>('span:not([aria-hidden])') ?? button
 }
 
 function openStackAtPointer(event: MouseEvent) {
@@ -1053,7 +1054,6 @@ const badgeTones = [
             </div>
             <CwaUiButton
               label="Rich text"
-              size="sm"
               data-testid="kit-stack-open"
               @click="openStackOver"
             />

@@ -355,9 +355,9 @@ function box(index: number): VNode {
     ...child,
     h('div', {
       'data-stack-name': index,
-      'class': 'cwa:flex cwa:min-h-7 cwa:cursor-pointer cwa:items-center cwa:gap-2 cwa:pr-1 cwa:pl-2 cwa:text-label cwa:text-fg',
+      'class': 'cwa:flex cwa:min-h-7 cwa:cursor-pointer cwa:items-center cwa:justify-center cwa:gap-2 cwa:px-2 cwa:text-label cwa:text-fg',
     }, [
-      h('span', { 'data-stack-label': '', 'class': 'cwa:min-w-0 cwa:flex-1 cwa:truncate' }, level.label),
+      h('span', { 'data-stack-label': '', 'class': 'cwa:min-w-0 cwa:truncate' }, level.label),
     ]),
   ])
 }

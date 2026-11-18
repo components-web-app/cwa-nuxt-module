@@ -65,14 +65,19 @@ async function goTo(routePath: string) {
     >
       <PopoverTrigger
         data-testid="component-usage-badge"
-        :class="[badgeClass, 'cwa:cursor-pointer cwa:hover:bg-yellow/10 cwa:aria-expanded:bg-yellow/10 cwa:aria-expanded:shadow-[inset_0_-2px_0_currentColor] cwa:focus-visible:outline-2 cwa:focus-visible:outline-yellow']"
+        class="cwa:inline-flex cwa:h-control cwa:shrink-0 cwa:items-center cwa:px-1 cwa:text-yellow cwa:cursor-pointer cwa:outline-1 cwa:outline-transparent cwa:hover:bg-yellow/10 cwa:aria-expanded:bg-yellow/10 cwa:aria-expanded:shadow-[inset_0_-2px_0_currentColor] cwa:focus-visible:outline-2 cwa:focus-visible:-outline-offset-2 cwa:focus-visible:outline-yellow cwa:pointer-coarse:h-hit"
       >
-        <span class="cwa:sr-only cwa:sm:not-sr-only">Shared · {{ usage.total }} places</span>
         <span
-          aria-hidden="true"
-          data-testid="component-usage-compact"
-          class="cwa:inline-flex cwa:items-center cwa:gap-1 cwa:sm:hidden"
-        ><ShareGlyph />{{ usage.total }}</span>
+          data-testid="component-usage-pill"
+          :class="badgeClass"
+        >
+          <span class="cwa:sr-only cwa:sm:not-sr-only">Shared · {{ usage.total }} places</span>
+          <span
+            aria-hidden="true"
+            data-testid="component-usage-compact"
+            class="cwa:inline-flex cwa:items-center cwa:gap-1 cwa:sm:hidden"
+          ><ShareGlyph />{{ usage.total }}</span>
+        </span>
       </PopoverTrigger>
       <PopoverPortal>
         <PopoverContent

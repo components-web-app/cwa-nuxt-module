@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { controlRows } from './control-rows.mjs'
 
 const widths = [1280, 390]
 const kitBase = process.env.KIT_BASE
@@ -332,7 +333,7 @@ for (const [name, open] of stackOpenings) {
 }
 
 for (const [selected, where, option] of [['0', 'innermost', 'Innermost'], ['4', 'outermost shown', 'Outermost shown'], ['1', 'second', 'Second']]) {
-  test(`kit: with the ${where} level selected, the resource stack opens with the innermost name exactly over its button, and a selected name sits and measures as an unselected one with the same text (#461)`, async ({ page }) => {
+  test(`kit: with the ${where} level selected, the resource stack opens with the innermost name exactly over its button's, every name is centred in its level's box, and a selected name sits and measures as an unselected one with the same text (#461)`, async ({ page }) => {
     await openKit(page, 1280)
     await page.waitForLoadState('networkidle')
     const control = page.getByTestId('kit-stack-selected')
@@ -343,26 +344,40 @@ for (const [selected, where, option] of [['0', 'innermost', 'Innermost'], ['4', 
     const stack = page.getByTestId('resource-stack')
     await expect(stack.locator('[aria-selected="true"]')).toHaveCount(1)
     await expect.poll(() => stack.evaluate(panel => getComputedStyle(panel.firstElementChild.parentElement).visibility)).toBe('visible')
+    await page.evaluate(() => Promise.all(document.getAnimations().filter(animation => Number.isFinite(animation.effect?.getComputedTiming().endTime)).map(animation => animation.finished)))
     const measured = await page.evaluate(({ selected }) => {
       const label = (level) => {
         const box = level.getBoundingClientRect()
         const range = document.createRange()
         range.selectNodeContents(level.querySelector(':scope > [data-stack-name] [data-stack-label]'))
         const text = range.getBoundingClientRect()
-        return { offset: text.left - box.left, width: text.width, weight: getComputedStyle(level.querySelector(':scope > [data-stack-name]')).fontWeight }
+        return { offset: (text.left + text.width / 2) - (box.left + box.width / 2), width: text.width, weight: getComputedStyle(level.querySelector(':scope > [data-stack-name]')).fontWeight }
       }
       const levels = [...document.querySelectorAll('[data-testid="resource-stack"] [role="treeitem"]')]
-      const opener = document.querySelector('[data-testid="kit-stack-open"]').getBoundingClientRect()
-      const inner = document.querySelector('[data-stack-innermost] > [data-stack-name] [data-stack-label]').getBoundingClientRect()
+      const text = (element) => {
+        const range = document.createRange()
+        range.selectNodeContents(element)
+        return range.getBoundingClientRect()
+      }
+      const opener = text(document.querySelector('[data-testid="kit-stack-open"] span:not([aria-hidden])'))
+      const inner = text(document.querySelector('[data-stack-innermost] > [data-stack-name] [data-stack-label]'))
+      const centred = levels.map((level) => {
+        const box = level.getBoundingClientRect()
+        const name = text(level.querySelector(':scope > [data-stack-name] [data-stack-label]'))
+        return { label: level.getAttribute('aria-label'), off: (name.left + name.width / 2) - (box.left + box.width / 2) }
+      })
       const chosen = levels.find(level => level.getAttribute('aria-selected') === 'true')
       const twin = levels.find(level => level !== chosen && level.getAttribute('aria-label') === chosen.getAttribute('aria-label'))
       return {
         over: { left: inner.left - opener.left, top: inner.top - opener.top },
         chosen: label(chosen),
         twin: twin ? label(twin) : undefined,
+        centred,
         selected,
       }
     }, { selected })
+    expect(measured.centred.length).toBeGreaterThanOrEqual(3)
+    expect(measured.centred.filter(level => Math.abs(level.off) > 1)).toEqual([])
     expect(Math.abs(measured.over.left)).toBeLessThanOrEqual(1)
     expect(Math.abs(measured.over.top)).toBeLessThanOrEqual(1)
     if (measured.twin) {
@@ -525,4 +540,41 @@ for (const [width, height] of [[1280, 600], [390, 600]]) {
     await toaster.getByRole('button', { name: 'Dismiss all 6 notifications' }).click()
     await expect(toaster.getByTestId('toast-title')).toHaveCount(0)
   })
+}
+
+for (const hasTouch of [false, true]) {
+  for (const width of widths) {
+    const where = `${width} with a ${hasTouch ? 'coarse' : 'fine'} pointer`
+    for (const open of [undefined, 'kit-dialog-open', 'kit-image-alt-dialog-open', 'kit-sim-dialogs-open']) {
+      test(`kit at ${where}: every single-line field, grouped control, toggle row and button in a row shares one height ${open ? `in the dialog ${open} opens, on every tab` : 'on the page'}, and a toggle's switch is centred in its row (#461)`, async ({ browser }) => {
+        const context = await browser.newContext({ viewport: { width, height: 900 }, hasTouch })
+        const page = await context.newPage()
+        await page.goto(`${kitBase}/kit`)
+        await page.getByTestId('kit-presence').getByTestId('field-presence-flag').first().waitFor()
+        expect(await page.evaluate('matchMedia("(pointer: coarse)").matches')).toBe(hasTouch)
+        if (!open) {
+          const onPage = await page.evaluate(controlRows)
+          expect(onPage.rows).toBeGreaterThan(40)
+          expect(onPage.problems).toEqual([])
+          await context.close()
+          return
+        }
+        await expect(async () => {
+          await page.getByTestId(open).click()
+          await expect(page.getByRole('dialog').first()).toBeVisible({ timeout: 500 })
+        }).toPass()
+        const tabs = await page.getByRole('dialog').first().getByRole('tab').all()
+        for (const tab of tabs.length ? tabs : [undefined]) {
+          if (tab) {
+            await tab.click()
+            await expect(tab).toHaveAttribute('aria-selected', 'true')
+          }
+          const inDialog = await page.evaluate(controlRows, '[role="dialog"]')
+          expect(inDialog.rows).toBeGreaterThan(0)
+          expect(inDialog.problems).toEqual([])
+        }
+        await context.close()
+      })
+    }
+  }
 }
