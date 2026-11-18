@@ -75,6 +75,17 @@ function recordedSaves() {
 }
 
 describe('useCwaResourceModel', () => {
+  test('carries the resource and root field it edits, following the IRI, so an in-page editor and the bar\'s handoff find each other (#461)', () => {
+    mockGetResource.mockReturnValue({ value: undefined })
+    const iri = ref<string | undefined>('/component/1')
+    const { editorKey } = useCwaResourceModel(iri, 'seo.title')
+
+    expect(editorKey.field).toBe('seo')
+    expect(editorKey.iri()).toBe('/component/1')
+    iri.value = '/component/1-draft'
+    expect(editorKey.iri()).toBe('/component/1-draft')
+  })
+
   const iri = ref<string | undefined>('/my/resource')
 
   beforeEach(() => {

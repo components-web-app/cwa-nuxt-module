@@ -11,8 +11,8 @@ const { label, colour } = defineProps<{
 const pressed = defineModel<boolean>({ default: false })
 
 const looks: Record<FilterToggleColour, { mark: string, on: string }> = {
-  static: { mark: 'cwa:rounded-full cwa:bg-type-static', on: 'cwa:bg-type-static cwa:text-stone-900' },
-  dynamic: { mark: 'cwa:rounded-full cwa:bg-type-dynamic', on: 'cwa:bg-type-dynamic cwa:text-stone-900' },
+  static: { mark: 'cwa:bg-type-static cwa:outline-type-static', on: 'cwa:bg-type-static cwa:text-stone-900' },
+  dynamic: { mark: 'cwa:bg-type-dynamic cwa:outline-type-dynamic', on: 'cwa:bg-type-dynamic cwa:text-stone-900' },
 }
 </script>
 
@@ -34,7 +34,7 @@ const looks: Record<FilterToggleColour, { mark: string, on: string }> = {
       v-else
       aria-hidden="true"
       data-testid="filter-toggle-mark"
-      class="cwa:size-2.5 cwa:shrink-0"
+      class="cwa:mx-0.5 cwa:size-2 cwa:shrink-0 cwa:rounded-full cwa:outline-1 cwa:outline-offset-2"
       :class="looks[colour].mark"
     />
     {{ label }}

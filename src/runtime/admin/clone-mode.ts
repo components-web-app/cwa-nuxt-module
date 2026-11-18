@@ -51,7 +51,7 @@ export function excerptOf(elements: readonly Node[]): string | undefined {
 const cloneModes = new WeakMap<Cwa, CloneMode>()
 
 function isDialogOpen() {
-  return !!document.querySelector('[role="dialog"], [aria-modal="true"]')
+  return !!document.querySelector('[role="dialog"], [role="alertdialog"], [role="menu"], [aria-modal="true"]')
 }
 
 function createCloneMode($cwa: Cwa): CloneMode {

@@ -22,7 +22,7 @@ vi.mock('#cwa-layer/_composables/useDynamicPageLoader', () => ({
 vi.mock('#cwa-layer/_composables/useDataList', () => ({ useDataList: vi.fn() }))
 
 mockNuxtImport('useCwa', () => () => ({ getApiDocumentation: mockGetApiDocumentation }))
-mockNuxtImport('useCwaResourceRoute', () => () => ({ getInternalResourceLink: vi.fn() }))
+mockNuxtImport('useCwaResourceRoute', () => () => ({ getInternalResourceLink: (iri: string) => ({ name: '_cwa-resource-page', params: { cwaPage0: iri } }) }))
 
 async function setup(item: Record<string, any>) {
   mockGetApiDocumentation.mockResolvedValue({ entrypoint: { event_data: '/event_data' } })
@@ -53,6 +53,14 @@ function status(wrapper: Awaited<ReturnType<typeof setup>>) {
 describe('/_cwa/data/[type]', () => {
   afterEach(() => {
     vi.clearAllMocks()
+  })
+
+  test('each row offers Edit, which opens its modal, and View, which goes to the page data on the site', async () => {
+    const wrapper = await setup({ '@id': '/event_data/1', 'title': 'Routed', 'route': null })
+
+    expect(wrapper.get('[data-testid="list-row-edit"]').attributes()).toMatchObject({ 'to': '/_cwa/data/event_data/x', 'aria-label': 'Edit Routed' })
+    expect(wrapper.get('[data-testid="list-row-view"]').attributes('aria-label')).toBe('View Routed')
+    expect(wrapper.findComponent({ name: 'ListContent' }).props('columns').at(-1)).toMatchObject({ label: 'Actions', labelHidden: true })
   })
 
   test('the Status column fits the widest status badge, Inherited scheduled with its date (#461)', async () => {

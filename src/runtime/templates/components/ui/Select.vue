@@ -105,6 +105,10 @@ function choose(next: unknown) {
 }
 
 const inactive = computed(() => props.disabled || unbound)
+
+function labelOfValue(candidate: unknown) {
+  return allGroups.value.flatMap(group => group.items).find(item => item.value === candidate)?.label ?? String(candidate)
+}
 const blocked = computed(() => props.disabled && !!props.disabledReason)
 const isOpen = computed({
   get: () => open.value,
@@ -116,10 +120,11 @@ const isOpen = computed({
 
 <template>
   <Field
+    :disabled-reason="blocked ? disabledReason : undefined"
     :label="label"
     :label-hidden="labelHidden"
     :info="info"
-    :description="blocked ? disabledReason : description"
+    :description="description"
     :optional="optional"
     :width="width"
     :state="state"
@@ -127,6 +132,7 @@ const isOpen = computed({
     :control-id="id"
     :inactive="inactive"
     :name="field"
+    :format="labelOfValue"
   >
     <template #default="{ describedBy, tone, busy }">
       <SelectRoot

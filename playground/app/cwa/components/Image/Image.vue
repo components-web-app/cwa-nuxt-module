@@ -19,6 +19,11 @@
         :class="{ 'opacity-0': files.file.loaded }"
       />
     </div>
+    <LazyCwaUiEditPlaceholder
+      v-else-if="$cwa.admin.isEditing"
+      label="Add an image"
+      class="w-40 h-40"
+    />
     <div v-else>
       <div
         data-placeholder="true"
@@ -40,6 +45,6 @@ const props = defineProps<IriProp>()
 // longer implicit). `ref="file"` is on <NuxtImg>, so this resolves to the component instance;
 // useCwaFile unwraps it to its root <img> via $el.
 const imageRef = useTemplateRef<unknown>('file')
-const { exposeMeta, files } = useCwaComponent(props, [withFile({ imagineFilterName: 'thumbnail', imageRef })])
+const { exposeMeta, files, $cwa } = useCwaComponent(props, [withFile({ imagineFilterName: 'thumbnail', imageRef })])
 defineExpose(exposeMeta)
 </script>

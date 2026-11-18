@@ -1,9 +1,10 @@
 // @vitest-environment happy-dom
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
-import { computed, reactive } from 'vue'
+import { computed, nextTick, reactive } from 'vue'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import type { Router } from 'vue-router'
+import { axe } from '../../../../../../../../test/utils/axe'
 import PresenceIndicator from './PresenceIndicator.vue'
 import { navigateTo } from '#app/composables/router'
 import * as cwaComposable from '#cwa/composables/cwa'
@@ -104,6 +105,7 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  vi.useRealTimers()
   mounted.splice(0).forEach(wrapper => wrapper.unmount())
   presence?.stop()
   presence = undefined
@@ -198,10 +200,41 @@ describe('PresenceIndicator (#429)', () => {
     const wrapper = await mountIndicator()
 
     const pausedNotice = wrapper.get('[data-testid="presence-paused"]')
-    expect(text(pausedNotice.element)).toBe('Live editing paused')
+    expect(text(pausedNotice.get('span').element)).toBe('Live editing paused')
     expect(pausedNotice.attributes('role')).toBe('status')
     expect(pausedNotice.attributes('title')).toBe('Other editors\' changes and who is here will catch up when the connection returns. You can keep editing.')
     expect(wrapper.findAll('[data-testid="presence-avatar"]')).toHaveLength(0)
+  })
+
+  test('on a phone the paused status is a glyph named for it, its text hidden, and a tap shows the text for 2 seconds', async () => {
+    mockCwa()
+    presence!.start(true)
+    presence!.paused()
+    const wrapper = await mountIndicator()
+    vi.useFakeTimers()
+
+    const notice = wrapper.get('[data-testid="presence-paused"]')
+    const glyph = wrapper.get('[data-testid="presence-paused-glyph"]')
+    expect(notice.get('span').classes()).toContain('cwa:max-sm:hidden')
+    expect(glyph.element.tagName).toBe('BUTTON')
+    expect(glyph.classes()).toEqual(expect.arrayContaining(['cwa:sm:hidden', 'cwa:size-hit']))
+    expect(text(glyph.element)).toBe('Live editing paused')
+    expect(wrapper.find('[data-testid="presence-paused-tip"]').exists()).toBe(false)
+
+    await glyph.trigger('click')
+    const tip = wrapper.get('[data-testid="presence-paused-tip"]')
+    expect(text(tip.element)).toBe('Live editing paused')
+    expect(tip.attributes('aria-hidden')).toBe('true')
+    expect(tip.classes()).toContain('cwa:sm:hidden')
+
+    vi.advanceTimersByTime(1999)
+    await nextTick()
+    expect(wrapper.find('[data-testid="presence-paused-tip"]').exists()).toBe(true)
+    vi.advanceTimersByTime(1)
+    await nextTick()
+    expect(wrapper.find('[data-testid="presence-paused-tip"]').exists()).toBe(false)
+    vi.useRealTimers()
+    expect(await axe(wrapper.element as HTMLElement)).toHaveNoViolations()
   })
 
   test('the list names each person, their page and what they are doing', async () => {

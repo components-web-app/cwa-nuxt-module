@@ -3,28 +3,25 @@
     <div ref="spacer" />
     <div
       ref="header"
-      class="cwa:section cwa:border-0 cwa:border-b-2 cwa:border-b-light/30 cwa:fixed cwa:z-manager cwa:w-full cwa:h-18 cwa:top-0 cwa:dark-blur"
+      class="cwa:section cwa:border-0 cwa:border-b-2 cwa:border-b-light/30 cwa:fixed cwa:z-manager cwa:flex cwa:items-center cwa:w-full cwa:h-18 cwa:top-0 cwa:dark-blur"
       :class="highlightClass"
       @click.stop
     >
-      <div class="cwa:flex cwa:justify-between cwa:items-center">
-        <div class="cwa:absolute cwa:left-1/2 cwa:top-1/2 cwa:-translate-x-1/2 cwa:-translate-y-1/2 cwa:text-center cwa:text-gray-300 cwa:z-manager">
+      <div class="cwa:flex cwa:min-w-0 cwa:flex-1 cwa:justify-between cwa:items-center cwa:max-sm:gap-x-2">
+        <div
+          data-testid="header-centre"
+          class="cwa:max-sm:order-1 cwa:max-sm:flex cwa:max-sm:min-w-0 cwa:max-sm:flex-1 cwa:max-sm:justify-center cwa:sm:absolute cwa:sm:left-1/2 cwa:sm:top-1/2 cwa:sm:-translate-x-1/2 cwa:sm:-translate-y-1/2 cwa:text-center cwa:text-gray-300 cwa:z-manager"
+        >
           <template v-if="!pageIsAdmin && !isErrorPage">
-            <CwaUiFormButton
+            <CwaUiButton
               v-if="!$cwa.admin.isEditing && $cwa.resources?.page?.value?.data"
-              color="dark"
-              class="cwa:min-w-[120px]"
-            >
-              <span
-                class="cwa:flex cwa:items-center cwa:gap-x-2 cwa:justify-center"
-                @click="showEditPage"
-              >
-                <span>{{ editPageLabel }}</span> <CwaUiIconCogIcon
-                  class="cwa:h-5 cwa:w-5"
-                  aria-hidden="true"
-                />
-              </span>
-            </CwaUiFormButton>
+              :label="editPageLabel"
+              :aria-label="`Page settings: ${editPageLabel}`"
+              :icon="CogIcon"
+              truncate
+              data-testid="page-settings"
+              @click="showEditPage"
+            />
             <path-selector
               v-else-if="$cwa.admin.resourceStackManager.showManager.value"
               :avoid="status"
@@ -85,32 +82,31 @@
             </ul>
           </template>
         </div>
-        <div class="cwa:flex cwa:justify-start cwa:gap-x-4">
+        <div class="cwa:flex cwa:shrink-0 cwa:items-center cwa:justify-start cwa:gap-x-4">
           <template v-if="!pageIsAdmin && !isErrorPage">
-            <CwaUiFormButton
-              class="cwa:min-w-[100px]"
-              color="blue"
+            <CwaUiButton
+              variant="solid"
+              class="cwa:min-w-24"
+              :label="$cwa.admin.isEditing ? 'Done' : 'Edit'"
               :loading="$cwa.resources.isLoading.value"
               @click="$cwa.admin.toggleEdit()"
-            >
-              {{ $cwa.admin.isEditing ? 'Done' : 'Edit' }}
-            </CwaUiFormButton>
+            />
             <button
               v-if="strandedGroups.length"
               type="button"
               data-testid="stranded-groups-warning"
-              class="cwa:flex cwa:items-center cwa:gap-x-1 cwa:text-orange cwa:hover:text-white cwa:transition-colors cwa:cursor-pointer"
+              class="cwa:flex cwa:min-h-hit cwa:items-center cwa:gap-x-1 cwa:px-2 cwa:text-label cwa:text-warning cwa:cursor-pointer cwa:outline-1 cwa:outline-transparent cwa:transition-colors cwa:duration-(--cwa-duration-fast) cwa:hover:bg-button cwa:focus-visible:outline-2 cwa:focus-visible:-outline-offset-2 cwa:focus-visible:outline-accent-fg"
               title="Component groups attached to this page are not shown on it"
+              :aria-label="`${strandedGroups.length} component groups attached to this page are not shown on it`"
               @click="showStrandedModal = true"
             >
-              <CwaUiIconWarningIcon
-                class="cwa:h-6 cwa:w-6"
+              <WarningIcon
+                class="cwa:size-5"
                 aria-hidden="true"
               />
-              <span>{{ strandedGroups.length }}</span>
-              <span class="cwa:sr-only">component groups attached to this page are not shown on it</span>
+              <span aria-hidden="true">{{ strandedGroups.length }}</span>
             </button>
-            <CwaUiFormToggle
+            <CwaUiToggle
               v-if="cloneSource && $cwa.admin.isEditing"
               v-model="isNavEnabled"
               label="Enable Navigation"
@@ -122,7 +118,7 @@
         <div
           v-if="$cwa.admin.isEditing"
           ref="status"
-          class="cwa:flex cwa:gap-x-4 cwa:items-center"
+          class="cwa:flex cwa:gap-x-4 cwa:items-center cwa:max-sm:order-2"
         >
           <SpinnerTick
             :is-loading="isLoading"
@@ -131,7 +127,7 @@
         </div>
         <div
           v-else
-          class="cwa:flex cwa:self-stretch cwa:min-h-9"
+          class="cwa:flex cwa:min-h-9 cwa:items-center cwa:max-sm:order-2"
         >
           <Menu />
         </div>
@@ -149,14 +145,12 @@
       @close="closeModal"
       @reload="goToAdminPagesView"
     />
-    <ResourceModalOverlayTemplate :show="showStrandedModal">
-      <StrandedComponentGroupsModal
-        v-if="showStrandedModal"
-        :groups="strandedGroups"
-        :targets="shownGroups"
-        @close="showStrandedModal = false"
-      />
-    </ResourceModalOverlayTemplate>
+    <StrandedComponentGroupsModal
+      v-if="showStrandedModal"
+      :groups="strandedGroups"
+      :targets="shownGroups"
+      @close="showStrandedModal = false"
+    />
   </div>
 </template>
 
@@ -173,7 +167,8 @@ import OutdatedContentNotice from '#cwa/templates/components/main/admin/header/_
 import IconPages from '#cwa/templates/components/core/assets/IconPages.vue'
 import IconLayouts from '#cwa/templates/components/core/assets/IconLayouts.vue'
 import IconUsers from '#cwa/templates/components/core/assets/IconUsers.vue'
-import ResourceModalOverlayTemplate from '#cwa/templates/components/core/admin/ResourceModalOverlayTemplate.vue'
+import CogIcon from '#cwa/templates/components/ui/icon/CogIcon.vue'
+import WarningIcon from '#cwa/templates/components/ui/icon/WarningIcon.vue'
 import PageResourceAdminModal from '#cwa/templates/components/core/admin/PageResourceAdminModal.vue'
 import IconRoutes from '#cwa/templates/components/core/assets/IconRoutes.vue'
 import IconData from '#cwa/templates/components/core/assets/IconData.vue'
@@ -226,17 +221,17 @@ const editPageResourceType = computed(() => {
 })
 
 const highlightClass = computed(() => {
-  const classes = ['cwa:before:content-[""] cwa:before:absolute cwa:before:top-0 cwa:before:left-0 cwa:before:w-full cwa:before:h-0.5 cwa:before:transition-colors']
+  const classes = ['cwa:before:content-[""] cwa:before:absolute cwa:before:top-0 cwa:before:left-0 cwa:before:w-full cwa:before:h-[3px] cwa:before:transition-colors']
   if ($cwa.resources.isDynamicPage.value) {
-    return [...classes, 'cwa:before:bg-yellow']
+    return [...classes, 'cwa:before:bg-type-dynamic']
   }
   if ($cwa.resources.isDataPage.value) {
-    return [...classes, $cwa.resources.pageData?.value?.data?.route ? 'cwa:before:bg-green' : 'cwa:before:bg-orange']
+    return [...classes, $cwa.resources.pageData?.value?.data?.route ? 'cwa:before:bg-success' : 'cwa:before:bg-warning']
   }
   if (pageIsAdmin.value) {
     return [...classes, 'cwa:before:bg-stone-400']
   }
-  return [...classes, 'cwa:before:bg-blue-600']
+  return [...classes, 'cwa:before:bg-type-static']
 })
 
 function showEditPage() {

@@ -66,6 +66,25 @@ describe('CwaUiDialog and the Save model (#461)', () => {
     form = fakeDialogForm({ reference: 'Kitchens', title: 'Hand-built kitchens', isReachableWithoutRoute: false })
   })
 
+  test('opens with focus on its title, never on a header control such as the page type select, the view link or the depth chain, where a stray key would act (#461)', async () => {
+    const Host = defineComponent({
+      setup() {
+        return () => h(Dialog, { title: 'Kitchens', tabs, form, onSave: () => form.save() }, {
+          'header-actions': () => h('button', { 'type': 'button', 'data-testid': 'page-type' }, 'Static'),
+          'subheader': () => h('nav', [h('a', { 'href': '/kitchens', 'data-testid': 'depth-link' }, 'Kitchens')]),
+          'details': () => h(Input, { label: 'Reference', field: 'reference' }),
+        })
+      },
+    })
+    mount(Host, { attachTo: document.body })
+    await flushPromises()
+
+    const title = document.getElementById(dialog().getAttribute('aria-labelledby')!)!
+    expect(document.activeElement).toBe(title)
+    expect(title.getAttribute('tabindex')).toBe('-1')
+    expect(q('[data-testid="page-type"]')).not.toBeNull()
+  })
+
   test('is a modal dialog named by its title, with tabs, panels and a footer of Cancel and Save only', async () => {
     mountDialog(form)
     await flushPromises()
@@ -421,6 +440,26 @@ describe('CwaUiDialog and the Save model (#461)', () => {
     expect(q('[data-testid="dialog-announcer"]')?.textContent).toBe('This page wasn\'t saved. 1 field needs a change.')
   })
 
+  test('a failed field on a tab never opened is listed by the label its tab declares, opens that tab and marks it, never by its raw name (#461)', async () => {
+    const declared = [tabs[0]!, { ...tabs[1]!, fields: { title: 'SEO page title' } }, tabs[2]!]
+    mountDialog(form, { tabs: declared })
+    await flushPromises()
+    await type('[data-cwa-field="reference"] input', 'Kitchens 2')
+    form.failNext({ title: 'Use 60 characters or fewer.', reference: 'Already used.' })
+
+    save().click()
+    await flushPromises()
+
+    const links = qa('[data-testid="dialog-alert-field"]').map(link => link.textContent?.trim())
+    expect(links.toSorted()).toEqual(['Reference', 'SEO page title'])
+    expect(q('[data-testid="dialog-alert"]')!.textContent).toContain('Search engines tab')
+    expect(tab('Search engines').getAttribute('data-badge')).toBe('error')
+
+    qa('[data-testid="dialog-alert-field"]').find(link => link.textContent?.trim() === 'SEO page title')!.click()
+    await flushPromises()
+    expect(tab('Search engines').getAttribute('aria-selected')).toBe('true')
+  })
+
   test('editing the failed field clears its error and the alert goes', async () => {
     mountDialog(form)
     await flushPromises()
@@ -564,6 +603,19 @@ describe('CwaUiDialog and the Save model (#461)', () => {
     tab('Details').dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }))
     await flushPromises()
     expect(tab('Info').getAttribute('aria-selected')).toBe('true')
+  })
+
+  test('Alt, Meta or Ctrl with an arrow key is left to the browser, so Alt+Left goes back instead of switching tabs (#461)', async () => {
+    mountDialog(form)
+    await flushPromises()
+
+    for (const modifier of ['altKey', 'metaKey', 'ctrlKey']) {
+      const event = new KeyboardEvent('keydown', { key: 'ArrowRight', [modifier]: true, bubbles: true, cancelable: true })
+      tab('Details').dispatchEvent(event)
+      await flushPromises()
+      expect(tab('Details').getAttribute('aria-selected')).toBe('true')
+      expect(event.defaultPrevented).toBe(false)
+    }
   })
 
   test('controls in a dialog take the large control size', async () => {

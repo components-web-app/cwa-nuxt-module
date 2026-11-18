@@ -10,7 +10,7 @@ import { ErrorStore } from '#cwa/storage/stores/error/error-store'
 import type { CwaResource } from '#cwa/resources/resource-utils'
 import { confirmResourceAction } from '#cwa/admin/resource-confirm'
 
-vi.mock('#cwa/templates/components/core/ConfirmDialog.vue', () => ({ default: {} }))
+vi.mock('#cwa/templates/components/core/ui/Confirm.vue', () => ({ default: {} }))
 vi.mock('#cwa/admin/resource-confirm', async (importOriginal) => {
   const actual = await importOriginal<typeof import('#cwa/admin/resource-confirm')>()
   return { ...actual, confirmResourceAction: vi.fn(actual.confirmResourceAction) }

@@ -2,9 +2,11 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { PopoverArrow, PopoverContent, PopoverRoot } from 'reka-ui'
 import CwaUiButton from '../../ui/Button.vue'
-import XMarkIcon from '../../ui/icon/XMarkIcon.vue'
-import StateGlyph from './StateGlyph.vue'
+import FieldStatusTitle from './FieldStatusTitle.vue'
+import FieldStatusError from './FieldStatusError.vue'
 import type { FieldUndo } from './field-keys'
+import { shownValue } from './field-value'
+import type { FieldValueFormat } from './field-value'
 import type { ResourceModelField } from '#cwa/resources/model-editors'
 import type { CwaFieldState } from '#cwa/storage/stores/resources/state'
 
@@ -13,13 +15,14 @@ export type LineState = 'saving' | 'saved' | 'error' | 'conflict' | 'undo'
 const SAVED_FOR = 1180
 const HOVER_DELAY = 300
 
-const { state, name, box, model, descriptionId, undo } = defineProps<{
+const { state, name, box, model, descriptionId, undo, format } = defineProps<{
   state: CwaFieldState
   name: string
   box: HTMLElement | null | undefined
   model?: ResourceModelField<any>
   descriptionId: string
   undo?: FieldUndo
+  format?: FieldValueFormat
 }>()
 
 const now = ref(Date.now())
@@ -219,10 +222,7 @@ function runUndo() {
 }
 
 function quoted(value: unknown) {
-  if (value === null || value === undefined || value === '') {
-    return 'Empty'
-  }
-  return typeof value === 'string' ? value : JSON.stringify(value)
+  return shownValue(value, format)
 }
 
 onBeforeUnmount(() => {
@@ -270,42 +270,17 @@ defineExpose({ line, open })
       @mouseenter="show"
       @mouseleave="scheduleClose"
     >
-      <div class="cwa:-mt-1 cwa:-mr-2 cwa:mb-1.5 cwa:flex cwa:min-h-8 cwa:items-center cwa:gap-2 cwa:font-semibold">
-        <StateGlyph
-          v-if="line !== 'undo'"
-          :kind="line === 'error' ? 'error' : 'conflict'"
-        />
-        <span class="cwa:min-w-0 cwa:flex-1">{{ title }}</span>
-        <button
-          type="button"
-          tabindex="-1"
-          aria-label="Close"
-          class="cwa:grid cwa:size-8 cwa:shrink-0 cwa:cursor-pointer cwa:place-items-center cwa:text-fg-muted cwa:hover:bg-button cwa:hover:text-fg"
-          @click="act()"
-        >
-          <XMarkIcon class="cwa:size-4" />
-        </button>
-      </div>
-      <template v-if="line === 'error'">
-        <p class="cwa:m-0">
-          {{ state.error?.message || 'The server couldn’t save this.' }} Reset puts back the last saved value.
-        </p>
-        <div class="cwa:mt-4 cwa:flex cwa:flex-wrap cwa:justify-end cwa:gap-actions">
-          <CwaUiButton
-            label="Retry"
-            variant="solid"
-            size="sm"
-            data-testid="field-status-retry"
-            @click="retry"
-          />
-          <CwaUiButton
-            label="Reset"
-            size="sm"
-            data-testid="field-status-reset"
-            @click="reset"
-          />
-        </div>
-      </template>
+      <FieldStatusTitle
+        :title="title"
+        :glyph="line === 'undo' ? undefined : line === 'error' ? 'error' : 'conflict'"
+        @close="act()"
+      />
+      <FieldStatusError
+        v-if="line === 'error'"
+        :message="state.error?.message"
+        @retry="retry"
+        @reset="reset"
+      />
       <template v-else-if="line === 'undo'">
         <p class="cwa:m-0">
           {{ undo?.text }}

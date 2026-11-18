@@ -490,5 +490,7 @@ export const useCwaResourceModel = <T, S = T>(iri: Ref<string | undefined>, prop
     blur,
     focusedBy,
     focusListeners,
+    /** @internal */
+    editorKey: { iri: () => iri.value, field: rootProperty.value },
   }
 }

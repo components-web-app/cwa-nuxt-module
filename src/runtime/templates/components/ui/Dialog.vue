@@ -61,6 +61,11 @@ const titleId = ref<string>()
 const kindEdges = { static: 'cwa:border-type-static', dynamic: 'cwa:border-type-dynamic', success: 'cwa:border-success', warning: 'cwa:border-warning' }
 const tabsId = useId()
 const body = useTemplateRef<HTMLElement>('body')
+
+function focusTitle(event: Event) {
+  event.preventDefault()
+  document.getElementById(titleId.value ?? '')?.focus({ preventScroll: true })
+}
 const presenceLayer = useTemplateRef<HTMLElement>('presenceLayer')
 provide(presenceLayerKey, { el: presenceLayer, align: 'end' })
 const alert = useTemplateRef<InstanceType<typeof CwaUiAlert>>('alert')
@@ -152,18 +157,28 @@ const keptText = computed(() => {
   return n ? `${n} unsaved ${props.noun} ${n === 1 ? 'change' : 'changes'} kept` : undefined
 })
 
+function declaringTab(field: string) {
+  return props.tabs?.find(tab => tab.fields?.[field])
+}
+
+function tabOf(field: string) {
+  return registry.get(field)?.tab ?? declaringTab(field)?.key
+}
+
 function fieldsOf(tab: string) {
-  return [...registry.entries()].filter(([, entry]) => entry.tab === tab).map(([field]) => field)
+  const registered = [...registry.entries()].filter(([, entry]) => entry.tab === tab).map(([field]) => field)
+  const declared = Object.keys(props.tabs?.find(candidate => candidate.key === tab)?.fields ?? {}).filter(field => !registry.has(field))
+  return [...registered, ...declared]
 }
 
 const badges = computed(() => Object.fromEntries((props.tabs ?? []).map(tab => [tab.key, dialogTabBadge(fieldsOf(tab.key), props.form)])))
 
 function labelOf(field: string) {
-  return registry.get(field)?.label ?? field
+  return registry.get(field)?.label ?? declaringTab(field)?.fields?.[field] ?? field
 }
 
 function tabLabelOf(field: string) {
-  const tab = registry.get(field)?.tab
+  const tab = tabOf(field)
   return props.tabs?.find(candidate => candidate.key === tab)?.label
 }
 
@@ -287,8 +302,8 @@ watch(() => props.form?.failures, async (failures, previous) => {
   showAlert.value = true
   const failed = alertFields.value
   const current = currentTab.value
-  if (failed.length && !failed.some(field => registry.get(field)?.tab === current)) {
-    const first = props.tabs?.find(tab => failed.some(field => registry.get(field)?.tab === tab.key))
+  if (failed.length && !failed.some(field => tabOf(field) === current)) {
+    const first = props.tabs?.find(tab => failed.some(field => tabOf(field) === tab.key))
     first && (currentTab.value = first.key)
   }
   announce(alertTitle.value)
@@ -298,7 +313,7 @@ watch(() => props.form?.failures, async (failures, previous) => {
 })
 
 async function showField(field: string) {
-  const tab = registry.get(field)?.tab
+  const tab = tabOf(field)
   tab && (currentTab.value = tab)
   await nextTick()
   const target = body.value?.querySelector<HTMLElement>(`[data-cwa-field="${CSS.escape(field)}"] :is(input, textarea, button, [tabindex]:not([tabindex="-1"]))`)
@@ -390,7 +405,7 @@ async function selectTab(key: string) {
 function onTabKey(event: KeyboardEvent, index: number) {
   const tabs = props.tabs ?? []
   const moves: Record<string, number> = { ArrowRight: index + 1, ArrowLeft: index - 1, Home: 0, End: tabs.length - 1 }
-  if (!(event.key in moves)) {
+  if (!(event.key in moves) || event.altKey || event.metaKey || event.ctrlKey) {
     return
   }
   event.preventDefault()
@@ -432,6 +447,7 @@ defineExpose({ requestClose, confirmDiscard, showField, announce })
         :inert="closing || undefined"
         class="cwa:fixed cwa:inset-0 cwa:z-dialog cwa:flex cwa:flex-col cwa:bg-surface cwa:text-fg cwa:shadow-popover cwa:outline-none cwa:[--cwa-spacing-control:var(--cwa-spacing-control-lg)] cwa:[--cwa-text-control:var(--cwa-text-control-lg)]"
         :class="placement === 'right' ? [slideOver, closing ? slideOut : slideIn] : [centred, widths[size]]"
+        @open-auto-focus="focusTitle"
         @animationend="onAnimationEnd"
       >
         <header
@@ -449,7 +465,8 @@ defineExpose({ requestClose, confirmDiscard, showField, announce })
           <DialogTitle
             :ref="(title) => { titleId = (title as { $el?: HTMLElement } | null)?.$el?.id }"
             as="h2"
-            class="cwa:m-0 cwa:me-2 cwa:min-w-0 cwa:flex-1 cwa:truncate cwa:text-title cwa:text-fg"
+            tabindex="-1"
+            class="cwa:m-0 cwa:me-2 cwa:min-w-0 cwa:flex-1 cwa:truncate cwa:text-title cwa:text-fg cwa:outline-none"
           >
             {{ title }}
           </DialogTitle>

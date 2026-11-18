@@ -39,7 +39,7 @@ vi.mock('#cwa-layer/_composables/useListRoutes', async () => {
 })
 
 mockNuxtImport('useCwa', () => mockUseCwa)
-mockNuxtImport('useCwaResourceRoute', () => () => ({ getInternalResourceLink: vi.fn() }))
+mockNuxtImport('useCwaResourceRoute', () => () => ({ getInternalResourceLink: (iri: string) => ({ name: '_cwa-resource-page', params: { cwaPage0: iri } }) }))
 
 function setup(uiComponent: string, stored: Record<string, any> = {}, listed: Record<string, any> = {}) {
   mockUseCwa.mockReturnValue({
@@ -167,8 +167,21 @@ describe('/_cwa/pages list (#461)', () => {
     expect(typesModel.value).toEqual(['true'])
   })
 
-  test('a template row is marked Dynamic and a page Static', () => {
+  test('a page row is marked Static page', () => {
     const wrapper = setup('CwaPagePrimaryPageTemplate')
-    expect(wrapper.findComponent(ListRow).props('type')).toEqual({ label: 'Static', colour: 'static' })
+    expect(wrapper.findComponent(ListRow).props('type')).toEqual({ label: 'Static page', colour: 'static' })
+  })
+
+  test('a template row is marked Dynamic template', () => {
+    const wrapper = setup('CwaPagePrimaryPageTemplate', { isTemplate: true })
+    expect(wrapper.findComponent(ListRow).props('type')).toEqual({ label: 'Dynamic template', colour: 'dynamic' })
+  })
+
+  test('each row offers Edit, which opens its modal, and View, which goes to the page on the site, under a hidden Actions column', () => {
+    const wrapper = setup('CwaPagePrimaryPageTemplate')
+    const row = wrapper.findComponent(ListRow)
+
+    expect(row.props()).toMatchObject({ actions: true, to: '/_cwa/pages/x', view: { name: '_cwa-resource-page', params: { cwaPage0: '/_/pages/1' } } })
+    expect(wrapper.findComponent({ name: 'ListContent' }).props('columns').at(-1)).toMatchObject({ label: 'Actions', labelHidden: true })
   })
 })

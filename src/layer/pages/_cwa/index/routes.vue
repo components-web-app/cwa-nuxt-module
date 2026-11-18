@@ -47,7 +47,7 @@ const now = ref(new Date())
 const columns = [
   { label: 'Path' },
   { label: 'Status', width: '17.5rem' },
-  { label: 'Actions', width: '2.75rem', labelHidden: true },
+  { label: 'Actions', width: '4.5rem', labelHidden: true },
 ]
 
 const countText = computed(() => {

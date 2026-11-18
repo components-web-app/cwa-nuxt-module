@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useCwa } from '#cwa/composables/cwa'
 import { useCloneMode } from '#cwa/admin/clone-mode'
+import CwaUiButton from '#cwa/templates/components/ui/Button.vue'
 
 const $cwa = useCwa()
 const { source, end } = useCloneMode($cwa)
@@ -10,22 +11,20 @@ const { source, end } = useCloneMode($cwa)
   <div
     v-if="source"
     data-testid="clone-mode-bar"
-    class="cwa:py-1 cwa:px-3 cwa:rounded-full cwa:bg-light/10 cwa:text-sm cwa:flex cwa:gap-x-1.5 cwa:items-center"
+    class="cwa:flex cwa:items-center cwa:gap-x-3 cwa:bg-surface-raised cwa:py-1 cwa:ps-3 cwa:pe-1 cwa:text-control"
   >
     <span
-      class="cwa:text-stone-300 cwa:whitespace-nowrap"
+      class="cwa:whitespace-nowrap cwa:text-fg"
       data-testid="clone-mode-source"
     >{{ source.move ? 'Moving' : 'Cloning' }}: {{ source.name || source.iri }}<template v-if="source.excerpt"> — “{{ source.excerpt }}”</template></span>
     <span
-      class="cwa:text-stone-400 cwa:text-xs"
+      class="cwa:text-helper cwa:text-fg-muted"
       data-testid="clone-mode-hint"
     >{{ $cwa.admin.navigationGuardDisabled ? 'Follow links to the page you want, then turn off Enable Navigation to place it.' : 'Click a component to place it before or after. To use another page, turn on Enable Navigation.' }}</span>
-    <button
-      type="button"
-      class="cwa:bg-light/90 cwa:hover:bg-light cwa:text-dark cwa:py-1 cwa:px-2 cwa:rounded-full cwa:cursor-pointer"
+    <CwaUiButton
+      label="Cancel"
+      size="sm"
       @click.stop="end"
-    >
-      Cancel
-    </button>
+    />
   </div>
 </template>

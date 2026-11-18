@@ -165,6 +165,37 @@ describe('CwaUiConfirm (#461)', () => {
     expect(wrapper.emitted('confirm')).toHaveLength(1)
   })
 
+  test('a second action sits between the safe action and the main one, takes focus, and answers extra; the main one answers go', async () => {
+    const wrapper = mountConfirm({ title: 'Delete this component?', description: 'It is used in 3 places.', keep: 'Cancel', extra: 'Remove from this location only', go: 'Delete from all 3 places' })
+    await flushPromises()
+
+    const buttons = [...panel().querySelectorAll('button')].map(button => button.getAttribute('data-testid'))
+    expect(buttons).toEqual(['confirm-keep', 'confirm-extra', 'confirm-go'])
+    expect(document.activeElement).toBe(q('[data-testid="confirm-extra"]'))
+    q<HTMLButtonElement>('[data-testid="confirm-extra"]').click()
+    await flushPromises()
+    expect(wrapper.emitted('confirm')).toEqual([['extra']])
+  })
+
+  test('the main action answers go', async () => {
+    const wrapper = mountConfirm({ title: 'Remove this component?', keep: 'Keep it', go: 'Remove' })
+    await flushPromises()
+
+    go().click()
+    await flushPromises()
+    expect(wrapper.emitted('confirm')).toEqual([['go']])
+  })
+
+  test('Escape answers cancel with a second action', async () => {
+    const wrapper = mountConfirm({ title: 'Delete this component?', keep: 'Cancel', extra: 'Remove from this location only', go: 'Delete from all 3 places' })
+    await flushPromises()
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    await flushPromises()
+    expect(wrapper.emitted('cancel')).toHaveLength(1)
+    expect(wrapper.emitted('confirm')).toBeUndefined()
+  })
+
   test.each(['empty', 'wrong', 'right'] as const)('has no axe violations when the typed field is %s', async (state) => {
     mountConfirm()
     await flushPromises()

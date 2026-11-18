@@ -28,12 +28,13 @@ describe('FilterToggle (#461)', () => {
     expect(button.attributes('aria-pressed')).toBe('true')
   })
 
-  test('off, it shows its type\'s mark in the type\'s colour on the field fill: a round dot for both', () => {
-    const staticMark = mountToggle(false, 'static').get('[data-testid="filter-toggle-mark"]').classes()
-    const dynamicMark = mountToggle(false, 'dynamic').get('[data-testid="filter-toggle-mark"]').classes()
+  test.each([
+    ['static', 'cwa:bg-type-static', 'cwa:outline-type-static'],
+    ['dynamic', 'cwa:bg-type-dynamic', 'cwa:outline-type-dynamic'],
+  ] as const)('off, a %s toggle shows the list rows\' round dot: 8px, filled, with a 1px outline 2px out, in its type\'s colour', (colour, fill, outline) => {
+    const mark = mountToggle(false, colour).get('[data-testid="filter-toggle-mark"]').classes()
 
-    expect(staticMark).toEqual(expect.arrayContaining(['cwa:rounded-full', 'cwa:bg-type-static']))
-    expect(dynamicMark).toEqual(expect.arrayContaining(['cwa:rounded-full', 'cwa:bg-type-dynamic']))
+    expect(mark).toEqual(expect.arrayContaining(['cwa:size-2', 'cwa:rounded-full', 'cwa:outline-1', 'cwa:outline-offset-2', fill, outline]))
   })
 
   test('on, it is filled in its type\'s colour with dark text and a check in place of the mark', () => {
