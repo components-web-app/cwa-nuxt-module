@@ -120,7 +120,7 @@ function kitSearch(term: string, pageNumber: number) {
 const kitSearchForever = () => new Promise<never>(() => {})
 const kitPeers = [{ user: { id: '/_/users/mia', name: 'Mia' }, name: 'Mia', colour: '#d946ef', isSelf: false, clientIds: ['kit-mia'] }]
 function withPeer<T>(model: ReturnType<typeof fakeFieldModel<T>>) {
-  return { ...model, focusedBy: computed(() => kitPeers) }
+  return { ...model, focusedBy: computed(() => kitPeers), focusListeners: { onFocusin: () => {}, onFocusout: () => {}, onPointerdown: () => {} } }
 }
 const presenceModels = {
   input: withPeer(fakeFieldModel('Kitchens')),
