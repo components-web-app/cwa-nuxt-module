@@ -1,10 +1,9 @@
 import { computed, ref } from 'vue'
-import type { Ref, App } from 'vue'
+import type { Ref } from 'vue'
 import { consola as logger } from 'consola'
 import { useCwa } from '#cwa/composables/cwa'
-import { createConfirmDialog } from '#cwa/admin/confirm-dialog'
-import { useNuxtApp } from '#imports'
-import ConfirmDialog from '#cwa/templates/components/core/ConfirmDialog.vue'
+import { useCwaConfirm } from '#cwa/composables/cwa-confirm'
+import type { CwaConfirmOptions } from '#cwa/composables/cwa-confirm'
 import { orphanedResourceEndpoint } from '#cwa/api/orphaned-resources'
 import { isNotFound, statusLabel } from './useOrphanReport'
 
@@ -26,10 +25,14 @@ export interface OrphanDeleteOutcome<TRejected> {
   rejected: TRejected[]
 }
 
-export async function confirmDeletion(vueApp: App, title: string, content: string) {
-  const dialog = await createConfirmDialog(vueApp, ConfirmDialog)
-  const { isCanceled } = await dialog.reveal({ title, content })
-  return !isCanceled
+export function deletionConfirm({ title, lines, go, typed }: { title: string, lines: string[], go: string, typed?: CwaConfirmOptions['typed'] }): CwaConfirmOptions {
+  return {
+    title,
+    lines: [...lines.map(text => ({ text })), { text: 'This can\'t be undone.' }],
+    keep: 'Don\'t delete',
+    go,
+    typed,
+  }
 }
 
 export function useOrphanView() {
@@ -86,7 +89,7 @@ interface OrphanDeletionSource<TRequest, TResult, TRejected> {
 }
 
 export function useOrphanDeletion<TRequest, TResult, TRejected>(source: OrphanDeletionSource<TRequest, TResult, TRejected>) {
-  const vueApp = useNuxtApp().vueApp
+  const confirm = useCwaConfirm()
   const deleting = ref(false)
   const deleteOutcome = ref<OrphanDeleteOutcome<TRejected>>() as Ref<OrphanDeleteOutcome<TRejected> | undefined>
   const deleteError = ref<string>()
@@ -133,13 +136,13 @@ export function useOrphanDeletion<TRequest, TResult, TRejected>(source: OrphanDe
     await showRemaining(result)
   }
 
-  async function run(confirmation: [title: string, content: string], request: TRequest, rows: DeletableRow[], onError: (label: string | number) => void) {
+  async function run(confirmation: CwaConfirmOptions, request: TRequest, rows: DeletableRow[], onError: (label: string | number) => void) {
     if (busy.value) {
       return
     }
     deleting.value = true
     try {
-      if (!await confirmDeletion(vueApp, ...confirmation)) {
+      if (!await confirm(confirmation)) {
         return
       }
       await send(request, rows, onError)

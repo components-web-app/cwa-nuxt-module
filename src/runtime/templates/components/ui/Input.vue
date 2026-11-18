@@ -21,6 +21,7 @@ const props = withDefaults(defineProps<{
   inputmode?: 'text' | 'email' | 'url' | 'search' | 'tel' | 'numeric' | 'decimal' | 'none'
   nullable?: boolean
   invalid?: string
+  autocomplete?: string
   field?: string
   model?: ResourceModelField<string>
   modelValue?: string | null
@@ -37,6 +38,7 @@ const props = withDefaults(defineProps<{
   inputmode: undefined,
   nullable: false,
   invalid: undefined,
+  autocomplete: undefined,
   field: undefined,
   model: undefined,
   modelValue: undefined,
@@ -76,6 +78,7 @@ function onInput(event: Event) {
         <input
           :id="id"
           :type="type"
+          :autocomplete="autocomplete"
           :inputmode="inputmode"
           :value="value ?? ''"
           :placeholder="placeholder"

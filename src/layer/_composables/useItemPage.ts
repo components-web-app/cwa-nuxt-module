@@ -7,7 +7,6 @@ import isEqual from 'lodash-es/isEqual'
 import { useCwaResourceRoute } from '#cwa/composables/useCwaResourceRoute'
 import type { CwaResource } from '#cwa/resources/resource-utils'
 import { useCwa } from '#cwa/composables/cwa'
-import { ErrorType } from '#cwa/storage/stores/error/state'
 import type { ApiResourceEvent } from '#cwa/resources/resources-manager'
 import type { ResourceModelField, RemoteFieldChange } from '#cwa/resources/model-editors'
 import type { CwaFieldState } from '#cwa/storage/stores/resources/state'
@@ -29,7 +28,7 @@ type UseItemOps = {
   emit: ((evt: 'close') => void) & ((evt: 'reload') => void)
   resourceType?: string
   defaultResource: MaybeRefOrGetter<Omit<TempCwaResource, '@type'>>
-  validate?: (data: any) => boolean | string
+  validate?: (data: any) => boolean | Record<string, string> | undefined
   endpoint?: Ref<string | undefined>
   routeHashAfterAdd?: ComputedRef<StartsWithHash>
   iri?: Ref<string | undefined>
@@ -130,25 +129,16 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
     if (!localResourceData.value) {
       return
     }
-    if (validate) {
-      const result = validate(localResourceData.value)
-      if (result !== true) {
-        if (result !== false) {
-          $cwa.resourcesManager.addError({
-            type: ErrorType.VALIDATION,
-            timestamp: (new Date()).getTime(),
-            statusCode: 0,
-            detail: result,
-            violations: [
-              {
-                message: result,
-                property: 'plainPassword',
-              },
-            ],
-          })
-        }
-        return
-      }
+    const invalid = validate?.(localResourceData.value)
+    if (invalid === false) {
+      return
+    }
+    if (typeof invalid === 'object' && Object.keys(invalid).length) {
+      fieldErrors.value = { ...fieldErrors.value, ...invalid }
+      formError.value = undefined
+      savedAt.value = undefined
+      failures.value++
+      return
     }
     const doRequest = async () => {
       const data: { [key: string]: any } = {

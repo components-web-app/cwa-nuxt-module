@@ -54,7 +54,10 @@
         />
       </template>
     </ListContent>
-    <ResourceModalOverlay @reload="triggerReload" />
+    <ResourceModalOverlay
+      :overlay="false"
+      @reload="triggerReload"
+    />
   </div>
 </template>
 

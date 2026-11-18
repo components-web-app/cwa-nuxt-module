@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { useId } from 'vue'
+import { inject, useId } from 'vue'
+import { sectionHeadingKey } from '../core/ui/field-keys'
 
 const { title, description, columns = 1 } = defineProps<{
   title?: string
@@ -8,6 +9,7 @@ const { title, description, columns = 1 } = defineProps<{
 }>()
 
 const headingId = useId()
+const heading = inject(sectionHeadingKey, 'h3')
 </script>
 
 <template>
@@ -21,12 +23,13 @@ const headingId = useId()
       class="cwa:mb-section-head cwa:flex cwa:flex-wrap cwa:items-start cwa:justify-between cwa:gap-x-4 cwa:gap-y-2"
     >
       <div class="cwa:min-w-0">
-        <h3
+        <component
+          :is="heading"
           :id="headingId"
           class="cwa:m-0 cwa:text-section cwa:text-fg-secondary"
         >
           {{ title }}
-        </h3>
+        </component>
         <p
           v-if="description"
           class="cwa:mt-1 cwa:mb-0 cwa:text-helper cwa:text-fg-muted"

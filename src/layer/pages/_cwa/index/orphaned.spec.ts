@@ -1,10 +1,12 @@
 // @vitest-environment nuxt
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import OrphanedPage from './orphaned.vue'
 import * as cwaComposable from '#cwa/composables/cwa'
 import { useRouter } from '#app/composables/router'
 import cwaAdmin from '#cwa-layer/middleware/cwa-admin'
+import { axe } from '../../../../../test/utils/axe'
+import { drawsFocusRing } from '../../../../../test/utils/focus-ring'
 
 const { mockReveal } = vi.hoisted(() => ({ mockReveal: vi.fn() }))
 
@@ -62,7 +64,7 @@ function fileReport(overrides: Record<string, any> = {}) {
   }
 }
 
-async function setup() {
+async function setup(attach = false) {
   // @ts-expect-error partial mock
   vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => ({
     fetch: mockFetch,
@@ -76,6 +78,7 @@ async function setup() {
     },
   }))
   const wrapper = mount(OrphanedPage, {
+    attachTo: attach ? document.body : undefined,
     global: {
       stubs: {
         ListHeading: true,
@@ -91,7 +94,7 @@ type Wrapper = Awaited<ReturnType<typeof setup>>
 
 function button(wrapper: Wrapper, text: string, within?: string) {
   const root = within ? wrapper.find(`[data-testid="${within}"]`) : wrapper
-  return root.findAll('button').find(b => b.text() === text)
+  return root.findAll('button').find(b => b.findAll('span').some(span => span.text() === text && !span.classes('cwa:sr-only')))
 }
 
 async function click(wrapper: Wrapper, text: string, within?: string) {
@@ -104,6 +107,11 @@ function rowIris(wrapper: Wrapper, section: string) {
 }
 
 describe('Orphaned resources page', () => {
+  beforeAll(async () => {
+    await import('#cwa/admin/confirm-dialog')
+    await import('#cwa/templates/components/core/ui/Confirm.vue')
+  })
+
   beforeEach(() => {
     mockFetchReport.mockReset().mockResolvedValue(report())
     mockRequestScan.mockReset().mockResolvedValue(undefined)
@@ -118,6 +126,131 @@ describe('Orphaned resources page', () => {
   afterEach(() => {
     vi.useRealTimers()
     vi.restoreAllMocks()
+    document.body.innerHTML = ''
+  })
+
+  describe('accessibility', () => {
+    async function expectNoViolations() {
+      expect(await axe(document.body)).toHaveNoViolations()
+    }
+
+    test('before any scan has no axe violations', async () => {
+      mockFetchReport.mockRejectedValue(statusError(404))
+      mockFetchFileReport.mockRejectedValue(statusError(404))
+      await setup(true)
+      expect(document.querySelector('[data-testid="orphaned-no-scan"]')).not.toBeNull()
+      await expectNoViolations()
+    })
+
+    test('while loading has no axe violations and is busy', async () => {
+      mockFetchReport.mockReturnValue(new Promise(() => {}))
+      mockFetchFileReport.mockReturnValue(new Promise(() => {}))
+      await setup(true)
+      expect(document.querySelector('[data-testid="orphaned-resources"]')!.getAttribute('aria-busy')).toBe('true')
+      expect(document.querySelector('[data-testid="orphaned-files"]')!.getAttribute('aria-busy')).toBe('true')
+      await expectNoViolations()
+    })
+
+    test('a full report has no axe violations', async () => {
+      await setup(true)
+      await expectNoViolations()
+    })
+
+    test('empty sections have no axe violations', async () => {
+      mockFetchReport.mockResolvedValue(report({ components: [], componentPositions: [], componentGroups: [] }))
+      mockFetchFileReport.mockResolvedValue(fileReport({ orphanedFiles: [], unknownFiles: [], missingFiles: [], invalidFiles: [] }))
+      await setup(true)
+      await expectNoViolations()
+    })
+
+    test('errors have no axe violations', async () => {
+      mockFetchReport.mockRejectedValue(statusError(500))
+      mockFetchFileReport.mockRejectedValue(statusError(500))
+      await setup(true)
+      expect(document.querySelector('[data-testid="orphaned-error"]')).not.toBeNull()
+      expect(document.querySelector('[data-testid="orphaned-files-error"]')).not.toBeNull()
+      await expectNoViolations()
+    })
+
+    test('a scan still pending has no axe violations', async () => {
+      vi.useFakeTimers()
+      const wrapper = await setup(true)
+      await button(wrapper, 'Scan again')!.trigger('click')
+      await vi.advanceTimersByTimeAsync(60_000)
+      await flushPromises()
+      expect(document.querySelector('[data-testid="orphaned-pending"]')).not.toBeNull()
+      vi.useRealTimers()
+      await expectNoViolations()
+    })
+
+    test('an open row view has no axe violations, and its data is a focusable region with a focus ring', async () => {
+      mockFetch.mockReturnValue({ response: Promise.resolve({ _data: { '@id': GROUP, 'reference': 'orphan-group' } }) })
+      const wrapper = await setup(true)
+      await click(wrapper, 'View', 'orphaned-section-componentGroups')
+      const data = wrapper.find('[data-testid="orphaned-row-data"]')
+      expect(data.attributes('tabindex')).toBe('0')
+      expect(data.attributes('aria-label')).toBe(`Data of ${GROUP}`)
+      expect(drawsFocusRing(data.classes())).toBe(true)
+      await expectNoViolations()
+    })
+
+    test('a delete outcome with rejections has no axe violations', async () => {
+      const wrapper = await setup(true)
+      mockDeleteOrphans.mockResolvedValue(deletion({ components: [COMPONENT] }, [{ iri: GROUP, reason: 'not_found' }]))
+      mockDeleteOrphanedFiles.mockResolvedValue({ deleted: [ORPHAN_FILE], rejected: [] })
+      await click(wrapper, 'Delete everything')
+      await click(wrapper, 'Delete everything', 'orphaned-files')
+      expect(wrapper.find('[data-testid="orphaned-delete-outcome"]').attributes('data-tone')).toBe('warning')
+      expect(wrapper.find('[data-testid="orphaned-files-delete-outcome"]').attributes('data-tone')).toBe('success')
+      await expectNoViolations()
+    })
+
+    test('the link to an invalid file\'s resource draws a focus ring', async () => {
+      const wrapper = await setup()
+      const link = wrapper.find('[data-testid="orphaned-files-section-invalid"]').findComponent({ name: 'NuxtLink' })
+      expect(drawsFocusRing(link.classes())).toBe(true)
+    })
+
+    test('every row button names the row it acts on', async () => {
+      const wrapper = await setup()
+      const names = wrapper.find('[data-testid="orphaned-section-componentGroups"]').findAll('li button').map(b => b.attributes('aria-label'))
+      expect(names).toEqual([`View ${GROUP}`, `Delete ${GROUP}`])
+      const fileNames = wrapper.find('[data-testid="orphaned-files-section-orphaned"]').findAll('li button').map(b => b.attributes('aria-label'))
+      expect(fileNames).toEqual(['Delete files/a.png (local)', 'Delete files/b.pdf (s3)'])
+    })
+
+    test('a failure is announced once through the page\'s polite region', async () => {
+      const wrapper = await setup()
+      mockRequestScan.mockRejectedValue(statusError(403))
+      await click(wrapper, 'Scan again')
+      await vi.waitFor(() => expect(wrapper.find('[data-testid="orphaned-announcer"]').text()).toBe('The scan could not be requested (403). Please try again.'))
+      expect(wrapper.find('[data-testid="orphaned-announcer"]').attributes('aria-live')).toBe('polite')
+    })
+  })
+
+  test('deletes are danger buttons and scans and views are plain ones', async () => {
+    const wrapper = await setup()
+    const looks = (text: string, within?: string) => button(wrapper, text, within)!.classes()
+    for (const [text, within] of [['Delete everything'], ['Delete all', 'orphaned-section-components'], ['Delete', 'orphaned-section-components'], ['Delete', 'orphaned-files-section-orphaned']]) {
+      expect(looks(text!, within)).toContain('cwa:text-danger-fg')
+    }
+    for (const [text, within] of [['Scan again'], ['View', 'orphaned-section-components'], ['Scan files', 'orphaned-files']]) {
+      expect(looks(text!, within)).not.toContain('cwa:text-danger-fg')
+      expect(looks(text!, within)).toContain('cwa:bg-button')
+    }
+  })
+
+  test('delete all and delete everything ask for the count to be typed; one row asks simply', async () => {
+    const wrapper = await setup()
+    await click(wrapper, 'Delete all', 'orphaned-section-components')
+    await click(wrapper, 'Delete everything')
+    await click(wrapper, 'Delete', 'orphaned-section-componentGroups')
+    expect(mockReveal.mock.calls.map(call => call[0].typed)).toEqual([
+      { noun: 'number of components', value: '1' },
+      { noun: 'number of resources', value: '3' },
+      undefined,
+    ])
+    expect(mockReveal.mock.calls.map(call => call[0].keep)).toEqual(['Don\'t delete', 'Don\'t delete', 'Don\'t delete'])
   })
 
   test('is the _cwa-orphaned admin route the settings page links to', () => {
@@ -134,7 +267,7 @@ describe('Orphaned resources page', () => {
     const wrapper = await setup()
     expect(wrapper.find('[data-testid="orphaned-no-scan"]').text()).toContain('No scan has been run yet.')
     expect(button(wrapper, 'Scan')).toBeDefined()
-    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="orphaned-error"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="orphaned-section-components"]').exists()).toBe(false)
   })
 
@@ -149,7 +282,7 @@ describe('Orphaned resources page', () => {
 
   test('lists each section in order, components first, with the component collection', async () => {
     const wrapper = await setup()
-    const sections = wrapper.findAll('[data-testid^="orphaned-section-"]').map(el => el.find('h2').text())
+    const sections = wrapper.findAll('[data-testid^="orphaned-section-"]').map(el => el.find('h3').text())
     expect(sections).toEqual(['Components (1)', 'Component positions (1)', 'Component groups (1)'])
     expect(rowIris(wrapper, 'components')).toEqual([COMPONENT])
     expect(rowIris(wrapper, 'componentPositions')).toEqual([POSITION])
@@ -168,7 +301,7 @@ describe('Orphaned resources page', () => {
   test('a report failure keeps the page and shows its status', async () => {
     mockFetchReport.mockRejectedValue(statusError(500))
     const wrapper = await setup()
-    expect(wrapper.find('[role="alert"]').text()).toContain('The report could not be loaded (500). Please try again.')
+    expect(wrapper.find('[data-testid="orphaned-error"]').text()).toContain('The report could not be loaded (500). Please try again.')
     expect(wrapper.find('[data-testid="orphaned-no-scan"]').exists()).toBe(false)
   })
 
@@ -194,7 +327,7 @@ describe('Orphaned resources page', () => {
     mockRequestScan.mockRejectedValue(statusError(403))
     const wrapper = await setup()
     await click(wrapper, 'Scan again')
-    expect(wrapper.find('[role="alert"]').text()).toContain('The scan could not be requested (403). Please try again.')
+    expect(wrapper.find('[data-testid="orphaned-error"]').text()).toContain('The scan could not be requested (403). Please try again.')
   })
 
   test('view shows the resource data and hide removes it', async () => {
@@ -269,14 +402,14 @@ describe('Orphaned resources page', () => {
     mockFetchReport.mockResolvedValue(report({ components: [], componentPositions: [], componentGroups: [] }))
     await click(wrapper, 'Delete everything')
     expect(mockDeleteOrphans).toHaveBeenCalledWith({ all: true })
-    expect(button(wrapper, 'Delete everything')!.attributes('disabled')).toBeDefined()
+    expect(button(wrapper, 'Delete everything')!.attributes('aria-disabled')).toBe('true')
   })
 
   test('a failed delete everything keeps every row and shows the error', async () => {
     mockDeleteOrphans.mockRejectedValue(statusError(403))
     const wrapper = await setup()
     await click(wrapper, 'Delete everything')
-    expect(wrapper.find('[role="alert"]').text()).toContain('The orphaned resources could not be deleted (403). Please try again.')
+    expect(wrapper.find('[data-testid="orphaned-error"]').text()).toContain('The orphaned resources could not be deleted (403). Please try again.')
     expect(rowIris(wrapper, 'components')).toEqual([COMPONENT])
   })
 
@@ -303,14 +436,14 @@ describe('Orphaned resources page', () => {
       const wrapper = await setup()
       expect(block(wrapper).find('[data-testid="orphaned-files-no-scan"]').text()).toContain('No file scan has been run yet.')
       expect(button(wrapper, 'Scan files', FILES)).toBeDefined()
-      expect(block(wrapper).find('[role="alert"]').exists()).toBe(false)
+      expect(block(wrapper).find('[data-testid="orphaned-files-error"]').exists()).toBe(false)
       expect(block(wrapper).find('[data-testid="orphaned-files-section-orphaned"]').exists()).toBe(false)
     })
 
     test('a file report failure is shown in the files block and leaves the component report alone', async () => {
       mockFetchFileReport.mockRejectedValue(statusError(500))
       const wrapper = await setup()
-      expect(block(wrapper).find('[role="alert"]').text()).toContain('The report could not be loaded (500). Please try again.')
+      expect(block(wrapper).find('[data-testid="orphaned-files-error"]').text()).toContain('The report could not be loaded (500). Please try again.')
       expect(rowIris(wrapper, 'components')).toEqual([COMPONENT])
     })
 
@@ -337,7 +470,7 @@ describe('Orphaned resources page', () => {
       expect(block(wrapper).text()).toContain('No missing files.')
       expect(block(wrapper).text()).toContain('No unknown files.')
       expect(button(wrapper, 'Delete all', 'orphaned-files-section-orphaned')).toBeUndefined()
-      expect(button(wrapper, 'Delete everything', FILES)!.attributes('disabled')).toBeDefined()
+      expect(button(wrapper, 'Delete everything', FILES)!.attributes('aria-disabled')).toBe('true')
     })
 
     test('unknown files are listed with their adapter and path, explained, and have no buttons', async () => {
@@ -456,7 +589,7 @@ describe('Orphaned resources page', () => {
       mockDeleteOrphanedFiles.mockRejectedValue(statusError(403))
       const wrapper = await setup()
       await click(wrapper, 'Delete everything', FILES)
-      expect(block(wrapper).find('[role="alert"]').text()).toContain('The orphaned files could not be deleted (403). Please try again.')
+      expect(block(wrapper).find('[data-testid="orphaned-files-error"]').text()).toContain('The orphaned files could not be deleted (403). Please try again.')
     })
 
     test('a failed row delete shows its error on the row', async () => {

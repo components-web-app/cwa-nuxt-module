@@ -39,6 +39,8 @@ export interface FormSurfaceContext {
 
 export const formSurfaceKey: InjectionKey<FormSurfaceContext> = Symbol('cwa-form-surface')
 
+export const sectionHeadingKey: InjectionKey<'h2' | 'h3'> = Symbol('cwa-section-heading')
+
 export interface DialogSubFooter {
   saveLabel: string
   saving: boolean

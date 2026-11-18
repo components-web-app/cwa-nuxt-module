@@ -1,5 +1,5 @@
 // @vitest-environment nuxt
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { useOrphanedResources } from './useOrphanedResources'
 import * as cwaComposable from '#cwa/composables/cwa'
@@ -67,6 +67,11 @@ function iris(rows: { iri: string }[]) {
 }
 
 describe('useOrphanedResources', () => {
+  beforeAll(async () => {
+    await import('#cwa/admin/confirm-dialog')
+    await import('#cwa/templates/components/core/ui/Confirm.vue')
+  })
+
   beforeEach(() => {
     ResourceTypeFromIri.setPathPrefix(undefined)
     mockFetchReport.mockReset().mockResolvedValue(report())
@@ -198,7 +203,10 @@ describe('useOrphanedResources', () => {
       await orphans.deleteRow(orphans.sections[1]!.rows[0]!)
       expect(mockReveal).toHaveBeenCalledWith({
         title: 'Delete this resource?',
-        content: '<p>It will be checked again first, then permanently deleted along with anything it contains. This cannot be undone.</p>',
+        lines: [{ text: 'It will be checked again first, then permanently deleted along with anything it contains.' }, { text: 'This can\'t be undone.' }],
+        keep: 'Don\'t delete',
+        go: 'Delete resource',
+        typed: undefined,
       })
       expect(mockDeleteOrphans).toHaveBeenCalledTimes(1)
       expect(mockDeleteOrphans).toHaveBeenCalledWith({ iris: [POSITION] })
@@ -219,7 +227,10 @@ describe('useOrphanedResources', () => {
       expect(mockReveal).toHaveBeenCalledTimes(1)
       expect(mockReveal).toHaveBeenCalledWith({
         title: 'Delete 2 orphaned components?',
-        content: '<p>Each is checked again first, then permanently deleted along with anything it contains. This cannot be undone.</p>',
+        lines: [{ text: 'Each is checked again first, then permanently deleted along with anything it contains.' }, { text: 'This can\'t be undone.' }],
+        keep: 'Don\'t delete',
+        go: 'Delete 2 components',
+        typed: { noun: 'number of components', value: '2' },
       })
       expect(mockDeleteOrphans).toHaveBeenCalledTimes(1)
       expect(mockDeleteOrphans).toHaveBeenCalledWith({ iris: [COMPONENT, COMPONENT_2] })
@@ -252,7 +263,10 @@ describe('useOrphanedResources', () => {
       expect(mockReveal).toHaveBeenCalledTimes(1)
       expect(mockReveal).toHaveBeenCalledWith({
         title: 'Delete all 4 orphaned resources?',
-        content: '<p>Everything is checked again first. Whatever is still unused is permanently deleted along with anything it contains, including anything that has become unused since the last scan. This cannot be undone.</p>',
+        lines: [{ text: 'Everything is checked again first. Whatever is still unused is permanently deleted along with anything it contains, including anything that has become unused since the last scan.' }, { text: 'This can\'t be undone.' }],
+        keep: 'Don\'t delete',
+        go: 'Delete everything',
+        typed: { noun: 'number of resources', value: '4' },
       })
       expect(mockDeleteOrphans).toHaveBeenCalledTimes(1)
       expect(mockDeleteOrphans).toHaveBeenCalledWith({ all: true })

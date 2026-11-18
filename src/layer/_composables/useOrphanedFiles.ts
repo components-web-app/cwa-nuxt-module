@@ -2,7 +2,7 @@ import { computed, reactive } from 'vue'
 import type { InvalidFile, MissingFile, OrphanedFile, OrphanedFileDeletionRequest, OrphanedFileDeletionResult, OrphanedFileRejection } from '#cwa/api/orphaned-resources'
 import { useCwa } from '#cwa/composables/cwa'
 import { useOrphanedFileReport } from './useOrphanReport'
-import { useOrphanDeletion, useOrphanView } from './useOrphanActions'
+import { deletionConfirm, useOrphanDeletion, useOrphanView } from './useOrphanActions'
 import type { DeletableRow, OrphanDeleteOutcome, ViewableRow } from './useOrphanActions'
 
 const REJECTION_REASONS: Record<OrphanedFileRejection['reason'], string> = {
@@ -115,7 +115,11 @@ export function useOrphanedFiles() {
 
   function deleteRow(row: OrphanedFileRow) {
     return deletion.run(
-      ['Delete this file?', '<p>It will be checked again first, then permanently deleted from storage, from every adapter where it is orphaned. This cannot be undone.</p>'],
+      deletionConfirm({
+        title: 'Delete this file?',
+        lines: ['It will be checked again first, then permanently deleted from storage, from every adapter where it is orphaned.'],
+        go: 'Delete file',
+      }),
       { paths: [row.path] },
       orphanedFiles.rows.filter(({ path }) => path === row.path),
       (label) => {
@@ -130,10 +134,12 @@ export function useOrphanedFiles() {
       return Promise.resolve()
     }
     return deletion.run(
-      [
-        `Delete ${rows.length} orphaned ${rows.length === 1 ? 'file' : 'files'}?`,
-        '<p>Each is checked again first, then permanently deleted from storage. This cannot be undone.</p>',
-      ],
+      deletionConfirm({
+        title: `Delete ${rows.length} orphaned ${rows.length === 1 ? 'file' : 'files'}?`,
+        lines: ['Each is checked again first, then permanently deleted from storage.'],
+        go: `Delete ${filesLabel(rows.length)}`,
+        typed: { noun: 'number of files', value: String(rows.length) },
+      }),
       { paths: rows.map(row => row.path) },
       rows,
       (label) => {
@@ -147,10 +153,12 @@ export function useOrphanedFiles() {
       return Promise.resolve()
     }
     return deletion.run(
-      [
-        `Delete all ${totalCount.value} orphaned files?`,
-        '<p>Everything is checked again first. Whatever is still unused is permanently deleted from storage, including anything that has become unused since the last scan. Unknown files, missing files and invalid files are never deleted. This cannot be undone.</p>',
-      ],
+      deletionConfirm({
+        title: `Delete all ${totalCount.value} orphaned files?`,
+        lines: ['Everything is checked again first. Whatever is still unused is permanently deleted from storage, including anything that has become unused since the last scan. Unknown files, missing files and invalid files are never deleted.'],
+        go: 'Delete everything',
+        typed: { noun: 'number of files', value: String(totalCount.value) },
+      }),
       { all: true },
       [...orphanedFiles.rows],
       (label) => {
