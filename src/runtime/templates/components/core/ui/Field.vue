@@ -10,7 +10,7 @@ import type { CwaFieldState } from '#cwa/storage/stores/resources/state'
 
 export type FieldWidth = 'xs' | 'sm' | 'md' | 'lg' | 'full'
 
-const { label, labelHidden = false, info, description, optional = false, width, state, model, controlId, ownLabel = false, name } = defineProps<{
+const { label, labelHidden = false, info, description, optional = false, width, state, model, controlId, ownLabel = false, name, invalid } = defineProps<{
   label: string
   labelHidden?: boolean
   info?: string
@@ -22,6 +22,7 @@ const { label, labelHidden = false, info, description, optional = false, width, 
   controlId: string
   ownLabel?: boolean
   name?: string
+  invalid?: string
 }>()
 
 defineSlots<{
@@ -50,10 +51,10 @@ const helperId = useId()
 
 const help = computed(() => surface ? info : [info, description].filter(Boolean).join(' ') || undefined)
 
-const tone = computed(() => state.status === 'error' ? 'danger' : state.status === 'conflict' ? 'warning' : undefined)
+const tone = computed(() => state.status === 'error' || (surface && invalid) ? 'danger' : state.status === 'conflict' ? 'warning' : undefined)
 
 const unsaved = computed(() => !!surface && !!fieldName.value && surface.unsaved(fieldName.value))
-const errorText = computed(() => surface && state.status === 'error' ? state.error?.message : undefined)
+const errorText = computed(() => surface ? (state.status === 'error' ? state.error?.message : undefined) ?? invalid : undefined)
 const conflict = computed(() => surface && state.status === 'conflict' ? model?.remoteChange.value : undefined)
 
 const describedBy = computed(() => {
