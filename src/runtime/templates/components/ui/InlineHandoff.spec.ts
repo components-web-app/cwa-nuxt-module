@@ -1,21 +1,26 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, test, vi } from 'vitest'
-import { computed, ref } from 'vue'
+import { computed, defineComponent, h, ref } from 'vue'
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { axe } from '../../../../../test/utils/axe'
 import { drawsFocusRing } from '../../../../../test/utils/focus-ring'
 import { registerInlineEditor } from '#cwa/admin/inline-editors'
 import type { InlineEditor } from '#cwa/admin/inline-editors'
 import type { ResourceModelField } from '#cwa/resources/model-editors'
+import { consola } from 'consola'
 import InlineHandoff from './InlineHandoff.vue'
+import ManagerTab from './ManagerTab.vue'
 
-const cwa = vi.hoisted(() => ({ resources: { isIriPublishableEquivalent: () => false } }))
+const cwa = vi.hoisted(() => ({ resources: { isIriPublishableEquivalent: () => false }, admin: { resourceStackManager: { currentIri: { value: '/component/html' } } } }))
 vi.mock('#cwa/composables/cwa', () => ({ useCwa: () => cwa }))
 vi.mock('#cwa/composables/cwa-confirm', () => ({ useCwaConfirm: () => vi.fn(async () => true) }))
 
 enableAutoUnmount(afterEach)
 
+const registered: (() => void)[] = []
+
 afterEach(() => {
+  registered.splice(0).forEach(unregister => unregister())
   document.body.innerHTML = ''
 })
 
@@ -38,6 +43,7 @@ function pageEditor(field = 'html', overrides: Partial<InlineEditor> = {}) {
   document.body.append(element)
   const editor: InlineEditor = { key: { iri: () => '/component/html', field }, element: () => element, enabled: () => true, focus: vi.fn(() => element.focus()), ...overrides }
   const unregister = registerInlineEditor(cwa, editor)
+  registered.push(unregister)
   return { editor, element, unregister }
 }
 
@@ -69,6 +75,12 @@ describe('CwaUiInlineHandoff (#461)', () => {
     globalThis.DOMParser = parser
 
     expect(wrapper.get('[data-testid="inline-handoff-preview"]').text()).toBe('“Made in Norfolk, by hand & with care”')
+  })
+
+  test('numeric entities decode, and one beyond Unicode or zero keeps its text instead of breaking the preview', () => {
+    const { wrapper } = mountHandoff(fieldModel('<p>&#8220;Hi&#x201D; &#99999999; &#x110000; &#0; &#xFFFFFFFFFFFF;</p>'))
+
+    expect(wrapper.get('[data-testid="inline-handoff-preview"]').text()).toBe('““Hi” &#99999999; &#x110000; &#0; &#xFFFFFFFFFFFF;”')
   })
 
   test('an empty value previews as Empty', () => {
@@ -139,5 +151,20 @@ describe('CwaUiInlineHandoff (#461)', () => {
     mountHandoff()
 
     expect(await axe(document.body)).toHaveNoViolations()
+  })
+
+  test('in a manager tab, its Edit… dialog holds the text area without the bar\'s refusal: a dialog is a form surface, not the bar row (#461)', async () => {
+    const error = vi.spyOn(consola, 'error').mockImplementation(() => undefined)
+    const model = fieldModel('<p>Long text</p>')
+    const wrapper = mount(defineComponent({ setup: () => () => h(ManagerTab, null, () => h(InlineHandoff, { label: 'Content', model })) }), { attachTo: document.body })
+    await flushPromises()
+
+    await wrapper.get('[data-testid="inline-handoff-edit"]').trigger('click')
+    await flushPromises()
+
+    await vi.waitFor(() => expect(document.querySelector('[data-testid="textarea"]')).not.toBeNull())
+    expect(error.mock.calls).toEqual([])
+    error.mockRestore()
+    wrapper.unmount()
   })
 })

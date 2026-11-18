@@ -9,7 +9,7 @@
       :aria-controls="hasLevels && isOpen ? stack?.contentId : undefined"
       :aria-disabled="hasLevels ? undefined : 'true'"
       :aria-label="hasLevels ? `${name}, choose another level` : undefined"
-      class="cwa:flex cwa:min-h-9 cwa:items-center cwa:gap-2 cwa:border cwa:border-line-strong cwa:bg-neutral-800 cwa:px-3 cwa:py-1.5 cwa:text-label cwa:text-white cwa:outline-1 cwa:outline-transparent cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-accent-fg"
+      class="cwa:flex cwa:min-h-9 cwa:items-center cwa:pointer-coarse:min-h-hit cwa:gap-2 cwa:border cwa:border-line-strong cwa:bg-neutral-800 cwa:px-3 cwa:py-1.5 cwa:text-label cwa:text-white cwa:outline-1 cwa:outline-transparent cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-accent-fg"
       :class="hasLevels ? 'cwa:cursor-pointer cwa:hover:border-fg cwa:hover:bg-field-hover' : 'cwa:cursor-default'"
       @click="toggle"
     >

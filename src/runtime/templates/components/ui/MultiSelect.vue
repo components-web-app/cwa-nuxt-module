@@ -31,6 +31,7 @@ const props = withDefaults(defineProps<{
   searchPlaceholder?: string
   width?: FieldWidth
   disabled?: boolean
+  disabledReason?: string
   options: MenuItem[]
   field?: string
   model?: ResourceModelField<string[]>
@@ -43,6 +44,7 @@ const props = withDefaults(defineProps<{
   searchPlaceholder: 'Search',
   width: 'md',
   disabled: false,
+  disabledReason: undefined,
   field: undefined,
   model: undefined,
   modelValue: undefined,
@@ -115,6 +117,7 @@ const inactive = computed(() => props.disabled || unbound)
 
 <template>
   <Field
+    :disabled-reason="disabled ? disabledReason : undefined"
     :label="label"
     :label-hidden="labelHidden"
     :info="info"

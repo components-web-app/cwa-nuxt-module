@@ -284,7 +284,7 @@ describe('CwaUiButton (#456)', () => {
 
       const buttons = wrapper.findAll('button')
       expect(buttons.map(button => button.text() || button.attributes('aria-label'))).toEqual(['Publish now', 'More actions'])
-      expect(wrapper.get('[data-testid="button-options"] svg').classes()).toContain('cwa:size-[calc(var(--cwa-spacing-control)*5/9)]')
+      expect(wrapper.get('[data-testid="button-options"] svg').classes()).toContain('cwa:size-4')
       await buttons[0]!.trigger('click')
       expect(onClick).toHaveBeenCalledTimes(1)
 
@@ -344,6 +344,29 @@ describe('CwaUiButton (#456)', () => {
     expect(short.classes()).toContain('cwa:sm:hidden')
     expect(full.classes()).toEqual(expect.arrayContaining(['cwa:hidden', 'cwa:sm:inline']))
     expect(await axe(wrapper.element as HTMLElement)).toHaveNoViolations()
+  })
+
+  test('a split button\'s ⋮ is 16px unless it asks for the large icon, which its main action does not take', () => {
+    const options = [{ group: null, items: [{ label: 'Clone', value: 'clone' }] }]
+    const large = mount(Button, { props: { label: 'Publish now', icon: Plus, options, size: 'sm', largeIcon: true } })
+    expect(large.get('[data-testid="button-options"] svg').classes()).toContain('cwa:size-[calc(var(--cwa-spacing-control)*5/9)]')
+    expect(large.get('[data-testid="plus"]').classes()).toContain('cwa:size-4')
+  })
+
+  test('a truncating button may shrink to its container and ends its label with an ellipsis, so a long page name in the phone header gives way to the items beside it', () => {
+    const wrapper = mount(Button, { props: { label: 'A very long page name', truncate: true } })
+    const label = wrapper.findAll('span').find(span => span.text() === 'A very long page name')!
+
+    expect(wrapper.classes()).toEqual(expect.arrayContaining(['cwa:min-w-0', 'cwa:max-w-full']))
+    expect(wrapper.classes()).not.toContain('cwa:shrink-0')
+    expect(label.classes()).toContain('cwa:truncate')
+  })
+
+  test('a button keeps its width by default', () => {
+    const wrapper = mount(Button, { props: { label: 'Save' } })
+
+    expect(wrapper.classes()).toContain('cwa:shrink-0')
+    expect(wrapper.findAll('span').find(span => span.text() === 'Save')!.classes()).not.toContain('cwa:truncate')
   })
 
   test('a split button passes its short label to the main action', () => {

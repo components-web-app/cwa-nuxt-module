@@ -1,6 +1,6 @@
 // @vitest-environment nuxt
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
-import { defineComponent, h, provide, ref } from 'vue'
+import { computed, defineComponent, h, provide, reactive, ref } from 'vue'
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { mockNuxtImport } from '@nuxt/test-utils/runtime'
 import PageResourceAdminModal from './PageResourceAdminModal.vue'
@@ -65,13 +65,13 @@ afterEach(() => {
 
 const DialogStub = defineComponent({
   name: 'CwaUiDialog',
-  props: ['title', 'tabs', 'form', 'loading', 'noun', 'createNoun', 'tab', 'kind', 'placement'],
-  emits: ['close', 'save', 'update:tab'],
+  props: ['title', 'tabs', 'form', 'loading', 'loadFailed', 'noun', 'createNoun', 'tab', 'kind', 'placement'],
+  emits: ['close', 'save', 'retry', 'update:tab'],
   setup(props, { slots, expose }) {
     provide(fieldGroupKey, { model: (field: string) => props.form.model(field), undo: () => undefined })
     provide(formSurfaceKey, { unsaved: (field: string) => props.form.unsavedFields.includes(field), register: () => () => {} })
     expose({ requestClose, confirmDiscard })
-    return () => h('div', { 'data-testid': 'dialog-stub' }, [h('div', { 'data-testid': 'stub-header' }, slots['header-actions']?.()), h('div', { 'data-testid': 'stub-subheader' }, slots.subheader?.()), slots.details?.(), slots.routes?.(), slots.info?.()])
+    return () => h('div', { 'data-testid': 'dialog-stub' }, [h('div', { 'data-testid': 'stub-header' }, slots['header-actions']?.()), h('div', { 'data-testid': 'stub-subheader' }, slots.subheader?.()), ...(props.loading ? [] : [slots.details?.(), slots.routes?.(), slots.info?.()])])
   },
 })
 
@@ -100,6 +100,9 @@ function setup(opts: {
   loadParentPageOptions?: () => Promise<unknown>
   fetchData?: (path: string) => unknown
   attach?: boolean
+  loading?: boolean
+  loadFailed?: boolean
+  fetchResource?: (props: { path: string }) => Promise<unknown>
 } = {}) {
   const iri = opts.iri ?? opts.routeIri ?? '/_/pages/uuid-self'
   routeState.route.params = opts.routeIri ? { iri: opts.routeIri } : {}
@@ -115,14 +118,15 @@ function setup(opts: {
     'parentPageData': null,
     ...opts.local,
   })
-  const localResourceData = ref(form.local)
+  const localResourceData = ref(opts.loading || opts.loadFailed ? undefined : form.local)
 
   const handlers = {
     isAdding: ref(opts.isAdding ?? false),
-    isLoading: ref(false),
+    isLoading: ref(!!opts.loading),
+    loadFailed: ref(!!opts.loadFailed),
     isUpdating: ref(false),
     localResourceData,
-    resource: ref(resource),
+    resource: ref(opts.loading || opts.loadFailed ? undefined : resource),
     formatDate: vi.fn(() => '1 Jan 2026'),
     deleteResource: vi.fn(),
     saveResource: vi.fn(),
@@ -144,8 +148,9 @@ function setup(opts: {
   })
   mockUseDataType.mockReturnValue({ pageDataConfig: ref(opts.pageDataConfig ?? null) })
 
-  const storedData = { ...opts.routes, ...opts.stored }
-  const getResource = vi.fn((resourceIri: string) => ref(storedData[resourceIri] ? { data: storedData[resourceIri] } : null))
+  const storedData = reactive<Record<string, any>>({ ...opts.routes, ...opts.stored })
+  const getResource = vi.fn((resourceIri: string) => computed(() => storedData[resourceIri] ? { data: storedData[resourceIri] } : null))
+  const fetchResource = vi.fn(opts.fetchResource ?? (async () => undefined))
   vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => ({
     resources: {
       displayPageIri: ref(opts.displayPageIri),
@@ -153,6 +158,7 @@ function setup(opts: {
     },
     fetch: vi.fn(({ path }: { path: string }) => ({ response: Promise.resolve({ _data: opts.fetchData ? opts.fetchData(path) : path.startsWith('/_/layouts') ? { member: opts.layouts ?? [{ '@id': '/_/layouts/default', 'reference': 'Default' }] } : null }) })),
     getApiDocumentation: vi.fn(() => opts.apiDocumentation ?? Promise.resolve({ entrypoint: { blogArticleData: '/page_data/blog_article_datas' } })),
+    fetchResource,
     pagesConfig: opts.pagesConfig ?? {},
     pageDataConfig: opts.pageDataTypes ?? {},
     admin: { toggleEdit: vi.fn() },
@@ -170,7 +176,7 @@ function setup(opts: {
     },
   })
 
-  return { wrapper, handlers, form, localResourceData }
+  return { wrapper, handlers, form, localResourceData, storedData, fetchResource }
 }
 
 function setupPageData(opts: Parameters<typeof setup>[0] = {}) {
@@ -196,13 +202,57 @@ describe('PageResourceAdminModal on the kit dialog (#461)', () => {
     countsMock.mockResolvedValue({})
   })
 
+  test('the dialog opens at once while its resource loads: titled by its kind, busy, with a neutral line and no page type until it arrives', async () => {
+    const { wrapper, handlers, form, localResourceData } = setup({ loading: true, hideViewLink: false })
+    const dialog = () => wrapper.findComponent(DialogStub)
+
+    expect(dialog().exists()).toBe(true)
+    expect(dialog().props()).toMatchObject({ title: 'Page', loading: true, kind: undefined })
+    expect(wrapper.find('[data-testid="page-type"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="page-view-on-site"]').exists()).toBe(true)
+
+    handlers.isLoading.value = false
+    localResourceData.value = form.local
+    handlers.resource.value = { '@id': '/_/pages/uuid-self', '@type': 'Page', 'reference': 'My Page' }
+    await flushPromises()
+    expect(dialog().props()).toMatchObject({ title: 'My Page', loading: false, kind: { tone: 'static' } })
+    expect(wrapper.find('[data-testid="page-type"]').exists()).toBe(true)
+  })
+
+  test('a depth that failed to load keeps the dialog open, titled by its kind, and Retry loads it again', async () => {
+    const { wrapper, handlers } = setup({ loadFailed: true })
+    const dialog = wrapper.findComponent(DialogStub)
+    expect(dialog.props()).toMatchObject({ title: 'Page', loadFailed: true, kind: undefined })
+    dialog.vm.$emit('retry')
+    expect(handlers.loadResource).toHaveBeenCalledTimes(1)
+  })
+
+  test('page data loading is titled Page data, and a load that ends with nothing closes nothing open', async () => {
+    const { wrapper, handlers } = setupPageData({ loading: true })
+    expect(wrapper.findComponent(DialogStub).props('title')).toBe('Page data')
+
+    handlers.isLoading.value = false
+    await flushPromises()
+    expect(wrapper.findComponent(DialogStub).exists()).toBe(false)
+  })
+
   test('the dialog is titled with the stored reference and gets the Save model from useItemPage', () => {
     const { wrapper, form } = setup()
     const dialog = wrapper.findComponent(DialogStub)
 
     expect(dialog.props('title')).toBe('My Page')
     expect(dialog.props('form')).toStrictEqual(form)
-    expect(dialog.props('tabs')).toEqual([{ label: 'Details', key: 'details' }, { label: 'Routes', key: 'routes' }, { label: 'Info', key: 'info' }])
+    expect(dialog.props('tabs')).toEqual([{ label: 'Details', key: 'details', fields: { reference: 'Reference', layout: 'Layout', uiComponent: 'Page UI', uiClassNames: 'Style', title: 'SEO page title', metaDescription: 'SEO meta description', parentPage: 'Parent page', parentPageData: 'Parent data' } }, { label: 'Routes', key: 'routes' }, { label: 'Info', key: 'info' }])
+  })
+
+  test('each tab names the fields it holds, so a refused field on a tab not yet opened is listed by its label (#461)', () => {
+    const { wrapper } = setupPageData()
+
+    expect(wrapper.findComponent(DialogStub).props('tabs')).toEqual([
+      { label: 'Details', key: 'details', fields: { title: 'Title', metaDescription: 'SEO meta description', page: 'Dynamic page', parentPage: 'Parent page', parentPageData: 'Parent data' } },
+      { label: 'Routes', key: 'routes', fields: { isReachableWithoutRoute: 'Public without a route' } },
+      { label: 'Info', key: 'info' },
+    ])
   })
 
   test('the dialog shows a failed save itself, so it alone asks useItemPage to dismiss the stored error', () => {
@@ -245,7 +295,7 @@ describe('PageResourceAdminModal on the kit dialog (#461)', () => {
     const { wrapper } = setup({ routeIri: 'add', isAdding: true })
 
     expect(wrapper.findComponent(DialogStub).props('tabs')).toEqual([
-      { label: 'Details', key: 'details' },
+      { label: 'Details', key: 'details', fields: { reference: 'Reference', layout: 'Layout', uiComponent: 'Page UI', uiClassNames: 'Style', title: 'SEO page title', metaDescription: 'SEO meta description', parentPage: 'Parent page', parentPageData: 'Parent data' } },
       { label: 'Routes', key: 'routes', disabled: 'Routes open once the page is created. Create the page and this tab lets you add its address.' },
     ])
   })
@@ -278,7 +328,7 @@ describe('PageResourceAdminModal on the kit dialog (#461)', () => {
     const select = pageType(wrapper)
     expect(wrapper.get('[data-testid="stub-header"]').element.contains(select.element)).toBe(true)
     expect(select.classes()).toContain('cwa:me-2')
-    expect(select.props()).toMatchObject({ labelHidden: true })
+    expect(select.props()).toMatchObject({ labelHidden: true, width: 'sm' })
     expect(select.props('options')).toEqual([
       { label: 'Static', value: 'static', dot: 'cwa:bg-type-static' },
       { label: 'Dynamic', value: 'template', dot: 'cwa:bg-type-dynamic' },
@@ -379,6 +429,39 @@ describe('PageResourceAdminModal on the kit dialog (#461)', () => {
   test('public without a route is not a Details field: it lives on the Routes tab, with the route it stands in for (bundle#381)', () => {
     expect(field(setup().wrapper, Toggle, 'Public without a route')).toBeUndefined()
     expect(field(setupPageData().wrapper, Toggle, 'Public without a route')).toBeUndefined()
+  })
+
+  test('a parent not loaded yet is fetched once, so the depths name it; its IRI stands in while it loads or if it fails, and its own parent follows', async () => {
+    const answers: Record<string, () => void> = {}
+    const { wrapper, storedData, fetchResource } = setup({
+      stored: { '/_/pages/uuid-self': { '@id': '/_/pages/uuid-self', 'reference': 'Child', 'parentPage': '/_/pages/parent' } },
+      fetchResource: ({ path }) => new Promise<void>((resolve) => {
+        answers[path] = resolve
+      }),
+    })
+    await flushPromises()
+    const options = () => field(wrapper, Segmented, 'Editing').props('options').map((option: { label: string }) => option.label)
+
+    expect(fetchResource).toHaveBeenCalledTimes(1)
+    expect(fetchResource).toHaveBeenCalledWith(expect.objectContaining({ path: '/_/pages/parent' }))
+    expect(options()).toEqual(['/_/pages/parent', 'Child'])
+
+    storedData['/_/pages/parent'] = { '@id': '/_/pages/parent', 'reference': 'Parent', 'parentPage': '/_/pages/grandparent' }
+    answers['/_/pages/parent']!()
+    await flushPromises()
+    expect(options()).toEqual(['/_/pages/grandparent', 'Parent', 'Child'])
+    expect(fetchResource).toHaveBeenCalledWith(expect.objectContaining({ path: '/_/pages/grandparent' }))
+
+    answers['/_/pages/grandparent']!()
+    await flushPromises()
+    expect(options()).toEqual(['/_/pages/grandparent', 'Parent', 'Child'])
+    expect(fetchResource).toHaveBeenCalledTimes(2)
+  })
+
+  test('a new page fetches nothing for its depths', async () => {
+    const { fetchResource } = setup({ routeIri: 'add', isAdding: true })
+    await flushPromises()
+    expect(fetchResource).not.toHaveBeenCalled()
   })
 
   test('switching the depth being edited asks the dialog to confirm discarding unsaved edits, and switches only on Discard; a long chain scrolls sideways under the header instead of widening the dialog', async () => {
@@ -536,6 +619,18 @@ describe('PageResourceAdminModal delete (#461)', () => {
       { text: 'Sam is editing this.' },
       { text: 'This can\'t be undone.' },
     ])
+  })
+
+  test('when who is editing cannot be read, the confirm still asks, without naming anyone', async () => {
+    realtime.peers.mockImplementationOnce(() => {
+      throw new Error('chunk failed')
+    })
+    const { wrapper } = setup()
+    confirmMock.mockResolvedValueOnce(false)
+
+    await clickDelete(wrapper)
+
+    expect(confirmMock.mock.calls[0]![0].lines).toEqual([{ text: 'This can\'t be undone.' }])
   })
 
   test('the count check starts at once, so the API docs it waits for are inside its 3 s limit (§8.6)', async () => {

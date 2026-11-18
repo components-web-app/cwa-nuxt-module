@@ -1,6 +1,6 @@
 <template>
   <CwaUiDialog
-    v-if="localResourceData"
+    v-if="localResourceData || isLoading || loadFailed"
     ref="dialog"
     v-model:tab="tab"
     placement="right"
@@ -8,21 +8,23 @@
     :tabs="tabs"
     :form="form"
     :loading="isLoading"
+    :load-failed="loadFailed"
     :kind="kind"
     noun="page"
     :create-noun="isAdding ? createNoun : undefined"
     data-testid="page-dialog"
     @close="$emit('close')"
+    @retry="loadResource()"
     @save="saveResource()"
   >
     <template #header-actions>
       <CwaUiSelect
-        v-if="isDisplayingPage"
+        v-if="isDisplayingPage && localResourceData"
         class="cwa:me-2"
         :model="pageTypeModel"
         label="Page type"
         label-hidden
-        width="xs"
+        width="sm"
         :options="pageTypeOptions"
         data-testid="page-type"
       />
@@ -132,7 +134,7 @@
             label="Dynamic page"
             :options="pageOptions"
           />
-          <div v-if="localResourceData.page">
+          <div v-if="localResourceData?.page">
             <CwaUiButton
               label="Go to dynamic template"
               :icon="EyeGlyph"
@@ -214,7 +216,7 @@
             class="cwa:m-0 cwa:mt-1.5 cwa:break-all cwa:font-mono cwa:text-control cwa:text-fg-secondary"
             data-testid="page-id"
           >
-            {{ localResourceData['@id'] }}
+            {{ localResourceData?.['@id'] }}
           </dd>
         </dl>
       </CwaUiFormSection>
@@ -342,6 +344,18 @@ const depthChain = computed(() => {
   return chain
 })
 
+const requestedDepths = new Set<string>()
+watch(depthChain, (chain) => {
+  chain.forEach(({ value }) => {
+    const iri = String(value)
+    if (iri === 'add' || iri === displayIri.value || getResourceData(iri) || requestedDepths.has(iri)) {
+      return
+    }
+    requestedDepths.add(iri)
+    $cwa.fetchResource({ path: iri, shallowFetch: true }).catch(() => undefined)
+  })
+}, { immediate: true })
+
 const depthOptions = computed(() => depthChain.value.map(option => ({ label: option.label, value: String(option.value) })))
 
 const displayIriModel = computed({
@@ -423,7 +437,7 @@ const linkDefaults = Object.fromEntries(
     .flatMap(([queryKey, field]) => typeof route.query[queryKey] === 'string' ? [[field, route.query[queryKey]]] : []),
 )
 
-const { isAdding, isLoading, isUpdating, localResourceData, resource, formatDate, deleteResource, saveResource: _saveResource, loadResource, getInternalResourceLink, form } = useItemPage({
+const { isAdding, isLoading, loadFailed, isUpdating, localResourceData, resource, formatDate, deleteResource, saveResource: _saveResource, loadResource, getInternalResourceLink, form } = useItemPage({
   createEndpoint,
   emit,
   resourceType: props.resourceType,
@@ -443,6 +457,9 @@ const dialogTitle = computed(() => {
     return `New ${createNoun.value}`
   }
   const stored = resource.value
+  if (!localResourceData.value) {
+    return isDisplayingPage.value ? 'Page' : 'Page data'
+  }
   const name = isDisplayingPage.value ? stored?.reference : stored?.title
   return name || (isDisplayingPage.value ? 'Untitled page' : 'Untitled')
 })
@@ -465,6 +482,9 @@ const pageTypeModel = {
 } as ReturnType<typeof form.model<string>>
 
 const kind = computed(() => {
+  if (!localResourceData.value) {
+    return undefined
+  }
   if (isDisplayingPage.value) {
     return { tone: localResourceData.value?.isTemplate ? 'dynamic' as const : 'static' as const }
   }
@@ -529,7 +549,7 @@ async function handleDeleteClick() {
   checkingDelete.value = true
   const iri = resource.value?.['@id']
   const [notice] = await Promise.all([
-    iri ? import('#cwa/admin/resource-confirm').then(({ editingNotice }) => editingNotice($cwa, iri)) : undefined,
+    iri ? import('#cwa/admin/resource-confirm').then(({ editingNotice }) => editingNotice($cwa, iri)).catch(() => undefined) : undefined,
     refreshCounts(),
   ])
   checkingDelete.value = false
@@ -710,16 +730,20 @@ const metaSelects = computed(() => Object.fromEntries((pageDataConfig.value?.met
   .filter(metaField => metaField.type !== 'input')
   .map(metaField => [metaField.field, metaSelect(metaField.field, metaField.options)])))
 
+const pageFields: Record<string, string> = { reference: 'Reference', layout: 'Layout', uiComponent: 'Page UI', uiClassNames: 'Style', title: 'SEO page title', metaDescription: 'SEO meta description', parentPage: 'Parent page', parentPageData: 'Parent data' }
+const pageDataFields: Record<string, string> = { title: 'Title', metaDescription: 'SEO meta description', page: 'Dynamic page', parentPage: 'Parent page', parentPageData: 'Parent data' }
+const detailsFields = computed(() => isDisplayingPage.value ? pageFields : pageDataFields)
+
 const tabs = computed<DialogTab[]>(() => {
   if (isAdding.value) {
     return [
-      { label: 'Details', key: 'details' },
+      { label: 'Details', key: 'details', fields: detailsFields.value },
       { label: 'Routes', key: 'routes', disabled: `Routes open once the ${createNoun.value} is created. Create the ${createNoun.value} and this tab lets you add its address.` },
     ]
   }
   return [
-    { label: 'Details', key: 'details' },
-    { label: 'Routes', key: 'routes' },
+    { label: 'Details', key: 'details', fields: detailsFields.value },
+    { label: 'Routes', key: 'routes', ...(!isDisplayingPage.value && { fields: { isReachableWithoutRoute: 'Public without a route' } }) },
     { label: 'Info', key: 'info' },
   ]
 })

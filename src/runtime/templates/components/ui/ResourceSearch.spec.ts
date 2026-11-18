@@ -5,8 +5,9 @@ import { axe } from '../../../../../test/utils/axe'
 import ResourceSearch from './ResourceSearch.vue'
 import { announceKey } from '../core/ui/field-keys'
 
+const api = vi.hoisted(() => ({ fetch: vi.fn((_: { path: string }) => ({ response: Promise.resolve({ _data: { member: [], totalItems: 0 } }) })) }))
 vi.mock('#cwa/composables/cwa', () => ({
-  useCwa: () => ({ resources: { getResource: () => ({ value: undefined }) } }),
+  useCwa: () => ({ resources: { getResource: () => ({ value: undefined }) }, fetch: api.fetch }),
 }))
 
 enableAutoUnmount(afterEach)
@@ -71,6 +72,22 @@ describe('CwaUiResourceSearch (#460)', () => {
 
     expect(load).toHaveBeenLastCalledWith('', 2)
     expect(menu().querySelector('[data-testid="search-count"]')).toBeNull()
+  })
+
+  test('without its own loader it fetches the endpoint in the order given, with the term in each search parameter', async () => {
+    const wrapper = mountSearch({ order: { path: 'asc' }, searchParams: ['search', 'path'] })
+    await open(wrapper)
+    const first = new URL(api.fetch.mock.calls.at(-1)![0].path, 'https://x')
+    expect(first.pathname).toBe('/_/routes')
+    expect(first.searchParams.get('order[path]')).toBe('asc')
+
+    await wrapper.get('[data-testid="search-input"]').setValue('kit')
+    vi.advanceTimersByTime(250)
+    await flushPromises()
+    const searched = new URL(api.fetch.mock.calls.at(-1)![0].path, 'https://x')
+    expect(searched.searchParams.get('order[path]')).toBe('asc')
+    expect(searched.searchParams.getAll('search')).toEqual(['kit'])
+    expect(searched.searchParams.getAll('path')).toEqual(['kit'])
   })
 
   test('typing searches 250ms after the last key, and an answer that is not the latest is ignored', async () => {

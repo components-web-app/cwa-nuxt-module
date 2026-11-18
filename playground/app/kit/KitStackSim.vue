@@ -68,7 +68,7 @@ function choose(level: string) {
   <KitSim
     id="kit-sim-stack"
     title="Simulation: resource stack"
-    intro="The real ResourceStack, opened at a point on the screen as a right-click opens it, or over a button as the header's path selector does. The innermost box's corner sits on the point; near an edge it flips and slides to stay on screen. Watch whether it moves as it opens."
+    intro="The real ResourceStack, opened at a point on the screen as a right-click opens it, or over a button as the header's path selector does. The innermost box's corner sits on the point; near an edge it flips and slides to stay on screen. Watch whether it moves as it opens. Below 640px it opens as the phone's bottom sheet instead: choose Width 390 in the toolbar."
   >
     <template #controls>
       <CwaUiSegmented

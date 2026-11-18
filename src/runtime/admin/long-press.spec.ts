@@ -101,12 +101,20 @@ describe('listenForLongPress (#461)', () => {
     editor.remove()
   })
 
-  test('the browser\'s own contextmenu and the click that end the same press are swallowed, so they never close or reselect', () => {
+  function levelUnderThePress() {
+    const handle = (event: Event) => event.preventDefault()
+    target.addEventListener('contextmenu', handle)
+    return () => target.removeEventListener('contextmenu', handle)
+  }
+
+  test('when the press opened a menu, the browser\'s own contextmenu and the click that end the same press are swallowed, so they never close or reselect', () => {
+    const remove = levelUnderThePress()
     const clicks = vi.fn()
     const natives = vi.fn()
     target.addEventListener('click', clicks)
     pointer('pointerdown', target)
     vi.advanceTimersByTime(LONG_PRESS_MS)
+    expect(contextMenus[0]!.defaultPrevented).toBe(true)
     target.addEventListener('contextmenu', natives)
     const native = new MouseEvent('contextmenu', { bubbles: true, cancelable: true })
     target.dispatchEvent(native)
@@ -122,18 +130,57 @@ describe('listenForLongPress (#461)', () => {
     vi.advanceTimersByTime(1000)
     target.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     expect(clicks).toHaveBeenCalledTimes(1)
+    remove()
   })
 
-  test('a held touch\'s own contextmenu is swallowed before 500 ms too, so the menu opens once, at 500 ms', () => {
+  test('when nothing was under the press, the browser\'s own menu and the click are left alone, so copy link and save image still work', () => {
+    const clicks = vi.fn()
+    target.addEventListener('click', clicks)
+    pointer('pointerdown', target)
+    vi.advanceTimersByTime(LONG_PRESS_MS)
+    expect(contextMenus[0]!.defaultPrevented).toBe(false)
+    const native = new MouseEvent('contextmenu', { bubbles: true, cancelable: true })
+    target.dispatchEvent(native)
+    pointer('pointerup', target)
+    const click = new MouseEvent('click', { bubbles: true, cancelable: true })
+    target.dispatchEvent(click)
+
+    expect(native.defaultPrevented).toBe(false)
+    expect(contextMenus).toContain(native)
+    expect(click.defaultPrevented).toBe(false)
+    expect(clicks).toHaveBeenCalledOnce()
+  })
+
+  test('a held touch\'s own contextmenu before 500 ms goes to the page as the press\'s menu, and no second one follows', () => {
     pointer('pointerdown', target)
     vi.advanceTimersByTime(400)
     const native = new MouseEvent('contextmenu', { bubbles: true, cancelable: true })
     target.dispatchEvent(native)
-    expect(native.defaultPrevented).toBe(true)
-    expect(contextMenus).toHaveLength(0)
-    vi.advanceTimersByTime(100)
+    expect(native.defaultPrevented).toBe(false)
+    expect(contextMenus).toEqual([native])
+    vi.advanceTimersByTime(LONG_PRESS_MS)
 
-    expect(contextMenus).toHaveLength(1)
+    expect(contextMenus).toEqual([native])
+  })
+
+  test('the click ending a press whose early native menu the page took is swallowed, and one it left is not', () => {
+    const remove = levelUnderThePress()
+    pointer('pointerdown', target)
+    vi.advanceTimersByTime(400)
+    target.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true }))
+    pointer('pointerup', target)
+    const swallowed = new MouseEvent('click', { bubbles: true, cancelable: true })
+    target.dispatchEvent(swallowed)
+    expect(swallowed.defaultPrevented).toBe(true)
+    remove()
+
+    pointer('pointerdown', target)
+    vi.advanceTimersByTime(400)
+    target.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true }))
+    pointer('pointerup', target)
+    const left = new MouseEvent('click', { bubbles: true, cancelable: true })
+    target.dispatchEvent(left)
+    expect(left.defaultPrevented).toBe(false)
   })
 
   test('listening twice on the same root opens one menu per press, and listens until both have stopped', () => {

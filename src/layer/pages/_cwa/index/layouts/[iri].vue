@@ -1,15 +1,17 @@
 <template>
   <CwaUiDialog
-    v-if="localResourceData"
+    v-if="localResourceData || isLoading || loadFailed"
     placement="right"
     :title="dialogTitle"
     :tabs="tabs"
     :form="form"
     :loading="isLoading"
+    :load-failed="loadFailed"
     noun="layout"
     :create-noun="isAdding ? 'layout' : undefined"
     data-testid="layout-dialog"
     @close="$emit('close')"
+    @retry="loadResource()"
     @save="saveResource()"
   >
     <template #details>
@@ -45,7 +47,7 @@
         data-testid="layout-unresolvable"
       >
         <p class="cwa:m-0">
-          The component '{{ unresolvableUiComponent }}' for resource '{{ localResourceData['@id'] }}' cannot be resolved. Pages using it show the default layout until another is chosen.
+          The component '{{ unresolvableUiComponent }}' for resource '{{ localResourceData?.['@id'] }}' cannot be resolved. Pages using it show the default layout until another is chosen.
         </p>
       </CwaUiAlert>
     </template>
@@ -59,7 +61,7 @@
             class="cwa:m-0 cwa:mt-1.5 cwa:break-all cwa:font-mono cwa:text-control cwa:text-fg-secondary"
             data-testid="layout-id"
           >
-            {{ localResourceData['@id'] }}
+            {{ localResourceData?.['@id'] }}
           </dd>
         </dl>
       </CwaUiFormSection>
@@ -143,7 +145,7 @@ const layoutComponentOptions = computed<MenuEntry[]>(() => layoutComponentNames.
   }
 }))
 
-const { isAdding, isLoading, isUpdating, localResourceData, resource, formatDate, deleteResource, saveResource: _saveResource, form } = useItemPage({
+const { isAdding, isLoading, loadFailed, loadResource, isUpdating, localResourceData, resource, formatDate, deleteResource, saveResource: _saveResource, form } = useItemPage({
   createEndpoint: '/_/layouts',
   emit,
   resourceType: 'Layout',
@@ -198,7 +200,7 @@ const layoutStyleModel = {
 
 const layoutName = computed(() => (resource.value?.reference as string | undefined) || '')
 
-const dialogTitle = computed(() => isAdding.value ? 'New layout' : (layoutName.value || 'Untitled layout'))
+const dialogTitle = computed(() => isAdding.value ? 'New layout' : (!localResourceData.value ? 'Layout' : (layoutName.value || 'Untitled layout')))
 
 const tabs = computed<DialogTab[]>(() => isAdding.value
   ? [{ label: 'Details', key: 'details' }]
@@ -225,7 +227,7 @@ function saveResource() {
 
 async function handleDeleteClick() {
   const iri = resource.value?.['@id']
-  const notice = iri ? await import('#cwa/admin/resource-confirm').then(({ editingNotice }) => editingNotice($cwa, iri)) : undefined
+  const notice = iri ? await import('#cwa/admin/resource-confirm').then(({ editingNotice }) => editingNotice($cwa, iri)).catch(() => undefined) : undefined
   const confirmed = await confirm({
     title: `Delete “${layoutName.value || dialogTitle.value}”?`,
     lines: [

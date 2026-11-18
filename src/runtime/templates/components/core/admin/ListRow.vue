@@ -101,7 +101,7 @@ const typeLooks: Record<ListRowType['colour'], string> = {
       >
         <PenIcon
           aria-hidden="true"
-          class="cwa:size-6"
+          class="cwa:size-5"
         />
       </NuxtLink>
       <NuxtLink

@@ -24,6 +24,7 @@ const {
   optionsLabel = 'More actions',
   ariaLabel,
   stretch = false,
+  truncate = false,
 } = defineProps<{
   label?: string
   shortLabel?: string
@@ -42,6 +43,7 @@ const {
   optionsLabel?: string
   ariaLabel?: string
   stretch?: boolean
+  truncate?: boolean
 }>()
 
 const ReasonPopover = defineAsyncComponent(() => import('../core/ui/ReasonPopover.vue'))
@@ -84,6 +86,7 @@ const classes = computed(() => {
   const look = buttonLooks[variant][tone]
   return [
     boxClasses.value,
+    truncate ? 'cwa:min-w-0 cwa:max-w-full' : 'cwa:shrink-0',
     size === 'sm' ? 'cwa:text-helper' : 'cwa:text-label',
     look.rest,
     inactive.value ? '' : look.hover,
@@ -143,7 +146,7 @@ function onClick(event: MouseEvent) {
           viewBox="0 0 16 16"
           aria-hidden="true"
           fill="currentColor"
-          :class="size === 'sm' ? 'cwa:size-4' : 'cwa:size-[calc(var(--cwa-spacing-control)*5/9)]'"
+          :class="largeIcon ? 'cwa:size-[calc(var(--cwa-spacing-control)*5/9)]' : 'cwa:size-4'"
         ><circle
           cx="8"
           cy="3"
@@ -169,7 +172,7 @@ function onClick(event: MouseEvent) {
     :aria-busy="loading ? 'true' : undefined"
     :aria-describedby="reason ? reasonId : undefined"
     :title="reason"
-    class="cwa:inline-flex cwa:shrink-0 cwa:items-center cwa:justify-center cwa:gap-2 cwa:whitespace-nowrap cwa:font-semibold cwa:leading-5 cwa:transition-colors cwa:duration-(--cwa-duration-fast) cwa:ease-out cwa:motion-reduce:transition-none cwa:outline-1 cwa:outline-transparent cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-accent-fg"
+    class="cwa:inline-flex cwa:items-center cwa:justify-center cwa:gap-2 cwa:whitespace-nowrap cwa:font-semibold cwa:leading-5 cwa:transition-colors cwa:duration-(--cwa-duration-fast) cwa:ease-out cwa:motion-reduce:transition-none cwa:outline-1 cwa:outline-transparent cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-accent-fg"
     :class="classes"
     @click="onClick"
   >
@@ -194,6 +197,7 @@ function onClick(event: MouseEvent) {
     <span
       v-else-if="!iconOnly"
       class="cwa:min-w-0"
+      :class="{ 'cwa:truncate': truncate }"
     >{{ label }}</span>
     <span
       v-if="reason"

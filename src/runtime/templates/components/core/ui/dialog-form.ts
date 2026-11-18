@@ -21,6 +21,7 @@ export interface DialogTab {
   key: string
   label: string
   disabled?: string
+  fields?: Record<string, string>
 }
 
 export interface TabBadge {

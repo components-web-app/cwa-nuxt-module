@@ -120,10 +120,11 @@ const isOpen = computed({
 
 <template>
   <Field
+    :disabled-reason="blocked ? disabledReason : undefined"
     :label="label"
     :label-hidden="labelHidden"
     :info="info"
-    :description="blocked ? disabledReason : description"
+    :description="description"
     :optional="optional"
     :width="width"
     :state="state"

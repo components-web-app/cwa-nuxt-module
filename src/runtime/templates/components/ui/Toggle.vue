@@ -12,6 +12,7 @@ const props = withDefaults(defineProps<{
   info?: string
   description?: string
   disabled?: boolean
+  disabledReason?: string
   field?: string
   model?: ResourceModelField<boolean>
   modelValue?: boolean | null
@@ -20,6 +21,7 @@ const props = withDefaults(defineProps<{
   info: undefined,
   description: undefined,
   disabled: false,
+  disabledReason: undefined,
   field: undefined,
   model: undefined,
   modelValue: undefined,
@@ -37,6 +39,7 @@ function onChecked(checked: boolean) {
 
 <template>
   <Field
+    :disabled-reason="disabled ? disabledReason : undefined"
     :label="label"
     :info="info"
     :description="description"

@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, test, vi } from 'vitest'
-import { defineComponent, h, ref } from 'vue'
+import { computed, defineComponent, h, ref, shallowRef } from 'vue'
 import { enableAutoUnmount, mount } from '@vue/test-utils'
 import { findInlineEditor, INLINE_EDITOR_FLASH_MS, openInlineEditor, registerInlineEditor } from './inline-editors'
 import type { InlineEditor } from './inline-editors'
@@ -13,7 +13,10 @@ vi.mock('#cwa/composables/cwa', () => ({ useCwa: () => cwa }))
 
 enableAutoUnmount(afterEach)
 
+const registered: (() => void)[] = []
+
 afterEach(() => {
+  registered.splice(0).forEach(unregister => unregister())
   document.body.innerHTML = ''
   vi.unstubAllGlobals()
 })
@@ -22,7 +25,9 @@ function editorFor(iri: string, field: string, overrides: Partial<InlineEditor> 
   const element = document.createElement('div')
   document.body.append(element)
   const editor: InlineEditor = { key: { iri: () => iri, field }, element: () => element, enabled: () => true, focus: vi.fn(), ...overrides }
-  return { editor, element, unregister: registerInlineEditor(cwa, editor) }
+  const unregister = registerInlineEditor(cwa, editor)
+  registered.push(unregister)
+  return { editor, element, unregister }
 }
 
 describe('inline editors (#461)', () => {
@@ -37,15 +42,25 @@ describe('inline editors (#461)', () => {
     expect(findInlineEditor(cwa, { iri: () => '/component/1', field: 'html' })).toBeUndefined()
   })
 
-  test('an editor that is disabled, or no longer in the page, is not found', () => {
+  test('an editor that is disabled, or has no element, is not found', () => {
     const enabled = ref(false)
-    const { element } = editorFor('/component/1', 'html', { enabled: () => enabled.value })
+    const element = shallowRef<HTMLElement>()
+    editorFor('/component/1', 'html', { enabled: () => enabled.value, element: () => element.value })
+    const found = computed(() => findInlineEditor(cwa, { iri: () => '/component/1', field: 'html' }))
 
-    expect(findInlineEditor(cwa, { iri: () => '/component/1', field: 'html' })).toBeUndefined()
+    expect(found.value).toBeUndefined()
     enabled.value = true
-    expect(findInlineEditor(cwa, { iri: () => '/component/1', field: 'html' })).toBeDefined()
+    expect(found.value).toBeUndefined()
+    element.value = document.createElement('div')
+    expect(found.value).toBeDefined()
+  })
+
+  test('an editor whose element is not in the page yet is still found, because its element is attached after the lookup ran (an editor built while it is being selected)', () => {
+    const element = document.createElement('div')
+    editorFor('/component/1', 'html', { element: () => element })
     element.remove()
-    expect(findInlineEditor(cwa, { iri: () => '/component/1', field: 'html' })).toBeUndefined()
+
+    expect(findInlineEditor(cwa, { iri: () => '/component/1', field: 'html' })).toBeDefined()
   })
 
   test('opening one scrolls it to the centre, focuses it and flashes an accent outline for 600 ms', () => {
@@ -109,6 +124,18 @@ describe('inline editors (#461)', () => {
 
       wrapper.unmount()
       expect(findInlineEditor(cwa, { iri: () => '/component/1', field: 'html' })).toBeUndefined()
+    })
+
+    test('Escape returns to the button even though the editor handles Escape itself, as ProseMirror does by selecting the parent node', async () => {
+      const { button, element } = await mountEditor()
+      const handled = (event: KeyboardEvent) => event.key === 'Escape' && event.preventDefault()
+      document.addEventListener('keydown', handled, true)
+      openInlineEditor(findInlineEditor(cwa, { iri: () => '/component/1', field: 'html' })!, button)
+
+      element.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
+      document.removeEventListener('keydown', handled, true)
+
+      expect(document.activeElement).toBe(button)
     })
 
     test('is found only while enabled, as a TipTap editor is only while its component is selected', async () => {

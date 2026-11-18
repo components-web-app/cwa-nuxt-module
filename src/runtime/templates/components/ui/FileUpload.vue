@@ -25,6 +25,7 @@ const props = withDefaults(defineProps<{
   description?: string
   accept?: string
   disabled?: boolean
+  disabledReason?: string
   field?: string
   upload?: CwaUploadField
 }>(), {
@@ -33,6 +34,7 @@ const props = withDefaults(defineProps<{
   description: undefined,
   accept: undefined,
   disabled: false,
+  disabledReason: undefined,
   field: undefined,
   upload: undefined,
 })
@@ -76,6 +78,7 @@ function remove() {
 
 <template>
   <Field
+    :disabled-reason="disabled ? disabledReason : undefined"
     :label="label"
     :label-hidden="labelHidden"
     :info="info"
@@ -135,6 +138,12 @@ function remove() {
           @change="onPicked"
         >
       </div>
+    </template>
+    <template
+      v-if="$slots.beside"
+      #beside
+    >
+      <slot name="beside" />
     </template>
   </Field>
 </template>

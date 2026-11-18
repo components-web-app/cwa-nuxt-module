@@ -41,3 +41,8 @@ export function kitSearchSource(loader: FakeLoader, outcome: () => KitSearchOutc
     resolve: async (iri: string) => resources.find(resource => resource['@id'] === iri),
   }
 }
+
+export const kitPageTypeOptions = [
+  { label: 'Static', value: 'static', dot: 'cwa:bg-type-static' },
+  { label: 'Dynamic', value: 'template', dot: 'cwa:bg-type-dynamic' },
+]

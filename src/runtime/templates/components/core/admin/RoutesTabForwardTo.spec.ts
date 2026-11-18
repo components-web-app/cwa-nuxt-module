@@ -24,6 +24,12 @@ describe('RoutesTabForwardTo', () => {
     expect(search.props('description')).toBeUndefined()
   })
 
+  test('the routes it offers come A to Z by path, searched by path', () => {
+    const search = mountForward({ form: true }).findComponent(CwaUiResourceSearch)
+    expect(search.props('order')).toEqual({ path: 'asc' })
+    expect(search.props('searchParams')).toEqual(['search', 'path'])
+  })
+
   test('when not redirecting it says visitors see this page and offers Redirect to another page', async () => {
     const wrapper = mountForward()
     expect(text(wrapper, '[data-testid="route-forward-off"]')).toBe('Not redirecting. Visitors to /kitchens/shaker see this page.')

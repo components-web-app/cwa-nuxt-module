@@ -12,10 +12,11 @@ import type { CwaFieldState } from '#cwa/storage/stores/resources/state'
 
 export type FieldWidth = 'xs' | 'sm' | 'md' | 'lg' | 'full'
 
-const { label, labelHidden = false, info, description, optional = false, width, state, model, controlId, ownLabel = false, name, inactive = false, invalid, format, hug = false } = defineProps<{
+const { label, labelHidden = false, info, disabledReason, description, optional = false, width, state, model, controlId, ownLabel = false, name, inactive = false, invalid, format, hug = false } = defineProps<{
   label: string
   labelHidden?: boolean
   info?: string
+  disabledReason?: string
   description?: string
   optional?: boolean
   width?: FieldWidth
@@ -34,6 +35,7 @@ defineSlots<{
   default: (props: { describedBy: string | undefined, tone: 'danger' | 'warning' | undefined, busy: boolean, labelId: string, modal: boolean, unsaved: boolean, help?: string, helpId?: string }) => any
   lead?: (props: { modal: boolean, unsaved: boolean, help?: string, helpId?: string }) => any
   after?: () => any
+  beside?: () => any
 }>()
 
 const widths: Record<FieldWidth, string> = {
@@ -55,7 +57,7 @@ const surface = inject(formSurfaceKey, undefined)
 const fieldName = computed(() => name ?? model?.field)
 const helperId = useId()
 
-const help = computed(() => surface ? info : [info, description].filter(Boolean).join(' ') || undefined)
+const help = computed(() => [disabledReason, ...(surface ? [info] : [info, description])].filter(Boolean).join(' ') || undefined)
 
 const tone = computed(() => state.status === 'error' || (surface && invalid) ? 'danger' : state.status === 'conflict' ? 'warning' : undefined)
 
@@ -119,7 +121,7 @@ watch(() => inactive, (now) => {
     </div>
     <div
       class="cwa:w-full cwa:min-w-0"
-      :class="{ 'cwa:mt-1.5': !ownLabel && !labelHidden, 'cwa:flex cwa:min-h-hit cwa:items-center cwa:justify-between cwa:gap-3': $slots.lead }"
+      :class="{ 'cwa:mt-1.5': !ownLabel && !labelHidden, 'cwa:flex cwa:min-h-hit cwa:items-center cwa:justify-between cwa:gap-3': $slots.lead, 'cwa:flex cwa:items-center cwa:gap-2': $slots.beside && !$slots.lead }"
     >
       <slot
         name="lead"
@@ -144,6 +146,7 @@ watch(() => inactive, (now) => {
           :help-id="infoId"
         />
       </CwaUiFieldPresence>
+      <slot name="beside" />
     </div>
     <p
       v-if="errorText"
@@ -225,6 +228,7 @@ watch(() => inactive, (now) => {
         :format="format"
       />
     </div>
+    <slot name="beside" />
     <InfoPopover
       v-if="help && ownLabel"
       :label="label"

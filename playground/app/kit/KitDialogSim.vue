@@ -3,12 +3,13 @@ import { computed, nextTick, ref, shallowRef } from 'vue'
 import { CwaUiButton, CwaUiDialog, CwaUiFormSection, CwaUiInput, CwaUiSegmented, CwaUiSelect, CwaUiTextarea, CwaUiToggle } from '#components'
 import KitSim from './KitSim.vue'
 import KitDemo from './KitDemo.vue'
-import KitSlot from './KitSlot.vue'
 import KitLoadControls from './KitLoadControls.vue'
 import { kitLoader } from './fake-loader'
 import { fakeDialogForm } from './fake-dialog-form'
 import type { FakeDialogForm } from './fake-dialog-form'
 import { kitMia } from './fake-save-server'
+import { kitPageTypeOptions } from './kit-data'
+import { useCwaConfirm } from '../../../src/runtime/composables/cwa-confirm'
 
 type Kind = 'static' | 'dynamic' | 'data' | 'nested'
 type NextSave = 'ok' | 'errors' | 'server' | 'offline' | 'conflict'
@@ -19,7 +20,6 @@ const nextOptions = [{ value: 'ok', label: 'Succeeds' }, { value: 'errors', labe
 const layoutOptions = [{ label: 'Main layout', value: '/_/layouts/main' }, { label: 'Landing layout', value: '/_/layouts/landing' }]
 const pageUiOptions = [{ label: 'Default page', value: 'CwaPageDefault' }, { label: 'Two columns', value: 'CwaPageTwoColumns' }]
 const templateOptions = [{ label: 'Kitchen template', value: '/_/pages/kitchen' }, { label: 'Bathroom template', value: '/_/pages/bathroom' }]
-const pageTypeOptions = [{ label: 'Static', value: 'static' }, { label: 'Dynamic', value: 'dynamic' }]
 const depthOptions = [{ label: 'Kitchens', value: '0' }, { label: 'Shaker', value: '1' }, { label: 'Painted', value: '2' }]
 
 const kind = ref<Kind>('static')
@@ -41,16 +41,32 @@ const title = computed(() => {
   }
   return { static: 'Kitchens', dynamic: 'Kitchen template', data: 'Shaker kitchen 17', nested: 'Painted shaker' }[kind.value]
 })
+const pageFields: Record<string, string> = { reference: 'Reference', title: 'SEO page title', metaDescription: 'SEO meta description', layout: 'Layout' }
+const dataFields: Record<string, string> = { title: 'Title', metaDescription: 'SEO meta description', page: 'Dynamic page' }
 const tabs = computed(() => [
-  { label: 'Details', key: 'details' },
+  { label: 'Details', key: 'details', fields: isPage.value ? pageFields : dataFields },
   { label: 'Routes', key: 'routes', ...(adding.value && { disabled: `Routes open once the ${isPage.value ? 'page' : 'kitchen'} is created. Create it and this tab lets you add its address.` }) },
   { label: 'Info', key: 'info' },
 ])
 
 function stored() {
   return adding.value
-    ? { reference: '', title: '', metaDescription: '', pageType: kind.value === 'dynamic' ? 'dynamic' : 'static', layout: null, uiComponent: null, page: null, isReachableWithoutRoute: reachable.value }
-    : { reference: title.value, title: `${title.value} | Hand-built`, metaDescription: 'Hand-built shaker kitchens, made to measure.', pageType: kind.value === 'dynamic' ? 'dynamic' : 'static', layout: '/_/layouts/main', uiComponent: 'CwaPageDefault', page: '/_/pages/kitchen', isReachableWithoutRoute: reachable.value }
+    ? { reference: '', title: '', metaDescription: '', pageType: kind.value === 'dynamic' ? 'template' : 'static', layout: null, uiComponent: null, page: null, isReachableWithoutRoute: reachable.value }
+    : { reference: title.value, title: `${title.value} | Hand-built`, metaDescription: 'Hand-built shaker kitchens, made to measure.', pageType: kind.value === 'dynamic' ? 'template' : 'static', layout: '/_/layouts/main', uiComponent: 'CwaPageDefault', page: '/_/pages/kitchen', isReachableWithoutRoute: reachable.value }
+}
+
+const dialogKind = computed(() => {
+  if (isPage.value) {
+    return { tone: form.value?.local.pageType === 'template' ? 'dynamic' as const : 'static' as const }
+  }
+  return reachable.value ? { tone: 'success' as const, label: 'Reachable' } : { tone: 'warning' as const, label: 'Not reachable' }
+})
+
+const confirm = useCwaConfirm()
+
+async function deletePage() {
+  const go = await confirm({ title: `Delete ${title.value}?`, description: 'Its route is kept, and visitors to it get “Page not found”.', keep: 'Keep it', go: 'Delete page', tone: 'danger' })
+  result.value = go ? 'Delete confirmed (nothing deleted in the kit)' : 'Delete cancelled'
 }
 
 function armNextSave(target: FakeDialogForm) {
@@ -117,7 +133,7 @@ async function openChanged() {
   <KitSim
     id="kit-sim-dialogs"
     title="Simulation: dialogs and admin pages"
-    intro="CwaUiDialog with a fakeDialogForm, laid out as the page settings modal is. Choose the kind of page, adding or editing, and how the next Save answers, then open it. Closing with changes asks to discard. The real PageResourceAdminModal loads through $cwa, so it is not mounted here."
+    intro="CwaUiDialog with a fakeDialogForm, laid out as the page settings modal is. Choose the kind of page, adding or editing, and how the next Save answers, then open it. Closing with changes asks to discard. The header line is the page type (static or dynamic, following the select) or, for page data, Reachable or Not reachable. Delete page asks through the kit confirm. The real PageResourceAdminModal is in the In practice tab."
   >
     <template #controls>
       <CwaUiSegmented
@@ -171,14 +187,6 @@ async function openChanged() {
     >
       <span class="kit-dialog-note">{{ open ? 'Open' : 'Closed' }}</span>
     </KitDemo>
-    <KitSlot
-      name="the page type line under the dialog title (Static page / Dynamic template)"
-      from="the module, which has no such line yet"
-    />
-    <KitSlot
-      name="the confirm dialog on the kit, and the phone sheet"
-      from="7c"
-    />
     <CwaUiDialog
       v-if="open && form"
       v-model:tab="tab"
@@ -187,10 +195,25 @@ async function openChanged() {
       :form="form"
       :loading="loading"
       :create-noun="adding ? (isPage ? 'page' : 'kitchen') : undefined"
+      placement="right"
+      :kind="dialogKind"
       data-testid="kit-sim-dialogs-dialog"
       @close="open = false"
       @save="save"
     >
+      <template
+        v-if="isPage"
+        #header-actions
+      >
+        <CwaUiSelect
+          field="pageType"
+          label="Page type"
+          label-hidden
+          width="xs"
+          :options="kitPageTypeOptions"
+          data-testid="kit-sim-dialogs-page-type"
+        />
+      </template>
       <template #details>
         <CwaUiFormSection v-if="kind === 'nested'">
           <CwaUiSegmented
@@ -210,12 +233,6 @@ async function openChanged() {
             v-else
             field="title"
             label="Title"
-          />
-          <CwaUiSegmented
-            v-if="isPage"
-            field="pageType"
-            label="Page type"
-            :options="pageTypeOptions"
           />
         </CwaUiFormSection>
         <CwaUiFormSection
@@ -282,6 +299,8 @@ async function openChanged() {
             <CwaUiButton
               tone="danger"
               label="Delete page"
+              data-testid="kit-sim-dialogs-delete"
+              @click="deletePage"
             />
           </div>
         </CwaUiFormSection>

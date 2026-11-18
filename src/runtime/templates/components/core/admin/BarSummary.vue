@@ -1,11 +1,14 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue'
 import { PopoverAnchor, PopoverArrow, PopoverContent, PopoverPortal, PopoverRoot } from 'reka-ui'
 import Spinner from '../../ui/Spinner.vue'
 import StateGlyph from '../ui/StateGlyph.vue'
+import FieldStatusTitle from '../ui/FieldStatusTitle.vue'
+import FieldStatusError from '../ui/FieldStatusError.vue'
 import type { GlyphKind } from '../ui/StateGlyph.vue'
 import { useAnnounce } from '../ui/field-context'
 import { useCwa } from '#cwa/composables/cwa'
+import { findInlineEditor, registerBarStatus } from '#cwa/admin/inline-editors'
 import { badgeFor, issueShort, issueText } from '#cwa/admin/field-badge'
 import { usePublishState } from '#cwa/admin/publish-state'
 import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/resources/resource-utils'
@@ -82,7 +85,16 @@ watch(iri, () => {
   phase.value = busy.value ? 'saving' : 'rest'
 })
 
-onBeforeUnmount(clearTimers)
+const button = useTemplateRef<HTMLButtonElement>('button')
+let unregisterStatus: (() => void) | undefined
+onMounted(() => {
+  unregisterStatus = registerBarStatus($cwa, { open: field => openError(field) })
+})
+
+onBeforeUnmount(() => {
+  clearTimers()
+  unregisterStatus?.()
+})
 
 const resourceType = computed(() => iri.value ? getResourceTypeFromIri(iri.value) : undefined)
 
@@ -127,13 +139,50 @@ const status = computed<{ state: string, glyph?: GlyphKind, full: string, short:
 
 const actionable = computed(() => (!!badge.value.kind || publish.failed.value) && phase.value !== 'saving')
 
-const actionLabel = computed(() => badge.value.kind ? `${issueText(badge.value)}, show the field` : 'Not published, retry')
+function inPageError(field: string | undefined) {
+  if (!field) {
+    return undefined
+  }
+  const state = fieldStates.value.find(([name, each]) => name === field && each.status === 'error')?.[1]
+  const editor = state && findInlineEditor($cwa, { iri: () => iri.value, field })
+  return state && editor?.model ? { field, state, editor, model: editor.model } : undefined
+}
+
+function firstToFix() {
+  const order: CwaFieldState['status'][] = ['conflict', 'error']
+  for (const kind of order) {
+    const found = fieldStates.value.find(([, state]) => state.status === kind)
+    if (found) {
+      return found[0]
+    }
+  }
+  return undefined
+}
+
+const opensError = computed(() => !!badge.value.kind && !!inPageError(firstToFix()))
+
+const actionLabel = computed(() => badge.value.kind ? `${issueText(badge.value)}, ${opensError.value ? 'Retry or Reset' : 'show the field'}` : 'Not published, retry')
 
 const open = ref(false)
+const errorField = ref<string>()
+const shownError = computed(() => inPageError(errorField.value))
+const errorBody = useTemplateRef<{ focusRetry: () => void }>('errorBody')
 
 watch(actionable, (isActionable) => {
   isActionable && (open.value = false)
 })
+
+watch(shownError, (shown) => {
+  shown || (errorField.value = undefined)
+})
+
+function openError(field: string) {
+  if (!inPageError(field)) {
+    return false
+  }
+  errorField.value = field
+  return true
+}
 
 function act() {
   if (!actionable.value) {
@@ -141,35 +190,60 @@ function act() {
     return
   }
   if (badge.value.kind) {
-    showFirst()
+    const field = firstToFix()
+    if (field && !openError(field)) {
+      emit('show', field)
+    }
     return
   }
   publish.retry()
 }
 
-function showFirst() {
-  const order: CwaFieldState['status'][] = ['conflict', 'error']
-  for (const kind of order) {
-    const found = fieldStates.value.find(([, state]) => state.status === kind)
-    if (found) {
-      emit('show', found[0])
-      return
-    }
+function onOpenChange(next: boolean) {
+  open.value = next
+  if (!next) {
+    errorField.value = undefined
   }
+}
+
+function onOpenAutoFocus(event: Event) {
+  event.preventDefault()
+  errorBody.value?.focusRetry()
+}
+
+function onCloseAutoFocus(event: Event) {
+  event.preventDefault()
+  button.value?.focus({ preventScroll: true })
+}
+
+function closeError(run: () => unknown) {
+  errorField.value = undefined
+  run()
+}
+
+function retry() {
+  const shown = shownError.value
+  closeError(() => shown?.model.retry?.())
+}
+
+function reset() {
+  const shown = shownError.value
+  closeError(() => shown?.model.reset?.())
 }
 </script>
 
 <template>
   <PopoverRoot
-    :open="open && !actionable"
-    @update:open="open = $event"
+    :open="!!shownError || (open && !actionable)"
+    @update:open="onOpenChange"
   >
     <PopoverAnchor as-child>
       <button
+        ref="button"
         type="button"
         :aria-label="actionable ? actionLabel : `Status: ${status.full}`"
-        :aria-haspopup="actionable ? undefined : 'dialog'"
-        :aria-expanded="actionable ? undefined : open ? 'true' : 'false'"
+        :aria-haspopup="actionable && !opensError ? undefined : 'dialog'"
+        :aria-expanded="actionable && !opensError ? undefined : (shownError || open) ? 'true' : 'false'"
         :data-state="status.state"
         data-testid="bar-summary"
         class="cwa:inline-flex cwa:h-full cwa:shrink-0 cwa:cursor-pointer cwa:items-center cwa:gap-2 cwa:whitespace-nowrap cwa:px-2 cwa:text-label cwa:text-fg-muted cwa:outline-1 cwa:outline-transparent cwa:hover:bg-button cwa:focus-visible:outline-2 cwa:focus-visible:-outline-offset-2 cwa:focus-visible:outline-accent-fg cwa:@max-[40rem]:aspect-square cwa:@max-[40rem]:justify-center cwa:@max-[40rem]:px-0"
@@ -196,6 +270,36 @@ function showFirst() {
     </PopoverAnchor>
     <PopoverPortal>
       <PopoverContent
+        v-if="shownError"
+        side="top"
+        align="end"
+        :side-offset="8"
+        :collision-padding="8"
+        :aria-label="`${shownError.editor.label ?? shownError.field}: not saved`"
+        data-testid="bar-summary-popover"
+        class="cwa:z-context cwa:w-max cwa:max-w-[min(20rem,calc(100vw-1rem))] cwa:bg-surface-menu cwa:p-popover cwa:text-control cwa:text-fg cwa:shadow-popover cwa:outline-none"
+        @open-auto-focus="onOpenAutoFocus"
+        @close-auto-focus="onCloseAutoFocus"
+      >
+        <FieldStatusTitle
+          :title="`${shownError.editor.label ?? shownError.field}: not saved`"
+          glyph="error"
+          @close="onOpenChange(false)"
+        />
+        <FieldStatusError
+          ref="errorBody"
+          :message="shownError.state.error?.message"
+          @retry="retry"
+          @reset="reset"
+        />
+        <PopoverArrow
+          :width="12"
+          :height="6"
+          class="cwa:fill-surface-menu"
+        />
+      </PopoverContent>
+      <PopoverContent
+        v-else
         side="top"
         align="end"
         :side-offset="8"
