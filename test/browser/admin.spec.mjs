@@ -1527,3 +1527,48 @@ test('57. with live editing paused on a phone, the header\'s status is a glyph n
     await page.getByTestId('presence-paused-tip').waitFor({ state: 'detached', timeout: 4000 })
   }
 })
+
+test('58. the header\'s Edit or Done button and the page settings button or path selector beside it share one height and one centre, at 1280 and 390, with a fine or a coarse pointer, while live editing is paused', async ({ cwa: t }) => {
+  const { page, base, seed } = t
+  const cookies = await page.context().cookies()
+  for (const hasTouch of [false, true]) {
+    for (const width of [1280, 390]) {
+      const context = await page.context().browser().newContext({ ignoreHTTPSErrors: true, viewport: { width, height: 800 }, hasTouch })
+      await context.addCookies(cookies)
+      const tab = await context.newPage()
+      await tab.route(`**${mercurePath}**`, route => route.abort())
+      const settle = async () => {
+        await tab.waitForLoadState('networkidle')
+      }
+      const measure = async (testId) => {
+        const boxes = await tab.evaluate((id) => {
+          const box = (element) => {
+            const { top, height } = element.getBoundingClientRect()
+            return { height, centre: top + height / 2 }
+          }
+          return {
+            coarse: matchMedia('(pointer: coarse)').matches,
+            cta: box([...document.querySelectorAll('button')].find(button => ['Edit', 'Done'].includes(button.textContent.trim()))),
+            beside: box(document.querySelector(`[data-testid="${id}"]`)),
+          }
+        }, testId)
+        assert(boxes.coarse === hasTouch, `The pointer is ${boxes.coarse ? 'coarse' : 'fine'}`)
+        const where = `At ${width}px with a ${hasTouch ? 'coarse' : 'fine'} pointer, the CTA and ${testId}`
+        assert(Math.abs(boxes.cta.height - boxes.beside.height) <= 1, `${where} are ${boxes.cta.height}px and ${boxes.beside.height}px tall`)
+        assert(Math.abs(boxes.cta.centre - boxes.beside.centre) <= 1, `${where} are centred at ${boxes.cta.centre} and ${boxes.beside.centre}`)
+      }
+      await tab.goto(`${base}${seed.paths.home}`)
+      await tab.getByRole('button', { name: 'Edit', exact: true }).waitFor()
+      await tab.getByTestId('presence-paused').waitFor()
+      await settle()
+      await measure('page-settings')
+      await tab.getByRole('button', { name: 'Edit', exact: true }).click()
+      await tab.getByRole('button', { name: 'Done', exact: true }).waitFor()
+      await tab.getByText(texts.source, { exact: true }).first().click()
+      await tab.getByTestId('path-selector').waitFor()
+      await settle()
+      await measure('path-selector')
+      await context.close()
+    }
+  }
+})
