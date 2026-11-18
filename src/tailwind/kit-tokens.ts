@@ -131,6 +131,7 @@ export const kitContrastPairs: KitContrastPair[] = [
   { fg: 'warning', bg: 'surface', min: 3, use: 'Unreachable page data, dialog edge' },
   { fg: 'toggle-off', bg: 'surface', min: 3, use: 'Toggle track, off' },
   { fg: 'tree-line', bg: 'surface', min: 3, use: 'Tree line' },
+  { fg: 'accent-fg', bg: 'surface-menu', min: 3, use: 'Selected level\'s border in the resource stack' },
   ...buttonPairs(),
   ...badgePairs(),
 ]

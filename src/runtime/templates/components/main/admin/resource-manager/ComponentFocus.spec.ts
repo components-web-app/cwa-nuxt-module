@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { describe, test, expect, vi, beforeAll, beforeEach } from 'vitest'
+import { describe, test, expect, vi, beforeAll, beforeEach, afterEach } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
 import { flushPromises, mount } from '@vue/test-utils'
@@ -7,6 +7,7 @@ import ComponentFocus from './ComponentFocus.vue'
 import * as cwaComposable from '#cwa/composables/cwa'
 import { registerInstance, unregisterInstance } from '#cwa/admin/manageable-instances'
 import type Cwa from '#cwa/cwa'
+import { ResourceTypeFromIri } from '#cwa/resources/resource-utils'
 
 vi.mock('uuid', () => ({ v4: vi.fn(() => 'mock-reorder-id') }))
 
@@ -298,6 +299,34 @@ describe('ComponentFocus', () => {
       mockCwa(() => ref({ data: { _metadata: {} } }))
       const { wrapper } = mountFocus({ iri: '/_/component_groups/abc' })
       expect(wrapper.find('div.cwa\\:animate-pulse').classes()).toContain('cwa:outline-magenta')
+    })
+
+    describe('behind an API path prefix', () => {
+      beforeEach(() => {
+        ResourceTypeFromIri.setPathPrefix('/_api')
+      })
+
+      afterEach(() => {
+        ResourceTypeFromIri.setPathPrefix()
+      })
+
+      test.each([
+        '/_api/_/component_positions/abc',
+        '/_api/_/component_groups/abc',
+        '/_api/_/pages/abc',
+        '/_api/_/layouts/abc',
+        '/_api/_/routes/abc',
+      ])('%s is magenta, as it is with no prefix', (iri) => {
+        mockCwa(() => ref({ data: { _metadata: {} } }))
+        const { wrapper } = mountFocus({ iri })
+        expect(wrapper.find('div.cwa\\:animate-pulse').classes()).toContain('cwa:outline-magenta')
+      })
+
+      test('a component is still green', () => {
+        mockCwa(() => ref({ data: { _metadata: {} } }))
+        const { wrapper } = mountFocus({ iri: '/_api/component/foo' })
+        expect(wrapper.find('div.cwa\\:animate-pulse').classes()).toContain('cwa:outline-green')
+      })
     })
 
     test('is green for a non-publishable resource with a non /_/ iri', () => {
