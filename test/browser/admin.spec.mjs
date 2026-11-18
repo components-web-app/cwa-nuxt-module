@@ -1750,8 +1750,9 @@ test('64. by keyboard alone a rich-text component is reached with Tab, selected 
   await page.getByTestId('component-menu').waitFor()
   await page.getByRole('textbox', { name: 'Content, Body Text' }).filter({ hasText: texts.source }).waitFor()
 
-  await page.keyboard.press('F6')
   const tablist = page.getByRole('tablist', { name: 'Body Text settings' })
+  await tablist.getByRole('tab', { selected: true }).waitFor()
+  await page.keyboard.press('F6')
   await eventually(() => tablist.evaluate(el => el.contains(document.activeElement)), 'F6 did not move focus to the manager bar\'s tabs')
   for (let moves = 0; moves < 8 && (await page.evaluate(() => document.activeElement?.textContent?.trim())) !== 'Publish'; moves++) {
     await page.keyboard.press('ArrowRight')
@@ -1785,4 +1786,41 @@ test('65. a shared component with unpublished changes offers Remove from here, D
   assert(t.rehearsal.writes.filter(w => w.method === 'DELETE').length === 1, `DELETEd ${JSON.stringify(t.rehearsal.writes.filter(w => w.method === 'DELETE').map(w => w.path))}`)
   assert(await t.api.status(t.seed.iris.source) === 200, 'The live component was deleted')
   assert(await t.api.status(draft['@id']) === 200, 'The draft was deleted')
+})
+
+test('66. at 390 wide the UI tab\'s row shows its fade and scrolls by keyboard, and focusing the Style select brings all of it into the row, with a fine or a coarse pointer', async ({ cwa: t }) => {
+  const { page, base, seed } = t
+  const cookies = await page.context().cookies()
+  for (const hasTouch of [false, true]) {
+    const context = await page.context().browser().newContext({ ignoreHTTPSErrors: true, viewport: { width: 390, height: 844 }, hasTouch })
+    await context.addCookies(cookies)
+    const tab = await context.newPage()
+    await tab.route(`**${mercurePath}**`, route => route.abort())
+    await tab.goto(`${base}${seed.paths.home}`)
+    await tab.getByRole('button', { name: 'Edit', exact: true }).waitFor()
+    await tab.waitForLoadState('networkidle')
+    await tab.getByRole('button', { name: 'Edit', exact: true }).click()
+    await tab.getByRole('button', { name: 'Done', exact: true }).waitFor()
+    await tab.getByText(texts.source, { exact: true }).first().click()
+    await tab.getByRole('tab', { name: 'UI', exact: true }).click()
+    const style = tab.getByTestId('manager-tab-panel').getByRole('combobox', { name: 'Style', exact: true })
+    await style.waitFor()
+    await tab.waitForLoadState('networkidle')
+    const fit = await style.evaluate((input) => {
+      const field = input.parentElement
+      let scroller = field.parentElement
+      while (scroller && getComputedStyle(scroller).overflowX !== 'auto') {
+        scroller = scroller.parentElement
+      }
+      const cue = { overflows: scroller.scrollWidth > scroller.clientWidth + 1, fade: scroller.parentElement.dataset.overflowEnd === 'true', tabindex: scroller.getAttribute('tabindex') }
+      scroller.scrollLeft = 0
+      input.focus()
+      const box = field.getBoundingClientRect()
+      const view = scroller.getBoundingClientRect()
+      return { ...cue, left: Math.round(box.left), right: Math.round(box.right), viewLeft: Math.round(view.left), viewRight: Math.round(view.right), page: document.documentElement.clientWidth, scrollWidth: document.documentElement.scrollWidth }
+    })
+    assert(!fit.overflows || (fit.fade && fit.tabindex === '0'), `With a ${hasTouch ? 'coarse' : 'fine'} pointer the row overflows with no fade or keyboard scroll: ${JSON.stringify(fit)}`)
+    assert(fit.left >= fit.viewLeft - 1 && fit.right <= fit.viewRight + 1 && fit.right <= fit.page, `With a ${hasTouch ? 'coarse' : 'fine'} pointer the Style select is cut off: ${JSON.stringify(fit)}`)
+    await context.close()
+  }
 })
