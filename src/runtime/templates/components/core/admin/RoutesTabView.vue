@@ -1,14 +1,16 @@
 <script setup lang="ts">
-import { computed, ref, useId } from 'vue'
+import { computed, inject, ref, useId } from 'vue'
 import CwaUiButton from '#cwa/templates/components/ui/Button.vue'
 import CwaUiAlert from '#cwa/templates/components/ui/Alert.vue'
 import CwaUiSpinner from '#cwa/templates/components/ui/Spinner.vue'
+import CwaUiToggle from '#cwa/templates/components/ui/Toggle.vue'
 import CwaUiPlusIcon from '#cwa/templates/components/ui/icon/PlusIcon.vue'
 import CopyGlyph from '#cwa/templates/components/core/ui/CopyGlyph.vue'
 import RouteStatusBadge from '#cwa/templates/components/core/admin/RouteStatusBadge.vue'
 import RouteSubStatus from '#cwa/templates/components/core/admin/RouteSubStatus.vue'
 import RouteRecommendation from '#cwa/templates/components/core/admin/RouteRecommendation.vue'
 import { useAnnounce } from '#cwa/templates/components/core/ui/field-context'
+import { fieldGroupKey } from '#cwa/templates/components/core/ui/field-keys'
 import { isRouteGatedByAncestor, routePublicationFromResource, routeReachableAt } from '#cwa/resources/route-publication'
 import { formatDateTime } from '#cwa/resources/date-time-input'
 import type { CwaResource } from '#cwa/resources/resource-utils'
@@ -16,7 +18,7 @@ import type { TempCwaResource } from '#cwa-layer/_composables/useItemPage'
 
 export type RouteSubView = 'route' | 'to' | 'from' | 'kids'
 
-const { resource, isLoading, parentHasNoRoute = false, parentName, forwardToPath, redirectCount = 0, childCount = 0, recommendedPath, noun = 'page', status } = defineProps<{
+const { resource, isLoading, parentHasNoRoute = false, parentName, forwardToPath, redirectCount = 0, childCount = 0, recommendedPath, recommendedFrom, noun = 'page', status } = defineProps<{
   resource: CwaResource | TempCwaResource | undefined
   isLoading: boolean
   parentHasNoRoute?: boolean
@@ -25,6 +27,7 @@ const { resource, isLoading, parentHasNoRoute = false, parentName, forwardToPath
   redirectCount?: number
   childCount?: number
   recommendedPath?: string
+  recommendedFrom?: string
   noun?: string
   status?: string
 }>()
@@ -35,6 +38,8 @@ const emit = defineEmits<{
 }>()
 
 const announce = useAnnounce()
+const fieldGroup = inject(fieldGroupKey, undefined)
+const publicWithoutRoute = computed(() => !!fieldGroup?.model('isReachableWithoutRoute')?.model.value)
 const headingId = useId()
 const statusLine = ref<InstanceType<typeof RouteSubStatus> | null>(null)
 
@@ -127,12 +132,13 @@ defineExpose({ statusElement: () => statusLine.value?.element() ?? null })
         <RouteRecommendation
           v-if="showRecommendation"
           :path="recommendedPath!"
+          :from="recommendedFrom"
           @use="emit('open', 'route', true)"
         />
         <CwaUiAlert
           v-if="gated"
-          tone="warning"
-          title="Held back by a parent route."
+          tone="info"
+          title="Inherited from a parent route."
           data-parent-gated
         >
           <template v-if="gatedAt">
@@ -158,10 +164,20 @@ defineExpose({ statusElement: () => statusLine.value?.element() ?? null })
           data-testid="routes-none"
           class="cwa:m-0 cwa:text-control cwa:text-fg-muted"
         >
-          No route yet. Visitors can't open this {{ noun }} at its own address.<template v-if="!parentHasNoRoute && childCount">
-            It is reachable through a nested page.
+          <template v-if="publicWithoutRoute">
+            No route yet. This {{ noun }} is public without a route: visitors can read it where your app loads it.
+          </template>
+          <template v-else>
+            No route yet. Visitors can't open this {{ noun }} at its own address.<template v-if="!parentHasNoRoute && childCount">
+              It is reachable through a nested page.
+            </template>
           </template>
         </p>
+        <CwaUiToggle
+          field="isReachableWithoutRoute"
+          label="Public without a route"
+          description="For a page your app shows on its own URL, loaded by reference. Visitors can read it without a route. It stays private while a parent page isn't live."
+        />
         <CwaUiAlert
           v-if="parentHasNoRoute"
           :title="parentName ? `The parent page, ${parentName}, has no route yet.` : 'The parent page has no route yet.'"
@@ -189,6 +205,7 @@ defineExpose({ statusElement: () => statusLine.value?.element() ?? null })
           <RouteRecommendation
             v-if="recommendedPath"
             :path="recommendedPath"
+            :from="recommendedFrom"
             @use="emit('open', 'route', true)"
           />
         </template>

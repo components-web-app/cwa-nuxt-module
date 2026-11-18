@@ -42,11 +42,12 @@ describe('RoutesTabForwardTo', () => {
     expect(wrapper.find('[data-edit-forward]').attributes('aria-disabled')).toBe('true')
   })
 
-  test('the form searches routes by path, and warns that visitors will no longer see this page once one is chosen', async () => {
+  test('the form searches routes by path, sending the legacy path filter too until every app has migrated (#328), and warns that visitors will no longer see this page once one is chosen', async () => {
     const wrapper = mountForward({ form: true })
     const search = wrapper.findComponent(CwaUiResourceSearch)
     expect(search.props('endpoint')).toBe('/_/routes')
     expect(search.props('label')).toBe('Send visitors to')
+    expect(search.props('searchParams')).toEqual(['search', 'path'])
     expect((search.props('labelOf') as (resource: Record<string, string>) => string)({ '@id': '/_/routes//a', 'path': '/a' })).toBe('/a')
     expect(wrapper.find('[data-testid="route-forward-warning"]').exists()).toBe(false)
 

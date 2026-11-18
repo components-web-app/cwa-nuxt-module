@@ -42,6 +42,7 @@ const labelOf = (resource: CwaResource) => resource.path ?? resource['@id']
         v-model="pick"
         label="Send visitors to"
         endpoint="/_/routes"
+        :search-params="['search', 'path']"
         noun="routes"
         width="full"
         :label-of="labelOf"

@@ -1270,6 +1270,10 @@
   border-bottom-style: var(--tw-border-style);
   border-bottom-width: 2px;
 }
+.cwa\:border-b-3 {
+  border-bottom-style: var(--tw-border-style);
+  border-bottom-width: 3px;
+}
 .cwa\:border-dashed {
   --tw-border-style: dashed;
   border-style: dashed;
@@ -1322,6 +1326,12 @@
 }
 .cwa\:border-transparent {
   border-color: transparent;
+}
+.cwa\:border-type-dynamic {
+  border-color: var(--cwa-color-type-dynamic);
+}
+.cwa\:border-type-static {
+  border-color: var(--cwa-color-type-static);
 }
 .cwa\:border-warning {
   border-color: var(--cwa-color-warning);

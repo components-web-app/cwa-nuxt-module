@@ -21,6 +21,11 @@ vi.mock('#cwa-layer/_composables/useItemPage', () => ({
   useItemPage: mockUseItemPage,
 }))
 
+const realtime = vi.hoisted(() => ({ peers: vi.fn((_iri: string): unknown[] => []) }))
+vi.mock('#cwa/resources/realtime-view', () => ({
+  realtimeView: () => ({ load: async () => ({ peers: realtime.peers }) }),
+}))
+
 const resolvableLayoutNames = componentNames.filter((n: string) => n.startsWith('CwaLayout'))
 const resolvableLayoutName = resolvableLayoutNames[0]
 const otherResolvableLayoutName = resolvableLayoutNames[1]
@@ -232,6 +237,7 @@ describe('Layout admin dialog (#461)', () => {
     const { wrapper, deleteResource, discard } = setup({ pages: ['/_/pages/1'], unsavedFields: ['reference'] })
 
     await wrapper.get('[data-testid="layout-delete"]').trigger('click')
+    await vi.dynamicImportSettled()
     await flushPromises()
 
     expect(mockConfirm).toHaveBeenCalledWith(expect.objectContaining({
@@ -248,11 +254,30 @@ describe('Layout admin dialog (#461)', () => {
     expect(discard).toHaveBeenCalled()
   })
 
+  test('the confirm names the other admins editing the layout, as the old delete did (#429)', async () => {
+    realtime.peers.mockReturnValueOnce([
+      { user: { id: '/users/sam', name: 'Sam' }, name: 'Sam', state: 'editing', idle: false },
+    ])
+    mockConfirm.mockResolvedValue(false)
+    const { wrapper } = setup()
+
+    await wrapper.get('[data-testid="layout-delete"]').trigger('click')
+    await vi.dynamicImportSettled()
+    await flushPromises()
+
+    expect(realtime.peers).toHaveBeenCalledWith('/_/layouts/uuid-self')
+    expect(mockConfirm.mock.calls[0]![0].lines).toEqual([
+      { text: 'Sam is editing this.' },
+      { text: 'This can\'t be undone.' },
+    ])
+  })
+
   test('a delete that is not confirmed deletes nothing', async () => {
     mockConfirm.mockResolvedValue(false)
     const { wrapper, deleteResource } = setup()
 
     await wrapper.get('[data-testid="layout-delete"]').trigger('click')
+    await vi.dynamicImportSettled()
     await flushPromises()
 
     expect(deleteResource).not.toHaveBeenCalled()

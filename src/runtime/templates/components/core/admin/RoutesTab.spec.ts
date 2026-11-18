@@ -219,6 +219,14 @@ describe('RoutesTab', () => {
       expect(wrapper.findComponent(RoutesTabView).props('recommendedPath')).toBe(expected)
     })
 
+    test('tells both route views which title the recommendation is based on', async () => {
+      setupItemPage()
+      mockCwa()
+      const wrapper = mountTab({ title: 'My Great Programme', parentPage: null })
+      await flushPromises()
+      expect(wrapper.findComponent(RoutesTabView).props('recommendedFrom')).toBe('My Great Programme')
+    })
+
     test('Use this opens the route form with the recommended path filled in, and saves nothing', async () => {
       const itemPage = setupItemPage()
       mockCwa()

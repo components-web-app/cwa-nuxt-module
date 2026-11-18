@@ -62,7 +62,7 @@ afterEach(() => {
 
 const DialogStub = defineComponent({
   name: 'CwaUiDialog',
-  props: ['title', 'tabs', 'form', 'loading', 'noun', 'createNoun', 'tab'],
+  props: ['title', 'tabs', 'form', 'loading', 'noun', 'createNoun', 'tab', 'kind'],
   emits: ['close', 'save', 'update:tab'],
   setup(props, { slots, expose }) {
     provide(fieldGroupKey, { model: (field: string) => props.form.model(field), undo: () => undefined })
@@ -268,11 +268,54 @@ describe('PageResourceAdminModal on the kit dialog (#461)', () => {
   test('changing the page type is a change to save, never saved on its own', async () => {
     const { wrapper, form, handlers } = setup({ local: { isTemplate: false } })
 
-    await field(wrapper, Segmented, 'Page type').findAll('button').find(b => b.text() === 'Template')!.trigger('click')
+    await field(wrapper, Segmented, 'Page type').findAll('button').find(b => b.text() === 'Dynamic')!.trigger('click')
 
     expect(form.local.isTemplate).toBe(true)
     expect(form.unsavedFields).toEqual(['isTemplate'])
     expect(handlers.saveResource).not.toHaveBeenCalled()
+  })
+
+  test('the page type is Static or Dynamic, as the page list names it', () => {
+    const { wrapper } = setup({ local: { isTemplate: false } })
+
+    expect(field(wrapper, Segmented, 'Page type').props('options').map((option: { label: string }) => option.label)).toEqual(['Static', 'Dynamic'])
+  })
+
+  test.each([
+    [false, { tone: 'static', label: 'Static page' }],
+    [true, { tone: 'dynamic', label: 'Dynamic template' }],
+  ])('a page with isTemplate %s gives the dialog the %o kind, its coloured edge and words', (isTemplate, kind) => {
+    const { wrapper } = setup({ local: { isTemplate } })
+
+    expect(wrapper.findComponent(DialogStub).props('kind')).toEqual(kind)
+  })
+
+  test('switching the page type changes the dialog\'s kind at once, before it is saved', async () => {
+    const { wrapper, handlers } = setup({ local: { isTemplate: false } })
+
+    await field(wrapper, Segmented, 'Page type').findAll('button').find(b => b.text() === 'Dynamic')!.trigger('click')
+
+    expect(wrapper.findComponent(DialogStub).props('kind')).toEqual({ tone: 'dynamic', label: 'Dynamic template' })
+    expect(handlers.saveResource).not.toHaveBeenCalled()
+  })
+
+  test('a page public without a route keeps its page type kind', () => {
+    const { wrapper } = setup({ local: { isTemplate: false, isReachableWithoutRoute: true } })
+
+    expect(wrapper.findComponent(DialogStub).props('kind')).toEqual({ tone: 'static', label: 'Static page' })
+  })
+
+  test.each([
+    [{ route: '/_/routes/r' }, { isReachableWithoutRoute: false }, { tone: 'reachable', label: 'Reachable' }],
+    [{ route: null }, { isReachableWithoutRoute: true }, { tone: 'reachable', label: 'Reachable' }],
+    [{ route: null }, { isReachableWithoutRoute: false }, { tone: 'unreachable', label: 'Not reachable' }],
+  ])('page data with %o and %o gives the dialog the %o kind', (saved, local, kind) => {
+    const { wrapper } = setupPageData({
+      resource: { '@id': '/page_data/uuid-self', '@type': 'App\\Entity\\EventData', 'title': 'An event', ...saved },
+      local,
+    })
+
+    expect(wrapper.findComponent(DialogStub).props('kind')).toEqual(kind)
   })
 
   test('choosing to nest under nothing clears the parent in the local copy, so Save counts it', async () => {
@@ -298,12 +341,9 @@ describe('PageResourceAdminModal on the kit dialog (#461)', () => {
     expect(field(wrapper, Select, 'Parent page').props('options')).toEqual([{ label: 'A', value: '/_/pages/a' }])
   })
 
-  test('public without a route is a field, off while the page has a route', () => {
-    const routed = setup({ resource: { '@id': '/_/pages/uuid-self', '@type': 'Page', 'reference': 'My Page', 'route': '/_/routes/r' } })
-    expect(field(routed.wrapper, Toggle, 'Public without a route').props()).toMatchObject({ field: 'isReachableWithoutRoute', disabled: true })
-
-    const unrouted = setupPageData()
-    expect(field(unrouted.wrapper, Toggle, 'Public without a route').props('disabled')).toBe(false)
+  test('public without a route is not a Details field: it lives on the Routes tab, with the route it stands in for (bundle#381)', () => {
+    expect(field(setup().wrapper, Toggle, 'Public without a route')).toBeUndefined()
+    expect(field(setupPageData().wrapper, Toggle, 'Public without a route')).toBeUndefined()
   })
 
   test('switching the depth being edited asks the dialog to confirm discarding unsaved edits, and switches only on Discard', async () => {

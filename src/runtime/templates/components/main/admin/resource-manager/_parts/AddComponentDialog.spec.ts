@@ -718,6 +718,24 @@ describe('the add component dialog (#461)', () => {
       expect(document.getElementById(add().getAttribute('aria-describedby')!)!.textContent).toBe('Choose a data type and a field first.')
     })
 
+    test('while a data type\'s fields load, Field says Loading… and stays disabled, as the old dialog did', async () => {
+      let resolveFields: (options: { label: string, value: string }[]) => void = () => undefined
+      dynamicOptions.getPropertyOptions.mockReturnValueOnce(new Promise((resolve) => {
+        resolveFields = resolve
+      }))
+      await openDynamic()
+
+      await pick('add-component-data-type', 'Blog articles')
+      const field = () => q('[data-testid="add-component-field"] [data-testid="select-trigger"]')!
+      expect(shown(field())).toContain('Loading…')
+      expect(field().getAttribute('aria-disabled')).toBe('true')
+
+      resolveFields([{ label: 'Hero image', value: 'heroImage' }])
+      await flushPromises()
+      expect(shown(field())).toContain('Choose a field')
+      expect(field().getAttribute('aria-disabled')).toBeNull()
+    })
+
     test('choosing a data type enables Field with its options, and Add sends the position with both', async () => {
       await openDynamic()
 
