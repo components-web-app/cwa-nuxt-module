@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue'
 import { useCwa, useRouter } from '#imports'
-import { CwaComponentGroup, CwaUiButton, CwaUiSegmented, CwaUiToggle } from '#components'
+import { CwaComponentGroup, CwaUiButton, CwaUiSegmented, CwaUiToggle, LazyCwaAdminHeader, LazyCwaAdminResourceManager, LazyCwaAdminResourceManagerLayoutPageOverlay } from '#components'
 import { Presence } from '#cwa/admin/presence'
 import { useCloneMode } from '#cwa/admin/clone-mode'
 import { NEW_RESOURCE_IRI } from '#cwa/storage/stores/resources/state'
@@ -28,6 +28,9 @@ const clone = useCloneMode($cwa)
 const server = createFakeSaveServer()
 
 const ready = ref(false)
+const chrome = useTemplateRef<HTMLElement>('chrome')
+const site = useTemplateRef<HTMLElement>('site')
+const manager = ref<InstanceType<typeof LazyCwaAdminResourceManager> | null>(null)
 const state = ref<PracticeState>('draft')
 const layout = ref(false)
 const mia = ref(false)
@@ -133,6 +136,18 @@ async function typeForMe() {
   await typeInto(input, ' and fitted by us', { clear: false })
 }
 
+function inSite(event: MouseEvent) {
+  return !!site.value?.contains(event.target as Node)
+}
+
+function onClick(event: MouseEvent) {
+  manager.value?.clickHandler(event, inSite(event) ? 'page' : 'layout')
+}
+
+function onContextMenu(event: MouseEvent) {
+  manager.value?.contextMenuHandler(event, inSite(event) ? 'page' : 'layout')
+}
+
 watch(state, value => ready.value && void applyState(value))
 watch(layout, (value) => {
   stack.isEditingLayout.value = value
@@ -153,13 +168,14 @@ onMounted(async () => {
   authStore.data.user = { '@id': '/_/users/kit', '@type': 'User', 'username': 'kit', 'emailAddress': 'kit@example.test', 'enabled': true, 'roles': ['ROLE_ADMIN', 'ROLE_USER'], '_metadata': { persisted: true } }
   storeAll(state.value)
   ready.value = true
+  const wasEditing = $cwa.admin.isEditing
   $cwa.admin.toggleEdit(true)
   startPresence()
   restore = () => {
     clone.end()
     presence?.stop()
-    $cwa.admin.toggleEdit(false)
     stack.resetStack()
+    $cwa.admin.toggleEdit(wasEditing)
     if (resourcesStore.adding) {
       resourcesStore.resetNewResource()
     }
@@ -180,6 +196,15 @@ onBeforeUnmount(() => restore?.())
     class="kit-practice"
     data-testid="kit-practice"
   >
+    <Teleport
+      v-if="ready"
+      to="body"
+    >
+      <div class="kit-practice-chrome">
+        <LazyCwaAdminHeader />
+        <LazyCwaAdminResourceManager ref="manager" />
+      </div>
+    </Teleport>
     <KitSim
       id="kit-practice-chrome"
       title="In practice: editing on the page"
@@ -251,30 +276,43 @@ onBeforeUnmount(() => restore?.())
 
     <div
       v-if="ready"
-      class="kit-site"
-      data-testid="kit-practice-site"
+      ref="chrome"
+      class="kit-site-frame"
+      @click="onClick"
+      @contextmenu="onContextMenu"
     >
+      <LazyCwaAdminResourceManagerLayoutPageOverlay
+        v-if="site && chrome"
+        :page="site"
+        :layout="chrome"
+      />
       <div class="kit-site-head">
         <strong>Shaker &amp; Co</strong>
         <span>Kitchens · Bathrooms · Visit us</span>
       </div>
       <div
-        class="kit-site-hero"
-        data-kit-practice="main"
+        ref="site"
+        class="kit-site"
+        data-testid="kit-practice-site"
       >
-        <CwaComponentGroup
-          reference="main"
-          :location="PRACTICE.page"
-        />
-      </div>
-      <div
-        class="kit-site-band"
-        data-kit-practice="empty"
-      >
-        <CwaComponentGroup
-          reference="empty"
-          :location="PRACTICE.page"
-        />
+        <div
+          class="kit-site-hero"
+          data-kit-practice="main"
+        >
+          <CwaComponentGroup
+            reference="main"
+            :location="PRACTICE.page"
+          />
+        </div>
+        <div
+          class="kit-site-band"
+          data-kit-practice="empty"
+        >
+          <CwaComponentGroup
+            reference="empty"
+            :location="PRACTICE.page"
+          />
+        </div>
       </div>
     </div>
   </main>
@@ -297,11 +335,29 @@ onBeforeUnmount(() => restore?.())
   font-size: 0.75rem;
 }
 
+.kit-site-head,
 .kit-site {
-  margin-top: 1.5rem;
+  font-family: Georgia, 'Times New Roman', serif;
+}
+
+.kit-site {
   background: #f7f3ee;
   color: #2b2520;
   font-family: Georgia, 'Times New Roman', serif;
+}
+
+.kit-practice-chrome {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 0;
+}
+
+.kit-site-frame {
+  position: relative;
+  overflow: clip;
+  margin-top: 1.5rem;
 }
 
 .kit-site-head {
