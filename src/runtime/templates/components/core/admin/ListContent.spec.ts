@@ -1,20 +1,26 @@
 // @vitest-environment happy-dom
-import { describe, test, expect, vi, beforeEach } from 'vitest'
+import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
 import { ref, nextTick } from 'vue'
-import { mount, flushPromises } from '@vue/test-utils'
+import { mount, flushPromises, enableAutoUnmount } from '@vue/test-utils'
 import { consola } from 'consola'
 import ListContent from './ListContent.vue'
+import Pagination from '#cwa/templates/components/core/ui/Pagination.vue'
+import { axe } from '../../../../../../test/utils/axe'
+import { drawsFocusRing } from '../../../../../../test/utils/focus-ring'
 import * as cwaComposable from '#cwa/composables/cwa'
 
 vi.mock('consola')
 
+enableAutoUnmount(afterEach)
+
+const routerReplace = vi.hoisted(() => vi.fn())
 // eslint-disable-next-line no-var
 var mockRoute: { query: Record<string, any> }
 vi.mock('vue-router', async () => {
   const { reactive } = await import('vue')
   mockRoute = reactive({ query: {} as Record<string, any> })
   const mod = await vi.importActual<typeof import('vue-router')>('vue-router')
-  return { ...mod, useRoute: () => mockRoute, useRouter: () => ({ replace: vi.fn() }) }
+  return { ...mod, useRoute: () => mockRoute, useRouter: () => ({ replace: routerReplace }) }
 })
 
 const models = vi.hoisted(() => ({ pageModel: null as any, perPageModel: null as any }))
@@ -30,15 +36,10 @@ vi.mock('#cwa/composables/cwa-query-bound-model', async () => {
   }
 })
 
-const ListContainerStub = { template: '<div class="list-container-stub"><slot /></div>' }
-const ListPaginationStub = {
-  name: 'ListPagination',
-  props: ['page', 'perPage', 'totalItems'],
-  template: '<div class="list-pagination-stub" />',
-}
-const SpinnerStub = { name: 'Spinner', props: ['show'], template: '<div class="spinner-stub" />' }
-const CwaUiIconWarningIconStub = { name: 'CwaUiIconWarningIcon', template: '<svg class="warning-icon-stub" />' }
-const CwaUiAlertWarningStub = { name: 'CwaUiAlertWarning', template: '<div class="alert-stub"><slot /></div>' }
+const itemSlot = `<template #item="{ data }"><div role="row" class="item-stub"><span role="cell">{{ data['@id'] }}</span></div></template>`
+const loadingState = (wrapper: ReturnType<typeof mountComponent>) => wrapper.find('[data-testid="list-state-loading"]')
+const errorAlert = (wrapper: ReturnType<typeof mountComponent>) => wrapper.find('[data-testid="list-error"]')
+const rows = (wrapper: ReturnType<typeof mountComponent>) => wrapper.findAll('.item-stub')
 
 function makeFetchResponse(member: any[] | undefined, extra: Record<string, any> = {}) {
   return {
@@ -90,19 +91,11 @@ function mockCwa({
   }))
 }
 
-function mountComponent(slots: Record<string, any> = {}, fetchUrl = '/_/routes', searchFields?: string[]) {
+function mountComponent(slots: Record<string, any> = {}, fetchUrl = '/_/routes', searchFields?: string[], props: Record<string, unknown> = {}) {
   return mount(ListContent, {
-    props: { fetchUrl, searchFields },
-    global: {
-      stubs: {
-        ListContainer: ListContainerStub,
-        ListPagination: ListPaginationStub,
-        Spinner: SpinnerStub,
-        CwaUiIconWarningIcon: CwaUiIconWarningIconStub,
-        CwaUiAlertWarning: CwaUiAlertWarningStub,
-      },
-    },
-    slots,
+    props: { fetchUrl, searchFields, ...props },
+    slots: { item: itemSlot, ...slots },
+    attachTo: document.body,
   })
 }
 
@@ -114,10 +107,13 @@ describe('ListContent', () => {
     if (models.perPageModel) models.perPageModel.value = null
   })
 
-  test('shows the spinner while loading on initial mount', () => {
+  test('shows skeleton rows while the first load is in flight, with the table marked busy and the load announced once', async () => {
     mockCwa({ fetchImpl: vi.fn(() => ({ response: new Promise(() => {}) })) })
-    const wrapper = mountComponent()
-    expect(wrapper.findComponent(SpinnerStub).exists()).toBe(true)
+    const wrapper = mountComponent({}, '/_/routes', undefined, { noun: 'pages' })
+    await nextTick()
+    expect(loadingState(wrapper).exists()).toBe(true)
+    expect(wrapper.get('[role="table"]').attributes('aria-busy')).toBe('true')
+    expect(wrapper.get('[data-testid="list-announcer"]').text()).toBe('Loading pages')
   })
 
   test('fetches items from the fetchUrl on mount', async () => {
@@ -227,9 +223,8 @@ describe('ListContent', () => {
     const wrapper = mountComponent()
     await flushPromises()
     await nextTick()
-    expect(wrapper.findComponent(SpinnerStub).exists()).toBe(false)
-    expect(wrapper.text()).toContain('Sorry, no items found')
-    expect(wrapper.findComponent(CwaUiIconWarningIconStub).exists()).toBe(true)
+    expect(loadingState(wrapper).exists()).toBe(false)
+    expect(wrapper.text()).toContain('No items yet')
   })
 
   test('renders pagination and a list item per member when items exist', async () => {
@@ -242,10 +237,10 @@ describe('ListContent', () => {
     const wrapper = mountComponent()
     await flushPromises()
     await nextTick()
-    expect(wrapper.findAll('li')).toHaveLength(3)
-    const paginations = wrapper.findAllComponents(ListPaginationStub)
-    expect(paginations).toHaveLength(2)
-    expect(paginations[0].props('totalItems')).toBe(42)
+    expect(rows(wrapper)).toHaveLength(3)
+    const paginations = wrapper.findAllComponents(Pagination)
+    expect(paginations).toHaveLength(1)
+    expect(paginations[0]!.props('total')).toBe(42)
   })
 
   test('passes totalItems=0 to pagination when result has no totalItems', async () => {
@@ -253,15 +248,7 @@ describe('ListContent', () => {
     const wrapper = mountComponent()
     await flushPromises()
     await nextTick()
-    expect(wrapper.findAllComponents(ListPaginationStub)[0].props('totalItems')).toBe(0)
-  })
-
-  test('renders the default "no template" UI when no item slot is provided', async () => {
-    mockCwa({ fetchImpl: vi.fn(() => makeFetchResponse([{ '@id': '/a' }])) })
-    const wrapper = mountComponent()
-    await flushPromises()
-    await nextTick()
-    expect(wrapper.text()).toContain('No list item template UI provided')
+    expect(wrapper.findComponent(Pagination).props('total')).toBe(0)
   })
 
   test('renders the provided item slot with store data and raw data', async () => {
@@ -315,17 +302,17 @@ describe('ListContent', () => {
     const wrapper = mountComponent()
     await flushPromises()
     await nextTick()
-    expect(wrapper.findComponent(SpinnerStub).exists()).toBe(false)
-    expect(wrapper.text()).toContain('Sorry, no items found')
+    expect(loadingState(wrapper).exists()).toBe(false)
+    expect(wrapper.text()).toContain('No items yet')
   })
 
   describe('failed load', () => {
-    test('the spinner stops when the list fails to load', async () => {
+    test('the loading state ends when the list fails to load', async () => {
       mockCwa({ fetchImpl: vi.fn(() => makeFetchRejection({ statusCode: 422 })) })
       const wrapper = mountComponent()
       await flushPromises()
       await nextTick()
-      expect(wrapper.findComponent(SpinnerStub).exists()).toBe(false)
+      expect(loadingState(wrapper).exists()).toBe(false)
     })
 
     test('a failure is reported in an alert with the status code', async () => {
@@ -333,9 +320,11 @@ describe('ListContent', () => {
       const wrapper = mountComponent()
       await flushPromises()
       await nextTick()
-      const alert = wrapper.findComponent(CwaUiAlertWarningStub)
+      const alert = errorAlert(wrapper)
       expect(alert.exists()).toBe(true)
-      expect(alert.text()).toBe('The list could not be loaded (422). Please try again.')
+      expect(alert.attributes('data-tone')).toBe('danger')
+      expect(alert.text()).toContain('Items couldn\'t be loaded.')
+      expect(alert.text()).toContain('The server answered 422.')
     })
 
     test('a failure with no status code is reported as a network error', async () => {
@@ -343,7 +332,7 @@ describe('ListContent', () => {
       const wrapper = mountComponent()
       await flushPromises()
       await nextTick()
-      expect(wrapper.findComponent(CwaUiAlertWarningStub).text()).toBe('The list could not be loaded (network error). Please try again.')
+      expect(errorAlert(wrapper).text()).toContain('The server couldn\'t be reached.')
     })
 
     test('the cause of a failure is logged', async () => {
@@ -359,7 +348,7 @@ describe('ListContent', () => {
       const wrapper = mountComponent()
       await flushPromises()
       await nextTick()
-      expect(wrapper.text()).not.toContain('Sorry, no items found')
+      expect(wrapper.text()).not.toContain('No items yet')
     })
 
     test('the previous items are still shown after a failed reload', async () => {
@@ -372,15 +361,15 @@ describe('ListContent', () => {
       const wrapper = mountComponent()
       await flushPromises()
       await nextTick()
-      expect(wrapper.findAll('li')).toHaveLength(2)
+      expect(rows(wrapper)).toHaveLength(2)
 
       shouldFail = true
       // @ts-expect-error exposed method
       await wrapper.vm.reloadItems()
       await flushPromises()
       await nextTick()
-      expect(wrapper.findComponent(CwaUiAlertWarningStub).exists()).toBe(true)
-      expect(wrapper.findAll('li')).toHaveLength(2)
+      expect(errorAlert(wrapper).exists()).toBe(true)
+      expect(rows(wrapper)).toHaveLength(2)
     })
 
     test('the failure is cleared when a retry succeeds', async () => {
@@ -393,15 +382,15 @@ describe('ListContent', () => {
       const wrapper = mountComponent()
       await flushPromises()
       await nextTick()
-      expect(wrapper.findComponent(CwaUiAlertWarningStub).exists()).toBe(true)
+      expect(errorAlert(wrapper).exists()).toBe(true)
 
       shouldFail = false
       // @ts-expect-error exposed method
       await wrapper.vm.reloadItems()
       await flushPromises()
       await nextTick()
-      expect(wrapper.findComponent(CwaUiAlertWarningStub).exists()).toBe(false)
-      expect(wrapper.findAll('li')).toHaveLength(1)
+      expect(errorAlert(wrapper).exists()).toBe(false)
+      expect(rows(wrapper)).toHaveLength(1)
     })
 
     test('a superseded response does not change the totals', async () => {
@@ -423,7 +412,7 @@ describe('ListContent', () => {
       await flushPromises()
       await nextTick()
 
-      expect(wrapper.findAllComponents(ListPaginationStub)[0].props('totalItems')).toBe(999)
+      expect(wrapper.findComponent(Pagination).props('total')).toBe(999)
     })
 
     test('an older failure does not interrupt a newer request still loading', async () => {
@@ -442,8 +431,8 @@ describe('ListContent', () => {
       await flushPromises()
       await nextTick()
 
-      expect(wrapper.findComponent(SpinnerStub).exists()).toBe(true)
-      expect(wrapper.findComponent(CwaUiAlertWarningStub).exists()).toBe(false)
+      expect(loadingState(wrapper).exists()).toBe(true)
+      expect(errorAlert(wrapper).exists()).toBe(false)
     })
 
     test('an older failure does not replace a newer success', async () => {
@@ -465,8 +454,8 @@ describe('ListContent', () => {
       await flushPromises()
       await nextTick()
 
-      expect(wrapper.findComponent(CwaUiAlertWarningStub).exists()).toBe(false)
-      expect(wrapper.findAll('li')).toHaveLength(1)
+      expect(errorAlert(wrapper).exists()).toBe(false)
+      expect(rows(wrapper)).toHaveLength(1)
     })
 
     test('a newer failure is not overridden by an older success', async () => {
@@ -488,8 +477,8 @@ describe('ListContent', () => {
       await flushPromises()
       await nextTick()
 
-      expect(wrapper.findComponent(CwaUiAlertWarningStub).exists()).toBe(true)
-      expect(wrapper.findAll('li')).toHaveLength(0)
+      expect(errorAlert(wrapper).exists()).toBe(true)
+      expect(rows(wrapper)).toHaveLength(0)
     })
   })
 
@@ -525,11 +514,158 @@ describe('ListContent', () => {
   })
 
   describe('perPage default watcher', () => {
-    test('defaults perPage model to 5 when it is null', async () => {
+    test('defaults perPage model to 20 when it is null', async () => {
       mockCwa()
       mountComponent()
       await flushPromises()
-      expect(models.perPageModel.value).toBe(5)
+      expect(models.perPageModel.value).toBe(20)
+    })
+  })
+
+  describe('the kit list (#461)', () => {
+    test('the header row names each column, a hidden label only for screen readers, on the grid its rows use', async () => {
+      mockCwa({ fetchImpl: vi.fn(() => makeFetchResponse([{ '@id': '/a' }], { totalItems: 1 })) })
+      const wrapper = mountComponent({}, '/_/routes', undefined, { columns: [{ label: 'Page' }, { label: 'Status', width: '13rem' }, { label: 'Actions', width: '2.75rem', labelHidden: true }] })
+      await flushPromises()
+
+      expect(wrapper.findAll('[role="columnheader"]').map(header => header.text())).toEqual(['Page', 'Status', 'Actions'])
+      expect(wrapper.findAll('[role="columnheader"] span')[2]!.classes()).toContain('cwa:sr-only')
+      expect(wrapper.get('[role="table"]').attributes('style')).toContain('--cwa-list-columns: minmax(0,1fr) 13rem 2.75rem')
+    })
+
+    test('a loaded list reports its items to its page and announces how many there are', async () => {
+      const items = [{ '@id': '/a' }, { '@id': '/b' }]
+      mockCwa({ fetchImpl: vi.fn(() => makeFetchResponse(items, { totalItems: 7 })) })
+      const wrapper = mountComponent({}, '/_/routes', undefined, { noun: 'pages' })
+      await flushPromises()
+
+      expect(wrapper.emitted('loaded')).toEqual([[items]])
+      expect(wrapper.get('[data-testid="list-announcer"]').text()).toBe('7 pages')
+      expect(wrapper.get('[role="table"]').attributes('aria-busy')).toBeUndefined()
+    })
+
+    test('an empty list offers what its page gives it, and a search that matches nothing says so instead', async () => {
+      mockCwa({ fetchImpl: vi.fn(() => makeFetchResponse([], { totalItems: 0 })) })
+      const empty = mountComponent({ empty: '<button type="button" class="create-stub">Create page</button>' }, '/_/pages', undefined, { noun: 'pages' })
+      await flushPromises()
+      expect(empty.text()).toContain('No pages yet')
+      expect(empty.find('.create-stub').exists()).toBe(true)
+
+      mockRoute.query = { search: 'shaker' }
+      const searched = mountComponent({ empty: '<button type="button" class="create-stub">Create page</button>' }, '/_/pages', undefined, { noun: 'pages' })
+      await flushPromises()
+      expect(searched.text()).toContain('No pages match “shaker”.')
+      expect(searched.find('.create-stub').exists()).toBe(false)
+      expect(searched.get('[data-testid="list-clear-filters"]').text()).toBe('Clear search')
+    })
+
+    test.each([
+      ['a type filter', { 'isTemplate[]': ['true'] }],
+      ['a filter from a link', { page: '2', template: '/_/pages/t' }],
+      ['a filter and a search', { 'search': 'shaker', 'isTemplate[]': 'false' }],
+    ])('an empty list under %s says nothing matches the filters, never that there are none yet, and Clear filters keeps the sort and page size', async (_kind, query) => {
+      mockRoute.query = { ...query, 'order[createdAt]': 'desc', 'perPage': '20', 'cwa_force': 'true' }
+      mockCwa({ fetchImpl: vi.fn(() => makeFetchResponse([], { totalItems: 0 })) })
+      const wrapper = mountComponent({ empty: '<button type="button" class="create-stub">Create page</button>' }, '/_/pages', undefined, { noun: 'pages' })
+      await flushPromises()
+
+      expect(wrapper.text()).toContain('No pages match these filters.')
+      expect(wrapper.text()).not.toContain('No pages yet')
+      expect(wrapper.find('.create-stub').exists()).toBe(false)
+      expect(drawsFocusRing(wrapper.get('[data-testid="list-clear-filters"]').classes())).toBe(true)
+      await wrapper.get('[data-testid="list-clear-filters"]').trigger('click')
+      expect(routerReplace).toHaveBeenCalledWith({ query: { 'order[createdAt]': 'desc', 'perPage': '20', 'cwa_force': 'true' } })
+    })
+
+    test('the sort, page size and an emptied search are not filters', async () => {
+      mockRoute.query = { 'order[reference]': 'asc', 'perPage': '50', 'search': ' ', 'isTemplate[]': [] }
+      mockCwa({ fetchImpl: vi.fn(() => makeFetchResponse([], { totalItems: 0 })) })
+      const wrapper = mountComponent({ empty: '<button type="button" class="create-stub">Create page</button>' }, '/_/pages', undefined, { noun: 'pages' })
+      await flushPromises()
+
+      expect(wrapper.text()).toContain('No pages yet')
+      expect(wrapper.find('.create-stub').exists()).toBe(true)
+    })
+
+    test('an empty page past the end of the list moves to the last page', async () => {
+      models.pageModel.value = 9
+      models.perPageModel.value = 20
+      mockCwa({ fetchImpl: vi.fn(() => makeFetchResponse([], { totalItems: 41 })) })
+      const wrapper = mountComponent({}, '/_/pages', undefined, { noun: 'pages' })
+      await flushPromises()
+
+      expect(models.pageModel.value).toBe(3)
+      expect(wrapper.find('[data-testid="list-state-empty"]').exists()).toBe(false)
+      expect(wrapper.emitted('loaded')).toBeUndefined()
+    })
+
+    test('an empty first page of an empty list stays where it is', async () => {
+      models.pageModel.value = 2
+      models.perPageModel.value = 20
+      mockCwa({ fetchImpl: vi.fn(() => makeFetchResponse([], { totalItems: 0 })) })
+      const wrapper = mountComponent({}, '/_/pages', undefined, { noun: 'pages' })
+      await flushPromises()
+
+      expect(models.pageModel.value).toBe(2)
+      expect(wrapper.find('[data-testid="list-state-empty"]').exists()).toBe(true)
+    })
+
+    test('a failed reload keeps the rows dimmed under the alert, says how old they are, and Retry loads again', async () => {
+      let shouldFail = false
+      mockCwa({
+        fetchImpl: vi.fn(() => shouldFail
+          ? makeFetchRejection({ statusCode: 503 })
+          : makeFetchResponse([{ '@id': '/a' }], { totalItems: 1 })),
+      })
+      const wrapper = mountComponent()
+      await flushPromises()
+      shouldFail = true
+      // @ts-expect-error exposed method
+      await wrapper.vm.reloadItems()
+      await flushPromises()
+
+      expect(errorAlert(wrapper).text()).toContain('The list below is from less than a minute ago.')
+      expect(wrapper.findAll('[role="rowgroup"]')[1]!.classes()).toContain('cwa:opacity-60')
+      shouldFail = false
+      await wrapper.get('[data-testid="list-retry"]').trigger('click')
+      await flushPromises()
+      expect(fetchMock).toHaveBeenCalledTimes(3)
+      expect(errorAlert(wrapper).exists()).toBe(false)
+    })
+
+    test('a first load that fails does not say how old a list it never had is', async () => {
+      mockCwa({ fetchImpl: vi.fn(() => makeFetchRejection({ statusCode: 500 })) })
+      const wrapper = mountComponent()
+      await flushPromises()
+
+      expect(errorAlert(wrapper).text()).not.toContain('The list below is from')
+    })
+
+    test('the page count is exposed for the toolbar once the list has loaded', async () => {
+      mockCwa({ fetchImpl: vi.fn(() => makeFetchResponse([{ '@id': '/a' }], { totalItems: 143 })) })
+      const wrapper = mountComponent()
+      // @ts-expect-error exposed value
+      expect(wrapper.vm.total).toBeUndefined()
+      await flushPromises()
+      // @ts-expect-error exposed value
+      expect(wrapper.vm.total).toBe(143)
+    })
+
+    test.each([
+      ['loaded', () => makeFetchResponse([{ '@id': '/a' }], { totalItems: 1 })],
+      ['empty', () => makeFetchResponse([], { totalItems: 0 })],
+      ['filtered to nothing', () => {
+        mockRoute.query = { 'isTemplate[]': 'true' }
+        return makeFetchResponse([], { totalItems: 0 })
+      }],
+      ['failed', () => makeFetchRejection({ statusCode: 500 })],
+      ['loading', () => ({ response: new Promise(() => {}) })],
+    ])('%s, it has no axe violations', async (_state, response) => {
+      mockCwa({ fetchImpl: vi.fn(response) })
+      mountComponent()
+      await flushPromises()
+
+      expect(await axe(document.body)).toHaveNoViolations()
     })
   })
 })

@@ -188,7 +188,12 @@ export class ResourcesManager {
       event.endpoint,
       { ...this.requestOptions('POST'), body: event.data },
     ]
-    return this.doResourceRequest(event, args)
+    let error: FetchError<any> | undefined
+    const request = this.doResourceRequest(event, args, undefined, undefined, (failure) => {
+      error = failure
+    })
+    event.onRequest?.(event.endpoint, request.then(resource => ({ resource, error })))
+    return request
   }
 
   private async confirm(action: 'delete' | 'discard', iri?: string) {

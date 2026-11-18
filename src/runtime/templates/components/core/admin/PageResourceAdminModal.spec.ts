@@ -13,9 +13,12 @@ import Toggle from '#cwa/templates/components/ui/Toggle.vue'
 import Segmented from '#cwa/templates/components/ui/Segmented.vue'
 import * as cwaComposable from '#cwa/composables/cwa'
 import { componentNames } from '#components'
+import { consola } from 'consola'
+import { drawsFocusRing } from '../../../../../../test/utils/focus-ring'
+import { axe } from '../../../../../../test/utils/axe'
 
 const mockNavigateTo = vi.hoisted(() => vi.fn())
-const mockRoute = vi.hoisted(() => ({ params: {} as Record<string, string> }))
+const routeState = vi.hoisted(() => ({ route: undefined as unknown as { params: Record<string, string>, query: Record<string, string>, hash: string } }))
 mockNuxtImport('navigateTo', () => mockNavigateTo)
 
 const { mockUseItemPage, mockUseDynamicPageLoader, mockUseParentPageLoader, mockUseParentPageDataLoader, mockUseDataType, confirmMock, countsMock, requestClose, confirmDiscard } = vi.hoisted(() => ({
@@ -33,7 +36,9 @@ const { mockUseItemPage, mockUseDynamicPageLoader, mockUseParentPageLoader, mock
 vi.mock('#cwa-layer/_composables/useItemPage', () => ({ useItemPage: mockUseItemPage }))
 vi.mock('vue-router', async (importOriginal) => {
   const mod = await importOriginal<typeof import('vue-router')>()
-  return { ...mod, useRoute: () => mockRoute }
+  const { reactive } = await import('vue')
+  routeState.route = reactive({ params: {}, query: {}, hash: '' })
+  return { ...mod, useRoute: () => routeState.route }
 })
 vi.mock('#cwa-layer/_composables/useDynamicPageLoader', () => ({ useDynamicPageLoader: mockUseDynamicPageLoader }))
 vi.mock('#cwa-layer/_composables/useParentPageLoader', () => ({ useParentPageLoader: mockUseParentPageLoader }))
@@ -50,10 +55,14 @@ vi.mock('#cwa/admin/page-delete', async (importOriginal) => {
 })
 
 enableAutoUnmount(afterEach)
+afterEach(() => {
+  requestClose.mockReset()
+  confirmDiscard.mockReset()
+})
 
 const DialogStub = defineComponent({
   name: 'CwaUiDialog',
-  props: ['title', 'tabs', 'form', 'loading', 'noun'],
+  props: ['title', 'tabs', 'form', 'loading', 'noun', 'createNoun', 'tab'],
   emits: ['close', 'save', 'update:tab'],
   setup(props, { slots, expose }) {
     provide(fieldGroupKey, { model: (field: string) => props.form.model(field), undo: () => undefined })
@@ -79,9 +88,19 @@ function setup(opts: {
   stored?: Record<string, any>
   routeIri?: string
   apiDocumentation?: Promise<unknown>
+  query?: Record<string, string>
+  hash?: string
+  pageDataTypes?: Record<string, any>
+  layouts?: Record<string, any>[]
+  dynamicPages?: Record<string, any>[]
+  loadDynamicPageOptions?: () => Promise<unknown>
+  loadParentPageOptions?: () => Promise<unknown>
+  fetchData?: (path: string) => unknown
 } = {}) {
   const iri = opts.iri ?? opts.routeIri ?? '/_/pages/uuid-self'
-  mockRoute.params = opts.routeIri ? { iri: opts.routeIri } : {}
+  routeState.route.params = opts.routeIri ? { iri: opts.routeIri } : {}
+  routeState.route.query = opts.query ?? {}
+  routeState.route.hash = opts.hash ?? ''
   const resource = opts.resource ?? { '@id': iri, '@type': 'Page', 'reference': 'My Page' }
   const form: FakeDialogForm = fakeDialogForm({
     '@id': iri,
@@ -110,12 +129,12 @@ function setup(opts: {
   }
   mockUseItemPage.mockReturnValue(handlers)
 
-  mockUseDynamicPageLoader.mockReturnValue({ dynamicPages: ref([]), loadDynamicPageOptions: vi.fn() })
-  mockUseParentPageLoader.mockReturnValue({ parentPages: ref(opts.parentPages ?? []), loadParentPageOptions: vi.fn() })
+  mockUseDynamicPageLoader.mockReturnValue({ dynamicPages: ref(opts.dynamicPages ?? [{ '@id': '/_/pages/default-template', 'reference': 'Default template' }]), loadDynamicPageOptions: vi.fn(opts.loadDynamicPageOptions ?? (async () => undefined)) })
+  mockUseParentPageLoader.mockReturnValue({ parentPages: ref(opts.parentPages ?? []), loadParentPageOptions: vi.fn(opts.loadParentPageOptions ?? (async () => undefined)) })
   mockUseParentPageDataLoader.mockReturnValue({
     dataTypes: ref([{ resourceClass: 'App\\Entity\\BlogArticleData' }]),
     dataInstances: ref([]),
-    loadDataTypes: vi.fn(),
+    loadDataTypes: vi.fn(async () => undefined),
     loadDataInstances: vi.fn(),
     fqcnToEntrypointKey: vi.fn(opts.fqcnToEntrypointKey ?? ((t: string) => t.split('\\').pop()!.replace(/^./, c => c.toLowerCase()))),
   })
@@ -128,9 +147,10 @@ function setup(opts: {
       displayPageIri: ref(opts.displayPageIri),
       getResource,
     },
-    fetch: vi.fn().mockReturnValue({ response: Promise.resolve({ _data: null }) }),
+    fetch: vi.fn(({ path }: { path: string }) => ({ response: Promise.resolve({ _data: opts.fetchData ? opts.fetchData(path) : path.startsWith('/_/layouts') ? { member: opts.layouts ?? [{ '@id': '/_/layouts/default', 'reference': 'Default' }] } : null }) })),
     getApiDocumentation: vi.fn(() => opts.apiDocumentation ?? Promise.resolve({ entrypoint: { blogArticleData: '/page_data/blog_article_datas' } })),
     pagesConfig: opts.pagesConfig ?? {},
+    pageDataConfig: opts.pageDataTypes ?? {},
     admin: { toggleEdit: vi.fn() },
   }) as unknown as ReturnType<typeof cwaComposable.useCwa>)
 
@@ -216,10 +236,13 @@ describe('PageResourceAdminModal on the kit dialog (#461)', () => {
     expect(confirmMock.mock.calls[0]![0]).toMatchObject({ title: 'Delete “Child”?', typed: { noun: 'page name', value: 'Child' } })
   })
 
-  test('creating shows only Details', () => {
-    const { wrapper } = setup({ isAdding: true })
+  test('creating a page shows Details, a Routes tab that says why it is not open yet, and no Info', () => {
+    const { wrapper } = setup({ routeIri: 'add', isAdding: true })
 
-    expect(wrapper.findComponent(DialogStub).props('tabs')).toEqual([{ label: 'Details', key: 'details' }])
+    expect(wrapper.findComponent(DialogStub).props('tabs')).toEqual([
+      { label: 'Details', key: 'details' },
+      { label: 'Routes', key: 'routes', disabled: 'Routes open once the page is created. Create the page and this tab lets you add its address.' },
+    ])
   })
 
   test('Save on the dialog saves without closing, and nothing is saved as you type', async () => {
@@ -681,5 +704,210 @@ describe('PageResourceAdminModal page cache purge (#484)', () => {
   test('does not offer it for a page that is not on screen, whose manifest is not loaded', () => {
     const { wrapper } = setup({ displayPageIri: '/_/pages/another' })
     expect(wrapper.findComponent({ name: 'PagePurgeCache' }).exists()).toBe(false)
+  })
+})
+
+describe('PageResourceAdminModal creating from a list (#461)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  test('a new page is titled as new, and Save becomes "+ Page"', () => {
+    const { wrapper } = setup({ routeIri: 'add', isAdding: true })
+    const dialog = wrapper.findComponent(DialogStub)
+
+    expect(dialog.props('title')).toBe('New page')
+    expect(dialog.props('createNoun')).toBe('page')
+    expect(wrapper.find('[data-testid="page-view-on-site"]').exists()).toBe(false)
+  })
+
+  test('editing passes no create noun, so Save counts changes', () => {
+    const { wrapper } = setup()
+
+    expect(wrapper.findComponent(DialogStub).props('createNoun')).toBeUndefined()
+  })
+
+  test('a new page posts to the pages collection, starts static with the first page UI, and takes the first layout once layouts load', async () => {
+    const { localResourceData } = setup({
+      routeIri: 'add',
+      isAdding: true,
+      resourceType: 'Page',
+      local: { layout: undefined },
+      layouts: [{ '@id': '/_/layouts/first', 'reference': 'First' }, { '@id': '/_/layouts/second', 'reference': 'Second' }],
+    })
+    const options = mockUseItemPage.mock.calls[0]![0]
+
+    expect(options.createEndpoint.value).toBe('/_/pages')
+    expect(options.defaultResource()).toEqual({ isTemplate: false, uiComponent: componentNames.filter(name => name.startsWith('CwaPage'))[0] })
+    await flushPromises()
+    expect(localResourceData.value.layout).toBe('/_/layouts/first')
+    expect(options.defaultResource()).toEqual({ isTemplate: false, uiComponent: componentNames.filter(name => name.startsWith('CwaPage'))[0], layout: '/_/layouts/first' })
+  })
+
+  test('the layouts offered are every page of the collection, not the first the API answers with', async () => {
+    const { wrapper } = setup({
+      routeIri: 'add',
+      isAdding: true,
+      fetchData: path => path === '/_/layouts?perPage=100'
+        ? { member: [{ '@id': '/_/layouts/a', 'reference': 'A' }], view: { next: '/_/layouts?perPage=100&page=2' } }
+        : { member: [{ '@id': '/_/layouts/b', 'reference': 'B' }] },
+    })
+    await flushPromises()
+
+    expect(field(wrapper, Select, 'Layout').props('options')).toEqual([{ label: 'A', value: '/_/layouts/a' }, { label: 'B', value: '/_/layouts/b' }])
+  })
+
+  test('a loader that fails is logged and the others still load, so the first layout is still chosen', async () => {
+    const error = vi.spyOn(consola, 'error').mockImplementation(() => undefined)
+    const { localResourceData } = setup({
+      routeIri: 'add',
+      isAdding: true,
+      local: { layout: undefined },
+      layouts: [{ '@id': '/_/layouts/first', 'reference': 'First' }],
+      loadParentPageOptions: () => Promise.reject(new Error('offline')),
+      loadDynamicPageOptions: () => Promise.reject(new Error('offline')),
+    })
+    await flushPromises()
+
+    expect(localResourceData.value.layout).toBe('/_/layouts/first')
+    expect(error).toHaveBeenCalledWith('[CWA] Could not load the parent pages', expect.any(Error))
+    expect(error).toHaveBeenCalledWith('[CWA] Could not load the template pages', expect.any(Error))
+    expect(mockUseParentPageDataLoader.mock.results[0]!.value.loadDataTypes).toHaveBeenCalled()
+  })
+
+  test.each([
+    ['a page with no layouts', { layouts: [] }, 'Create a layout first', 'Create a layout', { name: '_cwa-layouts-iri', params: { iri: 'add' }, query: { cwa_force: 'true' } }],
+    ['a page data with no template pages', { resourceType: 'BlogArticleData', dynamicPages: [] }, 'Create a template page first', 'Create a template page', { name: '_cwa-pages-iri', params: { iri: 'add' }, query: { cwa_force: 'true' } }],
+  ])('creating %s shows what to create first in place of the form, and goes there once the dialog closes', async (_kind, opts, title, action, to) => {
+    const { wrapper } = setup({ routeIri: 'add', isAdding: true, ...opts })
+    await flushPromises()
+
+    const alert = wrapper.get('[data-testid="page-missing-prerequisite"]')
+    expect(alert.text()).toContain(title)
+    expect(wrapper.findAllComponents(Input)).toHaveLength(0)
+    const link = wrapper.get('[data-testid="page-missing-prerequisite-link"]')
+    expect(link.text()).toBe(action)
+    expect(drawsFocusRing(link.classes())).toBe(true)
+    expect(await axe(wrapper.element as HTMLElement)).toHaveNoViolations()
+
+    requestClose.mockResolvedValueOnce(false)
+    await link.trigger('click')
+    await flushPromises()
+    expect(mockNavigateTo).not.toHaveBeenCalled()
+
+    requestClose.mockResolvedValueOnce(true)
+    await link.trigger('click')
+    await flushPromises()
+    expect(mockNavigateTo).toHaveBeenCalledWith(to)
+  })
+
+  test('an existing page is never asked to create a layout first', async () => {
+    const { wrapper } = setup({ layouts: [] })
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="page-missing-prerequisite"]').exists()).toBe(false)
+  })
+
+  test('going to the template asks the dialog to close first, so unsaved input is never dropped without asking', async () => {
+    const { wrapper } = setupPageData({ local: { page: '/_/pages/template' } })
+    const button = wrapper.get('[data-testid="go-to-template"]')
+
+    requestClose.mockResolvedValueOnce(false)
+    await button.trigger('click')
+    await flushPromises()
+    expect(requestClose).toHaveBeenCalledOnce()
+    expect(mockNavigateTo).not.toHaveBeenCalled()
+    expect(wrapper.emitted('close')).toBeUndefined()
+
+    requestClose.mockResolvedValueOnce(true)
+    await button.trigger('click')
+    await flushPromises()
+    expect(mockNavigateTo).toHaveBeenCalledWith({ name: '_cwa-resource-page', params: { cwaPage0: '/_/pages/template' }, query: { cwa_force: 'true' } })
+  })
+
+  test('a new page data takes its parents and template from the link, never the list\'s page number (#390), with its concrete class as its type (#393)', () => {
+    setup({
+      routeIri: 'add',
+      isAdding: true,
+      resourceType: 'BlogArticleData',
+      query: { parentPage: '/_/pages/parent', parentPageData: '/page_data/parent', template: '/_/pages/template', page: '2' },
+    })
+    const options = mockUseItemPage.mock.calls[0]![0]
+
+    expect(options.resourceType).toBe('BlogArticleData')
+    expect(options.defaultResource()).toEqual({ parentPage: '/_/pages/parent', parentPageData: '/page_data/parent', page: '/_/pages/template' })
+  })
+
+  test('a new page data posts to its own collection from the API docs, and is named from its class, never its configured list title', async () => {
+    const { wrapper } = setup({
+      routeIri: 'add',
+      isAdding: true,
+      resourceType: 'BlogArticleData',
+      pageDataTypes: { BlogArticleData: { name: 'Blog Articles' } },
+    })
+    await flushPromises()
+
+    expect(mockUseItemPage.mock.calls[0]![0].createEndpoint.value).toBe('/page_data/blog_article_datas')
+    expect(wrapper.findComponent(DialogStub).props('title')).toBe('New blog article')
+    expect(wrapper.findComponent(DialogStub).props('createNoun')).toBe('blog article')
+  })
+
+  test('an unconfigured page data type is named from its class', () => {
+    const { wrapper } = setup({ routeIri: 'add', isAdding: true, resourceType: 'EventData' })
+
+    expect(wrapper.findComponent(DialogStub).props('createNoun')).toBe('event')
+  })
+
+  test('a new page data without a template in its link takes the first template', async () => {
+    const { localResourceData } = setup({
+      routeIri: 'add',
+      isAdding: true,
+      resourceType: 'BlogArticleData',
+      dynamicPages: [{ '@id': '/_/pages/template-a', 'reference': 'A' }, { '@id': '/_/pages/template-b', 'reference': 'B' }],
+    })
+    await flushPromises()
+
+    expect(localResourceData.value.page).toBe('/_/pages/template-a')
+    expect(mockUseItemPage.mock.calls[0]![0].defaultResource()).toEqual({ page: '/_/pages/template-a' })
+  })
+
+  test('a template given by the link is kept', async () => {
+    const { localResourceData } = setup({
+      routeIri: 'add',
+      isAdding: true,
+      resourceType: 'BlogArticleData',
+      local: { page: '/_/pages/template-b' },
+      dynamicPages: [{ '@id': '/_/pages/template-a', 'reference': 'A' }, { '@id': '/_/pages/template-b', 'reference': 'B' }],
+    })
+    await flushPromises()
+
+    expect(localResourceData.value.page).toBe('/_/pages/template-b')
+  })
+
+  test('after Create the dialog edits the new page, on the tab its link names', async () => {
+    const { wrapper, handlers } = setup({ routeIri: 'add', isAdding: true })
+    const options = mockUseItemPage.mock.calls[0]![0]
+
+    handlers.isAdding.value = false
+    routeState.route.params = { iri: '/_/pages/new' }
+    routeState.route.hash = '#routes'
+    await flushPromises()
+
+    expect(options.endpoint.value).toBe('/_/pages/new')
+    expect(wrapper.findComponent(DialogStub).props('tab')).toBe('routes')
+  })
+
+  test('a link to a page\'s Routes tab opens it there, and a hash naming no tab opens Details', () => {
+    expect(setup({ hash: '#routes' }).wrapper.findComponent(DialogStub).props('tab')).toBe('routes')
+    expect(setup({ hash: '#data' }).wrapper.findComponent(DialogStub).props('tab')).toBe('details')
+  })
+
+  test('after Create a static page opens on Routes and a template stays on Details', () => {
+    const { localResourceData } = setup({ routeIri: 'add', isAdding: true })
+    const hash = mockUseItemPage.mock.calls[0]![0].routeHashAfterAdd
+
+    expect(hash.value).toBe('#routes')
+    localResourceData.value.isTemplate = true
+    expect(hash.value).toBe('#details')
   })
 })

@@ -161,11 +161,20 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
         }
       }
       if (isAdding.value) {
-        const newResource = await $cwa.resourcesManager.createResource({
+        let created: Promise<{ resource?: CwaResource, error?: FetchError<any> }> | undefined
+        const createEvent = {
           endpoint: isRef(createEndpoint) ? createEndpoint.value : createEndpoint,
           data,
           source: 'admin-modal',
-        })
+          onRequest: (_iri: string, done?: Promise<{ resource?: CwaResource, error?: FetchError<any> }>) => {
+            created = done
+          },
+        }
+        const newResource = await $cwa.resourcesManager.createResource(createEvent)
+        const failure = newResource ? undefined : (await created)?.error
+        if (failure) {
+          saveFailed(createEvent, failure, Object.keys(data), {})
+        }
         if (newResource) {
           emit('reload')
           if (close) {
@@ -254,7 +263,7 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
       for (const violation of failure.data.violations as { propertyPath?: string, message?: string }[]) {
         const field = fieldOfPath(violation.propertyPath)
         const message = violation.message || 'This value is not valid.'
-        if (field && fields.includes(field)) {
+        if (field && (fields.includes(field) || (isAdding.value && models.has(field)))) {
           errors[field] ??= message
         }
         else {
@@ -286,12 +295,17 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
     failures.value++
   }
 
-  const unsavedFields = computed(() => {
-    if (isAdding.value) {
-      return []
-    }
-    return Object.keys(changedFields()).filter(field => !excludeFields?.includes(field))
-  })
+  function isBlank(value: unknown) {
+    return value === undefined || value === null || value === ''
+  }
+
+  function addedFields() {
+    const local: { [key: string]: any } = localResourceData.value || {}
+    const defaults: { [key: string]: any } = { '@type': resourceType, ...toValue(defaultResource) }
+    return Object.keys(local).filter(key => !isEqual(local[key], defaults[key]) && !(isBlank(local[key]) && isBlank(defaults[key])))
+  }
+
+  const unsavedFields = computed(() => (isAdding.value ? addedFields() : Object.keys(changedFields())).filter(field => !excludeFields?.includes(field)))
 
   watch(() => ({ ...localResourceData.value }) as { [key: string]: any }, (now, before) => {
     const cleared = Object.keys(fieldErrors.value).filter(field => !isEqual(now[field], before?.[field]))

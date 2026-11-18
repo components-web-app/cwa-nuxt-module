@@ -1,6 +1,7 @@
 // @vitest-environment nuxt
 import { describe, test, expect, vi, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
+import ListRow from '#cwa/templates/components/core/admin/ListRow.vue'
 import { mockNuxtImport } from '@nuxt/test-utils/runtime'
 import LayoutsListPage from './layouts.vue'
 
@@ -44,12 +45,11 @@ describe('/_cwa/layouts layout UI label', () => {
   test('shows the configured layout UI name for a layout\'s full CwaLayout name', () => {
     const wrapper = setup('CwaLayoutPrimary')
     expect(mockUseCwa).toHaveBeenCalled()
-    expect(wrapper.text()).toContain('UI: Primary Layout')
+    expect(wrapper.findComponent(ListRow).props('sub')).toBe('UI: Primary Layout')
   })
 
   test('falls back to the name without CwaLayout when the layout UI is not configured', () => {
     const wrapper = setup('CwaLayoutSecondary')
-    expect(wrapper.text()).toContain('UI: Secondary')
-    expect(wrapper.text()).not.toContain('CwaLayoutSecondary')
+    expect(wrapper.findComponent(ListRow).props('sub')).toBe('UI: Secondary')
   })
 })
