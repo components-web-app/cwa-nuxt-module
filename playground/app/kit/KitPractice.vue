@@ -6,7 +6,6 @@ import { Presence } from '#cwa/admin/presence'
 import { RemoteChanges } from '#cwa/admin/remote-changes'
 import { useCloneMode } from '#cwa/admin/clone-mode'
 import { NEW_RESOURCE_IRI } from '#cwa/storage/stores/resources/state'
-import KitSlot from './KitSlot.vue'
 import { createFakeSaveServer, kitFailures } from './fake-save-server'
 import type { KitFailure } from './fake-save-server'
 import { PRACTICE, practiceNewResource, practiceResources, practiceSelection, practiceStates } from './practice-fixtures'
@@ -387,7 +386,7 @@ onBeforeUnmount(() => restore?.())
               data-testid="kit-practice-slow"
             />
             <p class="kit-try">
-              <strong>Try:</strong> choose 500, then edit the title in the bar. It fails; hover the field for Retry. 412 brings Mia's version as a conflict.
+              <strong>Try:</strong> choose 500, then edit the title in the bar. The outline on the page sweeps while it saves, then turns red; hover the field for Retry. 412 brings Mia's version as a conflict, in amber. Slow keeps the sweep going longer.
             </p>
           </div>
           <div class="kit-practice-control">
@@ -398,7 +397,7 @@ onBeforeUnmount(() => restore?.())
               @click="typeForMe"
             />
             <p class="kit-try">
-              <strong>Try:</strong> types into the bar's first text field, so you can watch it save.
+              <strong>Try:</strong> types into the bar's first text field, so you can watch it save, in the bar and on the selection's outline.
             </p>
           </div>
           <div class="kit-practice-control">
@@ -452,10 +451,6 @@ onBeforeUnmount(() => restore?.())
           </div>
         </div>
       </div>
-      <KitSlot
-        name="the save-state outline on the selection (saving band, saved, error and conflict tints)"
-        from="the module: ComponentFocus does not read field states yet"
-      />
     </section>
   </main>
 </template>
