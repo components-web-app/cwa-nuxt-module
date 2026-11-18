@@ -71,10 +71,7 @@ export default function (fetcherState: CwaFetcherStateInterface): CwaFetcherGett
     isCurrentFetchingToken: computed(() => {
       return (token: string) => {
         const fetchStatus = fetcherState.fetches[token]
-        if (!fetchStatus) {
-          throw new Error(`Failed to check if the token '${token}' is current. It does not exist.`)
-        }
-        if (fetchStatus.abort) {
+        if (!fetchStatus || fetchStatus.abort) {
           return false
         }
         return !fetchStatus.isPrimary || token === fetcherState.primaryFetch.fetchingToken
