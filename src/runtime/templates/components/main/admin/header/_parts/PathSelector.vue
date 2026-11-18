@@ -28,7 +28,7 @@
       v-if="isOpen && selector && nameLabel"
       ref="stack"
       :levels="levels"
-      :selected="String(stackManager.pathStack.value.index)"
+      :selected="levels[0]!.key"
       :at="nameLabel"
       :return-to="selector"
       :min-width="selector.offsetWidth"
@@ -70,7 +70,7 @@ const selector = useTemplateRef<HTMLButtonElement | null>('selector')
 const nameLabel = useTemplateRef<HTMLElement | null>('nameLabel')
 const stack = useTemplateRef<{ close: (refocus: boolean) => void, contentId?: string } | null>('stack')
 
-const levels = computed(() => resourceStackLevels(stackManager.pathStack.value.stack))
+const levels = computed(() => resourceStackLevels(stackManager.resourceStack.value))
 const name = computed(() => {
   const first = stackManager.resourceStack.value[0]
   return first && (first.displayName || first.iri)
@@ -82,7 +82,7 @@ watch([() => $cwa.resources.displayPageIri.value, () => router.currentRoute.valu
 })
 
 async function select(key: string) {
-  const item = stackManager.pathStack.value.stack[Number(key)]
+  const item = stackManager.resourceStack.value[Number(key)]
   await stackManager.selectStackIndex(Number(key), false)
   return stackManager.currentStackItem.value?.iri === item?.iri
 }

@@ -112,16 +112,37 @@ describe('ResourceStack (#461)', () => {
     expect(panel.innerHTML).not.toMatch(/dashed|dotted/)
   })
 
-  test('the selected level has a heavier name and the accent edge on its own name row only, and no check', async () => {
+  test('the selected level is marked by an accent border on its box, and its name keeps the weight, classes and padding of every other name', async () => {
     const { panel } = await openStack({ selected: '1' })
     const selected = item(panel, 'Component position')
+    const others = items(panel).filter(level => level !== selected)
 
     expect(selected.getAttribute('aria-selected')).toBe('true')
     expect(item(panel, 'Rich text').getAttribute('aria-selected')).toBe('false')
-    expect(nameRow(selected).className).toContain('cwa:font-semibold')
-    expect(nameRow(selected).className).toContain('inset_3px_0_0_var(--cwa-color-accent-fg)')
-    expect(selected.className).not.toContain('inset_3px')
+    expect(selected.className.split(/\s+/)).toContain('cwa:border-accent-fg')
+    expect(selected.className.split(/\s+/)).not.toContain('cwa:border-line-strong')
+    for (const other of others) {
+      expect(other.className.split(/\s+/)).toContain('cwa:border-line-strong')
+      expect(nameRow(selected).className).toBe(nameRow(other).className)
+      expect(nameRow(selected).querySelector('[data-stack-label]')!.className).toBe(nameRow(other).querySelector('[data-stack-label]')!.className)
+    }
+    expect(panel.innerHTML).not.toMatch(/font-(semibold|bold|medium)|inset_3px/)
     expect(panel.querySelectorAll('svg')).toHaveLength(0)
+  })
+
+  test('hovering the selected level shows both: its accent border stays and the hover fill is added', async () => {
+    const { panel } = await openStack({ selected: '1' })
+    const selected = item(panel, 'Component position')
+
+    nameRow(selected).dispatchEvent(new PointerEvent('pointermove', { bubbles: true }))
+    await flushPromises()
+    expect(selected.className.split(/\s+/)).toEqual(expect.arrayContaining(['cwa:border-accent-fg', 'cwa:bg-field-hover']))
+    expect(selected.className.split(/\s+/)).not.toContain('cwa:border-fg')
+
+    nameRow(item(panel, 'Rich text')).dispatchEvent(new PointerEvent('pointermove', { bubbles: true }))
+    await flushPromises()
+    expect(item(panel, 'Rich text').className.split(/\s+/)).toEqual(expect.arrayContaining(['cwa:border-fg', 'cwa:bg-field-hover']))
+    expect(selected.className.split(/\s+/)).toEqual(expect.arrayContaining(['cwa:border-accent-fg', 'cwa:bg-surface-menu']))
   })
 
   test('opens with focus on the tree and the highlight on the selected level, shown only as selected, or on the innermost when nothing is selected', async () => {

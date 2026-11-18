@@ -191,6 +191,7 @@ const uploadSamples = [
   { status: 'error' as const, upload: fakeUpload({ name: 'workshop-bench.jpg', size: '240 KB', url: kitImage, mimeType: 'image/jpeg' }, 'error') },
 ]
 const plainText = ref('')
+const passwordText = ref('kitchens')
 const nullableText = ref<string | null>('Can be emptied')
 const plainToggle = ref(false)
 const position = ref(2)
@@ -226,6 +227,12 @@ const stackAt = ref<HTMLElement | { x: number, y: number }>()
 const stackChoice = ref('')
 const stackKey = ref(0)
 const stackByKeyboard = ref(false)
+const stackSelected = ref('0')
+const stackSelectedOptions = [
+  { value: '0', label: 'Innermost' },
+  { value: '1', label: 'Second' },
+  { value: '4', label: 'Outermost shown' },
+]
 
 function openStackOver(event: MouseEvent) {
   stackKey.value++
@@ -582,6 +589,14 @@ const badgeTones = [
               model-value="Disabled"
               label="Disabled"
               disabled
+            />
+            <CwaUiInput
+              v-model="passwordText"
+              label="Password, revealable"
+              type="password"
+              autocomplete="new-password"
+              revealable
+              data-testid="kit-input-revealable"
             />
           </div>
         </div>
@@ -1028,14 +1043,21 @@ const badgeTones = [
             <CwaUiButton
               label="Rich text"
               size="sm"
+              data-testid="kit-stack-open"
               @click="openStackOver"
+            />
+            <CwaUiSegmented
+              v-model="stackSelected"
+              label="Selected"
+              :options="stackSelectedOptions"
+              data-testid="kit-stack-selected"
             />
           </div>
           <ResourceStack
             v-if="stackAt"
             :key="stackKey"
             :levels="stackLevels"
-            selected="0"
+            :selected="stackSelected"
             :at="stackAt"
             :keyboard="stackByKeyboard"
             :select="chooseStackLevel"

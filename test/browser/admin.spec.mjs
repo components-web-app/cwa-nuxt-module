@@ -1651,7 +1651,7 @@ test('62. with live editing paused on a phone, the header\'s status is a glyph n
   }
 })
 
-test('63. the header\'s Edit or Done button and the page settings button or path selector beside it share one height and one centre, at 1280 and 390, with a fine or a coarse pointer, while live editing is paused', async ({ cwa: t }) => {
+test('63. the header\'s Edit or Done button and the page settings button or path selector beside it share one height and one centre, at 1280 and 390, with a fine or a coarse pointer, while live editing is paused, and the manager bar\'s tabs and their group are exactly as tall as its CTA buttons', async ({ cwa: t }) => {
   const { page, base, seed } = t
   const cookies = await page.context().cookies()
   for (const hasTouch of [false, true]) {
@@ -1691,6 +1691,38 @@ test('63. the header\'s Edit or Done button and the page settings button or path
       await tab.getByTestId('path-selector').waitFor()
       await settle()
       await measure('path-selector')
+      await tab.getByTestId('manager-pin').getByRole('button').first().waitFor()
+      await settle()
+      const bar = await tab.evaluate(() => {
+        const height = element => element.getBoundingClientRect().height
+        const pin = document.querySelector('[data-testid="manager-pin"]')
+        const tablist = document.querySelector('[data-testid="manager-bar"] [role="tablist"]')
+        const selected = tablist.querySelector('[role="tab"][aria-selected="true"]')
+        const after = getComputedStyle(selected, '::after')
+        const underlineBottom = selected.getBoundingClientRect().bottom - Number.parseFloat(after.bottom)
+        return {
+          total: height(document.querySelector('[data-testid="manager-bar"]')),
+          tabs: [...tablist.querySelectorAll('[role="tab"]')].map(height),
+          underline: { top: underlineBottom - Number.parseFloat(after.height), bottom: underlineBottom },
+          line: tablist.parentElement.getBoundingClientRect().bottom,
+          clip: tablist.getBoundingClientRect().bottom,
+          ctas: [...pin.querySelectorAll('button')].filter(button => button.offsetParent && /Publish|More|actions|⋮/i.test(`${button.textContent} ${button.getAttribute('aria-label') ?? ''}`)).map(button => ({ name: (button.getAttribute('aria-label') ?? button.textContent).trim(), height: height(button) })),
+        }
+      })
+      const where = `At ${width}px with a ${hasTouch ? 'coarse' : 'fine'} pointer`
+      assert(bar.ctas.length >= 1, `${where} the bar shows ${bar.ctas.map(cta => cta.name).join(', ') || 'no'} CTA buttons`)
+      for (const cta of bar.ctas) {
+        for (const height of bar.tabs) {
+          assert(Math.abs(height - cta.height) <= 1, `${where} a tab is ${height}px tall and ${cta.name} ${cta.height}px`)
+        }
+        assert(!hasTouch || cta.height >= 44, `${where} ${cta.name} is ${cta.height}px tall, under the 44px hit size`)
+      }
+      for (const height of bar.tabs) {
+        assert(!hasTouch || height >= 44, `${where} a tab is ${height}px tall, under the 44px hit size`)
+      }
+      assert(Math.abs(bar.underline.bottom - bar.line) <= 0.5, `${where} the selected tab's underline ends at ${bar.underline.bottom}, not on the bar's line at ${bar.line}`)
+      assert(bar.underline.bottom <= bar.clip + 0.5, `${where} the underline ends at ${bar.underline.bottom}, below the tab row it is clipped by at ${bar.clip}`)
+      assert(bar.total === (hasTouch ? 112 : 100), `${where} the bar is ${bar.total}px tall`)
       await context.close()
     }
   }

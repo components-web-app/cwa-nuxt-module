@@ -46,7 +46,6 @@ function makeCwa(stack = STACK, { confirms = true, selected = 0 } = {}) {
     admin: {
       resourceStackManager: {
         resourceStack,
-        pathStack: computed(() => ({ stack: kept.value, index: index.value })),
         currentStackItem: computed(() => resourceStack.value[0]),
         selectStackIndex,
       },
@@ -92,7 +91,7 @@ describe('PathSelector (#461)', () => {
     expect(await axe(document.body)).toHaveNoViolations()
   })
 
-  test('with one level kept, it has no ▾, does not open and is aria-disabled', async () => {
+  test('with one level, it has no ▾, does not open and is aria-disabled', async () => {
     const { selector } = await mountSelector(makeCwa([STACK[2]!, STACK[3]!]))
 
     expect(selector.textContent).not.toContain('▾')
@@ -224,30 +223,27 @@ describe('PathSelector (#461)', () => {
     expect(document.querySelector('[data-testid="resource-stack"]')).toBeNull()
   })
 
-  test('with a parent selected it names the parent and opens every level of the clicked stack, the parent selected, its children included', async () => {
+  test('with a parent selected it names the parent and opens only it and its parents, never the levels clicked below it', async () => {
+    const { selector } = await mountSelector(makeCwa(STACK, { selected: 1 }))
+
+    expect(selector.textContent).toContain('Component position')
+    expect(selector.getAttribute('aria-label')).toBe('Component position, choose another level')
+    const panel = await openStack(selector)
+    expect([...panel.querySelectorAll('[role="treeitem"]')].map(level => level.getAttribute('aria-label'))).toEqual(['Main content group', 'Component position'])
+    expect(panel.querySelector('[aria-selected="true"]')!.getAttribute('aria-label')).toBe('Component position')
+    expect(panel.querySelector('[data-stack-innermost]')!.getAttribute('aria-label')).toBe('Component position')
+    expect(panel.textContent).not.toContain('Rich text')
+  })
+
+  test('with a group selected whose only parent is the page, there is nothing below or above it to choose, so it opens nothing', async () => {
     const { selector } = await mountSelector(makeCwa(STACK, { selected: 2 }))
 
     expect(selector.textContent).toContain('Main content group')
-    expect(selector.getAttribute('aria-disabled')).toBeNull()
-    expect(selector.getAttribute('aria-label')).toBe('Main content group, choose another level')
-    const panel = await openStack(selector)
-    expect([...panel.querySelectorAll('[role="treeitem"]')].map(level => level.getAttribute('aria-label'))).toEqual(['Main content group', 'Component position', 'Rich text'])
-    expect(panel.querySelector('[aria-selected="true"]')!.getAttribute('aria-label')).toBe('Main content group')
-    expect(panel.querySelector('[data-stack-innermost]')!.getAttribute('aria-label')).toBe('Rich text')
-  })
-
-  test('with a parent selected, choosing the component inside it selects it again from the clicked stack', async () => {
-    const { selector, cwa } = await mountSelector(makeCwa(STACK, { selected: 2 }))
-    const panel = await openStack(selector)
-
-    panel.querySelector<HTMLElement>('[aria-label="Rich text"] > [data-stack-name]')!.click()
-    await flushPromises()
-    expect(cwa.admin.resourceStackManager.selectStackIndex).toHaveBeenCalledWith(0, false)
-    expect(selector.textContent).toContain('Rich text')
+    expect(selector.getAttribute('aria-disabled')).toBe('true')
   })
 
   test('opens over its own name, hidden while open, so the innermost level\'s name lands on the selector\'s', async () => {
-    const { selector, wrapper } = await mountSelector(makeCwa(STACK, { selected: 2 }))
+    const { selector, wrapper } = await mountSelector(makeCwa(STACK, { selected: 1 }))
     await openStack(selector)
 
     const name = selector.querySelector<HTMLElement>('[data-testid="path-selector-name"]')!

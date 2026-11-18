@@ -14,6 +14,7 @@ export const practiceStates: { value: PracticeState, label: string }[] = [
 
 export const PRACTICE = {
   page: '/_/pages/kit-practice',
+  parent: '/_/pages/kit-practice-parent',
   group: '/_/component_groups/kit-practice-main',
   empty: '/_/component_groups/kit-practice-empty',
   heading: '/_/component_positions/kit-practice-1',
@@ -30,7 +31,8 @@ const meta = { persisted: true }
 export function practiceResources(state: PracticeState): CwaResource[] {
   const published = state === 'live'
   return [
-    { '@id': PRACTICE.page, '@type': 'Page', 'reference': 'Kit practice', 'title': 'Kitchens', 'isTemplate': false, 'componentGroups': [PRACTICE.group, PRACTICE.empty], '_metadata': meta },
+    { '@id': PRACTICE.parent, '@type': 'Page', 'reference': 'Kit practice parent', 'title': 'Our work', 'isTemplate': false, 'componentGroups': [], '_metadata': meta },
+    { '@id': PRACTICE.page, '@type': 'Page', 'reference': 'Kit practice', 'title': 'Kitchens', 'isTemplate': false, 'parentPage': PRACTICE.parent, 'componentGroups': [PRACTICE.group, PRACTICE.empty], '_metadata': meta },
     { '@id': PRACTICE.group, '@type': 'ComponentGroup', 'reference': `main_${PRACTICE.page}`, 'location': PRACTICE.page, 'componentPositions': [PRACTICE.heading, PRACTICE.body, PRACTICE.repeat], ...(state === 'full' && { maxComponents: PRACTICE_GROUP_CAPACITY }), '_metadata': meta },
     { '@id': PRACTICE.empty, '@type': 'ComponentGroup', 'reference': `empty_${PRACTICE.page}`, 'location': PRACTICE.page, 'componentPositions': [], '_metadata': meta },
     { '@id': PRACTICE.heading, '@type': 'ComponentPosition', 'componentGroup': PRACTICE.group, 'component': PRACTICE.title, 'sortValue': 1, '_metadata': meta },
