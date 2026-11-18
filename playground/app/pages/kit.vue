@@ -726,7 +726,7 @@ const badgeTones = [
         </div>
         <h3>MultiSelect</h3>
         <p class="kit-note">
-          In the bar it shows the first choice as a chip and +N. Type to filter; Backspace in an empty search marks the last chip and a second Backspace removes it.
+          In the bar it shows the first choice as a chip and +N. Open, an "N selected" count stays before the search and chosen options come first, ticked. Type to filter; Backspace in an empty search marks the last chip and a second Backspace removes it.
         </p>
         <div class="kit-stack">
           <div class="kit-row">

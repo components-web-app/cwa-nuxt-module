@@ -9,6 +9,7 @@ async function openKit(page, width) {
   await page.setViewportSize({ width, height: 900 })
   await page.goto(`${kitBase}/kit`)
   await page.getByTestId('kit-presence').getByTestId('field-presence-flag').first().waitFor()
+  await page.waitForFunction(() => !!document.querySelector('#__nuxt')?.__vue_app__, null, { timeout: 120000 })
 }
 
 for (const width of widths) {
@@ -405,3 +406,27 @@ test('kit: a textarea beside its label lines the label up with its first line of
   await expect(page.locator('.kit-place-bar [data-kit-field="textarea"]')).toHaveCount(0)
   expect(warnings).toEqual([])
 })
+
+for (const width of widths) {
+  test(`kit at ${width}: a multi-select keeps its width and height when it opens and closes, and shows its count while open (#461)`, async ({ page }) => {
+    await openKit(page, width)
+    const anchor = page.locator('main').getByTestId('multi-input').first().locator('xpath=..')
+    await anchor.scrollIntoViewIfNeeded()
+    const closed = await anchor.boundingBox()
+
+    await anchor.getByTestId('multi-input').click()
+    await page.getByTestId('multi-menu').waitFor()
+    await expect(anchor.getByTestId('multi-count')).toHaveText(/^\d+ selected$/)
+    const opened = await anchor.boundingBox()
+    await page.keyboard.press('Escape')
+    await page.getByTestId('multi-menu').waitFor({ state: 'detached' })
+    const reclosed = await anchor.boundingBox()
+
+    for (const box of [opened, reclosed]) {
+      expect(Math.abs(box.width - closed.width)).toBeLessThan(0.5)
+      expect(Math.abs(box.height - closed.height)).toBeLessThan(0.5)
+      expect(Math.abs(box.x - closed.x)).toBeLessThan(0.5)
+      expect(Math.abs(box.y - closed.y)).toBeLessThan(0.5)
+    }
+  })
+}

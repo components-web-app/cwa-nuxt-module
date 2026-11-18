@@ -1753,3 +1753,40 @@ test('64. by keyboard alone a rich-text component is reached with Tab, selected 
   await page.keyboard.press('Shift+F6')
   await eventually(() => page.evaluate(() => document.activeElement?.getAttribute('aria-label') === 'Body Text component'), 'Shift+F6 did not return to the component')
 })
+
+test('65. at 390 wide the UI tab\'s row shows its fade and scrolls by keyboard, and focusing the Style select brings all of it into the row, with a fine or a coarse pointer', async ({ cwa: t }) => {
+  const { page, base, seed } = t
+  const cookies = await page.context().cookies()
+  for (const hasTouch of [false, true]) {
+    const context = await page.context().browser().newContext({ ignoreHTTPSErrors: true, viewport: { width: 390, height: 844 }, hasTouch })
+    await context.addCookies(cookies)
+    const tab = await context.newPage()
+    await tab.route(`**${mercurePath}**`, route => route.abort())
+    await tab.goto(`${base}${seed.paths.home}`)
+    await tab.getByRole('button', { name: 'Edit', exact: true }).waitFor()
+    await tab.waitForLoadState('networkidle')
+    await tab.getByRole('button', { name: 'Edit', exact: true }).click()
+    await tab.getByRole('button', { name: 'Done', exact: true }).waitFor()
+    await tab.getByText(texts.source, { exact: true }).first().click()
+    await tab.getByRole('tab', { name: 'UI', exact: true }).click()
+    const style = tab.getByTestId('manager-tab-panel').getByRole('combobox', { name: 'Style', exact: true })
+    await style.waitFor()
+    await tab.waitForLoadState('networkidle')
+    const fit = await style.evaluate((input) => {
+      const field = input.parentElement
+      let scroller = field.parentElement
+      while (scroller && getComputedStyle(scroller).overflowX !== 'auto') {
+        scroller = scroller.parentElement
+      }
+      const cue = { overflows: scroller.scrollWidth > scroller.clientWidth + 1, fade: scroller.parentElement.dataset.overflowEnd === 'true', tabindex: scroller.getAttribute('tabindex') }
+      scroller.scrollLeft = 0
+      input.focus()
+      const box = field.getBoundingClientRect()
+      const view = scroller.getBoundingClientRect()
+      return { ...cue, left: Math.round(box.left), right: Math.round(box.right), viewLeft: Math.round(view.left), viewRight: Math.round(view.right), page: document.documentElement.clientWidth, scrollWidth: document.documentElement.scrollWidth }
+    })
+    assert(!fit.overflows || (fit.fade && fit.tabindex === '0'), `With a ${hasTouch ? 'coarse' : 'fine'} pointer the row overflows with no fade or keyboard scroll: ${JSON.stringify(fit)}`)
+    assert(fit.left >= fit.viewLeft - 1 && fit.right <= fit.viewRight + 1 && fit.right <= fit.page, `With a ${hasTouch ? 'coarse' : 'fine'} pointer the Style select is cut off: ${JSON.stringify(fit)}`)
+    await context.close()
+  }
+})
