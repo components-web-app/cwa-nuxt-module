@@ -4,6 +4,7 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+- Admin UI kit, step 7f: `CwaUiSegmented` is only as wide as its options in dialogs and pages (the page modal's page type, the route options), scrolling sideways rather than overflowing a narrow column, instead of a full-width bar ([#483](https://github.com/components-web-app/cwa-nuxt-module/pull/483), [#461](https://github.com/components-web-app/cwa-nuxt-module/issues/461))
 - Admin UI kit, step 7f: a kit dialog opens with focus on its title, never on a header control such as the page modal's Static/Dynamic select, where a stray Enter or arrow key could change it ([#483](https://github.com/components-web-app/cwa-nuxt-module/pull/483), [#461](https://github.com/components-web-app/cwa-nuxt-module/issues/461))
 - Admin UI kit, step 7f: the right-click resource stack and the header's path selector no longer flash at the top left of the window before appearing at the pointer ([#483](https://github.com/components-web-app/cwa-nuxt-module/pull/483), [#461](https://github.com/components-web-app/cwa-nuxt-module/issues/461))
 - Admin UI kit, step 7f: the sign-in, forgot and reset password pages' secondary links (Back to home, Forgot your password?) are muted grey and underlined, turning to the text colour on hover, so only Sign in is blue ([#483](https://github.com/components-web-app/cwa-nuxt-module/pull/483), [#461](https://github.com/components-web-app/cwa-nuxt-module/issues/461))
