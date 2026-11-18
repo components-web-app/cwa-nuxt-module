@@ -2,22 +2,28 @@
 import { describe, test, expect, vi, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import RoutesTabManage from './RoutesTabManage.vue'
-import ModalInput from '#cwa/templates/components/core/admin/form/ModalInput.vue'
-import ModalSelect from '#cwa/templates/components/core/admin/form/ModalSelect.vue'
+import RouteRecommendation from './RouteRecommendation.vue'
+import CwaUiInput from '#cwa/templates/components/ui/Input.vue'
+import CwaUiSelect from '#cwa/templates/components/ui/Select.vue'
 import { formatDateTime } from '#cwa/resources/date-time-input'
 
 function mountManage(options: {
   modelValue?: string
   parentRoutePrefix?: string | null
   currentPath?: string
-  title?: string
   liveAt?: string | null
   effectiveLiveAt?: string | null
+  recommendedPath?: string
+  recommendedFrom?: string
+  childPaths?: string[]
+  redirectCount?: number
 } = {}) {
   return mount(RoutesTabManage, {
     props: {
-      disableButtons: false,
-      pageResource: { title: options.title ?? 'My Programme', route: '/_/routes//conference/programme' },
+      recommendedPath: options.recommendedPath,
+      recommendedFrom: options.recommendedFrom,
+      childPaths: options.childPaths,
+      redirectCount: options.redirectCount,
       currentPath: options.currentPath ?? '/conference/programme',
       parentRoutePrefix: options.parentRoutePrefix !== undefined ? options.parentRoutePrefix : '/conference',
       modelValue: options.modelValue ?? '/conference/programme',
@@ -25,6 +31,7 @@ function mountManage(options: {
       routePublication: { liveAt: options.liveAt, effectiveLiveAt: options.effectiveLiveAt },
     } as any,
     shallow: true,
+    global: { stubs: { CwaReveal: false } },
   })
 }
 
@@ -37,11 +44,11 @@ function getLiveAtInput(wrapper: ReturnType<typeof mountManage>) {
 }
 
 function getPrefixInput(wrapper: ReturnType<typeof mountManage>) {
-  return wrapper.findComponent(ModalSelect)
+  return wrapper.findComponent(CwaUiSelect)
 }
 
 function getSuffixInput(wrapper: ReturnType<typeof mountManage>) {
-  return wrapper.findComponent(ModalInput)
+  return wrapper.findComponent(CwaUiInput)
 }
 
 describe('RoutesTabManage', () => {
@@ -60,7 +67,7 @@ describe('RoutesTabManage', () => {
 
     test('uses "/" as prefix and full path as suffix when no parentRoutePrefix', () => {
       const wrapper = mountManage({ modelValue: '/my-page', parentRoutePrefix: null })
-      expect(getPrefixInput(wrapper).props('modelValue')).toBe('/')
+      expect(getPrefixInput(wrapper).exists()).toBe(false)
       expect(getSuffixInput(wrapper).props('modelValue')).toBe('/my-page')
     })
 
@@ -72,7 +79,7 @@ describe('RoutesTabManage', () => {
 
     test('updates prefix to parentRoutePrefix when it loads asynchronously and path is empty (#230)', async () => {
       const wrapper = mountManage({ modelValue: '', parentRoutePrefix: null })
-      expect(getPrefixInput(wrapper).props('modelValue')).toBe('/')
+      expect(getPrefixInput(wrapper).exists()).toBe(false)
       await wrapper.setProps({ parentRoutePrefix: '/conference' })
       expect(getPrefixInput(wrapper).props('modelValue')).toBe('/conference')
       expect(getSuffixInput(wrapper).props('modelValue')).toBe('')
@@ -121,51 +128,139 @@ describe('RoutesTabManage', () => {
       await getSuffixInput(wrapper).vm.$emit('update:modelValue', ' /journal')
       expect(wrapper.emitted('update:modelValue')).toEqual([['/journal']])
     })
+  })
 
-    test('SEO recommendation always uses parentRoutePrefix regardless of selected prefix', async () => {
-      const wrapper = mountManage({ title: 'My Programme', parentRoutePrefix: '/conference' })
-      await getPrefixInput(wrapper).vm.$emit('update:modelValue', '/')
-      expect(wrapper.find('[data-seo-recommendation]').text()).toContain('/conference/my-programme')
+  describe('the recommendation', () => {
+    test('offers the recommended path when the path differs, and Use this fills the prefix and the rest', async () => {
+      const wrapper = mountManage({ modelValue: '/conference/programme', recommendedPath: '/conference/my-programme' })
+      expect(wrapper.findComponent(RouteRecommendation).props('path')).toBe('/conference/my-programme')
+
+      await wrapper.findComponent(RouteRecommendation).vm.$emit('use')
+
+      expect(getPrefixInput(wrapper).props('modelValue')).toBe('/conference')
+      expect(getSuffixInput(wrapper).props('modelValue')).toBe('/my-programme')
+      expect(wrapper.emitted('update:modelValue')?.at(-1)).toEqual(['/conference/my-programme'])
+    })
+
+    test('names the page title the recommendation is based on', () => {
+      const wrapper = mountManage({ modelValue: '/conference/programme', recommendedPath: '/conference/my-programme', recommendedFrom: 'My programme' })
+      expect(wrapper.findComponent(RouteRecommendation).props('from')).toBe('My programme')
+    })
+
+    test('never recommends a path for the route at /, the homepage', () => {
+      const wrapper = mountManage({ currentPath: '/', modelValue: '/', parentRoutePrefix: null, recommendedPath: '/welcome-to-cwa' })
+      expect(wrapper.findComponent(RouteRecommendation).exists()).toBe(false)
+    })
+
+    test('says the path is the recommended one instead of offering it', () => {
+      const wrapper = mountManage({ modelValue: '/conference/programme', recommendedPath: '/conference/programme' })
+      expect(wrapper.findComponent(RouteRecommendation).exists()).toBe(false)
+      expect(getSuffixInput(wrapper).props('description')).toBe('This is the recommended path.')
+    })
+
+    test('shows no prefix choice when there is no parent route', () => {
+      const wrapper = mountManage({ modelValue: '/my-page', parentRoutePrefix: null })
+      expect(getPrefixInput(wrapper).exists()).toBe(false)
+      expect(getSuffixInput(wrapper).props('label')).toBe('Path')
     })
   })
 
-  describe('SEO recommendation', () => {
-    test('shows the full recommended path (prefix + slugified suffix) as SEO recommendation', () => {
-      const wrapper = mountManage({ title: 'My Great Programme', parentRoutePrefix: '/conference' })
-      expect(wrapper.find('[data-seo-recommendation]').text()).toContain('/conference/my-great-programme')
+  describe('what saving will do', () => {
+    test('a changed path says the old one keeps working, and offers to change the child routes under it, checked', async () => {
+      const wrapper = mountManage({ modelValue: '/conference/programme', childPaths: ['/conference/programme/day-1', '/conference/programme/day-2', '/conference/elsewhere'] })
+      expect(wrapper.find('[data-testid="route-old-path"]').exists()).toBe(false)
+
+      await wrapper.setProps({ modelValue: '/conference/schedule' })
+
+      expect(wrapper.find('[data-testid="route-old-path"]').text()).toBe('The old path, /conference/programme, keeps working: it will redirect here.')
+      const cascade = wrapper.find<HTMLInputElement>('[data-testid="route-cascade"]')
+      expect(cascade.element.checked).toBe(true)
+      expect(cascade.element.closest('label')!.textContent).toContain('Also change the 2 child routes that start with /conference/programme/')
+      await cascade.setValue(false)
+      expect(wrapper.emitted('update:cascade')).toEqual([[false]])
     })
 
-    test('shows just the slugified suffix as SEO recommendation when no parentRoutePrefix', () => {
-      const wrapper = mountManage({ title: 'My Programme', parentRoutePrefix: null })
-      expect(wrapper.find('[data-seo-recommendation]').text()).toContain('/my-programme')
+    test('offers no cascade when no child route starts with the old path', () => {
+      const wrapper = mountManage({ modelValue: '/conference/schedule', childPaths: ['/conference/elsewhere'] })
+      expect(wrapper.find('[data-testid="route-old-path"]').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="route-cascade"]').exists()).toBe(false)
     })
 
-    test('Apply button is disabled when currentPath already matches the full recommended path', () => {
-      const wrapper = mountManage({
-        title: 'My Programme',
-        parentRoutePrefix: '/conference',
-        currentPath: '/conference/my-programme',
-      })
-      expect(wrapper.findComponent('[data-apply-seo]').props('disabled')).toBe(true)
+    test.each([
+      ['/ (root)', null, ''],
+      ['a parent route', '/conference', '/conference'],
+    ])('a new route with an empty path under %s asks for one, and has no path yet', async (_, parentRoutePrefix, modelValue) => {
+      const wrapper = mountManage({ currentPath: '', modelValue, parentRoutePrefix })
+      expect(wrapper.find('[data-testid="route-go-live-line"]').text()).toBe('Enter a path.')
+      await getSuffixInput(wrapper).vm.$emit('update:modelValue', 'talks')
+      await getSuffixInput(wrapper).vm.$emit('update:modelValue', '  ')
+      expect(wrapper.emitted('update:modelValue')!.at(-1)).toEqual([''])
+      expect(wrapper.find('[data-testid="route-go-live-line"]').text()).toBe('Enter a path.')
     })
 
-    test('strips full stops from SEO recommended slug (#210)', () => {
-      const wrapper = mountManage({ title: 'Dr. Smith', parentRoutePrefix: null })
-      expect(wrapper.find('[data-seo-recommendation]').text()).toBe('/dr-smith')
+    test('typing / is the homepage path', async () => {
+      const wrapper = mountManage({ currentPath: '', modelValue: '', parentRoutePrefix: null })
+      await getSuffixInput(wrapper).vm.$emit('update:modelValue', '/')
+      expect(wrapper.emitted('update:modelValue')).toEqual([['/']])
+      expect(wrapper.find('[data-testid="route-go-live-line"]').text()).toBe('Visitors will reach this page at /.')
     })
 
-    test('strips punctuation other than hyphens from SEO recommended slug (strict mode)', () => {
-      const wrapper = mountManage({ title: 'Hello! World?', parentRoutePrefix: null })
-      expect(wrapper.find('[data-seo-recommendation]').text()).toBe('/hello-world')
+    test.each([
+      ['/ (root)', null, '', 'spring  sale ', '/spring-sale'],
+      ['a parent route', '/conference', '/conference', 'spring sale', '/conference/spring-sale'],
+    ])('spaces typed under %s become one hyphen each run in the path and its hint as they are typed, and in the field once it is left, so the caret never jumps', async (_, parentRoutePrefix, modelValue, typed, path) => {
+      const wrapper = mountManage({ currentPath: '', modelValue, parentRoutePrefix })
+      await getSuffixInput(wrapper).vm.$emit('update:modelValue', typed)
+      expect(wrapper.emitted('update:modelValue')!.at(-1)).toEqual([path])
+      expect(wrapper.find('[data-testid="route-go-live-line"]').text()).toBe(`Visitors will reach this page at ${path}.`)
+      expect(getSuffixInput(wrapper).props('modelValue')).toBe(typed)
+      expect(getSuffixInput(wrapper).props('invalid')).toBeUndefined()
+
+      await getSuffixInput(wrapper).vm.$emit('focusout')
+      expect(getSuffixInput(wrapper).props('modelValue')).toBe('spring-sale')
+      expect(wrapper.emitted('update:modelValue')!.at(-1)).toEqual([path])
     })
 
-    test('Apply button is enabled when currentPath differs from the full recommended path', () => {
-      const wrapper = mountManage({
-        title: 'My Programme',
-        parentRoutePrefix: '/conference',
-        currentPath: '/conference/old-name',
-      })
-      expect(wrapper.findComponent('[data-apply-seo]').props('disabled')).toBe(false)
+    test.each(['spring?sale', 'spring#sale'])('“%s” is refused as it is typed, and the API\'s own error still wins', async (typed) => {
+      const wrapper = mountManage({ currentPath: '', modelValue: '', parentRoutePrefix: null })
+      await getSuffixInput(wrapper).vm.$emit('update:modelValue', typed)
+      expect(getSuffixInput(wrapper).props('invalid')).toBe('A path can\'t contain ? or #. They start a query or a page anchor.')
+      await getSuffixInput(wrapper).vm.$emit('update:modelValue', 'spring-sale')
+      expect(getSuffixInput(wrapper).props('invalid')).toBeUndefined()
+      await wrapper.setProps({ pathError: 'This path is already in use.' })
+      await getSuffixInput(wrapper).vm.$emit('update:modelValue', typed)
+      expect(getSuffixInput(wrapper).props('invalid')).toBe('This path is already in use.')
+    })
+
+    test('a new route says where visitors will reach the page', () => {
+      const wrapper = mountManage({ currentPath: '', modelValue: '/conference/talks' })
+      expect(wrapper.find('[data-testid="route-go-live-line"]').text()).toBe('Visitors will reach this page at /conference/talks.')
+    })
+
+    test('a new route starts Live, as the API makes it', () => {
+      const wrapper = mountManage({ currentPath: '', modelValue: '', liveAt: undefined })
+      expect(getStateSelect(wrapper).props('modelValue')).toBe('live')
+      expect(wrapper.emitted('update:liveAt')).toBeUndefined()
+    })
+
+    test('taking a live route offline says visitors can no longer reach the page', async () => {
+      const wrapper = mountManage({ liveAt: '2020-01-01T00:00:00+00:00' })
+      expect(wrapper.find('[data-testid="route-go-live-line"]').exists()).toBe(false)
+      await getStateSelect(wrapper).vm.$emit('update:modelValue', 'draft')
+      expect(wrapper.find('[data-testid="route-go-live-line"]').text()).toBe('Visitors can no longer reach this page once you save.')
+    })
+  })
+
+  describe('deleting', () => {
+    test('is the last section of the form, saying what goes, and is not offered for a new route', async () => {
+      const wrapper = mountManage({ redirectCount: 3 })
+      const section = wrapper.findComponent('[data-testid="route-delete-section"]')
+      expect(section.props('title')).toBe('Delete this route')
+      expect(section.props('description')).toBe('Visitors to /conference/programme get “Page not found”. Its 3 old addresses go too.')
+      await wrapper.findComponent('[data-testid="route-delete"]').vm.$emit('click')
+      expect(wrapper.emitted('delete')).toHaveLength(1)
+
+      expect(mountManage({ currentPath: '' }).findComponent('[data-testid="route-delete-section"]').exists()).toBe(false)
     })
   })
 
@@ -252,6 +347,14 @@ describe('RoutesTabManage', () => {
       expect(getLiveAtInput(wrapper).props('modelValue')).toBeNull()
       expect(new Date(getLiveAtInput(wrapper).props('min')).getTime()).toBeGreaterThanOrEqual(before - 1000)
       expect(wrapper.emitted('update:liveAt')).toEqual([[null]])
+    })
+
+    test('says it is waiting for a date while scheduled has none, and stops once one is picked', async () => {
+      const wrapper = mountManage({ liveAt: '2020-01-01T00:00:00+00:00' })
+      expect(wrapper.emitted('update:awaitingDate')).toBeUndefined()
+      await getStateSelect(wrapper).vm.$emit('update:modelValue', 'scheduled')
+      await getLiveAtInput(wrapper).vm.$emit('update:modelValue', '2999-09-25T08:00:00.000Z')
+      expect(wrapper.emitted('update:awaitingDate')).toEqual([[true], [false]])
     })
 
     test('commits the UTC instant the date picker gives', async () => {

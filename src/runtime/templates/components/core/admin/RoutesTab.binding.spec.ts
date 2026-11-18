@@ -65,6 +65,22 @@ function mockCwa(extra: Record<string, any> = {}) {
   return { createResource, updateResource }
 }
 
+const subViewStub = { template: '<div><slot name="main" /><slot /></div>' }
+
+function saveButton(wrapper: ReturnType<typeof mount>) {
+  return wrapper.findAllComponents({ name: 'CwaUiButton' }).find(button => ['Save route', 'Add route'].includes(button.props('label')))!
+}
+
+async function openRoute(wrapper: ReturnType<typeof mount>) {
+  await wrapper.findComponent(RoutesTabView).vm.$emit('open', 'route')
+  await flushPromises()
+}
+
+async function save(wrapper: ReturnType<typeof mount>) {
+  await saveButton(wrapper).vm.$emit('click')
+  await flushPromises()
+}
+
 describe('RoutesTab route binding', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -75,16 +91,16 @@ describe('RoutesTab route binding', () => {
     const wrapper = mount(RoutesTab, {
       props: { pageResource: childPage as any },
       shallow: true,
+      global: { stubs: { CwaUiSubView: subViewStub } },
     })
     await flushPromises()
 
     await wrapper.setProps({ pageResource: conference as any })
     await flushPromises()
 
-    await wrapper.findComponent(RoutesTabView).vm.$emit('changePage', 'manage-route')
+    await openRoute(wrapper)
     await wrapper.findComponent(RoutesTabManage).vm.$emit('update:modelValue', '/2027')
-    await wrapper.findComponent(RoutesTabManage).vm.$emit('save')
-    await flushPromises()
+    await save(wrapper)
 
     expect(createResource).toHaveBeenCalledOnce()
     const { endpoint, data } = createResource.mock.calls[0]![0]
@@ -99,13 +115,13 @@ describe('RoutesTab route binding', () => {
     const wrapper = mount(RoutesTab, {
       props: { pageResource: conference as any },
       shallow: true,
+      global: { stubs: { CwaUiSubView: subViewStub } },
     })
     await flushPromises()
 
-    await wrapper.findComponent(RoutesTabView).vm.$emit('changePage', 'manage-route')
+    await openRoute(wrapper)
     await wrapper.findComponent(RoutesTabManage).vm.$emit('update:modelValue', '/2027')
-    await wrapper.findComponent(RoutesTabManage).vm.$emit('save')
-    await flushPromises()
+    await save(wrapper)
     expect(wrapper.findComponent(RoutesTabView).props('isLoading')).toBe(true)
 
     await wrapper.setProps({ pageResource: { ...conference, route: '/_/routes//2027' } as any })
@@ -132,18 +148,19 @@ describe('RoutesTab route binding', () => {
     const wrapper = mount(RoutesTab, {
       props: { pageResource: { ...conference, route: parentRouteIri } as any },
       shallow: true,
+      global: { stubs: { CwaUiSubView: subViewStub } },
     })
     await flushPromises()
 
-    await wrapper.findComponent(RoutesTabView).vm.$emit('changePage', 'manage-route')
+    await openRoute(wrapper)
     await wrapper.findComponent(RoutesTabManage).vm.$emit('update:liveAt', '2027-03-01T09:00:00+00:00')
-    await wrapper.findComponent(RoutesTabManage).vm.$emit('save')
-    await flushPromises()
+    await save(wrapper)
 
     expect(updateResource).toHaveBeenCalledOnce()
     expect(updateResource.mock.calls[0]![0]).toEqual({
       endpoint: parentRouteIri,
       data: { liveAt: '2027-03-01T09:00:00+00:00' },
+      onRequest: expect.any(Function),
     })
   })
 
@@ -165,14 +182,84 @@ describe('RoutesTab route binding', () => {
     const wrapper = mount(RoutesTab, {
       props: { pageResource: { ...conference, route: routeIri } as any },
       shallow: true,
+      global: { stubs: { CwaUiSubView: subViewStub } },
     })
     await flushPromises()
 
-    await wrapper.findComponent(RoutesTabView).vm.$emit('changePage', 'manage-route')
-    await wrapper.findComponent(RoutesTabManage).vm.$emit('save')
-    await flushPromises()
+    await openRoute(wrapper)
+    expect(saveButton(wrapper).props('disabled')).toBe(true)
+    await save(wrapper)
 
     expect(updateResource).not.toHaveBeenCalled()
+  })
+
+  function scheduledParentRoute(liveAt: string) {
+    const routeIri = '/_/routes//2027'
+    return {
+      routeIri,
+      store: {
+        [routeIri]: {
+          data: {
+            '@id': routeIri,
+            '@type': 'Route',
+            'name': '/2027',
+            'path': '/2027',
+            'pageData': conferenceIri,
+            'page': childPageIri,
+            'liveAt': liveAt,
+            '_metadata': { persisted: true, effectiveLiveAt: liveAt },
+          },
+          apiState: { status: 'SUCCESS', path: `${routeIri}/redirects` },
+        },
+      },
+    }
+  }
+
+  test('setting a scheduled route live, its path untouched, sends the new go-live date alone: no path, name, page or page data', async () => {
+    const { routeIri, store } = scheduledParentRoute('2099-01-01T09:00:00+00:00')
+    const { updateResource } = mockCwa(store)
+    const wrapper = mount(RoutesTab, {
+      props: { pageResource: { ...conference, route: routeIri } as any },
+      shallow: true,
+      global: { stubs: { CwaUiSubView: subViewStub } },
+    })
+    await flushPromises()
+
+    await openRoute(wrapper)
+    await wrapper.findComponent(RoutesTabManage).vm.$emit('update:liveAt', '2026-11-18T04:00:00.000Z')
+    await flushPromises()
+    expect(saveButton(wrapper).props('disabled')).toBe(false)
+    await save(wrapper)
+
+    expect(updateResource).toHaveBeenCalledOnce()
+    expect(updateResource.mock.calls[0]![0]).toEqual({
+      endpoint: routeIri,
+      data: { liveAt: '2026-11-18T04:00:00.000Z' },
+      onRequest: expect.any(Function),
+    })
+  })
+
+  test('a go-live date set back to the stored one is not sent with a new path', async () => {
+    const { routeIri, store } = scheduledParentRoute('2099-01-01T09:00:00+00:00')
+    const { updateResource } = mockCwa(store)
+    const wrapper = mount(RoutesTab, {
+      props: { pageResource: { ...conference, route: routeIri } as any },
+      shallow: true,
+      global: { stubs: { CwaUiSubView: subViewStub } },
+    })
+    await flushPromises()
+
+    await openRoute(wrapper)
+    const manage = wrapper.findComponent(RoutesTabManage)
+    await manage.vm.$emit('update:liveAt', null)
+    await manage.vm.$emit('update:liveAt', '2099-01-01T09:00:00+00:00')
+    await manage.vm.$emit('update:modelValue', '/2028')
+    await flushPromises()
+    await save(wrapper)
+
+    expect(updateResource).toHaveBeenCalledOnce()
+    const { data } = updateResource.mock.calls[0]![0]
+    expect(data).toEqual({ path: '/2028', name: '/2028' })
   })
 
   test('creating a route for a page still sends the full body including the page', async () => {
@@ -181,13 +268,13 @@ describe('RoutesTab route binding', () => {
     const wrapper = mount(RoutesTab, {
       props: { pageResource: page as any },
       shallow: true,
+      global: { stubs: { CwaUiSubView: subViewStub } },
     })
     await flushPromises()
 
-    await wrapper.findComponent(RoutesTabView).vm.$emit('changePage', 'manage-route')
+    await openRoute(wrapper)
     await wrapper.findComponent(RoutesTabManage).vm.$emit('update:modelValue', '/standalone')
-    await wrapper.findComponent(RoutesTabManage).vm.$emit('save')
-    await flushPromises()
+    await save(wrapper)
 
     expect(createResource).toHaveBeenCalledOnce()
     expect(createResource.mock.calls[0]![0].data).toEqual({

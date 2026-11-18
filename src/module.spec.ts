@@ -39,12 +39,13 @@ vi.mock('./component-group-declarations', () => ({
   scanComponentGroupDeclarations: vi.fn(() => ({})),
 }))
 
-vi.mock('node:fs', () => {
+vi.mock('node:fs', async () => {
+  const actual = await vi.importActual<typeof import('node:fs')>('node:fs')
   const fs = {
     statSync: vi.fn(() => ({
       isDirectory: vi.fn(() => true),
     })),
-    readFileSync: vi.fn(() => ('{ "name": "@cwa/nuxt", "version": "1.0.0" }')),
+    readFileSync: vi.fn((file: string, encoding: BufferEncoding) => file.endsWith('@iconify-json/lucide/icons.json') ? actual.readFileSync(file, encoding) : '{ "name": "@cwa/nuxt", "version": "1.0.0" }'),
   }
   return { ...fs, default: fs }
 })
@@ -291,7 +292,7 @@ describe('CWA module', () => {
         })
         const { lastCall: [{ getContents }] } = (nuxtKit.addTemplate as Mock).mock
         const contents = await getContents({ app: { components: [] } })
-        return JSON.parse(contents.split('export const options:CwaModuleOptions = ')[1].split('\nexport const')[0]).staticRender
+        return JSON.parse(contents.split('export const options:CwaRuntimeOptions = ')[1].split('\nexport const')[0]).staticRender
       }
 
       test('is false when the app has no routeRules', async () => {
@@ -344,7 +345,7 @@ describe('CWA module', () => {
         })
         const { lastCall: [{ getContents }] } = (nuxtKit.addTemplate as Mock).mock
         const contents = await getContents({ app: { components: [] } })
-        const generated = JSON.parse(contents.split('export const options:CwaModuleOptions = ')[1].split('\nexport const')[0])
+        const generated = JSON.parse(contents.split('export const options:CwaRuntimeOptions = ')[1].split('\nexport const')[0])
         const registered = (nuxtKit.addPlugin as Mock).mock.calls.some(([plugin]) => plugin.src === pluginSrc)
         return { mockNuxt, generated, registered }
       }
@@ -465,8 +466,8 @@ describe('CWA module', () => {
         },
       ]
 
-      expect(await getContents({ app: { components } })).toEqual(`import type { CwaModuleOptions } from '#cwa/types';
-export const options:CwaModuleOptions = {
+      expect(await getContents({ app: { components } })).toEqual(`import type { CwaRuntimeOptions } from '#cwa/types';
+export const options:CwaRuntimeOptions = {
   "mock": true,
   "foo": "bar",
   "resources": {
@@ -589,6 +590,92 @@ export type CwaComponentName = typeof CwaComponentNames[keyof typeof CwaComponen
 
         const [{ filter }] = (nuxtKit.updateTemplates as Mock).mock.lastCall!
         expect(filter!({ filename: 'cwa-component-names.ts' } as any)).toBe(true)
+      })
+    })
+
+    describe('admin resources template (#461)', () => {
+      const components = [
+        { filePath: 'cwa/components/HtmlContent/HtmlContent.vue', pascalName: 'CwaComponentHtmlContent' },
+        { filePath: 'cwa/components/Hero/Hero.vue', pascalName: 'CwaComponentHero' },
+      ]
+      const resources = {
+        HtmlContent: { name: 'Body text', description: 'Text', icon: 'rich-text', group: 'Text', image: '/body.webp' },
+      }
+
+      async function prepare() {
+        await prepareMockNuxt({ resources }, {
+          hook: vi.fn((hookName, callback) => {
+            if (hookName === 'modules:done') {
+              callback()
+            }
+          }),
+        })
+        const templates = (nuxtKit.addTemplate as Mock).mock.calls.map(([template]) => template)
+        return {
+          admin: templates.find(({ filename }) => filename === 'cwa-admin-resources.ts'),
+          options: templates.find(({ filename }) => filename === 'cwa-options.ts'),
+        }
+      }
+
+      test('holds the icon, group and image, and the visitor options never do', async () => {
+        const { admin, options } = await prepare()
+
+        expect(admin.write).toBe(true)
+        const adminSource = await admin.getContents({ app: { components } })
+        expect(adminSource).toContain('"HtmlContent": { icon: "lucide:letter-text", group: "Text", image: "/body.webp" }')
+        expect(adminSource).toContain('data-cwa-admin-icon')
+
+        const optionsSource = await options.getContents({ app: { components } })
+        expect(optionsSource).toContain('"name": "Body text"')
+        expect(optionsSource).toContain('"description": "Text"')
+        expect(optionsSource).not.toContain('"icon"')
+        expect(optionsSource).not.toContain('"group"')
+        expect(optionsSource).not.toContain('/body.webp')
+      })
+
+      test('imports a component folder\'s preview.webp when no image is configured', async () => {
+        const fs = await import('node:fs')
+        vi.mocked(fs.statSync).mockImplementation(((file: string) => ({
+          isDirectory: () => !file.endsWith('.webp'),
+          isFile: () => file.endsWith(join('Hero', 'preview.webp')),
+        })) as any)
+        const { admin } = await prepare()
+
+        const adminSource = await admin.getContents({ app: { components } })
+        vi.mocked(fs.statSync).mockImplementation((() => ({ isDirectory: () => true })) as any)
+
+        expect(adminSource).toContain(`import preview0 from ${JSON.stringify(join('cwa/components/Hero', 'preview.webp'))}`)
+        expect(adminSource).toContain('"Hero": { image: preview0 }')
+        expect(adminSource).not.toContain(join('HtmlContent', 'preview.webp'))
+      })
+
+      test('generates the Lucide icon names as a type for the app and its nuxt.config', async () => {
+        await prepare()
+
+        const call = (nuxtKit.addTypeTemplate as Mock).mock.calls.find(([{ filename }]) => filename === 'types/cwa-lucide-icons.d.ts')
+        expect(call![1]).toEqual({ nuxt: true, node: true })
+        expect(call![0].write).toBe(true)
+        expect(await call![0].getContents()).toContain('"map-pin": true')
+      })
+
+      test('is regenerated when a file is added to or removed from a component folder in dev', async () => {
+        vi.spyOn(nuxtKit, 'createResolver').mockReturnValue({
+          resolve: vi.fn((...args: string[]) => join(...args)),
+          resolvePath: vi.fn(),
+        })
+        let watchCallback: ((event: string, path: string) => Promise<void>) | undefined
+        await prepareMockNuxt({}, {
+          hook: vi.fn((hookName, callback) => {
+            if (hookName === 'builder:watch') {
+              watchCallback = callback
+            }
+          }),
+        })
+
+        await watchCallback!('add', 'cwa/components/Hero/preview.webp')
+
+        const [{ filter }] = (nuxtKit.updateTemplates as Mock).mock.lastCall!
+        expect(filter!({ filename: 'cwa-admin-resources.ts' } as any)).toBe(true)
       })
     })
 

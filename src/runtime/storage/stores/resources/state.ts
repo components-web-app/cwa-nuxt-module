@@ -38,9 +38,19 @@ export interface CwaResourceApiStateSuccess extends SsrApiState {
 
 export declare type CwaResourceApiState = CwaResourceApiStateGeneral | CwaResourceApiStateError | CwaResourceApiStateSuccess
 
+export interface CwaFieldState {
+  status: 'idle' | 'pending' | 'saving' | 'saved' | 'error' | 'conflict'
+  waiting: boolean
+  slow: boolean
+  savedAt?: number
+  error?: { kind: 'network' | 'server' | 'violation' | 'precondition', message: string, status?: number }
+  held?: { user?: { id: string, name: string }, value: unknown }
+}
+
 export interface CwaCurrentResourceInterface {
   data?: CwaResource
   apiState: CwaResourceApiState
+  fieldStates?: { [field: string]: CwaFieldState }
 }
 
 interface PublishableMapping {

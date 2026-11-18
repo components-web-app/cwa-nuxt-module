@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { POPOVER_GAP } from '#cwa/templates/components/core/ui/popover-gap'
 import { computed, ref, watch } from 'vue'
 import { PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { navigateTo } from '#app/composables/router'
@@ -6,6 +7,7 @@ import { useCwa } from '#cwa/composables/cwa'
 import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/resources/resource-utils'
 import { fetchComponentUsage } from '#cwa/admin/component-usage'
 import type { ComponentUsage, ComponentUsagePage } from '#cwa/admin/component-usage'
+import ShareGlyph from '#cwa/templates/components/core/ui/ShareGlyph.vue'
 
 const $cwa = useCwa()
 const currentIri = $cwa.admin.resourceStackManager.currentIri
@@ -63,17 +65,27 @@ async function goTo(routePath: string) {
     >
       <PopoverTrigger
         data-testid="component-usage-badge"
-        :class="[badgeClass, 'cwa:cursor-pointer cwa:hover:bg-yellow/10 cwa:focus-visible:outline-2 cwa:focus-visible:outline-yellow']"
+        class="cwa:inline-flex cwa:h-control cwa:shrink-0 cwa:items-center cwa:px-1 cwa:text-yellow cwa:cursor-pointer cwa:outline-1 cwa:outline-transparent cwa:hover:bg-yellow/10 cwa:aria-expanded:bg-yellow/10 cwa:aria-expanded:shadow-[inset_0_-2px_0_currentColor] cwa:focus-visible:outline-2 cwa:focus-visible:-outline-offset-2 cwa:focus-visible:outline-yellow cwa:pointer-coarse:h-hit"
       >
-        Shared · {{ usage.total }} places
+        <span
+          data-testid="component-usage-pill"
+          :class="badgeClass"
+        >
+          <span class="cwa:sr-only cwa:sm:not-sr-only">Shared · {{ usage.total }} places</span>
+          <span
+            aria-hidden="true"
+            data-testid="component-usage-compact"
+            class="cwa:inline-flex cwa:items-center cwa:gap-1 cwa:sm:hidden"
+          ><ShareGlyph />{{ usage.total }}</span>
+        </span>
       </PopoverTrigger>
       <PopoverPortal>
         <PopoverContent
           side="top"
           align="end"
-          :side-offset="8"
+          :side-offset="POPOVER_GAP"
           data-testid="component-usage-list"
-          class="cwa:z-context cwa:min-w-[220px] cwa:max-w-sm cwa:max-h-[50vh] cwa:overflow-y-auto cwa:p-3 cwa:rounded-lg cwa:dark-blur cwa:outline-dotted cwa:outline-1 cwa:outline-stone-400 cwa:shadow-lg cwa:text-sm cwa:text-light"
+          class="cwa:z-context cwa:min-w-[220px] cwa:max-w-sm cwa:max-h-[50vh] cwa:overflow-y-auto cwa:p-3 cwa:rounded-lg cwa:bg-surface-menu cwa:border cwa:border-line cwa:shadow-lg cwa:text-sm cwa:text-light"
         >
           <ul class="cwa:flex cwa:flex-col cwa:gap-y-2">
             <li
@@ -133,6 +145,13 @@ async function goTo(routePath: string) {
       v-else
       data-testid="component-usage-badge"
       :class="badgeClass"
-    >Shared · {{ usage.total }} places</span>
+    >
+      <span class="cwa:sr-only cwa:sm:not-sr-only">Shared · {{ usage.total }} places</span>
+      <span
+        aria-hidden="true"
+        data-testid="component-usage-compact"
+        class="cwa:inline-flex cwa:items-center cwa:gap-1 cwa:sm:hidden"
+      ><ShareGlyph />{{ usage.total }}</span>
+    </span>
   </template>
 </template>

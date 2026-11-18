@@ -1,9 +1,10 @@
 // @vitest-environment happy-dom
 
 import { describe, expect, vi, test, beforeEach, afterEach } from 'vitest'
-import { createApp, defineComponent, h, ref, nextTick } from 'vue'
+import { createApp, defineAsyncComponent, defineComponent, h, onMounted, onUnmounted, ref, nextTick } from 'vue'
+import { consola } from 'consola'
 import type { Ref } from 'vue'
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { mockNuxtImport } from '@nuxt/test-utils/runtime'
 import { useDataResolver } from './useDataResolver'
 
@@ -73,6 +74,9 @@ describe('useDataResolver', () => {
 
   afterEach(() => {
     vi.useRealTimers()
+    vi.restoreAllMocks()
+    vi.unstubAllEnvs()
+    realVueApp.config.errorHandler = undefined
   })
 
   test('resets allMeta to an empty array on creation and returns control functions', () => {
@@ -88,7 +92,7 @@ describe('useDataResolver', () => {
     wrapper.unmount()
   })
 
-  test('onMounted starts the resolver and fills a slot per component (sync path)', async () => {
+  test('onMounted starts the resolver and fills a slot per component with its exposed metadata (sync path)', async () => {
     const allMeta = ref<any[]>([])
     const components = ref<any[] | undefined>([SyncMetaComponent])
     const props = ref({ iri: '/x' })
@@ -98,7 +102,7 @@ describe('useDataResolver', () => {
     await nextTick()
 
     expect(allMeta.value).toHaveLength(1)
-    expect(allMeta.value[0]).toBeNull()
+    expect(allMeta.value[0]).toMatchObject({ received: { iri: '/x' } })
     wrapper.unmount()
   })
 
@@ -119,8 +123,8 @@ describe('useDataResolver', () => {
     await nextTick()
 
     expect(allMeta.value).toHaveLength(2)
-    expect(allMeta.value[0]).toBeNull()
-    expect(allMeta.value[1]).toBeNull()
+    expect(allMeta.value[0]).toMatchObject({ received: { iri: '/multi' } })
+    expect(allMeta.value[1]).toMatchObject({ which: 'second' })
     wrapper.unmount()
   })
 
@@ -134,7 +138,7 @@ describe('useDataResolver', () => {
     await nextTick()
 
     expect(allMeta.value).toHaveLength(1)
-    expect(allMeta.value[0]).toBeNull()
+    expect(allMeta.value[0]).toMatchObject({ received: { iri: '/global' } })
     wrapper.unmount()
   })
 
@@ -164,7 +168,7 @@ describe('useDataResolver', () => {
 
     expect(validator).toHaveBeenCalled()
     expect(allMeta.value).toHaveLength(1)
-    expect(allMeta.value[0]).toBeNull()
+    expect(allMeta.value[0]).toMatchObject({ received: { iri: '/valid' } })
     wrapper.unmount()
   })
 
@@ -278,7 +282,7 @@ describe('useDataResolver', () => {
   })
 
   describe('async component resolution', () => {
-    test('treats an already-resolved async wrapper as resolved immediately (completes synchronously)', async () => {
+    test('reads the metadata of an already-resolved async wrapper once its template ref is set', async () => {
       const allMeta = ref<any[]>([])
       const flag = { value: true }
       const asyncComp = makeAsyncWrapper(flag)
@@ -289,7 +293,7 @@ describe('useDataResolver', () => {
       await nextTick()
 
       expect(allMeta.value).toHaveLength(1)
-      expect(allMeta.value[0]).toBeNull()
+      expect(allMeta.value[0]).toMatchObject({ asyncMeta: { iri: '/async-ready' } })
       wrapper.unmount()
     })
 
@@ -340,6 +344,137 @@ describe('useDataResolver', () => {
       expect(allMeta.value).toHaveLength(1)
       expect(allMeta.value[0]).toEqual({ received: { iri: '/pending' } })
       expect(allMeta.value[0]).not.toEqual({ asyncMeta: { iri: '/pending' } })
+      wrapper.unmount()
+    })
+  })
+
+  describe('detached instances still loading (#461)', () => {
+    function deferredComponent() {
+      const mounted = vi.fn()
+      const unmounted = vi.fn()
+      let load!: () => void
+      const Inner = defineComponent({
+        setup(_props, { expose }) {
+          expose({ loaded: true })
+          onMounted(mounted)
+          onUnmounted(unmounted)
+          return () => h('div')
+        },
+      })
+      const component = defineAsyncComponent(() => new Promise<typeof Inner>((resolve) => {
+        load = () => resolve(Inner)
+      }))
+      return { component, mounted, unmounted, load: () => load() }
+    }
+
+    async function settle() {
+      await flushPromises()
+      await new Promise(resolve => setTimeout(resolve, 30))
+      await flushPromises()
+    }
+
+    test('reads the metadata once the chunk loads, then unmounts the detached instance', async () => {
+      const { component, mounted, unmounted, load } = deferredComponent()
+      const allMeta = ref<any[]>([])
+      const { wrapper } = mountResolver(allMeta, { components: ref([component]), props: ref({}) })
+      await nextTick()
+
+      load()
+      await settle()
+
+      expect(allMeta.value[0]).toMatchObject({ loaded: true })
+      expect(mounted).toHaveBeenCalledTimes(1)
+      expect(unmounted).toHaveBeenCalledTimes(1)
+      wrapper.unmount()
+    })
+
+    test('unmounting the owner before the chunk loads unmounts the detached instance and stops polling', async () => {
+      const setInterval = vi.spyOn(window, 'setInterval')
+      const clearInterval = vi.spyOn(window, 'clearInterval')
+      const { component, mounted, unmounted, load } = deferredComponent()
+      const allMeta = ref<any[]>([])
+      const { wrapper } = mountResolver(allMeta, { components: ref([component]), props: ref({}) })
+      await nextTick()
+      const polling = setInterval.mock.results[0]!.value
+
+      wrapper.unmount()
+      expect(clearInterval).toHaveBeenCalledWith(polling)
+      load()
+      await settle()
+
+      expect(unmounted).toHaveBeenCalledTimes(mounted.mock.calls.length)
+    })
+
+    test('stopDataResolver unmounts the detached instances still loading', async () => {
+      const { component, mounted, unmounted, load } = deferredComponent()
+      const allMeta = ref<any[]>([])
+      const { api, wrapper } = mountResolver(allMeta, { components: ref([component]), props: ref({}) })
+      await nextTick()
+
+      api.stopDataResolver!()
+      load()
+      await settle()
+
+      expect(unmounted).toHaveBeenCalledTimes(mounted.mock.calls.length)
+      expect(allMeta.value[0]).toBeUndefined()
+      wrapper.unmount()
+    })
+
+    test('new inputs unmount the detached instances of the previous ones still loading', async () => {
+      const { component, mounted, unmounted, load } = deferredComponent()
+      const allMeta = ref<any[]>([])
+      const components = ref<any[]>([component])
+      const { wrapper } = mountResolver(allMeta, { components, props: ref({}) })
+      await nextTick()
+
+      components.value = [SyncMetaComponent]
+      await nextTick()
+      load()
+      await settle()
+
+      expect(unmounted).toHaveBeenCalledTimes(mounted.mock.calls.length)
+      wrapper.unmount()
+    })
+  })
+
+  describe('a component that cannot be rendered (#461)', () => {
+    const Throws = defineComponent({
+      name: 'Throws',
+      setup(_props, { expose }) {
+        expose({ styles: { classes: { Dark: 'dark' } } })
+        return () => {
+          throw new Error('no data')
+        }
+      },
+    })
+
+    test('gives no metadata and never reaches the app error handler, with a warning in development', async () => {
+      const errorHandler = vi.fn()
+      realVueApp.config.errorHandler = errorHandler
+      const warn = vi.spyOn(consola, 'warn').mockImplementation(() => undefined)
+      const allMeta = ref<any[]>([])
+
+      const { wrapper } = mountResolver(allMeta, { components: ref([Throws, SyncMetaComponent]), props: ref({ iri: '/new' }) })
+      await flushPromises()
+
+      expect(allMeta.value[0]).toBeNull()
+      expect(allMeta.value[1]).toMatchObject({ received: { iri: '/new' } })
+      expect(errorHandler).not.toHaveBeenCalled()
+      expect(warn).toHaveBeenCalledTimes(1)
+      expect(warn.mock.calls[0]![0]).toContain('Throws could not be rendered')
+      wrapper.unmount()
+    })
+
+    test('warns nothing in production', async () => {
+      vi.stubEnv('DEV', false)
+      const warn = vi.spyOn(consola, 'warn').mockImplementation(() => undefined)
+      const allMeta = ref<any[]>([])
+
+      const { wrapper } = mountResolver(allMeta, { components: ref([Throws]), props: ref({}) })
+      await flushPromises()
+
+      expect(allMeta.value[0]).toBeNull()
+      expect(warn).not.toHaveBeenCalled()
       wrapper.unmount()
     })
   })

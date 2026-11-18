@@ -3,6 +3,9 @@ import { computed } from 'vue'
 import { useCwaResourceManagerTab } from '#cwa/composables/cwa-resource-manager-tab'
 import { DEFAULT_TAB_ORDER } from '#cwa/admin/manager-tabs-resolver'
 import { componentGroupCapacity } from '#cwa/resources/component-group-capacity'
+import CwaUiBadge from '#cwa/templates/components/ui/Badge.vue'
+import CwaUiButton from '#cwa/templates/components/ui/Button.vue'
+import CwaUiManagerTab from '#cwa/templates/components/ui/ManagerTab.vue'
 
 const { exposeMeta, iri, resource, $cwa } = useCwaResourceManagerTab({
   name: 'Group',
@@ -36,29 +39,27 @@ function addEnd() {
 </script>
 
 <template>
-  <div class="cwa:flex cwa:gap-x-4 cwa:items-center">
-    <span
-      data-testid="group-full"
-      class="cwa:flex cwa:gap-x-4"
-      :title="fullReason"
-    >
-      <CwaUiFormButton
-        :disabled="capacity.full"
-        @click="addStart"
-      >
-        Add to start
-      </CwaUiFormButton>
-      <CwaUiFormButton
-        :disabled="capacity.full"
-        @click="addEnd"
-      >
-        Add to end
-      </CwaUiFormButton>
-    </span>
-    <span
+  <CwaUiManagerTab>
+    <CwaUiButton
+      label="Add to start"
+      data-testid="group-add-start"
+      :disabled="capacity.full"
+      :disabled-reason="fullReason"
+      @click="addStart"
+    />
+    <CwaUiButton
+      label="Add to end"
+      data-testid="group-add-end"
+      :disabled="capacity.full"
+      :disabled-reason="fullReason"
+      @click="addEnd"
+    />
+    <CwaUiBadge
       v-if="capacity.over"
+      tone="warning"
       data-testid="group-over-limit"
-      class="cwa:text-sm cwa:text-orange"
-    >Holds {{ capacity.count }} of {{ capacity.max }}. Remove components to add more.</span>
-  </div>
+    >
+      Holds {{ capacity.count }} of {{ capacity.max }}. Remove components to add more.
+    </CwaUiBadge>
+  </CwaUiManagerTab>
 </template>

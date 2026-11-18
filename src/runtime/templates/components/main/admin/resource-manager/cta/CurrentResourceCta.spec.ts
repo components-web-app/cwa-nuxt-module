@@ -1,16 +1,33 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
+import { nextTick, reactive } from 'vue'
 import CurrentResourceCta from './CurrentResourceCta.vue'
 import * as cwaComposable from '#cwa/composables/cwa'
 import { useCloneMode } from '#cwa/admin/clone-mode'
 import { NEW_RESOURCE_IRI } from '#cwa/storage/stores/resources/state'
 
 const ButtonStub = {
-  name: 'CwaUiFormButton',
-  props: ['disabled', 'options'],
-  emits: ['click'],
-  template: '<button type="button" :disabled="disabled" @click="$emit(\'click\')"><slot /></button>',
+  name: 'CwaUiButton',
+  props: ['label', 'shortLabel', 'disabled', 'disabledReason', 'options', 'loading', 'largeIcon'],
+  emits: ['click', 'select'],
+  template: '<button type="button" :disabled="disabled" @click="$emit(\'click\')">{{ label }}</button>',
+}
+
+const stubs = { Button: ButtonStub }
+
+function flatten(entries: any[]) {
+  return entries.flatMap(entry => 'items' in entry ? entry.items : [entry])
+}
+
+function stackState() {
+  const state = reactive<Record<string, any>>({})
+  return {
+    getState: vi.fn((key: string) => state[key]),
+    setState: vi.fn((key: string, value: any) => {
+      state[key] = value
+    }),
+  }
 }
 
 function mountCta() {
@@ -18,7 +35,7 @@ function mountCta() {
   const $cwa = {
     resourcesManager: { updateResource },
     resources: { getResource: vi.fn(() => ({ value: undefined })) },
-    admin: { resourceStackManager: { resourceStack: { value: [] } } },
+    admin: { resourceStackManager: { resourceStack: { value: [] }, ...stackState() } },
   }
   vi.spyOn(cwaComposable, 'useCwa').mockReturnValue($cwa as any)
   const wrapper = mount(CurrentResourceCta, {
@@ -30,7 +47,7 @@ function mountCta() {
         '_metadata': { persisted: true, publishable: { published: false } },
       } as any,
     },
-    global: { stubs: { CwaUiFormButton: ButtonStub } },
+    global: { stubs },
   })
   return { wrapper, updateResource }
 }
@@ -44,11 +61,29 @@ describe('CurrentResourceCta', () => {
     vi.useRealTimers()
   })
 
+  test('a draft that is not being scheduled offers Publish now as the main action (#459)', () => {
+    const { wrapper } = mountCta()
+
+    expect(wrapper.findComponent(ButtonStub).props('label')).toBe('Publish now')
+    expect(wrapper.findComponent(ButtonStub).props('disabled')).toBe(false)
+  })
+
+  test('below sm Publish now reads Publish, so the tab strip keeps its room on a phone (#460)', () => {
+    const { wrapper } = mountCta()
+
+    expect(wrapper.findComponent(ButtonStub).props('shortLabel')).toBe('Publish')
+  })
+
+  test('the bar CTA\'s ⋮ asks for the large icon', () => {
+    const { wrapper } = mountCta()
+    expect(wrapper.findComponent(ButtonStub).props('largeIcon')).toBe(true)
+  })
+
   test('Publish publishes the draft by the API\'s clock, sending "now" (#381)', async () => {
     vi.useFakeTimers({ now: new Date('2026-09-25T12:00:00Z'), toFake: ['Date'] })
     const { wrapper, updateResource } = mountCta()
 
-    expect(wrapper.text()).toBe('Publish')
+    expect(wrapper.text()).toBe('Publish now')
     await wrapper.find('button').trigger('click')
     await flushPromises()
 
@@ -56,6 +91,87 @@ describe('CurrentResourceCta', () => {
     expect(updateResource).toHaveBeenCalledWith({
       endpoint: '/component/draft',
       data: { publishedAt: 'now' },
+    })
+  })
+
+  describe('publishing a draft from the pinned action (#459)', () => {
+    const NOW = new Date('2026-09-25T12:00:00Z')
+
+    function mountDraft(publishedAt?: string) {
+      let finish: (saved?: unknown) => void = () => {}
+      const updateResource = vi.fn(() => new Promise((resolve) => {
+        finish = resolve
+      }))
+      const stack = { resourceStack: { value: [] }, ...stackState() }
+      const $cwa = {
+        resourcesManager: { updateResource },
+        resources: { getResource: vi.fn(() => ({ value: undefined })) },
+        admin: { resourceStackManager: stack },
+      }
+      vi.spyOn(cwaComposable, 'useCwa').mockReturnValue($cwa as any)
+      const wrapper = mount(CurrentResourceCta, {
+        props: {
+          currentIri: '/component/draft',
+          resource: { '@id': '/component/draft', '@type': 'HtmlContent', publishedAt, '_metadata': { persisted: true, publishable: { published: false } } } as any,
+        },
+        global: { stubs },
+      })
+      const button = () => wrapper.findComponent(ButtonStub)
+      const labels = () => flatten(button().props('options') as any[]).map(option => option.label)
+      return { wrapper, button, labels, stack, updateResource, finish: (saved?: unknown) => finish(saved) }
+    }
+
+    test('offers Cancel schedule only for a draft that is scheduled, not for one with scheduling on and no date yet', async () => {
+      vi.useFakeTimers({ now: NOW, toFake: ['Date'] })
+      expect(mountDraft('2026-10-01T08:00:00Z').labels()).toContain('Cancel schedule')
+
+      const unscheduled = mountDraft()
+      unscheduled.stack.setState('publishScheduling', true)
+      await nextTick()
+      expect(unscheduled.button().props('label')).toBe('Schedule')
+      expect(unscheduled.labels()).not.toContain('Cancel schedule')
+    })
+
+    test('choosing Cancel schedule clears the draft\'s publication date', async () => {
+      vi.useFakeTimers({ now: NOW, toFake: ['Date'] })
+      const { button, updateResource } = mountDraft('2026-10-01T08:00:00Z')
+
+      button().vm.$emit('select', { label: 'Cancel schedule', value: 'cancel-schedule' })
+      await flushPromises()
+
+      expect(updateResource).toHaveBeenCalledTimes(1)
+      expect(updateResource).toHaveBeenCalledWith({ endpoint: '/component/draft', data: { publishedAt: null } })
+    })
+
+    test('with scheduling on the main action reads Schedule and is disabled until a date is chosen, saying why', async () => {
+      vi.useFakeTimers({ now: NOW, toFake: ['Date'] })
+      const { wrapper, button, stack, updateResource } = mountDraft()
+      stack.setState('publishScheduling', true)
+      await nextTick()
+
+      expect(button().props('label')).toBe('Schedule')
+      expect(button().props('disabled')).toBe(true)
+      expect(button().props('disabledReason')).toBe('Choose a date first')
+
+      stack.setState('publishScheduleValue', '2026-10-01T08:00:00.000Z')
+      await nextTick()
+      expect(button().props('disabled')).toBe(false)
+      await wrapper.find('button').trigger('click')
+      expect(updateResource).toHaveBeenCalledWith({ endpoint: '/component/draft', data: { publishedAt: '2026-10-01T08:00:00.000Z' } })
+    })
+
+    test('shows loading while publishing, and a second press does not publish twice', async () => {
+      const { wrapper, button, updateResource, finish } = mountDraft()
+
+      await wrapper.find('button').trigger('click')
+      await nextTick()
+      expect(button().props('loading')).toBe(true)
+      await wrapper.find('button').trigger('click')
+      expect(updateResource).toHaveBeenCalledTimes(1)
+
+      finish({ '@id': '/component/draft' })
+      await flushPromises()
+      expect(button().props('loading')).toBe(false)
     })
   })
 
@@ -67,7 +183,7 @@ describe('CurrentResourceCta', () => {
       const $cwa = {
         resourcesManager: { updateResource: vi.fn(), initAddResource: vi.fn() },
         resources: { getResource: vi.fn((iri: string) => ({ value: groups[iri] })) },
-        admin: { resourceStackManager: { resourceStack: { value: [{ iri: '/component/c1' }, { iri: '/_/component_positions/p1' }, { iri: groupIri }, { iri: '/_/layouts/l1' }] } } },
+        admin: { resourceStackManager: { resourceStack: { value: [{ iri: '/component/c1' }, { iri: '/_/component_positions/p1' }, { iri: groupIri }, { iri: '/_/layouts/l1' }] }, ...stackState() } },
       }
       vi.spyOn(cwaComposable, 'useCwa').mockReturnValue($cwa as any)
       const wrapper = mount(CurrentResourceCta, {
@@ -75,22 +191,23 @@ describe('CurrentResourceCta', () => {
           currentIri,
           resource: { '@id': currentIri, '_metadata': { persisted: true } } as any,
         },
-        global: { stubs: { CwaUiFormButton: ButtonStub } },
+        global: { stubs },
       })
-      const labels = (wrapper.findComponent(ButtonStub).props('options') as any[]).flat().map(option => option.label)
-      return { labels }
+      const options = flatten(wrapper.findComponent(ButtonStub).props('options') as any[])
+      return { labels: options.filter(option => !option.disabled).map(option => option.label), disabled: options.filter(option => option.disabled) }
     }
 
-    test('offers Clone and Move when the component\'s own group is full, without the add options (#157, #398, #409)', () => {
-      const { labels } = mountFor('/component/c1', { maxComponents: 1, componentPositions: ['/_/component_positions/p1'] })
+    test('offers Clone and Move when the component\'s own group is full, with one disabled add row that says why (#157, #398, #409, #459)', () => {
+      const { labels, disabled } = mountFor('/component/c1', { maxComponents: 1, componentPositions: ['/_/component_positions/p1'], reference: 'Main content' })
 
       expect(labels).toEqual(['Clone', 'Move'])
+      expect(disabled).toEqual([expect.objectContaining({ label: 'Add before or after', disabledReason: 'Main content is full: 1 of 1 components.' })])
     })
 
     test.each([
-      [groupIri, ['Add to Start', 'Add to End']],
-      ['/component/c1', ['Add Before', 'Add After', 'Clone', 'Move']],
-      ['/_/component_positions/p1', ['Add Before', 'Add After']],
+      [groupIri, ['Add to start', 'Add to end']],
+      ['/component/c1', ['Add before', 'Add after', 'Clone', 'Move']],
+      ['/_/component_positions/p1', ['Add before', 'Add after']],
     ])('offers adding for %s while its group has room', (currentIri, expected) => {
       const { labels } = mountFor(currentIri, { maxComponents: 2, componentPositions: ['/_/component_positions/p1'] })
 
@@ -134,6 +251,7 @@ describe('CurrentResourceCta', () => {
             resourceStack: { value: (ops.stack ?? [currentIri]).map(iri => ({ iri })) },
             currentStackItem: { value: { iri: currentIri, displayName: 'Hero Section', domElements: { value: [textElement('  Shared source\n component ')] } } },
             isEditingLayout: { value: ops.isEditingLayout ?? false },
+            ...stackState(),
           },
         },
       }
@@ -144,10 +262,10 @@ describe('CurrentResourceCta', () => {
           currentIri,
           resource: { '@id': currentIri, '@type': 'HtmlContent', '_metadata': metadata } as any,
         },
-        global: { stubs: { CwaUiFormButton: ButtonStub } },
+        global: { stubs },
       })
       const button = wrapper.findComponent(ButtonStub)
-      const options = (button.props('options') as any[]).flat()
+      const options = button.exists() ? flatten(button.props('options') as any[]) : []
       return { $cwa, button, options, labels: options.map(option => option.label), emptyStack }
     }
 
@@ -178,7 +296,7 @@ describe('CurrentResourceCta', () => {
     test('choosing Clone starts clone mode with the component IRI and name and empties the stack', async () => {
       const { $cwa, button, emptyStack } = mountClone('/component/c1')
 
-      button.vm.$emit('click', 'clone')
+      button.vm.$emit('select', { label: 'Clone', value: 'clone' })
       await flushPromises()
 
       expect(useCloneMode($cwa as any).source.value).toEqual({ iri: '/component/c1', name: 'Hero Section', excerpt: 'Shared source component' })
@@ -189,7 +307,7 @@ describe('CurrentResourceCta', () => {
     test('choosing Clone holds the position it was started from, also a page-data slot\'s, so that instance is outlined apart from the others', async () => {
       const { $cwa, button } = mountClone('/component/c1', { persisted: true }, { stack: ['/component/c1', '/_/component_positions/p1', '/_/component_groups/g1'], byId: { '/_/component_positions/p1': { pageDataProperty: 'hero' } } })
 
-      button.vm.$emit('click', 'clone')
+      button.vm.$emit('select', { label: 'Clone', value: 'clone' })
       await flushPromises()
 
       expect(useCloneMode($cwa as any).source.value).toEqual({ iri: '/component/c1', name: 'Hero Section', excerpt: 'Shared source component', positionIri: '/_/component_positions/p1' })
@@ -250,7 +368,7 @@ describe('CurrentResourceCta', () => {
         test('choosing Move records the page data and property on screen, as the slot\'s position is the same on every page-data page', async () => {
           const { $cwa, button } = mountClone('/component/c1', { persisted: true }, { stack, pageDataOf: { [POSITION]: PAGE_DATA }, byId: { ...slot, [PAGE_DATA]: { hero: '/component/c1' } } })
 
-          button.vm.$emit('click', 'move')
+          button.vm.$emit('select', { label: 'Move', value: 'move' })
           await flushPromises()
 
           expect($cwa.resources.pageDataIriOf).toHaveBeenCalledWith(POSITION)
@@ -267,7 +385,7 @@ describe('CurrentResourceCta', () => {
       test.each([false, true])('choosing Move starts move mode with the selected position and whether it is in the layout (%s), and empties the stack', async (isEditingLayout) => {
         const { $cwa, button, emptyStack } = mountClone('/component/c1', { persisted: true }, { stack, isEditingLayout, byId: { [POSITION]: { componentGroup: GROUP } } })
 
-        button.vm.$emit('click', 'move')
+        button.vm.$emit('select', { label: 'Move', value: 'move' })
         await flushPromises()
 
         expect(useCloneMode($cwa as any).source.value).toEqual({ iri: '/component/c1', name: 'Hero Section', excerpt: 'Shared source component', positionIri: POSITION, move: { positionIri: POSITION, fromLayout: isEditingLayout, from: { componentPosition: POSITION } } })

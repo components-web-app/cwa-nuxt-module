@@ -2,13 +2,18 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { resetLocalTimeZone } from '@internationalized/date'
+import { axe } from '../../../../../test/utils/axe'
+import { drawsOpenState } from '../../../../../test/utils/kit-css'
+import { fakeFieldModel } from '../../../../../playground/app/kit/fake-field-model'
 import DatePicker from './DatePicker.vue'
+import Field from '../core/ui/Field.vue'
+import { formatDateTime } from '#cwa/resources/date-time-input'
 
 const originalTz = process.env.TZ
 
 function mountPicker(props: { modelValue?: string | null, min?: string, label?: string } = {}) {
   return mount(DatePicker, {
-    props: { modelValue: null, ...props },
+    props: { modelValue: null, label: 'Go live', ...props },
     attachTo: document.body,
   })
 }
@@ -61,7 +66,7 @@ describe('CwaUiDatePicker', () => {
 
     test('its label names the field for assistive technology', () => {
       const wrapper = mountPicker({ modelValue: '2026-10-01T08:00:00.000Z', label: 'Goes live' })
-      const label = wrapper.find('[data-date-picker-label]')
+      const label = wrapper.find('label')
 
       expect(label.text()).toBe('Goes live')
       expect(wrapper.find('[role="group"]').attributes('aria-labelledby')).toBe(label.attributes('id'))
@@ -99,6 +104,21 @@ describe('CwaUiDatePicker', () => {
 
       expect(emitted(wrapper)).toEqual([])
     })
+  })
+
+  test('the calendar button shows itself selected while the calendar is open, and not once it closes, with no axe violations open', async () => {
+    const wrapper = mountPicker()
+    const button = () => wrapper.get('[data-date-picker-trigger]').element
+    expect(drawsOpenState(button())).toBe(false)
+
+    await openCalendar(wrapper)
+    expect(drawsOpenState(button())).toBe(true)
+    expect(await axe(document.body, { rules: { region: { enabled: false } } })).toHaveNoViolations()
+
+    await wrapper.get('[data-date-picker-trigger]').trigger('click')
+    await flushPromises()
+    expect(drawsOpenState(button())).toBe(false)
+    wrapper.unmount()
   })
 
   describe('the calendar', () => {
@@ -176,5 +196,34 @@ describe('CwaUiDatePicker', () => {
       expect(inBody('[data-month-label]')).toBeNull()
       expect(emitted(wrapper)).toEqual([])
     })
+  })
+
+  describe('on the kit field (#460)', () => {
+    test('a model is shown and written, and its save state is the edge line with the field marked invalid on error', async () => {
+      const model = fakeFieldModel<string>('2026-10-01T08:00:00.000Z', 'error')
+      const wrapper = mount(DatePicker, { props: { label: 'Go live', model }, attachTo: document.body })
+
+      expect(segment(wrapper, 'hour').text()).toBe('09')
+      expect(wrapper.get('[data-testid="field-status-line"]').attributes('data-line')).toBe('error')
+      expect(wrapper.get('[role="group"]').attributes('aria-invalid')).toBe('true')
+
+      await segment(wrapper, 'hour').trigger('keydown', { key: 'ArrowUp' })
+      expect(model.model.value).toBe('2026-10-01T09:00:00.000Z')
+    })
+
+    test('has no axe violations', async () => {
+      const wrapper = mountPicker({ modelValue: '2026-10-01T08:00:00.000Z', label: 'Go live' })
+
+      expect(await axe(wrapper.element as HTMLElement)).toHaveNoViolations()
+    })
+  })
+})
+
+describe('DatePicker in a conflict (#461)', () => {
+  test('hands the field a format, so theirs and yours read as the control shows them', () => {
+    const wrapper = mount(DatePicker, { props: { label: 'Go live', modelValue: '2026-11-20T09:00:00.000Z' } })
+    const format = wrapper.findComponent(Field).props('format') as (value: unknown) => string
+    expect(format('2026-11-20T09:00:00.000Z')).toBe(formatDateTime('2026-11-20T09:00:00.000Z'))
+    expect(format('2026-11-20T09:00:00.000Z')).not.toContain('T09')
   })
 })

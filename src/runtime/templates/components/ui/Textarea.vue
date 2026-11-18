@@ -1,0 +1,139 @@
+<script setup lang="ts">
+import { computed, getCurrentInstance, inject, nextTick, onMounted, useId, useTemplateRef, watch } from 'vue'
+import { consola } from 'consola'
+import Field from '../core/ui/Field.vue'
+import { useFieldModel } from '../core/ui/field-context'
+import { fieldDisabled, fieldFill, placeholderLook } from '../core/ui/field-looks'
+import { formSurfaceKey, managerTabKey } from '../core/ui/field-keys'
+import type { ResourceModelField } from '#cwa/resources/model-editors'
+
+const LINE_HEIGHT_REM = 1.25
+const PADDING_REM = 1.25
+
+const props = withDefaults(defineProps<{
+  label: string
+  labelHidden?: boolean
+  info?: string
+  description?: string
+  optional?: boolean
+  placeholder?: string
+  disabled?: boolean
+  disabledReason?: string
+  readonly?: boolean
+  maxlength?: number
+  counter?: boolean
+  maxRows?: number
+  field?: string
+  model?: ResourceModelField<string>
+  modelValue?: string | null
+}>(), {
+  labelHidden: false,
+  info: undefined,
+  description: undefined,
+  optional: false,
+  placeholder: undefined,
+  disabled: false,
+  disabledReason: undefined,
+  readonly: false,
+  maxlength: undefined,
+  counter: false,
+  maxRows: 8,
+  field: undefined,
+  model: undefined,
+  modelValue: undefined,
+})
+
+const emit = defineEmits<{ 'update:modelValue': [value: string | null | undefined] }>()
+
+const inBar = !!inject(managerTabKey, undefined) && !inject(formSurfaceKey, undefined)
+const app = getCurrentInstance()?.appContext.app
+if (inBar && import.meta.env.DEV && app && !warnedApps.has(app)) {
+  warnedApps.add(app)
+  consola.warn(`CwaUiTextarea "${props.label}" renders nothing in a manager tab: the bar is one row. Edit multi-line text on the page with an inline editor (useCwaInlineEditor, offered from the bar by CwaUiInlineHandoff), or in a dialog.`)
+}
+
+const { model, value, state, unbound } = useFieldModel<string>(props, emit)
+const id = useId()
+const counterId = useId()
+const textarea = useTemplateRef<HTMLTextAreaElement>('textarea')
+
+const length = computed(() => (value.value ?? '').length)
+const maxHeight = computed(() => `${props.maxRows * LINE_HEIGHT_REM + PADDING_REM}rem`)
+const minHeight = `${3 * LINE_HEIGHT_REM + PADDING_REM}rem`
+
+function fitsContentNatively() {
+  return typeof CSS !== 'undefined' && typeof CSS.supports === 'function' && CSS.supports('field-sizing', 'content')
+}
+
+function fit() {
+  const element = textarea.value
+  if (!element || fitsContentNatively()) {
+    return
+  }
+  element.style.height = 'auto'
+  element.style.height = `${element.scrollHeight}px`
+}
+
+function onInput(event: Event) {
+  value.value = (event.target as HTMLTextAreaElement).value
+  fit()
+}
+
+watch(value, () => nextTick(fit))
+onMounted(fit)
+</script>
+
+<script lang="ts">
+const warnedApps = new WeakSet<object>()
+</script>
+
+<template>
+  <Field
+    v-if="!inBar"
+    :disabled-reason="disabled ? disabledReason : undefined"
+    :label="label"
+    :label-hidden="labelHidden"
+    :info="info"
+    :description="description"
+    :optional="optional"
+    width="full"
+    multiline
+    :state="state"
+    :model="model"
+    :control-id="id"
+    :inactive="disabled || unbound || readonly"
+    :name="field"
+  >
+    <template #default="{ describedBy, tone }">
+      <textarea
+        :id="id"
+        ref="textarea"
+        :value="value ?? ''"
+        :placeholder="placeholder"
+        :maxlength="maxlength"
+        :disabled="disabled || unbound"
+        :readonly="readonly"
+        rows="3"
+        :aria-describedby="[describedBy, counter ? counterId : undefined].filter(Boolean).join(' ') || undefined"
+        :aria-invalid="tone === 'danger' ? 'true' : undefined"
+        data-testid="textarea"
+        class="cwa:block cwa:w-full cwa:resize-none cwa:appearance-none cwa:border-0 cwa:px-3 cwa:py-2.5 cwa:text-control cwa:leading-5 cwa:outline-1 cwa:outline-transparent cwa:[field-sizing:content] cwa:focus:ring-0 cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-accent-fg cwa:pointer-coarse:text-base"
+        :class="[readonly ? 'cwa:bg-transparent' : fieldFill(tone, disabled || unbound), disabled || unbound ? fieldDisabled : 'cwa:text-fg', placeholderLook(disabled || unbound)]"
+        :style="{ minHeight, maxHeight }"
+        @input="onInput"
+      />
+    </template>
+    <template
+      v-if="counter"
+      #after
+    >
+      <p
+        :id="counterId"
+        data-testid="textarea-counter"
+        class="cwa:mt-1 cwa:mb-0 cwa:text-end cwa:text-helper cwa:tabular-nums cwa:text-fg-muted"
+      >
+        {{ maxlength ? `${length} / ${maxlength}` : length }}
+      </p>
+    </template>
+  </Field>
+</template>

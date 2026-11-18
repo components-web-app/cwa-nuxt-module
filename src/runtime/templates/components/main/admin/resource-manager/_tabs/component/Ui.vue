@@ -1,15 +1,17 @@
 <script lang="ts" setup>
-import { computed, onMounted, ref, watch, watchEffect } from 'vue'
-import { watchOnce } from '@vueuse/core'
+import { computed, ref, watchEffect } from 'vue'
 import {
   useCwaResourceManagerTab,
 } from '#cwa/composables/cwa-resource-manager-tab'
 import { DEFAULT_TAB_ORDER } from '#cwa/admin/manager-tabs-resolver'
 import type { CwaResourceMeta } from '#cwa/composables/cwa-resource'
 import { useCwaResourceModel } from '#cwa/composables/cwa-resource-model'
-import { useCwaSelect } from '#cwa/composables/cwa-select'
 import { useDataResolver } from '#cwa/templates/components/core/useDataResolver'
-import type { SelectOption } from '#cwa/composables/cwa-select-input'
+import type { ResourceModelField } from '#cwa/resources/model-editors'
+import type { MenuItem } from '#cwa/templates/components/core/ui/menu-entries'
+import CwaUiManagerTab from '#cwa/templates/components/ui/ManagerTab.vue'
+import CwaUiMultiSelect from '#cwa/templates/components/ui/MultiSelect.vue'
+import CwaUiSelect from '#cwa/templates/components/ui/Select.vue'
 import { deriveSelectedStyles, mergeSelectedStyles } from '#cwa/composables/cwa-styles'
 
 const { exposeMeta, $cwa, iri } = useCwaResourceManagerTab({
@@ -17,61 +19,45 @@ const { exposeMeta, $cwa, iri } = useCwaResourceManagerTab({
   order: DEFAULT_TAB_ORDER,
 })
 
-const savedUiComponent = computed(() => iri.value ? $cwa.resources.getResource(iri.value).value?.data?.uiComponent : undefined)
-
-const uiComponentModel = useCwaResourceModel<string>(iri, 'uiComponent', {
-  debounceTime: 0,
-})
-const uiClassNamesModel = useCwaResourceModel<string[]>(iri, 'uiClassNames', {
-  debounceTime: 0,
-})
-
-const uiSelect = useCwaSelect(uiComponentModel.model)
+exposeMeta.fields.push('uiComponent', 'uiClassNames')
 
 const componentMeta = ref<(CwaResourceMeta | null)[]>([])
 
 const current = computed(() => $cwa.admin.resourceStackManager.currentStackItem.value)
 
-const uiOptions = computed(() => {
-  const options: SelectOption[] = [{
-    label: 'Default',
-    value: null,
-  }]
-  componentMeta.value.forEach((meta, index) => {
-    // it seems meta can be null when re-mounting the meta resolver when changing to a draft from live (editing)
-    options.push({
-      label: meta?.cwaResource.name || current.value?.ui?.[index] || 'Unknown',
-      value: current.value?.ui?.[index],
-    })
-  })
-  return options
-})
-
 const styleClasses = computed<Record<string, string | string[]>>(() => current.value?.styles?.value?.classes || {})
 const isMultipleStyles = computed(() => !!current.value?.styles?.value?.multiple)
 const showStyleSelect = computed(() => Object.keys(styleClasses.value).length > 0)
 
-const styleNameOptions = computed<SelectOption[]>(() =>
+const uiModel = useCwaResourceModel<string>(iri, 'uiComponent', {
+  debounceTime: 0,
+  alsoSend: (_value, at) => $cwa.resources.getResource(at).value?.data?.uiClassNames?.length ? { uiClassNames: null } : undefined,
+})
+
+const styleModel = useCwaResourceModel<string[] | string, string[]>(iri, 'uiClassNames', {
+  debounceTime: 0,
+  get: (stored) => {
+    const names = deriveSelectedStyles(stored, styleClasses.value)
+    return isMultipleStyles.value ? names : names[0] ?? null
+  },
+  set: (shown) => {
+    const names = Array.isArray(shown) ? shown : shown ? [shown] : []
+    const merged = mergeSelectedStyles(names, styleClasses.value)
+    return merged.length ? merged : null
+  },
+})
+
+const styleNamesModel = styleModel as unknown as ResourceModelField<string[]>
+const styleNameModel = styleModel as unknown as ResourceModelField<string>
+
+const uiOptions = computed<MenuItem[]>(() => (current.value?.ui ?? []).map((ui, index) => ({
+  label: componentMeta.value[index]?.cwaResource.name || ui,
+  value: ui,
+})))
+
+const styleNameOptions = computed<MenuItem[]>(() =>
   Object.keys(styleClasses.value).map(name => ({ label: name, value: name })),
 )
-const singleStyleOptions = computed<SelectOption[]>(() => [
-  { label: 'Default', value: null },
-  ...styleNameOptions.value,
-])
-
-const selectedStyleNames = computed<string[]>({
-  get: () => deriveSelectedStyles(uiClassNamesModel.model.value, styleClasses.value),
-  set: (names) => {
-    const merged = mergeSelectedStyles(names, styleClasses.value)
-    uiClassNamesModel.model.value = merged.length ? merged : null
-  },
-})
-const selectedStyleName = computed<string | null>({
-  get: () => deriveSelectedStyles(uiClassNamesModel.model.value, styleClasses.value)[0] ?? null,
-  set: (name) => {
-    uiClassNamesModel.model.value = name ? mergeSelectedStyles([name], styleClasses.value) : null
-  },
-})
 
 const disabled = exposeMeta.disabled
 
@@ -100,53 +86,39 @@ const { startDataResolver } = useDataResolver(componentMeta, {
 // seem to need to start here for these to be consistent
 startDataResolver()
 
-onMounted(() => {
-  // trying to update ui class names too early, as the result may be a different IRI and sending in another
-  // request before database is updated can result in sql error
-  // when watching uiSelect.model
-  watch(uiSelect.model, () => {
-    watchOnce(savedUiComponent, () => {
-      uiClassNamesModel.model.value = null
-    })
-  })
-
-  watchEffect(() => {
-    uiSelect.options.value = uiOptions.value
-  })
-})
-
 defineExpose(exposeMeta)
 </script>
 
 <template>
-  <div>
-    <div class="cwa:flex cwa:gap-x-6">
-      <CwaUiFormLabelWrapper
-        v-if="uiSelect.options.value.length > 1"
-        label="UI:"
-      >
-        <CwaUiSelect
-          v-model="uiSelect.model.value"
-          :options="uiSelect.options.value"
-        />
-      </CwaUiFormLabelWrapper>
-      <CwaUiFormLabelWrapper
-        v-if="showStyleSelect"
-        label="Style:"
-      >
-        <CwaUiSelect
-          v-if="isMultipleStyles"
-          v-model="selectedStyleNames"
-          :options="styleNameOptions"
-          multiple
-          placeholder="Default"
-        />
-        <CwaUiSelect
-          v-else
-          v-model="selectedStyleName"
-          :options="singleStyleOptions"
-        />
-      </CwaUiFormLabelWrapper>
-    </div>
-  </div>
+  <CwaUiManagerTab>
+    <CwaUiSelect
+      v-if="uiOptions.length"
+      :model="uiModel"
+      label="UI"
+      nullable
+      none-label="Default"
+      :options="uiOptions"
+      data-testid="ui-select"
+    />
+    <template v-if="showStyleSelect">
+      <CwaUiMultiSelect
+        v-if="isMultipleStyles"
+        :model="styleNamesModel"
+        label="Style"
+        placeholder="Default"
+        search-placeholder="Search styles"
+        :options="styleNameOptions"
+        data-testid="style-select"
+      />
+      <CwaUiSelect
+        v-else
+        :model="styleNameModel"
+        label="Style"
+        nullable
+        none-label="Default"
+        :options="styleNameOptions"
+        data-testid="style-select"
+      />
+    </template>
+  </CwaUiManagerTab>
 </template>

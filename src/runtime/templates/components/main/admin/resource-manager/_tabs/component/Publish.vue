@@ -2,15 +2,19 @@
 import { computed, ref, watch } from 'vue'
 import { useCwaResourceManagerTab } from '#cwa/composables/cwa-resource-manager-tab'
 import { DEFAULT_TAB_ORDER } from '#cwa/admin/manager-tabs-resolver'
-import { getPublishedResourceState } from '#cwa/resources/resource-utils'
+import { usePublishState } from '#cwa/admin/publish-state'
 import DatePicker from '#cwa/templates/components/ui/DatePicker.vue'
+import CwaUiManagerTab from '#cwa/templates/components/ui/ManagerTab.vue'
+import CwaUiManagerRowDivider from '#cwa/templates/components/ui/ManagerRowDivider.vue'
+import CwaUiToggle from '#cwa/templates/components/ui/Toggle.vue'
+import CwaReveal from '#cwa/templates/components/core/ui/Reveal.vue'
 
-const { exposeMeta, resource, $cwa, iri } = useCwaResourceManagerTab({
+const { exposeMeta, $cwa, iri } = useCwaResourceManagerTab({
   name: 'Publish',
   order: DEFAULT_TAB_ORDER,
 })
 
-const publishableState = computed(() => resource.value ? getPublishedResourceState(resource.value) : undefined)
+const { published: publishableState, scheduling, scheduleValue } = usePublishState($cwa, iri)
 
 const editLiveVersion = ref<boolean>(publishableState.value || false)
 
@@ -33,108 +37,37 @@ watch(iri, () => {
   editLiveVersion.value = publishableState.value || false
 })
 
-const scheduledAt = computed<string | undefined>(() => {
-  const publishedAt = resource.value?.data?.publishedAt
-  if (publishableState.value !== false || !publishedAt) {
-    return
-  }
-  return new Date(publishedAt).getTime() > Date.now() ? publishedAt : undefined
-})
-const publishStateLabel = computed(() => {
-  if (publishableState.value !== false) {
-    return 'Live'
-  }
-  return scheduledAt.value ? 'Scheduled' : 'Draft'
-})
-const scheduling = ref(!!scheduledAt.value)
-const scheduleValue = ref<string | null>(scheduledAt.value ?? null)
 const minSchedule = new Date().toISOString()
-const saving = ref(false)
-
-watch(scheduledAt, (value) => {
-  scheduleValue.value = value ?? null
-  if (value) {
-    scheduling.value = true
-  }
-})
-
-async function savePublishedAt(publishedAt: string | null) {
-  if (!iri.value) {
-    return
-  }
-  saving.value = true
-  try {
-    await $cwa.resourcesManager.updateResource({
-      endpoint: iri.value,
-      data: { publishedAt },
-    })
-  }
-  finally {
-    saving.value = false
-  }
-}
-
-function schedule() {
-  const chosen = scheduleValue.value
-  if (!chosen) {
-    return
-  }
-  return savePublishedAt(new Date(chosen).getTime() > Date.now() ? chosen : 'now')
-}
-
-function publishNow() {
-  return savePublishedAt('now')
-}
-
-function cancelSchedule() {
-  return savePublishedAt(null)
-}
 
 defineExpose(exposeMeta)
 </script>
 
 <template>
-  <div class="cwa:flex cwa:items-center cwa:gap-x-6">
-    <CwaUiFormToggle
+  <CwaUiManagerTab>
+    <CwaUiToggle
       v-if="alternateIri"
       v-model="editLiveVersion"
-      label="Edit live version"
+      label="Edit published version"
+      info="Changes to the published version go live immediately."
     />
-    <span data-publish-state>{{ publishStateLabel }}</span>
+    <CwaUiManagerRowDivider v-if="alternateIri && publishableState === false" />
     <template v-if="publishableState === false">
-      <CwaUiFormToggle
+      <CwaUiToggle
         v-model="scheduling"
         data-schedule-toggle
         label="Schedule"
       />
-      <DatePicker
-        v-if="scheduling"
-        v-model="scheduleValue"
-        :min="minSchedule"
-      />
-      <div class="cwa:flex cwa:items-center cwa:gap-x-2">
-        <CwaUiFormButton
-          v-if="scheduling"
-          :disabled="saving || !scheduleValue"
-          @click="schedule"
-        >
-          Schedule
-        </CwaUiFormButton>
-        <CwaUiFormButton
-          v-else
-          :disabled="saving"
-          @click="publishNow"
-        >
-          Publish now
-        </CwaUiFormButton>
-        <CwaUiFormButton
-          v-if="scheduledAt"
-          :disabled="saving"
-          @click="cancelSchedule"
-        >
-          Cancel schedule
-        </CwaUiFormButton>
-      </div>
+      <CwaReveal :when="scheduling">
+        <DatePicker
+          v-model="scheduleValue"
+          :min="minSchedule"
+          label="Go live"
+        />
+      </CwaReveal>
     </template>
-  </div>
+    <span
+      v-else-if="publishableState && !alternateIri"
+      class="cwa:whitespace-nowrap cwa:text-label cwa:text-fg-muted"
+    >Live. There is no draft to publish.</span>
+  </CwaUiManagerTab>
 </template>

@@ -151,7 +151,7 @@ onMounted(() => {
           >
             <button
               v-if="$route.path !== '/'"
-              class="cwa:cursor-pointer cwa:rounded-md cwa:bg-blue-600 cwa:px-3.5 cwa:py-2.5 cwa:text-sm cwa:font-semibold cwa:text-white cwa:shadow-sm cwa:hover:bg-indigo-500 cwa:focus-visible:outline cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-indigo-600"
+              class="cwa:cursor-pointer cwa:rounded-md cwa:bg-blue-600 cwa:px-3.5 cwa:py-2.5 cwa:text-sm cwa:font-semibold cwa:text-white cwa:shadow-sm cwa:hover:bg-indigo-500 cwa:outline-1 cwa:outline-transparent cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-blue-600"
               @click="returnHome"
             >
               Go back home
@@ -159,7 +159,7 @@ onMounted(() => {
             <CwaLink
               v-if="showSignIn"
               to="/login"
-              class="cwa:cursor-pointer cwa:rounded-md cwa:bg-white/20 cwa:px-3.5 cwa:py-1.5 cwa:text-xs cwa:font-semibold cwa:text-white cwa:shadow-sm cwa:hover:bg-indigo-500 cwa:focus-visible:outline cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-indigo-600"
+              class="cwa:cursor-pointer cwa:rounded-md cwa:bg-white/20 cwa:px-3.5 cwa:py-1.5 cwa:text-xs cwa:font-semibold cwa:text-white cwa:shadow-sm cwa:hover:bg-indigo-500 cwa:outline-1 cwa:outline-transparent cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-blue-600"
             >
               Sign in
             </CwaLink>

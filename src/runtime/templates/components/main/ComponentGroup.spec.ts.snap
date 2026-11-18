@@ -4,9 +4,19 @@ exports[`ComponentGroup > snapshots > should match snapshot IF loader is shown 1
 <div
   class="component-group-placeholder"
 >
-  <spinner-stub
-    show="true"
-  />
+  <span
+    class="cwa:inline-flex"
+    role="status"
+  >
+    <spinner-stub
+      size="md"
+    />
+    <span
+      class="cwa:sr-only"
+    >
+      Loading
+    </span>
+  </span>
 </div>
 `;
 
@@ -82,14 +92,15 @@ exports[`ComponentGroup > snapshots > should match snapshot IF user is logged in
 >
   
   <!--cwa-start-->
-  <div
-    class="cwa:flex cwa:justify-center cwa:border-2 cwa:border-dashed cwa:border-gray-200 cwa:p-5 cwa:relative"
+  <editplaceholder-stub
+    info="Visitors see nothing here until a component is added. Use + to add one."
+    label="Empty group"
   >
     <lazyhotspot-stub
       disabled="true"
       screen-reader-action="Add component position"
     />
-  </div>
+  </editplaceholder-stub>
   <!--cwa-end-->
   
 </div>

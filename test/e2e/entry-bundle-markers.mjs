@@ -8,14 +8,12 @@ const outputDir = resolve(here, '../../playground/.output')
 const manifestPath = resolve(outputDir, 'server/chunks/virtual/precomputed.mjs')
 const chunkDir = resolve(outputDir, 'public/_nuxt')
 
-const gzipBudget = 163820
+const gzipBudget = 164235
 
 const forbidden = [
   { marker: 'Invalid DateTime', source: 'luxon' },
   { marker: 'InvalidXml', source: 'fast-xml-parser' },
-  { marker: 'headlessui', source: '@headlessui/vue' },
   { marker: 'data-reka-date-field-segment', source: 'reka-ui' },
-  { marker: 'preventOverflow', source: '@popperjs/core' },
   { marker: 'OES_texture_half_float', source: 'ui/BackgroundParticles.vue' },
   { marker: 'CwaLayoutSecondary:[]', source: 'cwa-component-group-declarations' },
   { marker: 'last_event_id', source: 'api/mercure-client.ts' },
@@ -29,6 +27,11 @@ const forbidden = [
   { marker: 'cwa:z-peer-outline', source: 'resource-manager/PeerOutlines.vue' },
   { marker: 'field-presence-flag', source: 'ui/FieldPresence.vue' },
   { marker: 'remote-change-accept', source: 'ui/RemoteChangeConflict.vue' },
+  { marker: 'path:`/kit`', source: 'playground/app/pages/kit.vue, which is dev only' },
+  { marker: 'cwa-fullscreen-dialog', source: 'core/ui/Toaster.vue' },
+  { marker: 'The request could not be sent.', source: 'admin/field-states.ts' },
+  { marker: 'data-cwa-admin-icon', source: 'cwa-admin-resources' },
+  { marker: 'Already in this group', source: 'resource-manager/_parts/AddComponentDialog.vue' },
 ]
 
 async function readEntryChunks() {
