@@ -37,6 +37,20 @@ for (const width of widths) {
     expect(clashes.clashes).toEqual([])
   })
 
+  test(`kit at ${width}: the page never scrolls sideways, with every simulation's fields in a manager row`, async ({ page }) => {
+    await openKit(page, width)
+    const rows = page.locator('button', { hasText: /^Manager row$/ })
+    for (let index = 0; index < await rows.count(); index++) {
+      await rows.nth(index).scrollIntoViewIfNeeded()
+      await expect(async () => {
+        await rows.nth(index).click()
+        await expect(rows.nth(index)).toHaveAttribute('data-state', 'on', { timeout: 500 })
+      }).toPass()
+    }
+    await expect(page.locator('.kit-place-bar [data-testid="manager-tab"]')).toHaveCount(await rows.count())
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width)
+  })
+
   test(`kit at ${width}: stacked demo rows never touch`, async ({ page }) => {
     await openKit(page, width)
     const touching = await page.locator('main').evaluate((main) => {

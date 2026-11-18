@@ -82,7 +82,6 @@ const inBar = computed(() => (only ?? kitFieldKeys).filter(key => key !== 'texta
 
 .kit-place-bar {
   max-width: 100%;
-  overflow-x: clip;
   background: var(--cwa-color-surface);
   box-shadow: inset 0 0 0 1px var(--cwa-color-line);
 }
