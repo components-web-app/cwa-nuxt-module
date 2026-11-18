@@ -421,9 +421,6 @@
 .cwa\:mb-0 {
   margin-bottom: 0px;
 }
-.cwa\:mb-0\.5 {
-  margin-bottom: calc(var(--cwa-spacing) * 0.5);
-}
 .cwa\:mb-1 {
   margin-bottom: var(--cwa-spacing);
 }
@@ -1920,11 +1917,18 @@
   font-size: var(--cwa-text-confirm);
   font-weight: var(--tw-font-weight, var(--cwa-text-confirm--font-weight));
 }
+.cwa\:text-\[0\.6875rem\] {
+  font-size: 0.6875rem;
+}
 .cwa\:text-\[1\.75rem\] {
   font-size: 1.75rem;
 }
 .cwa\:text-\[10px\] {
   font-size: 10px;
+}
+.cwa\:leading-3 {
+  --tw-leading: calc(var(--cwa-spacing) * 3);
+  line-height: calc(var(--cwa-spacing) * 3);
 }
 .cwa\:leading-5 {
   --tw-leading: calc(var(--cwa-spacing) * 5);

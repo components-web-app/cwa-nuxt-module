@@ -28,7 +28,7 @@ const faded = computed(() => !fresh.has('field'))
         :data-faded="faded || undefined"
         :style="{ backgroundColor: colour }"
         :class="faded ? 'cwa:opacity-0 cwa:group-hover/field:opacity-100' : 'cwa:opacity-100'"
-        class="cwa:absolute cwa:bottom-full cwa:left-0 cwa:mb-0.5 cwa:px-1.5 cwa:py-0.5 cwa:max-w-60 cwa:truncate cwa:whitespace-nowrap cwa:rounded-t-sm cwa:text-xs cwa:font-medium cwa:text-dark cwa:transition-opacity cwa:duration-300"
+        class="cwa:absolute cwa:bottom-full cwa:left-0 cwa:px-1 cwa:max-w-60 cwa:truncate cwa:whitespace-nowrap cwa:text-[0.6875rem] cwa:leading-3 cwa:font-medium cwa:text-dark cwa:transition-opacity cwa:duration-300"
       >{{ label }}</span>
     </div>
     <slot />

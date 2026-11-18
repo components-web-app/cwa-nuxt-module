@@ -1139,6 +1139,8 @@ test.describe('presence', () => {
     assert(await flag.innerText() === 'Pat Peer', `The field flag says "${await flag.innerText()}"`)
     const [fieldBox, inputBox] = [await managerPanel(page).getByTestId('field-presence').boundingBox(), await managerInput(page).boundingBox()]
     assert(covers({ top: fieldBox.y, left: fieldBox.x, width: fieldBox.width, height: fieldBox.height }, { top: inputBox.y, left: inputBox.x, width: inputBox.width, height: inputBox.height }), `The field outline ${JSON.stringify(fieldBox)} does not cover the input ${JSON.stringify(inputBox)}`)
+    const [rowBox, flagBox] = [await managerPanel(page).getByTestId('manager-tab').boundingBox(), await flag.boundingBox()]
+    assert(flagBox.y >= rowBox.y && flagBox.y + flagBox.height <= fieldBox.y + 1, `The field flag ${JSON.stringify(flagBox)} is not inside the bar row ${JSON.stringify(rowBox)} above the field ${JSON.stringify(fieldBox)}, so the row clips it`)
     t.publish({ ...peer, data: { v: 1, page: seed.iris.pageA, state: 'left' } })
     await eventually(async () => (await flag.count()) === 0, 'The field flag stayed after its tab left')
   })
