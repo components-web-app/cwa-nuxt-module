@@ -3,11 +3,11 @@
     <div ref="spacer" />
     <div
       ref="header"
-      class="cwa:section cwa:border-0 cwa:border-b-2 cwa:border-b-light/30 cwa:fixed cwa:z-manager cwa:w-full cwa:h-18 cwa:top-0 cwa:dark-blur"
+      class="cwa:section cwa:border-0 cwa:border-b-2 cwa:border-b-light/30 cwa:fixed cwa:z-manager cwa:flex cwa:items-center cwa:w-full cwa:h-18 cwa:top-0 cwa:dark-blur"
       :class="highlightClass"
       @click.stop
     >
-      <div class="cwa:flex cwa:justify-between cwa:items-center">
+      <div class="cwa:flex cwa:flex-1 cwa:justify-between cwa:items-center">
         <div class="cwa:absolute cwa:left-1/2 cwa:top-1/2 cwa:-translate-x-1/2 cwa:-translate-y-1/2 cwa:text-center cwa:text-gray-300 cwa:z-manager">
           <template v-if="!pageIsAdmin && !isErrorPage">
             <CwaUiButton
@@ -123,7 +123,7 @@
         </div>
         <div
           v-else
-          class="cwa:flex cwa:self-stretch cwa:min-h-9"
+          class="cwa:flex cwa:min-h-9 cwa:items-center"
         >
           <Menu />
         </div>
