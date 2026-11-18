@@ -1,10 +1,18 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import AuthTemplate from '#cwa/templates/components/main/auth/_parts/AuthTemplate.vue'
-import SpinnerTick from '#cwa/templates/components/utils/SpinnerTick.vue'
+import CwaUiSpinner from '#cwa/templates/components/ui/Spinner.vue'
 import { definePageMeta, useHead, useVerifyEmail } from '#imports'
 
-useHead({ title: 'Verify Email' })
+useHead({
+  title: 'Verify Email',
+  bodyAttrs: {
+    class: 'cwa:h-full',
+  },
+  htmlAttrs: {
+    class: 'cwa:h-full cwa:bg-stone-950',
+  },
+})
 
 definePageMeta({
   cwa: {
@@ -26,25 +34,20 @@ onMounted(() => {
 
 <template>
   <AuthTemplate
+    title="Verify your email"
     :submitting="submitting"
     submit-button-text="Verify Email"
     :error="error"
+    :success="success ? 'Your email address is now verified' : undefined"
     :hide-submit="!!(success || error)"
     @submit="verifyEmail"
   >
-    <div
-      v-if="!error"
-      class="cwa:flex cwa:gap-x-2"
+    <p
+      v-if="!success && !error"
+      class="cwa:m-0 cwa:flex cwa:items-center cwa:gap-2"
     >
-      <div v-if="submitting || success">
-        <SpinnerTick :is-loading="submitting" />
-      </div>
-      <div v-if="success">
-        Your email address is now verified
-      </div>
-      <div v-else-if="!submitting">
-        Verify your email address
-      </div>
-    </div>
+      <CwaUiSpinner v-if="submitting" />
+      <span>{{ submitting ? 'Verifying your email address' : 'Verify your email address' }}</span>
+    </p>
   </AuthTemplate>
 </template>
