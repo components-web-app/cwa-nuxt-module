@@ -107,7 +107,7 @@ function remove() {
           class="cwa:size-control cwa:shrink-0 cwa:bg-field cwa:pointer-coarse:size-hit"
         />
         <span
-          class="cwa:min-w-0 cwa:max-w-48 cwa:truncate cwa:text-control"
+          class="cwa:min-w-0 cwa:max-w-[6rem] cwa:truncate cwa:text-control cwa:sm:max-w-[12rem]"
           :class="file ? 'cwa:text-fg' : 'cwa:text-fg-muted'"
           data-testid="file-name"
         >{{ file ? `${file.name} · ${file.size}` : 'No file' }}</span>

@@ -6,6 +6,7 @@ import { useCwa } from '#cwa/composables/cwa'
 import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/resources/resource-utils'
 import { fetchComponentUsage } from '#cwa/admin/component-usage'
 import type { ComponentUsage, ComponentUsagePage } from '#cwa/admin/component-usage'
+import ShareGlyph from '#cwa/templates/components/core/ui/ShareGlyph.vue'
 
 const $cwa = useCwa()
 const currentIri = $cwa.admin.resourceStackManager.currentIri
@@ -65,7 +66,12 @@ async function goTo(routePath: string) {
         data-testid="component-usage-badge"
         :class="[badgeClass, 'cwa:cursor-pointer cwa:hover:bg-yellow/10 cwa:focus-visible:outline-2 cwa:focus-visible:outline-yellow']"
       >
-        Shared · {{ usage.total }} places
+        <span class="cwa:sr-only cwa:sm:not-sr-only">Shared · {{ usage.total }} places</span>
+        <span
+          aria-hidden="true"
+          data-testid="component-usage-compact"
+          class="cwa:inline-flex cwa:items-center cwa:gap-1 cwa:sm:hidden"
+        ><ShareGlyph />{{ usage.total }}</span>
       </PopoverTrigger>
       <PopoverPortal>
         <PopoverContent
@@ -133,6 +139,13 @@ async function goTo(routePath: string) {
       v-else
       data-testid="component-usage-badge"
       :class="badgeClass"
-    >Shared · {{ usage.total }} places</span>
+    >
+      <span class="cwa:sr-only cwa:sm:not-sr-only">Shared · {{ usage.total }} places</span>
+      <span
+        aria-hidden="true"
+        data-testid="component-usage-compact"
+        class="cwa:inline-flex cwa:items-center cwa:gap-1 cwa:sm:hidden"
+      ><ShareGlyph />{{ usage.total }}</span>
+    </span>
   </template>
 </template>

@@ -533,7 +533,7 @@ const badgeTones = [
         <div class="kit-row">
           <CwaUiSelect
             v-model="plainSelect"
-            label="Nullable, with v-model"
+            label="Nullable"
             nullable
             none-label="Default"
             :options="selectOptions"

@@ -724,14 +724,14 @@
 .cwa\:max-w-4xl {
   max-width: var(--cwa-container-4xl);
 }
-.cwa\:max-w-48 {
-  max-width: calc(var(--cwa-spacing) * 48);
-}
 .cwa\:max-w-60 {
   max-width: calc(var(--cwa-spacing) * 60);
 }
 .cwa\:max-w-72 {
   max-width: calc(var(--cwa-spacing) * 72);
+}
+.cwa\:max-w-\[6rem\] {
+  max-width: 6rem;
 }
 .cwa\:max-w-\[260px\] {
   max-width: 260px;
@@ -2820,6 +2820,16 @@
   }
 }
 @media (width >= 40rem) {
+  .cwa\:sm\:not-sr-only {
+    position: static;
+    width: auto;
+    height: auto;
+    padding: 0;
+    margin: 0;
+    overflow: visible;
+    clip-path: none;
+    white-space: normal;
+  }
   .cwa\:sm\:mx-auto {
     margin-inline: auto;
   }
@@ -2829,11 +2839,20 @@
   .cwa\:sm\:flex {
     display: flex;
   }
+  .cwa\:sm\:hidden {
+    display: none;
+  }
+  .cwa\:sm\:inline {
+    display: inline;
+  }
   .cwa\:sm\:w-full {
     width: 100%;
   }
   .cwa\:sm\:max-w-3xl {
     max-width: var(--cwa-container-3xl);
+  }
+  .cwa\:sm\:max-w-\[12rem\] {
+    max-width: 12rem;
   }
   .cwa\:sm\:max-w-md {
     max-width: var(--cwa-container-md);
