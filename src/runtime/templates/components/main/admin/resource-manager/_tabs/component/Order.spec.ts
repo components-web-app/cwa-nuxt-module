@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, test, expect, vi } from 'vitest'
-import { enableAutoUnmount, mount } from '@vue/test-utils'
+import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { computed, nextTick, ref } from 'vue'
 import { axe } from '../../../../../../../../../test/utils/axe'
 import Order from './Order.vue'
@@ -10,6 +10,9 @@ const requestCount = ref(0)
 const displayNumber = ref(2)
 const syncingNumber = ref<number | undefined>()
 const emit = vi.fn()
+const reorderFailed = ref(false)
+const retry = vi.fn()
+const dismiss = vi.fn()
 
 vi.mock('#cwa/composables/cwa-resource-manager-tab', () => ({
   useCwaResourceManagerTab: () => ({
@@ -27,6 +30,7 @@ vi.mock('#cwa/composables/cwa-resource-manager-tab', () => ({
         getResource: () => computed(() => ({ data: { _metadata: { sortDisplayNumber: syncingNumber.value } } })),
       },
       resourcesManager: { requestCount },
+      componentGroupReorders: { failed: (iri: string) => iri === '/_/component_groups/g1' && reorderFailed.value, retry, dismiss },
     },
     exposeMeta: { disabled: ref(false), fields: [] },
     createComputedState: () => reordering,
@@ -52,6 +56,9 @@ describe('Order tab on the kit (#400, #459)', () => {
     requestCount.value = 0
     displayNumber.value = 2
     syncingNumber.value = undefined
+    reorderFailed.value = false
+    retry.mockReset()
+    dismiss.mockReset()
   })
 
   test('Move up and Move down move the position by one while requests are in flight, so moves are never held back', async () => {
@@ -100,6 +107,44 @@ describe('Order tab on the kit (#400, #459)', () => {
     await nextTick()
     await nextTick()
     expect(positionLine(wrapper)).toBe('saved')
+  })
+
+  test('a reorder the API refused shows not saved on the position, never saved, and Retry sends the group\'s order again', async () => {
+    syncingNumber.value = 1
+    const wrapper = mount(Order, { attachTo: document.body })
+    reorderFailed.value = true
+    syncingNumber.value = undefined
+    await nextTick()
+    await nextTick()
+
+    expect(positionLine(wrapper)).toBe('error')
+    const input = wrapper.get<HTMLInputElement>('input[role="spinbutton"]')
+    expect(input.attributes('aria-invalid')).toBe('true')
+    input.element.focus()
+    await flushPromises()
+    document.querySelector<HTMLElement>('[data-testid="field-status-retry"]')!.click()
+    expect(retry).toHaveBeenCalledWith('/_/component_groups/g1')
+  })
+
+  test('Reset on a refused reorder dismisses it, as the group already shows the saved order', async () => {
+    reorderFailed.value = true
+    const wrapper = mount(Order, { attachTo: document.body })
+    await nextTick()
+
+    wrapper.get<HTMLInputElement>('input[role="spinbutton"]').element.focus()
+    await flushPromises()
+    document.querySelector<HTMLElement>('[data-testid="field-status-reset"]')!.click()
+    expect(dismiss).toHaveBeenCalledWith('/_/component_groups/g1')
+  })
+
+  test('while reordering is off, the position and its steppers say how to turn it on', () => {
+    reordering.value = false
+    const wrapper = mount(Order, { attachTo: document.body })
+
+    for (const name of ['Move up', 'Move down']) {
+      const ids = step(wrapper, name).attributes('aria-describedby')!.split(' ')
+      expect(ids.map(id => document.getElementById(id)?.textContent).join(' ')).toContain('Turn on Enable reordering to move this component.')
+    }
   })
 
   test('has no axe violations', async () => {

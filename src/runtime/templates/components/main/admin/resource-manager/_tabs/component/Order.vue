@@ -44,8 +44,10 @@ const orderValue = computed<number | null | undefined>({
 const syncing = computed(() => !!positionIri && $cwa.resources.getResource(positionIri).value?.data?._metadata?.sortDisplayNumber !== undefined)
 const savedAt = ref<number>()
 
+const failed = computed(() => !!groupIri && $cwa.componentGroupReorders.failed(groupIri))
+
 watch(syncing, (isSyncing, wasSyncing) => {
-  if (wasSyncing && !isSyncing) {
+  if (wasSyncing && !isSyncing && !failed.value) {
     savedAt.value = Date.now()
   }
 })
@@ -57,8 +59,17 @@ const orderModel: ResourceModelField<number> = {
     if (syncing.value) {
       return { status: 'saving', waiting: false, slow: false }
     }
+    if (failed.value) {
+      return { status: 'error', waiting: false, slow: false, error: { kind: 'server', message: 'The new order couldn’t be saved.' } }
+    }
     return savedAt.value ? { status: 'saved', waiting: false, slow: false, savedAt: savedAt.value } : { status: 'idle', waiting: false, slow: false }
   }),
+  retry: async () => {
+    groupIri && $cwa.componentGroupReorders.retry(groupIri)
+  },
+  reset: async () => {
+    groupIri && $cwa.componentGroupReorders.dismiss(groupIri)
+  },
 }
 </script>
 
@@ -72,6 +83,7 @@ const orderModel: ResourceModelField<number> = {
     <CwaUiNumber
       :model="orderModel"
       label="Position"
+      :info="reordering ? 'Its place in this group, from the top.' : 'Turn on Enable reordering to move this component.'"
       width="sm"
       :min="1"
       :max="Math.max(positions, 1)"

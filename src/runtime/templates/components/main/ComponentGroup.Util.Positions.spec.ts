@@ -402,6 +402,7 @@ describe('group reorder queue against the server (#400, api-components-bundle#47
       store,
       server,
       requests,
+      reorders: mockCwa.componentGroupReorders as ComponentGroupReorders,
       mount,
       group: helpersFor,
       queueWrite: (group: string, write: () => Promise<unknown>) => mockCwa.resourcesManager.queueComponentGroupWrite(group, write),
@@ -516,6 +517,45 @@ describe('group reorder queue against the server (#400, api-components-bundle#47
     await group.settle()
     expect(group.serverOrder()).toEqual(['b', 'c', 'a', 'd'])
     expect(group.displayed()).toEqual(['b', 'c', 'a', 'd'])
+  })
+
+  test('a failed order request is kept as the group\'s failure, and Retry sends the order the editor chose again (#459)', async () => {
+    let fail = true
+    const group = createGroup({ a: 0, b: 1, c: 2, d: 3 }, { failRequests: () => fail })
+    const failed = computed(() => group.reorders.failed(groupIri))
+    group.move('d', 2)
+    await group.settle()
+
+    expect(failed.value).toBe(true)
+    expect(group.displayed()).toEqual(['a', 'b', 'c', 'd'])
+    fail = false
+    group.reorders.retry(groupIri)
+    expect(group.displayed()).toEqual(['a', 'd', 'b', 'c'])
+    await group.settle()
+
+    expect(group.requests).toEqual([[groupIri, ['a', 'd', 'b', 'c']], [groupIri, ['a', 'd', 'b', 'c']]])
+    expect(failed.value).toBe(false)
+    expect(group.serverOrder()).toEqual(['a', 'd', 'b', 'c'])
+    expect(group.displayNumbers()).toEqual([undefined, undefined, undefined, undefined])
+  })
+
+  test('a failed order is cleared by dismissing it, and by the next move that saves (#459)', async () => {
+    let fail = true
+    const group = createGroup({ a: 0, b: 1, c: 2 }, { failRequests: () => fail })
+    const failed = computed(() => group.reorders.failed(groupIri))
+    group.move('c', 1)
+    await group.settle()
+    expect(failed.value).toBe(true)
+    group.reorders.dismiss(groupIri)
+    expect(failed.value).toBe(false)
+
+    group.move('c', 1)
+    await group.settle()
+    expect(failed.value).toBe(true)
+    fail = false
+    group.move('b', 1)
+    await group.settle()
+    expect(failed.value).toBe(false)
   })
 
   test('a move undone while its request is in flight sends the original order back and clears every display number', async () => {
