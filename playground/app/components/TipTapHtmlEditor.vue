@@ -109,6 +109,7 @@ const props = defineProps<{
   field: string
   disabled?: boolean
   editorClasses?: string
+  label?: string
 }>()
 
 // Render the menus at the top level so they escape the editor's stacking context and clear the CWA
@@ -220,7 +221,9 @@ function caretIn(previous: Editor | undefined): Caret {
 }
 
 function focusTaken() {
-  return !!document.activeElement && document.activeElement !== document.body
+  const active = document.activeElement
+  const dom = editorElement()
+  return !!active && active !== document.body && !(dom && active.contains(dom))
 }
 
 function build(shared?: Shared, wantsFocus = false) {
@@ -312,6 +315,7 @@ function editorElement() {
 
 useCwaInlineEditor(props.model, editorElement, {
   enabled: () => !props.disabled,
+  label: props.label ?? 'Content',
   focus: () => editor.value?.commands.focus('end'),
 })
 
