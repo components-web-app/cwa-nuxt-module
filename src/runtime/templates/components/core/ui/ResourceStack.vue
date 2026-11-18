@@ -84,7 +84,7 @@ function place() {
     { width: document.documentElement.clientWidth, height: window.innerHeight },
     avoid?.getBoundingClientRect(),
   )
-  return { panel, inner: { x: innerRect.left - panelRect.left + innerRect.width / 2, y: innerRect.top - panelRect.top + innerRect.height / 2 } }
+  return { panel, inner: { x: innerRect.left - panelRect.left, y: innerRect.top - panelRect.top } }
 }
 
 async function standsPlaced(panel: HTMLElement) {
@@ -118,7 +118,7 @@ const stopPlacing = watch(tree, async (element) => {
   revealed.value = true
   await nextTick()
   element.focus(keyboard ? { preventScroll: true } : { preventScroll: true, focusVisible: false } as FocusOptions)
-  placed && grow(placed.panel, placed.inner)
+  placed && grow((placed.panel.firstElementChild as HTMLElement | null) ?? placed.panel, placed.inner)
 }, { flush: 'post' })
 
 function close(refocus: boolean) {

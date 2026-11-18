@@ -473,11 +473,15 @@ describe('ResourceStack (#461)', () => {
     expect(placeResourceStack).toHaveBeenCalledWith({ x: 5, y: 5 }, expect.objectContaining({ inner: { left: 10, top: 10, width: 90, height: 40 } }), expect.any(Object), undefined)
   })
 
-  test('stays hidden until the panel stands where it was placed, so it never shows moving, and only then grows from there', async () => {
+  test('stays hidden until the panel stands where it was placed, so it never shows moving, and only then grows the panel itself, never the wrapper whose transform places it, from the anchored corner so that corner never moves', async () => {
     const frames: FrameRequestCallback[] = []
     vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => frames.push(callback))
     vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: false })))
-    const animate = vi.fn(() => ({ finish: vi.fn() }))
+    const animated: HTMLElement[] = []
+    const animate = vi.fn(function (this: HTMLElement) {
+      animated.push(this)
+      return { finish: vi.fn() }
+    })
     vi.spyOn(HTMLElement.prototype, 'animate' as any).mockImplementation(animate as any)
     const at = { left: 400, top: 300 }
     const rect = (left: number, top: number, width: number, height: number) => ({ left, top, width, height, x: left, y: top, right: left + width, bottom: top + height, toJSON: () => ({}) }) as DOMRect
@@ -506,6 +510,8 @@ describe('ResourceStack (#461)', () => {
       await flushPromises()
       expect(panel.style.visibility).not.toBe('hidden')
       expect(animate).toHaveBeenCalledOnce()
+      expect(animated).toEqual([panel])
+      expect(panel.style.transformOrigin).toBe('10px 10px')
     }
     finally {
       vi.unstubAllGlobals()
