@@ -43,7 +43,7 @@ const tree = useTemplateRef<HTMLElement | null>('tree')
 const moreButton = useTemplateRef<HTMLElement | null>('moreButton')
 const opener = typeof document === 'undefined' ? null : document.activeElement as HTMLElement | null
 const maxWidth = typeof document === 'undefined' ? undefined : document.documentElement.clientWidth - 16
-let growing: Animation | undefined
+let settling: Animation | undefined
 
 const shown = computed(() => showAll.value ? levels.length : Math.min(limit, levels.length))
 const hiddenCount = computed(() => levels.length - shown.value)
@@ -89,7 +89,7 @@ function place() {
     { width: document.documentElement.clientWidth, height: window.innerHeight },
     avoid?.getBoundingClientRect(),
   )
-  return { panel, inner: { x: innerRect.left - panelRect.left + innerRect.width / 2, y: innerRect.top - panelRect.top + innerRect.height / 2 } }
+  return { panel }
 }
 
 function reducedMotion(panel: HTMLElement) {
@@ -115,12 +115,11 @@ async function standsPlaced(panel: HTMLElement) {
   }
 }
 
-function grow(panel: HTMLElement, origin: { x: number, y: number }) {
+function settle(panel: HTMLElement) {
   if (reducedMotion(panel)) {
     return
   }
-  panel.style.transformOrigin = `${origin.x}px ${origin.y}px`
-  growing = panel.animate([{ scale: '0.9', opacity: 0 }, { scale: '1', opacity: 1 }], { duration: 150, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' })
+  settling = panel.animate([{ translate: '0 -4px', opacity: 0 }, { translate: '0 0', opacity: 1 }], { duration: 120, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' })
 }
 
 const stopPlacing = watch(tree, async (element) => {
@@ -147,7 +146,7 @@ const stopPlacing = watch(tree, async (element) => {
   revealed.value = true
   await nextTick()
   element.focus(keyboard ? { preventScroll: true } : { preventScroll: true, focusVisible: false } as FocusOptions)
-  placed && grow(placed.panel, placed.inner)
+  placed && settle((placed.panel.firstElementChild as HTMLElement | null) ?? placed.panel)
 }, { flush: 'post' })
 
 function close(refocus: boolean) {
@@ -189,7 +188,7 @@ async function showMore() {
   const count = hiddenCount.value
   showAll.value = true
   await nextTick()
-  growing?.finish()
+  settling?.finish()
   place()
   tree.value?.focus({ preventScroll: true })
   announcement.value = `${count} more ${parentsWord(count)} shown`

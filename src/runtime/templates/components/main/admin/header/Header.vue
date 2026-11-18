@@ -4,18 +4,22 @@
     <div
       ref="header"
       data-cwa-sticky
-      class="cwa:section cwa:border-0 cwa:border-b-2 cwa:border-b-light/30 cwa:fixed cwa:z-manager cwa:w-full cwa:h-18 cwa:top-0 cwa:dark-blur"
+      class="cwa:section cwa:border-0 cwa:border-b-2 cwa:border-b-light/30 cwa:fixed cwa:z-manager cwa:flex cwa:items-center cwa:w-full cwa:h-18 cwa:top-0 cwa:dark-blur"
       :class="highlightClass"
       @click.stop
     >
-      <div class="cwa:flex cwa:justify-between cwa:items-center">
-        <div class="cwa:absolute cwa:left-1/2 cwa:top-1/2 cwa:-translate-x-1/2 cwa:-translate-y-1/2 cwa:text-center cwa:text-gray-300 cwa:z-manager">
+      <div class="cwa:flex cwa:min-w-0 cwa:flex-1 cwa:justify-between cwa:items-center cwa:max-sm:gap-x-2">
+        <div
+          data-testid="header-centre"
+          class="cwa:max-sm:order-1 cwa:max-sm:flex cwa:max-sm:min-w-0 cwa:max-sm:flex-1 cwa:max-sm:justify-center cwa:sm:absolute cwa:sm:left-1/2 cwa:sm:top-1/2 cwa:sm:-translate-x-1/2 cwa:sm:-translate-y-1/2 cwa:text-center cwa:text-gray-300 cwa:z-manager"
+        >
           <template v-if="!pageIsAdmin && !isErrorPage">
             <CwaUiButton
               v-if="!$cwa.admin.isEditing && $cwa.resources?.page?.value?.data"
               :label="editPageLabel"
               :aria-label="`Page settings: ${editPageLabel}`"
               :icon="CogIcon"
+              truncate
               data-testid="page-settings"
               @click="showEditPage"
             />
@@ -79,7 +83,7 @@
             </ul>
           </template>
         </div>
-        <div class="cwa:flex cwa:justify-start cwa:gap-x-4">
+        <div class="cwa:flex cwa:shrink-0 cwa:items-center cwa:justify-start cwa:gap-x-4">
           <template v-if="!pageIsAdmin && !isErrorPage">
             <CwaUiButton
               variant="solid"
@@ -115,7 +119,7 @@
         <div
           v-if="$cwa.admin.isEditing"
           ref="status"
-          class="cwa:flex cwa:gap-x-4 cwa:items-center"
+          class="cwa:flex cwa:gap-x-4 cwa:items-center cwa:max-sm:order-2"
         >
           <SpinnerTick
             :is-loading="isLoading"
@@ -124,7 +128,7 @@
         </div>
         <div
           v-else
-          class="cwa:flex cwa:self-stretch cwa:min-h-9"
+          class="cwa:flex cwa:min-h-9 cwa:items-center cwa:max-sm:order-2"
         >
           <Menu />
         </div>

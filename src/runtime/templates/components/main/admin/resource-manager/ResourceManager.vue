@@ -174,7 +174,9 @@ if (import.meta.env.DEV) {
     return () => kitRows.delete(row)
   })
   const warned = new Set<unknown>()
-  watch(shownTab, (instance) => {
+  watch(shownTab, async () => {
+    await nextTick()
+    const instance = shownTab.value
     const tab = selectedTab.value
     const holder = tabHolder.value
     if (!instance || !tab || warned.has(tab) || !holder?.firstElementChild || [...kitRows].some(row => holder.contains(row))) {
@@ -225,12 +227,16 @@ let stopLongPress: (() => void) | undefined
 onMounted(() => {
   window.addEventListener('mousedown', mousedownHandler)
   window.addEventListener('resize', $cwa.admin.emitRedraw, false)
-  stopLongPress = listenForLongPress(document)
+  watch(() => $cwa.admin.isEditing, (editing) => {
+    stopLongPress?.()
+    stopLongPress = editing ? listenForLongPress(document) : undefined
+  }, { immediate: true })
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', $cwa.admin.emitRedraw)
   stopLongPress?.()
+  stopLongPress = undefined
 })
 
 defineExpose({

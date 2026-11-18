@@ -49,7 +49,8 @@ function plainText(html: string) {
     .replace(/<[^>]*>/g, '')
     .replace(/&(#\d+|#x[\da-f]+|[a-z]+);/gi, (entity, name: string) => {
       if (name[0] === '#') {
-        return String.fromCodePoint(name[1]?.toLowerCase() === 'x' ? Number.parseInt(name.slice(2), 16) : Number(name.slice(1)))
+        const code = name[1]?.toLowerCase() === 'x' ? Number.parseInt(name.slice(2), 16) : Number(name.slice(1))
+        return code > 0 && code <= 0x10FFFF ? String.fromCodePoint(code) : entity
       }
       return ENTITIES[name.toLowerCase()] ?? entity
     })

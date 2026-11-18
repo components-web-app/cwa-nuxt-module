@@ -1,4 +1,5 @@
 import { shallowReactive } from 'vue'
+import type { ResourceModelField } from '#cwa/resources/model-editors'
 
 export interface InlineEditorKey {
   iri: () => string | undefined
@@ -10,6 +11,8 @@ export interface InlineEditor {
   element: () => HTMLElement | null | undefined
   enabled: () => boolean
   focus: () => void
+  model?: ResourceModelField<any>
+  label?: string
   returnTo?: HTMLElement
 }
 
@@ -45,7 +48,7 @@ export function findInlineEditor(owner: EquivalenceSource, key: InlineEditorKey 
   }
   for (const editor of registry(owner)) {
     const editorIri = editor.key.iri()
-    if (editor.key.field === key.field && editorIri && editor.enabled() && editor.element()?.isConnected
+    if (editor.key.field === key.field && editorIri && editor.enabled() && editor.element()
       && (editorIri === iri || owner.resources.isIriPublishableEquivalent(editorIri, iri))) {
       return editor
     }
@@ -80,4 +83,21 @@ export function returnFromInlineEditor(editor: InlineEditor) {
   }
   target.focus()
   return true
+}
+
+export interface BarStatus {
+  open: (field: string) => boolean
+}
+
+const barStatuses = new WeakMap<object, BarStatus>()
+
+export function registerBarStatus(owner: object, status: BarStatus) {
+  barStatuses.set(owner, status)
+  return () => {
+    barStatuses.get(owner) === status && barStatuses.delete(owner)
+  }
+}
+
+export function openBarStatus(owner: object, field: string) {
+  return barStatuses.get(owner)?.open(field) ?? false
 }

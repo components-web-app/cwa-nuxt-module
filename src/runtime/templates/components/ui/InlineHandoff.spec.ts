@@ -17,7 +17,10 @@ vi.mock('#cwa/composables/cwa-confirm', () => ({ useCwaConfirm: () => vi.fn(asyn
 
 enableAutoUnmount(afterEach)
 
+const registered: (() => void)[] = []
+
 afterEach(() => {
+  registered.splice(0).forEach(unregister => unregister())
   document.body.innerHTML = ''
 })
 
@@ -40,6 +43,7 @@ function pageEditor(field = 'html', overrides: Partial<InlineEditor> = {}) {
   document.body.append(element)
   const editor: InlineEditor = { key: { iri: () => '/component/html', field }, element: () => element, enabled: () => true, focus: vi.fn(() => element.focus()), ...overrides }
   const unregister = registerInlineEditor(cwa, editor)
+  registered.push(unregister)
   return { editor, element, unregister }
 }
 
@@ -71,6 +75,12 @@ describe('CwaUiInlineHandoff (#461)', () => {
     globalThis.DOMParser = parser
 
     expect(wrapper.get('[data-testid="inline-handoff-preview"]').text()).toBe('“Made in Norfolk, by hand & with care”')
+  })
+
+  test('numeric entities decode, and one beyond Unicode or zero keeps its text instead of breaking the preview', () => {
+    const { wrapper } = mountHandoff(fieldModel('<p>&#8220;Hi&#x201D; &#99999999; &#x110000; &#0; &#xFFFFFFFFFFFF;</p>'))
+
+    expect(wrapper.get('[data-testid="inline-handoff-preview"]').text()).toBe('““Hi” &#99999999; &#x110000; &#0; &#xFFFFFFFFFFFF;”')
   })
 
   test('an empty value previews as Empty', () => {

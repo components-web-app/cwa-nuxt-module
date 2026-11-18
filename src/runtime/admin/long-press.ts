@@ -10,7 +10,7 @@ function isEditable(target: EventTarget | null) {
 function listen(root: Document | HTMLElement) {
   let timer: ReturnType<typeof setTimeout> | undefined
   let start: { x: number, y: number, id: number } | undefined
-  let fired = false
+  let opened: Event | undefined
   let swallowUntil = 0
 
   function cancel() {
@@ -21,7 +21,7 @@ function listen(root: Document | HTMLElement) {
 
   function onDown(event: PointerEvent) {
     cancel()
-    fired = false
+    opened = undefined
     if (event.pointerType !== 'touch' || isEditable(event.target)) {
       return
     }
@@ -30,10 +30,10 @@ function listen(root: Document | HTMLElement) {
     const { x, y } = start
     timer = setTimeout(() => {
       timer = undefined
-      fired = true
       swallowUntil = Date.now() + SWALLOW_MS
       const contextMenu = new MouseEvent('contextmenu', { clientX: x, clientY: y, button: 2, bubbles: true, cancelable: true })
       pressed.add(contextMenu)
+      opened = contextMenu
       target?.dispatchEvent(contextMenu)
     }, LONG_PRESS_MS)
   }
@@ -45,25 +45,36 @@ function listen(root: Document | HTMLElement) {
   }
 
   function onUp() {
-    if (fired) {
+    if (opened) {
       swallowUntil = Date.now() + SWALLOW_MS
     }
     cancel()
+  }
+
+  function tookPress() {
+    return !!opened?.defaultPrevented && Date.now() < swallowUntil
   }
 
   function swallow(event: Event) {
     if (pressed.has(event)) {
       return
     }
-    if (timer || (fired && Date.now() < swallowUntil)) {
+    if (timer) {
+      cancel()
+      opened = event
+      swallowUntil = Date.now() + SWALLOW_MS
+      return
+    }
+    if (tookPress()) {
       event.preventDefault()
       event.stopImmediatePropagation()
     }
   }
 
   function onClick(event: Event) {
-    if (fired && Date.now() < swallowUntil) {
-      fired = false
+    const took = tookPress()
+    opened = undefined
+    if (took) {
       event.preventDefault()
       event.stopImmediatePropagation()
     }

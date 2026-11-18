@@ -48,7 +48,7 @@ import { badgeTintPercent } from '../../../src/runtime/templates/components/ui/k
 import { kitColourLabel, kitColourTokens, kitContrastPairs, kitThemeStyle, kitTokenCss, measureKitPair } from '../../../src/tailwind/kit-tokens'
 import KitWorkbench from '../kit/KitWorkbench.vue'
 import KitLabs from '../kit/KitLabs.vue'
-import KitInfoPopoverLooks from '../kit/KitInfoPopoverLooks.vue'
+import KitImageAlt from '../kit/KitImageAlt.vue'
 import { useKitWorkbench } from '../kit/workbench-state'
 import KitPractice from '../kit/KitPractice.vue'
 import KitRevealSim from '../kit/KitRevealSim.vue'
@@ -535,11 +535,11 @@ const badgeTones = [
         </div>
       </section>
 
-      <section aria-labelledby="kit-info-popover">
-        <h2 id="kit-info-popover">
-          Information popover
+      <section aria-labelledby="kit-image-alt">
+        <h2 id="kit-image-alt">
+          Image with alt text
         </h2>
-        <KitInfoPopoverLooks />
+        <KitImageAlt />
       </section>
 
       <section aria-labelledby="kit-fields">

@@ -205,3 +205,125 @@ for (const [width, height] of [[1280, 600], [390, 600]]) {
     expect(after).toBe(before)
   })
 }
+
+const stackOpenings = [
+  ['at the pointer', floatingSurfaces[0][1]],
+  ['over its button, as the header\'s path selector opens it', floatingSurfaces[1][1]],
+]
+
+for (const [name, open] of stackOpenings) {
+  test(`kit: the resource stack opened ${name} never moves sideways while it appears (#461)`, async ({ page }) => {
+    await openKit(page, 1280)
+    await page.waitForLoadState('networkidle')
+    await page.evaluate(() => {
+      window.cwaStackFrames = []
+      const sample = () => {
+        const panel = document.querySelector('[data-testid="resource-stack"]')?.firstElementChild
+        if (!panel && !window.cwaStackFrames.length) {
+          requestAnimationFrame(sample)
+          return
+        }
+        const rect = panel.getBoundingClientRect()
+        const style = getComputedStyle(panel.parentElement)
+        window.cwaStackFrames.push({ x: rect.left, y: rect.top, painted: style.visibility !== 'hidden' && Number(getComputedStyle(panel).opacity) > 0 })
+        if (window.cwaStackFrames.length < 30) {
+          requestAnimationFrame(sample)
+        }
+      }
+      requestAnimationFrame(sample)
+    })
+    await open(page)
+    await page.waitForFunction(() => window.cwaStackFrames.length >= 30)
+
+    const frames = await page.evaluate(() => window.cwaStackFrames)
+    const final = frames.at(-1)
+    const painted = frames.filter(frame => frame.painted)
+    expect(painted.length).toBeGreaterThan(0)
+    expect(painted.filter(frame => Math.abs(frame.x - final.x) > 1)).toEqual([])
+    expect(painted.filter(frame => frame.y > final.y + 1 || frame.y < final.y - 5)).toEqual([])
+  })
+}
+
+for (const width of widths) {
+  for (const touch of [false, true]) {
+    test(`kit at ${width}${touch ? ' with touch sizes' : ''}: an image field's buttons, thumbnail and Alt button share one height and one centre, in the bar and in a dialog (#461)`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 })
+      await page.goto(`${kitBase}/kit`)
+      await page.waitForLoadState('networkidle')
+      if (touch) {
+        await page.getByTestId('kit-toolbar-touch').getByRole('switch').click()
+      }
+      const measure = scope => scope.evaluate((root) => {
+        const box = (element) => {
+          const rect = element.getBoundingClientRect()
+          return { height: rect.height, centre: rect.top + rect.height / 2 }
+        }
+        const parts = field => [
+          field.querySelector('[data-testid="file-choose"]'),
+          field.querySelector('[data-testid="file-remove"]'),
+          field.querySelector('img, span[aria-hidden="true"]'),
+        ].filter(Boolean)
+        const chips = [...root.querySelectorAll('[data-testid="image-alt-chip"]')]
+        return [
+          ...[...root.querySelectorAll('[data-testid="file-upload"]')].map(field => parts(field).map(box)),
+          ...chips.map(chip => [chip, ...parts(chip.parentElement.querySelector('[data-testid="file-upload"]'))].map(box)),
+        ]
+      })
+      const expectAligned = (groups) => {
+        expect(groups.length).toBeGreaterThan(0)
+        for (const parts of groups) {
+          expect(parts.length).toBeGreaterThanOrEqual(3)
+          for (const part of parts) {
+            expect(Math.abs(part.height - parts[0].height)).toBeLessThanOrEqual(1)
+            expect(Math.abs(part.centre - parts[0].centre)).toBeLessThanOrEqual(1)
+          }
+        }
+      }
+
+      const bar = page.getByTestId('kit-image-alt-bar')
+      await bar.scrollIntoViewIfNeeded()
+      expectAligned(await measure(bar))
+      expect(await bar.getByTestId('image-alt-chip').count()).toBe(1)
+
+      await page.getByTestId('kit-image-alt-dialog-open').click()
+      const dialog = page.getByTestId('dialog')
+      await dialog.getByTestId('image-alt-chip').waitFor()
+      expectAligned(await measure(dialog))
+    })
+  }
+}
+
+test('kit: a field\'s focus ring fades in from transparent, never from white (#461)', async ({ page }) => {
+  await page.emulateMedia({ colorScheme: 'dark' })
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await page.goto(`${kitBase}/kit`)
+  await page.waitForLoadState('networkidle')
+
+  const frames = await page.evaluate(async () => {
+    const ringed = [...document.querySelectorAll('main input:not([type="file"]):not([type="checkbox"])')]
+      .map(input => [input, input.closest('[class*="focus-within:outline-accent-fg"]')])
+      .filter(([input, ring]) => ring && input.getClientRects().length && !input.disabled)
+      .slice(0, 8)
+    const samples = []
+    for (const [input, ring] of ringed) {
+      input.scrollIntoView({ block: 'center' })
+      await new Promise(resolve => requestAnimationFrame(resolve))
+      input.focus()
+      for (let frame = 0; frame < 12; frame++) {
+        const style = getComputedStyle(ring)
+        samples.push({ field: input.name || input.getAttribute('aria-label') || input.id, colour: style.outlineColor, style: style.outlineStyle })
+        await new Promise(resolve => requestAnimationFrame(resolve))
+      }
+      input.blur()
+    }
+    return samples
+  })
+
+  const white = frames.filter(({ colour, style }) => {
+    const [r, g, b, a = 1] = colour.match(/[\d.]+/g).map(Number)
+    return style !== 'none' && a > 0.05 && r > 180 && g > 180 && b > 180
+  })
+  expect(new Set(frames.map(({ field }) => field)).size).toBeGreaterThanOrEqual(4)
+  expect(frames.some(({ colour }) => colour === 'rgb(96, 165, 250)')).toBe(true)
+  expect(white).toEqual([])
+})

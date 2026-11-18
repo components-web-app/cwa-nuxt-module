@@ -65,6 +65,7 @@
     "tailwind:main": "postcss src/tailwind/tailwind-cwa.css -o ./src/runtime/templates/assets/cwa.css",
     "tailwind:base": "postcss src/tailwind/tailwind-base.css -o ./src/runtime/templates/assets/base.css",
     "tailwind:watch": "postcss src/tailwind/tailwind-cwa.css -o ./src/runtime/templates/assets/cwa.css --watch",
+    "tailwind:check": "node scripts/check-compiled-css.mjs",
     "test:fresh-install": "node test/e2e/fresh-install.mjs",
     "test:browser": "playwright test -c test/browser/playwright.config.mjs",
     "test:browser:rehearse": "node test/browser/rehearse.mjs"

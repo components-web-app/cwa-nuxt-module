@@ -45,6 +45,7 @@ const props = withDefaults(defineProps<{
   disabledReason?: string
   endpoint: string
   searchParams?: string[]
+  order?: Record<string, 'asc' | 'desc'>
   perPage?: number
   noun?: string
   labelOf?: (resource: CwaResource) => string
@@ -63,6 +64,7 @@ const props = withDefaults(defineProps<{
   disabled: false,
   disabledReason: undefined,
   searchParams: () => ['search'],
+  order: undefined,
   perPage: 20,
   noun: 'pages',
   labelOf: (resource: CwaResource) => resource.title ?? resource.path ?? resource['@id'],
@@ -169,6 +171,7 @@ async function run(term: string, pageNumber: number) {
 async function fetchPage(term: string, pageNumber: number): Promise<ResourceSearchPage> {
   const params = new URLSearchParams({ perPage: String(props.perPage), page: String(pageNumber) })
   term && props.searchParams.forEach(param => params.append(param, term))
+  Object.entries(props.order ?? {}).forEach(([field, direction]) => params.set(`order[${field}]`, direction))
   const response = await $cwa.fetch({ path: `${props.endpoint}?${params.toString()}` }).response
   const items: CwaResource[] = response._data?.member ?? response._data?.['hydra:member'] ?? []
   return { items, total: response._data?.totalItems ?? response._data?.['hydra:totalItems'] ?? items.length }

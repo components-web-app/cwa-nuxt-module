@@ -41,17 +41,19 @@ function expectedResolvableOptions() {
   })
 }
 
-function setup(opts: { uiComponent?: string | null, isAdding?: boolean, pages?: string[], unsavedFields?: string[] } = {}) {
-  const localResourceData = ref<any>({
-    '@id': '/_/layouts/uuid-self',
-    '@type': 'Layout',
-    'reference': 'My Layout',
-    'uiComponent': opts.uiComponent === undefined ? resolvableLayoutName : opts.uiComponent,
-    'uiClassNames': null,
-    'createdAt': '2026-01-01',
-    'updatedAt': '2026-01-02',
-  })
-  const resource = computed(() => ({ ...localResourceData.value, pages: opts.pages ?? [] }))
+function setup(opts: { uiComponent?: string | null, isAdding?: boolean, pages?: string[], unsavedFields?: string[], loading?: boolean } = {}) {
+  const localResourceData = ref<any>(opts.loading
+    ? undefined
+    : {
+        '@id': '/_/layouts/uuid-self',
+        '@type': 'Layout',
+        'reference': 'My Layout',
+        'uiComponent': opts.uiComponent === undefined ? resolvableLayoutName : opts.uiComponent,
+        'uiClassNames': null,
+        'createdAt': '2026-01-01',
+        'updatedAt': '2026-01-02',
+      })
+  const resource = computed(() => localResourceData.value && ({ ...localResourceData.value, pages: opts.pages ?? [] }))
   const discard = vi.fn()
   const form = {
     unsavedFields: opts.unsavedFields ?? [],
@@ -67,7 +69,7 @@ function setup(opts: { uiComponent?: string | null, isAdding?: boolean, pages?: 
 
   mockUseItemPage.mockReturnValue({
     isAdding: ref(!!opts.isAdding),
-    isLoading: ref(false),
+    isLoading: ref(!!opts.loading),
     isUpdating: ref(false),
     localResourceData,
     resource,
@@ -92,7 +94,7 @@ function setup(opts: { uiComponent?: string | null, isAdding?: boolean, pages?: 
           name: 'Dialog',
           props: ['title', 'tabs', 'form', 'loading', 'noun', 'createNoun', 'placement'],
           emits: ['close', 'save'],
-          template: '<div><slot name="details" /><slot name="info" /></div>',
+          template: '<div><template v-if="!loading"><slot name="details" /><slot name="info" /></template></div>',
         },
       },
     },
@@ -118,6 +120,11 @@ function layoutUiOptions(wrapper: Wrapper) {
 describe('Layout admin page – Layout UI select', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+  })
+
+  test('the dialog opens while the layout loads, titled Layout and busy', () => {
+    const { wrapper } = setup({ loading: true })
+    expect(wrapper.findComponent({ name: 'Dialog' }).props()).toMatchObject({ title: 'Layout', loading: true })
   })
 
   test('the playground registers at least 2 layout components (fixture sanity)', () => {
@@ -282,6 +289,20 @@ describe('Layout admin dialog (#461)', () => {
       { text: 'Sam is editing this.' },
       { text: 'This can\'t be undone.' },
     ])
+  })
+
+  test('when who is editing cannot be read, the confirm still asks, without naming anyone', async () => {
+    realtime.peers.mockImplementationOnce(() => {
+      throw new Error('chunk failed')
+    })
+    mockConfirm.mockResolvedValue(false)
+    const { wrapper } = setup()
+
+    await wrapper.get('[data-testid="layout-delete"]').trigger('click')
+    await vi.dynamicImportSettled()
+    await flushPromises()
+
+    expect(mockConfirm.mock.calls[0]![0].lines).toEqual([{ text: 'This can\'t be undone.' }])
   })
 
   test('a delete that is not confirmed deletes nothing', async () => {

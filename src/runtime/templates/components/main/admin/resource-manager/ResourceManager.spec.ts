@@ -9,6 +9,7 @@ import type Cwa from '#cwa/cwa'
 import { announceKey } from '#cwa/templates/components/core/ui/field-keys'
 import { consola } from 'consola'
 import CwaUiManagerTab from '#cwa/templates/components/ui/ManagerTab.vue'
+import Group from './_tabs/group/Group.vue'
 
 vi.mock('#cwa/templates/components/main/admin/resource-manager/_parts/ClonePlacementMenu.vue', () => ({
   __esModule: true,
@@ -448,6 +449,25 @@ describe('ResourceManager', () => {
       expect(warn.mock.calls[0]![0]).toContain('"Title"')
     })
 
+    test('says nothing on switching to the module\'s Group tab from another tab, then warns on switching to a tab without CwaUiManagerTab', async () => {
+      const warn = vi.spyOn(consola, 'warn').mockImplementation(() => {})
+      const InfoTab = { name: 'InfoTab', render: () => h(CwaUiManagerTab, null, () => h('span', 'Info')) }
+      const PlainTab = { name: 'PlainTab', render: () => h('div', 'Label') }
+      const wrapper = await show([InfoTab, Group, PlainTab], ['Info', 'Group', 'Label'])
+      const tabs = wrapper.findComponent({ name: 'ManagerTabs' })
+
+      tabs.vm.$emit('click', 1)
+      await flushPromises()
+      expect(wrapper.find('[data-testid="group-add-start"]').exists()).toBe(true)
+      expect(warn).not.toHaveBeenCalled()
+
+      tabs.vm.$emit('click', 2)
+      await flushPromises()
+      expect(wrapper.text()).toContain('Label')
+      expect(warn).toHaveBeenCalledOnce()
+      expect(warn.mock.calls[0]![0]).toContain('"Label"')
+    })
+
     test('says nothing in production', async () => {
       vi.stubEnv('DEV', false)
       const warn = vi.spyOn(consola, 'warn').mockImplementation(() => {})
@@ -834,6 +854,46 @@ describe('ResourceManager', () => {
         wrapper.unmount()
         press()
         expect(contextMenus).toHaveBeenCalledTimes(1)
+      }
+      finally {
+        vi.useRealTimers()
+        target.remove()
+      }
+    })
+
+    test('a long press is a right-click only while editing, so outside edit mode the browser keeps its own touch menu', async () => {
+      const cwa = makeCwa({ hasRole: true })
+      const editing = ref(false)
+      Object.defineProperty(cwa.admin, 'isEditing', { get: () => editing.value })
+      cwaState.cwa = cwa
+      const wrapper = await mountManager()
+      const target = document.createElement('p')
+      document.body.append(target)
+      const contextMenus = vi.fn()
+      target.addEventListener('contextmenu', contextMenus)
+      vi.useFakeTimers()
+      try {
+        const press = () => {
+          const down = new MouseEvent('pointerdown', { clientX: 30, clientY: 40, bubbles: true })
+          Object.defineProperties(down, { pointerType: { value: 'touch' }, pointerId: { value: 1 } })
+          target.dispatchEvent(down)
+          vi.advanceTimersByTime(500)
+          target.dispatchEvent(new MouseEvent('pointerup', { bubbles: true }))
+          vi.advanceTimersByTime(1000)
+        }
+        press()
+        expect(contextMenus).not.toHaveBeenCalled()
+
+        editing.value = true
+        await nextTick()
+        press()
+        expect(contextMenus).toHaveBeenCalledTimes(1)
+
+        editing.value = false
+        await nextTick()
+        press()
+        expect(contextMenus).toHaveBeenCalledTimes(1)
+        wrapper.unmount()
       }
       finally {
         vi.useRealTimers()

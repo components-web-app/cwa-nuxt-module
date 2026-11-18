@@ -40,6 +40,16 @@ describe('CwaUiFileUpload (#460)', () => {
     expect(wrapper.find('[data-testid="file-remove"]').exists()).toBe(true)
   })
 
+  test('Replace and Remove are as tall as the thumbnail and the controls beside them, in the bar and in a dialog (#461)', () => {
+    const wrapper = mount(FileUpload, { props: { label: 'Image', upload: fakeUpload(bench) } })
+
+    for (const id of ['file-choose', 'file-remove']) {
+      const button = wrapper.get(`[data-testid="${id}"]`)
+      expect(button.classes()).toEqual(expect.arrayContaining(['cwa:h-control', 'cwa:pointer-coarse:h-hit']))
+      expect(button.classes()).not.toContain('cwa:h-8')
+    }
+  })
+
   test('with no file it offers Upload and no Remove', () => {
     const wrapper = mount(FileUpload, { props: { label: 'Image', upload: fakeUpload() } })
 

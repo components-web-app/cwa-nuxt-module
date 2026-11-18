@@ -15,6 +15,9 @@ const { label, text, textId, hover = false } = defineProps<{
 const HIDE_DELAY_MS = 150
 const open = ref(false)
 let passive = false
+let closedPassive = false
+let settledOnButton = false
+let keepOpen = false
 let hiding: ReturnType<typeof setTimeout> | undefined
 
 function show() {
@@ -28,13 +31,14 @@ function show() {
 function hideSoon() {
   clearTimeout(hiding)
   passive && (hiding = setTimeout(() => {
+    closedPassive = true
+    passive = false
     open.value = false
   }, HIDE_DELAY_MS))
 }
 
 function onCloseAutoFocus(event: Event) {
-  passive && event.preventDefault()
-  passive = false
+  closedPassive && event.preventDefault()
 }
 
 function onPointerenter(event: PointerEvent) {
@@ -47,15 +51,30 @@ function onPointerleave(event: PointerEvent) {
 
 function onFocus(event: FocusEvent) {
   const target = event.target as HTMLElement
-  hover && !open.value && target.matches?.(':focus-visible') !== false && show()
+  hover && !open.value && !settledOnButton && target.matches?.(':focus-visible') !== false && show()
 }
 
 function onBlur() {
+  settledOnButton = false
   hover && hideSoon()
+}
+
+function onClick() {
+  if (hover && open.value && passive) {
+    passive = false
+    keepOpen = true
+  }
 }
 
 function onOpenChange(next: boolean) {
   clearTimeout(hiding)
+  if (!next && keepOpen) {
+    keepOpen = false
+    return
+  }
+  keepOpen = false
+  closedPassive = !next && passive
+  settledOnButton = !next
   passive = false
   open.value = next
 }
@@ -79,6 +98,7 @@ function onOpenAutoFocus(event: Event) {
       @pointerleave="onPointerleave"
       @focus="onFocus"
       @blur="onBlur"
+      @click="onClick"
     >
       <StateGlyph kind="info" />
     </PopoverTrigger>
@@ -96,22 +116,31 @@ function onOpenAutoFocus(event: Event) {
         @pointerleave="onPointerleave"
       >
         <div class="cwa:-mt-1 cwa:-mr-2 cwa:mb-1.5 cwa:flex cwa:min-h-8 cwa:items-center cwa:gap-2 cwa:font-semibold">
+          <StateGlyph
+            kind="info"
+            accent
+          />
           <span class="cwa:min-w-0 cwa:flex-1">{{ label }}</span>
           <PopoverClose
             aria-label="Close"
-            class="cwa:grid cwa:size-8 cwa:shrink-0 cwa:cursor-pointer cwa:place-items-center cwa:text-white cwa:hover:bg-white/15"
+            class="cwa:grid cwa:size-8 cwa:shrink-0 cwa:cursor-pointer cwa:place-items-center cwa:text-fg cwa:hover:bg-button"
           >
-            <XMarkIcon class="cwa:size-4" />
+            <XMarkIcon class="cwa:size-3" />
           </PopoverClose>
         </div>
         <p class="cwa:m-0">
           {{ text }}
         </p>
         <PopoverArrow
-          :width="12"
-          :height="6"
+          :width="14"
+          :height="7"
           :class="infoArrow"
-        />
+        >
+          <path
+            d="M0 0L6 6L12 0"
+            vector-effect="non-scaling-stroke"
+          />
+        </PopoverArrow>
       </PopoverContent>
     </PopoverPortal>
   </PopoverRoot>

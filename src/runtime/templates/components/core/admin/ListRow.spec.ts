@@ -99,7 +99,7 @@ describe('ListRow (#461)', () => {
       expect(wrapper.get('[data-testid="list-row-link"]').attributes('tabindex')).toBeUndefined()
     })
 
-    test('the actions sit tight at the row end, above the stretched link, with large filled glyphs in square targets of at least 24px, 44px on coarse pointers, and focus rings', async () => {
+    test('the actions sit tight at the row end, above the stretched link, with 20px filled glyphs in 32px square targets, 44px on coarse pointers, and focus rings', async () => {
       const wrapper = await mountRow({ to: '/x', view: '/y', actions: true })
       const cell = wrapper.get('[data-testid="list-row-actions"]')
 
@@ -111,7 +111,8 @@ describe('ListRow (#461)', () => {
         expect(drawsFocusRing(action.classes())).toBe(true)
         const glyph = action.get('svg')
         expect(glyph.attributes('aria-hidden')).toBe('true')
-        expect(glyph.classes().some(name => /^cwa:(size|h)-(5|6)$/.test(name))).toBe(true)
+        expect(glyph.classes().some(name => /^cwa:(size|h)-5$/.test(name))).toBe(true)
+        expect(glyph.classes().some(name => /^cwa:(size|h)-6$/.test(name))).toBe(false)
         expect(glyph.find('[fill="currentColor"]').exists()).toBe(true)
       }
     })

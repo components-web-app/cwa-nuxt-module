@@ -66,6 +66,15 @@ describe('CwaUiLinkPopover (#461)', () => {
     expect(onApply).toHaveBeenCalledWith({ href: '/about', newTab: true })
   })
 
+  test('Enter that confirms an IME composition in the URL does not apply it', async () => {
+    const { url, onApply } = await openPopover()
+    type(url, '/about')
+    url.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', isComposing: true, bubbles: true, cancelable: true }))
+    await flushPromises()
+
+    expect(onApply).not.toHaveBeenCalled()
+  })
+
   test('a URL that is neither /path nor http(s) is not applied and says why', async () => {
     const { url, panel, button, onApply } = await openPopover()
     type(url, 'example')

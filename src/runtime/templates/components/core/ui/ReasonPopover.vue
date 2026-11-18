@@ -35,10 +35,15 @@ onMounted(() => announce(text))
       >
         {{ text }}
         <PopoverArrow
-          :width="12"
-          :height="6"
+          :width="14"
+          :height="7"
           :class="infoArrow"
-        />
+        >
+          <path
+            d="M0 0L6 6L12 0"
+            vector-effect="non-scaling-stroke"
+          />
+        </PopoverArrow>
       </PopoverContent>
     </PopoverPortal>
   </PopoverRoot>

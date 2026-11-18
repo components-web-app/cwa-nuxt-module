@@ -2,7 +2,7 @@
 import { useTemplateRef } from 'vue'
 import { useCwaReveal } from './reveal'
 
-const { when } = defineProps<{ when: boolean }>()
+const { when, keep = false } = defineProps<{ when: boolean, keep?: boolean }>()
 
 const root = useTemplateRef<HTMLElement>('root')
 
@@ -11,7 +11,8 @@ useCwaReveal(() => root.value, () => when)
 
 <template>
   <div
-    v-if="when"
+    v-if="keep || when"
+    v-show="when"
     ref="root"
     class="cwa:contents"
     data-cwa-reveal

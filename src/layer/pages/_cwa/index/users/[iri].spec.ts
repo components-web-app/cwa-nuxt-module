@@ -60,7 +60,7 @@ function resendState(opts: { error?: string, retryIn?: number, success?: boolean
   return state
 }
 
-async function setup(user: Record<string, any> = stored, opts: { adding?: boolean, signedInAs?: string } = {}) {
+async function setup(user: Record<string, any> = stored, opts: { adding?: boolean, signedInAs?: string, held?: Promise<void> } = {}) {
   route.params = { iri: opts.adding ? 'add' : userIri }
   const store = reactive<Record<string, any>>({})
   const errors = ref<any[]>([])
@@ -88,6 +88,7 @@ async function setup(user: Record<string, any> = stored, opts: { adding?: boolea
     },
     auth: { user: { '@id': opts.signedInAs ?? '/users/uuid-admin', 'roles': ['ROLE_SUPER_ADMIN'] } },
     fetchResource: vi.fn(async () => {
+      await opts.held
       store[userIri] = { data: { ...user }, apiState: { status: 'SUCCESS' } }
       return store[userIri].data
     }),
@@ -145,6 +146,26 @@ describe('admin user dialog (#461)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     resendState()
+  })
+
+  test('opens at once while the user loads, titled User, its body busy and Save off, and fills in when the user arrives', async () => {
+    let release!: () => void
+    const held = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    await setup(stored, { held })
+
+    expect(q('h2')!.textContent!.trim()).toBe('User')
+    expect(q('[data-testid="dialog-body"]')!.getAttribute('aria-busy')).toBe('true')
+    expect(q('[data-testid="dialog-loading"]')).not.toBeNull()
+    expect(fieldByLabel('Username')).toBeNull()
+    expect(save().getAttribute('aria-disabled')).toBe('true')
+
+    release()
+    await flushPromises()
+    expect(q('h2')!.textContent!.trim()).toBe(stored.username)
+    expect(q('[data-testid="dialog-body"]')!.getAttribute('aria-busy')).toBeNull()
+    expect(fieldByLabel('Username')!.value).toBe(stored.username)
   })
 
   test('slides over from the right, so switching tabs never moves its header or footer', async () => {

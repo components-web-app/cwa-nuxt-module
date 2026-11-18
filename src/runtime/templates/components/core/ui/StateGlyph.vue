@@ -1,8 +1,9 @@
 <script setup lang="ts">
 export type GlyphKind = 'error' | 'conflict' | 'saved' | 'draft' | 'live' | 'scheduled' | 'new' | 'group' | 'info'
 
-const { kind } = defineProps<{
+const { kind, accent = false } = defineProps<{
   kind: GlyphKind
+  accent?: boolean
 }>()
 
 const colours: Record<GlyphKind, string> = {
@@ -23,7 +24,7 @@ const colours: Record<GlyphKind, string> = {
     viewBox="0 0 16 16"
     aria-hidden="true"
     class="cwa:size-4 cwa:shrink-0"
-    :class="colours[kind]"
+    :class="accent ? 'cwa:text-accent-fg' : colours[kind]"
     :data-glyph="kind"
     fill="currentColor"
   >

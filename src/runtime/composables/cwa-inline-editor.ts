@@ -8,6 +8,7 @@ import type { ResourceModelField } from '#cwa/resources/model-editors'
 export interface CwaInlineEditorOps {
   focus?: () => void
   enabled?: () => boolean
+  label?: string
 }
 
 function focusAtEnd(element: HTMLElement) {
@@ -34,6 +35,8 @@ export function useCwaInlineEditor(model: ResourceModelField<any>, element: Mayb
     key,
     element: target,
     enabled: ops.enabled ?? (() => true),
+    model,
+    label: ops.label,
     focus: () => {
       if (ops.focus) {
         ops.focus()
@@ -47,7 +50,7 @@ export function useCwaInlineEditor(model: ResourceModelField<any>, element: Mayb
   let listeningOn: HTMLElement | undefined
 
   function onKeydown(event: KeyboardEvent) {
-    if (event.key === 'Escape' && !event.defaultPrevented && returnFromInlineEditor(editor)) {
+    if (event.key === 'Escape' && returnFromInlineEditor(editor)) {
       event.preventDefault()
       event.stopPropagation()
     }

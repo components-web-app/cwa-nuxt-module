@@ -37,12 +37,12 @@ afterEach(() => {
   document.body.innerHTML = ''
 })
 
-function harness(initial = false) {
+function harness(initial = false, keep = false) {
   const shown = ref(initial)
   const wrapper = mount(defineComponent({
     setup: () => () => h('div', [
       h('button', { 'data-geometry': 'control' }, 'Nested under'),
-      h(Reveal, { when: shown.value }, () => h('div', { 'data-geometry': 'revealed' }, 'Parent page')),
+      h(Reveal, { when: shown.value, keep }, () => h('div', { 'data-geometry': 'revealed' }, 'Parent page')),
     ]),
   }), { attachTo: document.body })
   return { wrapper, shown }
@@ -146,6 +146,19 @@ describe('Reveal (#461)', () => {
     wrapper.vm.$forceUpdate()
     await nextTick()
     expect(scrollBy).not.toHaveBeenCalled()
+  })
+
+  test('with keep, hidden content stays mounted, so a hidden field stays registered, and showing it still reveals it', async () => {
+    geometry.spans.set('revealed', { start: 560, end: 640 })
+    const { wrapper, shown } = harness(false, true)
+    const content = wrapper.find('[data-geometry="revealed"]')
+    expect(content.exists()).toBe(true)
+    expect(content.isVisible()).toBe(false)
+
+    userActs()
+    await reveal(shown)
+    expect(wrapper.find('[data-geometry="revealed"]').isVisible()).toBe(true)
+    expect(scrollBy).toHaveBeenCalledWith(geometry.scroller, 'y', 40, true)
   })
 
   test('with reduced motion the scroll is instant', async () => {
