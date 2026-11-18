@@ -74,7 +74,7 @@ const resourcesConfig = {
 
 function makeCwa() {
   const store = reactive<Record<string, any>>({
-    [GROUP]: { data: { '@id': GROUP, 'reference': 'Main content', 'componentPositions': ['/_/component_positions/1', '/_/component_positions/2', '/_/component_positions/3'] } },
+    [GROUP]: { data: { '@id': GROUP, 'reference': 'Main content_/_/pages/home', 'componentPositions': ['/_/component_positions/1', '/_/component_positions/2', '/_/component_positions/3'] } },
     '/_/component_positions/1': { data: { component: '/component/images/1' } },
     '/_/component_positions/2': { data: { component: '/component/images/2' } },
     '/_/component_positions/3': { data: { component: '/component/html_contents/3' } },

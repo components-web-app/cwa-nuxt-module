@@ -142,3 +142,7 @@ export function pageDataNoun(pageDataType: string | undefined): string {
   const words = pageDataType.replace(/Data$/, '').replace(/([a-z0-9])([A-Z])/g, '$1 $2').toLowerCase().trim()
   return words || 'page'
 }
+
+export function groupDisplayName(reference: string | undefined): string {
+  return reference?.replace(/_\/.*$/, '') || 'this group'
+}

@@ -13,6 +13,7 @@ import { isComponentAllowedInGroup } from '#cwa/templates/components/main/admin/
 import { canInsertSelection } from '#cwa/templates/components/main/admin/resource-manager/_parts/add-component-selection'
 import {
   addTargetPlace,
+  groupDisplayName,
   buildAddComponentList,
   countComponentsInGroup,
   DYNAMIC_COMPONENT,
@@ -211,7 +212,7 @@ async function createDisplayData(event: AddResourceEvent): Promise<DisplayData> 
     available,
     choices,
     dynamic,
-    groupName: group?.reference || 'this group',
+    groupName: groupDisplayName(group?.reference),
     place: addTargetPlace({
       targetIsGroup,
       addAfter: event.addAfter,

@@ -6,6 +6,7 @@ import {
   hasMarkup,
   matchRank,
   normaliseQuery,
+  groupDisplayName,
   pageDataNoun,
   plainText,
 } from './add-component-list'
@@ -174,5 +175,14 @@ describe('the page data noun', () => {
     expect(pageDataNoun('BlogArticleData')).toBe('blog article')
     expect(pageDataNoun('Product')).toBe('product')
     expect(pageDataNoun(undefined)).toBe('page')
+  })
+})
+
+describe('the group name', () => {
+  test('is the reference a template gave it, without the location the module appends', () => {
+    expect(groupDisplayName('primary_/_api/_/pages/bf0b86fd')).toBe('primary')
+    expect(groupDisplayName('top_nav_/_/layouts/1')).toBe('top_nav')
+    expect(groupDisplayName('footer_global')).toBe('footer_global')
+    expect(groupDisplayName(undefined)).toBe('this group')
   })
 })
