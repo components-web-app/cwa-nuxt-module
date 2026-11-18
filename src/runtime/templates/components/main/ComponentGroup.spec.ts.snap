@@ -4,9 +4,19 @@ exports[`ComponentGroup > snapshots > should match snapshot IF loader is shown 1
 <div
   class="component-group-placeholder"
 >
-  <spinner-stub
-    show="true"
-  />
+  <span
+    class="cwa:inline-flex"
+    role="status"
+  >
+    <spinner-stub
+      size="md"
+    />
+    <span
+      class="cwa:sr-only"
+    >
+      Loading
+    </span>
+  </span>
 </div>
 `;
 

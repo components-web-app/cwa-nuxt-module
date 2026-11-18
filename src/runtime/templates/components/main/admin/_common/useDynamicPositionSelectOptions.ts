@@ -1,4 +1,4 @@
-import type { SelectOption } from '#cwa/composables/cwa-select-input'
+import type { SelectOption } from '#cwa/composables/cwa-select'
 import { ResourceTypeFromIri } from '#cwa/resources/resource-utils'
 import type Cwa from '#cwa/cwa'
 import { isComponentAllowedInGroup } from '#cwa/templates/components/main/admin/resource-manager/_parts/available-components'
