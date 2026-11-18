@@ -768,6 +768,9 @@
 .cwa\:w-\[90vw\] {
   width: 90vw;
 }
+.cwa\:w-\[min\(20rem\,calc\(100vw-1rem\)\)\] {
+  width: min(20rem, calc(100vw - 1rem));
+}
 .cwa\:w-\[min\(22rem\,calc\(100vw-1rem\)\)\] {
   width: min(22rem, calc(100vw - 1rem));
 }
@@ -1595,6 +1598,9 @@
 }
 .cwa\:bg-type-static {
   background-color: var(--cwa-color-type-static);
+}
+.cwa\:bg-warning {
+  background-color: var(--cwa-color-warning);
 }
 .cwa\:bg-white {
   background-color: var(--cwa-color-white);
