@@ -149,6 +149,19 @@ describe('Resources manager', () => {
         resource: mockResource,
       })
     })
+
+    test('hands the request\'s outcome to onRequest, with the error a refused create was answered with (#461)', async () => {
+      const { resourcesManager, cwaFetch } = createResourcesManager()
+      const refused = Object.assign(new Error('refused'), { statusCode: 422, data: { violations: [] } })
+      cwaFetch.fetch.mockRejectedValue(refused)
+      const onRequest = vi.fn()
+
+      const created = await resourcesManager.createResource({ endpoint: '/_/pages', data: {}, onRequest })
+
+      expect(created).toBeUndefined()
+      expect(onRequest).toHaveBeenCalledWith('/_/pages', expect.any(Promise))
+      await expect(onRequest.mock.calls[0]![1]).resolves.toEqual({ resource: undefined, error: refused })
+    })
   })
 
   describe('updateResource', () => {

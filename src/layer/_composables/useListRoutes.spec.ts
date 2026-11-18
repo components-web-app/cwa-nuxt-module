@@ -1,6 +1,7 @@
 // @vitest-environment nuxt
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { useListRoutes } from './useListRoutes'
+import { consola } from 'consola'
 import * as cwaComposable from '#cwa/composables/cwa'
 
 function mockFetch(...responses: Array<Promise<unknown>>) {
@@ -71,13 +72,25 @@ describe('useListRoutes (#461)', () => {
     expect(known.value).toBe(true)
   })
 
-  test('a failed read leaves the routes unknown', async () => {
-    mockFetch(Promise.reject(new Error('offline')))
-    const { known, load } = useListRoutes('pages')
+  test('a failed read leaves the routes unknown, says why and logs it, and Retry reads the same pages again', async () => {
+    const logged = vi.spyOn(consola, 'error').mockImplementation(() => undefined)
+    const offline = new Error('offline')
+    const routeA = { '@id': '/_/routes//a', 'page': '/_/pages/a', 'path': '/a' }
+    const fetchMock = mockFetch(Promise.reject(offline), Promise.resolve({ _data: { member: [routeA] } }))
+    const { known, error, routes, load, retry } = useListRoutes('pages')
 
     await load(pages)
 
     expect(known.value).toBe(false)
+    expect(error.value).toBe(offline)
+    expect(logged).toHaveBeenCalledWith('[CWA] Could not load the routes of the list', offline)
+
+    const retrying = retry()
+    expect(error.value).toBeUndefined()
+    await retrying
+    expect(fetchMock.mock.calls[1]![0]).toEqual(fetchMock.mock.calls[0]![0])
+    expect(routes.value).toEqual({ '/_/pages/a': routeA })
+    expect(known.value).toBe(true)
   })
 
   test('an older answer never replaces a newer one', async () => {

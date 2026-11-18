@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import CheckGlyph from '../core/ui/CheckGlyph.vue'
+import CheckGlyph from './CheckGlyph.vue'
 
 export type FilterToggleColour = 'static' | 'dynamic'
 

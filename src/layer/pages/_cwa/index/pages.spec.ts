@@ -5,12 +5,12 @@ import { mount } from '@vue/test-utils'
 import ListRow from '#cwa/templates/components/core/admin/ListRow.vue'
 import { mockNuxtImport } from '@nuxt/test-utils/runtime'
 import PagesListPage from './pages.vue'
-import FilterToggle from '#cwa/templates/components/ui/FilterToggle.vue'
+import FilterToggle from '#cwa/templates/components/core/ui/FilterToggle.vue'
 
 const { mockUseCwa, typesModel, listRoutes } = vi.hoisted(() => ({
   mockUseCwa: vi.fn(),
   typesModel: { value: [] as string[] },
-  listRoutes: { routes: {} as Record<string, any>, load: (() => {}) as (...args: any[]) => void },
+  listRoutes: { routes: {} as Record<string, any>, load: (() => {}) as (...args: any[]) => void, error: undefined as unknown, retry: (() => {}) as () => void },
 }))
 
 vi.mock('#cwa-layer/_composables/useListPage', () => ({
@@ -34,29 +34,32 @@ vi.mock('#cwa/composables/cwa-query-bound-model', () => ({
 vi.mock('#cwa-layer/_composables/useListRoutes', async () => {
   const { ref } = await import('vue')
   return {
-    useListRoutes: () => ({ routes: ref(listRoutes.routes), known: ref(true), now: ref(new Date()), load: listRoutes.load }),
+    useListRoutes: () => ({ routes: ref(listRoutes.routes), known: ref(true), error: ref(listRoutes.error), now: ref(new Date()), load: listRoutes.load, retry: listRoutes.retry }),
   }
 })
 
 mockNuxtImport('useCwa', () => mockUseCwa)
 mockNuxtImport('useCwaResourceRoute', () => () => ({ getInternalResourceLink: vi.fn() }))
 
-function setup(uiComponent: string) {
+function setup(uiComponent: string, stored: Record<string, any> = {}, listed: Record<string, any> = {}) {
   mockUseCwa.mockReturnValue({
     pagesConfig: {
       PrimaryPageTemplate: { name: 'Primary Page' },
     },
   })
-  const item = { '@id': '/_/pages/1', 'reference': 'Home', 'isTemplate': false, uiComponent }
+  const item = { '@id': '/_/pages/1', 'reference': 'Home', 'isTemplate': false, uiComponent, ...stored }
+  const raw = { ...item, ...listed }
   return mount(PagesListPage, {
     shallow: true,
     global: {
       stubs: {
+        CwaUiAlert: false,
+        CwaUiButton: false,
         ListContent: {
           name: 'ListContent',
           props: ['fetchUrl', 'searchFields'],
-          setup: () => ({ item }),
-          template: '<div><slot name="item" :data="item" /></div>',
+          setup: () => ({ item, raw }),
+          template: '<div><slot name="notice" /><slot name="item" :data="item" :raw-data="raw" /></div>',
         },
         ListFilter: { name: 'ListFilter', template: '<div><slot name="filters" /></div>' },
       },
@@ -93,6 +96,37 @@ describe('/_cwa/pages list (#461)', () => {
     typesModel.value = []
     listRoutes.routes = {}
     listRoutes.load = () => {}
+    listRoutes.error = undefined
+    listRoutes.retry = () => {}
+  })
+
+  test('a template\'s count comes from the list\'s own answer, never the stored copy, which nothing refreshes when page data is added', () => {
+    const wrapper = setup('CwaPagePrimaryPageTemplate', { isTemplate: true, _metadata: { pageDataCount: 0 } }, { _metadata: { pageDataCount: 14 } })
+
+    const statuses = wrapper.findAllComponents({ name: 'PageListStatus' })
+    expect(statuses.length).toBeGreaterThan(0)
+    statuses.forEach(status => expect(status.props('pageDataCount')).toBe(14))
+  })
+
+  test('routes that could not be read mark every status unavailable and offer Retry, which reads them again', async () => {
+    const retry = vi.fn()
+    listRoutes.retry = retry
+    listRoutes.error = new Error('offline')
+    const wrapper = setup('CwaPagePrimaryPageTemplate', { route: '/_/routes//home' })
+
+    const statuses = wrapper.findAllComponents({ name: 'PageListStatus' })
+    expect(statuses.length).toBeGreaterThan(0)
+    statuses.forEach(status => expect(status.props('failed')).toBe(true))
+    expect(wrapper.get('[data-testid="list-routes-error"]').text()).toContain('Route statuses couldn\'t be loaded.')
+    await wrapper.get('[data-testid="list-routes-retry"]').trigger('click')
+    expect(retry).toHaveBeenCalledOnce()
+  })
+
+  test('routes that were read show no alert', () => {
+    const wrapper = setup('CwaPagePrimaryPageTemplate')
+
+    expect(wrapper.find('[data-testid="list-routes-error"]').exists()).toBe(false)
+    expect(wrapper.findComponent({ name: 'PageListStatus' }).props('failed')).toBe(false)
   })
 
   test('a routed page\'s second line is its route path', () => {

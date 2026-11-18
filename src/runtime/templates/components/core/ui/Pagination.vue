@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import ChevronGlyph from '../core/ui/ChevronGlyph.vue'
+import ChevronGlyph from './ChevronGlyph.vue'
 
 const { total, perPage, label = 'Pages' } = defineProps<{
   total: number

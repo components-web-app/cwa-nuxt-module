@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, test } from 'vitest'
 import { enableAutoUnmount, mount } from '@vue/test-utils'
-import { axe } from '../../../../../test/utils/axe'
-import { drawsFocusRing } from '../../../../../test/utils/focus-ring'
+import { axe } from '../../../../../../test/utils/axe'
+import { drawsFocusRing } from '../../../../../../test/utils/focus-ring'
 import Pagination from './Pagination.vue'
 
 enableAutoUnmount(afterEach)
@@ -17,7 +17,7 @@ function mountPagination(page: number, total = 143, perPage = 20) {
 
 const pages = (wrapper: ReturnType<typeof mountPagination>) => wrapper.findAll('[data-testid="pagination-page"]').map(button => button.text())
 
-describe('CwaUiPagination (#461)', () => {
+describe('Pagination (#461)', () => {
   test('says which items are shown out of how many', () => {
     expect(mountPagination(1).get('[data-testid="pagination-range"]').text()).toBe('1–20 of 143')
     expect(mountPagination(8).get('[data-testid="pagination-range"]').text()).toBe('141–143 of 143')

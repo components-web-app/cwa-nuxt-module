@@ -736,6 +736,9 @@
 .cwa\:w-12 {
   width: calc(var(--cwa-spacing) * 12);
 }
+.cwa\:w-16 {
+  width: calc(var(--cwa-spacing) * 16);
+}
 .cwa\:w-24 {
   width: calc(var(--cwa-spacing) * 24);
 }

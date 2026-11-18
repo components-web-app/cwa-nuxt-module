@@ -4,21 +4,23 @@ import { ref, nextTick } from 'vue'
 import { mount, flushPromises, enableAutoUnmount } from '@vue/test-utils'
 import { consola } from 'consola'
 import ListContent from './ListContent.vue'
-import Pagination from '#cwa/templates/components/ui/Pagination.vue'
+import Pagination from '#cwa/templates/components/core/ui/Pagination.vue'
 import { axe } from '../../../../../../test/utils/axe'
+import { drawsFocusRing } from '../../../../../../test/utils/focus-ring'
 import * as cwaComposable from '#cwa/composables/cwa'
 
 vi.mock('consola')
 
 enableAutoUnmount(afterEach)
 
+const routerReplace = vi.hoisted(() => vi.fn())
 // eslint-disable-next-line no-var
 var mockRoute: { query: Record<string, any> }
 vi.mock('vue-router', async () => {
   const { reactive } = await import('vue')
   mockRoute = reactive({ query: {} as Record<string, any> })
   const mod = await vi.importActual<typeof import('vue-router')>('vue-router')
-  return { ...mod, useRoute: () => mockRoute, useRouter: () => ({ replace: vi.fn() }) }
+  return { ...mod, useRoute: () => mockRoute, useRouter: () => ({ replace: routerReplace }) }
 })
 
 const models = vi.hoisted(() => ({ pageModel: null as any, perPageModel: null as any }))
@@ -554,6 +556,58 @@ describe('ListContent', () => {
       await flushPromises()
       expect(searched.text()).toContain('No pages match “shaker”.')
       expect(searched.find('.create-stub').exists()).toBe(false)
+      expect(searched.get('[data-testid="list-clear-filters"]').text()).toBe('Clear search')
+    })
+
+    test.each([
+      ['a type filter', { 'isTemplate[]': ['true'] }],
+      ['a filter from a link', { page: '2', template: '/_/pages/t' }],
+      ['a filter and a search', { 'search': 'shaker', 'isTemplate[]': 'false' }],
+    ])('an empty list under %s says nothing matches the filters, never that there are none yet, and Clear filters keeps the sort and page size', async (_kind, query) => {
+      mockRoute.query = { ...query, 'order[createdAt]': 'desc', 'perPage': '20', 'cwa_force': 'true' }
+      mockCwa({ fetchImpl: vi.fn(() => makeFetchResponse([], { totalItems: 0 })) })
+      const wrapper = mountComponent({ empty: '<button type="button" class="create-stub">Create page</button>' }, '/_/pages', undefined, { noun: 'pages' })
+      await flushPromises()
+
+      expect(wrapper.text()).toContain('No pages match these filters.')
+      expect(wrapper.text()).not.toContain('No pages yet')
+      expect(wrapper.find('.create-stub').exists()).toBe(false)
+      expect(drawsFocusRing(wrapper.get('[data-testid="list-clear-filters"]').classes())).toBe(true)
+      await wrapper.get('[data-testid="list-clear-filters"]').trigger('click')
+      expect(routerReplace).toHaveBeenCalledWith({ query: { 'order[createdAt]': 'desc', 'perPage': '20', 'cwa_force': 'true' } })
+    })
+
+    test('the sort, page size and an emptied search are not filters', async () => {
+      mockRoute.query = { 'order[reference]': 'asc', 'perPage': '50', 'search': ' ', 'isTemplate[]': [] }
+      mockCwa({ fetchImpl: vi.fn(() => makeFetchResponse([], { totalItems: 0 })) })
+      const wrapper = mountComponent({ empty: '<button type="button" class="create-stub">Create page</button>' }, '/_/pages', undefined, { noun: 'pages' })
+      await flushPromises()
+
+      expect(wrapper.text()).toContain('No pages yet')
+      expect(wrapper.find('.create-stub').exists()).toBe(true)
+    })
+
+    test('an empty page past the end of the list moves to the last page', async () => {
+      models.pageModel.value = 9
+      models.perPageModel.value = 20
+      mockCwa({ fetchImpl: vi.fn(() => makeFetchResponse([], { totalItems: 41 })) })
+      const wrapper = mountComponent({}, '/_/pages', undefined, { noun: 'pages' })
+      await flushPromises()
+
+      expect(models.pageModel.value).toBe(3)
+      expect(wrapper.find('[data-testid="list-state-empty"]').exists()).toBe(false)
+      expect(wrapper.emitted('loaded')).toBeUndefined()
+    })
+
+    test('an empty first page of an empty list stays where it is', async () => {
+      models.pageModel.value = 2
+      models.perPageModel.value = 20
+      mockCwa({ fetchImpl: vi.fn(() => makeFetchResponse([], { totalItems: 0 })) })
+      const wrapper = mountComponent({}, '/_/pages', undefined, { noun: 'pages' })
+      await flushPromises()
+
+      expect(models.pageModel.value).toBe(2)
+      expect(wrapper.find('[data-testid="list-state-empty"]').exists()).toBe(true)
     })
 
     test('a failed reload keeps the rows dimmed under the alert, says how old they are, and Retry loads again', async () => {
@@ -600,6 +654,10 @@ describe('ListContent', () => {
     test.each([
       ['loaded', () => makeFetchResponse([{ '@id': '/a' }], { totalItems: 1 })],
       ['empty', () => makeFetchResponse([], { totalItems: 0 })],
+      ['filtered to nothing', () => {
+        mockRoute.query = { 'isTemplate[]': 'true' }
+        return makeFetchResponse([], { totalItems: 0 })
+      }],
       ['failed', () => makeFetchRejection({ statusCode: 500 })],
       ['loading', () => ({ response: new Promise(() => {}) })],
     ])('%s, it has no axe violations', async (_state, response) => {
