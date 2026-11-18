@@ -118,6 +118,17 @@ function kitSearch(term: string, pageNumber: number) {
   return new Promise<{ items: CwaResource[], total: number }>(resolve => setTimeout(() => resolve({ items: found.slice((pageNumber - 1) * 20, pageNumber * 20), total: found.length }), 400))
 }
 const kitSearchForever = () => new Promise<never>(() => {})
+const kitPeers = [{ user: { id: '/_/users/mia', name: 'Mia' }, name: 'Mia', colour: '#d946ef', isSelf: false, clientIds: ['kit-mia'] }]
+function withPeer<T>(model: ReturnType<typeof fakeFieldModel<T>>) {
+  return { ...model, focusedBy: computed(() => kitPeers) }
+}
+const presenceModels = {
+  input: withPeer(fakeFieldModel('Kitchens')),
+  number: withPeer(fakeFieldModel(3)),
+  toggle: withPeer(fakeFieldModel(true)),
+  select: withPeer(fakeFieldModel<string>('split')),
+  segmented: withPeer(fakeFieldModel<string>('left')),
+}
 const kitSearchFails = () => Promise.reject(new Error('500'))
 const kitSearchNone = async () => ({ items: [], total: 0 })
 const kitResolve = async (iri: string) => kitPages.find(page => page['@id'] === iri)
@@ -559,6 +570,39 @@ const badgeTones = [
             :model-value="3"
             label="Disabled"
             disabled
+          />
+        </div>
+        <h3>Someone else in the field</h3>
+        <p class="kit-note">
+          Another editor's focus outlines the field in their colour and names them on a flag that fades after 3 s and comes back on hover. Every kit field shows it; a disabled one shows it but never reports your own focus.
+        </p>
+        <div
+          class="kit-row"
+          data-testid="kit-presence"
+        >
+          <CwaUiInput
+            label="Input"
+            :model="presenceModels.input"
+          />
+          <CwaUiNumber
+            label="Number"
+            :model="presenceModels.number"
+            :min="1"
+            :max="6"
+          />
+          <CwaUiToggle
+            label="Toggle"
+            :model="presenceModels.toggle"
+          />
+          <CwaUiSelect
+            label="Select"
+            :model="presenceModels.select"
+            :options="selectOptions"
+          />
+          <CwaUiSegmented
+            label="Segmented"
+            :model="presenceModels.segmented"
+            :options="[{ value: 'left', label: 'Left' }, { value: 'right', label: 'Right' }]"
           />
         </div>
       </section>

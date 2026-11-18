@@ -1,5 +1,7 @@
 <script lang="ts" setup>
 import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, onMounted, provide, ref, shallowRef, toRaw, useTemplateRef, watch } from 'vue'
+import type { ComponentPublicInstance } from 'vue'
+import { consola } from 'consola'
 import ResourceLoadingIndicator
   from '../_common/ResourceLoadingIndicator.vue'
 import ManagerTabs from './_parts/ManagerTabs.vue'
@@ -18,7 +20,7 @@ import { useCloneMode } from '#cwa/admin/clone-mode'
 import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/resources/resource-utils'
 import BarSummary from '#cwa/templates/components/core/admin/BarSummary.vue'
 import { createAnnouncer } from '#cwa/templates/components/core/ui/field-context'
-import { announceKey } from '#cwa/templates/components/core/ui/field-keys'
+import { announceKey, managerTabKey } from '#cwa/templates/components/core/ui/field-keys'
 
 const ComponentUsageBadge = defineAsyncComponent(() => import('#cwa/templates/components/main/admin/resource-manager/cta/ComponentUsageBadge.vue'))
 const SharedInstancesHighlight = defineAsyncComponent(() => import('#cwa/templates/components/main/admin/resource-manager/SharedInstancesHighlight.vue'))
@@ -161,6 +163,21 @@ const selectedTab = computed(() => {
   return tab ? toRaw(tab) : tab
 })
 
+const shownTab = useTemplateRef<ComponentPublicInstance>('shownTab')
+if (import.meta.env.DEV) {
+  const warned = new Set<unknown>()
+  watch(shownTab, (instance) => {
+    const tab = selectedTab.value
+    const root = instance?.$.subTree.component
+    if (!instance || !tab || warned.has(tab) || (root && Object.hasOwn((root as unknown as { provides: object }).provides, managerTabKey))) {
+      return
+    }
+    warned.add(tab)
+    const name = allTabsMeta.value[selectedIndex.value]?.name ?? instance.$.type.name ?? instance.$.type.__name
+    consola.warn(`The manager tab "${name}" should render CwaUiManagerTab at its root, so its fields sit in the manager bar's one row and \`field="…"\` binds to the selected resource.`)
+  }, { flush: 'post' })
+}
+
 watch([spacer, managerHolder, currentStackItem, selectedIndex, allTabsMeta], () => {
   if (!spacer.value || !managerHolder.value || !currentStackItem.value) {
     return
@@ -254,6 +271,7 @@ defineExpose({
           <component
             :is="selectedTab"
             v-if="selectedTab"
+            ref="shownTab"
             class="cwa:flex cwa:w-full cwa:min-w-0 cwa:items-center cwa:px-row-x"
           />
         </div>

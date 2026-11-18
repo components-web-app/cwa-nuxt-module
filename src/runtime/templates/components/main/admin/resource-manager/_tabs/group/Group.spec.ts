@@ -1,7 +1,8 @@
 // @vitest-environment happy-dom
-import { describe, test, expect, vi, beforeEach } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { afterEach, describe, test, expect, vi, beforeEach } from 'vitest'
+import { enableAutoUnmount, mount } from '@vue/test-utils'
 import { ref } from 'vue'
+import { axe } from '../../../../../../../../../test/utils/axe'
 import Group from './Group.vue'
 
 const resource = ref<any>()
@@ -19,17 +20,17 @@ vi.mock('#cwa/composables/cwa-resource-manager-tab', () => ({
     exposeMeta: { disabled: ref(false) },
   }),
 }))
+vi.mock('#cwa/composables/cwa', () => ({ useCwa: () => ({ admin: { resourceStackManager: { currentIri: ref('/_/component_groups/g1') } } }) }))
 
-const CwaUiFormButton = {
-  name: 'CwaUiFormButton',
-  props: { disabled: { type: Boolean, default: false } },
-  emits: ['click'],
-  template: '<button :disabled="disabled" @click="$emit(\'click\')"><slot /></button>',
-}
+enableAutoUnmount(afterEach)
 
 function mountGroup(data: Record<string, any>) {
   resource.value = { data: { '@id': '/_/component_groups/g1', ...data } }
-  return mount(Group, { global: { stubs: { CwaUiFormButton } } })
+  return mount(Group, { attachTo: document.body })
+}
+
+function buttons(wrapper: ReturnType<typeof mountGroup>) {
+  return [wrapper.get('[data-testid="group-add-start"]'), wrapper.get('[data-testid="group-add-end"]')]
 }
 
 describe('Group tab (#398)', () => {
@@ -37,34 +38,49 @@ describe('Group tab (#398)', () => {
     initAddResource.mockClear()
   })
 
+  test('is one manager bar row (#461)', async () => {
+    const wrapper = mountGroup({ maxComponents: 1, componentPositions: ['/p1', '/p2'] })
+
+    const row = wrapper.get('[data-testid="manager-tab"]')
+    expect(row.element).toBe(wrapper.element)
+    expect(buttons(wrapper).every(button => row.element.contains(button.element))).toBe(true)
+    expect(row.element.contains(wrapper.get('[data-testid="group-over-limit"]').element)).toBe(true)
+    expect(await axe(wrapper.element as HTMLElement)).toHaveNoViolations()
+  })
+
   test('adds to the start and end of a group with room', async () => {
     const wrapper = mountGroup({ maxComponents: 2, componentPositions: ['/p1'] })
-    const buttons = wrapper.findAllComponents(CwaUiFormButton)
+    const [start, end] = buttons(wrapper)
 
-    expect(buttons.map(button => button.props('disabled'))).toEqual([false, false])
-    await buttons[0]!.trigger('click')
-    await buttons[1]!.trigger('click')
+    expect([start!.attributes('aria-disabled'), end!.attributes('aria-disabled')]).toEqual([undefined, undefined])
+    await start!.trigger('click')
+    await end!.trigger('click')
     expect(initAddResource.mock.calls.map(call => call.slice(0, 2))).toEqual([
       ['/_/component_groups/g1', false],
       ['/_/component_groups/g1', true],
     ])
+    expect(await axe(wrapper.element as HTMLElement)).toHaveNoViolations()
   })
 
   test.each([
     [1, 'This group holds at most 1 component'],
     [2, 'This group holds at most 2 components'],
-  ])('disables adding to a full group of %s, saying why on hover', (max, reason) => {
+  ])('disables adding to a full group of %s, saying why on hover', async (max, reason) => {
     const wrapper = mountGroup({ maxComponents: max, componentPositions: Array.from({ length: max }, (_, i) => `/p${i}`) })
 
-    expect(wrapper.findAllComponents(CwaUiFormButton).map(button => button.props('disabled'))).toEqual([true, true])
-    expect(wrapper.find('[data-testid="group-full"]').attributes('title')).toBe(reason)
+    for (const button of buttons(wrapper)) {
+      expect(button.attributes('aria-disabled')).toBe('true')
+      expect(button.attributes('title')).toBe(reason)
+      expect(document.getElementById(button.attributes('aria-describedby')!)?.textContent).toBe(reason)
+    }
     expect(wrapper.find('[data-testid="group-over-limit"]').exists()).toBe(false)
+    expect(await axe(wrapper.element as HTMLElement)).toHaveNoViolations()
   })
 
   test('does not add to a full group when clicked anyway', async () => {
     const wrapper = mountGroup({ maxComponents: 1, componentPositions: ['/p1'] })
 
-    await wrapper.findAllComponents(CwaUiFormButton)[1]!.vm.$emit('click')
+    await buttons(wrapper)[1]!.trigger('click')
 
     expect(initAddResource).not.toHaveBeenCalled()
   })
@@ -74,13 +90,13 @@ describe('Group tab (#398)', () => {
 
     const warning = wrapper.find('[data-testid="group-over-limit"]')
     expect(warning.text()).toBe('Holds 3 of 1. Remove components to add more.')
-    expect(wrapper.findAllComponents(CwaUiFormButton).map(button => button.props('disabled'))).toEqual([true, true])
+    expect(buttons(wrapper).map(button => button.attributes('aria-disabled'))).toEqual(['true', 'true'])
   })
 
   test('a group with no limit is never full', () => {
     const wrapper = mountGroup({ componentPositions: ['/p1', '/p2'] })
 
-    expect(wrapper.findAllComponents(CwaUiFormButton).map(button => button.props('disabled'))).toEqual([false, false])
-    expect(wrapper.find('[data-testid="group-full"]').attributes('title')).toBeUndefined()
+    expect(buttons(wrapper).map(button => button.attributes('aria-disabled'))).toEqual([undefined, undefined])
+    expect(buttons(wrapper).map(button => button.attributes('title'))).toEqual([undefined, undefined])
   })
 })

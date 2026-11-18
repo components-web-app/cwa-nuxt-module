@@ -17,7 +17,6 @@ import {
 import Field from '../core/ui/Field.vue'
 import type { FieldWidth } from '../core/ui/Field.vue'
 import ChevronGlyph from '../core/ui/ChevronGlyph.vue'
-import CwaUiFieldPresence from './FieldPresence.vue'
 import CheckGlyph from '../core/ui/CheckGlyph.vue'
 import { useFieldModel } from '../core/ui/field-context'
 import { fieldBox, fieldFill, groupHeading, menuPanel, optionLook } from '../core/ui/field-looks'
@@ -126,6 +125,7 @@ const isOpen = computed({
     :state="state"
     :model="model"
     :control-id="id"
+    :inactive="inactive"
     :name="field"
   >
     <template #default="{ describedBy, tone, busy }">
@@ -135,26 +135,21 @@ const isOpen = computed({
         :disabled="inactive && !blocked"
         @update:model-value="choose"
       >
-        <CwaUiFieldPresence
-          :model="model"
-          v-bind="inactive ? undefined : model?.focusListeners"
+        <SelectTrigger
+          :id="id"
+          :aria-describedby="describedBy"
+          :aria-invalid="tone === 'danger' ? 'true' : undefined"
+          :aria-busy="busy ? 'true' : undefined"
+          :aria-disabled="blocked ? 'true' : undefined"
+          data-testid="select-trigger"
+          :class="[fieldBox, fieldFill(tone, inactive), blocked ? 'cwa:cursor-not-allowed' : 'cwa:cursor-pointer', 'cwa:gap-2 cwa:px-3 cwa:text-left cwa:outline-1 cwa:outline-transparent cwa:data-[state=open]:outline-2 cwa:data-[state=open]:outline-offset-2 cwa:data-[state=open]:outline-accent-fg cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-accent-fg cwa:disabled:cursor-not-allowed', { 'cwa:opacity-50': inactive }]"
         >
-          <SelectTrigger
-            :id="id"
-            :aria-describedby="describedBy"
-            :aria-invalid="tone === 'danger' ? 'true' : undefined"
-            :aria-busy="busy ? 'true' : undefined"
-            :aria-disabled="blocked ? 'true' : undefined"
-            data-testid="select-trigger"
-            :class="[fieldBox, fieldFill(tone, inactive), blocked ? 'cwa:cursor-not-allowed' : 'cwa:cursor-pointer', 'cwa:gap-2 cwa:px-3 cwa:text-left cwa:outline-1 cwa:outline-transparent cwa:data-[state=open]:outline-2 cwa:data-[state=open]:outline-offset-2 cwa:data-[state=open]:outline-accent-fg cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-accent-fg cwa:disabled:cursor-not-allowed', { 'cwa:opacity-50': inactive }]"
-          >
-            <span
-              class="cwa:min-w-0 cwa:flex-1 cwa:truncate"
-              :class="{ 'cwa:text-muted-on-field': !shown }"
-            >{{ shown ?? placeholder }}</span>
-            <ChevronGlyph />
-          </SelectTrigger>
-        </CwaUiFieldPresence>
+          <span
+            class="cwa:min-w-0 cwa:flex-1 cwa:truncate"
+            :class="{ 'cwa:text-muted-on-field': !shown }"
+          >{{ shown ?? placeholder }}</span>
+          <ChevronGlyph />
+        </SelectTrigger>
         <SelectPortal>
           <SelectContent
             position="popper"

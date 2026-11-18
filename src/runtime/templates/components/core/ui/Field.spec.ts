@@ -155,7 +155,7 @@ describe('Field and its status (#459)', () => {
     vi.useFakeTimers()
     const { wrapper } = mountInput('error')
     await nextTick()
-    const box = wrapper.get('input').element.closest('.cwa\\:relative')!
+    const box = wrapper.get('input').element.closest('.cwa\\:relative:not(.cwa\\:group\\/field)')!
 
     box.dispatchEvent(new MouseEvent('mouseenter'))
     vi.advanceTimersByTime(250)

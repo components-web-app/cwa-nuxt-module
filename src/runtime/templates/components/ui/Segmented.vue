@@ -54,6 +54,7 @@ function choose(next: unknown) {
     :state="state"
     :model="model"
     :control-id="id"
+    :inactive="disabled || unbound"
     :name="field"
   >
     <template #default="{ describedBy, busy, labelId }">
@@ -69,7 +70,6 @@ function choose(next: unknown) {
         data-testid="segmented"
         class="cwa:flex cwa:h-control cwa:bg-field cwa:pointer-coarse:h-hit"
         :class="{ 'cwa:opacity-50': disabled || unbound }"
-        v-bind="model?.focusListeners"
         @update:model-value="choose"
       >
         <ToggleGroupItem

@@ -180,12 +180,12 @@ function toneOf(tone: FieldTone) {
     :state="state"
     :model="model"
     :control-id="id"
+    :inactive="inactive"
     :name="field"
   >
     <template #default="{ describedBy, tone, busy }">
       <div
         :class="[fieldBox, fieldFill(toneOf(tone), inactive), holdFill[toneOf(tone) ?? 'none'], { 'cwa:opacity-50': inactive }]"
-        v-bind="model?.focusListeners"
       >
         <button
           type="button"

@@ -106,6 +106,7 @@ function onCalendarUpdate(date?: DateValue) {
     :state="state"
     :model="model"
     :control-id="id"
+    :inactive="inactive"
     :name="field"
   >
     <template #default="{ describedBy, tone, busy, labelId }">
@@ -123,7 +124,6 @@ function onCalendarUpdate(date?: DateValue) {
         :locale="locale"
         :disabled="inactive"
         :class="[fieldBox, fieldFill(tone, inactive), 'cwa:pl-3']"
-        v-bind="model?.focusListeners"
         @update:model-value="onFieldUpdate"
       >
         <PopoverRoot v-model:open="open">
