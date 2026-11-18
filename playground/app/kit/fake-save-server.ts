@@ -95,7 +95,7 @@ export interface LiveFieldModel<T> extends ResourceModelField<T> {
   armRemoteOnNextEdit: (value: T, peer?: FocusedPeer) => void
 }
 
-export function liveFieldModel<T>(server: FakeSaveServer, field: string, initial: T, schedule: { set: typeof setTimeout, clear: typeof clearTimeout } = { set: setTimeout, clear: clearTimeout }): LiveFieldModel<T> {
+export function liveFieldModel<T>(server: FakeSaveServer, field: string, initial: T, schedule: { set: (run: () => void, ms: number) => ReturnType<typeof setTimeout>, clear: (timer: ReturnType<typeof setTimeout> | undefined) => void } = { set: (run, ms) => setTimeout(run, ms), clear: timer => clearTimeout(timer) }): LiveFieldModel<T> {
   const fresh = () => reactive({ fieldStates: {} }) as unknown as CwaCurrentResourceInterface
   const current = shallowRef(fresh())
   const local = shallowRef<T | null | undefined>(initial)

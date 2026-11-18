@@ -1,13 +1,16 @@
 <script setup lang="ts">
-const { component, state, wide = false } = defineProps<{
+const { component, state, wide = false, bare = false } = defineProps<{
   component: string
   state: string
   wide?: boolean
+  bare?: boolean
 }>()
 </script>
 
 <template>
+  <slot v-if="bare" />
   <figure
+    v-else
     class="kit-demo"
     :class="{ 'kit-demo-wide': wide }"
     :data-component="component"
