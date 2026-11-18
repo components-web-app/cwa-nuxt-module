@@ -384,6 +384,13 @@ describe('Info tab — a component in several locations', () => {
     await expectTodaysDelete()
   })
 
+  test('Delete Draft on a shared live component only discards the draft: it never asks which locations to remove it from (#461)', async () => {
+    resourceData.value = { ...publishable(false), publishedResource: '/component/live' }
+    inLocations(3)
+    inStackPosition()
+    await expectTodaysDelete()
+  })
+
   test('Delete falls back to today\'s confirmation when the usage request fails', async () => {
     usageResponses.set('/component/abc/usage', Promise.reject(new Error('Server Error')))
     inStackPosition()
