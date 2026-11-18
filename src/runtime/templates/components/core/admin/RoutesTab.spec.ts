@@ -128,6 +128,14 @@ describe('RoutesTab', () => {
   })
 
   describe('the main view', () => {
+    test('a route added here keeps the dialog on its page or page data, never opening the route in its place (#461)', async () => {
+      setupItemPage()
+      mockCwa()
+      mountTab()
+      await flushPromises()
+      expect(mockUseItemPage).toHaveBeenCalledWith(expect.objectContaining({ createEndpoint: '/_/routes', openCreated: false }))
+    })
+
     test('summarises redirects and child routes from the route and its children', async () => {
       setupItemPage({ redirectedFrom: [{ '@id': '/_/routes//old', 'path': '/old', 'redirectedFrom': [{ '@id': '/_/routes//older', 'path': '/older' }] }] })
       const cwa = mockCwa()
@@ -283,6 +291,21 @@ describe('RoutesTab', () => {
 
       expect(itemPage.saveResource).toHaveBeenCalledWith(false, undefined)
       expect(confirmMock).not.toHaveBeenCalled()
+    })
+
+    test('a path with a space cannot be saved, and says why', async () => {
+      const itemPage = setupItemPage()
+      mockCwa()
+      const wrapper = mountTab()
+      await flushPromises()
+      await openSub(wrapper, 'route')
+      itemPage.localResourceData.value.path = '/my page'
+      await flushPromises()
+
+      expect(save(wrapper).attributes('title')).toBe('A path can\'t contain spaces. Use a hyphen instead.')
+      await save(wrapper).trigger('click')
+      await flushPromises()
+      expect(itemPage.saveResource).not.toHaveBeenCalled()
     })
 
     test('scheduled with no date yet cannot be saved, and says why', async () => {

@@ -10,7 +10,7 @@
     :loading="isLoading"
     :load-failed="loadFailed"
     :kind="kind"
-    noun="page"
+    :noun="createNoun"
     :create-noun="isAdding ? createNoun : undefined"
     data-testid="page-dialog"
     @close="$emit('close')"

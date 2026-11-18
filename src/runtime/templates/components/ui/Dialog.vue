@@ -287,6 +287,20 @@ watch(() => props.loading, (loading, was) => {
   }
 }, { immediate: true })
 
+const capitalise = (text: string) => `${text.charAt(0).toUpperCase()}${text.slice(1)}`
+
+watch(() => props.form?.savedAt, (savedAt, previous) => {
+  savedAt && savedAt !== previous && announce(`${capitalise(props.noun)} saved.`)
+})
+
+watch(() => props.createNoun, (createNoun, created) => {
+  if (createNoun || !created) {
+    return
+  }
+  const open = props.tabs?.find(candidate => candidate.key === currentTab.value)
+  announce(`${capitalise(created)} created.${open ? ` ${open.label} tab open.` : ''}`)
+})
+
 watch(() => props.loadFailed, failed => failed && announce(loadFailedText.value), { immediate: true })
 
 watch(hasIssue, (issue) => {

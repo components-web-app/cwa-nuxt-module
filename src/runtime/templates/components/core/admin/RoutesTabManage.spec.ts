@@ -146,6 +146,11 @@ describe('RoutesTabManage', () => {
       expect(wrapper.findComponent(RouteRecommendation).props('from')).toBe('My programme')
     })
 
+    test('never recommends a path for the route at /, the homepage', () => {
+      const wrapper = mountManage({ currentPath: '/', modelValue: '/', parentRoutePrefix: null, recommendedPath: '/welcome-to-cwa' })
+      expect(wrapper.findComponent(RouteRecommendation).exists()).toBe(false)
+    })
+
     test('says the path is the recommended one instead of offering it', () => {
       const wrapper = mountManage({ modelValue: '/conference/programme', recommendedPath: '/conference/programme' })
       expect(wrapper.findComponent(RouteRecommendation).exists()).toBe(false)
@@ -178,6 +183,36 @@ describe('RoutesTabManage', () => {
       const wrapper = mountManage({ modelValue: '/conference/schedule', childPaths: ['/conference/elsewhere'] })
       expect(wrapper.find('[data-testid="route-old-path"]').exists()).toBe(true)
       expect(wrapper.find('[data-testid="route-cascade"]').exists()).toBe(false)
+    })
+
+    test.each([
+      ['/ (root)', null, ''],
+      ['a parent route', '/conference', '/conference'],
+    ])('a new route with an empty path under %s asks for one, and has no path yet', async (_, parentRoutePrefix, modelValue) => {
+      const wrapper = mountManage({ currentPath: '', modelValue, parentRoutePrefix })
+      expect(wrapper.find('[data-testid="route-go-live-line"]').text()).toBe('Enter a path.')
+      await getSuffixInput(wrapper).vm.$emit('update:modelValue', 'talks')
+      await getSuffixInput(wrapper).vm.$emit('update:modelValue', '  ')
+      expect(wrapper.emitted('update:modelValue')!.at(-1)).toEqual([''])
+      expect(wrapper.find('[data-testid="route-go-live-line"]').text()).toBe('Enter a path.')
+    })
+
+    test('typing / is the homepage path', async () => {
+      const wrapper = mountManage({ currentPath: '', modelValue: '', parentRoutePrefix: null })
+      await getSuffixInput(wrapper).vm.$emit('update:modelValue', '/')
+      expect(wrapper.emitted('update:modelValue')).toEqual([['/']])
+      expect(wrapper.find('[data-testid="route-go-live-line"]').text()).toBe('Visitors will reach this page at /.')
+    })
+
+    test('a path with a space is flagged as it is typed, and the API\'s own error still wins', async () => {
+      const wrapper = mountManage({ currentPath: '', modelValue: '', parentRoutePrefix: null })
+      await getSuffixInput(wrapper).vm.$emit('update:modelValue', 'my page')
+      expect(getSuffixInput(wrapper).props('invalid')).toBe('A path can\'t contain spaces. Use a hyphen instead.')
+      await getSuffixInput(wrapper).vm.$emit('update:modelValue', 'my-page')
+      expect(getSuffixInput(wrapper).props('invalid')).toBeUndefined()
+      await wrapper.setProps({ pathError: 'This path is already in use.' })
+      await getSuffixInput(wrapper).vm.$emit('update:modelValue', 'my page')
+      expect(getSuffixInput(wrapper).props('invalid')).toBe('This path is already in use.')
     })
 
     test('a new route says where visitors will reach the page', () => {
