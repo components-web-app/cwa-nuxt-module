@@ -124,7 +124,7 @@ const endpoint = ref<string>()
 
 const columns = [
   { label: 'Title' },
-  { label: 'Status', width: '13rem' },
+  { label: 'Status', width: '17.5rem' },
   { label: 'Updated', width: '8rem', align: 'end' as const },
 ]
 

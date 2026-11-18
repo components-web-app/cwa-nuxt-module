@@ -57,7 +57,7 @@ function setup(uiComponent: string, stored: Record<string, any> = {}, listed: Re
         CwaUiButton: false,
         ListContent: {
           name: 'ListContent',
-          props: ['fetchUrl', 'searchFields'],
+          props: ['fetchUrl', 'searchFields', 'columns'],
           setup: () => ({ item, raw }),
           template: '<div><slot name="notice" /><slot name="item" :data="item" :raw-data="raw" /></div>',
         },
@@ -72,6 +72,11 @@ describe('/_cwa/pages page UI label', () => {
     vi.clearAllMocks()
     typesModel.value = []
     listRoutes.routes = {}
+  })
+
+  test('the Status column fits the widest status badge, Inherited scheduled with its date (#461)', () => {
+    const status = setup('CwaPagePrimaryPageTemplate').findComponent({ name: 'ListContent' }).props('columns').find((column: { label: string }) => column.label === 'Status')
+    expect(status.width).toBe('17.5rem')
   })
 
   test('shows the configured page UI name for a page stored with the full CwaPage name', () => {

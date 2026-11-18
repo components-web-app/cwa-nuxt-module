@@ -32,7 +32,7 @@ async function setup(item: Record<string, any>) {
       stubs: {
         ListContent: {
           name: 'ListContent',
-          props: ['fetchUrl', 'searchFields'],
+          props: ['fetchUrl', 'searchFields', 'columns'],
           setup: () => ({ item }),
           template: '<div><slot name="item" :data="item" /></div>',
         },
@@ -53,6 +53,12 @@ function status(wrapper: Awaited<ReturnType<typeof setup>>) {
 describe('/_cwa/data/[type]', () => {
   afterEach(() => {
     vi.clearAllMocks()
+  })
+
+  test('the Status column fits the widest status badge, Inherited scheduled with its date (#461)', async () => {
+    const wrapper = await setup({ '@id': '/page_data/1' })
+    const status = wrapper.findComponent({ name: 'ListContent' }).props('columns').find((column: { label: string }) => column.label === 'Status')
+    expect(status.width).toBe('17.5rem')
   })
 
   test('a page data with a route shows a loading badge until its route is read', async () => {
