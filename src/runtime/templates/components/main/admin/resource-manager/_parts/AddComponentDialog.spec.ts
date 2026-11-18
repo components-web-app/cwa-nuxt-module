@@ -713,14 +713,15 @@ describe('the add component dialog (#461)', () => {
       await choose('ComponentPosition')
     }
 
-    test('Field is visibly disabled with its reason until a data type is chosen, and Data type has focus', async () => {
+    test('Field is visibly disabled until a data type is chosen, with its reason behind its ⓘ and read with the field, and Data type has focus', async () => {
       await openDynamic()
 
       const field = q('[data-testid="add-component-field"] [data-testid="select-trigger"]')!
       expect(field.getAttribute('aria-disabled')).toBe('true')
       expect(field.hasAttribute('disabled')).toBe(false)
       expect(field.className).toContain('cwa:opacity-50')
-      expect(shown(q('[data-testid="add-component-field"]'))).toContain('Choose a data type first.')
+      expect(q('[data-testid="add-component-field"] [data-testid="field-info"]')).not.toBeNull()
+      expect(field.getAttribute('aria-describedby')!.split(' ').map(id => document.getElementById(id)?.textContent).join(' ')).toContain('Choose a data type first.')
       expect(document.activeElement).toBe(q('[data-testid="add-component-data-type"] [data-testid="select-trigger"]'))
       expect(add().getAttribute('aria-disabled')).toBe('true')
       expect(document.getElementById(add().getAttribute('aria-describedby')!)!.textContent).toBe('Choose a data type and a field first.')

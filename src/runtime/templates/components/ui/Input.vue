@@ -18,6 +18,7 @@ const props = withDefaults(defineProps<{
   placeholder?: string
   width?: FieldWidth
   disabled?: boolean
+  disabledReason?: string
   readonly?: boolean
   type?: 'text' | 'email' | 'url' | 'search' | 'password' | 'tel'
   inputmode?: 'text' | 'email' | 'url' | 'search' | 'tel' | 'numeric' | 'decimal' | 'none'
@@ -37,6 +38,7 @@ const props = withDefaults(defineProps<{
   placeholder: undefined,
   width: 'md',
   disabled: false,
+  disabledReason: undefined,
   readonly: false,
   type: 'text',
   inputmode: undefined,
@@ -73,6 +75,7 @@ function onInput(event: Event) {
 
 <template>
   <Field
+    :disabled-reason="disabled ? disabledReason : undefined"
     :label="label"
     :label-hidden="labelHidden"
     :info="info"

@@ -42,6 +42,7 @@ const props = withDefaults(defineProps<{
   placeholder?: string
   width?: FieldWidth
   disabled?: boolean
+  disabledReason?: string
   endpoint: string
   searchParams?: string[]
   perPage?: number
@@ -60,6 +61,7 @@ const props = withDefaults(defineProps<{
   placeholder: 'Search',
   width: 'md',
   disabled: false,
+  disabledReason: undefined,
   searchParams: () => ['search'],
   perPage: 20,
   noun: 'pages',
@@ -215,6 +217,7 @@ const reducedMotion = typeof window !== 'undefined' && !!window.matchMedia?.('(p
 
 <template>
   <Field
+    :disabled-reason="disabled ? disabledReason : undefined"
     :label="label"
     :label-hidden="labelHidden"
     :info="info"
