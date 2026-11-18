@@ -4,6 +4,7 @@ import KitFailuresSim from './KitFailuresSim.vue'
 import KitPresenceSim from './KitPresenceSim.vue'
 import KitSearchSim from './KitSearchSim.vue'
 import KitListSim from './KitListSim.vue'
+import KitDialogSim from './KitDialogSim.vue'
 </script>
 
 <template>
@@ -13,5 +14,6 @@ import KitListSim from './KitListSim.vue'
     <KitPresenceSim />
     <KitSearchSim />
     <KitListSim />
+    <KitDialogSim />
   </div>
 </template>
