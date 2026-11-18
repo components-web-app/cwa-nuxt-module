@@ -581,11 +581,13 @@ describe('CwaUiDialog without a Save model (#461, the add component dialog)', ()
     expect(body.querySelector('[data-cwa-field] [data-testid="field-presence-flag"]')).toBeNull()
   })
 
-  test('has no coloured edge or kind unless one is given', async () => {
+  test('without a kind, the header has the neutral solid 3px line and says no kind', async () => {
     mountPlain()
     await flushPromises()
 
-    expect(q('header')!.className).not.toContain('cwa:border-b-')
+    expect(q('header')!.className).toContain('cwa:border-b-3')
+    expect(q('header')!.className).toContain('cwa:border-line')
+    expect(q('header')!.className).not.toMatch(/dashed|dotted/)
     expect(q('[data-testid="dialog-kind"]')).toBeNull()
     expect(dialog().getAttribute('aria-describedby')).toBeNull()
   })
@@ -593,19 +595,38 @@ describe('CwaUiDialog without a Save model (#461, the add component dialog)', ()
   test.each([
     ['static', 'cwa:border-type-static'],
     ['dynamic', 'cwa:border-type-dynamic'],
-    ['reachable', 'cwa:border-success'],
-    ['unreachable', 'cwa:border-warning'],
-  ] as const)('a %s kind draws a solid 3px line under the header in its colour and says the kind beside the title, describing the dialog (#461)', async (tone, colour) => {
-    mountPlain({ kind: { tone, label: 'Static page' } })
+    ['success', 'cwa:border-success'],
+    ['warning', 'cwa:border-warning'],
+  ] as const)('a %s kind draws the header\'s solid 3px line in its colour and says the kind beside the title, describing the dialog (#461)', async (tone, colour) => {
+    mountPlain({ kind: { tone, label: 'Not reachable' } })
     await flushPromises()
 
     const header = q('header')!
     expect(header.className).toContain('cwa:border-b-3')
     expect(header.className).toContain(colour)
-    expect(header.className).not.toMatch(/dashed|dotted/)
+    expect(header.className).not.toContain('cwa:border-line')
     const kind = q('[data-testid="dialog-kind"]')!
-    expect(kind.textContent?.trim()).toBe('Static page')
+    expect(kind.textContent?.trim()).toBe('Not reachable')
     expect(dialog().getAttribute('aria-describedby')).toBe(kind.id)
+  })
+
+  test('a kind with no words colours the line only, for a dialog that says its kind in a header control', async () => {
+    mountPlain({ kind: { tone: 'dynamic' } })
+    await flushPromises()
+
+    expect(q('header')!.className).toContain('cwa:border-type-dynamic')
+    expect(q('[data-testid="dialog-kind"]')).toBeNull()
+    expect(dialog().getAttribute('aria-describedby')).toBeNull()
+  })
+
+  test('a subheader sits between the header and the tabs, on every tab', async () => {
+    mountPlain({ tabs: [{ key: 'a', label: 'A' }, { key: 'b', label: 'B' }] }, { subheader: () => h('p', { 'data-testid': 'sub' }, 'Depths'), a: () => h('p', 'A body'), b: () => h('p', 'B body') })
+    await flushPromises()
+
+    const sub = q('[data-testid="sub"]')!
+    expect(q('header')!.compareDocumentPosition(sub) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(sub.compareDocumentPosition(q('[role="tablist"]')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(q('[data-testid="dialog-body"]')!.contains(sub)).toBe(false)
   })
 
   test('a flush body leaves the padding to its content', async () => {

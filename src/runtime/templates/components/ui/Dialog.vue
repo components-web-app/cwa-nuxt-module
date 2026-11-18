@@ -27,7 +27,7 @@ const props = withDefaults(defineProps<{
   loading?: boolean
   flush?: boolean
   /** @internal */
-  kind?: { tone: 'static' | 'dynamic' | 'reachable' | 'unreachable', label: string }
+  kind?: { tone: 'static' | 'dynamic' | 'success' | 'warning', label?: string }
 }>(), {
   size: 'md',
   tabs: undefined,
@@ -53,7 +53,7 @@ defineSlots<{
 const confirm = useCwaConfirm()
 const titleId = useId()
 const kindId = useId()
-const kindEdges = { static: 'cwa:border-type-static', dynamic: 'cwa:border-type-dynamic', reachable: 'cwa:border-success', unreachable: 'cwa:border-warning' }
+const kindEdges = { static: 'cwa:border-type-static', dynamic: 'cwa:border-type-dynamic', success: 'cwa:border-success', warning: 'cwa:border-warning' }
 const tabsId = useId()
 const body = useTemplateRef<HTMLElement>('body')
 const presenceLayer = useTemplateRef<HTMLElement>('presenceLayer')
@@ -362,14 +362,14 @@ defineExpose({ requestClose, confirmDiscard, showField, announce })
       />
       <DialogContent
         :aria-labelledby="titleId"
-        :aria-describedby="kind ? kindId : undefined"
+        :aria-describedby="kind?.label ? kindId : undefined"
         data-testid="dialog"
         class="cwa:fixed cwa:inset-0 cwa:z-dialog cwa:flex cwa:flex-col cwa:bg-surface cwa:text-fg cwa:shadow-popover cwa:outline-none cwa:[--cwa-spacing-control:var(--cwa-spacing-control-lg)] cwa:[--cwa-text-control:var(--cwa-text-control-lg)] cwa:sm:inset-auto cwa:sm:top-1/2 cwa:sm:left-1/2 cwa:sm:max-h-[calc(100dvh-4rem)] cwa:sm:max-w-[calc(100vw-2rem)] cwa:sm:-translate-x-1/2 cwa:sm:-translate-y-1/2"
         :class="widths[size]"
       >
         <header
-          class="cwa:flex cwa:h-[3.75rem] cwa:shrink-0 cwa:items-center cwa:gap-2 cwa:ps-6 cwa:pe-3"
-          :class="kind ? ['cwa:border-b-3 cwa:border-solid', kindEdges[kind.tone]] : undefined"
+          class="cwa:flex cwa:h-[3.75rem] cwa:shrink-0 cwa:items-center cwa:gap-2 cwa:border-b-3 cwa:border-solid cwa:ps-6 cwa:pe-3"
+          :class="kind ? kindEdges[kind.tone] : 'cwa:border-line'"
         >
           <DialogTitle
             :id="titleId"
@@ -379,7 +379,7 @@ defineExpose({ requestClose, confirmDiscard, showField, announce })
             {{ title }}
           </DialogTitle>
           <span
-            v-if="kind"
+            v-if="kind?.label"
             :id="kindId"
             data-testid="dialog-kind"
             class="cwa:shrink-0 cwa:text-helper cwa:text-fg-muted"
@@ -395,6 +395,7 @@ defineExpose({ requestClose, confirmDiscard, showField, announce })
             <XMarkIcon class="cwa:size-5" />
           </button>
         </header>
+        <slot name="subheader" />
         <div
           v-if="tabs?.length"
           role="tablist"

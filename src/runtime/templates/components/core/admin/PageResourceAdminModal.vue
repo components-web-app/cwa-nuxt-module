@@ -14,11 +14,18 @@
     @close="$emit('close')"
     @save="saveResource()"
   >
-    <template
-      v-if="!hideViewLink && !isAdding"
-      #header-actions
-    >
+    <template #header-actions>
+      <CwaUiSelect
+        v-if="isDisplayingPage"
+        :model="pageTypeModel"
+        label="Page type"
+        label-hidden
+        width="xs"
+        :options="pageTypeOptions"
+        data-testid="page-type"
+      />
       <CwaUiButton
+        v-if="!hideViewLink && !isAdding"
         variant="ghost"
         icon-only
         :icon="EyeGlyph"
@@ -26,6 +33,22 @@
         data-testid="page-view-on-site"
         @click="viewOnSite"
       />
+    </template>
+    <template
+      v-if="depthChain.length > 1"
+      #subheader
+    >
+      <div
+        class="cwa:shrink-0 cwa:px-6 cwa:pt-3 cwa:max-sm:px-4"
+        data-testid="page-depths"
+      >
+        <CwaUiSegmented
+          v-model="displayIriModel"
+          label="Editing"
+          label-hidden
+          :options="depthOptions"
+        />
+      </div>
     </template>
     <template #details>
       <CwaUiAlert
@@ -43,13 +66,6 @@
         </template>
       </CwaUiAlert>
       <template v-else>
-        <CwaUiFormSection v-if="depthChain.length > 1">
-          <CwaUiSegmented
-            v-model="displayIriModel"
-            label="Editing"
-            :options="depthOptions"
-          />
-        </CwaUiFormSection>
         <CwaUiFormSection>
           <CwaUiInput
             v-if="isDisplayingPage"
@@ -61,12 +77,6 @@
             v-else
             field="title"
             label="Title"
-          />
-          <CwaUiSegmented
-            v-if="isDisplayingPage"
-            :model="pageTypeModel"
-            label="Page type"
-            :options="pageTypeOptions"
           />
         </CwaUiFormSection>
         <CwaUiFormSection
@@ -122,10 +132,18 @@
           <div v-if="localResourceData.page">
             <CwaUiButton
               label="Go to dynamic template"
+              :icon="EyeGlyph"
               data-testid="go-to-template"
               @click="goToTemplate"
             />
           </div>
+          <p
+            v-else
+            class="cwa:m-0 cwa:text-helper cwa:text-fg-muted"
+            data-testid="no-template"
+          >
+            No template selected
+          </p>
           <template
             v-for="metaField of pageDataConfig?.metaFields ?? []"
             :key="`field-${metaField.field}`"
@@ -428,9 +446,9 @@ const dialogTitle = computed(() => {
 
 const pageName = computed(() => (isDisplayingPage.value ? resource.value?.reference : resource.value?.title) || '')
 
-const pageTypeOptions = [
-  { label: 'Static', value: 'static' },
-  { label: 'Dynamic', value: 'template' },
+const pageTypeOptions: MenuEntry[] = [
+  { label: 'Static', value: 'static', dot: 'cwa:bg-type-static' },
+  { label: 'Dynamic', value: 'template', dot: 'cwa:bg-type-dynamic' },
 ]
 
 const pageTypeModel = {
@@ -445,13 +463,11 @@ const pageTypeModel = {
 
 const kind = computed(() => {
   if (isDisplayingPage.value) {
-    return localResourceData.value?.isTemplate
-      ? { tone: 'dynamic' as const, label: 'Dynamic template' }
-      : { tone: 'static' as const, label: 'Static page' }
+    return { tone: localResourceData.value?.isTemplate ? 'dynamic' as const : 'static' as const }
   }
   return resource.value?.route || localResourceData.value?.isReachableWithoutRoute
-    ? { tone: 'reachable' as const, label: 'Reachable' }
-    : { tone: 'unreachable' as const, label: 'Not reachable' }
+    ? { tone: 'success' as const, label: 'Reachable' }
+    : { tone: 'warning' as const, label: 'Not reachable' }
 })
 
 function saveResource(close = false) {
