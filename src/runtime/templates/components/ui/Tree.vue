@@ -129,8 +129,10 @@ function onRowKeydown(event: KeyboardEvent, row: TreeRow) {
       }
       return
     case 'Enter':
-      event.preventDefault()
-      runAction(row, own[0], 0)
+      if (own[0] && !own[0].delete) {
+        event.preventDefault()
+        runAction(row, own[0], 0)
+      }
       return
     case 'Delete':
     case 'Backspace': {
