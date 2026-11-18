@@ -343,7 +343,7 @@ test('12. Move up in the Order tab PATCHes the group order and the page keeps th
   await openEditMode(t)
   await eventually(async () => await sourceAbove(page, texts.pageAOther) === true, 'The fixture order is wrong')
   await select(page, texts.pageAOther)
-  await page.getByRole('button', { name: 'Order', exact: true }).click()
+  await page.getByRole('tab', { name: 'Order', exact: true }).click()
   assert(await page.getByRole('switch', { name: 'Enable reordering' }).getAttribute('aria-checked') === 'false', 'Enable reordering is on')
   let release
   const held = new Promise((resolve) => {
@@ -380,7 +380,7 @@ test('13. removing a component from one location DELETEs its position without ?p
   const { page, settle } = t
   await openEditMode(t)
   await select(page, texts.source)
-  await page.getByRole('button', { name: 'Info', exact: true }).click()
+  await page.getByRole('tab', { name: 'Info', exact: true }).click()
   await page.getByTestId('component-delete').getByRole('button', { name: 'Delete Live', exact: true }).click()
   const dialog = dialogWith(page, 'Delete this component?')
   await dialog.getByRole('button', { name: 'Remove from this location only', exact: true }).click()
@@ -828,7 +828,7 @@ test('19. Escape on the shared delete dialog cancels it and Delete works again',
   const { page } = t
   await openEditMode(t)
   await select(page, texts.source)
-  await page.getByRole('button', { name: 'Info', exact: true }).click()
+  await page.getByRole('tab', { name: 'Info', exact: true }).click()
   const deleteButton = page.getByTestId('component-delete').getByRole('button', { name: 'Delete Live', exact: true })
   await deleteButton.click()
   await dialogWith(page, 'Delete this component?').getByText('Delete this component?').waitFor()
@@ -844,7 +844,7 @@ test('20. the shared delete dialog focuses Remove from this location only, so En
   const { page } = t
   await openEditMode(t)
   await select(page, texts.source)
-  await page.getByRole('button', { name: 'Info', exact: true }).click()
+  await page.getByRole('tab', { name: 'Info', exact: true }).click()
   await page.getByTestId('component-delete').getByRole('button', { name: 'Delete Live', exact: true }).click()
   const dialog = dialogWith(page, 'Delete this component?')
   const here = dialog.getByRole('button', { name: 'Remove from this location only', exact: true })
@@ -1116,7 +1116,7 @@ test.describe('presence', () => {
     const { page, seed } = t
     await openEditMode(t)
     const selected = await selectLayoutLink(t, 'Third')
-    await page.getByRole('button', { name: 'Label', exact: true }).click()
+    await page.getByRole('tab', { name: 'Label', exact: true }).click()
     const input = managerInput(page)
     await input.focus()
     const editing = await presenceSent(t, data => data.state === 'editing', 'No editing presence was sent on focus')
@@ -1153,7 +1153,7 @@ test.describe('presence', () => {
     const { page, seed } = t
     await openEditMode(t)
     const selected = await selectLayoutLink(t, 'Third')
-    await page.getByRole('button', { name: 'Label', exact: true }).click()
+    await page.getByRole('tab', { name: 'Label', exact: true }).click()
     await managerInput(page).waitFor()
     await eventually(() => t.rehearsal.mercureSubscriptions > 0, 'Mercure was never subscribed to')
     const peer = peerPresence(t, { key: '1', name: 'Pat Peer', page: seed.iris.pageA })
@@ -1597,7 +1597,7 @@ test('61. outside edit mode the header\'s Edit button and menu sit on the header
         const box = element.getBoundingClientRect()
         return box.top + box.height / 2
       }
-      const menu = [...document.querySelectorAll('a')].find(link => link.querySelector('.cwa\\:sr-only')?.textContent === 'Menu')
+      const menu = [...document.querySelectorAll('button')].find(button => button.querySelector('.cwa\\:sr-only')?.textContent === 'Menu')
       const header = menu.closest('.cwa\\:fixed')
       const box = header.getBoundingClientRect()
       return {
@@ -1629,7 +1629,7 @@ test('62. with live editing paused on a phone, the header\'s status is a glyph n
         const { left, right } = element.getBoundingClientRect()
         return { left, right }
       }
-      const menu = [...document.querySelectorAll('a')].find(link => link.querySelector('.cwa\\:sr-only')?.textContent === 'Menu')
+      const menu = [...document.querySelectorAll('button')].find(button => button.querySelector('.cwa\\:sr-only')?.textContent === 'Menu')
       return {
         edit: box([...document.querySelectorAll('button')].find(button => button.textContent.trim() === 'Edit')),
         status: box(document.querySelector('[data-testid="presence-paused"]')),
@@ -1694,4 +1694,40 @@ test('63. the header\'s Edit or Done button and the page settings button or path
       await context.close()
     }
   }
+})
+
+test('64. by keyboard alone a rich-text component is reached with Tab, selected with Enter, its stack opened with Shift+F10, and F6 then the arrow keys reach its Publish tab', async ({ cwa: t }) => {
+  const { page } = t
+  await openEditMode(t)
+
+  let reached = false
+  for (let tabs = 0; tabs < 80 && !reached; tabs++) {
+    await page.keyboard.press('Tab')
+    reached = await page.evaluate(text => document.activeElement?.getAttribute('aria-label') === 'Body Text component' && !!document.activeElement.textContent?.includes(text), texts.source)
+  }
+  assert(reached, 'Tab never reached the Body Text component')
+
+  await page.keyboard.press('Shift+F10')
+  const stack = page.getByTestId('resource-stack')
+  await stack.waitFor()
+  await page.keyboard.press('Escape')
+  await stack.waitFor({ state: 'detached' })
+  await eventually(() => page.evaluate(() => document.activeElement?.getAttribute('aria-label') === 'Body Text component'), 'Focus did not come back to the component')
+
+  await page.keyboard.press('Enter')
+  await page.getByTestId('component-menu').waitFor()
+  await page.getByRole('textbox', { name: 'Content, Body Text' }).filter({ hasText: texts.source }).waitFor()
+
+  await page.keyboard.press('F6')
+  const tablist = page.getByRole('tablist', { name: 'Body Text settings' })
+  await eventually(() => tablist.evaluate(el => el.contains(document.activeElement)), 'F6 did not move focus to the manager bar\'s tabs')
+  for (let moves = 0; moves < 8 && (await page.evaluate(() => document.activeElement?.textContent?.trim())) !== 'Publish'; moves++) {
+    await page.keyboard.press('ArrowRight')
+  }
+  const publish = tablist.getByRole('tab', { name: 'Publish', exact: true })
+  await eventually(async () => (await publish.getAttribute('aria-selected')) === 'true', 'The arrow keys never selected Publish')
+  assert(await page.getByRole('tabpanel', { name: 'Publish' }).count() === 1, 'The shown tab is not a tabpanel named Publish')
+
+  await page.keyboard.press('Shift+F6')
+  await eventually(() => page.evaluate(() => document.activeElement?.getAttribute('aria-label') === 'Body Text component'), 'Shift+F6 did not return to the component')
 })

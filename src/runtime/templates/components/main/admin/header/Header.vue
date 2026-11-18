@@ -3,14 +3,48 @@
     <div ref="spacer" />
     <div
       ref="header"
+      data-cwa-sticky
       class="cwa:section cwa:border-0 cwa:border-b-2 cwa:border-b-light/30 cwa:fixed cwa:z-manager cwa:flex cwa:items-center cwa:w-full cwa:h-18 cwa:top-0 cwa:dark-blur"
       :class="highlightClass"
       @click.stop
     >
       <div class="cwa:flex cwa:min-w-0 cwa:flex-1 cwa:justify-between cwa:items-center cwa:max-sm:gap-x-2">
+        <div class="cwa:flex cwa:shrink-0 cwa:items-center cwa:justify-start cwa:gap-x-4">
+          <template v-if="!pageIsAdmin && !isErrorPage">
+            <CwaUiButton
+              variant="solid"
+              class="cwa:min-w-24"
+              :label="$cwa.admin.isEditing ? 'Done' : 'Edit'"
+              :loading="$cwa.resources.isLoading.value"
+              @click="toggleEditing"
+            />
+            <button
+              v-if="strandedGroups.length"
+              type="button"
+              data-testid="stranded-groups-warning"
+              class="cwa:flex cwa:min-h-hit cwa:items-center cwa:gap-x-1 cwa:px-2 cwa:text-label cwa:text-warning cwa:cursor-pointer cwa:outline-1 cwa:outline-transparent cwa:transition-colors cwa:duration-(--cwa-duration-fast) cwa:hover:bg-button cwa:focus-visible:outline-2 cwa:focus-visible:-outline-offset-2 cwa:focus-visible:outline-accent-fg"
+              title="Component groups attached to this page are not shown on it"
+              :aria-label="`${strandedGroups.length} component groups attached to this page are not shown on it`"
+              @click="showStrandedModal = true"
+            >
+              <WarningIcon
+                class="cwa:size-5"
+                aria-hidden="true"
+              />
+              <span aria-hidden="true">{{ strandedGroups.length }}</span>
+            </button>
+            <CwaUiToggle
+              v-if="cloneSource && $cwa.admin.isEditing"
+              v-model="isNavEnabled"
+              label="Enable Navigation"
+            />
+          </template>
+          <PresenceIndicator />
+          <CloneModeBar />
+        </div>
         <div
           data-testid="header-centre"
-          class="cwa:max-sm:order-1 cwa:max-sm:flex cwa:max-sm:min-w-0 cwa:max-sm:flex-1 cwa:max-sm:justify-center cwa:sm:absolute cwa:sm:left-1/2 cwa:sm:top-1/2 cwa:sm:-translate-x-1/2 cwa:sm:-translate-y-1/2 cwa:text-center cwa:text-gray-300 cwa:z-manager"
+          class="cwa:max-sm:flex cwa:max-sm:min-w-0 cwa:max-sm:flex-1 cwa:max-sm:justify-center cwa:sm:absolute cwa:sm:left-1/2 cwa:sm:top-1/2 cwa:sm:-translate-x-1/2 cwa:sm:-translate-y-1/2 cwa:text-center cwa:text-gray-300 cwa:z-manager"
         >
           <template v-if="!pageIsAdmin && !isErrorPage">
             <CwaUiButton
@@ -82,43 +116,10 @@
             </ul>
           </template>
         </div>
-        <div class="cwa:flex cwa:shrink-0 cwa:items-center cwa:justify-start cwa:gap-x-4">
-          <template v-if="!pageIsAdmin && !isErrorPage">
-            <CwaUiButton
-              variant="solid"
-              class="cwa:min-w-24"
-              :label="$cwa.admin.isEditing ? 'Done' : 'Edit'"
-              :loading="$cwa.resources.isLoading.value"
-              @click="$cwa.admin.toggleEdit()"
-            />
-            <button
-              v-if="strandedGroups.length"
-              type="button"
-              data-testid="stranded-groups-warning"
-              class="cwa:flex cwa:min-h-hit cwa:items-center cwa:gap-x-1 cwa:px-2 cwa:text-label cwa:text-warning cwa:cursor-pointer cwa:outline-1 cwa:outline-transparent cwa:transition-colors cwa:duration-(--cwa-duration-fast) cwa:hover:bg-button cwa:focus-visible:outline-2 cwa:focus-visible:-outline-offset-2 cwa:focus-visible:outline-accent-fg"
-              title="Component groups attached to this page are not shown on it"
-              :aria-label="`${strandedGroups.length} component groups attached to this page are not shown on it`"
-              @click="showStrandedModal = true"
-            >
-              <WarningIcon
-                class="cwa:size-5"
-                aria-hidden="true"
-              />
-              <span aria-hidden="true">{{ strandedGroups.length }}</span>
-            </button>
-            <CwaUiToggle
-              v-if="cloneSource && $cwa.admin.isEditing"
-              v-model="isNavEnabled"
-              label="Enable Navigation"
-            />
-          </template>
-          <PresenceIndicator />
-          <CloneModeBar />
-        </div>
         <div
           v-if="$cwa.admin.isEditing"
           ref="status"
-          class="cwa:flex cwa:gap-x-4 cwa:items-center cwa:max-sm:order-2"
+          class="cwa:flex cwa:gap-x-4 cwa:items-center"
         >
           <SpinnerTick
             :is-loading="isLoading"
@@ -127,7 +128,7 @@
         </div>
         <div
           v-else
-          class="cwa:flex cwa:min-h-9 cwa:items-center cwa:max-sm:order-2"
+          class="cwa:flex cwa:min-h-9 cwa:items-center"
         >
           <Menu />
         </div>
@@ -212,6 +213,17 @@ const isNavEnabled = computed({
 })
 
 const isLoading = computed(() => $cwa.resourcesManager.requestCount.value > 0)
+
+async function toggleEditing() {
+  if (!$cwa.admin.isEditing) {
+    $cwa.admin.toggleEdit(true)
+    return
+  }
+  if (!await $cwa.resourcesManager.confirmDiscardAddingResource()) {
+    return
+  }
+  $cwa.admin.toggleEdit(false)
+}
 
 const editPageResourceType = computed(() => {
   if ($cwa.resources.isDataPage.value) {

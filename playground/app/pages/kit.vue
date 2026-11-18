@@ -51,6 +51,7 @@ import KitLabs from '../kit/KitLabs.vue'
 import KitImageAlt from '../kit/KitImageAlt.vue'
 import { useKitWorkbench } from '../kit/workbench-state'
 import KitPractice from '../kit/KitPractice.vue'
+import KitRevealSim from '../kit/KitRevealSim.vue'
 import { useKitTab } from '../kit/kit-tab'
 
 definePageMeta({
@@ -835,17 +836,19 @@ const badgeTones = [
           The Alt chip edits the image's alt text; the dot shows while it is missing. Image slots put one labelled image per slot in one row.
         </p>
         <div class="kit-stack">
-          <div class="kit-row">
-            <CwaUiImageAlt
-              label="With alt"
-              :upload="uploadSamples[0]!.upload"
-              :alt="altPresent"
-            />
-            <CwaUiImageAlt
-              label="Alt missing"
-              :upload="uploadSamples[0]!.upload"
-              :alt="altMissing"
-            />
+          <div class="kit-bar">
+            <CwaUiManagerTab>
+              <CwaUiImageAlt
+                label="With alt"
+                :upload="uploadSamples[0]!.upload"
+                :alt="altPresent"
+              />
+              <CwaUiImageAlt
+                label="Alt missing"
+                :upload="uploadSamples[0]!.upload"
+                :alt="altMissing"
+              />
+            </CwaUiManagerTab>
           </div>
           <div class="kit-bar">
             <CwaUiManagerTab>
@@ -1171,6 +1174,16 @@ const badgeTones = [
         </div>
       </section>
 
+      <section aria-labelledby="kit-reveal">
+        <h2 id="kit-reveal">
+          Revealed content
+        </h2>
+        <p class="kit-note">
+          <code>CwaReveal</code> wraps content a choice shows. When the admin's choice reveals it outside the scrolling area, the area scrolls by the least amount that brings it into view, clear of sticky rows. Nothing moves when it is already in view, on opening, or when data shows it. Focus stays on the control. Try: open the slide-over, scroll to the top, and choose Nested under: Page data.
+        </p>
+        <KitRevealSim />
+      </section>
+
       <section aria-labelledby="kit-confirm">
         <h2 id="kit-confirm">
           Confirm
@@ -1470,6 +1483,14 @@ code {
   flex-wrap: wrap;
   align-items: center;
   gap: 0.75rem;
+}
+
+@media (max-width: 40rem) {
+  .kit-row > * {
+    flex-shrink: 1;
+    flex-wrap: wrap;
+    max-width: 100%;
+  }
 }
 
 .kit-sample {

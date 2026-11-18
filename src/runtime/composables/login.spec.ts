@@ -14,8 +14,9 @@ mockNuxtImport('navigateTo', () => mockNavigateTo)
 const mockRoute = vi.hoisted(() => ({ query: {} as Record<string, unknown> }))
 mockNuxtImport('useRoute', () => () => mockRoute)
 
-function makeFetchError(opts: { status?: number, message?: string, statusMessage?: string } = {}): FetchError {
+function makeFetchError(opts: { status?: number, message?: string, statusMessage?: string, request?: string } = {}): FetchError {
   return createFetchError({
+    request: opts.request ?? 'https://api.example.com/login',
     options: { method: 'POST' },
     response: {
       status: opts.status ?? 401,
@@ -67,25 +68,35 @@ describe('useLogin', () => {
     expect(mockNavigateTo).toHaveBeenCalledWith('/')
   })
 
-  test('signIn FetchError with data.message sets error from message', async () => {
-    mockAuth.signIn.mockResolvedValue(makeFetchError({ message: 'Invalid credentials' }))
-    const { signIn, error } = useLogin()
-    await signIn()
-    expect(error.value).toBe('Invalid credentials')
-  })
+  describe('sign-in failures are explained in plain words, never in the server\'s', () => {
+    test('a 401 from the login request is wrong credentials, whatever the server says', async () => {
+      mockAuth.signIn.mockResolvedValue(makeFetchError({ status: 401, message: 'Bad credentials, please verify that your username/password are correctly set.' }))
+      const { signIn, error } = useLogin()
+      await signIn()
+      expect(error.value).toBe('Invalid credentials.')
+    })
 
-  test('signIn FetchError without data.message falls back to statusMessage', async () => {
-    mockAuth.signIn.mockResolvedValue(makeFetchError({ statusMessage: 'Unauthorized' }))
-    const { signIn, error } = useLogin()
-    await signIn()
-    expect(error.value).toBe('Unauthorized')
-  })
+    test.each([
+      ['https://api.example.com/me'],
+      ['https://api.example.com/_api/me'],
+    ])('a 401 once signed in (%s) is the sign-in cookie not being kept', async (request) => {
+      mockAuth.signIn.mockResolvedValue(makeFetchError({ status: 401, message: 'JWT Token not found', request }))
+      const { signIn, error } = useLogin()
+      await signIn()
+      expect(error.value).toBe('We couldn\'t keep you signed in. Your browser didn\'t store the sign-in cookie; check the site\'s cookie settings or try again.')
+    })
 
-  test('signIn FetchError without data.message or statusMessage uses default', async () => {
-    mockAuth.signIn.mockResolvedValue(createFetchError({ options: {}, response: { _data: {} } }))
-    const { signIn, error } = useLogin()
-    await signIn()
-    expect(error.value).toBe('Unknown/Network Error')
+    test.each([
+      [makeFetchError({ status: 500, message: 'SQLSTATE[HY000] [2002] Connection refused' })],
+      [makeFetchError({ status: 400, message: 'The key "username" must be provided.' })],
+      [makeFetchError({ status: 503, statusMessage: 'Service Unavailable' })],
+      [createFetchError({ request: 'https://api.example.com/login', options: {}, error: new TypeError('Failed to fetch') })],
+    ])('any other failure is a generic line (%#)', async (failure) => {
+      mockAuth.signIn.mockResolvedValue(failure)
+      const { signIn, error } = useLogin()
+      await signIn()
+      expect(error.value).toBe('We couldn\'t sign you in. Please try again.')
+    })
   })
 
   describe('redirect target (#271)', () => {
@@ -164,7 +175,7 @@ describe('useLogin', () => {
     mockAuth.signIn.mockResolvedValueOnce({ '@id': '/users/1' })
     const { signIn, error } = useLogin()
     await signIn()
-    expect(error.value).toBe('First error')
+    expect(error.value).toBe('Invalid credentials.')
     await signIn()
     expect(error.value).toBeUndefined()
   })

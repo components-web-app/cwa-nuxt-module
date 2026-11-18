@@ -3,6 +3,7 @@ import { computed, ref, useId, watch } from 'vue'
 import CwaUiInput from '#cwa/templates/components/ui/Input.vue'
 import CwaUiSelect from '#cwa/templates/components/ui/Select.vue'
 import CwaUiSegmented from '#cwa/templates/components/ui/Segmented.vue'
+import CwaReveal from '#cwa/templates/components/core/ui/Reveal.vue'
 import CwaUiDatePicker from '#cwa/templates/components/ui/DatePicker.vue'
 import CwaUiButton from '#cwa/templates/components/ui/Button.vue'
 import CwaUiFormSection from '#cwa/templates/components/ui/FormSection.vue'
@@ -244,13 +245,14 @@ const deleteDescription = computed(() => {
           :options="publicationOptions"
           data-publication-state
         />
-        <CwaUiDatePicker
-          v-if="localPublicationState === 'scheduled'"
-          v-model="liveAtPickerModel"
-          label="Goes live"
-          :min="minLiveAt"
-          data-live-at
-        />
+        <CwaReveal :when="localPublicationState === 'scheduled'">
+          <CwaUiDatePicker
+            v-model="liveAtPickerModel"
+            label="Goes live"
+            :min="minLiveAt"
+            data-live-at
+          />
+        </CwaReveal>
         <p
           v-if="liveSince"
           data-live-since
