@@ -6,6 +6,7 @@ import { axe } from '../../../../../../test/utils/axe'
 import { drawsFocusRing } from '../../../../../../test/utils/focus-ring'
 import { announceKey } from '../ui/field-keys'
 import BarSummary from './BarSummary.vue'
+import { focusBarStatus } from '#cwa/admin/inline-editors'
 import type { CwaFieldState } from '#cwa/storage/stores/resources/state'
 
 const iri = ref('/component/c1')
@@ -15,8 +16,9 @@ const fieldStates = reactive<Record<string, CwaFieldState>>({})
 const stackState = reactive<Record<string, any>>({})
 const updateResource = vi.fn()
 
+const cwa = vi.hoisted(() => ({}))
 vi.mock('#cwa/composables/cwa', () => ({
-  useCwa: () => ({
+  useCwa: () => Object.assign(cwa, {
     admin: {
       resourceStackManager: {
         currentIri: iri,
@@ -62,6 +64,16 @@ describe('BarSummary (#459)', () => {
       delete stackState[key]
     }
     updateResource.mockReset()
+  })
+
+  test('is where an in-page editor\'s Escape goes while its save has failed, and stops being it when unmounted', async () => {
+    const { summary, wrapper } = mountSummary()
+
+    expect(focusBarStatus(cwa)).toBe(true)
+    expect(document.activeElement).toBe(summary().element)
+
+    wrapper.unmount()
+    expect(focusBarStatus(cwa)).toBe(false)
   })
 
   test.each([

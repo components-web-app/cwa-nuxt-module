@@ -4,7 +4,8 @@ import { computed, nextTick, ref } from 'vue'
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { axe } from '../../../../../test/utils/axe'
 import { drawsFocusRing } from '../../../../../test/utils/focus-ring'
-import { findInlineEditor, openInlineEditor } from '#cwa/admin/inline-editors'
+import { findInlineEditor, openInlineEditor, registerBarStatus } from '#cwa/admin/inline-editors'
+import type { CwaFieldState } from '#cwa/storage/stores/resources/state'
 import type { RemoteFieldChange, ResourceModelField } from '#cwa/resources/model-editors'
 import InlineEdit from './InlineEdit.vue'
 
@@ -17,19 +18,21 @@ afterEach(() => {
   document.body.innerHTML = ''
 })
 
-function fieldModel(initial: string | null, remote?: RemoteFieldChange<string>) {
+function fieldModel(initial: string | null, remote?: RemoteFieldChange<string>, status: CwaFieldState['status'] = 'idle') {
   const focusin = vi.fn()
+  const state = ref<CwaFieldState>({ status, waiting: false, slow: false })
   const model: ResourceModelField<string> = {
     model: ref(initial),
+    state,
     remoteChange: computed(() => remote),
     focusListeners: { onFocusin: focusin, onFocusout: vi.fn(), onPointerdown: vi.fn() },
     editorKey: { iri: () => '/component/title', field: 'title' },
   }
-  return { model, focusin }
+  return { model, focusin, state }
 }
 
-function mountEdit(initial: string | null = 'How we build a kitchen', props: Record<string, unknown> = {}) {
-  const field = fieldModel(initial)
+function mountEdit(initial: string | null = 'How we build a kitchen', props: Record<string, unknown> = {}, status?: CwaFieldState['status']) {
+  const field = fieldModel(initial, undefined, status)
   const wrapper = mount(InlineEdit, { props: { model: field.model, label: 'Title', ...props }, attachTo: document.body })
   return { wrapper, ...field }
 }
@@ -113,6 +116,57 @@ describe('CwaUiInlineEdit (#461)', () => {
     expect(wrapper.find('input').exists()).toBe(false)
     expect(outer).not.toHaveBeenCalled()
     document.removeEventListener('keydown', outer)
+  })
+
+  test('while its save has failed the editor is invalid, says Escape leads to Retry and Reset, and Escape reverts and goes to the bar status', async () => {
+    const { wrapper, model, state } = mountEdit('How we build a kitchen', {}, 'error')
+    const status = document.createElement('button')
+    document.body.append(status)
+    const unregister = registerBarStatus(cwa, status)
+    const input = await startEditing(wrapper)
+
+    expect(input.attributes('aria-invalid')).toBe('true')
+    const described = document.getElementById(input.attributes('aria-describedby')!)
+    expect(described?.textContent).toBe('Not saved. Press Escape for Retry and Reset.')
+    expect(shown(wrapper).attributes('aria-invalid')).toBe('true')
+
+    await input.setValue('Something else')
+    await input.trigger('keydown', { key: 'Escape' })
+    await flushPromises()
+
+    expect(model.model.value).toBe('How we build a kitchen')
+    expect(document.activeElement).toBe(status)
+
+    state.value = { status: 'saving', waiting: false, slow: false }
+    await nextTick()
+    expect(shown(wrapper).attributes('aria-invalid')).toBeUndefined()
+    expect(shown(wrapper).attributes('aria-describedby')).toBeUndefined()
+    unregister()
+  })
+
+  test('Escape stays on the editor\'s text when the save has not failed, even with a bar status', async () => {
+    const { wrapper } = mountEdit()
+    const status = document.createElement('button')
+    document.body.append(status)
+    const unregister = registerBarStatus(cwa, status)
+    const input = await startEditing(wrapper)
+    expect(input.attributes('aria-invalid')).toBeUndefined()
+
+    await input.trigger('keydown', { key: 'Escape' })
+    await flushPromises()
+
+    expect(document.activeElement).toBe(shown(wrapper).element)
+    unregister()
+  })
+
+  test('with its save failed and no bar on screen, Escape stays on the editor\'s text', async () => {
+    const { wrapper } = mountEdit('How we build a kitchen', {}, 'error')
+    const input = await startEditing(wrapper)
+
+    await input.trigger('keydown', { key: 'Escape' })
+    await flushPromises()
+
+    expect(document.activeElement).toBe(shown(wrapper).element)
   })
 
   test('leaving the input commits, as long as the text changed, and an emptied value saves null', async () => {
