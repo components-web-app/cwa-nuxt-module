@@ -41,6 +41,8 @@ import { kitColourLabel, kitColourTokens, kitContrastPairs, kitThemeStyle, kitTo
 import KitWorkbench from '../kit/KitWorkbench.vue'
 import KitLabs from '../kit/KitLabs.vue'
 import { useKitWorkbench } from '../kit/workbench-state'
+import KitPractice from '../kit/KitPractice.vue'
+import { useKitTab } from '../kit/kit-tab'
 
 definePageMeta({
   cwa: {
@@ -49,6 +51,7 @@ definePageMeta({
 })
 
 const { theme, remountKey } = useKitWorkbench()
+const tab = useKitTab()
 const themeStyle = computed(() => kitThemeStyle(theme.value))
 
 useHead({
@@ -255,7 +258,10 @@ const badgeTones = [
       <h1>CWA admin UI kit</h1>
     </header>
 
-    <main :key="remountKey">
+    <main
+      v-if="tab === 'kit'"
+      :key="remountKey"
+    >
       <KitLabs />
 
       <section aria-labelledby="kit-tokens">
@@ -1143,6 +1149,10 @@ const badgeTones = [
         </div>
       </section>
     </main>
+    <KitPractice
+      v-else
+      :key="remountKey"
+    />
   </div>
 </template>
 
