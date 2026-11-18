@@ -106,11 +106,11 @@ describe('RoutesTabView', () => {
   })
 
   describe('a page with no route', () => {
-    test('says so instead of showing a Path label, offers Add a route, and hides Redirect to', async () => {
+    test('says so instead of showing a Path label, offers Add a route, and hides Redirect to and Redirected from', async () => {
       const wrapper = mountView({ resource: undefined, recommendedPath: '/topic-one' })
       expect(wrapper.find('dt').exists()).toBe(false)
       expect(wrapper.find('[data-testid="routes-none"]').text()).toBe('No route yet. Visitors can\'t open this page at its own address.')
-      expect(rowTexts(wrapper)).toEqual(['Redirected from: None', 'Child routes: None'])
+      expect(rowTexts(wrapper)).toEqual(['Child routes: None'])
       expect(badge(wrapper).exists()).toBe(false)
       await wrapper.find('[data-testid="routes-add"]').trigger('click')
       await wrapper.find('[data-testid="route-use-recommended"]').trigger('click')
