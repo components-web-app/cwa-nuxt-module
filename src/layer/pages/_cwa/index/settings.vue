@@ -50,281 +50,293 @@
     <FormGroup
       v-else
       ref="group"
+      v-model:tab="tab"
       :form="form"
+      :tabs="tabs"
       @save="save"
     >
-      <CwaUiFormSection title="General">
-        <CwaUiInput
-          field="siteName"
-          label="Site name"
-          width="full"
-        />
-        <CwaUiToggle
-          field="concatTitle"
-          label="Extend page titles with the default title"
-          :description="local.concatTitle ? 'Page titles are formatted as “Page title | Site name”.' : 'Page titles are formatted as “Page title”.'"
-        />
-        <CwaUiToggle
-          field="fallbackTitle"
-          label="Smart fallback page titles"
-          :description="local.fallbackTitle ? 'A page without a title takes one from its address: /blog-articles becomes “Blog Articles”.' : 'A page without a title has no title at all.'"
-        />
-        <div class="cwa:flex cwa:flex-col cwa:gap-2">
+      <template #general>
+        <CwaUiFormSection>
           <CwaUiInput
-            field="canonicalUrl"
-            label="Canonical URL"
-            type="url"
-            inputmode="url"
-            placeholder="https://your-site-domain.com"
-            description="Your primary domain, with no redirects."
+            field="siteName"
+            label="Site name"
             width="full"
           />
-          <CwaUiAlert
-            v-if="canonicalMismatch"
-            tone="warning"
-            title="This isn't the address you're using now."
-            data-testid="canonical-mismatch"
-          >
-            <p class="cwa:m-0">
-              You're on <code class="cwa:font-mono">{{ currentHostDomain }}</code>. Make sure the canonical URL is your primary domain and does not redirect.
-            </p>
-          </CwaUiAlert>
-        </div>
-      </CwaUiFormSection>
-      <CwaUiFormSection
-        title="Sitemap"
-        description="Pages not created in the CWA are added to the sitemap automatically. Submit /sitemap_index.xml to each search engine's console."
-      >
-        <CwaUiToggle
-          field="sitemapEnabled"
-          label="Add CWA URLs to your sitemap"
-        />
-        <CwaUiTextarea
-          field="sitemapXml"
-          label="Additional custom XML sitemap"
-          optional
-        />
-      </CwaUiFormSection>
-      <CwaUiFormSection title="Search engines">
-        <CwaUiToggle
-          field="indexable"
-          label="Allow your website to be indexed"
-        />
-        <template v-if="local.indexable">
           <CwaUiToggle
-            field="robotsAllowNonSeoCrawlers"
-            label="Allow non-SEO crawlers (web scrapers and the like)"
+            field="concatTitle"
+            label="Extend page titles with the default title"
+            :description="local.concatTitle ? 'Page titles are formatted as “Page title | Site name”.' : 'Page titles are formatted as “Page title”.'"
           />
           <CwaUiToggle
-            field="robotsAllowAiBots"
-            label="Allow AI bots"
+            field="fallbackTitle"
+            label="Smart fallback page titles"
+            :description="local.fallbackTitle ? 'A page without a title takes one from its address: /blog-articles becomes “Blog Articles”.' : 'A page without a title has no title at all.'"
           />
-        </template>
-        <CwaUiToggle
-          field="robotsRemoveSitemap"
-          label="Remove sitemap.xml from robots.txt"
-        />
-        <div class="cwa:flex cwa:flex-col cwa:gap-2">
+          <div class="cwa:flex cwa:flex-col cwa:gap-2">
+            <CwaUiInput
+              field="canonicalUrl"
+              label="Canonical URL"
+              type="url"
+              inputmode="url"
+              placeholder="https://your-site-domain.com"
+              info="Your primary domain, with no redirects."
+              width="full"
+            />
+            <CwaUiAlert
+              v-if="canonicalMismatch"
+              tone="warning"
+              title="This isn't the address you're using now."
+              data-testid="canonical-mismatch"
+            >
+              <p class="cwa:m-0">
+                You're on <code class="cwa:font-mono">{{ currentHostDomain }}</code>. Make sure the canonical URL is your primary domain and does not redirect.
+              </p>
+            </CwaUiAlert>
+          </div>
+        </CwaUiFormSection>
+      </template>
+      <template #seo>
+        <CwaUiFormSection
+          title="Sitemap"
+          description="Pages not created in the CWA are added to the sitemap automatically. Submit /sitemap_index.xml to each search engine's console."
+        >
+          <CwaUiToggle
+            field="sitemapEnabled"
+            label="Add CWA URLs to your sitemap"
+          />
           <CwaUiTextarea
-            field="robotsText"
-            label="Additional custom robots.txt"
+            field="sitemapXml"
+            label="Additional custom XML sitemap"
             optional
           />
-          <CwaUiAlert
-            v-if="robotsWarnings.length"
-            tone="warning"
-            :title="robotsWarnings[0]!"
-            data-testid="robots-warning"
-          >
-            <p
-              v-for="warning in robotsWarnings.slice(1)"
-              :key="warning"
-              class="cwa:m-0"
+        </CwaUiFormSection>
+        <CwaUiFormSection title="Search engines">
+          <CwaUiToggle
+            field="indexable"
+            label="Allow your website to be indexed"
+          />
+          <template v-if="local.indexable">
+            <CwaUiToggle
+              field="robotsAllowNonSeoCrawlers"
+              label="Allow non-SEO crawlers (web scrapers and the like)"
+            />
+            <CwaUiToggle
+              field="robotsAllowAiBots"
+              label="Allow AI bots"
+            />
+          </template>
+          <CwaUiToggle
+            field="robotsRemoveSitemap"
+            label="Remove sitemap.xml from robots.txt"
+          />
+          <div class="cwa:flex cwa:flex-col cwa:gap-2">
+            <CwaUiTextarea
+              field="robotsText"
+              label="Additional custom robots.txt"
+              optional
+            />
+            <CwaUiAlert
+              v-if="robotsWarnings.length"
+              tone="warning"
+              :title="robotsWarnings[0]!"
+              data-testid="robots-warning"
             >
-              {{ warning }}
-            </p>
-          </CwaUiAlert>
-        </div>
-      </CwaUiFormSection>
-      <CwaUiFormSection title="Maintenance">
-        <CwaUiToggle
-          field="maintenanceModeEnabled"
-          label="Enable maintenance mode"
-          :description="local.maintenanceModeEnabled ? 'Visitors are sent to a “website under maintenance” page, and crawlers get a status code saying it is temporary.' : undefined"
-        />
-      </CwaUiFormSection>
-      <CwaUiFormSection
-        :title="pageCacheEnabled ? 'Page cache' : 'Cached data'"
-        data-testid="settings-cache"
-      >
-        <template v-if="pageCacheEnabled">
-          <div class="cwa:flex cwa:flex-col cwa:gap-2 cwa:text-control cwa:text-fg-secondary">
-            <p class="cwa:m-0">
-              Visitors are served a cached copy of each page. Purging drops every cached page at once, and each one is rebuilt the next time it is visited. No content is lost. You do not need to do this after ordinary edits, because those refresh the cache automatically.
-            </p>
-            <p class="cwa:m-0">
-              Warming loads every public page into the cache ahead of visitors, for example after a purge.
-            </p>
+              <p
+                v-for="warning in robotsWarnings.slice(1)"
+                :key="warning"
+                class="cwa:m-0"
+              >
+                {{ warning }}
+              </p>
+            </CwaUiAlert>
           </div>
+        </CwaUiFormSection>
+      </template>
+      <template #maintenance>
+        <CwaUiFormSection title="Maintenance mode">
+          <CwaUiToggle
+            field="maintenanceModeEnabled"
+            label="Enable maintenance mode"
+            :description="local.maintenanceModeEnabled ? 'Visitors are sent to a “website under maintenance” page, and crawlers get a status code saying it is temporary.' : undefined"
+          />
+        </CwaUiFormSection>
+        <CwaUiFormSection
+          :title="pageCacheEnabled ? 'Page cache' : 'Cached data'"
+          data-testid="settings-cache"
+        >
+          <template v-if="pageCacheEnabled">
+            <div class="cwa:flex cwa:flex-col cwa:gap-2 cwa:text-control cwa:text-fg-secondary">
+              <p class="cwa:m-0">
+                Visitors are served a cached copy of each page. Purging drops every cached page at once, and each one is rebuilt the next time it is visited. No content is lost. You do not need to do this after ordinary edits, because those refresh the cache automatically.
+              </p>
+              <p class="cwa:m-0">
+                Warming loads every public page into the cache ahead of visitors, for example after a purge.
+              </p>
+            </div>
+            <div class="cwa:flex cwa:flex-wrap cwa:gap-actions">
+              <CwaUiButton
+                :label="purgingPageCache ? 'Purging…' : 'Purge page cache'"
+                :loading="purgingPageCache"
+                data-testid="purge-page-cache"
+                @click="purgePageCache"
+              />
+              <CwaUiButton
+                :label="warmPageCacheLabel"
+                :loading="warmingPageCache"
+                data-testid="warm-page-cache"
+                @click="warmPageCache"
+              />
+            </div>
+            <CwaUiAlert
+              v-if="purgePageCacheResult"
+              :tone="purgePageCacheResult.success ? 'success' : 'danger'"
+              :title="purgePageCacheResult.success ? 'The page cache has been purged. Pages will be rebuilt as they are next visited.' : purgePageCacheResult.message"
+              data-testid="purge-page-cache-result"
+            />
+            <CwaUiAlert
+              v-if="warmPageCacheResult"
+              :tone="warmPageCacheResult.success ? 'success' : 'danger'"
+              :title="warmPageCacheResult.message"
+              data-testid="warm-page-cache-result"
+            />
+          </template>
+          <p class="cwa:m-0 cwa:text-control cwa:text-fg-secondary">
+            <span>Purging all cached data is a last resort: every page is slow until it has been rendered again. After data has been changed outside the admin, purge the pages it affects from each page's settings instead.</span>
+            <span v-if="!pageCacheEnabled">&nbsp;Pages are rendered fresh on every visit in this configuration, so this purges the API cache only.</span>
+          </p>
           <div class="cwa:flex cwa:flex-wrap cwa:gap-actions">
             <CwaUiButton
-              :label="purgingPageCache ? 'Purging…' : 'Purge page cache'"
-              :loading="purgingPageCache"
-              data-testid="purge-page-cache"
-              @click="purgePageCache"
+              tone="danger"
+              :label="purgingHttpCache ? 'Purging all cached data…' : 'Purge all cached data'"
+              :loading="purgingHttpCache"
+              data-testid="purge-http-cache"
+              @click="purgeHttpCache"
             />
             <CwaUiButton
-              :label="warmPageCacheLabel"
+              v-if="pageCacheEnabled && purgeHttpCacheResult?.success"
+              :label="warmingPageCache ? warmPageCacheLabel : 'Warm page cache now'"
               :loading="warmingPageCache"
-              data-testid="warm-page-cache"
+              data-testid="warm-page-cache-now"
               @click="warmPageCache"
             />
           </div>
           <CwaUiAlert
-            v-if="purgePageCacheResult"
-            :tone="purgePageCacheResult.success ? 'success' : 'danger'"
-            :title="purgePageCacheResult.success ? 'The page cache has been purged. Pages will be rebuilt as they are next visited.' : purgePageCacheResult.message"
-            data-testid="purge-page-cache-result"
+            v-if="purgeHttpCacheResult"
+            :tone="purgeHttpCacheResult.success ? 'success' : 'danger'"
+            :title="purgeHttpCacheResult.success ? 'All cached data has been purged. Pages will be slow until they have been rendered again.' : purgeHttpCacheResult.message"
+            data-testid="purge-http-cache-result"
           />
-          <CwaUiAlert
-            v-if="warmPageCacheResult"
-            :tone="warmPageCacheResult.success ? 'success' : 'danger'"
-            :title="warmPageCacheResult.message"
-            data-testid="warm-page-cache-result"
-          />
-        </template>
-        <p class="cwa:m-0 cwa:text-control cwa:text-fg-secondary">
-          <span>Purging all cached data is a last resort: every page is slow until it has been rendered again. After data has been changed outside the admin, purge the pages it affects from each page's settings instead.</span>
-          <span v-if="!pageCacheEnabled">&nbsp;Pages are rendered fresh on every visit in this configuration, so this purges the API cache only.</span>
-        </p>
-        <div class="cwa:flex cwa:flex-wrap cwa:gap-actions">
-          <CwaUiButton
-            tone="danger"
-            :label="purgingHttpCache ? 'Purging all cached data…' : 'Purge all cached data'"
-            :loading="purgingHttpCache"
-            data-testid="purge-http-cache"
-            @click="purgeHttpCache"
-          />
-          <CwaUiButton
-            v-if="pageCacheEnabled && purgeHttpCacheResult?.success"
-            :label="warmingPageCache ? warmPageCacheLabel : 'Warm page cache now'"
-            :loading="warmingPageCache"
-            data-testid="warm-page-cache-now"
-            @click="warmPageCache"
-          />
-        </div>
-        <CwaUiAlert
-          v-if="purgeHttpCacheResult"
-          :tone="purgeHttpCacheResult.success ? 'success' : 'danger'"
-          :title="purgeHttpCacheResult.success ? 'All cached data has been purged. Pages will be slow until they have been rendered again.' : purgeHttpCacheResult.message"
-          data-testid="purge-http-cache-result"
-        />
-      </CwaUiFormSection>
-      <CwaUiFormSection
-        title="Orphaned resources"
-        description="A scan finds component groups, component positions and components that are no longer used anywhere on the site. A file scan finds uploaded files nothing uses any more, and resources whose file is missing from storage; it is separate because listing storage can be slow. Scanning never deletes anything; you can review what it finds and choose what to delete."
-        data-testid="orphaned-settings"
-      >
-        <dl
-          v-if="orphanReport !== undefined || fileReport !== undefined"
-          class="cwa:m-0 cwa:grid cwa:grid-cols-[auto_1fr] cwa:gap-x-4 cwa:gap-y-1 cwa:text-control"
-          data-testid="orphaned-last-scans"
+        </CwaUiFormSection>
+        <CwaUiFormSection
+          title="Orphaned resources"
+          description="A scan finds component groups, component positions and components that are no longer used anywhere on the site. A file scan finds uploaded files nothing uses any more, and resources whose file is missing from storage; it is separate because listing storage can be slow. Scanning never deletes anything; you can review what it finds and choose what to delete."
+          data-testid="orphaned-settings"
         >
-          <template v-if="orphanReport !== undefined">
-            <dt class="cwa:text-fg-muted">
-              Components
-            </dt>
-            <dd class="cwa:m-0 cwa:text-fg">
-              {{ orphanReport ? `Last scanned ${formatDateTime(orphanReport.generatedAt)}` : 'Never scanned' }}
-            </dd>
-          </template>
-          <template v-if="fileReport !== undefined">
-            <dt class="cwa:text-fg-muted">
-              Files
-            </dt>
-            <dd class="cwa:m-0 cwa:text-fg">
-              {{ fileReport ? `Last scanned ${formatDateTime(fileReport.generatedAt)}` : 'Never scanned' }}
-            </dd>
-          </template>
-        </dl>
-        <div class="cwa:flex cwa:flex-wrap cwa:gap-actions">
-          <CwaUiButton
-            :label="scanningOrphans ? 'Scanning…' : 'Scan now'"
-            :loading="scanningOrphans"
-            data-testid="scan-orphans"
-            @click="scanOrphans"
-          />
-          <CwaUiButton
-            :label="scanningFiles ? 'Scanning…' : 'Scan files'"
-            :loading="scanningFiles"
-            data-testid="scan-files"
-            @click="scanFiles"
-          />
-          <NuxtLink
-            :to="{ name: '_cwa-orphaned' }"
-            :class="linkButton"
+          <dl
+            v-if="orphanReport !== undefined || fileReport !== undefined"
+            class="cwa:m-0 cwa:grid cwa:grid-cols-[auto_1fr] cwa:gap-x-4 cwa:gap-y-1 cwa:text-control"
+            data-testid="orphaned-last-scans"
           >
-            Review orphaned resources
-          </NuxtLink>
-        </div>
-        <CwaUiAlert
-          v-if="orphanScanPending || fileScanPending"
-          tone="info"
-          title="The scan has been requested but has not finished yet."
-          data-testid="orphaned-scan-pending"
-        >
-          <p class="cwa:m-0">
-            Reload this page in a moment to see the new report.
-          </p>
-        </CwaUiAlert>
-        <CwaUiAlert
-          v-if="orphanScanError || fileScanError"
-          tone="danger"
-          :title="(orphanScanError || fileScanError)!"
-          data-testid="orphaned-scan-error"
-        />
-      </CwaUiFormSection>
-      <CwaUiFormSection title="CWA version">
-        <dl class="cwa:m-0 cwa:grid cwa:grid-cols-[auto_1fr] cwa:gap-x-4 cwa:gap-y-1 cwa:text-control">
-          <dt class="cwa:text-fg-muted">
-            App
-          </dt>
-          <dd class="cwa:m-0">
-            <a
-              :href="moduleLink"
-              target="_blank"
-              rel="noopener"
-              :class="textLink"
-              data-testid="version-app"
-            >{{ displayAppVersion }}</a>
-          </dd>
-          <dt class="cwa:text-fg-muted">
-            API
-          </dt>
-          <dd class="cwa:m-0">
-            <a
-              :href="apiPackagistLink"
-              target="_blank"
-              rel="noopener"
-              :class="textLink"
-              data-testid="version-api"
-            >{{ displayApiVersion || 'Unknown' }}</a>
-            <span
-              v-if="apiVersionRef"
-              class="cwa:ml-2 cwa:font-mono cwa:text-fg-muted"
-              data-testid="version-api-ref"
-            >{{ apiVersionRef }}</span>
-          </dd>
-        </dl>
-      </CwaUiFormSection>
+            <template v-if="orphanReport !== undefined">
+              <dt class="cwa:text-fg-muted">
+                Components
+              </dt>
+              <dd class="cwa:m-0 cwa:text-fg">
+                {{ orphanReport ? `Last scanned ${formatDateTime(orphanReport.generatedAt)}` : 'Never scanned' }}
+              </dd>
+            </template>
+            <template v-if="fileReport !== undefined">
+              <dt class="cwa:text-fg-muted">
+                Files
+              </dt>
+              <dd class="cwa:m-0 cwa:text-fg">
+                {{ fileReport ? `Last scanned ${formatDateTime(fileReport.generatedAt)}` : 'Never scanned' }}
+              </dd>
+            </template>
+          </dl>
+          <div class="cwa:flex cwa:flex-wrap cwa:gap-actions">
+            <CwaUiButton
+              :label="scanningOrphans ? 'Scanning…' : 'Scan now'"
+              :loading="scanningOrphans"
+              data-testid="scan-orphans"
+              @click="scanOrphans"
+            />
+            <CwaUiButton
+              :label="scanningFiles ? 'Scanning…' : 'Scan files'"
+              :loading="scanningFiles"
+              data-testid="scan-files"
+              @click="scanFiles"
+            />
+            <NuxtLink
+              :to="{ name: '_cwa-orphaned' }"
+              :class="linkButton"
+            >
+              Review orphaned resources
+            </NuxtLink>
+          </div>
+          <CwaUiAlert
+            v-if="orphanScanPending || fileScanPending"
+            tone="info"
+            title="The scan has been requested but has not finished yet."
+            data-testid="orphaned-scan-pending"
+          >
+            <p class="cwa:m-0">
+              Reload this page in a moment to see the new report.
+            </p>
+          </CwaUiAlert>
+          <CwaUiAlert
+            v-if="orphanScanError || fileScanError"
+            tone="danger"
+            :title="(orphanScanError || fileScanError)!"
+            data-testid="orphaned-scan-error"
+          />
+        </CwaUiFormSection>
+      </template>
+      <template #about>
+        <CwaUiFormSection title="CWA version">
+          <dl class="cwa:m-0 cwa:grid cwa:grid-cols-[auto_1fr] cwa:gap-x-4 cwa:gap-y-1 cwa:text-control">
+            <dt class="cwa:text-fg-muted">
+              App
+            </dt>
+            <dd class="cwa:m-0">
+              <a
+                :href="moduleLink"
+                target="_blank"
+                rel="noopener"
+                :class="textLink"
+                data-testid="version-app"
+              >{{ displayAppVersion }}</a>
+            </dd>
+            <dt class="cwa:text-fg-muted">
+              API
+            </dt>
+            <dd class="cwa:m-0">
+              <a
+                :href="apiPackagistLink"
+                target="_blank"
+                rel="noopener"
+                :class="textLink"
+                data-testid="version-api"
+              >{{ displayApiVersion || 'Unknown' }}</a>
+              <span
+                v-if="apiVersionRef"
+                class="cwa:ml-2 cwa:font-mono cwa:text-fg-muted"
+                data-testid="version-api-ref"
+              >{{ apiVersionRef }}</span>
+            </dd>
+          </dl>
+        </CwaUiFormSection>
+      </template>
     </FormGroup>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, ref, useTemplateRef } from 'vue'
+import { computed, onMounted, ref, useTemplateRef, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import ListHeading from '#cwa/templates/components/core/admin/ListHeading.vue'
 import FormGroup from '#cwa/templates/components/core/ui/FormGroup.vue'
+import type { DialogTab } from '#cwa/templates/components/core/ui/dialog-form'
 import CwaUiFormSection from '#cwa/templates/components/ui/FormSection.vue'
 import CwaUiInput from '#cwa/templates/components/ui/Input.vue'
 import CwaUiToggle from '#cwa/templates/components/ui/Toggle.vue'
@@ -352,6 +364,25 @@ const linkButton = `cwa:inline-flex cwa:h-control cwa:items-center cwa:px-4 cwa:
 const textLink = `cwa:font-mono cwa:text-fg cwa:underline cwa:underline-offset-2 ${focusRing}`
 
 const { form, local, loading, loadError, load, save, robotsWarnings } = useSiteSettingsForm()
+
+const tabs: DialogTab[] = [
+  { key: 'general', label: 'General' },
+  { key: 'seo', label: 'SEO' },
+  { key: 'maintenance', label: 'Maintenance' },
+  { key: 'about', label: 'About' },
+]
+
+function tabFromHash(hash: string) {
+  const key = hash.replace(/^#/, '')
+  return tabs.some(item => item.key === key) ? key : 'general'
+}
+
+const route = useRouter().currentRoute
+const tab = ref(tabFromHash(route.value.hash))
+
+watch(() => route.value.hash, (hash) => {
+  tab.value = tabFromHash(hash)
+})
 
 const {
   report: orphanReport,
