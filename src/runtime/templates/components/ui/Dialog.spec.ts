@@ -1,7 +1,7 @@
 // @vitest-environment nuxt
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
-import { defineComponent, h, inject, ref } from 'vue'
+import { defineComponent, h, inject, reactive, ref } from 'vue'
 import { axe } from '../../../../../test/utils/axe'
 import { drawsFocusRing } from '../../../../../test/utils/focus-ring'
 import { fakeDialogForm } from '../../../../../playground/app/kit/fake-dialog-form'
@@ -139,6 +139,200 @@ describe('CwaUiDialog and the Save model (#461)', () => {
     save().click()
     await flushPromises()
     expect(form.saves).toEqual([])
+  })
+
+  describe('the header line while its resource loads', () => {
+    function reduceMotion(reduced: boolean) {
+      vi.spyOn(window, 'matchMedia').mockImplementation((query: string) => ({ matches: query.includes('reduce') ? reduced : false, media: query }) as unknown as MediaQueryList)
+    }
+
+    function mountLoading(start: { loading?: boolean, loadFailed?: boolean } = {}) {
+      const state = reactive({ loading: false, loadFailed: false, kind: undefined as undefined | { tone: string, label: string }, ...start })
+      mount(defineComponent({ setup: () => () => h(Dialog, { title: 'Page', form, noun: 'page', placement: 'right', ...state }) }), { attachTo: document.body })
+      return state
+    }
+
+    const edge = () => q('[data-testid="dialog-edge"]')
+    const header = () => q('[data-testid="dialog-header"]')!
+
+    afterEach(() => {
+      vi.restoreAllMocks()
+    })
+
+    test('sweeps over the neutral line while loading, and on arrival reveals the kind\'s colour from the start edge, over the line without taking room', async () => {
+      reduceMotion(false)
+      const state = mountLoading({ loading: true })
+      await flushPromises()
+      expect(edge()!.getAttribute('data-edge')).toBe('loading')
+      expect(edge()!.getAttribute('aria-hidden')).toBe('true')
+      expect(edge()!.className).toContain('cwa:dialog-edge')
+      expect(header().className).toContain('cwa:border-line')
+
+      state.kind = { tone: 'static', label: 'Static' }
+      state.loading = false
+      await flushPromises()
+      expect(edge()!.getAttribute('data-edge')).toBe('arrived')
+      expect(header().className).toContain('cwa:border-type-static')
+    })
+
+    test('a resource already stored shows its colour with no line animation', async () => {
+      reduceMotion(false)
+      mountLoading({ kind: { tone: 'warning', label: 'Not reachable' } })
+      await flushPromises()
+      expect(edge()).toBeNull()
+      expect(header().className).toContain('cwa:border-warning')
+    })
+
+    test.each([
+      ['after loading', { loading: true }],
+      ['when it opens failed', { loadFailed: true }],
+    ])('a failed load settles the line to danger %s', async (_, start) => {
+      reduceMotion(false)
+      const state = mountLoading(start)
+      await flushPromises()
+      state.loading = false
+      state.loadFailed = true
+      await flushPromises()
+      expect(header().className).toContain('cwa:border-danger')
+      expect(header().className).not.toContain('cwa:border-line')
+    })
+
+    test('after a failed load the reveal runs over danger, then a retry sweeps again', async () => {
+      reduceMotion(false)
+      const state = mountLoading({ loading: true })
+      await flushPromises()
+      state.loading = false
+      state.loadFailed = true
+      await flushPromises()
+      expect(edge()!.getAttribute('data-edge')).toBe('arrived')
+      state.loadFailed = false
+      state.loading = true
+      await flushPromises()
+      expect(edge()!.getAttribute('data-edge')).toBe('loading')
+    })
+
+    test('with reduced motion the line never sweeps or reveals, and shows its final colour', async () => {
+      reduceMotion(true)
+      const state = mountLoading({ loading: true })
+      await flushPromises()
+      expect(edge()).toBeNull()
+      state.kind = { tone: 'dynamic', label: 'Dynamic' }
+      state.loading = false
+      await flushPromises()
+      expect(edge()).toBeNull()
+      expect(header().className).toContain('cwa:border-type-dynamic')
+      expect(q('[data-testid="dialog-loading"]')).toBeNull()
+    })
+  })
+
+  describe('closing a slide-over', () => {
+    function media(reduced = false, wide = true) {
+      return vi.spyOn(window, 'matchMedia').mockImplementation((query: string) => ({
+        matches: query.includes('reduce') ? reduced : query.includes('min-width') ? wide : false,
+        media: query,
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+      }) as unknown as MediaQueryList)
+    }
+
+    function slidOut(name = 'cwa-slide-over-out') {
+      const end = new Event('animationend', { bubbles: true })
+      Object.defineProperty(end, 'animationName', { value: name })
+      dialog().dispatchEvent(end)
+    }
+
+    afterEach(() => {
+      vi.restoreAllMocks()
+      vi.useRealTimers()
+    })
+
+    test('slides out first and says close only when its own slide-out ends, with the page behind it fading and nothing inside it usable meanwhile', async () => {
+      media()
+      const onClose = vi.fn()
+      mountDialog(form, { placement: 'right', onClose })
+      await flushPromises()
+
+      q<HTMLButtonElement>('[data-testid="dialog-close"]')!.click()
+      await flushPromises()
+      expect(onClose).not.toHaveBeenCalled()
+      expect(dialog().getAttribute('data-closing')).toBe('true')
+      expect(dialog().className).toContain('cwa:sm:motion-safe:animate-[cwa-slide-over-out_var(--cwa-duration-slow)_cubic-bezier(0.8,0,0.8,0.2)_forwards]')
+      expect(dialog().className).not.toContain('cwa-slide-over-in')
+      expect(dialog().hasAttribute('inert')).toBe(true)
+      expect(document.querySelector('[data-testid="dialog-overlay"]')!.className).toContain('cwa:motion-safe:animate-[cwa-fade-out_var(--cwa-duration-slow)_cubic-bezier(0.8,0,0.8,0.2)_forwards]')
+
+      slidOut('cwa-spin')
+      expect(onClose).not.toHaveBeenCalled()
+      slidOut()
+      expect(onClose).toHaveBeenCalledTimes(1)
+    })
+
+    test('a second close request while it slides out says close only once', async () => {
+      media()
+      const onClose = vi.fn()
+      const wrapper = mountDialog(form, { placement: 'right', onClose })
+      await flushPromises()
+
+      q<HTMLButtonElement>('[data-testid="dialog-close"]')!.click()
+      await flushPromises()
+      expect(await (wrapper.findComponent(Dialog).vm as unknown as { requestClose: () => Promise<boolean> }).requestClose()).toBe(false)
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+      q<HTMLButtonElement>('[data-testid="dialog-close"]')!.click()
+      await flushPromises()
+      slidOut()
+      slidOut()
+      expect(onClose).toHaveBeenCalledTimes(1)
+    })
+
+    test.each([
+      ['with reduced motion', true, true, 'right'],
+      ['below sm, where it is full screen', false, false, 'right'],
+      ['for a centred dialog', false, true, 'center'],
+    ] as const)('says close at once %s', async (_, reduced, wide, placement) => {
+      media(reduced, wide)
+      const onClose = vi.fn()
+      mountDialog(form, { placement, onClose })
+      await flushPromises()
+
+      q<HTMLButtonElement>('[data-testid="dialog-close"]')!.click()
+      await flushPromises()
+      expect(onClose).toHaveBeenCalledTimes(1)
+    })
+
+    test('says close after its slide-out time when the animation never reports its end', async () => {
+      media()
+      const onClose = vi.fn()
+      mountDialog(form, { placement: 'right', onClose })
+      await flushPromises()
+      vi.useFakeTimers()
+
+      q<HTMLButtonElement>('[data-testid="dialog-close"]')!.click()
+      await vi.advanceTimersByTimeAsync(0)
+      await vi.advanceTimersByTimeAsync(399)
+      expect(onClose).not.toHaveBeenCalled()
+      await vi.advanceTimersByTimeAsync(1)
+      expect(onClose).toHaveBeenCalledTimes(1)
+      slidOut()
+      expect(onClose).toHaveBeenCalledTimes(1)
+    })
+
+    test('requestClose resolves once the dialog has said close', async () => {
+      media()
+      const onClose = vi.fn()
+      const wrapper = mountDialog(form, { placement: 'right', onClose })
+      await flushPromises()
+      const exposed = wrapper.findComponent(Dialog).vm as unknown as { requestClose: () => Promise<boolean> }
+
+      let resolved = false
+      exposed.requestClose().then(() => {
+        resolved = true
+      })
+      await flushPromises()
+      expect(resolved).toBe(false)
+      slidOut()
+      await flushPromises()
+      expect(resolved).toBe(true)
+    })
   })
 
   test('a dialog that opens loaded announces nothing about loading', async () => {

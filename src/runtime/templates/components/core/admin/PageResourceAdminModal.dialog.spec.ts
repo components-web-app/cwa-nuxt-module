@@ -23,6 +23,7 @@ vi.mock('#cwa/resources/realtime-view', () => ({
 enableAutoUnmount(afterEach)
 afterEach(() => {
   confirm.mockReset()
+  vi.restoreAllMocks()
 })
 
 function setup(resourceType: string, members: Record<string, Record<string, any>[]>) {
@@ -124,6 +125,7 @@ describe('PageResourceAdminModal in the real dialog, creating (#461)', () => {
   })
 
   test('a new page left as it opened, with its layout pre-selected, closes without asking; once typed into, closing asks first', async () => {
+    vi.spyOn(window, 'matchMedia').mockImplementation((query: string) => ({ matches: query.includes('reduce'), media: query }) as unknown as MediaQueryList)
     const { wrapper } = setup('Page', { '/_/layouts': [{ '@id': '/_/layouts/a', 'reference': 'A' }] })
     await flushPromises()
 
