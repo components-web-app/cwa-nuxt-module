@@ -9,7 +9,7 @@ import StateGlyph from '../core/ui/StateGlyph.vue'
 import CheckGlyph from '../core/ui/CheckGlyph.vue'
 import DialogPanel from '../core/ui/DialogPanel.vue'
 import { announceKey, dialogSubViewKey, fieldGroupKey, formSurfaceKey } from '../core/ui/field-keys'
-import type { DialogLeaveReason, DialogSubFooter } from '../core/ui/field-keys'
+import type { DialogSubViewClaim, DialogSubViewGuard } from '../core/ui/field-keys'
 import { changesText, dialogTabBadge, dialogTabWords, listText } from '../core/ui/dialog-form'
 import type { DialogForm, DialogTab } from '../core/ui/dialog-form'
 import { useCwaConfirm } from '#cwa/composables/cwa-confirm'
@@ -86,9 +86,9 @@ if (props.form) {
   })
 }
 
-const subViews = shallowRef<{ tab?: string, footer?: () => DialogSubFooter | 'none' | undefined, guard?: (reason: DialogLeaveReason) => Promise<boolean> }[]>([])
+const subViews = shallowRef<DialogSubViewClaim[]>([])
 
-function claimSubView(entry: { tab?: string, footer?: () => DialogSubFooter | 'none' | undefined, guard?: (reason: DialogLeaveReason) => Promise<boolean> }) {
+function claimSubView(entry: DialogSubViewClaim) {
   subViews.value = [...subViews.value, entry]
   return () => {
     subViews.value = subViews.value.filter(candidate => candidate !== entry)
@@ -96,8 +96,8 @@ function claimSubView(entry: { tab?: string, footer?: () => DialogSubFooter | 'n
 }
 
 provide(dialogSubViewKey, {
-  footer: get => claimSubView({ tab: currentTab.value, footer: get }),
-  guard: check => claimSubView({ tab: currentTab.value, guard: check }),
+  footer: get => claimSubView({ footer: get }),
+  guard: guard => claimSubView({ guard }),
 })
 
 const subFooter = computed(() => {
@@ -112,13 +112,27 @@ const subFooter = computed(() => {
   return undefined
 })
 
-async function subViewsAllow(reason: DialogLeaveReason) {
-  for (const entry of subViews.value) {
-    if (entry.guard && entry.tab === currentTab.value && !await entry.guard(reason)) {
-      return false
-    }
-  }
-  return true
+function openGuards() {
+  return subViews.value
+    .filter(entry => entry.guard && entry.tab === (props.tabs?.length ? currentTab.value : undefined))
+    .map(entry => entry.guard as DialogSubViewGuard)
+}
+
+function subViewUnsaved() {
+  return openGuards().flatMap(guard => guard.unsaved())
+}
+
+function leaveSubViews() {
+  openGuards().forEach(guard => guard.leave())
+}
+
+function askDiscard(names: string[], otherTabsKept: boolean) {
+  return confirm({
+    title: `Discard ${names.length} unsaved ${names.length === 1 ? 'change' : 'changes'}?`,
+    description: `Your changes to ${listText(names)} will be lost.${otherTabsKept ? ' Changes on the other tabs are kept.' : ''}`,
+    keep: 'Keep editing',
+    go: 'Discard',
+  })
 }
 
 const keptText = computed(() => {
@@ -257,31 +271,26 @@ async function showField(field: string) {
 let confirming = false
 
 async function confirmDiscard() {
-  const count = unsavedCount.value
-  if (!props.form || !count) {
+  const names = [...(props.form?.unsavedFields.map(labelOf) ?? []), ...subViewUnsaved()]
+  if (!names.length) {
     return true
   }
   if (confirming) {
     return false
   }
   confirming = true
-  const names = props.form.unsavedFields.map(labelOf)
-  const discard = await confirm({
-    title: `Discard ${count} unsaved ${count === 1 ? 'change' : 'changes'}?`,
-    description: `Your changes to ${listText(names)} will be lost.`,
-    keep: 'Keep editing',
-    go: 'Discard',
-  })
+  const discard = await askDiscard(names, false)
   confirming = false
   if (!discard) {
     return false
   }
-  props.form.discard()
+  props.form?.discard()
+  leaveSubViews()
   return true
 }
 
 async function requestClose() {
-  if (confirming || !await subViewsAllow('close') || !await confirmDiscard()) {
+  if (confirming || !await confirmDiscard()) {
     return false
   }
   emit('close')
@@ -296,9 +305,19 @@ function onOpenChange(open: boolean) {
 
 async function selectTab(key: string) {
   const tab = props.tabs?.find(candidate => candidate.key === key)
-  if (!tab || key === currentTab.value || !await subViewsAllow('tab')) {
+  if (!tab || key === currentTab.value || confirming) {
     return
   }
+  const names = subViewUnsaved()
+  if (names.length) {
+    confirming = true
+    const discard = await askDiscard(names, true)
+    confirming = false
+    if (!discard) {
+      return
+    }
+  }
+  leaveSubViews()
   currentTab.value = key
 }
 
@@ -474,6 +493,7 @@ defineExpose({ requestClose, confirmDiscard, showField, announce })
                     :tab="item.key"
                     :unsaved="isUnsaved"
                     :register="register"
+                    :claim="claimSubView"
                   >
                     <p
                       v-if="item.disabled"

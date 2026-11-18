@@ -232,6 +232,17 @@ describe('CwaUiTree (#461)', () => {
     expect([...document.querySelectorAll('[data-testid="badge"]')].map(element => element.textContent)).toEqual(['Live', 'Not live', 'Not live'])
   })
 
+  test('tells which rows are shown, again whenever a row opens or closes', async () => {
+    const { wrapper } = mountTree()
+    await flushPromises()
+    expect(wrapper.emitted('shown')).toEqual([[['/shaker', '/shaker-style', '/old-kitchens']]])
+
+    row('/shaker').querySelector<HTMLElement>('[data-testid="tree-chevron"]')!.click()
+    await flushPromises()
+    expect(wrapper.emitted('shown')!.at(-1)).toEqual([['/shaker', '/old-kitchens']])
+    expect(wrapper.emitted('shown')).toHaveLength(2)
+  })
+
   test('says so when it is empty', async () => {
     mountTree({ nodes: [], empty: 'No old addresses send visitors here.' })
     await flushPromises()

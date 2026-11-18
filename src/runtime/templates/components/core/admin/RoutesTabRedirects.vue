@@ -9,13 +9,14 @@ import BinIcon from '#cwa/templates/components/ui/icon/BinIcon.vue'
 import RouteSubStatus from '#cwa/templates/components/core/admin/RouteSubStatus.vue'
 import type { CwaResource } from '#cwa/resources/resource-utils'
 
-const { redirects = [], path, form = false, error, status, busy = false } = defineProps<{
+const { redirects = [], path, form = false, error, status, busy = false, addDisabledReason } = defineProps<{
   redirects?: CwaResource[]
   path: string
   form?: boolean
   error?: string
   status?: string
   busy?: boolean
+  addDisabledReason?: string
 }>()
 
 const oldAddress = defineModel<string>({ default: '' })
@@ -94,7 +95,8 @@ const preview = computed(() => oldAddress.value.trim())
           :icon="CwaUiPlusIcon"
           label="Add"
           aria-label="Add an old address"
-          :disabled="busy"
+          :disabled="busy || !!addDisabledReason"
+          :disabled-reason="addDisabledReason"
           data-testid="route-redirect-add"
           @click="emit('start')"
         />

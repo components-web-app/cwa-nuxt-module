@@ -36,11 +36,37 @@
         data-testid="routes-failure"
       >
         {{ failure.text }}
+        <ul
+          v-if="failure.reasons?.length"
+          class="cwa:m-0 cwa:mt-2 cwa:list-disc cwa:ps-5"
+        >
+          <li
+            v-for="reason in failure.reasons"
+            :key="reason"
+            data-testid="routes-failure-reason"
+          >
+            {{ reason }}
+          </li>
+        </ul>
         <template #actions>
           <CwaUiButton
             label="Retry"
             data-testid="routes-retry"
             @click="failure.retry()"
+          />
+        </template>
+      </CwaUiAlert>
+      <CwaUiAlert
+        v-if="sub === 'route' && pathChanged && childRoutesState === 'failed'"
+        tone="warning"
+        title="Couldn't check child routes"
+        data-testid="routes-children-failed"
+      >
+        Saving a new path offers to change the child routes under it, so it waits until they load.
+        <template #actions>
+          <CwaUiButton
+            label="Retry"
+            @click="loadChildRoutes()"
           />
         </template>
       </CwaUiAlert>
@@ -82,6 +108,7 @@
         :form="formOpen"
         :error="redirectError"
         :busy="submitting"
+        :add-disabled-reason="hasRoute ? undefined : 'Add a route first: old addresses send visitors to it.'"
         :status="status?.where === 'from' ? status.text : undefined"
         @start="startForm"
         @delete="handleDeleteRedirect"
@@ -92,6 +119,8 @@
         :details="childDetails"
         @edit="emit('openPage', $event)"
         @go="emit('goTo', $event)"
+        @shown="showChildRoutes"
+        @retry="retryChildDetail"
       />
       <div
         v-if="!dialog && subFooter && subFooter !== 'none'"
@@ -134,13 +163,16 @@ import RoutesTabRedirects from '#cwa/templates/components/core/admin/RoutesTabRe
 import RoutesTabChildRoutes from '#cwa/templates/components/core/admin/RoutesTabChildRoutes.vue'
 import type { ChildRouteDetail, RouteHierarchyNodeData } from '#cwa/templates/components/core/admin/RoutesTabChildRoutes.vue'
 import { dialogSubViewKey } from '#cwa/templates/components/core/ui/field-keys'
-import type { DialogLeaveReason, DialogSubFooter } from '#cwa/templates/components/core/ui/field-keys'
+import type { DialogSubFooter } from '#cwa/templates/components/core/ui/field-keys'
 import { useCwaConfirm } from '#cwa/composables/cwa-confirm'
 import { useCwaResourceRoute } from '#cwa/composables/useCwaResourceRoute'
 import { CwaResourceApiStatuses } from '#cwa/storage/stores/resources/state'
 
 const OLD_ADDRESS = /^\/\S*$/
 const NOT_SAVED = 'The server couldn\'t save it. Nothing changed, and what you typed is still here.'
+const NOT_DELETED = 'The server couldn\'t delete it. Nothing changed.'
+const DETAILS_AT_ONCE = 6
+const FIELD_LABELS: Record<string, string> = { path: 'Route path', name: 'Route path', liveAt: 'Go live' }
 
 const props = withDefaults(defineProps<{
   pageResource: CwaResource
@@ -208,6 +240,7 @@ const submitting = ref(false)
 const removingForward = ref(false)
 const deleting = ref(false)
 const childRoutes = ref<RouteHierarchyNodeData[]>([])
+const childRoutesState = ref<'loading' | 'loaded' | 'failed'>('loaded')
 const childDetails = ref<Record<string, ChildRouteDetail>>({})
 
 const sub = ref<RouteSubView | null>(null)
@@ -218,7 +251,7 @@ const forwardPick = ref<string | null | undefined>()
 const newRedirect = ref('')
 const redirectError = ref<string>()
 const status = ref<{ where: 'route' | 'to' | 'from', text: string }>()
-const failure = ref<{ title: string, text: string, retry: () => void }>()
+const failure = ref<{ title: string, text: string, reasons?: string[], retry: () => void }>()
 let focusStatusOnReturn = false
 
 function countNodes(nodes: { children?: unknown[] | null }[] | undefined): number {
@@ -238,19 +271,30 @@ function flattenRouteNodes(nodes: RouteHierarchyNodeData[]): RouteHierarchyNodeD
 
 const childPaths = computed(() => flattenRouteNodes(childRoutes.value).map(node => node.path))
 
+let childRoutesRequest = 0
+
 async function loadChildRoutes() {
   const iri = routeIriFromPage.value
+  const request = ++childRoutesRequest
   if (!iri) {
     childRoutes.value = []
+    childRoutesState.value = 'loaded'
     return
   }
+  childRoutesState.value = 'loading'
   try {
     const { response } = $cwa.fetch({ path: `${iri}/children` })
     const { _data: data } = await response
-    childRoutes.value = data?.children ?? []
+    if (request === childRoutesRequest) {
+      childRoutes.value = data?.children ?? []
+      childRoutesState.value = 'loaded'
+    }
   }
   catch {
-    childRoutes.value = []
+    if (request === childRoutesRequest) {
+      childRoutes.value = []
+      childRoutesState.value = 'failed'
+    }
   }
 }
 
@@ -258,21 +302,73 @@ function iriOf(value: unknown) {
   return typeof value === 'object' && value ? (value as { '@id'?: string })['@id'] : (value as string | undefined) || undefined
 }
 
-async function loadChildDetails() {
-  await Promise.all(flattenRouteNodes(childRoutes.value)
-    .filter(node => !childDetails.value[node.route])
-    .map(async (node) => {
-      try {
-        const { response } = $cwa.fetch({ path: node.route })
-        const { _data: data } = await response
-        if (data) {
-          childDetails.value = { ...childDetails.value, [node.route]: { publication: routePublicationFromResource(data), page: iriOf(data.page) ?? iriOf(data.pageData) } }
-        }
+let detailQueue: string[] = []
+let detailsInFlight = 0
+let detailsGeneration = 0
+
+function setChildDetail(route: string, detail: ChildRouteDetail | undefined) {
+  const { [route]: _previous, ...rest } = childDetails.value
+  childDetails.value = detail ? { ...rest, [route]: detail } : rest
+}
+
+async function loadChildDetail(route: string) {
+  let detail: ChildRouteDetail = { state: 'failed' }
+  try {
+    const { response } = $cwa.fetch({ path: route })
+    const { _data: data } = await response
+    if (data) {
+      detail = { state: 'loaded', publication: routePublicationFromResource(data), page: iriOf(data.page) ?? iriOf(data.pageData) }
+    }
+  }
+  catch {
+    detail = { state: 'failed' }
+  }
+  return detail
+}
+
+function pumpChildDetails() {
+  while (detailsInFlight < DETAILS_AT_ONCE && detailQueue.length) {
+    const route = detailQueue.shift()!
+    const generation = detailsGeneration
+    detailsInFlight++
+    loadChildDetail(route).then((detail) => {
+      if (generation !== detailsGeneration) {
+        return
       }
-      catch {
-        // todo: a child route that fails to load shows no badge
-      }
-    }))
+      detailsInFlight--
+      setChildDetail(route, detail)
+      pumpChildDetails()
+    })
+  }
+}
+
+function showChildRoutes(routes: string[]) {
+  const shown = new Set(routes)
+  detailQueue.filter(route => !shown.has(route)).forEach(route => setChildDetail(route, undefined))
+  detailQueue = detailQueue.filter(route => shown.has(route))
+  for (const route of routes) {
+    if (!childDetails.value[route]) {
+      setChildDetail(route, { state: 'loading' })
+      detailQueue.push(route)
+    }
+  }
+  pumpChildDetails()
+}
+
+function retryChildDetail(route: string) {
+  if (childDetails.value[route]?.state !== 'failed') {
+    return
+  }
+  setChildDetail(route, { state: 'loading' })
+  detailQueue.push(route)
+  pumpChildDetails()
+}
+
+function forgetChildDetails() {
+  detailsGeneration++
+  detailsInFlight = 0
+  detailQueue = []
+  childDetails.value = {}
 }
 
 const subTitle = computed(() => ({
@@ -282,29 +378,37 @@ const subTitle = computed(() => ({
   kids: 'Child routes',
 }[sub.value ?? 'route']))
 
-const routeDirty = computed(() => {
+const routeUnsaved = computed(() => {
   const local = localResourceData.value
   if (!local) {
-    return false
+    return []
   }
   if (!hasRoute.value) {
-    return !!local.path
+    return local.path ? [FIELD_LABELS.path!] : []
   }
-  return local.path !== resource.value?.path || (local.liveAt ?? null) !== (resource.value?.liveAt ?? null)
+  return [
+    ...(local.path !== resource.value?.path ? [FIELD_LABELS.path!] : []),
+    ...((local.liveAt ?? null) !== (resource.value?.liveAt ?? null) ? [FIELD_LABELS.liveAt!] : []),
+  ]
 })
 
-const dirty = computed(() => {
+const routeDirty = computed(() => routeUnsaved.value.length > 0)
+const pathChanged = computed(() => hasRoute.value && !!localResourceData.value && localResourceData.value.path !== resource.value?.path)
+
+const unsaved = computed(() => {
   if (sub.value === 'route') {
-    return routeDirty.value
+    return routeUnsaved.value
   }
   if (sub.value === 'to' && formOpen.value) {
-    return (forwardPick.value ?? null) !== (redirectIri.value ?? null)
+    return (forwardPick.value ?? null) !== (redirectIri.value ?? null) ? ['Send visitors to'] : []
   }
   if (sub.value === 'from' && formOpen.value) {
-    return !!newRedirect.value.trim()
+    return newRedirect.value.trim() ? ['Old address'] : []
   }
-  return false
+  return []
 })
+
+const dirty = computed(() => unsaved.value.length > 0)
 
 const busy = computed(() => submitting.value || deleting.value || removingForward.value || isUpdating.value)
 
@@ -314,6 +418,12 @@ const routeDisabledReason = computed(() => {
   }
   if (awaitingDate.value) {
     return 'Choose when the route goes live.'
+  }
+  if (pathChanged.value && childRoutesState.value === 'loading') {
+    return 'Checking the child routes under this path…'
+  }
+  if (pathChanged.value && childRoutesState.value === 'failed') {
+    return 'Couldn\'t check the child routes under this path.'
   }
   return routeDirty.value ? undefined : 'Nothing has changed.'
 })
@@ -344,7 +454,9 @@ const subFooter = computed<DialogSubFooter | 'none' | undefined>(() => {
   return 'none'
 })
 
-const releases = dialog ? [dialog.footer(() => subFooter.value), dialog.guard(guardLeave)] : []
+const releases = dialog
+  ? [dialog.footer(() => subFooter.value), dialog.guard({ unsaved: () => unsaved.value, leave: () => sub.value && closeSub() })]
+  : []
 onBeforeUnmount(() => releases.forEach(release => release()))
 
 function askDiscard() {
@@ -354,17 +466,6 @@ function askDiscard() {
     keep: 'Keep editing',
     go: 'Discard',
   })
-}
-
-async function guardLeave(reason: DialogLeaveReason) {
-  if (!sub.value) {
-    return true
-  }
-  if (dirty.value && !await askDiscard()) {
-    return false
-  }
-  reason === 'tab' && closeSub()
-  return true
 }
 
 function resetDrafts() {
@@ -389,7 +490,6 @@ function open(view: RouteSubView, recommended = false) {
   if (view === 'route' && recommended && localResourceData.value && recommendedPath.value) {
     localResourceData.value.path = recommendedPath.value
   }
-  view === 'kids' && loadChildDetails()
   focusStatusOnReturn = false
   sub.value = view
 }
@@ -416,6 +516,9 @@ async function focusInSub(selector: string) {
 }
 
 function startForm() {
+  if (sub.value === 'from' && !hasRoute.value) {
+    return
+  }
   status.value = undefined
   resetDrafts()
   formOpen.value = true
@@ -431,8 +534,8 @@ async function cancelForm() {
   focusInSub(sub.value === 'to' ? '[data-set-forward], [data-edit-forward]' : '[data-testid="route-redirect-add"]')
 }
 
-async function showFailure(title: string, retry: () => void, text = NOT_SAVED) {
-  failure.value = { title, text, retry }
+async function showFailure(title: string, retry: () => void, text = NOT_SAVED, reasons?: string[]) {
+  failure.value = { title, text, reasons, retry }
   await nextTick()
   failureAlert.value?.focus()
 }
@@ -445,6 +548,10 @@ async function endFormWith(where: 'to' | 'from', text: string) {
 }
 
 async function handleCreateRedirect() {
+  const target = props.pageResource.route
+  if (!target || busy.value) {
+    return
+  }
   const path = newRedirect.value.trim()
   if (!OLD_ADDRESS.test(path)) {
     redirectError.value = 'Start with / and leave out spaces, for example /old-kitchens.'
@@ -459,7 +566,7 @@ async function handleCreateRedirect() {
     data: {
       name: path,
       path,
-      redirect: props.pageResource.route,
+      redirect: target,
     },
   })
   submitting.value = false
@@ -479,18 +586,19 @@ async function handleSaveRoute() {
   const adding = !hasRoute.value
   const oldPath = resource.value?.path as string | undefined
   const newPath = localResourceData.value?.path as string
-  const pathChanged = !adding && newPath !== oldPath
+  const moved = !adding && newPath !== oldPath
   const childrenUnder = childPaths.value.some(path => path.startsWith(`${oldPath}/`))
-  const cascadeData = pathChanged && childrenUnder && cascade.value ? { cascadeChildPaths: true } : undefined
+  const cascadeData = moved && childrenUnder && cascade.value ? { cascadeChildPaths: true } : undefined
 
   const savedResource = await saveResource(false, cascadeData)
   if (!savedResource) {
-    showFailure(adding ? 'The route wasn\'t added.' : 'The route wasn\'t saved.', handleSaveRoute)
+    const reasons = serverReasons()
+    showFailure(adding ? 'The route wasn\'t added.' : 'The route wasn\'t saved.', handleSaveRoute, reasons.length ? 'What you typed is still here.' : NOT_SAVED, reasons)
     return
   }
   status.value = {
     where: 'route',
-    text: adding ? `Route added: ${newPath}.` : pathChanged ? `Route changed to ${newPath}. ${oldPath} now redirects here.` : 'Route saved.',
+    text: adding ? `Route added: ${newPath}.` : moved ? `Route changed to ${newPath}. ${oldPath} now redirects here.` : 'Route saved.',
   }
   isLoadingRoute.value = true
   emit('reload')
@@ -500,6 +608,11 @@ async function handleSaveRoute() {
     await loadResource()
   }
   await loadChildRoutes()
+}
+
+function serverReasons() {
+  const fieldReasons = Object.entries(routeForm?.fieldErrors ?? {}).map(([field, message]) => `${FIELD_LABELS[field] ?? field}: ${message}`)
+  return [...new Set([...(routeForm?.formError ? [routeForm.formError] : []), ...fieldReasons])]
 }
 
 function navigateFromDeleted(path: string | undefined) {
@@ -527,9 +640,14 @@ async function handleDeleteRoute() {
   if (!confirmed) {
     return
   }
+  failure.value = undefined
   deleting.value = true
-  await deleteResource(undefined, () => navigateFromDeleted(deletingPath), true)
+  const deleted = await deleteResource(undefined, () => navigateFromDeleted(deletingPath), true)
   deleting.value = false
+  if (!deleted) {
+    showFailure('The route wasn\'t deleted.', handleDeleteRoute, NOT_DELETED)
+    return
+  }
   status.value = { where: 'route', text: `Route ${deletingPath} deleted.` }
   closeSub(true)
 }
@@ -555,7 +673,7 @@ async function handleDeleteRedirect(redirect: CwaResource) {
   await loadResource()
   submitting.value = false
   if (hasRedirect(resource.value?.redirectedFrom, redirect['@id'])) {
-    showFailure('The old address wasn\'t deleted.', () => handleDeleteRedirect(redirect), 'The server couldn\'t delete it. Nothing changed.')
+    showFailure('The old address wasn\'t deleted.', () => handleDeleteRedirect(redirect), NOT_DELETED)
     return
   }
   status.value = { where: 'from', text: `${redirect.path} no longer redirects here.` }
@@ -622,7 +740,7 @@ watch(routeIriFromPage, async () => {
 watch(() => props.pageResource['@id'], () => {
   closeSub()
   status.value = undefined
-  childDetails.value = {}
+  forgetChildDetails()
   if (!routeIriFromPage.value) {
     loadResource()
   }

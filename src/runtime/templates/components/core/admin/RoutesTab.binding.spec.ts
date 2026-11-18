@@ -193,6 +193,75 @@ describe('RoutesTab route binding', () => {
     expect(updateResource).not.toHaveBeenCalled()
   })
 
+  function scheduledParentRoute(liveAt: string) {
+    const routeIri = '/_/routes//2027'
+    return {
+      routeIri,
+      store: {
+        [routeIri]: {
+          data: {
+            '@id': routeIri,
+            '@type': 'Route',
+            'name': '/2027',
+            'path': '/2027',
+            'pageData': conferenceIri,
+            'page': childPageIri,
+            'liveAt': liveAt,
+            '_metadata': { persisted: true, effectiveLiveAt: liveAt },
+          },
+          apiState: { status: 'SUCCESS', path: `${routeIri}/redirects` },
+        },
+      },
+    }
+  }
+
+  test('setting a scheduled route live, its path untouched, sends the new go-live date alone: no path, name, page or page data', async () => {
+    const { routeIri, store } = scheduledParentRoute('2099-01-01T09:00:00+00:00')
+    const { updateResource } = mockCwa(store)
+    const wrapper = mount(RoutesTab, {
+      props: { pageResource: { ...conference, route: routeIri } as any },
+      shallow: true,
+      global: { stubs: { CwaUiSubView: subViewStub } },
+    })
+    await flushPromises()
+
+    await openRoute(wrapper)
+    await wrapper.findComponent(RoutesTabManage).vm.$emit('update:liveAt', '2026-11-18T04:00:00.000Z')
+    await flushPromises()
+    expect(saveButton(wrapper).props('disabled')).toBe(false)
+    await save(wrapper)
+
+    expect(updateResource).toHaveBeenCalledOnce()
+    expect(updateResource.mock.calls[0]![0]).toEqual({
+      endpoint: routeIri,
+      data: { liveAt: '2026-11-18T04:00:00.000Z' },
+      onRequest: expect.any(Function),
+    })
+  })
+
+  test('a go-live date set back to the stored one is not sent with a new path', async () => {
+    const { routeIri, store } = scheduledParentRoute('2099-01-01T09:00:00+00:00')
+    const { updateResource } = mockCwa(store)
+    const wrapper = mount(RoutesTab, {
+      props: { pageResource: { ...conference, route: routeIri } as any },
+      shallow: true,
+      global: { stubs: { CwaUiSubView: subViewStub } },
+    })
+    await flushPromises()
+
+    await openRoute(wrapper)
+    const manage = wrapper.findComponent(RoutesTabManage)
+    await manage.vm.$emit('update:liveAt', null)
+    await manage.vm.$emit('update:liveAt', '2099-01-01T09:00:00+00:00')
+    await manage.vm.$emit('update:modelValue', '/2028')
+    await flushPromises()
+    await save(wrapper)
+
+    expect(updateResource).toHaveBeenCalledOnce()
+    const { data } = updateResource.mock.calls[0]![0]
+    expect(data).toEqual({ path: '/2028', name: '/2028' })
+  })
+
   test('creating a route for a page still sends the full body including the page', async () => {
     const page = { '@id': '/_/pages/standalone-uuid', '@type': 'Page', 'reference': 'standalone', 'parentPage': null, 'parentPageData': null }
     const { createResource } = mockCwa({ [page['@id']]: { data: page, apiState: { status: 'SUCCESS' } } })

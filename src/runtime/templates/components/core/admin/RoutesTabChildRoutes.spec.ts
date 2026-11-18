@@ -15,8 +15,8 @@ const children = [
 ]
 
 const details = {
-  '/_/routes//kitchens/shaker/painted': { publication: { liveAt: '2020-01-01T00:00:00Z', effectiveLiveAt: '2020-01-01T00:00:00Z' }, page: '/_/pages/painted' },
-  '/_/routes//kitchens/shaker/oak': { publication: { liveAt: null, effectiveLiveAt: null } },
+  '/_/routes//kitchens/shaker/painted': { state: 'loaded', publication: { liveAt: '2020-01-01T00:00:00Z', effectiveLiveAt: '2020-01-01T00:00:00Z' }, page: '/_/pages/painted' },
+  '/_/routes//kitchens/shaker/oak': { state: 'loaded', publication: { liveAt: null, effectiveLiveAt: null } },
 }
 
 function mountChildren(props: Record<string, unknown> = {}) {
@@ -50,12 +50,36 @@ describe('RoutesTabChildRoutes', () => {
     expect(wrapper.emitted('go')).toEqual([['/kitchens/shaker/painted']])
   })
 
-  test('Edit settings waits for the route to say which page it is', () => {
-    const wrapper = mountChildren()
+  test.each([
+    ['still loading', { '/_/routes//kitchens/shaker/oak': { state: 'loading' } }, 'Still loading this page.'],
+    ['not asked for yet', {}, 'Still loading this page.'],
+    ['loaded with no page', details, 'This route has no page.'],
+  ])('Edit settings is off for a route %s, saying why', (_, given, reason) => {
+    const wrapper = mountChildren({ details: given })
     const menu = menuOf(wrapper, '/_/routes//kitchens/shaker/oak')
+    expect(menu.menu.map(item => item.label)).toEqual(['Edit settings', 'Go to page'])
     expect(menu.menu[0]!.disabled).toBe(true)
+    expect(menu.menu[0]!.disabledReason).toBe(reason)
     menu.menu[0]!.onSelect!()
     expect(wrapper.emitted('edit')).toBeUndefined()
+  })
+
+  test('a route that failed to load says so on its row and offers Retry loading, which asks for it again', async () => {
+    const wrapper = mountChildren({ details: { ...details, '/_/routes//kitchens/shaker/oak': { state: 'failed' } } })
+    await flushPromises()
+    const menu = menuOf(wrapper, '/_/routes//kitchens/shaker/oak')
+
+    expect(menu.menu.map(item => item.label)).toEqual(['Edit settings', 'Retry loading', 'Go to page'])
+    expect(menu.menu[0]!.disabledReason).toBe('This route didn\'t load. Retry to load it again.')
+    expect(document.querySelector('[data-testid="route-child-failed"]')!.textContent!.trim()).toBe('Didn\'t load')
+    menu.menu[1]!.onSelect!()
+    expect(wrapper.emitted('retry')).toEqual([['/_/routes//kitchens/shaker/oak']])
+  })
+
+  test('tells which routes are shown, so only those are loaded', async () => {
+    const wrapper = mountChildren()
+    await flushPromises()
+    expect(wrapper.emitted('shown')![0]).toEqual([['/_/routes//kitchens/shaker/painted', '/_/routes//kitchens/shaker/painted/blue', '/_/routes//kitchens/shaker/oak']])
   })
 
   test('says so when no page is nested under this one', async () => {
