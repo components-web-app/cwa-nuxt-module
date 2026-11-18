@@ -328,6 +328,22 @@ describe('CwaUiButton (#456)', () => {
     expect(await axe(wrapper.element as HTMLElement)).toHaveNoViolations()
   })
 
+  test('a truncating button may shrink to its container and ends its label with an ellipsis, so a long page name in the phone header gives way to the items beside it', () => {
+    const wrapper = mount(Button, { props: { label: 'A very long page name', truncate: true } })
+    const label = wrapper.findAll('span').find(span => span.text() === 'A very long page name')!
+
+    expect(wrapper.classes()).toEqual(expect.arrayContaining(['cwa:min-w-0', 'cwa:max-w-full']))
+    expect(wrapper.classes()).not.toContain('cwa:shrink-0')
+    expect(label.classes()).toContain('cwa:truncate')
+  })
+
+  test('a button keeps its width by default', () => {
+    const wrapper = mount(Button, { props: { label: 'Save' } })
+
+    expect(wrapper.classes()).toContain('cwa:shrink-0')
+    expect(wrapper.findAll('span').find(span => span.text() === 'Save')!.classes()).not.toContain('cwa:truncate')
+  })
+
   test('a split button passes its short label to the main action', () => {
     const wrapper = mount(Button, { props: { label: 'Publish now', shortLabel: 'Publish', options: [{ label: 'Clone', value: 'clone' }] } })
 
