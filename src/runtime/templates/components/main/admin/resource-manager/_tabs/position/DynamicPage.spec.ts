@@ -186,6 +186,38 @@ describe('DynamicPage', () => {
       expect(fieldSelect!.props('modelValue')).toBeNull()
     })
 
+    test('only the latest data type\'s fields are offered when an earlier type\'s fields arrive after it (#476 review 7)', async () => {
+      setPositionResource({})
+      const wrapper = mountComponent()
+      await flushPromises()
+      const answers: ((options: { label: string, value: string }[]) => void)[] = []
+      mockGetPropertyOptions.mockImplementation(() => new Promise(resolve => answers.push(resolve)))
+      const typeSelect = () => wrapper.findAllComponents(CwaUiSelect).find(s => s.props('label') === 'Data type')!
+      const fieldSelect = () => wrapper.findAllComponents(CwaUiSelect).find(s => s.props('label') === 'Field')!
+
+      typeSelect().vm.$emit('update:modelValue', 'App\\Entity\\EventData')
+      await flushPromises()
+      typeSelect().vm.$emit('update:modelValue', 'App\\Entity\\Blog')
+      await flushPromises()
+      answers[1]!([{ label: 'Author', value: 'author' }])
+      await flushPromises()
+      answers[0]!(PROPERTY_OPTIONS)
+      await flushPromises()
+
+      expect(fieldSelect().props('options')).toEqual([{ label: 'Author', value: 'author' }])
+      expect(fieldSelect().props('disabled')).toBe(false)
+
+      typeSelect().vm.$emit('update:modelValue', 'App\\Entity\\EventData')
+      await flushPromises()
+      typeSelect().vm.$emit('update:modelValue', 'App\\Entity\\Blog')
+      await flushPromises()
+      answers[2]!(PROPERTY_OPTIONS)
+      await flushPromises()
+
+      expect(fieldSelect().props('disabled')).toBe(true)
+      expect(fieldSelect().props('options')).toEqual([])
+    })
+
     test('clearing the type (null) empties property options and hides Field select', async () => {
       setPositionResource({ pageDataClass: 'App\\Entity\\EventData', pageDataProperty: 'heroImage' })
       const wrapper = mountComponent()

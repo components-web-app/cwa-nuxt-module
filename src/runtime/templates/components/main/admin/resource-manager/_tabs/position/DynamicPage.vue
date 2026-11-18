@@ -44,18 +44,26 @@ async function loadTypeOptions() {
   typeOptions.value = await getTypeOptions() as { label: string, value: string }[]
 }
 
+let propertyRequest = 0
+
 async function loadPropertyOptions() {
+  const request = ++propertyRequest
+  propertyOptions.value = []
   if (!selectedType.value) {
-    propertyOptions.value = []
+    loadingProperties.value = false
     return
   }
-  propertyOptions.value = []
   loadingProperties.value = true
   try {
-    propertyOptions.value = await getPropertyOptions(selectedType.value, allowedComponents.value) as { label: string, value: string }[]
+    const options = await getPropertyOptions(selectedType.value, allowedComponents.value) as { label: string, value: string }[]
+    if (request === propertyRequest) {
+      propertyOptions.value = options
+    }
   }
   finally {
-    loadingProperties.value = false
+    if (request === propertyRequest) {
+      loadingProperties.value = false
+    }
   }
 }
 
@@ -104,7 +112,7 @@ async function makeStatic() {
   })
   selectedType.value = null
   selectedProperty.value = null
-  propertyOptions.value = []
+  loadPropertyOptions()
 }
 
 async function addFallbackComponent() {
