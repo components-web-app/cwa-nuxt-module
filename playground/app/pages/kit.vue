@@ -514,38 +514,40 @@ const badgeTones = [
           Each field binds one of <code>field="…"</code> (inside a manager tab), <code>:model</code> or <code>v-model</code>. The 2px line on the field's bottom edge is its save state: a moving band while saving, a line that grows and fades when saved, solid red when it wasn't saved and amber for a conflict. Focus or hover a red or amber field for Retry and Reset, or the two values. These samples use <code>fakeFieldModel(value, state)</code>; Retry saves and Reset puts the value back.
         </p>
         <h3>Input</h3>
-        <div class="kit-row">
-          <CwaUiInput
-            v-for="sample in inputModels"
-            :key="sample.status"
-            :label="sample.status"
-            :model="sample.model"
-            :data-testid="`kit-input-${sample.status}`"
-          />
-        </div>
-        <div class="kit-row">
-          <CwaUiInput
-            v-model="plainText"
-            label="With v-model"
-            placeholder="Type here"
-            info="Info is behind the ⓘ and also describes the field to screen readers."
-          />
-          <CwaUiInput
-            v-model="nullableText"
-            label="Nullable"
-            nullable
-            width="lg"
-          />
-          <CwaUiInput
-            model-value="Read only"
-            label="Read only"
-            readonly
-          />
-          <CwaUiInput
-            model-value="Disabled"
-            label="Disabled"
-            disabled
-          />
+        <div class="kit-stack">
+          <div class="kit-row">
+            <CwaUiInput
+              v-for="sample in inputModels"
+              :key="sample.status"
+              :label="sample.status"
+              :model="sample.model"
+              :data-testid="`kit-input-${sample.status}`"
+            />
+          </div>
+          <div class="kit-row">
+            <CwaUiInput
+              v-model="plainText"
+              label="With v-model"
+              placeholder="Type here"
+              info="Info is behind the ⓘ and also describes the field to screen readers."
+            />
+            <CwaUiInput
+              v-model="nullableText"
+              label="Nullable"
+              nullable
+              width="lg"
+            />
+            <CwaUiInput
+              model-value="Read only"
+              label="Read only"
+              readonly
+            />
+            <CwaUiInput
+              model-value="Disabled"
+              label="Disabled"
+              disabled
+            />
+          </div>
         </div>
         <h3>Toggle</h3>
         <div class="kit-row">
@@ -570,32 +572,34 @@ const badgeTones = [
         <p class="kit-note">
           Typing past the range is allowed and marked; on blur or Enter it snaps to the nearest end and says so. The − and + stay focusable at the ends and say why they do nothing. Arrow keys step by one, Page Up and Page Down by five, Home and End go to the ends.
         </p>
-        <div class="kit-row">
-          <CwaUiNumber
-            v-for="sample in numberModels"
-            :key="sample.status"
-            :label="sample.status"
-            :model="sample.model"
-            :min="1"
-            :max="6"
-          />
-        </div>
-        <div class="kit-row">
-          <CwaUiNumber
-            v-model="position"
-            label="Columns, 1 to 6"
-            :min="1"
-            :max="6"
-            noun="column"
-            min-reason="One column is the fewest"
-            max-reason="Six columns is the most"
-            data-testid="kit-number"
-          />
-          <CwaUiNumber
-            :model-value="3"
-            label="Disabled"
-            disabled
-          />
+        <div class="kit-stack">
+          <div class="kit-row">
+            <CwaUiNumber
+              v-for="sample in numberModels"
+              :key="sample.status"
+              :label="sample.status"
+              :model="sample.model"
+              :min="1"
+              :max="6"
+            />
+          </div>
+          <div class="kit-row">
+            <CwaUiNumber
+              v-model="position"
+              label="Columns, 1 to 6"
+              :min="1"
+              :max="6"
+              noun="column"
+              min-reason="One column is the fewest"
+              max-reason="Six columns is the most"
+              data-testid="kit-number"
+            />
+            <CwaUiNumber
+              :model-value="3"
+              label="Disabled"
+              disabled
+            />
+          </div>
         </div>
         <h3>Someone else in the field</h3>
         <p class="kit-note">
@@ -642,50 +646,54 @@ const badgeTones = [
           The same edge line, popover and binding as the fields above. A Select or MultiSelect choice saves at once; the Style control in the Ui tab maps its style names to class strings through the model's typed mapping.
         </p>
         <h3>Select</h3>
-        <div class="kit-row">
-          <CwaUiSelect
-            v-for="sample in selectModels"
-            :key="sample.status"
-            :label="sample.status"
-            :model="sample.model"
-            :options="selectOptions"
-          />
-        </div>
-        <div class="kit-row">
-          <CwaUiSelect
-            v-model="plainSelect"
-            label="Nullable"
-            nullable
-            none-label="Default"
-            :options="selectOptions"
-            info="None is the first option and stores null."
-          />
-          <CwaUiSelect
-            model-value="split"
-            label="Disabled"
-            disabled
-            :options="selectOptions"
-          />
+        <div class="kit-stack">
+          <div class="kit-row">
+            <CwaUiSelect
+              v-for="sample in selectModels"
+              :key="sample.status"
+              :label="sample.status"
+              :model="sample.model"
+              :options="selectOptions"
+            />
+          </div>
+          <div class="kit-row">
+            <CwaUiSelect
+              v-model="plainSelect"
+              label="Nullable"
+              nullable
+              none-label="Default"
+              :options="selectOptions"
+              info="None is the first option and stores null."
+            />
+            <CwaUiSelect
+              model-value="split"
+              label="Disabled"
+              disabled
+              :options="selectOptions"
+            />
+          </div>
         </div>
         <h3>MultiSelect</h3>
         <p class="kit-note">
           In the bar it shows the first choice as a chip and +N. Type to filter; Backspace in an empty search marks the last chip and a second Backspace removes it.
         </p>
-        <div class="kit-row">
-          <CwaUiMultiSelect
-            v-for="sample in multiModels"
-            :key="sample.status"
-            :label="sample.status"
-            :model="sample.model"
-            :options="styleOptions"
-          />
-        </div>
-        <div class="kit-row">
-          <CwaUiMultiSelect
-            v-model="plainStyles"
-            label="Empty, with v-model"
-            :options="styleOptions"
-          />
+        <div class="kit-stack">
+          <div class="kit-row">
+            <CwaUiMultiSelect
+              v-for="sample in multiModels"
+              :key="sample.status"
+              :label="sample.status"
+              :model="sample.model"
+              :options="styleOptions"
+            />
+          </div>
+          <div class="kit-row">
+            <CwaUiMultiSelect
+              v-model="plainStyles"
+              label="Empty, with v-model"
+              :options="styleOptions"
+            />
+          </div>
         </div>
         <h3>Segmented</h3>
         <div class="kit-row">
@@ -822,17 +830,19 @@ const badgeTones = [
         <p class="kit-note">
           A treegrid: arrow keys move between rows, Right and Left open, close and reach a row's actions, Delete runs its delete action. Last action: <output data-testid="kit-tree-choice">{{ treeChoice || 'nothing yet' }}</output>
         </p>
-        <CwaUiTree
-          label="Example routes"
-          :nodes="treeNodes"
-          :actions="treeActions"
-          data-testid="kit-tree"
-        />
-        <CwaUiTree
-          label="Empty routes"
-          :nodes="[]"
-          empty="Nothing is nested here."
-        />
+        <div class="kit-stack">
+          <CwaUiTree
+            label="Example routes"
+            :nodes="treeNodes"
+            :actions="treeActions"
+            data-testid="kit-tree"
+          />
+          <CwaUiTree
+            label="Empty routes"
+            :nodes="[]"
+            empty="Nothing is nested here."
+          />
+        </div>
       </section>
 
       <section aria-labelledby="kit-resource-stack">
@@ -842,30 +852,32 @@ const badgeTones = [
         <p class="kit-note">
           Right-click the area, or open it over the button as the header's path selector does. The innermost box's corner sits on the pointer. Last chosen: <output data-testid="kit-stack-choice">{{ stackChoice || 'nothing yet' }}</output>
         </p>
-        <div class="kit-row">
-          <div
-            class="kit-stack-area"
-            data-testid="kit-stack-area"
-            @contextmenu="openStackAtPointer"
-          >
-            Right-click here
+        <div class="kit-stack">
+          <div class="kit-row">
+            <div
+              class="kit-stack-area"
+              data-testid="kit-stack-area"
+              @contextmenu="openStackAtPointer"
+            >
+              Right-click here
+            </div>
+            <CwaUiButton
+              label="Rich text"
+              size="sm"
+              @click="openStackOver"
+            />
           </div>
-          <CwaUiButton
-            label="Rich text"
-            size="sm"
-            @click="openStackOver"
+          <ResourceStack
+            v-if="stackAt"
+            :key="stackKey"
+            :levels="stackLevels"
+            selected="0"
+            :at="stackAt"
+            :keyboard="stackByKeyboard"
+            :select="chooseStackLevel"
+            @close="stackAt = undefined"
           />
         </div>
-        <ResourceStack
-          v-if="stackAt"
-          :key="stackKey"
-          :levels="stackLevels"
-          selected="0"
-          :at="stackAt"
-          :keyboard="stackByKeyboard"
-          :select="chooseStackLevel"
-          @close="stackAt = undefined"
-        />
       </section>
 
       <section aria-labelledby="kit-bar">
@@ -921,81 +933,83 @@ const badgeTones = [
         <p class="kit-note">
           <code>CwaUiDialog</code> holds a form: fields bound with <code>field="…"</code> edit a local copy, marked ● Unsaved, and nothing is sent until Save. Save says how many changes it sends; closing with changes asks first. A failed Save shows an alert listing each field, which opens its tab. This sample uses <code>fakeDialogForm()</code>.
         </p>
-        <div class="kit-row">
-          <CwaUiButton
-            label="Open page settings"
-            data-testid="kit-dialog-open"
-            @click="dialogOpen = true"
-          />
-          <CwaUiButton
-            label="Fail the next Save"
-            size="sm"
-            data-testid="kit-dialog-fail"
-            @click="dialogForm.failNext({ reference: 'This reference is already used by another page.' })"
-          />
-          <CwaUiButton
-            label="Conflict on the next Save"
-            size="sm"
-            data-testid="kit-dialog-conflict"
-            @click="dialogForm.conflictNext({ title: 'Shaker kitchens | Made to measure' })"
-          />
-        </div>
-        <CwaUiDialog
-          v-if="dialogOpen"
-          title="Shaker kitchens"
-          :tabs="dialogTabs"
-          :form="dialogForm"
-          data-testid="kit-dialog"
-          @close="dialogOpen = false"
-          @save="dialogForm.save()"
-        >
-          <template #details>
-            <CwaUiFormSection>
-              <CwaUiInput
-                field="reference"
-                label="Reference"
-                description="Only admins see this. It names the page in lists."
-              />
-            </CwaUiFormSection>
-            <CwaUiFormSection
-              title="Search engines"
-              description="What people see in search results."
-            >
-              <CwaUiInput
-                field="title"
-                label="SEO page title"
-                optional
-              />
-              <CwaUiTextarea
-                field="metaDescription"
-                label="SEO meta description"
-                optional
-                counter
-                :maxlength="160"
-              />
-            </CwaUiFormSection>
-            <CwaUiFormSection title="Nesting">
-              <CwaUiToggle
-                field="isReachableWithoutRoute"
-                label="Public without a route"
-              />
-            </CwaUiFormSection>
-          </template>
-          <template #info>
-            <CwaUiFormSection
-              title="Delete this page"
-              description="Its route is kept, and visitors to it get “Page not found”."
-            >
-              <div>
-                <CwaUiButton
-                  tone="danger"
-                  label="Delete page"
-                  @click="confirmTyped"
+        <div class="kit-stack">
+          <div class="kit-row">
+            <CwaUiButton
+              label="Open page settings"
+              data-testid="kit-dialog-open"
+              @click="dialogOpen = true"
+            />
+            <CwaUiButton
+              label="Fail the next Save"
+              size="sm"
+              data-testid="kit-dialog-fail"
+              @click="dialogForm.failNext({ reference: 'This reference is already used by another page.' })"
+            />
+            <CwaUiButton
+              label="Conflict on the next Save"
+              size="sm"
+              data-testid="kit-dialog-conflict"
+              @click="dialogForm.conflictNext({ title: 'Shaker kitchens | Made to measure' })"
+            />
+          </div>
+          <CwaUiDialog
+            v-if="dialogOpen"
+            title="Shaker kitchens"
+            :tabs="dialogTabs"
+            :form="dialogForm"
+            data-testid="kit-dialog"
+            @close="dialogOpen = false"
+            @save="dialogForm.save()"
+          >
+            <template #details>
+              <CwaUiFormSection>
+                <CwaUiInput
+                  field="reference"
+                  label="Reference"
+                  description="Only admins see this. It names the page in lists."
                 />
-              </div>
-            </CwaUiFormSection>
-          </template>
-        </CwaUiDialog>
+              </CwaUiFormSection>
+              <CwaUiFormSection
+                title="Search engines"
+                description="What people see in search results."
+              >
+                <CwaUiInput
+                  field="title"
+                  label="SEO page title"
+                  optional
+                />
+                <CwaUiTextarea
+                  field="metaDescription"
+                  label="SEO meta description"
+                  optional
+                  counter
+                  :maxlength="160"
+                />
+              </CwaUiFormSection>
+              <CwaUiFormSection title="Nesting">
+                <CwaUiToggle
+                  field="isReachableWithoutRoute"
+                  label="Public without a route"
+                />
+              </CwaUiFormSection>
+            </template>
+            <template #info>
+              <CwaUiFormSection
+                title="Delete this page"
+                description="Its route is kept, and visitors to it get “Page not found”."
+              >
+                <div>
+                  <CwaUiButton
+                    tone="danger"
+                    label="Delete page"
+                    @click="confirmTyped"
+                  />
+                </div>
+              </CwaUiFormSection>
+            </template>
+          </CwaUiDialog>
+        </div>
       </section>
 
       <section aria-labelledby="kit-confirm">
@@ -1027,75 +1041,79 @@ const badgeTones = [
         <p class="kit-note">
           An admin page with a form (site settings) uses the dialog's Save model on the page: a local copy, nothing sent as you type, and one count, on Save. Cancel and leaving the page ask first while anything is unsaved, and closing the tab gets the browser's prompt. Its sections' headings are <code>h2</code>. This sample uses <code>fakeDialogForm()</code>.
         </p>
-        <div class="kit-row">
-          <CwaUiButton
-            label="Fail the next Save"
-            size="sm"
-            data-testid="kit-form-group-fail"
-            @click="pageForm.failNext({ canonicalUrl: 'Enter a full address, like https://example.com.' })"
-          />
+        <div class="kit-stack">
+          <div class="kit-row">
+            <CwaUiButton
+              label="Fail the next Save"
+              size="sm"
+              data-testid="kit-form-group-fail"
+              @click="pageForm.failNext({ canonicalUrl: 'Enter a full address, like https://example.com.' })"
+            />
+          </div>
+          <FormGroup
+            :form="pageForm"
+            data-testid="kit-form-group"
+            @save="pageForm.save()"
+          >
+            <CwaUiFormSection title="General">
+              <CwaUiInput
+                field="siteName"
+                label="Site name"
+                width="full"
+              />
+              <CwaUiInput
+                field="canonicalUrl"
+                label="Canonical URL"
+                type="url"
+                width="full"
+              />
+            </CwaUiFormSection>
+            <CwaUiFormSection title="Maintenance">
+              <CwaUiToggle
+                field="maintenanceModeEnabled"
+                label="Enable maintenance mode"
+              />
+            </CwaUiFormSection>
+          </FormGroup>
         </div>
-        <FormGroup
-          :form="pageForm"
-          data-testid="kit-form-group"
-          @save="pageForm.save()"
-        >
-          <CwaUiFormSection title="General">
-            <CwaUiInput
-              field="siteName"
-              label="Site name"
-              width="full"
-            />
-            <CwaUiInput
-              field="canonicalUrl"
-              label="Canonical URL"
-              type="url"
-              width="full"
-            />
-          </CwaUiFormSection>
-          <CwaUiFormSection title="Maintenance">
-            <CwaUiToggle
-              field="maintenanceModeEnabled"
-              label="Enable maintenance mode"
-            />
-          </CwaUiFormSection>
-        </FormGroup>
       </section>
 
       <section aria-labelledby="kit-form-parts">
         <h2 id="kit-form-parts">
           Alerts and sections
         </h2>
-        <div class="kit-toasts">
-          <CwaUiAlert
-            tone="danger"
-            title="This page wasn't saved."
+        <div class="kit-stack">
+          <div class="kit-toasts">
+            <CwaUiAlert
+              tone="danger"
+              title="This page wasn't saved."
+            >
+              Reference: this reference is already used by another page.
+            </CwaUiAlert>
+            <CwaUiAlert
+              tone="warning"
+              title="Mia changed 1 field while you were editing."
+            >
+              Choose which version to keep, then Save.
+            </CwaUiAlert>
+            <CwaUiAlert title="Note">
+              An info alert has no edge.
+            </CwaUiAlert>
+          </div>
+          <div
+            class="kit-toasts"
+            data-testid="kit-form-section"
           >
-            Reference: this reference is already used by another page.
-          </CwaUiAlert>
-          <CwaUiAlert
-            tone="warning"
-            title="Mia changed 1 field while you were editing."
-          >
-            Choose which version to keep, then Save.
-          </CwaUiAlert>
-          <CwaUiAlert title="Note">
-            An info alert has no edge.
-          </CwaUiAlert>
-        </div>
-        <div
-          class="kit-toasts"
-          data-testid="kit-form-section"
-        >
-          <CwaUiFormSection
-            title="Search engines"
-            description="Section titles are fg-secondary."
-          >
-            <p>A section groups fields in a dialog. The textarea is in the dialog sample above.</p>
-          </CwaUiFormSection>
-          <CwaUiFormSection title="A second section">
-            <p>It has a rule and the section space above it.</p>
-          </CwaUiFormSection>
+            <CwaUiFormSection
+              title="Search engines"
+              description="Section titles are fg-secondary."
+            >
+              <p>A section groups fields in a dialog. The textarea is in the dialog sample above.</p>
+            </CwaUiFormSection>
+            <CwaUiFormSection title="A second section">
+              <p>It has a rule and the section space above it.</p>
+            </CwaUiFormSection>
+          </div>
         </div>
       </section>
 
@@ -1284,8 +1302,14 @@ code {
   place-items: center;
   width: 16rem;
   height: 8rem;
-  border: 1px solid var(--cwa-color-line-strong);
+  border: 1px solid var(--cwa-color-line);
   color: var(--cwa-color-fg-muted);
+}
+
+.kit-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cwa-spacing-stack);
 }
 
 .kit-row {

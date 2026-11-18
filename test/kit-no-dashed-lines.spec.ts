@@ -3,7 +3,7 @@ import { join, relative } from 'node:path'
 import { describe, expect, test } from 'vitest'
 
 const root = join(import.meta.dirname, '..')
-const scanned = ['src/runtime/templates/components', 'src/layer', 'src/tailwind', 'playground/app/pages/kit.vue']
+const scanned = ['src/runtime/templates/components', 'src/layer', 'src/tailwind', 'playground/app']
 const sources = /\.(?:vue|ts|css)$/
 const dashed = /\b(?:dashed|dotted)\b|line-dash/
 
