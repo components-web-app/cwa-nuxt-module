@@ -135,6 +135,14 @@ describe('kit colour tokens (#456)', () => {
     })
   })
 
+  test('information popovers sit on a surface darker than every fill, with white text, in both themes (#461)', () => {
+    expect(themeValues('dark')).toMatchObject({ 'surface-info': '#0c0a09' })
+    expect(themeValues('light')).toMatchObject({ 'surface-info': '#1c1917' })
+    expect(kitContrastPairs).toEqual(expect.arrayContaining([
+      expect.objectContaining({ fg: 'white', bg: 'surface-info', min: 4.5 }),
+    ]))
+  })
+
   test('the colours the admin already uses keep their names', () => {
     for (const name of ['dark', 'light', 'danger', 'danger-dark', 'magenta', 'orange', 'green', 'stone-700']) {
       expect(compiled, name).toContain(`--cwa-color-${name}:`)

@@ -40,6 +40,7 @@ import { badgeTintPercent } from '../../../src/runtime/templates/components/ui/k
 import { kitColourLabel, kitColourTokens, kitContrastPairs, kitThemeStyle, kitTokenCss, measureKitPair } from '../../../src/tailwind/kit-tokens'
 import KitWorkbench from '../kit/KitWorkbench.vue'
 import KitLabs from '../kit/KitLabs.vue'
+import KitInfoPopoverLooks from '../kit/KitInfoPopoverLooks.vue'
 import { useKitWorkbench } from '../kit/workbench-state'
 
 definePageMeta({
@@ -495,6 +496,13 @@ const badgeTones = [
             Not saved
           </CwaUiBadge>
         </div>
+      </section>
+
+      <section aria-labelledby="kit-info-popover">
+        <h2 id="kit-info-popover">
+          Information popover
+        </h2>
+        <KitInfoPopoverLooks />
       </section>
 
       <section aria-labelledby="kit-fields">

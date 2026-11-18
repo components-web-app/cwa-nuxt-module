@@ -107,6 +107,7 @@ describe('CwaUiMenu (#459)', () => {
 
     const reasons = document.querySelector<HTMLElement>('[data-testid="menu-item-reasons"]')!
     expect([...reasons.querySelectorAll('li')].map(item => item.textContent)).toEqual(['Main content is full', 'Not allowed here'])
+    expect([...reasons.classList]).toEqual(expect.arrayContaining(['cwa:bg-surface-info', 'cwa:text-white']))
     expect(document.querySelector('[data-testid="kit-menu"]')).not.toBeNull()
     expect(onSelect).not.toHaveBeenCalled()
   })
