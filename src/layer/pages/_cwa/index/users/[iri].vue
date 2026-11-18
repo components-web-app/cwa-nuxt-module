@@ -1,6 +1,6 @@
 <template>
   <CwaUiDialog
-    v-if="localResourceData"
+    v-if="localResourceData || isLoading"
     placement="right"
     :title="dialogTitle"
     :tabs="tabs"
@@ -354,7 +354,7 @@ const roleModel = {
 
 const username = computed(() => (resource.value?.username as string | undefined) || '')
 
-const dialogTitle = computed(() => isAdding.value ? 'New user' : (username.value || 'No username'))
+const dialogTitle = computed(() => isAdding.value ? 'New user' : (!resource.value && isLoading.value ? 'User' : (username.value || 'No username')))
 
 const tabs = computed<DialogTab[]>(() => isAdding.value
   ? [{ label: 'Details', key: 'details' }]

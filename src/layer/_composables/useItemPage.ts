@@ -78,6 +78,9 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
       }
       return localResourceData.value
     }
+    if (!resource.value) {
+      isLoading.value = true
+    }
     const fetchProps = {
       path: endpoint.value,
       iri: iri?.value,

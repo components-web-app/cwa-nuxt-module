@@ -97,6 +97,38 @@ describe('CwaUiDialog and the Save model (#461)', () => {
     expect(qa('footer button').map(shown)).toEqual(['Cancel', 'Save'])
   })
 
+  test('while its resource loads the dialog is already open with its header and footer: the body is busy with a spinner, the loading is announced, and Save stays off even with a change waiting', async () => {
+    const loading = ref(true)
+    const Host = defineComponent({
+      setup: () => () => h(Dialog, { title: 'Page', tabs, form, noun: 'page', loading: loading.value }, {
+        details: () => h(Input, { label: 'Reference', field: 'reference' }),
+      }),
+    })
+    mount(Host, { attachTo: document.body })
+    await flushPromises()
+
+    expect(q('h2')!.textContent!.trim()).toBe('Page')
+    expect(q('[data-testid="dialog-body"]')!.getAttribute('aria-busy')).toBe('true')
+    expect(q('[data-testid="dialog-body"] [data-testid="dialog-loading"] .cwa\\:animate-spinner')).not.toBeNull()
+    expect(q('[data-cwa-field="reference"]')).toBeNull()
+    expect(q('[data-testid="dialog-announcer"]')!.textContent).toBe('Loading the page.')
+    expect(save().getAttribute('aria-disabled')).toBe('true')
+
+    loading.value = false
+    await flushPromises()
+    await type('[data-cwa-field="reference"] input', 'Our kitchens')
+    expect(save().getAttribute('aria-disabled')).toBeNull()
+    expect(q('[data-testid="dialog-body"]')!.getAttribute('aria-busy')).toBeNull()
+
+    loading.value = true
+    await flushPromises()
+    expect(save().getAttribute('aria-disabled')).toBe('true')
+    expect(save().getAttribute('aria-describedby') && document.getElementById(save().getAttribute('aria-describedby')!)?.textContent?.trim()).toBe('Still loading.')
+    save().click()
+    await flushPromises()
+    expect(form.saves).toEqual([])
+  })
+
   test('Save is off and sends nothing while nothing has changed', async () => {
     mountDialog(form)
     await flushPromises()

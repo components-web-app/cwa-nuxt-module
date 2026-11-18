@@ -1,6 +1,6 @@
 <template>
   <CwaUiDialog
-    v-if="localResourceData"
+    v-if="localResourceData || isLoading"
     placement="right"
     :title="dialogTitle"
     :tabs="tabs"
@@ -198,7 +198,7 @@ const layoutStyleModel = {
 
 const layoutName = computed(() => (resource.value?.reference as string | undefined) || '')
 
-const dialogTitle = computed(() => isAdding.value ? 'New layout' : (layoutName.value || 'Untitled layout'))
+const dialogTitle = computed(() => isAdding.value ? 'New layout' : (!resource.value && isLoading.value ? 'Layout' : (layoutName.value || 'Untitled layout')))
 
 const tabs = computed<DialogTab[]>(() => isAdding.value
   ? [{ label: 'Details', key: 'details' }]

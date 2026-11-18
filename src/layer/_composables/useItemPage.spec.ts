@@ -615,3 +615,48 @@ describe('useItemPage creating (#461)', () => {
     expect(errors).toHaveLength(1)
   })
 })
+
+describe('useItemPage loading', () => {
+  test('is loading until the first fetch answers, and again when it moves to a resource it has not stored, but not to one it has', async () => {
+    const store = reactive<Record<string, any>>({ [layoutIri]: { data: layout, apiState: { status: 'SUCCESS' } } })
+    const fetches: Array<() => void> = []
+    const fetchResource = vi.fn(({ path }: { path: string }) => new Promise<void>((resolve) => {
+      fetches.push(() => {
+        store[path] ??= { data: { ...layout, '@id': path }, apiState: { status: 'SUCCESS' } }
+        resolve()
+      })
+    }))
+    // @ts-expect-error
+    vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => ({
+      resources: { getResource: vi.fn((iri: string) => computed(() => store[iri])) },
+      resourcesManager: { errors: [] },
+      fetchResource,
+    }))
+    const endpoint = ref(layoutIri)
+    let itemPage!: ReturnType<typeof useItemPage>
+    mount(defineComponent({
+      setup() {
+        itemPage = useItemPage({ createEndpoint: '/_/layouts', emit: vi.fn(), resourceType: 'Layout', defaultResource: {}, endpoint })
+        return () => null
+      },
+    }))
+    await flushPromises()
+    expect(itemPage.isLoading.value).toBe(true)
+
+    fetches.shift()!()
+    await flushPromises()
+    expect(itemPage.isLoading.value).toBe(false)
+
+    endpoint.value = '/_/layouts/unstored'
+    await flushPromises()
+    expect(itemPage.isLoading.value).toBe(true)
+    fetches.shift()!()
+    await flushPromises()
+    expect(itemPage.isLoading.value).toBe(false)
+    expect(itemPage.localResourceData.value?.['@id']).toBe('/_/layouts/unstored')
+
+    endpoint.value = layoutIri
+    await flushPromises()
+    expect(itemPage.isLoading.value).toBe(false)
+  })
+})
