@@ -134,6 +134,10 @@ const router = useRouter()
 const { model: perPageModel } = useQueryBoundModel('perPage', { defaultValue: null, asNumber: true })
 const { model: pageModel } = useQueryBoundModel('page', { defaultValue: 1, asNumber: true })
 
+watch(pageModel, () => {
+  window.scrollTo({ top: 0, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })
+})
+
 watch(perPageModel, (newValue) => {
   if (!newValue) {
     perPageModel.value = PER_PAGE
