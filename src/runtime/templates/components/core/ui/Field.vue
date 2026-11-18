@@ -27,7 +27,7 @@ const { label, labelHidden = false, info, description, optional = false, width, 
 }>()
 
 defineSlots<{
-  default: (props: { describedBy: string | undefined, tone: 'danger' | 'warning' | undefined, busy: boolean, labelId: string, modal: boolean, unsaved: boolean }) => any
+  default: (props: { describedBy: string | undefined, tone: 'danger' | 'warning' | undefined, busy: boolean, labelId: string, modal: boolean, unsaved: boolean, help?: string, helpId?: string }) => any
   after?: () => any
 }>()
 
@@ -127,6 +127,8 @@ watch(() => inactive, (now) => {
           :label-id="labelId"
           :modal="true"
           :unsaved="unsaved"
+          :help="ownLabel ? help : undefined"
+          :help-id="infoId"
         />
       </CwaUiFieldPresence>
     </div>

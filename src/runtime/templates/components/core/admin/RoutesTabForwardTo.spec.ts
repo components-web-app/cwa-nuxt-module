@@ -18,6 +18,12 @@ function mountForward(props: Record<string, unknown> = {}) {
 const text = (wrapper: ReturnType<typeof mountForward>, selector: string) => wrapper.find(selector).text().replace(/\s+/g, ' ').trim()
 
 describe('RoutesTabForwardTo', () => {
+  test('the search explains itself behind ⓘ, not as a line under the field (#461)', () => {
+    const search = mountForward({ form: true }).findComponent(CwaUiResourceSearch)
+    expect(search.props('info')).toBe('Any page on this site.')
+    expect(search.props('description')).toBeUndefined()
+  })
+
   test('when not redirecting it says visitors see this page and offers Redirect to another page', async () => {
     const wrapper = mountForward()
     expect(text(wrapper, '[data-testid="route-forward-off"]')).toBe('Not redirecting. Visitors to /kitchens/shaker see this page.')

@@ -81,6 +81,18 @@ describe('CwaUiButton (#456)', () => {
     expect(small.classes()).toEqual(expect.arrayContaining(['cwa:h-8', 'cwa:w-8', 'cwa:pointer-coarse:h-hit', 'cwa:pointer-coarse:w-hit']))
   })
 
+  test('an icon-only button draws its icon at 5/9 of the control, 20px in a 36px button and 24px in a dialog\'s 44px one, without changing its box; a small one keeps 16px', () => {
+    const wrapper = mount(Button, { props: { label: 'View', icon: Plus, iconOnly: true, variant: 'ghost' } })
+    expect(wrapper.get('[data-testid="plus"]').classes()).toContain('cwa:size-[calc(var(--cwa-spacing-control)*5/9)]')
+    expect(wrapper.classes()).toEqual(expect.arrayContaining(['cwa:h-control', 'cwa:w-control']))
+
+    const small = mount(Button, { props: { label: 'View', icon: Plus, iconOnly: true, size: 'sm' } })
+    expect(small.get('[data-testid="plus"]').classes()).toContain('cwa:size-4')
+
+    const labelled = mount(Button, { props: { label: 'Page', icon: Plus } })
+    expect(labelled.get('[data-testid="plus"]').classes()).toContain('cwa:size-4')
+  })
+
   test('shows a square focus ring in accent-fg, offset 2px', () => {
     const wrapper = mount(Button, { props: { label: 'Go' } })
 
@@ -267,6 +279,7 @@ describe('CwaUiButton (#456)', () => {
 
       const buttons = wrapper.findAll('button')
       expect(buttons.map(button => button.text() || button.attributes('aria-label'))).toEqual(['Publish now', 'More actions'])
+      expect(wrapper.get('[data-testid="button-options"] svg').classes()).toContain('cwa:size-[calc(var(--cwa-spacing-control)*5/9)]')
       await buttons[0]!.trigger('click')
       expect(onClick).toHaveBeenCalledTimes(1)
 

@@ -3,6 +3,7 @@
     v-if="localResourceData"
     ref="dialog"
     v-model:tab="tab"
+    placement="right"
     :title="dialogTitle"
     :tabs="tabs"
     :form="form"
@@ -71,7 +72,7 @@
             v-if="isDisplayingPage"
             field="reference"
             label="Reference"
-            description="Only admins see this. It names the page in lists."
+            info="Only admins see this. It names the page in lists."
           />
           <CwaUiInput
             v-else

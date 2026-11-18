@@ -1,6 +1,7 @@
 <template>
   <CwaUiDialog
     v-if="localResourceData"
+    placement="right"
     :title="dialogTitle"
     :tabs="tabs"
     :form="form"
@@ -16,7 +17,7 @@
         <CwaUiInput
           field="reference"
           label="Reference"
-          description="Only admins see this. It names the layout in lists."
+          info="Only admins see this. It names the layout in lists."
         />
       </CwaUiFormSection>
       <CwaUiFormSection
