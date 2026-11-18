@@ -2,13 +2,15 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { resetLocalTimeZone } from '@internationalized/date'
+import { axe } from '../../../../../test/utils/axe'
+import { fakeFieldModel } from '../../../../../playground/app/kit/fake-field-model'
 import DatePicker from './DatePicker.vue'
 
 const originalTz = process.env.TZ
 
 function mountPicker(props: { modelValue?: string | null, min?: string, label?: string } = {}) {
   return mount(DatePicker, {
-    props: { modelValue: null, ...props },
+    props: { modelValue: null, label: 'Go live', ...props },
     attachTo: document.body,
   })
 }
@@ -61,7 +63,7 @@ describe('CwaUiDatePicker', () => {
 
     test('its label names the field for assistive technology', () => {
       const wrapper = mountPicker({ modelValue: '2026-10-01T08:00:00.000Z', label: 'Goes live' })
-      const label = wrapper.find('[data-date-picker-label]')
+      const label = wrapper.find('label')
 
       expect(label.text()).toBe('Goes live')
       expect(wrapper.find('[role="group"]').attributes('aria-labelledby')).toBe(label.attributes('id'))
@@ -175,6 +177,26 @@ describe('CwaUiDatePicker', () => {
 
       expect(inBody('[data-month-label]')).toBeNull()
       expect(emitted(wrapper)).toEqual([])
+    })
+  })
+
+  describe('on the kit field (#460)', () => {
+    test('a model is shown and written, and its save state is the edge line with the field marked invalid on error', async () => {
+      const model = fakeFieldModel<string>('2026-10-01T08:00:00.000Z', 'error')
+      const wrapper = mount(DatePicker, { props: { label: 'Go live', model }, attachTo: document.body })
+
+      expect(segment(wrapper, 'hour').text()).toBe('09')
+      expect(wrapper.get('[data-testid="field-status-line"]').attributes('data-line')).toBe('error')
+      expect(wrapper.get('[role="group"]').attributes('aria-invalid')).toBe('true')
+
+      await segment(wrapper, 'hour').trigger('keydown', { key: 'ArrowUp' })
+      expect(model.model.value).toBe('2026-10-01T09:00:00.000Z')
+    })
+
+    test('has no axe violations', async () => {
+      const wrapper = mountPicker({ modelValue: '2026-10-01T08:00:00.000Z', label: 'Go live' })
+
+      expect(await axe(wrapper.element as HTMLElement)).toHaveNoViolations()
     })
   })
 })

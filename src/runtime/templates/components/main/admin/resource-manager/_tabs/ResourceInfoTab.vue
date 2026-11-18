@@ -7,6 +7,11 @@ import { DEFAULT_TAB_ORDER } from '#cwa/admin/manager-tabs-resolver'
 import { NEW_RESOURCE_IRI } from '#cwa/storage/stores/resources/state'
 import { fetchComponentUsage } from '#cwa/admin/component-usage'
 import type { ComponentUsage } from '#cwa/admin/component-usage'
+import CwaUiBadge from '#cwa/templates/components/ui/Badge.vue'
+import CwaUiButton from '#cwa/templates/components/ui/Button.vue'
+import CwaUiInput from '#cwa/templates/components/ui/Input.vue'
+import CwaUiManagerRowDivider from '#cwa/templates/components/ui/ManagerRowDivider.vue'
+import CwaUiManagerTab from '#cwa/templates/components/ui/ManagerTab.vue'
 
 const { exposeMeta, iri, $cwa, resource } = useCwaResourceManagerTab({
   name: 'Info',
@@ -140,26 +145,32 @@ const deleteLabel = computed(() => {
 </script>
 
 <template>
-  <div class="cwa:flex cwa:gap-x-4 cwa:items-center">
-    <div class="cwa:text-sm">
-      {{ isAddingNew ? '[New Resource]' : iri }}
-    </div>
-    <div
+  <CwaUiManagerTab>
+    <CwaUiInput
+      :model-value="isAddingNew ? 'New, not saved yet' : iri"
+      label="ID"
+      width="lg"
+      readonly
+      data-testid="resource-id"
+    />
+    <CwaUiBadge
       v-if="usage && usage.total > 1"
-      class="cwa:text-sm cwa:text-stone-400 cwa:whitespace-nowrap"
+      data-testid="resource-usage"
     >
       Used in {{ usage.total }} locations
-    </div>
-    <div v-if="isDeleteEnabled">
-      <CwaUiFormButton
-        color="grey"
-        button-class="cwa:min-w-[100px]"
-        data-testid="component-delete"
-        :disabled="disableButton"
-        @click="handleDelete"
-      >
-        {{ deleteLabel }}
-      </CwaUiFormButton>
-    </div>
-  </div>
+    </CwaUiBadge>
+    <template v-if="isDeleteEnabled">
+      <CwaUiManagerRowDivider />
+      <span data-testid="component-delete">
+        <CwaUiButton
+          :label="deleteLabel"
+          tone="danger"
+          size="sm"
+          :loading="disableButton"
+          :disabled="disableButton"
+          @click="handleDelete"
+        />
+      </span>
+    </template>
+  </CwaUiManagerTab>
 </template>

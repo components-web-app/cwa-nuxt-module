@@ -49,6 +49,15 @@ vi.mock('vuejs-confirm-dialog', () => ({
   })),
 }))
 
+const stateWrites = vi.hoisted(() => ({
+  started: vi.fn(),
+  settled: vi.fn(),
+  cleared: vi.fn(),
+}))
+vi.mock('#cwa/resources/field-state-writer', () => ({
+  writeFieldStates: (write: (states: typeof stateWrites) => void) => write(stateWrites),
+}))
+
 vi.mock('#cwa/templates/components/core/ConfirmDialog.vue', () => ({
   default: {},
 }))
@@ -291,6 +300,62 @@ describe('useCwaResourceUpload', () => {
       await nextTick()
       expect(file.filenameInputModel.value).toBe('Existing File (9 MB)')
       expect(preview.filenameInputModel.value).toBe('Existing File (2 MB)')
+    })
+  })
+
+  describe('the file field\'s own save state (#460)', () => {
+    function answering(outcome: { resource?: unknown, error?: unknown }) {
+      mockUpdateResource.mockImplementation(async (event: { iri?: string, onRequest?: (iri: string, done: Promise<unknown>) => void }) => {
+        event.onRequest?.('/resources/1', Promise.resolve(outcome))
+        return outcome.resource
+      })
+    }
+
+    test('an upload writes saving and then its outcome to the field state of its own field', async () => {
+      const entry = { data: { '@id': '/resources/1', '_metadata': {} }, fieldStates: { image: { status: 'saved', waiting: false, slow: false } } }
+      mockGetResource.mockReturnValue(ref(entry))
+      answering({ resource: { '@id': '/resources/1' } })
+      const upload = useCwaResourceUpload(iri, 'image')
+
+      await upload.handleInputChangeFile(new File(['x'], 'a.png', { type: 'image/png' }))
+      await Promise.resolve()
+
+      expect(stateWrites.started).toHaveBeenCalledWith(entry, ['image'])
+      expect(stateWrites.settled).toHaveBeenCalledWith(entry, ['image'], { '@id': '/resources/1' }, undefined, expect.any(Function))
+      expect(upload.state.value.status).toBe('saved')
+    })
+
+    test('Retry sends the same downscaled file again, without downscaling it twice', async () => {
+      mockGetResource.mockReturnValue(ref({ data: { '@id': '/resources/1', '_metadata': {} } }))
+      answering({ error: { statusCode: 500 } })
+      const upload = useCwaResourceUpload(iri)
+      await upload.handleInputChangeFile(new File(['x'], 'a.png', { type: 'image/png' }))
+
+      await upload.retry()
+
+      expect(mockDownscaleImageFile).toHaveBeenCalledTimes(1)
+      expect(mockUpdateResource).toHaveBeenCalledTimes(2)
+      const [first, second] = mockUpdateResource.mock.calls.map(([event]) => (event.data as FormData).get('file'))
+      expect(second).toBe(first)
+    })
+
+    test('Reset clears the field state and sends nothing', async () => {
+      const entry = { data: { '@id': '/resources/1', '_metadata': {} } }
+      mockGetResource.mockReturnValue(ref(entry))
+      const upload = useCwaResourceUpload(iri)
+
+      await upload.reset()
+      await upload.retry()
+
+      expect(stateWrites.cleared).toHaveBeenCalledWith(entry, 'file')
+      expect(mockUpdateResource).not.toHaveBeenCalled()
+    })
+
+    test('names the stored file from its URL with its size', () => {
+      mockGetResource.mockReturnValue(ref({ data: { _metadata: { mediaObjects: { file: [{ contentUrl: '/files/workshop%20bench.jpg?x=1', formattedFileSize: '240 KB', mimeType: 'image/jpeg' }] } } } }))
+      const upload = useCwaResourceUpload(iri)
+
+      expect(upload.file.value).toEqual({ name: 'workshop bench.jpg', size: '240 KB', url: '/files/workshop%20bench.jpg?x=1', mimeType: 'image/jpeg' })
     })
   })
 })

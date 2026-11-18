@@ -3,7 +3,7 @@ import { consola } from 'consola'
 import { useCwaResourceModel } from '#cwa/composables/cwa-resource-model'
 import type { ResourceModelField } from '#cwa/resources/model-editors'
 import type { CwaFieldState } from '#cwa/storage/stores/resources/state'
-import { announceKey, managerTabKey, tabMetaOnlyKey } from './field-keys'
+import { announceKey, fieldGroupKey, managerTabKey, tabMetaOnlyKey } from './field-keys'
 import type { Announce } from './field-keys'
 
 export const IDLE_STATE: CwaFieldState = Object.freeze({ status: 'idle', waiting: false, slow: false })
@@ -38,6 +38,7 @@ export function useFieldModel<T>(props: FieldBindingProps<T>, emit: (event: 'upd
   const bound = BINDINGS.filter(([camel, kebab]) => given.includes(camel) || given.includes(kebab)).map(([camel]) => camel)
   const tab = inject(managerTabKey, undefined)
   const metaOnly = inject(tabMetaOnlyKey, false)
+  const group = inject(fieldGroupKey, undefined)
   let unbound = false
 
   if (bound.length > 1 && import.meta.env.DEV) {
@@ -45,7 +46,12 @@ export function useFieldModel<T>(props: FieldBindingProps<T>, emit: (event: 'upd
   }
 
   let fieldModel: ResourceModelField<T> | undefined
-  if (props.field) {
+  const grouped = props.field ? group?.model(props.field) : undefined
+  if (props.field && grouped) {
+    tab?.register(props.field)
+    fieldModel = grouped
+  }
+  else if (props.field) {
     if (!tab) {
       unbound = true
       import.meta.env.DEV && consola.error(`\`field="${props.field}"\` needs a CwaUiManagerTab, CwaUiDialog or CwaUiFormGroup`)

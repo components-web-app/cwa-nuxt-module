@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, useId, useTemplateRef } from 'vue'
+import { computed, inject, useId, useTemplateRef } from 'vue'
 import FieldStatus from './FieldStatus.vue'
 import InfoPopover from './InfoPopover.vue'
+import { fieldGroupKey } from './field-keys'
 import type { ResourceModelField } from '#cwa/resources/model-editors'
 import type { CwaFieldState } from '#cwa/storage/stores/resources/state'
 
@@ -34,6 +35,8 @@ const widths: Record<FieldWidth, string> = {
 }
 
 const box = useTemplateRef<HTMLElement>('box')
+const group = inject(fieldGroupKey, undefined)
+const undo = computed(() => name ? group?.undo(name) : undefined)
 const statusId = useId()
 const infoId = useId()
 const labelId = useId()
@@ -42,7 +45,7 @@ const help = computed(() => [info, description].filter(Boolean).join(' ') || und
 
 const tone = computed(() => state.status === 'error' ? 'danger' : state.status === 'conflict' ? 'warning' : undefined)
 
-const describedBy = computed(() => [help.value && infoId, tone.value && statusId].filter(Boolean).join(' ') || undefined)
+const describedBy = computed(() => [help.value && infoId, (tone.value || undo.value) && statusId].filter(Boolean).join(' ') || undefined)
 </script>
 
 <template>
@@ -79,6 +82,7 @@ const describedBy = computed(() => [help.value && infoId, tone.value && statusId
         :name="label"
         :box="box"
         :model="model"
+        :undo="undo"
         :description-id="statusId"
       />
     </div>

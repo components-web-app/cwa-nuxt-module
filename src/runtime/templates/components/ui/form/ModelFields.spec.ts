@@ -6,11 +6,6 @@ import type { RemoteFieldChange } from '#cwa/resources/model-editors'
 import type { FocusedPeer } from '#cwa/admin/presence'
 import Input from './Input.vue'
 import Toggle from './Toggle.vue'
-import Select from '../Select.vue'
-
-vi.mock('#cwa/composables/popper', () => ({
-  usePopper: vi.fn(() => [ref(null), ref(null)]),
-}))
 
 function fieldModel<T>(initial: T) {
   const value = ref<T | null | undefined>(initial)
@@ -80,34 +75,10 @@ describe('kit fields bound to a resource model (#429)', () => {
     expect(wrapper.get('[data-testid="remote-change"]').text()).toContain('Sam changed this')
   })
 
-  test('CwaUiSelect shows the model\'s option and shows a conflict', async () => {
-    const model = fieldModel('b')
-    model.change.value = conflict('a', 'Sam')
-    const wrapper = mount(Select, { props: { model, options: [{ label: 'First', value: 'a' }, { label: 'Second', value: 'b' }] } })
-
-    const trigger = wrapper.get('button')
-    expect(trigger.text()).toContain('Second')
-    expect(wrapper.get('[data-testid="remote-change"]').text()).toContain('Sam changed this')
-  })
-
-  test('CwaUiSelect writes a chosen option to the model', async () => {
-    const model = fieldModel('b')
-    const wrapper = mount(Select, { props: { model, options: [{ label: 'First', value: 'a' }, { label: 'Second', value: 'b' }] }, attachTo: document.body })
-
-    await wrapper.get('button').trigger('click')
-    await wrapper.findAll('li').find(item => item.text() === 'First')!.trigger('click')
-
-    expect(model.value.value).toBe('a')
-    wrapper.unmount()
-  })
-
   describe('focus is reported to co-editing presence (#429)', () => {
-    const options = [{ label: 'First', value: 'a' }, { label: 'Second', value: 'b' }]
-
     test.each([
       ['CwaUiFormInput', Input, 'Mine', {}, 'input'],
       ['CwaUiFormToggle', Toggle, false, { label: 'Visible' }, 'button'],
-      ['CwaUiSelect', Select, 'b', { options }, 'button'],
     ] as const)('%s binds the model\'s focusListeners on the element holding the whole field and its conflict', async (_name, component, initial, props, control) => {
       const model = fieldModel<any>(initial)
       model.change.value = conflict(initial, 'Sam')
@@ -165,12 +136,9 @@ describe('kit fields bound to a resource model (#429)', () => {
 
   describe('another admin in the field is shown on it (#429)', () => {
     const SAM = { user: { id: '/users/sam', name: 'Sam' }, name: 'Sam', colour: '#c084fc', isSelf: false, clientIds: ['tab-sam'] }
-    const options = [{ label: 'First', value: 'a' }, { label: 'Second', value: 'b' }]
-
     test.each([
       ['CwaUiFormInput', Input, 'Mine', {}],
       ['CwaUiFormToggle', Toggle, false, { label: 'Visible' }],
-      ['CwaUiSelect', Select, 'b', { options }],
     ] as const)('%s outlines itself with the name of whoever has it focused, and only then', async (_name, component, initial, props) => {
       const model = fieldModel<any>(initial)
       const wrapper = mount(component as any, { props: { ...props, model } })

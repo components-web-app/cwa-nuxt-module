@@ -23,14 +23,18 @@ interface Change {
   untrack?: () => void
 }
 
-interface ResourceModelOps {
+export interface ResourceModelOps<T = any, S = any> {
   longWaitThreshold?: number
   debounceTime?: number
+  get?: (stored: S | null | undefined) => T | null | undefined
+  set?: (shown: T | null | undefined) => S | null | undefined
+  valid?: (value: S | null | undefined) => boolean
+  alsoSend?: (value: S | null | undefined) => Record<string, unknown> | undefined
 }
 
 const IDLE: CwaFieldState = Object.freeze({ status: 'idle', waiting: false, slow: false })
 
-export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: string | string[], ops?: ResourceModelOps) => {
+export const useCwaResourceModel = <T, S = T>(iri: Ref<string | undefined>, property: string | string[], ops?: ResourceModelOps<T, S>) => {
   const proxy = getCurrentInstance()?.proxy
   const source = `input_${proxy?.$?.uid}`
   const $cwa = useCwa()
@@ -258,6 +262,7 @@ export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: s
       endpoint: submittingEndpoint,
       data: {
         [rootProperty.value]: submittingValue,
+        ...ops?.alsoSend?.(submittingValue),
       },
       source,
       onRequest,
@@ -311,6 +316,12 @@ export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: s
       }
       const untrack = untrackPendingUpdate
       untrackPendingUpdate = undefined
+      if (ops?.valid && !ops.valid(newLocalValue as S)) {
+        untrack?.()
+        pendingSubmit.value = !!queued.size
+        record(typedIri, (states, entry, field) => states.unqueued(entry, field))
+        return
+      }
       typedIri && typedIri !== iri.value && resetValue(typedIri)
       return typedIri ? send({ value: newLocalValue, iri: typedIri, endpoint: typedEndpoint, untrack }) : untrack?.()
     }, debounceTime)
@@ -408,6 +419,19 @@ export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: s
     unwatchIsBusy()
   })
 
+  const map = ops?.get || ops?.set
+  const shown = map
+    ? computed<T | null | undefined>({
+        get: () => ops.get ? ops.get(model.value as S) : model.value as T,
+        set: (value) => {
+          model.value = (ops.set ? ops.set(value) : value) as any
+        },
+      })
+    : model as unknown as typeof model
+  const shownRemoteChange = map && ops.get
+    ? computed(() => remoteChange.value ? { ...remoteChange.value, value: ops.get!(remoteChange.value.value as unknown as S) as T } : undefined)
+    : remoteChange
+
   return {
     state,
     retry,
@@ -421,9 +445,9 @@ export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: s
     },
     /** @deprecated use `reset()` */
     resetValue,
-    model,
+    model: shown,
     localValueWithIri,
-    remoteChange,
+    remoteChange: shownRemoteChange,
     focus,
     blur,
     focusedBy,

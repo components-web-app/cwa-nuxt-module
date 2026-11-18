@@ -241,6 +241,11 @@
     animation: cwa-line-saved 1.18s ease-out forwards;
   }
 
+  .cwa\:status-line[data-line='undo']::before {
+    background: var(--cwa-color-success);
+    opacity: 1;
+  }
+
   .cwa\:status-line[data-line='error']::before {
     background: var(--cwa-color-danger);
     opacity: 1;
@@ -274,6 +279,19 @@
 
     .cwa\:status-line[data-line='error']::before,
     .cwa\:status-line[data-line='conflict']::before {
+      animation: none;
+    }
+  }
+
+  .cwa\:skeleton {
+    background: var(--cwa-color-field) linear-gradient(90deg, transparent 0%, var(--cwa-color-shimmer) 50%, transparent 100%) no-repeat;
+    background-size: 50% 100%;
+    animation: cwa-line-band 1.6s linear infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cwa\:skeleton {
+      background-image: none;
       animation: none;
     }
   }

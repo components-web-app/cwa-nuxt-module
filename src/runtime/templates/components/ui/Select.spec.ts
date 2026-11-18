@@ -1,70 +1,99 @@
 // @vitest-environment happy-dom
-import { describe, expect, test, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
-import { ref } from 'vue'
+import { afterEach, describe, expect, test } from 'vitest'
+import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
+import { nextTick } from 'vue'
+import { axe } from '../../../../../test/utils/axe'
+import { fakeFieldModel } from '../../../../../playground/app/kit/fake-field-model'
 import Select from './Select.vue'
 
-vi.mock('@headlessui/vue', () => ({
-  Listbox: {
-    name: 'Listbox',
-    props: ['modelValue', 'by', 'multiple'],
-    emits: ['update:modelValue'],
-    template: '<div><slot /></div>',
-  },
-  ListboxButton: { name: 'ListboxButton', template: '<button><slot /></button>' },
-  ListboxOptions: { name: 'ListboxOptions', template: '<ul><slot /></ul>' },
-  ListboxOption: {
-    name: 'ListboxOption',
-    props: ['value', 'disabled', 'as'],
-    template: '<slot :active="false" :selected="false" />',
-  },
-}))
-
-vi.mock('#cwa/composables/popper', () => ({
-  usePopper: vi.fn(() => [ref(null), ref(null)]),
-}))
+enableAutoUnmount(afterEach)
 
 const options = [
-  { label: 'First', value: 'a' },
-  { label: 'Second', value: 'b' },
-  { label: 'Third', value: 'c', disabled: true },
+  { label: 'Split image', value: 'CwaComponentSplit' },
+  { group: 'More', items: [
+    { label: 'Wide', value: 'wide', description: 'Full width' },
+    { label: 'Full bleed', value: 'bleed', disabled: true, disabledReason: 'Unavailable inside a narrow column' },
+  ] },
 ]
 
-describe('CwaUiSelect', () => {
-  test('renders one entry per option with its label', () => {
-    const wrapper = mount(Select, { props: { options, modelValue: 'a' } })
-    const items = wrapper.findAll('li')
-    expect(items).toHaveLength(3)
-    expect(wrapper.text()).toContain('First')
-    expect(wrapper.text()).toContain('Second')
-    expect(wrapper.text()).toContain('Third')
+function mountSelect(props: Record<string, unknown> = {}) {
+  return mount(Select, { props: { label: 'UI', options, modelValue: 'CwaComponentSplit', ...props }, attachTo: document.body })
+}
+
+async function open(wrapper: ReturnType<typeof mountSelect>) {
+  await wrapper.get('[data-testid="select-trigger"]').trigger('keydown', { key: 'Enter' })
+  await flushPromises()
+  return document.querySelector<HTMLElement>('[data-testid="select-menu"]')!
+}
+
+function option(menu: HTMLElement, label: string) {
+  return [...menu.querySelectorAll<HTMLElement>('[role="option"]')].find(item => item.textContent?.includes(label))!
+}
+
+describe('CwaUiSelect (#460)', () => {
+  test('is a select-only combobox named by its label, showing the chosen option', () => {
+    const wrapper = mountSelect()
+    const trigger = wrapper.get('[data-testid="select-trigger"]')
+
+    expect(trigger.attributes('role')).toBe('combobox')
+    expect(wrapper.get(`label[for="${trigger.attributes('id')}"]`).text()).toBe('UI')
+    expect(trigger.text()).toBe('Split image')
   })
 
-  test('trigger shows the selected option label (single mode)', () => {
-    const wrapper = mount(Select, { props: { options, modelValue: 'b' } })
-    expect(wrapper.find('button').text()).toContain('Second')
+  test('opens a listbox with group headings and a disabled option that says why, and choosing emits its value', async () => {
+    const wrapper = mountSelect()
+    const menu = await open(wrapper)
+
+    expect(menu.textContent).toContain('More')
+    const bleed = option(menu, 'Full bleed')
+    expect(bleed.getAttribute('aria-disabled')).toBe('true')
+    expect(bleed.textContent).toContain('Unavailable inside a narrow column')
+    expect(option(menu, 'Split image').getAttribute('aria-selected')).toBe('true')
+
+    option(menu, 'Wide').dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerType: 'mouse' }))
+    await flushPromises()
+    expect(wrapper.emitted('update:modelValue')).toEqual([['wide']])
   })
 
-  test('trigger shows the placeholder when nothing is selected (multiple mode)', () => {
-    const wrapper = mount(Select, { props: { options, modelValue: [], multiple: true, placeholder: 'Default' } })
-    expect(wrapper.find('button').text()).toContain('Default')
+  test('a nullable select lists None first, shows it for no value, and choosing it emits null', async () => {
+    const wrapper = mountSelect({ nullable: true, noneLabel: 'Default', modelValue: 'wide' })
+    const menu = await open(wrapper)
+
+    expect(menu.querySelector('[role="option"]')!.textContent).toContain('Default')
+    option(menu, 'Default').dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerType: 'mouse' }))
+    await flushPromises()
+    expect(wrapper.emitted('update:modelValue')).toEqual([[null]])
+
+    await wrapper.setProps({ modelValue: null })
+    expect(wrapper.get('[data-testid="select-trigger"]').text()).toBe('Default')
   })
 
-  test('trigger joins selected labels (multiple mode)', () => {
-    const wrapper = mount(Select, { props: { options, modelValue: ['a', 'b'], multiple: true } })
-    expect(wrapper.find('button').text()).toContain('First, Second')
+  test('a placeholder shows when nothing is chosen and the select is not nullable', () => {
+    const wrapper = mountSelect({ modelValue: null, placeholder: 'Pick a layout' })
+
+    expect(wrapper.get('[data-testid="select-trigger"]').text()).toBe('Pick a layout')
   })
 
-  test('passes `multiple` through to the underlying Listbox', () => {
-    const wrapper = mount(Select, { props: { options, modelValue: [], multiple: true } })
-    const listbox = wrapper.findComponent({ name: 'Listbox' })
-    expect(listbox.props('multiple')).toBe(true)
+  test('a model writes its value and its error marks the trigger invalid with the edge line', async () => {
+    const model = fakeFieldModel<string>('CwaComponentSplit', 'error')
+    const wrapper = mount(Select, { props: { label: 'UI', options, model }, attachTo: document.body })
+    const trigger = wrapper.get('[data-testid="select-trigger"]')
+
+    expect(trigger.attributes('aria-invalid')).toBe('true')
+    expect(wrapper.get('[data-testid="field-status-line"]').attributes('data-line')).toBe('error')
+
+    const menu = await open(wrapper)
+    option(menu, 'Wide').dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerType: 'mouse' }))
+    await flushPromises()
+    await nextTick()
+    expect(model.model.value).toBe('wide')
   })
 
-  test('propagates the Listbox selection as update:modelValue', async () => {
-    const wrapper = mount(Select, { props: { options, modelValue: 'a' } })
-    wrapper.findComponent({ name: 'Listbox' }).vm.$emit('update:modelValue', 'b')
-    await wrapper.vm.$nextTick()
-    expect(wrapper.emitted('update:modelValue')?.[0]).toEqual(['b'])
+  test('has no axe violations closed or open', async () => {
+    const wrapper = mountSelect({ info: 'Which layout the component uses.' })
+    expect(await axe(wrapper.element as HTMLElement)).toHaveNoViolations()
+
+    const menu = await open(wrapper)
+    expect(await axe(menu)).toHaveNoViolations()
   })
 })
