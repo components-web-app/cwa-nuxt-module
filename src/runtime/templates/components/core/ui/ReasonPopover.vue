@@ -1,0 +1,44 @@
+<script setup lang="ts">
+import { onMounted } from 'vue'
+import { PopoverAnchor, PopoverArrow, PopoverContent, PopoverPortal, PopoverRoot } from 'reka-ui'
+import { useAnnounce } from './field-context'
+
+const { anchor, label, text } = defineProps<{
+  anchor: HTMLElement
+  label: string
+  text: string
+}>()
+
+const emit = defineEmits<{ close: [] }>()
+
+const announce = useAnnounce()
+onMounted(() => announce(text))
+</script>
+
+<template>
+  <PopoverRoot
+    :open="true"
+    @update:open="open => open || emit('close')"
+  >
+    <PopoverAnchor :reference="anchor" />
+    <PopoverPortal>
+      <PopoverContent
+        side="top"
+        :side-offset="8"
+        :collision-padding="8"
+        :aria-label="label"
+        data-testid="button-reason"
+        class="cwa:z-context cwa:w-max cwa:max-w-[min(20rem,calc(100vw-1rem))] cwa:bg-surface-menu cwa:p-popover cwa:text-control cwa:text-fg cwa:shadow-popover cwa:outline-none"
+        @open-auto-focus.prevent
+        @close-auto-focus.prevent
+      >
+        {{ text }}
+        <PopoverArrow
+          :width="12"
+          :height="6"
+          class="cwa:fill-surface-menu"
+        />
+      </PopoverContent>
+    </PopoverPortal>
+  </PopoverRoot>
+</template>
