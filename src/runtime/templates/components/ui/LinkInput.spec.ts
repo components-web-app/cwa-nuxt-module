@@ -4,14 +4,17 @@ import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { computed, h, reactive, ref } from 'vue'
 import { axe } from '../../../../../test/utils/axe'
 import LinkInput from './LinkInput.vue'
-import { managerTabKey, tabMetaOnlyKey } from '../core/ui/field-keys'
+import { announceKey, managerTabKey, tabMetaOnlyKey } from '../core/ui/field-keys'
 
 const store = vi.hoisted(() => ({ entry: undefined as any }))
 const mockUpdateResource = vi.hoisted(() => vi.fn())
 
 vi.mock('#cwa/composables/cwa', () => ({
   useCwa: () => ({
-    resources: { getResource: (iri: string) => computed(() => iri === '/component/links/1' ? store.entry : undefined) },
+    resources: {
+      getResource: (iri: string) => computed(() => iri === '/component/links/1' ? store.entry : undefined),
+      findPublishedComponentIri: () => computed(() => undefined),
+    },
     resourcesManager: {
       getWaitForRequestPromise: vi.fn().mockResolvedValue(undefined),
       updateResource: mockUpdateResource,
@@ -41,11 +44,13 @@ vi.mock('#cwa/resources/field-state-writer', () => ({
 
 enableAutoUnmount(afterEach)
 
+const announce = vi.fn()
+
 async function mountLink(data: Record<string, unknown>, metaOnly = false) {
   store.entry = reactive({ data: { '@id': '/component/links/1', ...data }, apiState: {}, fieldStates: {} })
   const fields: string[] = []
   const wrapper = mount({ render: () => h(LinkInput) }, {
-    global: { provide: { [managerTabKey as symbol]: { iri: ref('/component/links/1'), register: (field: string) => fields.push(field) }, [tabMetaOnlyKey]: metaOnly } },
+    global: { provide: { [managerTabKey as symbol]: { iri: ref('/component/links/1'), register: (field: string) => fields.push(field) }, [tabMetaOnlyKey]: metaOnly, [announceKey as symbol]: announce } },
     attachTo: document.body,
   })
   await flushPromises()
@@ -57,7 +62,12 @@ function segment(wrapper: Awaited<ReturnType<typeof mountLink>>['wrapper'], labe
 }
 
 describe('CwaUiLinkInput and CwaUiEitherOr (#460)', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   beforeEach(() => {
+    announce.mockClear()
     mockUpdateResource.mockReset()
     mockUpdateResource.mockImplementation(async (event: any) => {
       const done = Promise.resolve({ resource: store.entry.data })
@@ -133,6 +143,49 @@ describe('CwaUiLinkInput and CwaUiEitherOr (#460)', () => {
     expect(mockUpdateResource).toHaveBeenCalledTimes(1)
     expect(mockUpdateResource).toHaveBeenCalledWith(expect.objectContaining({ data: { route: '/_/routes/a', rawPath: null } }))
     expect(segment(wrapper, 'Page').attributes('aria-pressed')).toBe('true')
+  })
+
+  test('the URL\'s error is announced once through the bar each time it shows, on blur or Enter, and never while typing', async () => {
+    vi.useFakeTimers()
+    const { wrapper } = await mountLink({ route: null, rawPath: null })
+    await segment(wrapper, 'URL').trigger('click')
+    const input = wrapper.get('input[type="url"]')
+    await input.setValue('about us')
+    vi.advanceTimersByTime(1000)
+    await flushPromises()
+    expect(announce).not.toHaveBeenCalled()
+
+    await input.trigger('focusout')
+    await input.trigger('focusout')
+    await flushPromises()
+    expect(announce).toHaveBeenCalledTimes(1)
+    expect(announce).toHaveBeenCalledWith('Link URL: Use /path or https://…')
+
+    await input.trigger('focusin')
+    await input.setValue('about us too')
+    await flushPromises()
+    expect(announce).toHaveBeenCalledTimes(1)
+    await input.trigger('keydown', { key: 'Enter' })
+    await flushPromises()
+    expect(announce).toHaveBeenCalledTimes(2)
+    vi.useRealTimers()
+  })
+
+  test('the either/or is a group named by its label', async () => {
+    const { wrapper } = await mountLink({ route: null, rawPath: null })
+    const group = wrapper.get('[data-testid="either-or"]')
+
+    expect(group.attributes('role')).toBe('group')
+    expect(group.attributes('aria-label')).toBe('Link')
+  })
+
+  test('has no axe violations with the URL\'s error showing', async () => {
+    const { wrapper } = await mountLink({ route: null, rawPath: 'about us' })
+    await wrapper.get('input[type="url"]').trigger('focusout')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="input-invalid"]').exists()).toBe(true)
+
+    expect(await axe(wrapper.element as HTMLElement)).toHaveNoViolations()
   })
 
   test('old data holding both says so', async () => {

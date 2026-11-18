@@ -14,6 +14,12 @@ export interface ClearedFields {
   restore: Record<string, unknown>
 }
 
+interface Sending {
+  key: string
+  restore: Record<string, unknown>
+  undo: boolean
+}
+
 function isSet(value: unknown) {
   return value !== null && value !== undefined && value !== ''
 }
@@ -23,41 +29,60 @@ export const useCwaResourceFieldGroup = (iri: Ref<string | undefined>, options: 
   const data = computed(() => iri.value ? $cwa.resources.getResource(iri.value).value?.data : undefined)
   const groups = shallowReactive<string[][]>([])
   const models: Record<string, ResourceModelField<any>> = {}
+  const resets: Record<string, () => unknown> = {}
   const stored: Record<string, { value: unknown }> = {}
   const chosen = ref<number>()
   const cleared = ref<ClearedFields>()
-  let undoing = false
+  const undoing = new Set<string>()
+  const sending = new Map<string, Sending>()
+
+  function keyOf(at: string) {
+    return $cwa.resources.findPublishedComponentIri(at).value ?? at
+  }
+
+  const key = computed(() => iri.value ? keyOf(iri.value) : undefined)
 
   const setOptions = computed(() => groups.map((fields, index) => fields.some(field => isSet(data.value?.[field])) ? index : -1).filter(index => index !== -1))
   const active = computed(() => chosen.value ?? setOptions.value[0] ?? 0)
   const bothSet = computed(() => setOptions.value.length > 1)
 
-  watch(iri, () => {
+  watch(key, () => {
     chosen.value = undefined
     cleared.value = undefined
+    undoing.clear()
   })
 
   function optionOf(field: string) {
     return groups.findIndex(fields => fields.includes(field))
   }
 
-  function clearOthers(field: string) {
+  function clearOthers(field: string, at: string) {
     const own = optionOf(field)
+    const saving = $cwa.resources.getResource(at).value?.data
     const restore: Record<string, unknown> = {}
     groups.forEach((fields, index) => {
       index !== own && fields.forEach((other) => {
-        isSet(data.value?.[other]) && (restore[other] = data.value?.[other])
+        isSet(saving?.[other]) && (restore[other] = saving?.[other])
       })
     })
+    sending.set(field, { key: keyOf(at), restore, undo: undoing.delete(field) })
     const fields = Object.keys(restore)
-    if (!fields.length) {
-      return undefined
+    return fields.length ? Object.fromEntries(fields.map(other => [other, null])) : undefined
+  }
+
+  function saved(field: string) {
+    const sent = sending.get(field)
+    sending.delete(field)
+    const own = optionOf(field)
+    if (!sent || sent.key !== key.value) {
+      return
     }
-    if (!undoing) {
-      cleared.value = { field, restore }
+    groups.forEach((fields, index) => {
+      index !== own && fields.forEach(other => resets[other]?.())
+    })
+    if (!sent.undo && Object.keys(sent.restore).length) {
+      cleared.value = { field, restore: sent.restore }
     }
-    undoing = false
-    return Object.fromEntries(fields.map(other => [other, null]))
   }
 
   function addOption(fields: string[]) {
@@ -65,7 +90,11 @@ export const useCwaResourceFieldGroup = (iri: Ref<string | undefined>, options: 
       const fieldModel = useCwaResourceModel<any>(iri, field, {
         debounceTime: ops.debounceTime?.[field],
         valid: ops.valid?.[field],
-        alsoSend: value => isSet(value) ? clearOthers(field) : undefined,
+        alsoSend: (value, at) => {
+          sending.delete(field)
+          return isSet(value) ? clearOthers(field, at) : undefined
+        },
+        saved: () => saved(field),
       })
       models[field] = {
         ...fieldModel,
@@ -73,6 +102,7 @@ export const useCwaResourceFieldGroup = (iri: Ref<string | undefined>, options: 
           get: () => fieldModel.model.value,
           set: (value) => {
             cleared.value = undefined
+            undoing.clear()
             fieldModel.model.value = value
           },
         }),
@@ -81,6 +111,7 @@ export const useCwaResourceFieldGroup = (iri: Ref<string | undefined>, options: 
           return fieldModel.reset()
         },
       }
+      resets[field] = fieldModel.reset
       stored[field] = fieldModel.model
     }
     groups.push(fields)
@@ -103,7 +134,7 @@ export const useCwaResourceFieldGroup = (iri: Ref<string | undefined>, options: 
     const [firstField] = entries[0]!
     chosen.value = optionOf(firstField)
     for (const [field, value] of entries) {
-      undoing = true
+      undoing.add(field)
       stored[field]!.value = value
     }
   }

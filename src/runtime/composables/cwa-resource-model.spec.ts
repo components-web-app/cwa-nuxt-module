@@ -644,8 +644,110 @@ describe('useCwaResourceModel', () => {
       await microtasks()
 
       expect(mockUpdateResource).toHaveBeenCalledTimes(1)
-      expect(alsoSend).toHaveBeenCalledWith('/about')
+      expect(alsoSend).toHaveBeenCalledWith('/about', '/my/resource')
       expect(mockUpdateResource).toHaveBeenCalledWith(expect.objectContaining({ data: { rawPath: '/about', route: null } }))
+    })
+
+    test('a value equal to the stored one is still sent when it carries extra fields', async () => {
+      mockGetResource.mockReturnValue(ref<any>({ data: { route: '/_/routes/a', rawPath: '/old' } }))
+      const { model } = useCwaResourceModel<string>(iri, 'route', { alsoSend: () => ({ rawPath: null }) })
+
+      model.value = '/_/routes/a'
+      await nextTick()
+      vi.runAllTimers()
+      await microtasks()
+
+      expect(mockUpdateResource).toHaveBeenCalledWith(expect.objectContaining({ data: { route: '/_/routes/a', rawPath: null } }))
+    })
+
+    test('a value equal to the stored one with no extra fields is not sent', async () => {
+      mockGetResource.mockReturnValue(ref<any>({ data: { route: '/_/routes/a' } }))
+      const { model } = useCwaResourceModel<string>(iri, 'route', { alsoSend: () => undefined })
+
+      model.value = '/_/routes/a'
+      await nextTick()
+      vi.runAllTimers()
+      await microtasks()
+
+      expect(mockUpdateResource).not.toHaveBeenCalled()
+    })
+
+    describe('a value that is not valid is never sent, whichever path sends it', () => {
+      const validUrl = (value: string | null | undefined) => value === null || !!value?.startsWith('/')
+
+      test('Keep mine, and a newer remote change clearing a conflict, send through the editor\'s submit: an invalid value stays unsent', async () => {
+        mockGetResource.mockReturnValue(ref<any>({ data: { rawPath: null } }))
+        const { model } = useCwaResourceModel<string>(iri, 'rawPath', { valid: validUrl })
+        const editor = registeredEditors.at(-1) as ModelEditor
+        model.value = 'about us'
+        await nextTick()
+        vi.runAllTimers()
+        await microtasks()
+
+        await editor.submit()
+        await microtasks()
+
+        expect(mockUpdateResource).not.toHaveBeenCalled()
+        expect(model.value).toBe('about us')
+      })
+
+      test('Retry after the value became invalid sends nothing', async () => {
+        mockGetResource.mockReturnValue(ref<any>({ data: { rawPath: null } }))
+        const answers = recordedSaves()
+        const { model, retry } = useCwaResourceModel<string>(iri, 'rawPath', { valid: validUrl })
+        model.value = '/about'
+        await nextTick()
+        vi.runAllTimers()
+        await microtasks()
+        answers[0]!({ error: { statusCode: 500 } })
+        await microtasks()
+        expect(mockUpdateResource).toHaveBeenCalledTimes(1)
+
+        model.value = 'about us'
+        await nextTick()
+        vi.runAllTimers()
+        await microtasks()
+        await retry()
+        await microtasks()
+
+        expect(mockUpdateResource).toHaveBeenCalledTimes(1)
+      })
+
+      test('a publish flushing the waiting save sends nothing for an invalid value', async () => {
+        mockGetResource.mockReturnValue(ref<any>({ data: { rawPath: null } }))
+        const { model } = useCwaResourceModel<string>(iri, 'rawPath', { valid: validUrl, debounceTime: 1000 })
+        model.value = 'about us'
+        await nextTick()
+
+        await pendingUpdates.get('/my/resource')?.()
+        await microtasks()
+
+        expect(mockUpdateResource).not.toHaveBeenCalled()
+      })
+    })
+
+    test('saved runs once the request succeeds, and never for a failed one', async () => {
+      mockGetResource.mockReturnValue(ref<any>({ data: { rawPath: null } }))
+      const answers = recordedSaves()
+      const saved = vi.fn()
+      const { model } = useCwaResourceModel<string>(iri, 'rawPath', { saved })
+
+      model.value = '/about'
+      await nextTick()
+      vi.runAllTimers()
+      await microtasks()
+      expect(saved).not.toHaveBeenCalled()
+      answers[0]!({ error: { statusCode: 500 } })
+      await microtasks()
+      expect(saved).not.toHaveBeenCalled()
+
+      model.value = '/about-us'
+      await nextTick()
+      vi.runAllTimers()
+      await microtasks()
+      answers[1]!({ resource: { '@id': '/my/resource', 'rawPath': '/about-us' } })
+      await microtasks()
+      expect(saved).toHaveBeenCalledTimes(1)
     })
   })
 

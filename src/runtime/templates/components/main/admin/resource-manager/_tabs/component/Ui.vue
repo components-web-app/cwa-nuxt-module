@@ -1,6 +1,5 @@
 <script lang="ts" setup>
 import { computed, ref, watchEffect } from 'vue'
-import { watchOnce } from '@vueuse/core'
 import {
   useCwaResourceManagerTab,
 } from '#cwa/composables/cwa-resource-manager-tab'
@@ -22,8 +21,6 @@ const { exposeMeta, $cwa, iri } = useCwaResourceManagerTab({
 
 exposeMeta.fields.push('uiComponent', 'uiClassNames')
 
-const savedUiComponent = computed(() => iri.value ? $cwa.resources.getResource(iri.value).value?.data?.uiComponent : undefined)
-
 const componentMeta = ref<(CwaResourceMeta | null)[]>([])
 
 const current = computed(() => $cwa.admin.resourceStackManager.currentStackItem.value)
@@ -32,8 +29,9 @@ const styleClasses = computed<Record<string, string | string[]>>(() => current.v
 const isMultipleStyles = computed(() => !!current.value?.styles?.value?.multiple)
 const showStyleSelect = computed(() => Object.keys(styleClasses.value).length > 0)
 
-const uiComponentModel = useCwaResourceModel<string>(iri, 'uiComponent', {
+const uiModel = useCwaResourceModel<string>(iri, 'uiComponent', {
   debounceTime: 0,
+  alsoSend: (_value, at) => $cwa.resources.getResource(at).value?.data?.uiClassNames?.length ? { uiClassNames: null } : undefined,
 })
 
 const styleModel = useCwaResourceModel<string[] | string, string[]>(iri, 'uiClassNames', {
@@ -51,19 +49,6 @@ const styleModel = useCwaResourceModel<string[] | string, string[]>(iri, 'uiClas
 
 const styleNamesModel = styleModel as unknown as ResourceModelField<string[]>
 const styleNameModel = styleModel as unknown as ResourceModelField<string>
-
-const uiModel: ResourceModelField<string> = {
-  ...uiComponentModel,
-  model: computed<string | null | undefined>({
-    get: () => uiComponentModel.model.value,
-    set: (value) => {
-      uiComponentModel.model.value = value
-      watchOnce(savedUiComponent, () => {
-        styleModel.model.value = null
-      })
-    },
-  }),
-}
 
 const uiOptions = computed<MenuItem[]>(() => (current.value?.ui ?? []).map((ui, index) => ({
   label: componentMeta.value[index]?.cwaResource.name || ui,

@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, ref, useId } from 'vue'
+import { computed, ref, useId, watch } from 'vue'
+import { consola } from 'consola'
 import {
   SelectContent,
   SelectGroup,
@@ -16,6 +17,7 @@ import {
 import Field from '../core/ui/Field.vue'
 import type { FieldWidth } from '../core/ui/Field.vue'
 import ChevronGlyph from '../core/ui/ChevronGlyph.vue'
+import CwaUiFieldPresence from './FieldPresence.vue'
 import CheckGlyph from '../core/ui/CheckGlyph.vue'
 import { useFieldModel } from '../core/ui/field-context'
 import { fieldBox, fieldFill, groupHeading, menuPanel, optionLook } from '../core/ui/field-looks'
@@ -25,6 +27,8 @@ import type { ResourceModelField } from '#cwa/resources/model-editors'
 
 const NONE = '__cwa-none__'
 
+type NullItem = Omit<MenuItem, 'value'> & { value: null }
+
 const props = withDefaults(defineProps<{
   label: string
   labelHidden?: boolean
@@ -33,7 +37,7 @@ const props = withDefaults(defineProps<{
   placeholder?: string
   width?: FieldWidth
   disabled?: boolean
-  options: MenuEntry[]
+  options: (MenuEntry | NullItem)[]
   nullable?: boolean
   noneLabel?: string
   field?: string
@@ -47,7 +51,7 @@ const props = withDefaults(defineProps<{
   width: 'md',
   disabled: false,
   nullable: false,
-  noneLabel: 'None',
+  noneLabel: undefined,
   field: undefined,
   model: undefined,
   modelValue: undefined,
@@ -59,15 +63,34 @@ const { model, value, state, unbound } = useFieldModel<string>(props, emit)
 const id = useId()
 const open = ref(false)
 
-const groups = computed(() => menuGroups(props.options))
+function isNone(item: { value?: unknown }) {
+  return item.value === null || item.value === undefined
+}
+
+const allGroups = computed(() => menuGroups(props.options as MenuEntry[]))
+const noneItem = computed(() => props.nullable ? allGroups.value.flatMap(group => group.items).find(isNone) : undefined)
+const noneText = computed(() => props.noneLabel ?? noneItem.value?.label ?? 'None')
+const groups = computed(() => props.nullable
+  ? allGroups.value.map(group => ({ ...group, items: group.items.filter(item => !isNone(item)) })).filter(group => group.items.length)
+  : allGroups.value)
 const items = computed(() => groups.value.flatMap(group => group.items))
 const chosen = computed<MenuItem | undefined>(() => items.value.find(item => item.value === value.value))
 const shown = computed(() => {
   if (chosen.value) {
     return chosen.value.label
   }
-  return props.nullable && (value.value === null || value.value === undefined) ? props.noneLabel : undefined
+  return props.nullable && (value.value === null || value.value === undefined) ? noneText.value : undefined
 })
+
+if (import.meta.env.DEV) {
+  watch(() => props.options, (options) => {
+    const values = menuGroups(options as MenuEntry[]).flatMap(group => group.items).map(item => item.value as unknown)
+    values.some(option => option !== null && option !== undefined && typeof option !== 'string')
+    && consola.warn(`CwaUiSelect "${props.label}": option values must be strings.`)
+    !props.nullable && values.includes(null)
+    && consola.warn(`CwaUiSelect "${props.label}": an option with a null value needs \`nullable\`, which shows it as the None option.`)
+  }, { immediate: true })
+}
 
 const selected = computed(() => value.value === null || value.value === undefined ? (props.nullable ? NONE : undefined) : value.value)
 
@@ -100,21 +123,25 @@ const inactive = computed(() => props.disabled || unbound)
         :disabled="inactive"
         @update:model-value="choose"
       >
-        <SelectTrigger
-          :id="id"
-          :aria-describedby="describedBy"
-          :aria-invalid="tone === 'danger' ? 'true' : undefined"
-          :aria-busy="busy ? 'true' : undefined"
-          data-testid="select-trigger"
-          :class="[fieldBox, fieldFill(tone, inactive), 'cwa:cursor-pointer cwa:gap-2 cwa:px-3 cwa:text-left cwa:outline-none cwa:data-[state=open]:outline-2 cwa:data-[state=open]:outline-offset-2 cwa:data-[state=open]:outline-accent-fg cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-accent-fg cwa:disabled:cursor-not-allowed', { 'cwa:opacity-50': inactive }]"
-          v-bind="model?.focusListeners"
+        <CwaUiFieldPresence
+          :model="model"
+          v-bind="inactive ? undefined : model?.focusListeners"
         >
-          <span
-            class="cwa:min-w-0 cwa:flex-1 cwa:truncate"
-            :class="{ 'cwa:text-muted-on-field': !shown }"
-          >{{ shown ?? placeholder }}</span>
-          <ChevronGlyph />
-        </SelectTrigger>
+          <SelectTrigger
+            :id="id"
+            :aria-describedby="describedBy"
+            :aria-invalid="tone === 'danger' ? 'true' : undefined"
+            :aria-busy="busy ? 'true' : undefined"
+            data-testid="select-trigger"
+            :class="[fieldBox, fieldFill(tone, inactive), 'cwa:cursor-pointer cwa:gap-2 cwa:px-3 cwa:text-left cwa:outline-none cwa:data-[state=open]:outline-2 cwa:data-[state=open]:outline-offset-2 cwa:data-[state=open]:outline-accent-fg cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-accent-fg cwa:disabled:cursor-not-allowed', { 'cwa:opacity-50': inactive }]"
+          >
+            <span
+              class="cwa:min-w-0 cwa:flex-1 cwa:truncate"
+              :class="{ 'cwa:text-muted-on-field': !shown }"
+            >{{ shown ?? placeholder }}</span>
+            <ChevronGlyph />
+          </SelectTrigger>
+        </CwaUiFieldPresence>
         <SelectPortal>
           <SelectContent
             position="popper"
@@ -132,7 +159,7 @@ const inactive = computed(() => props.disabled || unbound)
                 :class="[optionLook, 'cwa:text-fg-muted']"
               >
                 <SelectItemText class="cwa:flex-1">
-                  {{ noneLabel }}
+                  {{ noneText }}
                 </SelectItemText>
                 <SelectItemIndicator><CheckGlyph /></SelectItemIndicator>
               </SelectItem>

@@ -59,6 +59,8 @@ const segment = computed({
   <slot v-if="metaOnly" />
   <div
     v-else
+    role="group"
+    :aria-label="label"
     class="cwa:flex cwa:shrink-0 cwa:items-center cwa:gap-2"
     data-testid="either-or"
   >

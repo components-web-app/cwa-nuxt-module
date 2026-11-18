@@ -1,10 +1,12 @@
 // @vitest-environment happy-dom
-import { afterEach, describe, expect, test } from 'vitest'
+import { afterEach, describe, expect, test, vi } from 'vitest'
+import { consola } from 'consola'
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
-import { nextTick } from 'vue'
+import { defineComponent, h, nextTick, ref } from 'vue'
 import { axe } from '../../../../../test/utils/axe'
 import { fakeFieldModel } from '../../../../../playground/app/kit/fake-field-model'
 import Select from './Select.vue'
+import { useCwaSelect } from '#cwa/composables/cwa-select'
 
 enableAutoUnmount(afterEach)
 
@@ -65,6 +67,65 @@ describe('CwaUiSelect (#460)', () => {
     expect(wrapper.emitted('update:modelValue')).toEqual([[null]])
 
     await wrapper.setProps({ modelValue: null })
+    expect(wrapper.get('[data-testid="select-trigger"]').text()).toBe('Default')
+  })
+
+  test.each([
+    ['null', { label: 'Default', value: null }],
+    ['missing', { label: 'Default' }],
+  ])('under nullable, an option whose value is %s is the None option and keeps saving null', async (_kind, defaultOption) => {
+    const wrapper = mountSelect({ nullable: true, modelValue: 'wide', options: [defaultOption, { label: 'Wide', value: 'wide' }] })
+    const menu = await open(wrapper)
+
+    const listed = [...menu.querySelectorAll('[role="option"]')].map(item => item.textContent?.trim())
+    expect(listed).toEqual(['Default', 'Wide'])
+    option(menu, 'Default').dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerType: 'mouse' }))
+    await flushPromises()
+    expect(wrapper.emitted('update:modelValue')).toEqual([[null]])
+
+    await wrapper.setProps({ modelValue: null })
+    expect(wrapper.get('[data-testid="select-trigger"]').text()).toBe('Default')
+  })
+
+  test('noneLabel names the None option over a null option\'s label', async () => {
+    const wrapper = mountSelect({ nullable: true, noneLabel: 'Inherit', modelValue: null, options: [{ label: 'Default', value: null }, { label: 'Wide', value: 'wide' }] })
+
+    expect(wrapper.get('[data-testid="select-trigger"]').text()).toBe('Inherit')
+  })
+
+  test('warns in development about option values that are not strings, and a null value without nullable', () => {
+    const warn = vi.spyOn(consola, 'warn').mockImplementation(() => {})
+    mountSelect({ options: [{ label: 'Two', value: 2 }] })
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('option values must be strings'))
+    warn.mockClear()
+
+    mountSelect({ options: [{ label: 'Default', value: null }, { label: 'Wide', value: 'wide' }] })
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('needs `nullable`'))
+    warn.mockClear()
+
+    mountSelect({ nullable: true, options: [{ label: 'Default', value: null }, { label: 'Wide', value: 'wide' }] })
+    expect(warn).not.toHaveBeenCalled()
+    warn.mockRestore()
+  })
+
+  test('takes the model and options of useCwaSelect, with a null option as None', async () => {
+    const source = ref<any>('wide')
+    const Host = defineComponent({
+      setup() {
+        const { model, options: selectOptions } = useCwaSelect(source, [{ label: 'Default', value: null }, { label: 'Wide', value: 'wide' }])
+        return () => h(Select, { 'label': 'Layout', 'nullable': true, 'options': selectOptions.value as any, 'modelValue': model.value as string | null, 'onUpdate:modelValue': (value: unknown) => {
+          model.value = value as string | null
+        } })
+      },
+    })
+    const wrapper = mount(Host, { attachTo: document.body })
+    expect(wrapper.get('[data-testid="select-trigger"]').text()).toBe('Wide')
+
+    const menu = await open(wrapper as unknown as ReturnType<typeof mountSelect>)
+    option(menu, 'Default').dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerType: 'mouse' }))
+    await flushPromises()
+
+    expect(source.value).toBeNull()
     expect(wrapper.get('[data-testid="select-trigger"]').text()).toBe('Default')
   })
 

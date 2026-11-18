@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, inject, ref } from 'vue'
+import { computed, inject, ref, watch } from 'vue'
 import CwaUiInput from '../../ui/Input.vue'
 import { fieldGroupKey } from './field-keys'
+import { useAnnounce } from './field-context'
 import { isLinkUrl, isOffSiteUrl } from '#cwa/resources/link-url'
 
 const { field, label } = defineProps<{
@@ -13,6 +14,11 @@ const group = inject(fieldGroupKey, undefined)
 const touched = ref(false)
 const value = computed(() => group?.model(field)?.model.value)
 const invalid = computed(() => touched.value && value.value && !isLinkUrl(value.value) ? 'Use /path or https://…' : undefined)
+const announce = useAnnounce()
+
+watch(invalid, (message, previous) => {
+  message && !previous && announce(`${label}: ${message}`)
+})
 
 function onKeydown(event: KeyboardEvent) {
   if (event.key === 'Enter') {
