@@ -82,3 +82,65 @@ for (const path of ['bar', 'page']) {
     await expect(page.getByText('Edit the shared layout?')).toHaveCount(0)
   })
 }
+
+test('in practice at 1280×600: switching the page dialog to a nested child page never scrolls to its Parent page, and choosing A page still does (#461)', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 600 })
+  await page.goto(`${kitBase}/kit?tab=practice`)
+  await expect(page.getByTestId('kit-practice-status')).toContainText('Selected: Title')
+  const dialog = page.getByRole('dialog')
+  await page.getByTestId('kit-practice-settings').click()
+  await expect(dialog.getByRole('textbox', { name: 'Reference' })).toHaveValue('Kit practice')
+
+  const depths = dialog.getByTestId('page-depths')
+  const nesting = dialog.getByRole('group', { name: 'Nested under' })
+  const parentPage = dialog.locator('[data-cwa-reveal] > *').filter({ hasText: 'Parent page' })
+  const scroller = nesting.locator('xpath=ancestor::*[@data-cwa-scroll][1]')
+  const placeNestingAtBottom = () => nesting.evaluate((group) => {
+    const body = group.closest('[data-cwa-scroll]')
+    body.scrollTop += group.getBoundingClientRect().bottom - (body.getBoundingClientRect().top + body.clientHeight)
+    return Math.abs(group.getBoundingClientRect().bottom - (body.getBoundingClientRect().top + body.clientHeight)) < 2
+  })
+  const scrollTopOverFrames = () => scroller.evaluate(body => new Promise((resolve) => {
+    const seen = new Set()
+    let frames = 20
+    const step = () => {
+      seen.add(body.scrollTop)
+      --frames ? requestAnimationFrame(step) : resolve([...seen])
+    }
+    requestAnimationFrame(step)
+  }))
+  const inView = element => element.evaluate((field) => {
+    const body = field.closest('[data-cwa-scroll]')
+    const view = body.getBoundingClientRect()
+    const box = field.getBoundingClientRect()
+    return box.top >= view.top - 1 && box.bottom <= view.top + body.clientHeight + 1
+  })
+  const choose = async (group, label) => {
+    const option = group.getByRole('button', { name: label, exact: true })
+    await expect(async () => {
+      await option.focus()
+      await page.keyboard.press('Enter')
+      await expect(option).toHaveAttribute('aria-pressed', 'true', { timeout: 500 })
+    }).toPass()
+    return option
+  }
+
+  await choose(depths, 'Kit practice parent')
+  await expect(dialog.getByRole('textbox', { name: 'Reference' })).toHaveValue('Kit practice parent')
+  await expect(parentPage).toHaveCount(0)
+  expect(await placeNestingAtBottom()).toBe(true)
+  const before = await scroller.evaluate(body => body.scrollTop)
+
+  await page.getByTestId('page-depths').getByRole('button', { name: 'Kit practice', exact: true }).click()
+  await expect(dialog.getByRole('textbox', { name: 'Reference' })).toHaveValue('Kit practice')
+  await expect(parentPage).toHaveCount(1)
+  expect(await scrollTopOverFrames()).toEqual([before])
+  expect(await inView(parentPage)).toBe(false)
+
+  await choose(nesting, 'Nothing')
+  await expect(parentPage).toHaveCount(0)
+  expect(await placeNestingAtBottom()).toBe(true)
+  const option = await choose(nesting, 'A page')
+  await expect.poll(() => inView(parentPage)).toBe(true)
+  await expect(option).toBeFocused()
+})
