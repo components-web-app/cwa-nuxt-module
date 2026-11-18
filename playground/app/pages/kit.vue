@@ -834,23 +834,27 @@ const badgeTones = [
         <p class="kit-note">
           The Alt chip edits the image's alt text; the dot shows while it is missing. Image slots put one labelled image per slot in one row.
         </p>
-        <div class="kit-row">
-          <CwaUiImageAlt
-            label="With alt"
-            :upload="uploadSamples[0]!.upload"
-            :alt="altPresent"
-          />
-          <CwaUiImageAlt
-            label="Alt missing"
-            :upload="uploadSamples[0]!.upload"
-            :alt="altMissing"
-          />
-        </div>
-        <div class="kit-row">
-          <CwaUiImageSlots
-            label="Before and after"
-            :slots="[{ label: 'Before', upload: uploadSamples[0]!.upload }, { label: 'After', upload: uploadSamples[1]!.upload }]"
-          />
+        <div class="kit-stack">
+          <div class="kit-row">
+            <CwaUiImageAlt
+              label="With alt"
+              :upload="uploadSamples[0]!.upload"
+              :alt="altPresent"
+            />
+            <CwaUiImageAlt
+              label="Alt missing"
+              :upload="uploadSamples[0]!.upload"
+              :alt="altMissing"
+            />
+          </div>
+          <div class="kit-bar">
+            <CwaUiManagerTab>
+              <CwaUiImageSlots
+                label="Before and after"
+                :slots="[{ label: 'Before', upload: uploadSamples[0]!.upload }, { label: 'After', upload: uploadSamples[1]!.upload }]"
+              />
+            </CwaUiManagerTab>
+          </div>
         </div>
       </section>
 
@@ -882,15 +886,17 @@ const badgeTones = [
           </p>
         </div>
         <h3>InlineHandoff</h3>
-        <div class="kit-row">
-          <CwaUiInlineHandoff
-            label="Title"
-            :model="inlineTitle"
-          />
-          <CwaUiInlineHandoff
-            label="Content"
-            :model="handoffHtml"
-          />
+        <div class="kit-bar">
+          <CwaUiManagerTab>
+            <CwaUiInlineHandoff
+              label="Title"
+              :model="inlineTitle"
+            />
+            <CwaUiInlineHandoff
+              label="Content"
+              :model="handoffHtml"
+            />
+          </CwaUiManagerTab>
         </div>
         <h3>EditPlaceholder</h3>
         <p class="kit-note">
