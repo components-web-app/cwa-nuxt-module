@@ -702,6 +702,36 @@ describe('PageResourceAdminModal creating from a list (#461)', () => {
     vi.clearAllMocks()
   })
 
+  test.each([
+    ['a page', {}],
+    ['a page data', { resourceType: 'BlogArticleData' }],
+  ])('creating %s shows one Save, the dialog\'s, and no overlay or Save of the modal\'s own', (_kind, opts) => {
+    const { wrapper } = setup({ routeIri: 'add', isAdding: true, ...opts })
+
+    expect(wrapper.findAllComponents(DialogStub)).toHaveLength(1)
+    expect(wrapper.findAll('button').filter(button => /Save|\+ /.test(button.text()))).toHaveLength(0)
+  })
+
+  test.each([
+    ['a page', {}],
+    ['a page data', { resourceType: 'BlogArticleData', local: { '@id': 'add', 'title': '' } }],
+  ])('what is typed into a new %s stays when another tab is shown and Details again', async (_kind, opts) => {
+    const { wrapper, localResourceData } = setup({ routeIri: 'add', isAdding: true, ...opts })
+    const label = opts.resourceType ? 'Title' : 'Reference'
+    const prop = opts.resourceType ? 'title' : 'reference'
+    const input = field(wrapper, Input, label)
+    expect(input.props('field')).toBe(prop)
+    localResourceData.value[prop] = 'Typed before switching'
+
+    await wrapper.findComponent(DialogStub).vm.$emit('update:tab', 'routes')
+    await wrapper.findComponent(DialogStub).vm.$emit('update:tab', 'details')
+    await flushPromises()
+
+    expect(mockUseItemPage).toHaveBeenCalledOnce()
+    expect(localResourceData.value[prop]).toBe('Typed before switching')
+    expect(field(wrapper, Input, label).exists()).toBe(true)
+  })
+
   test('a new page is titled as new, and Save becomes "+ Page"', () => {
     const { wrapper } = setup({ routeIri: 'add', isAdding: true })
     const dialog = wrapper.findComponent(DialogStub)
