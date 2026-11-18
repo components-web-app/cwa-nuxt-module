@@ -56,6 +56,11 @@ const kindId = useId()
 const kindEdges = { static: 'cwa:border-type-static', dynamic: 'cwa:border-type-dynamic', success: 'cwa:border-success', warning: 'cwa:border-warning' }
 const tabsId = useId()
 const body = useTemplateRef<HTMLElement>('body')
+
+function focusTitle(event: Event) {
+  event.preventDefault()
+  document.getElementById(titleId)?.focus({ preventScroll: true })
+}
 const presenceLayer = useTemplateRef<HTMLElement>('presenceLayer')
 provide(presenceLayerKey, { el: presenceLayer, align: 'end' })
 const alert = useTemplateRef<InstanceType<typeof CwaUiAlert>>('alert')
@@ -366,6 +371,7 @@ defineExpose({ requestClose, confirmDiscard, showField, announce })
         data-testid="dialog"
         class="cwa:fixed cwa:inset-0 cwa:z-dialog cwa:flex cwa:flex-col cwa:bg-surface cwa:text-fg cwa:shadow-popover cwa:outline-none cwa:[--cwa-spacing-control:var(--cwa-spacing-control-lg)] cwa:[--cwa-text-control:var(--cwa-text-control-lg)] cwa:sm:inset-auto cwa:sm:top-1/2 cwa:sm:left-1/2 cwa:sm:max-h-[calc(100dvh-4rem)] cwa:sm:max-w-[calc(100vw-2rem)] cwa:sm:-translate-x-1/2 cwa:sm:-translate-y-1/2"
         :class="widths[size]"
+        @open-auto-focus="focusTitle"
       >
         <header
           class="cwa:flex cwa:h-[3.75rem] cwa:shrink-0 cwa:items-center cwa:gap-2 cwa:border-b-3 cwa:border-solid cwa:ps-6 cwa:pe-3"
@@ -374,7 +380,8 @@ defineExpose({ requestClose, confirmDiscard, showField, announce })
           <DialogTitle
             :id="titleId"
             as="h2"
-            class="cwa:m-0 cwa:min-w-0 cwa:flex-1 cwa:truncate cwa:text-title cwa:text-fg"
+            tabindex="-1"
+            class="cwa:m-0 cwa:min-w-0 cwa:flex-1 cwa:truncate cwa:text-title cwa:text-fg cwa:outline-none"
           >
             {{ title }}
           </DialogTitle>
