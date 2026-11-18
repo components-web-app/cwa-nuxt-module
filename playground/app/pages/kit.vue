@@ -929,7 +929,7 @@ const badgeTones = [
         </div>
         <h3>EditPlaceholder</h3>
         <p class="kit-note">
-          Shown only in edit mode, for an empty component, position or group, so there is something to select. Why it is empty is behind the ⓘ: hover, focus or tap it.
+          Shown only in edit mode, for an empty component, position or group, so there is something to select. It shows no text: its name is for screen readers, and why it is empty shows as a tooltip on hovering or focusing the cue inside it (the +), which it also describes.
         </p>
         <div class="kit-row">
           <CwaUiEditPlaceholder
@@ -941,10 +941,13 @@ const badgeTones = [
             info="Visitors see nothing here until a component is added. Use + to add one."
             class="kit-placeholder"
           >
-            <CwaUiButton
-              label="Add"
-              size="sm"
-            />
+            <template #default="{ describedBy }">
+              <CwaUiButton
+                label="Add"
+                size="sm"
+                :aria-describedby="describedBy"
+              />
+            </template>
           </CwaUiEditPlaceholder>
         </div>
         <h3>LinkPopover</h3>

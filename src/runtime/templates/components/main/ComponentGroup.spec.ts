@@ -674,7 +674,7 @@ describe('ComponentGroup', () => {
   })
 
   describe('edit placeholder (#461)', () => {
-    test('in edit mode an empty group shows the kit placeholder holding the hot spot, and nothing out of edit mode', () => {
+    test('in edit mode an empty group shows the kit placeholder holding the hot spot, described by the explanation, and nothing out of edit mode', () => {
       const emptyGroup = () => {
         vi.spyOn(mockCwaResources, 'getResource').mockImplementationOnce(() => ({ value: { data: { reference: 'anything' } } }))
         vi.spyOn(mockCwaResources, 'getComponentGroupByReference').mockImplementationOnce(() => ({ data: {} }))
@@ -686,6 +686,8 @@ describe('ComponentGroup', () => {
       expect(placeholder.exists()).toBe(true)
       expect(placeholder.attributes('info')).toBe('Visitors see nothing here until a component is added. Use + to add one.')
       expect(placeholder.find('[screen-reader-action="Add component position"]').exists()).toBe(true)
+      const [plus] = (placeholder.element as any).__vueParentComponent.slots.default({ describedBy: 'explanation' })
+      expect(plus.props['aria-describedby']).toBe('explanation')
 
       emptyGroup()
       expect(createWrapper({ signedIn: true, isEditing: false }).find('[label="Empty group"]').exists()).toBe(false)
@@ -696,7 +698,10 @@ describe('ComponentGroup', () => {
     test('a group for a component still being added shows the kit placeholder saying so, only in edit mode', () => {
       const wrapper = createWrapper({ location: NEW_RESOURCE_IRI })
 
-      expect(wrapper.find('[label="Empty group"][info="Add the component to populate this component group."]').exists()).toBe(true)
+      const placeholder = wrapper.find('[label="Empty group"][info="Add the component to populate this component group."]')
+      expect(placeholder.exists()).toBe(true)
+      const [plus] = (placeholder.element as any).__vueParentComponent.slots.default({ describedBy: 'explanation' })
+      expect(plus.props['aria-describedby']).toBe('explanation')
       expect(createWrapper({ location: NEW_RESOURCE_IRI, isEditing: false }).find('[label="Empty group"]').exists()).toBe(false)
     })
   })
