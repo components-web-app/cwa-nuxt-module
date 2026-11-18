@@ -374,7 +374,7 @@ describe('PageResourceAdminModal meta fields config', () => {
     vi.clearAllMocks()
   })
 
-  test('a meta field declaring type "input" is an input bound to its field, any other a select', () => {
+  test('a meta field declaring type "input" is an input bound to its field, any other a select whose null option is its None option', () => {
     const { wrapper } = setupPageData({
       pageDataConfig: {
         metaFields: [
@@ -388,7 +388,7 @@ describe('PageResourceAdminModal meta fields config', () => {
 
     expect(field(wrapper, Input, 'Subtitle').props('field')).toBe('subtitle')
     expect(field(wrapper, Select, 'Subtitle')).toBeUndefined()
-    expect(field(wrapper, Select, 'Category').props()).toMatchObject({ field: 'category', options: [{ label: 'A', value: 'a' }], nullable: true })
+    expect(field(wrapper, Select, 'Category').props()).toMatchObject({ field: 'category', options: [{ label: 'A', value: 'a' }, { label: 'None', value: null }], nullable: true })
     expect(field(wrapper, Select, 'Status').props('field')).toBe('status')
     expect(wrapper.get('[data-cwa-field="subtitle"] input').element).toHaveProperty('value', 'Hello')
   })

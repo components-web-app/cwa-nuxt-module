@@ -551,8 +551,8 @@ const pageOptions = computed<MenuEntry[]>(() => (dynamicPages.value ?? []).map(p
   value: page['@id'],
 })))
 
-function metaFieldOptions(options: SelectOption[] | undefined): MenuEntry[] {
-  return (options ?? []).filter(option => option.value !== null && option.value !== undefined).map(option => ({ label: option.label, value: String(option.value) }))
+function metaFieldOptions(options: SelectOption[] | undefined) {
+  return (options ?? []).map(option => ({ label: option.label, value: option.value === null || option.value === undefined ? null : String(option.value) }))
 }
 
 const { pageDataConfig } = useDataType(computed(() => resource.value?.['@type']))
