@@ -309,6 +309,11 @@
               :class="textLink"
               data-testid="version-api"
             >{{ displayApiVersion || 'Unknown' }}</a>
+            <span
+              v-if="apiVersionRef"
+              class="cwa:ml-2 cwa:font-mono cwa:text-fg-muted"
+              data-testid="version-api-ref"
+            >{{ apiVersionRef }}</span>
           </dd>
         </dl>
       </CwaUiFormSection>
@@ -390,6 +395,7 @@ const orphanNotice = computed(() => {
 })
 
 const apiVersion = ref('')
+const apiVersionRef = ref('')
 
 const moduleLink = computed(() => `https://www.npmjs.com/package/${$cwa.currentModulePackageInfo.name}/v/${$cwa.currentModulePackageInfo.version}`)
 
@@ -405,33 +411,23 @@ definePageMeta({
 async function setApiVersion() {
   const docs = await $cwa.getApiDocumentation()
   const version = docs?.docs?.info.version
-  if (!version) {
-    apiVersion.value = ''
-    return
-  }
-  const matches: RegExpMatchArray | null = version.match(/ \(([a-zA-Z0-9\-@]+)\)$/)
-  apiVersion.value = matches ? (matches[1] || version) : version
-}
-
-function truncateVersion(version: string) {
-  return version.length > 9
-    ? `${version.substring(0, 3)}..${version.substring(version.length - 4)}`
-    : version
+  const matches = version?.match(/\(([^\s()@]+)(?:@([^\s()]+))?\)$/)
+  apiVersion.value = matches ? matches[1]! : (version || '')
+  apiVersionRef.value = matches?.[2]?.substring(0, 8) || ''
 }
 
 const displayApiVersion = computed(() => {
   if (!apiVersion.value) {
     return ''
   }
-  const unstablePostfix = apiVersion.value.substring(0, 3) === 'dev' ? ' (unstable)' : ''
-  return truncateVersion(apiVersion.value) + unstablePostfix
+  return apiVersion.value + (apiVersion.value.startsWith('dev-') ? ' (unstable)' : '')
 })
 
-const apiPackagistLink = computed(() => `https://packagist.org/packages/components-web-app/api-components-bundle#${apiVersion.value.split('@')[0]}`)
+const apiPackagistLink = computed(() => `https://packagist.org/packages/components-web-app/api-components-bundle#${apiVersion.value}`)
 
 const displayAppVersion = computed(() => {
   const { name, version } = $cwa.currentModulePackageInfo
-  return truncateVersion(version) + (name.endsWith('edge') ? ' (unstable)' : '')
+  return version + (name.endsWith('edge') ? ' (unstable)' : '')
 })
 
 const url = useRequestURL()
