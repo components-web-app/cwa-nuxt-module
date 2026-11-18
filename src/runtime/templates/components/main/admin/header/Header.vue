@@ -3,6 +3,7 @@
     <div ref="spacer" />
     <div
       ref="header"
+      data-cwa-sticky
       class="cwa:section cwa:border-0 cwa:border-b-2 cwa:border-b-light/30 cwa:fixed cwa:z-manager cwa:flex cwa:items-center cwa:w-full cwa:h-18 cwa:top-0 cwa:dark-blur"
       :class="highlightClass"
       @click.stop

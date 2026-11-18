@@ -51,6 +51,7 @@ import KitLabs from '../kit/KitLabs.vue'
 import KitImageAlt from '../kit/KitImageAlt.vue'
 import { useKitWorkbench } from '../kit/workbench-state'
 import KitPractice from '../kit/KitPractice.vue'
+import KitRevealSim from '../kit/KitRevealSim.vue'
 import { useKitTab } from '../kit/kit-tab'
 
 definePageMeta({
@@ -1169,6 +1170,16 @@ const badgeTones = [
             </template>
           </CwaUiDialog>
         </div>
+      </section>
+
+      <section aria-labelledby="kit-reveal">
+        <h2 id="kit-reveal">
+          Revealed content
+        </h2>
+        <p class="kit-note">
+          <code>CwaReveal</code> wraps content a choice shows. When the admin's choice reveals it outside the scrolling area, the area scrolls by the least amount that brings it into view, clear of sticky rows. Nothing moves when it is already in view, on opening, or when data shows it. Focus stays on the control. Try: open the slide-over, scroll to the top, and choose Nested under: Page data.
+        </p>
+        <KitRevealSim />
       </section>
 
       <section aria-labelledby="kit-confirm">

@@ -173,27 +173,29 @@
             label="Nested under"
             :options="parentTypeOptions"
           />
-          <CwaUiSelect
-            v-if="parentType === 'page'"
-            field="parentPage"
-            label="Parent page"
-            :options="parentPageOptions"
-            nullable
-          />
-          <template v-if="parentType === 'data'">
+          <CwaReveal :when="parentType === 'page'">
+            <CwaUiSelect
+              field="parentPage"
+              label="Parent page"
+              :options="parentPageOptions"
+              nullable
+            />
+          </CwaReveal>
+          <CwaReveal :when="parentType === 'data'">
             <CwaUiSelect
               v-model="selectedParentDataType"
               label="Parent data type"
               :options="dataTypeOptions"
             />
-            <CwaUiSelect
-              v-if="selectedParentDataType"
-              field="parentPageData"
-              label="Parent data"
-              :options="dataInstanceOptions"
-              nullable
-            />
-          </template>
+            <CwaReveal :when="!!selectedParentDataType">
+              <CwaUiSelect
+                field="parentPageData"
+                label="Parent data"
+                :options="dataInstanceOptions"
+                nullable
+              />
+            </CwaReveal>
+          </CwaReveal>
         </CwaUiFormSection>
       </template>
     </template>
@@ -278,6 +280,7 @@ import CwaUiInput from '#cwa/templates/components/ui/Input.vue'
 import CwaUiTextarea from '#cwa/templates/components/ui/Textarea.vue'
 import CwaUiSelect from '#cwa/templates/components/ui/Select.vue'
 import CwaUiSegmented from '#cwa/templates/components/ui/Segmented.vue'
+import CwaReveal from '#cwa/templates/components/core/ui/Reveal.vue'
 import CwaUiButton from '#cwa/templates/components/ui/Button.vue'
 import CwaUiAlert from '#cwa/templates/components/ui/Alert.vue'
 import EyeGlyph from '#cwa/templates/components/ui/icon/EyeIcon.vue'
