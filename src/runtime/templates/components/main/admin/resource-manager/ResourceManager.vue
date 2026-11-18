@@ -21,6 +21,7 @@ import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/resources/resourc
 import BarSummary from '#cwa/templates/components/core/admin/BarSummary.vue'
 import { createAnnouncer } from '#cwa/templates/components/core/ui/field-context'
 import { announceKey, managerTabMountedKey } from '#cwa/templates/components/core/ui/field-keys'
+import { resourceStackLevels } from '#cwa/templates/components/core/ui/resource-stack'
 
 const ComponentUsageBadge = defineAsyncComponent(() => import('#cwa/templates/components/main/admin/resource-manager/cta/ComponentUsageBadge.vue'))
 const SharedInstancesHighlight = defineAsyncComponent(() => import('#cwa/templates/components/main/admin/resource-manager/SharedInstancesHighlight.vue'))
@@ -35,7 +36,8 @@ const managerHolder = useTemplateRef<HTMLElement | null>('managerHolder')
 const allTabsMeta = ref<CwaResourceManagerTabOptions[]>([])
 const selectedIndex = ref(0)
 const isOpen = ref(false)
-const virtualElement = ref({ getBoundingClientRect: () => ({}) })
+const contextPoint = shallowRef<{ x: number, y: number, key: number }>()
+let contextKey = 0
 const managerTabs = useTemplateRef<typeof ManagerTabs | null>('managerTabs')
 const currentManagerTabs = ref<ManagerTab[] | undefined>()
 const cachedPosition = { top: 0, left: 0 }
@@ -62,12 +64,7 @@ function showDefaultContext({ top, left }: ContextPosition) {
 function openContext({ top, left }: ContextPosition) {
   cachedPosition.top = top
   cachedPosition.left = left
-  virtualElement.value.getBoundingClientRect = () => ({
-    width: 0,
-    height: 0,
-    top,
-    left,
-  })
+  contextPoint.value = { x: left, y: top, key: ++contextKey }
   isOpen.value = true
 }
 
@@ -85,8 +82,12 @@ function contextMenuHandler(e: MouseEvent, type: 'page' | 'layout') {
     isOpen.value = false
     return
   }
-  e.preventDefault()
   completeStack(e, type, true)
+  if (!resourceStackLevels($cwa.admin.resourceStackManager.contextStack.value).length) {
+    isOpen.value = false
+    return
+  }
+  e.preventDefault()
   openContext(pos)
 }
 
@@ -290,7 +291,7 @@ defineExpose({
   <CwaAdminResourceManagerContextMenu
     v-if="showAdmin"
     v-model="isOpen"
-    :virtual-element="virtualElement"
+    :point="contextPoint"
   />
   <AddComponentDialog />
   <SharedInstancesHighlight v-if="showSharedInstances" />

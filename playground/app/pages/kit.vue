@@ -34,6 +34,7 @@ import type { CwaResource } from '../../../src/runtime/resources/resource-utils'
 import type { MenuEntry } from '../../../src/runtime/templates/components/core/ui/menu-entries'
 import Toast from '../../../src/runtime/templates/components/core/ui/Toast.vue'
 import FormGroup from '../../../src/runtime/templates/components/core/ui/FormGroup.vue'
+import ResourceStack from '../../../src/runtime/templates/components/core/ui/ResourceStack.vue'
 import type { CwaToastOptions } from '../../../src/runtime/composables/cwa-toast'
 import { badgeTintPercent } from '../../../src/runtime/templates/components/ui/kit-looks'
 import { kitColourLabel, kitColourTokens, kitContrastPairs, kitThemeStyle, kitTokenCss, measureKitPair } from '../../../src/tailwind/kit-tokens'
@@ -181,6 +182,30 @@ const menuOptions: MenuEntry[] = [
   { group: null, items: [{ label: 'Add to start or end', value: 'add-full', disabled: true, disabledReason: 'Main content is full: 6 of 6 components.' }] },
   { group: null, items: [{ label: 'Clone', value: 'clone' }, { label: 'Move', value: 'move' }, { label: 'Discard', value: 'discard', tone: 'danger' }] },
 ]
+
+const stackNames = ['Rich text', 'Component position', 'Left column group', 'Two columns', 'Component position', 'Tab panel group', 'Tabs', 'Component position', 'Main content group']
+const stackLevels = stackNames.map((label, index) => ({ key: String(index), label }))
+const stackAt = ref<HTMLElement | { x: number, y: number }>()
+const stackChoice = ref('')
+const stackKey = ref(0)
+const stackByKeyboard = ref(false)
+
+function openStackOver(event: MouseEvent) {
+  stackKey.value++
+  stackByKeyboard.value = event.detail === 0
+  stackAt.value = event.currentTarget as HTMLElement
+}
+
+function openStackAtPointer(event: MouseEvent) {
+  event.preventDefault()
+  stackKey.value++
+  stackByKeyboard.value = false
+  stackAt.value = { x: event.clientX, y: event.clientY }
+}
+
+function chooseStackLevel(key: string) {
+  stackChoice.value = stackLevels[Number(key)]!.label
+}
 
 const dialogOpen = ref(false)
 const dialogForm = fakeDialogForm({ reference: 'Shaker kitchens', title: 'Shaker kitchens | Hand-built', metaDescription: 'Hand-built shaker kitchens, made to measure.', isReachableWithoutRoute: false }, { title: kitPeers })
@@ -810,6 +835,39 @@ const badgeTones = [
         />
       </section>
 
+      <section aria-labelledby="kit-resource-stack">
+        <h2 id="kit-resource-stack">
+          Resource stack
+        </h2>
+        <p class="kit-note">
+          Right-click the area, or open it over the button as the header's path selector does. The innermost box's corner sits on the pointer. Last chosen: <output data-testid="kit-stack-choice">{{ stackChoice || 'nothing yet' }}</output>
+        </p>
+        <div class="kit-row">
+          <div
+            class="kit-stack-area"
+            data-testid="kit-stack-area"
+            @contextmenu="openStackAtPointer"
+          >
+            Right-click here
+          </div>
+          <CwaUiButton
+            label="Rich text"
+            size="sm"
+            @click="openStackOver"
+          />
+        </div>
+        <ResourceStack
+          v-if="stackAt"
+          :key="stackKey"
+          :levels="stackLevels"
+          selected="0"
+          :at="stackAt"
+          :keyboard="stackByKeyboard"
+          :select="chooseStackLevel"
+          @close="stackAt = undefined"
+        />
+      </section>
+
       <section aria-labelledby="kit-bar">
         <h2 id="kit-bar">
           Manager row
@@ -1219,6 +1277,15 @@ code {
   height: 1.5rem;
   flex: none;
   box-shadow: inset 0 0 0 1px var(--cwa-color-line);
+}
+
+.kit-stack-area {
+  display: grid;
+  place-items: center;
+  width: 16rem;
+  height: 8rem;
+  border: 1px dashed var(--cwa-color-line-dash);
+  color: var(--cwa-color-fg-muted);
 }
 
 .kit-row {

@@ -1,87 +1,93 @@
 <template>
-  <div
-    v-if="stackItem && stackSize"
-    ref="pathSelector"
-  >
-    <div
-      class="cwa:py-1.5 cwa:px-3 cwa:bg-neutral-800 cwa:border cwa:border-dashed cwa:text-white"
-      :class="[isEnabled ? 'cwa:hover:bg-dark cwa:cursor-pointer' : '']"
-      @click="openMenu"
+  <div v-if="name">
+    <button
+      ref="selector"
+      type="button"
+      data-testid="path-selector"
+      :aria-haspopup="hasParents ? 'dialog' : undefined"
+      :aria-expanded="hasParents ? isOpen : undefined"
+      :aria-controls="hasParents && isOpen ? stack?.contentId : undefined"
+      :aria-disabled="hasParents ? undefined : 'true'"
+      :aria-label="hasParents ? `${name}, choose a parent` : undefined"
+      class="cwa:flex cwa:min-h-9 cwa:items-center cwa:gap-2 cwa:border cwa:border-dashed cwa:border-line-dash cwa:bg-neutral-800 cwa:px-3 cwa:py-1.5 cwa:text-label cwa:text-white cwa:outline-1 cwa:outline-transparent cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-accent-fg"
+      :class="hasParents ? 'cwa:cursor-pointer cwa:hover:border-solid cwa:hover:border-fg cwa:hover:bg-field-hover' : 'cwa:cursor-default'"
+      @click="toggle"
     >
-      <span :class="{ 'cwa:opacity-0 cwa:duration-200': isOpen }">{{ stackItem.displayName }}</span>
-    </div>
-    <Transition v-bind="transitions.context">
-      <div
-        v-if="isOpen"
-        class="cwa:absolute cwa:top-0 cwa:left-1/2 cwa:-translate-x-1/2 cwa:min-w-full cwa:box-content cwa:inline-block"
-        :style="{ marginTop: marginTop, transformOrigin: tOrig }"
-      >
-        <div class="cwa:relative cwa:bg-dark cwa:inline-block">
-          <resource-context-item
-            :index="stackSize - 1"
-            :root-width="selectorWidth"
-            :use-current-stack="true"
-            @click="index => selectResource(index)"
-          />
-        </div>
-      </div>
-    </Transition>
+      <span :class="{ 'cwa:invisible': isOpen }">{{ name }}</span>
+      <span
+        v-if="hasParents"
+        aria-hidden="true"
+        class="cwa:text-fg-muted"
+      >▾</span>
+    </button>
+    <ResourceStack
+      v-if="isOpen && selector"
+      ref="stack"
+      :levels="levels"
+      :selected="levels[0]!.key"
+      :at="selector"
+      :return-to="selector"
+      :min-width="selector.offsetWidth"
+      :avoid="avoid"
+      :keyboard="openedByKeyboard"
+      :select="select"
+      @close="isOpen = false"
+    />
+    <span
+      role="status"
+      aria-live="polite"
+      class="cwa:sr-only"
+      data-testid="path-selector-announcer"
+    >{{ announcer.message.value }}</span>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, useTemplateRef } from 'vue'
-import { onClickOutside } from '@vueuse/core'
-import ResourceContextItem from '../../_common/ResourceContextItem.vue'
+import { computed, defineAsyncComponent, provide, ref, useTemplateRef, watch } from 'vue'
+import { useRouter } from '#app/composables/router'
+import { resourceStackLevels } from '#cwa/templates/components/core/ui/resource-stack'
+import { createAnnouncer } from '#cwa/templates/components/core/ui/field-context'
+import { announceKey } from '#cwa/templates/components/core/ui/field-keys'
 import { useCwa } from '#cwa/composables/cwa'
-import { useTransitions } from '#cwa/composables/transitions'
+
+const ResourceStack = defineAsyncComponent(() => import('#cwa/templates/components/core/ui/ResourceStack.vue'))
+
+const { avoid } = defineProps<{ avoid?: HTMLElement | null }>()
 
 const $cwa = useCwa()
-const transitions = useTransitions()
+const stackManager = $cwa.admin.resourceStackManager
+const router = useRouter()
+const announcer = createAnnouncer()
+provide(announceKey, announcer.announce)
 
 const isOpen = ref(false)
-const pathSelector = useTemplateRef<HTMLElement | null>('pathSelector')
+const openedByKeyboard = ref(false)
+const selector = useTemplateRef<HTMLButtonElement | null>('selector')
+const stack = useTemplateRef<{ close: (refocus: boolean) => void, contentId?: string } | null>('stack')
 
-const stackSize = computed(() => $cwa.admin.resourceStackManager.resourceStack.value.length)
-const spacingStackSize = computed(() => stackSize.value - 1)
-const tOrig = computed(() => {
-  const pathSelectorEl = pathSelector.value
-  if (!pathSelectorEl) {
-    return
-  }
-  const buttonOffset = Math.round(pathSelectorEl.offsetHeight / 2)
-  return `50% calc(${buttonOffset}px + ${stackSize.value}px + ${spacingStackSize.value * 0.25}rem)`
+const levels = computed(() => resourceStackLevels(stackManager.resourceStack.value))
+const name = computed(() => {
+  const first = stackManager.resourceStack.value[0]
+  return first && (first.displayName || first.iri)
 })
+const hasParents = computed(() => levels.value.length > 1)
 
-const isEnabled = computed(() => {
-  return stackSize.value > 1
-})
-const marginTop = computed(() => {
-  return spacingStackSize.value ? `calc(0px - ${spacingStackSize.value}px - ${spacingStackSize.value * 0.25}rem)` : 0
-})
-const stackItem = computed(() => {
-  return $cwa.admin.resourceStackManager.resourceStack.value[0]
-})
-const selectorWidth = computed(() => {
-  const pathSelectorEl = pathSelector.value
-  // reactive to display name changing
-  return stackItem.value?.displayName && pathSelectorEl ? pathSelectorEl.clientWidth : undefined
-})
-
-function selectResource(index: number) {
-  $cwa.admin.resourceStackManager.selectStackIndex(index, false)
-  isOpen.value = false
-}
-
-function openMenu() {
-  if (!isEnabled.value) {
-    isOpen.value = false
-    return
-  }
-  isOpen.value = true
-}
-
-onClickOutside(pathSelector, () => {
+watch([() => $cwa.resources.displayPageIri.value, () => router.currentRoute.value.fullPath], () => {
   isOpen.value = false
 })
+
+async function select(key: string) {
+  const item = stackManager.resourceStack.value[Number(key)]
+  await stackManager.selectStackIndex(Number(key), false)
+  return stackManager.currentStackItem.value?.iri === item?.iri
+}
+
+function toggle(event: MouseEvent) {
+  if (isOpen.value) {
+    stack.value ? stack.value.close(true) : (isOpen.value = false)
+    return
+  }
+  openedByKeyboard.value = event.detail === 0
+  isOpen.value = hasParents.value
+}
 </script>
