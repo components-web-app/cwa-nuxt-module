@@ -1580,7 +1580,11 @@ test.describe('in-page editing', () => {
     await page.getByText('Draft only text').first().waitFor()
     const placeholder = page.getByRole('group', { name: 'Empty group' }).first()
     await placeholder.waitFor()
-    assert((await placeholder.evaluate(element => element.innerText)).trim() === '', 'The empty group shows text')
+    assert((await placeholder.evaluate((element) => {
+      const shown = element.cloneNode(true)
+      shown.querySelectorAll('.cwa\\:sr-only').forEach(hidden => hidden.remove())
+      return shown.textContent
+    })).trim() === '', 'The empty group shows text')
     assert(await page.getByTestId('edit-placeholder-tooltip').count() === 0, 'The empty group shows its explanation before the + is hovered')
     await placeholder.getByRole('button', { name: 'Add component position' }).hover()
     await page.getByTestId('edit-placeholder-tooltip').filter({ hasText: 'Visitors see nothing here' }).waitFor()
