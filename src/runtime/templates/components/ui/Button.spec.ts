@@ -81,10 +81,13 @@ describe('CwaUiButton (#456)', () => {
     expect(small.classes()).toEqual(expect.arrayContaining(['cwa:h-8', 'cwa:w-8', 'cwa:pointer-coarse:h-hit', 'cwa:pointer-coarse:w-hit']))
   })
 
-  test('an icon-only button draws its icon at 5/9 of the control, 20px in a 36px button and 24px in a dialog\'s 44px one, without changing its box; a small one keeps 16px', () => {
-    const wrapper = mount(Button, { props: { label: 'View', icon: Plus, iconOnly: true, variant: 'ghost' } })
-    expect(wrapper.get('[data-testid="plus"]').classes()).toContain('cwa:size-[calc(var(--cwa-spacing-control)*5/9)]')
-    expect(wrapper.classes()).toEqual(expect.arrayContaining(['cwa:h-control', 'cwa:w-control']))
+  test('an icon-only button keeps the 16px row-action icon; a dialog header\'s asks for the large one, 5/9 of the control (24px in its 44px button), without changing its box', () => {
+    const wrapper = mount(Button, { props: { label: 'Edit', icon: Plus, iconOnly: true, variant: 'ghost' } })
+    expect(wrapper.get('[data-testid="plus"]').classes()).toContain('cwa:size-4')
+
+    const large = mount(Button, { props: { label: 'View', icon: Plus, iconOnly: true, variant: 'ghost', largeIcon: true } })
+    expect(large.get('[data-testid="plus"]').classes()).toContain('cwa:size-[calc(var(--cwa-spacing-control)*5/9)]')
+    expect(large.classes()).toEqual(expect.arrayContaining(['cwa:h-control', 'cwa:w-control']))
 
     const small = mount(Button, { props: { label: 'View', icon: Plus, iconOnly: true, size: 'sm' } })
     expect(small.get('[data-testid="plus"]').classes()).toContain('cwa:size-4')

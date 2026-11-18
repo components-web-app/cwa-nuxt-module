@@ -373,13 +373,13 @@ defineExpose({ requestClose, confirmDiscard, showField, announce })
         :class="placement === 'right' ? slideOver : [centred, widths[size]]"
       >
         <header
-          class="cwa:flex cwa:h-[3.75rem] cwa:shrink-0 cwa:items-center cwa:gap-2 cwa:border-b-3 cwa:border-solid cwa:ps-6 cwa:pe-3"
+          class="cwa:flex cwa:h-[3.75rem] cwa:shrink-0 cwa:items-center cwa:gap-1 cwa:border-b-3 cwa:border-solid cwa:ps-6 cwa:pe-3"
           :class="kind ? kindEdges[kind.tone] : 'cwa:border-line'"
         >
           <DialogTitle
             :id="titleId"
             as="h2"
-            class="cwa:m-0 cwa:min-w-0 cwa:flex-1 cwa:truncate cwa:text-title cwa:text-fg"
+            class="cwa:m-0 cwa:me-2 cwa:min-w-0 cwa:flex-1 cwa:truncate cwa:text-title cwa:text-fg"
           >
             {{ title }}
           </DialogTitle>
@@ -387,7 +387,7 @@ defineExpose({ requestClose, confirmDiscard, showField, announce })
             v-if="kind?.label"
             :id="kindId"
             data-testid="dialog-kind"
-            class="cwa:shrink-0 cwa:text-helper cwa:text-fg-muted"
+            class="cwa:me-2 cwa:shrink-0 cwa:text-helper cwa:text-fg-muted"
           >{{ kind.label }}</span>
           <slot name="header-actions" />
           <button

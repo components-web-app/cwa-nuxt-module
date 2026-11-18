@@ -18,6 +18,7 @@
     <template #header-actions>
       <CwaUiSelect
         v-if="isDisplayingPage"
+        class="cwa:me-2"
         :model="pageTypeModel"
         label="Page type"
         label-hidden
@@ -29,6 +30,7 @@
         v-if="!hideViewLink && !isAdding"
         variant="ghost"
         icon-only
+        large-icon
         :icon="EyeGlyph"
         label="View page on site"
         data-testid="page-view-on-site"

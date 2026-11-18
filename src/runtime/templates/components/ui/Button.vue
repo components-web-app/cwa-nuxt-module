@@ -15,6 +15,7 @@ const {
   size = 'md',
   icon,
   iconOnly = false,
+  largeIcon = false,
   loading = false,
   disabled = false,
   disabledReason,
@@ -31,6 +32,8 @@ const {
   size?: 'sm' | 'md'
   icon?: Component
   iconOnly?: boolean
+  /** @internal */
+  largeIcon?: boolean
   loading?: boolean
   disabled?: boolean
   disabledReason?: string
@@ -179,7 +182,7 @@ function onClick(event: MouseEvent) {
       v-else-if="icon"
       aria-hidden="true"
       class="cwa:shrink-0"
-      :class="iconOnly && size !== 'sm' ? 'cwa:size-[calc(var(--cwa-spacing-control)*5/9)]' : 'cwa:size-4'"
+      :class="largeIcon ? 'cwa:size-[calc(var(--cwa-spacing-control)*5/9)]' : 'cwa:size-4'"
     />
     <template v-if="!iconOnly && shortLabel">
       <span

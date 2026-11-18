@@ -11,6 +11,7 @@ import Input from '#cwa/templates/components/ui/Input.vue'
 import Select from '#cwa/templates/components/ui/Select.vue'
 import Toggle from '#cwa/templates/components/ui/Toggle.vue'
 import Segmented from '#cwa/templates/components/ui/Segmented.vue'
+import Button from '#cwa/templates/components/ui/Button.vue'
 import EyeGlyph from '#cwa/templates/components/ui/icon/EyeIcon.vue'
 import * as cwaComposable from '#cwa/composables/cwa'
 import { componentNames } from '#components'
@@ -276,6 +277,7 @@ describe('PageResourceAdminModal on the kit dialog (#461)', () => {
 
     const select = pageType(wrapper)
     expect(wrapper.get('[data-testid="stub-header"]').element.contains(select.element)).toBe(true)
+    expect(select.classes()).toContain('cwa:me-2')
     expect(select.props()).toMatchObject({ labelHidden: true })
     expect(select.props('options')).toEqual([
       { label: 'Static', value: 'static', dot: 'cwa:bg-type-static' },
@@ -407,6 +409,7 @@ describe('PageResourceAdminModal on the kit dialog (#461)', () => {
     requestClose.mockResolvedValueOnce(true)
     const { wrapper } = setup({ hideViewLink: false })
 
+    expect(wrapper.findAllComponents(Button).find(button => button.attributes('data-testid') === 'page-view-on-site')!.props('largeIcon')).toBe(true)
     await wrapper.get('[data-testid="page-view-on-site"]').trigger('click')
     await flushPromises()
 
