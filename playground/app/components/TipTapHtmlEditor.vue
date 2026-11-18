@@ -246,7 +246,10 @@ function build(shared?: Shared, wantsFocus = false) {
     extensions: extensions(shared),
     onCreate: ({ editor: created }) => {
       rendered = true
-      focus && created.chain().setTextSelection(caret ?? created.state.selection).focus(null, { scrollIntoView: false }).run()
+      if (focus && !focusTaken()) {
+        created.commands.setTextSelection(caret ?? created.state.selection)
+        created.view.focus()
+      }
     },
     onUpdate: ({ editor: changed, transaction }) => {
       if (!rendered || !editable) {

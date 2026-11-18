@@ -1718,8 +1718,9 @@ test('64. by keyboard alone a rich-text component is reached with Tab, selected 
   await page.getByTestId('component-menu').waitFor()
   await page.getByRole('textbox', { name: 'Content, Body Text' }).filter({ hasText: texts.source }).waitFor()
 
-  await page.keyboard.press('F6')
   const tablist = page.getByRole('tablist', { name: 'Body Text settings' })
+  await tablist.getByRole('tab', { selected: true }).waitFor()
+  await page.keyboard.press('F6')
   await eventually(() => tablist.evaluate(el => el.contains(document.activeElement)), 'F6 did not move focus to the manager bar\'s tabs')
   for (let moves = 0; moves < 8 && (await page.evaluate(() => document.activeElement?.textContent?.trim())) !== 'Publish'; moves++) {
     await page.keyboard.press('ArrowRight')

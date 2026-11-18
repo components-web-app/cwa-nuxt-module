@@ -524,6 +524,10 @@
   width: var(--cwa-spacing-control);
   height: var(--cwa-spacing-control);
 }
+.cwa\:size-full {
+  width: 100%;
+  height: 100%;
+}
 .cwa\:size-hit {
   width: var(--cwa-spacing-hit);
   height: var(--cwa-spacing-hit);

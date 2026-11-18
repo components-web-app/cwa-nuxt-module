@@ -105,10 +105,32 @@ function remove() {
           class="cwa:size-control cwa:shrink-0 cwa:bg-field cwa:object-cover cwa:pointer-coarse:size-hit"
         >
         <span
-          v-else
+          v-else-if="file"
           aria-hidden="true"
           class="cwa:size-control cwa:shrink-0 cwa:bg-field cwa:pointer-coarse:size-hit"
         />
+        <span
+          v-else
+          aria-hidden="true"
+          data-testid="file-thumbnail-empty"
+          class="cwa:size-control cwa:shrink-0 cwa:bg-field cwa:pointer-coarse:size-hit"
+        >
+          <svg
+            viewBox="0 0 1 1"
+            preserveAspectRatio="none"
+            class="cwa:block cwa:size-full cwa:text-fg-muted"
+          >
+            <line
+              x1="0"
+              y1="1"
+              x2="1"
+              y2="0"
+              stroke="currentColor"
+              stroke-width="1.5"
+              vector-effect="non-scaling-stroke"
+            />
+          </svg>
+        </span>
         <span
           class="cwa:min-w-0 cwa:max-w-[6rem] cwa:truncate cwa:text-control cwa:sm:max-w-[12rem]"
           :class="file ? 'cwa:text-fg' : 'cwa:text-fg-muted'"
