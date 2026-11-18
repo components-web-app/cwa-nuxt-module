@@ -768,6 +768,9 @@
 .cwa\:w-\[90vw\] {
   width: 90vw;
 }
+.cwa\:w-\[min\(22rem\,calc\(100vw-1rem\)\)\] {
+  width: min(22rem, calc(100vw - 1rem));
+}
 .cwa\:w-\[min\(24rem\,calc\(100vw-2rem\)\)\] {
   width: min(24rem, calc(100vw - 2rem));
 }
