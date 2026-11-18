@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue'
 import { PopoverAnchor, PopoverArrow, PopoverContent, PopoverPortal, PopoverRoot } from 'reka-ui'
 import Spinner from '../../ui/Spinner.vue'
 import StateGlyph from '../ui/StateGlyph.vue'
 import type { GlyphKind } from '../ui/StateGlyph.vue'
 import { useAnnounce } from '../ui/field-context'
 import { useCwa } from '#cwa/composables/cwa'
+import { registerBarStatus } from '#cwa/admin/inline-editors'
 import { badgeFor, issueShort, issueText } from '#cwa/admin/field-badge'
 import { usePublishState } from '#cwa/admin/publish-state'
 import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/resources/resource-utils'
@@ -82,7 +83,16 @@ watch(iri, () => {
   phase.value = busy.value ? 'saving' : 'rest'
 })
 
-onBeforeUnmount(clearTimers)
+const button = useTemplateRef<HTMLButtonElement>('button')
+let unregisterStatus: (() => void) | undefined
+onMounted(() => {
+  unregisterStatus = button.value ? registerBarStatus($cwa, button.value) : undefined
+})
+
+onBeforeUnmount(() => {
+  clearTimers()
+  unregisterStatus?.()
+})
 
 const resourceType = computed(() => iri.value ? getResourceTypeFromIri(iri.value) : undefined)
 
@@ -166,6 +176,7 @@ function showFirst() {
   >
     <PopoverAnchor as-child>
       <button
+        ref="button"
         type="button"
         :aria-label="actionable ? actionLabel : `Status: ${status.full}`"
         :aria-haspopup="actionable ? undefined : 'dialog'"

@@ -81,3 +81,21 @@ export function returnFromInlineEditor(editor: InlineEditor) {
   target.focus()
   return true
 }
+
+const barStatuses = new WeakMap<object, HTMLElement>()
+
+export function registerBarStatus(owner: object, element: HTMLElement) {
+  barStatuses.set(owner, element)
+  return () => {
+    barStatuses.get(owner) === element && barStatuses.delete(owner)
+  }
+}
+
+export function focusBarStatus(owner: object) {
+  const element = barStatuses.get(owner)
+  if (!element) {
+    return false
+  }
+  element.focus()
+  return true
+}

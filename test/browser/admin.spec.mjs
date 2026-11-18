@@ -1,5 +1,5 @@
 import * as Y from 'yjs'
-import { test } from './fixtures.mjs'
+import { expect, test } from './fixtures.mjs'
 import { articleTexts, seedArticlePages, texts } from './seed.mjs'
 
 const notFoundResource = /^Failed to load resource: the server responded with a status of 404/
@@ -1459,7 +1459,7 @@ test.describe('in-page editing', () => {
     await eventually(async () => await sheet.count() === 0, 'Close did not shut the sheet')
   })
 
-  test('57. a title is edited where it sits on the page: Enter saves it', async ({ cwa: t }) => {
+  test('57. a title is edited where it sits on the page: Enter saves it, and while a save has failed Escape goes to the bar status', async ({ cwa: t }) => {
     const { page, seed } = t
     const title = (await t.api.create('/component/titles', { title: 'Title on the page' }))['@id']
     await t.api.create('/_/component_positions', { componentGroup: seed.iris.pageAGroup, component: title })
@@ -1473,6 +1473,27 @@ test.describe('in-page editing', () => {
 
     await eventually(() => t.rehearsal.writes.find(w => w.method === 'PATCH' && w.path.startsWith(title) && w.body?.title === 'Title edited on the page'), `No PATCH of the title: ${JSON.stringify(t.rehearsal.writes)}`)
     await page.getByTestId('inline-edit-value').filter({ hasText: 'Title edited on the page' }).waitFor()
+    await t.settle()
+
+    t.allowConsoleErrors(/^Failed to load resource: the server responded with a status of 500/)
+    let refused = false
+    await page.route(url => url.pathname.includes('/component/titles/'), (route) => {
+      if (refused || route.request().method() !== 'PATCH') {
+        return route.fallback()
+      }
+      refused = true
+      return route.fulfill({ status: 500, contentType: 'application/ld+json', body: '{}' })
+    })
+    await page.getByTestId('inline-edit-value').filter({ hasText: 'Title edited on the page' }).click()
+    await input.fill('Title that will not save')
+    await input.press('Enter')
+    const status = page.getByTestId('bar-summary')
+    await eventually(async () => await status.getAttribute('data-state') === 'error', 'The bar status never showed the failed save')
+
+    await page.getByTestId('inline-edit-value').filter({ hasText: 'Title that will not save' }).click()
+    expect(await input.getAttribute('aria-invalid')).toBe('true')
+    await input.press('Escape')
+    await eventually(() => status.evaluate(el => document.activeElement === el), 'Escape from the failed editor did not go to the bar status')
   })
 
   test('58. the Content tab\'s Edit on page focuses the rich-text editor on the page, and Escape there returns to the button', async ({ cwa: t }) => {
