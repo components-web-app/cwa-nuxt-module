@@ -71,6 +71,10 @@ watch(fieldName, (field) => {
   unregister = field && surface ? surface.register(field, label) : undefined
 }, { immediate: true })
 onBeforeUnmount(() => unregister?.())
+
+watch(() => inactive, (now) => {
+  now && model?.blur?.()
+})
 </script>
 
 <template>

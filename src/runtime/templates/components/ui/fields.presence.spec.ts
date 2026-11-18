@@ -32,6 +32,7 @@ function presenceModel<T>(initial: T, peers: FocusedPeer[] = []) {
     ...fakeFieldModel(initial),
     focusedBy: computed(() => focused.value),
     focusListeners: listeners,
+    blur: vi.fn(),
   }
 }
 
@@ -99,6 +100,17 @@ describe.each(cases)('$name shows co-editing presence (#461)', (item) => {
     expect(model.focusListeners.onFocusin).toHaveBeenCalledOnce()
     expect(model.focusListeners.onPointerdown).toHaveBeenCalledOnce()
     expect(model.focusListeners.onFocusout).toHaveBeenCalledOnce()
+  })
+
+  test('a focused field that becomes disabled reports leaving it (#476 review 3)', async () => {
+    const model = presenceModel(item.value)
+    const wrapper = mountCase(item, model)
+    await wrapper.get(item.control).trigger('focusin')
+    expect(model.blur).not.toHaveBeenCalled()
+
+    await wrapper.setProps({ disabled: true })
+
+    expect(model.blur).toHaveBeenCalledOnce()
   })
 
   test('a disabled field reports nothing, and still shows who is in it', async () => {

@@ -98,16 +98,12 @@ export const useCwaResourceModel = <T, S = T>(iri: Ref<string | undefined>, prop
     focusIri && realtime.load().then(view => view?.focus(focusOwner, focusIri, rootProperty.value))
   }
 
-  function blur() {
-    realtime.load().then(view => view?.blur(focusOwner))
-  }
-
   let stopWatchingOutside: (() => void) | undefined
 
-  function leave() {
+  function blur() {
     stopWatchingOutside?.()
     stopWatchingOutside = undefined
-    blur()
+    realtime.load().then(view => view?.blur(focusOwner))
   }
 
   function holds(root: Element, node: EventTarget | Element | null) {
@@ -124,7 +120,7 @@ export const useCwaResourceModel = <T, S = T>(iri: Ref<string | undefined>, prop
   const focusListeners = {
     onFocusin: () => focus(),
     onFocusout: (event: FocusEvent) => {
-      holds(event.currentTarget as Element, event.relatedTarget) || leave()
+      holds(event.currentTarget as Element, event.relatedTarget) || blur()
     },
     // Safari does not focus a button, checkbox or switch on click, so focusin never fires for them
     onPointerdown: (event: PointerEvent) => {
@@ -134,7 +130,7 @@ export const useCwaResourceModel = <T, S = T>(iri: Ref<string | undefined>, prop
       }
       const root = event.currentTarget as Element
       const outside = (down: Event) => {
-        holds(root, down.target) || holds(root, document.activeElement) || leave()
+        holds(root, down.target) || holds(root, document.activeElement) || blur()
       }
       document.addEventListener('pointerdown', outside, true)
       stopWatchingOutside = () => document.removeEventListener('pointerdown', outside, true)
@@ -439,7 +435,7 @@ export const useCwaResourceModel = <T, S = T>(iri: Ref<string | undefined>, prop
   }
 
   onBeforeUnmount(() => {
-    leave()
+    blur()
     unregisterEditor()
     unwatchLocalValue()
     unwatchIsBusy()
