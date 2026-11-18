@@ -101,6 +101,17 @@ const toastButtons = [
   { key: 'error', label: 'Error with actions' },
   { key: 'errors', label: 'Several errors' },
 ] as const
+const sixToasts: CwaToastOptions[] = [
+  { id: 'kit-six-1', tone: 'error', title: 'Title wasn’t saved', description: 'Hero section on Kitchens.', actions: [{ label: 'Retry', primary: true, onClick: noop }] },
+  { id: 'kit-six-2', tone: 'error', title: 'Oops! There was a problem.', description: 'The page list could not load.' },
+  { id: 'kit-six-3', tone: 'warning', title: 'Mercure reconnected', description: '3 components on this page changed while you were away.' },
+  { id: 'kit-six-4', tone: 'error', title: 'Image wasn’t uploaded', description: 'The file is larger than 20 MB.' },
+  { id: 'kit-six-5', tone: 'success', title: 'Published', description: 'Intro text on Bathrooms.' },
+  { id: 'kit-six-6', tone: 'error', title: 'Route wasn’t saved', description: '/kitchens is already used by another page.' },
+]
+function raiseSix() {
+  sixToasts.forEach(sample => toast.show(sample))
+}
 const staticToasts = [toastSamples.success, toastSamples.warning, toastSamples.errors]
 
 const fieldStatuses: FakeStatus[] = ['idle', 'pending', 'saving', 'saved', 'error', 'conflict']
@@ -1318,7 +1329,7 @@ const badgeTones = [
           Toasts
         </h2>
         <p class="kit-note">
-          Raised with <code>useCwaToast()</code>. Success and info go after 4 seconds, warnings after 6; errors and toasts with actions stay until dismissed. At most 3 show, the newest on top; the rest wait and show when room frees up. Raising the same toast again changes nothing; the stack turns see-through while it entirely hides the focused element.
+          Raised with <code>useCwaToast()</code>. Success and info go after 4 seconds, warnings after 6; errors and toasts with actions stay until dismissed. At most 3 show, the oldest on top; the rest wait behind “+N more”, which shows them all in a stack that scrolls within the window, beside Dismiss all, and show when room frees up. Escape or a click away puts the list back to 3. Raising the same toast again changes nothing; the stack turns see-through while it entirely hides the focused element.
         </p>
         <div
           class="kit-row"
@@ -1330,6 +1341,12 @@ const badgeTones = [
             :label="button.label"
             size="sm"
             @click="toast.show(toastSamples[button.key])"
+          />
+          <CwaUiButton
+            label="Six at once"
+            size="sm"
+            data-testid="kit-toast-six"
+            @click="raiseSix"
           />
         </div>
         <h3>Samples</h3>
