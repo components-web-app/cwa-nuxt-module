@@ -12,7 +12,7 @@ import type { CwaFieldState } from '#cwa/storage/stores/resources/state'
 
 export type FieldWidth = 'xs' | 'sm' | 'md' | 'lg' | 'full'
 
-const { label, labelHidden = false, info, disabledReason, description, optional = false, width, state, model, controlId, ownLabel = false, name, inactive = false, invalid, format, hug = false } = defineProps<{
+const { label, labelHidden = false, info, disabledReason, description, optional = false, width, state, model, controlId, ownLabel = false, name, inactive = false, invalid, format, hug = false, multiline = false } = defineProps<{
   label: string
   labelHidden?: boolean
   info?: string
@@ -29,6 +29,7 @@ const { label, labelHidden = false, info, disabledReason, description, optional 
   invalid?: string
   format?: FieldValueFormat
   hug?: boolean
+  multiline?: boolean
 }>()
 
 defineSlots<{
@@ -178,7 +179,8 @@ watch(() => inactive, (now) => {
   </div>
   <div
     v-else
-    class="cwa:flex cwa:min-w-0 cwa:shrink-0 cwa:items-center cwa:gap-2"
+    class="cwa:flex cwa:min-w-0 cwa:shrink-0 cwa:gap-2"
+    :class="multiline ? 'cwa:items-start' : 'cwa:items-center'"
     :data-cwa-field="name"
   >
     <label
@@ -186,7 +188,7 @@ watch(() => inactive, (now) => {
       :id="labelId"
       :for="controlId"
       class="cwa:whitespace-nowrap cwa:text-label cwa:text-fg-muted"
-      :class="{ 'cwa:sr-only': labelHidden }"
+      :class="{ 'cwa:sr-only': labelHidden, 'cwa:pt-2.5': multiline }"
     >{{ label }}</label>
     <InfoPopover
       v-if="help && !ownLabel"
