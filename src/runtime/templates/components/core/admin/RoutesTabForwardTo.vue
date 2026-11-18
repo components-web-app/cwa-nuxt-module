@@ -43,6 +43,7 @@ const labelOf = (resource: CwaResource) => resource.path ?? resource['@id']
         label="Send visitors to"
         endpoint="/_/routes"
         :search-params="['search', 'path']"
+        :order="{ path: 'asc' }"
         noun="routes"
         width="full"
         :label-of="labelOf"

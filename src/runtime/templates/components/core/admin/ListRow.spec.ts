@@ -35,14 +35,14 @@ describe('ListRow (#461)', () => {
     expect(wrapper.get('[role="row"]').classes()).not.toContain('cwa:hover:bg-field-hover/50')
   })
 
-  test('the type is a coloured mark named for screen readers: a circle for Static, a square for Dynamic', async () => {
+  test('the type is a coloured mark named for screen readers: a round dot for Static and for Dynamic, told apart by colour and name', async () => {
     const staticType = (await mountRow({ type: { label: 'Static', colour: 'static' } })).get('[data-testid="list-row-type"]')
     const dynamicType = (await mountRow({ type: { label: 'Dynamic', colour: 'dynamic' } })).get('[data-testid="list-row-type"]')
 
     expect(staticType.attributes()).toMatchObject({ 'role': 'img', 'aria-label': 'Static' })
     expect(staticType.classes()).toEqual(expect.arrayContaining(['cwa:rounded-full', 'cwa:bg-type-static']))
-    expect(dynamicType.classes()).toContain('cwa:bg-type-dynamic')
-    expect(dynamicType.classes()).not.toContain('cwa:rounded-full')
+    expect(dynamicType.attributes()).toMatchObject({ 'role': 'img', 'aria-label': 'Dynamic' })
+    expect(dynamicType.classes()).toEqual(expect.arrayContaining(['cwa:rounded-full', 'cwa:bg-type-dynamic']))
   })
 
   test('the second line gives way to the phone line below md when there is one', async () => {

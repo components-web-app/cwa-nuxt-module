@@ -12,7 +12,7 @@ const pressed = defineModel<boolean>({ default: false })
 
 const looks: Record<FilterToggleColour, { mark: string, on: string }> = {
   static: { mark: 'cwa:rounded-full cwa:bg-type-static', on: 'cwa:bg-type-static cwa:text-stone-900' },
-  dynamic: { mark: 'cwa:bg-type-dynamic', on: 'cwa:bg-type-dynamic cwa:text-stone-900' },
+  dynamic: { mark: 'cwa:rounded-full cwa:bg-type-dynamic', on: 'cwa:bg-type-dynamic cwa:text-stone-900' },
 }
 </script>
 

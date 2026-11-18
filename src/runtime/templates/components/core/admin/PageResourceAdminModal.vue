@@ -132,7 +132,7 @@
             label="Dynamic page"
             :options="pageOptions"
           />
-          <div v-if="localResourceData.page">
+          <div v-if="localResourceData?.page">
             <CwaUiButton
               label="Go to dynamic template"
               :icon="EyeGlyph"
@@ -214,7 +214,7 @@
             class="cwa:m-0 cwa:mt-1.5 cwa:break-all cwa:font-mono cwa:text-control cwa:text-fg-secondary"
             data-testid="page-id"
           >
-            {{ localResourceData['@id'] }}
+            {{ localResourceData?.['@id'] }}
           </dd>
         </dl>
       </CwaUiFormSection>
@@ -341,6 +341,18 @@ const depthChain = computed(() => {
   }
   return chain
 })
+
+const requestedDepths = new Set<string>()
+watch(depthChain, (chain) => {
+  chain.forEach(({ value }) => {
+    const iri = String(value)
+    if (iri === 'add' || getResourceData(iri) || requestedDepths.has(iri)) {
+      return
+    }
+    requestedDepths.add(iri)
+    $cwa.fetchResource({ path: iri, shallowFetch: true }).catch(() => undefined)
+  })
+}, { immediate: true })
 
 const depthOptions = computed(() => depthChain.value.map(option => ({ label: option.label, value: String(option.value) })))
 

@@ -20,7 +20,7 @@ const skeleton = computed(() => !chip && entry.value?.skeleton ? adminResourceIc
     v-if="dynamic"
     aria-hidden="true"
     data-lead="dynamic"
-    class="cwa:block cwa:size-3 cwa:shrink-0 cwa:bg-type-dynamic"
+    class="cwa:block cwa:size-3 cwa:shrink-0 cwa:rounded-full cwa:bg-type-dynamic"
   />
   <img
     v-else-if="entry?.image && !chip"

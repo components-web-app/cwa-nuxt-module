@@ -25,6 +25,10 @@ mockNuxtImport('navigateTo', () => mockNavigateTo)
 
 vi.mock('#cwa-layer/_composables/useItemPage', () => ({ useItemPage: mockUseItemPage }))
 vi.mock('#cwa/composables/cwa-confirm', () => ({ useCwaConfirm: () => confirmMock }))
+const realtime = vi.hoisted(() => ({ peers: vi.fn((_iri: string): unknown[] => []) }))
+vi.mock('#cwa/resources/realtime-view', () => ({
+  realtimeView: () => ({ load: async () => ({ peers: realtime.peers }) }),
+}))
 
 enableAutoUnmount(afterEach)
 
@@ -551,6 +555,26 @@ describe('RoutesTab', () => {
   })
 
   describe('deleting the route', () => {
+    test('names the other admins editing the route first', async () => {
+      setupItemPage()
+      mockCwa({ fetch: vi.fn(() => ({ response: Promise.resolve({ _data: { children: [] } }) })) })
+      confirmMock.mockResolvedValueOnce(false)
+      realtime.peers.mockReturnValueOnce([{ user: { id: '/users/sam' }, name: 'Sam', idle: false }, { user: { id: '/users/kim' }, name: 'Kim', idle: false }])
+      const wrapper = mountTab()
+      await flushPromises()
+      await openSub(wrapper, 'route')
+
+      await wrapper.findComponent(RoutesTabManage).vm.$emit('delete')
+      await vi.dynamicImportSettled()
+      await flushPromises()
+
+      expect(realtime.peers).toHaveBeenCalledWith(ROUTE_IRI)
+      expect(confirmMock.mock.calls[0]![0].lines).toEqual([
+        { text: 'Sam and Kim are editing this.' },
+        { text: 'Visitors to /conference/programme get “Page not found”.' },
+      ])
+    })
+
     test('asks with a simple confirm when nothing depends on it, then deletes and says so', async () => {
       const itemPage = setupItemPage()
       mockCwa({ fetch: vi.fn(() => ({ response: Promise.resolve({ _data: { children: [] } }) })) })
@@ -867,6 +891,23 @@ describe('RoutesTab', () => {
       })
       expect(cwa.resourcesManager.deleteResource).toHaveBeenCalledWith({ endpoint: '/_/routes//shaker', requestCompleteFn: expect.any(Function) }, true)
       expect(wrapper.find('[data-testid="routes-status"]').text()).toBe('/shaker no longer redirects here.')
+    })
+
+    test('deleting an old address names the other admins editing it first', async () => {
+      const single = { '@id': '/_/routes//old', 'path': '/old', 'redirectedFrom': [] }
+      setupItemPage({ redirectedFrom: [single] })
+      mockCwa()
+      confirmMock.mockResolvedValueOnce(false)
+      realtime.peers.mockReturnValueOnce([{ user: { id: '/users/sam' }, name: 'Sam', idle: false }])
+      const wrapper = mountTab()
+      await openSub(wrapper, 'from')
+
+      await wrapper.findComponent(RoutesTabRedirects).vm.$emit('delete', single)
+      await vi.dynamicImportSettled()
+      await flushPromises()
+
+      expect(realtime.peers).toHaveBeenCalledWith('/_/routes//old')
+      expect(confirmMock.mock.calls[0]![0].lines[0]).toEqual({ text: 'Sam is editing this.' })
     })
 
     test('an old address still there after deleting shows an alert with Retry', async () => {

@@ -50,8 +50,8 @@ defineSlots<{
           :aria-label="type.label"
           :data-type="type.colour"
           data-testid="list-row-type"
-          class="cwa:size-2 cwa:shrink-0"
-          :class="type.colour === 'static' ? 'cwa:rounded-full cwa:bg-type-static' : 'cwa:bg-type-dynamic'"
+          class="cwa:size-2 cwa:shrink-0 cwa:rounded-full"
+          :class="type.colour === 'static' ? 'cwa:bg-type-static' : 'cwa:bg-type-dynamic'"
         />
       </span>
       <span

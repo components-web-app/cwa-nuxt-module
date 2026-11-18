@@ -28,13 +28,12 @@ describe('FilterToggle (#461)', () => {
     expect(button.attributes('aria-pressed')).toBe('true')
   })
 
-  test('off, it shows its type\'s mark in the type\'s colour on the field fill: a circle for Static, a square for Dynamic', () => {
+  test('off, it shows its type\'s mark in the type\'s colour on the field fill: a round dot for both', () => {
     const staticMark = mountToggle(false, 'static').get('[data-testid="filter-toggle-mark"]').classes()
     const dynamicMark = mountToggle(false, 'dynamic').get('[data-testid="filter-toggle-mark"]').classes()
 
     expect(staticMark).toEqual(expect.arrayContaining(['cwa:rounded-full', 'cwa:bg-type-static']))
-    expect(dynamicMark).toContain('cwa:bg-type-dynamic')
-    expect(dynamicMark).not.toContain('cwa:rounded-full')
+    expect(dynamicMark).toEqual(expect.arrayContaining(['cwa:rounded-full', 'cwa:bg-type-dynamic']))
   })
 
   test('on, it is filled in its type\'s colour with dark text and a check in place of the mark', () => {
