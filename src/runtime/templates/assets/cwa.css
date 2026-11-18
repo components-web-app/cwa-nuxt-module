@@ -345,6 +345,9 @@
 .cwa\:ms-auto {
   margin-inline-start: auto;
 }
+.cwa\:me-1 {
+  margin-inline-end: var(--cwa-spacing);
+}
 .cwa\:me-2 {
   margin-inline-end: calc(var(--cwa-spacing) * 2);
 }
@@ -2953,6 +2956,9 @@
   }
   .cwa\:pointer-coarse\:w-hit {
     width: var(--cwa-spacing-hit);
+  }
+  .cwa\:pointer-coarse\:min-w-hit {
+    min-width: var(--cwa-spacing-hit);
   }
   .cwa\:pointer-coarse\:text-base {
     font-size: var(--cwa-text-base);
