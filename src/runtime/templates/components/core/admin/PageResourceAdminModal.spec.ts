@@ -15,6 +15,7 @@ import * as cwaComposable from '#cwa/composables/cwa'
 import { componentNames } from '#components'
 
 const mockNavigateTo = vi.hoisted(() => vi.fn())
+const mockRoute = vi.hoisted(() => ({ params: {} as Record<string, string> }))
 mockNuxtImport('navigateTo', () => mockNavigateTo)
 
 const { mockUseItemPage, mockUseDynamicPageLoader, mockUseParentPageLoader, mockUseParentPageDataLoader, mockUseDataType, confirmMock, countsMock, requestClose, confirmDiscard } = vi.hoisted(() => ({
@@ -30,6 +31,10 @@ const { mockUseItemPage, mockUseDynamicPageLoader, mockUseParentPageLoader, mock
 }))
 
 vi.mock('#cwa-layer/_composables/useItemPage', () => ({ useItemPage: mockUseItemPage }))
+vi.mock('vue-router', async (importOriginal) => {
+  const mod = await importOriginal<typeof import('vue-router')>()
+  return { ...mod, useRoute: () => mockRoute }
+})
 vi.mock('#cwa-layer/_composables/useDynamicPageLoader', () => ({ useDynamicPageLoader: mockUseDynamicPageLoader }))
 vi.mock('#cwa-layer/_composables/useParentPageLoader', () => ({ useParentPageLoader: mockUseParentPageLoader }))
 vi.mock('#cwa-layer/_composables/useParentPageDataLoader', () => ({ useParentPageDataLoader: mockUseParentPageDataLoader }))
@@ -68,8 +73,10 @@ function setup(opts: {
   parentPages?: Record<string, any>[]
   routes?: Record<string, any>
   stored?: Record<string, any>
+  routeIri?: string
 } = {}) {
-  const iri = opts.iri ?? '/_/pages/uuid-self'
+  const iri = opts.iri ?? opts.routeIri ?? '/_/pages/uuid-self'
+  mockRoute.params = opts.routeIri ? { iri: opts.routeIri } : {}
   const resource = opts.resource ?? { '@id': iri, '@type': 'Page', 'reference': 'My Page' }
   const form: FakeDialogForm = fakeDialogForm({
     '@id': iri,
@@ -123,7 +130,7 @@ function setup(opts: {
   }) as unknown as ReturnType<typeof cwaComposable.useCwa>)
 
   const wrapper = mount(PageResourceAdminModal, {
-    props: { iri, resourceType: opts.resourceType ?? 'Page', hideViewLink: opts.hideViewLink ?? true },
+    props: { ...(opts.routeIri ? {} : { iri }), resourceType: opts.resourceType ?? 'Page', hideViewLink: opts.hideViewLink ?? true },
     global: {
       stubs: {
         CwaUiDialog: DialogStub,
@@ -171,6 +178,36 @@ describe('PageResourceAdminModal on the kit dialog (#461)', () => {
     setup()
 
     expect(mockUseItemPage).toHaveBeenCalledWith(expect.objectContaining({ dismissStoredErrors: true }))
+  })
+
+  test('opened from /_cwa/routes/<iri> without an iri, a page opens as a page: its fields, depths, parent filter and typed delete', async () => {
+    const routeIri = '/_/pages/uuid-self'
+    const stored = {
+      [routeIri]: { '@id': routeIri, 'reference': 'Child', 'parentPage': '/_/pages/parent' },
+      '/_/pages/parent': { '@id': '/_/pages/parent', 'reference': 'Parent' },
+    }
+    const { wrapper } = setup({
+      routeIri,
+      stored,
+      resource: { '@id': routeIri, '@type': 'Page', 'reference': 'Child', 'parentPage': '/_/pages/parent' },
+      local: { parentPage: '/_/pages/parent' },
+      parentPages: [
+        { '@id': routeIri, 'reference': 'Child', 'parentPage': '/_/pages/parent' },
+        { '@id': '/_/pages/parent', 'reference': 'Parent' },
+        { '@id': '/_/pages/grandchild', 'reference': 'Grandchild', 'parentPage': routeIri },
+      ],
+    })
+
+    expect(mockUseItemPage.mock.calls[0]![0].endpoint.value).toBe(routeIri)
+    expect(wrapper.find('[data-cwa-field="reference"]').exists()).toBe(true)
+    expect(field(wrapper, Segmented, 'Page type')).toBeDefined()
+    expect(field(wrapper, Select, 'Layout')).toBeDefined()
+    expect(field(wrapper, Select, 'Page UI')).toBeDefined()
+    expect(field(wrapper, Segmented, 'Editing').props('options')).toEqual([{ label: 'Parent', value: '/_/pages/parent' }, { label: 'Child', value: routeIri }])
+    expect(field(wrapper, Select, 'Parent page').props('options')).toEqual([{ label: 'Parent', value: '/_/pages/parent' }])
+    confirmMock.mockResolvedValueOnce(false)
+    await clickDelete(wrapper)
+    expect(confirmMock.mock.calls[0]![0]).toMatchObject({ title: 'Delete “Child”?', typed: { noun: 'page name', value: 'Child' } })
   })
 
   test('creating shows only Details', () => {

@@ -229,6 +229,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, useTemplateRef, watch } from 'vue'
 import isEqual from 'lodash-es/isEqual'
+import { useRoute } from 'vue-router'
 import { navigateTo, useCwa } from '#imports'
 import { componentNames } from '#components'
 import CwaUiDialog from '#cwa/templates/components/ui/Dialog.vue'
@@ -271,7 +272,12 @@ const { parentPages, loadParentPageOptions } = useParentPageLoader()
 const { dataTypes, dataInstances, loadDataTypes, loadDataInstances, fqcnToEntrypointKey } = useParentPageDataLoader()
 const { dynamicPages, loadDynamicPageOptions } = useDynamicPageLoader()
 
-const displayIri = ref(props.iri)
+const route = useRoute()
+const rootIri = computed(() => {
+  const param = route.params.iri
+  return props.iri ?? ((Array.isArray(param) ? param[0] : param) || undefined)
+})
+const displayIri = ref(rootIri.value)
 
 const isDisplayingPage = computed(() => getResourceTypeFromIri(displayIri.value ?? '') === CwaResourceTypes.PAGE)
 
@@ -281,7 +287,7 @@ function getResourceData(iri: string) {
 
 const depthChain = computed(() => {
   const chain: SelectOption[] = []
-  let iri: string | null | undefined = props.iri
+  let iri: string | null | undefined = rootIri.value
   while (iri) {
     const res = getResourceData(iri)
     chain.unshift({
@@ -338,7 +344,7 @@ function isDescendantOfCurrentPage(candidateIri: string): boolean {
   while (current) {
     if (visited.has(current)) break
     visited.add(current)
-    if (current === props.iri) return true
+    if (current === rootIri.value) return true
     current = byId[current]?.parentPage
   }
   return false
@@ -347,7 +353,7 @@ function isDescendantOfCurrentPage(candidateIri: string): boolean {
 const parentPageOptions = computed<MenuEntry[]>(() => {
   const options: MenuEntry[] = []
   for (const page of parentPages.value ?? []) {
-    if (page['@id'] !== props.iri && !isDescendantOfCurrentPage(page['@id'])) {
+    if (page['@id'] !== rootIri.value && !isDescendantOfCurrentPage(page['@id'])) {
       options.push({ label: page.reference, value: page['@id'] })
     }
   }
@@ -404,7 +410,7 @@ function saveResource(close = false) {
   return _saveResource(close)
 }
 
-const isDisplayedPage = computed(() => !!props.iri && props.iri === $cwa.resources.displayPageIri.value)
+const isDisplayedPage = computed(() => !!rootIri.value && rootIri.value === $cwa.resources.displayPageIri.value)
 
 const adminListingLink = computed(() => {
   if (isDisplayingPage.value) {
