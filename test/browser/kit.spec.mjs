@@ -226,3 +226,38 @@ for (const width of widths) {
     })
   }
 }
+
+test('kit: a field\'s focus ring fades in from transparent, never from white (#461)', async ({ page }) => {
+  await page.emulateMedia({ colorScheme: 'dark' })
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await page.goto(`${kitBase}/kit`)
+  await page.waitForLoadState('networkidle')
+
+  const frames = await page.evaluate(async () => {
+    const ringed = [...document.querySelectorAll('main input:not([type="file"]):not([type="checkbox"])')]
+      .map(input => [input, input.closest('[class*="focus-within:outline-accent-fg"]')])
+      .filter(([input, ring]) => ring && input.getClientRects().length && !input.disabled)
+      .slice(0, 8)
+    const samples = []
+    for (const [input, ring] of ringed) {
+      input.scrollIntoView({ block: 'center' })
+      await new Promise(resolve => requestAnimationFrame(resolve))
+      input.focus()
+      for (let frame = 0; frame < 12; frame++) {
+        const style = getComputedStyle(ring)
+        samples.push({ field: input.name || input.getAttribute('aria-label') || input.id, colour: style.outlineColor, style: style.outlineStyle })
+        await new Promise(resolve => requestAnimationFrame(resolve))
+      }
+      input.blur()
+    }
+    return samples
+  })
+
+  const white = frames.filter(({ colour, style }) => {
+    const [r, g, b, a = 1] = colour.match(/[\d.]+/g).map(Number)
+    return style !== 'none' && a > 0.05 && r > 180 && g > 180 && b > 180
+  })
+  expect(new Set(frames.map(({ field }) => field)).size).toBeGreaterThanOrEqual(4)
+  expect(frames.some(({ colour }) => colour === 'rgb(96, 165, 250)')).toBe(true)
+  expect(white).toEqual([])
+})
