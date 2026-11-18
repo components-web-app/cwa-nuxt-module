@@ -120,6 +120,7 @@ const sectionItems = computed<MenuEntry[]>(() => sections.map(section => ({ labe
   position: sticky;
   top: 0;
   z-index: 740;
+  overflow-x: clip;
   background: var(--cwa-color-surface);
   box-shadow: inset 0 -1px 0 var(--cwa-color-line);
 }

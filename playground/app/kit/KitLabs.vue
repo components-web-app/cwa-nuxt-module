@@ -5,6 +5,8 @@ import KitPresenceSim from './KitPresenceSim.vue'
 import KitSearchSim from './KitSearchSim.vue'
 import KitListSim from './KitListSim.vue'
 import KitDialogSim from './KitDialogSim.vue'
+import KitStackSim from './KitStackSim.vue'
+import KitToastSim from './KitToastSim.vue'
 </script>
 
 <template>
@@ -15,5 +17,7 @@ import KitDialogSim from './KitDialogSim.vue'
     <KitSearchSim />
     <KitListSim />
     <KitDialogSim />
+    <KitStackSim />
+    <KitToastSim />
   </div>
 </template>
