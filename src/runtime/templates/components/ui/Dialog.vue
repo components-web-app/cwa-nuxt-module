@@ -26,6 +26,9 @@ const props = withDefaults(defineProps<{
   createNoun?: string
   loading?: boolean
   flush?: boolean
+  /** @internal */
+  kind?: { tone: 'static' | 'dynamic' | 'success' | 'warning', label?: string }
+  placement?: 'center' | 'right'
 }>(), {
   size: 'md',
   tabs: undefined,
@@ -35,6 +38,8 @@ const props = withDefaults(defineProps<{
   createNoun: undefined,
   loading: false,
   flush: false,
+  kind: undefined,
+  placement: 'center',
 })
 
 const emit = defineEmits<{
@@ -49,6 +54,8 @@ defineSlots<{
 
 const confirm = useCwaConfirm()
 const titleId = useId()
+const kindId = useId()
+const kindEdges = { static: 'cwa:border-type-static', dynamic: 'cwa:border-type-dynamic', success: 'cwa:border-success', warning: 'cwa:border-warning' }
 const tabsId = useId()
 const body = useTemplateRef<HTMLElement>('body')
 const presenceLayer = useTemplateRef<HTMLElement>('presenceLayer')
@@ -336,6 +343,8 @@ function onTabKey(event: KeyboardEvent, index: number) {
 }
 
 const widths = { sm: 'cwa:sm:w-[28rem]', md: 'cwa:sm:w-[36rem]', lg: 'cwa:sm:w-[48rem]' }
+const centred = 'cwa:sm:inset-auto cwa:sm:top-1/2 cwa:sm:left-1/2 cwa:sm:max-h-[calc(100dvh-4rem)] cwa:sm:max-w-[calc(100vw-2rem)] cwa:sm:-translate-x-1/2 cwa:sm:-translate-y-1/2'
+const slideOver = 'cwa:sm:inset-y-0 cwa:sm:right-0 cwa:sm:left-auto cwa:sm:w-[min(40rem,100vw)] cwa:sm:motion-safe:animate-[cwa-slide-over-in_var(--cwa-duration-slow)_var(--cwa-ease-out)]'
 
 function glyphOf(key: string) {
   const kind = badges.value[key]?.kind
@@ -357,12 +366,16 @@ defineExpose({ requestClose, confirmDiscard, showField, announce })
       />
       <DialogContent
         :aria-labelledby="titleId"
-        :aria-describedby="undefined"
+        :aria-describedby="kind?.label ? kindId : undefined"
         data-testid="dialog"
-        class="cwa:fixed cwa:inset-0 cwa:z-dialog cwa:flex cwa:flex-col cwa:bg-surface cwa:text-fg cwa:shadow-popover cwa:outline-none cwa:[--cwa-spacing-control:var(--cwa-spacing-control-lg)] cwa:[--cwa-text-control:var(--cwa-text-control-lg)] cwa:sm:inset-auto cwa:sm:top-1/2 cwa:sm:left-1/2 cwa:sm:max-h-[calc(100dvh-4rem)] cwa:sm:max-w-[calc(100vw-2rem)] cwa:sm:-translate-x-1/2 cwa:sm:-translate-y-1/2"
-        :class="widths[size]"
+        :data-placement="placement"
+        class="cwa:fixed cwa:inset-0 cwa:z-dialog cwa:flex cwa:flex-col cwa:bg-surface cwa:text-fg cwa:shadow-popover cwa:outline-none cwa:[--cwa-spacing-control:var(--cwa-spacing-control-lg)] cwa:[--cwa-text-control:var(--cwa-text-control-lg)]"
+        :class="placement === 'right' ? slideOver : [centred, widths[size]]"
       >
-        <header class="cwa:flex cwa:h-[3.75rem] cwa:shrink-0 cwa:items-center cwa:gap-2 cwa:ps-6 cwa:pe-3">
+        <header
+          class="cwa:flex cwa:h-[3.75rem] cwa:shrink-0 cwa:items-center cwa:gap-2 cwa:border-b-3 cwa:border-solid cwa:ps-6 cwa:pe-3"
+          :class="kind ? kindEdges[kind.tone] : 'cwa:border-line'"
+        >
           <DialogTitle
             :id="titleId"
             as="h2"
@@ -370,6 +383,12 @@ defineExpose({ requestClose, confirmDiscard, showField, announce })
           >
             {{ title }}
           </DialogTitle>
+          <span
+            v-if="kind?.label"
+            :id="kindId"
+            data-testid="dialog-kind"
+            class="cwa:shrink-0 cwa:text-helper cwa:text-fg-muted"
+          >{{ kind.label }}</span>
           <slot name="header-actions" />
           <button
             type="button"
@@ -378,9 +397,10 @@ defineExpose({ requestClose, confirmDiscard, showField, announce })
             class="cwa:grid cwa:size-hit cwa:shrink-0 cwa:cursor-pointer cwa:place-items-center cwa:text-fg cwa:outline-1 cwa:outline-transparent cwa:transition-colors cwa:duration-(--cwa-duration-fast) cwa:hover:bg-button cwa:focus-visible:outline-2 cwa:focus-visible:-outline-offset-2 cwa:focus-visible:outline-accent-fg"
             @click="requestClose"
           >
-            <XMarkIcon class="cwa:size-5" />
+            <XMarkIcon class="cwa:size-6" />
           </button>
         </header>
+        <slot name="subheader" />
         <div
           v-if="tabs?.length"
           role="tablist"

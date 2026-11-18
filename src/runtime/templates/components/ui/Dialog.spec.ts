@@ -581,6 +581,100 @@ describe('CwaUiDialog without a Save model (#461, the add component dialog)', ()
     expect(body.querySelector('[data-cwa-field] [data-testid="field-presence-flag"]')).toBeNull()
   })
 
+  test('the close × draws a 24px icon in its unchanged 44px hit area, the icon-to-button ratio of every icon-only button', async () => {
+    mountPlain()
+    await flushPromises()
+
+    const close = q('[data-testid="dialog-close"]')!
+    expect(close.className.split(' ')).toEqual(expect.arrayContaining(['cwa:size-hit', 'cwa:place-items-center']))
+    expect(close.querySelector('svg')!.getAttribute('class')).toContain('cwa:size-6')
+  })
+
+  test('is centred by default, sized by its size, and does not slide', async () => {
+    mountPlain({ size: 'sm' })
+    await flushPromises()
+
+    const classes = dialog().className.split(' ')
+    expect(classes).toEqual(expect.arrayContaining(['cwa:sm:top-1/2', 'cwa:sm:left-1/2', 'cwa:sm:-translate-y-1/2', 'cwa:sm:w-[28rem]']))
+    expect(dialog().dataset.placement).toBe('center')
+    expect(classes.some(name => name.includes('slide-over'))).toBe(false)
+  })
+
+  test('a right placement is a full-height slide-over anchored right, so its header and footer never move as the content changes height; it slides in only when motion is allowed', async () => {
+    mountPlain({ placement: 'right', size: 'sm' }, { footer: () => h('button', 'Save') })
+    await flushPromises()
+
+    const classes = dialog().className.split(' ')
+    expect(dialog().dataset.placement).toBe('right')
+    expect(classes).toEqual(expect.arrayContaining(['cwa:sm:inset-y-0', 'cwa:sm:right-0', 'cwa:sm:left-auto', 'cwa:sm:w-[min(40rem,100vw)]', 'cwa:sm:motion-safe:animate-[cwa-slide-over-in_var(--cwa-duration-slow)_var(--cwa-ease-out)]']))
+    expect(classes.filter(name => name.includes('animate-')).every(name => name.includes('motion-safe:'))).toBe(true)
+    expect(classes.some(name => /translate|top-1\/2|left-1\/2|max-h-|w-\[28rem\]/.test(name))).toBe(false)
+    expect(q('header')!.className).toContain('cwa:shrink-0')
+    expect(q('[data-testid="dialog-body"]')!.className).toContain('cwa:overflow-y-auto')
+  })
+
+  test.each(['center', 'right'] as const)('a %s dialog gives focus back to what opened it when it closes', async (placement) => {
+    const opener = document.createElement('button')
+    document.body.appendChild(opener)
+    opener.focus()
+    const wrapper = mountPlain({ placement })
+    await flushPromises()
+    expect(document.activeElement).not.toBe(opener)
+
+    wrapper.unmount()
+    await flushPromises()
+    expect(document.activeElement).toBe(opener)
+    opener.remove()
+  })
+
+  test('without a kind, the header has the neutral solid 3px line and says no kind', async () => {
+    mountPlain()
+    await flushPromises()
+
+    expect(q('header')!.className).toContain('cwa:border-b-3')
+    expect(q('header')!.className).toContain('cwa:border-line')
+    expect(q('header')!.className).not.toMatch(/dashed|dotted/)
+    expect(q('[data-testid="dialog-kind"]')).toBeNull()
+    expect(dialog().getAttribute('aria-describedby')).toBeNull()
+  })
+
+  test.each([
+    ['static', 'cwa:border-type-static'],
+    ['dynamic', 'cwa:border-type-dynamic'],
+    ['success', 'cwa:border-success'],
+    ['warning', 'cwa:border-warning'],
+  ] as const)('a %s kind draws the header\'s solid 3px line in its colour and says the kind beside the title, describing the dialog (#461)', async (tone, colour) => {
+    mountPlain({ kind: { tone, label: 'Not reachable' } })
+    await flushPromises()
+
+    const header = q('header')!
+    expect(header.className).toContain('cwa:border-b-3')
+    expect(header.className).toContain(colour)
+    expect(header.className).not.toContain('cwa:border-line')
+    const kind = q('[data-testid="dialog-kind"]')!
+    expect(kind.textContent?.trim()).toBe('Not reachable')
+    expect(dialog().getAttribute('aria-describedby')).toBe(kind.id)
+  })
+
+  test('a kind with no words colours the line only, for a dialog that says its kind in a header control', async () => {
+    mountPlain({ kind: { tone: 'dynamic' } })
+    await flushPromises()
+
+    expect(q('header')!.className).toContain('cwa:border-type-dynamic')
+    expect(q('[data-testid="dialog-kind"]')).toBeNull()
+    expect(dialog().getAttribute('aria-describedby')).toBeNull()
+  })
+
+  test('a subheader sits between the header and the tabs, on every tab', async () => {
+    mountPlain({ tabs: [{ key: 'a', label: 'A' }, { key: 'b', label: 'B' }] }, { subheader: () => h('p', { 'data-testid': 'sub' }, 'Depths'), a: () => h('p', 'A body'), b: () => h('p', 'B body') })
+    await flushPromises()
+
+    const sub = q('[data-testid="sub"]')!
+    expect(q('header')!.compareDocumentPosition(sub) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(sub.compareDocumentPosition(q('[role="tablist"]')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(q('[data-testid="dialog-body"]')!.contains(sub)).toBe(false)
+  })
+
   test('a flush body leaves the padding to its content', async () => {
     mountPlain({ flush: true })
     await flushPromises()
