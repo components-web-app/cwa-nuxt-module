@@ -79,7 +79,7 @@ function tabLabelOf(field: string) {
 function onTabKey(event: KeyboardEvent, index: number) {
   const tabs = props.tabs ?? []
   const moves: Record<string, number> = { ArrowRight: index + 1, ArrowLeft: index - 1, Home: 0, End: tabs.length - 1 }
-  if (!(event.key in moves)) {
+  if (!(event.key in moves) || event.altKey || event.metaKey || event.ctrlKey) {
     return
   }
   event.preventDefault()

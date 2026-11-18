@@ -7,6 +7,7 @@ import { axe } from '../../../../../test/utils/axe'
 import { drawsFocusRing } from '../../../../../test/utils/focus-ring'
 import SettingsPage from './settings.vue'
 import * as cwaComposable from '#cwa/composables/cwa'
+import { useRouter } from '#app/composables/router'
 import { PageCacheWarmInterruptedError } from '#cwa/api/page-cache-warm'
 
 const { mockOptions, mockConfirm, mockPurgePageCache, mockPurgeHttpCache, mockWarmPageCache, mockFetchOrphanReport, mockRequestOrphanScan, mockFetchFileReport, mockRequestFileScan, mockSaveConfig } = vi.hoisted(() => ({
@@ -794,14 +795,14 @@ describe('Site settings form on the kit (#461)', () => {
   })
 
   test('the AI and non-SEO crawler toggles show only while the site can be indexed', async () => {
-    const wrapper = await setup()
-    expect(wrapper.find('[data-cwa-field="robotsAllowAiBots"]').exists()).toBe(true)
+    const wrapper = await setup({ hash: '#seo' })
+    expect(wrapper.get('[data-cwa-field="robotsAllowAiBots"]').isVisible()).toBe(true)
 
     await wrapper.get('[data-cwa-field="indexable"] [role="switch"]').trigger('click')
     await flushPromises()
 
-    expect(wrapper.find('[data-cwa-field="robotsAllowAiBots"]').exists()).toBe(false)
-    expect(wrapper.find('[data-cwa-field="robotsAllowNonSeoCrawlers"]').exists()).toBe(false)
+    expect(wrapper.get('[data-cwa-field="robotsAllowAiBots"]').isVisible()).toBe(false)
+    expect(wrapper.get('[data-cwa-field="robotsAllowNonSeoCrawlers"]').isVisible()).toBe(false)
   })
 
   test('the canonical URL\'s fixed explanation is behind its ⓘ, never a line under the field', async () => {
@@ -1121,6 +1122,65 @@ describe('Site settings tabs (#461)', () => {
     await currentRouter.push('/_cwa/settings#nothing')
     await flushPromises()
     expect(selected(wrapper)).toEqual(['general'])
+  })
+
+  test('choosing a tab replaces the URL hash, General with none, so Back after a link and a reload return to it, without asking to leave', async () => {
+    const wrapper = await setup()
+    await wrapper.get('[data-cwa-field="siteName"] input').setValue('Kitchens')
+    await flushPromises()
+    const push = vi.spyOn(currentRouter, 'push')
+    const replace = vi.spyOn(currentRouter, 'replace')
+
+    await select(wrapper, 'seo')
+    expect(currentRouter.currentRoute.value.fullPath).toBe('/_cwa/settings#seo')
+    await select(wrapper, 'maintenance')
+    expect(currentRouter.currentRoute.value.fullPath).toBe('/_cwa/settings#maintenance')
+    expect(replace).toHaveBeenCalledTimes(2)
+    expect(push).not.toHaveBeenCalled()
+    expect(mockConfirm).not.toHaveBeenCalled()
+
+    await select(wrapper, 'general')
+    expect(currentRouter.currentRoute.value.fullPath).toBe('/_cwa/settings')
+    expect(selected(wrapper)).toEqual(['general'])
+
+    await select(wrapper, 'maintenance')
+    push.mockRestore()
+    await currentRouter.push('/_cwa/settings/elsewhere')
+    currentRouter.back()
+    await vi.waitFor(() => expect(currentRouter.currentRoute.value.fullPath).toBe('/_cwa/settings#maintenance'))
+    await flushPromises()
+    expect(selected(wrapper)).toEqual(['maintenance'])
+  })
+
+  test('the page declares its hash a tab, so the router never waits for or scrolls to an element named by it', () => {
+    expect(useRouter().resolve({ name: '_cwa-settings', hash: '#seo' }).meta.hashIsTab).toBe(true)
+  })
+
+  test('Alt, Meta or Ctrl with an arrow key is left to the browser, so Alt+Left goes back instead of switching tabs', async () => {
+    const wrapper = await setup()
+
+    for (const modifier of ['altKey', 'metaKey', 'ctrlKey']) {
+      const event = new KeyboardEvent('keydown', { key: 'ArrowRight', [modifier]: true, bubbles: true, cancelable: true })
+      tab(wrapper, 'general').element.dispatchEvent(event)
+      await flushPromises()
+      expect(selected(wrapper)).toEqual(['general'])
+      expect(event.defaultPrevented).toBe(false)
+    }
+  })
+
+  test('a change to a setting hidden by turning indexing off is still counted, badged and named', async () => {
+    const wrapper = await setup()
+    await select(wrapper, 'seo')
+    await wrapper.get('[data-cwa-field="robotsAllowAiBots"] [role="switch"]').trigger('click')
+    await wrapper.get('[data-cwa-field="indexable"] [role="switch"]').trigger('click')
+    await flushPromises()
+
+    expect(saveLabel(wrapper)).toBe('Save 2 changes')
+    expect(tab(wrapper, 'seo').attributes('aria-label')).toBe('SEO, 2 unsaved')
+    await wrapper.get('[data-testid="form-group-cancel"]').trigger('click')
+    await flushPromises()
+    expect(mockConfirm).toHaveBeenCalledWith(expect.objectContaining({ description: expect.stringContaining('Allow AI bots') }))
+    expect(mockConfirm.mock.calls[0][0].description).not.toContain('robotsAllowAiBots')
   })
 
   test('the arrow keys, Home and End move between tabs and focus the tab they open', async () => {
