@@ -44,6 +44,7 @@ function onChecked(checked: boolean) {
     :control-id="id"
     :inactive="disabled || unbound"
     :name="field"
+    :format="value => value ? 'On' : 'Off'"
     own-label
   >
     <template #lead="{ modal, unsaved }">

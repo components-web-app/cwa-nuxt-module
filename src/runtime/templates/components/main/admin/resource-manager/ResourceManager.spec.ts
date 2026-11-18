@@ -172,6 +172,17 @@ describe('ResourceManager', () => {
       const wrapper = await mountManager()
       expect(wrapper.find('#cwa-manager-spacer').exists()).toBe(true)
     })
+
+    test('the saving line above the bar sits on the notifications layer, above the page overlay and outlines, as the header\'s does', async () => {
+      const stackManager = makeStackManager({ showManager: ref(true), currentStackItem: ref({ iri: '/component/1' }) })
+      cwaState.cwa = makeCwa({ stackManager })
+      const wrapper = await mountManager()
+      resolverState.allMeta.value = [{ name: 'Tab' }]
+      await nextTick()
+      const line = wrapper.get('.rli-stub')
+      expect(line.classes()).toContain('cwa:z-notifications')
+      expect(line.classes()).toContain('cwa:bottom-full')
+    })
   })
 
   describe('manager tabs holder', () => {

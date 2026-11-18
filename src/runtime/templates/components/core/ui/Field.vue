@@ -4,6 +4,7 @@ import FieldStatus from './FieldStatus.vue'
 import InfoPopover from './InfoPopover.vue'
 import StateGlyph from './StateGlyph.vue'
 import ConflictNotice from './ConflictNotice.vue'
+import type { FieldValueFormat } from './field-value'
 import CwaUiFieldPresence from '../../ui/FieldPresence.vue'
 import { fieldGroupKey, formSurfaceKey } from './field-keys'
 import type { ResourceModelField } from '#cwa/resources/model-editors'
@@ -11,7 +12,7 @@ import type { CwaFieldState } from '#cwa/storage/stores/resources/state'
 
 export type FieldWidth = 'xs' | 'sm' | 'md' | 'lg' | 'full'
 
-const { label, labelHidden = false, info, description, optional = false, width, state, model, controlId, ownLabel = false, name, inactive = false } = defineProps<{
+const { label, labelHidden = false, info, description, optional = false, width, state, model, controlId, ownLabel = false, name, inactive = false, format } = defineProps<{
   label: string
   labelHidden?: boolean
   info?: string
@@ -24,6 +25,7 @@ const { label, labelHidden = false, info, description, optional = false, width, 
   ownLabel?: boolean
   name?: string
   inactive?: boolean
+  format?: FieldValueFormat
 }>()
 
 defineSlots<{
@@ -160,6 +162,7 @@ watch(() => inactive, (now) => {
       :id="statusId"
       :change="conflict"
       :mine="model?.model.value"
+      :format="format"
     />
     <slot name="after" />
   </div>
@@ -211,6 +214,7 @@ watch(() => inactive, (now) => {
         :model="model"
         :undo="undo"
         :description-id="statusId"
+        :format="format"
       />
     </div>
     <InfoPopover
