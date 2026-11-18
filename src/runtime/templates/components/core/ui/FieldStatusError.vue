@@ -18,7 +18,7 @@ defineExpose({ focusRetry })
 </script>
 
 <template>
-  <p class="cwa:m-0">
+  <p class="cwa:m-0 cwa:trim-text">
     {{ message || 'The server couldn’t save this.' }} Reset puts back the last saved value.
   </p>
   <div

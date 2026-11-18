@@ -307,13 +307,15 @@ function reset() {
         :collision-padding="8"
         aria-label="Status"
         data-testid="bar-summary-popover"
-        class="cwa:z-context cwa:flex cwa:w-max cwa:max-w-[min(20rem,calc(100vw-1rem))] cwa:items-center cwa:gap-2 cwa:bg-surface-menu cwa:p-popover cwa:text-control cwa:text-fg cwa:shadow-popover cwa:outline-none"
+        class="cwa:z-context cwa:w-max cwa:max-w-[min(20rem,calc(100vw-1rem))] cwa:bg-surface-menu cwa:p-popover cwa:text-control cwa:text-fg cwa:shadow-popover cwa:outline-none"
       >
-        <StateGlyph
-          v-if="status.glyph"
-          :kind="status.glyph"
-        />
-        <span>{{ status.full }}</span>
+        <div class="cwa:flex cwa:h-[1cap] cwa:items-center cwa:gap-2">
+          <StateGlyph
+            v-if="status.glyph"
+            :kind="status.glyph"
+          />
+          <span class="cwa:trim-text">{{ status.full }}</span>
+        </div>
         <PopoverArrow
           :width="12"
           :height="6"

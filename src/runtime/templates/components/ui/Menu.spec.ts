@@ -3,7 +3,7 @@ import { afterEach, describe, expect, test, vi } from 'vitest'
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { h } from 'vue'
 import { axe } from '../../../../../test/utils/axe'
-import { drawsOpenState } from '../../../../../test/utils/open-state'
+import { drawsOpenState } from '../../../../../test/utils/kit-css'
 import { menuGroups } from '../core/ui/menu-entries'
 import Menu from './Menu.vue'
 

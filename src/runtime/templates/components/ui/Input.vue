@@ -7,7 +7,7 @@ import EyeOffIcon from './icon/EyeOffIcon.vue'
 import Field from '../core/ui/Field.vue'
 import type { FieldWidth } from '../core/ui/Field.vue'
 import { useFieldModel } from '../core/ui/field-context'
-import { fieldBox, fieldFill } from '../core/ui/field-looks'
+import { fieldBox, fieldDisabled, fieldFill, placeholderLook } from '../core/ui/field-looks'
 import { formSurfaceKey } from '../core/ui/field-keys'
 import type { ResourceModelField } from '#cwa/resources/model-editors'
 
@@ -103,7 +103,7 @@ function onInput(event: Event) {
   >
     <template #default="{ describedBy, tone, busy }">
       <div
-        :class="[fieldBox, readonly ? 'cwa:bg-transparent' : fieldFill(tone, disabled || unbound), { 'cwa:opacity-50 cwa:cursor-not-allowed': disabled || unbound }]"
+        :class="[fieldBox, readonly ? 'cwa:bg-transparent' : fieldFill(tone, disabled || unbound), { [fieldDisabled]: disabled || unbound }]"
       >
         <slot name="prefix" />
         <input
@@ -121,7 +121,8 @@ function onInput(event: Event) {
           :aria-describedby="[describedBy, invalid && !onSurface ? invalidId : undefined].filter(Boolean).join(' ') || undefined"
           :aria-invalid="tone === 'danger' || invalid ? 'true' : undefined"
           :aria-busy="busy ? 'true' : undefined"
-          class="cwa:h-full cwa:min-w-0 cwa:flex-1 cwa:appearance-none cwa:border-0 cwa:bg-transparent cwa:px-3 cwa:text-control cwa:text-inherit cwa:outline-none cwa:placeholder:text-muted-on-field cwa:focus:ring-0 cwa:disabled:cursor-not-allowed cwa:pointer-coarse:text-base"
+          class="cwa:h-full cwa:min-w-0 cwa:flex-1 cwa:appearance-none cwa:border-0 cwa:bg-transparent cwa:px-3 cwa:text-control cwa:text-inherit cwa:outline-none cwa:focus:ring-0 cwa:disabled:cursor-not-allowed cwa:pointer-coarse:text-base"
+          :class="placeholderLook(disabled || unbound)"
           @input="onInput"
         >
         <button

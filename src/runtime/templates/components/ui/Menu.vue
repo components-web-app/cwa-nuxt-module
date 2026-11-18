@@ -188,10 +188,11 @@ function hideReasons() {
         :class="['cwa:z-context cwa:max-w-[min(18rem,calc(100vw-1rem))] cwa:p-popover cwa:text-control cwa:outline-1 cwa:outline-transparent', infoPanel]"
         @close-auto-focus.prevent
       >
-        <ul class="cwa:m-0 cwa:flex cwa:list-none cwa:flex-col cwa:gap-1 cwa:p-0">
+        <ul class="cwa:m-0 cwa:flex cwa:list-none cwa:flex-col cwa:gap-3 cwa:p-0">
           <li
             v-for="reason of reasonsFor.item.reasons"
             :key="reason"
+            class="cwa:trim-text"
           >
             {{ reason }}
           </li>
