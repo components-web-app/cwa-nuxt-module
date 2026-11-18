@@ -80,3 +80,40 @@ describe('disabledReason on every kit field (#461)', () => {
     })
   })
 })
+
+const textFields: [string, Component, Record<string, unknown>, boolean][] = [
+  ['CwaUiInput', Input, { modelValue: '', placeholder: 'https://your-site-domain.com' }, true],
+  ['CwaUiTextarea', Textarea, { modelValue: '', placeholder: 'Intro' }, true],
+  ['CwaUiNumber', NumberField, { modelValue: 2 }, false],
+  ['CwaUiSegmented', Segmented, { modelValue: 'one', options }, false],
+  ['CwaUiSelect', Select, { modelValue: undefined, options, placeholder: 'Choose…' }, false],
+  ['CwaUiMultiSelect', MultiSelect, { modelValue: [], options, placeholder: 'Choose…' }, true],
+  ['CwaUiResourceSearch', ResourceSearch, { modelValue: null, endpoint: '/_/routes', labelOf: () => '', placeholder: 'Search' }, true],
+]
+
+function classesIn(wrapper: ReturnType<typeof mountIn>) {
+  return wrapper.findAll('*').flatMap(element => element.classes())
+}
+
+describe('a disabled kit field stays readable (#461)', () => {
+  test.each(textFields)('%s, disabled, shows its value and placeholder in the disabled text colour, never faded with opacity or in the placeholder colour', async (_, component, props, nativePlaceholder) => {
+    const wrapper = mountIn('bar', component, { ...props, disabled: true })
+    await flushPromises()
+    const classes = classesIn(wrapper)
+
+    expect(classes.some(name => name.startsWith('cwa:text-fg-disabled'))).toBe(true)
+    expect(classes).not.toContain('cwa:opacity-50')
+    expect(classes).not.toContain('cwa:text-muted-on-field')
+    expect(classes).not.toContain('cwa:placeholder:text-muted-on-field')
+    expect(classes).not.toContain('cwa:text-fg/40')
+    nativePlaceholder && expect(classes).toContain('cwa:placeholder:text-fg-disabled')
+  })
+
+  test.each(textFields)('%s, enabled, never uses the disabled text colour', async (_, component, props) => {
+    const wrapper = mountIn('bar', component, props)
+    await flushPromises()
+
+    expect(classesIn(wrapper).some(name => name.startsWith('cwa:text-fg-disabled'))).toBe(false)
+    expect(classesIn(wrapper)).not.toContain('cwa:placeholder:text-fg-disabled')
+  })
+})

@@ -68,12 +68,13 @@
     --cwa-color-button: #44403c;
     --cwa-color-shimmer: rgb(255 255 255 / 0.24);
     --cwa-color-menu-highlight: #57534e;
-    --cwa-color-field: #44403c;
-    --cwa-color-field-hover: #4f4a45;
+    --cwa-color-field: #383430;
+    --cwa-color-field-hover: #2f2b28;
     --cwa-color-chip: #6e6964;
     --cwa-color-field-danger: #6f514c;
     --cwa-color-field-warning: #6d5e45;
-    --cwa-color-muted-on-field: #c1bcb7;
+    --cwa-color-muted-on-field: #a8a29e;
+    --cwa-color-fg-disabled: #8a847f;
     --cwa-color-tree-line: #78716c;
     --cwa-color-toggle-off: #78716c;
     --cwa-color-step-hover: rgb(255 255 255 / 0.17);
@@ -1873,6 +1874,12 @@
 .cwa\:text-fg {
   color: var(--cwa-color-fg);
 }
+.cwa\:text-fg-disabled {
+  color: var(--cwa-color-fg-disabled);
+}
+.cwa\:text-fg-disabled\! {
+  color: var(--cwa-color-fg-disabled) !important;
+}
 .cwa\:text-fg-muted {
   color: var(--cwa-color-fg-muted);
 }
@@ -2217,6 +2224,9 @@
 .cwa\:group-data-highlighted\:text-muted-on-field:is(:where(.cwa\:group)[data-highlighted] *) {
   color: var(--cwa-color-muted-on-field);
 }
+.cwa\:placeholder\:text-fg-disabled::placeholder {
+  color: var(--cwa-color-fg-disabled);
+}
 .cwa\:placeholder\:text-muted-on-field::placeholder {
   color: var(--cwa-color-muted-on-field);
 }
@@ -2472,6 +2482,11 @@
 .cwa\:active\:bg-step-press:active {
   background-color: var(--cwa-color-step-press);
 }
+@media (hover: hover) {
+  .cwa\:enabled\:hover\:bg-field-hover:enabled:hover {
+    background-color: var(--cwa-color-field-hover);
+  }
+}
 .cwa\:disabled\:pointer-events-none:disabled {
   pointer-events: none;
 }
@@ -2536,11 +2551,11 @@
 .cwa\:data-disabled\:cursor-not-allowed[data-disabled] {
   cursor: not-allowed;
 }
+.cwa\:data-disabled\:text-fg-disabled[data-disabled] {
+  color: var(--cwa-color-fg-disabled);
+}
 .cwa\:data-disabled\:text-stone-600[data-disabled] {
   color: var(--cwa-color-stone-600);
-}
-.cwa\:data-disabled\:opacity-50[data-disabled] {
-  opacity: 50%;
 }
 .cwa\:data-highlighted\:bg-menu-highlight[data-highlighted] {
   background-color: var(--cwa-color-menu-highlight);
@@ -2555,7 +2570,7 @@
 .cwa\:data-outside-view\:text-stone-500[data-outside-view] {
   color: var(--cwa-color-stone-500);
 }
-.cwa\:data-placeholder\:text-muted-on-field[data-placeholder] {
+.cwa\:data-placeholder\:not-data-disabled\:text-muted-on-field[data-placeholder]:not([data-disabled]) {
   color: var(--cwa-color-muted-on-field);
 }
 .cwa\:data-selected\:bg-light[data-selected] {
