@@ -1,114 +1,144 @@
 <template>
-  <ListHeading
-    title="Pages"
+  <ListHeading title="Pages" />
+  <ListFilter
+    :order-options="orderOptions"
+    search-label="Search pages"
+    :count="countText"
+    create-noun="page"
     @add="goToAdd"
-  />
-  <ListFilter :order-options="orderOptions" />
-  <ListContainer>
-    <div>
-      <div>
-        <FilterFormWrapper
-          label="Page Type"
-          input-id="page-type"
-        >
-          <div class="cwa:flex cwa:gap-x-2">
-            <div>
-              <ListFilterButton
-                v-model="selectedTypesModel"
-                value="false"
-                label="Static"
-                background-color-class="cwa:bg-blue-600/20"
-                border-color-class="cwa:border-blue-600"
-              />
-            </div>
-            <div>
-              <ListFilterButton
-                v-model="selectedTypesModel"
-                value="true"
-                label="Dynamic"
-                background-color-class="cwa:bg-yellow/20"
-                border-color-class="cwa:border-yellow"
-              />
-            </div>
-          </div>
-        </FilterFormWrapper>
-      </div>
-    </div>
-  </ListContainer>
+  >
+    <template #filters>
+      <CwaUiFilterToggle
+        v-model="staticModel"
+        label="Static"
+        colour="static"
+      />
+      <CwaUiFilterToggle
+        v-model="dynamicModel"
+        label="Dynamic"
+        colour="dynamic"
+      />
+    </template>
+  </ListFilter>
   <ListContent
     ref="listContent"
     fetch-url="/_/pages"
+    noun="pages"
+    :columns="columns"
     :search-fields="['reference', 'title', 'uiComponent']"
+    @loaded="load"
   >
     <template #item="{ data }">
-      <div class="cwa:flex cwa:border-b cwa:border-b-stone-700 cwa:py-6 cwa:gap-x-4 cwa:items-center">
-        <div class="cwa:grow cwa:flex cwa:flex-col cwa:gap-y-1">
-          <span class="cwa:text-xl cwa:text-pretty">{{ data.reference }}<span :class="['cwa:inline-block', 'cwa:align-middle', 'cwa:-translate-y-0.5', 'cwa:ml-3', 'cwa:outline', 'cwa:outline-1', 'cwa:outline-offset-2', 'cwa:w-2', 'cwa:h-2', 'cwa:shrink-0', 'cwa:rounded-full', data.isTemplate ? 'cwa:outline-yellow cwa:bg-yellow' : 'cwa:outline-blue-600 cwa:bg-blue-600']" /></span>
-          <span class="cwa:text-stone-400">UI: {{ data.uiComponent ? getDisplayPageUi(data.uiComponent) : 'Unknown' }}</span>
-        </div>
-        <div class="cwa:flex cwa:gap-x-2">
-          <CwaUiFormButton :to="computedItemLink(data['@id'])">
-            <CwaUiIconCogIcon class="cwa:w-6" />
-            <span class="cwa:sr-only">Settings</span>
-          </CwaUiFormButton>
-          <CwaUiFormButton @click="() => goToPage(data['@id'])">
-            <CwaUiIconEyeIcon class="cwa:h-5" />
-            <span class="cwa:sr-only">View</span>
-          </CwaUiFormButton>
-        </div>
-      </div>
+      <ListRow
+        :to="computedItemLink(data['@id'])"
+        :title="data.reference"
+        :type="data.isTemplate ? { label: 'Dynamic', colour: 'dynamic' } : { label: 'Static', colour: 'static' }"
+        :sub="subLine(data)"
+      >
+        <template #phone>
+          <PageListStatus
+            :resource="data"
+            :route="routes[data['@id']]"
+            :known="known"
+            :now="now"
+          />
+          <span class="cwa:truncate">{{ subLine(data) }}</span>
+        </template>
+        <ListCell>
+          <PageListStatus
+            :resource="data"
+            :route="routes[data['@id']]"
+            :known="known"
+            :now="now"
+          />
+        </ListCell>
+        <ListCell align="end">
+          {{ listDate(data.modifiedAt) }}
+        </ListCell>
+      </ListRow>
+    </template>
+    <template #empty>
+      <CwaUiButton
+        variant="solid"
+        :icon="PlusIcon"
+        label="Page"
+        aria-label="Create page"
+        @click="goToAdd"
+      />
     </template>
   </ListContent>
-  <ResourceModalOverlay @reload="triggerReload" />
+  <ResourceModalOverlay
+    :overlay="false"
+    @reload="triggerReload"
+  />
 </template>
 
 <script lang="ts" setup>
-import { useRouter } from 'vue-router'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useListPage } from '#cwa-layer/_composables/useListPage'
+import { useListRoutes } from '#cwa-layer/_composables/useListRoutes'
 import ListHeading from '#cwa/templates/components/core/admin/ListHeading.vue'
 import ListContent from '#cwa/templates/components/core/admin/ListContent.vue'
 import ListFilter from '#cwa/templates/components/core/admin/ListFilter.vue'
-import ListContainer from '#cwa/templates/components/core/admin/ListContainer.vue'
-import FilterFormWrapper from '#cwa/templates/components/core/admin/form/FilterFormWrapper.vue'
-import ListFilterButton from '#cwa/templates/components/core/admin/ListFilterButton.vue'
-import { useQueryBoundModel } from '#cwa/composables/cwa-query-bound-model'
+import ListRow from '#cwa/templates/components/core/admin/ListRow.vue'
+import ListCell from '#cwa/templates/components/core/admin/ListCell.vue'
+import PageListStatus from '#cwa/templates/components/core/admin/PageListStatus.vue'
+import { listDate } from '#cwa/templates/components/core/admin/list-date'
 import ResourceModalOverlay from '#cwa/templates/components/core/admin/ResourceModalOverlay.vue'
-import { definePageMeta, useCwa, useCwaResourceRoute, useHead } from '#imports'
+import CwaUiFilterToggle from '#cwa/templates/components/ui/FilterToggle.vue'
+import CwaUiButton from '#cwa/templates/components/ui/Button.vue'
+import PlusIcon from '#cwa/templates/components/ui/icon/PlusIcon.vue'
+import { useQueryBoundModel } from '#cwa/composables/cwa-query-bound-model'
+import type { CwaResource } from '#cwa/resources/resource-utils'
+import { definePageMeta, useCwa, useHead } from '#imports'
 
 const listContent = ref<InstanceType<typeof ListContent> | null>(null)
 
 const $cwa = useCwa()
 const { goToAdd, triggerReload, computedItemLink } = useListPage(listContent)
-const { getInternalResourceLink } = useCwaResourceRoute()
+const { routes, known, now, load } = useListRoutes('pages')
 
-const router = useRouter()
+const columns = [
+  { label: 'Page' },
+  { label: 'Status', width: '13rem' },
+  { label: 'Updated', width: '8rem', align: 'end' as const },
+]
 
 const orderOptions = [
-  {
-    label: 'New - Old',
-    value: { createdAt: 'desc' },
-  },
-  {
-    label: 'Old - New',
-    value: { createdAt: 'asc' },
-  },
-  {
-    label: 'A - Z',
-    value: { reference: 'asc' },
-  },
-  {
-    label: 'Z - A',
-    value: { reference: 'desc' },
-  },
+  { label: 'Newest first', value: { createdAt: 'desc' } },
+  { label: 'Oldest first', value: { createdAt: 'asc' } },
+  { label: 'A to Z', value: { reference: 'asc' } },
+  { label: 'Z to A', value: { reference: 'desc' } },
 ]
 
 const { model: selectedTypesModel } = useQueryBoundModel('isTemplate[]', {
-  defaultValue: ['true', 'false'],
+  defaultValue: [],
 })
 
-function goToPage(page: string) {
-  router.push(getInternalResourceLink(page))
+function typeModel(value: string) {
+  return computed({
+    get: () => (selectedTypesModel.value ?? []).includes(value),
+    set: (on: boolean) => {
+      const others = (selectedTypesModel.value ?? []).filter((selected: string) => selected !== value)
+      selectedTypesModel.value = on ? [...others, value] : others
+    },
+  })
+}
+
+const staticModel = typeModel('false')
+const dynamicModel = typeModel('true')
+
+const countText = computed(() => {
+  const total = listContent.value?.total
+  return typeof total === 'number' ? `${total} ${total === 1 ? 'page' : 'pages'}` : undefined
+})
+
+function subLine(page: CwaResource) {
+  const path = routes.value[page['@id']]?.path
+  if (path) {
+    return path
+  }
+  return `UI: ${page.uiComponent ? getDisplayPageUi(page.uiComponent) : 'Unknown'}`
 }
 
 function getDisplayPageUi(ui: string) {

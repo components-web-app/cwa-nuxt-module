@@ -1,31 +1,57 @@
 <template>
   <div>
-    <ListHeading
-      title="Users"
+    <ListHeading title="Users" />
+    <ListFilter
+      :order-options="orderOptions"
+      search-label="Search users"
+      :count="countText"
+      create-noun="user"
       @add="goToAdd"
     />
-    <ListFilter :order-options="orderOptions" />
     <ListContent
       ref="listContent"
       fetch-url="/users"
+      noun="users"
+      :columns="columns"
       :search-fields="['emailAddress', 'username']"
     >
       <template #item="{ data }">
-        <div
-          class="cwa:flex cwa:border-b cwa:border-b-stone-700 cwa:py-6 cwa:gap-x-4 cwa:items-center"
-          :class="{ 'cwa:opacity-50': !data.enabled }"
+        <ListRow
+          :to="computedItemLink(data['@id'])"
+          :title="data.username"
+          :sub="data.emailAddress"
+          :dim="!data.enabled"
         >
-          <div class="cwa:grow cwa:flex cwa:flex-col cwa:gap-y-1">
-            <span class="cwa:text-xl">{{ data.username }} <span class="cwa:text-stone-400 cwa:text-sm">{{ getUserRole(data.roles) }}</span></span>
-            <span>{{ data.emailAddress }}</span>
-          </div>
-          <div>
-            <CwaUiFormButton :to="computedItemLink(data['@id'])">
-              <CwaUiIconCogIcon class="cwa:w-6" />
-              <span class="cwa:sr-only">Settings</span>
-            </CwaUiFormButton>
-          </div>
-        </div>
+          <ListCell>
+            {{ getUserRole(data.roles) }}
+          </ListCell>
+          <ListCell>
+            <CwaUiBadge
+              v-if="!data.enabled"
+              dot
+              data-testid="user-disabled"
+            >
+              Disabled
+            </CwaUiBadge>
+            <CwaUiBadge
+              v-else-if="data.emailAddressVerified === false"
+              tone="warning"
+              dot
+              data-testid="user-unverified"
+            >
+              Email not verified
+            </CwaUiBadge>
+          </ListCell>
+        </ListRow>
+      </template>
+      <template #empty>
+        <CwaUiButton
+          variant="solid"
+          :icon="PlusIcon"
+          label="User"
+          aria-label="Create user"
+          @click="goToAdd"
+        />
       </template>
     </ListContent>
     <ResourceModalOverlay @reload="triggerReload" />
@@ -33,12 +59,17 @@
 </template>
 
 <script lang="ts" setup>
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import ListHeading from '#cwa/templates/components/core/admin/ListHeading.vue'
 import ListContent from '#cwa/templates/components/core/admin/ListContent.vue'
-import { CwaUserRoles } from '#cwa/storage/stores/auth/state'
 import ListFilter from '#cwa/templates/components/core/admin/ListFilter.vue'
+import ListRow from '#cwa/templates/components/core/admin/ListRow.vue'
+import ListCell from '#cwa/templates/components/core/admin/ListCell.vue'
 import ResourceModalOverlay from '#cwa/templates/components/core/admin/ResourceModalOverlay.vue'
+import CwaUiBadge from '#cwa/templates/components/ui/Badge.vue'
+import CwaUiButton from '#cwa/templates/components/ui/Button.vue'
+import PlusIcon from '#cwa/templates/components/ui/icon/PlusIcon.vue'
+import { CwaUserRoles } from '#cwa/storage/stores/auth/state'
 import { useListPage } from '#cwa-layer/_composables/useListPage'
 import { definePageMeta, useHead } from '#imports'
 
@@ -46,24 +77,23 @@ const listContent = ref<InstanceType<typeof ListContent> | null>(null)
 
 const { goToAdd, triggerReload, computedItemLink } = useListPage(listContent)
 
-const orderOptions = [
-  {
-    label: 'New - Old',
-    value: { createdAt: 'desc' },
-  },
-  {
-    label: 'Old - New',
-    value: { createdAt: 'asc' },
-  },
-  {
-    label: 'A - Z',
-    value: { username: 'asc' },
-  },
-  {
-    label: 'Z - A',
-    value: { username: 'desc' },
-  },
+const columns = [
+  { label: 'User' },
+  { label: 'Role', width: '8rem' },
+  { label: 'Status', width: '11rem' },
 ]
+
+const orderOptions = [
+  { label: 'Newest first', value: { createdAt: 'desc' } },
+  { label: 'Oldest first', value: { createdAt: 'asc' } },
+  { label: 'A to Z', value: { username: 'asc' } },
+  { label: 'Z to A', value: { username: 'desc' } },
+]
+
+const countText = computed(() => {
+  const total = listContent.value?.total
+  return typeof total === 'number' ? `${total} ${total === 1 ? 'user' : 'users'}` : undefined
+})
 
 function getUserRole(roles: CwaUserRoles[]) {
   if (roles.includes(CwaUserRoles.SUPER_ADMIN)) {

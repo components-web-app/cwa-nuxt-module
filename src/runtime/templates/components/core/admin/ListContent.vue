@@ -1,106 +1,187 @@
 <template>
-  <ListContainer class="cwa:py-4">
-    <CwaUiAlertWarning v-if="loadError">
-      {{ loadError }}
-    </CwaUiAlertWarning>
-    <div class="cwa:relative">
-      <Transition
-        appear
-        mode="out-in"
-        v-bind="overlay"
-      >
-        <Spinner
-          v-if="loading"
-          class="cwa:absolute"
-          :show="true"
+  <div
+    class="cwa:mx-auto cwa:w-full cwa:max-w-6xl cwa:px-4 cwa:pb-12 cwa:sm:px-8"
+    data-testid="list-content"
+  >
+    <CwaUiAlert
+      v-if="loadError"
+      tone="danger"
+      :title="`${capitalise(noun)} couldn't be loaded.`"
+      class="cwa:mb-4"
+      data-testid="list-error"
+    >
+      <p class="cwa:m-0">
+        {{ loadError }}<template v-if="items.length">
+          {{ ageText }}
+        </template>
+      </p>
+      <template #actions>
+        <CwaUiButton
+          label="Retry"
+          data-testid="list-retry"
+          :loading="loading"
+          @click="reloadItems"
         />
+      </template>
+    </CwaUiAlert>
+    <div
+      role="table"
+      :aria-label="capitalise(noun)"
+      :aria-busy="loading ? 'true' : undefined"
+      :style="{ '--cwa-list-columns': columnTemplate }"
+      data-testid="list-table"
+    >
+      <div
+        role="rowgroup"
+        class="cwa:max-md:hidden"
+      >
         <div
-          v-else-if="!items.length && !loadError"
-          class="cwa:flex cwa:justify-center"
+          role="row"
+          class="cwa:grid cwa:h-10 cwa:grid-cols-(--cwa-list-columns) cwa:items-center cwa:gap-x-4 cwa:border-b cwa:border-line cwa:px-4"
         >
-          <div class="cwa:w-full cwa:max-w-xl cwa:text-center cwa:flex cwa:flex-col cwa:gap-y-2 cwa:text-stone-400">
-            <div class="cwa:flex cwa:justify-center">
-              <CwaUiIconWarningIcon class="cwa:w-20" />
-            </div>
-            <h2 class="cwa:font-bold">
-              Sorry, no items found
-            </h2>
-          </div>
+          <span
+            v-for="column in columns"
+            :key="column.label"
+            role="columnheader"
+            class="cwa:truncate cwa:text-helper cwa:text-fg-muted"
+            :class="{ 'cwa:text-end': column.align === 'end' }"
+          ><span :class="{ 'cwa:sr-only': column.labelHidden }">{{ column.label }}</span></span>
         </div>
-        <div v-else-if="items.length">
-          <ListPagination
-            v-model:page.number="pageModel"
-            v-model:per-page.number="perPageModel"
-            :total-items="hydraData.totalItems || 0"
-          />
-          <ul class="cwa:flex cwa:flex-col cwa:mb-8">
-            <li
-              v-for="(item, index) in items"
-              :key="`list-item-${index}`"
-            >
-              <slot
-                name="item"
-                v-bind="{ data: getItemFromStore(item), rawData: item }"
-              >
-                <div class="cwa:dark-blur cwa:p-2 cwa:border cwa:border-light/20">
-                  <span class="cwa:font-bold">No list item template UI provided</span>
-                  <pre class="cwa:text-xs cwa:p-2 cwa:max-h-40 cwa:overflow-auto">{{ item }}</pre>
-                </div>
-              </slot>
-            </li>
-          </ul>
-          <ListPagination
-            v-model:page.number="pageModel"
-            v-model:per-page.number="perPageModel"
-            :total-items="hydraData.totalItems || 0"
-          />
-        </div>
-      </Transition>
+      </div>
+      <div
+        role="rowgroup"
+        :class="{ 'cwa:opacity-60 cwa:transition-opacity': (loading || loadError) && items.length }"
+      >
+        <template v-if="items.length">
+          <template
+            v-for="item in items"
+            :key="item['@id']"
+          >
+            <slot
+              name="item"
+              v-bind="{ data: getItemFromStore(item), rawData: item }"
+            />
+          </template>
+        </template>
+      </div>
     </div>
-  </ListContainer>
+    <CwaUiListState
+      v-if="loading && !items.length"
+      state="loading"
+      :noun="noun"
+    />
+    <CwaUiListState
+      v-else-if="!loading && !items.length && !loadError"
+      state="empty"
+      :noun="noun"
+      :title="searchText ? `No ${noun} match “${searchText}”.` : undefined"
+    >
+      <slot
+        v-if="!searchText"
+        name="empty"
+      />
+    </CwaUiListState>
+    <CwaUiPagination
+      v-if="items.length"
+      v-model:page="pageModel"
+      :total="hydraData?.totalItems || 0"
+      :per-page="perPageModel || PER_PAGE"
+      :label="`${capitalise(noun)} pages`"
+      class="cwa:mt-6"
+    />
+    <span
+      role="status"
+      class="cwa:sr-only"
+      data-testid="list-announcer"
+    >{{ announcement }}</span>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { consola as logger } from 'consola'
-import { useTransitions } from '#cwa/composables/transitions'
 import { useRoute } from 'vue-router'
 import type { LocationQuery } from 'vue-router'
-import ListContainer from './ListContainer.vue'
-import ListPagination from './ListPagination.vue'
-import Spinner from '#cwa/templates/components/utils/Spinner.vue'
-import { useCwa, useQueryBoundModel } from '#imports'
+import CwaUiAlert from '#cwa/templates/components/ui/Alert.vue'
+import CwaUiButton from '#cwa/templates/components/ui/Button.vue'
+import CwaUiListState from '#cwa/templates/components/ui/ListState.vue'
+import CwaUiPagination from '#cwa/templates/components/ui/Pagination.vue'
+import { useCwa } from '#cwa/composables/cwa'
+import { useQueryBoundModel } from '#cwa/composables/cwa-query-bound-model'
 import { mergeQueryIntoPath } from '#cwa/api/fetcher/query-utils'
 import type { CwaResource } from '#cwa/resources/resource-utils'
 
+export interface ListColumn {
+  label: string
+  width?: string
+  align?: 'end'
+  labelHidden?: boolean
+}
+
+const PER_PAGE = 20
+
 const $cwa = useCwa()
-const { overlay } = useTransitions()
 const route = useRoute()
 const { model: perPageModel } = useQueryBoundModel('perPage', { defaultValue: null, asNumber: true })
 const { model: pageModel } = useQueryBoundModel('page', { defaultValue: 1, asNumber: true })
 
 watch(perPageModel, (newValue) => {
   if (!newValue) {
-    perPageModel.value = 5
+    perPageModel.value = PER_PAGE
   }
 }, {
   immediate: true,
 })
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   fetchUrl: string
   searchFields?: string[]
+  noun?: string
+  columns?: ListColumn[]
+}>(), {
+  searchFields: undefined,
+  noun: 'items',
+  columns: () => [{ label: 'Name' }],
+})
+
+const emit = defineEmits<{
+  loaded: [items: CwaResource[]]
 }>()
 
 const loading = ref(true)
 const items = ref<any[]>([])
-const hydraData = ref()
+const hydraData = ref<{ totalItems: number, view?: unknown }>()
 const currentRequestId = ref<number>(0)
 const loadError = ref<string>()
+const loadedAt = ref<number>()
+const ageText = ref('')
+const announcement = ref('')
+
+const columnTemplate = computed(() => props.columns.map((column, index) => index === 0 ? 'minmax(0,1fr)' : (column.width ?? 'auto')).join(' '))
+
+const searchText = computed(() => {
+  const search = route.query.search
+  return typeof search === 'string' ? search.trim() : ''
+})
+
+function capitalise(text: string) {
+  return text.charAt(0).toUpperCase() + text.slice(1)
+}
 
 function loadFailureMessage(error: unknown) {
   const statusCode = (error as { statusCode?: number } | undefined)?.statusCode
-  return `The list could not be loaded (${statusCode || 'network error'}). Please try again.`
+  return statusCode ? `The server answered ${statusCode}.` : 'The server couldn\'t be reached.'
+}
+
+function describeAge() {
+  if (!loadedAt.value) {
+    return ''
+  }
+  const minutes = Math.round((Date.now() - loadedAt.value) / 60000)
+  if (minutes < 1) {
+    return 'The list below is from less than a minute ago.'
+  }
+  return `The list below is from ${minutes} ${minutes === 1 ? 'minute' : 'minutes'} ago.`
 }
 
 function buildRequestQuery(): LocationQuery {
@@ -121,20 +202,11 @@ async function reloadItems() {
   const thisRequestId = currentRequestId.value + 1
   currentRequestId.value = thisRequestId
   loading.value = true
-  loadError.value = undefined
+  items.value.length || (announcement.value = `Loading ${props.noun}`)
 
   try {
     const { response } = $cwa.fetch({ path: mergeQueryIntoPath(props.fetchUrl, buildRequestQuery()), noQuery: true })
     const { _data: data } = await response
-    /*
-    hydra:totalItems: 123
-    hydra:view:
-      @id: "/_/routes?perPage=5&page=1"
-      @type: "hydra:PartialCollectionView"
-      hydra:first: "/_/routes?perPage=5&page=1"
-      hydra:last: "/_/routes?perPage=5&page=5"
-      hydra:next: "/_/routes?perPage=5&page=2"
-     */
     if (thisRequestId !== currentRequestId.value) {
       return
     }
@@ -142,14 +214,19 @@ async function reloadItems() {
       totalItems: data?.['totalItems'] || 0,
       view: data?.['view'],
     }
-    data && (items.value = data['member'])
+    items.value = data?.['member'] ?? []
+    loadError.value = undefined
+    loadedAt.value = Date.now()
     loading.value = false
+    announcement.value = `${hydraData.value.totalItems} ${props.noun}`
+    emit('loaded', items.value)
   }
   catch (error) {
     if (thisRequestId !== currentRequestId.value) {
       return
     }
     loadError.value = loadFailureMessage(error)
+    ageText.value = describeAge()
     loading.value = false
     logger.error('[CWA] Could not load the list', error)
   }
@@ -187,8 +264,11 @@ onMounted(() => {
   reloadItems()
 })
 
+const total = computed(() => hydraData.value?.totalItems)
+
 defineExpose({
   reloadItems,
+  total,
 })
 
 defineSlots<{
@@ -198,5 +278,6 @@ defineSlots<{
       rawData: typeof items.value[0]
     }
   ): any
+  empty(): any
 }>()
 </script>

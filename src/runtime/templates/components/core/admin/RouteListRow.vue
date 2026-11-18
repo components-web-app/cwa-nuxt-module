@@ -1,80 +1,52 @@
 <template>
-  <div class="cwa:flex cwa:border-b cwa:border-b-stone-700 cwa:py-6 cwa:gap-x-4 cwa:items-center">
-    <div class="cwa:grow cwa:flex cwa:flex-col cwa:gap-y-1 cwa:min-w-0">
-      <span class="cwa:text-xl cwa:truncate">{{ data.path }}</span>
-      <span
-        data-route-publication
-        class="cwa:inline-flex cwa:self-start cwa:text-sm cwa:font-bold cwa:py-1 cwa:px-3 cwa:border cwa:rounded"
-        :class="publicationClass"
-      >
-        {{ publicationLabel }}<template v-if="publicationState === 'scheduled'"> — {{ goesLiveAt }}</template>
-      </span>
-      <span
-        v-if="relatedResource"
-        class="cwa:text-stone-400"
-      >
-        <span class="cwa:inline-flex cwa:max-w-full cwa:bg-dark cwa:p-2 cwa:font-bold cwa:gap-x-2 cwa:items-center">
-          <IconRoutes
-            v-if="resourceType === 'Route'"
-            class="cwa:h-5"
-          />
-          <IconData
-            v-else-if="resourceType === 'PageData'"
-            class="cwa:h-5"
-          />
-          <IconPages
-            v-else-if="resourceType === 'Page'"
-            class="cwa:h-5"
-          />
-          <span class="cwa:truncate">{{ relatedResource || 'Unknown' }}</span>
-        </span>
-      </span>
-      <span v-else>
-        <span class="cwa:inline-flex cwa:truncate cwa:bg-magenta/60 cwa:text-white cwa:font-bold cwa:py-1 cwa:px-3 cwa:border cwa:border-magenta cwa:rounded">
-          This route has no association and should be deleted
-        </span>
-      </span>
-    </div>
-    <div>
-      <CwaUiFormButton
-        v-if="relatedResource"
-        :to="linkTo"
-      >
-        <IconPages
-          v-if="data.page"
-          class="cwa:h-6"
-        />
-        <IconData
-          v-else
-          class="cwa:h-6"
-        />
-        <span class="cwa:sr-only">View</span>
-      </CwaUiFormButton>
-      <CwaUiFormButton
-        v-else-if="!data.redirect"
-        color="error"
+  <ListRow
+    :to="linkTo"
+    :title="data.path"
+    :sub="subLine"
+  >
+    <template #phone>
+      <RouteStatusBadge
+        :publication="routePublication"
+        :now="now"
+      />
+      <span class="cwa:truncate">{{ subLine }}</span>
+    </template>
+    <ListCell>
+      <RouteStatusBadge
+        :publication="routePublication"
+        :now="now"
+      />
+    </ListCell>
+    <ListCell action>
+      <CwaUiButton
+        v-if="!relatedResource && !data.redirect"
+        variant="ghost"
+        tone="danger"
+        icon-only
+        :icon="BinIcon"
+        :label="`Delete the route ${data.path}`"
+        data-testid="route-delete"
         @click="$emit('delete', data['@id'])"
-      >
-        <CwaUiIconBinIcon class="cwa:w-4 cwa:m-1" />
-        <span class="cwa:sr-only">Delete</span>
-      </CwaUiFormButton>
-    </div>
-  </div>
+      />
+    </ListCell>
+  </ListRow>
 </template>
 
 <script setup lang="ts">
 import type { RouteLocationRaw } from 'vue-router'
 import { computed } from 'vue'
-import IconPages from '#cwa/templates/components/core/assets/IconPages.vue'
-import IconRoutes from '#cwa/templates/components/core/assets/IconRoutes.vue'
+import ListRow from '#cwa/templates/components/core/admin/ListRow.vue'
+import ListCell from '#cwa/templates/components/core/admin/ListCell.vue'
+import RouteStatusBadge from '#cwa/templates/components/core/admin/RouteStatusBadge.vue'
+import CwaUiButton from '#cwa/templates/components/ui/Button.vue'
+import BinIcon from '#cwa/templates/components/ui/icon/BinIcon.vue'
 import type { CwaResource } from '#cwa/resources/resource-utils'
-import IconData from '#cwa/templates/components/core/assets/IconData.vue'
-import { getRouteLiveState, routeLiveStateLabel, routePublicationFromResource, routeReachableAt } from '#cwa/resources/route-publication'
-import { formatDateTime } from '#cwa/resources/date-time-input'
+import { routePublicationFromResource } from '#cwa/resources/route-publication'
 
 const props = defineProps<{
   data: CwaResource
   linkFn: (iri: string, routeName?: string, hash?: string, params?: { [key: string]: string }) => RouteLocationRaw
+  now?: Date
   associatedResources?: {
     redirect?: string
     page?: string
@@ -88,50 +60,25 @@ defineEmits<{
 }>()
 
 const routePublication = computed(() => routePublicationFromResource(props.data))
-const publicationState = computed(() => getRouteLiveState(routePublication.value))
-const publicationLabel = computed(() => routeLiveStateLabel(routePublication.value))
-const goesLiveAt = computed(() => formatDateTime(routeReachableAt(routePublication.value)))
-const publicationClass = computed(() => {
-  if (publicationState.value === 'live') {
-    return 'cwa:text-stone-300 cwa:border-stone-600'
-  }
-  if (publicationState.value === 'scheduled') {
-    return 'cwa:text-amber-400 cwa:border-amber-400'
-  }
-  return 'cwa:text-white cwa:bg-magenta/60 cwa:border-magenta'
-})
 
 const linkTo = computed(() => {
-  if (!relatedResource.value) {
-    return
-  }
-  if (props.associatedResources?.pageData) {
-    if (!props.data.pageData) {
-      return '#'
-    }
-    return props.linkFn(props.data.pageData, '_cwa-routes', '#routes')
-  }
-  if (!props.data.page) {
-    return '#'
-  }
-  return props.linkFn(props.data.page, '_cwa-routes', '#routes')
+  const target = props.associatedResources?.pageData ? props.data.pageData : (props.associatedResources?.page ? props.data.page : undefined)
+  return target ? props.linkFn(target, '_cwa-routes', '#routes') : undefined
 })
 
-const resourceType = computed<undefined | 'Route' | 'Page' | 'PageData'>(() => {
-  const assocResource = props.associatedResources
-  if (!assocResource) {
-    return
-  }
-  if (props.associatedResources?.redirect) {
-    return 'Route'
-  }
-  if (props.associatedResources?.page) {
-    return 'Page'
-  }
-  return 'PageData'
-})
+const relatedResource = computed(() => props.associatedResources?.redirect || props.associatedResources?.pageData || props.associatedResources?.page)
 
-const relatedResource = computed(() => {
-  return props.associatedResources?.redirect || props.associatedResources?.pageData || props.associatedResources?.page
+const subLine = computed(() => {
+  const related = props.associatedResources
+  if (related?.redirect) {
+    return `Redirects to ${related.redirect}`
+  }
+  if (related?.pageData) {
+    return `${related.pageDataType ? `${related.pageDataType.split('\\').pop()}: ` : ''}${related.pageData}`
+  }
+  if (related?.page) {
+    return `Page: ${related.page}`
+  }
+  return 'Nothing uses this route, so it can be deleted.'
 })
 </script>

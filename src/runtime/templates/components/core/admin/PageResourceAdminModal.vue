@@ -2,15 +2,16 @@
   <CwaUiDialog
     v-if="localResourceData"
     ref="dialog"
+    v-model:tab="tab"
     :title="dialogTitle"
     :tabs="tabs"
     :form="form"
     :loading="isLoading"
     noun="page"
+    :create-noun="isAdding ? createNoun : undefined"
     data-testid="page-dialog"
     @close="$emit('close')"
     @save="saveResource()"
-    @update:tab="onTab"
   >
     <template
       v-if="!hideViewLink && !isAdding"
@@ -229,7 +230,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, useTemplateRef, watch } from 'vue'
+import { pageDataNoun } from './page-data-noun'
+import { computed, onMounted, ref, useTemplateRef, watch, watchEffect } from 'vue'
 import isEqual from 'lodash-es/isEqual'
 import { useRoute } from 'vue-router'
 import { navigateTo, useCwa } from '#imports'
@@ -281,7 +283,11 @@ const rootIri = computed(() => {
 })
 const displayIri = ref(rootIri.value)
 
-const isDisplayingPage = computed(() => getResourceTypeFromIri(displayIri.value ?? '') === CwaResourceTypes.PAGE)
+watch(rootIri, (iri) => {
+  displayIri.value = iri
+})
+
+const isDisplayingPage = computed(() => displayIri.value === 'add' ? props.resourceType === 'Page' : getResourceTypeFromIri(displayIri.value ?? '') === CwaResourceTypes.PAGE)
 
 function getResourceData(iri: string) {
   return $cwa.resources.getResource(iri).value
@@ -375,17 +381,32 @@ const dataTypeOptions = computed<MenuEntry[]>(() => {
 
 const dataInstanceOptions = computed<MenuEntry[]>(() => (dataInstances.value ?? []).map(instance => ({ label: instance.title || instance['@id'], value: instance['@id'] })))
 
+const createEndpoint = ref(props.resourceType === 'Page' ? '/_/pages' : '')
+
+const linkDefaults = Object.fromEntries(
+  ([['parentPage', 'parentPage'], ['parentPageData', 'parentPageData'], ['template', 'page']] as const)
+    .flatMap(([queryKey, field]) => typeof route.query[queryKey] === 'string' ? [[field, route.query[queryKey]]] : []),
+)
+
 const { isAdding, isLoading, isUpdating, localResourceData, resource, formatDate, deleteResource, saveResource: _saveResource, loadResource, getInternalResourceLink, form } = useItemPage({
-  createEndpoint: '/_/pages',
+  createEndpoint,
   emit,
   resourceType: props.resourceType,
-  defaultResource: {},
+  defaultResource: () => props.resourceType === 'Page'
+    ? { isTemplate: false, uiComponent: pageComponentNames.value[0] }
+    : linkDefaults,
   endpoint: displayIri,
+  routeHashAfterAdd: computed(() => (localResourceData.value?.isTemplate ? '#details' : '#routes')),
   excludeFields: ['componentGroups'],
   dismissStoredErrors: true,
 })
 
+const createNoun = computed(() => isDisplayingPage.value ? 'page' : pageDataNoun(props.resourceType))
+
 const dialogTitle = computed(() => {
+  if (isAdding.value) {
+    return `New ${createNoun.value}`
+  }
   const stored = resource.value
   const name = isDisplayingPage.value ? stored?.reference : stored?.title
   return name || (isDisplayingPage.value ? 'Untitled page' : 'Untitled')
@@ -633,13 +654,31 @@ const metaSelects = computed(() => Object.fromEntries((pageDataConfig.value?.met
   .map(metaField => [metaField.field, metaSelect(metaField.field, metaField.options)])))
 
 const tabs = computed<DialogTab[]>(() => {
-  const t: DialogTab[] = [{ label: 'Details', key: 'details' }]
-  if (!isAdding.value) {
-    t.push({ label: 'Routes', key: 'routes' })
-    t.push({ label: 'Info', key: 'info' })
+  if (isAdding.value) {
+    return [
+      { label: 'Details', key: 'details' },
+      { label: 'Routes', key: 'routes', disabled: `Routes open once the ${createNoun.value} is created. Create the ${createNoun.value} and this tab lets you add its address.` },
+    ]
   }
-  return t
+  return [
+    { label: 'Details', key: 'details' },
+    { label: 'Routes', key: 'routes' },
+    { label: 'Info', key: 'info' },
+  ]
 })
+
+function tabFromHash(hash: string) {
+  const key = hash.replace(/^#/, '')
+  return tabs.value.some(item => item.key === key && !item.disabled) ? key : 'details'
+}
+
+const tab = ref(tabFromHash(route.hash ?? ''))
+
+watch(() => route.hash, (hash) => {
+  tab.value = tabFromHash(hash ?? '')
+})
+
+watch(tab, key => key === 'info' && refreshCounts())
 
 watch(selectedParentDataType, (key, oldKey) => {
   if (oldKey && localResourceData.value) localResourceData.value.parentPageData = null
@@ -661,11 +700,23 @@ watch(localResourceData, (data, oldData) => {
   }
 }, { immediate: true })
 
-function onTab(tab: string) {
-  tab === 'info' && refreshCounts()
-}
+watchEffect(async () => {
+  if (!props.resourceType || props.resourceType === 'Page') {
+    return
+  }
+  const docs = await $cwa.getApiDocumentation()
+  createEndpoint.value = docs?.entrypoint?.[fqcnToEntrypointKey(props.resourceType) || ''] || ''
+})
 
 onMounted(async () => {
   await Promise.all([loadLayoutOptions(), loadDynamicPageOptions(), loadParentPageOptions(), loadDataTypes()])
+  if (!isAdding.value || !localResourceData.value) {
+    return
+  }
+  if (isDisplayingPage.value) {
+    localResourceData.value.layout ||= layouts.value?.[0]?.['@id']
+    return
+  }
+  localResourceData.value.page ||= dynamicPages.value?.[0]?.['@id']
 })
 </script>

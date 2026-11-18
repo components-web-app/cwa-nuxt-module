@@ -202,7 +202,7 @@ Until then a short value is still read in places.
 **Delete:**
 
 - `fullPageUiName` and the `pageUiComponentModel` computed in
-  `PageAdminModal.vue` and `PageResourceAdminModal.vue`, binding the Page UI
+  `PageResourceAdminModal.vue`, binding the Page UI
   select straight to `localResourceData.uiComponent`, and their "stored short"
   tests
 - the "still stored short" test in `src/layer/pages/_cwa/index/pages.spec.ts`
