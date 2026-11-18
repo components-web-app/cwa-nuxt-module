@@ -9,6 +9,7 @@ const route = useRoute()
 const framed = route.query.frame === '1'
 const { settings, ready } = useKitWorkbench()
 const tab = useKitTab()
+const belowAdminHeader = computed(() => tab.value === 'practice')
 const frameSrc = computed(() => `/kit?frame=1${tab.value === 'kit' ? '' : `&tab=${tab.value}`}`)
 
 const root = useTemplateRef<HTMLElement>('root')
@@ -121,6 +122,7 @@ watch(frameBox, (box) => {
     v-if="!framed"
     ref="root"
     class="kit-workbench"
+    :class="{ 'kit-workbench-below-header': belowAdminHeader }"
   >
     <KitToolbar
       :sections="sections"
@@ -163,6 +165,10 @@ watch(frameBox, (box) => {
   .kit-workbench {
     margin: -2rem -2.5rem 1.5rem;
   }
+}
+
+.kit-workbench-below-header {
+  top: 4.5rem;
 }
 
 .kit-workbench-stage {
