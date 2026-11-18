@@ -66,6 +66,25 @@ describe('CwaUiDialog and the Save model (#461)', () => {
     form = fakeDialogForm({ reference: 'Kitchens', title: 'Hand-built kitchens', isReachableWithoutRoute: false })
   })
 
+  test('opens with focus on its title, never on a header control such as the page type select, the view link or the depth chain, where a stray key would act (#461)', async () => {
+    const Host = defineComponent({
+      setup() {
+        return () => h(Dialog, { title: 'Kitchens', tabs, form, onSave: () => form.save() }, {
+          'header-actions': () => h('button', { 'type': 'button', 'data-testid': 'page-type' }, 'Static'),
+          'subheader': () => h('nav', [h('a', { 'href': '/kitchens', 'data-testid': 'depth-link' }, 'Kitchens')]),
+          'details': () => h(Input, { label: 'Reference', field: 'reference' }),
+        })
+      },
+    })
+    mount(Host, { attachTo: document.body })
+    await flushPromises()
+
+    const title = document.getElementById(dialog().getAttribute('aria-labelledby')!)!
+    expect(document.activeElement).toBe(title)
+    expect(title.getAttribute('tabindex')).toBe('-1')
+    expect(q('[data-testid="page-type"]')).not.toBeNull()
+  })
+
   test('is a modal dialog named by its title, with tabs, panels and a footer of Cancel and Save only', async () => {
     mountDialog(form)
     await flushPromises()

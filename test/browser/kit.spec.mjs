@@ -54,3 +54,67 @@ for (const width of widths) {
     expect(touching).toEqual([])
   })
 }
+
+const floatingSurfaces = [
+  ['the resource stack at the pointer', async (page) => {
+    const area = page.getByTestId('kit-stack-area')
+    await area.scrollIntoViewIfNeeded()
+    const box = await area.boundingBox()
+    await page.mouse.click(box.x + 40, box.y + 20, { button: 'right' })
+  }],
+  ['the resource stack over its button', page => page.getByRole('button', { name: 'Rich text' }).click()],
+  ['the split button menu', page => page.getByTestId('kit-split').getByRole('button').last().click()],
+  ['an information popover', page => page.locator('main').getByTestId('field-info').first().click()],
+  ['a select menu', page => page.locator('main').getByTestId('select-trigger').first().click()],
+  ['a multi-select menu', page => page.locator('main').getByTestId('multi-input').first().click()],
+  ['a resource search menu', async (page) => {
+    const input = page.locator('main').getByTestId('search-input').first()
+    await input.click()
+    await input.fill('a')
+  }],
+]
+
+for (const [name, open] of floatingSurfaces) {
+  test(`kit: ${name} is never painted before it is placed (#461)`, async ({ page }) => {
+    await openKit(page, 1280)
+    await page.waitForLoadState('networkidle')
+    await page.evaluate(() => {
+      window.cwaFloatingFrames = []
+      const sample = () => {
+        const wrappers = [...document.querySelectorAll('[data-reka-popper-content-wrapper]')]
+        if (!wrappers.length && !window.cwaFloatingFrames.length) {
+          requestAnimationFrame(sample)
+          return
+        }
+        window.cwaFloatingFrames.push(wrappers.map((wrapper) => {
+          const content = wrapper.firstElementChild
+          const style = getComputedStyle(wrapper)
+          const contentStyle = content ? getComputedStyle(content) : style
+          const placement = new DOMMatrixReadOnly(style.transform === 'none' ? undefined : style.transform)
+          const rect = wrapper.getBoundingClientRect()
+          return {
+            id: content?.getAttribute('data-testid') ?? content?.getAttribute('role'),
+            x: placement.e,
+            y: placement.f,
+            painted: style.visibility !== 'hidden' && contentStyle.visibility !== 'hidden' && Number(contentStyle.opacity) > 0 && rect.width > 0,
+          }
+        }))
+        if (window.cwaFloatingFrames.length < 45) {
+          requestAnimationFrame(sample)
+        }
+      }
+      requestAnimationFrame(sample)
+    })
+    await open(page)
+    await page.waitForFunction(() => window.cwaFloatingFrames.length >= 45)
+
+    const frames = await page.evaluate(() => window.cwaFloatingFrames)
+    const final = frames.at(-1)
+    expect(final.filter(surface => surface.painted).length).toBeGreaterThan(0)
+    const misplaced = frames.flatMap((frame, index) => frame.filter((surface) => {
+      const placed = final.find(last => last.id === surface.id)
+      return surface.painted && placed && (Math.abs(placed.x - surface.x) > 1 || Math.abs(placed.y - surface.y) > 1)
+    }).map(surface => `frame ${index}: ${surface.id} at ${surface.x},${surface.y}`))
+    expect(misplaced).toEqual([])
+  })
+}

@@ -120,7 +120,7 @@ function grow(panel: HTMLElement, origin: { x: number, y: number }) {
     return
   }
   panel.style.transformOrigin = `${origin.x}px ${origin.y}px`
-  growing = panel.animate([{ transform: 'scale(0.9)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 150, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' })
+  growing = panel.animate([{ scale: '0.9', opacity: 0 }, { scale: '1', opacity: 1 }], { duration: 150, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' })
 }
 
 const stopPlacing = watch(tree, async (element) => {
