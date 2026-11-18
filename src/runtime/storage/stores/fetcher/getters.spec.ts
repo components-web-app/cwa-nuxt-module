@@ -232,10 +232,8 @@ describe('FetcherStore getters -> isCurrentFetchingToken', () => {
     getterFns = getters(state)
   })
 
-  test('Throws an error if the token does not exist', () => {
-    expect(() => {
-      getterFns.isCurrentFetchingToken.value('some-token')
-    }).toThrowError('Failed to check if the token \'some-token\' is current. It does not exist.')
+  test('a token sign-out cleared while its fetch was in flight is not current, and checking it never throws', () => {
+    expect(getterFns.isCurrentFetchingToken.value('some-token')).toBe(false)
   })
 
   test('Non-primary fetch tokens return true', () => {
