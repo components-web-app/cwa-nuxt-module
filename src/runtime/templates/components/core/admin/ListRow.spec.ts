@@ -5,6 +5,8 @@ import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { h } from 'vue'
 import ListRow from './ListRow.vue'
 import ListCell from './ListCell.vue'
+import PenIcon from '../../ui/icon/PenIcon.vue'
+import CogIcon from '../../ui/icon/CogIcon.vue'
 import { axe } from '../../../../../../test/utils/axe'
 import { drawsFocusRing } from '../../../../../../test/utils/focus-ring'
 
@@ -55,6 +57,14 @@ describe('ListRow (#461)', () => {
       expect(view.attributes()).toMatchObject({ 'href': '/kitchens', 'aria-label': 'View Kitchens', 'title': 'View Kitchens' })
       expect(edit.text()).toBe('')
       expect(view.text()).toBe('')
+    })
+
+    test('Edit shows a pencil drawn in the text colour, never the settings cog', async () => {
+      const wrapper = await mountRow({ to: '/x', view: '/y', actions: true })
+      const edit = wrapper.get('[data-testid="list-row-edit"]')
+      expect(edit.findComponent(PenIcon).exists()).toBe(true)
+      expect(edit.findComponent(CogIcon).exists()).toBe(false)
+      expect(edit.find('path').attributes('fill')).toBe('currentColor')
     })
 
     test('the actions are named for the given name when the title is not it', async () => {

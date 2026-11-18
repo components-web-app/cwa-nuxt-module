@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { RouteLocationRaw } from 'vue-router'
-import CogIcon from '../../ui/icon/CogIcon.vue'
+import PenIcon from '../../ui/icon/PenIcon.vue'
 import EyeIcon from '../../ui/icon/EyeIcon.vue'
 import { buttonLooks } from '../../ui/kit-looks'
 
@@ -99,7 +99,7 @@ const typeLooks: Record<ListRowType['colour'], string> = {
         data-testid="list-row-edit"
         :class="actionClass"
       >
-        <CogIcon
+        <PenIcon
           aria-hidden="true"
           class="cwa:size-6"
         />

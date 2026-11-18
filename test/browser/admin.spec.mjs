@@ -343,8 +343,28 @@ test('12. Move up in the Order tab PATCHes the group order and the page keeps th
   await eventually(async () => await sourceAbove(page, texts.pageAOther) === true, 'The fixture order is wrong')
   await select(page, texts.pageAOther)
   await page.getByRole('button', { name: 'Order', exact: true }).click()
-  await page.getByRole('switch', { name: 'Enable reordering' }).click()
+  assert(await page.getByRole('switch', { name: 'Enable reordering' }).getAttribute('aria-checked') === 'false', 'Enable reordering is on')
+  let release
+  const held = new Promise((resolve) => {
+    release = resolve
+  })
+  await page.route(url => url.pathname.endsWith('/order'), async (route) => {
+    route.request().method() === 'PATCH' && await held
+    await route.continue()
+  })
   await page.getByRole('button', { name: 'Move up', exact: true }).click()
+  await page.locator('div#cwa-layout-page-overlay').waitFor({ state: 'attached' })
+  const line = page.getByTestId('manager-saving-line')
+  await line.locator('> *').first().waitFor({ state: 'attached' })
+  await page.addStyleTag({ content: '[data-testid="manager-saving-line"], [data-testid="manager-saving-line"] * { pointer-events: auto !important; }' })
+  const { onTop, track } = await line.evaluate((element) => {
+    const box = element.getBoundingClientRect()
+    const hit = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2)
+    return { onTop: !!hit && element.contains(hit), track: getComputedStyle(element.firstElementChild).backgroundColor }
+  })
+  release()
+  assert(onTop, 'Something covers the saving line above the manager bar while the order is saving')
+  assert(!['transparent', 'rgba(0, 0, 0, 0)'].includes(track), `The saving line is not painted (${track})`)
   const patch = await eventually(() => t.rehearsal.writes.find(w => w.method === 'PATCH' && w.path === `${t.seed.iris.pageAGroup}/order`), 'No PATCH to the group order')
   assert(JSON.stringify(patch.body.componentPositions) === JSON.stringify([t.seed.positions.aOther, t.seed.positions.aSource]), `PATCHed ${JSON.stringify(patch.body)}`)
   await settle()

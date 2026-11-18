@@ -437,6 +437,9 @@
 .cwa\:ml-1 {
   margin-left: var(--cwa-spacing);
 }
+.cwa\:ml-2 {
+  margin-left: calc(var(--cwa-spacing) * 2);
+}
 .cwa\:ml-auto {
   margin-left: auto;
 }
