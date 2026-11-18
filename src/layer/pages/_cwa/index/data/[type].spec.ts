@@ -63,6 +63,12 @@ describe('/_cwa/data/[type]', () => {
     expect(wrapper.findComponent({ name: 'ListContent' }).props('columns').at(-1)).toMatchObject({ label: 'Actions', labelHidden: true })
   })
 
+  test('the Status column fits the widest status badge, Inherited scheduled with its date (#461)', async () => {
+    const wrapper = await setup({ '@id': '/page_data/1' })
+    const status = wrapper.findComponent({ name: 'ListContent' }).props('columns').find((column: { label: string }) => column.label === 'Status')
+    expect(status.width).toBe('17.5rem')
+  })
+
   test('a page data with a route shows a loading badge until its route is read', async () => {
     const wrapper = await setup({ '@id': '/event_data/1', 'title': 'Routed', 'route': '/_/routes/r', 'isReachableWithoutRoute': false })
     expect(status(wrapper)).toBe('Loading status')

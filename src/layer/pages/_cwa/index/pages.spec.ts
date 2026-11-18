@@ -74,6 +74,11 @@ describe('/_cwa/pages page UI label', () => {
     listRoutes.routes = {}
   })
 
+  test('the Status column fits the widest status badge, Inherited scheduled with its date (#461)', () => {
+    const status = setup('CwaPagePrimaryPageTemplate').findComponent({ name: 'ListContent' }).props('columns').find((column: { label: string }) => column.label === 'Status')
+    expect(status.width).toBe('17.5rem')
+  })
+
   test('shows the configured page UI name for a page stored with the full CwaPage name', () => {
     const wrapper = setup('CwaPagePrimaryPageTemplate')
     expect(mockUseCwa).toHaveBeenCalled()
