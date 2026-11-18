@@ -558,6 +558,20 @@ describe('group reorder queue against the server (#400, api-components-bundle#47
     expect(failed.value).toBe(false)
   })
 
+  test('a move back to the saved order while a failing request is in flight leaves no failure, as there is nothing left to save (#459)', async () => {
+    const group = createGroup({ a: 0, b: 1, c: 2 }, { holdRequests: true, failRequests: () => true })
+    const failed = computed(() => group.reorders.failed(groupIri))
+    group.move('c', 1)
+    await group.settle()
+    group.move('c', 3)
+    group.releaseRequests()
+    await group.settle()
+
+    expect(group.requests).toEqual([[groupIri, ['c', 'a', 'b']]])
+    expect(failed.value).toBe(false)
+    expect(group.displayed()).toEqual(['a', 'b', 'c'])
+  })
+
   test('a move undone while its request is in flight sends the original order back and clears every display number', async () => {
     const group = createGroup({ a: 0, b: 1, c: 2 }, { holdRequests: true })
     group.move('b', 'next')
