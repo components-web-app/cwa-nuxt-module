@@ -315,6 +315,9 @@ async function loadDynamicTypeOptions() {
   dynamicTypeOptions.value = await getTypeOptions() as { label: string, value: string }[]
 }
 
+const loadingProperties = ref(false)
+let propertyRequest = 0
+
 async function loadDynamicPropertyOptions() {
   if (!selectedDynamicType.value) {
     dynamicPropertyOptions.value = []
@@ -323,7 +326,19 @@ async function loadDynamicPropertyOptions() {
   const groupIri = displayData.value?.event.closest.group
   const allowedComponents = groupIri ? $cwa.resources.getResource(groupIri).value?.data?.allowedComponents ?? null : null
   dynamicPropertyOptions.value = []
-  dynamicPropertyOptions.value = await getPropertyOptions(selectedDynamicType.value, allowedComponents) as { label: string, value: string }[]
+  const request = ++propertyRequest
+  loadingProperties.value = true
+  try {
+    const options = await getPropertyOptions(selectedDynamicType.value, allowedComponents) as { label: string, value: string }[]
+    if (request === propertyRequest) {
+      dynamicPropertyOptions.value = options
+    }
+  }
+  finally {
+    if (request === propertyRequest) {
+      loadingProperties.value = false
+    }
+  }
 }
 
 function onDynamicTypeChange(value: string | null | undefined) {
@@ -539,10 +554,10 @@ watch(open, async (isOpen: boolean) => {
             v-model="selectedDynamicProperty"
             label="Field"
             width="full"
-            placeholder="Choose a field"
+            :placeholder="loadingProperties ? 'Loading…' : 'Choose a field'"
             :options="dynamicPropertyOptions"
-            :disabled="!selectedDynamicType"
-            disabled-reason="Choose a data type first."
+            :disabled="!selectedDynamicType || loadingProperties"
+            :disabled-reason="loadingProperties && selectedDynamicType ? 'The fields are loading.' : 'Choose a data type first.'"
             description="The page data property that holds the component."
             data-testid="add-component-field"
           />
