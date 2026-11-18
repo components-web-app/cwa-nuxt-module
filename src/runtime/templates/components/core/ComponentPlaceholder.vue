@@ -1,22 +1,18 @@
 <template>
-  <div class="cwa:flex cwa:flex-col cwa:border cwa:border-dashed cwa:border-gray-300 cwa:p-5 cwa:text-medium">
-    <div class="cwa:flex cwa:justify-center">
-      <ComponentIcon />
-    </div>
-    <div
-      v-if="name"
-      class="cwa:flex cwa:justify-center cwa:mt-2"
-    >
-      <span class="cwa:text-xs cwa:py-0.5 cwa:px-3 cwa:bg-stone-200/10 cwa:rounded-full cwa:font-bold cwa:tracking-wide">{{ name }}</span>
-    </div>
-  </div>
+  <EditPlaceholder
+    :label="name || 'Empty position'"
+    :info="name ? `This page data has no ${name} component yet, so visitors see nothing here.` : 'No component is placed here yet, so visitors see nothing here.'"
+  >
+    <ComponentIcon class="cwa:text-fg-muted" />
+  </EditPlaceholder>
 </template>
 
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import ComponentIcon from './assets/IconComponents.vue'
+import EditPlaceholder from '../ui/EditPlaceholder.vue'
 import type { IriProp } from '#cwa/composables/cwa-resource'
-import { useCwa } from '#imports'
+import { useCwa } from '#cwa/composables/cwa'
 
 const props = defineProps<IriProp & {
   name?: string

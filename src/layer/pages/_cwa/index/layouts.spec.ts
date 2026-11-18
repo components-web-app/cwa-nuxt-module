@@ -28,7 +28,7 @@ function setup(uiComponent: string) {
       stubs: {
         ListContent: {
           name: 'ListContent',
-          props: ['fetchUrl', 'searchFields'],
+          props: ['fetchUrl', 'searchFields', 'columns'],
           setup: () => ({ item }),
           template: '<div><slot name="item" :data="item" /></div>',
         },
@@ -46,6 +46,13 @@ describe('/_cwa/layouts layout UI label', () => {
     const wrapper = setup('CwaLayoutPrimary')
     expect(mockUseCwa).toHaveBeenCalled()
     expect(wrapper.findComponent(ListRow).props('sub')).toBe('UI: Primary Layout')
+  })
+
+  test('a layout row offers Edit only, as a layout has no page of its own to view', () => {
+    const wrapper = setup('CwaLayoutPrimary')
+
+    expect(wrapper.findComponent(ListRow).props()).toMatchObject({ actions: true, to: '/_cwa/layouts/x', view: undefined })
+    expect(wrapper.findComponent({ name: 'ListContent' }).props('columns').at(-1)).toMatchObject({ label: 'Actions', labelHidden: true })
   })
 
   test('falls back to the name without CwaLayout when the layout UI is not configured', () => {

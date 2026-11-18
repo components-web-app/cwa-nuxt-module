@@ -75,7 +75,7 @@ const preview = computed(() => oldAddress.value.trim())
         placeholder="/old-path"
         width="full"
         :invalid="error"
-        description="A path on this site, starting with /."
+        info="A path on this site, starting with /."
         data-testid="route-redirect-input"
       />
       <p

@@ -10,6 +10,10 @@ const toast = useCwaToast()
 
 const toastId = (error: CwaErrorEvent) => `cwa-request-error-${error.timestamp}`
 
+function toasted(error: CwaErrorEvent) {
+  return !(error.event && 'onRequest' in error.event && error.event.onRequest)
+}
+
 function description(error: CwaErrorEvent) {
   if (error.type === ErrorType.VALIDATION) {
     return (error.violations ?? []).map(violation => `${violation.property}: ${violation.message}`).join('\n')
@@ -17,7 +21,7 @@ function description(error: CwaErrorEvent) {
   return `${toDisplayString(error.statusCode || 'Network Error')}: ${toDisplayString(error.detail)}`
 }
 
-watch(() => [...$cwa.resourcesManager.errors], (errors, previous = []) => {
+watch(() => $cwa.resourcesManager.errors.filter(toasted), (errors, previous = []) => {
   const current = new Set(errors.map(error => error.timestamp))
   for (const error of previous) {
     if (!current.has(error.timestamp)) {
@@ -36,7 +40,7 @@ watch(() => [...$cwa.resourcesManager.errors], (errors, previous = []) => {
 }, { immediate: true })
 
 onBeforeUnmount(() => {
-  for (const error of [...$cwa.resourcesManager.errors]) {
+  for (const error of $cwa.resourcesManager.errors.filter(toasted)) {
     toast.dismiss(toastId(error))
   }
 })

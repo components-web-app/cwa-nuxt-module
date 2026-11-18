@@ -3,6 +3,7 @@ import { computed, ref, useId, watch } from 'vue'
 import CwaUiInput from '#cwa/templates/components/ui/Input.vue'
 import CwaUiSelect from '#cwa/templates/components/ui/Select.vue'
 import CwaUiSegmented from '#cwa/templates/components/ui/Segmented.vue'
+import CwaReveal from '#cwa/templates/components/core/ui/Reveal.vue'
 import CwaUiDatePicker from '#cwa/templates/components/ui/DatePicker.vue'
 import CwaUiButton from '#cwa/templates/components/ui/Button.vue'
 import CwaUiFormSection from '#cwa/templates/components/ui/FormSection.vue'
@@ -12,11 +13,12 @@ import type { CwaRouteLiveAt, RouteLiveState } from '#cwa/resources/route-public
 import { getRouteOwnLiveState, isRouteGatedByAncestor, routeReachableAt } from '#cwa/resources/route-publication'
 import { formatDateTime } from '#cwa/resources/date-time-input'
 
-const { currentPath, parentRoutePrefix, routePublication, recommendedPath, childPaths = [], redirectCount = 0, pathError, noun = 'page', deleting = false } = defineProps<{
+const { currentPath, parentRoutePrefix, routePublication, recommendedPath, recommendedFrom, childPaths = [], redirectCount = 0, pathError, noun = 'page', deleting = false } = defineProps<{
   currentPath: string
   parentRoutePrefix?: string | null
   routePublication?: CwaRouteLiveAt
   recommendedPath?: string
+  recommendedFrom?: string
   childPaths?: string[]
   redirectCount?: number
   pathError?: string
@@ -54,7 +56,10 @@ const localSuffix = ref(initial.suffix)
 
 watch([localPrefix, localSuffix], ([prefix, suffix]) => {
   suffix = (suffix ?? '').trim()
-  if (prefix === '/') {
+  if (!suffix) {
+    pathModel.value = ''
+  }
+  else if (prefix === '/') {
     pathModel.value = suffix.startsWith('/') ? suffix : '/' + suffix
   }
   else {
@@ -94,6 +99,8 @@ const suffixModel = computed({
   },
 })
 
+const hasPath = computed(() => !!localSuffix.value.trim())
+const pathInvalid = computed(() => pathError ?? (/\s/.test(pathModel.value) ? 'A path can\'t contain spaces. Use a hyphen instead.' : undefined))
 const isRecommended = computed(() => !!recommendedPath && pathModel.value === recommendedPath)
 
 function useRecommended() {
@@ -166,8 +173,11 @@ const childrenUnder = computed(() => childPaths.filter(path => path.startsWith(`
 const goLiveLine = computed(() => {
   const state = localPublicationState.value
   if (isNew.value) {
+    if (!hasPath.value) {
+      return 'Enter a path.'
+    }
     const when = state === 'scheduled' && localLiveAt.value ? ` from ${formatDateTime(localLiveAt.value)}` : state === 'draft' ? ' once it is set live' : ''
-    return `Visitors will reach this ${noun} at ${pathModel.value || '/'}${when}.`
+    return `Visitors will reach this ${noun} at ${pathModel.value}${when}.`
   }
   if (state === savedState && (state !== 'scheduled' || liveAtModel.value === routePublication?.liveAt)) {
     return undefined
@@ -214,7 +224,7 @@ const deleteDescription = computed(() => {
               :label="prefixOptions.length > 1 ? 'Rest of the path' : 'Path'"
               label-hidden
               width="full"
-              :invalid="pathError"
+              :invalid="pathInvalid"
               :description="isRecommended ? 'This is the recommended path.' : undefined"
               data-testid="route-suffix"
               class="cwa:min-w-0 cwa:flex-1 cwa:@max-[25rem]:w-full"
@@ -223,8 +233,9 @@ const deleteDescription = computed(() => {
         </div>
       </div>
       <RouteRecommendation
-        v-if="recommendedPath && !isRecommended"
+        v-if="recommendedPath && !isRecommended && currentPath !== '/'"
         :path="recommendedPath"
+        :from="recommendedFrom"
         @use="useRecommended"
       />
       <div class="cwa:flex cwa:flex-col cwa:gap-3">
@@ -234,13 +245,14 @@ const deleteDescription = computed(() => {
           :options="publicationOptions"
           data-publication-state
         />
-        <CwaUiDatePicker
-          v-if="localPublicationState === 'scheduled'"
-          v-model="liveAtPickerModel"
-          label="Goes live"
-          :min="minLiveAt"
-          data-live-at
-        />
+        <CwaReveal :when="localPublicationState === 'scheduled'">
+          <CwaUiDatePicker
+            v-model="liveAtPickerModel"
+            label="Goes live"
+            :min="minLiveAt"
+            data-live-at
+          />
+        </CwaReveal>
         <p
           v-if="liveSince"
           data-live-since

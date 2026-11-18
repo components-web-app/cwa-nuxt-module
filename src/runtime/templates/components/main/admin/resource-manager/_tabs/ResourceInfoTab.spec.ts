@@ -5,7 +5,6 @@ import { computed, ref } from 'vue'
 import { NEW_RESOURCE_IRI } from '#cwa/storage/stores/resources/state'
 import { axe } from '../../../../../../../../test/utils/axe'
 import ResourceInfoTab from './ResourceInfoTab.vue'
-import DeleteLocationsDialog from '#cwa/templates/components/core/admin/DeleteLocationsDialog.vue'
 import { CwaResourceTypes } from '#cwa/resources/resource-utils'
 
 const iri = ref<string>('/component/abc')
@@ -13,8 +12,7 @@ const resourceData = ref<Record<string, any>>({})
 
 const mocks = vi.hoisted(() => ({
   vueApp: { name: 'vue-app' },
-  reveal: vi.fn(),
-  createConfirmDialog: vi.fn(),
+  confirmChoice: vi.fn(),
   editingNotice: vi.fn(async (): Promise<string | undefined> => undefined),
 }))
 
@@ -56,12 +54,9 @@ vi.mock('#app/nuxt', async importOriginal => ({
   useNuxtApp: () => ({ vueApp: mocks.vueApp }),
 }))
 
-vi.mock('#cwa/admin/confirm-dialog', () => ({
-  createConfirmDialog: mocks.createConfirmDialog,
-}))
-
 vi.mock('#cwa/admin/resource-confirm', () => ({
   editingNotice: mocks.editingNotice,
+  confirmChoice: mocks.confirmChoice,
 }))
 
 vi.mock('#cwa/composables/cwa-resource-manager-tab', () => ({
@@ -93,7 +88,7 @@ function inStackPosition(positionIri = '/_/component_positions/p1', groupIri = '
 }
 
 function revealChoosing(choice?: 'all' | 'here') {
-  mocks.reveal.mockResolvedValue(choice ? { isCanceled: false, data: choice } : { isCanceled: true })
+  mocks.confirmChoice.mockResolvedValue(choice === 'all' ? 'go' : choice === 'here' ? 'extra' : undefined)
 }
 
 function publishable(published: boolean) {
@@ -155,11 +150,10 @@ describe('Info tab — a component in several locations', () => {
     usageResponses.clear()
     storedResources.clear()
     closestStackItems.clear()
-    mocks.createConfirmDialog.mockResolvedValue({ reveal: mocks.reveal })
   })
 
   afterEach(() => {
-    mocks.reveal.mockReset()
+    mocks.confirmChoice.mockReset()
     mocks.editingNotice.mockReset()
   })
 
@@ -233,8 +227,14 @@ describe('Info tab — a component in several locations', () => {
     await wrapper.find('button').trigger('click')
     await flushPromises()
 
-    expect(mocks.createConfirmDialog).toHaveBeenCalledWith(mocks.vueApp, DeleteLocationsDialog)
-    expect(mocks.reveal).toHaveBeenCalledWith({ total: 3 })
+    expect(mocks.confirmChoice).toHaveBeenCalledWith(mocks.vueApp, {
+      title: 'Delete this component?',
+      description: 'It is used in 3 places.',
+      keep: 'Don\'t delete',
+      extra: 'Remove from this location only',
+      go: 'Delete from all 3 places',
+      lines: [{ text: 'Deleting it from all places can\'t be undone.', emphasis: 'muted' }],
+    })
     expect(mockCwa.resourcesManager.deleteResource).not.toHaveBeenCalled()
     expect(mockCwa.admin.emptyStack).not.toHaveBeenCalled()
   })
@@ -251,7 +251,7 @@ describe('Info tab — a component in several locations', () => {
     await flushPromises()
 
     expect(mocks.editingNotice).toHaveBeenCalledWith(mockCwa, '/component/abc')
-    expect(mocks.reveal).toHaveBeenCalledWith({ total: 3, notice: 'Sam is editing this.' })
+    expect(mocks.confirmChoice).toHaveBeenCalledWith(mocks.vueApp, expect.objectContaining({ lines: [{ text: 'Sam is editing this.' }, { text: 'Deleting it from all places can\'t be undone.', emphasis: 'muted' }] }))
   })
 
   test('Delete from all X locations deletes the component without a second confirmation', async () => {
@@ -370,7 +370,7 @@ describe('Info tab — a component in several locations', () => {
     await wrapper.find('button').trigger('click')
     await flushPromises()
 
-    expect(mocks.createConfirmDialog).not.toHaveBeenCalled()
+    expect(mocks.confirmChoice).not.toHaveBeenCalled()
     expect(mockCwa.resourcesManager.deleteResource).toHaveBeenCalledWith({
       endpoint: '/component/abc',
       refreshEndpoints: ['/_/component_positions/p1'],
@@ -380,6 +380,13 @@ describe('Info tab — a component in several locations', () => {
 
   test('Delete for a component in one location behaves as today', async () => {
     inLocations(1)
+    inStackPosition()
+    await expectTodaysDelete()
+  })
+
+  test('Delete Draft on a shared live component only discards the draft: it never asks which locations to remove it from (#461)', async () => {
+    resourceData.value = { ...publishable(false), publishedResource: '/component/live' }
+    inLocations(3)
     inStackPosition()
     await expectTodaysDelete()
   })

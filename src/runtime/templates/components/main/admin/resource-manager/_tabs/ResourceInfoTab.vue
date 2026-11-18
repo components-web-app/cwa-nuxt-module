@@ -40,12 +40,17 @@ watch([iri, isPersistedComponent], async ([currentIri, persisted]) => {
 }, { immediate: true })
 
 async function chooseLocations(componentIri: string, total: number) {
-  const { default: DeleteLocationsDialog } = await import('#cwa/templates/components/core/admin/DeleteLocationsDialog.vue')
-  const { createConfirmDialog } = await import('#cwa/admin/confirm-dialog')
-  const { editingNotice } = await import('#cwa/admin/resource-confirm')
-  const dialog = await createConfirmDialog(vueApp, DeleteLocationsDialog)
-  const { isCanceled, data } = await dialog.reveal({ total, notice: await editingNotice($cwa, componentIri) })
-  return isCanceled ? undefined : data as 'all' | 'here'
+  const { confirmChoice, editingNotice } = await import('#cwa/admin/resource-confirm')
+  const notice = await editingNotice($cwa, componentIri)
+  const choice = await confirmChoice(vueApp, {
+    title: 'Delete this component?',
+    description: `It is used in ${total} places.`,
+    keep: 'Don\'t delete',
+    extra: 'Remove from this location only',
+    go: `Delete from all ${total} places`,
+    lines: [...(notice ? [{ text: notice }] : []), { text: 'Deleting it from all places can\'t be undone.', emphasis: 'muted' as const }],
+  })
+  return choice === 'go' ? 'all' : choice === 'extra' ? 'here' : undefined
 }
 
 function removeFromLocation(positionIri: string, groupIri?: string) {
@@ -74,7 +79,8 @@ async function deleteSelected(componentIri: string) {
     endpoint: componentIri,
     refreshEndpoints: $cwa.resources.getRefreshEndpointsForDelete(componentIri),
   }
-  if (!positionIri || total <= 1) {
+  const isDraftOfLive = getPublishedResourceState(resource.value ?? {}) === false && !!resource.value?.data?.publishedResource
+  if (!positionIri || total <= 1 || isDraftOfLive) {
     return $cwa.resourcesManager.deleteResource(deleteEvent)
   }
   const choice = await chooseLocations(componentIri, total)

@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, onMounted, provide, ref, shallowRef, toRaw, useTemplateRef, watch } from 'vue'
+import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, onMounted, provide, ref, shallowRef, toRaw, toValue, useId, useTemplateRef, watch } from 'vue'
 import type { ComponentPublicInstance } from 'vue'
 import { consola } from 'consola'
 import ResourceLoadingIndicator
@@ -22,6 +22,7 @@ import BarSummary from '#cwa/templates/components/core/admin/BarSummary.vue'
 import { createAnnouncer } from '#cwa/templates/components/core/ui/field-context'
 import { announceKey, managerTabMountedKey } from '#cwa/templates/components/core/ui/field-keys'
 import { resourceStackLevels } from '#cwa/templates/components/core/ui/resource-stack'
+import { listenForLongPress } from '#cwa/admin/long-press'
 
 const ComponentUsageBadge = defineAsyncComponent(() => import('#cwa/templates/components/main/admin/resource-manager/cta/ComponentUsageBadge.vue'))
 const SharedInstancesHighlight = defineAsyncComponent(() => import('#cwa/templates/components/main/admin/resource-manager/SharedInstancesHighlight.vue'))
@@ -35,6 +36,8 @@ const spacer = useTemplateRef<HTMLElement | null>('spacer')
 const managerHolder = useTemplateRef<HTMLElement | null>('managerHolder')
 const allTabsMeta = ref<CwaResourceManagerTabOptions[]>([])
 const selectedIndex = ref(0)
+const tabsId = useId()
+const tabsLabel = computed(() => currentStackItem.value?.displayName ? `${currentStackItem.value.displayName} settings` : 'Settings')
 const isOpen = ref(false)
 const contextPoint = shallowRef<{ x: number, y: number, key: number }>()
 let contextKey = 0
@@ -173,7 +176,9 @@ if (import.meta.env.DEV) {
     return () => kitRows.delete(row)
   })
   const warned = new Set<unknown>()
-  watch(shownTab, (instance) => {
+  watch(shownTab, async () => {
+    await nextTick()
+    const instance = shownTab.value
     const tab = selectedTab.value
     const holder = tabHolder.value
     if (!instance || !tab || warned.has(tab) || !holder?.firstElementChild || [...kitRows].some(row => holder.contains(row))) {
@@ -219,13 +224,38 @@ watch(currentStackItem, (newCurrent, oldCurrent) => {
   currentManagerTabs.value = newCurrent?.managerTabs
 })
 
+let stopLongPress: (() => void) | undefined
+
+function onPaneKey(e: KeyboardEvent) {
+  if (e.key !== 'F6' || e.defaultPrevented || e.altKey || e.metaKey || e.ctrlKey || !$cwa.admin.isEditing || !currentStackItem.value) {
+    return
+  }
+  const inBar = !!managerHolder.value?.contains(document.activeElement)
+  const target = inBar
+    ? toValue(currentStackItem.value.domElements)?.find(el => el.hasAttribute('tabindex'))
+    : document.getElementById(`${tabsId}-tab-${selectedIndex.value}`)
+  if (!target) {
+    return
+  }
+  e.preventDefault()
+  target.focus()
+}
+
 onMounted(() => {
   window.addEventListener('mousedown', mousedownHandler)
   window.addEventListener('resize', $cwa.admin.emitRedraw, false)
+  document.addEventListener('keydown', onPaneKey)
+  watch(() => $cwa.admin.isEditing, (editing) => {
+    stopLongPress?.()
+    stopLongPress = editing ? listenForLongPress(document) : undefined
+  }, { immediate: true })
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', $cwa.admin.emitRedraw)
+  document.removeEventListener('keydown', onPaneKey)
+  stopLongPress?.()
+  stopLongPress = undefined
 })
 
 defineExpose({
@@ -254,12 +284,17 @@ defineExpose({
         ref="managerHolder"
         class="cwa:relative cwa:grid cwa:min-h-manager cwa:grid-cols-[minmax(0,1fr)_auto] cwa:grid-rows-[var(--cwa-spacing-manager-tabs)_minmax(var(--cwa-spacing-manager-row),auto)]"
       >
-        <ResourceLoadingIndicator class="cwa:absolute cwa:bottom-full cwa:left-0" />
+        <ResourceLoadingIndicator
+          class="cwa:absolute cwa:bottom-full cwa:left-0 cwa:z-notifications"
+          data-testid="manager-saving-line"
+        />
         <div class="cwa:min-w-0 cwa:shadow-[inset_0_-1px_0_var(--cwa-color-line)]">
           <ManagerTabs
             ref="managerTabs"
             :tabs="allTabsMeta"
             :field-states="currentFieldStates"
+            :id-prefix="tabsId"
+            :label="tabsLabel"
             @click="selectTab"
           />
         </div>
@@ -275,7 +310,11 @@ defineExpose({
           <ResourceManagerCtaButton />
         </div>
         <div
+          :id="`${tabsId}-panel`"
           ref="tabHolder"
+          role="tabpanel"
+          :aria-labelledby="`${tabsId}-tab-${selectedIndex}`"
+          data-testid="manager-tab-panel"
           class="cwa:col-span-2 cwa:grid cwa:min-w-0"
         >
           <component

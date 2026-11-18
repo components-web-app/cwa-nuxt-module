@@ -18,6 +18,7 @@
       <template #item="{ data }">
         <ListRow
           :to="computedItemLink(data['@id'])"
+          actions
           :title="data.username"
           :sub="data.emailAddress"
           :dim="!data.enabled"
@@ -84,6 +85,7 @@ const columns = [
   { label: 'User' },
   { label: 'Role', width: '8rem' },
   { label: 'Status', width: '11rem' },
+  { label: 'Actions', width: '2.5rem', labelHidden: true },
 ]
 
 const orderOptions = [

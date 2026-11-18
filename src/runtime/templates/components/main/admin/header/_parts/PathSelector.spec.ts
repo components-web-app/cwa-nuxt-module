@@ -33,17 +33,20 @@ const STACK = [
   { iri: '/_/pages/home', displayName: 'Page' },
 ]
 
-function makeCwa(stack = STACK, { confirms = true } = {}) {
-  const resourceStack = shallowRef(stack)
-  const selectStackIndex = vi.fn(async (index: number) => {
+function makeCwa(stack = STACK, { confirms = true, selected = 0 } = {}) {
+  const kept = shallowRef(stack)
+  const index = ref(selected)
+  const resourceStack = computed(() => kept.value.slice(index.value))
+  const selectStackIndex = vi.fn(async (chosen: number) => {
     if (confirms) {
-      resourceStack.value = resourceStack.value.slice(index)
+      index.value = chosen
     }
   })
   return {
     admin: {
       resourceStackManager: {
-        resourceStack: computed(() => resourceStack.value),
+        resourceStack,
+        pathStack: computed(() => ({ stack: kept.value, index: index.value })),
         currentStackItem: computed(() => resourceStack.value[0]),
         selectStackIndex,
       },
@@ -71,7 +74,7 @@ function pointerFocus() {
 
 async function openStack(selector: HTMLButtonElement) {
   selector.click()
-  await vi.waitFor(() => expect(document.querySelector('[data-testid="resource-stack"]')).not.toBeNull())
+  await vi.waitFor(() => expect(document.querySelector('[data-testid="resource-stack"]')).not.toBeNull(), { timeout: 5000 })
   return document.querySelector<HTMLElement>('[data-testid="resource-stack"]')!
 }
 
@@ -84,12 +87,12 @@ describe('PathSelector (#461)', () => {
     expect(selector.getAttribute('aria-haspopup')).toBe('dialog')
     expect(selector.hasAttribute('aria-controls')).toBe(false)
     expect(selector.getAttribute('aria-expanded')).toBe('false')
-    expect(selector.getAttribute('aria-label')).toBe('Rich text, choose a parent')
+    expect(selector.getAttribute('aria-label')).toBe('Rich text, choose another level')
     expect(drawsFocusRing(selector.className.split(/\s+/))).toBe(true)
     expect(await axe(document.body)).toHaveNoViolations()
   })
 
-  test('with no parents it has no ▾, does not open and is aria-disabled', async () => {
+  test('with one level kept, it has no ▾, does not open and is aria-disabled', async () => {
     const { selector } = await mountSelector(makeCwa([STACK[2]!, STACK[3]!]))
 
     expect(selector.textContent).not.toContain('▾')
@@ -130,7 +133,7 @@ describe('PathSelector (#461)', () => {
     pointerFocus()
     const { selector } = await mountSelector()
     selector.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 0 }))
-    await vi.waitFor(() => expect(document.querySelector('[data-testid="resource-stack"]')).not.toBeNull())
+    await vi.waitFor(() => expect(document.querySelector('[data-testid="resource-stack"]')).not.toBeNull(), { timeout: 5000 })
 
     const ringed = [...document.querySelectorAll<HTMLElement>('[role="treeitem"]')].filter(level => level.className.split(/\s+/).includes('cwa:outline-accent-fg'))
     expect(ringed.map(level => level.getAttribute('aria-label'))).toEqual(['Rich text'])
@@ -140,7 +143,7 @@ describe('PathSelector (#461)', () => {
     pointerFocus()
     const { selector } = await mountSelector()
     selector.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 1 }))
-    await vi.waitFor(() => expect(document.querySelector('[data-testid="resource-stack"]')).not.toBeNull())
+    await vi.waitFor(() => expect(document.querySelector('[data-testid="resource-stack"]')).not.toBeNull(), { timeout: 5000 })
 
     expect([...document.querySelectorAll<HTMLElement>('[role="treeitem"]')].some(level => level.className.split(/\s+/).includes('cwa:outline-accent-fg'))).toBe(false)
   })
@@ -219,5 +222,36 @@ describe('PathSelector (#461)', () => {
     state.route.value = { fullPath: '/_cwa/layouts' }
     await flushPromises()
     expect(document.querySelector('[data-testid="resource-stack"]')).toBeNull()
+  })
+
+  test('with a parent selected it names the parent and opens every level of the clicked stack, the parent selected, its children included', async () => {
+    const { selector } = await mountSelector(makeCwa(STACK, { selected: 2 }))
+
+    expect(selector.textContent).toContain('Main content group')
+    expect(selector.getAttribute('aria-disabled')).toBeNull()
+    expect(selector.getAttribute('aria-label')).toBe('Main content group, choose another level')
+    const panel = await openStack(selector)
+    expect([...panel.querySelectorAll('[role="treeitem"]')].map(level => level.getAttribute('aria-label'))).toEqual(['Main content group', 'Component position', 'Rich text'])
+    expect(panel.querySelector('[aria-selected="true"]')!.getAttribute('aria-label')).toBe('Main content group')
+    expect(panel.querySelector('[data-stack-innermost]')!.getAttribute('aria-label')).toBe('Rich text')
+  })
+
+  test('with a parent selected, choosing the component inside it selects it again from the clicked stack', async () => {
+    const { selector, cwa } = await mountSelector(makeCwa(STACK, { selected: 2 }))
+    const panel = await openStack(selector)
+
+    panel.querySelector<HTMLElement>('[aria-label="Rich text"] > [data-stack-name]')!.click()
+    await flushPromises()
+    expect(cwa.admin.resourceStackManager.selectStackIndex).toHaveBeenCalledWith(0, false)
+    expect(selector.textContent).toContain('Rich text')
+  })
+
+  test('opens over its own name, hidden while open, so the innermost level\'s name lands on the selector\'s', async () => {
+    const { selector, wrapper } = await mountSelector(makeCwa(STACK, { selected: 2 }))
+    await openStack(selector)
+
+    const name = selector.querySelector<HTMLElement>('[data-testid="path-selector-name"]')!
+    expect(wrapper.findComponent({ name: 'ResourceStack' }).props('at')).toBe(name)
+    expect(name.className).toContain('cwa:invisible')
   })
 })

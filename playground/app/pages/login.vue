@@ -3,13 +3,14 @@
     v-model="credentials"
     :error="error"
     :submitting="submitting"
-    submit-button-text="Sign In"
+    submit-button-text="Sign in"
     @submit="signIn"
   >
     <template #header>
-      <div class="py-2 px-3 border border-slate-600 bg-slate-900 rounded text-sm font-bold">
-        Use the username and password "admin" to log in to this preview version of CWA
-      </div>
+      <CwaUiAlert
+        tone="info"
+        title="Use the username and password &quot;admin&quot; to log in to this preview version of CWA"
+      />
     </template>
   </CwaAuthLoginPage>
 </template>

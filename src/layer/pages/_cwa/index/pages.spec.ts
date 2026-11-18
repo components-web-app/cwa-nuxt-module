@@ -39,7 +39,7 @@ vi.mock('#cwa-layer/_composables/useListRoutes', async () => {
 })
 
 mockNuxtImport('useCwa', () => mockUseCwa)
-mockNuxtImport('useCwaResourceRoute', () => () => ({ getInternalResourceLink: vi.fn() }))
+mockNuxtImport('useCwaResourceRoute', () => () => ({ getInternalResourceLink: (iri: string) => ({ name: '_cwa-resource-page', params: { cwaPage0: iri } }) }))
 
 function setup(uiComponent: string, stored: Record<string, any> = {}, listed: Record<string, any> = {}) {
   mockUseCwa.mockReturnValue({
@@ -57,7 +57,7 @@ function setup(uiComponent: string, stored: Record<string, any> = {}, listed: Re
         CwaUiButton: false,
         ListContent: {
           name: 'ListContent',
-          props: ['fetchUrl', 'searchFields'],
+          props: ['fetchUrl', 'searchFields', 'columns'],
           setup: () => ({ item, raw }),
           template: '<div><slot name="notice" /><slot name="item" :data="item" :raw-data="raw" /></div>',
         },
@@ -72,6 +72,11 @@ describe('/_cwa/pages page UI label', () => {
     vi.clearAllMocks()
     typesModel.value = []
     listRoutes.routes = {}
+  })
+
+  test('the Status column fits the widest status badge, Inherited scheduled with its date (#461)', () => {
+    const status = setup('CwaPagePrimaryPageTemplate').findComponent({ name: 'ListContent' }).props('columns').find((column: { label: string }) => column.label === 'Status')
+    expect(status.width).toBe('17.5rem')
   })
 
   test('shows the configured page UI name for a page stored with the full CwaPage name', () => {
@@ -162,8 +167,21 @@ describe('/_cwa/pages list (#461)', () => {
     expect(typesModel.value).toEqual(['true'])
   })
 
-  test('a template row is marked Dynamic and a page Static', () => {
+  test('a page row is marked Static page', () => {
     const wrapper = setup('CwaPagePrimaryPageTemplate')
-    expect(wrapper.findComponent(ListRow).props('type')).toEqual({ label: 'Static', colour: 'static' })
+    expect(wrapper.findComponent(ListRow).props('type')).toEqual({ label: 'Static page', colour: 'static' })
+  })
+
+  test('a template row is marked Dynamic template', () => {
+    const wrapper = setup('CwaPagePrimaryPageTemplate', { isTemplate: true })
+    expect(wrapper.findComponent(ListRow).props('type')).toEqual({ label: 'Dynamic template', colour: 'dynamic' })
+  })
+
+  test('each row offers Edit, which opens its modal, and View, which goes to the page on the site, under a hidden Actions column', () => {
+    const wrapper = setup('CwaPagePrimaryPageTemplate')
+    const row = wrapper.findComponent(ListRow)
+
+    expect(row.props()).toMatchObject({ actions: true, to: '/_cwa/pages/x', view: { name: '_cwa-resource-page', params: { cwaPage0: '/_/pages/1' } } })
+    expect(wrapper.findComponent({ name: 'ListContent' }).props('columns').at(-1)).toMatchObject({ label: 'Actions', labelHidden: true })
   })
 })

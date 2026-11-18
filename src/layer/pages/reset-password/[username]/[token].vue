@@ -28,12 +28,12 @@ definePageMeta({
 })
 
 useHead({
-  title: 'Reset Password',
+  title: 'Reset password',
   bodyAttrs: {
     class: 'cwa:h-full',
   },
   htmlAttrs: {
-    class: 'cwa:h-full cwa:bg-neutral-900',
+    class: 'cwa:h-full cwa:bg-stone-950',
   },
 })
 </script>

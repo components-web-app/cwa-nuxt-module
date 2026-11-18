@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { inject, useId } from 'vue'
+import { Comment, Fragment, Text, inject, useId } from 'vue'
+import type { VNode } from 'vue'
 import { sectionHeadingKey } from '../core/ui/field-keys'
 
 const { title, description, columns = 1 } = defineProps<{
@@ -7,6 +8,29 @@ const { title, description, columns = 1 } = defineProps<{
   description?: string
   columns?: 1 | 2
 }>()
+
+const slots = defineSlots<{
+  default?: () => VNode[]
+  action?: () => unknown
+}>()
+
+function countItems(nodes: unknown[] | undefined): number {
+  return (nodes ?? []).reduce<number>((count, node) => {
+    if (!node || typeof node !== 'object') return count
+    const vnode = node as VNode
+    if (vnode.type === Comment) return count
+    if (vnode.type === Text && !String(vnode.children ?? '').trim()) return count
+    if (vnode.type === Fragment) return count + countItems(vnode.children as unknown[])
+    return count + 1
+  }, 0)
+}
+
+function gridClasses() {
+  if (columns !== 2) return []
+  const count = countItems(slots.default?.())
+  if (count < 2) return ['cwa:gap-x-4']
+  return ['cwa:gap-x-4', 'cwa:@lg:grid-cols-2', ...(count % 2 ? ['cwa:@lg:*:first:col-span-2'] : [])]
+}
 
 const headingId = useId()
 const heading = inject(sectionHeadingKey, 'h3')
@@ -40,8 +64,9 @@ const heading = inject(sectionHeadingKey, 'h3')
       <slot name="action" />
     </div>
     <div
+      data-testid="form-section-grid"
       class="cwa:grid cwa:grid-cols-1 cwa:gap-y-stack"
-      :class="{ 'cwa:gap-x-4 cwa:@lg:grid-cols-2': columns === 2 }"
+      :class="gridClasses()"
     >
       <slot />
     </div>

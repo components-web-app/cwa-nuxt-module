@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, test } from 'vitest'
 import { badgeLookColours, badgeTintPercent, badgeTones, buttonLookColours, buttonLooks } from '../runtime/templates/components/ui/kit-looks'
 import type { KitLookColour } from '../runtime/templates/components/ui/kit-looks'
-import { contrastRatio, kitColourLabel, kitColourTokens, kitContrastPairs, kitThemeStyle, kitTokenCss, measureKitPair, parseColour } from './kit-tokens'
+import { contrastRatio, kitColourLabel, kitColourTokens, kitContrastPairs, kitThemeStyle, kitTokenCss, measureKitPair, parseColour, resolveKitColour } from './kit-tokens'
 
 const read = (path: string) => readFileSync(fileURLToPath(new URL(path, import.meta.url)), 'utf8')
 const source = read('./tailwind-cwa.css')
@@ -68,7 +68,7 @@ describe('kit colour tokens (#456)', () => {
   })
 
   test('dark is the default and light is a theme of its own, with the values the proposal measured', () => {
-    expect(themeValues('dark')).toMatchObject({ 'surface': '#1c1917', 'field': '#57534e', 'button': '#44403c', 'fg': '#f5f5f4', 'accent-fg': '#60a5fa', 'danger-fg': '#fca5a5', 'shimmer': 'rgb(255 255 255 / 0.24)' })
+    expect(themeValues('dark')).toMatchObject({ 'surface': '#1c1917', 'field': '#383430', 'button': '#44403c', 'fg': '#f5f5f4', 'accent-fg': '#60a5fa', 'danger-fg': '#fca5a5', 'shimmer': 'rgb(255 255 255 / 0.24)' })
     expect(themeValues('light')).toMatchObject({ 'surface': '#ffffff', 'field': '#d6d3d1', 'button': '#e7e5e4', 'fg': '#1c1917', 'accent-fg': '#1d4ed8', 'danger-fg': '#b91c1c', 'shimmer': 'rgb(255 255 255 / 0.9)' })
   })
 
@@ -135,8 +135,17 @@ describe('kit colour tokens (#456)', () => {
     })
   })
 
+  test('a placeholder reads clearly dimmer than a typed value, at least 2.2:1 between the two, so an empty field never looks filled in', () => {
+    expect(contrastRatio(resolveKitColour('fg', 'dark'), resolveKitColour('muted-on-field', 'dark'))).toBeGreaterThanOrEqual(2.2)
+  })
+
+  test.each(['dark', 'light'] as const)('in %s a disabled value stays readable but reads clearly dimmer than an enabled one', (theme) => {
+    expect(contrastRatio(resolveKitColour('fg-disabled', theme), resolveKitColour('field', theme))).toBeGreaterThanOrEqual(3)
+    expect(contrastRatio(resolveKitColour('fg', theme), resolveKitColour('fg-disabled', theme))).toBeGreaterThanOrEqual(2.2)
+  })
+
   test('the colours the admin already uses keep their names', () => {
-    for (const name of ['dark', 'light', 'medium', 'danger', 'danger-dark', 'magenta', 'orange', 'green', 'stone-700']) {
+    for (const name of ['dark', 'light', 'danger', 'danger-dark', 'magenta', 'orange', 'green', 'stone-700']) {
       expect(compiled, name).toContain(`--cwa-color-${name}:`)
     }
   })

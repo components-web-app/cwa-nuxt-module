@@ -1,5 +1,6 @@
 import * as Y from 'yjs'
-import { test } from './fixtures.mjs'
+import { expect, test } from './fixtures.mjs'
+import { mercurePath } from './rehearsal.mjs'
 import { articleTexts, seedArticlePages, texts } from './seed.mjs'
 
 const notFoundResource = /^Failed to load resource: the server responded with a status of 404/
@@ -84,8 +85,12 @@ function layoutLink(page, name) {
   return page.locator('header').getByRole('link', { name, exact: true })
 }
 
+function dialogs(page) {
+  return page.locator('[role="dialog"], [role="alertdialog"]')
+}
+
 function dialogWith(page, text) {
-  return page.getByRole('dialog').filter({ hasText: text })
+  return dialogs(page).filter({ hasText: text })
 }
 
 function cloneMenu(page) {
@@ -97,8 +102,8 @@ function moveMenu(page) {
 }
 
 async function reasonsBehind(page, menu, name) {
-  await menu.getByRole('button', { name, exact: true }).click()
-  const reasons = page.getByTestId('clone-option-reasons')
+  await menu.getByRole('menuitem', { name, exact: true }).click()
+  const reasons = page.getByTestId('menu-item-reasons')
   await reasons.waitFor()
   return reasons.innerText()
 }
@@ -108,11 +113,11 @@ async function waitForNoMenu(page, message) {
 }
 
 async function dialogTexts(page) {
-  return (await page.getByRole('dialog').allInnerTexts()).join(' | ')
+  return (await dialogs(page).allInnerTexts()).join(' | ')
 }
 
 async function waitForNoDialog(page, message) {
-  await eventually(async () => (await page.getByRole('dialog').count()) === 0, `${message}: ${await dialogTexts(page)}`)
+  await eventually(async () => (await dialogs(page).count()) === 0, `${message}: ${await dialogTexts(page)}`)
 }
 
 async function visibleHighlights(page) {
@@ -147,7 +152,7 @@ async function assertEveryInstanceHighlighted(page, label) {
 async function highlightsWithOrigin(page) {
   return page.getByTestId('clone-highlight').evaluateAll(els => els.map((el) => {
     const r = el.getBoundingClientRect()
-    return { top: r.top, left: r.left, width: r.width, height: r.height, origin: el.dataset.origin === 'true', style: getComputedStyle(el).outlineStyle }
+    return { top: r.top, left: r.left, width: r.width, height: r.height, origin: el.dataset.origin === 'true', style: getComputedStyle(el).outlineStyle, thickness: Number.parseFloat(getComputedStyle(el).outlineWidth) }
   }).filter(r => r.width > 0 && r.height > 0))
 }
 
@@ -213,7 +218,7 @@ test('3. after navigating, a page click opens the target dialog and Add after cl
   await assertOnSecondPage(t)
   await setNavigation(page, false)
   await page.getByText(texts.pageBOther, { exact: true }).click()
-  await cloneMenu(page).getByRole('button', { name: 'Add after', exact: true }).click()
+  await cloneMenu(page).getByRole('menuitem', { name: 'Add after', exact: true }).click()
   const post = await eventually(() => t.rehearsal.writes.find(w => w.method === 'POST' && w.path.endsWith('/_/component_positions')), 'No position was POSTed')
   assert(post.body.componentGroup === t.seed.iris.pageBGroup, `POSTed to ${post.body.componentGroup}`)
   assert(post.body.component === t.seed.iris.source, `POSTed component ${post.body.component}`)
@@ -249,8 +254,8 @@ test('5. Escape and Cancel end clone mode, turn Enable Navigation off and clear 
     assert(!(await page.getByRole('switch', { name: 'Enable Navigation' }).count()), `${end} left Enable Navigation showing`)
     await eventually(async () => (await visibleHighlights(page)).length === 0, `${end} left a highlight`)
     await layoutLink(page, 'Second').click()
-    const confirm = dialogWith(page, 'switch and edit the layout')
-    await confirm.getByText('switch and edit the layout').waitFor()
+    const confirm = dialogWith(page, 'Edit the shared layout?')
+    await confirm.getByText('Edit the shared layout?').waitFor()
     assert(page.url() === `${base}${t.seed.paths.home}`, `${end} left navigation enabled: navigated to ${page.url()}`)
     await confirm.getByRole('button', { name: 'Cancel', exact: true }).click()
     await waitForNoDialog(page, 'Cancel did not close the confirm')
@@ -281,7 +286,7 @@ test('7. with Enable Navigation on, a layout link click shows no dialog or confi
   await eventually(() => page.url() === `${base}${t.seed.paths.third}`, `Expected /third, at ${page.url()}`)
   await page.getByText(texts.third, { exact: true }).waitFor()
   await settle()
-  assert(await page.getByRole('dialog').count() === 0, `A dialog opened: ${await dialogTexts(page)}`)
+  assert(await dialogs(page).count() === 0, `A dialog opened: ${await dialogTexts(page)}`)
 })
 
 test('8. a redirect route in clone mode lands on the target page and renders its content', async ({ cwa: t }) => {
@@ -338,9 +343,29 @@ test('12. Move up in the Order tab PATCHes the group order and the page keeps th
   await openEditMode(t)
   await eventually(async () => await sourceAbove(page, texts.pageAOther) === true, 'The fixture order is wrong')
   await select(page, texts.pageAOther)
-  await page.getByRole('button', { name: 'Order', exact: true }).click()
-  await page.getByRole('switch', { name: 'Enable reordering' }).click()
+  await page.getByRole('tab', { name: 'Order', exact: true }).click()
+  assert(await page.getByRole('switch', { name: 'Enable reordering' }).getAttribute('aria-checked') === 'false', 'Enable reordering is on')
+  let release
+  const held = new Promise((resolve) => {
+    release = resolve
+  })
+  await page.route(url => url.pathname.endsWith('/order'), async (route) => {
+    route.request().method() === 'PATCH' && await held
+    await route.continue()
+  })
   await page.getByRole('button', { name: 'Move up', exact: true }).click()
+  await page.locator('div#cwa-layout-page-overlay').waitFor({ state: 'attached' })
+  const line = page.getByTestId('manager-saving-line')
+  await line.locator('> *').first().waitFor({ state: 'attached' })
+  await page.addStyleTag({ content: '[data-testid="manager-saving-line"], [data-testid="manager-saving-line"] * { pointer-events: auto !important; }' })
+  const { onTop, track } = await line.evaluate((element) => {
+    const box = element.getBoundingClientRect()
+    const hit = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2)
+    return { onTop: !!hit && element.contains(hit), track: getComputedStyle(element.firstElementChild).backgroundColor }
+  })
+  release()
+  assert(onTop, 'Something covers the saving line above the manager bar while the order is saving')
+  assert(!['transparent', 'rgba(0, 0, 0, 0)'].includes(track), `The saving line is not painted (${track})`)
   const patch = await eventually(() => t.rehearsal.writes.find(w => w.method === 'PATCH' && w.path === `${t.seed.iris.pageAGroup}/order`), 'No PATCH to the group order')
   assert(JSON.stringify(patch.body.componentPositions) === JSON.stringify([t.seed.positions.aOther, t.seed.positions.aSource]), `PATCHed ${JSON.stringify(patch.body)}`)
   await settle()
@@ -355,7 +380,7 @@ test('13. removing a component from one location DELETEs its position without ?p
   const { page, settle } = t
   await openEditMode(t)
   await select(page, texts.source)
-  await page.getByRole('button', { name: 'Info', exact: true }).click()
+  await page.getByRole('tab', { name: 'Info', exact: true }).click()
   await page.getByTestId('component-delete').getByRole('button', { name: 'Delete Live', exact: true }).click()
   const dialog = dialogWith(page, 'Delete this component?')
   await dialog.getByRole('button', { name: 'Remove from this location only', exact: true }).click()
@@ -375,7 +400,7 @@ test('14. a clone whose source was deleted elsewhere ends clone mode with the so
   await setNavigation(page, false)
   await t.api.remove(t.seed.iris.source)
   await page.getByText(texts.pageAOther, { exact: true }).click()
-  await cloneMenu(page).getByRole('button', { name: 'Add after', exact: true }).click()
+  await cloneMenu(page).getByRole('menuitem', { name: 'Add after', exact: true }).click()
   await assertCloneModeEnded(page, 'Clone mode did not end when the API refused the deleted source')
   await page.getByText('The component being cloned no longer exists').first().waitFor()
 })
@@ -392,7 +417,7 @@ test('15. clone mode starts with Enable Navigation on, and arriving on another p
   await eventually(async () => await toggle.getAttribute('aria-checked') === 'false', 'Enable Navigation stayed on after arriving on another page')
   assert((await page.getByTestId('clone-mode-hint').innerText()).includes('Click a component to place it'), 'The bar does not say how to place the clone')
   await page.getByText(texts.pageBOther, { exact: true }).click()
-  await cloneMenu(page).getByRole('button', { name: 'Add after', exact: true }).waitFor()
+  await cloneMenu(page).getByRole('menuitem', { name: 'Add after', exact: true }).waitFor()
 })
 
 test('16. a redirect in clone mode turns Enable Navigation off only once the target page is shown', async ({ cwa: t }) => {
@@ -461,7 +486,7 @@ test('22. a link to a page already visited, shown at once from the route cache, 
   await setNavigation(page, true)
   await layoutLink(page, 'Second').click()
   await assertOnSecondPage(t)
-  assert(await page.getByRole('dialog').count() === 0, `A dialog opened: ${await dialogTexts(page)}`)
+  assert(await dialogs(page).count() === 0, `A dialog opened: ${await dialogTexts(page)}`)
 })
 
 test('23. Move within a group POSTs the clicked position\'s move after its new neighbour, and the new order survives a reload', async ({ cwa: t }) => {
@@ -472,7 +497,7 @@ test('23. Move within a group POSTs the clicked position\'s move after its new n
   assert((await page.getByTestId('clone-mode-bar').innerText()).includes('Moving:'), 'The bar does not say Moving')
   await setNavigation(page, false)
   await page.getByText(texts.pageAOther, { exact: true }).click()
-  await moveMenu(page).getByRole('button', { name: 'Add after', exact: true }).click()
+  await moveMenu(page).getByRole('menuitem', { name: 'Add after', exact: true }).click()
   assertMove(await moveWrite(t), t.seed.iris.source, { from: { componentPosition: t.seed.positions.aSource }, to: { componentGroup: t.seed.iris.pageAGroup, after: t.seed.positions.aOther } })
   assert(contentWrites(t).length === 1, `A move wrote more than once: ${JSON.stringify(contentWrites(t))}`)
   await assertCloneModeEnded(page, 'Move mode did not end')
@@ -492,7 +517,7 @@ test('24. Move to another page relocates only the clicked instance: it leaves Ho
   await page.getByText(texts.third, { exact: true }).waitFor()
   await eventually(async () => await page.getByRole('switch', { name: 'Enable Navigation' }).getAttribute('aria-checked') === 'false', 'Enable Navigation stayed on after arriving')
   await page.getByText(texts.third, { exact: true }).click()
-  await moveMenu(page).getByRole('button', { name: 'Add after', exact: true }).click()
+  await moveMenu(page).getByRole('menuitem', { name: 'Add after', exact: true }).click()
   assertMove(await moveWrite(t), t.seed.iris.source, { from: { componentPosition: t.seed.positions.aSource }, to: { componentGroup: t.seed.iris.pageCGroup, after: t.seed.positions.cThird } })
   await assertCloneModeEnded(page, 'Move mode did not end')
   await eventually(async () => (await page.getByText(texts.source, { exact: true }).count()) === 1, 'The moved component is not on Third')
@@ -527,7 +552,7 @@ test('26. moving a layout component into the page warns that it will leave every
   const { page } = t
   await openEditMode(t)
   await layoutLink(page, 'Second').click()
-  await dialogWith(page, 'switch and edit the layout').getByRole('button', { name: 'Ok', exact: true }).click()
+  await dialogWith(page, 'Edit the shared layout?').getByRole('button', { name: 'Edit layout', exact: true }).click()
   await page.getByTestId('component-menu').waitFor()
   await page.getByTestId('component-menu').getByTestId('button-options').click()
   await page.getByTestId('component-menu-move').click()
@@ -558,7 +583,7 @@ test('28. after a clone the new instance is selected and its outline flashes, an
   await startClone(page)
   await setNavigation(page, false)
   await page.getByText(texts.pageAOther, { exact: true }).click()
-  await cloneMenu(page).getByRole('button', { name: 'Add after', exact: true }).click()
+  await cloneMenu(page).getByRole('menuitem', { name: 'Add after', exact: true }).click()
   await eventually(() => t.rehearsal.writes.find(w => w.method === 'POST' && w.path.endsWith('/_/component_positions')), 'No position was POSTed')
   await assertCloneModeEnded(page, 'Clone mode did not end')
   await eventually(async () => (await page.getByText(texts.source, { exact: true }).count()) === 2, 'The new instance did not render')
@@ -601,7 +626,7 @@ test('29. after a move the moved instance is selected and its outline flashes', 
   await page.getByTestId('component-menu').waitFor()
 })
 
-test('30. in clone and move mode the instance started from is outlined solid and the other instance dashed', async ({ cwa: t }) => {
+test('30. in clone and move mode the instance started from has a thicker outline than the other instance', async ({ cwa: t }) => {
   const { page, settle } = t
   await addSecondSourceOnHome(t)
   await openEditMode(t)
@@ -616,7 +641,7 @@ test('30. in clone and move mode the instance started from is outlined solid and
       const rest = highlights.filter(h => !h.origin)
       return highlights.length === 2
         && origin.length === 1 && covers(origin[0], from) && origin[0].style === 'solid'
-        && rest.length === 1 && covers(rest[0], other) && rest[0].style === 'dashed'
+        && rest.length === 1 && covers(rest[0], other) && rest[0].style === 'solid' && origin[0].thickness > rest[0].thickness
     }, `${start.name}: the instance started from is not marked apart from the other: ${JSON.stringify(await highlightsWithOrigin(page))}`)
     await page.keyboard.press('Escape')
     await assertCloneModeEnded(page, 'Escape did not end the mode')
@@ -627,14 +652,14 @@ test('31. switching scope in clone mode asks "Edit the page?" or "Edit the share
   const { page } = t
   await openEditMode(t)
   await layoutLink(page, 'Second').click()
-  await dialogWith(page, 'switch and edit the layout').getByRole('button', { name: 'Ok', exact: true }).click()
+  await dialogWith(page, 'Edit the shared layout?').getByRole('button', { name: 'Edit layout', exact: true }).click()
   await page.getByTestId('component-menu').waitFor()
   await page.getByTestId('component-menu').getByTestId('button-options').click()
   await page.getByTestId('component-menu-clone').click()
   await page.getByTestId('clone-mode-bar').waitFor()
   await setNavigation(page, false)
   await page.getByText(texts.pageAOther, { exact: true }).click()
-  await cloneMenu(page).getByRole('button', { name: 'Add after', exact: true }).click()
+  await cloneMenu(page).getByRole('menuitem', { name: 'Add after', exact: true }).click()
   const toPage = dialogWith(page, 'Edit the page?')
   await toPage.getByRole('button', { name: 'Edit page', exact: true }).waitFor()
   assert(await toPage.getByRole('button', { name: 'Cancel', exact: true }).isVisible(), 'The page confirm has no Cancel')
@@ -648,7 +673,7 @@ test('31. switching scope in clone mode asks "Edit the page?" or "Edit the share
   await page.getByTestId('clone-mode-bar').waitFor()
   await setNavigation(page, false)
   await layoutLink(page, 'Third').click()
-  await cloneMenu(page).getByRole('button', { name: 'Add after', exact: true }).click()
+  await cloneMenu(page).getByRole('menuitem', { name: 'Add after', exact: true }).click()
   const toLayout = dialogWith(page, 'Edit the shared layout?')
   await toLayout.getByRole('button', { name: 'Edit layout', exact: true }).waitFor()
   await toLayout.getByRole('button', { name: 'Cancel', exact: true }).click()
@@ -691,7 +716,7 @@ async function placeInMove(page, text, option) {
     if (!opened && attempt < 3) {
       continue
     }
-    const button = menu.getByRole('button', { name: option, exact: true })
+    const button = menu.getByRole('menuitem', { name: option, exact: true })
     if (await button.count() || attempt === 3) {
       await button.click()
       return
@@ -803,7 +828,7 @@ test('19. Escape on the shared delete dialog cancels it and Delete works again',
   const { page } = t
   await openEditMode(t)
   await select(page, texts.source)
-  await page.getByRole('button', { name: 'Info', exact: true }).click()
+  await page.getByRole('tab', { name: 'Info', exact: true }).click()
   const deleteButton = page.getByTestId('component-delete').getByRole('button', { name: 'Delete Live', exact: true })
   await deleteButton.click()
   await dialogWith(page, 'Delete this component?').getByText('Delete this component?').waitFor()
@@ -819,7 +844,7 @@ test('20. the shared delete dialog focuses Remove from this location only, so En
   const { page } = t
   await openEditMode(t)
   await select(page, texts.source)
-  await page.getByRole('button', { name: 'Info', exact: true }).click()
+  await page.getByRole('tab', { name: 'Info', exact: true }).click()
   await page.getByTestId('component-delete').getByRole('button', { name: 'Delete Live', exact: true }).click()
   const dialog = dialogWith(page, 'Delete this component?')
   const here = dialog.getByRole('button', { name: 'Remove from this location only', exact: true })
@@ -834,7 +859,7 @@ test('21. cloning a layout component within the layout still says it appears on 
   const { page } = t
   await openEditMode(t)
   await layoutLink(page, 'Second').click()
-  await dialogWith(page, 'switch and edit the layout').getByRole('button', { name: 'Ok', exact: true }).click()
+  await dialogWith(page, 'Edit the shared layout?').getByRole('button', { name: 'Edit layout', exact: true }).click()
   await page.getByTestId('component-menu').waitFor()
   await page.getByTestId('component-menu').getByTestId('button-options').click()
   await page.getByTestId('component-menu-clone').click()
@@ -867,7 +892,7 @@ test('35. selecting a component outlines its other copies on the page, not the s
   await startClone(page)
   await setNavigation(page, false)
   await page.getByText(texts.pageAOther, { exact: true }).click()
-  await cloneMenu(page).getByRole('button', { name: 'Add after', exact: true }).click()
+  await cloneMenu(page).getByRole('menuitem', { name: 'Add after', exact: true }).click()
   await assertCloneModeEnded(page, 'Clone mode did not end')
   await eventually(async () => (await page.getByText(texts.source, { exact: true }).count()) === 2, 'The clone did not render')
   await settle()
@@ -917,7 +942,7 @@ test.describe('the list of places behind the shared badge', () => {
   })
 })
 
-test('43. a click on a target in clone mode outlines it in blue dashed at once and opens the menu at the click point, and Escape or a click outside closes the menu and keeps clone mode on', async ({ cwa: t }) => {
+test('43. a click on a target in clone mode outlines it in solid blue at once and opens the menu at the click point, and Escape or a click outside closes the menu and keeps clone mode on', async ({ cwa: t }) => {
   const { page } = t
   await openEditMode(t)
   await startClone(page)
@@ -935,7 +960,7 @@ test('43. a click on a target in clone mode outlines it in blue dashed at once a
   })
   const [targetBox] = await boxesOf(page, texts.pageAOther)
   assert(covers(drawn, targetBox), `The target outline ${JSON.stringify(drawn)} does not cover the target ${JSON.stringify(targetBox)}`)
-  assert(drawn.style === 'dashed' && drawn.color === 'rgb(37, 99, 235)', `The target outline is ${drawn.style} ${drawn.color}, not blue dashed`)
+  assert(drawn.style === 'solid' && drawn.color === 'rgb(37, 99, 235)', `The target outline is ${drawn.style} ${drawn.color}, not solid blue`)
   const sourceColors = await page.getByTestId('clone-highlight').evaluateAll(els => els.map(el => getComputedStyle(el).outlineColor))
   assert(sourceColors.length > 0 && !sourceColors.includes(drawn.color), `The target outline has the source outline's colour: ${JSON.stringify(sourceColors)}`)
   const menuBox = await menu.boundingBox()
@@ -970,7 +995,7 @@ test('44. where nothing can be placed the menu has one disabled row whose ⓘ sh
   assert(reasons.includes('This is where it already is'), `The reasons are "${reasons}"`)
 
   await page.keyboard.press('Escape')
-  await eventually(async () => (await page.getByTestId('clone-option-reasons').count()) === 0, 'Escape did not close the reasons')
+  await eventually(async () => (await page.getByTestId('menu-item-reasons').count()) === 0, 'Escape did not close the reasons')
   assert(await menu.isVisible(), 'Escape on the reasons closed the menu too')
   await page.keyboard.press('Escape')
   await waitForNoMenu(page, 'The second Escape did not close the menu')
@@ -1028,7 +1053,7 @@ function managerInput(page) {
 async function selectLayoutLink(t, name) {
   const { page } = t
   await layoutLink(page, name).click()
-  await dialogWith(page, 'switch and edit the layout').getByRole('button', { name: 'Ok', exact: true }).click()
+  await dialogWith(page, 'Edit the shared layout?').getByRole('button', { name: 'Edit layout', exact: true }).click()
   await page.getByTestId('component-menu').waitFor()
   return presenceSent(t, data => data.state === 'selected' && !!data.component, 'No selected presence was sent for the link')
 }
@@ -1091,7 +1116,7 @@ test.describe('presence', () => {
     const { page, seed } = t
     await openEditMode(t)
     const selected = await selectLayoutLink(t, 'Third')
-    await page.getByRole('button', { name: 'Label', exact: true }).click()
+    await page.getByRole('tab', { name: 'Label', exact: true }).click()
     const input = managerInput(page)
     await input.focus()
     const editing = await presenceSent(t, data => data.state === 'editing', 'No editing presence was sent on focus')
@@ -1128,7 +1153,7 @@ test.describe('presence', () => {
     const { page, seed } = t
     await openEditMode(t)
     const selected = await selectLayoutLink(t, 'Third')
-    await page.getByRole('button', { name: 'Label', exact: true }).click()
+    await page.getByRole('tab', { name: 'Label', exact: true }).click()
     await managerInput(page).waitFor()
     await eventually(() => t.rehearsal.mercureSubscriptions > 0, 'Mercure was never subscribed to')
     const peer = peerPresence(t, { key: '1', name: 'Pat Peer', page: seed.iris.pageA })
@@ -1406,7 +1431,7 @@ test.describe('resource stack', () => {
       await component.evaluate((el, [clientX, clientY]) => el.dispatchEvent(new MouseEvent('contextmenu', { clientX, clientY, button: 2, bubbles: true, cancelable: true })), [x, y])
       const panel = page.getByTestId('resource-stack')
       await eventually(async () => await panel.count() === 1 && await panel.evaluate(el => el.style.visibility !== 'hidden'), `The stack did not show at ${x}, ${y}`)
-      await panel.evaluate(el => Promise.all(el.parentElement.getAnimations().map(animation => animation.finished)))
+      await panel.evaluate(el => Promise.all([el, el.parentElement].flatMap(element => element.getAnimations()).map(animation => animation.finished)))
       const boxes = await panel.evaluate((el) => {
         const inner = el.querySelector('[data-stack-innermost]').getBoundingClientRect()
         const outer = el.getBoundingClientRect()
@@ -1435,4 +1460,274 @@ test.describe('resource stack', () => {
     assert(bottom.inner.bottom <= 840 + 1, `60px from the bottom the innermost box ends at ${bottom.inner.bottom}, below the pointer`)
     assert(bottom.panel.bottom <= 892 + 1 && bottom.panel.bottom >= 892 - 1, `60px from the bottom the panel ends at ${bottom.panel.bottom}, not 8px inside the window`)
   })
+})
+
+test.describe('in-page editing', () => {
+  test('56. on a phone a long press on a component opens the resource stack as a bottom sheet, and Close shuts it', async ({ cwa: t }) => {
+    const { page } = t
+    await page.setViewportSize({ width: 390, height: 844 })
+    await openEditMode(t)
+    const component = page.getByText(texts.source, { exact: true }).first()
+    await component.waitFor()
+
+    await component.evaluate((el) => {
+      const { left, top, width, height } = el.getBoundingClientRect()
+      el.dispatchEvent(new PointerEvent('pointerdown', { pointerType: 'touch', clientX: left + width / 2, clientY: top + height / 2, bubbles: true, cancelable: true }))
+    })
+    const sheet = page.getByTestId('resource-stack')
+    await eventually(async () => await sheet.count() === 1 && await sheet.getAttribute('aria-modal') === 'true', 'The long press never opened the stack as a sheet')
+    await sheet.evaluate(el => Promise.all(el.getAnimations({ subtree: true }).map(animation => animation.finished)))
+    const box = await sheet.boundingBox()
+    assert(Math.abs(box.y + box.height - 844) <= 1 && box.width >= 389, `The sheet is not along the bottom edge: ${JSON.stringify(box)}`)
+
+    await page.getByTestId('resource-stack-close').click()
+    await eventually(async () => await sheet.count() === 0, 'Close did not shut the sheet')
+  })
+
+  test('57. a title is edited where it sits on the page: Enter saves it, and while a save has failed Escape opens the bar status on Retry, which saves it', async ({ cwa: t }) => {
+    const { page, seed } = t
+    const title = (await t.api.create('/component/titles', { title: 'Title on the page' }))['@id']
+    await t.api.create('/_/component_positions', { componentGroup: seed.iris.pageAGroup, component: title })
+    await openEditMode(t)
+
+    const shown = page.getByTestId('inline-edit-value').filter({ hasText: 'Title on the page' })
+    await shown.click()
+    const input = page.getByPlaceholder('Add a title')
+    await input.fill('Title edited on the page')
+    await input.press('Enter')
+
+    await eventually(() => t.rehearsal.writes.find(w => w.method === 'PATCH' && w.path.startsWith(title) && w.body?.title === 'Title edited on the page'), `No PATCH of the title: ${JSON.stringify(t.rehearsal.writes)}`)
+    await page.getByTestId('inline-edit-value').filter({ hasText: 'Title edited on the page' }).waitFor()
+    await t.settle()
+
+    t.allowConsoleErrors(/^Failed to load resource: the server responded with a status of 500/)
+    let refused = false
+    await page.route(url => url.pathname.includes('/component/titles/'), (route) => {
+      if (refused || route.request().method() !== 'PATCH') {
+        return route.fallback()
+      }
+      refused = true
+      return route.fulfill({ status: 500, contentType: 'application/ld+json', body: '{}' })
+    })
+    await page.getByTestId('inline-edit-value').filter({ hasText: 'Title edited on the page' }).click()
+    await input.fill('Title that will not save')
+    await input.press('Enter')
+    const status = page.getByTestId('bar-summary')
+    await eventually(async () => await status.getAttribute('data-state') === 'error', 'The bar status never showed the failed save')
+
+    await page.getByTestId('inline-edit-value').filter({ hasText: 'Title that will not save' }).click()
+    expect(await input.getAttribute('aria-invalid')).toBe('true')
+    await input.press('Escape')
+    const retry = page.getByTestId('bar-summary-popover').getByRole('button', { name: 'Retry' })
+    await eventually(() => retry.evaluate(el => document.activeElement === el), 'Escape from the failed editor did not open the bar status on Retry')
+    expect(await page.getByTestId('bar-summary-popover').getAttribute('aria-label')).toBe('Title: not saved')
+
+    await page.keyboard.press('Enter')
+    await eventually(() => t.rehearsal.writes.find(w => w.method === 'PATCH' && w.body?.title === 'Title that will not save'), `Retry sent no PATCH: ${JSON.stringify(t.rehearsal.writes)}`)
+    await eventually(async () => await status.getAttribute('data-state') !== 'error' && await page.getByTestId('bar-summary-popover').count() === 0, 'Retry did not clear the failed save')
+    expect(await page.getByTestId('inline-edit-value').filter({ hasText: 'Title that will not save' }).getAttribute('aria-invalid')).toBeNull()
+  })
+
+  test('58. the Content tab\'s Edit on page focuses the rich-text editor on the page, and Escape there returns to the button', async ({ cwa: t }) => {
+    const { page } = t
+    await openEditMode(t)
+    await select(page, texts.source)
+
+    const button = page.getByTestId('inline-handoff-edit')
+    await eventually(async () => (await button.textContent()).trim() === 'Edit on page', 'The Content tab never offered Edit on page')
+    await button.click()
+    await eventually(() => page.evaluate(() => document.activeElement?.classList.contains('ProseMirror')), 'Edit on page did not focus the editor')
+
+    await page.keyboard.press('Escape')
+    await eventually(() => button.evaluate(el => document.activeElement === el), 'Escape did not return to Edit on page')
+  })
+
+  test('59. Link in the rich-text editor opens the link popover, and Enter links the selected words', async ({ cwa: t }) => {
+    const { page, settle } = t
+    await openEditMode(t)
+    await select(page, texts.source)
+
+    await placeCaret(page, texts.source, 'start')
+    await page.keyboard.press('Shift+End')
+    await page.getByRole('button', { name: 'Link', exact: true }).click()
+    const popover = page.getByTestId('link-popover')
+    await popover.waitFor()
+    const url = popover.getByRole('textbox', { name: 'URL' })
+    await eventually(() => url.evaluate(el => document.activeElement === el), 'The URL field was not focused')
+    await url.fill('/kitchens')
+    await url.press('Enter')
+
+    await eventually(() => t.rehearsal.writes.find(w => w.method === 'PATCH' && w.body?.html?.includes('href="/kitchens"')), `No PATCH with the link: ${JSON.stringify(t.rehearsal.writes)}`)
+    assert(await popover.count() === 0, 'The popover stayed open after Enter')
+    await settle()
+  })
+
+  test('60. empty placeholders show only in edit mode: a draft-only position shows nothing to an admin who is not editing, and its draft once editing', async ({ cwa: t }) => {
+    const { page, seed, settle } = t
+    const draft = (await t.api.create('/component/html_contents', { html: '<p>Draft only text</p>' }))['@id']
+    await t.api.create('/_/component_positions', { componentGroup: seed.iris.pageAGroup, component: draft })
+
+    await page.goto(`${t.base}${seed.paths.home}`)
+    await page.getByRole('button', { name: 'Edit', exact: true }).waitFor()
+    await page.getByText(texts.source, { exact: true }).first().waitFor()
+    await settle()
+    assert(await page.getByTestId('edit-placeholder').count() === 0, 'An admin who is not editing sees a placeholder')
+    assert(await page.getByText('Draft only text').count() === 0, 'An admin who is not editing sees the draft')
+
+    await page.getByRole('button', { name: 'Edit', exact: true }).click()
+    await page.getByRole('button', { name: 'Done', exact: true }).waitFor()
+    await page.getByText('Draft only text').first().waitFor()
+    const placeholder = page.getByTestId('edit-placeholder').filter({ hasText: 'Empty group' }).first()
+    await placeholder.waitFor()
+    assert(await page.getByTestId('field-info-popover').count() === 0, 'The empty group shows its explanation before the info button is hovered')
+    await placeholder.getByTestId('field-info').hover()
+    await page.getByTestId('field-info-popover').filter({ hasText: 'Visitors see nothing here' }).waitFor()
+  })
+})
+
+test('61. outside edit mode the header\'s Edit button and menu sit on the header bar\'s centre, level with the page settings button', async ({ cwa: t }) => {
+  const { page, base, settle, seed } = t
+  for (const width of [1280, 390]) {
+    await page.setViewportSize({ width, height: 800 })
+    await page.goto(`${base}${seed.paths.home}`)
+    await page.getByRole('button', { name: 'Edit', exact: true }).waitFor()
+    await settle()
+    const centres = await page.evaluate(() => {
+      const middle = (element) => {
+        const box = element.getBoundingClientRect()
+        return box.top + box.height / 2
+      }
+      const menu = [...document.querySelectorAll('button')].find(button => button.querySelector('.cwa\\:sr-only')?.textContent === 'Menu')
+      const header = menu.closest('.cwa\\:fixed')
+      const box = header.getBoundingClientRect()
+      return {
+        bar: box.top + (box.height - Number.parseFloat(getComputedStyle(header).borderBottomWidth)) / 2,
+        menu: middle(menu.querySelector('svg')),
+        edit: middle([...document.querySelectorAll('button')].find(button => button.textContent.trim() === 'Edit')),
+        settings: middle(document.querySelector('[data-testid="page-settings"]')),
+      }
+    })
+    for (const name of ['menu', 'edit', 'settings']) {
+      assert(Math.abs(centres[name] - centres.bar) < 0.5, `At ${width}px the ${name} is centred at ${centres[name]}, the bar at ${centres.bar}`)
+    }
+  }
+})
+
+test('62. with live editing paused on a phone, the header\'s status is a glyph named for it beside Edit, clear of the page settings button and the menu, and a tap shows its text', async ({ cwa: t }) => {
+  const { page, base, settle, seed } = t
+  t.allowConsoleErrors(/^Failed to load resource: net::ERR_FAILED/)
+  await page.route(`**${mercurePath}**`, route => route.abort())
+  for (const width of [390, 320]) {
+    await page.setViewportSize({ width, height: 800 })
+    await page.goto(`${base}${seed.paths.home}`)
+    await page.getByRole('button', { name: 'Edit', exact: true }).waitFor()
+    const glyph = page.getByTestId('presence-paused-glyph')
+    await glyph.waitFor()
+    await settle()
+    const boxes = await page.evaluate(() => {
+      const box = (element) => {
+        const { left, right } = element.getBoundingClientRect()
+        return { left, right }
+      }
+      const menu = [...document.querySelectorAll('button')].find(button => button.querySelector('.cwa\\:sr-only')?.textContent === 'Menu')
+      return {
+        edit: box([...document.querySelectorAll('button')].find(button => button.textContent.trim() === 'Edit')),
+        status: box(document.querySelector('[data-testid="presence-paused"]')),
+        settings: box(document.querySelector('[data-testid="page-settings"]')),
+        menu: box(menu.querySelector('svg')),
+      }
+    })
+    const order = ['edit', 'status', 'settings', 'menu']
+    for (let index = 1; index < order.length; index++) {
+      const [before, after] = [order[index - 1], order[index]]
+      assert(boxes[before].right <= boxes[after].left, `At ${width}px the ${before} (${boxes[before].left}–${boxes[before].right}) overlaps the ${after} (${boxes[after].left}–${boxes[after].right})`)
+    }
+    assert(boxes.menu.right <= width, `At ${width}px the menu ends at ${boxes.menu.right}`)
+    assert(await glyph.getAttribute('aria-label') === null && (await glyph.textContent()).trim() === 'Live editing paused', 'The glyph is named "Live editing paused"')
+    assert(await page.evaluate(() => getComputedStyle(document.querySelector('[data-testid="presence-paused"] > span')).display) === 'none', 'The status text is hidden on a phone')
+    await glyph.click()
+    await page.getByTestId('presence-paused-tip').waitFor()
+    await page.getByTestId('presence-paused-tip').waitFor({ state: 'detached', timeout: 4000 })
+  }
+})
+
+test('63. the header\'s Edit or Done button and the page settings button or path selector beside it share one height and one centre, at 1280 and 390, with a fine or a coarse pointer, while live editing is paused', async ({ cwa: t }) => {
+  const { page, base, seed } = t
+  const cookies = await page.context().cookies()
+  for (const hasTouch of [false, true]) {
+    for (const width of [1280, 390]) {
+      const context = await page.context().browser().newContext({ ignoreHTTPSErrors: true, viewport: { width, height: 800 }, hasTouch })
+      await context.addCookies(cookies)
+      const tab = await context.newPage()
+      await tab.route(`**${mercurePath}**`, route => route.abort())
+      const settle = async () => {
+        await tab.waitForLoadState('networkidle')
+      }
+      const measure = async (testId) => {
+        const boxes = await tab.evaluate((id) => {
+          const box = (element) => {
+            const { top, height } = element.getBoundingClientRect()
+            return { height, centre: top + height / 2 }
+          }
+          return {
+            coarse: matchMedia('(pointer: coarse)').matches,
+            cta: box([...document.querySelectorAll('button')].find(button => ['Edit', 'Done'].includes(button.textContent.trim()))),
+            beside: box(document.querySelector(`[data-testid="${id}"]`)),
+          }
+        }, testId)
+        assert(boxes.coarse === hasTouch, `The pointer is ${boxes.coarse ? 'coarse' : 'fine'}`)
+        const where = `At ${width}px with a ${hasTouch ? 'coarse' : 'fine'} pointer, the CTA and ${testId}`
+        assert(Math.abs(boxes.cta.height - boxes.beside.height) <= 1, `${where} are ${boxes.cta.height}px and ${boxes.beside.height}px tall`)
+        assert(Math.abs(boxes.cta.centre - boxes.beside.centre) <= 1, `${where} are centred at ${boxes.cta.centre} and ${boxes.beside.centre}`)
+      }
+      await tab.goto(`${base}${seed.paths.home}`)
+      await tab.getByRole('button', { name: 'Edit', exact: true }).waitFor()
+      await tab.getByTestId('presence-paused').waitFor()
+      await settle()
+      await measure('page-settings')
+      await tab.getByRole('button', { name: 'Edit', exact: true }).click()
+      await tab.getByRole('button', { name: 'Done', exact: true }).waitFor()
+      await tab.getByText(texts.source, { exact: true }).first().click()
+      await tab.getByTestId('path-selector').waitFor()
+      await settle()
+      await measure('path-selector')
+      await context.close()
+    }
+  }
+})
+
+test('64. by keyboard alone a rich-text component is reached with Tab, selected with Enter, its stack opened with Shift+F10, and F6 then the arrow keys reach its Publish tab', async ({ cwa: t }) => {
+  const { page } = t
+  await openEditMode(t)
+
+  let reached = false
+  for (let tabs = 0; tabs < 80 && !reached; tabs++) {
+    await page.keyboard.press('Tab')
+    reached = await page.evaluate(text => document.activeElement?.getAttribute('aria-label') === 'Body Text component' && !!document.activeElement.textContent?.includes(text), texts.source)
+  }
+  assert(reached, 'Tab never reached the Body Text component')
+
+  await page.keyboard.press('Shift+F10')
+  const stack = page.getByTestId('resource-stack')
+  await stack.waitFor()
+  await page.keyboard.press('Escape')
+  await stack.waitFor({ state: 'detached' })
+  await eventually(() => page.evaluate(() => document.activeElement?.getAttribute('aria-label') === 'Body Text component'), 'Focus did not come back to the component')
+
+  await page.keyboard.press('Enter')
+  await page.getByTestId('component-menu').waitFor()
+  await page.getByRole('textbox', { name: 'Content, Body Text' }).filter({ hasText: texts.source }).waitFor()
+
+  await page.keyboard.press('F6')
+  const tablist = page.getByRole('tablist', { name: 'Body Text settings' })
+  await eventually(() => tablist.evaluate(el => el.contains(document.activeElement)), 'F6 did not move focus to the manager bar\'s tabs')
+  for (let moves = 0; moves < 8 && (await page.evaluate(() => document.activeElement?.textContent?.trim())) !== 'Publish'; moves++) {
+    await page.keyboard.press('ArrowRight')
+  }
+  const publish = tablist.getByRole('tab', { name: 'Publish', exact: true })
+  await eventually(async () => (await publish.getAttribute('aria-selected')) === 'true', 'The arrow keys never selected Publish')
+  assert(await page.getByRole('tabpanel', { name: 'Publish' }).count() === 1, 'The shown tab is not a tabpanel named Publish')
+
+  await page.keyboard.press('Shift+F6')
+  await eventually(() => page.evaluate(() => document.activeElement?.getAttribute('aria-label') === 'Body Text component'), 'Shift+F6 did not return to the component')
 })

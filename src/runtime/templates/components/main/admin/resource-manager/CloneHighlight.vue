@@ -86,13 +86,13 @@ onBeforeUnmount(() => {
       :style="highlight.style"
       :data-origin="highlight.origin || undefined"
       data-testid="clone-highlight"
-      :class="[highlight.origin ? 'cwa:outline-solid cwa:outline-4' : 'cwa:outline-dashed cwa:outline-2', 'cwa:absolute cwa:z-manager-focus cwa:outline-yellow cwa:outline-offset-4 cwa:pointer-events-none cwa:rounded-[1px]']"
+      :class="[highlight.origin ? 'cwa:outline-solid cwa:outline-4' : 'cwa:outline-solid cwa:outline-1', 'cwa:absolute cwa:z-manager-focus cwa:outline-yellow cwa:outline-offset-4 cwa:pointer-events-none cwa:rounded-[1px]']"
     />
     <div
       v-if="targetHighlight"
       :style="targetHighlight"
       data-testid="clone-target"
-      class="cwa:absolute cwa:z-manager-focus cwa:outline-2 cwa:outline-dashed cwa:outline-blue-600 cwa:outline-offset-2 cwa:pointer-events-none cwa:rounded-[1px]"
+      class="cwa:absolute cwa:z-manager-focus cwa:outline-2 cwa:outline-solid cwa:outline-blue-600 cwa:outline-offset-2 cwa:pointer-events-none cwa:rounded-[1px]"
     />
     <div
       v-for="(style, index) of placedHighlights"

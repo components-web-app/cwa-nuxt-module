@@ -14,17 +14,18 @@ import { fieldBox, fieldFill } from './field-looks'
 import { typedCanStillMatch, typedMatches } from '#cwa/composables/cwa-confirm'
 import type { CwaConfirmLine, CwaConfirmTyped } from '#cwa/composables/cwa-confirm'
 
-const { title, description, lines = [], keep = 'Keep editing', go, tone = 'danger', typed } = defineProps<{
+const { title, description, lines = [], keep = 'Keep editing', extra, go, tone = 'danger', typed } = defineProps<{
   title: string
   description?: string
   lines?: CwaConfirmLine[]
   keep?: string
+  extra?: string
   go: string
   tone?: 'danger' | 'accent'
   typed?: CwaConfirmTyped
 }>()
 
-const emit = defineEmits<{ confirm: [], cancel: [] }>()
+const emit = defineEmits<{ confirm: [choice: 'go' | 'extra'], cancel: [] }>()
 
 const open = ref(true)
 const text = ref('')
@@ -33,6 +34,7 @@ const announcement = ref('')
 const fieldId = useId()
 const helperId = useId()
 const keepButton = useTemplateRef<InstanceType<typeof CwaUiButton>>('keepButton')
+const extraButton = useTemplateRef<InstanceType<typeof CwaUiButton>>('extraButton')
 const input = useTemplateRef<HTMLInputElement>('input')
 
 const matches = computed(() => !typed || typedMatches(text.value, typed.value))
@@ -51,18 +53,18 @@ watch(matches, (now) => {
   announcement.value = now ? `Matches. ${go} is on.` : `${go} is off.`
 })
 
-function answer(event: 'confirm' | 'cancel') {
+function answer(choice: 'go' | 'extra' | 'cancel') {
   if (answered.value) {
     return
   }
   answered.value = true
   open.value = false
-  event === 'confirm' ? emit('confirm') : emit('cancel')
+  choice === 'cancel' ? emit('cancel') : emit('confirm', choice)
 }
 
 function go_() {
   if (matches.value) {
-    answer('confirm')
+    answer('go')
   }
 }
 
@@ -79,7 +81,7 @@ async function onOpenAutoFocus(event: Event) {
     input.value?.focus()
     return
   }
-  const element = keepButton.value?.$el as HTMLElement | undefined
+  const element = (extraButton.value ?? keepButton.value)?.$el as HTMLElement | undefined
   element?.focus()
 }
 
@@ -179,12 +181,22 @@ function onEnter() {
             data-testid="confirm-announcer"
           >{{ announcement }}</span>
         </div>
-        <div class="cwa:mt-5 cwa:grid cwa:grid-cols-2 cwa:gap-actions cwa:sm:flex cwa:sm:justify-end">
+        <div
+          class="cwa:mt-5 cwa:grid cwa:gap-actions cwa:sm:flex cwa:sm:flex-wrap cwa:sm:justify-end"
+          :class="extra ? 'cwa:grid-cols-1' : 'cwa:grid-cols-2'"
+        >
           <CwaUiButton
             ref="keepButton"
             :label="keep"
             data-testid="confirm-keep"
             @click="answer('cancel')"
+          />
+          <CwaUiButton
+            v-if="extra"
+            ref="extraButton"
+            :label="extra"
+            data-testid="confirm-extra"
+            @click="answer('extra')"
           />
           <CwaUiButton
             :label="go"

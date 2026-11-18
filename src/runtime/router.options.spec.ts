@@ -120,6 +120,25 @@ describe('CWA router options scrollBehavior', () => {
       expect(result).toBe(false)
     })
 
+    test('a hash that only picks a tab on a page declaring hashIsTab is never scrolled to on the same page (#461)', () => {
+      const meta = { hashIsTab: true }
+
+      expect(scrollBehavior(route('/_cwa/settings', { hash: '#seo', fullPath: '/_cwa/settings#seo', meta }), route('/_cwa/settings', { meta }), null)).toBe(false)
+      expect(scrollBehavior(route('/_cwa/settings', { meta }), route('/_cwa/settings', { hash: '#seo', meta }), null)).toBe(false)
+      expect(scrollBehavior(route('/_cwa/settings', { hash: '#about', fullPath: '/_cwa/settings#about', meta }), route('/_cwa/settings', { hash: '#seo', meta }), null)).toBe(false)
+      expect(waitForScrollTarget).not.toHaveBeenCalled()
+    })
+
+    test('arriving at a tab hash on a page declaring hashIsTab goes to the top without waiting for an element (#461)', async () => {
+      routerState.fullPath = '/_cwa/settings#maintenance'
+      const result = scrollBehavior(route('/_cwa/settings', { hash: '#maintenance', fullPath: '/_cwa/settings#maintenance', meta: { hashIsTab: true } }), route('/_cwa/pages'), null)
+
+      await flushPageLoad()
+
+      await expect(result).resolves.toEqual({ left: 0, top: 0 })
+      expect(waitForScrollTarget).not.toHaveBeenCalled()
+    })
+
     test('a plain forward navigation goes to the top without waiting for content', async () => {
       routerState.fullPath = '/about'
       const result = scrollBehavior(route('/about'), route('/'), null)

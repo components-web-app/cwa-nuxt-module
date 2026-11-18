@@ -80,6 +80,23 @@ describe.each(cases)('$name shows co-editing presence (#461)', (item) => {
     expect(await axe(wrapper.element as HTMLElement)).toHaveNoViolations()
   })
 
+  test.each([
+    ['a manager row', {}],
+    ['a dialog', modal],
+  ])('in %s the outline and flag sit on the control, never over its visible label', async (_place, surface) => {
+    const wrapper = mount(item.component, {
+      props: { label: 'Field', model: presenceModel(item.value, [MIA]), ...item.props },
+      global: { provide: { ...surface, ...item.provide } },
+      attachTo: document.body,
+    })
+    await flushPromises()
+
+    const presenceRoot = wrapper.get('[data-testid="field-presence"]').element.parentElement!
+    const labels = [...wrapper.element.parentElement!.querySelectorAll('label')].filter(label => label.textContent?.trim() === 'Field' && !label.closest('.cwa\\:sr-only') && !label.classList.contains('cwa:sr-only'))
+    expect(labels).toHaveLength(1)
+    expect(presenceRoot.contains(labels[0]!)).toBe(false)
+  })
+
   test('shows no one while no one else is in the field', async () => {
     const wrapper = mountCase(item, presenceModel(item.value))
     await flushPromises()

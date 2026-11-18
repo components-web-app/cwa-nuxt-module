@@ -1,5 +1,6 @@
 // @vitest-environment nuxt
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
+import { fieldExplanation } from '../../../../../../../../test/utils/field-info'
 import { reactive, ref } from 'vue'
 import type { Ref } from 'vue'
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
@@ -181,6 +182,13 @@ describe('the add component dialog (#461)', () => {
     for (const name of Object.keys(resolvedMeta)) {
       delete resolvedMeta[name]
     }
+  })
+
+  test('stays a centred dialog, as a picker, not a slide-over', async () => {
+    await mountDialog()
+    await openDialog()
+
+    expect(dialog()!.dataset.placement).toBe('center')
   })
 
   describe('loading the available components', () => {
@@ -705,17 +713,36 @@ describe('the add component dialog (#461)', () => {
       await choose('ComponentPosition')
     }
 
-    test('Field is visibly disabled with its reason until a data type is chosen, and Data type has focus', async () => {
+    test('Field is visibly disabled until a data type is chosen, with its reason behind its ⓘ and read with the field, and Data type has focus', async () => {
       await openDynamic()
 
       const field = q('[data-testid="add-component-field"] [data-testid="select-trigger"]')!
       expect(field.getAttribute('aria-disabled')).toBe('true')
       expect(field.hasAttribute('disabled')).toBe(false)
-      expect(field.className).toContain('cwa:opacity-50')
-      expect(shown(q('[data-testid="add-component-field"]'))).toContain('Choose a data type first.')
+      expect(field.className).toContain('cwa:text-fg-disabled')
+      expect(q('[data-testid="add-component-field"] [data-testid="field-info"]')).not.toBeNull()
+      expect(field.getAttribute('aria-describedby')!.split(' ').map(id => document.getElementById(id)?.textContent).join(' ')).toContain('Choose a data type first.')
       expect(document.activeElement).toBe(q('[data-testid="add-component-data-type"] [data-testid="select-trigger"]'))
       expect(add().getAttribute('aria-disabled')).toBe('true')
       expect(document.getElementById(add().getAttribute('aria-describedby')!)!.textContent).toBe('Choose a data type and a field first.')
+    })
+
+    test('while a data type\'s fields load, Field says Loading… and stays disabled, as the old dialog did', async () => {
+      let resolveFields: (options: { label: string, value: string }[]) => void = () => undefined
+      dynamicOptions.getPropertyOptions.mockReturnValueOnce(new Promise((resolve) => {
+        resolveFields = resolve
+      }))
+      await openDynamic()
+
+      await pick('add-component-data-type', 'Blog articles')
+      const field = () => q('[data-testid="add-component-field"] [data-testid="select-trigger"]')!
+      expect(shown(field())).toContain('Loading…')
+      expect(field().getAttribute('aria-disabled')).toBe('true')
+
+      resolveFields([{ label: 'Hero image', value: 'heroImage' }])
+      await flushPromises()
+      expect(shown(field())).toContain('Choose a field')
+      expect(field().getAttribute('aria-disabled')).toBeNull()
     })
 
     test('choosing a data type enables Field with its options, and Add sends the position with both', async () => {
@@ -724,7 +751,7 @@ describe('the add component dialog (#461)', () => {
       await pick('add-component-data-type', 'Blog articles')
       const field = q('[data-testid="add-component-field"] [data-testid="select-trigger"]')!
       expect(field.getAttribute('aria-disabled')).toBeNull()
-      expect(shown(q('[data-testid="add-component-field"]'))).toContain('The page data property that holds the component.')
+      expect(fieldExplanation(q('[data-testid="add-component-field"]')!, 'The page data property that holds the component.')).toEqual({ info: true, line: false })
       expect(dynamicOptions.getPropertyOptions).toHaveBeenCalledWith('App\\Entity\\BlogArticleData', null)
       await pick('add-component-field', 'Hero image')
 
