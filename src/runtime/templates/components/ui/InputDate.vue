@@ -52,7 +52,7 @@ const rootProps = computed(() => ({
   name: props.name,
 }))
 
-const segmentClass = 'cwa:rounded-sm cwa:px-0.5 cwa:tabular-nums cwa:focus:outline-none cwa:focus:bg-stone-600 cwa:focus:text-light cwa:data-placeholder:text-stone-500 cwa:data-[segment=literal]:text-stone-500 cwa:data-[segment=literal]:px-0'
+const segmentClass = 'cwa:px-0.5 cwa:tabular-nums cwa:focus:outline-none cwa:focus:bg-menu-highlight cwa:focus:text-fg cwa:data-placeholder:text-muted-on-field cwa:data-[segment=literal]:text-fg-muted cwa:data-[segment=literal]:px-0'
 </script>
 
 <template>
@@ -61,7 +61,7 @@ const segmentClass = 'cwa:rounded-sm cwa:px-0.5 cwa:tabular-nums cwa:focus:outli
     v-slot="{ segments }"
     v-bind="rootProps"
     :model-value="modelValue ?? undefined"
-    class="cwa:relative cwa:flex cwa:items-center cwa:gap-x-0.5 cwa:w-full cwa:py-2 cwa:pl-4 cwa:pr-2 cwa:text-light cwa:dark-blur cwa:outline-dotted cwa:outline-1 cwa:outline-stone-700 cwa:hover:outline-stone-400 cwa:focus-within:outline-stone-400 cwa:data-invalid:outline-red-500 cwa:data-disabled:opacity-50"
+    class="cwa:relative cwa:flex cwa:items-center cwa:gap-x-0.5 cwa:w-full cwa:data-disabled:opacity-50"
     @update:model-value="(value: any) => emit('update:modelValue', value)"
   >
     <template v-if="Array.isArray(segments)">
@@ -88,7 +88,7 @@ const segmentClass = 'cwa:rounded-sm cwa:px-0.5 cwa:tabular-nums cwa:focus:outli
       >
         {{ segment.value.trim() }}
       </component>
-      <span class="cwa:px-1 cwa:text-stone-500">–</span>
+      <span class="cwa:px-1 cwa:text-fg-muted">–</span>
       <component
         :is="DateField.Input"
         v-for="(segment, index) in segments.end"

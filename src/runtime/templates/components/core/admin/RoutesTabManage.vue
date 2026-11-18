@@ -126,8 +126,8 @@ function handlePublicationStateChange(state: RouteLiveState) {
   liveAtModel.value = isFuture ? scheduled : null
 }
 
-function handleLiveAtChange(value: string) {
-  localLiveAt.value = value
+function handleLiveAtChange(value: string | null | undefined) {
+  localLiveAt.value = value ?? null
   liveAtModel.value = value
 }
 </script>

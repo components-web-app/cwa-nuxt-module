@@ -276,4 +276,21 @@ describe('CwaUiButton (#456)', () => {
       expect(await axe(wrapper.element as HTMLElement)).toHaveNoViolations()
     })
   })
+
+  test('a short label shows below sm instead of the label, which shows from sm, and only one is ever displayed (#460)', async () => {
+    const wrapper = mount(Button, { props: { label: 'Publish now', shortLabel: 'Publish' }, attachTo: document.body })
+    const short = wrapper.get('[data-testid="button-short-label"]')
+    const full = wrapper.findAll('span').find(span => span.text() === 'Publish now')!
+
+    expect(short.text()).toBe('Publish')
+    expect(short.classes()).toContain('cwa:sm:hidden')
+    expect(full.classes()).toEqual(expect.arrayContaining(['cwa:hidden', 'cwa:sm:inline']))
+    expect(await axe(wrapper.element as HTMLElement)).toHaveNoViolations()
+  })
+
+  test('a split button passes its short label to the main action', () => {
+    const wrapper = mount(Button, { props: { label: 'Publish now', shortLabel: 'Publish', options: [{ label: 'Clone', value: 'clone' }] } })
+
+    expect(wrapper.get('[data-testid="button-short-label"]').text()).toBe('Publish')
+  })
 })

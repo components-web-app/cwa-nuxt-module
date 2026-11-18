@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useId } from 'vue'
+import StateGlyph from '../core/ui/StateGlyph.vue'
 import Field from '../core/ui/Field.vue'
 import type { FieldWidth } from '../core/ui/Field.vue'
 import { useFieldModel } from '../core/ui/field-context'
@@ -18,6 +19,7 @@ const props = withDefaults(defineProps<{
   type?: 'text' | 'email' | 'url' | 'search' | 'password' | 'tel'
   inputmode?: 'text' | 'email' | 'url' | 'search' | 'tel' | 'numeric' | 'decimal' | 'none'
   nullable?: boolean
+  invalid?: string
   field?: string
   model?: ResourceModelField<string>
   modelValue?: string | null
@@ -32,6 +34,7 @@ const props = withDefaults(defineProps<{
   type: 'text',
   inputmode: undefined,
   nullable: false,
+  invalid: undefined,
   field: undefined,
   model: undefined,
   modelValue: undefined,
@@ -41,6 +44,7 @@ const emit = defineEmits<{ 'update:modelValue': [value: string | null | undefine
 
 const { model, value, state, unbound } = useFieldModel<string>(props, emit)
 const id = useId()
+const invalidId = useId()
 
 function onInput(event: Event) {
   const text = (event.target as HTMLInputElement).value
@@ -74,14 +78,25 @@ function onInput(event: Event) {
           :placeholder="placeholder"
           :disabled="disabled || unbound"
           :readonly="readonly"
-          :aria-describedby="describedBy"
-          :aria-invalid="tone === 'danger' ? 'true' : undefined"
+          :aria-describedby="[describedBy, invalid ? invalidId : undefined].filter(Boolean).join(' ') || undefined"
+          :aria-invalid="tone === 'danger' || invalid ? 'true' : undefined"
           :aria-busy="busy ? 'true' : undefined"
           class="cwa:h-full cwa:min-w-0 cwa:flex-1 cwa:appearance-none cwa:border-0 cwa:bg-transparent cwa:px-3 cwa:text-control cwa:text-inherit cwa:outline-none cwa:placeholder:text-muted-on-field cwa:focus:ring-0 cwa:disabled:cursor-not-allowed cwa:pointer-coarse:text-base"
           @input="onInput"
         >
         <slot name="suffix" />
       </div>
+    </template>
+    <template #after>
+      <span
+        v-if="invalid"
+        :id="invalidId"
+        data-testid="input-invalid"
+        class="cwa:inline-flex cwa:items-center cwa:gap-1.5 cwa:whitespace-nowrap cwa:text-control cwa:text-danger-fg"
+      >
+        <StateGlyph kind="error" />
+        {{ invalid }}
+      </span>
     </template>
   </Field>
 </template>

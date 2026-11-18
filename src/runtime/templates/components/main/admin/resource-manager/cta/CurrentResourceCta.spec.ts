@@ -9,7 +9,7 @@ import { NEW_RESOURCE_IRI } from '#cwa/storage/stores/resources/state'
 
 const ButtonStub = {
   name: 'CwaUiButton',
-  props: ['label', 'disabled', 'disabledReason', 'options', 'loading'],
+  props: ['label', 'shortLabel', 'disabled', 'disabledReason', 'options', 'loading'],
   emits: ['click', 'select'],
   template: '<button type="button" :disabled="disabled" @click="$emit(\'click\')">{{ label }}</button>',
 }
@@ -66,6 +66,12 @@ describe('CurrentResourceCta', () => {
 
     expect(wrapper.findComponent(ButtonStub).props('label')).toBe('Publish now')
     expect(wrapper.findComponent(ButtonStub).props('disabled')).toBe(false)
+  })
+
+  test('below sm Publish now reads Publish, so the tab strip keeps its room on a phone (#460)', () => {
+    const { wrapper } = mountCta()
+
+    expect(wrapper.findComponent(ButtonStub).props('shortLabel')).toBe('Publish')
   })
 
   test('Publish publishes the draft by the API\'s clock, sending "now" (#381)', async () => {

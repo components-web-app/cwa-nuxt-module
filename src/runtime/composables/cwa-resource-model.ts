@@ -23,14 +23,20 @@ interface Change {
   untrack?: () => void
 }
 
-interface ResourceModelOps {
+export interface ResourceModelOps<T = any, S = any> {
   longWaitThreshold?: number
   debounceTime?: number
+  get?: (stored: S | null | undefined) => T | null | undefined
+  set?: (shown: T | null | undefined) => S | null | undefined
+  valid?: (value: S | null | undefined) => boolean
+  alsoSend?: (value: S | null | undefined, iri: string) => Record<string, unknown> | undefined
+  /** @internal */
+  saved?: () => void
 }
 
 const IDLE: CwaFieldState = Object.freeze({ status: 'idle', waiting: false, slow: false })
 
-export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: string | string[], ops?: ResourceModelOps) => {
+export const useCwaResourceModel = <T, S = T>(iri: Ref<string | undefined>, property: string | string[], ops?: ResourceModelOps<T, S>) => {
   const proxy = getCurrentInstance()?.proxy
   const source = `input_${proxy?.$?.uid}`
   const $cwa = useCwa()
@@ -104,10 +110,21 @@ export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: s
     blur()
   }
 
+  function holds(root: Element, node: EventTarget | Element | null) {
+    if (!(node instanceof Node)) {
+      return false
+    }
+    if (root.contains(node)) {
+      return true
+    }
+    const controls = [root, ...root.querySelectorAll('[aria-controls]')].flatMap(control => control.getAttribute('aria-controls')?.split(' ') ?? [])
+    return controls.some(id => !!id && !!document.getElementById(id)?.contains(node))
+  }
+
   const focusListeners = {
     onFocusin: () => focus(),
     onFocusout: (event: FocusEvent) => {
-      (event.currentTarget as Node).contains(event.relatedTarget as Node | null) || leave()
+      holds(event.currentTarget as Element, event.relatedTarget) || leave()
     },
     // Safari does not focus a button, checkbox or switch on click, so focusin never fires for them
     onPointerdown: (event: PointerEvent) => {
@@ -115,9 +132,9 @@ export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: s
       if (stopWatchingOutside) {
         return
       }
-      const root = event.currentTarget as Node
+      const root = event.currentTarget as Element
       const outside = (down: Event) => {
-        root.contains(down.target as Node | null) || root.contains(document.activeElement) || leave()
+        holds(root, down.target) || holds(root, document.activeElement) || leave()
       }
       document.addEventListener('pointerdown', outside, true)
       stopWatchingOutside = () => document.removeEventListener('pointerdown', outside, true)
@@ -240,9 +257,17 @@ export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: s
 
     mergeFromRoot && await $cwa.resourcesManager.getWaitForRequestPromise(submittingEndpoint, rootProperty.value, source)
 
+    if (ops?.valid && !ops.valid(newLocalValue)) {
+      pendingSubmit.value = debouncing || !!queued.size
+      record(submittingIri, (states, entry, field) => states.unqueued(entry, field))
+      return
+    }
+
     const submittingResource = resourceAt(submittingIri)
+    const extra = submittingResource && ops?.alsoSend?.(rootValue(newLocalValue, submittingIri), submittingIri)
+    const hasExtra = !!extra && Object.keys(extra).length > 0
     // if the resource has been deleted, this will trigger a store value update but we do not need to submit this
-    if (submittingResource === undefined || (!isSubmitting.value && isEqual(submittingResource.data ? get(submittingResource.data, property) : undefined, newLocalValue))) {
+    if (submittingResource === undefined || (!isSubmitting.value && !hasExtra && isEqual(submittingResource.data ? get(submittingResource.data, property) : undefined, newLocalValue))) {
       pendingSubmit.value = debouncing || !!queued.size
       record(submittingIri, (states, entry, field) => states.skipped(entry, field))
       submittingIri === iri.value && !debouncing && isEqual(localValue.value, newLocalValue) && resetValue()
@@ -254,15 +279,27 @@ export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: s
 
     pendingSubmit.value = debouncing || !!queued.size
     record(submittingIri, (states, entry, field) => states.unqueued(entry, field))
+    let failed = false
+    let local = false
     const newResource = await $cwa.resourcesManager.updateResource({
       endpoint: submittingEndpoint,
       data: {
         [rootProperty.value]: submittingValue,
+        ...(hasExtra && extra),
       },
       source,
-      onRequest,
+      onRequest: (sentTo, done) => {
+        onRequest(sentTo, done)
+        local = !done
+        done?.then(({ error }) => {
+          failed = !!error
+        })
+      },
     })
     requests.value--
+    if (local || (newResource && !failed)) {
+      ops?.saved?.()
+    }
 
     const newIriReturned = newResource?.['@id'] && newResource['@id'] !== submittingIri
     if (newIriReturned) {
@@ -408,6 +445,19 @@ export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: s
     unwatchIsBusy()
   })
 
+  const map = ops?.get || ops?.set
+  const shown = map
+    ? computed<T | null | undefined>({
+        get: () => ops.get ? ops.get(model.value as S) : model.value as T,
+        set: (value) => {
+          model.value = (ops.set ? ops.set(value) : value) as any
+        },
+      })
+    : model as unknown as typeof model
+  const shownRemoteChange = map && ops.get
+    ? computed(() => remoteChange.value ? { ...remoteChange.value, value: ops.get!(remoteChange.value.value as unknown as S) as T } : undefined)
+    : remoteChange
+
   return {
     state,
     retry,
@@ -421,9 +471,9 @@ export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: s
     },
     /** @deprecated use `reset()` */
     resetValue,
-    model,
+    model: shown,
     localValueWithIri,
-    remoteChange,
+    remoteChange: shownRemoteChange,
     focus,
     blur,
     focusedBy,

@@ -23,7 +23,7 @@ describe('CwaUiDatePicker with two copies of @internationalized/date', () => {
     sameCopy.value = false
     const warn = vi.spyOn(consola, 'warn').mockImplementation(() => undefined)
 
-    mount(DatePicker, { props: { modelValue: '2026-10-01T08:00:00.000Z' } })
+    mount(DatePicker, { props: { label: 'Go live', modelValue: '2026-10-01T08:00:00.000Z' } })
 
     expect(warn).toHaveBeenCalledTimes(1)
     expect(warn.mock.calls[0]![0]).toContain('pnpm dedupe')
@@ -33,7 +33,7 @@ describe('CwaUiDatePicker with two copies of @internationalized/date', () => {
     sameCopy.value = true
     const warn = vi.spyOn(consola, 'warn').mockImplementation(() => undefined)
 
-    mount(DatePicker, { props: { modelValue: '2026-10-01T08:00:00.000Z' } })
+    mount(DatePicker, { props: { label: 'Go live', modelValue: '2026-10-01T08:00:00.000Z' } })
 
     expect(warn).not.toHaveBeenCalled()
   })

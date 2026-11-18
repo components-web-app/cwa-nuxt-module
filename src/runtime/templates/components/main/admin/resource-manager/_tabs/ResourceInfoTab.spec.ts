@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { enableAutoUnmount, mount, flushPromises } from '@vue/test-utils'
 import { computed, ref } from 'vue'
 import { NEW_RESOURCE_IRI } from '#cwa/storage/stores/resources/state'
+import { axe } from '../../../../../../../../test/utils/axe'
 import ResourceInfoTab from './ResourceInfoTab.vue'
 import DeleteLocationsDialog from '#cwa/templates/components/core/admin/DeleteLocationsDialog.vue'
 import { CwaResourceTypes } from '#cwa/resources/resource-utils'
@@ -43,9 +44,12 @@ const mockCwa = {
       isEditingLayout: computed(() => false),
       getClosestStackItemByType: vi.fn((type: string) => closestStackItems.get(type)),
       isComponentGroupDisabled: () => false,
+      currentIri: iri,
     },
   },
 }
+
+vi.mock('#cwa/composables/cwa', () => ({ useCwa: () => mockCwa }))
 
 vi.mock('#app/nuxt', async importOriginal => ({
   ...await importOriginal<typeof import('#app/nuxt')>(),
@@ -69,16 +73,10 @@ vi.mock('#cwa/composables/cwa-resource-manager-tab', () => ({
   }),
 }))
 
-const ButtonStub = {
-  name: 'CwaUiFormButton',
-  emits: ['click'],
-  template: '<button @click="$emit(\'click\')"><slot /></button>',
-}
-
 enableAutoUnmount(afterEach)
 
 function mountInfoTab() {
-  return mount(ResourceInfoTab, { global: { stubs: { CwaUiFormButton: ButtonStub } } })
+  return mount(ResourceInfoTab, { attachTo: document.body })
 }
 
 function usage(total: number) {
@@ -404,5 +402,21 @@ describe('Info tab — a component in several locations', () => {
     await expectTodaysDelete()
 
     expect(mockCwa.fetch).not.toHaveBeenCalled()
+  })
+
+  test('is one manager-tab row: the ID read-only, the usage, then the delete action after a divider, with no axe violations (#460)', async () => {
+    usageResponses.set('/component/abc/usage', usage(3))
+    const wrapper = mountInfoTab()
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="manager-tab"]').exists()).toBe(true)
+    const id = wrapper.get('[data-testid="resource-id"] input')
+    expect(id.attributes('readonly')).toBeDefined()
+    expect((id.element as HTMLInputElement).value).toBe('/component/abc')
+    expect(wrapper.get('[data-testid="resource-usage"]').text()).toBe('Used in 3 locations')
+    const row = wrapper.get('[data-testid="manager-tab"]').html()
+    expect(row.indexOf('cwa:bg-line')).toBeGreaterThan(row.indexOf('resource-usage'))
+    expect(row.indexOf('cwa:bg-line')).toBeLessThan(row.indexOf('component-delete'))
+    expect(await axe(wrapper.element as HTMLElement)).toHaveNoViolations()
   })
 })

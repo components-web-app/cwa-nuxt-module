@@ -4,6 +4,12 @@ import { definePageMeta, useCwaToast, useHead } from '#imports'
 import {
   CwaUiBadge,
   CwaUiButton,
+  CwaUiDatePicker,
+  CwaUiFileUpload,
+  CwaUiMultiSelect,
+  CwaUiResourceSearch,
+  CwaUiSegmented,
+  CwaUiSelect,
   CwaUiIconBinIcon,
   CwaUiIconPlusIcon,
   CwaUiIconTickIcon,
@@ -17,6 +23,7 @@ import {
 } from '#components'
 import { fakeFieldModel } from '../kit/fake-field-model'
 import type { FakeStatus } from '../kit/fake-field-model'
+import type { CwaResource } from '../../../src/runtime/resources/resource-utils'
 import type { MenuEntry } from '../../../src/runtime/templates/components/core/ui/menu-entries'
 import Toast from '../../../src/runtime/templates/components/core/ui/Toast.vue'
 import type { CwaToastOptions } from '../../../src/runtime/composables/cwa-toast'
@@ -76,6 +83,56 @@ const fieldStatuses: FakeStatus[] = ['idle', 'pending', 'saving', 'saved', 'erro
 const inputModels = fieldStatuses.map(status => ({ status, model: fakeFieldModel('Kitchens', status, 'Kitchens & bathrooms') }))
 const toggleModels = fieldStatuses.map(status => ({ status, model: fakeFieldModel(true, status, false) }))
 const numberModels = fieldStatuses.map(status => ({ status, model: fakeFieldModel(3, status, 4) }))
+const selectOptions: MenuEntry[] = [
+  { label: 'Default', value: 'default' },
+  { label: 'Split image', value: 'split', description: 'Image on one side, text on the other' },
+  { group: 'Wide layouts only', items: [{ label: 'Full bleed', value: 'bleed', disabled: true, disabledReason: 'Needs a wide layout' }] },
+]
+const styleOptions = [
+  { label: 'Dark background', value: 'dark' },
+  { label: 'Extra padding', value: 'padding' },
+  { label: 'Wide', value: 'wide' },
+  { label: 'Rounded corners', value: 'rounded' },
+]
+const selectModels = fieldStatuses.map(status => ({ status, model: fakeFieldModel<string>('split', status, 'default') }))
+const multiModels = fieldStatuses.map(status => ({ status, model: fakeFieldModel<string[]>(['padding', 'dark'], status, ['wide']) }))
+const segmentModels = fieldStatuses.map(status => ({ status, model: fakeFieldModel<string>('left', status, 'right') }))
+const dateModels = fieldStatuses.map(status => ({ status, model: fakeFieldModel<string>('2026-12-01T09:00:00.000Z', status, '2026-12-02T09:00:00.000Z') }))
+const plainSelect = ref<string | null>(null)
+const plainStyles = ref<string[]>([])
+const plainSegment = ref('page')
+const plainDate = ref<string | null>(null)
+const kitPages: CwaResource[] = Array.from({ length: 42 }, (_, index) => ({ '@id': `/_/routes/${index + 1}`, '@type': 'Route', 'path': index ? `/showrooms/branch-${index}` : '/', '_metadata': { persisted: true } } as CwaResource))
+const kitPageLabel = (resource: CwaResource) => resource.path ?? ''
+const searchRoute = ref<string | null>(null)
+function kitSearch(term: string, pageNumber: number) {
+  const found = kitPages.filter(page => (page.path as string).includes(term))
+  return new Promise<{ items: CwaResource[], total: number }>(resolve => setTimeout(() => resolve({ items: found.slice((pageNumber - 1) * 20, pageNumber * 20), total: found.length }), 400))
+}
+const kitSearchForever = () => new Promise<never>(() => {})
+const kitSearchFails = () => Promise.reject(new Error('500'))
+const kitSearchNone = async () => ({ items: [], total: 0 })
+const kitResolve = async (iri: string) => kitPages.find(page => page['@id'] === iri)
+function fakeUpload(file: { name: string, size: string, url?: string, mimeType?: string } | undefined, status: FakeStatus) {
+  const model = fakeFieldModel<string | undefined>(file?.name, status)
+  return {
+    file: computed(() => file),
+    state: computed(() => model.state!.value),
+    updating: ref(false),
+    handleInputChangeFile: async () => {},
+    handleInputDeleteFile: async () => {},
+    retry: async () => model.retry?.(),
+    reset: async () => model.reset?.(),
+  }
+}
+const kitImage = 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 4 3%22%3E%3Crect width=%224%22 height=%223%22 fill=%22%23a3866a%22/%3E%3C/svg%3E'
+const uploadSamples = [
+  { status: 'idle' as const, upload: fakeUpload({ name: 'workshop-bench.jpg', size: '240 KB', url: kitImage, mimeType: 'image/jpeg' }, 'idle') },
+  { status: 'empty' as const, upload: fakeUpload(undefined, 'idle') },
+  { status: 'saving' as const, upload: fakeUpload({ name: 'workshop-bench.jpg', size: '240 KB', url: kitImage, mimeType: 'image/jpeg' }, 'saving') },
+  { status: 'saved' as const, upload: fakeUpload({ name: 'brochure.pdf', size: '1.2 MB', mimeType: 'application/pdf' }, 'saved') },
+  { status: 'error' as const, upload: fakeUpload({ name: 'workshop-bench.jpg', size: '240 KB', url: kitImage, mimeType: 'image/jpeg' }, 'error') },
+]
 const plainText = ref('')
 const nullableText = ref<string | null>('Can be emptied')
 const plainToggle = ref(false)
@@ -452,6 +509,146 @@ const badgeTones = [
             :model-value="3"
             label="Disabled"
             disabled
+          />
+        </div>
+      </section>
+
+      <section aria-labelledby="kit-choices">
+        <h2 id="kit-choices">
+          Choices, search, files and dates
+        </h2>
+        <p class="kit-note">
+          The same edge line, popover and binding as the fields above. A Select or MultiSelect choice saves at once; the Style control in the Ui tab maps its style names to class strings through the model's typed mapping.
+        </p>
+        <h3>Select</h3>
+        <div class="kit-row">
+          <CwaUiSelect
+            v-for="sample in selectModels"
+            :key="sample.status"
+            :label="sample.status"
+            :model="sample.model"
+            :options="selectOptions"
+          />
+        </div>
+        <div class="kit-row">
+          <CwaUiSelect
+            v-model="plainSelect"
+            label="Nullable"
+            nullable
+            none-label="Default"
+            :options="selectOptions"
+            info="None is the first option and stores null."
+          />
+          <CwaUiSelect
+            model-value="split"
+            label="Disabled"
+            disabled
+            :options="selectOptions"
+          />
+        </div>
+        <h3>MultiSelect</h3>
+        <p class="kit-note">
+          In the bar it shows the first choice as a chip and +N. Type to filter; Backspace in an empty search marks the last chip and a second Backspace removes it.
+        </p>
+        <div class="kit-row">
+          <CwaUiMultiSelect
+            v-for="sample in multiModels"
+            :key="sample.status"
+            :label="sample.status"
+            :model="sample.model"
+            :options="styleOptions"
+          />
+        </div>
+        <div class="kit-row">
+          <CwaUiMultiSelect
+            v-model="plainStyles"
+            label="Empty, with v-model"
+            :options="styleOptions"
+          />
+        </div>
+        <h3>Segmented</h3>
+        <div class="kit-row">
+          <CwaUiSegmented
+            v-for="sample in segmentModels"
+            :key="sample.status"
+            :label="sample.status"
+            :model="sample.model"
+            :options="[{ value: 'left', label: 'Left' }, { value: 'centre', label: 'Centre' }, { value: 'right', label: 'Right' }]"
+          />
+          <CwaUiSegmented
+            v-model="plainSegment"
+            label="Link"
+            :options="[{ value: 'page', label: 'Page' }, { value: 'url', label: 'URL' }]"
+          />
+        </div>
+        <h3>ResourceSearch</h3>
+        <p class="kit-note">
+          Open each to see its state. Results come 20 at a time with the total; slow answers say so after 3 s (5 s for the first load); a stale answer is ignored. The Link field in a manager tab is a Segmented Page / URL over a ResourceSearch and a URL input: a page saves at once, a URL 250 ms after typing stops while it is valid, and the first save after switching clears the other with Undo on its line.
+        </p>
+        <div class="kit-row">
+          <CwaUiResourceSearch
+            v-model="searchRoute"
+            label="Results"
+            endpoint="/_/routes"
+            :label-of="kitPageLabel"
+            :load="kitSearch"
+            :resolve="kitResolve"
+            placeholder="Search pages"
+          />
+          <CwaUiResourceSearch
+            :model-value="null"
+            label="Loading"
+            endpoint="/_/routes"
+            :label-of="kitPageLabel"
+            :load="kitSearchForever"
+          />
+          <CwaUiResourceSearch
+            :model-value="null"
+            label="Server failure"
+            endpoint="/_/routes"
+            :label-of="kitPageLabel"
+            :load="kitSearchFails"
+          />
+          <CwaUiResourceSearch
+            :model-value="null"
+            label="Nothing"
+            endpoint="/_/routes"
+            :label-of="kitPageLabel"
+            :load="kitSearchNone"
+          />
+          <CwaUiResourceSearch
+            model-value="/_/routes/7"
+            label="Chosen, label loading"
+            endpoint="/_/routes"
+            :label-of="kitPageLabel"
+            :load="kitSearch"
+            :resolve="kitSearchForever"
+          />
+        </div>
+        <h3>FileUpload</h3>
+        <p class="kit-note">
+          Remove asks first and has no Undo: the server deletes the file.
+        </p>
+        <div class="kit-row">
+          <CwaUiFileUpload
+            v-for="sample in uploadSamples"
+            :key="sample.status"
+            :label="sample.status"
+            :upload="sample.upload"
+            accept="image/*"
+          />
+        </div>
+        <h3>DatePicker</h3>
+        <div class="kit-row">
+          <CwaUiDatePicker
+            v-for="sample in dateModels"
+            :key="sample.status"
+            :label="sample.status"
+            :model="sample.model"
+          />
+          <CwaUiDatePicker
+            v-model="plainDate"
+            label="Empty, with v-model"
           />
         </div>
       </section>

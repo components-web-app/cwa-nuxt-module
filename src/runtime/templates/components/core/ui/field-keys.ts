@@ -1,4 +1,5 @@
 import type { InjectionKey, Ref } from 'vue'
+import type { ResourceModelField } from '#cwa/resources/model-editors'
 
 export interface ManagerTabContext {
   iri: Ref<string | undefined>
@@ -11,3 +12,22 @@ export const managerTabKey: InjectionKey<ManagerTabContext> = Symbol('cwa-manage
 export const tabMetaOnlyKey = 'cwaTabMetaOnly'
 export const tabFieldsKey: InjectionKey<string[]> = Symbol('cwa-tab-fields')
 export const announceKey: InjectionKey<Announce> = Symbol('cwa-announce')
+
+export interface FieldUndo {
+  text: string
+  run: () => void
+}
+
+export interface FieldGroupContext {
+  model: (field: string) => ResourceModelField<any> | undefined
+  undo: (field: string) => FieldUndo | undefined
+}
+
+export const fieldGroupKey: InjectionKey<FieldGroupContext> = Symbol('cwa-field-group')
+
+export interface EitherOrContext {
+  active: Ref<number>
+  register: (label: string, fields: string[]) => number
+}
+
+export const eitherOrKey: InjectionKey<EitherOrContext> = Symbol('cwa-either-or')

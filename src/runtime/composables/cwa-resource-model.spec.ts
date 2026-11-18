@@ -576,6 +576,181 @@ describe('useCwaResourceModel', () => {
     })
   })
 
+  describe('typed mapping, validation and extra fields for the bar controls (#460)', () => {
+    beforeEach(() => {
+      vi.useFakeTimers()
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    test('a typed mapping shows the stored value through get and stores what is set through set', async () => {
+      mockGetResource.mockReturnValue(ref({ data: { price: 1250 } }))
+      const { model } = useCwaResourceModel<number, number>(iri, 'price', { get: pence => pence === null || pence === undefined ? pence : pence / 100, set: pounds => pounds === null || pounds === undefined ? pounds : Math.round(pounds * 100) })
+
+      expect(model.value).toBe(12.5)
+      model.value = 13
+      await nextTick()
+      vi.runAllTimers()
+      await microtasks()
+
+      expect(mockUpdateResource).toHaveBeenCalledWith(expect.objectContaining({ data: { price: 1300 } }))
+    })
+
+    test('a typed mapping shows the held remote value mapped too', async () => {
+      mockGetResource.mockReturnValue(ref({ data: { price: 1250 } }))
+      const { remoteChange } = useCwaResourceModel<number, number>(iri, 'price', { get: pence => (pence ?? 0) / 100 })
+      const editor = registeredEditors.at(-1) as ModelEditor
+
+      editor.conflict({ iri: '/my/resource', change: { name: 'Mia', value: 900, accept: vi.fn(), keep: vi.fn() } })
+
+      expect(remoteChange.value?.value).toBe(9)
+    })
+
+    test('a value that is not valid waits silently: nothing is sent and the field holds no state', async () => {
+      const resource = ref<any>({ data: { rawPath: null } })
+      mockGetResource.mockReturnValue(resource)
+      const { model, state } = useCwaResourceModel<string>(iri, 'rawPath', { valid: value => !!value?.startsWith('/') })
+
+      model.value = 'about us'
+      await nextTick()
+      vi.runAllTimers()
+      await microtasks()
+
+      expect(mockUpdateResource).not.toHaveBeenCalled()
+      expect(state.value.status).toBe('idle')
+      expect(model.value).toBe('about us')
+      expect(pendingUpdates.size).toBe(0)
+
+      model.value = '/about'
+      await nextTick()
+      vi.runAllTimers()
+      await microtasks()
+
+      expect(mockUpdateResource).toHaveBeenCalledWith(expect.objectContaining({ data: { rawPath: '/about' } }))
+    })
+
+    test('extra fields are sent in the same request, read when it is sent', async () => {
+      const resource = ref<any>({ data: { rawPath: null, route: '/_/routes/a' } })
+      mockGetResource.mockReturnValue(resource)
+      const alsoSend = vi.fn(() => ({ route: null }))
+      const { model } = useCwaResourceModel<string>(iri, 'rawPath', { alsoSend })
+
+      model.value = '/about'
+      await nextTick()
+      expect(alsoSend).not.toHaveBeenCalled()
+      vi.runAllTimers()
+      await microtasks()
+
+      expect(mockUpdateResource).toHaveBeenCalledTimes(1)
+      expect(alsoSend).toHaveBeenCalledWith('/about', '/my/resource')
+      expect(mockUpdateResource).toHaveBeenCalledWith(expect.objectContaining({ data: { rawPath: '/about', route: null } }))
+    })
+
+    test('a value equal to the stored one is still sent when it carries extra fields', async () => {
+      mockGetResource.mockReturnValue(ref<any>({ data: { route: '/_/routes/a', rawPath: '/old' } }))
+      const { model } = useCwaResourceModel<string>(iri, 'route', { alsoSend: () => ({ rawPath: null }) })
+
+      model.value = '/_/routes/a'
+      await nextTick()
+      vi.runAllTimers()
+      await microtasks()
+
+      expect(mockUpdateResource).toHaveBeenCalledWith(expect.objectContaining({ data: { route: '/_/routes/a', rawPath: null } }))
+    })
+
+    test('a value equal to the stored one with no extra fields is not sent', async () => {
+      mockGetResource.mockReturnValue(ref<any>({ data: { route: '/_/routes/a' } }))
+      const { model } = useCwaResourceModel<string>(iri, 'route', { alsoSend: () => undefined })
+
+      model.value = '/_/routes/a'
+      await nextTick()
+      vi.runAllTimers()
+      await microtasks()
+
+      expect(mockUpdateResource).not.toHaveBeenCalled()
+    })
+
+    describe('a value that is not valid is never sent, whichever path sends it', () => {
+      const validUrl = (value: string | null | undefined) => value === null || !!value?.startsWith('/')
+
+      test('Keep mine, and a newer remote change clearing a conflict, send through the editor\'s submit: an invalid value stays unsent', async () => {
+        mockGetResource.mockReturnValue(ref<any>({ data: { rawPath: null } }))
+        const { model } = useCwaResourceModel<string>(iri, 'rawPath', { valid: validUrl })
+        const editor = registeredEditors.at(-1) as ModelEditor
+        model.value = 'about us'
+        await nextTick()
+        vi.runAllTimers()
+        await microtasks()
+
+        await editor.submit()
+        await microtasks()
+
+        expect(mockUpdateResource).not.toHaveBeenCalled()
+        expect(model.value).toBe('about us')
+      })
+
+      test('Retry after the value became invalid sends nothing', async () => {
+        mockGetResource.mockReturnValue(ref<any>({ data: { rawPath: null } }))
+        const answers = recordedSaves()
+        const { model, retry } = useCwaResourceModel<string>(iri, 'rawPath', { valid: validUrl })
+        model.value = '/about'
+        await nextTick()
+        vi.runAllTimers()
+        await microtasks()
+        answers[0]!({ error: { statusCode: 500 } })
+        await microtasks()
+        expect(mockUpdateResource).toHaveBeenCalledTimes(1)
+
+        model.value = 'about us'
+        await nextTick()
+        vi.runAllTimers()
+        await microtasks()
+        await retry()
+        await microtasks()
+
+        expect(mockUpdateResource).toHaveBeenCalledTimes(1)
+      })
+
+      test('a publish flushing the waiting save sends nothing for an invalid value', async () => {
+        mockGetResource.mockReturnValue(ref<any>({ data: { rawPath: null } }))
+        const { model } = useCwaResourceModel<string>(iri, 'rawPath', { valid: validUrl, debounceTime: 1000 })
+        model.value = 'about us'
+        await nextTick()
+
+        await pendingUpdates.get('/my/resource')?.()
+        await microtasks()
+
+        expect(mockUpdateResource).not.toHaveBeenCalled()
+      })
+    })
+
+    test('saved runs once the request succeeds, and never for a failed one', async () => {
+      mockGetResource.mockReturnValue(ref<any>({ data: { rawPath: null } }))
+      const answers = recordedSaves()
+      const saved = vi.fn()
+      const { model } = useCwaResourceModel<string>(iri, 'rawPath', { saved })
+
+      model.value = '/about'
+      await nextTick()
+      vi.runAllTimers()
+      await microtasks()
+      expect(saved).not.toHaveBeenCalled()
+      answers[0]!({ error: { statusCode: 500 } })
+      await microtasks()
+      expect(saved).not.toHaveBeenCalled()
+
+      model.value = '/about-us'
+      await nextTick()
+      vi.runAllTimers()
+      await microtasks()
+      answers[1]!({ resource: { '@id': '/my/resource', 'rawPath': '/about-us' } })
+      await microtasks()
+      expect(saved).toHaveBeenCalledTimes(1)
+    })
+  })
+
   describe('state, retry and reset (#458)', () => {
     beforeEach(() => {
       vi.useFakeTimers()

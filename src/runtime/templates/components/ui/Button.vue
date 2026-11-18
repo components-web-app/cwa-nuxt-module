@@ -9,6 +9,7 @@ import type { ButtonTone, ButtonVariant } from './kit-looks'
 
 const {
   label,
+  shortLabel,
   variant = 'soft',
   tone = 'accent',
   size = 'md',
@@ -24,6 +25,7 @@ const {
   stretch = false,
 } = defineProps<{
   label?: string
+  shortLabel?: string
   variant?: ButtonVariant
   tone?: ButtonTone
   size?: 'sm' | 'md'
@@ -99,6 +101,7 @@ function onClick(event: MouseEvent) {
     <Button
       v-if="label"
       :label="label"
+      :short-label="shortLabel"
       :variant="variant"
       :tone="tone"
       :size="size"
@@ -169,8 +172,15 @@ function onClick(event: MouseEvent) {
       aria-hidden="true"
       class="cwa:size-4 cwa:shrink-0"
     />
+    <template v-if="!iconOnly && shortLabel">
+      <span
+        class="cwa:min-w-0 cwa:sm:hidden"
+        data-testid="button-short-label"
+      >{{ shortLabel }}</span>
+      <span class="cwa:hidden cwa:min-w-0 cwa:sm:inline">{{ label }}</span>
+    </template>
     <span
-      v-if="!iconOnly"
+      v-else-if="!iconOnly"
       class="cwa:min-w-0"
     >{{ label }}</span>
     <span

@@ -91,6 +91,10 @@ async function routerEditingOn(path: string) {
   return router
 }
 
+function fullText(badge: { element: Element }) {
+  return [...badge.element.childNodes].filter(node => !(node instanceof Element && node.getAttribute('aria-hidden') === 'true')).map(node => node.textContent).join('').trim()
+}
+
 describe('ComponentUsageBadge', () => {
   afterEach(() => {
     vi.restoreAllMocks()
@@ -103,7 +107,7 @@ describe('ComponentUsageBadge', () => {
     const { cwa } = mockCwa()
     const wrapper = await mountBadge()
     expect(fetchComponentUsage).toHaveBeenCalledWith(cwa, COMPONENT)
-    expect(wrapper.get('[data-testid="component-usage-badge"]').text()).toBe('Shared · 3 places')
+    expect(fullText(wrapper.get('[data-testid="component-usage-badge"]'))).toBe('Shared · 3 places')
   })
 
   test.each([
@@ -141,7 +145,7 @@ describe('ComponentUsageBadge', () => {
     expect(wrapper.find('[data-testid="component-usage-badge"]').exists()).toBe(false)
     resolveOther({ positionCount: 2, pageDataCount: 0, total: 2 })
     await flushPromises()
-    expect(wrapper.get('[data-testid="component-usage-badge"]').text()).toBe('Shared · 2 places')
+    expect(fullText(wrapper.get('[data-testid="component-usage-badge"]'))).toBe('Shared · 2 places')
     expect(vi.mocked(fetchComponentUsage).mock.calls.map(call => call[1])).toEqual([COMPONENT, OTHER])
   })
 
@@ -193,7 +197,7 @@ describe('ComponentUsageBadge', () => {
       const wrapper = await mountBadge()
       const badge = wrapper.get('[data-testid="component-usage-badge"]')
       expect(badge.element.tagName).toBe('SPAN')
-      expect(badge.text()).toBe('Shared · 2 places')
+      expect(fullText(badge)).toBe('Shared · 2 places')
       expect(wrapper.find('button').exists()).toBe(false)
     })
 
@@ -201,7 +205,7 @@ describe('ComponentUsageBadge', () => {
       const { wrapper, list } = await openList({ total: 2, locations: [location({ renderedOn: [page('/_/pages/a', 'Home', '/')], renderedOnCount: 1 }), location({ renderedOn: [page('/_/pages/b', 'About', '/about')], renderedOnCount: 1 })] })
       const badge = wrapper.get('[data-testid="component-usage-badge"]')
       expect(badge.element.tagName).toBe('BUTTON')
-      expect(badge.text()).toBe('Shared · 2 places')
+      expect(fullText(badge)).toBe('Shared · 2 places')
       expect(list).not.toBeNull()
     })
 
@@ -301,5 +305,21 @@ describe('ComponentUsageBadge', () => {
       await router.push('/b')
       expect(router.currentRoute.value.fullPath).toBe('/start')
     })
+  })
+
+  test('below sm the badge is a share glyph and the count, and its accessible name stays the full text (#460)', async () => {
+    vi.mocked(fetchComponentUsage).mockResolvedValue({ positionCount: 2, pageDataCount: 0, total: 2 })
+    mockCwa()
+    const wrapper = await mountBadge()
+    const badge = wrapper.get('[data-testid="component-usage-badge"]')
+    const compact = badge.get('[data-testid="component-usage-compact"]')
+
+    expect(compact.attributes('aria-hidden')).toBe('true')
+    expect(compact.classes()).toContain('cwa:sm:hidden')
+    expect(compact.find('svg').exists()).toBe(true)
+    expect(compact.text()).toBe('2')
+    const full = badge.findAll('span').find(span => span.classes().includes('cwa:sr-only'))!
+    expect(full.text()).toBe('Shared · 2 places')
+    expect(full.classes()).toContain('cwa:sm:not-sr-only')
   })
 })

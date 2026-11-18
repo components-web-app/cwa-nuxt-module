@@ -147,6 +147,7 @@ function handleOption({ value }: MenuItem) {
   <CwaUiButton
     v-if="publish.action.value || buttonOptions.length"
     :label="publish.action.value"
+    :short-label="publish.action.value === 'Publish now' ? 'Publish' : undefined"
     variant="solid"
     size="sm"
     stretch

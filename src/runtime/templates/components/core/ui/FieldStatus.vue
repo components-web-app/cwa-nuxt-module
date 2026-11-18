@@ -4,20 +4,22 @@ import { PopoverArrow, PopoverContent, PopoverRoot } from 'reka-ui'
 import CwaUiButton from '../../ui/Button.vue'
 import XMarkIcon from '../../ui/icon/XMarkIcon.vue'
 import StateGlyph from './StateGlyph.vue'
+import type { FieldUndo } from './field-keys'
 import type { ResourceModelField } from '#cwa/resources/model-editors'
 import type { CwaFieldState } from '#cwa/storage/stores/resources/state'
 
-export type LineState = 'saving' | 'saved' | 'error' | 'conflict'
+export type LineState = 'saving' | 'saved' | 'error' | 'conflict' | 'undo'
 
 const SAVED_FOR = 1180
 const HOVER_DELAY = 300
 
-const { state, name, box, model, descriptionId } = defineProps<{
+const { state, name, box, model, descriptionId, undo } = defineProps<{
   state: CwaFieldState
   name: string
   box: HTMLElement | null | undefined
   model?: ResourceModelField<any>
   descriptionId: string
+  undo?: FieldUndo
 }>()
 
 const now = ref(Date.now())
@@ -46,13 +48,13 @@ const line = computed<LineState | undefined>(() => {
     case 'conflict':
       return 'conflict'
     case 'saved':
-      return (state.savedAt ?? 0) + SAVED_FOR > now.value ? 'saved' : undefined
+      return undo ? 'undo' : (state.savedAt ?? 0) + SAVED_FOR > now.value ? 'saved' : undefined
     default:
-      return undefined
+      return undo && state.status === 'idle' ? 'undo' : undefined
   }
 })
 
-const hasPopover = computed(() => line.value === 'error' || line.value === 'conflict')
+const hasPopover = computed(() => line.value === 'error' || line.value === 'conflict' || line.value === 'undo')
 
 const who = computed(() => model?.remoteChange.value?.name || state.held?.user?.name || 'Someone else')
 
@@ -67,10 +69,13 @@ const description = computed(() => {
   if (line.value === 'conflict') {
     return `Changed by ${who.value} while you were editing. Use ${who.value}’s and Keep mine follow.`
   }
+  if (line.value === 'undo') {
+    return `Saved. ${undo?.text} Undo follows.`
+  }
   return undefined
 })
 
-const title = computed(() => line.value === 'error' ? `${name}: not saved` : `${name}: changed by ${who.value}`)
+const title = computed(() => line.value === 'error' ? `${name}: not saved` : line.value === 'undo' ? `${name}: saved` : `${name}: changed by ${who.value}`)
 
 const open = ref(false)
 const content = ref<{ $el?: HTMLElement } | null>(null)
@@ -209,6 +214,10 @@ function keepMine() {
   act(() => model?.remoteChange.value ? model.remoteChange.value.keep() : model?.retry?.())
 }
 
+function runUndo() {
+  act(() => undo?.run())
+}
+
 function quoted(value: unknown) {
   if (value === null || value === undefined || value === '') {
     return 'Empty'
@@ -262,7 +271,10 @@ defineExpose({ line, open })
       @mouseleave="scheduleClose"
     >
       <div class="cwa:-mt-1 cwa:-mr-2 cwa:mb-1.5 cwa:flex cwa:min-h-8 cwa:items-center cwa:gap-2 cwa:font-semibold">
-        <StateGlyph :kind="line === 'error' ? 'error' : 'conflict'" />
+        <StateGlyph
+          v-if="line !== 'undo'"
+          :kind="line === 'error' ? 'error' : 'conflict'"
+        />
         <span class="cwa:min-w-0 cwa:flex-1">{{ title }}</span>
         <button
           type="button"
@@ -291,6 +303,19 @@ defineExpose({ line, open })
             size="sm"
             data-testid="field-status-reset"
             @click="reset"
+          />
+        </div>
+      </template>
+      <template v-else-if="line === 'undo'">
+        <p class="cwa:m-0">
+          {{ undo?.text }}
+        </p>
+        <div class="cwa:mt-4 cwa:flex cwa:flex-wrap cwa:justify-end cwa:gap-actions">
+          <CwaUiButton
+            label="Undo"
+            size="sm"
+            data-testid="field-status-undo"
+            @click="runUndo"
           />
         </div>
       </template>
