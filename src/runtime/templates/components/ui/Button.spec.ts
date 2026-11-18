@@ -3,6 +3,7 @@ import { afterEach, describe, expect, test, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { h } from 'vue'
 import { axe } from '../../../../../test/utils/axe'
+import { drawsOpenState } from '../../../../../test/utils/open-state'
 import Button from './Button.vue'
 import Spinner from './Spinner.vue'
 import { announceKey } from '../core/ui/field-keys'
@@ -293,6 +294,22 @@ describe('CwaUiButton (#456)', () => {
       document.querySelector<HTMLElement>('[data-testid="menu-clone"]')!.click()
       await flushPromises()
       expect(onSelect).toHaveBeenCalledWith(expect.objectContaining({ value: 'clone' }))
+    })
+
+    test('the ⋮ shows itself selected while its menu is open, and not once it closes, with no axe violations open', async () => {
+      const wrapper = mount(Button, { props: { label: 'Publish now', options }, attachTo: document.body })
+      const more = wrapper.get('[data-testid="button-options"]')
+      expect(drawsOpenState(more.element)).toBe(false)
+
+      await more.trigger('keydown', { key: 'Enter' })
+      await flushPromises()
+      expect(drawsOpenState(more.element)).toBe(true)
+      expect(await axe(document.body, { rules: { region: { enabled: false } } })).toHaveNoViolations()
+
+      document.querySelector<HTMLElement>('[data-testid="menu-clone"]')!.click()
+      await flushPromises()
+      expect(drawsOpenState(more.element)).toBe(false)
+      wrapper.unmount()
     })
 
     test('with no main action only the ⋮ is shown, and it is held while loading', () => {

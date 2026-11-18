@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { POPOVER_GAP } from '../core/ui/popover-gap'
 import { computed, provide, ref, useTemplateRef, watch } from 'vue'
 import { PopoverAnchor, PopoverContent, PopoverPortal, PopoverRoot } from 'reka-ui'
 import CwaUiButton from './Button.vue'
@@ -130,7 +131,7 @@ function onUrlKeydown(event: KeyboardEvent) {
         ref="content"
         side="bottom"
         align="start"
-        :side-offset="6"
+        :side-offset="POPOVER_GAP"
         :collision-padding="8"
         role="dialog"
         aria-label="Link"

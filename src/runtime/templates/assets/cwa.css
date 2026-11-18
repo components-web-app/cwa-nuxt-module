@@ -354,9 +354,6 @@
 .cwa\:me-auto {
   margin-inline-end: auto;
 }
-.cwa\:-mt-1 {
-  margin-top: calc(var(--cwa-spacing) * -1);
-}
 .cwa\:-mt-2 {
   margin-top: calc(var(--cwa-spacing) * -2);
 }
@@ -2473,6 +2470,40 @@
 }
 .cwa\:has-\[\[data-step\]\:hover\]\:bg-field-warning:has(:is([data-step]:hover)) {
   background-color: var(--cwa-color-field-warning);
+}
+.cwa\:aria-expanded\:bg-accent-hover[aria-expanded="true"] {
+  background-color: var(--cwa-color-accent-hover);
+}
+.cwa\:aria-expanded\:bg-button[aria-expanded="true"] {
+  background-color: var(--cwa-color-button);
+}
+.cwa\:aria-expanded\:bg-danger-fill-hover[aria-expanded="true"] {
+  background-color: var(--cwa-color-danger-fill-hover);
+}
+.cwa\:aria-expanded\:bg-field-danger[aria-expanded="true"] {
+  background-color: var(--cwa-color-field-danger);
+}
+.cwa\:aria-expanded\:bg-field-hover[aria-expanded="true"] {
+  background-color: var(--cwa-color-field-hover);
+}
+.cwa\:aria-expanded\:bg-menu-highlight[aria-expanded="true"] {
+  background-color: var(--cwa-color-menu-highlight);
+}
+.cwa\:aria-expanded\:bg-step-hover[aria-expanded="true"] {
+  background-color: var(--cwa-color-step-hover);
+}
+.cwa\:aria-expanded\:bg-yellow\/10[aria-expanded="true"] {
+  background-color: var(--cwa-color-yellow);
+  @supports (color: color-mix(in lab, red, red)) {
+    background-color: color-mix(in oklab, var(--cwa-color-yellow) 10%, transparent);
+  }
+}
+.cwa\:aria-expanded\:text-fg[aria-expanded="true"] {
+  color: var(--cwa-color-fg);
+}
+.cwa\:aria-expanded\:shadow-\[inset_0_-2px_0_currentColor\][aria-expanded="true"] {
+  --tw-shadow: inset 0 -2px 0 var(--tw-shadow-color, currentColor);
+  box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
 }
 .cwa\:data-disabled\:pointer-events-none[data-disabled] {
   pointer-events: none;

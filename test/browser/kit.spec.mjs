@@ -51,6 +51,39 @@ for (const width of widths) {
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width)
   })
 
+  test(`kit at ${width}: an information popover stands 4 to 6px from its ⓘ glyph, not from the button's hit area, with equal padding on all four sides (#461)`, async ({ page }) => {
+    await openKit(page, width)
+    await page.waitForLoadState('networkidle')
+    const trigger = page.locator('main').getByTestId('field-info').first()
+    await trigger.click()
+    const popover = page.getByTestId('field-info-popover')
+    await popover.waitFor()
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true')
+    await page.waitForFunction(() => document.querySelector('[data-testid="field-info-popover"]')?.getAnimations().every(animation => animation.playState !== 'running'))
+
+    const measured = await trigger.evaluate((button) => {
+      const glyph = button.querySelector('svg').getBoundingClientRect()
+      const panel = document.querySelector('[data-testid="field-info-popover"]')
+      const box = panel.getBoundingClientRect()
+      const caret = [...panel.querySelectorAll('svg')].at(-1).getBoundingClientRect()
+      const painted = { top: Math.min(box.top, caret.top), bottom: Math.max(box.bottom, caret.bottom) }
+      const content = [...panel.children].filter(child => getComputedStyle(child).position !== 'absolute').map(child => child.getBoundingClientRect()).filter(rect => rect.width && rect.height)
+      const inner = {
+        top: Math.min(...content.map(rect => rect.top)),
+        right: Math.max(...content.map(rect => rect.right)),
+        bottom: Math.max(...content.map(rect => rect.bottom)),
+        left: Math.min(...content.map(rect => rect.left)),
+      }
+      return {
+        gap: Math.max(glyph.top - painted.bottom, painted.top - glyph.bottom),
+        padding: [inner.top - box.top, box.right - inner.right, box.bottom - inner.bottom, inner.left - box.left],
+      }
+    })
+    expect(measured.gap).toBeGreaterThanOrEqual(4)
+    expect(measured.gap).toBeLessThanOrEqual(6)
+    expect(Math.max(...measured.padding) - Math.min(...measured.padding)).toBeLessThanOrEqual(1)
+  })
+
   test(`kit at ${width}: stacked demo rows never touch`, async ({ page }) => {
     await openKit(page, width)
     const touching = await page.locator('main').evaluate((main) => {

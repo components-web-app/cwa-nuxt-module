@@ -110,6 +110,7 @@ export const kitContrastPairs: KitContrastPair[] = [
   { fg: 'fg', bg: 'menu-highlight', min: 4.5, use: 'Highlighted option' },
   { fg: 'fg', bg: 'field', min: 4.5, use: 'Field value, neutral badge' },
   { fg: 'fg', bg: 'field-hover', min: 4.5, use: 'Field value on hover' },
+  { fg: 'fg', bg: 'step-hover', min: 3, use: 'A nested control\'s glyph and its open mark, hovered or open (the date picker\'s calendar button)' },
   { fg: 'muted-on-field', bg: 'field', min: 4.5, use: 'Placeholder' },
   { fg: 'muted-on-field', bg: 'field-hover', min: 4.5, use: 'Placeholder on hover' },
   { fg: 'fg-secondary', bg: 'surface', min: 4.5, use: 'Section heading' },

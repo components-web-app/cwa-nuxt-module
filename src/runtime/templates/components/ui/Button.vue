@@ -4,7 +4,7 @@ import type { Component } from 'vue'
 import Spinner from './Spinner.vue'
 import Menu from './Menu.vue'
 import type { MenuEntry, MenuItem } from '../core/ui/menu-entries'
-import { buttonLooks } from './kit-looks'
+import { buttonLooks, openTriggerMark } from './kit-looks'
 import type { ButtonTone, ButtonVariant } from './kit-looks'
 
 const {
@@ -89,7 +89,7 @@ const classes = computed(() => {
     truncate ? 'cwa:min-w-0 cwa:max-w-full' : 'cwa:shrink-0',
     size === 'sm' ? 'cwa:text-helper' : 'cwa:text-label',
     look.rest,
-    inactive.value ? '' : look.hover,
+    inactive.value ? '' : [look.hover, look.open, openTriggerMark],
     disabled ? 'cwa:opacity-50 cwa:cursor-not-allowed' : loading ? 'cwa:cursor-progress' : 'cwa:cursor-pointer',
   ]
 })
@@ -140,7 +140,7 @@ function onClick(event: MouseEvent) {
         :aria-label="optionsLabel"
         :disabled="loading"
         class="cwa:inline-flex cwa:shrink-0 cwa:items-center cwa:justify-center cwa:outline-1 cwa:outline-transparent cwa:transition-colors cwa:duration-(--cwa-duration-fast) cwa:ease-out cwa:motion-reduce:transition-none cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-accent-fg cwa:disabled:cursor-progress cwa:disabled:opacity-50"
-        :class="[moreClasses, loading ? '' : buttonLooks[moreVariant][tone].hover]"
+        :class="[moreClasses, loading ? '' : [buttonLooks[moreVariant][tone].hover, buttonLooks[moreVariant][tone].open, openTriggerMark]]"
       >
         <svg
           viewBox="0 0 16 16"
