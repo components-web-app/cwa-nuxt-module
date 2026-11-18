@@ -1554,6 +1554,8 @@ test.describe('in-page editing', () => {
     await placeholder.getByTestId('field-info').hover()
     await page.getByTestId('field-info-popover').filter({ hasText: 'Visitors see nothing here' }).waitFor()
   })
+})
+
 test('56. outside edit mode the header\'s Edit button and menu sit on the header bar\'s centre, level with the page settings button', async ({ cwa: t }) => {
   const { page, base, settle, seed } = t
   for (const width of [1280, 390]) {
