@@ -73,11 +73,11 @@ function onOpenAutoFocus(event: Event) {
       :aria-label="`About ${label}`"
       :aria-describedby="hover ? textId : undefined"
       data-testid="field-info"
+      class="cwa:grid cwa:size-6 cwa:shrink-0 cwa:cursor-pointer cwa:place-items-center cwa:outline-1 cwa:outline-transparent cwa:focus-visible:outline-2 cwa:focus-visible:outline-accent-fg cwa:pointer-coarse:size-hit"
       @pointerenter="onPointerenter"
       @pointerleave="onPointerleave"
       @focus="onFocus"
       @blur="onBlur"
-      class="cwa:grid cwa:size-6 cwa:shrink-0 cwa:cursor-pointer cwa:place-items-center cwa:outline-1 cwa:outline-transparent cwa:focus-visible:outline-2 cwa:focus-visible:outline-accent-fg cwa:pointer-coarse:size-hit"
     >
       <StateGlyph kind="info" />
     </PopoverTrigger>
@@ -88,11 +88,11 @@ function onOpenAutoFocus(event: Event) {
         :collision-padding="8"
         :aria-label="label"
         data-testid="field-info-popover"
+        class="cwa:z-context cwa:w-max cwa:max-w-[min(20rem,calc(100vw-1rem))] cwa:bg-surface-menu cwa:p-popover cwa:text-control cwa:text-fg cwa:shadow-popover cwa:outline-none"
         @open-auto-focus="onOpenAutoFocus"
         @close-auto-focus="onCloseAutoFocus"
         @pointerenter="onPointerenter"
         @pointerleave="onPointerleave"
-        class="cwa:z-context cwa:w-max cwa:max-w-[min(20rem,calc(100vw-1rem))] cwa:bg-surface-menu cwa:p-popover cwa:text-control cwa:text-fg cwa:shadow-popover cwa:outline-none"
       >
         <div class="cwa:-mt-1 cwa:-mr-2 cwa:mb-1.5 cwa:flex cwa:min-h-8 cwa:items-center cwa:gap-2 cwa:font-semibold">
           <span class="cwa:min-w-0 cwa:flex-1">{{ label }}</span>

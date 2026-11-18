@@ -15,7 +15,10 @@ vi.mock('#cwa/composables/cwa-confirm', () => ({ useCwaConfirm: () => vi.fn(asyn
 
 enableAutoUnmount(afterEach)
 
+const registered: (() => void)[] = []
+
 afterEach(() => {
+  registered.splice(0).forEach(unregister => unregister())
   document.body.innerHTML = ''
 })
 
@@ -38,6 +41,7 @@ function pageEditor(field = 'html', overrides: Partial<InlineEditor> = {}) {
   document.body.append(element)
   const editor: InlineEditor = { key: { iri: () => '/component/html', field }, element: () => element, enabled: () => true, focus: vi.fn(() => element.focus()), ...overrides }
   const unregister = registerInlineEditor(cwa, editor)
+  registered.push(unregister)
   return { editor, element, unregister }
 }
 

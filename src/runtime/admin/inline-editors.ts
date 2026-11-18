@@ -45,7 +45,7 @@ export function findInlineEditor(owner: EquivalenceSource, key: InlineEditorKey 
   }
   for (const editor of registry(owner)) {
     const editorIri = editor.key.iri()
-    if (editor.key.field === key.field && editorIri && editor.enabled() && editor.element()?.isConnected
+    if (editor.key.field === key.field && editorIri && editor.enabled() && editor.element()
       && (editorIri === iri || owner.resources.isIriPublishableEquivalent(editorIri, iri))) {
       return editor
     }

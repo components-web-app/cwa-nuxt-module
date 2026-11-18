@@ -76,6 +76,15 @@ describe('CwaUiInlineEdit (#461)', () => {
     expect(wrapper.find('input').exists()).toBe(true)
   })
 
+  test('the clicked text stays in the document, hidden, while editing, so the page click that started editing still selects its component', async () => {
+    const { wrapper } = mountEdit()
+    const value = shown(wrapper).element
+    await startEditing(wrapper)
+
+    expect(value.isConnected).toBe(true)
+    expect(value.style.display).toBe('none')
+  })
+
   test('Enter commits the typed value to the model and shows it', async () => {
     const { wrapper, model } = mountEdit()
     const input = await startEditing(wrapper)
