@@ -159,7 +159,6 @@ const dialogForm = fakeDialogForm({ reference: 'Shaker kitchens', title: 'Shaker
 const dialogTabs = [{ label: 'Details', key: 'details' }, { label: 'Info', key: 'info' }]
 const confirm = useCwaConfirm()
 const confirmResult = ref('')
-const notes = ref('A textarea grows from three lines to its maxRows, then scrolls.')
 
 async function confirmSimple() {
   const go = await confirm({ title: 'Remove this component?', description: 'It is only used here.', keep: 'Keep it', go: 'Remove', tone: 'danger' })
@@ -881,7 +880,7 @@ const badgeTones = [
 
       <section aria-labelledby="kit-form-parts">
         <h2 id="kit-form-parts">
-          Alerts, sections and textareas
+          Alerts and sections
         </h2>
         <div class="kit-toasts">
           <CwaUiAlert
@@ -906,14 +905,12 @@ const badgeTones = [
         >
           <CwaUiFormSection
             title="Search engines"
-            description="Section titles are fg-secondary; a section after the first has a rule above."
+            description="Section titles are fg-secondary."
           >
-            <CwaUiTextarea
-              v-model="notes"
-              label="Notes"
-              counter
-              :maxlength="200"
-            />
+            <p>A section groups fields in a dialog. The textarea is in the dialog sample above.</p>
+          </CwaUiFormSection>
+          <CwaUiFormSection title="A second section">
+            <p>It has a rule and the section space above it.</p>
           </CwaUiFormSection>
         </div>
       </section>
