@@ -333,14 +333,14 @@ test('11. no highlight remains on a page that does not contain the source', asyn
   await eventually(async () => (await page.getByTestId('clone-highlight').count()) === 0, `${await page.getByTestId('clone-highlight').count()} highlight element(s) remain`)
 })
 
-test('12. Move Up in the Order tab PATCHes the group order and the page keeps the new order, also after a reload', async ({ cwa: t }) => {
+test('12. Move up in the Order tab PATCHes the group order and the page keeps the new order, also after a reload', async ({ cwa: t }) => {
   const { page, settle } = t
   await openEditMode(t)
   await eventually(async () => await sourceAbove(page, texts.pageAOther) === true, 'The fixture order is wrong')
   await select(page, texts.pageAOther)
   await page.getByRole('button', { name: 'Order', exact: true }).click()
   await page.getByRole('switch', { name: 'Enable reordering' }).click()
-  await page.getByRole('button', { name: 'Move Up', exact: true }).click()
+  await page.getByRole('button', { name: 'Move up', exact: true }).click()
   const patch = await eventually(() => t.rehearsal.writes.find(w => w.method === 'PATCH' && w.path === `${t.seed.iris.pageAGroup}/order`), 'No PATCH to the group order')
   assert(JSON.stringify(patch.body.componentPositions) === JSON.stringify([t.seed.positions.aOther, t.seed.positions.aSource]), `PATCHed ${JSON.stringify(patch.body)}`)
   await settle()
@@ -704,7 +704,7 @@ async function placeInMove(page, text, option) {
 async function moveMenuOffers(page, text, options) {
   await select(page, text, options)
   await page.getByTestId('component-menu').getByTestId('button-options').click()
-  await page.getByText('Add After', { exact: true }).waitFor()
+  await page.getByText('Add after', { exact: true }).waitFor()
   return await page.getByTestId('component-menu-move').count() > 0
 }
 

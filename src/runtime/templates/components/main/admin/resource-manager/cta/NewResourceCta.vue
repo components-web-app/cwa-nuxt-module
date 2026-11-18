@@ -3,7 +3,8 @@ import { computed, ref } from 'vue'
 import { consola } from 'consola'
 import type { CwaResource } from '#cwa/resources/resource-utils'
 import { useCwa } from '#cwa/composables/cwa'
-import type { ButtonOption, ModelValue } from '#cwa/templates/components/ui/form/Button.vue'
+import CwaUiButton from '#cwa/templates/components/ui/Button.vue'
+import type { MenuEntry, MenuItem } from '#cwa/templates/components/core/ui/menu-entries'
 
 const props = defineProps<{
   currentIri: string
@@ -16,16 +17,12 @@ const addingMeta = computed(() => props.resource?._metadata.adding)
 const isPublishable = computed(() => addingMeta.value?.isPublishable)
 const isAdding = ref(false)
 
-const buttonLabel = computed<'Add Draft' | 'Add'>(() => {
-  return isPublishable.value ? 'Add Draft' : 'Add'
-})
-
-const buttonOptions = computed(() => {
-  const ops: (ButtonOption | ButtonOption[])[] = []
-  ops.push({ label: 'Discard', value: 'add-discard' })
+const buttonOptions = computed<MenuEntry[]>(() => {
+  const ops: MenuEntry[] = []
   if (isPublishable.value) {
-    ops.push({ label: 'Add and Publish', value: 'add-publish' })
+    ops.push({ group: null, items: [{ label: 'Add and publish', value: 'add-publish' }] })
   }
+  ops.push({ group: null, items: [{ label: 'Discard', value: 'add-discard', tone: 'danger' }] })
   return ops
 })
 
@@ -41,12 +38,11 @@ async function addResourceAction(publish?: boolean) {
   isAdding.value = false
 }
 
-async function handleManagerCtaClick(value?: ModelValue) {
-  if (!value) {
-    await addResourceAction(buttonLabel.value !== 'Add Draft')
-    return
-  }
+async function handleManagerCtaClick() {
+  await addResourceAction(!isPublishable.value)
+}
 
+async function handleOption({ value }: MenuItem) {
   if (value === 'add-discard') {
     await $cwa.resourcesManager.confirmDiscardAddingResource() && $cwa.admin.emptyStack()
     return
@@ -59,13 +55,15 @@ async function handleManagerCtaClick(value?: ModelValue) {
 </script>
 
 <template>
-  <CwaUiFormButton
-    color="grey"
-    button-class="cwa:min-w-[100px]"
+  <CwaUiButton
+    :label="isPublishable ? '+ Draft' : '+ Add'"
+    :aria-label="isPublishable ? 'Add draft' : 'Add'"
+    variant="solid"
+    size="sm"
+    stretch
     :options="buttonOptions"
-    :disabled="isAdding"
+    :loading="isAdding"
     @click="handleManagerCtaClick"
-  >
-    {{ buttonLabel }}
-  </CwaUiFormButton>
+    @select="handleOption"
+  />
 </template>

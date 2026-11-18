@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, toRaw, useTemplateRef, watch } from 'vue'
+import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, onMounted, provide, ref, shallowRef, toRaw, useTemplateRef, watch } from 'vue'
 import ResourceLoadingIndicator
   from '../_common/ResourceLoadingIndicator.vue'
 import ManagerTabs from './_parts/ManagerTabs.vue'
@@ -16,6 +16,9 @@ import AddComponentDialog
 import { useDataResolver } from '#cwa/templates/components/core/useDataResolver'
 import { useCloneMode } from '#cwa/admin/clone-mode'
 import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/resources/resource-utils'
+import BarSummary from '#cwa/templates/components/core/admin/BarSummary.vue'
+import { createAnnouncer } from '#cwa/templates/components/core/ui/field-context'
+import { announceKey } from '#cwa/templates/components/core/ui/field-keys'
 
 const ComponentUsageBadge = defineAsyncComponent(() => import('#cwa/templates/components/main/admin/resource-manager/cta/ComponentUsageBadge.vue'))
 const SharedInstancesHighlight = defineAsyncComponent(() => import('#cwa/templates/components/main/admin/resource-manager/SharedInstancesHighlight.vue'))
@@ -38,6 +41,8 @@ let mousedownTarget: null | EventTarget = null
 const cloneMode = useCloneMode($cwa)
 const cloneTarget = shallowRef<{ stack: { iri: string }[], type: 'page' | 'layout', point: { x: number, y: number }, key: number }>()
 let cloneTargetKey = 0
+const announcer = createAnnouncer()
+provide(announceKey, announcer.announce)
 
 type ContextPosition = {
   top: number
@@ -123,6 +128,18 @@ function selectTab(index: number) {
   selectedIndex.value = index
 }
 
+const currentFieldStates = computed(() => {
+  const iri = currentStackItem.value?.iri
+  return iri ? $cwa.resources.getResource(iri).value?.fieldStates : undefined
+})
+
+async function showField(field: string) {
+  const index = allTabsMeta.value.findIndex(meta => (meta as { fields?: string[] } | null)?.fields?.includes(field))
+  index > -1 && managerTabs.value?.selectOriginal(index)
+  await nextTick()
+  managerHolder.value?.querySelector<HTMLElement>(`[data-cwa-field="${field}"] :is(input, button, [role="switch"])`)?.focus()
+}
+
 const showSharedInstances = computed(() => {
   const iri = currentStackItem.value?.iri
   return !!iri
@@ -204,39 +221,41 @@ defineExpose({
   <Transition v-bind="slideUp">
     <div
       v-if="$cwa.admin.resourceStackManager.showManager.value"
-      class="cwa:fixed cwa:bottom-0 cwa:z-manager cwa:w-full cwa:text-white cwa:bg-dark/40"
+      class="cwa:@container cwa:fixed cwa:bottom-0 cwa:z-manager cwa:w-full cwa:bg-surface cwa:text-fg cwa:shadow-[0_-8px_24px_rgb(0_0_0/0.18)] cwa:pointer-coarse:[--cwa-spacing-manager-tabs:2.75rem] cwa:pointer-coarse:[--cwa-spacing-manager-row:4.25rem] cwa:pointer-coarse:[--cwa-spacing-manager:7rem]"
+      data-testid="manager-bar"
       @click.stop
     >
-      <div class="cwa:dark-blur">
+      <div
+        v-if="allTabsMeta.length"
+        ref="managerHolder"
+        class="cwa:relative cwa:grid cwa:min-h-manager cwa:grid-cols-[minmax(0,1fr)_auto] cwa:grid-rows-[var(--cwa-spacing-manager-tabs)_minmax(var(--cwa-spacing-manager-row),auto)]"
+      >
+        <ResourceLoadingIndicator class="cwa:absolute cwa:bottom-full cwa:left-0" />
+        <div class="cwa:min-w-0 cwa:shadow-[inset_0_-1px_0_var(--cwa-color-line)]">
+          <ManagerTabs
+            ref="managerTabs"
+            :tabs="allTabsMeta"
+            :field-states="currentFieldStates"
+            @click="selectTab"
+          />
+        </div>
         <div
-          v-if="allTabsMeta.length"
-          ref="managerHolder"
+          class="cwa:flex cwa:h-manager-tabs cwa:items-center cwa:gap-cta-inset cwa:pt-cta-inset cwa:pr-cta-inset cwa:pb-[calc(var(--cwa-spacing-cta-inset)+1px)] cwa:pl-[calc(1px+var(--cwa-spacing-cta-inset))] cwa:shadow-[inset_1px_0_0_var(--cwa-color-line),inset_0_-1px_0_var(--cwa-color-line)] cwa:pointer-coarse:[--cwa-spacing-cta-inset:0px] cwa:@max-[40rem]:[--cwa-spacing-cta-inset:0px]"
+          data-testid="manager-pin"
         >
-          <ResourceLoadingIndicator class="cwa:absolute cwa:bottom-full cwa:left-0" />
-          <div class="cwa:flex">
-            <div class="cwa:grow">
-              <div class="cwa:flex cwa:items-center cwa:pt-3 cwa:px-4 cwa:gap-x-3">
-                <div class="cwa:grow">
-                  <ManagerTabs
-                    ref="managerTabs"
-                    :tabs="allTabsMeta"
-                    @click="selectTab"
-                  />
-                </div>
-                <div class="cwa:flex cwa:light cwa:items-center cwa:content-center cwa:justify-center cwa:gap-x-3">
-                  <ComponentUsageBadge />
-                  <ResourceManagerCtaButton />
-                </div>
-              </div>
-              <div class="cwa:p-4 cwa:min-h-[74px] cwa:flex cwa:items-center">
-                <component
-                  :is="selectedTab"
-                  v-if="selectedTab"
-                  class="cwa:w-full"
-                />
-              </div>
-            </div>
-          </div>
+          <BarSummary
+            :message="announcer.message.value"
+            @show="showField"
+          />
+          <ComponentUsageBadge />
+          <ResourceManagerCtaButton />
+        </div>
+        <div class="cwa:col-span-2 cwa:grid cwa:min-w-0">
+          <component
+            :is="selectedTab"
+            v-if="selectedTab"
+            class="cwa:flex cwa:w-full cwa:min-w-0 cwa:items-center cwa:px-row-x"
+          />
         </div>
       </div>
     </div>

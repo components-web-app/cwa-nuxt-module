@@ -1,9 +1,7 @@
 <script lang="ts" setup>
-import { computed, ref } from 'vue'
+import { computed, toRef } from 'vue'
 import {
-
   CwaResourceTypes,
-  getPublishedResourceState,
   getResourceTypeFromIri,
 } from '#cwa/resources/resource-utils'
 import type { CwaResource } from '#cwa/resources/resource-utils'
@@ -11,7 +9,9 @@ import { useCwa } from '#cwa/composables/cwa'
 import { excerptOf, useCloneMode } from '#cwa/admin/clone-mode'
 import type { MoveFrom } from '#cwa/admin/clone-mode'
 import { componentGroupCapacity } from '#cwa/resources/component-group-capacity'
-import type { ButtonOption, ModelValue } from '#cwa/templates/components/ui/form/Button.vue'
+import { usePublishState } from '#cwa/admin/publish-state'
+import CwaUiButton from '#cwa/templates/components/ui/Button.vue'
+import type { MenuEntry, MenuItem } from '#cwa/templates/components/core/ui/menu-entries'
 
 const props = defineProps<{
   currentIri: string
@@ -20,24 +20,10 @@ const props = defineProps<{
 
 const $cwa = useCwa()
 
-const publishing = ref(false)
-
-const publishedState = computed(() => {
-  if (!props.currentIri || !props.resource) {
-    return
-  }
-  return getPublishedResourceState({ data: props.resource })
-})
+const publish = usePublishState($cwa, toRef(props, 'currentIri'), toRef(props, 'resource'))
 
 const resourceType = computed(() => {
   return props.currentIri ? getResourceTypeFromIri(props.currentIri) : undefined
-})
-
-const buttonLabel = computed<'Publish' | undefined>(() => {
-  if (publishedState.value !== false) {
-    return
-  }
-  return 'Publish'
 })
 
 const targetGroupIri = computed(() => {
@@ -80,98 +66,96 @@ const moveFrom = computed<MoveFrom | undefined>(() => {
   return { pageData, property }
 })
 
-const buttonOptions = computed(() => {
-  const ops: (ButtonOption | ButtonOption[])[] = []
+const groupName = computed(() => {
+  const group = targetGroupIri.value ? $cwa.resources.getResource(targetGroupIri.value).value?.data : undefined
+  return group?.reference || 'This group'
+})
 
-  if (!targetGroupFull.value) {
-    if (resourceType.value === CwaResourceTypes.COMPONENT_POSITION || resourceType.value === CwaResourceTypes.COMPONENT) {
-      ops.push([
-        {
-          label: 'Add Before',
-          value: 'add-before',
-        },
-        {
-          label: 'Add After',
-          value: 'add-after',
-        },
-      ])
-    }
-    else if (resourceType.value === CwaResourceTypes.COMPONENT_GROUP) {
-      ops.push([
-        {
-          label: 'Add to Start',
-          value: 'add-before',
-        },
-        {
-          label: 'Add to End',
-          value: 'add-after',
-        },
-      ])
-    }
+function capacityReason() {
+  const group = targetGroupIri.value ? $cwa.resources.getResource(targetGroupIri.value).value?.data : undefined
+  const { count, max } = componentGroupCapacity(group)
+  return `${groupName.value} is full: ${count} of ${max} components.`
+}
+
+const buttonOptions = computed<MenuEntry[]>(() => {
+  const ops: MenuEntry[] = []
+
+  if (publish.scheduledAt.value) {
+    ops.push({ group: null, items: [{ label: 'Cancel schedule', value: 'cancel-schedule' }] })
   }
 
+  const addsNext = resourceType.value === CwaResourceTypes.COMPONENT_POSITION || resourceType.value === CwaResourceTypes.COMPONENT
+  const addsInGroup = resourceType.value === CwaResourceTypes.COMPONENT_GROUP
+  if (addsNext || addsInGroup) {
+    ops.push({
+      group: null,
+      items: targetGroupFull.value
+        ? [{ label: addsNext ? 'Add before or after' : 'Add to start or end', value: 'add-full', disabled: true, disabledReason: capacityReason() }]
+        : addsNext
+          ? [{ label: 'Add before', value: 'add-before' }, { label: 'Add after', value: 'add-after' }]
+          : [{ label: 'Add to start', value: 'add-before' }, { label: 'Add to end', value: 'add-after' }],
+    })
+  }
+
+  const more: MenuItem[] = []
   if (isPersistedComponent.value) {
-    ops.push({ label: 'Clone', value: 'clone', testId: 'component-menu-clone' })
+    more.push({ label: 'Clone', value: 'clone', testId: 'component-menu-clone' })
   }
   if (moveFrom.value) {
-    ops.push({ label: 'Move', value: 'move', testId: 'component-menu-move' })
+    more.push({ label: 'Move', value: 'move', testId: 'component-menu-move' })
   }
+  more.length && ops.push({ group: null, items: more })
 
   return ops
 })
 
-async function publishResource() {
-  publishing.value = true
-  await $cwa.resourcesManager.updateResource({
-    endpoint: props.currentIri,
-    data: {
-      publishedAt: 'now',
-    },
-  })
-  publishing.value = false
+function handleManagerCtaClick() {
+  publish.run()
 }
 
-function handleManagerCtaClick(value?: ModelValue) {
-  if (!value) {
-    buttonLabel.value === 'Publish' && publishResource()
+function handleOption({ value }: MenuItem) {
+  if (value === 'cancel-schedule') {
+    publish.cancelSchedule()
     return
   }
 
-  if (typeof value === 'string') {
-    if (['add-before', 'add-after'].includes(value)) {
-      const addAfter = value === 'add-after'
-      $cwa.resourcesManager.initAddResource(props.currentIri, addAfter, $cwa.admin.resourceStackManager.resourceStack.value)
-    }
+  if (value === 'add-before' || value === 'add-after') {
+    $cwa.resourcesManager.initAddResource(props.currentIri, value === 'add-after', $cwa.admin.resourceStackManager.resourceStack.value)
+    return
+  }
 
-    const stackItem = $cwa.admin.resourceStackManager.currentStackItem.value
-    const origin = { positionIri: closestPositionIri.value, excerpt: excerptOf(stackItem?.domElements.value ?? []) }
+  const stackItem = $cwa.admin.resourceStackManager.currentStackItem.value
+  const origin = { positionIri: closestPositionIri.value, excerpt: excerptOf(stackItem?.domElements.value ?? []) }
 
-    if (value === 'clone') {
-      useCloneMode($cwa).start(props.currentIri, stackItem?.displayName, undefined, origin)
-      $cwa.admin.emptyStack()
-    }
+  if (value === 'clone') {
+    useCloneMode($cwa).start(props.currentIri, stackItem?.displayName, undefined, origin)
+    $cwa.admin.emptyStack()
+  }
 
-    if (value === 'move' && moveFrom.value && closestPositionIri.value) {
-      useCloneMode($cwa).start(props.currentIri, stackItem?.displayName, {
-        positionIri: closestPositionIri.value,
-        fromLayout: $cwa.admin.resourceStackManager.isEditingLayout.value,
-        from: moveFrom.value,
-      }, origin)
-      $cwa.admin.emptyStack()
-    }
+  if (value === 'move' && moveFrom.value && closestPositionIri.value) {
+    useCloneMode($cwa).start(props.currentIri, stackItem?.displayName, {
+      positionIri: closestPositionIri.value,
+      fromLayout: $cwa.admin.resourceStackManager.isEditingLayout.value,
+      from: moveFrom.value,
+    }, origin)
+    $cwa.admin.emptyStack()
   }
 }
 </script>
 
 <template>
-  <CwaUiFormButton
-    color="grey"
-    button-class="cwa:min-w-[100px]"
+  <CwaUiButton
+    v-if="publish.action.value || buttonOptions.length"
+    :label="publish.action.value"
+    variant="solid"
+    size="sm"
+    stretch
     data-testid="component-menu"
     :options="buttonOptions"
-    :disabled="publishing"
+    :loading="publish.saving.value"
+    :disabled="publish.action.value === 'Schedule' && !publish.scheduleValue.value"
+    disabled-reason="Choose a date first"
     @click="handleManagerCtaClick"
-  >
-    {{ buttonLabel }}
-  </CwaUiFormButton>
+    @select="handleOption"
+  />
 </template>
