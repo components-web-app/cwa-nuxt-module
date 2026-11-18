@@ -64,6 +64,7 @@
     --cwa-color-surface: #1c1917;
     --cwa-color-surface-raised: #292524;
     --cwa-color-surface-menu: #292524;
+    --cwa-color-surface-info: #0c0a09;
     --cwa-color-button: #44403c;
     --cwa-color-shimmer: rgb(255 255 255 / 0.24);
     --cwa-color-menu-highlight: #57534e;
@@ -1376,6 +1377,9 @@
 .cwa\:bg-surface {
   background-color: var(--cwa-color-surface);
 }
+.cwa\:bg-surface-info {
+  background-color: var(--cwa-color-surface-info);
+}
 .cwa\:bg-surface-menu {
   background-color: var(--cwa-color-surface-menu);
 }
@@ -1417,6 +1421,9 @@
 }
 .cwa\:fill-orange {
   fill: var(--cwa-color-orange);
+}
+.cwa\:fill-surface-info {
+  fill: var(--cwa-color-surface-info);
 }
 .cwa\:fill-surface-menu {
   fill: var(--cwa-color-surface-menu);
@@ -1951,10 +1958,20 @@
   --tw-shadow: 0 1px 3px 0 var(--tw-shadow-color, rgb(0 0 0 / 0.1)), 0 1px 2px -1px var(--tw-shadow-color, rgb(0 0 0 / 0.1));
   box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
 }
+.cwa\:ring-1 {
+  --tw-ring-shadow: var(--tw-ring-inset,) 0 0 0 calc(1px + var(--tw-ring-offset-width)) var(--tw-ring-color, currentcolor);
+  box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+}
 .cwa\:shadow-line-saving\/30 {
   --tw-shadow-color: var(--cwa-color-line-saving);
   @supports (color: color-mix(in lab, red, red)) {
     --tw-shadow-color: color-mix(in oklab, color-mix(in oklab, var(--cwa-color-line-saving) 30%, transparent) var(--tw-shadow-alpha), transparent);
+  }
+}
+.cwa\:ring-white\/15 {
+  --tw-ring-color: var(--cwa-color-white);
+  @supports (color: color-mix(in lab, red, red)) {
+    --tw-ring-color: color-mix(in oklab, var(--cwa-color-white) 15%, transparent);
   }
 }
 .cwa\:outline {
@@ -2320,6 +2337,14 @@
   }
   .cwa\:hover\:bg-stone-700:hover {
     background-color: var(--cwa-color-stone-700);
+  }
+  .cwa\:hover\:bg-white\/15:hover {
+    background-color: var(--cwa-color-white);
+  }
+  @supports (color: color-mix(in lab, red, red)) {
+    .cwa\:hover\:bg-white\/15:hover {
+      background-color: color-mix(in oklab, var(--cwa-color-white) 15%, transparent);
+    }
   }
   .cwa\:hover\:bg-yellow\/10:hover {
     background-color: var(--cwa-color-yellow);

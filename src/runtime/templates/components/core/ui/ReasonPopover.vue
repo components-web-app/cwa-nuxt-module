@@ -2,6 +2,7 @@
 import { onMounted } from 'vue'
 import { PopoverAnchor, PopoverArrow, PopoverContent, PopoverPortal, PopoverRoot } from 'reka-ui'
 import { useAnnounce } from './field-context'
+import { infoArrow, infoPanel } from './field-looks'
 
 const { anchor, label, text } = defineProps<{
   anchor: HTMLElement
@@ -28,7 +29,7 @@ onMounted(() => announce(text))
         :collision-padding="8"
         :aria-label="label"
         data-testid="button-reason"
-        class="cwa:z-context cwa:w-max cwa:max-w-[min(20rem,calc(100vw-1rem))] cwa:bg-surface-menu cwa:p-popover cwa:text-control cwa:text-fg cwa:shadow-popover cwa:outline-none"
+        :class="['cwa:z-context cwa:w-max cwa:max-w-[min(20rem,calc(100vw-1rem))] cwa:p-popover cwa:text-control cwa:outline-none', infoPanel]"
         @open-auto-focus.prevent
         @close-auto-focus.prevent
       >
@@ -36,7 +37,7 @@ onMounted(() => announce(text))
         <PopoverArrow
           :width="12"
           :height="6"
-          class="cwa:fill-surface-menu"
+          :class="infoArrow"
         />
       </PopoverContent>
     </PopoverPortal>

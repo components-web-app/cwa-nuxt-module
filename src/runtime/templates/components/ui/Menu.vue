@@ -14,6 +14,7 @@ import {
   PopoverPortal,
   PopoverRoot,
 } from 'reka-ui'
+import { infoPanel } from '../core/ui/field-looks'
 import { menuGroups } from '../core/ui/menu-entries'
 import type { MenuEntry, MenuItem } from '../core/ui/menu-entries'
 
@@ -182,7 +183,7 @@ function hideReasons() {
         :aria-label="reasonsFor.item.reasonsLabel ?? `Why ${reasonsFor.item.label} is unavailable`"
         data-testid="menu-item-reasons"
         data-cwa-menu-reasons
-        class="cwa:z-context cwa:max-w-[min(18rem,calc(100vw-1rem))] cwa:bg-surface-menu cwa:p-popover cwa:text-control cwa:text-fg cwa:shadow-popover cwa:outline-1 cwa:outline-transparent"
+        :class="['cwa:z-context cwa:max-w-[min(18rem,calc(100vw-1rem))] cwa:p-popover cwa:text-control cwa:outline-1 cwa:outline-transparent', infoPanel]"
         @close-auto-focus.prevent
       >
         <ul class="cwa:m-0 cwa:flex cwa:list-none cwa:flex-col cwa:gap-1 cwa:p-0">

@@ -14,6 +14,10 @@ export function fieldFill(tone: FieldTone, inactive: boolean) {
 
 export const menuPanel = 'cwa:z-context cwa:max-h-72 cwa:max-w-[min(22rem,calc(100vw-1rem))] cwa:overflow-hidden cwa:bg-surface-menu cwa:text-control cwa:text-fg cwa:shadow-popover cwa:outline-none cwa:motion-safe:data-[state=open]:animate-[cwa-line-in_150ms_ease-out]'
 
+export const infoPanel = 'cwa:bg-surface-info cwa:text-white cwa:shadow-popover cwa:ring-1 cwa:ring-white/15'
+
+export const infoArrow = 'cwa:fill-surface-info'
+
 export const optionLook = 'cwa:relative cwa:flex cwa:min-h-option cwa:cursor-pointer cwa:items-center cwa:gap-2 cwa:px-3 cwa:py-1.5 cwa:text-fg cwa:outline-none cwa:select-none cwa:data-highlighted:bg-menu-highlight cwa:data-highlighted:shadow-[inset_2px_0_0_var(--cwa-color-accent-fg)] cwa:data-disabled:cursor-not-allowed cwa:data-[state=checked]:font-medium'
 
 export const groupHeading = 'cwa:px-3 cwa:pt-2 cwa:pb-1 cwa:text-helper cwa:text-fg-muted'
