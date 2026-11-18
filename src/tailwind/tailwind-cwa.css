@@ -388,6 +388,12 @@
   }
 }
 
+@keyframes cwa-slide-over-in {
+  from {
+    transform: translateX(100%);
+  }
+}
+
 @keyframes cwa-sub-view-in {
   from {
     opacity: 0;

@@ -2,6 +2,7 @@
 import { afterEach, describe, test, expect } from 'vitest'
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import RoutesTabRedirects from './RoutesTabRedirects.vue'
+import CwaUiInput from '#cwa/templates/components/ui/Input.vue'
 import { axe } from '../../../../../../test/utils/axe'
 
 enableAutoUnmount(afterEach)
@@ -21,6 +22,12 @@ function mountRedirects(props: Record<string, unknown> = {}) {
 const rowTexts = () => [...document.querySelectorAll('[role="row"]')].map(row => row.querySelector('[data-testid="tree-label"]')!.textContent!.replace(/\s+/g, ' ').trim())
 
 describe('RoutesTabRedirects', () => {
+  test('the old address explains itself behind ⓘ, not as a line under the field (#461)', () => {
+    const input = mountRedirects({ form: true, modelValue: '' }).findComponent(CwaUiInput)
+    expect(input.props('info')).toBe('A path on this site, starting with /.')
+    expect(input.props('description')).toBeUndefined()
+  })
+
   test('lists old addresses as a tree, each saying where it sends visitors, nested under the one it redirects to', async () => {
     const wrapper = mountRedirects()
     await flushPromises()

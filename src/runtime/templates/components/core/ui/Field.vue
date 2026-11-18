@@ -30,8 +30,8 @@ const { label, labelHidden = false, info, description, optional = false, width, 
 }>()
 
 defineSlots<{
-  default: (props: { describedBy: string | undefined, tone: 'danger' | 'warning' | undefined, busy: boolean, labelId: string, modal: boolean, unsaved: boolean }) => any
-  lead?: (props: { modal: boolean, unsaved: boolean }) => any
+  default: (props: { describedBy: string | undefined, tone: 'danger' | 'warning' | undefined, busy: boolean, labelId: string, modal: boolean, unsaved: boolean, help?: string, helpId?: string }) => any
+  lead?: (props: { modal: boolean, unsaved: boolean, help?: string, helpId?: string }) => any
   after?: () => any
 }>()
 
@@ -124,6 +124,8 @@ watch(() => inactive, (now) => {
         name="lead"
         :modal="true"
         :unsaved="unsaved"
+        :help="ownLabel ? help : undefined"
+        :help-id="infoId"
       />
       <CwaUiFieldPresence
         :model="model"
@@ -136,6 +138,8 @@ watch(() => inactive, (now) => {
           :label-id="labelId"
           :modal="true"
           :unsaved="unsaved"
+          :help="ownLabel ? help : undefined"
+          :help-id="infoId"
         />
       </CwaUiFieldPresence>
     </div>

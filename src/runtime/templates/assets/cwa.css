@@ -101,6 +101,7 @@
     --cwa-shadow-popover: 0 8px 24px rgb(0 0 0 / 0.28);
     --cwa-duration-fast: 120ms;
     --cwa-duration-base: 200ms;
+    --cwa-duration-slow: 300ms;
     --cwa-text-flag: 0.75rem;
     --cwa-text-flag--font-weight: 600;
     --cwa-text-flag--line-height: 1.4;
@@ -508,6 +509,10 @@
 .cwa\:size-10 {
   width: calc(var(--cwa-spacing) * 10);
   height: calc(var(--cwa-spacing) * 10);
+}
+.cwa\:size-\[calc\(var\(--cwa-spacing-control\)\*5\/9\)\] {
+  width: calc(var(--cwa-spacing-control) * 5 / 9);
+  height: calc(var(--cwa-spacing-control) * 5 / 9);
 }
 .cwa\:size-control {
   width: var(--cwa-spacing-control);
@@ -2664,11 +2669,20 @@
   .cwa\:sm\:inset-auto {
     inset: auto;
   }
+  .cwa\:sm\:inset-y-0 {
+    inset-block: 0px;
+  }
   .cwa\:sm\:top-1\/2 {
     top: calc(1 / 2 * 100%);
   }
+  .cwa\:sm\:right-0 {
+    right: 0px;
+  }
   .cwa\:sm\:left-1\/2 {
     left: calc(1 / 2 * 100%);
+  }
+  .cwa\:sm\:left-auto {
+    left: auto;
   }
   .cwa\:sm\:mx-auto {
     margin-inline: auto;
@@ -2693,6 +2707,9 @@
   }
   .cwa\:sm\:w-\[48rem\] {
     width: 48rem;
+  }
+  .cwa\:sm\:w-\[min\(40rem\,100vw\)\] {
+    width: min(40rem, 100vw);
   }
   .cwa\:sm\:max-w-\[12rem\] {
     max-width: 12rem;
@@ -2754,6 +2771,11 @@
     font-size: var(--cwa-text-xl);
     line-height: calc(var(--cwa-spacing) * 8);
   }
+  @media (prefers-reduced-motion: no-preference) {
+    .cwa\:sm\:motion-safe\:animate-\[cwa-slide-over-in_var\(--cwa-duration-slow\)_var\(--cwa-ease-out\)\] {
+      animation: cwa-slide-over-in var(--cwa-duration-slow) var(--cwa-ease-out);
+    }
+  }
 }
 @media (width >= 48rem) {
   .cwa\:md\:order-last {
@@ -2814,6 +2836,9 @@
 @container (width >= 32rem) {
   .cwa\:\@lg\:grid-cols-2 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  :is(.cwa\:\@lg\:\*\:first\:col-span-2 > *):first-child {
+    grid-column: span 2 / span 2;
   }
 }
 @container (width >= 40rem) {
@@ -3116,6 +3141,11 @@
   }
   100% {
     opacity: 0;
+  }
+}
+@keyframes cwa-slide-over-in {
+  from {
+    transform: translateX(100%);
   }
 }
 @keyframes cwa-sub-view-in {

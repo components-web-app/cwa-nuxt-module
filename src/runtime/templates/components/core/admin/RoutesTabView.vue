@@ -176,7 +176,7 @@ defineExpose({ statusElement: () => statusLine.value?.element() ?? null })
         <CwaUiToggle
           field="isReachableWithoutRoute"
           label="Public without a route"
-          description="For a page your app shows on its own URL, loaded by reference. Visitors can read it without a route. It stays private while a parent page isn't live."
+          info="For a page your app shows on its own URL, loaded by reference. Visitors can read it without a route. It stays private while a parent page isn't live."
         />
         <CwaUiAlert
           v-if="parentHasNoRoute"

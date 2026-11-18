@@ -558,7 +558,7 @@ watch(open, async (isOpen: boolean) => {
             :options="dynamicPropertyOptions"
             :disabled="!selectedDynamicType || loadingProperties"
             :disabled-reason="loadingProperties && selectedDynamicType ? 'The fields are loading.' : 'Choose a data type first.'"
-            description="The page data property that holds the component."
+            info="The page data property that holds the component."
             data-testid="add-component-field"
           />
         </template>

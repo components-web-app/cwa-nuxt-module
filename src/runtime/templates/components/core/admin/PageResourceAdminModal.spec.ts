@@ -17,6 +17,7 @@ import { componentNames } from '#components'
 import { consola } from 'consola'
 import { drawsFocusRing } from '../../../../../../test/utils/focus-ring'
 import { axe } from '../../../../../../test/utils/axe'
+import { fieldExplanation } from '../../../../../../test/utils/field-info'
 
 const mockNavigateTo = vi.hoisted(() => vi.fn())
 const routeState = vi.hoisted(() => ({ route: undefined as unknown as { params: Record<string, string>, query: Record<string, string>, hash: string } }))
@@ -63,7 +64,7 @@ afterEach(() => {
 
 const DialogStub = defineComponent({
   name: 'CwaUiDialog',
-  props: ['title', 'tabs', 'form', 'loading', 'noun', 'createNoun', 'tab', 'kind'],
+  props: ['title', 'tabs', 'form', 'loading', 'noun', 'createNoun', 'tab', 'kind', 'placement'],
   emits: ['close', 'save', 'update:tab'],
   setup(props, { slots, expose }) {
     provide(fieldGroupKey, { model: (field: string) => props.form.model(field), undo: () => undefined })
@@ -360,6 +361,17 @@ describe('PageResourceAdminModal on the kit dialog (#461)', () => {
     })
 
     expect(field(wrapper, Select, 'Parent page').props('options')).toEqual([{ label: 'A', value: '/_/pages/a' }])
+  })
+
+  test('Reference explains itself behind ⓘ, not as a line under the field', () => {
+    const reference = field(setup().wrapper, Input, 'Reference')
+    expect(fieldExplanation(reference.element, 'Only admins see this. It names the page in lists.')).toEqual({ info: true, line: false })
+  })
+
+  test('the page and page data dialogs slide over from the right, so switching tabs never moves its header or footer, while creating too', () => {
+    expect(setup().wrapper.findComponent(DialogStub).props('placement')).toBe('right')
+    expect(setupPageData().wrapper.findComponent(DialogStub).props('placement')).toBe('right')
+    expect(setup({ routeIri: 'add', isAdding: true }).wrapper.findComponent(DialogStub).props('placement')).toBe('right')
   })
 
   test('public without a route is not a Details field: it lives on the Routes tab, with the route it stands in for (bundle#381)', () => {

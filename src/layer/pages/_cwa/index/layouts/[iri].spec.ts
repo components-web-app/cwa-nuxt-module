@@ -4,6 +4,7 @@ import { computed, ref } from 'vue'
 import { flushPromises, mount } from '@vue/test-utils'
 import Select from '#cwa/templates/components/ui/Select.vue'
 import Alert from '#cwa/templates/components/ui/Alert.vue'
+import Input from '#cwa/templates/components/ui/Input.vue'
 import LayoutItemPage from './[iri].vue'
 import { componentNames } from '#components'
 import * as cwaComposable from '#cwa/composables/cwa'
@@ -89,7 +90,7 @@ function setup(opts: { uiComponent?: string | null, isAdding?: boolean, pages?: 
       stubs: {
         CwaUiDialog: {
           name: 'Dialog',
-          props: ['title', 'tabs', 'form', 'loading', 'noun', 'createNoun'],
+          props: ['title', 'tabs', 'form', 'loading', 'noun', 'createNoun', 'placement'],
           emits: ['close', 'save'],
           template: '<div><slot name="details" /><slot name="info" /></div>',
         },
@@ -200,6 +201,17 @@ describe('Layout admin dialog (#461)', () => {
   })
 
   const dialog = (wrapper: Wrapper) => wrapper.findComponent({ name: 'Dialog' })
+
+  test('Reference explains itself behind ⓘ, not as a line under the field', () => {
+    const reference = setup().wrapper.findAllComponents(Input).find(found => found.props('label') === 'Reference')!
+    expect(reference.props('info')).toBe('Only admins see this. It names the layout in lists.')
+    expect(reference.props('description')).toBeUndefined()
+  })
+
+  test('slides over from the right, so switching tabs never moves its header or footer', () => {
+    expect(dialog(setup().wrapper).props('placement')).toBe('right')
+    expect(dialog(setup({ isAdding: true }).wrapper).props('placement')).toBe('right')
+  })
 
   test('editing, it is titled by the layout\'s reference with Details and Info', () => {
     const { wrapper } = setup()

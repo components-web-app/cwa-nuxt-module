@@ -1,5 +1,6 @@
 // @vitest-environment nuxt
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
+import { fieldExplanation } from '../../../../../../../../test/utils/field-info'
 import { reactive, ref } from 'vue'
 import type { Ref } from 'vue'
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
@@ -181,6 +182,13 @@ describe('the add component dialog (#461)', () => {
     for (const name of Object.keys(resolvedMeta)) {
       delete resolvedMeta[name]
     }
+  })
+
+  test('stays a centred dialog, as a picker, not a slide-over', async () => {
+    await mountDialog()
+    await openDialog()
+
+    expect(dialog()!.dataset.placement).toBe('center')
   })
 
   describe('loading the available components', () => {
@@ -742,7 +750,7 @@ describe('the add component dialog (#461)', () => {
       await pick('add-component-data-type', 'Blog articles')
       const field = q('[data-testid="add-component-field"] [data-testid="select-trigger"]')!
       expect(field.getAttribute('aria-disabled')).toBeNull()
-      expect(shown(q('[data-testid="add-component-field"]'))).toContain('The page data property that holds the component.')
+      expect(fieldExplanation(q('[data-testid="add-component-field"]')!, 'The page data property that holds the component.')).toEqual({ info: true, line: false })
       expect(dynamicOptions.getPropertyOptions).toHaveBeenCalledWith('App\\Entity\\BlogArticleData', null)
       await pick('add-component-field', 'Hero image')
 
