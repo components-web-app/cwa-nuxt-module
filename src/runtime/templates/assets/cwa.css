@@ -327,6 +327,12 @@
 .cwa\:mx-auto {
   margin-inline: auto;
 }
+.cwa\:trim-text {
+  text-box: trim-both cap alphabetic;
+  @supports not (text-box: trim-both cap alphabetic) {
+    margin-block: calc((1em - 1lh) / 2);
+  }
+}
 .cwa\:my-0 {
   margin-block: 0px;
 }
@@ -569,6 +575,9 @@
 }
 .cwa\:h-18 {
   height: calc(var(--cwa-spacing) * 18);
+}
+.cwa\:h-\[1cap\] {
+  height: 1cap;
 }
 .cwa\:h-\[1px\] {
   height: 1px;

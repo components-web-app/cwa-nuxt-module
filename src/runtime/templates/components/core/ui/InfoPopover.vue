@@ -125,20 +125,20 @@ function onOpenAutoFocus(event: Event) {
         @pointerenter="onPointerenter"
         @pointerleave="onPointerleave"
       >
-        <div class="cwa:mb-1.5 cwa:flex cwa:min-h-8 cwa:items-center cwa:gap-2 cwa:font-semibold">
+        <div class="cwa:mb-4 cwa:flex cwa:h-[1cap] cwa:items-center cwa:gap-2 cwa:font-semibold">
           <StateGlyph
             kind="info"
             accent
           />
-          <span class="cwa:min-w-0 cwa:flex-1">{{ label }}</span>
+          <span class="cwa:min-w-0 cwa:flex-1 cwa:trim-text">{{ label }}</span>
           <PopoverClose
             aria-label="Close"
-            class="cwa:grid cwa:size-8 cwa:shrink-0 cwa:cursor-pointer cwa:place-items-center cwa:text-fg cwa:hover:bg-button"
+            class="cwa:grid cwa:size-6 cwa:shrink-0 cwa:cursor-pointer cwa:place-items-center cwa:text-fg cwa:hover:bg-button"
           >
             <XMarkIcon class="cwa:size-3" />
           </PopoverClose>
         </div>
-        <p class="cwa:m-0">
+        <p class="cwa:m-0 cwa:trim-text">
           {{ text }}
         </p>
         <PopoverArrow
