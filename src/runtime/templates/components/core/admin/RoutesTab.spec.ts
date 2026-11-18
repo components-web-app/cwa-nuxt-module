@@ -879,8 +879,7 @@ describe('RoutesTab', () => {
       expect(await axe(document.body)).toHaveNoViolations()
     })
 
-    // todo: make this test() once the CwaUiSubView fix for an open Select lands on feat/236-kit-6a-plus-add-component
-    test.fails('Escape in an open Select closes the Select and stays in the sub-view', async () => {
+    test('Escape in an open Select closes the Select and stays in the sub-view', async () => {
       setupItemPage()
       mockCwa({}, { '/_/pages/conference-uuid': { data: { route: '/_/routes//conference' } } })
       const form = fakeDialogForm({ reference: 'Programme' })

@@ -146,6 +146,24 @@ describe('CwaUiSubView (#461)', () => {
     expect(onBack).not.toHaveBeenCalled()
   })
 
+  test.each([
+    ['a text input', () => h('input', { 'aria-label': 'Path', 'data-testid': 'editable' })],
+    ['a textarea', () => h('textarea', { 'aria-label': 'Notes', 'data-testid': 'editable' })],
+    ['a contenteditable', () => h('div', { 'contenteditable': 'true', 'role': 'textbox', 'aria-label': 'Body', 'data-testid': 'editable' }, [h('p', { 'data-testid': 'editable-inner' }, 'Text')])],
+  ])('Alt+Left in %s moves the caret, and Escape there still goes back', async (_, field) => {
+    const { open, onBack } = mountSubView({}, () => [field()])
+    await openFrom(document.querySelector('[data-testid="opener"]')!, open)
+    const target = sub()!.querySelector('[data-testid="editable-inner"]') ?? sub()!.querySelector('[data-testid="editable"]')!
+
+    target.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', altKey: true, bubbles: true, cancelable: true }))
+    await flushPromises()
+    expect(onBack).not.toHaveBeenCalled()
+
+    target.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
+    await flushPromises()
+    expect(onBack).toHaveBeenCalledTimes(1)
+  })
+
   describe('a menu open in the sub-view (#461)', () => {
     const styles = [{ label: 'Dark', value: 'dark' }, { label: 'Boxed', value: 'boxed' }]
     const multi = () => document.querySelector<HTMLElement>('[data-testid="multi-input"]')!

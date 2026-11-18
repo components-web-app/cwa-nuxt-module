@@ -68,6 +68,10 @@ function layerAbove() {
     && !!(scope.compareDocumentPosition(layer) & Node.DOCUMENT_POSITION_FOLLOWING))
 }
 
+function editable(target: EventTarget | null) {
+  return !!(target as Element | null)?.closest?.('input, textarea, [contenteditable]:not([contenteditable="false"])')
+}
+
 function onKeydown(event: KeyboardEvent) {
   if (event.defaultPrevented) {
     return
@@ -75,7 +79,7 @@ function onKeydown(event: KeyboardEvent) {
   if ((event.target as Element | null)?.closest?.('[aria-expanded="true"]') || layerAbove()) {
     return
   }
-  if (event.key === 'Escape' || (event.altKey && event.key === 'ArrowLeft')) {
+  if (event.key === 'Escape' || (event.altKey && event.key === 'ArrowLeft' && !editable(event.target))) {
     event.preventDefault()
     event.stopPropagation()
     emit('back')
