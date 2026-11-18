@@ -85,6 +85,10 @@ export interface AdminResourcesTemplateInput {
   warn: (message: string) => void
 }
 
+function isImageUrl(image: string) {
+  return image.startsWith('/') || /^https?:/i.test(image)
+}
+
 function lucideBody(lucide: LucideIconSet, name: string): string | undefined {
   const parent = lucide.aliases?.[name]?.parent
   return lucide.icons[parent ?? name]?.body
@@ -147,12 +151,13 @@ export function adminResourcesTemplate({ resources, previews, lucide, warn }: Ad
     if (config.group) {
       entry.group = config.group
     }
-    if (config.image) {
-      entry.image = config.image
+    const asset = config.image || previews[name]
+    if (asset && isImageUrl(asset) && asset === config.image) {
+      entry.image = asset
     }
-    else if (previews[name]) {
+    else if (asset) {
       const ref = `preview${imports.length}`
-      imports.push(`import ${ref} from ${JSON.stringify(previews[name])}`)
+      imports.push(`import ${ref} from ${JSON.stringify(asset)}`)
       imageRefs[name] = ref
     }
     if (Object.keys(entry).length || imageRefs[name]) {
