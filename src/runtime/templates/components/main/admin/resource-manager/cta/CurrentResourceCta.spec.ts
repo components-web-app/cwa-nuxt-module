@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
+import { nextTick, reactive } from 'vue'
 import CurrentResourceCta from './CurrentResourceCta.vue'
 import * as cwaComposable from '#cwa/composables/cwa'
 import { useCloneMode } from '#cwa/admin/clone-mode'
@@ -8,7 +9,7 @@ import { NEW_RESOURCE_IRI } from '#cwa/storage/stores/resources/state'
 
 const ButtonStub = {
   name: 'CwaUiButton',
-  props: ['label', 'disabled', 'options', 'loading'],
+  props: ['label', 'disabled', 'disabledReason', 'options', 'loading'],
   emits: ['click', 'select'],
   template: '<button type="button" :disabled="disabled" @click="$emit(\'click\')">{{ label }}</button>',
 }
@@ -20,7 +21,7 @@ function flatten(entries: any[]) {
 }
 
 function stackState() {
-  const state: Record<string, any> = {}
+  const state = reactive<Record<string, any>>({})
   return {
     getState: vi.fn((key: string) => state[key]),
     setState: vi.fn((key: string, value: any) => {
@@ -79,6 +80,87 @@ describe('CurrentResourceCta', () => {
     expect(updateResource).toHaveBeenCalledWith({
       endpoint: '/component/draft',
       data: { publishedAt: 'now' },
+    })
+  })
+
+  describe('publishing a draft from the pinned action (#459)', () => {
+    const NOW = new Date('2026-09-25T12:00:00Z')
+
+    function mountDraft(publishedAt?: string) {
+      let finish: (saved?: unknown) => void = () => {}
+      const updateResource = vi.fn(() => new Promise((resolve) => {
+        finish = resolve
+      }))
+      const stack = { resourceStack: { value: [] }, ...stackState() }
+      const $cwa = {
+        resourcesManager: { updateResource },
+        resources: { getResource: vi.fn(() => ({ value: undefined })) },
+        admin: { resourceStackManager: stack },
+      }
+      vi.spyOn(cwaComposable, 'useCwa').mockReturnValue($cwa as any)
+      const wrapper = mount(CurrentResourceCta, {
+        props: {
+          currentIri: '/component/draft',
+          resource: { '@id': '/component/draft', '@type': 'HtmlContent', publishedAt, '_metadata': { persisted: true, publishable: { published: false } } } as any,
+        },
+        global: { stubs },
+      })
+      const button = () => wrapper.findComponent(ButtonStub)
+      const labels = () => flatten(button().props('options') as any[]).map(option => option.label)
+      return { wrapper, button, labels, stack, updateResource, finish: (saved?: unknown) => finish(saved) }
+    }
+
+    test('offers Cancel schedule only for a draft that is scheduled, not for one with scheduling on and no date yet', async () => {
+      vi.useFakeTimers({ now: NOW, toFake: ['Date'] })
+      expect(mountDraft('2026-10-01T08:00:00Z').labels()).toContain('Cancel schedule')
+
+      const unscheduled = mountDraft()
+      unscheduled.stack.setState('publishScheduling', true)
+      await nextTick()
+      expect(unscheduled.button().props('label')).toBe('Schedule')
+      expect(unscheduled.labels()).not.toContain('Cancel schedule')
+    })
+
+    test('choosing Cancel schedule clears the draft\'s publication date', async () => {
+      vi.useFakeTimers({ now: NOW, toFake: ['Date'] })
+      const { button, updateResource } = mountDraft('2026-10-01T08:00:00Z')
+
+      button().vm.$emit('select', { label: 'Cancel schedule', value: 'cancel-schedule' })
+      await flushPromises()
+
+      expect(updateResource).toHaveBeenCalledTimes(1)
+      expect(updateResource).toHaveBeenCalledWith({ endpoint: '/component/draft', data: { publishedAt: null } })
+    })
+
+    test('with scheduling on the main action reads Schedule and is disabled until a date is chosen, saying why', async () => {
+      vi.useFakeTimers({ now: NOW, toFake: ['Date'] })
+      const { wrapper, button, stack, updateResource } = mountDraft()
+      stack.setState('publishScheduling', true)
+      await nextTick()
+
+      expect(button().props('label')).toBe('Schedule')
+      expect(button().props('disabled')).toBe(true)
+      expect(button().props('disabledReason')).toBe('Choose a date first')
+
+      stack.setState('publishScheduleValue', '2026-10-01T08:00:00.000Z')
+      await nextTick()
+      expect(button().props('disabled')).toBe(false)
+      await wrapper.find('button').trigger('click')
+      expect(updateResource).toHaveBeenCalledWith({ endpoint: '/component/draft', data: { publishedAt: '2026-10-01T08:00:00.000Z' } })
+    })
+
+    test('shows loading while publishing, and a second press does not publish twice', async () => {
+      const { wrapper, button, updateResource, finish } = mountDraft()
+
+      await wrapper.find('button').trigger('click')
+      await nextTick()
+      expect(button().props('loading')).toBe(true)
+      await wrapper.find('button').trigger('click')
+      expect(updateResource).toHaveBeenCalledTimes(1)
+
+      finish({ '@id': '/component/draft' })
+      await flushPromises()
+      expect(button().props('loading')).toBe(false)
     })
   })
 
