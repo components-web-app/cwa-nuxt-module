@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, provide, reactive, ref, useTemplateRef, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, provide, reactive, ref, useTemplateRef, watch } from 'vue'
 import { onBeforeRouteLeave, useRouter } from 'vue-router'
 import type { RouteLocationNormalized } from 'vue-router'
 import CwaUiButton from '../../ui/Button.vue'
@@ -27,6 +27,7 @@ defineSlots<{
 const confirm = useCwaConfirm()
 const root = useTemplateRef<HTMLElement>('root')
 const alert = useTemplateRef<InstanceType<typeof CwaUiAlert>>('alert')
+const actions = useTemplateRef<HTMLElement>('actions')
 
 const registry = reactive(new Map<string, string>())
 
@@ -202,7 +203,32 @@ watch(() => unsavedCount.value > 0, (dirty) => {
   window.removeEventListener('beforeunload', onBeforeUnload)
 }, { immediate: true })
 
+let rowObserver: ResizeObserver | undefined
+let restoreScrollPadding: (() => void) | undefined
+
+onMounted(() => {
+  const row = actions.value
+  const scroller = document.scrollingElement as HTMLElement | null ?? document.documentElement
+  if (!row) {
+    return
+  }
+  const previous = scroller.style.scrollPaddingBottom
+  const pad = () => {
+    scroller.style.scrollPaddingBottom = `${Math.ceil(row.getBoundingClientRect().height)}px`
+  }
+  pad()
+  if (typeof ResizeObserver !== 'undefined') {
+    rowObserver = new ResizeObserver(pad)
+    rowObserver.observe(row)
+  }
+  restoreScrollPadding = () => {
+    scroller.style.scrollPaddingBottom = previous
+  }
+})
+
 onBeforeUnmount(() => {
+  rowObserver?.disconnect()
+  restoreScrollPadding?.()
   stopAfterEach()
   clearTimeout(savedTimer)
   typeof window !== 'undefined' && window.removeEventListener('beforeunload', onBeforeUnload)
@@ -258,8 +284,9 @@ defineExpose({ showField, announce })
     </CwaUiAlert>
     <slot />
     <div
+      ref="actions"
       data-testid="form-group-actions"
-      class="cwa:sticky cwa:bottom-0 cwa:z-10 cwa:mt-section cwa:flex cwa:items-center cwa:justify-end cwa:gap-actions cwa:border-t cwa:border-line cwa:bg-surface cwa:py-4 cwa:pb-[calc(1rem+env(safe-area-inset-bottom))]"
+      class="cwa:sticky cwa:bottom-0 cwa:z-10 cwa:mt-section cwa:flex cwa:items-center cwa:justify-end cwa:gap-actions cwa:bg-stone-800 cwa:py-4 cwa:pb-[calc(1rem+env(safe-area-inset-bottom))]"
     >
       <p
         v-if="blockedText"
