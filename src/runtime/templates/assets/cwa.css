@@ -62,7 +62,6 @@
     --cwa-font-weight-semibold: 600;
     --cwa-font-weight-bold: 700;
     --cwa-tracking-tight: -0.025em;
-    --cwa-tracking-wide: 0.025em;
     --cwa-leading-tight: 1.25;
     --cwa-radius-sm: 0.25rem;
     --cwa-radius-md: 0.375rem;
@@ -162,7 +161,6 @@
     --cwa-color-danger-dark: oklch(44.4% 0.177 26.899 / 0.8);
     --cwa-color-dark: #1c1917;
     --cwa-color-light: #f5f5f4;
-    --cwa-color-medium: #a8a29e;
     --cwa-animate-admin-spinner: cwa-spin 1s linear infinite;
     --cwa-animate-clone-placed: cwa-clone-placed 1.5s ease-out forwards;
     --cwa-transition-property-opacity-transform: opacity, transform, rotate;
@@ -266,9 +264,6 @@
 }
 .cwa\:bottom-2 {
   bottom: calc(var(--cwa-spacing) * 2);
-}
-.cwa\:bottom-5 {
-  bottom: calc(var(--cwa-spacing) * 5);
 }
 .cwa\:bottom-full {
   bottom: 100%;
@@ -806,6 +801,9 @@
 .cwa\:max-w-60 {
   max-width: calc(var(--cwa-spacing) * 60);
 }
+.cwa\:max-w-64 {
+  max-width: calc(var(--cwa-spacing) * 64);
+}
 .cwa\:max-w-72 {
   max-width: calc(var(--cwa-spacing) * 72);
 }
@@ -865,6 +863,9 @@
 }
 .cwa\:min-w-64 {
   min-width: calc(var(--cwa-spacing) * 64);
+}
+.cwa\:min-w-\[4ch\] {
+  min-width: 4ch;
 }
 .cwa\:min-w-\[100px\] {
   min-width: 100px;
@@ -1004,6 +1005,9 @@
 }
 .cwa\:cursor-progress {
   cursor: progress;
+}
+.cwa\:cursor-text {
+  cursor: text;
 }
 .cwa\:resize-none {
   resize: none;
@@ -1292,12 +1296,6 @@
 .cwa\:border-fg {
   border-color: var(--cwa-color-fg);
 }
-.cwa\:border-gray-200 {
-  border-color: var(--cwa-color-gray-200);
-}
-.cwa\:border-gray-300 {
-  border-color: var(--cwa-color-gray-300);
-}
 .cwa\:border-line {
   border-color: var(--cwa-color-line);
 }
@@ -1539,12 +1537,6 @@
   background-color: var(--cwa-color-orange);
   @supports (color: color-mix(in lab, red, red)) {
     background-color: color-mix(in oklab, var(--cwa-color-orange) 30%, transparent);
-  }
-}
-.cwa\:bg-stone-200\/10 {
-  background-color: var(--cwa-color-stone-200);
-  @supports (color: color-mix(in lab, red, red)) {
-    background-color: color-mix(in oklab, var(--cwa-color-stone-200) 10%, transparent);
   }
 }
 .cwa\:bg-stone-600 {
@@ -1844,9 +1836,6 @@
 .cwa\:pb-12 {
   padding-bottom: calc(var(--cwa-spacing) * 12);
 }
-.cwa\:pb-14 {
-  padding-bottom: calc(var(--cwa-spacing) * 14);
-}
 .cwa\:pb-16 {
   padding-bottom: calc(var(--cwa-spacing) * 16);
 }
@@ -2010,9 +1999,8 @@
   --tw-tracking: var(--cwa-tracking-tight);
   letter-spacing: var(--cwa-tracking-tight);
 }
-.cwa\:tracking-wide {
-  --tw-tracking: var(--cwa-tracking-wide);
-  letter-spacing: var(--cwa-tracking-wide);
+.cwa\:\[letter-spacing\:inherit\] {
+  letter-spacing: inherit;
 }
 .cwa\:text-balance {
   text-wrap: balance;
@@ -2091,9 +2079,6 @@
   @supports (color: color-mix(in lab, red, red)) {
     color: color-mix(in oklab, var(--cwa-color-light) 70%, transparent);
   }
-}
-.cwa\:text-medium {
-  color: var(--cwa-color-medium);
 }
 .cwa\:text-muted-on-field {
   color: var(--cwa-color-muted-on-field);
@@ -2438,6 +2423,9 @@
 }
 .cwa\:\[--cwa-text-control\:var\(--cwa-text-control-lg\)\] {
   --cwa-text-control: var(--cwa-text-control-lg);
+}
+.cwa\:\[font\:inherit\] {
+  font: inherit;
 }
 .cwa\:\[stroke-linecap\:round\] {
   stroke-linecap: round;

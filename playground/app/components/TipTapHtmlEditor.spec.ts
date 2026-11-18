@@ -134,6 +134,7 @@ function resourceModel(html: string | null) {
       focusedBy: computed(() => focused.value),
       focusListeners: { onFocusin: vi.fn(), onFocusout: vi.fn(), onPointerdown: vi.fn() },
       states: { submitting },
+      editorKey: { iri: () => LIVE, field: 'html' },
     },
   }
 }
@@ -150,6 +151,7 @@ function cwaFor(model: ReturnType<typeof resourceModel>, drafts: Record<string, 
     resources: {
       getResource: (iri: string) => computed(() => ({ data: { '@id': iri, 'html': model.stored.value, '_metadata': { lastWrite: model.lastWrite.value ? { clientId: model.lastWrite.value } : undefined } } })),
       findPublishedComponentIri: (iri: string) => computed(() => drafts[iri]),
+      isIriPublishableEquivalent: () => false,
     },
   }
 }
@@ -210,6 +212,21 @@ afterEach(() => {
 })
 
 describe('TipTapHtmlEditor: the co-editing reference editor (#429)', () => {
+  test('the bar\'s Edit on page finds it only while it is editable, and opening it focuses it with the caret at the end (#461)', async () => {
+    const { findInlineEditor, openInlineEditor } = await import('#cwa/admin/inline-editors')
+    const disabled = await mountEditor('<p>Hello</p>', { disabled: true })
+    expect(findInlineEditor(disabled.cwa as never, { iri: () => LIVE, field: 'html' })).toBeUndefined()
+    disabled.wrapper.unmount()
+
+    const { editor, cwa } = await mountEditor('<p>Hello</p>')
+    const found = findInlineEditor(cwa as never, { iri: () => LIVE, field: 'html' })!
+    expect(found.element()).toBe(editor().view.dom)
+
+    openInlineEditor(found)
+    await vi.waitFor(() => expect(editor().isFocused).toBe(true))
+    expect(editor().state.selection.from).toBe(end(editor()))
+  })
+
   test('saves what is typed through the resource model', async () => {
     const { editor, stored } = await mountEditor('<p>Hello</p>')
 

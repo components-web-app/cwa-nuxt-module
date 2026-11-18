@@ -5,7 +5,7 @@ import * as vue from 'vue'
 import { computed, reactive, ref } from 'vue'
 import ComponentPosition from '../core/ComponentPosition.vue'
 import ComponentGroup from './ComponentGroup.vue'
-import { CwaResourceApiStatuses } from '#cwa/storage/stores/resources/state'
+import { CwaResourceApiStatuses, NEW_RESOURCE_IRI } from '#cwa/storage/stores/resources/state'
 import { ComponentGroupUtilSynchronizer } from '#cwa/templates/components/main/ComponentGroup.Util.Synchronizer'
 import * as cwaComposables from '#cwa/composables/cwa'
 import * as cwaResourceManageableComposables from '#cwa/composables/cwa-resource-manageable'
@@ -670,6 +670,30 @@ describe('ComponentGroup', () => {
         immediate: true,
         flush: 'post',
       })
+    })
+  })
+
+  describe('edit placeholder (#461)', () => {
+    test('in edit mode an empty group shows the kit placeholder holding the hot spot, and nothing out of edit mode', () => {
+      const emptyGroup = () => {
+        vi.spyOn(mockCwaResources, 'getResource').mockImplementationOnce(() => ({ value: { data: { reference: 'anything' } } }))
+        vi.spyOn(mockCwaResources, 'getComponentGroupByReference').mockImplementationOnce(() => ({ data: {} }))
+      }
+      emptyGroup()
+      const wrapper = createWrapper({ signedIn: true })
+
+      const placeholder = wrapper.find('[label="Empty group"]')
+      expect(placeholder.exists()).toBe(true)
+      expect(placeholder.find('[screen-reader-action="Add component position"]').exists()).toBe(true)
+
+      emptyGroup()
+      expect(createWrapper({ signedIn: true, isEditing: false }).find('[label="Empty group"]').exists()).toBe(false)
+    })
+
+    test('a group for a component still being added shows the kit placeholder saying so', () => {
+      const wrapper = createWrapper({ location: NEW_RESOURCE_IRI })
+
+      expect(wrapper.find('[label="Add the component to populate this component group"]').exists()).toBe(true)
     })
   })
 
