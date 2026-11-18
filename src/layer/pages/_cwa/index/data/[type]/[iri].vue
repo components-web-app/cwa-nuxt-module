@@ -14,6 +14,7 @@ const { dataTypeClassName } = useDataType()
 
 definePageMeta({
   name: '_cwa-data-type-iri',
+  key: '_cwa-data-type-iri',
 })
 
 defineEmits<{

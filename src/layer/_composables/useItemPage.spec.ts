@@ -517,3 +517,101 @@ describe('useItemPage Save model (#461)', () => {
     expect(itemPage.form.unsavedFields).toEqual([])
   })
 })
+
+describe('useItemPage creating (#461)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  function setupAdding(defaults: () => Record<string, any>, ops: { dismissStoredErrors?: boolean } = {}) {
+    const createResource = vi.fn()
+    const errors = reactive<any[]>([])
+    const removeError = vi.fn((timestamp: number) => {
+      const index = errors.findIndex(error => error.timestamp === timestamp)
+      index > -1 && errors.splice(index, 1)
+    })
+    // @ts-expect-error
+    vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => ({
+      resources: { getResource: vi.fn(() => computed(() => undefined)) },
+      resourcesManager: { createResource, errors, removeError, addError: vi.fn() },
+      fetchResource: vi.fn(),
+    }))
+    const emit = vi.fn()
+    let itemPage!: ReturnType<typeof useItemPage>
+    mount(defineComponent({
+      setup() {
+        itemPage = useItemPage({
+          createEndpoint: '/_/pages',
+          emit,
+          resourceType: 'Page',
+          defaultResource: defaults,
+          endpoint: ref('add'),
+          excludeFields: ['componentGroups'],
+          dismissStoredErrors: ops.dismissStoredErrors,
+        })
+        return () => null
+      },
+    }))
+    function refuseWith(statusCode: number | undefined, data?: Record<string, any>) {
+      createResource.mockImplementationOnce(async (event: any) => {
+        const error = Object.assign(new Error('failed'), { statusCode, data })
+        errors.push({ timestamp: 7, event, detail: 'failed', violations: [] })
+        event.onRequest?.(event.endpoint, Promise.resolve({ error }))
+        return undefined
+      })
+    }
+    return { itemPage, createResource, emit, errors, removeError, refuseWith }
+  }
+
+  test('a new resource counts the fields that differ from its defaults and the pre-selected layout, so closing it asks first', async () => {
+    const layouts = ref<string[]>([])
+    const { itemPage } = setupAdding(() => ({ isTemplate: false, uiComponent: 'CwaPagePrimary', layout: layouts.value[0] }))
+    await flushPromises()
+    layouts.value = ['/_/layouts/first']
+    itemPage.localResourceData.value!.layout = '/_/layouts/first'
+    expect(itemPage.form.unsavedFields).toEqual([])
+
+    itemPage.localResourceData.value!.reference = ''
+    itemPage.localResourceData.value!.componentGroups = ['/_/component_groups/a']
+    expect(itemPage.form.unsavedFields).toEqual([])
+
+    itemPage.localResourceData.value!.reference = 'Typed'
+    itemPage.localResourceData.value!.layout = '/_/layouts/second'
+    itemPage.localResourceData.value!.isTemplate = true
+    expect(itemPage.form.unsavedFields).toEqual(['isTemplate', 'layout', 'reference'])
+  })
+
+  test('a refused create puts each violation on its field, even one left empty, and alone shows it in a dialog that shows the form errors', async () => {
+    const { itemPage, refuseWith, errors, removeError, emit } = setupAdding(() => ({ isTemplate: false }), { dismissStoredErrors: true })
+    await flushPromises()
+    itemPage.form.model('reference')
+    itemPage.localResourceData.value!.title = 'A title'
+    refuseWith(422, { violations: [
+      { propertyPath: 'reference', message: 'This value should not be blank.' },
+      { propertyPath: 'route', message: 'Not a field here.' },
+    ] })
+
+    expect(await itemPage.saveResource()).toBeUndefined()
+
+    expect(itemPage.form.fieldErrors).toEqual({ reference: 'This value should not be blank.' })
+    expect(itemPage.form.formError).toBe('Not a field here.')
+    expect(itemPage.form.failures).toBe(1)
+    expect(itemPage.form.unsavedFields).toEqual(['title'])
+    expect(removeError).toHaveBeenCalledWith(7)
+    expect(errors).toEqual([])
+    expect(emit).not.toHaveBeenCalledWith('close')
+  })
+
+  test('a create the server could not save says so in the form, and keeps its stored error for a page that shows the store\'s errors', async () => {
+    const { itemPage, refuseWith, errors, removeError } = setupAdding(() => ({}))
+    await flushPromises()
+    refuseWith(500, { detail: 'Boom' })
+
+    await itemPage.saveResource()
+
+    expect(itemPage.form.formError).toBe('The server couldn\'t save it. Nothing changed, and what you typed is still here.')
+    expect(itemPage.form.failures).toBe(1)
+    expect(removeError).not.toHaveBeenCalled()
+    expect(errors).toHaveLength(1)
+  })
+})

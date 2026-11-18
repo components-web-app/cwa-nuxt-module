@@ -2,6 +2,8 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { defineComponent, h } from 'vue'
+import { createMemoryHistory, createRouter, RouterView } from 'vue-router'
+import type { Router } from 'vue-router'
 import { axe } from '../../../../../../test/utils/axe'
 import { drawsFocusRing } from '../../../../../../test/utils/focus-ring'
 import { fakeDialogForm } from '../../../../../../playground/app/kit/fake-dialog-form'
@@ -11,20 +13,15 @@ import FormSection from '../../ui/FormSection.vue'
 import Input from '../../ui/Input.vue'
 import Toggle from '../../ui/Toggle.vue'
 
-const { confirmMock, leaveGuards } = vi.hoisted(() => ({
+const { confirmMock } = vi.hoisted(() => ({
   confirmMock: vi.fn(),
-  leaveGuards: [] as (() => unknown)[],
 }))
 vi.mock('#cwa/composables/cwa-confirm', () => ({ useCwaConfirm: () => confirmMock }))
-vi.mock('vue-router', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('vue-router')>()
-  return { ...actual, onBeforeRouteLeave: (guard: () => unknown) => leaveGuards.push(guard) }
-})
 
 enableAutoUnmount(afterEach)
 
-function mountGroup(form: FakeDialogForm) {
-  const Host = defineComponent({
+function settingsPage(form: FakeDialogForm) {
+  return defineComponent({
     setup() {
       return () => h('div', [
         h('h1', 'Site settings'),
@@ -40,7 +37,27 @@ function mountGroup(form: FakeDialogForm) {
       ])
     },
   })
-  return mount(Host, { attachTo: document.body })
+}
+
+async function mountRouted(form: FakeDialogForm) {
+  const router = createRouter({
+    history: createMemoryHistory(),
+    routes: [
+      { path: '/settings', component: settingsPage(form) },
+      { path: '/:other(.*)', component: { render: () => h('p', 'Elsewhere') } },
+    ],
+  })
+  await router.push('/settings')
+  await router.isReady()
+  mount({ render: () => h(RouterView) }, { attachTo: document.body, global: { plugins: [router] } })
+  await flushPromises()
+  return router
+}
+
+async function go(router: Router, to: string) {
+  await router.push(to)
+  await flushPromises()
+  return router.currentRoute.value.fullPath
 }
 
 const group = () => document.querySelector<HTMLElement>('[data-testid="form-group"]')!
@@ -67,12 +84,11 @@ describe('FormGroup and the page Save model (#461)', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    leaveGuards.length = 0
     form = fakeDialogForm({ siteName: 'Kitchens', maintenanceModeEnabled: false, canonicalUrl: '' })
   })
 
   test('holds its sections, whose headings follow the page heading, and ends in a row of Cancel and Save only', async () => {
-    mountGroup(form)
+    await mountRouted(form)
     await flushPromises()
 
     expect(qa('[data-testid="form-section"] :is(h2, h3)').map(heading => `${heading.tagName} ${heading.textContent?.trim()}`)).toEqual(['H2 General', 'H2 Sitemap'])
@@ -80,7 +96,7 @@ describe('FormGroup and the page Save model (#461)', () => {
   })
 
   test('controls on a page take the large control size, inside a 40rem column', async () => {
-    mountGroup(form)
+    await mountRouted(form)
     await flushPromises()
 
     expect(group().className).toContain('cwa:[--cwa-spacing-control:var(--cwa-spacing-control-lg)]')
@@ -88,7 +104,7 @@ describe('FormGroup and the page Save model (#461)', () => {
   })
 
   test('with nothing changed, Save and Cancel are off with their reason and nothing is sent', async () => {
-    mountGroup(form)
+    await mountRouted(form)
     await flushPromises()
 
     expect(save().getAttribute('aria-disabled')).toBe('true')
@@ -102,7 +118,7 @@ describe('FormGroup and the page Save model (#461)', () => {
   })
 
   test('an edit marks its field Unsaved and the one count is on Save, with no other unsaved notice', async () => {
-    mountGroup(form)
+    await mountRouted(form)
     await flushPromises()
 
     await type('[data-cwa-field="siteName"] input', 'Our kitchens')
@@ -116,7 +132,7 @@ describe('FormGroup and the page Save model (#461)', () => {
   })
 
   test('Save sends only the changed fields, then reads Saved with its check', async () => {
-    mountGroup(form)
+    await mountRouted(form)
     await flushPromises()
     await type('[data-cwa-field="siteName"] input', 'Our kitchens')
 
@@ -132,7 +148,7 @@ describe('FormGroup and the page Save model (#461)', () => {
   test('Saved goes back to Save after 1.5 s', async () => {
     vi.useFakeTimers()
     try {
-      mountGroup(form)
+      await mountRouted(form)
       await flushPromises()
       await type('[data-cwa-field="siteName"] input', 'Our kitchens')
       save().click()
@@ -150,7 +166,7 @@ describe('FormGroup and the page Save model (#461)', () => {
   })
 
   test('a failed Save shows the alert listing the field, focuses it, announces it once and puts the error under the field', async () => {
-    mountGroup(form)
+    await mountRouted(form)
     await flushPromises()
     await type('[data-cwa-field="canonicalUrl"] input', 'kitchens')
     form.failNext({ canonicalUrl: 'Enter a full address, like https://example.com.' })
@@ -171,7 +187,7 @@ describe('FormGroup and the page Save model (#461)', () => {
   })
 
   test('a field in the alert takes focus to that field', async () => {
-    mountGroup(form)
+    await mountRouted(form)
     await flushPromises()
     await type('[data-cwa-field="canonicalUrl"] input', 'kitchens')
     form.failNext({ canonicalUrl: 'Enter a full address.' })
@@ -185,7 +201,7 @@ describe('FormGroup and the page Save model (#461)', () => {
   })
 
   test('a failure with no field says why in the alert', async () => {
-    mountGroup(form)
+    await mountRouted(form)
     await flushPromises()
     await type('[data-cwa-field="siteName"] input', 'Our kitchens')
     form.failNext({})
@@ -200,7 +216,7 @@ describe('FormGroup and the page Save model (#461)', () => {
   })
 
   test('Cancel with changes asks first; Keep editing keeps them and Discard throws them away', async () => {
-    mountGroup(form)
+    await mountRouted(form)
     await flushPromises()
     await type('[data-cwa-field="siteName"] input', 'Our kitchens')
 
@@ -223,23 +239,21 @@ describe('FormGroup and the page Save model (#461)', () => {
   })
 
   test('leaving with nothing changed asks nothing', async () => {
-    mountGroup(form)
-    await flushPromises()
+    const router = await mountRouted(form)
 
-    expect(leaveGuards).toHaveLength(1)
-    expect(await leaveGuards[0]!()).toBe(true)
+    expect(await go(router, '/pages')).toBe('/pages')
     expect(confirmMock).not.toHaveBeenCalled()
   })
 
-  test('leaving with changes asks, naming them; Keep editing stays and Leave discards them and goes', async () => {
-    mountGroup(form)
-    await flushPromises()
+  test('leaving with changes asks, naming them; Keep editing stays, and Leave goes without discarding first', async () => {
+    const discard = vi.spyOn(form, 'discard')
+    const router = await mountRouted(form)
     await type('[data-cwa-field="siteName"] input', 'Our kitchens')
     q<HTMLButtonElement>('[data-cwa-field="maintenanceModeEnabled"] [role="switch"]')!.click()
     await flushPromises()
 
     confirmMock.mockResolvedValueOnce(false)
-    expect(await leaveGuards[0]!()).toBe(false)
+    expect(await go(router, '/pages')).toBe('/settings')
     expect(confirmMock).toHaveBeenCalledWith({
       title: 'Leave without saving?',
       description: '2 unsaved changes (Site name and Enable maintenance mode) will be lost.',
@@ -249,12 +263,63 @@ describe('FormGroup and the page Save model (#461)', () => {
     expect(form.local.siteName).toBe('Our kitchens')
 
     confirmMock.mockResolvedValueOnce(true)
-    expect(await leaveGuards[0]!()).toBe(true)
-    expect(form.local.siteName).toBe('Kitchens')
+    expect(await go(router, '/pages')).toBe('/pages')
+    expect(discard).not.toHaveBeenCalled()
+  })
+
+  test('a leave another guard then cancels keeps the edits, and the next leave asks again', async () => {
+    const router = await mountRouted(form)
+    router.beforeEach(to => to.path !== '/locked')
+    await type('[data-cwa-field="siteName"] input', 'Our kitchens')
+
+    confirmMock.mockResolvedValue(true)
+    expect(await go(router, '/locked')).toBe('/settings')
+    expect(form.local.siteName).toBe('Our kitchens')
+    expect(form.unsavedFields).toEqual(['siteName'])
+
+    expect(await go(router, '/locked')).toBe('/settings')
+    expect(confirmMock).toHaveBeenCalledTimes(2)
+  })
+
+  test('an approved leave re-run without cwa_force goes on without asking again', async () => {
+    const router = await mountRouted(form)
+    router.beforeEach((to) => {
+      if (!('cwa_force' in to.query)) {
+        return true
+      }
+      const { cwa_force: _force, ...query } = to.query
+      return { path: to.path, query, hash: to.hash }
+    })
+    await type('[data-cwa-field="siteName"] input', 'Our kitchens')
+
+    confirmMock.mockResolvedValue(true)
+    expect(await go(router, '/pages?cwa_force=true&page=2')).toBe('/pages?page=2')
+    expect(confirmMock).toHaveBeenCalledTimes(1)
+  })
+
+  test('a second click while the leave is being asked waits for the same answer, and goes to where it was clicked', async () => {
+    const router = await mountRouted(form)
+    await type('[data-cwa-field="siteName"] input', 'Our kitchens')
+    let answer!: (go: boolean) => void
+    confirmMock.mockReturnValueOnce(new Promise<boolean>((resolve) => {
+      answer = resolve
+    }))
+
+    void router.push('/pages')
+    await flushPromises()
+    const second = router.push('/layouts')
+    await flushPromises()
+    expect(router.currentRoute.value.fullPath).toBe('/settings')
+    answer(true)
+    await second
+    await flushPromises()
+
+    expect(router.currentRoute.value.fullPath).toBe('/layouts')
+    expect(confirmMock).toHaveBeenCalledTimes(1)
   })
 
   test('closing or reloading the tab gets the browser\'s prompt only while something is unsaved', async () => {
-    mountGroup(form)
+    await mountRouted(form)
     await flushPromises()
     const unload = () => {
       const event = new Event('beforeunload', { cancelable: true })
@@ -270,8 +335,54 @@ describe('FormGroup and the page Save model (#461)', () => {
     expect(unload()).toBe(false)
   })
 
+  test('while it is on the page, the scroll container keeps focused fields clear of the sticky Save row, whatever its height', async () => {
+    const observers: { callback: () => void, observed: Element[], disconnect: () => void }[] = []
+    vi.stubGlobal('ResizeObserver', class {
+      observed: Element[] = []
+      disconnect = vi.fn()
+      constructor(public callback: () => void) {
+        observers.push(this)
+      }
+
+      observe(element: Element) {
+        this.observed.push(element)
+      }
+    })
+    let rowHeight = 72.4
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+      return { height: this.dataset.testid === 'form-group-actions' ? rowHeight : 0 } as DOMRect
+    })
+    const scroller = document.documentElement
+    scroller.style.scrollPaddingBottom = '8px'
+    try {
+      const router = await mountRouted(form)
+      expect(scroller.style.scrollPaddingBottom).toBe('73px')
+
+      rowHeight = 140
+      observers.find(observer => observer.observed.some(element => (element as HTMLElement).dataset.testid === 'form-group-actions'))!.callback()
+      expect(scroller.style.scrollPaddingBottom).toBe('140px')
+
+      await go(router, '/pages')
+      expect(scroller.style.scrollPaddingBottom).toBe('8px')
+      expect(observers[0]!.disconnect).toHaveBeenCalled()
+    }
+    finally {
+      scroller.style.scrollPaddingBottom = ''
+      vi.unstubAllGlobals()
+      vi.restoreAllMocks()
+    }
+  })
+
+  test('the sticky Save row is painted with the page\'s own background and adds no rule of its own', async () => {
+    await mountRouted(form)
+
+    const row = q('[data-testid="form-group-actions"]')!
+    expect(row.className).toContain('cwa:bg-stone-800')
+    expect(row.className).not.toMatch(/cwa:bg-surface|cwa:border-t/)
+  })
+
   test('a conflict blocks Save with its reason until a version is chosen', async () => {
-    mountGroup(form)
+    await mountRouted(form)
     await flushPromises()
     await type('[data-cwa-field="siteName"] input', 'Mine')
     form.conflictNext({ siteName: 'Theirs' })
@@ -290,7 +401,7 @@ describe('FormGroup and the page Save model (#461)', () => {
   })
 
   test.each(['idle', 'unsaved', 'saved', 'error', 'conflict'] as const)('has no axe violations when %s', async (state) => {
-    mountGroup(form)
+    await mountRouted(form)
     await flushPromises()
     if (state !== 'idle') {
       await type('[data-cwa-field="siteName"] input', 'Mine')
@@ -310,7 +421,7 @@ describe('FormGroup and the page Save model (#461)', () => {
   })
 
   test('the alert\'s field links draw their focus ring', async () => {
-    mountGroup(form)
+    await mountRouted(form)
     await flushPromises()
     await type('[data-cwa-field="siteName"] input', '')
     form.failNext({ siteName: 'Add a site name.' })

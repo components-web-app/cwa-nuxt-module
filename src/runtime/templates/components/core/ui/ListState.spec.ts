@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { enableAutoUnmount, mount } from '@vue/test-utils'
-import { axe } from '../../../../../test/utils/axe'
+import { axe } from '../../../../../../test/utils/axe'
 import ListState from './ListState.vue'
 
 enableAutoUnmount(afterEach)
@@ -10,7 +10,7 @@ function reducedMotion(reduce: boolean) {
   vi.stubGlobal('matchMedia', (query: string) => ({ matches: reduce && query.includes('reduce') }))
 }
 
-describe('CwaUiListState (#461)', () => {
+describe('ListState (#461)', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     reducedMotion(false)

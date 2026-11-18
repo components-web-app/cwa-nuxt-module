@@ -3,6 +3,7 @@
     class="cwa:mx-auto cwa:w-full cwa:max-w-6xl cwa:px-4 cwa:pb-12 cwa:sm:px-8"
     data-testid="list-content"
   >
+    <slot name="notice" />
     <CwaUiAlert
       v-if="loadError"
       tone="danger"
@@ -65,23 +66,29 @@
         </template>
       </div>
     </div>
-    <CwaUiListState
+    <ListState
       v-if="loading && !items.length"
       state="loading"
       :noun="noun"
     />
-    <CwaUiListState
+    <ListState
       v-else-if="!loading && !items.length && !loadError"
       state="empty"
       :noun="noun"
-      :title="searchText ? `No ${noun} match “${searchText}”.` : undefined"
+      :title="emptyTitle"
     >
+      <CwaUiButton
+        v-if="filterKeys.length"
+        :label="filtered ? 'Clear filters' : 'Clear search'"
+        data-testid="list-clear-filters"
+        @click="clearFilters"
+      />
       <slot
-        v-if="!searchText"
+        v-else
         name="empty"
       />
-    </CwaUiListState>
-    <CwaUiPagination
+    </ListState>
+    <Pagination
       v-if="items.length"
       v-model:page="pageModel"
       :total="hydraData?.totalItems || 0"
@@ -100,12 +107,12 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { consola as logger } from 'consola'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import type { LocationQuery } from 'vue-router'
 import CwaUiAlert from '#cwa/templates/components/ui/Alert.vue'
 import CwaUiButton from '#cwa/templates/components/ui/Button.vue'
-import CwaUiListState from '#cwa/templates/components/ui/ListState.vue'
-import CwaUiPagination from '#cwa/templates/components/ui/Pagination.vue'
+import ListState from '#cwa/templates/components/core/ui/ListState.vue'
+import Pagination from '#cwa/templates/components/core/ui/Pagination.vue'
 import { useCwa } from '#cwa/composables/cwa'
 import { useQueryBoundModel } from '#cwa/composables/cwa-query-bound-model'
 import { mergeQueryIntoPath } from '#cwa/api/fetcher/query-utils'
@@ -119,9 +126,11 @@ export interface ListColumn {
 }
 
 const PER_PAGE = 20
+const NOT_A_FILTER = /^(?:page|perPage|order(?:\[.*\])?|cwa_force)$/
 
 const $cwa = useCwa()
 const route = useRoute()
+const router = useRouter()
 const { model: perPageModel } = useQueryBoundModel('perPage', { defaultValue: null, asNumber: true })
 const { model: pageModel } = useQueryBoundModel('page', { defaultValue: 1, asNumber: true })
 
@@ -163,6 +172,24 @@ const searchText = computed(() => {
   const search = route.query.search
   return typeof search === 'string' ? search.trim() : ''
 })
+
+const filterKeys = computed(() => Object.keys(route.query).filter((key) => {
+  const value = route.query[key]
+  return !NOT_A_FILTER.test(key) && (Array.isArray(value) ? value.some(entry => !!entry?.trim()) : !!value?.trim())
+}))
+
+const filtered = computed(() => filterKeys.value.some(key => key !== 'search'))
+
+const emptyTitle = computed(() => {
+  if (filtered.value) {
+    return `No ${props.noun} match these filters.`
+  }
+  return searchText.value ? `No ${props.noun} match “${searchText.value}”.` : undefined
+})
+
+function clearFilters() {
+  router.replace({ query: Object.fromEntries(Object.entries(route.query).filter(([key]) => key !== 'page' && NOT_A_FILTER.test(key))) })
+}
 
 function capitalise(text: string) {
   return text.charAt(0).toUpperCase() + text.slice(1)
@@ -208,6 +235,11 @@ async function reloadItems() {
     const { response } = $cwa.fetch({ path: mergeQueryIntoPath(props.fetchUrl, buildRequestQuery()), noQuery: true })
     const { _data: data } = await response
     if (thisRequestId !== currentRequestId.value) {
+      return
+    }
+    const lastPage = Math.ceil((data?.['totalItems'] || 0) / (perPageModel.value || PER_PAGE))
+    if (!data?.['member']?.length && lastPage > 0 && lastPage < (pageModel.value ?? 1)) {
+      pageModel.value = lastPage
       return
     }
     hydraData.value = {
@@ -279,5 +311,6 @@ defineSlots<{
     }
   ): any
   empty(): any
+  notice(): any
 }>()
 </script>

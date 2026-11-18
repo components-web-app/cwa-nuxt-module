@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, provide, reactive, ref, useTemplateRef, watch } from 'vue'
-import { onBeforeRouteLeave } from 'vue-router'
+import { computed, nextTick, onBeforeUnmount, onMounted, provide, reactive, ref, useTemplateRef, watch } from 'vue'
+import { onBeforeRouteLeave, useRouter } from 'vue-router'
+import type { RouteLocationNormalized } from 'vue-router'
 import CwaUiButton from '../../ui/Button.vue'
 import CwaUiAlert from '../../ui/Alert.vue'
 import CheckGlyph from './CheckGlyph.vue'
@@ -26,6 +27,7 @@ defineSlots<{
 const confirm = useCwaConfirm()
 const root = useTemplateRef<HTMLElement>('root')
 const alert = useTemplateRef<InstanceType<typeof CwaUiAlert>>('alert')
+const actions = useTemplateRef<HTMLElement>('actions')
 
 const registry = reactive(new Map<string, string>())
 
@@ -131,19 +133,13 @@ async function showField(field: string) {
   root.value?.querySelector<HTMLElement>(`[data-cwa-field="${CSS.escape(field)}"] :is(input, textarea, button, [tabindex]:not([tabindex="-1"]))`)?.focus()
 }
 
-let confirming = false
+let asking: Promise<boolean> | undefined
 
-async function ask(title: string, description: string, go: string) {
-  if (confirming) {
-    return false
-  }
-  confirming = true
-  try {
-    return await confirm({ title, description, keep: 'Keep editing', go })
-  }
-  finally {
-    confirming = false
-  }
+function ask(title: string, description: string, go: string) {
+  asking ??= confirm({ title, description, keep: 'Keep editing', go }).finally(() => {
+    asking = undefined
+  })
+  return asking
 }
 
 function unsavedNames() {
@@ -164,16 +160,31 @@ async function cancel() {
   }
 }
 
-onBeforeRouteLeave(async () => {
+const router = useRouter()
+let approvedLeave: string | undefined
+
+function leaveKey(to: RouteLocationNormalized) {
+  const { cwa_force: _force, ...query } = to.query
+  return router.resolve({ path: to.path, query, hash: to.hash }).fullPath
+}
+
+onBeforeRouteLeave(async (to) => {
   const names = unsavedNames()
-  if (!names.length) {
+  const key = leaveKey(to)
+  if (!names.length || approvedLeave === key) {
     return true
   }
   if (!await ask('Leave without saving?', `${unsavedText(names.length)} (${listText(names)}) will be lost.`, 'Leave')) {
     return false
   }
-  props.form.discard()
+  approvedLeave = key
   return true
+})
+
+const stopAfterEach = router.afterEach((_to, _from, failure) => {
+  if (failure) {
+    approvedLeave = undefined
+  }
 })
 
 function onBeforeUnload(event: BeforeUnloadEvent) {
@@ -192,7 +203,33 @@ watch(() => unsavedCount.value > 0, (dirty) => {
   window.removeEventListener('beforeunload', onBeforeUnload)
 }, { immediate: true })
 
+let rowObserver: ResizeObserver | undefined
+let restoreScrollPadding: (() => void) | undefined
+
+onMounted(() => {
+  const row = actions.value
+  const scroller = document.scrollingElement as HTMLElement | null ?? document.documentElement
+  if (!row) {
+    return
+  }
+  const previous = scroller.style.scrollPaddingBottom
+  const pad = () => {
+    scroller.style.scrollPaddingBottom = `${Math.ceil(row.getBoundingClientRect().height)}px`
+  }
+  pad()
+  if (typeof ResizeObserver !== 'undefined') {
+    rowObserver = new ResizeObserver(pad)
+    rowObserver.observe(row)
+  }
+  restoreScrollPadding = () => {
+    scroller.style.scrollPaddingBottom = previous
+  }
+})
+
 onBeforeUnmount(() => {
+  rowObserver?.disconnect()
+  restoreScrollPadding?.()
+  stopAfterEach()
   clearTimeout(savedTimer)
   typeof window !== 'undefined' && window.removeEventListener('beforeunload', onBeforeUnload)
 })
@@ -247,8 +284,9 @@ defineExpose({ showField, announce })
     </CwaUiAlert>
     <slot />
     <div
+      ref="actions"
       data-testid="form-group-actions"
-      class="cwa:sticky cwa:bottom-0 cwa:z-10 cwa:mt-section cwa:flex cwa:items-center cwa:justify-end cwa:gap-actions cwa:border-t cwa:border-line cwa:bg-surface cwa:py-4 cwa:pb-[calc(1rem+env(safe-area-inset-bottom))]"
+      class="cwa:sticky cwa:bottom-0 cwa:z-10 cwa:mt-section cwa:flex cwa:items-center cwa:justify-end cwa:gap-actions cwa:bg-stone-800 cwa:py-4 cwa:pb-[calc(1rem+env(safe-area-inset-bottom))]"
     >
       <p
         v-if="blockedText"

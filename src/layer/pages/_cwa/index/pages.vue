@@ -8,12 +8,12 @@
     @add="goToAdd"
   >
     <template #filters>
-      <CwaUiFilterToggle
+      <FilterToggle
         v-model="staticModel"
         label="Static"
         colour="static"
       />
-      <CwaUiFilterToggle
+      <FilterToggle
         v-model="dynamicModel"
         label="Dynamic"
         colour="dynamic"
@@ -28,7 +28,24 @@
     :search-fields="['reference', 'title', 'uiComponent']"
     @loaded="load"
   >
-    <template #item="{ data }">
+    <template #notice>
+      <CwaUiAlert
+        v-if="routesError"
+        tone="warning"
+        title="Route statuses couldn't be loaded."
+        class="cwa:mb-4"
+        data-testid="list-routes-error"
+      >
+        <template #actions>
+          <CwaUiButton
+            label="Retry"
+            data-testid="list-routes-retry"
+            @click="retryRoutes"
+          />
+        </template>
+      </CwaUiAlert>
+    </template>
+    <template #item="{ data, rawData }">
       <ListRow
         :to="computedItemLink(data['@id'])"
         :title="data.reference"
@@ -40,6 +57,8 @@
             :resource="data"
             :route="routes[data['@id']]"
             :known="known"
+            :failed="!!routesError"
+            :page-data-count="rawData._metadata?.pageDataCount"
             :now="now"
           />
           <span class="cwa:truncate">{{ subLine(data) }}</span>
@@ -49,6 +68,8 @@
             :resource="data"
             :route="routes[data['@id']]"
             :known="known"
+            :failed="!!routesError"
+            :page-data-count="rawData._metadata?.pageDataCount"
             :now="now"
           />
         </ListCell>
@@ -85,8 +106,9 @@ import ListCell from '#cwa/templates/components/core/admin/ListCell.vue'
 import PageListStatus from '#cwa/templates/components/core/admin/PageListStatus.vue'
 import { listDate } from '#cwa/templates/components/core/admin/list-date'
 import ResourceModalOverlay from '#cwa/templates/components/core/admin/ResourceModalOverlay.vue'
-import CwaUiFilterToggle from '#cwa/templates/components/ui/FilterToggle.vue'
+import FilterToggle from '#cwa/templates/components/core/ui/FilterToggle.vue'
 import CwaUiButton from '#cwa/templates/components/ui/Button.vue'
+import CwaUiAlert from '#cwa/templates/components/ui/Alert.vue'
 import PlusIcon from '#cwa/templates/components/ui/icon/PlusIcon.vue'
 import { useQueryBoundModel } from '#cwa/composables/cwa-query-bound-model'
 import type { CwaResource } from '#cwa/resources/resource-utils'
@@ -96,7 +118,7 @@ const listContent = ref<InstanceType<typeof ListContent> | null>(null)
 
 const $cwa = useCwa()
 const { goToAdd, triggerReload, computedItemLink } = useListPage(listContent)
-const { routes, known, now, load } = useListRoutes('pages')
+const { routes, known, error: routesError, now, load, retry: retryRoutes } = useListRoutes('pages')
 
 const columns = [
   { label: 'Page' },

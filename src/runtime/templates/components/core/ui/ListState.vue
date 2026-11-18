@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue'
-import Spinner from './Spinner.vue'
+import Spinner from '../../ui/Spinner.vue'
 
 const STILL_LOADING_AFTER = 5000
 

@@ -2,6 +2,7 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
 import { ref } from 'vue'
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
+import { createMemoryHistory, createRouter, routerKey } from 'vue-router'
 import { axe } from '../../../../../test/utils/axe'
 import { drawsFocusRing } from '../../../../../test/utils/focus-ring'
 import SettingsPage from './settings.vue'
@@ -70,9 +71,11 @@ async function setup(opts: { loadFails?: boolean, heading?: boolean } = {}) {
     currentModulePackageInfo: { version: '1.0.0', name: '@cwa/nuxt' },
   }))
 
+  const router = createRouter({ history: createMemoryHistory(), routes: [{ path: '/:any(.*)', component: { render: () => null } }] })
   const wrapper = mount(SettingsPage, {
     attachTo: document.body,
     global: {
+      provide: { [routerKey as symbol]: router },
       stubs: {
         ...(opts.heading ? {} : { ListHeading: true }),
         RouterLink: { props: ['to'], template: '<a :data-route-name="to?.name"><slot /></a>' },
@@ -737,13 +740,10 @@ describe('Site settings form on the kit (#461)', () => {
     mockConfirm.mockResolvedValue(true)
     mockFetchOrphanReport.mockReset().mockResolvedValue(orphanReport())
     mockFetchFileReport.mockReset().mockResolvedValue(fileReport())
-    mockSaveConfig.mockReset().mockImplementation(async (changed: Record<string, any>) => ({
-      totalConfigsChanged: Object.keys(changed).length,
-      done: Promise.resolve().then(() => {
-        storedConfig.value = { ...storedConfig.value, ...changed }
-        return []
-      }),
-    }))
+    mockSaveConfig.mockReset().mockImplementation(async (changed: Record<string, any>) => {
+      storedConfig.value = { ...storedConfig.value, ...changed }
+      return []
+    })
   })
 
   afterEach(() => {
@@ -778,7 +778,7 @@ describe('Site settings form on the kit (#461)', () => {
 
   test('a setting the API refuses shows its message on the field and in the alert', async () => {
     const refused = Object.assign(new Error('422'), { statusCode: 422, data: { violations: [{ propertyPath: 'value', message: 'This value is not a valid URL.' }] } })
-    mockSaveConfig.mockImplementation(async (changed: Record<string, any>) => ({ totalConfigsChanged: 1, done: Promise.resolve(Object.keys(changed).map(key => ({ key, error: refused }))) }))
+    mockSaveConfig.mockImplementation(async (changed: Record<string, any>) => Object.keys(changed).map(key => ({ key, error: refused })))
     const wrapper = await setup()
 
     await type(wrapper, 'canonicalUrl', 'https://kitchens.example')
@@ -868,7 +868,7 @@ describe('Site settings form on the kit (#461)', () => {
 
   test.each(['idle', 'dirty', 'saved', 'failed', 'load error', 'scan pending'] as const)('has no axe violations when %s', async (state) => {
     if (state === 'failed') {
-      mockSaveConfig.mockImplementation(async () => ({ totalConfigsChanged: 1, done: Promise.resolve([{ key: 'siteName', error: Object.assign(new Error('x'), { statusCode: 500 }) }]) }))
+      mockSaveConfig.mockImplementation(async () => [{ key: 'siteName', error: Object.assign(new Error('x'), { statusCode: 500 }) }])
     }
     const wrapper = await setup({ heading: true, loadFails: state === 'load error' })
     if (['dirty', 'saved', 'failed'].includes(state)) {

@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, test } from 'vitest'
 import { enableAutoUnmount, mount } from '@vue/test-utils'
-import { axe } from '../../../../../test/utils/axe'
-import { drawsFocusRing } from '../../../../../test/utils/focus-ring'
+import { axe } from '../../../../../../test/utils/axe'
+import { drawsFocusRing } from '../../../../../../test/utils/focus-ring'
 import FilterToggle from './FilterToggle.vue'
 
 enableAutoUnmount(afterEach)
@@ -15,7 +15,7 @@ function mountToggle(modelValue = false, colour: 'static' | 'dynamic' = 'static'
   return wrapper
 }
 
-describe('CwaUiFilterToggle (#461)', () => {
+describe('FilterToggle (#461)', () => {
   test('is a toggle button named by its label that reports being pressed', async () => {
     const wrapper = mountToggle()
     const button = wrapper.get('button')

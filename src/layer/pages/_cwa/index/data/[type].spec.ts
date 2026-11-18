@@ -55,9 +55,9 @@ describe('/_cwa/data/[type]', () => {
     vi.clearAllMocks()
   })
 
-  test('a page data with a route waits for its route before showing a status', async () => {
+  test('a page data with a route shows a loading badge until its route is read', async () => {
     const wrapper = await setup({ '@id': '/event_data/1', 'title': 'Routed', 'route': '/_/routes/r', 'isReachableWithoutRoute': false })
-    expect(status(wrapper)).toBe('')
+    expect(status(wrapper)).toBe('Loading status')
     expect(wrapper.find('[data-testid="page-status-no-route"]').exists()).toBe(false)
   })
 

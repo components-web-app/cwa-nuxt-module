@@ -59,7 +59,7 @@ function resendState(opts: { error?: string, retryIn?: number, success?: boolean
   return state
 }
 
-async function setup(user: Record<string, any> = stored, opts: { adding?: boolean } = {}) {
+async function setup(user: Record<string, any> = stored, opts: { adding?: boolean, signedInAs?: string } = {}) {
   route.params = { iri: opts.adding ? 'add' : userIri }
   const store = reactive<Record<string, any>>({})
   const errors = ref<any[]>([])
@@ -85,6 +85,7 @@ async function setup(user: Record<string, any> = stored, opts: { adding?: boolea
       storeResource: vi.fn(),
       get errors() { return errors.value },
     },
+    auth: { user: { '@id': opts.signedInAs ?? '/users/uuid-admin', 'roles': ['ROLE_SUPER_ADMIN'] } },
     fetchResource: vi.fn(async () => {
       store[userIri] = { data: { ...user }, apiState: { status: 'SUCCESS' } }
       return store[userIri].data
@@ -185,6 +186,33 @@ describe('admin user dialog (#461)', () => {
     await clickSave()
 
     expect(updateResource).toHaveBeenCalledWith(expect.objectContaining({ data: { roles: ['ROLE_SUPER_ADMIN'] } }))
+  })
+
+  test('another admin\'s account can have its role changed and be deleted', async () => {
+    const { wrapper } = await setup()
+    const role = wrapper.findAllComponents(Select).find(select => select.props('label') === 'Role')!
+
+    expect(role.props('disabled')).toBe(false)
+    tab('Info').click()
+    await flushPromises()
+    expect(q('[data-testid="user-delete"]')!.getAttribute('aria-disabled')).toBeNull()
+  })
+
+  test('your own account can\'t be demoted or deleted, and says why', async () => {
+    const { wrapper, deleteResource } = await setup(stored, { signedInAs: userIri })
+    const role = wrapper.findAllComponents(Select).find(select => select.props('label') === 'Role')!
+
+    expect(role.props('disabled')).toBe(true)
+    expect(role.props('disabledReason')).toBe('You can\'t change your own role.')
+    tab('Info').click()
+    await flushPromises()
+    const remove = q<HTMLButtonElement>('[data-testid="user-delete"]')!
+    expect(remove.getAttribute('aria-disabled')).toBe('true')
+    expect(remove.textContent).toContain('You can\'t delete your own account.')
+    remove.click()
+    await flushPromises()
+    expect(mockConfirm).not.toHaveBeenCalled()
+    expect(deleteResource).not.toHaveBeenCalled()
   })
 
   describe('changing the email (#449)', () => {

@@ -5,15 +5,17 @@ import RouteStatusBadge from '#cwa/templates/components/core/admin/RouteStatusBa
 import { routePublicationFromResource } from '#cwa/resources/route-publication'
 import type { CwaResource } from '#cwa/resources/resource-utils'
 
-const { resource, route, known, now } = defineProps<{
+const { resource, route, known, failed = false, now, pageDataCount } = defineProps<{
   resource: CwaResource
   route?: CwaResource
   known: boolean
+  failed?: boolean
   now?: Date
+  pageDataCount?: unknown
 }>()
 
 const templateText = computed(() => {
-  const count = resource._metadata?.pageDataCount
+  const count = pageDataCount
   if (typeof count !== 'number') {
     return 'Template'
   }
@@ -48,4 +50,22 @@ const templateText = computed(() => {
     :publication="routePublicationFromResource(route)"
     :now="now"
   />
+  <CwaUiBadge
+    v-else-if="failed"
+    tone="warning"
+    data-testid="page-status-unavailable"
+  >
+    Status unavailable
+  </CwaUiBadge>
+  <span
+    v-else-if="!known"
+    data-testid="page-status-loading"
+    class="cwa:inline-flex"
+  >
+    <span
+      aria-hidden="true"
+      class="cwa:skeleton cwa:block cwa:h-5 cwa:w-16"
+    />
+    <span class="cwa:sr-only">Loading status</span>
+  </span>
 </template>
