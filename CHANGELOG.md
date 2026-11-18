@@ -6,6 +6,7 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ### Changed
 
+- The layout, user, page and page data slide-overs close when a save of an existing resource succeeds, and a success toast says what was saved; a failed save keeps the slide-over open ([262c6dd9](https://github.com/components-web-app/cwa-nuxt-module/commit/262c6dd9d5b20f0f20b72fc75f13d0072f3abeaf), [#461](https://github.com/components-web-app/cwa-nuxt-module/issues/461))
 - The add component dialog keeps the components already in the group in its full list as well as the chips, and its detail says where it adds in an info box again ([81e88c3a](https://github.com/components-web-app/cwa-nuxt-module/commit/81e88c3ab55f859198e24d0d367d8f9e77fb00bd), [#461](https://github.com/components-web-app/cwa-nuxt-module/issues/461))
 
 ## [2.0.0-alpha.34] - 2026-11-18
