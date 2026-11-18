@@ -31,7 +31,6 @@ export default defineNuxtConfig({
   app: {
     pageTransition: { name: 'page', mode: 'out-in' },
     head: {
-      charset: 'utf-8',
       htmlAttrs: {
         lang: 'en-GB',
       },

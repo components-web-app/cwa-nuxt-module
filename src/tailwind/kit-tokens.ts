@@ -115,7 +115,7 @@ export const kitContrastPairs: KitContrastPair[] = [
   { fg: 'muted-on-field', bg: 'field', min: 4.5, use: 'Placeholder' },
   { fg: 'muted-on-field', bg: 'field-hover', min: 4.5, use: 'Placeholder on hover' },
   { fg: 'fg-secondary', bg: 'surface', min: 4.5, use: 'Section heading' },
-  { fg: 'fg-muted', bg: 'surface', min: 4.5, use: 'Bar label, helper text' },
+  { fg: 'fg-muted', bg: 'surface', min: 4.5, use: 'Bar label, helper text, secondary link' },
   { fg: 'accent-fg', bg: 'surface', min: 4.5, use: 'Link, focus ring' },
   { fg: 'danger-fg', bg: 'surface', min: 4.5, use: 'Error text' },
   { fg: 'success', bg: 'field', min: 3, use: 'Saved glyph' },
