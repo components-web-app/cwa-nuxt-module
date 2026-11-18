@@ -50,7 +50,7 @@ describe('CwaUiButton (#456)', () => {
 
   test('follows the control height, which grows on touch, with 1rem of padding, or 0.75rem before an icon', () => {
     const plain = mount(Button, { props: { label: 'Go' } })
-    expect(plain.classes()).toEqual(expect.arrayContaining(['cwa:h-control', 'cwa:px-4']))
+    expect(plain.classes()).toEqual(expect.arrayContaining(['cwa:h-control', 'cwa:pointer-coarse:h-hit', 'cwa:px-4']))
 
     const withIcon = mount(Button, { props: { label: 'Page', icon: Plus } })
     expect(withIcon.classes()).toEqual(expect.arrayContaining(['cwa:h-control', 'cwa:pl-3', 'cwa:pr-4']))
@@ -75,7 +75,7 @@ describe('CwaUiButton (#456)', () => {
     expect(wrapper.attributes('aria-label')).toBe('Close')
     expect(wrapper.text()).toBe('')
     expect(wrapper.find('[data-testid="plus"]').exists()).toBe(true)
-    expect(wrapper.classes()).toEqual(expect.arrayContaining(['cwa:h-control', 'cwa:w-control', 'cwa:px-0']))
+    expect(wrapper.classes()).toEqual(expect.arrayContaining(['cwa:h-control', 'cwa:w-control', 'cwa:pointer-coarse:h-hit', 'cwa:pointer-coarse:w-hit', 'cwa:px-0']))
 
     const small = mount(Button, { props: { label: 'Close', icon: Plus, iconOnly: true, size: 'sm' } })
     expect(small.classes()).toEqual(expect.arrayContaining(['cwa:h-8', 'cwa:w-8', 'cwa:pointer-coarse:h-hit', 'cwa:pointer-coarse:w-hit']))

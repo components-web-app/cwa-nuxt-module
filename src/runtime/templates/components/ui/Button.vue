@@ -65,9 +65,9 @@ const hasLead = computed(() => loading || !!icon)
 const boxClasses = computed(() => {
   const small = size === 'sm'
   if (iconOnly) {
-    return small ? 'cwa:h-8 cwa:w-8 cwa:pointer-coarse:h-hit cwa:pointer-coarse:w-hit cwa:px-0' : 'cwa:h-control cwa:w-control cwa:px-0'
+    return small ? 'cwa:h-8 cwa:w-8 cwa:pointer-coarse:h-hit cwa:pointer-coarse:w-hit cwa:px-0' : 'cwa:h-control cwa:w-control cwa:pointer-coarse:h-hit cwa:pointer-coarse:w-hit cwa:px-0'
   }
-  const height = stretch ? 'cwa:h-full' : small ? 'cwa:h-8 cwa:pointer-coarse:h-hit' : 'cwa:h-control'
+  const height = stretch ? 'cwa:h-full' : small ? 'cwa:h-8 cwa:pointer-coarse:h-hit' : 'cwa:h-control cwa:pointer-coarse:h-hit'
   const padding = small ? 'cwa:px-3' : (hasLead.value ? 'cwa:pl-3 cwa:pr-4' : 'cwa:px-4')
   return `${height} ${padding}`
 })

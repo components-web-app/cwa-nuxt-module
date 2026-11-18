@@ -34,6 +34,13 @@ function chip(wrapper: { get: (selector: string) => { element: Element } }) {
 }
 
 describe('CwaUiImageAlt (#461)', () => {
+  test('the Alt chip sits on the image field\'s row, below the field\'s label, not centred against label and field together (#461)', () => {
+    const wrapper = mount(ImageAlt, { props: { label: 'Image', upload: fakeUpload(), alt: altModel(null) } })
+
+    expect(wrapper.classes()).toContain('cwa:items-end')
+    expect(wrapper.classes()).not.toContain('cwa:items-center')
+  })
+
   test('shows the image with an Alt chip whose hover text is the alt text', () => {
     const wrapper = mount(ImageAlt, { props: { label: 'Image', upload: fakeUpload(), alt: altModel('A bench in the workshop') }, attachTo: document.body })
 

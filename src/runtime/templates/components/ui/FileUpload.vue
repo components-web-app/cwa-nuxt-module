@@ -113,7 +113,6 @@ function remove() {
         >{{ file ? `${file.name} · ${file.size}` : 'No file' }}</span>
         <CwaUiButton
           :label="file ? 'Replace' : 'Upload'"
-          size="sm"
           :disabled="inactive"
           data-testid="file-choose"
           @click="choose"
@@ -121,7 +120,6 @@ function remove() {
         <CwaUiButton
           v-if="file"
           label="Remove"
-          size="sm"
           :disabled="inactive"
           data-testid="file-remove"
           @click="remove"
