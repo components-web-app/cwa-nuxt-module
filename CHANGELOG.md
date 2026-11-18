@@ -4,6 +4,10 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+### Changed
+
+- The add component dialog keeps the components already in the group in its full list as well as the chips, and its detail says where it adds in an info box again ([81e88c3a](https://github.com/components-web-app/cwa-nuxt-module/commit/81e88c3ab55f859198e24d0d367d8f9e77fb00bd), [#461](https://github.com/components-web-app/cwa-nuxt-module/issues/461))
+
 ## [2.0.0-alpha.34] - 2026-11-18
 
 - Signing out while a page is still loading no longer throws "Failed to check if the token … is current": a fetch whose token sign-out cleared is treated as no longer current ([f29e7af7](https://github.com/components-web-app/cwa-nuxt-module/commit/f29e7af72deaf563d7c7eec122f8cec2367a2ebb))
