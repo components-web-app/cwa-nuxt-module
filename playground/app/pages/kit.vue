@@ -38,6 +38,9 @@ import ResourceStack from '../../../src/runtime/templates/components/core/ui/Res
 import type { CwaToastOptions } from '../../../src/runtime/composables/cwa-toast'
 import { badgeTintPercent } from '../../../src/runtime/templates/components/ui/kit-looks'
 import { kitColourLabel, kitColourTokens, kitContrastPairs, kitThemeStyle, kitTokenCss, measureKitPair } from '../../../src/tailwind/kit-tokens'
+import KitWorkbench from '../kit/KitWorkbench.vue'
+import KitLabs from '../kit/KitLabs.vue'
+import { useKitWorkbench } from '../kit/workbench-state'
 
 definePageMeta({
   cwa: {
@@ -45,8 +48,7 @@ definePageMeta({
   },
 })
 
-const light = ref(false)
-const theme = computed(() => light.value ? 'light' : 'dark')
+const { theme, remountKey } = useKitWorkbench()
 const themeStyle = computed(() => kitThemeStyle(theme.value))
 
 useHead({
@@ -248,25 +250,14 @@ const badgeTones = [
     class="kit"
     :style="themeStyle"
   >
+    <KitWorkbench />
     <header class="kit-head">
       <h1>CWA admin UI kit</h1>
-      <div class="kit-switches">
-        <label class="kit-switch">
-          <input
-            v-model="light"
-            type="checkbox"
-            role="switch"
-            data-testid="kit-light"
-          >
-          <span>Light theme</span>
-        </label>
-      </div>
-      <p class="kit-note">
-        To see reduced motion, use DevTools' "Emulate CSS prefers-reduced-motion".
-      </p>
     </header>
 
-    <main>
+    <main :key="remountKey">
+      <KitLabs />
+
       <section aria-labelledby="kit-tokens">
         <h2 id="kit-tokens">
           Colour tokens
@@ -1192,33 +1183,6 @@ h3 {
 
 h3::first-letter {
   text-transform: uppercase;
-}
-
-.kit-switches {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1.5rem;
-}
-
-.kit-switch {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  min-height: 1.5rem;
-  cursor: pointer;
-  font-weight: 500;
-}
-
-.kit-switch input {
-  width: 1.125rem;
-  height: 1.125rem;
-  margin: 0;
-  accent-color: var(--cwa-color-accent);
-}
-
-.kit-switch input:focus-visible {
-  outline: 2px solid var(--cwa-color-accent-fg);
-  outline-offset: 2px;
 }
 
 .kit-note {
