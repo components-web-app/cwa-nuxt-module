@@ -625,7 +625,7 @@ function navigateFromDeleted(path: string | undefined) {
 }
 
 async function editingNoticeFor(iri: string | undefined) {
-  return iri ? (await import('#cwa/admin/resource-confirm')).editingNotice($cwa, iri) : undefined
+  return iri ? import('#cwa/admin/resource-confirm').then(({ editingNotice }) => editingNotice($cwa, iri)).catch(() => undefined) : undefined
 }
 
 async function handleDeleteRoute() {

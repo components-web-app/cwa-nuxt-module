@@ -108,6 +108,7 @@ describe('CwaUiDialog and the Save model (#461)', () => {
 
     loading.value = false
     await flushPromises()
+    expect(q('[data-testid="dialog-announcer"]')!.textContent).toBe('Page loaded.')
     await type('[data-cwa-field="reference"] input', 'Our kitchens')
     expect(save().getAttribute('aria-disabled')).toBeNull()
     expect(q('[data-testid="dialog-body"]')!.getAttribute('aria-busy')).toBeNull()
@@ -119,6 +120,31 @@ describe('CwaUiDialog and the Save model (#461)', () => {
     save().click()
     await flushPromises()
     expect(form.saves).toEqual([])
+  })
+
+  test('a dialog that opens loaded announces nothing about loading', async () => {
+    mountDialog(form)
+    await flushPromises()
+    expect(q('[data-testid="dialog-announcer"]')!.textContent).toBe('')
+  })
+
+  test('a resource that failed to load says so in the body with Retry, Save off, and the fields stay away', async () => {
+    const onRetry = vi.fn()
+    const Host = defineComponent({
+      setup: () => () => h(Dialog, { title: 'Page', tabs, form, noun: 'page', loadFailed: true, onRetry }, {
+        details: () => h(Input, { label: 'Reference', field: 'reference' }),
+      }),
+    })
+    mount(Host, { attachTo: document.body })
+    await flushPromises()
+
+    const failed = q('[data-testid="dialog-load-failed"]')!
+    expect(failed.textContent).toContain('This page couldn\'t be loaded.')
+    expect(q('[data-cwa-field="reference"]')).toBeNull()
+    expect(save().getAttribute('aria-disabled')).toBe('true')
+    expect(q('[data-testid="dialog-announcer"]')!.textContent).toBe('This page couldn\'t be loaded.')
+    failed.querySelector<HTMLButtonElement>('[data-testid="dialog-load-retry"]')!.click()
+    expect(onRetry).toHaveBeenCalledTimes(1)
   })
 
   test('Save is off and sends nothing while nothing has changed', async () => {
@@ -706,7 +732,20 @@ describe('CwaUiDialog without a Save model (#461, the add component dialog)', ()
     expect(header.className).not.toContain('cwa:border-line')
     const kind = q('[data-testid="dialog-kind"]')!
     expect(kind.textContent?.trim()).toBe('Not reachable')
+    expect(kind.tagName).toBe('SPAN')
     expect(dialog().getAttribute('aria-describedby')).toBe(kind.id)
+  })
+
+  test.each([
+    ['labelled', { tone: 'warning', label: 'Not reachable' }],
+    ['unlabelled', { tone: 'dynamic' }],
+    ['without a kind', undefined],
+  ] as const)('reka logs no description warning for a dialog %s', async (_, kind) => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    mountPlain(kind ? { kind } : {})
+    await flushPromises()
+    expect(warn.mock.calls.filter(call => /Description|DialogTitle/.test(String(call[0])))).toEqual([])
+    warn.mockRestore()
   })
 
   test('a kind with no words colours the line only, for a dialog that says its kind in a header control', async () => {

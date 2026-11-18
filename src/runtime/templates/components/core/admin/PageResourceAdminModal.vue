@@ -1,6 +1,6 @@
 <template>
   <CwaUiDialog
-    v-if="localResourceData || isLoading"
+    v-if="localResourceData || isLoading || loadFailed"
     ref="dialog"
     v-model:tab="tab"
     placement="right"
@@ -8,11 +8,13 @@
     :tabs="tabs"
     :form="form"
     :loading="isLoading"
+    :load-failed="loadFailed"
     :kind="kind"
     noun="page"
     :create-noun="isAdding ? createNoun : undefined"
     data-testid="page-dialog"
     @close="$emit('close')"
+    @retry="loadResource()"
     @save="saveResource()"
   >
     <template #header-actions>
@@ -22,7 +24,7 @@
         :model="pageTypeModel"
         label="Page type"
         label-hidden
-        width="xs"
+        width="sm"
         :options="pageTypeOptions"
         data-testid="page-type"
       />
@@ -346,7 +348,7 @@ const requestedDepths = new Set<string>()
 watch(depthChain, (chain) => {
   chain.forEach(({ value }) => {
     const iri = String(value)
-    if (iri === 'add' || getResourceData(iri) || requestedDepths.has(iri)) {
+    if (iri === 'add' || iri === displayIri.value || getResourceData(iri) || requestedDepths.has(iri)) {
       return
     }
     requestedDepths.add(iri)
@@ -435,7 +437,7 @@ const linkDefaults = Object.fromEntries(
     .flatMap(([queryKey, field]) => typeof route.query[queryKey] === 'string' ? [[field, route.query[queryKey]]] : []),
 )
 
-const { isAdding, isLoading, isUpdating, localResourceData, resource, formatDate, deleteResource, saveResource: _saveResource, loadResource, getInternalResourceLink, form } = useItemPage({
+const { isAdding, isLoading, loadFailed, isUpdating, localResourceData, resource, formatDate, deleteResource, saveResource: _saveResource, loadResource, getInternalResourceLink, form } = useItemPage({
   createEndpoint,
   emit,
   resourceType: props.resourceType,
@@ -455,7 +457,7 @@ const dialogTitle = computed(() => {
     return `New ${createNoun.value}`
   }
   const stored = resource.value
-  if (!stored && isLoading.value) {
+  if (!localResourceData.value) {
     return isDisplayingPage.value ? 'Page' : 'Page data'
   }
   const name = isDisplayingPage.value ? stored?.reference : stored?.title
@@ -547,7 +549,7 @@ async function handleDeleteClick() {
   checkingDelete.value = true
   const iri = resource.value?.['@id']
   const [notice] = await Promise.all([
-    iri ? import('#cwa/admin/resource-confirm').then(({ editingNotice }) => editingNotice($cwa, iri)) : undefined,
+    iri ? import('#cwa/admin/resource-confirm').then(({ editingNotice }) => editingNotice($cwa, iri)).catch(() => undefined) : undefined,
     refreshCounts(),
   ])
   checkingDelete.value = false

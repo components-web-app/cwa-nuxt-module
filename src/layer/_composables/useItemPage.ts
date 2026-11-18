@@ -51,7 +51,10 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
     throw new Error('No Endpoint Found For useItemPage composable')
   }
 
-  const isLoading = ref(true)
+  const isLoading = ref(false)
+  const loadFailed = ref(false)
+  let loads = 0
+  let mountLoad = -1
   const isUpdating = ref(false)
   const localResourceData = ref<TempCwaResource | CwaResource>()
   const resourceIri = computed(() => (iri?.value || endpoint.value))
@@ -78,8 +81,14 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
       }
       return localResourceData.value
     }
-    if (!resource.value) {
+    const load = ++loads
+    loadFailed.value = false
+    if (resource.value) {
+      localResourceData.value?.['@id'] !== resource.value['@id'] && syncLocalResourceWithStore()
+    }
+    else {
       isLoading.value = true
+      localResourceData.value = undefined
     }
     const fetchProps = {
       path: endpoint.value,
@@ -87,7 +96,10 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
       shallowFetch: true,
     }
     const loadedResource = await $cwa.fetchResource(fetchProps)
-    isLoading.value = false
+    if (load === loads) {
+      isLoading.value = false
+      loadFailed.value = !resource.value && load !== mountLoad
+    }
     return loadedResource
   }
 
@@ -395,19 +407,22 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
   watch(endpoint, loadResource)
 
   onMounted(async () => {
-    await loadResource()
-    if (!resource.value || (resourceType !== undefined && resource.value['@type'] !== resourceType)) {
-      emit('close')
-      isLoading.value = false
+    const loading = loadResource()
+    mountLoad = loads
+    await loading
+    if (mountLoad !== loads) {
       return
     }
-    isLoading.value = false
+    if (!resource.value || (resourceType !== undefined && resource.value['@type'] !== resourceType)) {
+      emit('close')
+    }
   })
 
   const { getInternalResourceLink } = useCwaResourceRoute()
 
   return {
     isLoading,
+    loadFailed,
     isUpdating,
     resource,
     localResourceData,

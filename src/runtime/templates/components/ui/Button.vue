@@ -143,7 +143,7 @@ function onClick(event: MouseEvent) {
           viewBox="0 0 16 16"
           aria-hidden="true"
           fill="currentColor"
-          :class="size === 'sm' ? 'cwa:size-4' : 'cwa:size-[calc(var(--cwa-spacing-control)*5/9)]'"
+          :class="largeIcon ? 'cwa:size-[calc(var(--cwa-spacing-control)*5/9)]' : 'cwa:size-4'"
         ><circle
           cx="8"
           cy="3"
