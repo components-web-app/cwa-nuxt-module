@@ -244,6 +244,15 @@ describe('CwaUiButton (#456)', () => {
       expect(wrapper.get('[data-testid="button-options"]').attributes('disabled')).toBeDefined()
     })
 
+    test('a solid ⋮ beside its main action, and a soft one alone, such as a live component\'s with no draft to publish', () => {
+      const beside = mount(Button, { props: { label: 'Publish now', variant: 'solid', options } }).get('[data-testid="button-options"]')
+      expect(beside.classes()).toEqual(expect.arrayContaining(['cwa:bg-accent', 'cwa:text-white', 'cwa:hover:bg-accent-hover']))
+
+      const alone = mount(Button, { props: { variant: 'solid', options } }).get('[data-testid="button-options"]')
+      expect(alone.classes()).toEqual(expect.arrayContaining(['cwa:bg-button', 'cwa:text-fg', 'cwa:hover:bg-field-hover']))
+      expect(alone.classes()).not.toContain('cwa:bg-accent')
+    })
+
     test('a disabled main action leaves the menu usable', () => {
       const wrapper = mount(Button, { props: { label: 'Schedule', disabled: true, disabledReason: 'Choose a date first', options } })
 
