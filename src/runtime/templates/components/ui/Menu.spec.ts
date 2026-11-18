@@ -3,6 +3,7 @@ import { afterEach, describe, expect, test, vi } from 'vitest'
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { h } from 'vue'
 import { axe } from '../../../../../test/utils/axe'
+import { drawsOpenState } from '../../../../../test/utils/kit-css'
 import { menuGroups } from '../core/ui/menu-entries'
 import Menu from './Menu.vue'
 
@@ -71,5 +72,63 @@ describe('CwaUiMenu (#459)', () => {
     await openMenu()
 
     expect(await axe(document.body)).toHaveNoViolations()
+  })
+
+  test('opens at a point with no trigger, carries its attributes onto the panel, and shows a header above the items', async () => {
+    mount(Menu, {
+      props: { items: [{ label: 'Add after', value: 'after' }], label: 'Clone next to Hero', open: true, at: { x: 40, y: 60 } },
+      attrs: { 'data-testid': 'clone-menu' },
+      slots: { header: () => h('p', { 'data-testid': 'menu-header' }, 'Clone next to Hero') },
+      attachTo: document.body,
+    })
+    await flushPromises()
+
+    const menu = document.querySelector<HTMLElement>('[data-testid="clone-menu"]')!
+    expect(menu.getAttribute('role')).toBe('menu')
+    expect(menu.firstElementChild!.getAttribute('data-testid')).toBe('menu-header')
+    expect(menu.querySelector('[role="menuitem"]')!.textContent).toContain('Add after')
+    expect(document.querySelector('[aria-haspopup="menu"]')).toBeNull()
+  })
+
+  test('a disabled item with reasons keeps them behind its ⓘ, a menu item that opens them in a popover and leaves the menu open', async () => {
+    const onSelect = vi.fn()
+    const wrapper = mount(Menu, {
+      props: { items: [{ label: 'Add before', value: 'before', disabled: true, reasons: ['Main content is full', 'Not allowed here'], reasonsLabel: 'Why Add before is unavailable', testId: 'clone-option' }], label: 'Clone', open: true, at: { x: 0, y: 0 }, onSelect },
+      attachTo: document.body,
+    })
+    await flushPromises()
+
+    const menu = document.querySelector<HTMLElement>('[data-testid="kit-menu"]')!
+    expect(menu.textContent).not.toContain('Main content is full')
+    const why = [...menu.querySelectorAll<HTMLElement>('[role="menuitem"]')].find(item => item.getAttribute('aria-label') === 'Why Add before is unavailable')!
+    expect(why.getAttribute('aria-disabled')).toBeNull()
+    why.click()
+    await flushPromises()
+    expect(wrapper.emitted('update:open')).toBeUndefined()
+
+    const reasons = document.querySelector<HTMLElement>('[data-testid="menu-item-reasons"]')!
+    expect([...reasons.querySelectorAll('li')].map(item => item.textContent)).toEqual(['Main content is full', 'Not allowed here'])
+    expect([...reasons.classList]).toEqual(expect.arrayContaining(['cwa:bg-surface-menu', 'cwa:text-fg', 'cwa:leading-normal', 'cwa:ring-1', 'cwa:ring-line']))
+    expect(document.querySelector('[data-testid="kit-menu"]')).not.toBeNull()
+    expect(onSelect).not.toHaveBeenCalled()
+  })
+
+  test('the ⓘ shows itself selected while its reasons are open, and not once they close, with no axe violations open', async () => {
+    mount(Menu, {
+      props: { items: [{ label: 'Add before', value: 'before', disabled: true, reasons: ['Main content is full'], reasonsLabel: 'Why Add before is unavailable' }], label: 'Clone', open: true, at: { x: 0, y: 0 } },
+      attachTo: document.body,
+    })
+    await flushPromises()
+    const why = document.querySelector<HTMLElement>('[data-testid="menu-item-why"]')!
+    expect(drawsOpenState(why)).toBe(false)
+
+    why.click()
+    await flushPromises()
+    expect(drawsOpenState(why)).toBe(true)
+    expect(await axe(document.body, { rules: { region: { enabled: false } } })).toHaveNoViolations()
+
+    why.click()
+    await flushPromises()
+    expect(drawsOpenState(why)).toBe(false)
   })
 })

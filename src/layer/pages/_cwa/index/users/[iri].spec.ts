@@ -4,6 +4,7 @@ import { computed, reactive, ref } from 'vue'
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import UserItemPage from './[iri].vue'
 import { axe } from '../../../../../../test/utils/axe'
+import { fieldExplanation } from '../../../../../../test/utils/field-info'
 import * as cwaComposable from '#cwa/composables/cwa'
 import Select from '#cwa/templates/components/ui/Select.vue'
 
@@ -59,7 +60,7 @@ function resendState(opts: { error?: string, retryIn?: number, success?: boolean
   return state
 }
 
-async function setup(user: Record<string, any> = stored, opts: { adding?: boolean, signedInAs?: string } = {}) {
+async function setup(user: Record<string, any> = stored, opts: { adding?: boolean, signedInAs?: string, held?: Promise<void> } = {}) {
   route.params = { iri: opts.adding ? 'add' : userIri }
   const store = reactive<Record<string, any>>({})
   const errors = ref<any[]>([])
@@ -87,6 +88,7 @@ async function setup(user: Record<string, any> = stored, opts: { adding?: boolea
     },
     auth: { user: { '@id': opts.signedInAs ?? '/users/uuid-admin', 'roles': ['ROLE_SUPER_ADMIN'] } },
     fetchResource: vi.fn(async () => {
+      await opts.held
       store[userIri] = { data: { ...user }, apiState: { status: 'SUCCESS' } }
       return store[userIri].data
     }),
@@ -146,6 +148,39 @@ describe('admin user dialog (#461)', () => {
     resendState()
   })
 
+  test('opens at once while the user loads, titled User, its body busy and Save off, and fills in when the user arrives', async () => {
+    let release!: () => void
+    const held = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    await setup(stored, { held })
+
+    expect(q('h2')!.textContent!.trim()).toBe('User')
+    expect(q('[data-testid="dialog-body"]')!.getAttribute('aria-busy')).toBe('true')
+    expect(q('[data-testid="dialog-loading"]')).not.toBeNull()
+    expect(fieldByLabel('Username')).toBeNull()
+    expect(save().getAttribute('aria-disabled')).toBe('true')
+
+    release()
+    await flushPromises()
+    expect(q('h2')!.textContent!.trim()).toBe(stored.username)
+    expect(q('[data-testid="dialog-body"]')!.getAttribute('aria-busy')).toBeNull()
+    expect(fieldByLabel('Username')!.value).toBe(stored.username)
+  })
+
+  test('slides over from the right, so switching tabs never moves its header or footer', async () => {
+    await setup()
+
+    expect(dialog().dataset.placement).toBe('right')
+  })
+
+  test('User enabled explains itself behind ⓘ, not as a line under the switch', async () => {
+    await setup()
+
+    const label = qa('label').find(element => element.textContent?.trim() === 'User enabled')!
+    expect(fieldExplanation(label.closest('[data-cwa-field]')!, 'A disabled user can\'t sign in.')).toEqual({ info: true, line: false })
+  })
+
   test('is a kit dialog named by the username, with Details, Password and Info tabs and only Cancel and Save', async () => {
     await setup()
 
@@ -173,6 +208,43 @@ describe('admin user dialog (#461)', () => {
       endpoint: '/users',
       data: { '@type': 'User', 'enabled': true, 'roles': ['ROLE_USER'], 'emailAddress': 'new@example.com', 'plainPassword': 'secret' },
     }))
+  })
+
+  test.each([
+    ['creating a user', true, 'Password'],
+    ['the Password tab', false, 'New password'],
+  ])('%s stacks the two password fields one above the other', async (_, adding, first) => {
+    await setup(stored, { adding })
+    if (!adding) {
+      tab('Password').click()
+      await flushPromises()
+    }
+    const grid = (label: string) => fieldByLabel(label)!.closest('[data-testid="form-section-grid"]')!
+    expect(grid(first)).toBe(grid('Repeat password'))
+    expect(grid(first).className).not.toMatch(/grid-cols-2/)
+  })
+
+  test.each([
+    ['creating a user', true, ['Password', 'Repeat password']],
+    ['the Password tab', false, ['New password', 'Repeat password']],
+  ])('%s lets each new password be shown', async (_, adding, labels) => {
+    await setup(stored, { adding })
+    if (!adding) {
+      tab('Password').click()
+      await flushPromises()
+    }
+    for (const label of labels) {
+      const input = fieldByLabel(label)!
+      expect(document.querySelector(`[data-testid="input-reveal"][aria-controls="${input.id}"]`)).not.toBeNull()
+    }
+  })
+
+  test('your current password, asked for an email change, has no show toggle', async () => {
+    await setup()
+    await type('Email', 'changed@example.com')
+    const input = fieldByLabel('Your current password')!
+    expect(input).not.toBeNull()
+    expect(document.querySelector(`[data-testid="input-reveal"][aria-controls="${input.id}"]`)).toBeNull()
   })
 
   test('the role select edits `roles` as the highest chosen role', async () => {
@@ -223,6 +295,7 @@ describe('admin user dialog (#461)', () => {
       await type('Email', 'new@example.com')
 
       const password = fieldByLabel('Your current password')!
+      expect(fieldExplanation(password.closest('[data-cwa-field]')!, 'Changing the email needs your own password.')).toEqual({ info: true, line: false })
       expect(password.type).toBe('password')
       expect(password.getAttribute('autocomplete')).toBe('current-password')
 

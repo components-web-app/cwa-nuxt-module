@@ -4,8 +4,11 @@ import { flushPromises, mount } from '@vue/test-utils'
 import PagePurgeCache from './PagePurgeCache.vue'
 import * as cwaComposable from '#cwa/composables/cwa'
 import { ResourceTypeFromIri } from '#cwa/resources/resource-utils'
+import { drawsFocusRing } from '../../../../../../test/utils/focus-ring'
 
 const { mockReveal } = vi.hoisted(() => ({ mockReveal: vi.fn() }))
+
+vi.mock('#cwa/templates/components/core/ui/Confirm.vue', () => ({ default: { name: 'Confirm' } }))
 
 vi.mock('vuejs-confirm-dialog', () => ({
   install: vi.fn(),
@@ -26,11 +29,13 @@ function setup(resourceTree: unknown = tree) {
 }
 
 function purgeButton(wrapper: ReturnType<typeof setup>['wrapper']) {
-  return wrapper.findAll('button').find(b => ['Purge this page\'s cache', 'Purging…'].includes(b.text()))
+  return wrapper.findAll('button').find(b => b.text() === 'Purge this page\'s cache')
 }
 
 async function clickPurge(wrapper: ReturnType<typeof setup>['wrapper']) {
+  const asked = mockReveal.mock.calls.length
   await purgeButton(wrapper)!.trigger('click')
+  await vi.waitFor(() => expect(mockReveal.mock.calls.length).toBeGreaterThan(asked))
   await flushPromises()
 }
 
@@ -51,7 +56,10 @@ describe('PagePurgeCache (#484)', () => {
     await clickPurge(wrapper)
     expect(mockReveal).toHaveBeenCalledWith({
       title: 'Purge this page\'s cache?',
-      content: '<p>This page\'s cached copy and the API data it is built from will be dropped and rebuilt on its next visit. Pages sharing its layout or components are rebuilt too. No content will be lost.</p>',
+      description: 'This page\'s cached copy and the API data it is built from will be dropped and rebuilt on its next visit. Pages sharing its layout or components are rebuilt too. No content will be lost.',
+      keep: 'Cancel',
+      go: 'Purge cache',
+      tone: 'accent',
     })
     expect(purgeHttpCache).toHaveBeenCalledTimes(1)
     expect(purgeHttpCache).toHaveBeenCalledWith({
@@ -81,11 +89,13 @@ describe('PagePurgeCache (#484)', () => {
       resolvePurge = resolve
     }))
     await clickPurge(wrapper)
-    expect(purgeButton(wrapper)!.text()).toBe('Purging…')
-    expect(purgeButton(wrapper)!.attributes('disabled')).toBeDefined()
+    expect(purgeButton(wrapper)!.attributes('aria-busy')).toBe('true')
+    await purgeButton(wrapper)!.trigger('click')
+    await flushPromises()
+    expect(purgeHttpCache).toHaveBeenCalledTimes(1)
     resolvePurge()
     await flushPromises()
-    expect(purgeButton(wrapper)!.text()).toBe('Purge this page\'s cache')
+    expect(purgeButton(wrapper)!.attributes('aria-busy')).toBeUndefined()
   })
 
   test.each([
@@ -101,5 +111,15 @@ describe('PagePurgeCache (#484)', () => {
     await clickPurge(wrapper)
     expect(wrapper.text()).toContain(message)
     expect(wrapper.text()).not.toContain('has been purged')
+    expect(wrapper.find('[data-testid="page-purge-result"]').classes()).toContain('cwa:text-danger-fg')
+  })
+
+  test('is a kit button that draws its focus ring, and the outcome is announced', async () => {
+    const { wrapper } = setup()
+    expect(drawsFocusRing(purgeButton(wrapper)!.classes())).toBe(true)
+    await clickPurge(wrapper)
+    const result = wrapper.find('[data-testid="page-purge-result"]')
+    expect(result.attributes('role')).toBe('status')
+    expect(result.classes()).toContain('cwa:text-fg-muted')
   })
 })

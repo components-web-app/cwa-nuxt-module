@@ -11,20 +11,22 @@ export interface FakeDialogForm extends DialogForm {
   local: Record<string, unknown>
   saves: Record<string, unknown>[]
   save: () => Promise<void>
-  failNext: (errors: Record<string, string>) => void
+  failNext: (errors: Record<string, string>, formError?: string) => void
   conflictNext: (theirs: Record<string, unknown>, name?: string) => void
 }
 
-export function fakeDialogForm(stored: Record<string, unknown>, focused: Record<string, FocusedPeer[]> = {}): FakeDialogForm {
+export function fakeDialogForm(stored: Record<string, unknown>, focused: Record<string, FocusedPeer[]> = {}, wait: () => Promise<void> = () => Promise.resolve()): FakeDialogForm {
   const saved = ref({ ...stored })
   const local = reactive({ ...stored }) as Record<string, unknown>
   const fieldErrors = ref<Record<string, string>>({})
   const conflicts = ref<Record<string, DialogFieldConflict>>({})
   const saving = ref(false)
+  const formError = ref<string>()
   const savedAt = ref<number>()
   const failures = ref(0)
   const saves: Record<string, unknown>[] = []
   let nextErrors: Record<string, string> | undefined
+  let nextFormError: string | undefined
   let nextConflict: { theirs: Record<string, unknown>, name: string } | undefined
 
   const unsavedFields = computed(() => Object.keys(local).filter(field => !isEqual(local[field], saved.value[field])))
@@ -82,11 +84,14 @@ export function fakeDialogForm(stored: Record<string, unknown>, focused: Record<
   async function save() {
     const sent = Object.fromEntries(unsavedFields.value.map(field => [field, local[field]]))
     saving.value = true
-    await Promise.resolve()
+    formError.value = undefined
+    await wait()
     saving.value = false
     if (nextErrors) {
       fieldErrors.value = nextErrors
+      formError.value = nextFormError
       nextErrors = undefined
+      nextFormError = undefined
       failures.value++
       return
     }
@@ -107,7 +112,7 @@ export function fakeDialogForm(stored: Record<string, unknown>, focused: Record<
     unsavedFields,
     fieldErrors,
     conflicts,
-    formError: undefined,
+    formError,
     saving,
     savedAt,
     failures,
@@ -116,12 +121,14 @@ export function fakeDialogForm(stored: Record<string, unknown>, focused: Record<
       Object.assign(local, saved.value)
       fieldErrors.value = {}
       conflicts.value = {}
+      formError.value = undefined
     },
     local,
     saves,
     save,
-    failNext: (errors: Record<string, string>) => {
+    failNext: (errors: Record<string, string>, error?: string) => {
       nextErrors = errors
+      nextFormError = error
     },
     conflictNext: (theirs: Record<string, unknown>, name = 'Mia') => {
       nextConflict = { theirs, name }

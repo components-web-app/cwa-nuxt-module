@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, inject, nextTick, onMounted, useId, useTemplateRef, watch } from 'vue'
+import { computed, getCurrentInstance, inject, nextTick, onMounted, useId, useTemplateRef, watch } from 'vue'
 import { consola } from 'consola'
 import Field from '../core/ui/Field.vue'
 import { useFieldModel } from '../core/ui/field-context'
@@ -18,6 +18,7 @@ const props = withDefaults(defineProps<{
   optional?: boolean
   placeholder?: string
   disabled?: boolean
+  disabledReason?: string
   readonly?: boolean
   maxlength?: number
   counter?: boolean
@@ -32,6 +33,7 @@ const props = withDefaults(defineProps<{
   optional: false,
   placeholder: undefined,
   disabled: false,
+  disabledReason: undefined,
   readonly: false,
   maxlength: undefined,
   counter: false,
@@ -44,8 +46,10 @@ const props = withDefaults(defineProps<{
 const emit = defineEmits<{ 'update:modelValue': [value: string | null | undefined] }>()
 
 const inBar = !!inject(managerTabKey, undefined) && !inject(formSurfaceKey, undefined)
-if (inBar && import.meta.env.DEV) {
-  consola.error('CwaUiTextarea is for modals and pages; the manager bar is one row, so edit long text on the page instead.')
+const app = getCurrentInstance()?.appContext.app
+if (inBar && import.meta.env.DEV && app && !warnedApps.has(app)) {
+  warnedApps.add(app)
+  consola.warn(`CwaUiTextarea "${props.label}" renders nothing in a manager tab: the bar is one row. Edit multi-line text on the page with an inline editor (useCwaInlineEditor, offered from the bar by CwaUiInlineHandoff), or in a dialog.`)
 }
 
 const { model, value, state, unbound } = useFieldModel<string>(props, emit)
@@ -79,15 +83,21 @@ watch(value, () => nextTick(fit))
 onMounted(fit)
 </script>
 
+<script lang="ts">
+const warnedApps = new WeakSet<object>()
+</script>
+
 <template>
   <Field
     v-if="!inBar"
+    :disabled-reason="disabled ? disabledReason : undefined"
     :label="label"
     :label-hidden="labelHidden"
     :info="info"
     :description="description"
     :optional="optional"
     width="full"
+    multiline
     :state="state"
     :model="model"
     :control-id="id"

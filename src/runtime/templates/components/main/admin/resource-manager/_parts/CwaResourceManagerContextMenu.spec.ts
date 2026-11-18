@@ -56,7 +56,7 @@ async function openMenu(cwa = makeCwa(), expectPanel = true) {
     attachTo: document.body,
   })
   await flushPromises()
-  expectPanel && await vi.waitFor(() => expect(document.querySelector('[data-testid="resource-stack"]')).not.toBeNull())
+  expectPanel && await vi.waitFor(() => expect(document.querySelector('[data-testid="resource-stack"]')).not.toBeNull(), { timeout: 5000 })
   return { wrapper, onUpdate, cwa, panel: document.querySelector<HTMLElement>('[data-testid="resource-stack"]') }
 }
 

@@ -8,6 +8,7 @@ import CwaUiPlusIcon from '#cwa/templates/components/ui/icon/PlusIcon.vue'
 import BinIcon from '#cwa/templates/components/ui/icon/BinIcon.vue'
 import RouteSubStatus from '#cwa/templates/components/core/admin/RouteSubStatus.vue'
 import type { CwaResource } from '#cwa/resources/resource-utils'
+import { normaliseRoutePath, routePathProblem } from '#cwa/resources/route-path'
 
 const { redirects = [], path, form = false, error, status, busy = false, addDisabledReason } = defineProps<{
   redirects?: CwaResource[]
@@ -59,7 +60,12 @@ function actions(node: TreeNode): TreeAction[] {
   }]
 }
 
-const preview = computed(() => oldAddress.value.trim())
+const preview = computed(() => normaliseRoutePath(oldAddress.value))
+const invalid = computed(() => error ?? routePathProblem(preview.value))
+
+function normalise() {
+  oldAddress.value = normaliseRoutePath(oldAddress.value)
+}
 </script>
 
 <template>
@@ -74,9 +80,10 @@ const preview = computed(() => oldAddress.value.trim())
         label="Old address"
         placeholder="/old-path"
         width="full"
-        :invalid="error"
-        description="A path on this site, starting with /."
+        :invalid="invalid"
+        info="A path on this site, starting with /."
         data-testid="route-redirect-input"
+        @focusout="normalise"
       />
       <p
         v-if="preview"

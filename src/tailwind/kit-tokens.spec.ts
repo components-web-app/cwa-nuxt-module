@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, test } from 'vitest'
 import { badgeLookColours, badgeTintPercent, badgeTones, buttonLookColours, buttonLooks } from '../runtime/templates/components/ui/kit-looks'
 import type { KitLookColour } from '../runtime/templates/components/ui/kit-looks'
-import { contrastRatio, kitColourLabel, kitColourTokens, kitContrastPairs, kitThemeStyle, kitTokenCss, measureKitPair, parseColour } from './kit-tokens'
+import { contrastRatio, kitColourLabel, kitColourTokens, kitContrastPairs, kitThemeStyle, kitTokenCss, measureKitPair, parseColour, resolveKitColour } from './kit-tokens'
 
 const read = (path: string) => readFileSync(fileURLToPath(new URL(path, import.meta.url)), 'utf8')
 const source = read('./tailwind-cwa.css')
@@ -68,7 +68,7 @@ describe('kit colour tokens (#456)', () => {
   })
 
   test('dark is the default and light is a theme of its own, with the values the proposal measured', () => {
-    expect(themeValues('dark')).toMatchObject({ 'surface': '#1c1917', 'field': '#57534e', 'button': '#44403c', 'fg': '#f5f5f4', 'accent-fg': '#60a5fa', 'danger-fg': '#fca5a5', 'shimmer': 'rgb(255 255 255 / 0.24)' })
+    expect(themeValues('dark')).toMatchObject({ 'surface': '#1c1917', 'field': '#44403c', 'button': '#44403c', 'fg': '#f5f5f4', 'accent-fg': '#60a5fa', 'danger-fg': '#fca5a5', 'shimmer': 'rgb(255 255 255 / 0.24)' })
     expect(themeValues('light')).toMatchObject({ 'surface': '#ffffff', 'field': '#d6d3d1', 'button': '#e7e5e4', 'fg': '#1c1917', 'accent-fg': '#1d4ed8', 'danger-fg': '#b91c1c', 'shimmer': 'rgb(255 255 255 / 0.9)' })
   })
 
@@ -135,8 +135,12 @@ describe('kit colour tokens (#456)', () => {
     })
   })
 
+  test.each(['dark', 'light'] as const)('in %s a placeholder reads clearly dimmer than a typed value, at least 1.5:1 between the two, so an empty field never looks filled in', (theme) => {
+    expect(contrastRatio(resolveKitColour('fg', theme), resolveKitColour('muted-on-field', theme))).toBeGreaterThanOrEqual(1.5)
+  })
+
   test('the colours the admin already uses keep their names', () => {
-    for (const name of ['dark', 'light', 'medium', 'danger', 'danger-dark', 'magenta', 'orange', 'green', 'stone-700']) {
+    for (const name of ['dark', 'light', 'danger', 'danger-dark', 'magenta', 'orange', 'green', 'stone-700']) {
       expect(compiled, name).toContain(`--cwa-color-${name}:`)
     }
   })
@@ -154,16 +158,17 @@ describe('kit colour tokens (#456)', () => {
     expect(compiledColours.get('danger-dark')).toBe('oklch(44.4% 0.177 26.899 / 0.8)')
   })
 
-  test('the manager bar\'s touch and narrow sizes are compiled, on the bar rather than the root, with one CTA inset (#459)', () => {
+  test('the manager bar\'s touch and narrow sizes are compiled, on the bar rather than the root, with one CTA inset, the tab row the control height plus the inset and the bar\'s line (the hit size on touch) and the row below the rest (#459)', () => {
     const enclosing = (at: number) => {
       const before = compiled.slice(0, at)
       return before.slice(Math.max(before.lastIndexOf('@media ('), before.lastIndexOf('@container ('))).match(/\(([^)]+)\)/)?.[1]
     }
-    const setUnder = (property: string, value: string) => [...compiled.matchAll(new RegExp(`{\\s*${property}:\\s*${value.replace('.', '\\.')};`, 'g'))].map(match => enclosing(match.index)).sort()
+    const setUnder = (property: string, value: string) => [...compiled.matchAll(new RegExp(`{\\s*${property}:\\s*${value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')};`, 'g'))].map(match => enclosing(match.index)).sort()
 
-    expect(compiled).toMatch(/--cwa-spacing-cta-inset:\s*0\.25rem;/)
-    expect(setUnder('--cwa-spacing-manager-tabs', '2.75rem')).toEqual(['pointer: coarse'])
-    expect(setUnder('--cwa-spacing-manager-row', '4.25rem')).toEqual(['pointer: coarse'])
+    expect(compiled).toMatch(/--cwa-spacing-cta-inset:\s*0\.125rem;/)
+    expect(setUnder('--cwa-spacing-manager-tabs', 'calc(var(--cwa-spacing-hit) + 1px)')).toEqual(['pointer: coarse'])
+    expect(compiled).toMatch(/--cwa-spacing-manager-tabs:\s*calc\(var\(--cwa-spacing-control\) \+ 2 \* var\(--cwa-spacing-cta-inset\) \+ 1px\);/)
+    expect(compiled).toMatch(/--cwa-spacing-manager-row:\s*calc\(var\(--cwa-spacing-manager\) - var\(--cwa-spacing-manager-tabs\)\);/)
     expect(setUnder('--cwa-spacing-manager', '7rem')).toEqual(['pointer: coarse'])
     expect(setUnder('--cwa-spacing-cta-inset', '0px')).toEqual(['pointer: coarse', 'width < 40rem'])
   })

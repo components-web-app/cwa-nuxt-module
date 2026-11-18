@@ -150,6 +150,7 @@ function handleOption({ value }: MenuItem) {
     :short-label="publish.action.value === 'Publish now' ? 'Publish' : undefined"
     variant="solid"
     size="sm"
+    large-icon
     stretch
     data-testid="component-menu"
     :options="buttonOptions"

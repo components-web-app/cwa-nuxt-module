@@ -1,30 +1,59 @@
 <template>
   <CwaUiDialog
-    v-if="localResourceData"
+    v-if="localResourceData || isLoading || loadFailed"
     ref="dialog"
     v-model:tab="tab"
+    placement="right"
     :title="dialogTitle"
     :tabs="tabs"
     :form="form"
     :loading="isLoading"
-    noun="page"
+    :load-failed="loadFailed"
+    :kind="kind"
+    :noun="createNoun"
     :create-noun="isAdding ? createNoun : undefined"
     data-testid="page-dialog"
     @close="$emit('close')"
+    @retry="loadResource()"
     @save="saveResource()"
   >
-    <template
-      v-if="!hideViewLink && !isAdding"
-      #header-actions
-    >
+    <template #header-actions>
+      <CwaUiSelect
+        v-if="isDisplayingPage && localResourceData"
+        class="cwa:me-2"
+        :model="pageTypeModel"
+        label="Page type"
+        label-hidden
+        width="sm"
+        :options="pageTypeOptions"
+        data-testid="page-type"
+      />
       <CwaUiButton
+        v-if="!hideViewLink && !isAdding"
         variant="ghost"
         icon-only
+        large-icon
         :icon="EyeGlyph"
         label="View page on site"
         data-testid="page-view-on-site"
         @click="viewOnSite"
       />
+    </template>
+    <template
+      v-if="depthChain.length > 1"
+      #subheader
+    >
+      <div
+        class="cwa:shrink-0 cwa:overflow-x-auto cwa:px-6 cwa:pt-3 cwa:max-sm:px-4"
+        data-testid="page-depths"
+      >
+        <CwaUiSegmented
+          v-model="displayIriModel"
+          label="Editing"
+          label-hidden
+          :options="depthOptions"
+        />
+      </div>
     </template>
     <template #details>
       <CwaUiAlert
@@ -42,30 +71,17 @@
         </template>
       </CwaUiAlert>
       <template v-else>
-        <CwaUiFormSection v-if="depthChain.length > 1">
-          <CwaUiSegmented
-            v-model="displayIriModel"
-            label="Editing"
-            :options="depthOptions"
-          />
-        </CwaUiFormSection>
         <CwaUiFormSection>
           <CwaUiInput
             v-if="isDisplayingPage"
             field="reference"
             label="Reference"
-            description="Only admins see this. It names the page in lists."
+            info="Only admins see this. It names the page in lists."
           />
           <CwaUiInput
             v-else
             field="title"
             label="Title"
-          />
-          <CwaUiSegmented
-            v-if="isDisplayingPage"
-            :model="pageTypeModel"
-            label="Page type"
-            :options="pageTypeOptions"
           />
         </CwaUiFormSection>
         <CwaUiFormSection
@@ -118,13 +134,21 @@
             label="Dynamic page"
             :options="pageOptions"
           />
-          <div v-if="localResourceData.page">
+          <div v-if="localResourceData?.page">
             <CwaUiButton
               label="Go to dynamic template"
+              :icon="EyeGlyph"
               data-testid="go-to-template"
               @click="goToTemplate"
             />
           </div>
+          <p
+            v-else
+            class="cwa:m-0 cwa:text-helper cwa:text-fg-muted"
+            data-testid="no-template"
+          >
+            No template selected
+          </p>
           <template
             v-for="metaField of pageDataConfig?.metaFields ?? []"
             :key="`field-${metaField.field}`"
@@ -149,33 +173,29 @@
             label="Nested under"
             :options="parentTypeOptions"
           />
-          <CwaUiSelect
-            v-if="parentType === 'page'"
-            field="parentPage"
-            label="Parent page"
-            :options="parentPageOptions"
-            nullable
-          />
-          <template v-if="parentType === 'data'">
+          <CwaReveal :when="parentType === 'page'">
+            <CwaUiSelect
+              field="parentPage"
+              label="Parent page"
+              :options="parentPageOptions"
+              nullable
+            />
+          </CwaReveal>
+          <CwaReveal :when="parentType === 'data'">
             <CwaUiSelect
               v-model="selectedParentDataType"
               label="Parent data type"
               :options="dataTypeOptions"
             />
-            <CwaUiSelect
-              v-if="selectedParentDataType"
-              field="parentPageData"
-              label="Parent data"
-              :options="dataInstanceOptions"
-              nullable
-            />
-          </template>
-          <CwaUiToggle
-            field="isReachableWithoutRoute"
-            label="Public without a route"
-            :disabled="!!resource?.route"
-            :description="resource?.route ? 'Has no effect while this page has a route.' : 'Visitors can reach it through a nested page, even when it has no route of its own. Any parent page must be live too.'"
-          />
+            <CwaReveal :when="!!selectedParentDataType">
+              <CwaUiSelect
+                field="parentPageData"
+                label="Parent data"
+                :options="dataInstanceOptions"
+                nullable
+              />
+            </CwaReveal>
+          </CwaReveal>
         </CwaUiFormSection>
       </template>
     </template>
@@ -198,7 +218,7 @@
             class="cwa:m-0 cwa:mt-1.5 cwa:break-all cwa:font-mono cwa:text-control cwa:text-fg-secondary"
             data-testid="page-id"
           >
-            {{ localResourceData['@id'] }}
+            {{ localResourceData?.['@id'] }}
           </dd>
         </dl>
       </CwaUiFormSection>
@@ -260,7 +280,7 @@ import CwaUiInput from '#cwa/templates/components/ui/Input.vue'
 import CwaUiTextarea from '#cwa/templates/components/ui/Textarea.vue'
 import CwaUiSelect from '#cwa/templates/components/ui/Select.vue'
 import CwaUiSegmented from '#cwa/templates/components/ui/Segmented.vue'
-import CwaUiToggle from '#cwa/templates/components/ui/Toggle.vue'
+import CwaReveal from '#cwa/templates/components/core/ui/Reveal.vue'
 import CwaUiButton from '#cwa/templates/components/ui/Button.vue'
 import CwaUiAlert from '#cwa/templates/components/ui/Alert.vue'
 import EyeGlyph from '#cwa/templates/components/ui/icon/EyeIcon.vue'
@@ -268,7 +288,7 @@ import RoutesTab from '#cwa/templates/components/core/admin/RoutesTab.vue'
 import PagePurgeCache from '#cwa/templates/components/core/admin/PagePurgeCache.vue'
 import type { MenuEntry } from '#cwa/templates/components/core/ui/menu-entries'
 import type { DialogTab } from '#cwa/templates/components/core/ui/dialog-form'
-import type { SelectOption } from '#cwa/composables/cwa-select-input'
+import type { SelectOption } from '#cwa/composables/cwa-select'
 import type { CwaResource } from '#cwa/resources/resource-utils'
 import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/resources/resource-utils'
 import { useCwaConfirm } from '#cwa/composables/cwa-confirm'
@@ -326,6 +346,18 @@ const depthChain = computed(() => {
   }
   return chain
 })
+
+const requestedDepths = new Set<string>()
+watch(depthChain, (chain) => {
+  chain.forEach(({ value }) => {
+    const iri = String(value)
+    if (iri === 'add' || iri === displayIri.value || getResourceData(iri) || requestedDepths.has(iri)) {
+      return
+    }
+    requestedDepths.add(iri)
+    $cwa.fetchResource({ path: iri, shallowFetch: true }).catch(() => undefined)
+  })
+}, { immediate: true })
 
 const depthOptions = computed(() => depthChain.value.map(option => ({ label: option.label, value: String(option.value) })))
 
@@ -408,7 +440,7 @@ const linkDefaults = Object.fromEntries(
     .flatMap(([queryKey, field]) => typeof route.query[queryKey] === 'string' ? [[field, route.query[queryKey]]] : []),
 )
 
-const { isAdding, isLoading, isUpdating, localResourceData, resource, formatDate, deleteResource, saveResource: _saveResource, loadResource, getInternalResourceLink, form } = useItemPage({
+const { isAdding, isLoading, loadFailed, isUpdating, localResourceData, resource, formatDate, deleteResource, saveResource: _saveResource, loadResource, getInternalResourceLink, form } = useItemPage({
   createEndpoint,
   emit,
   resourceType: props.resourceType,
@@ -428,15 +460,18 @@ const dialogTitle = computed(() => {
     return `New ${createNoun.value}`
   }
   const stored = resource.value
+  if (!localResourceData.value) {
+    return isDisplayingPage.value ? 'Page' : 'Page data'
+  }
   const name = isDisplayingPage.value ? stored?.reference : stored?.title
   return name || (isDisplayingPage.value ? 'Untitled page' : 'Untitled')
 })
 
 const pageName = computed(() => (isDisplayingPage.value ? resource.value?.reference : resource.value?.title) || '')
 
-const pageTypeOptions = [
-  { label: 'Static', value: 'static' },
-  { label: 'Template', value: 'template' },
+const pageTypeOptions: MenuEntry[] = [
+  { label: 'Static', value: 'static', dot: 'cwa:bg-type-static' },
+  { label: 'Dynamic', value: 'template', dot: 'cwa:bg-type-dynamic' },
 ]
 
 const pageTypeModel = {
@@ -448,6 +483,18 @@ const pageTypeModel = {
     },
   }),
 } as ReturnType<typeof form.model<string>>
+
+const kind = computed(() => {
+  if (!localResourceData.value) {
+    return undefined
+  }
+  if (isDisplayingPage.value) {
+    return { tone: localResourceData.value?.isTemplate ? 'dynamic' as const : 'static' as const }
+  }
+  return resource.value?.route || localResourceData.value?.isReachableWithoutRoute
+    ? { tone: 'success' as const, label: 'Reachable' }
+    : { tone: 'warning' as const, label: 'Not reachable' }
+})
 
 function saveResource(close = false) {
   return _saveResource(close)
@@ -505,7 +552,7 @@ async function handleDeleteClick() {
   checkingDelete.value = true
   const iri = resource.value?.['@id']
   const [notice] = await Promise.all([
-    iri ? import('#cwa/admin/resource-confirm').then(({ editingNotice }) => editingNotice($cwa, iri)) : undefined,
+    iri ? import('#cwa/admin/resource-confirm').then(({ editingNotice }) => editingNotice($cwa, iri)).catch(() => undefined) : undefined,
     refreshCounts(),
   ])
   checkingDelete.value = false
@@ -686,16 +733,20 @@ const metaSelects = computed(() => Object.fromEntries((pageDataConfig.value?.met
   .filter(metaField => metaField.type !== 'input')
   .map(metaField => [metaField.field, metaSelect(metaField.field, metaField.options)])))
 
+const pageFields: Record<string, string> = { reference: 'Reference', layout: 'Layout', uiComponent: 'Page UI', uiClassNames: 'Style', title: 'SEO page title', metaDescription: 'SEO meta description', parentPage: 'Parent page', parentPageData: 'Parent data' }
+const pageDataFields: Record<string, string> = { title: 'Title', metaDescription: 'SEO meta description', page: 'Dynamic page', parentPage: 'Parent page', parentPageData: 'Parent data' }
+const detailsFields = computed(() => isDisplayingPage.value ? pageFields : pageDataFields)
+
 const tabs = computed<DialogTab[]>(() => {
   if (isAdding.value) {
     return [
-      { label: 'Details', key: 'details' },
+      { label: 'Details', key: 'details', fields: detailsFields.value },
       { label: 'Routes', key: 'routes', disabled: `Routes open once the ${createNoun.value} is created. Create the ${createNoun.value} and this tab lets you add its address.` },
     ]
   }
   return [
-    { label: 'Details', key: 'details' },
-    { label: 'Routes', key: 'routes' },
+    { label: 'Details', key: 'details', fields: detailsFields.value },
+    { label: 'Routes', key: 'routes', ...(!isDisplayingPage.value && { fields: { isReachableWithoutRoute: 'Public without a route' } }) },
     { label: 'Info', key: 'info' },
   ]
 })

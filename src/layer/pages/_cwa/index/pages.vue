@@ -48,8 +48,10 @@
     <template #item="{ data, rawData }">
       <ListRow
         :to="computedItemLink(data['@id'])"
+        :view="getInternalResourceLink(data['@id'])"
+        actions
         :title="data.reference"
-        :type="data.isTemplate ? { label: 'Dynamic', colour: 'dynamic' } : { label: 'Static', colour: 'static' }"
+        :type="data.isTemplate ? { label: 'Dynamic template', colour: 'dynamic' } : { label: 'Static page', colour: 'static' }"
         :sub="subLine(data)"
       >
         <template #phone>
@@ -112,18 +114,20 @@ import CwaUiAlert from '#cwa/templates/components/ui/Alert.vue'
 import PlusIcon from '#cwa/templates/components/ui/icon/PlusIcon.vue'
 import { useQueryBoundModel } from '#cwa/composables/cwa-query-bound-model'
 import type { CwaResource } from '#cwa/resources/resource-utils'
-import { definePageMeta, useCwa, useHead } from '#imports'
+import { definePageMeta, useCwa, useCwaResourceRoute, useHead } from '#imports'
 
 const listContent = ref<InstanceType<typeof ListContent> | null>(null)
 
 const $cwa = useCwa()
 const { goToAdd, triggerReload, computedItemLink } = useListPage(listContent)
+const { getInternalResourceLink } = useCwaResourceRoute()
 const { routes, known, error: routesError, now, load, retry: retryRoutes } = useListRoutes('pages')
 
 const columns = [
   { label: 'Page' },
-  { label: 'Status', width: '13rem' },
+  { label: 'Status', width: '17.5rem' },
   { label: 'Updated', width: '8rem', align: 'end' as const },
+  { label: 'Actions', width: '4.5rem', labelHidden: true },
 ]
 
 const orderOptions = [

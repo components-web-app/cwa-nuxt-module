@@ -1,16 +1,33 @@
 import type { App } from 'vue'
 import { createConfirmDialog } from './confirm-dialog'
 import type Cwa from '#cwa/cwa'
+import type { CwaConfirmOptions } from '#cwa/composables/cwa-confirm'
 import { realtimeView } from '#cwa/resources/realtime-view'
 
-const confirmations = {
+export interface ConfirmChoiceOptions extends CwaConfirmOptions {
+  extra?: string
+  alternative?: string
+}
+
+const discardDraft: CwaConfirmOptions = {
+  title: 'Discard the unpublished changes?',
+  description: 'The live version stays as it is.',
+  keep: 'Keep changes',
+  go: 'Discard changes',
+}
+
+const confirmations: Record<'delete' | 'discard', CwaConfirmOptions> = {
   delete: {
     title: 'Delete this resource?',
-    content: '<p>Are you sure you want to permanently delete this resource?</p>',
+    description: 'This can\'t be undone.',
+    keep: 'Don\'t delete',
+    go: 'Delete',
   },
   discard: {
-    title: 'Discard new resource?',
-    content: '<p>Are you sure you want to discard your new resource. It will NOT be saved.</p>',
+    title: 'Discard this new component?',
+    description: 'It hasn\'t been saved.',
+    keep: 'Keep editing',
+    go: 'Discard',
   },
 }
 
@@ -26,11 +43,21 @@ export async function editingNotice($cwa: Cwa, iri: string) {
   return `${names.slice(0, -1).join(', ')} and ${names.at(-1)} are editing this.`
 }
 
-export async function confirmResourceAction(app: App, action: keyof typeof confirmations | { title: string, content: string }, iri?: string) {
-  const { default: ConfirmDialog } = await import('#cwa/templates/components/core/ConfirmDialog.vue')
-  const dialog = await createConfirmDialog(app, ConfirmDialog)
+export async function confirmChoice(app: App, options: ConfirmChoiceOptions): Promise<'go' | 'extra' | 'alternative' | undefined> {
+  const { default: Confirm } = await import('#cwa/templates/components/core/ui/Confirm.vue')
+  const dialog = await createConfirmDialog(app, Confirm)
+  const { isCanceled, data } = await dialog.reveal({ ...options })
+  if (isCanceled) {
+    return
+  }
+  return data === 'extra' || data === 'alternative' ? data : 'go'
+}
+
+export async function confirmResourceAction(app: App, action: keyof typeof confirmations | CwaConfirmOptions, iri?: string) {
   const $cwa = iri ? app.config.globalProperties.$cwa as Cwa | undefined : undefined
   const notice = iri && $cwa ? await editingNotice($cwa, iri) : undefined
-  const { isCanceled } = await dialog.reveal({ ...(typeof action === 'string' ? confirmations[action] : action), notice })
-  return !isCanceled
+  const data = action === 'delete' && iri ? $cwa?.resources?.getResource(iri).value?.data : undefined
+  const isDraftOfLive = data?._metadata?.publishable?.published === false && !!data.publishedResource
+  const options = isDraftOfLive ? discardDraft : typeof action === 'string' ? confirmations[action] : action
+  return !!await confirmChoice(app, notice ? { ...options, lines: [{ text: notice }, ...(options.lines ?? [])] } : options)
 }

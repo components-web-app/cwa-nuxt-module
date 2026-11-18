@@ -311,7 +311,7 @@ const navButtonClass = 'cwa:flex cwa:items-center cwa:justify-center cwa:size-8 
                 v-slot="cell"
                 v-bind="cellProps(cellDate, month.value)"
                 :data-date="cellDate.toString()"
-                class="cwa:m-0.5 cwa:flex cwa:items-center cwa:justify-center cwa:whitespace-nowrap cwa:rounded-md cwa:cursor-pointer cwa:transition cwa:hover:bg-stone-700 cwa:focus-visible:outline-2 cwa:focus-visible:outline-stone-400 cwa:data-today:font-semibold cwa:data-today:underline cwa:data-today:underline-offset-4 cwa:data-outside-view:text-stone-500 cwa:data-disabled:text-stone-600 cwa:data-disabled:pointer-events-none cwa:data-unavailable:line-through cwa:data-unavailable:text-stone-600 cwa:data-unavailable:pointer-events-none cwa:data-selected:bg-light cwa:data-selected:text-dark cwa:data-selected:hover:bg-light"
+                class="cwa:m-0.5 cwa:flex cwa:items-center cwa:justify-center cwa:whitespace-nowrap cwa:rounded-md cwa:cursor-pointer cwa:transition cwa:hover:bg-stone-700 cwa:outline-1 cwa:outline-transparent cwa:focus-visible:outline-2 cwa:focus-visible:outline-stone-400 cwa:data-today:font-semibold cwa:data-today:underline cwa:data-today:underline-offset-4 cwa:data-outside-view:text-stone-500 cwa:data-disabled:text-stone-600 cwa:data-disabled:pointer-events-none cwa:data-unavailable:line-through cwa:data-unavailable:text-stone-600 cwa:data-unavailable:pointer-events-none cwa:data-selected:bg-light cwa:data-selected:text-dark cwa:data-selected:hover:bg-light"
                 :class="view === 'day' ? 'cwa:size-8' : 'cwa:h-8 cwa:px-3'"
               >
                 <template v-if="view === 'day'">
