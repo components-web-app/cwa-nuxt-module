@@ -1286,6 +1286,9 @@
     border-color: color-mix(in oklab, currentcolor 28%, transparent);
   }
 }
+.cwa\:border-danger {
+  border-color: var(--cwa-color-danger);
+}
 .cwa\:border-danger-fg {
   border-color: var(--cwa-color-danger-fg);
 }
@@ -2940,6 +2943,9 @@
   outline-color: var(--cwa-color-accent-fg);
 }
 @media (prefers-reduced-motion: no-preference) {
+  .cwa\:motion-safe\:animate-\[cwa-fade-out_var\(--cwa-duration-slow\)_cubic-bezier\(0\.8\,0\,0\.8\,0\.2\)_forwards\] {
+    animation: cwa-fade-out var(--cwa-duration-slow) cubic-bezier(0.8,0,0.8,0.2) forwards;
+  }
   .cwa\:motion-safe\:animate-\[cwa-sub-view-back_var\(--cwa-duration-base\)_ease\] {
     animation: cwa-sub-view-back var(--cwa-duration-base) ease;
   }
@@ -3196,6 +3202,9 @@
     .cwa\:sm\:motion-safe\:animate-\[cwa-slide-over-in_var\(--cwa-duration-slow\)_var\(--cwa-ease-out\)\] {
       animation: cwa-slide-over-in var(--cwa-duration-slow) var(--cwa-ease-out);
     }
+    .cwa\:sm\:motion-safe\:animate-\[cwa-slide-over-out_var\(--cwa-duration-slow\)_cubic-bezier\(0\.8\,0\,0\.8\,0\.2\)_forwards\] {
+      animation: cwa-slide-over-out var(--cwa-duration-slow) cubic-bezier(0.8,0,0.8,0.2) forwards;
+    }
   }
 }
 @media (width >= 48rem) {
@@ -3393,6 +3402,22 @@
     height: var(--cwa-spacing-status-line);
     pointer-events: none;
   }
+  .cwa\:dialog-edge {
+    position: absolute;
+    inset-inline: 0;
+    bottom: -3px;
+    height: 3px;
+    pointer-events: none;
+  }
+  .cwa\:dialog-edge[data-edge='loading'] {
+    background: linear-gradient(90deg, transparent 0%, var(--cwa-color-accent-fg) 50%, transparent 100%) no-repeat;
+    background-size: 40% 100%;
+    animation: cwa-line-band 1.1s linear infinite;
+  }
+  .cwa\:dialog-edge[data-edge='arrived'] {
+    background: var(--cwa-color-line);
+    animation: cwa-edge-reveal var(--cwa-duration-slow) var(--cwa-ease-out) forwards;
+  }
   .cwa\:status-line::before,
   .cwa\:status-line::after {
     content: '';
@@ -3540,6 +3565,14 @@
     background-position: 170% 0;
   }
 }
+@keyframes cwa-edge-reveal {
+  from {
+    clip-path: inset(0);
+  }
+  to {
+    clip-path: inset(0 0 0 100%);
+  }
+}
 @keyframes cwa-line-in {
   from {
     opacity: 0;
@@ -3564,6 +3597,16 @@
     opacity: 1;
   }
   100% {
+    opacity: 0;
+  }
+}
+@keyframes cwa-slide-over-out {
+  to {
+    transform: translateX(100%);
+  }
+}
+@keyframes cwa-fade-out {
+  to {
     opacity: 0;
   }
 }

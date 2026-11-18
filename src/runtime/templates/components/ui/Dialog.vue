@@ -15,6 +15,7 @@ import type { DialogForm, DialogTab } from '../core/ui/dialog-form'
 import { useCwaConfirm } from '#cwa/composables/cwa-confirm'
 
 const SAVED_FOR = 1500
+const SLIDE_OUT_FALLBACK = 400
 
 const props = withDefaults(defineProps<{
   title: string
@@ -256,7 +257,13 @@ const hasIssue = computed(() => !!(conflictFields.value.length || errorFields.va
 
 const loadFailedText = computed(() => `This ${props.noun} couldn't be loaded.`)
 
+const reducedMotion = !!globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+const arrived = ref(false)
+const edge = computed(() => reducedMotion ? undefined : props.loading ? 'loading' : arrived.value ? 'arrived' : undefined)
+const headerEdge = computed(() => props.loadFailed ? 'cwa:border-danger' : props.kind ? kindEdges[props.kind.tone] : 'cwa:border-line')
+
 watch(() => props.loading, (loading, was) => {
+  arrived.value = !loading && !!was
   if (loading) {
     announce(`Loading the ${props.noun}.`)
   }
@@ -319,11 +326,40 @@ async function confirmDiscard() {
   return true
 }
 
+const closing = ref(false)
+let finishClosing: (() => void) | undefined
+
+function slidesOut() {
+  const media = (query: string) => !!globalThis.matchMedia?.(query).matches
+  return props.placement === 'right' && media('(min-width: 40rem)') && !media('(prefers-reduced-motion: reduce)')
+}
+
+function closed() {
+  return new Promise<void>((resolve) => {
+    const timer = setTimeout(() => finishClosing?.(), SLIDE_OUT_FALLBACK)
+    finishClosing = () => {
+      finishClosing = undefined
+      clearTimeout(timer)
+      emit('close')
+      resolve()
+    }
+  })
+}
+
+function onAnimationEnd(event: AnimationEvent) {
+  event.animationName === 'cwa-slide-over-out' && finishClosing?.()
+}
+
 async function requestClose() {
-  if (confirming || !await confirmDiscard()) {
+  if (closing.value || confirming || !await confirmDiscard()) {
     return false
   }
-  emit('close')
+  if (!slidesOut()) {
+    emit('close')
+    return true
+  }
+  closing.value = true
+  await closed()
   return true
 }
 
@@ -365,7 +401,9 @@ function onTabKey(event: KeyboardEvent, index: number) {
 
 const widths = { sm: 'cwa:sm:w-[28rem]', md: 'cwa:sm:w-[36rem]', lg: 'cwa:sm:w-[48rem]' }
 const centred = 'cwa:sm:inset-auto cwa:sm:top-1/2 cwa:sm:left-1/2 cwa:sm:max-h-[calc(100dvh-4rem)] cwa:sm:max-w-[calc(100vw-2rem)] cwa:sm:-translate-x-1/2 cwa:sm:-translate-y-1/2'
-const slideOver = 'cwa:sm:inset-y-0 cwa:sm:right-0 cwa:sm:left-auto cwa:sm:w-[min(40rem,100vw)] cwa:sm:motion-safe:animate-[cwa-slide-over-in_var(--cwa-duration-slow)_var(--cwa-ease-out)]'
+const slideOver = 'cwa:sm:inset-y-0 cwa:sm:right-0 cwa:sm:left-auto cwa:sm:w-[min(40rem,100vw)]'
+const slideIn = 'cwa:sm:motion-safe:animate-[cwa-slide-over-in_var(--cwa-duration-slow)_var(--cwa-ease-out)]'
+const slideOut = 'cwa:pointer-events-none cwa:sm:motion-safe:animate-[cwa-slide-over-out_var(--cwa-duration-slow)_cubic-bezier(0.8,0,0.8,0.2)_forwards]'
 
 function glyphOf(key: string) {
   const kind = badges.value[key]?.kind
@@ -384,18 +422,30 @@ defineExpose({ requestClose, confirmDiscard, showField, announce })
       <DialogOverlay
         data-testid="dialog-overlay"
         class="cwa:fixed cwa:inset-0 cwa:z-dialog cwa:bg-black/60 cwa:backdrop-blur-sm"
+        :class="{ 'cwa:pointer-events-none cwa:motion-safe:animate-[cwa-fade-out_var(--cwa-duration-slow)_cubic-bezier(0.8,0,0.8,0.2)_forwards]': closing }"
       />
       <DialogContent
         v-bind="kind?.label ? {} : { 'aria-describedby': undefined }"
         data-testid="dialog"
         :data-placement="placement"
+        :data-closing="closing ? 'true' : undefined"
+        :inert="closing || undefined"
         class="cwa:fixed cwa:inset-0 cwa:z-dialog cwa:flex cwa:flex-col cwa:bg-surface cwa:text-fg cwa:shadow-popover cwa:outline-none cwa:[--cwa-spacing-control:var(--cwa-spacing-control-lg)] cwa:[--cwa-text-control:var(--cwa-text-control-lg)]"
-        :class="placement === 'right' ? slideOver : [centred, widths[size]]"
+        :class="placement === 'right' ? [slideOver, closing ? slideOut : slideIn] : [centred, widths[size]]"
+        @animationend="onAnimationEnd"
       >
         <header
-          class="cwa:flex cwa:h-[3.75rem] cwa:shrink-0 cwa:items-center cwa:gap-1 cwa:border-b-3 cwa:border-solid cwa:ps-6 cwa:pe-3"
-          :class="kind ? kindEdges[kind.tone] : 'cwa:border-line'"
+          data-testid="dialog-header"
+          class="cwa:relative cwa:flex cwa:h-[3.75rem] cwa:shrink-0 cwa:items-center cwa:gap-1 cwa:border-b-3 cwa:border-solid cwa:ps-6 cwa:pe-3"
+          :class="headerEdge"
         >
+          <span
+            v-if="edge"
+            data-testid="dialog-edge"
+            aria-hidden="true"
+            class="cwa:dialog-edge"
+            :data-edge="edge"
+          />
           <DialogTitle
             :ref="(title) => { titleId = (title as { $el?: HTMLElement } | null)?.$el?.id }"
             as="h2"
