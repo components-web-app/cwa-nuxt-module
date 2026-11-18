@@ -69,12 +69,15 @@ function commit(refocus: boolean) {
   finish(refocus)
 }
 
+let actedOnEscape = false
+
 function onKeydown(event: KeyboardEvent) {
-  if (event.key === 'Enter') {
+  if (event.key === 'Enter' && !event.isComposing) {
     event.preventDefault()
     commit(true)
   }
   else if (event.key === 'Escape') {
+    actedOnEscape = true
     const toBar = failed.value
     finish(false).then(() => {
       const field = props.model.editorKey?.field
@@ -87,7 +90,8 @@ function onKeydown(event: KeyboardEvent) {
 }
 
 function onRootKeydown(event: KeyboardEvent) {
-  if (event.key === 'Escape') {
+  if (event.key === 'Escape' && actedOnEscape) {
+    actedOnEscape = false
     event.stopPropagation()
   }
 }
@@ -127,6 +131,7 @@ useCwaInlineEditor(props.model, root, { focus: start, label: props.label })
       :class="{ 'cwa:opacity-60': !text }"
       @click="start"
       @keydown.enter.prevent="start"
+      @keydown.space.prevent="start"
     >{{ text || placeholder }}</span>
     <span
       v-if="failed"

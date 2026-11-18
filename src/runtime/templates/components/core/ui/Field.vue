@@ -29,6 +29,7 @@ const { label, labelHidden = false, info, description, optional = false, width, 
 defineSlots<{
   default: (props: { describedBy: string | undefined, tone: 'danger' | 'warning' | undefined, busy: boolean, labelId: string, modal: boolean, unsaved: boolean }) => any
   after?: () => any
+  beside?: () => any
 }>()
 
 const widths: Record<FieldWidth, string> = {
@@ -114,7 +115,7 @@ watch(() => inactive, (now) => {
     </div>
     <div
       class="cwa:w-full cwa:min-w-0"
-      :class="{ 'cwa:mt-1.5': !ownLabel && !labelHidden }"
+      :class="{ 'cwa:mt-1.5': !ownLabel && !labelHidden, 'cwa:flex cwa:items-center cwa:gap-2': $slots.beside }"
     >
       <CwaUiFieldPresence
         :model="model"
@@ -129,6 +130,7 @@ watch(() => inactive, (now) => {
           :unsaved="unsaved"
         />
       </CwaUiFieldPresence>
+      <slot name="beside" />
     </div>
     <p
       v-if="errorText"
@@ -202,6 +204,7 @@ watch(() => inactive, (now) => {
         :description-id="statusId"
       />
     </div>
+    <slot name="beside" />
     <InfoPopover
       v-if="help && ownLabel"
       :label="label"

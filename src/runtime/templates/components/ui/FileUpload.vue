@@ -138,5 +138,11 @@ function remove() {
         >
       </div>
     </template>
+    <template
+      v-if="$slots.beside"
+      #beside
+    >
+      <slot name="beside" />
+    </template>
   </Field>
 </template>

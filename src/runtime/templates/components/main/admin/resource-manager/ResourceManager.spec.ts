@@ -829,5 +829,45 @@ describe('ResourceManager', () => {
         target.remove()
       }
     })
+
+    test('a long press is a right-click only while editing, so outside edit mode the browser keeps its own touch menu', async () => {
+      const cwa = makeCwa({ hasRole: true })
+      const editing = ref(false)
+      Object.defineProperty(cwa.admin, 'isEditing', { get: () => editing.value })
+      cwaState.cwa = cwa
+      const wrapper = await mountManager()
+      const target = document.createElement('p')
+      document.body.append(target)
+      const contextMenus = vi.fn()
+      target.addEventListener('contextmenu', contextMenus)
+      vi.useFakeTimers()
+      try {
+        const press = () => {
+          const down = new MouseEvent('pointerdown', { clientX: 30, clientY: 40, bubbles: true })
+          Object.defineProperties(down, { pointerType: { value: 'touch' }, pointerId: { value: 1 } })
+          target.dispatchEvent(down)
+          vi.advanceTimersByTime(500)
+          target.dispatchEvent(new MouseEvent('pointerup', { bubbles: true }))
+          vi.advanceTimersByTime(1000)
+        }
+        press()
+        expect(contextMenus).not.toHaveBeenCalled()
+
+        editing.value = true
+        await nextTick()
+        press()
+        expect(contextMenus).toHaveBeenCalledTimes(1)
+
+        editing.value = false
+        await nextTick()
+        press()
+        expect(contextMenus).toHaveBeenCalledTimes(1)
+        wrapper.unmount()
+      }
+      finally {
+        vi.useRealTimers()
+        target.remove()
+      }
+    })
   })
 })

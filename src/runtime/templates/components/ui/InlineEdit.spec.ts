@@ -184,6 +184,43 @@ describe('CwaUiInlineEdit (#461)', () => {
     expect(document.activeElement).toBe(shown(wrapper).element)
   })
 
+  test('Enter that confirms an IME composition does not commit, and the next Enter does', async () => {
+    const { wrapper, model } = mountEdit()
+    const input = await startEditing(wrapper)
+    await input.setValue('台所')
+
+    input.element.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', isComposing: true, bubbles: true, cancelable: true }))
+    await flushPromises()
+    expect(model.model.value).toBe('How we build a kitchen')
+    expect(wrapper.find('input').exists()).toBe(true)
+
+    await input.trigger('keydown', { key: 'Enter' })
+    expect(model.model.value).toBe('台所')
+  })
+
+  test('an Escape it did not act on, with the text shown and not editing, still reaches the page, so clone mode and the manager hear it', async () => {
+    const { wrapper } = mountEdit()
+    const outer = vi.fn()
+    document.addEventListener('keydown', outer)
+    await new Promise(resolve => setTimeout(resolve, 5))
+
+    shown(wrapper).element.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+
+    expect(outer).toHaveBeenCalledOnce()
+    document.removeEventListener('keydown', outer)
+  })
+
+  test('Space on the shown text starts editing, as a button does, without scrolling the page', async () => {
+    const { wrapper } = mountEdit()
+    const space = new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true })
+
+    shown(wrapper).element.dispatchEvent(space)
+    await flushPromises()
+
+    expect(space.defaultPrevented).toBe(true)
+    expect(wrapper.find('input').exists()).toBe(true)
+  })
+
   test('leaving the input commits, as long as the text changed, and an emptied value saves null', async () => {
     const { wrapper, model } = mountEdit()
     let input = await startEditing(wrapper)

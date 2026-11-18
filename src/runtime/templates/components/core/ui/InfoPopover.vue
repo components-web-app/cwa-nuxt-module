@@ -14,6 +14,9 @@ const { label, text, textId, hover = false } = defineProps<{
 const HIDE_DELAY_MS = 150
 const open = ref(false)
 let passive = false
+let closedPassive = false
+let settledOnButton = false
+let keepOpen = false
 let hiding: ReturnType<typeof setTimeout> | undefined
 
 function show() {
@@ -27,13 +30,14 @@ function show() {
 function hideSoon() {
   clearTimeout(hiding)
   passive && (hiding = setTimeout(() => {
+    closedPassive = true
+    passive = false
     open.value = false
   }, HIDE_DELAY_MS))
 }
 
 function onCloseAutoFocus(event: Event) {
-  passive && event.preventDefault()
-  passive = false
+  closedPassive && event.preventDefault()
 }
 
 function onPointerenter(event: PointerEvent) {
@@ -46,15 +50,30 @@ function onPointerleave(event: PointerEvent) {
 
 function onFocus(event: FocusEvent) {
   const target = event.target as HTMLElement
-  hover && !open.value && target.matches?.(':focus-visible') !== false && show()
+  hover && !open.value && !settledOnButton && target.matches?.(':focus-visible') !== false && show()
 }
 
 function onBlur() {
+  settledOnButton = false
   hover && hideSoon()
+}
+
+function onClick() {
+  if (hover && open.value && passive) {
+    passive = false
+    keepOpen = true
+  }
 }
 
 function onOpenChange(next: boolean) {
   clearTimeout(hiding)
+  if (!next && keepOpen) {
+    keepOpen = false
+    return
+  }
+  keepOpen = false
+  closedPassive = !next && passive
+  settledOnButton = !next
   passive = false
   open.value = next
 }
@@ -78,6 +97,7 @@ function onOpenAutoFocus(event: Event) {
       @pointerleave="onPointerleave"
       @focus="onFocus"
       @blur="onBlur"
+      @click="onClick"
     >
       <StateGlyph kind="info" />
     </PopoverTrigger>

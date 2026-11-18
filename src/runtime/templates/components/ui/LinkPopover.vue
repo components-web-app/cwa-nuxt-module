@@ -115,7 +115,7 @@ function remove() {
 }
 
 function onUrlKeydown(event: KeyboardEvent) {
-  if (event.key === 'Enter') {
+  if (event.key === 'Enter' && !event.isComposing) {
     event.preventDefault()
     apply()
   }
