@@ -1,13 +1,15 @@
 import { useNuxtApp } from '#imports'
 import {
   defineComponent,
-  h, onBeforeUnmount, onMounted, provide,
+  effectScope,
+  h, onBeforeUnmount, onErrorCaptured, onMounted, provide,
   ref,
   toRaw,
   watch,
   render,
 } from 'vue'
-import type { defineAsyncComponent, Ref, WatchStopHandle } from 'vue'
+import type { defineAsyncComponent, EffectScope, Ref, WatchStopHandle } from 'vue'
+import { consola } from 'consola'
 import type { ManagerTab } from '#cwa/types'
 import { tabMetaOnlyKey } from '#cwa/templates/components/core/ui/field-keys'
 
@@ -28,6 +30,7 @@ export const useDataResolver = <T extends object>(allMeta: Ref<(T | null)[]>, op
       provide(tabMetaOnlyKey, true)
       const metadata = ref<T | null>(null)
       const resolved = ref(false)
+      const failed = ref(false)
       const possibleAsyncDefinition: ReturnType<typeof defineAsyncComponent> | undefined
         = typeof props.component === 'string'
           ? globalComponents[props.component]
@@ -36,6 +39,18 @@ export const useDataResolver = <T extends object>(allMeta: Ref<(T | null)[]>, op
       if (possibleAsyncDefinition === undefined) {
         throw new Error('Cannot load metadata for component')
       }
+
+      onErrorCaptured((error) => {
+        if (!failed.value && import.meta.env.DEV) {
+          const name = typeof props.component === 'string' ? props.component : (possibleAsyncDefinition.name ?? 'a component')
+          consola.warn(`[CWA] ${name} could not be rendered to read its metadata, so its UIs and styles are not offered.`, error)
+        }
+        failed.value = true
+        return false
+      })
+
+      let interval: number | undefined
+      onBeforeUnmount(() => window.clearInterval(interval))
 
       if (possibleAsyncDefinition.name !== 'AsyncComponentWrapper') {
         resolved.value = true
@@ -46,7 +61,7 @@ export const useDataResolver = <T extends object>(allMeta: Ref<(T | null)[]>, op
 
         resolved.value = isAsyncResolved()
         if (!resolved.value) {
-          const interval = window.setInterval(() => {
+          interval = window.setInterval(() => {
             if (isAsyncResolved()) {
               resolved.value = true
               window.clearInterval(interval)
@@ -58,6 +73,7 @@ export const useDataResolver = <T extends object>(allMeta: Ref<(T | null)[]>, op
       expose({
         metadata,
         resolved,
+        failed,
       })
       return () => {
         return h(possibleAsyncDefinition, { ...props.cProps, ref: metadata })
@@ -68,17 +84,28 @@ export const useDataResolver = <T extends object>(allMeta: Ref<(T | null)[]>, op
     },
   )
 
-  const resolvedWatchers = ref<WatchStopHandle[]>([])
-  const handleInputChange = () => {
-    for (const unwatch of resolvedWatchers.value) {
-      unwatch()
+  let runScope: EffectScope | undefined
+  const unfinished = new Set<HTMLElement>()
+
+  const clearRun = () => {
+    runScope?.stop()
+    runScope = undefined
+    for (const wrapper of unfinished) {
+      render(null, wrapper)
     }
-    resolvedWatchers.value = []
+    unfinished.clear()
+  }
+
+  const handleInputChange = () => {
+    clearRun()
     allMeta.value = new Array(ops.components.value?.length || 0)
 
     if (!ops.components.value || (ops.propsValidator && !ops.propsValidator(ops.props.value))) {
       return
     }
+
+    const scope = effectScope(true)
+    runScope = scope
 
     for (const [index, cName] of ops.components.value.entries()) {
       const wrapper = document.createElement('div')
@@ -92,24 +119,29 @@ export const useDataResolver = <T extends object>(allMeta: Ref<(T | null)[]>, op
       const exposed = vnode.component?.exposed
 
       if (!exposed) {
+        render(null, wrapper)
         continue
       }
+      const isComplete = () => exposed.failed.value || (exposed.resolved.value && exposed.metadata.value !== null)
       const completeLoad = () => {
         allMeta.value.splice(index, 1, exposed.metadata.value)
+        unfinished.delete(wrapper)
         render(null, wrapper)
       }
-      if (exposed.resolved.value) {
+      if (isComplete()) {
         completeLoad()
         continue
       }
 
-      const unwatch = watch(exposed.resolved, (isResolved, wasResolved) => {
-        if (!wasResolved && isResolved) {
-          completeLoad()
-          unwatch()
-        }
+      unfinished.add(wrapper)
+      scope.run(() => {
+        const unwatch: WatchStopHandle = watch(isComplete, (complete) => {
+          if (complete) {
+            unwatch()
+            completeLoad()
+          }
+        })
       })
-      resolvedWatchers.value.push(unwatch)
     }
   }
 
@@ -125,9 +157,9 @@ export const useDataResolver = <T extends object>(allMeta: Ref<(T | null)[]>, op
   }
 
   const stopDataResolver = () => {
-    if (stopPrimaryWatch) {
-      stopPrimaryWatch()
-    }
+    stopPrimaryWatch?.()
+    stopPrimaryWatch = undefined
+    clearRun()
   }
 
   onMounted(() => {

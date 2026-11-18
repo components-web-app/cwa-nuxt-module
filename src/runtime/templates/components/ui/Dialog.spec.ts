@@ -342,3 +342,56 @@ describe('CwaUiDialog and the Save model (#461)', () => {
     expect(focusable.map(element => drawsFocusRing([...element.classList]))).toEqual(focusable.map(() => true))
   })
 })
+
+describe('CwaUiDialog without a Save model (#461, the add component dialog)', () => {
+  function mountPlain(props: Record<string, unknown> = {}, slots: Record<string, () => unknown> = {}) {
+    const Host = defineComponent({
+      setup() {
+        return () => h(Dialog, { title: 'Add a component', ...props }, {
+          default: () => h('p', 'Body'),
+          ...slots,
+        })
+      },
+    })
+    return mount(Host, { attachTo: document.body })
+  }
+
+  test('has no footer unless one is given', async () => {
+    mountPlain()
+    await flushPromises()
+
+    expect(q('footer')).toBeNull()
+  })
+
+  test('renders its own footer in place of Cancel and Save', async () => {
+    mountPlain({}, { footer: () => h('button', { type: 'button' }, 'Add') })
+    await flushPromises()
+
+    expect(qa('footer button').map(shown)).toEqual(['Add'])
+  })
+
+  test('a flush body leaves the padding to its content', async () => {
+    mountPlain({ flush: true })
+    await flushPromises()
+
+    expect(q('[data-testid="dialog-body"]')!.className).not.toContain('cwa:p-6')
+  })
+
+  test('controls inside announce through the dialog\'s own polite region', async () => {
+    const { useAnnounce } = await import('../core/ui/field-context')
+    let announce: ((text: string) => void) | undefined
+    const Speaker = defineComponent({
+      setup() {
+        announce = useAnnounce()
+        return () => h('span')
+      },
+    })
+    mountPlain({}, { default: () => h(Speaker) })
+    await flushPromises()
+
+    announce!('3 components')
+    await flushPromises()
+
+    expect(q('[data-testid="dialog-announcer"]')!.textContent).toBe('3 components')
+  })
+})
