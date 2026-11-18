@@ -98,3 +98,11 @@ The right-click menu (`CwaResourceManagerContextMenu` on `utils/ContextMenu.vue`
 - **The slide-over slides out on close**, mirroring its slide in, with the backdrop fading; with reduced motion it closes at once (7d).
 - **The slide-over's header line is its loading indicator**, only while its content loads: an indeterminate sweep in the field indicators' language, settling into the line's colour when the content arrives (`danger` if it fails); no animation when nothing loads, no sweep with reduced motion (7d).
 - **Revealed content scrolls into view**: when choosing an option reveals content below the visible area of a scrollable surface (dialogs and slide-overs first), the surface scrolls it into view with the least movement, never on open or re-render, instantly with reduced motion; one kit mechanism used wherever a choice reveals content (7e).
+
+### Persona reviews (2026-11-18), fix now
+- **Header menu is a real button** (`aria-expanded`, focus in, Escape back), header focus order matches the layout, the save tick is announced, the + hot-spot stops under reduced motion, Done asks before discarding an unadded component, login never shows raw API text (7c).
+- **Components are selectable by keyboard in edit mode**, with a skip-to-bar; rich-text editors are named for their component and field; the bar's tabs are a real tablist (7b).
+- **Deleting a draft has its own confirm** ("Discard the unpublished changes? The live version stays as it is."); the homepage never gets a recommended slug; an empty route path says "Enter a path."; dialogs announce a successful save (7d).
+- **First image upload's false "not saved"** and **`collaboration_states` 500 on adding Body Text** investigated and fixed or written up (7f).
+- Decided: Add persists only with `instantAdd`; new routes stay Live by default; outline colours stay as they are.
+- Open: visible labels or tooltips on the admin nav; files chosen on an unpersisted component, sent as one multipart create; a `#cwa/kit` types entry, usage docs on /kit, packaging the TipTap editor.
