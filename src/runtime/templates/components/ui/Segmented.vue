@@ -15,6 +15,7 @@ const props = withDefaults(defineProps<{
   labelHidden?: boolean
   info?: string
   description?: string
+  optional?: boolean
   disabled?: boolean
   options: SegmentedOption[]
   field?: string
@@ -24,6 +25,7 @@ const props = withDefaults(defineProps<{
   labelHidden: false,
   info: undefined,
   description: undefined,
+  optional: false,
   disabled: false,
   field: undefined,
   model: undefined,
@@ -48,6 +50,7 @@ function choose(next: unknown) {
     :label-hidden="labelHidden"
     :info="info"
     :description="description"
+    :optional="optional"
     :state="state"
     :model="model"
     :control-id="id"
@@ -73,7 +76,7 @@ function choose(next: unknown) {
           v-for="option in options"
           :key="option.value"
           :value="option.value"
-          class="cwa:h-full cwa:cursor-pointer cwa:whitespace-nowrap cwa:px-4 cwa:text-control cwa:text-fg-secondary cwa:outline-none cwa:transition-colors cwa:duration-(--cwa-duration-fast) cwa:hover:bg-field-hover cwa:focus-visible:z-1 cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-accent-fg cwa:disabled:cursor-not-allowed cwa:data-[state=on]:bg-surface cwa:data-[state=on]:font-medium cwa:data-[state=on]:text-fg cwa:data-[state=on]:shadow-[inset_0_0_0_3px_var(--cwa-color-field)] cwa:motion-reduce:transition-none"
+          class="cwa:h-full cwa:cursor-pointer cwa:whitespace-nowrap cwa:px-4 cwa:text-control cwa:text-fg-secondary cwa:outline-1 cwa:outline-transparent cwa:transition-colors cwa:duration-(--cwa-duration-fast) cwa:hover:bg-field-hover cwa:focus-visible:z-1 cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-accent-fg cwa:disabled:cursor-not-allowed cwa:data-[state=on]:bg-surface cwa:data-[state=on]:font-medium cwa:data-[state=on]:text-fg cwa:data-[state=on]:shadow-[inset_0_0_0_3px_var(--cwa-color-field)] cwa:motion-reduce:transition-none"
         >
           {{ option.label }}
         </ToggleGroupItem>

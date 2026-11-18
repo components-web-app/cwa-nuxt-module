@@ -1,5 +1,6 @@
-import { computed, isRef, onMounted, ref, toValue, watch } from 'vue'
+import { computed, isRef, onMounted, reactive, ref, toRaw, toValue, watch } from 'vue'
 import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
+import type { FetchError } from 'ofetch'
 import { useRoute, useRouter } from 'vue-router'
 import dayjs from 'dayjs'
 import isEqual from 'lodash-es/isEqual'
@@ -8,6 +9,16 @@ import type { CwaResource } from '#cwa/resources/resource-utils'
 import { useCwa } from '#cwa/composables/cwa'
 import { ErrorType } from '#cwa/storage/stores/error/state'
 import type { ApiResourceEvent } from '#cwa/resources/resources-manager'
+import type { ResourceModelField, RemoteFieldChange } from '#cwa/resources/model-editors'
+import type { CwaFieldState } from '#cwa/storage/stores/resources/state'
+import type { DialogFieldConflict, DialogForm } from '#cwa/templates/components/core/ui/dialog-form'
+
+const IDLE: CwaFieldState = Object.freeze({ status: 'idle', waiting: false, slow: false })
+const SOMEONE_ELSE = 'Someone else'
+
+function fieldOfPath(path: string | undefined) {
+  return path?.split(/[.[]/)[0] || undefined
+}
 
 export type TempCwaResource = Omit<CwaResource, '@id' | '_metadata'>
 
@@ -23,9 +34,10 @@ type UseItemOps = {
   routeHashAfterAdd?: ComputedRef<StartsWithHash>
   iri?: Ref<string | undefined>
   excludeFields?: string[]
+  dismissStoredErrors?: boolean
 }
 
-export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoint, validate, endpoint: userDefinedEndpoint, routeHashAfterAdd, iri, excludeFields }: UseItemOps) => {
+export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoint, validate, endpoint: userDefinedEndpoint, routeHashAfterAdd, iri, excludeFields, dismissStoredErrors }: UseItemOps) => {
   const $cwa = useCwa()
   const router = useRouter()
   const route = useRoute()
@@ -44,6 +56,12 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
   const isUpdating = ref(false)
   const localResourceData = ref<TempCwaResource | CwaResource>()
   const resourceIri = computed(() => (iri?.value || endpoint.value))
+
+  const fieldErrors = ref<Record<string, string>>({})
+  const conflicts = ref<Record<string, DialogFieldConflict>>({})
+  const formError = ref<string>()
+  const savedAt = ref<number>()
+  const failures = ref(0)
 
   const isAdding = computed(() => endpoint.value === 'add')
   const apiState = computed(() => (isAdding.value ? undefined : $cwa.resources.getResource(resourceIri.value).value?.apiState))
@@ -71,7 +89,7 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
     return loadedResource
   }
 
-  async function deleteResource(refreshEndpoints?: string[] | undefined, requestCompleteFn?: ApiResourceEvent['requestCompleteFn']) {
+  async function deleteResource(refreshEndpoints?: string[] | undefined, requestCompleteFn?: ApiResourceEvent['requestCompleteFn'], confirmed = false) {
     isUpdating.value = true
     await $cwa.resourcesManager.deleteResource({
       endpoint: iri?.value || endpoint.value,
@@ -82,7 +100,7 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
         emit('reload')
         emit('close')
       },
-    })
+    }, confirmed)
     isUpdating.value = false
   }
 
@@ -164,10 +182,23 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
         return resource.value as CwaResource | undefined
       }
 
-      const updatedResource = await $cwa.resourcesManager.updateResource({
+      const base: { [key: string]: any } = { ...resource.value }
+      let outcome: Promise<{ resource?: CwaResource, error?: FetchError<any> }> | undefined
+      const event = {
         endpoint: iri?.value || endpoint.value,
         data,
-      })
+        onRequest: (_iri: string, done?: Promise<{ resource?: CwaResource, error?: FetchError<any> }>) => {
+          outcome = done
+        },
+      }
+      const updatedResource = await $cwa.resourcesManager.updateResource(event)
+      const failure = updatedResource ? undefined : (await outcome)?.error
+      if (failure) {
+        saveFailed(event, failure, Object.keys(data), base)
+      }
+      else if (updatedResource) {
+        saveSucceeded(Object.keys(data))
+      }
       if (updatedResource && localResourceData.value && updatedResource['@id'] === resource.value?.['@id']) {
         const local: { [key: string]: any } = { ...localResourceData.value }
         for (const key of Object.keys(data)) {
@@ -191,6 +222,146 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
     isUpdating.value = false
     return savedResource
   }
+
+  function dismissStoredError(event: object) {
+    for (const error of $cwa.resourcesManager.errors) {
+      if (error.event && toRaw(error.event) === event) {
+        $cwa.resourcesManager.removeError(error.timestamp)
+      }
+    }
+  }
+
+  function saveSucceeded(fields: string[]) {
+    const errors = { ...fieldErrors.value }
+    for (const field of fields) {
+      delete errors[field]
+    }
+    fieldErrors.value = errors
+    formError.value = undefined
+    savedAt.value = Date.now()
+  }
+
+  function saveFailed(event: object, failure: FetchError<any>, fields: string[], base: { [key: string]: any }) {
+    dismissStoredErrors && dismissStoredError(event)
+    savedAt.value = undefined
+    const status = failure.statusCode
+    if (status === 422 && Array.isArray(failure.data?.violations)) {
+      const errors: Record<string, string> = {}
+      const general: string[] = []
+      for (const violation of failure.data.violations as { propertyPath?: string, message?: string }[]) {
+        const field = fieldOfPath(violation.propertyPath)
+        const message = violation.message || 'This value is not valid.'
+        if (field && fields.includes(field)) {
+          errors[field] ??= message
+        }
+        else {
+          general.push(message)
+        }
+      }
+      fieldErrors.value = { ...fieldErrors.value, ...errors }
+      formError.value = general.length ? general.join(' ') : undefined
+    }
+    else if (status === 412 && failure.data?.['@id']) {
+      const theirs: { [key: string]: any } = failure.data
+      const found: Record<string, DialogFieldConflict> = {}
+      for (const field of fields) {
+        if (field in theirs && !isEqual(theirs[field], base[field])) {
+          found[field] = { name: SOMEONE_ELSE, value: theirs[field] }
+        }
+      }
+      conflicts.value = { ...conflicts.value, ...found }
+      formError.value = Object.keys(found).length ? undefined : 'Someone else saved this first. Their changes are shown, and yours are kept: press Save again.'
+      const storedVersion = resource.value?._metadata?.version
+      const theirVersion = theirs._metadata?.version
+      if (typeof theirVersion === 'number' && (typeof storedVersion !== 'number' || theirVersion > storedVersion)) {
+        $cwa.resourcesManager.storeResource({ resource: theirs as CwaResource })
+      }
+    }
+    else {
+      formError.value = status ? 'The server couldn\'t save it. Nothing changed, and what you typed is still here.' : 'You\'re offline. This wasn\'t saved, and what you typed is still here.'
+    }
+    failures.value++
+  }
+
+  const unsavedFields = computed(() => {
+    if (isAdding.value) {
+      return []
+    }
+    return Object.keys(changedFields()).filter(field => !excludeFields?.includes(field))
+  })
+
+  watch(() => ({ ...localResourceData.value }) as { [key: string]: any }, (now, before) => {
+    const cleared = Object.keys(fieldErrors.value).filter(field => !isEqual(now[field], before?.[field]))
+    if (cleared.length) {
+      const errors = { ...fieldErrors.value }
+      cleared.forEach(field => delete errors[field])
+      fieldErrors.value = errors
+    }
+  })
+
+  function resolveConflict(field: string, value?: { value: unknown }) {
+    const { [field]: _resolved, ...rest } = conflicts.value
+    conflicts.value = rest
+    if (value && localResourceData.value) {
+      (localResourceData.value as { [key: string]: any })[field] = value.value
+    }
+  }
+
+  const models = new Map<string, ResourceModelField<any>>()
+
+  function model<T = unknown>(field: string): ResourceModelField<T> {
+    let found = models.get(field)
+    if (!found) {
+      const conflict = computed(() => conflicts.value[field])
+      found = {
+        field,
+        model: computed({
+          get: () => (localResourceData.value as { [key: string]: any } | undefined)?.[field],
+          set: (value) => {
+            if (localResourceData.value) {
+              (localResourceData.value as { [key: string]: any })[field] = value
+            }
+          },
+        }),
+        state: computed<CwaFieldState>(() => {
+          const error = fieldErrors.value[field]
+          if (conflict.value) {
+            return { status: 'conflict', waiting: false, slow: false, held: { user: { id: '', name: conflict.value.name }, value: conflict.value.value } }
+          }
+          return error ? { status: 'error', waiting: false, slow: false, error: { kind: 'violation', message: error } } : IDLE
+        }),
+        remoteChange: computed<RemoteFieldChange<unknown> | undefined>(() => conflict.value
+          ? {
+              name: conflict.value.name,
+              value: conflict.value.value,
+              accept: () => resolveConflict(field, { value: conflict.value!.value }),
+              keep: async () => resolveConflict(field),
+            }
+          : undefined),
+      }
+      models.set(field, found)
+    }
+    return found as ResourceModelField<T>
+  }
+
+  function discard() {
+    fieldErrors.value = {}
+    conflicts.value = {}
+    formError.value = undefined
+    syncLocalResourceWithStore()
+  }
+
+  const form: DialogForm = reactive({
+    unsavedFields,
+    fieldErrors,
+    conflicts,
+    formError,
+    saving: isUpdating,
+    savedAt,
+    failures,
+    model,
+    discard,
+  }) as unknown as DialogForm
 
   function syncLocalResourceWithStore(newResource?: TempCwaResource | undefined) {
     const storeResource = newResource || resource.value
@@ -239,5 +410,6 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
     loadResource,
     resetResource: syncLocalResourceWithStore,
     getInternalResourceLink,
+    form,
   }
 }

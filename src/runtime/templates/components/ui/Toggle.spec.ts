@@ -2,6 +2,7 @@
 import { afterEach, describe, expect, test } from 'vitest'
 import { enableAutoUnmount, mount } from '@vue/test-utils'
 import { axe } from '../../../../../test/utils/axe'
+import { drawsFocusRing } from '../../../../../test/utils/focus-ring'
 import { fakeFieldModel } from '../../../../../playground/app/kit/fake-field-model'
 import Toggle from './Toggle.vue'
 
@@ -39,5 +40,11 @@ describe('CwaUiToggle (#459)', () => {
     const wrapper = mount(Toggle, { props: { label: 'Featured', info: 'Shows it first.', model: fakeFieldModel(true, status) }, attachTo: document.body })
 
     expect(await axe(wrapper.element.parentElement as HTMLElement)).toHaveNoViolations()
+  })
+
+  test('the switch draws its focus ring when focused from the keyboard', () => {
+    const wrapper = mount(Toggle, { props: { label: 'Schedule', modelValue: false } })
+
+    expect(drawsFocusRing(wrapper.get('[role="switch"]').classes())).toBe(true)
   })
 })

@@ -137,16 +137,14 @@
       <ResourceLoadingIndicator class="cwa:absolute cwa:top-full cwa:left-0 cwa:z-notifications" />
     </div>
     <RequestErrors />
-    <ResourceModalOverlayTemplate :show="showEditModal && !!$cwa.resources.displayPageIri.value">
-      <PageResourceAdminModal
-        v-if="$cwa.resources.displayPageIri.value"
-        :iri="$cwa.resources.displayPageIri.value"
-        :resource-type="editPageResourceType"
-        :hide-view-link="true"
-        @close="closeModal"
-        @reload="goToAdminPagesView"
-      />
-    </ResourceModalOverlayTemplate>
+    <PageResourceAdminModal
+      v-if="showEditModal && $cwa.resources.displayPageIri.value"
+      :iri="$cwa.resources.displayPageIri.value"
+      :resource-type="editPageResourceType"
+      :hide-view-link="true"
+      @close="closeModal"
+      @reload="goToAdminPagesView"
+    />
     <ResourceModalOverlayTemplate :show="showStrandedModal">
       <StrandedComponentGroupsModal
         v-if="showStrandedModal"

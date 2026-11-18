@@ -2,6 +2,7 @@
 import { afterEach, describe, expect, test } from 'vitest'
 import { enableAutoUnmount, mount } from '@vue/test-utils'
 import { axe } from '../../../../../test/utils/axe'
+import { drawsFocusRing } from '../../../../../test/utils/focus-ring'
 import { fakeFieldModel } from '../../../../../playground/app/kit/fake-field-model'
 import Segmented from './Segmented.vue'
 
@@ -43,5 +44,11 @@ describe('CwaUiSegmented (#460)', () => {
     const wrapper = mount(Segmented, { props: { label: 'Link', info: 'Where it goes.', options, modelValue: 'url' }, attachTo: document.body })
 
     expect(await axe(wrapper.element as HTMLElement)).toHaveNoViolations()
+  })
+
+  test('each segment draws its focus ring when focused from the keyboard', () => {
+    const wrapper = mount(Segmented, { props: { label: 'Link', options, modelValue: 'page' } })
+
+    expect(wrapper.findAll('button').map(button => drawsFocusRing(button.classes()))).toEqual([true, true])
   })
 })

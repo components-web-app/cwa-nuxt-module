@@ -16,16 +16,24 @@ vi.mock('vue-router', async (importOriginal) => {
 
 const layoutIri = '/_/layouts/layout-uuid'
 
-function setup(stored: Record<string, any>, ops: { excludeFields?: string[], resourceType?: string | null } = {}) {
+function setup(stored: Record<string, any>, ops: { excludeFields?: string[], resourceType?: string | null, dismissStoredErrors?: boolean } = {}) {
   const store = reactive<Record<string, any>>({
     [layoutIri]: { data: stored, apiState: { status: 'SUCCESS' } },
   })
   const updateResource = vi.fn().mockResolvedValue({ ...stored, '@id': layoutIri })
   const createResource = vi.fn()
+  const errors = reactive<any[]>([])
+  const removeError = vi.fn((timestamp: number) => {
+    const index = errors.findIndex(error => error.timestamp === timestamp)
+    index > -1 && errors.splice(index, 1)
+  })
+  const storeResource = vi.fn(({ resource }: { resource: Record<string, any> }) => {
+    store[resource['@id']] = { data: resource, apiState: { status: 'SUCCESS' } }
+  })
   // @ts-expect-error
   vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => ({
     resources: { getResource: vi.fn((iri: string) => computed(() => store[iri])) },
-    resourcesManager: { createResource, updateResource, deleteResource: vi.fn(), addError: vi.fn() },
+    resourcesManager: { createResource, updateResource, deleteResource: vi.fn(), addError: vi.fn(), errors, removeError, storeResource },
     fetchResource: vi.fn(),
   }))
   const emit = vi.fn()
@@ -39,6 +47,7 @@ function setup(stored: Record<string, any>, ops: { excludeFields?: string[], res
         defaultResource: {},
         endpoint: ref(layoutIri),
         excludeFields: ops.excludeFields,
+        dismissStoredErrors: ops.dismissStoredErrors,
       })
       return () => null
     },
@@ -47,7 +56,15 @@ function setup(stored: Record<string, any>, ops: { excludeFields?: string[], res
   const refetch = (data: Record<string, any>) => {
     store[layoutIri] = { data, apiState: { status: 'SUCCESS' } }
   }
-  return { itemPage, updateResource, createResource, emit, refetch }
+  function failWith(statusCode: number | undefined, data?: Record<string, any>) {
+    updateResource.mockImplementationOnce(async (event: any) => {
+      const error = Object.assign(new Error('failed'), { statusCode, data })
+      errors.push({ timestamp: 1, event, detail: 'failed', violations: [] })
+      event.onRequest?.(layoutIri, Promise.resolve({ error }))
+      return undefined
+    })
+  }
+  return { itemPage, updateResource, createResource, emit, refetch, failWith, errors, removeError, storeResource }
 }
 
 const layout = {
@@ -71,7 +88,7 @@ describe('useItemPage update body', () => {
     itemPage.localResourceData.value!.reference = 'Renamed'
     await itemPage.saveResource()
     expect(updateResource).toHaveBeenCalledOnce()
-    expect(updateResource.mock.calls[0]![0]).toEqual({ endpoint: layoutIri, data: { reference: 'Renamed' } })
+    expect(updateResource.mock.calls[0]![0]).toEqual({ endpoint: layoutIri, data: { reference: 'Renamed' }, onRequest: expect.any(Function) })
   })
 
   test('a field cleared to null is sent as null', async () => {
@@ -271,5 +288,185 @@ describe('useItemPage keeps local edits through a re-fetch (#458)', () => {
     itemPage.resetResource()
 
     expect(itemPage.localResourceData.value?.reference).toBe('Main')
+  })
+})
+
+describe('useItemPage Save model (#461)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  test('lists the fields changed in the local copy, which Save counts, and nothing for an untouched copy', async () => {
+    const { itemPage } = setup({ ...layout }, { excludeFields: ['settings'] })
+    await flushPromises()
+    expect(itemPage.form.unsavedFields).toEqual([])
+
+    itemPage.localResourceData.value!.reference = 'Renamed'
+    itemPage.form.model('uiComponent').model.value = 'CwaLayoutSecondary'
+    itemPage.localResourceData.value!.settings = { theme: 'light' }
+
+    expect(itemPage.form.unsavedFields).toEqual(['reference', 'uiComponent'])
+    itemPage.localResourceData.value!.reference = 'Main'
+    expect(itemPage.form.unsavedFields).toEqual(['uiComponent'])
+  })
+
+  test('a field model reads and writes the local copy, never the store, and names its field', async () => {
+    const { itemPage, updateResource } = setup({ ...layout })
+    await flushPromises()
+    const reference = itemPage.form.model<string>('reference')
+
+    expect(reference.field).toBe('reference')
+    expect(reference.model.value).toBe('Main')
+    reference.model.value = 'Renamed'
+
+    expect(itemPage.localResourceData.value?.reference).toBe('Renamed')
+    expect(itemPage.resource.value?.reference).toBe('Main')
+    expect(updateResource).not.toHaveBeenCalled()
+    expect(itemPage.form.model('reference')).toBe(reference)
+  })
+
+  test('a 422 puts each violation on its field, keeps the edits unsaved, and shows no request-error toast in a dialog that shows the form errors', async () => {
+    const { itemPage, failWith, errors, removeError } = setup({ ...layout }, { dismissStoredErrors: true })
+    await flushPromises()
+    itemPage.localResourceData.value!.reference = ''
+    itemPage.localResourceData.value!.uiComponent = 'Nope'
+    failWith(422, { violations: [
+      { propertyPath: 'reference', message: 'Add a reference.' },
+      { propertyPath: 'reference', message: 'A second message is not shown.' },
+      { propertyPath: 'uiComponent.name', message: 'Choose a page UI.' },
+      { propertyPath: 'somethingElse', message: 'Something else is wrong.' },
+    ] })
+
+    expect(await itemPage.saveResource()).toBeUndefined()
+
+    expect(itemPage.form.fieldErrors).toEqual({ reference: 'Add a reference.', uiComponent: 'Choose a page UI.' })
+    expect(itemPage.form.formError).toBe('Something else is wrong.')
+    expect(itemPage.form.model('reference').state!.value).toMatchObject({ status: 'error', error: { kind: 'violation', message: 'Add a reference.' } })
+    expect(itemPage.form.unsavedFields).toEqual(['reference', 'uiComponent'])
+    expect(itemPage.form.failures).toBe(1)
+    expect(removeError).toHaveBeenCalledWith(1)
+    expect(errors).toEqual([])
+  })
+
+  test('a failed save keeps its stored error for a page that shows the store\'s errors itself', async () => {
+    const { itemPage, failWith, errors, removeError } = setup({ ...layout })
+    await flushPromises()
+    itemPage.localResourceData.value!.reference = ''
+    failWith(422, { violations: [{ propertyPath: 'reference', message: 'Add a reference.' }] })
+    await itemPage.saveResource()
+
+    failWith(500, { detail: 'Boom' })
+    await itemPage.saveResource()
+
+    expect(removeError).not.toHaveBeenCalled()
+    expect(errors).toHaveLength(2)
+    expect(itemPage.form.failures).toBe(2)
+  })
+
+  test('editing a field clears its error at once, and only its own', async () => {
+    const { itemPage, failWith } = setup({ ...layout })
+    await flushPromises()
+    itemPage.localResourceData.value!.reference = ''
+    itemPage.localResourceData.value!.uiComponent = 'Nope'
+    failWith(422, { violations: [{ propertyPath: 'reference', message: 'Add a reference.' }, { propertyPath: 'uiComponent', message: 'Choose one.' }] })
+    await itemPage.saveResource()
+
+    itemPage.form.model('reference').model.value = 'Fixed'
+    await flushPromises()
+
+    expect(itemPage.form.fieldErrors).toEqual({ uiComponent: 'Choose one.' })
+    expect(itemPage.form.model('reference').state!.value.status).toBe('idle')
+  })
+
+  test('a successful save clears the errors of the fields it sent and marks the save time', async () => {
+    const { itemPage, failWith } = setup({ ...layout })
+    await flushPromises()
+    itemPage.localResourceData.value!.reference = ''
+    failWith(422, { violations: [{ propertyPath: 'reference', message: 'Add a reference.' }] })
+    await itemPage.saveResource()
+    expect(itemPage.form.savedAt).toBeUndefined()
+
+    await itemPage.saveResource()
+
+    expect(itemPage.form.fieldErrors).toEqual({})
+    expect(itemPage.form.savedAt).toEqual(expect.any(Number))
+  })
+
+  test('a 412 marks each sent field another editor changed as a conflict, stores their newer version and keeps mine', async () => {
+    const { itemPage, failWith, storeResource, removeError } = setup({ ...layout, _metadata: { persisted: true, version: 3 } }, { dismissStoredErrors: true })
+    await flushPromises()
+    itemPage.localResourceData.value!.reference = 'Mine'
+    itemPage.localResourceData.value!.uiComponent = 'CwaLayoutMine'
+    const theirs = { ...layout, _metadata: { persisted: true, version: 4 }, reference: 'Theirs', uiClassNames: ['c'] }
+    failWith(412, theirs)
+
+    await itemPage.saveResource()
+    await flushPromises()
+
+    expect(itemPage.form.conflicts).toEqual({ reference: { name: 'Someone else', value: 'Theirs' } })
+    expect(storeResource).toHaveBeenCalledWith({ resource: theirs })
+    expect(removeError).toHaveBeenCalledWith(1)
+    expect(itemPage.localResourceData.value).toMatchObject({ reference: 'Mine', uiComponent: 'CwaLayoutMine', uiClassNames: ['c'] })
+    expect(itemPage.form.model('reference').state!.value.status).toBe('conflict')
+    expect(itemPage.form.model('reference').remoteChange.value).toMatchObject({ name: 'Someone else', value: 'Theirs' })
+  })
+
+  test('Keep mine resolves the conflict and stays an unsaved change; Use theirs takes their value, which is no longer one', async () => {
+    const { itemPage, failWith } = setup({ ...layout, _metadata: { persisted: true, version: 3 } })
+    await flushPromises()
+    itemPage.localResourceData.value!.reference = 'Mine'
+    itemPage.localResourceData.value!.uiComponent = 'CwaLayoutMine'
+    failWith(412, { ...layout, _metadata: { persisted: true, version: 4 }, reference: 'Theirs', uiComponent: 'CwaLayoutTheirs' })
+    await itemPage.saveResource()
+    await flushPromises()
+
+    await itemPage.form.model('reference').remoteChange.value!.keep()
+    itemPage.form.model('uiComponent').remoteChange.value!.accept()
+
+    expect(itemPage.form.conflicts).toEqual({})
+    expect(itemPage.localResourceData.value).toMatchObject({ reference: 'Mine', uiComponent: 'CwaLayoutTheirs' })
+    expect(itemPage.form.unsavedFields).toEqual(['reference'])
+  })
+
+  test('a 412 whose version is not newer than the stored one does not overwrite the store', async () => {
+    const { itemPage, failWith, storeResource } = setup({ ...layout, _metadata: { persisted: true, version: 4 } })
+    await flushPromises()
+    itemPage.localResourceData.value!.reference = 'Mine'
+    failWith(412, { ...layout, _metadata: { persisted: true, version: 4 }, reference: 'Theirs' })
+
+    await itemPage.saveResource()
+
+    expect(storeResource).not.toHaveBeenCalled()
+  })
+
+  test('a server or network failure keeps the edits and says so in the form, not in a toast, in a dialog that shows the form errors', async () => {
+    const { itemPage, failWith, removeError } = setup({ ...layout }, { dismissStoredErrors: true })
+    await flushPromises()
+    itemPage.localResourceData.value!.reference = 'Mine'
+    failWith(500, { detail: 'Boom' })
+    await itemPage.saveResource()
+    expect(itemPage.form.formError).toBe('The server couldn\'t save it. Nothing changed, and what you typed is still here.')
+
+    failWith(undefined)
+    await itemPage.saveResource()
+    expect(itemPage.form.formError).toBe('You\'re offline. This wasn\'t saved, and what you typed is still here.')
+    expect(removeError).toHaveBeenCalledTimes(2)
+    expect(itemPage.form.failures).toBe(2)
+    expect(itemPage.form.unsavedFields).toEqual(['reference'])
+  })
+
+  test('discard puts the local copy back to the stored resource and clears its errors and conflicts', async () => {
+    const { itemPage, failWith } = setup({ ...layout })
+    await flushPromises()
+    itemPage.localResourceData.value!.reference = ''
+    failWith(422, { violations: [{ propertyPath: 'reference', message: 'Add a reference.' }] })
+    await itemPage.saveResource()
+
+    itemPage.form.discard()
+
+    expect(itemPage.localResourceData.value?.reference).toBe('Main')
+    expect(itemPage.form.fieldErrors).toEqual({})
+    expect(itemPage.form.formError).toBeUndefined()
+    expect(itemPage.form.unsavedFields).toEqual([])
   })
 })

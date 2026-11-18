@@ -12,6 +12,7 @@ const props = withDefaults(defineProps<{
   labelHidden?: boolean
   info?: string
   description?: string
+  optional?: boolean
   placeholder?: string
   width?: FieldWidth
   disabled?: boolean
@@ -27,6 +28,7 @@ const props = withDefaults(defineProps<{
   labelHidden: false,
   info: undefined,
   description: undefined,
+  optional: false,
   placeholder: undefined,
   width: 'md',
   disabled: false,
@@ -58,6 +60,7 @@ function onInput(event: Event) {
     :label-hidden="labelHidden"
     :info="info"
     :description="description"
+    :optional="optional"
     :width="width"
     :state="state"
     :model="model"

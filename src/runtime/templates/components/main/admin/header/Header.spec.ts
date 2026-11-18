@@ -312,11 +312,10 @@ describe('Header', () => {
     test('clicking the edit-page label opens the page admin modal', async () => {
       mockCwa({ admin: buildAdmin({ isEditing: false }) })
       const wrapper = mountHeader()
-      expect(wrapper.find('.overlay-stub').attributes('data-show')).toBe('false')
+      expect(wrapper.findComponent({ name: 'PageResourceAdminModal' }).exists()).toBe(false)
       const span = wrapper.findAll('span').find(s => s.text().includes('My Reference'))
       expect(span).toBeTruthy()
       await span!.trigger('click')
-      expect(wrapper.find('.overlay-stub').attributes('data-show')).toBe('true')
       expect(wrapper.findComponent({ name: 'PageResourceAdminModal' }).exists()).toBe(true)
     })
 
@@ -474,14 +473,14 @@ describe('Header', () => {
   })
 
   describe('modal close / reload handlers', () => {
-    test('@close hides the modal overlay', async () => {
+    test('@close closes the page settings dialog', async () => {
       mockCwa({ admin: buildAdmin({ isEditing: false }) })
       const wrapper = mountHeader()
       const span = wrapper.findAll('span').find(s => s.text().includes('My Reference'))
       await span!.trigger('click')
-      expect(wrapper.find('.overlay-stub').attributes('data-show')).toBe('true')
+      expect(wrapper.findComponent({ name: 'PageResourceAdminModal' }).exists()).toBe(true)
       await wrapper.findComponent({ name: 'PageResourceAdminModal' }).vm.$emit('close')
-      expect(wrapper.find('.overlay-stub').attributes('data-show')).toBe('false')
+      expect(wrapper.findComponent({ name: 'PageResourceAdminModal' }).exists()).toBe(false)
     })
 
     test('@reload navigates to the admin pages view', async () => {

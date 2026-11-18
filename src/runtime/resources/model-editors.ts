@@ -18,6 +18,7 @@ export interface RemoteFieldChange<T = unknown> {
 }
 
 export interface ResourceModelField<T = unknown> {
+  field?: string
   model: { value: T | null | undefined }
   remoteChange: { readonly value: RemoteFieldChange<T> | undefined }
   focusedBy?: { readonly value: FocusedPeer[] }

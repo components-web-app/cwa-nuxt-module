@@ -45,13 +45,33 @@ function onChecked(checked: boolean) {
     :name="field"
     own-label
   >
-    <template #default="{ describedBy, busy }">
+    <template #default="{ describedBy, busy, modal, unsaved }">
       <div
-        class="cwa:flex cwa:h-control cwa:items-center cwa:gap-3 cwa:pointer-coarse:h-hit"
-        :class="{ 'cwa:opacity-50': disabled || unbound }"
+        class="cwa:flex cwa:items-center cwa:gap-3"
+        :class="[modal ? 'cwa:min-h-hit cwa:w-full cwa:justify-between' : 'cwa:h-control cwa:pointer-coarse:h-hit', { 'cwa:opacity-50': disabled || unbound }]"
         v-bind="model?.focusListeners"
       >
+        <span
+          v-if="modal"
+          class="cwa:flex cwa:flex-wrap cwa:items-center cwa:gap-x-2"
+          :class="{ 'cwa:sr-only': labelHidden }"
+        >
+          <label
+            :for="id"
+            class="cwa:text-label cwa:text-fg"
+            :class="disabled || unbound ? 'cwa:cursor-not-allowed' : 'cwa:cursor-pointer'"
+          >{{ label }}</label>
+          <span
+            v-if="unsaved"
+            data-testid="field-unsaved"
+            class="cwa:inline-flex cwa:items-center cwa:gap-1.5 cwa:text-helper cwa:font-medium cwa:text-fg-muted"
+          ><span
+            aria-hidden="true"
+            class="cwa:size-2 cwa:rounded-toggle cwa:bg-accent-fg"
+          />Unsaved</span>
+        </span>
         <label
+          v-else
           :for="id"
           class="cwa:whitespace-nowrap cwa:text-label cwa:text-fg-muted"
           :class="[labelHidden ? 'cwa:sr-only' : '', disabled || unbound ? 'cwa:cursor-not-allowed' : 'cwa:cursor-pointer']"
@@ -62,7 +82,7 @@ function onChecked(checked: boolean) {
           :disabled="disabled || unbound"
           :aria-describedby="describedBy"
           :aria-busy="busy ? 'true' : undefined"
-          class="cwa:relative cwa:inline-flex cwa:h-5 cwa:w-9 cwa:shrink-0 cwa:items-center cwa:rounded-toggle cwa:bg-toggle-off cwa:p-0.5 cwa:transition-colors cwa:duration-(--cwa-duration-fast) cwa:motion-reduce:transition-none cwa:outline-none cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-accent-fg cwa:data-[state=checked]:bg-accent cwa:disabled:cursor-not-allowed cwa:cursor-pointer"
+          class="cwa:relative cwa:inline-flex cwa:h-5 cwa:w-9 cwa:shrink-0 cwa:items-center cwa:rounded-toggle cwa:bg-toggle-off cwa:p-0.5 cwa:transition-colors cwa:duration-(--cwa-duration-fast) cwa:motion-reduce:transition-none cwa:outline-1 cwa:outline-transparent cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-accent-fg cwa:data-[state=checked]:bg-accent cwa:disabled:cursor-not-allowed cwa:cursor-pointer"
           @update:model-value="onChecked"
         >
           <SwitchThumb class="cwa:block cwa:size-4 cwa:rounded-toggle cwa:bg-white cwa:transition-transform cwa:duration-(--cwa-duration-fast) cwa:motion-reduce:transition-none cwa:data-[state=checked]:translate-x-4" />

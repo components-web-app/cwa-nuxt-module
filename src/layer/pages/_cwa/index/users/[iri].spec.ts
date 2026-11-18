@@ -201,6 +201,9 @@ describe('admin user page — changing the email (#449)', () => {
         createResource: vi.fn(),
         deleteResource: vi.fn(),
         addError: vi.fn(),
+        removeError: vi.fn((timestamp: number) => {
+          errors.value = errors.value.filter(error => error.timestamp !== timestamp)
+        }),
         get errors() { return errors.value },
       },
       fetchResource: vi.fn(async () => {
@@ -242,6 +245,7 @@ describe('admin user page — changing the email (#449)', () => {
     expect(updateResource).toHaveBeenCalledWith({
       endpoint: userIri,
       data: { newEmailAddress: 'new@example.com', oldPassword: 'my-own-password' },
+      onRequest: expect.any(Function),
     })
   })
 
@@ -266,6 +270,7 @@ describe('admin user page — changing the email (#449)', () => {
     expect(updateResource).toHaveBeenLastCalledWith({
       endpoint: userIri,
       data: { newEmailAddress: 'newer@example.com' },
+      onRequest: expect.any(Function),
     })
   })
 
@@ -277,7 +282,7 @@ describe('admin user page — changing the email (#449)', () => {
     await saveButton(wrapper).trigger('click')
     await flushPromises()
 
-    expect(updateResource).toHaveBeenCalledWith({ endpoint: userIri, data: { enabled: false } })
+    expect(updateResource).toHaveBeenCalledWith({ endpoint: userIri, data: { enabled: false }, onRequest: expect.any(Function) })
   })
 
   test('an email edited back to the pending address sends no password', async () => {
@@ -295,7 +300,7 @@ describe('admin user page — changing the email (#449)', () => {
     await saveButton(wrapper).trigger('click')
     await flushPromises()
 
-    expect(updateResource).toHaveBeenCalledWith({ endpoint: userIri, data: { enabled: false } })
+    expect(updateResource).toHaveBeenCalledWith({ endpoint: userIri, data: { enabled: false }, onRequest: expect.any(Function) })
   })
 
   test('a 422 on `oldPassword` shows its message on that field', async () => {
@@ -318,6 +323,28 @@ describe('admin user page — changing the email (#449)', () => {
     const message = wrapper.find('[data-old-password-error]')
     expect(message.text()).toBe('This value should be the user\'s current password.')
     expect(message.element.previousElementSibling).toBe(field('Your current password')!.element.parentElement)
+  })
+
+  test('a save refused with a 422 on `oldPassword` keeps its message on the field after the save returns', async () => {
+    const { wrapper, field, errors, updateResource } = await setupRealItemPage()
+    const message = 'This value should be the user\'s current password.'
+    updateResource.mockImplementationOnce(async (event: any) => {
+      const violations = [{ property: 'oldPassword', propertyPath: 'oldPassword', message }]
+      errors.value = [...errors.value, { type: ErrorType.VALIDATION, statusCode: 422, timestamp: 1, detail: `oldPassword: ${message}`, event, violations }]
+      event.onRequest?.(userIri, Promise.resolve({ error: Object.assign(new Error('422'), { statusCode: 422, data: { violations } }) }))
+      return undefined
+    })
+
+    field('Email')!.vm.$emit('update:modelValue', 'new@example.com')
+    await flushPromises()
+    field('Your current password')!.vm.$emit('update:modelValue', 'wrong-password')
+    await flushPromises()
+    await saveButton(wrapper).trigger('click')
+    await flushPromises()
+
+    expect(updateResource).toHaveBeenCalledTimes(1)
+    expect(errors.value).toHaveLength(1)
+    expect(wrapper.find('[data-old-password-error]').text()).toBe(message)
   })
 
   test('a 422 on another resource\'s `oldPassword` is not shown', async () => {

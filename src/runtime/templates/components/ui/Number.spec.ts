@@ -2,6 +2,7 @@
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import { enableAutoUnmount, mount } from '@vue/test-utils'
 import { axe } from '../../../../../test/utils/axe'
+import { drawsFocusRing } from '../../../../../test/utils/focus-ring'
 import { announceKey } from '../core/ui/field-keys'
 import Num from './Number.vue'
 
@@ -93,5 +94,11 @@ describe('CwaUiNumber (#459)', () => {
     await wrapper.get('input').setValue(String(typed))
 
     expect(await axe(wrapper.element as HTMLElement)).toHaveNoViolations()
+  })
+
+  test('the step buttons draw their focus ring when focused from the keyboard', () => {
+    const { down, up } = mountNumber()
+
+    expect([down, up].map(button => drawsFocusRing(button.classes()))).toEqual([true, true])
   })
 })

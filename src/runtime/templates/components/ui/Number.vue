@@ -153,7 +153,7 @@ onBeforeUnmount(() => {
   }
 })
 
-const stepButton = 'cwa:grid cwa:h-full cwa:w-control cwa:shrink-0 cwa:place-items-center cwa:text-base cwa:text-fg cwa:outline-none cwa:focus-visible:outline-2 cwa:focus-visible:-outline-offset-2 cwa:focus-visible:outline-accent-fg cwa:pointer-coarse:w-hit'
+const stepButton = 'cwa:grid cwa:h-full cwa:w-control cwa:shrink-0 cwa:place-items-center cwa:text-base cwa:text-fg cwa:outline-1 cwa:outline-transparent cwa:focus-visible:outline-2 cwa:focus-visible:-outline-offset-2 cwa:focus-visible:outline-accent-fg cwa:pointer-coarse:w-hit'
 
 function stepLook(blocked: boolean) {
   return blocked || inactive.value ? 'cwa:text-fg/40 cwa:cursor-not-allowed' : 'cwa:cursor-pointer cwa:hover:bg-step-hover cwa:active:bg-step-press'
