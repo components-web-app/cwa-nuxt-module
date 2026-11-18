@@ -39,7 +39,7 @@ function same() {
   <KitSim
     id="kit-sim-toasts"
     title="Simulation: toasts"
-    intro="Raised through useCwaToast(), the real toaster. At most 3 show, the newest on top; the rest wait. Raise all five at once to see the queue."
+    intro="Raised through useCwaToast(), the real toaster. At most 3 show, the oldest on top; the rest wait behind “+N more”, beside Dismiss all. Raise all five at once to see the queue."
   >
     <template #controls>
       <CwaUiButton

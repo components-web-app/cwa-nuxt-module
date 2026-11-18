@@ -438,3 +438,37 @@ test('kit: a textarea beside its label lines the label up with its first line of
   await expect(page.locator('.kit-place-bar [data-kit-field="textarea"]')).toHaveCount(0)
   expect(warnings).toEqual([])
 })
+
+for (const [width, height] of [[1280, 600], [390, 600]]) {
+  test(`kit at ${width}×${height}: six toasts show the oldest 3 and "+3 more", which expands them all in a stack that scrolls within the window, and Dismiss all clears them`, async ({ page }) => {
+    await openKit(page, width)
+    await page.setViewportSize({ width, height })
+    const toaster = page.getByTestId('toaster')
+    const more = toaster.getByRole('button', { name: 'Show 3 more notifications' })
+    await expect(async () => {
+      await page.getByTestId('kit-toast-six').click()
+      await expect(more).toBeVisible({ timeout: 500 })
+    }).toPass()
+    await expect(toaster.getByTestId('toast-title')).toHaveText(['Title wasn’t saved', 'Oops! There was a problem.', 'Mercure reconnected'])
+
+    await more.click()
+    await expect(toaster.getByTestId('toast-title')).toHaveCount(6)
+    const list = toaster.getByTestId('toaster-list')
+    const boxes = await page.evaluate(() => {
+      const rect = selector => document.querySelector(selector).getBoundingClientRect()
+      const list = document.querySelector('[data-testid="toaster-list"]')
+      return { list: rect('[data-testid="toaster-list"]'), row: rect('[data-testid="toaster-overflow"]'), scrolls: list.scrollHeight > list.clientHeight, page: document.documentElement.scrollWidth }
+    })
+    expect(boxes.list.top).toBeGreaterThanOrEqual(0)
+    expect(boxes.row.bottom).toBeLessThanOrEqual(height)
+    expect(boxes.scrolls).toBe(true)
+    expect(boxes.page).toBeLessThanOrEqual(width)
+    await list.evaluate(element => element.scrollTo({ top: element.scrollHeight }))
+    await expect(toaster.getByTestId('toast-title').last()).toBeInViewport()
+
+    await page.keyboard.press('Escape')
+    await expect(toaster.getByTestId('toast-title')).toHaveCount(3)
+    await toaster.getByRole('button', { name: 'Dismiss all 6 notifications' }).click()
+    await expect(toaster.getByTestId('toast-title')).toHaveCount(0)
+  })
+}
