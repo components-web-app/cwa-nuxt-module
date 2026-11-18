@@ -12,6 +12,7 @@ import RouteRecommendation from '#cwa/templates/components/core/admin/RouteRecom
 import type { CwaRouteLiveAt, RouteLiveState } from '#cwa/resources/route-publication'
 import { getRouteOwnLiveState, isRouteGatedByAncestor, routeReachableAt } from '#cwa/resources/route-publication'
 import { formatDateTime } from '#cwa/resources/date-time-input'
+import { normaliseRoutePath, routePathProblem } from '#cwa/resources/route-path'
 
 const { currentPath, parentRoutePrefix, routePublication, recommendedPath, recommendedFrom, childPaths = [], redirectCount = 0, pathError, noun = 'page', deleting = false } = defineProps<{
   currentPath: string
@@ -55,7 +56,7 @@ const localPrefix = ref(initial.prefix)
 const localSuffix = ref(initial.suffix)
 
 watch([localPrefix, localSuffix], ([prefix, suffix]) => {
-  suffix = (suffix ?? '').trim()
+  suffix = normaliseRoutePath(suffix ?? '')
   if (!suffix) {
     pathModel.value = ''
   }
@@ -100,7 +101,11 @@ const suffixModel = computed({
 })
 
 const hasPath = computed(() => !!localSuffix.value.trim())
-const pathInvalid = computed(() => pathError ?? (/\s/.test(pathModel.value) ? 'A path can\'t contain spaces. Use a hyphen instead.' : undefined))
+const pathInvalid = computed(() => pathError ?? routePathProblem(pathModel.value))
+
+function normaliseSuffix() {
+  localSuffix.value = normaliseRoutePath(localSuffix.value)
+}
 const isRecommended = computed(() => !!recommendedPath && pathModel.value === recommendedPath)
 
 function useRecommended() {
@@ -228,6 +233,7 @@ const deleteDescription = computed(() => {
               :description="isRecommended ? 'This is the recommended path.' : undefined"
               data-testid="route-suffix"
               class="cwa:min-w-0 cwa:flex-1 cwa:@max-[25rem]:w-full"
+              @focusout="normaliseSuffix"
             />
           </div>
         </div>

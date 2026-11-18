@@ -293,16 +293,16 @@ describe('RoutesTab', () => {
       expect(confirmMock).not.toHaveBeenCalled()
     })
 
-    test('a path with a space cannot be saved, and says why', async () => {
+    test.each(['/spring?sale', '/spring#sale'])('a path “%s” cannot be saved, and says why', async (path) => {
       const itemPage = setupItemPage()
       mockCwa()
       const wrapper = mountTab()
       await flushPromises()
       await openSub(wrapper, 'route')
-      itemPage.localResourceData.value.path = '/my page'
+      itemPage.localResourceData.value.path = path
       await flushPromises()
 
-      expect(save(wrapper).attributes('title')).toBe('A path can\'t contain spaces. Use a hyphen instead.')
+      expect(save(wrapper).attributes('title')).toBe('A path can\'t contain ? or #. They start a query or a page anchor.')
       await save(wrapper).trigger('click')
       await flushPromises()
       expect(itemPage.saveResource).not.toHaveBeenCalled()
@@ -879,7 +879,36 @@ describe('RoutesTab', () => {
       expect(cwa.resourcesManager.createResource).not.toHaveBeenCalled()
     })
 
-    test.each(['old-shaker', '/old shaker'])('“%s” is checked before sending and the reason shown', async (typed) => {
+    test('an old address typed with spaces is sent with a hyphen for each run', async () => {
+      setupItemPage()
+      const cwa = mockCwa()
+      const wrapper = mountTab()
+      await openSub(wrapper, 'from')
+      await wrapper.find('[data-testid="route-redirect-add"]').trigger('click')
+      await wrapper.find('input').setValue(' /old  shaker ')
+
+      await save(wrapper).trigger('click')
+      await flushPromises()
+
+      expect(cwa.resourcesManager.createResource).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ path: '/old-shaker', name: '/old-shaker' }) }))
+    })
+
+    test.each(['/old?shaker', '/old#shaker'])('an old address “%s” cannot be added, and says why', async (typed) => {
+      setupItemPage()
+      const cwa = mockCwa()
+      const wrapper = mountTab()
+      await openSub(wrapper, 'from')
+      await wrapper.find('[data-testid="route-redirect-add"]').trigger('click')
+      await wrapper.find('input').setValue(typed)
+      await flushPromises()
+
+      expect(save(wrapper).attributes('title')).toBe('A path can\'t contain ? or #. They start a query or a page anchor.')
+      await save(wrapper).trigger('click')
+      await flushPromises()
+      expect(cwa.resourcesManager.createResource).not.toHaveBeenCalled()
+    })
+
+    test.each(['old-shaker'])('“%s” is checked before sending and the reason shown', async (typed) => {
       setupItemPage()
       const cwa = mockCwa()
       const wrapper = mountTab()
@@ -891,7 +920,7 @@ describe('RoutesTab', () => {
       await flushPromises()
 
       expect(cwa.resourcesManager.createResource).not.toHaveBeenCalled()
-      expect(wrapper.find('[data-testid="input-invalid"]').text()).toBe('Start with / and leave out spaces, for example /old-kitchens.')
+      expect(wrapper.find('[data-testid="input-invalid"]').text()).toBe('Start with /, for example /old-kitchens.')
     })
 
     test('a failed add keeps what was typed under an alert', async () => {

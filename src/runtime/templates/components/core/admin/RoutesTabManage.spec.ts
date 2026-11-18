@@ -205,14 +205,30 @@ describe('RoutesTabManage', () => {
       expect(wrapper.find('[data-testid="route-go-live-line"]').text()).toBe('Visitors will reach this page at /.')
     })
 
-    test('a path with a space is flagged as it is typed, and the API\'s own error still wins', async () => {
+    test.each([
+      ['/ (root)', null, '', 'spring  sale ', '/spring-sale'],
+      ['a parent route', '/conference', '/conference', 'spring sale', '/conference/spring-sale'],
+    ])('spaces typed under %s become one hyphen each run in the path and its hint as they are typed, and in the field once it is left, so the caret never jumps', async (_, parentRoutePrefix, modelValue, typed, path) => {
+      const wrapper = mountManage({ currentPath: '', modelValue, parentRoutePrefix })
+      await getSuffixInput(wrapper).vm.$emit('update:modelValue', typed)
+      expect(wrapper.emitted('update:modelValue')!.at(-1)).toEqual([path])
+      expect(wrapper.find('[data-testid="route-go-live-line"]').text()).toBe(`Visitors will reach this page at ${path}.`)
+      expect(getSuffixInput(wrapper).props('modelValue')).toBe(typed)
+      expect(getSuffixInput(wrapper).props('invalid')).toBeUndefined()
+
+      await getSuffixInput(wrapper).vm.$emit('focusout')
+      expect(getSuffixInput(wrapper).props('modelValue')).toBe('spring-sale')
+      expect(wrapper.emitted('update:modelValue')!.at(-1)).toEqual([path])
+    })
+
+    test.each(['spring?sale', 'spring#sale'])('“%s” is refused as it is typed, and the API\'s own error still wins', async (typed) => {
       const wrapper = mountManage({ currentPath: '', modelValue: '', parentRoutePrefix: null })
-      await getSuffixInput(wrapper).vm.$emit('update:modelValue', 'my page')
-      expect(getSuffixInput(wrapper).props('invalid')).toBe('A path can\'t contain spaces. Use a hyphen instead.')
-      await getSuffixInput(wrapper).vm.$emit('update:modelValue', 'my-page')
+      await getSuffixInput(wrapper).vm.$emit('update:modelValue', typed)
+      expect(getSuffixInput(wrapper).props('invalid')).toBe('A path can\'t contain ? or #. They start a query or a page anchor.')
+      await getSuffixInput(wrapper).vm.$emit('update:modelValue', 'spring-sale')
       expect(getSuffixInput(wrapper).props('invalid')).toBeUndefined()
       await wrapper.setProps({ pathError: 'This path is already in use.' })
-      await getSuffixInput(wrapper).vm.$emit('update:modelValue', 'my page')
+      await getSuffixInput(wrapper).vm.$emit('update:modelValue', typed)
       expect(getSuffixInput(wrapper).props('invalid')).toBe('This path is already in use.')
     })
 

@@ -191,6 +191,7 @@ const uploadSamples = [
   { status: 'error' as const, upload: fakeUpload({ name: 'workshop-bench.jpg', size: '240 KB', url: kitImage, mimeType: 'image/jpeg' }, 'error') },
 ]
 const plainText = ref('')
+const passwordText = ref('kitchens')
 const nullableText = ref<string | null>('Can be emptied')
 const plainToggle = ref(false)
 const position = ref(2)
@@ -582,6 +583,14 @@ const badgeTones = [
               model-value="Disabled"
               label="Disabled"
               disabled
+            />
+            <CwaUiInput
+              v-model="passwordText"
+              label="Password, revealable"
+              type="password"
+              autocomplete="new-password"
+              revealable
+              data-testid="kit-input-revealable"
             />
           </div>
         </div>

@@ -125,18 +125,19 @@
       <CwaUiFormSection
         v-if="isAdding"
         title="Password"
-        :columns="2"
       >
         <CwaUiInput
           field="plainPassword"
           label="Password"
           type="password"
+          revealable
           autocomplete="new-password"
         />
         <CwaUiInput
           field="repeatPassword"
           label="Repeat password"
           type="password"
+          revealable
           autocomplete="new-password"
         />
       </CwaUiFormSection>
@@ -144,18 +145,19 @@
     <template #password>
       <CwaUiFormSection
         description="Sets a new password for this user. Leave it empty to keep theirs."
-        :columns="2"
       >
         <CwaUiInput
           field="plainPassword"
           label="New password"
           type="password"
+          revealable
           autocomplete="new-password"
         />
         <CwaUiInput
           field="repeatPassword"
           label="Repeat password"
           type="password"
+          revealable
           autocomplete="new-password"
         />
       </CwaUiFormSection>
