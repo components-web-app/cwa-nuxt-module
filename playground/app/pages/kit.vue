@@ -2,6 +2,10 @@
 import { computed, ref } from 'vue'
 import { definePageMeta, useCwaToast, useHead } from '#imports'
 import {
+  CwaUiAlert,
+  CwaUiDialog,
+  CwaUiFormSection,
+  CwaUiTextarea,
   CwaUiBadge,
   CwaUiButton,
   CwaUiDatePicker,
@@ -22,6 +26,8 @@ import {
   CwaUiToggle,
 } from '#components'
 import { fakeFieldModel } from '../kit/fake-field-model'
+import { fakeDialogForm } from '../kit/fake-dialog-form'
+import { useCwaConfirm } from '../../../src/runtime/composables/cwa-confirm'
 import type { FakeStatus } from '../kit/fake-field-model'
 import type { CwaResource } from '../../../src/runtime/resources/resource-utils'
 import type { MenuEntry } from '../../../src/runtime/templates/components/core/ui/menu-entries'
@@ -147,6 +153,33 @@ const menuOptions: MenuEntry[] = [
   { group: null, items: [{ label: 'Add to start or end', value: 'add-full', disabled: true, disabledReason: 'Main content is full: 6 of 6 components.' }] },
   { group: null, items: [{ label: 'Clone', value: 'clone' }, { label: 'Move', value: 'move' }, { label: 'Discard', value: 'discard', tone: 'danger' }] },
 ]
+
+const dialogOpen = ref(false)
+const dialogForm = fakeDialogForm({ reference: 'Shaker kitchens', title: 'Shaker kitchens | Hand-built', metaDescription: 'Hand-built shaker kitchens, made to measure.', isReachableWithoutRoute: false })
+const dialogTabs = [{ label: 'Details', key: 'details' }, { label: 'Info', key: 'info' }]
+const confirm = useCwaConfirm()
+const confirmResult = ref('')
+const notes = ref('A textarea grows from three lines to its maxRows, then scrolls.')
+
+async function confirmSimple() {
+  const go = await confirm({ title: 'Remove this component?', description: 'It is only used here.', keep: 'Keep it', go: 'Remove', tone: 'danger' })
+  confirmResult.value = go ? 'Removed' : 'Kept'
+}
+
+async function confirmTyped() {
+  const go = await confirm({
+    title: 'Delete “Shaker kitchens”?',
+    lines: [
+      { text: '14 pages built from this template are deleted too. Visitors to their 14 addresses get “Page not found”.', emphasis: 'strong' },
+      { text: 'The route /kitchens/shaker is kept, and visitors to it get “Page not found”.', emphasis: 'muted' },
+      { text: 'This can\'t be undone.' },
+    ],
+    keep: 'Don\'t delete',
+    go: 'Delete page',
+    typed: { noun: 'page name', value: 'Shaker kitchens' },
+  })
+  confirmResult.value = go ? 'Deleted' : 'Not deleted'
+}
 
 const badgeTones = [
   { tone: 'success', label: 'Live' },
@@ -737,6 +770,151 @@ const badgeTones = [
               label="Subtitle"
             />
           </CwaUiManagerTab>
+        </div>
+      </section>
+
+      <section aria-labelledby="kit-dialog">
+        <h2 id="kit-dialog">
+          Dialog and Save
+        </h2>
+        <p class="kit-note">
+          <code>CwaUiDialog</code> holds a form: fields bound with <code>field="…"</code> edit a local copy, marked ● Unsaved, and nothing is sent until Save. Save says how many changes it sends; closing with changes asks first. A failed Save shows an alert listing each field, which opens its tab. This sample uses <code>fakeDialogForm()</code>.
+        </p>
+        <div class="kit-row">
+          <CwaUiButton
+            label="Open page settings"
+            data-testid="kit-dialog-open"
+            @click="dialogOpen = true"
+          />
+          <CwaUiButton
+            label="Fail the next Save"
+            size="sm"
+            data-testid="kit-dialog-fail"
+            @click="dialogForm.failNext({ reference: 'This reference is already used by another page.' })"
+          />
+          <CwaUiButton
+            label="Conflict on the next Save"
+            size="sm"
+            data-testid="kit-dialog-conflict"
+            @click="dialogForm.conflictNext({ title: 'Shaker kitchens | Made to measure' })"
+          />
+        </div>
+        <CwaUiDialog
+          v-if="dialogOpen"
+          title="Shaker kitchens"
+          :tabs="dialogTabs"
+          :form="dialogForm"
+          data-testid="kit-dialog"
+          @close="dialogOpen = false"
+          @save="dialogForm.save()"
+        >
+          <template #details>
+            <CwaUiFormSection>
+              <CwaUiInput
+                field="reference"
+                label="Reference"
+                description="Only admins see this. It names the page in lists."
+              />
+            </CwaUiFormSection>
+            <CwaUiFormSection
+              title="Search engines"
+              description="What people see in search results."
+            >
+              <CwaUiInput
+                field="title"
+                label="SEO page title"
+                optional
+              />
+              <CwaUiTextarea
+                field="metaDescription"
+                label="SEO meta description"
+                optional
+                counter
+                :maxlength="160"
+              />
+            </CwaUiFormSection>
+            <CwaUiFormSection title="Nesting">
+              <CwaUiToggle
+                field="isReachableWithoutRoute"
+                label="Public without a route"
+              />
+            </CwaUiFormSection>
+          </template>
+          <template #info>
+            <CwaUiFormSection
+              title="Delete this page"
+              description="Its route is kept, and visitors to it get “Page not found”."
+            >
+              <div>
+                <CwaUiButton
+                  tone="danger"
+                  label="Delete page"
+                  @click="confirmTyped"
+                />
+              </div>
+            </CwaUiFormSection>
+          </template>
+        </CwaUiDialog>
+      </section>
+
+      <section aria-labelledby="kit-confirm">
+        <h2 id="kit-confirm">
+          Confirm
+        </h2>
+        <p class="kit-note">
+          <code>await useCwaConfirm()(options)</code> resolves true for the go action. A typed confirm asks for the name (ignoring case and spaces) before the go action turns on. Last answer: <output data-testid="kit-confirm-result">{{ confirmResult || 'nothing yet' }}</output>
+        </p>
+        <div class="kit-row">
+          <CwaUiButton
+            label="Simple confirm"
+            data-testid="kit-confirm-simple"
+            @click="confirmSimple"
+          />
+          <CwaUiButton
+            label="Typed confirm"
+            tone="danger"
+            data-testid="kit-confirm-typed"
+            @click="confirmTyped"
+          />
+        </div>
+      </section>
+
+      <section aria-labelledby="kit-form-parts">
+        <h2 id="kit-form-parts">
+          Alerts, sections and textareas
+        </h2>
+        <div class="kit-toasts">
+          <CwaUiAlert
+            tone="danger"
+            title="This page wasn't saved."
+          >
+            Reference: this reference is already used by another page.
+          </CwaUiAlert>
+          <CwaUiAlert
+            tone="warning"
+            title="Mia changed 1 field while you were editing."
+          >
+            Choose which version to keep, then Save.
+          </CwaUiAlert>
+          <CwaUiAlert title="Note">
+            An info alert has no edge.
+          </CwaUiAlert>
+        </div>
+        <div
+          class="kit-toasts"
+          data-testid="kit-form-section"
+        >
+          <CwaUiFormSection
+            title="Search engines"
+            description="Section titles are fg-secondary; a section after the first has a rule above."
+          >
+            <CwaUiTextarea
+              v-model="notes"
+              label="Notes"
+              counter
+              :maxlength="200"
+            />
+          </CwaUiFormSection>
         </div>
       </section>
 

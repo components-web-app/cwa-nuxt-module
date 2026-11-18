@@ -31,3 +31,10 @@ export interface EitherOrContext {
 }
 
 export const eitherOrKey: InjectionKey<EitherOrContext> = Symbol('cwa-either-or')
+
+export interface FormSurfaceContext {
+  unsaved: (field: string) => boolean
+  register: (field: string, label: string) => () => void
+}
+
+export const formSurfaceKey: InjectionKey<FormSurfaceContext> = Symbol('cwa-form-surface')

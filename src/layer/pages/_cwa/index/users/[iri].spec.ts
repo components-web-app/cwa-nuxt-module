@@ -242,6 +242,7 @@ describe('admin user page — changing the email (#449)', () => {
     expect(updateResource).toHaveBeenCalledWith({
       endpoint: userIri,
       data: { newEmailAddress: 'new@example.com', oldPassword: 'my-own-password' },
+      onRequest: expect.any(Function),
     })
   })
 
@@ -266,6 +267,7 @@ describe('admin user page — changing the email (#449)', () => {
     expect(updateResource).toHaveBeenLastCalledWith({
       endpoint: userIri,
       data: { newEmailAddress: 'newer@example.com' },
+      onRequest: expect.any(Function),
     })
   })
 
@@ -277,7 +279,7 @@ describe('admin user page — changing the email (#449)', () => {
     await saveButton(wrapper).trigger('click')
     await flushPromises()
 
-    expect(updateResource).toHaveBeenCalledWith({ endpoint: userIri, data: { enabled: false } })
+    expect(updateResource).toHaveBeenCalledWith({ endpoint: userIri, data: { enabled: false }, onRequest: expect.any(Function) })
   })
 
   test('an email edited back to the pending address sends no password', async () => {
@@ -295,7 +297,7 @@ describe('admin user page — changing the email (#449)', () => {
     await saveButton(wrapper).trigger('click')
     await flushPromises()
 
-    expect(updateResource).toHaveBeenCalledWith({ endpoint: userIri, data: { enabled: false } })
+    expect(updateResource).toHaveBeenCalledWith({ endpoint: userIri, data: { enabled: false }, onRequest: expect.any(Function) })
   })
 
   test('a 422 on `oldPassword` shows its message on that field', async () => {

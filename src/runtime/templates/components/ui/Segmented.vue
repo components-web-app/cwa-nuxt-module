@@ -15,6 +15,7 @@ const props = withDefaults(defineProps<{
   labelHidden?: boolean
   info?: string
   description?: string
+  optional?: boolean
   disabled?: boolean
   options: SegmentedOption[]
   field?: string
@@ -24,6 +25,7 @@ const props = withDefaults(defineProps<{
   labelHidden: false,
   info: undefined,
   description: undefined,
+  optional: false,
   disabled: false,
   field: undefined,
   model: undefined,
@@ -48,6 +50,7 @@ function choose(next: unknown) {
     :label-hidden="labelHidden"
     :info="info"
     :description="description"
+    :optional="optional"
     :state="state"
     :model="model"
     :control-id="id"

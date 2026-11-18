@@ -1,23 +1,31 @@
 // @vitest-environment nuxt
-import { describe, test, expect, vi, beforeEach } from 'vitest'
-import { ref } from 'vue'
-import { mount } from '@vue/test-utils'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
+import { defineComponent, h, provide, ref } from 'vue'
+import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { mockNuxtImport } from '@nuxt/test-utils/runtime'
 import PageResourceAdminModal from './PageResourceAdminModal.vue'
-import ModalInput from '#cwa/templates/components/core/admin/form/ModalInput.vue'
-import ModalSelect from '#cwa/templates/components/core/admin/form/ModalSelect.vue'
+import { fakeDialogForm } from '../../../../../../playground/app/kit/fake-dialog-form'
+import type { FakeDialogForm } from '../../../../../../playground/app/kit/fake-dialog-form'
+import { fieldGroupKey, formSurfaceKey } from '#cwa/templates/components/core/ui/field-keys'
+import Input from '#cwa/templates/components/ui/Input.vue'
+import Select from '#cwa/templates/components/ui/Select.vue'
+import Toggle from '#cwa/templates/components/ui/Toggle.vue'
+import Segmented from '#cwa/templates/components/ui/Segmented.vue'
 import * as cwaComposable from '#cwa/composables/cwa'
 import { componentNames } from '#components'
 
 const mockNavigateTo = vi.hoisted(() => vi.fn())
 mockNuxtImport('navigateTo', () => mockNavigateTo)
 
-const { mockUseItemPage, mockUseDynamicPageLoader, mockUseParentPageLoader, mockUseParentPageDataLoader, mockUseDataType } = vi.hoisted(() => ({
+const { mockUseItemPage, mockUseDynamicPageLoader, mockUseParentPageLoader, mockUseParentPageDataLoader, mockUseDataType, confirmMock, countsMock, requestClose } = vi.hoisted(() => ({
   mockUseItemPage: vi.fn(),
   mockUseDynamicPageLoader: vi.fn(),
   mockUseParentPageLoader: vi.fn(),
   mockUseParentPageDataLoader: vi.fn(),
   mockUseDataType: vi.fn(),
+  confirmMock: vi.fn(),
+  countsMock: vi.fn(),
+  requestClose: vi.fn(),
 }))
 
 vi.mock('#cwa-layer/_composables/useItemPage', () => ({ useItemPage: mockUseItemPage }))
@@ -25,151 +33,339 @@ vi.mock('#cwa-layer/_composables/useDynamicPageLoader', () => ({ useDynamicPageL
 vi.mock('#cwa-layer/_composables/useParentPageLoader', () => ({ useParentPageLoader: mockUseParentPageLoader }))
 vi.mock('#cwa-layer/_composables/useParentPageDataLoader', () => ({ useParentPageDataLoader: mockUseParentPageDataLoader }))
 vi.mock('#cwa-layer/_composables/useDataType', () => ({ useDataType: mockUseDataType }))
+vi.mock('#cwa/composables/cwa-confirm', () => ({ useCwaConfirm: () => confirmMock }))
+vi.mock('#cwa/admin/page-delete', async (importOriginal) => {
+  const original = await importOriginal<typeof import('#cwa/admin/page-delete')>()
+  return { ...original, fetchTemplateCounts: countsMock }
+})
+
+enableAutoUnmount(afterEach)
+
+const DialogStub = defineComponent({
+  name: 'CwaUiDialog',
+  props: ['title', 'tabs', 'form', 'loading', 'noun'],
+  emits: ['close', 'save', 'update:tab'],
+  setup(props, { slots, expose }) {
+    provide(fieldGroupKey, { model: (field: string) => props.form.model(field), undo: () => undefined })
+    provide(formSurfaceKey, { unsaved: (field: string) => props.form.unsavedFields.includes(field), register: () => () => {} })
+    expose({ requestClose })
+    return () => h('div', { 'data-testid': 'dialog-stub' }, [slots['header-actions']?.(), slots.details?.(), slots.routes?.(), slots.info?.()])
+  },
+})
 
 function setup(opts: {
   iri?: string
   resourceType?: string
-  resource?: any
+  resource?: Record<string, any>
   displayPageIri?: string | undefined
   fqcnToEntrypointKey?: (t: string) => any
   pageDataConfig?: any
-  localDataOverrides?: Record<string, any>
+  local?: Record<string, any>
   isAdding?: boolean
   pagesConfig?: Record<string, any>
+  hideViewLink?: boolean
+  parentPages?: Record<string, any>[]
+  routes?: Record<string, any>
 } = {}) {
   const iri = opts.iri ?? '/_/pages/uuid-self'
-  const localResourceData = ref<Record<string, any>>({
+  const resource = opts.resource ?? { '@id': iri, '@type': 'Page', 'reference': 'My Page' }
+  const form: FakeDialogForm = fakeDialogForm({
     '@id': iri,
-    'reference': 'My Page',
-    'title': '',
+    'reference': resource.reference ?? 'My Page',
+    'title': resource.title ?? '',
     'metaDescription': '',
     'parentPage': null,
     'parentPageData': null,
-    ...opts.localDataOverrides,
+    ...opts.local,
   })
+  const localResourceData = ref(form.local)
 
   const handlers = {
     isAdding: ref(opts.isAdding ?? false),
     isLoading: ref(false),
     isUpdating: ref(false),
     localResourceData,
-    resource: ref(opts.resource ?? { '@id': iri, '@type': 'Page' }),
-    formatDate: vi.fn(() => '2026-01-01'),
+    resource: ref(resource),
+    formatDate: vi.fn(() => '1 Jan 2026'),
     deleteResource: vi.fn(),
     saveResource: vi.fn(),
     saveTitle: vi.fn(),
     loadResource: vi.fn(),
-    getInternalResourceLink: vi.fn((resourceIri: string) => ({ name: '_cwa-pages-iri', params: { iri: resourceIri } })),
+    getInternalResourceLink: vi.fn((resourceIri: string) => ({ name: '_cwa-resource-page', params: { cwaPage0: resourceIri } })),
+    form,
   }
   mockUseItemPage.mockReturnValue(handlers)
 
   mockUseDynamicPageLoader.mockReturnValue({ dynamicPages: ref([]), loadDynamicPageOptions: vi.fn() })
-  mockUseParentPageLoader.mockReturnValue({ parentPages: ref([]), loadParentPageOptions: vi.fn() })
+  mockUseParentPageLoader.mockReturnValue({ parentPages: ref(opts.parentPages ?? []), loadParentPageOptions: vi.fn() })
   mockUseParentPageDataLoader.mockReturnValue({
-    dataTypes: ref([]),
+    dataTypes: ref([{ resourceClass: 'App\\Entity\\BlogArticleData' }]),
     dataInstances: ref([]),
     loadDataTypes: vi.fn(),
     loadDataInstances: vi.fn(),
-    fqcnToEntrypointKey: vi.fn(opts.fqcnToEntrypointKey ?? ((t: string) => t)),
+    fqcnToEntrypointKey: vi.fn(opts.fqcnToEntrypointKey ?? ((t: string) => t.split('\\').pop()!.replace(/^./, c => c.toLowerCase()))),
   })
   mockUseDataType.mockReturnValue({ pageDataConfig: ref(opts.pageDataConfig ?? null) })
 
-  // @ts-expect-error
+  const getResource = vi.fn((resourceIri: string) => ref(opts.routes?.[resourceIri] ? { data: opts.routes[resourceIri] } : null))
   vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => ({
     resources: {
       displayPageIri: ref(opts.displayPageIri),
-      getResource: vi.fn(() => ref(null)),
+      getResource,
     },
     fetch: vi.fn().mockReturnValue({ response: Promise.resolve({ _data: null }) }),
+    getApiDocumentation: vi.fn().mockResolvedValue({ entrypoint: { blogArticleData: '/page_data/blog_article_datas' } }),
     pagesConfig: opts.pagesConfig ?? {},
     admin: { toggleEdit: vi.fn() },
-  }))
+  }) as unknown as ReturnType<typeof cwaComposable.useCwa>)
 
   const wrapper = mount(PageResourceAdminModal, {
-    props: { iri, resourceType: opts.resourceType ?? 'Page' },
-    shallow: true,
+    props: { iri, resourceType: opts.resourceType ?? 'Page', hideViewLink: opts.hideViewLink ?? true },
     global: {
       stubs: {
-        ResourceModalTabs: {
-          name: 'ResourceModalTabs',
-          props: ['tabs'],
-          template: '<div><slot name="details" /><slot name="routes" /><slot name="info" /></div>',
-        },
-        ResourceModal: {
-          name: 'ResourceModal',
-          emits: ['close', 'save'],
-          template: '<div><slot name="icons" /><slot name="subheader" /><slot /><slot name="title" /></div>',
-        },
+        CwaUiDialog: DialogStub,
+        RoutesTab: true,
+        PagePurgeCache: { name: 'PagePurgeCache', template: '<div />' },
       },
     },
   })
 
-  return { wrapper, handlers, localResourceData }
+  return { wrapper, handlers, form, localResourceData }
 }
 
-function setupPageData(opts: { pageDataConfig?: any, localDataOverrides?: Record<string, any>, resource?: any } = {}) {
+function setupPageData(opts: Parameters<typeof setup>[0] = {}) {
   return setup({
     iri: '/page_data/uuid-self',
     resourceType: 'App\\Entity\\EventData',
-    resource: { '@id': '/page_data/uuid-self', '@type': 'App\\Entity\\EventData' },
+    resource: { '@id': '/page_data/uuid-self', '@type': 'App\\Entity\\EventData', 'title': 'An event' },
     ...opts,
   })
 }
 
-async function clickDelete(wrapper: ReturnType<typeof setup>['wrapper']) {
-  const buttons = wrapper.findAllComponents({ name: 'CwaUiFormButton' })
-  await buttons[buttons.length - 1].vm.$emit('click')
+const field = (wrapper: ReturnType<typeof mount>, component: any, label: string) => wrapper.findAllComponents(component).find(found => found.props('label') === label)!
+
+async function clickDelete(wrapper: ReturnType<typeof mount>) {
+  await wrapper.get('[data-testid="page-delete"]').trigger('click')
+  await flushPromises()
 }
 
-describe('PageResourceAdminModal delete', () => {
+describe('PageResourceAdminModal on the kit dialog (#461)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    countsMock.mockResolvedValue({})
   })
 
-  test('navigates to the pages admin listing when deleting the page currently on screen', async () => {
-    const { wrapper, handlers } = setup({ displayPageIri: '/_/pages/uuid-self' })
-    await clickDelete(wrapper)
-    expect(handlers.deleteResource).toHaveBeenCalled()
+  test('the dialog is titled with the stored reference and gets the Save model from useItemPage', () => {
+    const { wrapper, form } = setup()
+    const dialog = wrapper.findComponent(DialogStub)
 
-    const requestCompleteFn = handlers.deleteResource.mock.calls[0][1]
-    expect(requestCompleteFn).toBeInstanceOf(Function)
-    await requestCompleteFn()
+    expect(dialog.props('title')).toBe('My Page')
+    expect(dialog.props('form')).toStrictEqual(form)
+    expect(dialog.props('tabs')).toEqual([{ label: 'Details', key: 'details' }, { label: 'Routes', key: 'routes' }, { label: 'Info', key: 'info' }])
+  })
+
+  test('creating shows only Details', () => {
+    const { wrapper } = setup({ isAdding: true })
+
+    expect(wrapper.findComponent(DialogStub).props('tabs')).toEqual([{ label: 'Details', key: 'details' }])
+  })
+
+  test('Save on the dialog saves without closing, and nothing is saved as you type', async () => {
+    const { wrapper, handlers } = setup()
+
+    await wrapper.get('[data-cwa-field="reference"] input').setValue('Renamed')
+    expect(handlers.saveResource).not.toHaveBeenCalled()
+    await wrapper.findComponent(DialogStub).vm.$emit('save')
+
+    expect(handlers.saveResource).toHaveBeenCalledWith(false)
+  })
+
+  test('typing in a field edits the local copy and marks it unsaved', async () => {
+    const { wrapper, form } = setup()
+
+    await wrapper.get('[data-cwa-field="reference"] input').setValue('Renamed')
+
+    expect(form.local.reference).toBe('Renamed')
+    expect(form.unsavedFields).toEqual(['reference'])
+    expect(wrapper.find('[data-cwa-field="reference"] [data-testid="field-unsaved"]').exists()).toBe(true)
+  })
+
+  test('changing the page type is a change to save, never saved on its own', async () => {
+    const { wrapper, form, handlers } = setup({ local: { isTemplate: false } })
+
+    await field(wrapper, Segmented, 'Page type').findAll('button').find(b => b.text() === 'Template')!.trigger('click')
+
+    expect(form.local.isTemplate).toBe(true)
+    expect(form.unsavedFields).toEqual(['isTemplate'])
+    expect(handlers.saveResource).not.toHaveBeenCalled()
+  })
+
+  test('choosing to nest under nothing clears the parent in the local copy, so Save counts it', async () => {
+    const { wrapper, form } = setup({ local: { parentPage: '/_/pages/parent' }, resource: { '@id': '/_/pages/uuid-self', '@type': 'Page', 'reference': 'My Page', 'parentPage': '/_/pages/parent' } })
+    form.discard()
+
+    await field(wrapper, Segmented, 'Nested under').findAll('button').find(b => b.text() === 'Nothing')!.trigger('click')
+
+    expect(form.local.parentPage).toBeNull()
+    expect(form.unsavedFields).toEqual(['parentPage'])
+  })
+
+  test('the parent page options leave out the page itself and its descendants', () => {
+    const { wrapper } = setup({
+      local: { parentPage: '/_/pages/a' },
+      parentPages: [
+        { '@id': '/_/pages/uuid-self', 'reference': 'Self' },
+        { '@id': '/_/pages/a', 'reference': 'A' },
+        { '@id': '/_/pages/child', 'reference': 'Child', 'parentPage': '/_/pages/uuid-self' },
+      ],
+    })
+
+    expect(field(wrapper, Select, 'Parent page').props('options')).toEqual([{ label: 'A', value: '/_/pages/a' }])
+  })
+
+  test('public without a route is a field, off while the page has a route', () => {
+    const routed = setup({ resource: { '@id': '/_/pages/uuid-self', '@type': 'Page', 'reference': 'My Page', 'route': '/_/routes/r' } })
+    expect(field(routed.wrapper, Toggle, 'Public without a route').props()).toMatchObject({ field: 'isReachableWithoutRoute', disabled: true })
+
+    const unrouted = setupPageData()
+    expect(field(unrouted.wrapper, Toggle, 'Public without a route').props('disabled')).toBe(false)
+  })
+
+  test('the view button navigates to the page with cwa_force once the dialog has closed, and is hidden on the page on screen', async () => {
+    requestClose.mockResolvedValueOnce(true)
+    const { wrapper } = setup({ hideViewLink: false })
+
+    await wrapper.get('[data-testid="page-view-on-site"]').trigger('click')
+    await flushPromises()
+
+    expect(requestClose).toHaveBeenCalled()
+    expect(mockNavigateTo).toHaveBeenCalledWith({ name: '_cwa-resource-page', params: { cwaPage0: '/_/pages/uuid-self' }, query: { cwa_force: 'true' } })
+    expect(setup().wrapper.find('[data-testid="page-view-on-site"]').exists()).toBe(false)
+  })
+
+  test('the view button stays put when Keep editing is chosen', async () => {
+    requestClose.mockResolvedValueOnce(false)
+    const { wrapper } = setup({ hideViewLink: false })
+
+    await wrapper.get('[data-testid="page-view-on-site"]').trigger('click')
+    await flushPromises()
+
+    expect(mockNavigateTo).not.toHaveBeenCalled()
+  })
+})
+
+describe('PageResourceAdminModal delete (#461)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    countsMock.mockResolvedValue({})
+  })
+
+  test('the Info tab\'s last section says what deleting keeps, from the same sentences as the confirm', () => {
+    const { wrapper } = setup({
+      resource: { '@id': '/_/pages/uuid-self', '@type': 'Page', 'reference': 'My Page', 'route': '/_/routes/r' },
+      routes: { '/_/routes/r': { path: '/kitchens' } },
+      parentPages: [{ '@id': '/_/pages/child', 'reference': 'Child', 'parentPage': '/_/pages/uuid-self' }],
+    })
+
+    expect(wrapper.get('[data-testid="page-delete-section"]').text()).toContain('The route /kitchens is kept, and visitors to it get “Page not found”. The page nested under it is kept and loses its parent.')
+  })
+
+  test('asks to type the page name, counting the template\'s pages fresh before the confirm opens', async () => {
+    countsMock.mockResolvedValueOnce({ templatePages: 14, addresses: 12 })
+    const { wrapper, handlers } = setup({ resource: { '@id': '/_/pages/uuid-self', '@type': 'Page', 'reference': 'Shaker kitchens', 'isTemplate': true } })
+    confirmMock.mockResolvedValueOnce(false)
+
+    await clickDelete(wrapper)
+
+    expect(countsMock).toHaveBeenCalledWith(expect.anything(), '/_/pages/uuid-self', ['/page_data/blog_article_datas'])
+    expect(confirmMock).toHaveBeenCalledWith({
+      title: 'Delete “Shaker kitchens”?',
+      lines: [
+        { text: '14 pages built from this template are deleted too. Visitors to their 12 addresses get “Page not found”.', emphasis: 'strong' },
+        { text: 'This can\'t be undone.' },
+      ],
+      keep: 'Don\'t delete',
+      go: 'Delete page',
+      typed: { noun: 'page name', value: 'Shaker kitchens' },
+    })
+    expect(handlers.deleteResource).not.toHaveBeenCalled()
+  })
+
+  test('a page that is not a template is not counted', async () => {
+    const { wrapper } = setup()
+    confirmMock.mockResolvedValueOnce(false)
+
+    await clickDelete(wrapper)
+
+    expect(countsMock).not.toHaveBeenCalled()
+  })
+
+  test('the confirm says unsaved edits are discarded too', async () => {
+    const { wrapper } = setup()
+    await wrapper.get('[data-cwa-field="reference"] input').setValue('Renamed')
+    confirmMock.mockResolvedValueOnce(false)
+
+    await clickDelete(wrapper)
+
+    expect(confirmMock.mock.calls[0]![0].lines).toContainEqual({ text: 'Your 1 unsaved change is discarded too.' })
+    expect(confirmMock.mock.calls[0]![0].title).toBe('Delete “My Page”?')
+  })
+
+  test('once confirmed it deletes without a second confirm, discards the local copy and goes to the pages list when it is the page on screen', async () => {
+    confirmMock.mockResolvedValueOnce(true)
+    const { wrapper, handlers, form } = setup({ displayPageIri: '/_/pages/uuid-self' })
+    await wrapper.get('[data-cwa-field="reference"] input').setValue('Renamed')
+
+    await clickDelete(wrapper)
+
+    expect(handlers.deleteResource).toHaveBeenCalledWith(undefined, expect.any(Function), true)
+    await (handlers.deleteResource.mock.calls[0] as unknown as [unknown, () => Promise<void>])[1]()
+    expect(form.unsavedFields).toEqual([])
     expect(mockNavigateTo).toHaveBeenCalledWith({ name: '_cwa-pages', query: { cwa_force: 'true' } })
   })
 
-  test('navigates to the typed data listing when the page on screen is a data page', async () => {
-    const { wrapper, handlers } = setup({
-      iri: '/_/page_data/uuid-self',
-      resourceType: 'App\\Entity\\EventData',
-      resource: { '@id': '/_/page_data/uuid-self', '@type': 'App\\Entity\\EventData' },
-      displayPageIri: '/_/page_data/uuid-self',
-      fqcnToEntrypointKey: (t: string) => t === 'App\\Entity\\EventData' ? 'event_data' : null,
-    })
+  test.each([
+    [(t: string) => t === 'App\\Entity\\EventData' ? 'event_data' : null, { name: '_cwa-data-type', params: { type: 'event_data' }, query: { cwa_force: 'true' } }],
+    [() => null, { name: '_cwa-data', query: { cwa_force: 'true' } }],
+  ])('deleting the data page on screen goes to its list', async (fqcnToEntrypointKey, destination) => {
+    confirmMock.mockResolvedValueOnce(true)
+    const { wrapper, handlers } = setupPageData({ displayPageIri: '/page_data/uuid-self', fqcnToEntrypointKey })
+
     await clickDelete(wrapper)
-    const requestCompleteFn = handlers.deleteResource.mock.calls[0][1]
-    await requestCompleteFn()
-    expect(mockNavigateTo).toHaveBeenCalledWith({ name: '_cwa-data-type', params: { type: 'event_data' }, query: { cwa_force: 'true' } })
+    await (handlers.deleteResource.mock.calls[0] as unknown as [unknown, () => Promise<void>])[1]()
+
+    expect(mockNavigateTo).toHaveBeenCalledWith(destination)
+    expect(confirmMock.mock.calls[0]![0].typed).toEqual({ noun: 'page name', value: 'An event' })
   })
 
-  test('falls back to the data listing when the data type has no entrypoint key', async () => {
-    const { wrapper, handlers } = setup({
-      iri: '/_/page_data/uuid-self',
-      resourceType: 'App\\Entity\\EventData',
-      resource: { '@id': '/_/page_data/uuid-self', '@type': 'App\\Entity\\EventData' },
-      displayPageIri: '/_/page_data/uuid-self',
-      fqcnToEntrypointKey: () => null,
-    })
-    await clickDelete(wrapper)
-    const requestCompleteFn = handlers.deleteResource.mock.calls[0][1]
-    await requestCompleteFn()
-    expect(mockNavigateTo).toHaveBeenCalledWith({ name: '_cwa-data', query: { cwa_force: 'true' } })
-  })
-
-  test('does not navigate when deleting a page we are not currently viewing', async () => {
+  test('deleting a page that is not on screen does not navigate', async () => {
+    confirmMock.mockResolvedValueOnce(true)
     const { wrapper, handlers } = setup({ displayPageIri: undefined })
+
     await clickDelete(wrapper)
-    expect(handlers.deleteResource).toHaveBeenCalledWith()
+    await (handlers.deleteResource.mock.calls[0] as unknown as [unknown, () => Promise<void>])[1]()
+
     expect(mockNavigateTo).not.toHaveBeenCalled()
+  })
+
+  test('Don\'t delete deletes nothing', async () => {
+    confirmMock.mockResolvedValueOnce(false)
+    const { wrapper, handlers } = setup()
+
+    await clickDelete(wrapper)
+
+    expect(handlers.deleteResource).not.toHaveBeenCalled()
+  })
+
+  test('the template counts are refreshed whenever the Info tab is shown', async () => {
+    countsMock.mockResolvedValue({ templatePages: 2, addresses: 2 })
+    const { wrapper } = setup({ resource: { '@id': '/_/pages/uuid-self', '@type': 'Page', 'reference': 'T', 'isTemplate': true } })
+
+    await wrapper.findComponent(DialogStub).vm.$emit('update:tab', 'info')
+    await flushPromises()
+
+    expect(countsMock).toHaveBeenCalledOnce()
+    expect(wrapper.get('[data-testid="page-delete-section"]').text()).toContain('2 pages built from this template are deleted too. Visitors to their 2 addresses get “Page not found”.')
   })
 })
 
@@ -178,102 +374,34 @@ describe('PageResourceAdminModal meta fields config', () => {
     vi.clearAllMocks()
   })
 
-  test('renders a ModalInput for a meta field declaring type "input" and a ModalSelect otherwise', () => {
+  test('a meta field declaring type "input" is an input bound to its field, any other a select', () => {
     const { wrapper } = setupPageData({
       pageDataConfig: {
         metaFields: [
           { field: 'subtitle', type: 'input', label: 'Subtitle' },
-          { field: 'category', type: 'select', label: 'Category', options: [{ label: 'A', value: 'a' }] },
+          { field: 'category', type: 'select', label: 'Category', options: [{ label: 'A', value: 'a' }, { label: 'None', value: null }] },
           { field: 'status', label: 'Status' },
         ],
       },
-      localDataOverrides: { subtitle: 'Hello', category: 'a', status: null },
+      local: { subtitle: 'Hello', category: 'a', status: null },
     })
-    const inputLabels = wrapper.findAllComponents(ModalInput).map(i => i.props('label'))
-    const selectLabels = wrapper.findAllComponents(ModalSelect).map(s => s.props('label'))
 
-    expect(inputLabels).toContain('Subtitle')
-    expect(selectLabels).not.toContain('Subtitle')
-    expect(selectLabels).toEqual(expect.arrayContaining(['Category', 'Status']))
-    expect(inputLabels).not.toContain('Category')
-    expect(inputLabels).not.toContain('Status')
+    expect(field(wrapper, Input, 'Subtitle').props('field')).toBe('subtitle')
+    expect(field(wrapper, Select, 'Subtitle')).toBeUndefined()
+    expect(field(wrapper, Select, 'Category').props()).toMatchObject({ field: 'category', options: [{ label: 'A', value: 'a' }], nullable: true })
+    expect(field(wrapper, Select, 'Status').props('field')).toBe('status')
+    expect(wrapper.get('[data-cwa-field="subtitle"] input').element).toHaveProperty('value', 'Hello')
   })
 
-  test('binds the current value of a type "input" meta field', () => {
-    const { wrapper } = setupPageData({
+  test('typing in a meta field writes back to the local copy', async () => {
+    const { wrapper, form } = setupPageData({
       pageDataConfig: { metaFields: [{ field: 'subtitle', type: 'input', label: 'Subtitle' }] },
-      localDataOverrides: { subtitle: 'Hello' },
+      local: { subtitle: 'Hello' },
     })
-    const input = wrapper.findAllComponents(ModalInput).find(i => i.props('label') === 'Subtitle')
-    expect(input?.props('modelValue')).toBe('Hello')
-  })
 
-  test('v-model on a type "input" meta field writes back to localResourceData', async () => {
-    const { wrapper, localResourceData } = setupPageData({
-      pageDataConfig: { metaFields: [{ field: 'subtitle', type: 'input', label: 'Subtitle' }] },
-      localDataOverrides: { subtitle: 'Hello' },
-    })
-    const input = wrapper.findAllComponents(ModalInput).find(i => i.props('label') === 'Subtitle')
-    await input!.vm.$emit('update:modelValue', 'Updated')
-    expect(localResourceData.value.subtitle).toBe('Updated')
-  })
+    await wrapper.get('[data-cwa-field="subtitle"] input').setValue('Updated')
 
-  test('v-model on a select meta field still writes back to localResourceData', async () => {
-    const { wrapper, localResourceData } = setupPageData({
-      pageDataConfig: { metaFields: [{ field: 'category', type: 'select', label: 'Category', options: [{ label: 'A', value: 'a' }] }] },
-      localDataOverrides: { category: null },
-    })
-    const select = wrapper.findAllComponents(ModalSelect).find(s => s.props('label') === 'Category')
-    await select!.vm.$emit('update:modelValue', 'a')
-    expect(localResourceData.value.category).toBe('a')
-  })
-})
-
-describe('PageResourceAdminModal public without a route', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
-  test.each([
-    ['page', setup],
-    ['page data', setupPageData],
-  ])('binds the toggle to isReachableWithoutRoute for a %s', async (_label, mountFn) => {
-    const { wrapper, localResourceData } = mountFn({ localDataOverrides: { isReachableWithoutRoute: false } })
-    const toggle = wrapper.findComponent({ name: 'ModalReachableToggle' })
-    expect(toggle.props('modelValue')).toBe(false)
-    expect(toggle.props('hasRoute')).toBe(false)
-    await toggle.vm.$emit('update:modelValue', true)
-    expect(localResourceData.value.isReachableWithoutRoute).toBe(true)
-  })
-
-  test('tells the toggle the saved resource has a route', () => {
-    const { wrapper } = setup({ resource: { '@id': '/_/pages/uuid-self', '@type': 'Page', 'route': '/_/routes/r' } })
-    expect(wrapper.findComponent({ name: 'ModalReachableToggle' }).props('hasRoute')).toBe(true)
-  })
-
-  test('shows the toggle when adding so it can be sent on create', () => {
-    const { wrapper } = setup({ isAdding: true })
-    expect(wrapper.findComponent({ name: 'ModalReachableToggle' }).exists()).toBe(true)
-  })
-
-  test.each([
-    [{ route: '/_/routes/r', isReachableWithoutRoute: false }, 'cwa:border-b-green'],
-    [{ route: null, isReachableWithoutRoute: true }, 'cwa:border-b-green'],
-    [{ route: null, isReachableWithoutRoute: false }, 'cwa:border-b-orange'],
-  ])('page data border for saved %o is %s', (saved, expected) => {
-    const { wrapper } = setupPageData({
-      resource: { '@id': '/page_data/uuid-self', '@type': 'App\\Entity\\EventData', ...saved },
-      localDataOverrides: { isReachableWithoutRoute: !saved.isReachableWithoutRoute },
-    })
-    expect(wrapper.findComponent({ name: 'ResourceModal' }).attributes('border-color-class')).toBe(expected)
-  })
-
-  test('a flagged page keeps its page type border', () => {
-    const { wrapper } = setup({
-      resource: { '@id': '/_/pages/uuid-self', '@type': 'Page', 'route': null, 'isReachableWithoutRoute': true },
-      localDataOverrides: { isTemplate: false },
-    })
-    expect(wrapper.findComponent({ name: 'ResourceModal' }).attributes('border-color-class')).toBe('cwa:border-b-blue-600')
+    expect(form.local.subtitle).toBe('Updated')
   })
 })
 
@@ -281,40 +409,37 @@ describe('PageResourceAdminModal Page UI select stores the full CwaPage componen
   const pagesConfig = { PrimaryPageTemplate: { name: 'Primary Page Template' } }
   const pageNames = componentNames.filter((n: string) => n.startsWith('CwaPage'))
 
-  function pageUiSelect(wrapper: ReturnType<typeof setup>['wrapper']) {
-    return wrapper.findAllComponents(ModalSelect).find(s => s.props('label') === 'Page UI')!
-  }
-
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
   test('lists every registered CwaPage component with its full name as the value, named from pagesConfig', () => {
     const { wrapper } = setup({ pagesConfig })
-    expect(pageUiSelect(wrapper).props('options')).toEqual(pageNames.map((name: string) => {
+    expect(field(wrapper, Select, 'Page UI').props('options')).toEqual(pageNames.map((name: string) => {
       const cleanName = name.replace(/^CwaPage/, '')
       return { label: pagesConfig[cleanName as keyof typeof pagesConfig]?.name || cleanName, value: name }
     }))
   })
 
   test('a page the API returned with the full name selects its option', () => {
-    const { wrapper } = setup({ pagesConfig, localDataOverrides: { uiComponent: 'CwaPagePrimaryPageTemplate' } })
-    const select = pageUiSelect(wrapper)
-    expect(select.props('modelValue')).toBe('CwaPagePrimaryPageTemplate')
-    expect((select.props('options') as Array<{ value: string }>).map(o => o.value)).toContain('CwaPagePrimaryPageTemplate')
+    const { wrapper } = setup({ pagesConfig, local: { uiComponent: 'CwaPagePrimaryPageTemplate' } })
+    expect(field(wrapper, Select, 'Page UI').props('model').model.value).toBe('CwaPagePrimaryPageTemplate')
   })
 
   test('a page stored short before the API prefixed it still selects its full-name option, without changing the resource', () => {
-    const { wrapper, localResourceData, handlers } = setup({ pagesConfig, localDataOverrides: { uiComponent: 'PrimaryPageTemplate' } })
-    expect(pageUiSelect(wrapper).props('modelValue')).toBe('CwaPagePrimaryPageTemplate')
-    expect(localResourceData.value.uiComponent).toBe('PrimaryPageTemplate')
+    const { wrapper, form, handlers } = setup({ pagesConfig, local: { uiComponent: 'PrimaryPageTemplate' } })
+    expect(field(wrapper, Select, 'Page UI').props('model').model.value).toBe('CwaPagePrimaryPageTemplate')
+    expect(form.local.uiComponent).toBe('PrimaryPageTemplate')
+    expect(form.unsavedFields).toEqual([])
     expect(handlers.saveResource).not.toHaveBeenCalled()
   })
 
-  test('choosing an option stores the full component name', async () => {
-    const { wrapper, localResourceData } = setup({ pagesConfig, localDataOverrides: { uiComponent: 'CwaPagePrimaryPageTemplate' } })
-    await pageUiSelect(wrapper).vm.$emit('update:modelValue', 'CwaPageNestedTopicTemplate')
-    expect(localResourceData.value.uiComponent).toBe('CwaPageNestedTopicTemplate')
+  test('choosing an option stores the full component name, marked as the uiComponent field', () => {
+    const { wrapper, form } = setup({ pagesConfig, local: { uiComponent: 'CwaPagePrimaryPageTemplate' } })
+    const model = field(wrapper, Select, 'Page UI').props('model')
+    model.model.value = 'CwaPageNestedTopicTemplate'
+    expect(form.local.uiComponent).toBe('CwaPageNestedTopicTemplate')
+    expect(model.field).toBe('uiComponent')
   })
 })
 

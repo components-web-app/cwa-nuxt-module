@@ -144,6 +144,7 @@ describe('RoutesTab route binding', () => {
     expect(updateResource.mock.calls[0]![0]).toEqual({
       endpoint: parentRouteIri,
       data: { liveAt: '2027-03-01T09:00:00+00:00' },
+      onRequest: expect.any(Function),
     })
   })
 
