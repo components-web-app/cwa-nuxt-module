@@ -75,3 +75,16 @@ Daniel picks from the confirmed findings before the next round.
 The right-click menu (`CwaResourceManagerContextMenu` on `utils/ContextMenu.vue`) lists the resource stack under the pointer so the editor can select a parent or child. Bring it into the kit so its styles match: it becomes `CwaUiMenu` anchored at a virtual point, the same component as the CTA's ⋮ menu and the clone or move placement menu. The kit owns the menu: anchoring at the pointer or an element, items, groups, disabled rows with a reason, keyboard, focus return and phone behaviour (long press, sheet or popover). The resource manager keeps what goes in it, the stack logic. The mockup shows it on the sample page and in the `/kit` page plan, and the spec lists it in the catalogue, the migration plan (which replaces `utils/ContextMenu.vue`) and the build phases.
 
 **Keep the nested containment layout (Daniel):** the right-click stack and the header's path selector keep today's boxes inside boxes, each name below the child it contains, restyled on kit tokens as one `CwaUiResourceStack` with two anchors (spec §5.3, §7.2). Not a flat `CwaUiMenu` list.
+
+## From Daniel's preview review (2026-11-18)
+
+- **Information popovers** are a dark `surface-info` with white text, not `surface-menu`, which blended into the fields. The info-tint look is on `/kit` beside it for comparison (7f).
+- **No white flash before the focus ring** on any kit control (7f).
+- **The auth pages' secondary links are grey** (`fg-muted`, `fg` on hover, underlined) (7f).
+- **A dialog never focuses a header control on open** (the type select, the view link, the depth chain) (7f).
+- **A segmented choice is only as wide as its options**, never stretched across the field column (7f).
+- **Sizing consistency:** anything in a row with buttons is the buttons' height; chips and tag groups were taller. The image field's Alt button sits level with the field (7f).
+- **A floating surface is never painted before it is placed:** menus flashed top-left before moving (7f).
+- **Empty-position placeholders show only in edit mode**, never to an admin outside it (7b).
+- **CWA is off on `/kit`**, so samples never select resources in the real admin (7e).
+- **Edit dialogs become slide-overs from the right** (experiment): a centred dialog shifted as its content changed height. Confirms, the add component dialog and pickers stay centred (7d).
