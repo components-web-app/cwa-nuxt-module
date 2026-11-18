@@ -4,7 +4,7 @@ import CwaUiRemoteChangeConflict from './RemoteChangeConflict.vue'
 import { useFieldModel } from '../core/ui/field-context'
 import { useCwa } from '#cwa/composables/cwa'
 import { useCwaInlineEditor } from '#cwa/composables/cwa-inline-editor'
-import { focusBarStatus } from '#cwa/admin/inline-editors'
+import { openBarStatus } from '#cwa/admin/inline-editors'
 import type { ResourceModelField } from '#cwa/resources/model-editors'
 
 const props = withDefaults(defineProps<{
@@ -77,7 +77,8 @@ function onKeydown(event: KeyboardEvent) {
   else if (event.key === 'Escape') {
     const toBar = failed.value
     finish(false).then(() => {
-      if (toBar && focusBarStatus($cwa)) {
+      const field = props.model.editorKey?.field
+      if (toBar && field && openBarStatus($cwa, field)) {
         return
       }
       document.activeElement === document.body && valueEl.value?.focus({ preventScroll: true })
@@ -91,7 +92,7 @@ function onRootKeydown(event: KeyboardEvent) {
   }
 }
 
-useCwaInlineEditor(props.model, root, { focus: start })
+useCwaInlineEditor(props.model, root, { focus: start, label: props.label })
 </script>
 
 <template>

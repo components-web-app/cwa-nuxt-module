@@ -118,11 +118,10 @@ describe('CwaUiInlineEdit (#461)', () => {
     document.removeEventListener('keydown', outer)
   })
 
-  test('while its save has failed the editor is invalid, says Escape leads to Retry and Reset, and Escape reverts and goes to the bar status', async () => {
+  test('while its save has failed the editor is invalid, says Escape leads to Retry and Reset, and Escape reverts and opens the bar status on Retry', async () => {
     const { wrapper, model, state } = mountEdit('How we build a kitchen', {}, 'error')
-    const status = document.createElement('button')
-    document.body.append(status)
-    const unregister = registerBarStatus(cwa, status)
+    const open = vi.fn(() => true)
+    const unregister = registerBarStatus(cwa, { open })
     const input = await startEditing(wrapper)
 
     expect(input.attributes('aria-invalid')).toBe('true')
@@ -135,7 +134,8 @@ describe('CwaUiInlineEdit (#461)', () => {
     await flushPromises()
 
     expect(model.model.value).toBe('How we build a kitchen')
-    expect(document.activeElement).toBe(status)
+    expect(open).toHaveBeenCalledExactlyOnceWith('title')
+    expect(document.activeElement).not.toBe(shown(wrapper).element)
 
     state.value = { status: 'saving', waiting: false, slow: false }
     await nextTick()
@@ -146,22 +146,37 @@ describe('CwaUiInlineEdit (#461)', () => {
 
   test('Escape stays on the editor\'s text when the save has not failed, even with a bar status', async () => {
     const { wrapper } = mountEdit()
-    const status = document.createElement('button')
-    document.body.append(status)
-    const unregister = registerBarStatus(cwa, status)
+    const open = vi.fn(() => true)
+    const unregister = registerBarStatus(cwa, { open })
     const input = await startEditing(wrapper)
     expect(input.attributes('aria-invalid')).toBeUndefined()
 
     await input.trigger('keydown', { key: 'Escape' })
     await flushPromises()
 
+    expect(open).not.toHaveBeenCalled()
     expect(document.activeElement).toBe(shown(wrapper).element)
     unregister()
   })
 
-  test('with its save failed and no bar on screen, Escape stays on the editor\'s text', async () => {
+  test('registers its model and label, so the bar status can name the field and retry or reset it', () => {
+    const { model } = mountEdit()
+    const editor = findInlineEditor(cwa, { iri: () => '/component/title', field: 'title' })!
+
+    expect(editor.model).toBe(model)
+    expect(editor.label).toBe('Title')
+  })
+
+  test('with its save failed and no bar on screen, or a bar that cannot open it, Escape stays on the editor\'s text', async () => {
     const { wrapper } = mountEdit('How we build a kitchen', {}, 'error')
-    const input = await startEditing(wrapper)
+    const unregister = registerBarStatus(cwa, { open: () => false })
+    let input = await startEditing(wrapper)
+    await input.trigger('keydown', { key: 'Escape' })
+    await flushPromises()
+    expect(document.activeElement).toBe(shown(wrapper).element)
+    unregister()
+
+    input = await startEditing(wrapper)
 
     await input.trigger('keydown', { key: 'Escape' })
     await flushPromises()
