@@ -27,6 +27,7 @@ const { currentPath, parentRoutePrefix, routePublication, recommendedPath, child
 const pathModel = defineModel<string>({ required: true })
 const liveAtModel = defineModel<string | null | undefined>('liveAt')
 const cascadeModel = defineModel<boolean>('cascade', { default: true })
+const awaitingDateModel = defineModel<boolean>('awaitingDate', { default: false })
 
 defineEmits<{
   delete: []
@@ -154,6 +155,10 @@ function handlePublicationStateChange(state: RouteLiveState) {
   }
   liveAtModel.value = isFuture ? scheduled : null
 }
+
+watch(() => localPublicationState.value === 'scheduled' && !localLiveAt.value, (awaiting) => {
+  awaitingDateModel.value = awaiting
+}, { immediate: true })
 
 const pathChanged = computed(() => !isNew.value && pathModel.value !== currentPath)
 const childrenUnder = computed(() => childPaths.filter(path => path.startsWith(`${currentPath}/`)).length)

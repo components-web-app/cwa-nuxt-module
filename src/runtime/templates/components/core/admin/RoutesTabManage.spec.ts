@@ -290,6 +290,14 @@ describe('RoutesTabManage', () => {
       expect(wrapper.emitted('update:liveAt')).toEqual([[null]])
     })
 
+    test('says it is waiting for a date while scheduled has none, and stops once one is picked', async () => {
+      const wrapper = mountManage({ liveAt: '2020-01-01T00:00:00+00:00' })
+      expect(wrapper.emitted('update:awaitingDate')).toBeUndefined()
+      await getStateSelect(wrapper).vm.$emit('update:modelValue', 'scheduled')
+      await getLiveAtInput(wrapper).vm.$emit('update:modelValue', '2999-09-25T08:00:00.000Z')
+      expect(wrapper.emitted('update:awaitingDate')).toEqual([[true], [false]])
+    })
+
     test('commits the UTC instant the date picker gives', async () => {
       const wrapper = mountManage({ liveAt: '2999-01-01T00:00:00+00:00' })
       await getLiveAtInput(wrapper).vm.$emit('update:modelValue', '2999-09-25T08:00:00.000Z')

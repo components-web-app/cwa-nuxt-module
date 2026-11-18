@@ -49,6 +49,7 @@
         v-model="localResourceData.path"
         v-model:live-at="localResourceData.liveAt"
         v-model:cascade="cascade"
+        v-model:awaiting-date="awaitingDate"
         :current-path="hasRoute ? resource?.path ?? '' : ''"
         :parent-route-prefix="parentRoutePrefix"
         :route-publication="routePublication"
@@ -212,6 +213,7 @@ const childDetails = ref<Record<string, ChildRouteDetail>>({})
 const sub = ref<RouteSubView | null>(null)
 const formOpen = ref(false)
 const cascade = ref(true)
+const awaitingDate = ref(false)
 const forwardPick = ref<string | null | undefined>()
 const newRedirect = ref('')
 const redirectError = ref<string>()
@@ -310,6 +312,9 @@ const routeDisabledReason = computed(() => {
   if (!localResourceData.value?.path) {
     return 'Type a path first.'
   }
+  if (awaitingDate.value) {
+    return 'Choose when the route goes live.'
+  }
   return routeDirty.value ? undefined : 'Nothing has changed.'
 })
 
@@ -363,6 +368,7 @@ async function guardLeave(reason: DialogLeaveReason) {
 }
 
 function resetDrafts() {
+  awaitingDate.value = false
   failure.value = undefined
   redirectError.value = undefined
   newRedirect.value = ''
