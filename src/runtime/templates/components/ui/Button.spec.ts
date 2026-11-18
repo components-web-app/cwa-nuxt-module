@@ -184,7 +184,7 @@ describe('CwaUiButton (#456)', () => {
     const popover = document.querySelector<HTMLElement>('[data-testid="button-reason"]')
     expect(popover?.textContent?.trim()).toBe('This group already holds its 3 components')
     expect(popover?.getAttribute('aria-label')).toBe('Why Add is unavailable')
-    expect([...popover!.classList]).toEqual(expect.arrayContaining(['cwa:bg-surface-info', 'cwa:text-white']))
+    expect([...popover!.classList]).toEqual(expect.arrayContaining(['cwa:bg-surface-menu', 'cwa:text-fg', 'cwa:leading-normal']))
     expect(announce).toHaveBeenCalledWith('This group already holds its 3 components')
     expect(clicked).not.toHaveBeenCalled()
     expect(document.activeElement).toBe(wrapper.element)
