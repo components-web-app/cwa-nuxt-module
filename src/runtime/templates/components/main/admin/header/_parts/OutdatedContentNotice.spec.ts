@@ -5,6 +5,7 @@ import OutdatedContentNotice from './OutdatedContentNotice.vue'
 import { axe } from '../../../../../../../../test/utils/axe'
 import { drawsFocusRing } from '../../../../../../../../test/utils/focus-ring'
 import * as cwaComposable from '#cwa/composables/cwa'
+import { buttonLooks } from '#cwa/templates/components/ui/kit-looks'
 
 enableAutoUnmount(afterEach)
 
@@ -36,6 +37,15 @@ describe('OutdatedContentNotice', () => {
     expect(drawsFocusRing([...update.element.classList])).toBe(true)
     await update.trigger('click')
     expect(mergeNewResources).toHaveBeenCalledTimes(1)
+  })
+
+  test('Update has the kit\'s solid accent look without loading the kit button, so visitors are not sent reka (#382)', () => {
+    const { wrapper } = mountNotice(true)
+    const update = wrapper.get('[data-testid="outdated-content-notice"] button')
+    for (const look of [buttonLooks.solid.accent.rest, buttonLooks.solid.accent.hover].flatMap(classes => classes.split(' '))) {
+      expect(update.classes()).toContain(look)
+    }
+    expect(wrapper.findComponent({ name: 'Button' }).exists()).toBe(false)
   })
 
   test('has no axe violations', async () => {

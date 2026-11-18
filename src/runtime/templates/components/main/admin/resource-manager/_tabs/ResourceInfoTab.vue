@@ -45,10 +45,10 @@ async function chooseLocations(componentIri: string, total: number) {
   const choice = await confirmChoice(vueApp, {
     title: 'Delete this component?',
     description: `It is used in ${total} places.`,
-    keep: 'Cancel',
+    keep: 'Don\'t delete',
     extra: 'Remove from this location only',
     go: `Delete from all ${total} places`,
-    lines: notice ? [{ text: notice }] : [],
+    lines: [...(notice ? [{ text: notice }] : []), { text: 'Deleting it from all places can\'t be undone.', emphasis: 'muted' as const }],
   })
   return choice === 'go' ? 'all' : choice === 'extra' ? 'here' : undefined
 }
