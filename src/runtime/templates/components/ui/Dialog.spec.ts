@@ -10,7 +10,7 @@ import Dialog from './Dialog.vue'
 import Input from './Input.vue'
 import Toggle from './Toggle.vue'
 import { dialogSubViewKey } from '../core/ui/field-keys'
-import type { DialogSubFooter, DialogSubViewContext } from '../core/ui/field-keys'
+import type { DialogSubFooter, DialogSubViewContext, DialogSubViewGuard } from '../core/ui/field-keys'
 
 const { confirmMock } = vi.hoisted(() => ({ confirmMock: vi.fn() }))
 vi.mock('#cwa/composables/cwa-confirm', () => ({ useCwaConfirm: () => confirmMock }))
@@ -344,7 +344,7 @@ describe('CwaUiDialog and the Save model (#461)', () => {
     expect(focusable.map(element => drawsFocusRing([...element.classList]))).toEqual(focusable.map(() => true))
   })
   describe('a sub-view inside a tab', () => {
-    function mountWithSubView(footer: () => DialogSubFooter | 'none' | undefined, guard?: (reason: 'tab' | 'close') => Promise<boolean>) {
+    function mountWithSubView(footer: () => DialogSubFooter | 'none' | undefined, guard?: DialogSubViewGuard, claimant = ref(true)) {
       const Claimant = defineComponent({
         setup() {
           const context = inject(dialogSubViewKey) as DialogSubViewContext
@@ -357,12 +357,17 @@ describe('CwaUiDialog and the Save model (#461)', () => {
         setup() {
           return () => h(Dialog, { title: 'Kitchens', tabs, form, onSave: () => form.save() }, {
             details: () => h(Input, { label: 'Reference', field: 'reference' }),
-            seo: () => h(Claimant),
+            seo: () => claimant.value ? h(Claimant) : h('p', 'No route'),
             info: () => h('p', 'Created yesterday'),
           })
         },
       })
       return mount(Host, { attachTo: document.body })
+    }
+
+    function subViewGuard(unsaved: string[] = []) {
+      const names = ref(unsaved)
+      return { names, guard: { unsaved: vi.fn(() => names.value), leave: vi.fn() } }
     }
 
     test('a form open in a sub-view replaces the footer with its own Cancel and Save, keeping the page\'s unsaved count beside them', async () => {
@@ -426,40 +431,110 @@ describe('CwaUiDialog and the Save model (#461)', () => {
       expect(qa('footer button').map(shown)).toEqual(['Cancel', 'Save'])
     })
 
-    test('another tab asks the sub-view first, and stays put when it says no', async () => {
-      const guard = vi.fn().mockResolvedValueOnce(true).mockResolvedValueOnce(false)
-      mountWithSubView(() => undefined, guard)
+    test('a sub-view mounted while another tab is open still claims the footer of the tab it is in', async () => {
+      const claimant = ref(false)
+      mountWithSubView(() => ({ saveLabel: 'Save route', saving: false, cancel: vi.fn(), save: vi.fn() }), undefined, claimant)
       await flushPromises()
-      tab('Search engines').click()
-      await flushPromises()
-      expect(guard).not.toHaveBeenCalled()
-
-      tab('Info').click()
-      await flushPromises()
-      expect(guard).toHaveBeenLastCalledWith('tab')
-      expect(tab('Info').getAttribute('aria-selected')).toBe('true')
-
       tab('Search engines').click()
       await flushPromises()
       tab('Details').click()
       await flushPromises()
-      expect(tab('Search engines').getAttribute('aria-selected')).toBe('true')
+
+      claimant.value = true
+      await flushPromises()
+      expect(qa('footer button').map(shown)).toEqual(['Cancel', 'Save'])
+
+      tab('Search engines').click()
+      await flushPromises()
+      expect(qa('footer button').map(shown)).toEqual(['Cancel', 'Save route'])
     })
 
-    test('closing asks the sub-view first, and a no keeps the dialog open without asking about the page', async () => {
-      const guard = vi.fn().mockResolvedValue(false)
-      const wrapper = mountWithSubView(() => undefined, guard)
+    test('another tab leaves a sub-view with nothing typed without asking', async () => {
+      const { guard } = subViewGuard()
+      mountWithSubView(() => undefined, guard)
       await flushPromises()
       tab('Search engines').click()
       await flushPromises()
+      expect(guard.leave).not.toHaveBeenCalled()
+
+      tab('Info').click()
+      await flushPromises()
+
+      expect(confirmMock).not.toHaveBeenCalled()
+      expect(guard.leave).toHaveBeenCalledTimes(1)
+      expect(tab('Info').getAttribute('aria-selected')).toBe('true')
+    })
+
+    test('another tab asks before throwing away what the sub-view holds, naming it, and stays put on Keep editing', async () => {
+      const { guard } = subViewGuard(['Route path'])
+      mountWithSubView(() => undefined, guard)
+      await flushPromises()
+      tab('Search engines').click()
+      await flushPromises()
+      confirmMock.mockResolvedValueOnce(false)
+
+      tab('Info').click()
+      await flushPromises()
+
+      expect(confirmMock).toHaveBeenCalledWith({
+        title: 'Discard 1 unsaved change?',
+        description: 'Your changes to Route path will be lost. Changes on the other tabs are kept.',
+        keep: 'Keep editing',
+        go: 'Discard',
+      })
+      expect(guard.leave).not.toHaveBeenCalled()
+      expect(tab('Search engines').getAttribute('aria-selected')).toBe('true')
+
+      confirmMock.mockResolvedValueOnce(true)
+      tab('Info').click()
+      await flushPromises()
+      expect(guard.leave).toHaveBeenCalledTimes(1)
+      expect(tab('Info').getAttribute('aria-selected')).toBe('true')
+    })
+
+    test('closing asks once, naming the page\'s changes and the sub-view\'s together, and Keep editing keeps both', async () => {
+      const { guard } = subViewGuard(['Route path'])
+      const wrapper = mountWithSubView(() => undefined, guard)
+      await flushPromises()
       await type('[data-cwa-field="reference"] input', 'Mine')
+      tab('Search engines').click()
+      await flushPromises()
+      confirmMock.mockResolvedValueOnce(false)
 
       q<HTMLButtonElement>('[data-testid="dialog-close"]')!.click()
       await flushPromises()
 
-      expect(guard).toHaveBeenCalledWith('close')
-      expect(confirmMock).not.toHaveBeenCalled()
+      expect(confirmMock).toHaveBeenCalledTimes(1)
+      expect(confirmMock).toHaveBeenCalledWith({
+        title: 'Discard 2 unsaved changes?',
+        description: 'Your changes to Reference and Route path will be lost.',
+        keep: 'Keep editing',
+        go: 'Discard',
+      })
+      expect(guard.leave).not.toHaveBeenCalled()
+      expect(form.unsavedFields).toEqual(['reference'])
       expect(wrapper.findComponent(Dialog).emitted('close')).toBeUndefined()
+
+      confirmMock.mockResolvedValueOnce(true)
+      q<HTMLButtonElement>('[data-testid="dialog-close"]')!.click()
+      await flushPromises()
+      expect(confirmMock).toHaveBeenCalledTimes(2)
+      expect(guard.leave).toHaveBeenCalledTimes(1)
+      expect(form.unsavedFields).toEqual([])
+      expect(wrapper.findComponent(Dialog).emitted('close')).toHaveLength(1)
+    })
+
+    test('the discard check a page switch runs asks about the sub-view too', async () => {
+      const { guard } = subViewGuard(['Route path'])
+      const wrapper = mountWithSubView(() => undefined, guard)
+      await flushPromises()
+      tab('Search engines').click()
+      await flushPromises()
+      confirmMock.mockResolvedValueOnce(false)
+
+      expect(await wrapper.findComponent(Dialog).vm.confirmDiscard()).toBe(false)
+      expect(confirmMock.mock.calls[0]![0].description).toBe('Your changes to Route path will be lost.')
+      expect(guard.leave).not.toHaveBeenCalled()
     })
   })
 })

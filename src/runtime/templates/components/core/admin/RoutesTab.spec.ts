@@ -71,13 +71,13 @@ function setupItemPage(options: { path?: string, liveAt?: string | null, effecti
     localResourceData,
     resource,
     loadResource: vi.fn(),
-    deleteResource: vi.fn().mockResolvedValue(undefined),
+    deleteResource: vi.fn().mockResolvedValue(true),
     saveResource: vi.fn().mockResolvedValue({ '@id': ROUTE_IRI, 'path': path }),
     resetResource: vi.fn(() => {
       localResourceData.value = { ...resource.value }
     }),
     apiState: ref({ status: 'SUCCESS', path: `${ROUTE_IRI}/redirects` }),
-    form: { fieldErrors: {} },
+    form: { fieldErrors: {} as Record<string, string>, formError: undefined as string | undefined },
   }
   mockUseItemPage.mockReturnValue(itemPage)
   return itemPage
@@ -341,6 +341,73 @@ describe('RoutesTab', () => {
       expect(itemPage.saveResource).toHaveBeenCalledWith(false, undefined)
     })
 
+    test('a new path cannot be saved while the child routes under it are still being checked, and says why', async () => {
+      const itemPage = setupItemPage()
+      let answer!: (value: unknown) => void
+      mockCwa({ fetch: vi.fn(() => ({ response: new Promise((resolve) => {
+        answer = resolve
+      }) })) })
+      const wrapper = mountTab()
+      await flushPromises()
+      await openSub(wrapper, 'route')
+      itemPage.localResourceData.value.path = '/conference/renamed'
+      await flushPromises()
+
+      expect(save(wrapper).attributes('aria-disabled')).toBe('true')
+      expect(save(wrapper).attributes('title')).toBe('Checking the child routes under this path…')
+      await save(wrapper).trigger('click')
+      await flushPromises()
+      expect(itemPage.saveResource).not.toHaveBeenCalled()
+
+      answer({ _data: { children } })
+      await flushPromises()
+      expect(save(wrapper).attributes('aria-disabled')).toBeUndefined()
+      expect(wrapper.find('[data-testid="route-cascade"]').exists()).toBe(true)
+    })
+
+    test('when the child routes could not be checked, a new path says so with Retry and is not saved until they are', async () => {
+      const itemPage = setupItemPage()
+      const fetch = vi.fn(() => ({ response: Promise.reject(new Error('boom')) }))
+      mockCwa({ fetch })
+      const wrapper = mountTab()
+      await flushPromises()
+      await openSub(wrapper, 'route')
+      expect(wrapper.find('[data-testid="routes-children-failed"]').exists()).toBe(false)
+      itemPage.localResourceData.value.path = '/conference/renamed'
+      await flushPromises()
+
+      const alert = wrapper.find('[data-testid="routes-children-failed"]')
+      expect(alert.text()).toContain('Couldn\'t check child routes')
+      expect(save(wrapper).attributes('title')).toBe('Couldn\'t check the child routes under this path.')
+      await save(wrapper).trigger('click')
+      await flushPromises()
+      expect(itemPage.saveResource).not.toHaveBeenCalled()
+      expect(await axe(wrapper.element as HTMLElement)).toHaveNoViolations()
+
+      fetch.mockImplementation(() => ({ response: Promise.resolve({ _data: { children } }) }) as any)
+      await alert.find('button').trigger('click')
+      await flushPromises()
+      expect(wrapper.find('[data-testid="routes-children-failed"]').exists()).toBe(false)
+      await save(wrapper).trigger('click')
+      await flushPromises()
+      expect(itemPage.saveResource).toHaveBeenCalledWith(false, { cascadeChildPaths: true })
+    })
+
+    test('a go-live change saves even when the child routes could not be checked, since it changes no path', async () => {
+      const itemPage = setupItemPage()
+      mockCwa({ fetch: vi.fn(() => ({ response: Promise.reject(new Error('boom')) })) })
+      const wrapper = mountTab()
+      await flushPromises()
+      await openSub(wrapper, 'route')
+      itemPage.localResourceData.value.liveAt = null
+      await flushPromises()
+
+      expect(wrapper.find('[data-testid="routes-children-failed"]').exists()).toBe(false)
+      await save(wrapper).trigger('click')
+      await flushPromises()
+      expect(itemPage.saveResource).toHaveBeenCalledWith(false, undefined)
+    })
+
     test('a new path with no child routes under the old one sends no cascade', async () => {
       const itemPage = setupItemPage({ path: '/conference/other' })
       mockCwa()
@@ -380,6 +447,29 @@ describe('RoutesTab', () => {
       await flushPromises()
       expect(itemPage.saveResource).toHaveBeenCalledTimes(2)
       expect(wrapper.find('[data-testid="routes-failure"]').exists()).toBe(false)
+    })
+
+    test('a save the server refuses lists every reason it gave, not only the path\'s', async () => {
+      const itemPage = setupItemPage()
+      itemPage.saveResource.mockImplementationOnce(async () => {
+        itemPage.form.fieldErrors = { path: 'This path is already used.', liveAt: 'Choose a later date.' }
+        itemPage.form.formError = 'The route name is too long.'
+        return undefined
+      })
+      mockCwa()
+      const wrapper = mountTab()
+      await flushPromises()
+      await openSub(wrapper, 'route')
+      itemPage.localResourceData.value.path = '/conference/renamed'
+      await flushPromises()
+
+      await save(wrapper).trigger('click')
+      await flushPromises()
+
+      const reasons = wrapper.findAll('[data-testid="routes-failure-reason"]').map(reason => reason.text())
+      expect(reasons).toEqual(['The route name is too long.', 'Route path: This path is already used.', 'Go live: Choose a later date.'])
+      expect(wrapper.find('[data-testid="routes-failure"]').text()).toContain('What you typed is still here.')
+      expect(await axe(wrapper.element as HTMLElement)).toHaveNoViolations()
     })
 
     test('adding a route says where the page is now', async () => {
@@ -471,6 +561,31 @@ describe('RoutesTab', () => {
         typed: undefined,
       })
       expect(itemPage.deleteResource).toHaveBeenCalledWith(undefined, expect.any(Function), true)
+      expect(wrapper.find('[data-testid="sub-view"]').exists()).toBe(false)
+      expect(wrapper.find('[data-testid="routes-status"]').text()).toBe('Route /conference/programme deleted.')
+    })
+
+    test('a delete the server refuses keeps the route form open under an alert with Retry, and never says it was deleted', async () => {
+      const itemPage = setupItemPage()
+      itemPage.deleteResource.mockResolvedValueOnce(false)
+      mockCwa({ fetch: vi.fn(() => ({ response: Promise.resolve({ _data: { children: [] } }) })) })
+      const wrapper = mountTab()
+      await flushPromises()
+      await openSub(wrapper, 'route')
+
+      await wrapper.findComponent(RoutesTabManage).vm.$emit('delete')
+      await flushPromises()
+
+      const alert = wrapper.find('[data-testid="routes-failure"]')
+      expect(alert.text()).toContain('The route wasn\'t deleted.')
+      expect(alert.text()).toContain('The server couldn\'t delete it. Nothing changed.')
+      expect(document.activeElement).toBe(alert.element)
+      expect(wrapper.find('[data-testid="sub-view"]').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="routes-status"]').exists()).toBe(false)
+
+      await wrapper.find('[data-testid="routes-retry"]').trigger('click')
+      await flushPromises()
+      expect(itemPage.deleteResource).toHaveBeenCalledTimes(2)
       expect(wrapper.find('[data-testid="sub-view"]').exists()).toBe(false)
       expect(wrapper.find('[data-testid="routes-status"]').text()).toBe('Route /conference/programme deleted.')
     })
@@ -660,6 +775,37 @@ describe('RoutesTab', () => {
       expect(wrapper.findComponent(RoutesTabRedirects).props('form')).toBe(false)
     })
 
+    test('a page with no route cannot add an old address, and Add says why', async () => {
+      setupItemPage({ adding: true })
+      const cwa = mockCwa()
+      const wrapper = mountTab({ route: null })
+      await openSub(wrapper, 'from')
+
+      const add = wrapper.find('[data-testid="route-redirect-add"]')
+      expect(add.attributes('aria-disabled')).toBe('true')
+      expect(add.attributes('title')).toBe('Add a route first: old addresses send visitors to it.')
+      await wrapper.findComponent(RoutesTabRedirects).vm.$emit('start')
+      await flushPromises()
+      expect(wrapper.findComponent(RoutesTabRedirects).props('form')).toBe(false)
+      expect(cwa.resourcesManager.createResource).not.toHaveBeenCalled()
+    })
+
+    test('an old address whose page loses its route before it is sent is not sent', async () => {
+      setupItemPage()
+      const cwa = mockCwa()
+      const wrapper = mountTab()
+      await openSub(wrapper, 'from')
+      await wrapper.find('[data-testid="route-redirect-add"]').trigger('click')
+      await wrapper.find('input').setValue('/old-shaker')
+
+      await wrapper.setProps({ pageResource: { '@id': '/_/pages/programme-uuid', '@type': 'Page', 'title': 'My Programme', 'route': null } as any })
+      await flushPromises()
+      await save(wrapper).trigger('click')
+      await flushPromises()
+
+      expect(cwa.resourcesManager.createResource).not.toHaveBeenCalled()
+    })
+
     test.each(['old-shaker', '/old shaker'])('“%s” is checked before sending and the reason shown', async (typed) => {
       setupItemPage()
       const cwa = mockCwa()
@@ -766,6 +912,75 @@ describe('RoutesTab', () => {
       expect(wrapper.emitted('openPage')).toEqual([['/_/pages/elsewhere']])
       expect(wrapper.emitted('goTo')).toEqual([['/conference/elsewhere']])
       expect(await axe(wrapper.element as HTMLElement)).toHaveNoViolations()
+    })
+
+    function manyChildren() {
+      const leaf = (name: string) => ({ route: `/_/routes//conference/programme/${name}`, path: `/conference/programme/${name}`, children: [] as any[] })
+      const last = { ...leaf('r8'), children: ['k1', 'k2', 'k3', 'k4'].map(name => leaf(`r8/${name}`)) }
+      return [...['r1', 'r2', 'r3', 'r4', 'r5', 'r6', 'r7'].map(leaf), last]
+    }
+
+    function detailFetch(list: any[]) {
+      const pending: Record<string, (value: unknown) => void> = {}
+      const fetch = vi.fn((options: { path: string }) => ({
+        response: options.path.endsWith('/children')
+          ? Promise.resolve({ _data: { children: list } })
+          : new Promise((resolve) => {
+              pending[options.path] = resolve
+            }),
+      }))
+      const answer = (path: string) => pending[path]!({ _data: { '@id': path, 'liveAt': null, 'page': `/_/pages/${path.split('/').pop()}` } })
+      const asked = () => fetch.mock.calls.map(([options]) => options.path).filter(path => !path.endsWith('/children'))
+      return { fetch, answer, asked }
+    }
+
+    test('loads at most six child routes at a time, and only the rows shown: a collapsed row\'s children wait until it opens', async () => {
+      setupItemPage()
+      const list = manyChildren()
+      const { fetch, answer, asked } = detailFetch(list)
+      mockCwa({ fetch })
+      const wrapper = mountTab()
+      await flushPromises()
+      await openSub(wrapper, 'kids')
+
+      expect(asked().map(path => path.split('/programme/')[1])).toEqual(['r1', 'r2', 'r3', 'r4', 'r5', 'r6'])
+      const r8 = [...document.querySelectorAll<HTMLElement>('[role="row"]')].find(row => row.textContent?.includes('/conference/programme/r8') && !row.textContent?.includes('/k'))!
+      r8.querySelector<HTMLElement>('[data-testid="tree-chevron"]')!.click()
+      await flushPromises()
+
+      for (const name of ['r1', 'r2', 'r3', 'r4', 'r5', 'r6']) {
+        answer(`/_/routes//conference/programme/${name}`)
+        await flushPromises()
+      }
+      answer('/_/routes//conference/programme/r7')
+      answer('/_/routes//conference/programme/r8')
+      await flushPromises()
+      expect(asked().map(path => path.split('/programme/')[1])).toEqual(['r1', 'r2', 'r3', 'r4', 'r5', 'r6', 'r7', 'r8'])
+
+      r8.querySelector<HTMLElement>('[data-testid="tree-chevron"]')!.click()
+      await flushPromises()
+      expect(asked()).toHaveLength(12)
+    })
+
+    test('a child route that fails to load says so and offers Retry, never staying on Still loading', async () => {
+      setupItemPage()
+      const fetch = vi.fn((options: { path: string }) => ({
+        response: options.path.endsWith('/children')
+          ? Promise.resolve({ _data: { children: [{ route: '/_/routes//conference/elsewhere', path: '/conference/elsewhere', children: [] }] } })
+          : Promise.reject(new Error('boom')),
+      }))
+      mockCwa({ fetch })
+      const wrapper = mountTab()
+      await flushPromises()
+      await openSub(wrapper, 'kids')
+
+      const kids = wrapper.findComponent(RoutesTabChildRoutes)
+      expect(kids.props('details')).toEqual({ '/_/routes//conference/elsewhere': { state: 'failed' } })
+
+      fetch.mockImplementation(((options: { path: string }) => ({ response: Promise.resolve({ _data: { '@id': options.path, 'liveAt': null, 'page': '/_/pages/elsewhere' } }) })) as any)
+      await kids.vm.$emit('retry', '/_/routes//conference/elsewhere')
+      await flushPromises()
+      expect((kids.props('details') as any)['/_/routes//conference/elsewhere']).toMatchObject({ state: 'loaded', page: '/_/pages/elsewhere' })
     })
   })
 
@@ -879,8 +1094,50 @@ describe('RoutesTab', () => {
       expect(await axe(document.body)).toHaveNoViolations()
     })
 
-    // todo: make this test() once the CwaUiSubView fix for an open Select lands on feat/236-kit-6a-plus-add-component
-    test.fails('Escape in an open Select closes the Select and stays in the sub-view', async () => {
+    test('closing the dialog with a typed path asks once, naming the route path among the page\'s changes', async () => {
+      const itemPage = setupItemPage()
+      mockCwa()
+      const wrapper = mountInDialog()
+      await flushPromises()
+      await openSub(wrapper as unknown as Wrapper, 'route')
+      itemPage.localResourceData.value.path = '/conference/renamed'
+      itemPage.localResourceData.value.liveAt = null
+      await flushPromises()
+      confirmMock.mockResolvedValueOnce(false)
+
+      dialog().querySelector<HTMLElement>('[data-testid="dialog-close"]')!.click()
+      await flushPromises()
+
+      expect(confirmMock).toHaveBeenCalledTimes(1)
+      expect(confirmMock).toHaveBeenCalledWith({
+        title: 'Discard 2 unsaved changes?',
+        description: 'Your changes to Route path and Go live will be lost.',
+        keep: 'Keep editing',
+        go: 'Discard',
+      })
+      expect(itemPage.localResourceData.value.path).toBe('/conference/renamed')
+      expect(dialog().querySelector('[data-testid="sub-view"]')).not.toBeNull()
+    })
+
+    test('another tab with a typed path asks once, naming it, and Discard leaves the sub-view with the stored path back', async () => {
+      const itemPage = setupItemPage()
+      mockCwa()
+      const wrapper = mountInDialog()
+      await flushPromises()
+      await openSub(wrapper as unknown as Wrapper, 'route')
+      itemPage.localResourceData.value.path = '/conference/renamed'
+      await flushPromises()
+
+      dialog().querySelector<HTMLElement>('[role="tab"]')!.click()
+      await flushPromises()
+
+      expect(confirmMock).toHaveBeenCalledTimes(1)
+      expect(confirmMock.mock.calls[0]![0].description).toBe('Your changes to Route path will be lost. Changes on the other tabs are kept.')
+      expect(dialog().querySelector('[data-testid="sub-view"]')).toBeNull()
+      expect(itemPage.localResourceData.value.path).toBe('/conference/programme')
+    })
+
+    test('Escape in an open Select closes the Select and stays in the sub-view', async () => {
       setupItemPage()
       mockCwa({}, { '/_/pages/conference-uuid': { data: { route: '/_/routes//conference' } } })
       const form = fakeDialogForm({ reference: 'Programme' })

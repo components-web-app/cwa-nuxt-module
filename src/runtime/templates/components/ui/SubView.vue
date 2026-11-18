@@ -61,11 +61,25 @@ watch(() => open, async (isOpen, wasOpen) => {
   opener = null
 })
 
+function layerAbove() {
+  const scope = keyScope
+  return !!scope && [...document.querySelectorAll<HTMLElement>('[data-dismissable-layer]')].some(layer => layer !== scope
+    && !layer.closest('[hidden]')
+    && !!(scope.compareDocumentPosition(layer) & Node.DOCUMENT_POSITION_FOLLOWING))
+}
+
+function editable(target: EventTarget | null) {
+  return !!(target as Element | null)?.closest?.('input, textarea, [contenteditable]:not([contenteditable="false"])')
+}
+
 function onKeydown(event: KeyboardEvent) {
   if (event.defaultPrevented) {
     return
   }
-  if (event.key === 'Escape' || (event.altKey && event.key === 'ArrowLeft')) {
+  if ((event.target as Element | null)?.closest?.('[aria-expanded="true"]') || layerAbove()) {
+    return
+  }
+  if (event.key === 'Escape' || (event.altKey && event.key === 'ArrowLeft' && !editable(event.target))) {
     event.preventDefault()
     event.stopPropagation()
     emit('back')

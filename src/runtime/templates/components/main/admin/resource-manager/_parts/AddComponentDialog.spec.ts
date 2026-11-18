@@ -511,7 +511,7 @@ describe('the add component dialog (#461)', () => {
       })
     })
 
-    test('with no UI chosen and no style, nothing extra is sent', async () => {
+    test('with the UI and Style shown but left on Default, none is sent for both', async () => {
       resolvedMeta.CwaComponentHtmlContent = { cwaResource: { styles: { classes: { 'Black background': 'bg-black' } } } }
       await mountDialog()
       await openDialog()
@@ -520,7 +520,151 @@ describe('the add component dialog (#461)', () => {
 
       add().click()
 
-      expect(cwaState.cwa.resourcesManager.setAddResourceEventResource).toHaveBeenCalledWith('HtmlContent', '/component/html_contents', true, false, {})
+      expect(cwaState.cwa.resourcesManager.setAddResourceEventResource).toHaveBeenCalledWith('HtmlContent', '/component/html_contents', true, false, { uiComponent: null, uiClassNames: [] })
+    })
+
+    describe('the configured default data', () => {
+      function configureDefaults(defaultData: Record<string, unknown>) {
+        cwaState.cwa.resourcesConfig = { ...resourcesConfig, HtmlContent: { ...resourcesConfig.HtmlContent, defaultData } }
+        resolvedMeta.CwaComponentHtmlContent = { cwaResource: { styles: { classes: { 'Black background': 'bg-black p-2' } } } }
+        resolvedMeta.CwaComponentHtmlContentUiAltHtmlContent = { cwaResource: { name: 'Alternative', styles: { multiple: true, classes: { Boxed: ['border', 'p-4'], Shadow: 'shadow' } } } }
+      }
+
+      async function openHtmlContent() {
+        await mountDialog()
+        await openDialog()
+        qa('[data-testid="add-component-chip"]')[1]!.click()
+        await flushPromises()
+      }
+
+      const trigger = (testId: string) => q(`[data-testid="${testId}"] [data-testid="select-trigger"], [data-testid="${testId}"] [data-testid="multi-input"]`)!
+
+      test('chooses the UI and the styles the default data sets, and sends them', async () => {
+        configureDefaults({ title: 'Hello', uiComponent: 'CwaComponentHtmlContentUiAltHtmlContent', uiClassNames: ['shadow', 'border p-4'] })
+        await openHtmlContent()
+
+        expect(trigger('add-component-ui').textContent!.trim()).toBe('Alternative')
+        expect(shown(q('[data-testid="add-component-style"]'))).toContain('Boxed')
+        add().click()
+
+        expect(cwaState.cwa.resourcesManager.setAddResourceEventResource).toHaveBeenCalledWith('HtmlContent', '/component/html_contents', true, false, {
+          title: 'Hello',
+          uiComponent: 'CwaComponentHtmlContentUiAltHtmlContent',
+          uiClassNames: ['border p-4', 'shadow'],
+        })
+      })
+
+      test('the styles of the default UI are chosen from the default data', async () => {
+        configureDefaults({ uiClassNames: ['bg-black p-2'] })
+        await openHtmlContent()
+
+        expect(trigger('add-component-ui').textContent!.trim()).toBe('Default')
+        expect(trigger('add-component-style').textContent!.trim()).toBe('Black background')
+        add().click()
+
+        expect(cwaState.cwa.resourcesManager.setAddResourceEventResource).toHaveBeenCalledWith('HtmlContent', '/component/html_contents', true, false, {
+          uiComponent: null,
+          uiClassNames: ['bg-black p-2'],
+        })
+      })
+
+      test('choosing Default and no style overwrites the default data with none', async () => {
+        configureDefaults({ uiComponent: 'CwaComponentHtmlContentUiAltHtmlContent', uiClassNames: ['shadow'] })
+        await openHtmlContent()
+
+        await pick('add-component-ui', 'Default')
+        add().click()
+
+        expect(cwaState.cwa.resourcesManager.setAddResourceEventResource).toHaveBeenCalledWith('HtmlContent', '/component/html_contents', true, false, {
+          uiComponent: null,
+          uiClassNames: [],
+        })
+      })
+
+      test('with no UI or Style to choose, the default data is sent as configured', async () => {
+        cwaState.cwa.resourcesConfig = { ...resourcesConfig, Hero: { ...resourcesConfig.Hero, defaultData: { title: 'New hero', uiComponent: 'CwaComponentHeroUiWide', uiClassNames: ['dark'] } } }
+        await mountDialog()
+        await openDialog()
+        await choose('Hero')
+
+        expect(q('[data-testid="add-component-ui"]')).toBeNull()
+        expect(q('[data-testid="add-component-style"]')).toBeNull()
+        add().click()
+
+        expect(cwaState.cwa.resourcesManager.setAddResourceEventResource).toHaveBeenCalledWith('Hero', '/component/heroes', true, false, {
+          title: 'New hero',
+          uiComponent: 'CwaComponentHeroUiWide',
+          uiClassNames: ['dark'],
+        })
+      })
+    })
+
+    describe('Add now while it adds', () => {
+      function addingInstantly() {
+        let finish!: (resource?: Record<string, unknown>) => void
+        cwaState.cwa.resourcesManager.setAddResourceEventResource.mockImplementation(() => {
+          cwaState.cwa.resources.newResource.value = { data: { _metadata: { adding: { instantAdd: true } } } }
+        })
+        cwaState.cwa.resourcesManager.addResourceAction.mockImplementation(() => new Promise((resolve) => {
+          finish = resolve
+        }))
+        cwaState.cwa.resourcesManager.clearAddResourceEventResource.mockImplementation(() => {
+          cwaState.cwa.resources.newResource.value = undefined
+        })
+        return { finish: (resource?: Record<string, unknown>) => finish(resource) }
+      }
+
+      async function openImage() {
+        await mountDialog()
+        await openDialog()
+        await type('image')
+        await key(search(), 'Enter')
+      }
+
+      test('a double click adds once, and Add says it is busy', async () => {
+        addingInstantly()
+        await openImage()
+
+        add().dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 1 }))
+        await flushPromises()
+        add().dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 2 }))
+        await flushPromises()
+
+        expect(cwaState.cwa.resourcesManager.setAddResourceEventResource).toHaveBeenCalledTimes(1)
+        expect(cwaState.cwa.resourcesManager.addResourceAction).toHaveBeenCalledTimes(1)
+        expect(add().getAttribute('aria-disabled')).toBe('true')
+        expect(add().getAttribute('aria-busy')).toBe('true')
+      })
+
+      test('a second click before the add starts adds nothing more', async () => {
+        addingInstantly()
+        await openImage()
+
+        add().click()
+        add().click()
+        await flushPromises()
+
+        expect(cwaState.cwa.resourcesManager.setAddResourceEventResource).toHaveBeenCalledTimes(1)
+      })
+
+      test('focus that was in the detail goes to Add when the spinner replaces it, and stays there when the add fails', async () => {
+        const { finish } = addingInstantly()
+        await openImage()
+        const back = q('[data-testid="sub-view-back"]')!
+        back.focus()
+
+        add().click()
+        await flushPromises()
+        expect(q('[data-testid="add-component-detail"]')).toBeNull()
+        expect(document.activeElement).toBe(add())
+
+        finish(undefined)
+        await flushPromises()
+
+        expect(q('[data-testid="add-component-detail"]')).not.toBeNull()
+        expect(document.activeElement).toBe(add())
+        expect(add().hasAttribute('aria-disabled')).toBe(false)
+      })
     })
   })
 

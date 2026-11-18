@@ -11,10 +11,7 @@ export interface RouteHierarchyNodeData {
   children: RouteHierarchyNodeData[]
 }
 
-export interface ChildRouteDetail {
-  publication: CwaRouteLiveAt
-  page?: string
-}
+export type ChildRouteDetail = { state: 'loading' } | { state: 'failed' } | { state: 'loaded', publication: CwaRouteLiveAt, page?: string }
 
 const { children, details = {} } = defineProps<{
   children: RouteHierarchyNodeData[]
@@ -24,6 +21,8 @@ const { children, details = {} } = defineProps<{
 const emit = defineEmits<{
   edit: [page: string]
   go: [path: string]
+  shown: [routes: string[]]
+  retry: [route: string]
 }>()
 
 function toNodes(list: RouteHierarchyNodeData[]): TreeNode[] {
@@ -36,15 +35,33 @@ function toNodes(list: RouteHierarchyNodeData[]): TreeNode[] {
 
 const nodes = computed(() => toNodes(children))
 
+function editReason(detail: ChildRouteDetail | undefined) {
+  if (detail?.state === 'failed') {
+    return 'This route didn\'t load. Retry to load it again.'
+  }
+  if (detail?.state === 'loaded') {
+    return detail.page ? undefined : 'This route has no page.'
+  }
+  return 'Still loading this page.'
+}
+
 function actions(node: TreeNode): TreeAction[] {
-  const page = details[node.key]?.page
+  const detail = details[node.key]
+  const page = detail?.state === 'loaded' ? detail.page : undefined
+  const reason = editReason(detail)
   return [{
     label: `More actions for ${node.label}`,
     menu: [
-      { label: 'Edit settings', value: 'edit', disabled: !page, disabledReason: page ? undefined : 'Still loading this page.', onSelect: () => page && emit('edit', page) },
+      { label: 'Edit settings', value: 'edit', disabled: !!reason, disabledReason: reason, onSelect: () => page && emit('edit', page) },
+      ...(detail?.state === 'failed' ? [{ label: 'Retry loading', value: 'retry', onSelect: () => emit('retry', node.key) }] : []),
       { label: 'Go to page', value: 'go', onSelect: () => emit('go', node.label) },
     ],
   }]
+}
+
+function loaded(key: string) {
+  const detail = details[key]
+  return detail?.state === 'loaded' ? detail : undefined
 }
 </script>
 
@@ -61,12 +78,18 @@ function actions(node: TreeNode): TreeAction[] {
       :nodes="nodes"
       :actions="actions"
       empty="No pages are nested under this one."
+      @shown="emit('shown', $event)"
     >
       <template #badge="{ node }">
         <RouteStatusBadge
-          v-if="details[node.key]"
-          :publication="details[node.key]!.publication"
+          v-if="loaded(node.key)"
+          :publication="loaded(node.key)!.publication"
         />
+        <span
+          v-else-if="details[node.key]?.state === 'failed'"
+          data-testid="route-child-failed"
+          class="cwa:text-helper cwa:text-fg-muted"
+        >Didn't load</span>
       </template>
     </CwaUiTree>
   </div>

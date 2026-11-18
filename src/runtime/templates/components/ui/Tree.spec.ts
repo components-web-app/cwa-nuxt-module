@@ -135,14 +135,29 @@ describe('CwaUiTree (#461)', () => {
   })
 
   test('Enter runs the row\'s first action and Delete its delete action, naming the node', async () => {
-    const { remove } = mountTree()
+    const run = vi.fn()
+    const remove = vi.fn()
+    mountTree({ actions: (): TreeAction[] => [{ label: 'Edit', run }, { label: 'Delete', icon: BinIcon, danger: true, delete: true, run: remove }] })
     await flushPromises()
 
     key(row('/old-kitchens'), 'Enter')
     key(row('/shaker'), 'Delete')
     await flushPromises()
 
-    expect(remove.mock.calls.map(([node]) => node.key)).toEqual(['/old-kitchens', '/shaker'])
+    expect(run.mock.calls.map(([node]) => node.key)).toEqual(['/old-kitchens'])
+    expect(remove.mock.calls.map(([node]) => node.key)).toEqual(['/shaker'])
+  })
+
+  test('Enter on a row whose first action is its delete does nothing: deleting takes the Delete key or the button', async () => {
+    const { remove } = mountTree()
+    await flushPromises()
+
+    const event = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true })
+    row('/old-kitchens').dispatchEvent(event)
+    await flushPromises()
+
+    expect(remove).not.toHaveBeenCalled()
+    expect(event.defaultPrevented).toBe(false)
   })
 
   test('Delete on a row with no delete action does nothing', async () => {
@@ -215,6 +230,17 @@ describe('CwaUiTree (#461)', () => {
     expect(row('/shaker')).toBeUndefined()
     expect(document.querySelectorAll('[data-testid="custom"]')[0]!.textContent).toBe('/shaker → this page')
     expect([...document.querySelectorAll('[data-testid="badge"]')].map(element => element.textContent)).toEqual(['Live', 'Not live', 'Not live'])
+  })
+
+  test('tells which rows are shown, again whenever a row opens or closes', async () => {
+    const { wrapper } = mountTree()
+    await flushPromises()
+    expect(wrapper.emitted('shown')).toEqual([[['/shaker', '/shaker-style', '/old-kitchens']]])
+
+    row('/shaker').querySelector<HTMLElement>('[data-testid="tree-chevron"]')!.click()
+    await flushPromises()
+    expect(wrapper.emitted('shown')!.at(-1)).toEqual([['/shaker', '/old-kitchens']])
+    expect(wrapper.emitted('shown')).toHaveLength(2)
   })
 
   test('says so when it is empty', async () => {

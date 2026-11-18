@@ -22,6 +22,7 @@ function setup(stored: Record<string, any>, ops: { excludeFields?: string[], res
   })
   const updateResource = vi.fn().mockResolvedValue({ ...stored, '@id': layoutIri })
   const createResource = vi.fn()
+  const deleteResource = vi.fn()
   const errors = reactive<any[]>([])
   const removeError = vi.fn((timestamp: number) => {
     const index = errors.findIndex(error => error.timestamp === timestamp)
@@ -33,7 +34,7 @@ function setup(stored: Record<string, any>, ops: { excludeFields?: string[], res
   // @ts-expect-error
   vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => ({
     resources: { getResource: vi.fn((iri: string) => computed(() => store[iri])) },
-    resourcesManager: { createResource, updateResource, deleteResource: vi.fn(), addError: vi.fn(), errors, removeError, storeResource },
+    resourcesManager: { createResource, updateResource, deleteResource, addError: vi.fn(), errors, removeError, storeResource },
     fetchResource: vi.fn(),
   }))
   const emit = vi.fn()
@@ -64,7 +65,7 @@ function setup(stored: Record<string, any>, ops: { excludeFields?: string[], res
       return undefined
     })
   }
-  return { itemPage, updateResource, createResource, emit, refetch, failWith, errors, removeError, storeResource }
+  return { itemPage, updateResource, createResource, deleteResource, emit, refetch, failWith, errors, removeError, storeResource }
 }
 
 const layout = {
@@ -154,6 +155,28 @@ describe('useItemPage update body', () => {
     expect(updateResource).not.toHaveBeenCalled()
     expect(result).toStrictEqual(stored)
     expect(emit).toHaveBeenCalledWith('close')
+    expect(itemPage.isUpdating.value).toBe(false)
+  })
+})
+
+describe('useItemPage delete (#461)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  test('says whether the delete went through, so a caller can tell a refused one', async () => {
+    const { itemPage, deleteResource, emit } = setup({ ...layout })
+    await flushPromises()
+    deleteResource.mockImplementationOnce(async (event: { saveCompleteFn: () => void }) => {
+      event.saveCompleteFn()
+    })
+    deleteResource.mockResolvedValueOnce(undefined)
+
+    expect(await itemPage.deleteResource(undefined, undefined, true)).toBe(true)
+    expect(emit).toHaveBeenCalledWith('close')
+    emit.mockClear()
+    expect(await itemPage.deleteResource(undefined, undefined, true)).toBe(false)
+    expect(emit).not.toHaveBeenCalledWith('close')
     expect(itemPage.isUpdating.value).toBe(false)
   })
 })

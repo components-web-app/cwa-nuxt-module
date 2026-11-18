@@ -5,10 +5,11 @@ import { defineComponent, h, ref } from 'vue'
 import { axe } from '../../../../../test/utils/axe'
 import { drawsFocusRing } from '../../../../../test/utils/focus-ring'
 import SubView from './SubView.vue'
+import MultiSelect from './MultiSelect.vue'
 
 enableAutoUnmount(afterEach)
 
-function mountSubView(props: Record<string, unknown> = {}) {
+function mountSubView(props: Record<string, unknown> = {}, extra: () => unknown[] = () => []) {
   const open = ref(false)
   const onBack = vi.fn(() => {
     open.value = false
@@ -21,7 +22,7 @@ function mountSubView(props: Record<string, unknown> = {}) {
             h('input', { 'aria-label': 'Search components', 'data-testid': 'search' }),
             h('button', { 'type': 'button', 'data-testid': 'opener', 'onClick': () => (open.value = true) }, 'Hero section'),
           ],
-          default: () => h('button', { 'type': 'button', 'data-testid': 'add' }, 'Add'),
+          default: () => [h('button', { 'type': 'button', 'data-testid': 'add' }, 'Add'), ...extra()],
         }),
       ])
     },
@@ -143,6 +144,102 @@ describe('CwaUiSubView (#461)', () => {
     sub()!.querySelector('[data-testid="add"]')!.dispatchEvent(event)
 
     expect(onBack).not.toHaveBeenCalled()
+  })
+
+  test.each([
+    ['a text input', () => h('input', { 'aria-label': 'Path', 'data-testid': 'editable' })],
+    ['a textarea', () => h('textarea', { 'aria-label': 'Notes', 'data-testid': 'editable' })],
+    ['a contenteditable', () => h('div', { 'contenteditable': 'true', 'role': 'textbox', 'aria-label': 'Body', 'data-testid': 'editable' }, [h('p', { 'data-testid': 'editable-inner' }, 'Text')])],
+  ])('Alt+Left in %s moves the caret, and Escape there still goes back', async (_, field) => {
+    const { open, onBack } = mountSubView({}, () => [field()])
+    await openFrom(document.querySelector('[data-testid="opener"]')!, open)
+    const target = sub()!.querySelector('[data-testid="editable-inner"]') ?? sub()!.querySelector('[data-testid="editable"]')!
+
+    target.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', altKey: true, bubbles: true, cancelable: true }))
+    await flushPromises()
+    expect(onBack).not.toHaveBeenCalled()
+
+    target.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
+    await flushPromises()
+    expect(onBack).toHaveBeenCalledTimes(1)
+  })
+
+  describe('a menu open in the sub-view (#461)', () => {
+    const styles = [{ label: 'Dark', value: 'dark' }, { label: 'Boxed', value: 'boxed' }]
+    const multi = () => document.querySelector<HTMLElement>('[data-testid="multi-input"]')!
+    const menu = () => document.querySelector('[data-testid="multi-menu"]')
+
+    async function openMenu() {
+      const opened = mountSubView({}, () => [h(MultiSelect, { label: 'Style', options: styles, modelValue: [] })])
+      await openFrom(document.querySelector('[data-testid="opener"]')!, opened.open)
+      multi().click()
+      await flushPromises()
+      expect(menu()).not.toBeNull()
+      return opened
+    }
+
+    test.each([
+      ['Escape', { key: 'Escape' }],
+      ['Alt+Left', { key: 'ArrowLeft', altKey: true }],
+    ])('%s in an open MultiSelect is left to the menu', async (_, init) => {
+      const { onBack } = await openMenu()
+
+      multi().dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, cancelable: true, ...init }))
+      await flushPromises()
+
+      expect(onBack).not.toHaveBeenCalled()
+      expect(sub()).not.toBeNull()
+    })
+
+    test('Escape in an open MultiSelect closes the menu, and the next Escape goes back', async () => {
+      const { onBack } = await openMenu()
+
+      multi().dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
+      await flushPromises()
+      expect(menu()).toBeNull()
+      multi().dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
+      await flushPromises()
+
+      expect(onBack).toHaveBeenCalledTimes(1)
+    })
+
+    test('Escape in an expanded control with no layer of its own, such as an inline combobox, is left to it', async () => {
+      const { open, onBack } = mountSubView({}, () => [h('input', { 'role': 'combobox', 'aria-label': 'Field', 'aria-expanded': 'true', 'data-testid': 'inline' })])
+      await openFrom(document.querySelector('[data-testid="opener"]')!, open)
+
+      sub()!.querySelector('[data-testid="inline"]')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
+
+      expect(onBack).not.toHaveBeenCalled()
+    })
+
+    test('Escape from elsewhere in the dialog is left alone while a layer is open above it', async () => {
+      const { open, onBack } = mountSubView()
+      await openFrom(document.querySelector('[data-testid="opener"]')!, open)
+      const layer = document.createElement('div')
+      layer.setAttribute('data-dismissable-layer', '')
+      document.body.appendChild(layer)
+
+      sub()!.querySelector('[data-testid="add"]')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
+      layer.remove()
+
+      expect(onBack).not.toHaveBeenCalled()
+    })
+
+    test('a layer in the hidden main view, or one under the dialog, does not stop Escape going back', async () => {
+      const under = document.createElement('div')
+      under.setAttribute('data-dismissable-layer', '')
+      document.body.prepend(under)
+      const { open, onBack } = mountSubView()
+      await openFrom(document.querySelector('[data-testid="opener"]')!, open)
+      const inMain = document.createElement('div')
+      inMain.setAttribute('data-dismissable-layer', '')
+      main().appendChild(inMain)
+
+      sub()!.querySelector('[data-testid="add"]')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
+      under.remove()
+
+      expect(onBack).toHaveBeenCalledTimes(1)
+    })
   })
 
   test('focus returns to the control the consumer names', async () => {

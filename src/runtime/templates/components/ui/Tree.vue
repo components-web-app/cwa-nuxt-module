@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, reactive, ref, useTemplateRef } from 'vue'
+import { computed, nextTick, reactive, ref, useTemplateRef, watch } from 'vue'
 import type { Component } from 'vue'
 import Menu from './Menu.vue'
 import type { MenuEntry } from '../core/ui/menu-entries'
@@ -37,6 +37,10 @@ const { label, nodes, actions, empty, mono = true } = defineProps<{
   mono?: boolean
 }>()
 
+const emit = defineEmits<{
+  shown: [keys: string[]]
+}>()
+
 defineSlots<{
   label?: (props: { node: TreeNode, parent?: TreeNode }) => any
   badge?: (props: { node: TreeNode, parent?: TreeNode }) => any
@@ -58,6 +62,7 @@ function flatten(list: TreeNode[], level: number, guides: boolean[], parent?: Tr
 }
 
 const rows = computed(() => flatten(nodes, 1, []))
+watch(() => rows.value.map(row => row.node.key).join('\n'), () => emit('shown', rows.value.map(row => row.node.key)), { immediate: true })
 const tabStop = computed(() => rows.value.find(row => row.node.key === activeKey.value)?.node.key ?? rows.value[0]?.node.key)
 const rowActions = computed(() => new Map(rows.value.map(row => [row.node.key, actions?.(row.node, row.parent) ?? []])))
 
@@ -129,8 +134,10 @@ function onRowKeydown(event: KeyboardEvent, row: TreeRow) {
       }
       return
     case 'Enter':
-      event.preventDefault()
-      runAction(row, own[0], 0)
+      if (own[0] && !own[0].delete) {
+        event.preventDefault()
+        runAction(row, own[0], 0)
+      }
       return
     case 'Delete':
     case 'Backspace': {

@@ -63,8 +63,8 @@ const detailName = ref<string>()
 const detailOpener = ref<HTMLElement | null>(null)
 const activeChip = ref(0)
 
-const uiComponent = ref<string | null>(null)
-const uiClassNames = ref<string[]>([])
+const uiComponent = ref<string | null | undefined>()
+const uiClassNames = ref<string[] | undefined>()
 const selectedDynamicType = ref<string | null>(null)
 const selectedDynamicProperty = ref<string | null>(null)
 const dynamicTypeOptions = ref<{ label: string, value: string }[]>([])
@@ -222,16 +222,16 @@ async function createDisplayData(event: AddResourceEvent): Promise<DisplayData> 
   }
 }
 
-function resetDetail() {
-  uiComponent.value = null
-  uiClassNames.value = []
+function resetDetail(defaults?: Record<string, any>) {
+  uiComponent.value = defaults?.uiComponent ?? undefined
+  uiClassNames.value = Array.isArray(defaults?.uiClassNames) ? [...defaults.uiClassNames] : undefined
   selectedDynamicType.value = null
   selectedDynamicProperty.value = null
   dynamicPropertyOptions.value = []
 }
 
 function openDetail(name: string, opener?: HTMLElement) {
-  resetDetail()
+  resetDetail(displayData.value?.available[name]?.config.defaultData)
   detailOpener.value = opener ?? null
   detailName.value = name
   if (name === DYNAMIC_COMPONENT && !dynamicTypeOptions.value.length) {
@@ -283,6 +283,9 @@ function onChipKeydown(event: KeyboardEvent, index: number) {
 }
 
 function onAddClick() {
+  if (dialogLoading.value || isInstantAddResourceSaved.value) {
+    return
+  }
   if (addReason.value) {
     dialog.value?.announce(addReason.value)
     return
@@ -302,8 +305,8 @@ function add() {
     data.pageDataProperty = selectedDynamicProperty.value ?? null
   }
   else {
-    uiComponent.value && (data.uiComponent = uiComponent.value)
-    uiClassNames.value.length && (data.uiClassNames = [...uiClassNames.value])
+    uiComponent.value !== undefined && (data.uiComponent = uiComponent.value)
+    uiClassNames.value && (data.uiClassNames = [...uiClassNames.value])
   }
   $cwa.resourcesManager.setAddResourceEventResource(name, meta.apiMetadata.endpoint, meta.apiMetadata.isPublishable, instantAdd.value, data)
 }
@@ -329,10 +332,19 @@ function onDynamicTypeChange(value: string | null | undefined) {
   loadDynamicPropertyOptions()
 }
 
+function holdFocusOnAdd() {
+  const root = document.querySelector<HTMLElement>('[data-testid="dialog"]')
+  const active = document.activeElement
+  if (root && (!root.contains(active) || active === root || dialogElement('dialog-body')?.contains(active))) {
+    dialogElement('add-component-add')?.focus({ preventScroll: true })
+  }
+}
+
 watch(isInstantAddResourceSaved, async (newlySaved) => {
   if (!newlySaved) {
     return
   }
+  holdFocusOnAdd()
   dialogLoading.value = true
   try {
     const newResource = await $cwa.resourcesManager.addResourceAction()
@@ -558,6 +570,7 @@ watch(open, async (isOpen: boolean) => {
           <CwaUiButton
             variant="solid"
             :label="instantAdd ? 'Add now' : 'Add'"
+            :loading="dialogLoading"
             :disabled="!!addReason"
             :disabled-reason="addReason"
             data-testid="add-component-add"

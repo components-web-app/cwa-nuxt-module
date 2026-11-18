@@ -47,11 +47,20 @@ export interface DialogSubFooter {
   save: () => void
 }
 
-export type DialogLeaveReason = 'tab' | 'close'
+export interface DialogSubViewGuard {
+  unsaved: () => string[]
+  leave: () => void
+}
 
 export interface DialogSubViewContext {
   footer: (get: () => DialogSubFooter | 'none' | undefined) => () => void
-  guard: (check: (reason: DialogLeaveReason) => Promise<boolean>) => () => void
+  guard: (entry: DialogSubViewGuard) => () => void
+}
+
+export interface DialogSubViewClaim {
+  tab?: string
+  footer?: () => DialogSubFooter | 'none' | undefined
+  guard?: DialogSubViewGuard
 }
 
 export const dialogSubViewKey: InjectionKey<DialogSubViewContext> = Symbol('cwa-dialog-sub-view')

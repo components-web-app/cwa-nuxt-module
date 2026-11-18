@@ -91,17 +91,20 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
 
   async function deleteResource(refreshEndpoints?: string[] | undefined, requestCompleteFn?: ApiResourceEvent['requestCompleteFn'], confirmed = false) {
     isUpdating.value = true
+    let deleted = false
     await $cwa.resourcesManager.deleteResource({
       endpoint: iri?.value || endpoint.value,
       refreshEndpoints,
       requestCompleteFn,
       saveCompleteFn: () => {
+        deleted = true
         // if in cwa view
         emit('reload')
         emit('close')
       },
     }, confirmed)
     isUpdating.value = false
+    return deleted
   }
 
   function saveTitle() {

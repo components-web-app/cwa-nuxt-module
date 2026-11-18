@@ -1741,6 +1741,9 @@
 .cwa\:ps-3 {
   padding-inline-start: calc(var(--cwa-spacing) * 3);
 }
+.cwa\:ps-5 {
+  padding-inline-start: calc(var(--cwa-spacing) * 5);
+}
 .cwa\:ps-6 {
   padding-inline-start: calc(var(--cwa-spacing) * 6);
 }

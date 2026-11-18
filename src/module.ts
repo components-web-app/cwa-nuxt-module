@@ -30,7 +30,7 @@ import { defaultSiteConfig } from './runtime/composables/useCwaSiteConfig'
 import { scanComponentGroupDeclarations } from './component-group-declarations'
 import { adminResourcesTemplate, lucideNamesTypeTemplate } from './admin-resources'
 import type { LucideIconSet } from './admin-resources'
-import type { CwaModuleOptions, CwaResourcesMeta, GlobalComponentNames } from './runtime/types'
+import type { CwaModuleOptions, CwaResourcesConfig, CwaRuntimeOptions, GlobalComponentNames } from './runtime/types'
 
 declare module 'nuxt/schema' {
   interface PublicRuntimeConfig {
@@ -289,7 +289,7 @@ export default defineNuxtModule<CwaModuleOptions>({
     }
 
     function extendCwaOptions(components: Component[]) {
-      const defaultResourcesConfig: CwaResourcesMeta = {}
+      const defaultResourcesConfig: CwaResourcesConfig = {}
 
       const { allUserComponents, userComponents } = resolveUserComponents(components)
       const componentsByPath: { [key: string]: Component } = allUserComponents.reduce((obj, value) => ({ ...obj, [value.filePath]: value }), {})
@@ -341,7 +341,7 @@ export default defineNuxtModule<CwaModuleOptions>({
 
     const ADMIN_RESOURCE_KEYS = ['icon', 'group', 'image'] as const
 
-    function withoutAdminResourceKeys(cwaOptions: CwaModuleOptions): CwaModuleOptions {
+    function withoutAdminResourceKeys(cwaOptions: CwaModuleOptions): CwaRuntimeOptions {
       const resources = Object.fromEntries(Object.entries(cwaOptions.resources ?? {}).map(([name, meta]) => {
         const { icon: _icon, group: _group, image: _image, ...rest } = meta
         return [name, rest]
@@ -474,8 +474,8 @@ export const componentGroupDeclarations: ComponentGroupDeclarations = ${JSON.str
       addTemplate({
         filename: 'cwa-options.ts',
         getContents: ({ app }) => {
-          return `import type { CwaModuleOptions } from '#cwa/types';
-export const options:CwaModuleOptions = ${JSON.stringify(withoutAdminResourceKeys(extendCwaOptions(app.components)), undefined, 2)}
+          return `import type { CwaRuntimeOptions } from '#cwa/types';
+export const options:CwaRuntimeOptions = ${JSON.stringify(withoutAdminResourceKeys(extendCwaOptions(app.components)), undefined, 2)}
 export const currentModulePackageInfo:{ version: string, name: string } = ${JSON.stringify({ version, name }, undefined, 2)}
 `
         },

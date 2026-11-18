@@ -52,8 +52,8 @@ const rows = computed(() => {
   const list: { view: RouteSubView, label: string, summary: string, arrow?: boolean }[] = []
   if (path.value) {
     list.push(forwardToPath ? { view: 'to', label: 'Redirect to', summary: forwardToPath, arrow: true } : { view: 'to', label: 'Redirect to', summary: 'Off' })
+    list.push({ view: 'from', label: 'Redirected from', summary: count(redirectCount, 'old address', 'old addresses') })
   }
-  list.push({ view: 'from', label: 'Redirected from', summary: count(redirectCount, 'old address', 'old addresses') })
   list.push({ view: 'kids', label: 'Child routes', summary: count(childCount, 'route', 'routes') })
   return list
 })
