@@ -1,6 +1,8 @@
 <template>
   <ListRow
     :to="linkTo"
+    :view="linkTo ? data.path : undefined"
+    actions
     :title="data.path"
     :sub="subLine"
   >
@@ -17,7 +19,7 @@
         :now="now"
       />
     </ListCell>
-    <ListCell action>
+    <template #actions>
       <CwaUiButton
         v-if="!relatedResource && !data.redirect"
         variant="ghost"
@@ -28,7 +30,7 @@
         data-testid="route-delete"
         @click="$emit('delete', data['@id'])"
       />
-    </ListCell>
+    </template>
   </ListRow>
 </template>
 

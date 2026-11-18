@@ -54,17 +54,20 @@ function confirmWith(isCanceled: boolean) {
   return reveal
 }
 
-function mountModal() {
+function mountModal(options: { realDialog?: boolean, attachTo?: HTMLElement } = {}) {
   return mount(StrandedComponentGroupsModal, {
     props: { groups, targets },
+    attachTo: options.attachTo,
     global: {
       stubs: {
-        CwaUiDialog: {
-          name: 'CwaUiDialog',
-          props: ['title', 'size'],
-          emits: ['close'],
-          template: '<div class="dialog-stub"><button type="button" data-testid="dialog-close" @click="$emit(\'close\')">Close</button><slot /><slot name="footer" /></div>',
-        },
+        CwaUiDialog: options.realDialog
+          ? false
+          : {
+              name: 'CwaUiDialog',
+              props: ['title', 'size'],
+              emits: ['close'],
+              template: '<div class="dialog-stub"><button type="button" data-testid="dialog-close" @click="$emit(\'close\')">Close</button><slot /><slot name="footer" /></div>',
+            },
         CwaUiSelect: {
           name: 'CwaUiSelect',
           props: ['options', 'modelValue', 'label', 'placeholder', 'disabled', 'disabledReason'],
@@ -228,5 +231,22 @@ describe('StrandedComponentGroupsModal', () => {
   test('each merge target is chosen in a labelled kit select', () => {
     const wrapper = mountModal()
     expect(section(wrapper, 0).findComponent({ name: 'CwaUiSelect' }).props('label')).toBe('Merge into')
+  })
+
+  test('is portalled out of the page, so a click inside it does not reach the root layout (#380)', async () => {
+    const root = document.createElement('div')
+    const rootClick = vi.fn()
+    root.addEventListener('click', rootClick)
+    const mountPoint = document.createElement('div')
+    root.appendChild(mountPoint)
+    document.body.appendChild(root)
+    const wrapper = mountModal({ realDialog: true, attachTo: mountPoint })
+    await vi.waitFor(() => expect(document.querySelector('[data-testid="dialog"]')).not.toBeNull())
+    const dialog = document.querySelector<HTMLElement>('[data-testid="dialog"]')!
+    expect(root.contains(dialog)).toBe(false)
+    dialog.click()
+    expect(rootClick).not.toHaveBeenCalled()
+    wrapper.unmount()
+    root.remove()
   })
 })

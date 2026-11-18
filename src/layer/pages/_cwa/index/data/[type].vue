@@ -45,6 +45,8 @@
     <template #item="{ data }">
       <ListRow
         :to="computedItemLink(data['@id'])"
+        :view="getInternalResourceLink(data['@id'])"
+        actions
         :title="data.title || 'Untitled'"
         :sub="subLine(data)"
       >
@@ -109,7 +111,7 @@ import { useListRoutes } from '#cwa-layer/_composables/useListRoutes'
 import { useDataType } from '#cwa-layer/_composables/useDataType'
 import { useDynamicPageLoader } from '#cwa-layer/_composables/useDynamicPageLoader'
 import type { CwaResource } from '#cwa/resources/resource-utils'
-import { definePageMeta, useCwa, useHead } from '#imports'
+import { definePageMeta, useCwa, useCwaResourceRoute, useHead } from '#imports'
 
 const listContent = ref<InstanceType<typeof ListContent> | null>(null)
 
@@ -117,6 +119,7 @@ const $cwa = useCwa()
 const { pageDataClassName, dataType, dataTypeClassName, pageDataConfig } = useDataType()
 
 const { goToAdd, triggerReload, computedItemLink } = useListPage(listContent)
+const { getInternalResourceLink } = useCwaResourceRoute()
 const { loadDynamicPageOptions, dynamicPages } = useDynamicPageLoader()
 const { routes, known, error: routesError, now, load, retry: retryRoutes } = useListRoutes('pageData')
 
@@ -126,6 +129,7 @@ const columns = [
   { label: 'Title' },
   { label: 'Status', width: '13rem' },
   { label: 'Updated', width: '8rem', align: 'end' as const },
+  { label: 'Actions', width: '4.5rem', labelHidden: true },
 ]
 
 const orderOptions = [

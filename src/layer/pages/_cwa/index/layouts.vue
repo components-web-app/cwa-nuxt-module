@@ -17,6 +17,7 @@
     <template #item="{ data }">
       <ListRow
         :to="computedItemLink(data['@id'])"
+        actions
         :title="data.reference || 'Untitled layout'"
         :sub="`UI: ${data.uiComponent ? getDisplayLayoutUi(data.uiComponent) : 'Unknown'}`"
       >
@@ -68,6 +69,7 @@ const columns = [
   { label: 'Layout' },
   { label: 'Pages', width: '5rem', align: 'end' as const },
   { label: 'Updated', width: '8rem', align: 'end' as const },
+  { label: 'Actions', width: '2.5rem', labelHidden: true },
 ]
 
 const orderOptions = [

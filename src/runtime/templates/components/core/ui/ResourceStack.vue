@@ -32,6 +32,7 @@ const selectedIndex = computed(() => levels.findIndex(level => level.key === sel
 const highlight = ref(Math.max(0, selectedIndex.value))
 const highlightBy = ref<'pointer' | 'keyboard' | undefined>(keyboard ? 'keyboard' : undefined)
 const position = ref<{ left: number, top: number }>()
+const revealed = ref(false)
 const content = useTemplateRef<{ $el: HTMLElement } | null>('content')
 const tree = useTemplateRef<HTMLElement | null>('tree')
 const moreButton = useTemplateRef<HTMLElement | null>('moreButton')
@@ -64,7 +65,8 @@ function levelId(index: number) {
 
 function place() {
   const panel = content.value?.$el as HTMLElement | undefined
-  const inner = panel?.querySelector?.<HTMLElement>('[data-stack-innermost]')
+  const innermost = panel?.querySelector?.<HTMLElement>('[data-stack-innermost]')
+  const inner = at instanceof HTMLElement ? innermost?.querySelector<HTMLElement>(':scope > [data-stack-name] > [data-stack-label]') : innermost
   if (!panel || !inner) {
     const { x, y } = anchorPoint()
     position.value = { left: x, top: y }
@@ -85,6 +87,17 @@ function place() {
   return { panel, inner: { x: innerRect.left - panelRect.left + innerRect.width / 2, y: innerRect.top - panelRect.top + innerRect.height / 2 } }
 }
 
+async function standsPlaced(panel: HTMLElement) {
+  for (let frame = 0; frame < 10; frame++) {
+    const { left, top, width } = panel.getBoundingClientRect()
+    const target = position.value
+    if (!width || !target || (Math.abs(left - target.left) < 1 && Math.abs(top - target.top) < 1)) {
+      return
+    }
+    await new Promise(resolve => requestAnimationFrame(resolve))
+  }
+}
+
 function grow(panel: HTMLElement, origin: { x: number, y: number }) {
   if (typeof panel.animate !== 'function' || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
     return
@@ -101,21 +114,12 @@ const stopPlacing = watch(tree, async (element) => {
   await nextTick()
   const placed = place()
   await nextTick()
-  element.focus({ preventScroll: true })
-  if (focusVisible(element)) {
-    highlightBy.value = 'keyboard'
-  }
+  placed && await standsPlaced(placed.panel)
+  revealed.value = true
+  await nextTick()
+  element.focus(keyboard ? { preventScroll: true } : { preventScroll: true, focusVisible: false } as FocusOptions)
   placed && grow(placed.panel, placed.inner)
 }, { flush: 'post' })
-
-function focusVisible(element: HTMLElement) {
-  try {
-    return element.matches(':focus-visible')
-  }
-  catch {
-    return false
-  }
-}
 
 function close(refocus: boolean) {
   if (!open.value) {
@@ -310,9 +314,8 @@ function box(index: number): VNode {
     'data-testid': 'resource-stack-level',
     'class': [
       'cwa:flex cwa:min-w-0 cwa:flex-col cwa:gap-1.5 cwa:border cwa:p-1.5',
-      isHovered ? 'cwa:border-solid cwa:border-fg cwa:bg-field-hover' : 'cwa:border-dashed cwa:border-line-dash cwa:bg-surface-menu',
+      isHovered ? 'cwa:border-fg cwa:bg-field-hover' : 'cwa:border-line-strong cwa:bg-surface-menu',
       isHighlighted && highlightBy.value === 'keyboard' ? 'cwa:outline-2 cwa:outline-accent-fg' : '',
-      isHighlighted && !highlightBy.value ? 'cwa:in-focus-visible:outline-2 cwa:in-focus-visible:outline-accent-fg' : '',
       isHighlighted ? (index === shown.value - 1 ? 'cwa:-outline-offset-2' : 'cwa:outline-offset-1') : '',
     ],
     'style': index === 0 && minWidth ? { minWidth: `${minWidth}px` } : undefined,
@@ -325,7 +328,7 @@ function box(index: number): VNode {
         isSelected ? 'cwa:font-semibold cwa:shadow-[inset_3px_0_0_var(--cwa-color-accent-fg)]' : '',
       ],
     }, [
-      h('span', { class: 'cwa:min-w-0 cwa:flex-1 cwa:truncate' }, level.label),
+      h('span', { 'data-stack-label': '', 'class': 'cwa:min-w-0 cwa:flex-1 cwa:truncate' }, level.label),
     ]),
   ])
 }
@@ -351,7 +354,7 @@ defineExpose({ close, contentId: computed(() => position.value && content.value?
         :aria-label="label"
         data-testid="resource-stack"
         class="cwa:z-context cwa:flex cwa:max-h-[calc(100dvh-1rem)] cwa:flex-col cwa:overflow-y-auto cwa:bg-surface-menu cwa:text-fg cwa:shadow-popover cwa:outline-1 cwa:outline-transparent"
-        :style="{ visibility: position ? undefined : 'hidden', maxWidth: maxWidth === undefined ? undefined : `${maxWidth}px` }"
+        :style="{ visibility: revealed ? undefined : 'hidden', maxWidth: maxWidth === undefined ? undefined : `${maxWidth}px` }"
         @open-auto-focus.prevent
         @close-auto-focus.prevent
         @focus-outside.prevent

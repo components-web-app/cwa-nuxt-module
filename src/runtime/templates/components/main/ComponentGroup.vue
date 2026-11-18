@@ -3,7 +3,10 @@
     v-if="showLoader"
     class="component-group-placeholder"
   >
-    <Spinner :show="true" />
+    <span
+      role="status"
+      class="cwa:inline-flex"
+    ><Spinner /><span class="cwa:sr-only">Loading</span></span>
   </div>
   <template v-else-if="componentPositions?.length">
     <!--cwa-start-->
@@ -19,7 +22,7 @@
   </template>
   <template v-else-if="isNewPosition">
     <!--cwa-start-->
-    <div class="cwa:flex cwa:justify-center cwa:border-2 cwa:border-dashed cwa:border-gray-200 cwa:p-5 cwa:pb-14 cwa:relative">
+    <div class="cwa:flex cwa:justify-center cwa:border cwa:border-gray-300 cwa:p-5 cwa:pb-14 cwa:relative">
       <LazyHotSpot
         screen-reader-action="Add component position"
         :iri="iri"
@@ -42,7 +45,7 @@
   </template>
   <template v-else-if="signedInAndResourceExists">
     <!--cwa-start-->
-    <div class="cwa:flex cwa:justify-center cwa:border-2 cwa:border-dashed cwa:border-gray-200 cwa:p-5 cwa:relative">
+    <div class="cwa:flex cwa:justify-center cwa:border cwa:border-gray-300 cwa:p-5 cwa:relative">
       <LazyHotSpot
         screen-reader-action="Add component position"
         :iri="iri"
@@ -76,7 +79,7 @@ import ResourceLoader from '#cwa/templates/components/core/ResourceLoader.vue'
 import { CwaResourceApiStatuses, NEW_RESOURCE_IRI } from '#cwa/storage/stores/resources/state'
 import { useCwa } from '#cwa/composables/cwa'
 import { useCwaResourceManageable } from '#cwa/composables/cwa-resource-manageable'
-import Spinner from '#cwa/templates/components/utils/Spinner.vue'
+import Spinner from '#cwa/templates/components/ui/Spinner.vue'
 
 const LazyHotSpot = defineAsyncComponent({
   suspensible: false,
