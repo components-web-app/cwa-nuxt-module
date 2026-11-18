@@ -447,6 +447,9 @@
 .cwa\:ml-auto {
   margin-left: auto;
 }
+.cwa\:box-border {
+  box-sizing: border-box;
+}
 .cwa\:block {
   display: block;
 }
@@ -2277,6 +2280,10 @@
   content: var(--tw-content);
   inset-inline: 0px;
 }
+.cwa\:after\:-bottom-\[calc\(var\(--cwa-spacing-cta-inset\)\+1px\)\]::after {
+  content: var(--tw-content);
+  bottom: calc(calc(var(--cwa-spacing-cta-inset) + 1px) * -1);
+}
 .cwa\:after\:bottom-0::after {
   content: var(--tw-content);
   bottom: 0px;
@@ -2997,11 +3004,11 @@
   .cwa\:pointer-coarse\:\[--cwa-spacing-cta-inset\:0px\] {
     --cwa-spacing-cta-inset: 0px;
   }
-  .cwa\:pointer-coarse\:\[--cwa-spacing-manager-row\:4\.25rem\] {
-    --cwa-spacing-manager-row: 4.25rem;
+  .cwa\:pointer-coarse\:\[--cwa-spacing-manager-row\:calc\(4\.25rem-1px\)\] {
+    --cwa-spacing-manager-row: calc(4.25rem - 1px);
   }
-  .cwa\:pointer-coarse\:\[--cwa-spacing-manager-tabs\:2\.75rem\] {
-    --cwa-spacing-manager-tabs: 2.75rem;
+  .cwa\:pointer-coarse\:\[--cwa-spacing-manager-tabs\:calc\(2\.75rem\+1px\)\] {
+    --cwa-spacing-manager-tabs: calc(2.75rem + 1px);
   }
   .cwa\:pointer-coarse\:\[--cwa-spacing-manager\:7rem\] {
     --cwa-spacing-manager: 7rem;

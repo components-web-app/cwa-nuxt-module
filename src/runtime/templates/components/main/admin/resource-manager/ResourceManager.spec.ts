@@ -278,15 +278,15 @@ describe('ResourceManager', () => {
       expect(wrapper.findComponent({ name: 'BarSummary' }).props('message')).toBe('Set to 6, the highest position')
     })
 
-    test('on touch the tab row is 2.75rem and the bar grows with it, and the CTA group\'s and the tab group\'s one inset, which keeps them the same height, is 0 on touch and below 40rem (#459)', async () => {
+    test('on touch the tab row is the 44px hit size plus the bar\'s line, taken from the row below so the bar keeps its height, and the CTA group\'s and the tab group\'s one inset, which keeps them the same height, is 0 on touch and below 40rem (#459)', async () => {
       cwaState.cwa = makeCwa({ stackManager: makeStackManager({ showManager: ref(true), currentStackItem: ref({ iri: '/component/1', managerTabs: [] }) }) })
       const wrapper = await mountManager()
       resolverState.allMeta.value = [{ name: 'Tab' }]
       await nextTick()
 
       expect(wrapper.get('[data-testid="manager-bar"]').classes()).toEqual(expect.arrayContaining([
-        'cwa:pointer-coarse:[--cwa-spacing-manager-tabs:2.75rem]',
-        'cwa:pointer-coarse:[--cwa-spacing-manager-row:4.25rem]',
+        'cwa:pointer-coarse:[--cwa-spacing-manager-tabs:calc(2.75rem+1px)]',
+        'cwa:pointer-coarse:[--cwa-spacing-manager-row:calc(4.25rem-1px)]',
         'cwa:pointer-coarse:[--cwa-spacing-manager:7rem]',
       ]))
       expect(wrapper.get('[data-testid="manager-pin"]').classes()).toEqual(expect.arrayContaining([
@@ -294,9 +294,11 @@ describe('ResourceManager', () => {
         'cwa:pr-cta-inset',
         'cwa:gap-cta-inset',
       ]))
-      const tabs = wrapper.get('.manager-tabs-stub').element.parentElement!
+      const tabs = wrapper.get('.manager-tabs-stub').element
+      expect(tabs.classList).toContain('cwa:box-border')
       expect(tabs.classList).toContain('cwa:pt-cta-inset')
       expect(tabs.classList).toContain('cwa:pb-[calc(var(--cwa-spacing-cta-inset)+1px)]')
+      expect(tabs.parentElement!.classList).not.toContain('cwa:pt-cta-inset')
       const row = wrapper.get('[data-testid="manager-pin"]').element.parentElement!
       expect(row.contains(tabs)).toBe(true)
       expect(row.classList).toContain('cwa:pointer-coarse:[--cwa-spacing-cta-inset:0px]')
