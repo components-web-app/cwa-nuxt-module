@@ -100,6 +100,7 @@ import { createCursorChannel, YRemoteCursors } from '~/tiptap/y-cursors'
 import { acquireYSession } from '~/tiptap/y-session'
 import { createCollaborationState } from '~/tiptap/y-state'
 import type { YSyncData } from '~/tiptap/y-sync'
+import { NEW_RESOURCE_IRI } from '#cwa/storage/stores/resources/state'
 import { useCwa, useCwaInlineEditor, useCwaRealtime } from '#imports'
 import type { useCwaResourceModel } from '#imports'
 
@@ -138,6 +139,7 @@ let cursorChannel: Shared['channel'] | undefined
 let stopHearing: (() => void) | undefined
 let settleTimer: ReturnType<typeof setTimeout> | undefined
 
+const persisted = computed(() => props.iri !== NEW_RESOURCE_IRI)
 const live = computed(() => peers.value.map(peer => peer.clientId))
 const inField = computed(() => focusedBy.value.flatMap(peer => peer.clientIds))
 const company = computed(() => heard.value >= 0 && !!session.value?.sync.peers().some(peer => live.value.includes(peer.clientId)))
@@ -231,6 +233,7 @@ function build(shared?: Shared, wantsFocus = false) {
   const focus = wantsFocus && !focusTaken()
   const caret = focus ? caretIn(previous) : undefined
   let rendered = !shared
+  const editable = !props.disabled && (!!shared || !persisted.value)
   cursorChannel = shared?.channel
   editor.value = new Editor({
     ...(shared ? {} : { content: html.value }),
@@ -246,13 +249,17 @@ function build(shared?: Shared, wantsFocus = false) {
       focus && created.chain().setTextSelection(caret ?? created.state.selection).focus(null, { scrollIntoView: false }).run()
     },
     onUpdate: ({ editor: changed, transaction }) => {
-      if (!rendered || !shared) {
+      if (!rendered || !editable) {
+        return
+      }
+      if (!shared) {
+        save(changed)
         return
       }
       isLocal(transaction) && save(changed)
       saver.value && settleSoon()
     },
-    editable: !!shared && !props.disabled,
+    editable,
   })
   editorKey.value++
   previous && nextTick(() => previous.destroy())
@@ -321,7 +328,7 @@ useCwaInlineEditor(props.model, editorElement, {
 
 onMounted(() => {
   build()
-  props.disabled || startSession(false)
+  props.disabled || !persisted.value || startSession(false)
 })
 
 onBeforeUnmount(() => {
@@ -370,7 +377,11 @@ watch(() => props.disabled, (disabled) => {
     build()
     return
   }
-  startSession(true)
+  persisted.value ? startSession(true) : build(undefined, true)
+})
+
+watch(persisted, (now) => {
+  now && !props.disabled && startSession(false)
 })
 
 const linkAt = ref<{ x: number, y: number }>()
