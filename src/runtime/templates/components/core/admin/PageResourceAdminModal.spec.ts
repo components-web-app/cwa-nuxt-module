@@ -201,7 +201,17 @@ describe('PageResourceAdminModal on the kit dialog (#461)', () => {
 
     expect(dialog.props('title')).toBe('My Page')
     expect(dialog.props('form')).toStrictEqual(form)
-    expect(dialog.props('tabs')).toEqual([{ label: 'Details', key: 'details' }, { label: 'Routes', key: 'routes' }, { label: 'Info', key: 'info' }])
+    expect(dialog.props('tabs')).toEqual([{ label: 'Details', key: 'details', fields: { reference: 'Reference', layout: 'Layout', uiComponent: 'Page UI', uiClassNames: 'Style', title: 'SEO page title', metaDescription: 'SEO meta description', parentPage: 'Parent page', parentPageData: 'Parent data' } }, { label: 'Routes', key: 'routes' }, { label: 'Info', key: 'info' }])
+  })
+
+  test('each tab names the fields it holds, so a refused field on a tab not yet opened is listed by its label (#461)', () => {
+    const { wrapper } = setupPageData()
+
+    expect(wrapper.findComponent(DialogStub).props('tabs')).toEqual([
+      { label: 'Details', key: 'details', fields: { title: 'Title', metaDescription: 'SEO meta description', page: 'Dynamic page', parentPage: 'Parent page', parentPageData: 'Parent data' } },
+      { label: 'Routes', key: 'routes', fields: { isReachableWithoutRoute: 'Public without a route' } },
+      { label: 'Info', key: 'info' },
+    ])
   })
 
   test('the dialog shows a failed save itself, so it alone asks useItemPage to dismiss the stored error', () => {
@@ -244,7 +254,7 @@ describe('PageResourceAdminModal on the kit dialog (#461)', () => {
     const { wrapper } = setup({ routeIri: 'add', isAdding: true })
 
     expect(wrapper.findComponent(DialogStub).props('tabs')).toEqual([
-      { label: 'Details', key: 'details' },
+      { label: 'Details', key: 'details', fields: { reference: 'Reference', layout: 'Layout', uiComponent: 'Page UI', uiClassNames: 'Style', title: 'SEO page title', metaDescription: 'SEO meta description', parentPage: 'Parent page', parentPageData: 'Parent data' } },
       { label: 'Routes', key: 'routes', disabled: 'Routes open once the page is created. Create the page and this tab lets you add its address.' },
     ])
   })
