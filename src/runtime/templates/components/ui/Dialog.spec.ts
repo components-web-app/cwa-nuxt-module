@@ -581,6 +581,33 @@ describe('CwaUiDialog without a Save model (#461, the add component dialog)', ()
     expect(body.querySelector('[data-cwa-field] [data-testid="field-presence-flag"]')).toBeNull()
   })
 
+  test('has no coloured edge or kind unless one is given', async () => {
+    mountPlain()
+    await flushPromises()
+
+    expect(q('header')!.className).not.toContain('cwa:border-b-')
+    expect(q('[data-testid="dialog-kind"]')).toBeNull()
+    expect(dialog().getAttribute('aria-describedby')).toBeNull()
+  })
+
+  test.each([
+    ['static', 'cwa:border-type-static'],
+    ['dynamic', 'cwa:border-type-dynamic'],
+    ['reachable', 'cwa:border-success'],
+    ['unreachable', 'cwa:border-warning'],
+  ] as const)('a %s kind draws a solid 3px line under the header in its colour and says the kind beside the title, describing the dialog (#461)', async (tone, colour) => {
+    mountPlain({ kind: { tone, label: 'Static page' } })
+    await flushPromises()
+
+    const header = q('header')!
+    expect(header.className).toContain('cwa:border-b-3')
+    expect(header.className).toContain(colour)
+    expect(header.className).not.toMatch(/dashed|dotted/)
+    const kind = q('[data-testid="dialog-kind"]')!
+    expect(kind.textContent?.trim()).toBe('Static page')
+    expect(dialog().getAttribute('aria-describedby')).toBe(kind.id)
+  })
+
   test('a flush body leaves the padding to its content', async () => {
     mountPlain({ flush: true })
     await flushPromises()

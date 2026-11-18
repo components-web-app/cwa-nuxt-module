@@ -128,6 +128,8 @@ export const kitContrastPairs: KitContrastPair[] = [
   { fg: 'warning', bg: 'field-warning', min: 3, use: 'Conflict glyph' },
   { fg: 'type-static', bg: 'surface', min: 3, use: 'Static page marker' },
   { fg: 'type-dynamic', bg: 'surface', min: 3, use: 'Dynamic page marker' },
+  { fg: 'success', bg: 'surface', min: 3, use: 'Reachable page data, dialog edge' },
+  { fg: 'warning', bg: 'surface', min: 3, use: 'Unreachable page data, dialog edge' },
   { fg: 'toggle-off', bg: 'surface', min: 3, use: 'Toggle track, off' },
   { fg: 'tree-line', bg: 'surface', min: 3, use: 'Tree line' },
   { fg: 'line-dash', bg: 'surface-menu', min: 3, use: 'Resource stack box' },
