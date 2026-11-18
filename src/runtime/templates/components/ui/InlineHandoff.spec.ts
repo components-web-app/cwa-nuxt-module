@@ -77,6 +77,12 @@ describe('CwaUiInlineHandoff (#461)', () => {
     expect(wrapper.get('[data-testid="inline-handoff-preview"]').text()).toBe('“Made in Norfolk, by hand & with care”')
   })
 
+  test('numeric entities decode, and one beyond Unicode or zero keeps its text instead of breaking the preview', () => {
+    const { wrapper } = mountHandoff(fieldModel('<p>&#8220;Hi&#x201D; &#99999999; &#x110000; &#0; &#xFFFFFFFFFFFF;</p>'))
+
+    expect(wrapper.get('[data-testid="inline-handoff-preview"]').text()).toBe('““Hi” &#99999999; &#x110000; &#0; &#xFFFFFFFFFFFF;”')
+  })
+
   test('an empty value previews as Empty', () => {
     const { wrapper } = mountHandoff(fieldModel(null))
 
