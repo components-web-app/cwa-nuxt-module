@@ -1527,6 +1527,27 @@ describe('useCwaResourceModel', () => {
         expect(presence.blur).toHaveBeenCalledOnce()
       })
 
+      test('a click that focuses the component around the editor, a tab stop in edit mode, keeps the focus the pointerdown reported (#461)', async () => {
+        const presence = presenceView()
+        realtime.load.mockResolvedValue(presence)
+        const { root, inner, outside } = editorRoot()
+        const component = document.createElement('article')
+        component.tabIndex = 0
+        component.append(root)
+        document.body.prepend(component)
+        bind(root, useCwaResourceModel(iri, 'title').focusListeners)
+
+        pointerdown(inner)
+        component.focus()
+        await settled()
+        expect(presence.focus).toHaveBeenCalledOnce()
+        expect(presence.blur).not.toHaveBeenCalled()
+
+        outside.focus()
+        await settled()
+        expect(presence.blur).toHaveBeenCalledOnce()
+      })
+
       test('after focus leaves by keyboard, a later pointerdown outside does not blur again', async () => {
         const presence = presenceView()
         realtime.load.mockResolvedValue(presence)

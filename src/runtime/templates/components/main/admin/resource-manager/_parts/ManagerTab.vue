@@ -5,10 +5,11 @@ import { badgeWords } from '#cwa/admin/field-badge'
 import type { FieldBadge } from '#cwa/admin/field-badge'
 import type { CwaResourceManagerTabOptions } from '#cwa/composables/cwa-resource-manager-tab'
 
-const { tab, selected, badge } = defineProps<{
+const { tab, selected, badge, controls } = defineProps<{
   tab: CwaResourceManagerTabOptions
   selected: boolean
   badge?: FieldBadge
+  controls: string
 }>()
 
 const words = computed(() => badge?.kind ? badgeWords(badge) : undefined)
@@ -17,8 +18,12 @@ const words = computed(() => badge?.kind ? badgeWords(badge) : undefined)
 <template>
   <button
     type="button"
+    role="tab"
     :aria-label="words ? `${tab.name}: ${words}` : undefined"
-    :aria-pressed="selected"
+    :aria-selected="selected ? 'true' : 'false'"
+    :aria-controls="controls"
+    :tabindex="selected ? 0 : -1"
+    :aria-keyshortcuts="selected ? 'F6' : undefined"
     :title="words"
     :data-badge="badge?.kind"
     class="cwa:relative cwa:inline-flex cwa:h-full cwa:shrink-0 cwa:cursor-pointer cwa:items-center cwa:gap-2 cwa:whitespace-nowrap cwa:px-4 cwa:text-label cwa:outline-1 cwa:outline-transparent cwa:transition-colors cwa:duration-(--cwa-duration-fast) cwa:focus-visible:outline-2 cwa:focus-visible:-outline-offset-2 cwa:focus-visible:outline-accent-fg cwa:after:absolute cwa:after:inset-x-0 cwa:after:bottom-0 cwa:after:h-0.5 cwa:after:content-['']"

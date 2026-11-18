@@ -117,9 +117,9 @@ async function mountManager(attachTo?: HTMLElement) {
         ResourceLoadingIndicator: { template: '<div class="rli-stub" />' },
         ManagerTabs: {
           name: 'ManagerTabs',
-          props: ['tabs'],
+          props: ['tabs', 'idPrefix', 'label'],
           methods: { resetTabs() {}, selectOriginal: (index: number) => selectOriginal.fn(index) },
-          template: '<div class="manager-tabs-stub" @click="$emit(\'click\', 1)" />',
+          template: '<div class="manager-tabs-stub" @click="$emit(\'click\', 1)"><button v-for="(tab, index) of tabs" :id="`${idPrefix}-tab-${index}`" type="button">{{ tab.name }}</button></div>',
         },
         CwaAdminResourceManagerContextMenu: {
           name: 'CwaAdminResourceManagerContextMenu',
@@ -317,6 +317,93 @@ describe('ResourceManager', () => {
       expect(calls).toEqual([1])
       expect(document.activeElement).toBe(wrapper.get('[data-testid="title-input"]').element)
       wrapper.unmount()
+    })
+
+    test('the shown tab is a tabpanel labelled by the selected tab, and the tablist is named for the selection (#461)', async () => {
+      const FieldTab = { name: 'FieldTab', render: () => h('div') }
+      const stackManager = makeStackManager({
+        showManager: ref(true),
+        currentStackItem: ref({ iri: '/component/1', displayName: 'Body Text', managerTabs: [FieldTab, FieldTab] }),
+      })
+      cwaState.cwa = makeCwa({ stackManager })
+      const wrapper = await mountManager()
+      resolverState.allMeta.value = [{ name: 'Publish', fields: [] }, { name: 'Content', fields: [] }]
+      await nextTick()
+
+      const tabs = wrapper.findComponent({ name: 'ManagerTabs' })
+      const prefix = tabs.props('idPrefix') as string
+      expect(prefix).toBeTruthy()
+      expect(tabs.props('label')).toBe('Body Text settings')
+      const panel = wrapper.get('[data-testid="manager-tab-panel"]')
+      expect(panel.attributes('role')).toBe('tabpanel')
+      expect(panel.attributes('id')).toBe(`${prefix}-panel`)
+      expect(panel.attributes('aria-labelledby')).toBe(`${prefix}-tab-0`)
+
+      tabs.vm.$emit('click', 1)
+      await nextTick()
+      expect(panel.attributes('aria-labelledby')).toBe(`${prefix}-tab-1`)
+      wrapper.unmount()
+    })
+
+    test('a selection with no display name names its tablist Settings (#461)', async () => {
+      const stackManager = makeStackManager({
+        showManager: ref(true),
+        currentStackItem: ref({ iri: '/component/1', managerTabs: [{ name: 'FieldTab', render: () => h('div') }] }),
+      })
+      cwaState.cwa = makeCwa({ stackManager })
+      const wrapper = await mountManager()
+      resolverState.allMeta.value = [{ name: 'Publish', fields: [] }]
+      await nextTick()
+
+      expect(wrapper.findComponent({ name: 'ManagerTabs' }).props('label')).toBe('Settings')
+    })
+
+    test('F6 moves focus from the selected component to its selected tab and back, only while editing (#461)', async () => {
+      const component = document.createElement('div')
+      component.setAttribute('tabindex', '0')
+      document.body.append(component)
+      const outside = document.createElement('button')
+      document.body.append(outside)
+      const stackManager = makeStackManager({
+        showManager: ref(true),
+        currentStackItem: ref({ iri: '/component/1', domElements: ref([component]), managerTabs: [{ name: 'FieldTab', render: () => h('div') }, { name: 'FieldTab', render: () => h('div') }] }),
+      })
+      cwaState.cwa = makeCwa({ stackManager, isEditing: true })
+      const wrapper = await mountManager(document.body)
+      resolverState.allMeta.value = [{ name: 'Publish', fields: [] }, { name: 'Content', fields: [] }]
+      await nextTick()
+      wrapper.findComponent({ name: 'ManagerTabs' }).vm.$emit('click', 1)
+      await nextTick()
+      const press = (init: KeyboardEventInit = {}) => {
+        const event = new KeyboardEvent('keydown', { key: 'F6', bubbles: true, cancelable: true, ...init })
+        document.activeElement!.dispatchEvent(event)
+        return event
+      }
+
+      component.focus()
+      expect(press().defaultPrevented).toBe(true)
+      expect(document.activeElement?.textContent).toBe('Content')
+      expect(press({ shiftKey: true }).defaultPrevented).toBe(true)
+      expect(document.activeElement).toBe(component)
+
+      outside.focus()
+      press()
+      expect(document.activeElement?.textContent).toBe('Content')
+
+      component.focus()
+      expect(press({ key: 'F7' }).defaultPrevented).toBe(false)
+      expect(press({ ctrlKey: true }).defaultPrevented).toBe(false)
+      expect(document.activeElement).toBe(component)
+
+      cwaState.cwa.admin.isEditing = false
+      expect(press().defaultPrevented).toBe(false)
+      expect(document.activeElement).toBe(component)
+
+      cwaState.cwa.admin.isEditing = true
+      wrapper.unmount()
+      expect(press().defaultPrevented).toBe(false)
+      component.remove()
+      outside.remove()
     })
 
     test('does not render the holder when allTabsMeta is empty', async () => {
