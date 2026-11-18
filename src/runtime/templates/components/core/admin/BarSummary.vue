@@ -207,6 +207,11 @@ function onOpenChange(next: boolean) {
   }
 }
 
+function keepForOwnButton(event: CustomEvent<{ originalEvent: PointerEvent }>) {
+  const target = event.detail.originalEvent.target
+  target instanceof Node && button.value?.contains(target) && event.preventDefault()
+}
+
 function onOpenAutoFocus(event: Event) {
   event.preventDefault()
   errorBody.value?.focusRetry()
@@ -308,6 +313,7 @@ function reset() {
         aria-label="Status"
         data-testid="bar-summary-popover"
         class="cwa:z-context cwa:w-max cwa:max-w-[min(20rem,calc(100vw-1rem))] cwa:bg-surface-menu cwa:p-popover cwa:text-control cwa:text-fg cwa:shadow-popover cwa:outline-none"
+        @pointer-down-outside="keepForOwnButton"
       >
         <div class="cwa:flex cwa:h-[1cap] cwa:items-center cwa:gap-2">
           <StateGlyph

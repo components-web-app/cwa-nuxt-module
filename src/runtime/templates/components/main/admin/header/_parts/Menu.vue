@@ -174,7 +174,7 @@ watch(showMenu, async (open) => {
 })
 onClickOutside(menu, () => {
   showMenu.value = false
-})
+}, { ignore: [`[aria-controls="${panelId}"]`] })
 
 async function signOut() {
   if ($cwa.navigationDisabled) {
