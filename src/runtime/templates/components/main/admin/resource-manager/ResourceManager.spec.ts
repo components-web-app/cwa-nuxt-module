@@ -259,6 +259,26 @@ describe('ResourceManager', () => {
       expect(wrapper.findComponent({ name: 'BarSummary' }).props('message')).toBe('Set to 6, the highest position')
     })
 
+    test('on touch the tab row is 2.75rem and the bar grows with it, and the CTA group\'s one inset is 0 on touch and below 40rem (#459)', async () => {
+      cwaState.cwa = makeCwa({ stackManager: makeStackManager({ showManager: ref(true), currentStackItem: ref({ iri: '/component/1', managerTabs: [] }) }) })
+      const wrapper = await mountManager()
+      resolverState.allMeta.value = [{ name: 'Tab' }]
+      await nextTick()
+
+      expect(wrapper.get('[data-testid="manager-bar"]').classes()).toEqual(expect.arrayContaining([
+        'cwa:pointer-coarse:[--cwa-spacing-manager-tabs:2.75rem]',
+        'cwa:pointer-coarse:[--cwa-spacing-manager-row:4.25rem]',
+        'cwa:pointer-coarse:[--cwa-spacing-manager:7rem]',
+      ]))
+      expect(wrapper.get('[data-testid="manager-pin"]').classes()).toEqual(expect.arrayContaining([
+        'cwa:pt-cta-inset',
+        'cwa:pr-cta-inset',
+        'cwa:gap-cta-inset',
+        'cwa:pointer-coarse:[--cwa-spacing-cta-inset:0px]',
+        'cwa:@max-[40rem]:[--cwa-spacing-cta-inset:0px]',
+      ]))
+    })
+
     test('showing a field from the status selects the tab that holds it and focuses its control (#459)', async () => {
       const calls: number[] = []
       selectOriginal.fn = index => calls.push(index)

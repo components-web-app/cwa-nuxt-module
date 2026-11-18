@@ -221,7 +221,7 @@ defineExpose({
   <Transition v-bind="slideUp">
     <div
       v-if="$cwa.admin.resourceStackManager.showManager.value"
-      class="cwa:@container cwa:fixed cwa:bottom-0 cwa:z-manager cwa:w-full cwa:bg-surface cwa:text-fg cwa:shadow-[0_-8px_24px_rgb(0_0_0/0.18)]"
+      class="cwa:@container cwa:fixed cwa:bottom-0 cwa:z-manager cwa:w-full cwa:bg-surface cwa:text-fg cwa:shadow-[0_-8px_24px_rgb(0_0_0/0.18)] cwa:pointer-coarse:[--cwa-spacing-manager-tabs:2.75rem] cwa:pointer-coarse:[--cwa-spacing-manager-row:4.25rem] cwa:pointer-coarse:[--cwa-spacing-manager:7rem]"
       data-testid="manager-bar"
       @click.stop
     >
@@ -240,7 +240,7 @@ defineExpose({
           />
         </div>
         <div
-          class="cwa:flex cwa:h-manager-tabs cwa:items-center cwa:gap-1 cwa:pr-1 cwa:pl-[calc(1px+0.25rem)] cwa:shadow-[inset_1px_0_0_var(--cwa-color-line),inset_0_-1px_0_var(--cwa-color-line)] cwa:pointer-coarse:gap-0 cwa:pointer-coarse:px-0 cwa:@max-[40rem]:gap-0 cwa:@max-[40rem]:pr-0"
+          class="cwa:flex cwa:h-manager-tabs cwa:items-center cwa:gap-cta-inset cwa:pt-cta-inset cwa:pr-cta-inset cwa:pb-[calc(var(--cwa-spacing-cta-inset)+1px)] cwa:pl-[calc(1px+var(--cwa-spacing-cta-inset))] cwa:shadow-[inset_1px_0_0_var(--cwa-color-line),inset_0_-1px_0_var(--cwa-color-line)] cwa:pointer-coarse:[--cwa-spacing-cta-inset:0px] cwa:@max-[40rem]:[--cwa-spacing-cta-inset:0px]"
           data-testid="manager-pin"
         >
           <BarSummary

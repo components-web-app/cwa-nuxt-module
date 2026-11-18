@@ -154,6 +154,20 @@ describe('kit colour tokens (#456)', () => {
     expect(compiledColours.get('danger-dark')).toBe('oklch(44.4% 0.177 26.899 / 0.8)')
   })
 
+  test('the manager bar\'s touch and narrow sizes are compiled, on the bar rather than the root, with one CTA inset (#459)', () => {
+    const enclosing = (at: number) => {
+      const before = compiled.slice(0, at)
+      return before.slice(Math.max(before.lastIndexOf('@media ('), before.lastIndexOf('@container ('))).match(/\(([^)]+)\)/)?.[1]
+    }
+    const setUnder = (property: string, value: string) => [...compiled.matchAll(new RegExp(`{\\s*${property}:\\s*${value.replace('.', '\\.')};`, 'g'))].map(match => enclosing(match.index)).sort()
+
+    expect(compiled).toMatch(/--cwa-spacing-cta-inset:\s*0\.25rem;/)
+    expect(setUnder('--cwa-spacing-manager-tabs', '2.75rem')).toEqual(['pointer: coarse'])
+    expect(setUnder('--cwa-spacing-manager-row', '4.25rem')).toEqual(['pointer: coarse'])
+    expect(setUnder('--cwa-spacing-manager', '7rem')).toEqual(['pointer: coarse'])
+    expect(setUnder('--cwa-spacing-cta-inset', '0px')).toEqual(['pointer: coarse', 'width < 40rem'])
+  })
+
   test('the kit\'s type and motion tokens are in the compiled CSS, and reduced motion follows the system setting', () => {
     expect(compiled).toMatch(/--cwa-text-flag:\s*0\.75rem;/)
     expect(compiled).toMatch(/--cwa-text-flag--font-weight:\s*600;/)

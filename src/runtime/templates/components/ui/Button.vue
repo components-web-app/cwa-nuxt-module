@@ -21,6 +21,7 @@ const {
   options,
   optionsLabel = 'More actions',
   ariaLabel,
+  stretch = false,
 } = defineProps<{
   label?: string
   variant?: ButtonVariant
@@ -35,6 +36,7 @@ const {
   options?: MenuEntry[]
   optionsLabel?: string
   ariaLabel?: string
+  stretch?: boolean
 }>()
 
 const emit = defineEmits<{ click: [event: MouseEvent], select: [item: MenuItem] }>()
@@ -54,7 +56,7 @@ const boxClasses = computed(() => {
   if (iconOnly) {
     return small ? 'cwa:h-8 cwa:w-8 cwa:pointer-coarse:h-hit cwa:pointer-coarse:w-hit cwa:px-0' : 'cwa:h-control cwa:w-control cwa:px-0'
   }
-  const height = small ? 'cwa:h-8 cwa:pointer-coarse:h-hit' : 'cwa:h-control'
+  const height = stretch ? 'cwa:h-full' : small ? 'cwa:h-8 cwa:pointer-coarse:h-hit' : 'cwa:h-control'
   const padding = small ? 'cwa:px-3' : (hasLead.value ? 'cwa:pl-3 cwa:pr-4' : 'cwa:px-4')
   return `${height} ${padding}`
 })
@@ -63,7 +65,7 @@ const moreVariant = computed<ButtonVariant>(() => label ? variant : 'soft')
 
 const moreClasses = computed(() => {
   const look = buttonLooks[moreVariant.value][tone]
-  const box = size === 'sm' ? 'cwa:size-8 cwa:pointer-coarse:size-hit' : 'cwa:size-control cwa:pointer-coarse:size-hit'
+  const box = stretch ? 'cwa:h-full cwa:aspect-square' : size === 'sm' ? 'cwa:size-8 cwa:pointer-coarse:size-hit' : 'cwa:size-control cwa:pointer-coarse:size-hit'
   return [box, look.rest, 'cwa:cursor-pointer']
 })
 
@@ -92,6 +94,7 @@ function onClick(event: MouseEvent) {
     v-if="options"
     ref="split"
     class="cwa:inline-flex cwa:shrink-0 cwa:gap-px"
+    :class="{ 'cwa:h-full': stretch }"
   >
     <Button
       v-if="label"
@@ -106,6 +109,7 @@ function onClick(event: MouseEvent) {
       :disabled-reason="disabledReason"
       :type="type"
       :aria-label="ariaLabel"
+      :stretch="stretch"
       @click="emit('click', $event)"
     />
     <Menu

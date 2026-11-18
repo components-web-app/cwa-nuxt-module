@@ -133,6 +133,7 @@
     --cwa-spacing-manager-tabs: 2.5rem;
     --cwa-spacing-manager-row: 3.75rem;
     --cwa-spacing-manager: 6.25rem;
+    --cwa-spacing-cta-inset: 0.25rem;
     --cwa-spacing-status-line: 2px;
     --cwa-radius-toggle: 9999px;
     --cwa-animate-spinner: cwa-spin 0.8s linear infinite;
@@ -456,6 +457,9 @@
 }
 .cwa\:inline-flex {
   display: inline-flex;
+}
+.cwa\:aspect-square {
+  aspect-ratio: 1 / 1;
 }
 .cwa\:size-2 {
   width: calc(var(--cwa-spacing) * 2);
@@ -981,6 +985,9 @@
 }
 .cwa\:gap-actions {
   gap: var(--cwa-spacing-actions);
+}
+.cwa\:gap-cta-inset {
+  gap: var(--cwa-spacing-cta-inset);
 }
 .cwa\:gap-px {
   gap: 1px;
@@ -1668,8 +1675,8 @@
 .cwa\:pt-12 {
   padding-top: calc(var(--cwa-spacing) * 12);
 }
-.cwa\:pr-1 {
-  padding-right: var(--cwa-spacing);
+.cwa\:pt-cta-inset {
+  padding-top: var(--cwa-spacing-cta-inset);
 }
 .cwa\:pr-2 {
   padding-right: calc(var(--cwa-spacing) * 2);
@@ -1688,6 +1695,9 @@
 }
 .cwa\:pr-10 {
   padding-right: calc(var(--cwa-spacing) * 10);
+}
+.cwa\:pr-cta-inset {
+  padding-right: var(--cwa-spacing-cta-inset);
 }
 .cwa\:pb-0 {
   padding-bottom: 0px;
@@ -1716,6 +1726,9 @@
 .cwa\:pb-14 {
   padding-bottom: calc(var(--cwa-spacing) * 14);
 }
+.cwa\:pb-\[calc\(var\(--cwa-spacing-cta-inset\)\+1px\)\] {
+  padding-bottom: calc(var(--cwa-spacing-cta-inset) + 1px);
+}
 .cwa\:pl-3 {
   padding-left: calc(var(--cwa-spacing) * 3);
 }
@@ -1725,8 +1738,8 @@
 .cwa\:pl-5 {
   padding-left: calc(var(--cwa-spacing) * 5);
 }
-.cwa\:pl-\[calc\(1px\+0\.25rem\)\] {
-  padding-left: calc(1px + 0.25rem);
+.cwa\:pl-\[calc\(1px\+var\(--cwa-spacing-cta-inset\)\)\] {
+  padding-left: calc(1px + var(--cwa-spacing-cta-inset));
 }
 .cwa\:text-center {
   text-align: center;
@@ -2859,23 +2872,17 @@
   }
 }
 @container (width < 40rem) {
-  .cwa\:\@max-\[40rem\]\:h-hit {
-    height: var(--cwa-spacing-hit);
-  }
-  .cwa\:\@max-\[40rem\]\:w-hit {
-    width: var(--cwa-spacing-hit);
+  .cwa\:\@max-\[40rem\]\:aspect-square {
+    aspect-ratio: 1 / 1;
   }
   .cwa\:\@max-\[40rem\]\:justify-center {
     justify-content: center;
   }
-  .cwa\:\@max-\[40rem\]\:gap-0 {
-    gap: 0px;
-  }
   .cwa\:\@max-\[40rem\]\:px-0 {
     padding-inline: 0px;
   }
-  .cwa\:\@max-\[40rem\]\:pr-0 {
-    padding-right: 0px;
+  .cwa\:\@max-\[40rem\]\:\[--cwa-spacing-cta-inset\:0px\] {
+    --cwa-spacing-cta-inset: 0px;
   }
 }
 @container (width >= 40rem) {
@@ -2946,15 +2953,21 @@
   .cwa\:pointer-coarse\:w-hit {
     width: var(--cwa-spacing-hit);
   }
-  .cwa\:pointer-coarse\:gap-0 {
-    gap: 0px;
-  }
-  .cwa\:pointer-coarse\:px-0 {
-    padding-inline: 0px;
-  }
   .cwa\:pointer-coarse\:text-base {
     font-size: var(--cwa-text-base);
     line-height: var(--tw-leading, var(--cwa-text-base--line-height));
+  }
+  .cwa\:pointer-coarse\:\[--cwa-spacing-cta-inset\:0px\] {
+    --cwa-spacing-cta-inset: 0px;
+  }
+  .cwa\:pointer-coarse\:\[--cwa-spacing-manager-row\:4\.25rem\] {
+    --cwa-spacing-manager-row: 4.25rem;
+  }
+  .cwa\:pointer-coarse\:\[--cwa-spacing-manager-tabs\:2\.75rem\] {
+    --cwa-spacing-manager-tabs: 2.75rem;
+  }
+  .cwa\:pointer-coarse\:\[--cwa-spacing-manager\:7rem\] {
+    --cwa-spacing-manager: 7rem;
   }
 }
 .cwa\:\[\&\:\:-webkit-scrollbar\]\:hidden::-webkit-scrollbar {

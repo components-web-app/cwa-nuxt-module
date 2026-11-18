@@ -253,6 +253,17 @@ describe('CwaUiButton (#456)', () => {
       expect(alone.classes()).not.toContain('cwa:bg-accent')
     })
 
+    test('stretched, as in the bar\'s tab row, the main action and a square ⋮ fill the height they are given', () => {
+      const wrapper = mount(Button, { props: { label: 'Publish now', size: 'sm', stretch: true, options } })
+
+      expect(wrapper.classes()).toContain('cwa:h-full')
+      const [main, more] = wrapper.findAll('button')
+      expect(main!.classes()).toContain('cwa:h-full')
+      expect(main!.classes()).not.toContain('cwa:h-8')
+      expect(more!.classes()).toEqual(expect.arrayContaining(['cwa:h-full', 'cwa:aspect-square']))
+      expect(more!.classes()).not.toContain('cwa:size-8')
+    })
+
     test('a disabled main action leaves the menu usable', () => {
       const wrapper = mount(Button, { props: { label: 'Schedule', disabled: true, disabledReason: 'Choose a date first', options } })
 

@@ -60,6 +60,7 @@ async function handleOption({ value }: MenuItem) {
     :aria-label="isPublishable ? 'Add draft' : 'Add'"
     variant="solid"
     size="sm"
+    stretch
     :options="buttonOptions"
     :loading="isAdding"
     @click="handleManagerCtaClick"

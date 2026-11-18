@@ -149,6 +149,7 @@ function handleOption({ value }: MenuItem) {
     :label="publish.action.value"
     variant="solid"
     size="sm"
+    stretch
     data-testid="component-menu"
     :options="buttonOptions"
     :loading="publish.saving.value"
