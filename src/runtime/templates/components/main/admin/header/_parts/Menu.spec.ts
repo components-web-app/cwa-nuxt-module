@@ -37,6 +37,10 @@ function mountMenu() {
   })
 }
 
+function nextTask() {
+  return new Promise(resolve => setTimeout(resolve))
+}
+
 let wrapper: ReturnType<typeof mountMenu> | undefined
 
 afterEach(() => {
@@ -89,6 +93,27 @@ describe('the header menu is operable from the keyboard', () => {
     await flushPromises()
     expect(toggle.attributes('aria-expanded')).toBe('true')
     links[1]!.element.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: outside }))
+    await flushPromises()
+    expect(toggle.attributes('aria-expanded')).toBe('false')
+  })
+
+  test('a click outside closes it, and a click on the toggle while open closes it once, never reopening it', async () => {
+    wrapper = mountMenu()
+    const outside = document.createElement('div')
+    document.body.appendChild(outside)
+    const toggle = wrapper.get('button')
+    await toggle.trigger('click')
+    await nextTask()
+    outside.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+    outside.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    await flushPromises()
+    expect(toggle.attributes('aria-expanded')).toBe('false')
+
+    await nextTask()
+    await toggle.trigger('click')
+    await nextTask()
+    toggle.element.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+    await toggle.trigger('click')
     await flushPromises()
     expect(toggle.attributes('aria-expanded')).toBe('false')
   })

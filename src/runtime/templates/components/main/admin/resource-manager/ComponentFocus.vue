@@ -4,7 +4,7 @@ import type { ComputedRef, Ref } from 'vue'
 import { useElementSize, useWindowSize } from '@vueuse/core'
 import { v4 as uuidv4 } from 'uuid'
 import { useCwa } from '#imports'
-import { getPublishedResourceState } from '#cwa/resources/resource-utils'
+import { CwaResourceTypes, getPublishedResourceState, getResourceTypeFromIri } from '#cwa/resources/resource-utils'
 import { toneBehind, useSaveOutline } from '#cwa/admin/save-outline'
 import { NEW_RESOURCE_IRI } from '#cwa/storage/stores/resources/state'
 
@@ -142,6 +142,14 @@ function styleOf(focusPosition: FocusPosition) {
 const cssStyle = computed(() => styleOf(position.value))
 const otherCssStyles = computed(() => otherPositions.value.map(styleOf))
 
+const MAGENTA_TYPES = [
+  CwaResourceTypes.ROUTE,
+  CwaResourceTypes.PAGE,
+  CwaResourceTypes.LAYOUT,
+  CwaResourceTypes.COMPONENT_GROUP,
+  CwaResourceTypes.COMPONENT_POSITION,
+]
+
 const borderColor = computed(() => {
   if (!resource.value) {
     return
@@ -153,7 +161,8 @@ const borderColor = computed(() => {
   if (publishedState !== undefined) {
     return publishedState ? 'cwa:outline-green' : 'cwa:outline-orange'
   }
-  return iri.value?.startsWith('/_/') ? 'cwa:outline-magenta' : 'cwa:outline-green'
+  const type = iri.value ? getResourceTypeFromIri(iri.value) : undefined
+  return type && MAGENTA_TYPES.includes(type) ? 'cwa:outline-magenta' : 'cwa:outline-green'
 })
 
 async function redraw() {

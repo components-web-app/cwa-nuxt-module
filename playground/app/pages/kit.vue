@@ -226,6 +226,12 @@ const stackAt = ref<HTMLElement | { x: number, y: number }>()
 const stackChoice = ref('')
 const stackKey = ref(0)
 const stackByKeyboard = ref(false)
+const stackSelected = ref('0')
+const stackSelectedOptions = [
+  { value: '0', label: 'Innermost' },
+  { value: '1', label: 'Second' },
+  { value: '4', label: 'Outermost shown' },
+]
 
 function openStackOver(event: MouseEvent) {
   stackKey.value++
@@ -1026,14 +1032,21 @@ const badgeTones = [
             <CwaUiButton
               label="Rich text"
               size="sm"
+              data-testid="kit-stack-open"
               @click="openStackOver"
+            />
+            <CwaUiSegmented
+              v-model="stackSelected"
+              label="Selected"
+              :options="stackSelectedOptions"
+              data-testid="kit-stack-selected"
             />
           </div>
           <ResourceStack
             v-if="stackAt"
             :key="stackKey"
             :levels="stackLevels"
-            selected="0"
+            :selected="stackSelected"
             :at="stackAt"
             :keyboard="stackByKeyboard"
             :select="chooseStackLevel"

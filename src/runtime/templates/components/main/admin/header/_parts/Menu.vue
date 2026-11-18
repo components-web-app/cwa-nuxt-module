@@ -174,8 +174,6 @@ watch(showMenu, async (open) => {
 })
 onClickOutside(menu, () => {
   showMenu.value = false
-}, {
-  ignore: [hamburger],
 })
 
 async function signOut() {
