@@ -7,7 +7,7 @@
     component-prefix="CwaComponent"
   />
   <ComponentPlaceholder
-    v-else-if="$cwa.auth.isAdmin.value"
+    v-else-if="$cwa.auth.isAdmin.value && $cwa.admin.isEditing"
     :name="resource?.data?.pageDataProperty"
     :iri="iri"
   />

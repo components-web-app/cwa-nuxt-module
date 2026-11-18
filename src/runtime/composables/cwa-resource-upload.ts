@@ -1,10 +1,8 @@
-import { computed, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import type { ComputedRef } from 'vue'
 import { useCwaResourceEndpoint } from '#cwa/composables/cwa-resource-endpoint'
 import { useCwa } from '#cwa/composables/cwa'
-import { createConfirmDialog } from '#cwa/admin/confirm-dialog'
 import { useNuxtApp } from '#imports'
-import ConfirmDialog from '#cwa/templates/components/core/ConfirmDialog.vue'
 import { writeFieldStates } from '#cwa/resources/field-state-writer'
 import type { CwaResource } from '#cwa/resources/resource-utils'
 import type { CwaFieldState } from '#cwa/storage/stores/resources/state'
@@ -15,33 +13,15 @@ export interface CwaResourceUploadOps {
   imageDownscale?: Partial<ImageDownscaleOptions>
 }
 
-export interface CwaResourceUploadBind {
-  'modelValue': string | number | undefined | null
-  'onUpdate:modelValue': (value: string | number | undefined | null) => void
-  'fileExists': boolean
-  'disabled': boolean
-  'onChange': (newFile: File | undefined) => Promise<void>
-  'onDelete': () => Promise<void>
-}
-
 export const useCwaResourceUpload = (iri: ComputedRef<string | undefined>, filename: string = 'file', fileDisplayType: string = 'File', ops?: CwaResourceUploadOps) => {
   const $cwa = useCwa()
   const vueApp = useNuxtApp().vueApp
   const resource = computed(() => iri.value ? $cwa.resources.getResource(iri.value).value : undefined)
 
-  function getFilename() {
-    return fileData.value ? `Existing ${fileDisplayType} (${fileData.value.formattedFileSize})` : ''
-  }
-
   const fileData = computed(() => resource.value?.data?._metadata.mediaObjects?.[filename]?.[0])
 
-  const filenameInputModel = ref(getFilename())
   const fileExists = computed(() => !!fileData.value)
   const updating = ref(false)
-
-  watch(fileData, () => {
-    filenameInputModel.value = getFilename()
-  })
 
   const IDLE: CwaFieldState = { status: 'idle', waiting: false, slow: false }
   const state = computed<CwaFieldState>(() => resource.value?.fieldStates?.[filename] ?? IDLE)
@@ -116,14 +96,13 @@ export const useCwaResourceUpload = (iri: ComputedRef<string | undefined>, filen
   }
 
   async function confirmDelete() {
-    const alertData = {
+    const { confirmResourceAction } = await import('#cwa/admin/resource-confirm')
+    return confirmResourceAction(vueApp, {
       title: `Delete this ${fileDisplayType.toLowerCase()}?`,
-      content: `<p>Are you sure you want to permanently delete this ${fileDisplayType.toLowerCase()}?</p>`,
-    }
-    const dialog = await createConfirmDialog(vueApp, ConfirmDialog)
-    const { isCanceled } = await dialog.reveal(alertData)
-
-    return !isCanceled
+      description: 'This can\'t be undone.',
+      keep: 'Don\'t delete',
+      go: 'Delete',
+    })
   }
 
   async function handleInputDeleteFile() {
@@ -143,27 +122,14 @@ export const useCwaResourceUpload = (iri: ComputedRef<string | undefined>, filen
     await lastSend()
   }
 
-  const bind = computed<CwaResourceUploadBind>(() => ({
-    'modelValue': filenameInputModel.value,
-    'onUpdate:modelValue': (value) => {
-      filenameInputModel.value = (value ?? '') as string
-    },
-    'fileExists': fileExists.value,
-    'disabled': updating.value,
-    'onChange': handleInputChangeFile,
-    'onDelete': handleInputDeleteFile,
-  }))
-
   return {
     state,
     retry,
     reset,
     file,
-    filenameInputModel,
     updating,
     fileExists,
     handleInputChangeFile,
     handleInputDeleteFile,
-    bind,
   }
 }

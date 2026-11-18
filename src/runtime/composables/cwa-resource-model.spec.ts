@@ -75,6 +75,17 @@ function recordedSaves() {
 }
 
 describe('useCwaResourceModel', () => {
+  test('carries the resource and root field it edits, following the IRI, so an in-page editor and the bar\'s handoff find each other (#461)', () => {
+    mockGetResource.mockReturnValue({ value: undefined })
+    const iri = ref<string | undefined>('/component/1')
+    const { editorKey } = useCwaResourceModel(iri, 'seo.title')
+
+    expect(editorKey.field).toBe('seo')
+    expect(editorKey.iri()).toBe('/component/1')
+    iri.value = '/component/1-draft'
+    expect(editorKey.iri()).toBe('/component/1-draft')
+  })
+
   const iri = ref<string | undefined>('/my/resource')
 
   beforeEach(() => {
@@ -1509,6 +1520,27 @@ describe('useCwaResourceModel', () => {
         pointerdown(outside)
         await settled()
         expect(document.activeElement).toBe(inner)
+        expect(presence.blur).not.toHaveBeenCalled()
+
+        outside.focus()
+        await settled()
+        expect(presence.blur).toHaveBeenCalledOnce()
+      })
+
+      test('a click that focuses the component around the editor, a tab stop in edit mode, keeps the focus the pointerdown reported (#461)', async () => {
+        const presence = presenceView()
+        realtime.load.mockResolvedValue(presence)
+        const { root, inner, outside } = editorRoot()
+        const component = document.createElement('article')
+        component.tabIndex = 0
+        component.append(root)
+        document.body.prepend(component)
+        bind(root, useCwaResourceModel(iri, 'title').focusListeners)
+
+        pointerdown(inner)
+        component.focus()
+        await settled()
+        expect(presence.focus).toHaveBeenCalledOnce()
         expect(presence.blur).not.toHaveBeenCalled()
 
         outside.focus()

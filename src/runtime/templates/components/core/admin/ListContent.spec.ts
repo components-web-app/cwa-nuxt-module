@@ -502,6 +502,27 @@ describe('ListContent', () => {
       expect(fetchMock.mock.calls.length).toBe(callsAfterMount)
     })
 
+    test('moving to another page scrolls back to the top of the list, as the old pagination did, instantly under reduced motion', async () => {
+      const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined)
+      const matchMedia = vi.spyOn(window, 'matchMedia')
+      mockCwa()
+      mountComponent()
+      await flushPromises()
+      expect(scrollTo).not.toHaveBeenCalled()
+
+      matchMedia.mockReturnValue({ matches: false } as MediaQueryList)
+      models.pageModel.value = 2
+      await flushPromises()
+      matchMedia.mockReturnValue({ matches: true } as MediaQueryList)
+      models.pageModel.value = 3
+      await flushPromises()
+
+      expect(matchMedia).toHaveBeenCalledWith('(prefers-reduced-motion: reduce)')
+      expect(scrollTo.mock.calls).toEqual([[{ top: 0, behavior: 'smooth' }], [{ top: 0, behavior: 'auto' }]])
+      scrollTo.mockRestore()
+      matchMedia.mockRestore()
+    })
+
     test('reloads items when route query changes', async () => {
       mockCwa()
       mountComponent()

@@ -14,7 +14,7 @@ vi.mock('vue', async () => {
 })
 
 vi.mock('vuejs-confirm-dialog', () => ({ install: vi.fn(), createConfirmDialog: vi.fn() }))
-vi.mock('#cwa/templates/components/core/ConfirmDialog.vue', () => ({ default: {} }))
+vi.mock('#cwa/templates/components/core/ui/Confirm.vue', () => ({ default: {} }))
 const mockComponentFocusRedraw = vi.hoisted(() => vi.fn())
 vi.mock('#cwa/templates/components/main/admin/resource-manager/ComponentFocus.vue', () => ({
   default: { name: 'ComponentFocus', render: () => null, methods: { redraw: mockComponentFocusRedraw } },
@@ -733,6 +733,20 @@ describe('Resource Manager', () => {
       await manager.selectStackIndex(0, false)
       expect((manager as any)._isEditingLayout.value).toBe(true)
       expect(manager.showManager.value).toBe(true)
+    })
+
+    test.each([
+      [true, { title: 'Edit the shared layout?', description: 'Changes appear on every page that uses this layout.', keep: 'Cancel', go: 'Edit layout', tone: 'accent' }],
+      [false, { title: 'Edit the page?', description: 'Changes appear on this page only, not on other pages using the layout.', keep: 'Cancel', go: 'Edit page', tone: 'accent' }],
+    ])('switching to the layout (%s) asks in the kit confirm, as clone mode does', async (toLayout, options) => {
+      const manager = createEditingManager()
+      ;(manager as any).currentResourceStack.value = [{ iri: '/test', domElements: ref([]), childIris: ref([]) }]
+      ;(manager as any)._isEditingLayout.value = !toLayout
+      ;(manager as any).isLayoutStack.value = toLayout
+      const reveal = vi.fn().mockResolvedValue({ isCanceled: true })
+      vi.mocked(createConfirmDialog).mockReturnValue({ reveal } as any)
+      await manager.selectStackIndex(0, false)
+      expect(reveal).toHaveBeenCalledWith(options)
     })
 
     test('when layout context differs and cancelled, restores isLayoutStack and does not proceed', async () => {

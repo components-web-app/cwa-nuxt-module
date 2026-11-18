@@ -1,28 +1,27 @@
 <template>
   <div
     v-if="body"
-    class="cwa:flex cwa:items-center cwa:gap-x-4"
+    class="cwa:flex cwa:flex-wrap cwa:items-center cwa:gap-x-4 cwa:gap-y-2"
   >
-    <CwaUiFormButton
-      :disabled="purging"
+    <CwaUiButton
+      label="Purge this page's cache"
+      :loading="purging"
       @click="purge"
-    >
-      {{ purging ? 'Purging…' : 'Purge this page\'s cache' }}
-    </CwaUiFormButton>
+    />
     <span
-      v-if="result"
-      class="cwa:text-sm cwa:font-bold"
-      :class="{ 'cwa:text-danger': !result.success }"
-    >{{ result.message }}</span>
+      role="status"
+      data-testid="page-purge-result"
+      class="cwa:text-helper"
+      :class="result && !result.success ? 'cwa:text-danger-fg' : 'cwa:text-fg-muted'"
+    >{{ result?.message }}</span>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useCwa, useNuxtApp } from '#imports'
-import { createConfirmDialog } from '#cwa/admin/confirm-dialog'
 import { pageCachePurgeBody } from '#cwa/admin/page-cache-purge'
-import ConfirmDialog from '#cwa/templates/components/core/ConfirmDialog.vue'
+import CwaUiButton from '#cwa/templates/components/ui/Button.vue'
 
 const $cwa = useCwa()
 const vueApp = useNuxtApp().vueApp
@@ -46,12 +45,18 @@ function failureMessage(error: unknown) {
 }
 
 async function purge() {
-  const dialog = await createConfirmDialog(vueApp, ConfirmDialog)
-  const { isCanceled } = await dialog.reveal({
+  if (purging.value) {
+    return
+  }
+  const { confirmResourceAction } = await import('#cwa/admin/resource-confirm')
+  const confirmed = await confirmResourceAction(vueApp, {
     title: 'Purge this page\'s cache?',
-    content: '<p>This page\'s cached copy and the API data it is built from will be dropped and rebuilt on its next visit. Pages sharing its layout or components are rebuilt too. No content will be lost.</p>',
+    description: 'This page\'s cached copy and the API data it is built from will be dropped and rebuilt on its next visit. Pages sharing its layout or components are rebuilt too. No content will be lost.',
+    keep: 'Cancel',
+    go: 'Purge cache',
+    tone: 'accent',
   })
-  if (isCanceled || !body.value) {
+  if (!confirmed || !body.value) {
     return
   }
   result.value = undefined

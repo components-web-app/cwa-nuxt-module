@@ -50,11 +50,11 @@ describe('placeResourceStack at the pointer (#461)', () => {
 describe('placeResourceStack over an element (#461)', () => {
   const anchor = { left: 590, top: 60, width: 120, height: 30 }
 
-  test('centres the innermost box over the element', () => {
-    const { left, top } = placeResourceStack(anchor, boxes, viewport)
+  test('puts the innermost name exactly on the element, so the outer levels grow around it', () => {
+    const { left, top } = placeResourceStack({ ...anchor, width: 64, height: 18 }, boxes, viewport)
 
-    expect(left + boxes.inner.left + boxes.inner.width / 2).toBe(650)
-    expect(top + boxes.inner.top + boxes.inner.height / 2).toBe(75)
+    expect(left + boxes.inner.left).toBe(590)
+    expect(top + boxes.inner.top).toBe(60)
   })
 
   test('stays 8px inside the viewport', () => {

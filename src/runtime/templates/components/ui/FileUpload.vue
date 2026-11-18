@@ -25,6 +25,7 @@ const props = withDefaults(defineProps<{
   description?: string
   accept?: string
   disabled?: boolean
+  disabledReason?: string
   field?: string
   upload?: CwaUploadField
 }>(), {
@@ -33,6 +34,7 @@ const props = withDefaults(defineProps<{
   description: undefined,
   accept: undefined,
   disabled: false,
+  disabledReason: undefined,
   field: undefined,
   upload: undefined,
 })
@@ -76,6 +78,7 @@ function remove() {
 
 <template>
   <Field
+    :disabled-reason="disabled ? disabledReason : undefined"
     :label="label"
     :label-hidden="labelHidden"
     :info="info"
@@ -102,10 +105,32 @@ function remove() {
           class="cwa:size-control cwa:shrink-0 cwa:bg-field cwa:object-cover cwa:pointer-coarse:size-hit"
         >
         <span
-          v-else
+          v-else-if="file"
           aria-hidden="true"
           class="cwa:size-control cwa:shrink-0 cwa:bg-field cwa:pointer-coarse:size-hit"
         />
+        <span
+          v-else
+          aria-hidden="true"
+          data-testid="file-thumbnail-empty"
+          class="cwa:size-control cwa:shrink-0 cwa:bg-field cwa:pointer-coarse:size-hit"
+        >
+          <svg
+            viewBox="0 0 1 1"
+            preserveAspectRatio="none"
+            class="cwa:block cwa:size-full cwa:text-fg-muted"
+          >
+            <line
+              x1="0"
+              y1="1"
+              x2="1"
+              y2="0"
+              stroke="currentColor"
+              stroke-width="1.5"
+              vector-effect="non-scaling-stroke"
+            />
+          </svg>
+        </span>
         <span
           class="cwa:min-w-0 cwa:max-w-[6rem] cwa:truncate cwa:text-control cwa:sm:max-w-[12rem]"
           :class="file ? 'cwa:text-fg' : 'cwa:text-fg-muted'"
@@ -113,7 +138,6 @@ function remove() {
         >{{ file ? `${file.name} · ${file.size}` : 'No file' }}</span>
         <CwaUiButton
           :label="file ? 'Replace' : 'Upload'"
-          size="sm"
           :disabled="inactive"
           data-testid="file-choose"
           @click="choose"
@@ -121,7 +145,6 @@ function remove() {
         <CwaUiButton
           v-if="file"
           label="Remove"
-          size="sm"
           :disabled="inactive"
           data-testid="file-remove"
           @click="remove"
@@ -137,6 +160,12 @@ function remove() {
           @change="onPicked"
         >
       </div>
+    </template>
+    <template
+      v-if="$slots.beside"
+      #beside
+    >
+      <slot name="beside" />
     </template>
   </Field>
 </template>

@@ -4,6 +4,7 @@ import FieldStatus from './FieldStatus.vue'
 import InfoPopover from './InfoPopover.vue'
 import StateGlyph from './StateGlyph.vue'
 import ConflictNotice from './ConflictNotice.vue'
+import type { FieldValueFormat } from './field-value'
 import CwaUiFieldPresence from '../../ui/FieldPresence.vue'
 import { fieldGroupKey, formSurfaceKey } from './field-keys'
 import type { ResourceModelField } from '#cwa/resources/model-editors'
@@ -11,10 +12,11 @@ import type { CwaFieldState } from '#cwa/storage/stores/resources/state'
 
 export type FieldWidth = 'xs' | 'sm' | 'md' | 'lg' | 'full'
 
-const { label, labelHidden = false, info, description, optional = false, width, state, model, controlId, ownLabel = false, name, inactive = false } = defineProps<{
+const { label, labelHidden = false, info, disabledReason, description, optional = false, width, state, model, controlId, ownLabel = false, name, inactive = false, invalid, format, hug = false, multiline = false } = defineProps<{
   label: string
   labelHidden?: boolean
   info?: string
+  disabledReason?: string
   description?: string
   optional?: boolean
   width?: FieldWidth
@@ -24,11 +26,17 @@ const { label, labelHidden = false, info, description, optional = false, width, 
   ownLabel?: boolean
   name?: string
   inactive?: boolean
+  invalid?: string
+  format?: FieldValueFormat
+  hug?: boolean
+  multiline?: boolean
 }>()
 
 defineSlots<{
-  default: (props: { describedBy: string | undefined, tone: 'danger' | 'warning' | undefined, busy: boolean, labelId: string, modal: boolean, unsaved: boolean }) => any
+  default: (props: { describedBy: string | undefined, tone: 'danger' | 'warning' | undefined, busy: boolean, labelId: string, modal: boolean, unsaved: boolean, help?: string, helpId?: string }) => any
+  lead?: (props: { modal: boolean, unsaved: boolean, help?: string, helpId?: string }) => any
   after?: () => any
+  beside?: () => any
 }>()
 
 const widths: Record<FieldWidth, string> = {
@@ -50,12 +58,12 @@ const surface = inject(formSurfaceKey, undefined)
 const fieldName = computed(() => name ?? model?.field)
 const helperId = useId()
 
-const help = computed(() => surface ? info : [info, description].filter(Boolean).join(' ') || undefined)
+const help = computed(() => [disabledReason, ...(surface ? [info] : [info, description])].filter(Boolean).join(' ') || undefined)
 
-const tone = computed(() => state.status === 'error' ? 'danger' : state.status === 'conflict' ? 'warning' : undefined)
+const tone = computed(() => state.status === 'error' || (surface && invalid) ? 'danger' : state.status === 'conflict' ? 'warning' : undefined)
 
 const unsaved = computed(() => !!surface && !!fieldName.value && surface.unsaved(fieldName.value))
-const errorText = computed(() => surface && state.status === 'error' ? state.error?.message : undefined)
+const errorText = computed(() => surface ? (state.status === 'error' ? state.error?.message : undefined) ?? invalid : undefined)
 const conflict = computed(() => surface && state.status === 'conflict' ? model?.remoteChange.value : undefined)
 
 const describedBy = computed(() => {
@@ -114,10 +122,18 @@ watch(() => inactive, (now) => {
     </div>
     <div
       class="cwa:w-full cwa:min-w-0"
-      :class="{ 'cwa:mt-1.5': !ownLabel && !labelHidden }"
+      :class="{ 'cwa:mt-1.5': !ownLabel && !labelHidden, 'cwa:flex cwa:min-h-hit cwa:items-center cwa:justify-between cwa:gap-3': $slots.lead, 'cwa:flex cwa:items-center cwa:gap-2': $slots.beside && !$slots.lead }"
     >
+      <slot
+        name="lead"
+        :modal="true"
+        :unsaved="unsaved"
+        :help="ownLabel ? help : undefined"
+        :help-id="infoId"
+      />
       <CwaUiFieldPresence
         :model="model"
+        :class="{ 'cwa:w-fit cwa:max-w-full': hug }"
         v-bind="inactive ? undefined : model?.focusListeners"
       >
         <slot
@@ -127,8 +143,11 @@ watch(() => inactive, (now) => {
           :label-id="labelId"
           :modal="true"
           :unsaved="unsaved"
+          :help="ownLabel ? help : undefined"
+          :help-id="infoId"
         />
       </CwaUiFieldPresence>
+      <slot name="beside" />
     </div>
     <p
       v-if="errorText"
@@ -154,12 +173,14 @@ watch(() => inactive, (now) => {
       :id="statusId"
       :change="conflict"
       :mine="model?.model.value"
+      :format="format"
     />
     <slot name="after" />
   </div>
   <div
     v-else
-    class="cwa:flex cwa:min-w-0 cwa:shrink-0 cwa:items-center cwa:gap-2"
+    class="cwa:flex cwa:min-w-0 cwa:shrink-0 cwa:gap-2"
+    :class="multiline ? 'cwa:items-start' : 'cwa:items-center'"
     :data-cwa-field="name"
   >
     <label
@@ -167,13 +188,18 @@ watch(() => inactive, (now) => {
       :id="labelId"
       :for="controlId"
       class="cwa:whitespace-nowrap cwa:text-label cwa:text-fg-muted"
-      :class="{ 'cwa:sr-only': labelHidden }"
+      :class="{ 'cwa:sr-only': labelHidden, 'cwa:pt-2.5': multiline }"
     >{{ label }}</label>
     <InfoPopover
       v-if="help && !ownLabel"
       :label="label"
       :text="help"
       :text-id="infoId"
+    />
+    <slot
+      name="lead"
+      :modal="false"
+      :unsaved="false"
     />
     <div
       ref="box"
@@ -182,6 +208,7 @@ watch(() => inactive, (now) => {
     >
       <CwaUiFieldPresence
         :model="model"
+        :class="{ 'cwa:w-fit cwa:max-w-full': hug }"
         v-bind="inactive ? undefined : model?.focusListeners"
       >
         <slot
@@ -200,8 +227,10 @@ watch(() => inactive, (now) => {
         :model="model"
         :undo="undo"
         :description-id="statusId"
+        :format="format"
       />
     </div>
+    <slot name="beside" />
     <InfoPopover
       v-if="help && ownLabel"
       :label="label"

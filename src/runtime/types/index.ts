@@ -1,4 +1,4 @@
-import type { SelectOption } from '../composables/cwa-select-input'
+import type { SelectOption } from '../composables/cwa-select'
 import type { ImageDownscaleOptions } from '../files/image-downscale'
 import type { DefineComponent, GlobalComponents } from 'vue'
 import type { CwaComponentName } from '#build/cwa-component-names'
