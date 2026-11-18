@@ -684,16 +684,20 @@ describe('ComponentGroup', () => {
 
       const placeholder = wrapper.find('[label="Empty group"]')
       expect(placeholder.exists()).toBe(true)
+      expect(placeholder.attributes('info')).toBe('Visitors see nothing here until a component is added. Use + to add one.')
       expect(placeholder.find('[screen-reader-action="Add component position"]').exists()).toBe(true)
 
       emptyGroup()
       expect(createWrapper({ signedIn: true, isEditing: false }).find('[label="Empty group"]').exists()).toBe(false)
+      emptyGroup()
+      expect(createWrapper({ signedIn: false, isEditing: false }).find('[label="Empty group"]').exists()).toBe(false)
     })
 
-    test('a group for a component still being added shows the kit placeholder saying so', () => {
+    test('a group for a component still being added shows the kit placeholder saying so, only in edit mode', () => {
       const wrapper = createWrapper({ location: NEW_RESOURCE_IRI })
 
-      expect(wrapper.find('[label="Add the component to populate this component group"]').exists()).toBe(true)
+      expect(wrapper.find('[label="Empty group"][info="Add the component to populate this component group."]').exists()).toBe(true)
+      expect(createWrapper({ location: NEW_RESOURCE_IRI, isEditing: false }).find('[label="Empty group"]').exists()).toBe(false)
     })
   })
 

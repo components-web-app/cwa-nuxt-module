@@ -894,7 +894,7 @@ const badgeTones = [
         </div>
         <h3>EditPlaceholder</h3>
         <p class="kit-note">
-          Shown in edit mode for an empty component or group, so there is something to select.
+          Shown only in edit mode, for an empty component, position or group, so there is something to select. Why it is empty is behind the ⓘ: hover, focus or tap it.
         </p>
         <div class="kit-row">
           <CwaUiEditPlaceholder
@@ -903,8 +903,14 @@ const badgeTones = [
           />
           <CwaUiEditPlaceholder
             label="Empty group"
+            info="Visitors see nothing here until a component is added. Use + to add one."
             class="kit-placeholder"
-          />
+          >
+            <CwaUiButton
+              label="Add"
+              size="sm"
+            />
+          </CwaUiEditPlaceholder>
         </div>
         <h3>LinkPopover</h3>
         <p class="kit-note">

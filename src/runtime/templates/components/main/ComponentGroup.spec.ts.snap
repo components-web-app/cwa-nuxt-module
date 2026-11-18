@@ -93,6 +93,7 @@ exports[`ComponentGroup > snapshots > should match snapshot IF user is logged in
   
   <!--cwa-start-->
   <editplaceholder-stub
+    info="Visitors see nothing here until a component is added. Use + to add one."
     label="Empty group"
   >
     <lazyhotspot-stub

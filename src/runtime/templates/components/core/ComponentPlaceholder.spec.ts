@@ -17,6 +17,19 @@ describe('ComponentPlaceholder (#461)', () => {
     expect(unnamed.get('[data-testid="edit-placeholder"]').text()).toContain('Empty position')
   })
 
+  test('says why it is empty only behind its info button, described by it, never inline', () => {
+    const named = mount(ComponentPlaceholder, { props: { iri: '/_/component_positions/1', name: 'heroImage' }, attachTo: document.body })
+    const info = named.get('[data-testid="field-info"]')
+    const description = document.getElementById(info.attributes('aria-describedby')!)!
+
+    expect(description.textContent).toBe('This page data has no heroImage component yet, so visitors see nothing here.')
+    expect(description.classList).toContain('cwa:sr-only')
+    named.unmount()
+
+    const unnamed = mount(ComponentPlaceholder, { props: { iri: '/_/component_positions/2' }, attachTo: document.body })
+    expect(document.getElementById(unnamed.get('[data-testid="field-info"]').attributes('aria-describedby')!)!.textContent).toBe('No component is placed here yet, so visitors see nothing here.')
+  })
+
   test('tells the admin it has mounted, so the selection outline can be drawn around it', () => {
     mount(ComponentPlaceholder, { props: { iri: '/_/component_positions/1' } })
 
