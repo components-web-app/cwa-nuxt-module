@@ -118,6 +118,7 @@ describe('deleting a draft (#461)', () => {
 describe('confirmChoice (#461)', () => {
   test.each([
     [{ isCanceled: false, data: 'extra' }, 'extra'],
+    [{ isCanceled: false, data: 'alternative' }, 'alternative'],
     [{ isCanceled: false, data: 'go' }, 'go'],
     [{ isCanceled: false }, 'go'],
     [{ isCanceled: true }, undefined],

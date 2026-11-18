@@ -122,12 +122,7 @@ const detailImage = computed(() => detailName.value && !isDynamic.value ? adminR
 const instantAdd = computed(() => !!detailConfig.value?.instantAdd)
 
 const ready = computed(() => canInsertSelection(detailName.value, selectedDynamicType.value, selectedDynamicProperty.value))
-const addReason = computed(() => {
-  if (!detailName.value) {
-    return 'Choose a component first.'
-  }
-  return ready.value ? undefined : 'Choose a data type and a field first.'
-})
+const addReason = computed(() => ready.value ? undefined : 'Choose a data type and a field first.')
 
 const placeSuffix = computed(() => displayData.value?.place ? `, ${displayData.value.place}` : '')
 
@@ -431,6 +426,16 @@ watch(open, async (isOpen: boolean) => {
       :return-focus="returnFocus"
       @back="back"
     >
+      <template
+        v-if="detail && !isDynamic && !detailImage"
+        #lead
+      >
+        <AddComponentLead
+          :name="detail.name"
+          heading
+          data-testid="add-component-detail-lead"
+        />
+      </template>
       <template #main>
         <CwaUiCombobox
           ref="combobox"
@@ -572,13 +577,17 @@ watch(open, async (isOpen: boolean) => {
       </div>
     </CwaUiSubView>
     <template #footer>
-      <div class="cwa:grid cwa:grid-cols-2 cwa:gap-actions cwa:max-sm:w-full cwa:sm:flex">
+      <div
+        class="cwa:grid cwa:gap-actions cwa:max-sm:w-full cwa:sm:flex"
+        :class="{ 'cwa:grid-cols-2': detail }"
+      >
         <CwaUiButton
           label="Cancel"
           data-testid="add-component-cancel"
           @click="dialog?.requestClose()"
         />
         <span
+          v-if="detail"
           class="cwa:contents"
           @click="onAddClick"
         >

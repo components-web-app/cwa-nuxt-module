@@ -87,36 +87,26 @@ function inStackPosition(positionIri = '/_/component_positions/p1', groupIri = '
   closestStackItems.set(CwaResourceTypes.COMPONENT_GROUP, groupIri)
 }
 
-function revealChoosing(choice?: 'all' | 'here') {
-  mocks.confirmChoice.mockResolvedValue(choice === 'all' ? 'go' : choice === 'here' ? 'extra' : undefined)
+function revealChoosing(choice?: 'go' | 'extra' | 'alternative' | 'all' | 'here') {
+  mocks.confirmChoice.mockResolvedValue(choice === 'all' ? 'go' : choice === 'here' ? 'extra' : choice)
 }
 
 function publishable(published: boolean) {
   return { '@id': iri.value, '_metadata': { publishable: { published } } }
 }
 
-describe('Info tab — delete button names the version being deleted', () => {
+describe('Info tab — the delete button', () => {
   beforeEach(() => {
     iri.value = '/component/abc'
     resourceData.value = {}
   })
 
-  test('a draft of a publishable component says Delete Draft', () => {
-    resourceData.value = publishable(false)
-    const wrapper = mountInfoTab()
-
-    expect(wrapper.find('button').text()).toBe('Delete Draft')
-  })
-
-  test('the live version of a publishable component says Delete Live', () => {
-    resourceData.value = publishable(true)
-    const wrapper = mountInfoTab()
-
-    expect(wrapper.find('button').text()).toBe('Delete Live')
-  })
-
-  test('a resource that is not publishable says Delete', () => {
-    resourceData.value = { '@id': iri.value, '_metadata': {} }
+  test.each([
+    ['a draft of a live component', { ...publishable(false), publishedResource: '/component/live' }],
+    ['a live component', publishable(true)],
+    ['a resource that is not publishable', { '@id': '/component/abc', '_metadata': {} }],
+  ])('says Delete for %s, never Delete Draft or Delete Live (#461)', (_label, data) => {
+    resourceData.value = data
     const wrapper = mountInfoTab()
 
     expect(wrapper.find('button').text()).toBe('Delete')
@@ -128,18 +118,6 @@ describe('Info tab — delete button names the version being deleted', () => {
     const wrapper = mountInfoTab()
 
     expect(wrapper.find('button').text()).toBe('Discard')
-  })
-
-  test('the label follows the selected version when the selection changes', async () => {
-    resourceData.value = publishable(false)
-    const wrapper = mountInfoTab()
-    expect(wrapper.find('button').text()).toBe('Delete Draft')
-
-    iri.value = '/component/abc_live'
-    resourceData.value = publishable(true)
-    await flushPromises()
-
-    expect(wrapper.find('button').text()).toBe('Delete Live')
   })
 })
 
@@ -231,7 +209,7 @@ describe('Info tab — a component in several locations', () => {
       title: 'Delete this component?',
       description: 'It is used in 3 places.',
       keep: 'Don\'t delete',
-      extra: 'Remove from this location only',
+      extra: 'Remove from here',
       go: 'Delete from all 3 places',
       lines: [{ text: 'Deleting it from all places can\'t be undone.', emphasis: 'muted' }],
     })
@@ -272,7 +250,7 @@ describe('Info tab — a component in several locations', () => {
     expect(mockCwa.admin.emptyStack).toHaveBeenCalled()
   })
 
-  test('Remove from this location only deletes only the closest position', async () => {
+  test('Remove from here deletes only the closest position', async () => {
     inLocations(3)
     inStackPosition('/_/component_positions/p2', '/_/component_groups/g2')
     revealChoosing('here')
@@ -291,7 +269,7 @@ describe('Info tab — a component in several locations', () => {
     expect(mockCwa.admin.emptyStack).toHaveBeenCalled()
   })
 
-  test('Remove from this location only deletes the position through its group\'s write queue, so it cannot race an insert or reorder there (#415)', async () => {
+  test('Remove from here deletes the position through its group\'s write queue, so it cannot race an insert or reorder there (#415)', async () => {
     inLocations(3)
     inStackPosition('/_/component_positions/p2', '/_/component_groups/g2')
     revealChoosing('here')
@@ -312,7 +290,7 @@ describe('Info tab — a component in several locations', () => {
     expect(deletedInQueue).toBe(true)
   })
 
-  test('Remove from this location only with no group in the stack deletes the position directly', async () => {
+  test('Remove from here with no group in the stack deletes the position directly', async () => {
     inLocations(3)
     inStackPosition('/_/component_positions/p2')
     closestStackItems.delete(CwaResourceTypes.COMPONENT_GROUP)
@@ -327,7 +305,7 @@ describe('Info tab — a component in several locations', () => {
     expect(mockCwa.resourcesManager.queueComponentGroupWrite).not.toHaveBeenCalled()
   })
 
-  test('Remove from this location only empties a page-data slot instead of deleting its position', async () => {
+  test('Remove from here empties a page-data slot instead of deleting its position', async () => {
     inLocations(3)
     inStackPosition('/_/component_positions/dynamic', '/_/component_groups/g2')
     storedResources.set('/_/component_positions/dynamic', { pageDataProperty: 'heroComponent' })
@@ -384,13 +362,6 @@ describe('Info tab — a component in several locations', () => {
     await expectTodaysDelete()
   })
 
-  test('Delete Draft on a shared live component only discards the draft: it never asks which locations to remove it from (#461)', async () => {
-    resourceData.value = { ...publishable(false), publishedResource: '/component/live' }
-    inLocations(3)
-    inStackPosition()
-    await expectTodaysDelete()
-  })
-
   test('Delete falls back to today\'s confirmation when the usage request fails', async () => {
     usageResponses.set('/component/abc/usage', Promise.reject(new Error('Server Error')))
     inStackPosition()
@@ -409,6 +380,157 @@ describe('Info tab — a component in several locations', () => {
     await expectTodaysDelete()
 
     expect(mockCwa.fetch).not.toHaveBeenCalled()
+  })
+
+  describe('a draft of a live component (#461)', () => {
+    const LIVE = '/component/live'
+    const positionDelete = { endpoint: '/_/component_positions/p1', refreshEndpoints: ['/_/component_groups/g1'] }
+
+    beforeEach(() => {
+      resourceData.value = { ...publishable(false), _metadata: { persisted: true, publishable: { published: false } }, publishedResource: LIVE }
+    })
+
+    async function clickDelete() {
+      const wrapper = mountInfoTab()
+      await flushPromises()
+      await wrapper.find('button').trigger('click')
+      await flushPromises()
+    }
+
+    test('in one place, asks once with Discard unpublished changes beside Delete', async () => {
+      inLocations(1)
+      inStackPosition()
+      revealChoosing()
+
+      await clickDelete()
+
+      expect(mocks.confirmChoice).toHaveBeenCalledTimes(1)
+      expect(mocks.confirmChoice).toHaveBeenCalledWith(mocks.vueApp, {
+        title: 'Delete this component?',
+        description: 'It has unpublished changes.',
+        keep: 'Don\'t delete',
+        extra: 'Discard unpublished changes',
+        go: 'Delete',
+        lines: [
+          { text: 'Discarding the unpublished changes keeps the live version.', emphasis: 'muted' },
+          { text: 'Deleting it can\'t be undone.', emphasis: 'muted' },
+        ],
+      })
+      expect(mockCwa.resourcesManager.deleteResource).not.toHaveBeenCalled()
+    })
+
+    test('Discard unpublished changes deletes only the draft', async () => {
+      inLocations(1)
+      inStackPosition()
+      revealChoosing('extra')
+
+      await clickDelete()
+
+      expect(mockCwa.resourcesManager.deleteResource.mock.calls).toEqual([[{ endpoint: '/component/abc', refreshEndpoints: ['/_/component_positions/p1'] }, true]])
+      expect(mockCwa.admin.emptyStack).toHaveBeenCalled()
+    })
+
+    test('Delete removes the draft and then the live component, so no position is left on either', async () => {
+      inLocations(1)
+      inStackPosition()
+      revealChoosing('go')
+
+      await clickDelete()
+
+      expect(mockCwa.resourcesManager.deleteResource.mock.calls).toEqual([
+        [{ endpoint: '/component/abc', refreshEndpoints: [] }, true],
+        [{ endpoint: LIVE, refreshEndpoints: ['/_/component_positions/p1'] }, true],
+      ])
+      expect(mockCwa.admin.emptyStack).toHaveBeenCalled()
+    })
+
+    test('Delete stops, keeping the live component and the stack, when the draft is still there after its delete', async () => {
+      inLocations(1)
+      inStackPosition()
+      revealChoosing('go')
+      storedResources.set('/component/abc', resourceData.value)
+
+      await clickDelete()
+
+      expect(mockCwa.resourcesManager.deleteResource).toHaveBeenCalledTimes(1)
+      expect(mockCwa.admin.emptyStack).not.toHaveBeenCalled()
+    })
+
+    test('in several places, asks once with Remove from here, Discard unpublished changes and Delete from all N places', async () => {
+      inLocations(3)
+      inStackPosition()
+      revealChoosing()
+
+      await clickDelete()
+
+      expect(mocks.confirmChoice).toHaveBeenCalledWith(mocks.vueApp, {
+        title: 'Delete this component?',
+        description: 'It is used in 3 places and has unpublished changes.',
+        keep: 'Don\'t delete',
+        extra: 'Remove from here',
+        alternative: 'Discard unpublished changes',
+        go: 'Delete from all 3 places',
+        lines: [
+          { text: 'Discarding the unpublished changes keeps the live version.', emphasis: 'muted' },
+          { text: 'Deleting it from all places can\'t be undone.', emphasis: 'muted' },
+        ],
+      })
+    })
+
+    test('in several places, Remove from here deletes only this position', async () => {
+      inLocations(3)
+      inStackPosition()
+      revealChoosing('extra')
+
+      await clickDelete()
+
+      expect(mockCwa.resourcesManager.deleteResource.mock.calls).toEqual([[positionDelete, true]])
+      expect(mockCwa.resourcesManager.queueComponentGroupWrite).toHaveBeenCalledWith('/_/component_groups/g1', expect.any(Function))
+    })
+
+    test('in several places, Discard unpublished changes deletes only the draft', async () => {
+      inLocations(3)
+      inStackPosition()
+      revealChoosing('alternative')
+
+      await clickDelete()
+
+      expect(mockCwa.resourcesManager.deleteResource.mock.calls).toEqual([[{ endpoint: '/component/abc', refreshEndpoints: ['/_/component_positions/p1'] }, true]])
+    })
+
+    test('in several places, Delete from all N places removes the draft and then the live component', async () => {
+      inLocations(3)
+      inStackPosition()
+      revealChoosing('go')
+
+      await clickDelete()
+
+      expect(mockCwa.resourcesManager.deleteResource.mock.calls).toEqual([
+        [{ endpoint: '/component/abc', refreshEndpoints: [] }, true],
+        [{ endpoint: LIVE, refreshEndpoints: ['/_/component_positions/p1'] }, true],
+      ])
+    })
+
+    test('with no position in the stack, offers no Remove from here', async () => {
+      inLocations(3)
+      revealChoosing()
+
+      await clickDelete()
+
+      expect(mocks.confirmChoice).toHaveBeenCalledWith(mocks.vueApp, expect.objectContaining({ extra: 'Discard unpublished changes', go: 'Delete from all 3 places' }))
+      expect(mocks.confirmChoice.mock.calls[0]![1]).not.toHaveProperty('alternative')
+    })
+
+    test('Don\'t delete sends nothing and keeps the stack', async () => {
+      inLocations(3)
+      inStackPosition()
+      revealChoosing()
+
+      await clickDelete()
+
+      expect(mockCwa.resourcesManager.deleteResource).not.toHaveBeenCalled()
+      expect(mockCwa.admin.emptyStack).not.toHaveBeenCalled()
+    })
   })
 
   test('is one manager-tab row: the ID read-only, the usage, then the delete action after a divider, with no axe violations (#460)', async () => {

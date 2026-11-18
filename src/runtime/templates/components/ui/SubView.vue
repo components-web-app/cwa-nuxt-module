@@ -14,6 +14,7 @@ const emit = defineEmits<{ back: [] }>()
 
 defineSlots<{
   main?: () => any
+  lead?: () => any
   default?: () => any
 }>()
 
@@ -127,15 +128,18 @@ function onKeydown(event: KeyboardEvent) {
           ><path d="M6 0v10L0 5z" /></svg>
           {{ backLabel }}
         </button>
-        <h3
-          :id="titleId"
-          ref="heading"
-          tabindex="-1"
-          data-testid="sub-view-title"
-          class="cwa:m-0 cwa:mt-2 cwa:text-section cwa:text-fg cwa:outline-none"
-        >
-          {{ title }}
-        </h3>
+        <div class="cwa:mt-2 cwa:flex cwa:items-center cwa:gap-3">
+          <slot name="lead" />
+          <h3
+            :id="titleId"
+            ref="heading"
+            tabindex="-1"
+            data-testid="sub-view-title"
+            class="cwa:m-0 cwa:text-section cwa:text-fg cwa:outline-none"
+          >
+            {{ title }}
+          </h3>
+        </div>
       </div>
       <slot />
     </div>
