@@ -139,3 +139,41 @@ for (const width of widths) {
     expect(sizes.group).toBeLessThan(sizes.column)
   })
 }
+
+const stackOpenings = [
+  ['at the pointer', floatingSurfaces[0][1]],
+  ['over its button, as the header\'s path selector opens it', floatingSurfaces[1][1]],
+]
+
+for (const [name, open] of stackOpenings) {
+  test(`kit: the resource stack opened ${name} never moves sideways while it appears (#461)`, async ({ page }) => {
+    await openKit(page, 1280)
+    await page.waitForLoadState('networkidle')
+    await page.evaluate(() => {
+      window.cwaStackFrames = []
+      const sample = () => {
+        const panel = document.querySelector('[data-testid="resource-stack"]')?.firstElementChild
+        if (!panel && !window.cwaStackFrames.length) {
+          requestAnimationFrame(sample)
+          return
+        }
+        const rect = panel.getBoundingClientRect()
+        const style = getComputedStyle(panel.parentElement)
+        window.cwaStackFrames.push({ x: rect.left, y: rect.top, painted: style.visibility !== 'hidden' && Number(getComputedStyle(panel).opacity) > 0 })
+        if (window.cwaStackFrames.length < 30) {
+          requestAnimationFrame(sample)
+        }
+      }
+      requestAnimationFrame(sample)
+    })
+    await open(page)
+    await page.waitForFunction(() => window.cwaStackFrames.length >= 30)
+
+    const frames = await page.evaluate(() => window.cwaStackFrames)
+    const final = frames.at(-1)
+    const painted = frames.filter(frame => frame.painted)
+    expect(painted.length).toBeGreaterThan(0)
+    expect(painted.filter(frame => Math.abs(frame.x - final.x) > 1)).toEqual([])
+    expect(painted.filter(frame => frame.y > final.y + 1 || frame.y < final.y - 5)).toEqual([])
+  })
+}

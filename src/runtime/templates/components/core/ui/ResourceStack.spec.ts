@@ -473,7 +473,15 @@ describe('ResourceStack (#461)', () => {
     expect(placeResourceStack).toHaveBeenCalledWith({ x: 5, y: 5 }, expect.objectContaining({ inner: { left: 10, top: 10, width: 90, height: 40 } }), expect.any(Object), undefined)
   })
 
-  test('stays hidden until the panel stands where it was placed, so it never shows moving, and only then grows the panel itself, never the wrapper whose transform places it, from the anchored corner so that corner never moves', async () => {
+  test.each([
+    ['at the pointer', () => ({ x: 400, y: 300 })],
+    ['over the header\'s path selector', () => {
+      const selector = document.createElement('button')
+      selector.textContent = 'Rich text'
+      document.body.append(selector)
+      return selector
+    }],
+  ])('opened %s, stays hidden until the panel stands where it was placed, so it never shows moving, then fades in with a small downward settle on the panel itself, never the wrapper whose transform places it, and never sideways (#461)', async (_, anchor) => {
     const frames: FrameRequestCallback[] = []
     vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => frames.push(callback))
     vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: false })))
@@ -496,7 +504,7 @@ describe('ResourceStack (#461)', () => {
     })
     vi.mocked(placeResourceStack).mockReturnValueOnce({ left: 390, top: 290 })
     try {
-      const { panel } = await openStack({ at: { x: 400, y: 300 } })
+      const { panel } = await openStack({ at: anchor() })
 
       expect(panel.style.visibility).toBe('hidden')
       expect(animate).not.toHaveBeenCalled()
@@ -511,10 +519,11 @@ describe('ResourceStack (#461)', () => {
       expect(panel.style.visibility).not.toBe('hidden')
       expect(animate).toHaveBeenCalledOnce()
       const [keyframes] = animate.mock.calls[0] as unknown as [Keyframe[]]
-      expect(keyframes).toEqual([{ scale: '0.9', opacity: 0 }, { scale: '1', opacity: 1 }])
-      expect(keyframes.some(keyframe => 'transform' in keyframe)).toBe(false)
+      expect(keyframes).toEqual([{ translate: '0 -4px', opacity: 0 }, { translate: '0 0', opacity: 1 }])
+      expect(keyframes.some(keyframe => 'transform' in keyframe || 'scale' in keyframe)).toBe(false)
+      expect(animate.mock.calls[0]![1]).toMatchObject({ duration: 120 })
       expect(animated).toEqual([panel])
-      expect(panel.style.transformOrigin).toBe('10px 10px')
+      expect(panel.style.transformOrigin).toBe('')
     }
     finally {
       vi.unstubAllGlobals()
@@ -551,7 +560,7 @@ describe('ResourceStack (#461)', () => {
       expect(highlighted(tree)).toBe('Component position')
     })
 
-    test('showing them finishes the grow animation before measuring again', async () => {
+    test('showing them finishes the opening animation before measuring again', async () => {
       vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: false })))
       const finish = vi.fn()
       HTMLElement.prototype.animate = vi.fn(() => ({ finish }) as unknown as Animation)
