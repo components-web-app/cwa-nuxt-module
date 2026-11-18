@@ -204,8 +204,7 @@ describe('FormGroup and the page Save model (#461)', () => {
     await mountRouted(form)
     await flushPromises()
     await type('[data-cwa-field="siteName"] input', 'Our kitchens')
-    form.failNext({})
-    form.formError = 'The server couldn\'t save it. Nothing changed, and what you typed is still here.'
+    form.failNext({}, 'The server couldn\'t save it. Nothing changed, and what you typed is still here.')
 
     save().click()
     await flushPromises()
