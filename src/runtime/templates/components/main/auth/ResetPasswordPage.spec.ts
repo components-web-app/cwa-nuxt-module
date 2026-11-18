@@ -25,6 +25,13 @@ describe('ResetPasswordPage', () => {
     expect(inputs.map(input => input.attributes('type'))).toEqual(['password', 'password'])
   })
 
+  test('each new password can be shown, with its own toggle, and the form is stacked', () => {
+    const wrapper = mountPage()
+    const toggles = wrapper.findAll('[data-testid="input-reveal"]')
+    expect(toggles.map(toggle => toggle.attributes('aria-controls'))).toEqual(wrapper.findAll('input').map(input => input.attributes('id')))
+    expect(wrapper.find('form').classes()).toContain('cwa:flex-col')
+  })
+
   test('the API\'s password errors are the line below the first field, which they describe', () => {
     const wrapper = mountPage({ inputErrors: { password: ['This value is too short.', 'Use a number.'] } })
     const line = wrapper.get('[data-testid="field-error"]')

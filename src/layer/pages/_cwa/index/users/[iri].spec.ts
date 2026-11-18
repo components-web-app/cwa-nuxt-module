@@ -210,6 +210,43 @@ describe('admin user dialog (#461)', () => {
     }))
   })
 
+  test.each([
+    ['creating a user', true, 'Password'],
+    ['the Password tab', false, 'New password'],
+  ])('%s stacks the two password fields one above the other', async (_, adding, first) => {
+    await setup(stored, { adding })
+    if (!adding) {
+      tab('Password').click()
+      await flushPromises()
+    }
+    const grid = (label: string) => fieldByLabel(label)!.closest('[data-testid="form-section-grid"]')!
+    expect(grid(first)).toBe(grid('Repeat password'))
+    expect(grid(first).className).not.toMatch(/grid-cols-2/)
+  })
+
+  test.each([
+    ['creating a user', true, ['Password', 'Repeat password']],
+    ['the Password tab', false, ['New password', 'Repeat password']],
+  ])('%s lets each new password be shown', async (_, adding, labels) => {
+    await setup(stored, { adding })
+    if (!adding) {
+      tab('Password').click()
+      await flushPromises()
+    }
+    for (const label of labels) {
+      const input = fieldByLabel(label)!
+      expect(document.querySelector(`[data-testid="input-reveal"][aria-controls="${input.id}"]`)).not.toBeNull()
+    }
+  })
+
+  test('your current password, asked for an email change, has no show toggle', async () => {
+    await setup()
+    await type('Email', 'changed@example.com')
+    const input = fieldByLabel('Your current password')!
+    expect(input).not.toBeNull()
+    expect(document.querySelector(`[data-testid="input-reveal"][aria-controls="${input.id}"]`)).toBeNull()
+  })
+
   test('the role select edits `roles` as the highest chosen role', async () => {
     const { wrapper, updateResource } = await setup({ ...stored, roles: ['ROLE_USER', 'ROLE_ADMIN'] })
     const role = wrapper.findAllComponents(Select).find(select => select.props('label') === 'Role')!
