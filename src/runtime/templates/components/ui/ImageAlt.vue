@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { POPOVER_GAP } from '../core/ui/popover-gap'
 import { computed } from 'vue'
 import { PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger } from 'reka-ui'
 import CwaUiFileUpload from './FileUpload.vue'
@@ -53,7 +54,7 @@ const altText = computed(() => altModel.value?.model.value ?? '')
             data-testid="image-alt-chip"
             :title="altText || 'No alt text'"
             :aria-label="altText ? `Alt text: ${altText}` : 'Alt text missing'"
-            class="cwa:inline-flex cwa:h-control cwa:shrink-0 cwa:cursor-pointer cwa:items-center cwa:gap-1.5 cwa:bg-field cwa:px-2 cwa:text-control cwa:text-fg cwa:outline-1 cwa:outline-transparent cwa:hover:bg-field-hover cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-accent-fg cwa:pointer-coarse:h-hit"
+            class="cwa:inline-flex cwa:h-control cwa:shrink-0 cwa:cursor-pointer cwa:items-center cwa:gap-1.5 cwa:bg-field cwa:px-2 cwa:text-control cwa:text-fg cwa:outline-1 cwa:outline-transparent cwa:hover:bg-field-hover cwa:aria-expanded:bg-field-hover cwa:aria-expanded:shadow-[inset_0_-2px_0_currentColor] cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-accent-fg cwa:pointer-coarse:h-hit"
           >
             Alt
             <span
@@ -68,7 +69,7 @@ const altText = computed(() => altModel.value?.model.value ?? '')
           <PopoverContent
             side="top"
             align="start"
-            :side-offset="6"
+            :side-offset="POPOVER_GAP"
             :collision-padding="8"
             role="dialog"
             :aria-label="`${label} alt text`"

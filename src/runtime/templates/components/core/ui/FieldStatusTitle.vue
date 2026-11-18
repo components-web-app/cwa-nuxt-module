@@ -12,7 +12,7 @@ const emit = defineEmits<{ close: [] }>()
 </script>
 
 <template>
-  <div class="cwa:-mt-1 cwa:-mr-2 cwa:mb-1.5 cwa:flex cwa:min-h-8 cwa:items-center cwa:gap-2 cwa:font-semibold">
+  <div class="cwa:mb-1.5 cwa:flex cwa:min-h-8 cwa:items-center cwa:gap-2 cwa:font-semibold">
     <StateGlyph
       v-if="glyph"
       :kind="glyph"

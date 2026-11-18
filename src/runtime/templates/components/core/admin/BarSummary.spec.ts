@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { enableAutoUnmount, mount } from '@vue/test-utils'
 import { nextTick, reactive, ref } from 'vue'
 import { axe } from '../../../../../../test/utils/axe'
+import { drawsOpenState } from '../../../../../../test/utils/open-state'
 import { drawsFocusRing } from '../../../../../../test/utils/focus-ring'
 import { announceKey } from '../ui/field-keys'
 import BarSummary from './BarSummary.vue'
@@ -104,11 +105,13 @@ describe('BarSummary (#459)', () => {
     expect(summary().attributes('aria-label')).toBe('1 not saved, Retry or Reset')
     expect(summary().attributes('aria-haspopup')).toBe('dialog')
     expect(summary().attributes('aria-expanded')).toBe('false')
+    expect(drawsOpenState(summary().element)).toBe(false)
     await summary().trigger('click')
     await vi.advanceTimersByTimeAsync(50)
 
     expect(wrapper.emitted('show')).toBeUndefined()
     expect(summary().attributes('aria-expanded')).toBe('true')
+    expect(drawsOpenState(summary().element)).toBe(true)
     expect(popover()?.getAttribute('aria-label')).toBe('Title: not saved')
     expect(popover()?.textContent).toContain('Title: not saved')
     expect(popover()?.textContent).toContain('The server is unavailable.')

@@ -929,6 +929,8 @@ const badgeTones = [
           <CwaUiButton
             label="Link"
             size="sm"
+            aria-haspopup="dialog"
+            :aria-expanded="linkOpen ? 'true' : 'false'"
             @click="openLink"
           />
         </div>

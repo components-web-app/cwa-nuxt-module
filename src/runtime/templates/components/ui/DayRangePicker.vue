@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { POPOVER_GAP } from '../core/ui/popover-gap'
 import { computed, ref, useId } from 'vue'
 import type { DateValue } from '@internationalized/date'
 import { parseDate } from '@internationalized/date'
@@ -114,7 +115,7 @@ function clear() {
             :aria-busy="busy ? 'true' : undefined"
             :disabled="inactive"
             data-testid="day-range-trigger"
-            :class="[fieldBox, fieldFill(tone, inactive), 'cwa:cursor-pointer cwa:gap-2 cwa:px-3 cwa:text-left cwa:outline-1 cwa:outline-transparent cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-accent-fg cwa:disabled:cursor-not-allowed']"
+            :class="[fieldBox, fieldFill(tone, inactive), 'cwa:cursor-pointer cwa:gap-2 cwa:px-3 cwa:text-left cwa:aria-expanded:bg-field-hover cwa:aria-expanded:shadow-[inset_0_-2px_0_currentColor] cwa:outline-1 cwa:outline-transparent cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-accent-fg cwa:disabled:cursor-not-allowed']"
           >
             <span
               class="cwa:min-w-0 cwa:flex-1 cwa:truncate"
@@ -145,7 +146,7 @@ function clear() {
           <PopoverPortal>
             <PopoverContent
               align="start"
-              :side-offset="8"
+              :side-offset="POPOVER_GAP"
               :collision-padding="8"
               role="dialog"
               :aria-label="`${label}: choose days`"
