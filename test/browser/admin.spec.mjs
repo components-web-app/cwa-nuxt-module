@@ -1139,6 +1139,23 @@ test.describe('presence', () => {
     assert(await flag.innerText() === 'Pat Peer', `The field flag says "${await flag.innerText()}"`)
     const [fieldBox, inputBox] = [await managerPanel(page).getByTestId('field-presence').boundingBox(), await managerInput(page).boundingBox()]
     assert(covers({ top: fieldBox.y, left: fieldBox.x, width: fieldBox.width, height: fieldBox.height }, { top: inputBox.y, left: inputBox.x, width: inputBox.width, height: inputBox.height }), `The field outline ${JSON.stringify(fieldBox)} does not cover the input ${JSON.stringify(inputBox)}`)
+    const [rowBox, flagBox] = [await managerPanel(page).getByTestId('manager-tab').boundingBox(), await flag.boundingBox()]
+    assert(flagBox.y >= rowBox.y + 2 && flagBox.y < fieldBox.y && flagBox.y + flagBox.height <= fieldBox.y + fieldBox.height / 2, `The field flag ${JSON.stringify(flagBox)} is not on the field's top edge ${JSON.stringify(fieldBox)} at least 2px inside the bar row ${JSON.stringify(rowBox)}`)
+    const glyphs = await flag.evaluate((el) => {
+      const range = document.createRange()
+      range.selectNodeContents(el)
+      return { top: range.getBoundingClientRect().top, scrollHeight: el.scrollHeight, clientHeight: el.clientHeight }
+    })
+    assert(glyphs.top >= rowBox.y, `The flag's text starts at ${glyphs.top}, above the bar row at ${rowBox.y}`)
+    assert(glyphs.scrollHeight <= glyphs.clientHeight, `The flag's text is ${glyphs.scrollHeight}px tall in a ${glyphs.clientHeight}px flag, so it is clipped`)
+    const ring = await managerPanel(page).getByTestId('field-presence').evaluate(el => getComputedStyle(el).boxShadow)
+    assert(ring.includes('inset') && ring.includes('2px'), `The peer ring is ${ring}, not a 2px inset ring`)
+    await managerInput(page).focus()
+    await eventually(async () => (await flag.innerText()) === 'Pat Peer is editing this too', `Focused, the flag says "${await flag.innerText()}"`)
+    const focusedRing = await managerPanel(page).getByTestId('field-presence').evaluate(el => getComputedStyle(el).boxShadow)
+    assert(focusedRing === 'none', `The peer ring ${focusedRing} is still drawn under your own focus ring`)
+    await managerInput(page).evaluate(el => el.blur())
+    await eventually(async () => (await flag.innerText()) === 'Pat Peer', `Blurred, the flag says "${await flag.innerText()}"`)
     t.publish({ ...peer, data: { v: 1, page: seed.iris.pageA, state: 'left' } })
     await eventually(async () => (await flag.count()) === 0, 'The field flag stayed after its tab left')
   })

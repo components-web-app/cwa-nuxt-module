@@ -277,6 +277,9 @@
 .cwa\:left-2 {
   left: calc(var(--cwa-spacing) * 2);
 }
+.cwa\:isolate {
+  isolation: isolate;
+}
 .cwa\:-z-10 {
   z-index: calc(10 * -1);
 }
@@ -420,9 +423,6 @@
 }
 .cwa\:mb-0 {
   margin-bottom: 0px;
-}
-.cwa\:mb-0\.5 {
-  margin-bottom: calc(var(--cwa-spacing) * 0.5);
 }
 .cwa\:mb-1 {
   margin-bottom: var(--cwa-spacing);
@@ -1923,6 +1923,9 @@
   font-size: var(--cwa-text-confirm);
   font-weight: var(--tw-font-weight, var(--cwa-text-confirm--font-weight));
 }
+.cwa\:text-\[0\.6875rem\] {
+  font-size: 0.6875rem;
+}
 .cwa\:text-\[1\.75rem\] {
   font-size: 1.75rem;
 }
@@ -1940,6 +1943,10 @@
 .cwa\:leading-8 {
   --tw-leading: calc(var(--cwa-spacing) * 8);
   line-height: calc(var(--cwa-spacing) * 8);
+}
+.cwa\:leading-\[0\.875rem\] {
+  --tw-leading: 0.875rem;
+  line-height: 0.875rem;
 }
 .cwa\:leading-none {
   --tw-leading: 1;
@@ -2435,9 +2442,6 @@
 @media (hover: hover) {
   .cwa\:group-hover\:text-muted-on-field:is(:where(.cwa\:group):hover *) {
     color: var(--cwa-color-muted-on-field);
-  }
-  .cwa\:group-hover\/field\:opacity-100:is(:where(.cwa\:group\/field):hover *) {
-    opacity: 100%;
   }
 }
 .cwa\:group-data-highlighted\:text-muted-on-field:is(:where(.cwa\:group)[data-highlighted] *) {

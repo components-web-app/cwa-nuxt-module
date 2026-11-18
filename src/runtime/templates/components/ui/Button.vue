@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, useId, useTemplateRef } from 'vue'
+import { computed, defineAsyncComponent, ref, useId, useTemplateRef, watch } from 'vue'
 import type { Component } from 'vue'
 import Spinner from './Spinner.vue'
 import Menu from './Menu.vue'
@@ -41,15 +41,21 @@ const {
   stretch?: boolean
 }>()
 
+const ReasonPopover = defineAsyncComponent(() => import('../core/ui/ReasonPopover.vue'))
+
 const emit = defineEmits<{ click: [event: MouseEvent], select: [item: MenuItem] }>()
 
 const split = useTemplateRef<HTMLElement>('split')
+const button = useTemplateRef<HTMLElement>('button')
 
 const inactive = computed(() => loading || disabled)
 
 const reason = computed(() => disabled ? disabledReason : undefined)
 
 const reasonId = useId()
+
+const reasonShown = ref(false)
+watch(reason, now => now || (reasonShown.value = false))
 
 const hasLead = computed(() => loading || !!icon)
 
@@ -85,6 +91,7 @@ const classes = computed(() => {
 function onClick(event: MouseEvent) {
   if (inactive.value) {
     event.preventDefault()
+    reasonShown.value = !!reason.value
     return
   }
   emit('click', event)
@@ -152,6 +159,7 @@ function onClick(event: MouseEvent) {
   </div>
   <button
     v-else
+    ref="button"
     :type="type"
     :aria-label="iconOnly ? label : ariaLabel"
     :aria-disabled="inactive ? 'true' : undefined"
@@ -189,5 +197,12 @@ function onClick(event: MouseEvent) {
       aria-hidden="true"
       class="cwa:sr-only"
     >{{ reason }}</span>
+    <ReasonPopover
+      v-if="reasonShown && reason && button"
+      :anchor="button"
+      :label="`Why ${label ?? ariaLabel} is unavailable`"
+      :text="reason"
+      @close="reasonShown = false"
+    />
   </button>
 </template>

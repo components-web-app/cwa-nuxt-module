@@ -4,13 +4,14 @@ import FieldStatus from './FieldStatus.vue'
 import InfoPopover from './InfoPopover.vue'
 import StateGlyph from './StateGlyph.vue'
 import ConflictNotice from './ConflictNotice.vue'
+import CwaUiFieldPresence from '../../ui/FieldPresence.vue'
 import { fieldGroupKey, formSurfaceKey } from './field-keys'
 import type { ResourceModelField } from '#cwa/resources/model-editors'
 import type { CwaFieldState } from '#cwa/storage/stores/resources/state'
 
 export type FieldWidth = 'xs' | 'sm' | 'md' | 'lg' | 'full'
 
-const { label, labelHidden = false, info, description, optional = false, width, state, model, controlId, ownLabel = false, name } = defineProps<{
+const { label, labelHidden = false, info, description, optional = false, width, state, model, controlId, ownLabel = false, name, inactive = false } = defineProps<{
   label: string
   labelHidden?: boolean
   info?: string
@@ -22,6 +23,7 @@ const { label, labelHidden = false, info, description, optional = false, width, 
   controlId: string
   ownLabel?: boolean
   name?: string
+  inactive?: boolean
 }>()
 
 defineSlots<{
@@ -69,6 +71,10 @@ watch(fieldName, (field) => {
   unregister = field && surface ? surface.register(field, label) : undefined
 }, { immediate: true })
 onBeforeUnmount(() => unregister?.())
+
+watch(() => inactive, (now) => {
+  now && model?.blur?.()
+})
 </script>
 
 <template>
@@ -110,14 +116,19 @@ onBeforeUnmount(() => unregister?.())
       class="cwa:w-full cwa:min-w-0"
       :class="{ 'cwa:mt-1.5': !ownLabel && !labelHidden }"
     >
-      <slot
-        :described-by="describedBy"
-        :tone="tone"
-        :busy="false"
-        :label-id="labelId"
-        :modal="true"
-        :unsaved="unsaved"
-      />
+      <CwaUiFieldPresence
+        :model="model"
+        v-bind="inactive ? undefined : model?.focusListeners"
+      >
+        <slot
+          :described-by="describedBy"
+          :tone="tone"
+          :busy="false"
+          :label-id="labelId"
+          :modal="true"
+          :unsaved="unsaved"
+        />
+      </CwaUiFieldPresence>
     </div>
     <p
       v-if="errorText"
@@ -169,14 +180,19 @@ onBeforeUnmount(() => unregister?.())
       class="cwa:relative cwa:min-w-0"
       :class="width ? widths[width] : undefined"
     >
-      <slot
-        :described-by="describedBy"
-        :tone="tone"
-        :busy="state.status === 'saving'"
-        :label-id="labelId"
-        :modal="false"
-        :unsaved="false"
-      />
+      <CwaUiFieldPresence
+        :model="model"
+        v-bind="inactive ? undefined : model?.focusListeners"
+      >
+        <slot
+          :described-by="describedBy"
+          :tone="tone"
+          :busy="state.status === 'saving'"
+          :label-id="labelId"
+          :modal="false"
+          :unsaved="false"
+        />
+      </CwaUiFieldPresence>
       <FieldStatus
         :state="state"
         :name="label"

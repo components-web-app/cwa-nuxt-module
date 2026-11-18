@@ -123,6 +123,7 @@ const inactive = computed(() => props.disabled || unbound)
     :state="state"
     :model="model"
     :control-id="id"
+    :inactive="inactive"
     :name="field"
   >
     <template #default="{ describedBy, tone, busy }">
@@ -139,7 +140,6 @@ const inactive = computed(() => props.disabled || unbound)
       >
         <ComboboxAnchor
           :class="[fieldBox, fieldFill(tone, inactive), 'cwa:gap-1.5 cwa:pr-3', { 'cwa:opacity-50 cwa:cursor-not-allowed': inactive }]"
-          v-bind="model?.focusListeners"
         >
           <span
             v-if="!open && firstChosen"

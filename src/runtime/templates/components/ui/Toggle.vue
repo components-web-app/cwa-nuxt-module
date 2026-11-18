@@ -42,6 +42,7 @@ function onChecked(checked: boolean) {
     :state="state"
     :model="model"
     :control-id="id"
+    :inactive="disabled || unbound"
     :name="field"
     own-label
   >
@@ -49,7 +50,6 @@ function onChecked(checked: boolean) {
       <div
         class="cwa:flex cwa:items-center cwa:gap-3"
         :class="[modal ? 'cwa:min-h-hit cwa:w-full cwa:justify-between' : 'cwa:h-control cwa:pointer-coarse:h-hit', { 'cwa:opacity-50': disabled || unbound }]"
-        v-bind="model?.focusListeners"
       >
         <span
           v-if="modal"

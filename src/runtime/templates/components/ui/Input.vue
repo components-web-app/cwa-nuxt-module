@@ -67,12 +67,12 @@ function onInput(event: Event) {
     :state="state"
     :model="model"
     :control-id="id"
+    :inactive="disabled || unbound || readonly"
     :name="field"
   >
     <template #default="{ describedBy, tone, busy }">
       <div
         :class="[fieldBox, readonly ? 'cwa:bg-transparent' : fieldFill(tone, disabled || unbound), { 'cwa:opacity-50 cwa:cursor-not-allowed': disabled || unbound }]"
-        v-bind="model?.focusListeners"
       >
         <slot name="prefix" />
         <input

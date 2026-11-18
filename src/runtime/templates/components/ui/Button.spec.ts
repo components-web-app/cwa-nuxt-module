@@ -5,6 +5,7 @@ import { h } from 'vue'
 import { axe } from '../../../../../test/utils/axe'
 import Button from './Button.vue'
 import Spinner from './Spinner.vue'
+import { announceKey } from '../core/ui/field-keys'
 
 const Plus = { name: 'PlusIcon', render: () => h('svg', { 'data-testid': 'plus' }) }
 
@@ -165,6 +166,45 @@ describe('CwaUiButton (#456)', () => {
     expect(reason.attributes('aria-hidden')).toBe('true')
     expect(wrapper.attributes('title')).toBe('Nothing has changed since the last save')
     expect(wrapper.get('span:not([aria-hidden])').text()).toBe('Publish')
+  })
+
+  test('pressing a disabled button with a reason shows the reason beside it and announces it, without moving focus, where a touch screen has no tooltip (#476 review 6)', async () => {
+    const announce = vi.fn()
+    const clicked = vi.fn()
+    const wrapper = mount(Button, {
+      props: { label: 'Add', disabled: true, disabledReason: 'This group already holds its 3 components', onClick: clicked },
+      global: { provide: { [announceKey as symbol]: announce } },
+      attachTo: document.body,
+    })
+    wrapper.element.focus()
+
+    await wrapper.trigger('click')
+    await vi.waitFor(() => expect(document.querySelector('[data-testid="button-reason"]')).not.toBeNull())
+
+    const popover = document.querySelector<HTMLElement>('[data-testid="button-reason"]')
+    expect(popover?.textContent?.trim()).toBe('This group already holds its 3 components')
+    expect(popover?.getAttribute('aria-label')).toBe('Why Add is unavailable')
+    expect(announce).toHaveBeenCalledWith('This group already holds its 3 components')
+    expect(clicked).not.toHaveBeenCalled()
+    expect(document.activeElement).toBe(wrapper.element)
+    expect(await axe(document.body)).toHaveNoViolations()
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    await flushPromises()
+    expect(document.querySelector('[data-testid="button-reason"]')).toBeNull()
+    wrapper.unmount()
+  })
+
+  test('pressing a disabled button without a reason, or a loading one, shows nothing (#476 review 6)', async () => {
+    const wrapper = mount(Button, { props: { label: 'Add', disabled: true }, attachTo: document.body })
+    await wrapper.trigger('click')
+    await wrapper.setProps({ disabled: false, loading: true, disabledReason: 'Not used while loading' })
+    await wrapper.trigger('click')
+    await flushPromises()
+
+    expect(document.querySelector('[data-testid="button-reason"]')).toBeNull()
+    expect(wrapper.element.tagName).toBe('BUTTON')
+    wrapper.unmount()
   })
 
   test('each button on a page has its own reason id', () => {

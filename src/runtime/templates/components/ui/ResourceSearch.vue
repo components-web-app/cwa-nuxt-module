@@ -223,6 +223,7 @@ const reducedMotion = typeof window !== 'undefined' && !!window.matchMedia?.('(p
     :state="state"
     :model="model"
     :control-id="id"
+    :inactive="inactive"
     :name="field"
   >
     <template #default="{ describedBy, tone, busy }">
@@ -238,7 +239,6 @@ const reducedMotion = typeof window !== 'undefined' && !!window.matchMedia?.('(p
       >
         <ComboboxAnchor
           :class="[fieldBox, fieldFill(tone, inactive), 'cwa:gap-2 cwa:pr-3 cwa:pl-3', { 'cwa:opacity-50 cwa:cursor-not-allowed': inactive }]"
-          v-bind="model?.focusListeners"
         >
           <SearchIcon
             class="cwa:size-3.5 cwa:shrink-0 cwa:text-fg-muted"

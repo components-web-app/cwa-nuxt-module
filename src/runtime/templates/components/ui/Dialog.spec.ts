@@ -566,6 +566,21 @@ describe('CwaUiDialog without a Save model (#461, the add component dialog)', ()
     expect(qa('footer button').map(shown)).toEqual(['Add'])
   })
 
+  test('an editor\'s presence flag goes into the body\'s own layer, which scrolls with the fields, on the field\'s right so the label above it stays readable (#476 review 1)', async () => {
+    const model = { model: ref('Kitchens'), remoteChange: ref(undefined), focusedBy: ref([{ user: { id: '/_/users/mia', name: 'Mia' }, name: 'Mia', colour: '#d946ef', isSelf: false, clientIds: ['tab-mia'] }]) }
+    mountPlain({}, { default: () => h(Input, { label: 'Title', model }) })
+    await flushPromises()
+
+    const body = q('[data-testid="dialog-body"]')!
+    const layer = body.querySelector<HTMLElement>(':scope > [data-testid="presence-layer"]')!
+    expect(body.className).toContain('cwa:relative')
+    expect(layer.className).toContain('cwa:absolute')
+    const flag = layer.querySelector<HTMLElement>('[data-testid="field-presence-flag"]')
+    expect(flag?.textContent).toBe('Mia')
+    expect(flag?.style.right).toBeTruthy()
+    expect(body.querySelector('[data-cwa-field] [data-testid="field-presence-flag"]')).toBeNull()
+  })
+
   test('a flush body leaves the padding to its content', async () => {
     mountPlain({ flush: true })
     await flushPromises()

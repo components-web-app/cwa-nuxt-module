@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, inject, onBeforeUnmount, onMounted, provide, ref, useTemplateRef } from 'vue'
-import { managerTabKey, tabFieldsKey, tabMetaOnlyKey } from '../core/ui/field-keys'
+import { managerTabKey, managerTabMountedKey, presenceLayerKey, tabFieldsKey, tabMetaOnlyKey } from '../core/ui/field-keys'
 import { useCwa } from '#cwa/composables/cwa'
 
 const { iri } = defineProps<{
@@ -21,6 +21,10 @@ provide(managerTabKey, {
 })
 
 const row = useTemplateRef<HTMLElement>('row')
+const presenceLayer = useTemplateRef<HTMLElement>('presenceLayer')
+provide(presenceLayerKey, { el: presenceLayer, align: 'start' })
+const mounted = import.meta.env.DEV ? inject(managerTabMountedKey, undefined) : undefined
+let unmounted: (() => void) | undefined
 const overflowStart = ref(false)
 const overflowEnd = ref(false)
 let observer: ResizeObserver | undefined
@@ -38,6 +42,7 @@ onMounted(() => {
   if (!row.value) {
     return
   }
+  unmounted = mounted?.(row.value)
   row.value.addEventListener('scroll', measure, { passive: true })
   if (typeof ResizeObserver !== 'undefined') {
     observer = new ResizeObserver(measure)
@@ -47,6 +52,7 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  unmounted?.()
   row.value?.removeEventListener('scroll', measure)
   observer?.disconnect()
 })
@@ -72,5 +78,10 @@ defineExpose({ measure })
     >
       <slot />
     </div>
+    <div
+      ref="presenceLayer"
+      data-testid="presence-layer"
+      class="cwa:pointer-events-none cwa:absolute cwa:inset-0 cwa:overflow-hidden"
+    />
   </div>
 </template>
