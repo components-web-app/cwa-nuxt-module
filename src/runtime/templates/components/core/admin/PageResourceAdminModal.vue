@@ -7,6 +7,7 @@
     :tabs="tabs"
     :form="form"
     :loading="isLoading"
+    :kind="kind"
     noun="page"
     :create-noun="isAdding ? createNoun : undefined"
     data-testid="page-dialog"
@@ -170,12 +171,6 @@
               nullable
             />
           </template>
-          <CwaUiToggle
-            field="isReachableWithoutRoute"
-            label="Public without a route"
-            :disabled="!!resource?.route"
-            :description="resource?.route ? 'Has no effect while this page has a route.' : 'Visitors can reach it through a nested page, even when it has no route of its own. Any parent page must be live too.'"
-          />
         </CwaUiFormSection>
       </template>
     </template>
@@ -260,7 +255,6 @@ import CwaUiInput from '#cwa/templates/components/ui/Input.vue'
 import CwaUiTextarea from '#cwa/templates/components/ui/Textarea.vue'
 import CwaUiSelect from '#cwa/templates/components/ui/Select.vue'
 import CwaUiSegmented from '#cwa/templates/components/ui/Segmented.vue'
-import CwaUiToggle from '#cwa/templates/components/ui/Toggle.vue'
 import CwaUiButton from '#cwa/templates/components/ui/Button.vue'
 import CwaUiAlert from '#cwa/templates/components/ui/Alert.vue'
 import EyeGlyph from '#cwa/templates/components/ui/icon/EyeIcon.vue'
@@ -436,7 +430,7 @@ const pageName = computed(() => (isDisplayingPage.value ? resource.value?.refere
 
 const pageTypeOptions = [
   { label: 'Static', value: 'static' },
-  { label: 'Template', value: 'template' },
+  { label: 'Dynamic', value: 'template' },
 ]
 
 const pageTypeModel = {
@@ -448,6 +442,17 @@ const pageTypeModel = {
     },
   }),
 } as ReturnType<typeof form.model<string>>
+
+const kind = computed(() => {
+  if (isDisplayingPage.value) {
+    return localResourceData.value?.isTemplate
+      ? { tone: 'dynamic' as const, label: 'Dynamic template' }
+      : { tone: 'static' as const, label: 'Static page' }
+  }
+  return resource.value?.route || localResourceData.value?.isReachableWithoutRoute
+    ? { tone: 'reachable' as const, label: 'Reachable' }
+    : { tone: 'unreachable' as const, label: 'Not reachable' }
+})
 
 function saveResource(close = false) {
   return _saveResource(close)

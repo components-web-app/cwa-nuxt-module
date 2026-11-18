@@ -40,13 +40,13 @@ describe('RouteListRow', () => {
       expect(await publication({ liveAt, _metadata: { persisted: true, effectiveLiveAt: liveAt } })).toContain('Live')
     })
 
-    test('lists a live child route whose parent goes live next week as held back by its parent', async () => {
+    test('lists a live child route whose parent goes live next week as inheriting the parent\'s schedule', async () => {
       const text = await publication({ liveAt: '2020-01-01T00:00:00+00:00', _metadata: { persisted: true, effectiveLiveAt: '2999-01-01T09:00:00Z' } })
-      expect(text).toBe('Held back by parent')
+      expect(text).toBe(`Inherited scheduled · ${formatDateTime('2999-01-01T09:00:00Z')}`)
     })
 
-    test('reports a live route the API resolved no effective date for as held back by its parent, as the Routes tab does', async () => {
-      expect(await publication({ liveAt: '2020-01-01T00:00:00+00:00', _metadata: { persisted: true } })).toBe('Held back by parent')
+    test('reports a live route the API resolved no effective date for as inheriting not live, as the Routes tab does', async () => {
+      expect(await publication({ liveAt: '2020-01-01T00:00:00+00:00', _metadata: { persisted: true } })).toBe('Inherited not live')
     })
   })
 

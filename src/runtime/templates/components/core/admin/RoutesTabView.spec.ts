@@ -1,7 +1,13 @@
 // @vitest-environment nuxt
 import { describe, test, expect, vi, afterEach } from 'vitest'
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
+import { defineComponent, h, provide } from 'vue'
 import RoutesTabView from './RoutesTabView.vue'
+import Toggle from '#cwa/templates/components/ui/Toggle.vue'
+import Badge from '#cwa/templates/components/ui/Badge.vue'
+import ClockGlyph from '#cwa/templates/components/core/ui/ClockGlyph.vue'
+import { fieldGroupKey, formSurfaceKey } from '#cwa/templates/components/core/ui/field-keys'
+import { fakeDialogForm } from '../../../../../../playground/app/kit/fake-dialog-form'
 import { formatDateTime } from '#cwa/resources/date-time-input'
 import { axe } from '../../../../../../test/utils/axe'
 import { drawsFocusRing } from '../../../../../../test/utils/focus-ring'
@@ -18,6 +24,20 @@ function mountView(overrides: Record<string, any> = {}) {
     attachTo: document.body,
   })
 }
+
+function mountInForm(overrides: Record<string, any> = {}, stored: Record<string, unknown> = { isReachableWithoutRoute: false }) {
+  const form = fakeDialogForm(stored)
+  const Host = defineComponent({
+    setup() {
+      provide(fieldGroupKey, { model: (field: string) => form.model(field), undo: () => undefined })
+      provide(formSurfaceKey, { unsaved: (field: string) => form.unsavedFields.includes(field), register: () => () => {} })
+      return () => h(RoutesTabView, { resource: undefined, isLoading: false, ...overrides })
+    },
+  })
+  return { wrapper: mount(Host, { attachTo: document.body }), form }
+}
+
+const publicToggle = (wrapper: ReturnType<typeof mount>) => wrapper.findAllComponents(Toggle).find(found => found.props('label') === 'Public without a route')
 
 const badge = (wrapper: ReturnType<typeof mountView>) => wrapper.find('[data-route-publication]')
 const rowTexts = (wrapper: ReturnType<typeof mountView>) => wrapper.findAll('[data-nav]').map(row => row.text().replace(/\s+/g, ' ').trim())
@@ -117,6 +137,36 @@ describe('RoutesTabView', () => {
       expect(wrapper.emitted('open')).toEqual([['route'], ['route', true]])
     })
 
+    test('offers Public without a route under the no-route sentence, bound to the page\'s own field so the dialog\'s Save sends it (bundle#381)', async () => {
+      const { wrapper, form } = mountInForm()
+      const toggle = publicToggle(wrapper)!
+      expect(toggle.props()).toMatchObject({
+        field: 'isReachableWithoutRoute',
+        description: 'For a page your app shows on its own URL, loaded by reference. Visitors can read it without a route. It stays private while a parent page isn\'t live.',
+      })
+      expect(toggle.props('disabled')).toBe(false)
+      expect(wrapper.find('[data-testid="routes-none"]').element.compareDocumentPosition(toggle.element) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+      await toggle.find('button[role="switch"]').trigger('click')
+      expect(form.local.isReachableWithoutRoute).toBe(true)
+      expect(form.unsavedFields).toEqual(['isReachableWithoutRoute'])
+      expect(form.saves).toEqual([])
+    })
+
+    test('with Public without a route on, the no-route sentence says the page is public without one', () => {
+      const { wrapper } = mountInForm({}, { isReachableWithoutRoute: true })
+      expect(wrapper.find('[data-testid="routes-none"]').text()).toBe('No route yet. This page is public without a route: visitors can read it where your app loads it.')
+    })
+
+    test('is still offered under a parent with no route, where the flag still applies when no ancestor has a route', () => {
+      const { wrapper } = mountInForm({ parentHasNoRoute: true, parentName: 'Conference' })
+      expect(publicToggle(wrapper)).toBeDefined()
+    })
+
+    test('offers no Public without a route once the page has a route, nor while the route loads', () => {
+      expect(publicToggle(mountInForm({ resource: { path: '/topic-1' } }).wrapper)).toBeUndefined()
+      expect(publicToggle(mountInForm({ isLoading: true }).wrapper)).toBeUndefined()
+    })
+
     test('says it is still reachable through a nested page when a child route makes it public', () => {
       const wrapper = mountView({ resource: undefined, childCount: 2 })
       expect(wrapper.find('[data-testid="routes-none"]').text()).toContain('It is reachable through a nested page.')
@@ -171,24 +221,29 @@ describe('RoutesTabView', () => {
       _metadata: { persisted: true, effectiveLiveAt: '2999-01-01T09:00:00Z' },
     }
 
-    test('a live child route whose parent goes live next week reads as held back by its parent, not live', () => {
-      const text = badge(mountView({ resource: gatedChild })).text()
-      expect(text).toBe('Held back by parent')
+    test('a live child route whose parent goes live next week reads as inheriting the parent\'s schedule, with the clock and the Scheduled tone', () => {
+      const wrapper = mountView({ resource: gatedChild })
+      expect(badge(wrapper).text()).toBe(`Inherited scheduled · ${formatDateTime(gatedChild._metadata.effectiveLiveAt)}`)
+      expect(wrapper.findComponent(Badge).props()).toMatchObject({ tone: 'accent', icon: ClockGlyph })
     })
 
-    test('explains that a parent route sets the date visitors can reach it', () => {
+    test('explains that a parent route sets the date visitors can reach it, in the Scheduled badge\'s tone', () => {
       const note = mountView({ resource: gatedChild }).find('[data-parent-gated]')
-      expect(note.text()).toContain('Held back by a parent route.')
+      expect(note.text()).toContain('Inherited from a parent route.')
       expect(note.text()).toContain(formatDateTime(gatedChild._metadata.effectiveLiveAt))
-      expect(note.attributes('data-tone')).toBe('warning')
+      expect(note.attributes('data-tone')).toBe('info')
     })
 
-    test('names a draft ancestor as the reason rather than leaving it unexplained', () => {
+    test('names a draft ancestor as the reason rather than leaving it unexplained, inheriting not live in its tone', () => {
       const wrapper = mountView({
         resource: { path: '/topic-1', redirectedFrom: [], liveAt: '2020-01-01T00:00:00+00:00', _metadata: { persisted: true } },
       })
-      expect(badge(wrapper).text()).toBe('Held back by parent')
-      expect(wrapper.find('[data-parent-gated]').text()).toContain('no go-live date')
+      expect(badge(wrapper).text()).toBe('Inherited not live')
+      expect(wrapper.findComponent(Badge).props()).toMatchObject({ tone: 'neutral', dot: true })
+      const note = wrapper.find('[data-parent-gated]')
+      expect(note.text()).toContain('Inherited from a parent route.')
+      expect(note.text()).toContain('no go-live date')
+      expect(note.attributes('data-tone')).toBe('info')
     })
 
     test('says nothing about parents when the effective date matches the route own date', () => {
