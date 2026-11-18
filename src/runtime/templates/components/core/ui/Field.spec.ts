@@ -96,6 +96,36 @@ describe('Field and its status (#459)', () => {
     expect(popover()).toBeNull()
   })
 
+  test('pressing Enter on Retry, having tabbed to it, sends again and puts focus back in the field, not on the button that goes away', async () => {
+    const { model, wrapper } = mountInput('error')
+    await focusField(wrapper)
+
+    const retry = document.querySelector<HTMLElement>('[data-testid="field-status-retry"]')!
+    retry.focus()
+    await flushPromises()
+    retry.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    retry.click()
+    await flushPromises()
+
+    expect(model.retried.value).toBe(1)
+    expect(popover()).toBeNull()
+    expect(document.activeElement).toBe(wrapper.get('input').element)
+  })
+
+  test('Escape from Reset, having tabbed to it, closes the popover and puts focus back in the field', async () => {
+    const { wrapper } = mountInput('error')
+    await focusField(wrapper)
+
+    const reset = document.querySelector<HTMLElement>('[data-testid="field-status-reset"]')!
+    reset.focus()
+    await flushPromises()
+    reset.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    await flushPromises()
+
+    expect(popover()).toBeNull()
+    expect(document.activeElement).toBe(wrapper.get('input').element)
+  })
+
   test('Reset puts the last saved value back', async () => {
     const { model, wrapper } = mountInput('error')
     model.model.value = 'Typed'

@@ -111,7 +111,10 @@ function scheduleClose() {
 }
 
 function onFocusin(event: FocusEvent) {
-  lastFocused = event.target as HTMLElement
+  const target = event.target as HTMLElement
+  if (!popoverEl()?.contains(target)) {
+    lastFocused = target
+  }
   show()
 }
 
