@@ -1430,7 +1430,7 @@ test.describe('resource stack', () => {
       await component.evaluate((el, [clientX, clientY]) => el.dispatchEvent(new MouseEvent('contextmenu', { clientX, clientY, button: 2, bubbles: true, cancelable: true })), [x, y])
       const panel = page.getByTestId('resource-stack')
       await eventually(async () => await panel.count() === 1 && await panel.evaluate(el => el.style.visibility !== 'hidden'), `The stack did not show at ${x}, ${y}`)
-      await panel.evaluate(el => Promise.all(el.parentElement.getAnimations().map(animation => animation.finished)))
+      await panel.evaluate(el => Promise.all([el, el.parentElement].flatMap(element => element.getAnimations()).map(animation => animation.finished)))
       const boxes = await panel.evaluate((el) => {
         const inner = el.querySelector('[data-stack-innermost]').getBoundingClientRect()
         const outer = el.getBoundingClientRect()
@@ -1459,4 +1459,32 @@ test.describe('resource stack', () => {
     assert(bottom.inner.bottom <= 840 + 1, `60px from the bottom the innermost box ends at ${bottom.inner.bottom}, below the pointer`)
     assert(bottom.panel.bottom <= 892 + 1 && bottom.panel.bottom >= 892 - 1, `60px from the bottom the panel ends at ${bottom.panel.bottom}, not 8px inside the window`)
   })
+})
+
+test('56. outside edit mode the header\'s Edit button and menu sit on the header bar\'s centre, level with the page settings button', async ({ cwa: t }) => {
+  const { page, base, settle, seed } = t
+  for (const width of [1280, 390]) {
+    await page.setViewportSize({ width, height: 800 })
+    await page.goto(`${base}${seed.paths.home}`)
+    await page.getByRole('button', { name: 'Edit', exact: true }).waitFor()
+    await settle()
+    const centres = await page.evaluate(() => {
+      const middle = (element) => {
+        const box = element.getBoundingClientRect()
+        return box.top + box.height / 2
+      }
+      const menu = [...document.querySelectorAll('a')].find(link => link.querySelector('.cwa\\:sr-only')?.textContent === 'Menu')
+      const header = menu.closest('.cwa\\:fixed')
+      const box = header.getBoundingClientRect()
+      return {
+        bar: box.top + (box.height - Number.parseFloat(getComputedStyle(header).borderBottomWidth)) / 2,
+        menu: middle(menu.querySelector('svg')),
+        edit: middle([...document.querySelectorAll('button')].find(button => button.textContent.trim() === 'Edit')),
+        settings: middle(document.querySelector('[data-testid="page-settings"]')),
+      }
+    })
+    for (const name of ['menu', 'edit', 'settings']) {
+      assert(Math.abs(centres[name] - centres.bar) < 0.5, `At ${width}px the ${name} is centred at ${centres[name]}, the bar at ${centres.bar}`)
+    }
+  }
 })
