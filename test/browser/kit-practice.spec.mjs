@@ -49,3 +49,35 @@ for (const width of [1280, 390]) {
     expect(errors).toEqual([])
   })
 }
+
+for (const path of ['bar', 'page']) {
+  test(`in practice: a 500 saving the selected component from the ${path} shows in its field and outline, never as a toast (#461)`, async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 })
+    await page.goto(`${kitBase}/kit?tab=practice`)
+    const status = page.getByTestId('kit-practice-status')
+    await expect(status).toContainText('Selected: Title')
+    const chrome = page.getByTestId('kit-practice-chrome')
+
+    await page.getByTestId('kit-practice-next').click()
+    await page.getByRole('option', { name: '500 server error' }).click()
+    await expect(status).toContainText('the next save fails: 500 server error')
+
+    if (path === 'bar') {
+      const title = chrome.getByRole('textbox', { name: 'Title' })
+      await title.click()
+      await title.pressSequentially('!')
+    }
+    else {
+      const heading = page.locator('[data-kit-practice="main"] h1').first()
+      await heading.getByTestId('inline-edit-value').focus()
+      await page.keyboard.press('Enter')
+      const input = heading.getByRole('textbox', { name: 'Title' })
+      await input.pressSequentially('!')
+      await input.press('Enter')
+    }
+
+    await expect(page.locator('[data-testid="focus-outline"][data-save="error"]').first()).toBeVisible()
+    await expect(chrome.getByText(/not saved/).first()).toBeVisible()
+    await expect(page.getByText('Oops! There was a problem.')).toHaveCount(0)
+  })
+}
