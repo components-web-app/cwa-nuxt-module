@@ -40,7 +40,19 @@ export function revealElement(el: Element, control: Element | null) {
 
 let lastAction = Number.NEGATIVE_INFINITY
 let lastTarget: Element | null = null
+let lastOwners: Element[] = []
 let listening = false
+
+function ownersOf(target: Element) {
+  const owners = [target]
+  for (let el: Element | null = target; el; el = el.parentElement) {
+    const controller = el.id && document.querySelector(`[aria-controls~="${CSS.escape(el.id)}"]`)
+    if (controller) {
+      owners.push(controller)
+    }
+  }
+  return owners
+}
 
 function listen() {
   if (listening || typeof document === 'undefined') {
@@ -50,9 +62,14 @@ function listen() {
   const record = (event: Event) => {
     lastAction = performance.now()
     lastTarget = event.target instanceof Element ? event.target : null
+    lastOwners = lastTarget ? ownersOf(lastTarget) : []
   }
   document.addEventListener('pointerdown', record, true)
   document.addEventListener('keydown', record, true)
+}
+
+function inScope(scope: Element | null | undefined) {
+  return !!scope && lastOwners.some(owner => scope.contains(owner))
 }
 
 function controlNow() {
@@ -60,7 +77,7 @@ function controlNow() {
   return active && active !== document.body ? active : lastTarget
 }
 
-export function useCwaReveal(target: () => Element | null | undefined, shown: () => boolean) {
+export function useCwaReveal(target: () => Element | null | undefined, shown: () => boolean, scope: () => Element | null | undefined) {
   listen()
   let mountedAt = Number.POSITIVE_INFINITY
   onMounted(() => {
@@ -68,7 +85,7 @@ export function useCwaReveal(target: () => Element | null | undefined, shown: ()
   })
   watch(shown, async (now) => {
     const at = performance.now()
-    if (!now || lastAction < mountedAt || at - lastAction > USER_ACTION_WINDOW) {
+    if (!now || lastAction < mountedAt || at - lastAction > USER_ACTION_WINDOW || !inScope(scope())) {
       return
     }
     const control = controlNow()
