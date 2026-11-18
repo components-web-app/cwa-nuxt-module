@@ -4,14 +4,17 @@ import { adminResourceIcons, adminResources } from '#build/cwa-admin-resources'
 
 const GENERIC = 'lucide:component'
 
-const { name, dynamic = false, chip = false } = defineProps<{
+const { name, dynamic = false, chip = false, heading = false } = defineProps<{
   name: string
   dynamic?: boolean
   chip?: boolean
+  heading?: boolean
 }>()
 
 const entry = computed(() => adminResources[name])
-const icon = computed(() => adminResourceIcons[entry.value?.icon ?? GENERIC] ?? adminResourceIcons[GENERIC])
+const icon = computed(() => heading
+  ? entry.value?.icon ? adminResourceIcons[entry.value.icon] : undefined
+  : adminResourceIcons[entry.value?.icon ?? GENERIC] ?? adminResourceIcons[GENERIC])
 const skeleton = computed(() => !chip && entry.value?.skeleton ? adminResourceIcons[entry.value.skeleton] : undefined)
 </script>
 
@@ -37,10 +40,11 @@ const skeleton = computed(() => !chip && entry.value?.skeleton ? adminResourceIc
     v-html="skeleton"
   />
   <span
-    v-else
+    v-else-if="icon"
     aria-hidden="true"
     data-lead="icon"
-    class="cwa:block cwa:size-4 cwa:shrink-0 cwa:text-fg-muted cwa:[&>svg]:size-full"
+    class="cwa:block cwa:shrink-0 cwa:text-fg-muted cwa:[&>svg]:size-full"
+    :class="heading ? 'cwa:size-5' : 'cwa:size-4'"
     v-html="icon"
   />
 </template>
