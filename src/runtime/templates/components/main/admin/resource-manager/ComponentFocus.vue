@@ -5,6 +5,8 @@ import { useElementSize, useWindowSize } from '@vueuse/core'
 import { v4 as uuidv4 } from 'uuid'
 import { useCwa } from '#imports'
 import { getPublishedResourceState } from '#cwa/resources/resource-utils'
+import { toneBehind, useSaveOutline } from '#cwa/admin/save-outline'
+import { NEW_RESOURCE_IRI } from '#cwa/storage/stores/resources/state'
 
 const props = defineProps<{
   iri: Ref<string | undefined>
@@ -65,6 +67,19 @@ const resource = computed(() => {
   }
   return $cwa.resources.getResource(iri.value).value
 })
+
+const fieldStates = computed(() => {
+  const current = iri.value
+  if (!current) {
+    return []
+  }
+  const iris = current === NEW_RESOURCE_IRI ? [current] : $cwa.resources.findAllPublishableIris(current)
+  return iris.flatMap(each => Object.values($cwa.resources.getResource(each).value?.fieldStates ?? {}))
+})
+
+const savePhase = useSaveOutline(fieldStates, iri)
+const saveTone = computed(() => savePhase.value === 'rest' ? undefined : toneBehind(domElements.value[0]))
+const sides = ['top', 'right', 'bottom', 'left'] as const
 
 type FocusPosition = {
   top: number
@@ -212,16 +227,28 @@ defineExpose({
       class="cwa:z-manager-focus cwa:pointer-events-none cwa:absolute cwa:top-0 cwa:left-0"
     />
     <div
-      :class="[borderColor]"
-      :style="cssStyle"
-      class="cwa:animate-pulse cwa:absolute cwa:outline-2 cwa:outline-offset-4 cwa:pointer-events-none cwa:outline cwa:rounded-[1px]"
-    />
-    <div
-      v-for="(otherCssStyle, index) of otherCssStyles"
+      v-for="(outlineStyle, index) of [cssStyle, ...otherCssStyles]"
       :key="index"
-      :class="[borderColor]"
-      :style="otherCssStyle"
-      class="cwa:animate-pulse cwa:absolute cwa:outline-2 cwa:outline-offset-4 cwa:pointer-events-none cwa:outline cwa:rounded-[1px]"
-    />
+      :class="[borderColor, { 'cwa:animate-pulse': savePhase === 'rest' }]"
+      :style="outlineStyle"
+      :data-save="savePhase"
+      class="cwa:absolute cwa:outline-2 cwa:outline-offset-4 cwa:pointer-events-none cwa:outline cwa:rounded-[1px]"
+      data-testid="focus-outline"
+    >
+      <span
+        v-if="savePhase !== 'rest'"
+        :key="savePhase"
+        class="cwa:focus-save"
+        :data-save="savePhase"
+        :data-tone="saveTone"
+        data-testid="focus-save"
+      >
+        <i
+          v-for="side of sides"
+          :key="side"
+          :data-side="side"
+        />
+      </span>
+    </div>
   </client-only>
 </template>
