@@ -600,7 +600,17 @@ describe('CwaUiDialog without a Save model (#461, the add component dialog)', ()
     expect(body.querySelector('[data-cwa-field] [data-testid="field-presence-flag"]')).toBeNull()
   })
 
-  test('the close × draws a 24px icon in its unchanged 44px hit area, the icon-to-button ratio of every icon-only button', async () => {
+  test('the header\'s icon buttons sit together (gap-1), with the title and kind kept apart from them', async () => {
+    mountPlain({ kind: { tone: 'warning', label: 'Not reachable' } }, { 'header-actions': () => h('button', { 'data-testid': 'eye' }, 'eye') })
+    await flushPromises()
+
+    expect(q('header')!.className.split(' ')).toContain('cwa:gap-1')
+    expect(q('header')!.className.split(' ')).not.toContain('cwa:gap-2')
+    expect(q('h2')!.className.split(' ')).toContain('cwa:me-2')
+    expect(q('[data-testid="dialog-kind"]')!.className.split(' ')).toContain('cwa:me-2')
+  })
+
+  test('the close × draws a 24px icon in its unchanged 44px hit area', async () => {
     mountPlain()
     await flushPromises()
 

@@ -345,6 +345,9 @@
 .cwa\:ms-auto {
   margin-inline-start: auto;
 }
+.cwa\:me-2 {
+  margin-inline-end: calc(var(--cwa-spacing) * 2);
+}
 .cwa\:me-auto {
   margin-inline-end: auto;
 }
