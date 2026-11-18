@@ -1,7 +1,7 @@
 // @vitest-environment nuxt
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
-import { defineComponent, h } from 'vue'
+import { defineComponent, h, inject, ref } from 'vue'
 import { axe } from '../../../../../test/utils/axe'
 import { drawsFocusRing } from '../../../../../test/utils/focus-ring'
 import { fakeDialogForm } from '../../../../../playground/app/kit/fake-dialog-form'
@@ -9,6 +9,8 @@ import type { FakeDialogForm } from '../../../../../playground/app/kit/fake-dial
 import Dialog from './Dialog.vue'
 import Input from './Input.vue'
 import Toggle from './Toggle.vue'
+import { dialogSubViewKey } from '../core/ui/field-keys'
+import type { DialogSubFooter, DialogSubViewContext } from '../core/ui/field-keys'
 
 const { confirmMock } = vi.hoisted(() => ({ confirmMock: vi.fn() }))
 vi.mock('#cwa/composables/cwa-confirm', () => ({ useCwaConfirm: () => confirmMock }))
@@ -341,6 +343,125 @@ describe('CwaUiDialog and the Save model (#461)', () => {
     expect(qa('[data-testid="dialog-alert-field"]')).toHaveLength(1)
     expect(focusable.map(element => drawsFocusRing([...element.classList]))).toEqual(focusable.map(() => true))
   })
+  describe('a sub-view inside a tab', () => {
+    function mountWithSubView(footer: () => DialogSubFooter | 'none' | undefined, guard?: (reason: 'tab' | 'close') => Promise<boolean>) {
+      const Claimant = defineComponent({
+        setup() {
+          const context = inject(dialogSubViewKey) as DialogSubViewContext
+          context.footer(footer)
+          guard && context.guard(guard)
+          return () => h('p', 'Edit route')
+        },
+      })
+      const Host = defineComponent({
+        setup() {
+          return () => h(Dialog, { title: 'Kitchens', tabs, form, onSave: () => form.save() }, {
+            details: () => h(Input, { label: 'Reference', field: 'reference' }),
+            seo: () => h(Claimant),
+            info: () => h('p', 'Created yesterday'),
+          })
+        },
+      })
+      return mount(Host, { attachTo: document.body })
+    }
+
+    test('a form open in a sub-view replaces the footer with its own Cancel and Save, keeping the page\'s unsaved count beside them', async () => {
+      const cancel = vi.fn()
+      const saveRoute = vi.fn()
+      mountWithSubView(() => ({ saveLabel: 'Save route', saving: false, cancel, save: saveRoute }))
+      await flushPromises()
+      await type('[data-cwa-field="reference"] input', 'Mine')
+      tab('Search engines').click()
+      await flushPromises()
+
+      expect(qa('footer button').map(shown)).toEqual(['Cancel', 'Save route'])
+      expect(q('[data-testid="dialog-sub-kept"]')?.textContent?.trim()).toBe('1 unsaved page change kept')
+      expect(q('[data-testid="dialog-save"]')).toBeNull()
+      qa('footer button')[0]!.click()
+      qa('footer button')[1]!.click()
+      expect(cancel).toHaveBeenCalledTimes(1)
+      expect(saveRoute).toHaveBeenCalledTimes(1)
+      expect(await axe(document.body)).toHaveNoViolations()
+    })
+
+    test('the sub-view\'s Save shows it is saving and says why it is off', async () => {
+      const footer = ref<DialogSubFooter>({ saveLabel: 'Add', saving: true, cancel: vi.fn(), save: vi.fn() })
+      mountWithSubView(() => footer.value)
+      await flushPromises()
+      tab('Search engines').click()
+      await flushPromises()
+
+      const button = qa('footer button')[1]!
+      expect(shown(button)).toBe('Add')
+      expect(button.getAttribute('aria-busy')).toBe('true')
+      expect(q('[data-testid="dialog-sub-kept"]')).toBeNull()
+
+      footer.value = { ...footer.value, saving: false, disabledReason: 'Type an old address first.' }
+      await flushPromises()
+      expect(qa('footer button')[1]!.getAttribute('aria-disabled')).toBe('true')
+      expect(qa('footer button')[1]!.getAttribute('title')).toBe('Type an old address first.')
+    })
+
+    test('a sub-view showing a list hides the footer, and the page\'s footer comes back with it', async () => {
+      const footer = ref<'none' | undefined>('none')
+      mountWithSubView(() => footer.value)
+      await flushPromises()
+      tab('Search engines').click()
+      await flushPromises()
+
+      expect(q('footer')).toBeNull()
+      footer.value = undefined
+      await flushPromises()
+      expect(qa('footer button').map(shown)).toEqual(['Cancel', 'Save'])
+    })
+
+    test('the sub-view\'s footer shows only while its tab is open', async () => {
+      mountWithSubView(() => ({ saveLabel: 'Save route', saving: false, cancel: vi.fn(), save: vi.fn() }))
+      await flushPromises()
+      tab('Search engines').click()
+      await flushPromises()
+      tab('Details').click()
+      await flushPromises()
+
+      expect(qa('footer button').map(shown)).toEqual(['Cancel', 'Save'])
+    })
+
+    test('another tab asks the sub-view first, and stays put when it says no', async () => {
+      const guard = vi.fn().mockResolvedValueOnce(true).mockResolvedValueOnce(false)
+      mountWithSubView(() => undefined, guard)
+      await flushPromises()
+      tab('Search engines').click()
+      await flushPromises()
+      expect(guard).not.toHaveBeenCalled()
+
+      tab('Info').click()
+      await flushPromises()
+      expect(guard).toHaveBeenLastCalledWith('tab')
+      expect(tab('Info').getAttribute('aria-selected')).toBe('true')
+
+      tab('Search engines').click()
+      await flushPromises()
+      tab('Details').click()
+      await flushPromises()
+      expect(tab('Search engines').getAttribute('aria-selected')).toBe('true')
+    })
+
+    test('closing asks the sub-view first, and a no keeps the dialog open without asking about the page', async () => {
+      const guard = vi.fn().mockResolvedValue(false)
+      const wrapper = mountWithSubView(() => undefined, guard)
+      await flushPromises()
+      tab('Search engines').click()
+      await flushPromises()
+      await type('[data-cwa-field="reference"] input', 'Mine')
+
+      q<HTMLButtonElement>('[data-testid="dialog-close"]')!.click()
+      await flushPromises()
+
+      expect(guard).toHaveBeenCalledWith('close')
+      expect(confirmMock).not.toHaveBeenCalled()
+      expect(wrapper.findComponent(Dialog).emitted('close')).toBeUndefined()
+    })
+  })
 })
 
 describe('CwaUiDialog without a Save model (#461, the add component dialog)', () => {
@@ -394,4 +515,5 @@ describe('CwaUiDialog without a Save model (#461, the add component dialog)', ()
 
     expect(q('[data-testid="dialog-announcer"]')!.textContent).toBe('3 components')
   })
+
 })

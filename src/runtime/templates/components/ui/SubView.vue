@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, ref, useId, useTemplateRef, watch } from 'vue'
 
-const { open, title = '', backLabel, initialFocus, returnFocus } = defineProps<{
+const { open, title = '', backLabel, initialFocus, returnFocus, padded = false } = defineProps<{
   open: boolean
+  padded?: boolean
   title?: string
   backLabel: string
   initialFocus?: () => HTMLElement | null | undefined
@@ -92,7 +93,11 @@ function onKeydown(event: KeyboardEvent) {
       data-testid="sub-view"
       class="cwa:motion-safe:animate-[cwa-sub-view-in_var(--cwa-duration-base)_ease]"
     >
-      <div class="cwa:sticky cwa:top-0 cwa:z-1 cwa:border-b cwa:border-line cwa:bg-surface cwa:px-6 cwa:pt-3 cwa:pb-4 cwa:max-sm:px-4">
+      <div
+        data-testid="sub-view-header"
+        class="cwa:sticky cwa:z-1 cwa:border-b cwa:border-line cwa:bg-surface cwa:px-6 cwa:pt-3 cwa:pb-4"
+        :class="padded ? 'cwa:-mx-6 cwa:-mt-6 cwa:mb-6 cwa:-top-6' : 'cwa:top-0 cwa:max-sm:px-4'"
+      >
         <button
           type="button"
           :aria-label="`Back to ${backLabel}`"

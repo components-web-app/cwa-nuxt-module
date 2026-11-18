@@ -38,3 +38,20 @@ export interface FormSurfaceContext {
 }
 
 export const formSurfaceKey: InjectionKey<FormSurfaceContext> = Symbol('cwa-form-surface')
+
+export interface DialogSubFooter {
+  saveLabel: string
+  saving: boolean
+  disabledReason?: string
+  cancel: () => void
+  save: () => void
+}
+
+export type DialogLeaveReason = 'tab' | 'close'
+
+export interface DialogSubViewContext {
+  footer: (get: () => DialogSubFooter | 'none' | undefined) => () => void
+  guard: (check: (reason: DialogLeaveReason) => Promise<boolean>) => () => void
+}
+
+export const dialogSubViewKey: InjectionKey<DialogSubViewContext> = Symbol('cwa-dialog-sub-view')

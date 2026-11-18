@@ -176,6 +176,24 @@ describe('CwaUiSubView (#461)', () => {
     expect(drawsFocusRing([...sub()!.querySelector('[data-testid="sub-view-back"]')!.classList])).toBe(true)
   })
 
+  test('inside a padded body its header still spans the body and sticks to its top edge', async () => {
+    const { open } = mountSubView({ padded: true })
+    await openFrom(document.querySelector('[data-testid="opener"]')!, open)
+    const header = sub()!.querySelector<HTMLElement>('[data-testid="sub-view-header"]')!
+
+    expect([...header.classList]).toEqual(expect.arrayContaining(['cwa:-mx-6', 'cwa:-mt-6', 'cwa:mb-6', 'cwa:-top-6', 'cwa:px-6']))
+    expect(header.classList.contains('cwa:max-sm:px-4')).toBe(false)
+  })
+
+  test('in a flush body its header keeps to its own padding', async () => {
+    const { open } = mountSubView()
+    await openFrom(document.querySelector('[data-testid="opener"]')!, open)
+    const header = sub()!.querySelector<HTMLElement>('[data-testid="sub-view-header"]')!
+
+    expect([...header.classList]).toEqual(expect.arrayContaining(['cwa:top-0', 'cwa:px-6', 'cwa:max-sm:px-4']))
+    expect(header.classList.contains('cwa:-mx-6')).toBe(false)
+  })
+
   test('has no axe violations open or closed', async () => {
     const { wrapper, open } = mountSubView()
     await flushPromises()
