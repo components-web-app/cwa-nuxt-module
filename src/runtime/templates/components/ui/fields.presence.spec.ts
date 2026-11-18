@@ -32,6 +32,7 @@ function presenceModel<T>(initial: T, peers: FocusedPeer[] = []) {
     ...fakeFieldModel(initial),
     focusedBy: computed(() => focused.value),
     focusListeners: listeners,
+    blur: vi.fn(),
   }
 }
 
@@ -73,7 +74,7 @@ describe.each(cases)('$name shows co-editing presence (#461)', (item) => {
     await flushPromises()
 
     const outline = wrapper.get('[data-testid="field-presence"]')
-    expect(outline.attributes('style')).toContain('outline-color: #d946ef')
+    expect(outline.attributes('style')).toContain('box-shadow: inset 0 0 0 2px #d946ef')
     expect(wrapper.get('[data-testid="field-presence-flag"]').text()).toBe('Mia')
     expect(outline.element.parentElement!.contains(wrapper.get(item.control).element)).toBe(true)
     expect(await axe(wrapper.element as HTMLElement)).toHaveNoViolations()
@@ -99,6 +100,17 @@ describe.each(cases)('$name shows co-editing presence (#461)', (item) => {
     expect(model.focusListeners.onFocusin).toHaveBeenCalledOnce()
     expect(model.focusListeners.onPointerdown).toHaveBeenCalledOnce()
     expect(model.focusListeners.onFocusout).toHaveBeenCalledOnce()
+  })
+
+  test('a focused field that becomes disabled reports leaving it (#476 review 3)', async () => {
+    const model = presenceModel(item.value)
+    const wrapper = mountCase(item, model)
+    await wrapper.get(item.control).trigger('focusin')
+    expect(model.blur).not.toHaveBeenCalled()
+
+    await wrapper.setProps({ disabled: true })
+
+    expect(model.blur).toHaveBeenCalledOnce()
   })
 
   test('a disabled field reports nothing, and still shows who is in it', async () => {

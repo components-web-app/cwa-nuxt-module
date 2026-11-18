@@ -77,12 +77,14 @@ describe('Group tab (#398)', () => {
     expect(await axe(wrapper.element as HTMLElement)).toHaveNoViolations()
   })
 
-  test('does not add to a full group when clicked anyway', async () => {
+  test('does not add to a full group when pressed anyway, and shows why instead, which a touch screen cannot hover for (#476 review 6)', async () => {
     const wrapper = mountGroup({ maxComponents: 1, componentPositions: ['/p1'] })
 
     await buttons(wrapper)[1]!.trigger('click')
 
     expect(initAddResource).not.toHaveBeenCalled()
+    await vi.waitFor(() => expect(document.querySelector('[data-testid="button-reason"]')?.textContent?.trim()).toBe('This group holds at most 1 component'))
+    expect(await axe(document.body)).toHaveNoViolations()
   })
 
   test('warns in the same row about a group over its limit, removing nothing', () => {

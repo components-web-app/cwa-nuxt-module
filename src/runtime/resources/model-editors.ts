@@ -27,6 +27,7 @@ export interface ResourceModelField<T = unknown> {
     onFocusout: (event: FocusEvent) => void
     onPointerdown: (event: PointerEvent) => void
   }
+  blur?: () => void
   state?: { readonly value: CwaFieldState }
   retry?: () => Promise<void>
   reset?: () => Promise<void>

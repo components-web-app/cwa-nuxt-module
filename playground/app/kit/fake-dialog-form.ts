@@ -1,6 +1,7 @@
 import { computed, reactive, ref } from 'vue'
 import isEqual from 'lodash-es/isEqual'
 import type { ResourceModelField } from '#cwa/resources/model-editors'
+import type { FocusedPeer } from '#cwa/admin/presence'
 import type { CwaFieldState } from '#cwa/storage/stores/resources/state'
 import type { DialogFieldConflict, DialogForm } from '#cwa/templates/components/core/ui/dialog-form'
 
@@ -14,7 +15,7 @@ export interface FakeDialogForm extends DialogForm {
   conflictNext: (theirs: Record<string, unknown>, name?: string) => void
 }
 
-export function fakeDialogForm(stored: Record<string, unknown>): FakeDialogForm {
+export function fakeDialogForm(stored: Record<string, unknown>, focused: Record<string, FocusedPeer[]> = {}): FakeDialogForm {
   const saved = ref({ ...stored })
   const local = reactive({ ...stored }) as Record<string, unknown>
   const fieldErrors = ref<Record<string, string>>({})
@@ -34,6 +35,7 @@ export function fakeDialogForm(stored: Record<string, unknown>): FakeDialogForm 
     if (!found) {
       found = {
         field,
+        focusedBy: computed(() => focused[field] ?? []),
         model: computed({
           get: () => local[field] as T,
           set: (value) => {

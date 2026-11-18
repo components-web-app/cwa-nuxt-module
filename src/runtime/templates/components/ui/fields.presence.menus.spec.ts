@@ -6,6 +6,7 @@ import type { Component } from 'vue'
 import MultiSelect from './MultiSelect.vue'
 import ResourceSearch from './ResourceSearch.vue'
 import DatePicker from './DatePicker.vue'
+import Input from './Input.vue'
 import { useCwaResourceModel } from '#cwa/composables/cwa-resource-model'
 
 const store = vi.hoisted(() => ({ entry: undefined as any }))
@@ -109,7 +110,9 @@ describe.each(cases)('$name presence with its menu open (#461)', (item) => {
     expect(wrapper.element.contains(panel)).toBe(false)
 
     opener.element.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: inside }))
+    const activeElement = vi.spyOn(document, 'activeElement', 'get').mockReturnValue(document.body)
     inside.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+    activeElement.mockRestore()
     await flushPromises()
     expect(view.focus).toHaveBeenCalled()
     expect(view.blur).not.toHaveBeenCalled()
@@ -118,5 +121,57 @@ describe.each(cases)('$name presence with its menu open (#461)', (item) => {
     document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
     await flushPromises()
     expect(view.blur).toHaveBeenCalledTimes(1)
+  })
+
+  test('by keyboard alone, moving into the menu is not leaving, and moving focus past it is (#476 review 4)', async () => {
+    const wrapper = mountCase(item)
+    const opener = wrapper.get(item.opener)
+    await opener.trigger('focusin')
+    await opener.trigger('click')
+    await flushPromises()
+    const panel = document.querySelector<HTMLElement>(item.panel)!
+    const inside = panel.querySelector<HTMLElement>(item.inside)!
+    const next = document.createElement('button')
+    document.body.append(next)
+
+    opener.element.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: inside }))
+    inside.dispatchEvent(new FocusEvent('focusin', { bubbles: true }))
+    await flushPromises()
+    expect(view.focus).toHaveBeenCalled()
+    expect(view.blur).not.toHaveBeenCalled()
+
+    next.dispatchEvent(new FocusEvent('focusin', { bubbles: true }))
+    await flushPromises()
+    expect(view.blur).toHaveBeenCalledTimes(1)
+    next.remove()
+  })
+})
+
+describe('a kit field bound to a resource model (#476 review 3)', () => {
+  beforeEach(() => {
+    store.entry = reactive({ data: { '@id': '/component/1', 'title': 'Summer' }, apiState: {} })
+    view.focus.mockClear()
+    view.blur.mockClear()
+  })
+
+  test('reports leaving when it becomes disabled while focused', async () => {
+    const disabled = ref(false)
+    const Host = defineComponent({
+      setup() {
+        const model = useCwaResourceModel(ref('/component/1'), 'title', { debounceTime: 0 })
+        return () => h(Input, { label: 'Title', model, disabled: disabled.value })
+      },
+    })
+    const wrapper = mount(Host, { attachTo: document.body })
+    const input = wrapper.get('input')
+    ;(input.element as HTMLInputElement).focus()
+    await flushPromises()
+    expect(view.focus).toHaveBeenCalledOnce()
+    expect(view.blur).not.toHaveBeenCalled()
+
+    disabled.value = true
+    await flushPromises()
+
+    expect(view.blur).toHaveBeenCalledOnce()
   })
 })

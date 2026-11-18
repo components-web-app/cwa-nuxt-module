@@ -98,16 +98,12 @@ export const useCwaResourceModel = <T, S = T>(iri: Ref<string | undefined>, prop
     focusIri && realtime.load().then(view => view?.focus(focusOwner, focusIri, rootProperty.value))
   }
 
-  function blur() {
-    realtime.load().then(view => view?.blur(focusOwner))
-  }
-
   let stopWatchingOutside: (() => void) | undefined
 
-  function leave() {
+  function blur() {
     stopWatchingOutside?.()
     stopWatchingOutside = undefined
-    blur()
+    realtime.load().then(view => view?.blur(focusOwner))
   }
 
   function holds(root: Element, node: EventTarget | Element | null) {
@@ -121,23 +117,39 @@ export const useCwaResourceModel = <T, S = T>(iri: Ref<string | undefined>, prop
     return controls.some(id => !!id && !!document.getElementById(id)?.contains(node))
   }
 
+  function watchOutside(root: Element) {
+    if (stopWatchingOutside) {
+      return
+    }
+    const outside = (down: Event) => {
+      holds(root, down.target) || holds(root, document.activeElement) || blur()
+    }
+    const focusMoved = (event: Event) => {
+      holds(root, event.target) || blur()
+    }
+    document.addEventListener('pointerdown', outside, true)
+    document.addEventListener('focusin', focusMoved, true)
+    stopWatchingOutside = () => {
+      document.removeEventListener('pointerdown', outside, true)
+      document.removeEventListener('focusin', focusMoved, true)
+    }
+  }
+
   const focusListeners = {
     onFocusin: () => focus(),
     onFocusout: (event: FocusEvent) => {
-      holds(event.currentTarget as Element, event.relatedTarget) || leave()
+      const root = event.currentTarget as Element
+      if (!holds(root, event.relatedTarget)) {
+        blur()
+      }
+      else if (!root.contains(event.relatedTarget as Node)) {
+        watchOutside(root)
+      }
     },
     // Safari does not focus a button, checkbox or switch on click, so focusin never fires for them
     onPointerdown: (event: PointerEvent) => {
       focus()
-      if (stopWatchingOutside) {
-        return
-      }
-      const root = event.currentTarget as Element
-      const outside = (down: Event) => {
-        holds(root, down.target) || holds(root, document.activeElement) || leave()
-      }
-      document.addEventListener('pointerdown', outside, true)
-      stopWatchingOutside = () => document.removeEventListener('pointerdown', outside, true)
+      watchOutside(event.currentTarget as Element)
     },
   }
 
@@ -439,7 +451,7 @@ export const useCwaResourceModel = <T, S = T>(iri: Ref<string | undefined>, prop
   }
 
   onBeforeUnmount(() => {
-    leave()
+    blur()
     unregisterEditor()
     unwatchLocalValue()
     unwatchIsBusy()

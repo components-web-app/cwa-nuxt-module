@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
-import { defineAsyncComponent, h, inject, onMounted, ref, nextTick } from 'vue'
+import { createCommentVNode, defineAsyncComponent, h, inject, onMounted, ref, nextTick } from 'vue'
 import { flushPromises, mount } from '@vue/test-utils'
 import { mockNuxtImport } from '@nuxt/test-utils/runtime'
 import { CwaUserRoles } from '#cwa/storage/stores/auth/state'
@@ -380,6 +380,58 @@ describe('ResourceManager', () => {
       expect(wrapper.text()).toContain('Label')
       expect(warn).toHaveBeenCalledOnce()
       expect(warn.mock.calls[0]![0]).toContain('"Label"')
+    })
+
+    test('says nothing for a kit root beside a template-root comment, as a development build renders it (#476 review 5)', async () => {
+      const warn = vi.spyOn(consola, 'warn').mockImplementation(() => {})
+      const CommentedTab = { name: 'CommentedTab', render: () => [createCommentVNode(' the title tab '), h(CwaUiManagerTab, null, () => h('span', 'Title'))] }
+      const wrapper = await show([CommentedTab], ['Title'])
+
+      expect(wrapper.find('[data-testid="manager-tab"]').exists()).toBe(true)
+      expect(warn).not.toHaveBeenCalled()
+    })
+
+    test('says nothing for a kit root behind a v-if that first renders as a comment (#476 review 5)', async () => {
+      const warn = vi.spyOn(consola, 'warn').mockImplementation(() => {})
+      const ready = ref(false)
+      const LaterTab = { name: 'LaterTab', render: () => ready.value ? h(CwaUiManagerTab, null, () => h('span', 'Title')) : createCommentVNode('v-if', true) }
+      const wrapper = await show([LaterTab], ['Title'])
+      ready.value = true
+      await flushPromises()
+
+      expect(wrapper.find('[data-testid="manager-tab"]').exists()).toBe(true)
+      expect(warn).not.toHaveBeenCalled()
+    })
+
+    test('says nothing for a tab whose root is a component that renders CwaUiManagerTab (#476 review 5)', async () => {
+      const warn = vi.spyOn(consola, 'warn').mockImplementation(() => {})
+      const Wrapper = { name: 'AppTabShell', setup: (_: unknown, { slots }: { slots: Record<string, () => unknown> }) => () => h(CwaUiManagerTab, null, slots) }
+      const WrappedTab = { name: 'WrappedTab', render: () => h(Wrapper, null, () => h('span', 'Title')) }
+      const wrapper = await show([WrappedTab], ['Title'])
+
+      expect(wrapper.find('[data-testid="manager-tab"]').exists()).toBe(true)
+      expect(warn).not.toHaveBeenCalled()
+    })
+
+    test('says nothing for a tab whose root is a component loaded on demand that renders CwaUiManagerTab (#476 review 5)', async () => {
+      const warn = vi.spyOn(consola, 'warn').mockImplementation(() => {})
+      const Shell = defineAsyncComponent(async () => ({ name: 'AppAsyncShell', setup: (_: unknown, { slots }: { slots: Record<string, () => unknown> }) => () => h(CwaUiManagerTab, null, slots) }))
+      const ShellTab = { name: 'ShellTab', render: () => h(Shell, null, () => h('span', 'Title')) }
+      const wrapper = await show([ShellTab], ['Title'])
+      await flushPromises()
+
+      expect(wrapper.find('[data-testid="manager-tab"]').exists()).toBe(true)
+      expect(warn).not.toHaveBeenCalled()
+    })
+
+    test('warns for a tab whose root is a component rendering its fields in a plain element (#476 review 5)', async () => {
+      const warn = vi.spyOn(consola, 'warn').mockImplementation(() => {})
+      const Shell = { name: 'AppPlainShell', setup: (_: unknown, { slots }: { slots: Record<string, () => unknown> }) => () => h('div', slots.default?.()) }
+      const ShellTab = { name: 'ShellTab', render: () => h(Shell, null, () => h('span', 'Title')) }
+      await show([ShellTab], ['Title'])
+
+      expect(warn).toHaveBeenCalledOnce()
+      expect(warn.mock.calls[0]![0]).toContain('"Title"')
     })
 
     test('says nothing in production', async () => {

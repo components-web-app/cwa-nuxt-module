@@ -20,7 +20,7 @@ import { useCloneMode } from '#cwa/admin/clone-mode'
 import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/resources/resource-utils'
 import BarSummary from '#cwa/templates/components/core/admin/BarSummary.vue'
 import { createAnnouncer } from '#cwa/templates/components/core/ui/field-context'
-import { announceKey, managerTabKey } from '#cwa/templates/components/core/ui/field-keys'
+import { announceKey, managerTabMountedKey } from '#cwa/templates/components/core/ui/field-keys'
 
 const ComponentUsageBadge = defineAsyncComponent(() => import('#cwa/templates/components/main/admin/resource-manager/cta/ComponentUsageBadge.vue'))
 const SharedInstancesHighlight = defineAsyncComponent(() => import('#cwa/templates/components/main/admin/resource-manager/SharedInstancesHighlight.vue'))
@@ -160,12 +160,18 @@ const selectedTab = computed(() => {
 })
 
 const shownTab = useTemplateRef<ComponentPublicInstance>('shownTab')
+const tabHolder = useTemplateRef<HTMLElement>('tabHolder')
 if (import.meta.env.DEV) {
+  const kitRows = new Set<HTMLElement>()
+  provide(managerTabMountedKey, (row) => {
+    kitRows.add(row)
+    return () => kitRows.delete(row)
+  })
   const warned = new Set<unknown>()
   watch(shownTab, (instance) => {
     const tab = selectedTab.value
-    const root = instance?.$.subTree.component
-    if (!instance || !tab || warned.has(tab) || (root && Object.hasOwn((root as unknown as { provides: object }).provides, managerTabKey))) {
+    const holder = tabHolder.value
+    if (!instance || !tab || warned.has(tab) || !holder?.firstElementChild || [...kitRows].some(row => holder.contains(row))) {
       return
     }
     warned.add(tab)
@@ -263,7 +269,10 @@ defineExpose({
           <ComponentUsageBadge />
           <ResourceManagerCtaButton />
         </div>
-        <div class="cwa:col-span-2 cwa:grid cwa:min-w-0">
+        <div
+          ref="tabHolder"
+          class="cwa:col-span-2 cwa:grid cwa:min-w-0"
+        >
           <component
             :is="selectedTab"
             v-if="selectedTab"
