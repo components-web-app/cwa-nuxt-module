@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, unref, useTemplateRef, watch } from 'vue'
+import { computed, nextTick, ref, unref, useId, useTemplateRef, watch } from 'vue'
 import { consola as logger } from 'consola'
 import { useCwa } from '#imports'
 import { adminResources } from '#build/cwa-admin-resources'
@@ -30,6 +30,7 @@ import type { ComboboxSection } from '#cwa/templates/components/ui/Combobox.vue'
 import CwaUiButton from '#cwa/templates/components/ui/Button.vue'
 import CwaUiSelect from '#cwa/templates/components/ui/Select.vue'
 import CwaUiAlert from '#cwa/templates/components/ui/Alert.vue'
+import InfoPopover from '#cwa/templates/components/core/ui/InfoPopover.vue'
 import AddComponentLead from '#cwa/templates/components/main/admin/resource-manager/_parts/AddComponentLead.vue'
 import AddComponentUiChoices from '#cwa/templates/components/main/admin/resource-manager/_parts/AddComponentUiChoices.vue'
 
@@ -62,6 +63,7 @@ const query = ref('')
 const detailName = ref<string>()
 const detailOpener = ref<HTMLElement | null>(null)
 const activeChip = ref(0)
+const addingToId = useId()
 
 const uiComponent = ref<string | null | undefined>()
 const uiClassNames = ref<string[] | undefined>()
@@ -436,6 +438,18 @@ watch(open, async (isOpen: boolean) => {
           data-testid="add-component-detail-lead"
         />
       </template>
+      <template
+        v-if="detail"
+        #title-after
+      >
+        <InfoPopover
+          label="Where it is added"
+          trigger-label="Where it is added"
+          :text-id="addingToId"
+        >
+          Adding to <b class="cwa:font-semibold">{{ displayData.groupName }}</b>{{ placeSuffix }}
+        </InfoPopover>
+      </template>
       <template #main>
         <CwaUiCombobox
           ref="combobox"
@@ -538,12 +552,6 @@ watch(open, async (isOpen: boolean) => {
           data-testid="add-component-description"
         >
           {{ detail.description }}
-        </p>
-        <p
-          class="cwa:m-0 cwa:text-fg-muted"
-          data-testid="add-component-adding-to"
-        >
-          Adding to <b class="cwa:font-semibold cwa:text-fg">{{ displayData.groupName }}</b>{{ placeSuffix }}
         </p>
         <template v-if="isDynamic">
           <CwaUiSelect

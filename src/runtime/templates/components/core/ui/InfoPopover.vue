@@ -7,12 +7,15 @@ import { openTriggerMark } from '../../ui/kit-looks'
 import StateGlyph from './StateGlyph.vue'
 import XMarkIcon from '../../ui/icon/XMarkIcon.vue'
 
-const { label, text, textId, hover = false } = defineProps<{
+const { label, text = '', textId, hover = false, triggerLabel } = defineProps<{
   label: string
-  text: string
+  text?: string
   textId: string
   hover?: boolean
+  triggerLabel?: string
 }>()
+
+defineSlots<{ default?: () => any }>()
 
 const glyph = useTemplateRef<{ $el: Element }>('glyph')
 const glyphElement = computed(() => glyph.value?.$el)
@@ -95,7 +98,7 @@ function onOpenAutoFocus(event: Event) {
     @update:open="onOpenChange"
   >
     <PopoverTrigger
-      :aria-label="`About ${label}`"
+      :aria-label="triggerLabel ?? `About ${label}`"
       :aria-describedby="hover ? textId : undefined"
       data-testid="field-info"
       :class="['cwa:grid cwa:size-6 cwa:shrink-0 cwa:cursor-pointer cwa:place-items-center cwa:text-fg cwa:hover:bg-button cwa:aria-expanded:bg-button', openTriggerMark]"
@@ -139,7 +142,7 @@ function onOpenAutoFocus(event: Event) {
           </PopoverClose>
         </div>
         <p class="cwa:m-0 cwa:trim-text">
-          {{ text }}
+          <slot>{{ text }}</slot>
         </p>
         <PopoverArrow
           :width="14"
@@ -157,5 +160,5 @@ function onOpenAutoFocus(event: Event) {
   <span
     :id="textId"
     class="cwa:sr-only"
-  >{{ text }}</span>
+  ><slot>{{ text }}</slot></span>
 </template>

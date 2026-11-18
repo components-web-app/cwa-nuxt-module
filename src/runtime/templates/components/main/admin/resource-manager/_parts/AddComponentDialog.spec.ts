@@ -418,7 +418,6 @@ describe('the add component dialog (#461)', () => {
       expect(q<HTMLImageElement>('[data-testid="add-component-image"]')!.getAttribute('src')).toBe('/hero.webp')
       expect(q<HTMLImageElement>('[data-testid="add-component-image"]')!.alt).toBe('Preview of Hero section')
       expect(shown(q('[data-testid="add-component-description"]'))).toBe('Title, subtitle and image')
-      expect(shown(q('[data-testid="add-component-adding-to"]'))).toBe('Adding to Main content, after “Intro text”')
       expect(document.activeElement).toBe(add())
       expect(q('[data-testid="sub-view-main"]')!.hidden).toBe(true)
       expect(announcer()).toBe('Hero section. Adding to Main content, after “Intro text”.')
@@ -434,7 +433,29 @@ describe('the add component dialog (#461)', () => {
       expect(q('[data-testid="add-component-description"]')).toBeNull()
       expect(q('[data-testid="add-component-ui"]')).toBeNull()
       expect(q('[data-testid="add-component-style"]')).toBeNull()
-      expect(shown(q('[data-testid="add-component-adding-to"]'))).toBe('Adding to Main content, after “Intro text”')
+    })
+
+    test('where it adds is behind an ⓘ beside the name, not a line in the detail, and is still announced', async () => {
+      await mountDialog()
+      await openDialog()
+
+      await choose('Hero')
+
+      expect(shown(q('[data-testid="add-component-detail"]'))).not.toContain('Adding to')
+      const info = q('[data-testid="sub-view-header"] [data-testid="field-info"]')!
+      expect(info.getAttribute('aria-label')).toBe('Where it is added')
+      expect(document.querySelector('[data-testid="field-info-popover"]')).toBeNull()
+
+      info.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, pointerType: 'mouse' }))
+      info.click()
+      await flushPromises()
+
+      const popover = document.querySelector<HTMLElement>('[data-testid="field-info-popover"]')!
+      expect(popover.getAttribute('aria-label')).toBe('Where it is added')
+      expect(shown(popover.querySelector('p'))).toBe('Adding to Main content, after “Intro text”')
+      expect(popover.querySelector('p b')!.textContent).toBe('Main content')
+      expect(announcer()).toBe('Hero section. Adding to Main content, after “Intro text”.')
+      expect(await axe(document.body)).toHaveNoViolations()
     })
 
     test('shows the icon the list row shows beside its name, hidden from assistive technology', async () => {
