@@ -96,20 +96,24 @@ function onOpenAutoFocus(event: Event) {
         @pointerleave="onPointerleave"
       >
         <div class="cwa:-mt-1 cwa:-mr-2 cwa:mb-1.5 cwa:flex cwa:min-h-8 cwa:items-center cwa:gap-2 cwa:font-semibold">
+          <StateGlyph
+            kind="info"
+            accent
+          />
           <span class="cwa:min-w-0 cwa:flex-1">{{ label }}</span>
           <PopoverClose
             aria-label="Close"
-            class="cwa:grid cwa:size-8 cwa:shrink-0 cwa:cursor-pointer cwa:place-items-center cwa:text-white cwa:hover:bg-white/15"
+            class="cwa:grid cwa:size-8 cwa:shrink-0 cwa:cursor-pointer cwa:place-items-center cwa:text-fg cwa:hover:bg-button"
           >
-            <XMarkIcon class="cwa:size-4" />
+            <XMarkIcon class="cwa:size-3" />
           </PopoverClose>
         </div>
         <p class="cwa:m-0">
           {{ text }}
         </p>
         <PopoverArrow
-          :width="12"
-          :height="6"
+          :width="14"
+          :height="7"
           :class="infoArrow"
         />
       </PopoverContent>
