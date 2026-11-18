@@ -9,6 +9,7 @@ export type PublishAction = 'Publish now' | 'Schedule'
 const SCHEDULING = 'publishScheduling'
 const SCHEDULE_VALUE = 'publishScheduleValue'
 const SAVING = 'publishSaving'
+const FAILED = 'publishFailed'
 
 export function usePublishState($cwa: Cwa, iri: Ref<string | undefined>, given?: Ref<CwaResource | undefined>) {
   const stack = $cwa.admin.resourceStackManager
@@ -38,6 +39,8 @@ export function usePublishState($cwa: Cwa, iri: Ref<string | undefined>, given?:
 
   const saving = computed(() => !!stack.getState(SAVING))
 
+  const failed = computed(() => stack.getState(FAILED) !== undefined)
+
   const action = computed<PublishAction | undefined>(() => {
     if (published.value !== false) {
       return
@@ -45,17 +48,24 @@ export function usePublishState($cwa: Cwa, iri: Ref<string | undefined>, given?:
     return scheduling.value ? 'Schedule' : 'Publish now'
   })
 
+  function due(publishedAt: string | null) {
+    return publishedAt && publishedAt !== 'now' && new Date(publishedAt).getTime() <= Date.now() ? 'now' : publishedAt
+  }
+
   async function save(publishedAt: string | null) {
     const endpoint = iri.value
-    if (!endpoint) {
+    if (!endpoint || saving.value) {
       return
     }
+    const persisted = resource.value?._metadata?.persisted !== false
     stack.setState(SAVING, true)
+    stack.setState(FAILED, undefined)
     try {
-      await $cwa.resourcesManager.updateResource({
+      const saved = await $cwa.resourcesManager.updateResource({
         endpoint,
         data: { publishedAt },
       })
+      persisted && !saved && stack.setState(FAILED, publishedAt)
     }
     finally {
       stack.setState(SAVING, false)
@@ -70,13 +80,21 @@ export function usePublishState($cwa: Cwa, iri: Ref<string | undefined>, given?:
     if (action.value !== 'Schedule' || !chosen) {
       return
     }
-    return save(new Date(chosen).getTime() > Date.now() ? chosen : 'now')
+    return save(due(chosen))
+  }
+
+  function retry() {
+    const attempted = stack.getState(FAILED)
+    return attempted === undefined ? undefined : save(due(attempted))
   }
 
   function cancelSchedule() {
+    if (saving.value) {
+      return
+    }
     stack.setState(SCHEDULE_VALUE, undefined)
     return save(null)
   }
 
-  return { published, scheduledAt, scheduling, scheduleValue, saving, action, run, cancelSchedule }
+  return { published, scheduledAt, scheduling, scheduleValue, saving, failed, action, run, retry, cancelSchedule }
 }

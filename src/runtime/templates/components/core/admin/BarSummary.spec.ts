@@ -12,6 +12,7 @@ const requestCount = ref(0)
 const data = ref<Record<string, any>>({})
 const fieldStates = reactive<Record<string, CwaFieldState>>({})
 const stackState = reactive<Record<string, any>>({})
+const updateResource = vi.fn()
 
 vi.mock('#cwa/composables/cwa', () => ({
   useCwa: () => ({
@@ -28,7 +29,7 @@ vi.mock('#cwa/composables/cwa', () => ({
       findAllPublishableIris: (each: string) => [each],
       getResource: () => ({ value: { data: data.value, fieldStates } }),
     },
-    resourcesManager: { requestCount },
+    resourcesManager: { requestCount, updateResource },
   }),
 }))
 
@@ -56,6 +57,10 @@ describe('BarSummary (#459)', () => {
     for (const key of Object.keys(fieldStates)) {
       delete fieldStates[key]
     }
+    for (const key of Object.keys(stackState)) {
+      delete stackState[key]
+    }
+    updateResource.mockReset()
   })
 
   test.each([
@@ -112,6 +117,29 @@ describe('BarSummary (#459)', () => {
     expect(summary().attributes('aria-label')).toBe('1 conflict · 1 not saved, show the field')
     await summary().trigger('click')
     expect(wrapper.emitted('show')).toEqual([['body']])
+  })
+
+  test('a publish that failed reads as not published, never as all changes saved, is announced, and the status retries it', async () => {
+    const { summary, announce } = mountSummary()
+
+    requestCount.value = 1
+    stackState.publishSaving = true
+    await nextTick()
+    stackState.publishSaving = false
+    stackState.publishFailed = 'now'
+    requestCount.value = 0
+    await nextTick()
+    vi.advanceTimersByTime(300)
+    await nextTick()
+
+    expect(announce).toHaveBeenLastCalledWith('Not published')
+    expect(summary().attributes('data-state')).toBe('error')
+    expect(summary().element.tagName).toBe('BUTTON')
+    expect(summary().attributes('aria-label')).toBe('Not published, retry')
+    expect(summary().text()).toContain('Not published · Retry')
+
+    await summary().trigger('click')
+    expect(updateResource).toHaveBeenCalledWith({ endpoint: '/component/c1', data: { publishedAt: 'now' } })
   })
 
   test('voices the message it is given in its polite live region', async () => {

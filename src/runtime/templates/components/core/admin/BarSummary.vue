@@ -63,8 +63,8 @@ watch(busy, (isBusy) => {
   clearTimeout(gapTimer)
   gapTimer = setTimeout(() => {
     clearTimeout(slowTimer)
-    const failed = badge.value.kind
-    announce(failed ? `${issueText(badge.value)}` : 'All changes saved')
+    const failed = badge.value.kind || publish.failed.value
+    announce(badge.value.kind ? issueText(badge.value) : failed ? 'Not published' : 'All changes saved')
     if (failed) {
       phase.value = 'rest'
       return
@@ -115,13 +115,26 @@ const status = computed<{ state: string, glyph?: GlyphKind, full: string, short:
   if (badge.value.kind) {
     return { state: badge.value.kind, glyph: badge.value.kind, full: `${issueText(badge.value)} →`, short: issueShort(badge.value) }
   }
+  if (publish.failed.value) {
+    return { state: 'error', glyph: 'error', full: 'Not published · Retry', short: 'Not published' }
+  }
   if (phase.value === 'saved') {
     return { state: 'saved', glyph: 'saved', full: 'All changes saved', short: 'Saved' }
   }
   return { state: 'rest', ...rest.value }
 })
 
-const actionable = computed(() => !!badge.value.kind && phase.value !== 'saving')
+const actionable = computed(() => (!!badge.value.kind || publish.failed.value) && phase.value !== 'saving')
+
+const actionLabel = computed(() => badge.value.kind ? `${issueText(badge.value)}, show the field` : 'Not published, retry')
+
+function act() {
+  if (badge.value.kind) {
+    showFirst()
+    return
+  }
+  publish.retry()
+}
 
 function showFirst() {
   const order: CwaFieldState['status'][] = ['conflict', 'error']
@@ -139,12 +152,12 @@ function showFirst() {
   <component
     :is="actionable ? 'button' : 'span'"
     :type="actionable ? 'button' : undefined"
-    :aria-label="actionable ? `${status.full.replace(' →', '')}, show the field` : undefined"
+    :aria-label="actionable ? actionLabel : undefined"
     :data-state="status.state"
     data-testid="bar-summary"
     class="cwa:inline-flex cwa:h-8 cwa:shrink-0 cwa:items-center cwa:gap-2 cwa:whitespace-nowrap cwa:px-2 cwa:text-label cwa:text-fg-muted cwa:outline-none cwa:focus-visible:outline-2 cwa:focus-visible:-outline-offset-2 cwa:focus-visible:outline-accent-fg cwa:pointer-coarse:h-hit cwa:@max-[40rem]:h-hit cwa:@max-[40rem]:w-hit cwa:@max-[40rem]:justify-center cwa:@max-[40rem]:px-0"
     :class="actionable ? 'cwa:cursor-pointer cwa:font-semibold cwa:text-fg cwa:hover:bg-button' : ''"
-    @click="actionable && showFirst()"
+    @click="actionable && act()"
   >
     <Spinner
       v-show="status.state === 'saving'"
