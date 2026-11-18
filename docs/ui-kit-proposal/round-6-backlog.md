@@ -88,3 +88,4 @@ The right-click menu (`CwaResourceManagerContextMenu` on `utils/ContextMenu.vue`
 - **Empty-position placeholders show only in edit mode**, never to an admin outside it (7b).
 - **CWA is off on `/kit`**, so samples never select resources in the real admin (7e).
 - **Edit dialogs become slide-overs from the right** (experiment): a centred dialog shifted as its content changed height. Confirms, the add component dialog and pickers stay centred (7d).
+- **Placeholder messages are behind their icon:** the empty group and empty position placeholders show only the icon and label; the explanation opens on hover, focus or tap (7b).
