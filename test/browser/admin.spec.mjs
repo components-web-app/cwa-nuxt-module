@@ -381,9 +381,9 @@ test('13. removing a component from one location DELETEs its position without ?p
   await openEditMode(t)
   await select(page, texts.source)
   await page.getByRole('tab', { name: 'Info', exact: true }).click()
-  await page.getByTestId('component-delete').getByRole('button', { name: 'Delete Live', exact: true }).click()
+  await page.getByTestId('component-delete').getByRole('button', { name: 'Delete', exact: true }).click()
   const dialog = dialogWith(page, 'Delete this component?')
-  await dialog.getByRole('button', { name: 'Remove from this location only', exact: true }).click()
+  await dialog.getByRole('button', { name: 'Remove from here', exact: true }).click()
   const del = await eventually(() => t.rehearsal.writes.find(w => w.method === 'DELETE'), 'Nothing was DELETEd')
   assert(del.path === t.seed.positions.aSource, `DELETEd ${del.path}`)
   await eventually(async () => (await page.getByText(texts.source, { exact: true }).count()) === 0, 'The removed instance is still on the page')
@@ -829,7 +829,7 @@ test('19. Escape on the shared delete dialog cancels it and Delete works again',
   await openEditMode(t)
   await select(page, texts.source)
   await page.getByRole('tab', { name: 'Info', exact: true }).click()
-  const deleteButton = page.getByTestId('component-delete').getByRole('button', { name: 'Delete Live', exact: true })
+  const deleteButton = page.getByTestId('component-delete').getByRole('button', { name: 'Delete', exact: true })
   await deleteButton.click()
   await dialogWith(page, 'Delete this component?').getByText('Delete this component?').waitFor()
   await page.keyboard.press('Escape')
@@ -840,15 +840,15 @@ test('19. Escape on the shared delete dialog cancels it and Delete works again',
   assert(!t.rehearsal.writes.some(w => w.method === 'DELETE'), 'Escape deleted something')
 })
 
-test('20. the shared delete dialog focuses Remove from this location only, so Enter removes just this one', async ({ cwa: t }) => {
+test('20. the shared delete dialog focuses Remove from here, so Enter removes just this one', async ({ cwa: t }) => {
   const { page } = t
   await openEditMode(t)
   await select(page, texts.source)
   await page.getByRole('tab', { name: 'Info', exact: true }).click()
-  await page.getByTestId('component-delete').getByRole('button', { name: 'Delete Live', exact: true }).click()
+  await page.getByTestId('component-delete').getByRole('button', { name: 'Delete', exact: true }).click()
   const dialog = dialogWith(page, 'Delete this component?')
-  const here = dialog.getByRole('button', { name: 'Remove from this location only', exact: true })
-  await eventually(() => here.evaluate(el => el === document.activeElement), 'Remove from this location only is not focused')
+  const here = dialog.getByRole('button', { name: 'Remove from here', exact: true })
+  await eventually(() => here.evaluate(el => el === document.activeElement), 'Remove from here is not focused')
   await page.keyboard.press('Enter')
   const del = await eventually(() => t.rehearsal.writes.find(w => w.method === 'DELETE'), 'Enter deleted nothing')
   assert(del.path === t.seed.positions.aSource, `Enter DELETEd ${del.path}`)
@@ -1697,21 +1697,32 @@ test('63. the header\'s Edit or Done button and the page settings button or path
         const height = element => element.getBoundingClientRect().height
         const pin = document.querySelector('[data-testid="manager-pin"]')
         const tablist = document.querySelector('[data-testid="manager-bar"] [role="tablist"]')
+        const selected = tablist.querySelector('[role="tab"][aria-selected="true"]')
+        const after = getComputedStyle(selected, '::after')
+        const underlineBottom = selected.getBoundingClientRect().bottom - Number.parseFloat(after.bottom)
         return {
           total: height(document.querySelector('[data-testid="manager-bar"]')),
-          tablist: height(tablist),
           tabs: [...tablist.querySelectorAll('[role="tab"]')].map(height),
+          underline: { top: underlineBottom - Number.parseFloat(after.height), bottom: underlineBottom },
+          line: tablist.parentElement.getBoundingClientRect().bottom,
+          clip: tablist.getBoundingClientRect().bottom,
           ctas: [...pin.querySelectorAll('button')].filter(button => button.offsetParent && /Publish|More|actions|⋮/i.test(`${button.textContent} ${button.getAttribute('aria-label') ?? ''}`)).map(button => ({ name: (button.getAttribute('aria-label') ?? button.textContent).trim(), height: height(button) })),
         }
       })
       const where = `At ${width}px with a ${hasTouch ? 'coarse' : 'fine'} pointer`
       assert(bar.ctas.length >= 1, `${where} the bar shows ${bar.ctas.map(cta => cta.name).join(', ') || 'no'} CTA buttons`)
       for (const cta of bar.ctas) {
-        assert(Math.abs(bar.tablist.valueOf() - cta.height) <= 1, `${where} the tab group is ${bar.tablist}px tall and ${cta.name} ${cta.height}px`)
+        for (const height of bar.tabs) {
+          assert(Math.abs(height - cta.height) <= 1, `${where} a tab is ${height}px tall and ${cta.name} ${cta.height}px`)
+        }
+        assert(!hasTouch || cta.height >= 44, `${where} ${cta.name} is ${cta.height}px tall, under the 44px hit size`)
       }
       for (const height of bar.tabs) {
-        assert(Math.abs(height - bar.tablist) <= 1, `${where} a tab is ${height}px tall in a ${bar.tablist}px group`)
+        assert(!hasTouch || height >= 44, `${where} a tab is ${height}px tall, under the 44px hit size`)
       }
+      assert(Math.abs(bar.underline.bottom - bar.line) <= 0.5, `${where} the selected tab's underline ends at ${bar.underline.bottom}, not on the bar's line at ${bar.line}`)
+      assert(bar.underline.bottom <= bar.clip + 0.5, `${where} the underline ends at ${bar.underline.bottom}, below the tab row it is clipped by at ${bar.clip}`)
+      assert(bar.total === (hasTouch ? 112 : 100), `${where} the bar is ${bar.total}px tall`)
       await context.close()
     }
   }
@@ -1754,7 +1765,30 @@ test('64. by keyboard alone a rich-text component is reached with Tab, selected 
   await eventually(() => page.evaluate(() => document.activeElement?.getAttribute('aria-label') === 'Body Text component'), 'Shift+F6 did not return to the component')
 })
 
-test('65. at 390 wide the UI tab\'s row shows its fade and scrolls by keyboard, and focusing the Style select brings all of it into the row, with a fine or a coarse pointer', async ({ cwa: t }) => {
+test('65. a shared component with unpublished changes offers Remove from here, Discard unpublished changes and Delete from all 2 places, and Remove from here takes only this instance off the page (#461)', async ({ cwa: t }) => {
+  const { page, settle } = t
+  const draftText = 'Shared source component, unpublished'
+  const draft = await t.api.patch(t.seed.iris.source, { html: `<p>${draftText}</p>` })
+  t.api.track(draft['@id'])
+  await openEditMode(t)
+  await select(page, draftText)
+  await page.getByRole('tab', { name: 'Info', exact: true }).click()
+  await page.getByTestId('component-delete').getByRole('button', { name: 'Delete', exact: true }).click()
+  const dialog = dialogWith(page, 'Delete this component?')
+  await dialog.getByText('It is used in 2 places and has unpublished changes.').waitFor()
+  const labels = await dialog.getByRole('button').allInnerTexts()
+  assert(JSON.stringify(labels.map(label => label.trim())) === JSON.stringify(['Don\'t delete', 'Remove from here', 'Discard unpublished changes', 'Delete from all 2 places']), `The choices are ${JSON.stringify(labels)}`)
+  await dialog.getByRole('button', { name: 'Remove from here', exact: true }).click()
+  const del = await eventually(() => t.rehearsal.writes.find(w => w.method === 'DELETE'), 'Nothing was DELETEd')
+  assert(del.path === t.seed.positions.aSource, `DELETEd ${del.path}`)
+  await eventually(async () => (await page.getByText(draftText, { exact: true }).count()) === 0, 'The removed instance is still on the page')
+  await settle()
+  assert(t.rehearsal.writes.filter(w => w.method === 'DELETE').length === 1, `DELETEd ${JSON.stringify(t.rehearsal.writes.filter(w => w.method === 'DELETE').map(w => w.path))}`)
+  assert(await t.api.status(t.seed.iris.source) === 200, 'The live component was deleted')
+  assert(await t.api.status(draft['@id']) === 200, 'The draft was deleted')
+})
+
+test('66. at 390 wide the UI tab\'s row shows its fade and scrolls by keyboard, and focusing the Style select brings all of it into the row, with a fine or a coarse pointer', async ({ cwa: t }) => {
   const { page, base, seed } = t
   const cookies = await page.context().cookies()
   for (const hasTouch of [false, true]) {

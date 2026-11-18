@@ -3,6 +3,7 @@ import { afterEach, describe, expect, test, vi } from 'vitest'
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { h } from 'vue'
 import { axe } from '../../../../../test/utils/axe'
+import { drawsOpenState } from '../../../../../test/utils/open-state'
 import { menuGroups } from '../core/ui/menu-entries'
 import Menu from './Menu.vue'
 
@@ -110,5 +111,24 @@ describe('CwaUiMenu (#459)', () => {
     expect([...reasons.classList]).toEqual(expect.arrayContaining(['cwa:bg-surface-menu', 'cwa:text-fg', 'cwa:leading-normal', 'cwa:ring-1', 'cwa:ring-line']))
     expect(document.querySelector('[data-testid="kit-menu"]')).not.toBeNull()
     expect(onSelect).not.toHaveBeenCalled()
+  })
+
+  test('the ⓘ shows itself selected while its reasons are open, and not once they close, with no axe violations open', async () => {
+    mount(Menu, {
+      props: { items: [{ label: 'Add before', value: 'before', disabled: true, reasons: ['Main content is full'], reasonsLabel: 'Why Add before is unavailable' }], label: 'Clone', open: true, at: { x: 0, y: 0 } },
+      attachTo: document.body,
+    })
+    await flushPromises()
+    const why = document.querySelector<HTMLElement>('[data-testid="menu-item-why"]')!
+    expect(drawsOpenState(why)).toBe(false)
+
+    why.click()
+    await flushPromises()
+    expect(drawsOpenState(why)).toBe(true)
+    expect(await axe(document.body, { rules: { region: { enabled: false } } })).toHaveNoViolations()
+
+    why.click()
+    await flushPromises()
+    expect(drawsOpenState(why)).toBe(false)
   })
 })

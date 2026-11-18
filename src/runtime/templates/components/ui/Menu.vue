@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { POPOVER_GAP } from '../core/ui/popover-gap'
 import { computed, ref } from 'vue'
 import {
   DropdownMenuContent,
@@ -64,8 +65,9 @@ function choose(item: MenuItem) {
 
 function showReasons(event: Event, item: MenuItem) {
   event.preventDefault()
-  const anchor = whyElements.get(item)
-  reasonsFor.value = reasonsFor.value?.item === item || !anchor ? undefined : { item, anchor }
+  const cell = whyElements.get(item)
+  const anchor = cell?.querySelector('svg') ?? cell
+  reasonsFor.value = reasonsFor.value?.item === item || !anchor ? undefined : { item, anchor: anchor as HTMLElement }
 }
 
 function keepOpenForReasons(event: CustomEvent<{ originalEvent: Event }>) {
@@ -153,7 +155,7 @@ function hideReasons() {
                 :aria-label="item.reasonsLabel ?? `Why ${item.label} is unavailable`"
                 :aria-expanded="reasonsFor?.item === item ? 'true' : 'false'"
                 data-testid="menu-item-why"
-                class="cwa:grid cwa:min-h-option cwa:w-option cwa:shrink-0 cwa:cursor-pointer cwa:place-items-center cwa:text-fg-muted cwa:outline-none cwa:select-none cwa:data-highlighted:bg-menu-highlight cwa:data-highlighted:text-fg cwa:data-highlighted:shadow-[inset_2px_0_0_var(--cwa-color-accent-fg)]"
+                class="cwa:grid cwa:min-h-option cwa:w-option cwa:shrink-0 cwa:cursor-pointer cwa:place-items-center cwa:text-fg-muted cwa:outline-none cwa:select-none cwa:data-highlighted:bg-menu-highlight cwa:data-highlighted:text-fg cwa:data-highlighted:shadow-[inset_2px_0_0_var(--cwa-color-accent-fg)] cwa:aria-expanded:bg-menu-highlight cwa:aria-expanded:text-fg cwa:aria-expanded:shadow-[inset_0_-2px_0_currentColor]"
                 @select="showReasons($event, item)"
               >
                 <svg
@@ -178,7 +180,7 @@ function hideReasons() {
     <PopoverPortal>
       <PopoverContent
         side="right"
-        :side-offset="6"
+        :side-offset="POPOVER_GAP"
         :collision-padding="8"
         :aria-label="reasonsFor.item.reasonsLabel ?? `Why ${reasonsFor.item.label} is unavailable`"
         data-testid="menu-item-reasons"

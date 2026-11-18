@@ -5,6 +5,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import type { Router } from 'vue-router'
 import { axe } from '../../../../../../../../test/utils/axe'
+import { drawsOpenState } from '../../../../../../../../test/utils/open-state'
 import PresenceIndicator from './PresenceIndicator.vue'
 import { navigateTo } from '#app/composables/router'
 import * as cwaComposable from '#cwa/composables/cwa'
@@ -115,6 +116,20 @@ afterEach(() => {
 })
 
 describe('PresenceIndicator (#429)', () => {
+  test('the indicator shows itself selected while its list is open, and not once it closes, with no axe violations open', async () => {
+    mockCwa()
+    presence!.start(true)
+    arrive(ids[0]!, SAM, {})
+    const { wrapper } = await openList()
+    const trigger = wrapper.get('[data-testid="presence-indicator"]')
+    expect(drawsOpenState(trigger.element)).toBe(true)
+    expect(await axe(document.body, { rules: { region: { enabled: false } } })).toHaveNoViolations()
+
+    await trigger.trigger('click')
+    await flushPromises()
+    expect(drawsOpenState(trigger.element)).toBe(false)
+  })
+
   test('renders nothing while presence is not running', async () => {
     mockCwa()
     arrive(ids[0]!, SAM, {})

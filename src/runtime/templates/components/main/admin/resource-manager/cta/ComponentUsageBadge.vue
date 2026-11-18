@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { POPOVER_GAP } from '#cwa/templates/components/core/ui/popover-gap'
 import { computed, ref, watch } from 'vue'
 import { PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { navigateTo } from '#app/composables/router'
@@ -64,7 +65,7 @@ async function goTo(routePath: string) {
     >
       <PopoverTrigger
         data-testid="component-usage-badge"
-        :class="[badgeClass, 'cwa:cursor-pointer cwa:hover:bg-yellow/10 cwa:focus-visible:outline-2 cwa:focus-visible:outline-yellow']"
+        :class="[badgeClass, 'cwa:cursor-pointer cwa:hover:bg-yellow/10 cwa:aria-expanded:bg-yellow/10 cwa:aria-expanded:shadow-[inset_0_-2px_0_currentColor] cwa:focus-visible:outline-2 cwa:focus-visible:outline-yellow']"
       >
         <span class="cwa:sr-only cwa:sm:not-sr-only">Shared · {{ usage.total }} places</span>
         <span
@@ -77,7 +78,7 @@ async function goTo(routePath: string) {
         <PopoverContent
           side="top"
           align="end"
-          :side-offset="8"
+          :side-offset="POPOVER_GAP"
           data-testid="component-usage-list"
           class="cwa:z-context cwa:min-w-[220px] cwa:max-w-sm cwa:max-h-[50vh] cwa:overflow-y-auto cwa:p-3 cwa:rounded-lg cwa:bg-surface-menu cwa:border cwa:border-line cwa:shadow-lg cwa:text-sm cwa:text-light"
         >

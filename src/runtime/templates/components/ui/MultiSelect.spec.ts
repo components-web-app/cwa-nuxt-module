@@ -132,7 +132,7 @@ describe('CwaUiMultiSelect (#460)', () => {
 
   test('a choice that changes the count announces it (#461)', async () => {
     const said: string[] = []
-    const wrapper = mountMulti({ modelValue: ['padding'], 'onUpdate:modelValue': (value: string[]) => wrapper.setProps({ modelValue: value }) }, message => said.push(message))
+    const wrapper = mountMulti({ 'modelValue': ['padding'], 'onUpdate:modelValue': (value: string[]) => wrapper.setProps({ modelValue: value }) }, message => said.push(message))
     const menu = await open(wrapper)
     const pick = async (label: string) => {
       const option = [...menu.querySelectorAll<HTMLElement>('[role="option"]')].find(item => item.textContent!.includes(label))!

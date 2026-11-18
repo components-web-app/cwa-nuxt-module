@@ -82,6 +82,14 @@ describe('ManagerTabs (#459)', () => {
     expect(buttons()[0]!.attributes('aria-selected')).toBe('true')
   })
 
+  test('the selected tab\'s underline is drawn below the tab, past the row\'s inset, on the bar\'s line', () => {
+    const wrapper = mount(ManagerTabs, { props: { tabs, idPrefix: 'bar', label: 'Settings' } })
+    const [selected, other] = wrapper.findAll('button')
+    expect(selected!.classes()).toEqual(expect.arrayContaining(['cwa:after:-bottom-[calc(var(--cwa-spacing-cta-inset)+1px)]', 'cwa:after:bg-accent']))
+    expect(selected!.classes()).not.toContain('cwa:after:bottom-0')
+    expect(other!.classes()).not.toContain('cwa:after:bg-accent')
+  })
+
   test('has no axe violations', async () => {
     const panel = document.createElement('div')
     panel.id = 'bar-panel'

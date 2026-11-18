@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { POPOVER_GAP } from './popover-gap'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { PopoverArrow, PopoverContent, PopoverRoot } from 'reka-ui'
 import CwaUiButton from '../../ui/Button.vue'
@@ -257,7 +258,7 @@ defineExpose({ line, open })
       :reference="box ?? undefined"
       side="top"
       align="start"
-      :side-offset="10"
+      :side-offset="POPOVER_GAP"
       :collision-padding="8"
       :aria-label="title"
       data-testid="field-status-popover"
