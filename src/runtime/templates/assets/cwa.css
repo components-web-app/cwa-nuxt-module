@@ -68,12 +68,12 @@
     --cwa-color-button: #44403c;
     --cwa-color-shimmer: rgb(255 255 255 / 0.24);
     --cwa-color-menu-highlight: #57534e;
-    --cwa-color-field: #57534e;
-    --cwa-color-field-hover: #625d58;
+    --cwa-color-field: #44403c;
+    --cwa-color-field-hover: #4f4a45;
     --cwa-color-chip: #6e6964;
     --cwa-color-field-danger: #6f514c;
     --cwa-color-field-warning: #6d5e45;
-    --cwa-color-muted-on-field: #e7e5e4;
+    --cwa-color-muted-on-field: #c1bcb7;
     --cwa-color-tree-line: #78716c;
     --cwa-color-toggle-off: #78716c;
     --cwa-color-step-hover: rgb(255 255 255 / 0.17);
@@ -1605,6 +1605,9 @@
 .cwa\:pt-2 {
   padding-top: calc(var(--cwa-spacing) * 2);
 }
+.cwa\:pt-2\.5 {
+  padding-top: calc(var(--cwa-spacing) * 2.5);
+}
 .cwa\:pt-3 {
   padding-top: calc(var(--cwa-spacing) * 3);
 }
@@ -1971,10 +1974,6 @@
 }
 .cwa\:shadow-\[inset_1px_0_0_var\(--cwa-color-line\)\,inset_0_-1px_0_var\(--cwa-color-line\)\] {
   --tw-shadow: inset 1px 0 0 var(--tw-shadow-color, var(--cwa-color-line)), inset 0 -1px 0 var(--tw-shadow-color, var(--cwa-color-line));
-  box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
-}
-.cwa\:shadow-\[inset_3px_0_0_var\(--cwa-color-accent-fg\)\] {
-  --tw-shadow: inset 3px 0 0 var(--tw-shadow-color, var(--cwa-color-accent-fg));
   box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
 }
 .cwa\:shadow-lg {

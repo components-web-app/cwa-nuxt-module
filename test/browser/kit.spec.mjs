@@ -244,6 +244,52 @@ for (const [name, open] of stackOpenings) {
   })
 }
 
+for (const [selected, where, option] of [['0', 'innermost', 'Innermost'], ['4', 'outermost shown', 'Outermost shown'], ['1', 'second', 'Second']]) {
+  test(`kit: with the ${where} level selected, the resource stack opens with the innermost name exactly over its button, and a selected name sits and measures as an unselected one with the same text (#461)`, async ({ page }) => {
+    await openKit(page, 1280)
+    await page.waitForLoadState('networkidle')
+    const control = page.getByTestId('kit-stack-selected')
+    await control.scrollIntoViewIfNeeded()
+    await control.getByText(option, { exact: true }).click()
+    const opener = page.getByTestId('kit-stack-open')
+    await opener.click()
+    const stack = page.getByTestId('resource-stack')
+    await expect(stack.locator('[aria-selected="true"]')).toHaveCount(1)
+    await expect.poll(() => stack.evaluate(panel => getComputedStyle(panel.firstElementChild.parentElement).visibility)).toBe('visible')
+    const measured = await page.evaluate(({ selected }) => {
+      const label = (level) => {
+        const box = level.getBoundingClientRect()
+        const range = document.createRange()
+        range.selectNodeContents(level.querySelector(':scope > [data-stack-name] [data-stack-label]'))
+        const text = range.getBoundingClientRect()
+        return { offset: text.left - box.left, width: text.width, weight: getComputedStyle(level.querySelector(':scope > [data-stack-name]')).fontWeight }
+      }
+      const levels = [...document.querySelectorAll('[data-testid="resource-stack"] [role="treeitem"]')]
+      const opener = document.querySelector('[data-testid="kit-stack-open"]').getBoundingClientRect()
+      const inner = document.querySelector('[data-stack-innermost] > [data-stack-name] [data-stack-label]').getBoundingClientRect()
+      const chosen = levels.find(level => level.getAttribute('aria-selected') === 'true')
+      const twin = levels.find(level => level !== chosen && level.getAttribute('aria-label') === chosen.getAttribute('aria-label'))
+      return {
+        over: { left: inner.left - opener.left, top: inner.top - opener.top },
+        chosen: label(chosen),
+        twin: twin ? label(twin) : undefined,
+        selected,
+      }
+    }, { selected })
+    expect(Math.abs(measured.over.left)).toBeLessThanOrEqual(1)
+    expect(Math.abs(measured.over.top)).toBeLessThanOrEqual(1)
+    if (measured.twin) {
+      expect(Math.abs(measured.chosen.offset - measured.twin.offset)).toBeLessThanOrEqual(0.5)
+      expect(Math.abs(measured.chosen.width - measured.twin.width)).toBeLessThanOrEqual(0.5)
+      expect(measured.chosen.weight).toBe(measured.twin.weight)
+    }
+    if (selected === '1') {
+      expect(measured.twin).toBeDefined()
+      await page.screenshot({ path: process.env.KIT_SCREENSHOT ?? 'test-results/kit-stack-selected.png', clip: await stack.locator('[role="tree"]').boundingBox() ?? undefined })
+    }
+  })
+}
+
 for (const width of widths) {
   for (const touch of [false, true]) {
     test(`kit at ${width}${touch ? ' with touch sizes' : ''}: an image field's buttons, thumbnail and Alt button share one height and one centre, in the bar and in a dialog (#461)`, async ({ page }) => {
@@ -326,4 +372,36 @@ test('kit: a field\'s focus ring fades in from transparent, never from white (#4
   expect(new Set(frames.map(({ field }) => field)).size).toBeGreaterThanOrEqual(4)
   expect(frames.some(({ colour }) => colour === 'rgb(96, 165, 250)')).toBe(true)
   expect(white).toEqual([])
+})
+
+test('kit: a textarea beside its label lines the label up with its first line of text, and no manager row holds one (#461)', async ({ page }) => {
+  const warnings = []
+  page.on('console', message => message.text().includes('CwaUiTextarea') && warnings.push(message.text()))
+  await openKit(page, 1280)
+  const textarea = page.locator('[data-kit-field="textarea"]').first()
+  await textarea.scrollIntoViewIfNeeded()
+  const offset = await textarea.evaluate((field) => {
+    const element = field.querySelector('textarea')
+    const label = document.querySelector(`label[for="${element.id}"]`)
+    const firstLine = (box) => {
+      const style = getComputedStyle(box)
+      const top = box.getBoundingClientRect().top + Number.parseFloat(style.paddingTop) + Number.parseFloat(style.borderTopWidth)
+      return top + Number.parseFloat(style.lineHeight) / 2
+    }
+    return firstLine(label) - firstLine(element)
+  })
+  expect(Math.abs(offset)).toBeLessThanOrEqual(1)
+
+  const rows = page.locator('button', { hasText: /^Manager row$/ })
+  for (let index = 0; index < await rows.count(); index++) {
+    await rows.nth(index).scrollIntoViewIfNeeded()
+    await expect(async () => {
+      await rows.nth(index).click()
+      await expect(rows.nth(index)).toHaveAttribute('data-state', 'on', { timeout: 500 })
+    }).toPass()
+  }
+  await expect(page.locator('.kit-place-bar [data-testid="manager-tab"]')).toHaveCount(await rows.count())
+  await expect(page.locator('.kit-place-bar [data-kit-field]').first()).toBeAttached()
+  await expect(page.locator('.kit-place-bar [data-kit-field="textarea"]')).toHaveCount(0)
+  expect(warnings).toEqual([])
 })
