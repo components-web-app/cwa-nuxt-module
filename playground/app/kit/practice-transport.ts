@@ -1,5 +1,5 @@
 import type { CwaResource } from '../../../src/runtime/resources/resource-utils'
-import type { FakeSaveServer } from './fake-save-server'
+import type { FakeSaveServer, KitRequestError } from './fake-save-server'
 
 interface FetchOptions {
   method?: string
@@ -10,13 +10,22 @@ type FetchLike = ((request: string, options?: FetchOptions) => Promise<unknown>)
   raw: (request: string, options?: FetchOptions) => Promise<unknown>
 }
 
+export interface PracticePeer {
+  clientId: string
+  userId: string
+}
+
 export interface PracticeTransportOptions {
   server: FakeSaveServer
   current: (iri: string) => CwaResource | undefined
   usage: (iri: string) => { total: number, positionCount: number, pageDataCount: number }
+  members?: (collection: string) => CwaResource[]
+  peer: PracticePeer
+  now?: () => Date
 }
 
-const NO_API = { message: 'The kit has no API.' }
+const NOT_FOUND = { statusCode: 404, message: 'Not Found', data: {}, response: { status: 404 } }
+const COLLECTION = /^(?:\/_)?\/[a-z_]+$/
 
 function bodyOf(body: unknown): Record<string, unknown> {
   if (typeof body === 'string') {
@@ -30,8 +39,22 @@ function bodyOf(body: unknown): Record<string, unknown> {
   return body && typeof body === 'object' && !(body instanceof FormData) ? body as Record<string, unknown> : {}
 }
 
-export function practiceFetch(real: FetchLike, { server, current, usage }: PracticeTransportOptions): FetchLike {
+export function practiceFetch(real: FetchLike, { server, current, usage, members = () => [], peer, now = () => new Date() }: PracticeTransportOptions): FetchLike {
   let created = 0
+
+  function theirs(iri: string, error: KitRequestError) {
+    const stored = current(iri)
+    return {
+      ...error,
+      data: {
+        ...stored,
+        ...error.data,
+        '@id': iri,
+        '_metadata': { ...stored?._metadata, lastWrite: { clientId: peer.clientId, userId: peer.userId, at: now().toISOString() } },
+      },
+    }
+  }
+
   const fetch = async (request: string, options: FetchOptions = {}) => {
     const method = (options.method ?? 'GET').toUpperCase()
     const iri = String(request).split('?')[0]!
@@ -40,9 +63,22 @@ export function practiceFetch(real: FetchLike, { server, current, usage }: Pract
       return {}
     }
     if (method === 'GET') {
-      throw NO_API
+      const stored = current(iri)
+      if (stored) {
+        return JSON.parse(JSON.stringify(stored))
+      }
+      if (COLLECTION.test(iri)) {
+        const found = members(iri)
+        return { member: JSON.parse(JSON.stringify(found)), totalItems: found.length }
+      }
+      throw NOT_FOUND
     }
-    await server.save(body)
+    try {
+      await server.save(body)
+    }
+    catch (error) {
+      throw (error as KitRequestError).statusCode === 412 ? theirs(iri, error as KitRequestError) : error
+    }
     if (method === 'DELETE') {
       return undefined
     }
@@ -55,13 +91,8 @@ export function practiceFetch(real: FetchLike, { server, current, usage }: Pract
   return Object.assign(fetch, {
     raw: async (request: string, options?: FetchOptions) => {
       const path = String(request).split('?')[0]!
-      if (path.endsWith('/usage')) {
-        return { _data: usage(path.slice(0, -'/usage'.length)), headers: new Headers(), status: 200 }
-      }
-      if ((options?.method ?? 'GET').toUpperCase() === 'GET') {
-        throw NO_API
-      }
-      return { _data: await fetch(request, options), headers: new Headers(), status: 200 }
+      const data = path.endsWith('/usage') ? usage(path.slice(0, -'/usage'.length)) : await fetch(request, options)
+      return { _data: data, headers: new Headers({ 'content-type': 'application/ld+json' }), status: 200 }
     },
   }, Object.fromEntries(Object.entries(real).filter(([key]) => key !== 'raw')))
 }
