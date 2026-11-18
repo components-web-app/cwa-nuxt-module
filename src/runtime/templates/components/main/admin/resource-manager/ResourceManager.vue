@@ -275,7 +275,7 @@ defineExpose({
   <Transition v-bind="slideUp">
     <div
       v-if="$cwa.admin.resourceStackManager.showManager.value"
-      class="cwa:@container cwa:fixed cwa:bottom-0 cwa:z-manager cwa:w-full cwa:bg-surface cwa:text-fg cwa:shadow-[0_-8px_24px_rgb(0_0_0/0.18)] cwa:pointer-coarse:[--cwa-spacing-manager-tabs:2.75rem] cwa:pointer-coarse:[--cwa-spacing-manager-row:4.25rem] cwa:pointer-coarse:[--cwa-spacing-manager:7rem]"
+      class="cwa:@container cwa:fixed cwa:bottom-0 cwa:z-manager cwa:w-full cwa:bg-surface cwa:text-fg cwa:shadow-[0_-8px_24px_rgb(0_0_0/0.18)] cwa:pointer-coarse:[--cwa-spacing-manager-tabs:calc(2.75rem+1px)] cwa:pointer-coarse:[--cwa-spacing-manager-row:calc(4.25rem-1px)] cwa:pointer-coarse:[--cwa-spacing-manager:7rem]"
       data-testid="manager-bar"
       @click.stop
     >
@@ -288,9 +288,10 @@ defineExpose({
           class="cwa:absolute cwa:bottom-full cwa:left-0 cwa:z-notifications"
           data-testid="manager-saving-line"
         />
-        <div class="cwa:min-w-0 cwa:pt-cta-inset cwa:pb-[calc(var(--cwa-spacing-cta-inset)+1px)] cwa:shadow-[inset_0_-1px_0_var(--cwa-color-line)]">
+        <div class="cwa:min-w-0 cwa:shadow-[inset_0_-1px_0_var(--cwa-color-line)]">
           <ManagerTabs
             ref="managerTabs"
+            class="cwa:box-border cwa:pt-cta-inset cwa:pb-[calc(var(--cwa-spacing-cta-inset)+1px)]"
             :tabs="allTabsMeta"
             :field-states="currentFieldStates"
             :id-prefix="tabsId"
