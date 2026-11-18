@@ -164,6 +164,12 @@ describe('PageResourceAdminModal on the kit dialog (#461)', () => {
     expect(dialog.props('tabs')).toEqual([{ label: 'Details', key: 'details' }, { label: 'Routes', key: 'routes' }, { label: 'Info', key: 'info' }])
   })
 
+  test('the dialog shows a failed save itself, so it alone asks useItemPage to dismiss the stored error', () => {
+    setup()
+
+    expect(mockUseItemPage).toHaveBeenCalledWith(expect.objectContaining({ dismissStoredErrors: true }))
+  })
+
   test('creating shows only Details', () => {
     const { wrapper } = setup({ isAdding: true })
 
