@@ -9,25 +9,23 @@ vi.mock('#cwa/composables/cwa', () => ({ useCwa: () => ({ admin: { eventBus: { e
 enableAutoUnmount(afterEach)
 
 describe('ComponentPlaceholder (#461)', () => {
-  test('an empty position shows the kit placeholder named by its page data property, or as an empty position', () => {
+  test('an empty position is named by its page data property, or as an empty position, and shows no text', () => {
     const named = mount(ComponentPlaceholder, { props: { iri: '/_/component_positions/1', name: 'heroImage' } })
-    expect(named.get('[data-testid="edit-placeholder"]').text()).toContain('heroImage')
+    const placeholder = named.get('[data-testid="edit-placeholder"]')
+    expect(placeholder.get(`[id="${placeholder.attributes('aria-labelledby')}"]`).text()).toBe('heroImage')
+    expect(placeholder.get(`[id="${placeholder.attributes('aria-labelledby')}"]`).classes()).toContain('cwa:sr-only')
 
-    const unnamed = mount(ComponentPlaceholder, { props: { iri: '/_/component_positions/2' } })
-    expect(unnamed.get('[data-testid="edit-placeholder"]').text()).toContain('Empty position')
+    const unnamed = mount(ComponentPlaceholder, { props: { iri: '/_/component_positions/2' } }).get('[data-testid="edit-placeholder"]')
+    expect(unnamed.get(`[id="${unnamed.attributes('aria-labelledby')}"]`).text()).toBe('Empty position')
   })
 
-  test('says why it is empty only behind its info button, described by it, never inline', () => {
-    const named = mount(ComponentPlaceholder, { props: { iri: '/_/component_positions/1', name: 'heroImage' }, attachTo: document.body })
-    const info = named.get('[data-testid="field-info"]')
-    const description = document.getElementById(info.attributes('aria-describedby')!)!
+  test('says why it is empty in its description, with no info button', () => {
+    const named = mount(ComponentPlaceholder, { props: { iri: '/_/component_positions/1', name: 'heroImage' } }).get('[data-testid="edit-placeholder"]')
+    expect(named.find('[data-testid="field-info"]').exists()).toBe(false)
+    expect(named.get(`[id="${named.attributes('aria-describedby')}"]`).text()).toBe('This page data has no heroImage component yet, so visitors see nothing here.')
 
-    expect(description.textContent).toBe('This page data has no heroImage component yet, so visitors see nothing here.')
-    expect(description.classList).toContain('cwa:sr-only')
-    named.unmount()
-
-    const unnamed = mount(ComponentPlaceholder, { props: { iri: '/_/component_positions/2' }, attachTo: document.body })
-    expect(document.getElementById(unnamed.get('[data-testid="field-info"]').attributes('aria-describedby')!)!.textContent).toBe('No component is placed here yet, so visitors see nothing here.')
+    const unnamed = mount(ComponentPlaceholder, { props: { iri: '/_/component_positions/2' } }).get('[data-testid="edit-placeholder"]')
+    expect(unnamed.get(`[id="${unnamed.attributes('aria-describedby')}"]`).text()).toBe('No component is placed here yet, so visitors see nothing here.')
   })
 
   test('tells the admin it has mounted, so the selection outline can be drawn around it', () => {
