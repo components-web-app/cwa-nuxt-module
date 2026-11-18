@@ -34,9 +34,19 @@ exports[`ResourceLoader > snapshots > should match snapshot IF resource does not
 
 exports[`ResourceLoader > snapshots > should match snapshot IF resource is loading 1`] = `
 <div>
-  <spinner-stub
-    show="true"
-  />
+  <span
+    class="cwa:inline-flex"
+    role="status"
+  >
+    <spinner-stub
+      size="md"
+    />
+    <span
+      class="cwa:sr-only"
+    >
+      Loading
+    </span>
+  </span>
 </div>
 `;
 

@@ -13,7 +13,7 @@ const serverEntry = resolve(outputDir, 'server/index.mjs')
 const chunkDir = resolve(outputDir, 'public/_nuxt')
 const appBase = `http://127.0.0.1:${appPort}`
 
-const gzipBudget = 184520
+const gzipBudget = 184775
 
 const required = [
   { marker: 'cwa-start', source: 'core/ComponentPosition.vue' },
@@ -29,7 +29,11 @@ const forbidden = [
   { marker: 'cwa:z-peer-outline', source: 'resource-manager/PeerOutlines.vue' },
   { marker: 'field-presence-flag', source: 'ui/FieldPresence.vue' },
   { marker: 'remote-change-accept', source: 'ui/RemoteChangeConflict.vue' },
+  { marker: 'cwa-fullscreen-dialog', source: 'core/ui/Toaster.vue' },
+  { marker: 'The request could not be sent.', source: 'admin/field-states.ts' },
   { marker: 'remoteCursors', source: 'playground/app/tiptap/co-editing.ts' },
+  { marker: 'data-cwa-admin-icon', source: 'cwa-admin-resources' },
+  { marker: 'Already in this group', source: 'resource-manager/_parts/AddComponentDialog.vue' },
 ]
 
 let stub

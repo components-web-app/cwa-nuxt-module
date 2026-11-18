@@ -1,4 +1,4 @@
-import { CwaResourceTypes } from '#cwa/resources/resource-utils'
+import { shallowReactive } from 'vue'
 import type { CwaResource } from '#cwa/resources/resource-utils'
 import { compareSortValues } from '#cwa/resources/component-position-order'
 import { NEW_RESOURCE_IRI } from '#cwa/storage/stores/resources/state'
@@ -45,6 +45,7 @@ class GroupReorder {
     private readonly admin: Admin,
     private readonly resources: Resources,
     private readonly resourcesManager: ResourcesManager,
+    private readonly onSynced: (failedOrder?: string[]) => void,
   ) {
     this.handleReorderEvent = this.handleReorderEvent.bind(this)
   }
@@ -55,7 +56,7 @@ class GroupReorder {
 
   public handleReorderEvent(event: ReorderEvent) {
     const componentPositions = this.componentPositions()
-    if (!this.isReordering() || !componentPositions) {
+    if (!componentPositions) {
       return
     }
 
@@ -72,6 +73,19 @@ class GroupReorder {
     const pendingPositions = this.collectPendingPositions(this.persistedPositions())
     const positionCopy = [...componentPositions]
     moveElement(positionCopy, currentIndex, newIndex)
+    this.applyOrder(positionCopy, pendingPositions)
+  }
+
+  public retry(order: string[]) {
+    const componentPositions = this.componentPositions()
+    if (!componentPositions) {
+      return
+    }
+    const kept = order.filter(iri => componentPositions.includes(iri))
+    this.applyOrder([...kept, ...componentPositions.filter(iri => !kept.includes(iri))], this.collectPendingPositions(this.persistedPositions()))
+  }
+
+  private applyOrder(positionCopy: string[], pendingPositions: PendingPosition[]) {
     for (const [index, iri] of positionCopy.entries()) {
       const currentResource = this.resources.getResource(iri).value?.data
       if (!currentResource) {
@@ -99,11 +113,6 @@ class GroupReorder {
     this.syncQueue = this.syncGroupOrder().finally(() => {
       this.syncing = false
     })
-  }
-
-  private isReordering() {
-    return !!this.admin.resourceStackManager.getState('reordering')
-      && this.admin.resourceStackManager.getClosestStackItemByType(CwaResourceTypes.COMPONENT_GROUP) === this.iri
   }
 
   private componentPositions(): string[] | undefined {
@@ -181,23 +190,28 @@ class GroupReorder {
   }
 
   private async syncGroupOrder() {
+    let failedOrder: string[] | undefined
     do {
       this.changedWhileSyncing = false
       await this.resourcesManager.queueComponentGroupWrite(this.iri, async () => {
         const desiredOrder = this.persistedPositions()
+        failedOrder = undefined
         this.applyPendingSortValues(this.collectPendingPositions(desiredOrder))
         if (desiredOrder.join() === this.serverOrder(desiredOrder).join()) {
           return
         }
-        await this.resourcesManager.orderComponentGroup(this.iri, desiredOrder)
+        const saved = await this.resourcesManager.orderComponentGroup(this.iri, desiredOrder)
+        failedOrder = saved ? undefined : desiredOrder
       })
     } while (this.changedWhileSyncing)
+    this.onSynced(failedOrder)
     this.clearDisplayNumbers()
   }
 }
 
 export class ComponentGroupReorders {
   private readonly groups = new Map<string, GroupReorder>()
+  private readonly failures = shallowReactive(new Map<string, string[]>())
 
   public constructor(
     private readonly admin: Admin,
@@ -208,7 +222,9 @@ export class ComponentGroupReorders {
   public acquire(iri: string) {
     let group = this.groups.get(iri)
     if (!group) {
-      group = new GroupReorder(iri, this.admin, this.resources, this.resourcesManager)
+      group = new GroupReorder(iri, this.admin, this.resources, this.resourcesManager, (failedOrder) => {
+        failedOrder ? this.failures.set(iri, failedOrder) : this.failures.delete(iri)
+      })
       this.groups.set(iri, group)
     }
     if (group.mounts === 0) {
@@ -232,5 +248,18 @@ export class ComponentGroupReorders {
         this.groups.delete(iri)
       }
     })
+  }
+
+  public failed(iri: string) {
+    return this.failures.has(iri)
+  }
+
+  public retry(iri: string) {
+    const order = this.failures.get(iri)
+    order && this.groups.get(iri)?.retry(order)
+  }
+
+  public dismiss(iri: string) {
+    this.failures.delete(iri)
   }
 }

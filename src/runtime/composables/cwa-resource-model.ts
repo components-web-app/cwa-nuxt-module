@@ -9,16 +9,34 @@ import { useCwaResourceEndpoint } from '#cwa/composables/cwa-resource-endpoint'
 import { registerModelEditor } from '#cwa/resources/model-editors'
 import type { RemoteFieldChange } from '#cwa/resources/model-editors'
 import { realtimeView } from '#cwa/resources/realtime-view'
+import { writeFieldStates } from '#cwa/resources/field-state-writer'
 import type { FocusedPeer } from '#cwa/admin/presence'
+import type { CwaFieldState } from '#cwa/storage/stores/resources/state'
+import type { CwaResource } from '#cwa/resources/resource-utils'
 
 export type { FocusedPeer } from '#cwa/admin/presence'
 
-interface ResourceModelOps {
-  longWaitThreshold?: number
-  debounceTime?: number
+interface Change {
+  value: any
+  iri: string
+  endpoint: string
+  untrack?: () => void
 }
 
-export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: string | string[], ops?: ResourceModelOps) => {
+export interface ResourceModelOps<T = any, S = any> {
+  longWaitThreshold?: number
+  debounceTime?: number
+  get?: (stored: S | null | undefined) => T | null | undefined
+  set?: (shown: T | null | undefined) => S | null | undefined
+  valid?: (value: S | null | undefined) => boolean
+  alsoSend?: (value: S | null | undefined, iri: string) => Record<string, unknown> | undefined
+  /** @internal */
+  saved?: () => void
+}
+
+const IDLE: CwaFieldState = Object.freeze({ status: 'idle', waiting: false, slow: false })
+
+export const useCwaResourceModel = <T, S = T>(iri: Ref<string | undefined>, property: string | string[], ops?: ResourceModelOps<T, S>) => {
   const proxy = getCurrentInstance()?.proxy
   const source = `input_${proxy?.$?.uid}`
   const $cwa = useCwa()
@@ -61,9 +79,14 @@ export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: s
   let waitingIri: string | undefined
   let untrackPendingUpdate: (() => void) | undefined
 
+  const requests = ref(0)
+  const isSubmitting = computed(() => requests.value > 0)
   const isBusy = computed(() => pendingSubmit.value || isSubmitting.value)
-  const isSubmitting = ref(false)
-  const lastSubmittedValueInProgress = ref()
+  let debouncing = false
+  let episode: Promise<void> | undefined
+  let episodes = 0
+  const queued = new Map<string, Change>()
+  const state = computed<CwaFieldState>(() => resource.value?.fieldStates?.[rootProperty.value] ?? IDLE)
   const heldChange = shallowRef<{ iri: string, change: RemoteFieldChange<T> }>()
   const remoteChange = computed(() => heldChange.value?.iri === iri.value ? heldChange.value?.change : undefined)
   const realtime = realtimeView($cwa)
@@ -75,50 +98,149 @@ export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: s
     focusIri && realtime.load().then(view => view?.focus(focusOwner, focusIri, rootProperty.value))
   }
 
+  let stopWatchingOutside: (() => void) | undefined
+
   function blur() {
+    stopWatchingOutside?.()
+    stopWatchingOutside = undefined
     realtime.load().then(view => view?.blur(focusOwner))
   }
 
-  let stopWatchingOutside: (() => void) | undefined
+  function holds(root: Element, node: EventTarget | Element | null) {
+    if (!(node instanceof Node)) {
+      return false
+    }
+    if (root.contains(node)) {
+      return true
+    }
+    const controls = [root, ...root.querySelectorAll('[aria-controls]')].flatMap(control => control.getAttribute('aria-controls')?.split(' ') ?? [])
+    return controls.some(id => !!id && !!document.getElementById(id)?.contains(node))
+  }
 
-  function leave() {
-    stopWatchingOutside?.()
-    stopWatchingOutside = undefined
-    blur()
+  function watchOutside(root: Element) {
+    if (stopWatchingOutside) {
+      return
+    }
+    const outside = (down: Event) => {
+      holds(root, down.target) || holds(root, document.activeElement) || blur()
+    }
+    const focusMoved = (event: Event) => {
+      holds(root, event.target) || (event.target instanceof Node && event.target.contains(root)) || blur()
+    }
+    document.addEventListener('pointerdown', outside, true)
+    document.addEventListener('focusin', focusMoved, true)
+    stopWatchingOutside = () => {
+      document.removeEventListener('pointerdown', outside, true)
+      document.removeEventListener('focusin', focusMoved, true)
+    }
   }
 
   const focusListeners = {
     onFocusin: () => focus(),
     onFocusout: (event: FocusEvent) => {
-      (event.currentTarget as Node).contains(event.relatedTarget as Node | null) || leave()
+      const root = event.currentTarget as Element
+      if (!holds(root, event.relatedTarget)) {
+        blur()
+      }
+      else if (!root.contains(event.relatedTarget as Node)) {
+        watchOutside(root)
+      }
     },
     // Safari does not focus a button, checkbox or switch on click, so focusin never fires for them
     onPointerdown: (event: PointerEvent) => {
       focus()
-      if (stopWatchingOutside) {
-        return
-      }
-      const root = event.currentTarget as Node
-      const outside = (down: Event) => {
-        root.contains(down.target as Node | null) || root.contains(document.activeElement) || leave()
-      }
-      document.addEventListener('pointerdown', outside, true)
-      stopWatchingOutside = () => document.removeEventListener('pointerdown', outside, true)
+      watchOutside(event.currentTarget as Element)
     },
   }
 
-  function rootValue(value: any) {
+  function rootValue(value: any, at = iri.value) {
     if (!isNestedProperty.value && !isObject(value)) {
       return value
     }
-    return set({ [rootProperty.value]: { ...rootStoreValue.value } }, property, value)[rootProperty.value]
+    const root = at === iri.value ? rootStoreValue.value : get(resourceAt(at)?.data, rootProperty.value)
+    return set({ [rootProperty.value]: { ...root } }, property, value)[rootProperty.value]
+  }
+
+  function resourceAt(at: string | undefined) {
+    return at === iri.value ? resource.value : at ? $cwa.resources.getResource(at).value : undefined
+  }
+
+  type States = Parameters<Parameters<typeof writeFieldStates>[0]>[0]
+
+  function record(at: string | undefined, write: (states: States, entry: ReturnType<typeof resourceAt>, field: string) => void) {
+    const field = rootProperty.value
+    at && writeFieldStates(states => write(states, resourceAt(at), field))
+  }
+
+  function onRequest(sentTo: string, done?: Promise<{ resource?: CwaResource, error?: any }>) {
+    if (!done) {
+      record(sentTo, (states, entry, field) => states.skipped(entry, field))
+      return
+    }
+    const field = rootProperty.value
+    const sending = resourceAt(sentTo)
+    writeFieldStates(states => states.started(sending, [field]))
+    done.then(({ resource, error }) => writeFieldStates(states => states.settled(sending, [field], resource, error, at => $cwa.resources.getResource(at).value)))
   }
 
   function cancelPending() {
     debounced?.cancel()
+    debouncing = false
     untrackPendingUpdate?.()
     untrackPendingUpdate = undefined
+    const dropped = [iri.value, ...queued.keys()]
+    queued.forEach(change => change.untrack?.())
+    queued.clear()
     pendingSubmit.value = false
+    new Set(dropped).forEach(at => record(at, (states, entry, field) => states.unqueued(entry, field)))
+  }
+
+  function hold(untrack?: () => void) {
+    if (untrackPendingUpdate) {
+      untrack?.()
+      return
+    }
+    untrackPendingUpdate = untrack
+  }
+
+  function send(change: Change): Promise<void> {
+    if (episode) {
+      queued.get(change.iri)?.untrack?.()
+      queued.delete(change.iri)
+      queued.set(change.iri, change)
+      pendingSubmit.value = true
+      record(change.iri, (states, entry, field) => states.edited(entry, field))
+      return episode
+    }
+    return start(change)
+  }
+
+  function start(change: Change): Promise<void> {
+    change.untrack?.()
+    const sending: Promise<void> = run(change).finally(() => {
+      episode === sending && (episode = undefined)
+    })
+    episode = sending
+    return sending
+  }
+
+  async function run(first: Change) {
+    const id = ++episodes
+    let change = first
+    for (;;) {
+      const savedAs = await updateResource(change.value, change.iri, change.endpoint)
+      const [next] = queued.values()
+      if (id !== episodes || !next) {
+        return
+      }
+      queued.delete(next.iri)
+      if (heldChange.value) {
+        hold(next.untrack)
+        return
+      }
+      next.untrack?.()
+      change = savedAs && savedAs !== change.iri && next.iri === change.iri ? { ...next, iri: savedAs, endpoint: savedAs } : next
+    }
   }
 
   function isEqual(value1: any, value2: any) {
@@ -134,8 +256,7 @@ export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: s
     return getNormalizedValue(value1) === getNormalizedValue(value2)
   }
 
-  async function updateResource(newLocalValue: any, resend = false) {
-    const submittingIri = iri.value
+  async function updateResource(newLocalValue: any, submittingIri: string | undefined, submittingEndpoint: string): Promise<string | undefined> {
     if (!submittingIri) {
       return
     }
@@ -146,44 +267,52 @@ export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: s
     // consider: it is all about the external sync status of a nested object property that we should need to wait for
     const mergeFromRoot = isNestedProperty.value || isObject(newLocalValue)
 
-    // todo: resolve the correct iri for the endpoint we are checking with the applied querystring -
-    //  should be the same unless we will be creating a new draft in a request perhaps??
-    //  ...but then would that matter, because the endpoint would be the same until then... to think about...
-    mergeFromRoot && await $cwa.resourcesManager.getWaitForRequestPromise(endpoint.value, rootProperty.value, source)
+    mergeFromRoot && await $cwa.resourcesManager.getWaitForRequestPromise(submittingEndpoint, rootProperty.value, source)
 
-    // if we are already submitting this value, just skip - we shouldn't really get here
+    if (ops?.valid && !ops.valid(newLocalValue)) {
+      pendingSubmit.value = debouncing || !!queued.size
+      record(submittingIri, (states, entry, field) => states.unqueued(entry, field))
+      return
+    }
+
+    const submittingResource = resourceAt(submittingIri)
+    const extra = submittingResource && ops?.alsoSend?.(rootValue(newLocalValue, submittingIri), submittingIri)
+    const hasExtra = !!extra && Object.keys(extra).length > 0
     // if the resource has been deleted, this will trigger a store value update but we do not need to submit this
-    if (
-      resource.value === undefined
-      || (!resend && isSubmitting.value && isEqual(lastSubmittedValueInProgress.value, newLocalValue))
-    ) {
-      resetValue()
+    if (submittingResource === undefined || (!isSubmitting.value && !hasExtra && isEqual(submittingResource.data ? get(submittingResource.data, property) : undefined, newLocalValue))) {
+      pendingSubmit.value = debouncing || !!queued.size
+      record(submittingIri, (states, entry, field) => states.skipped(entry, field))
+      submittingIri === iri.value && !debouncing && isEqual(localValue.value, newLocalValue) && resetValue()
       return
     }
 
-    // if we are submitting already, then we will already be updating the store value in a moment,
-    // so the equality check would be invalid
-    if (!isSubmitting.value && isEqual(storeValue.value, newLocalValue)) {
-      pendingSubmit.value = false
-      resetValue()
-      return
-    }
+    requests.value++
+    const submittingValue = rootValue(newLocalValue, submittingIri)
 
-    isSubmitting.value = true
-    const submittingValue = rootValue(newLocalValue)
-    lastSubmittedValueInProgress.value = submittingValue
-
-    pendingSubmit.value = false
+    pendingSubmit.value = debouncing || !!queued.size
+    record(submittingIri, (states, entry, field) => states.unqueued(entry, field))
+    let failed = false
+    let local = false
     const newResource = await $cwa.resourcesManager.updateResource({
-      endpoint: endpoint.value,
+      endpoint: submittingEndpoint,
       data: {
         [rootProperty.value]: submittingValue,
+        ...(hasExtra && extra),
       },
       source,
+      onRequest: (sentTo, done) => {
+        onRequest(sentTo, done)
+        local = !done
+        done?.then(({ error }) => {
+          failed = !!error
+        })
+      },
     })
-    isSubmitting.value = false
+    requests.value--
+    if (local || (newResource && !failed)) {
+      ops?.saved?.()
+    }
 
-    // todo: check on when second request made before initial is complete
     const newIriReturned = newResource?.['@id'] && newResource['@id'] !== submittingIri
     if (newIriReturned) {
       moveLocalValue(submittingIri, newResource['@id'])
@@ -193,6 +322,7 @@ export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: s
     // sequence of updating is:
     // local var > debounce > submitting var > store value
     isEqual(storeValue.value, submittingValue) && isEqual(storeValue.value, localValue.value) && resetValue()
+    return newResource?.['@id']
   }
 
   function moveLocalValue(from: string, to: string) {
@@ -218,15 +348,20 @@ export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: s
     waitingIri && waitingIri !== iri.value && resetValue(waitingIri)
     untrackPendingUpdate?.()
     pendingSubmit.value = true
+    debouncing = true
     const typedIri = iri.value
+    const typedEndpoint = endpoint.value
     waitingIri = typedIri
+    record(typedIri, (states, entry, field) => states.edited(entry, field))
     const submit = debounce(() => {
+      debouncing = false
       if (remoteChange.value) {
         return
       }
-      untrackPendingUpdate?.()
+      const untrack = untrackPendingUpdate
+      untrackPendingUpdate = undefined
       typedIri && typedIri !== iri.value && resetValue(typedIri)
-      return updateResource(newLocalValue)
+      return typedIri ? send({ value: newLocalValue, iri: typedIri, endpoint: typedEndpoint, untrack }) : untrack?.()
     }, debounceTime)
     debounced = submit
     untrackPendingUpdate = iri.value ? $cwa.resourcesManager.registerPendingUpdate(iri.value, (keepConflict = true) => remoteChange.value ? keepConflict && remoteChange.value.keep() : submit.flush()) : undefined
@@ -281,35 +416,81 @@ export const useCwaResourceModel = <T>(iri: Ref<string | undefined>, property: s
     },
     moveTo: moveLocalValue,
     submit: () => {
+      const value = localValue.value
       cancelPending()
-      return updateResource(localValue.value, true)
+      return start({ value, iri: iri.value!, endpoint: endpoint.value })
     },
     conflict: (held) => {
+      const previous = heldChange.value
       heldChange.value = held as typeof heldChange.value
+      previous && record(previous.iri, (states, entry, field) => states.held(entry, field, undefined))
+      held && record(held.iri, (states, entry, field) => states.held(entry, field, {
+        ...(held.change.user && { user: { id: held.change.user.id, name: held.change.name } }),
+        value: held.change.value,
+      }))
     },
   })
 
+  function retry() {
+    if (localValue.value === undefined) {
+      return Promise.resolve()
+    }
+    const value = localValue.value
+    cancelPending()
+    return send({ value, iri: iri.value!, endpoint: endpoint.value })
+  }
+
+  async function reset() {
+    if (remoteChange.value) {
+      remoteChange.value.accept()
+      return
+    }
+    cancelPending()
+    resetValue()
+    record(iri.value, (states, entry, field) => states.cleared(entry, field))
+  }
+
   onBeforeUnmount(() => {
-    leave()
+    blur()
     unregisterEditor()
     unwatchLocalValue()
     unwatchIsBusy()
   })
 
+  const map = ops?.get || ops?.set
+  const shown = map
+    ? computed<T | null | undefined>({
+        get: () => ops.get ? ops.get(model.value as S) : model.value as T,
+        set: (value) => {
+          model.value = (ops.set ? ops.set(value) : value) as any
+        },
+      })
+    : model as unknown as typeof model
+  const shownRemoteChange = map && ops.get
+    ? computed(() => remoteChange.value ? { ...remoteChange.value, value: ops.get!(remoteChange.value.value as unknown as S) as T } : undefined)
+    : remoteChange
+
   return {
+    state,
+    retry,
+    reset,
+    /** @deprecated use `state` */
     states: {
       pendingSubmit,
       submitting: isSubmitting,
       isBusy,
       isLongWait,
     },
+    /** @deprecated use `reset()` */
     resetValue,
-    model,
+    model: shown,
     localValueWithIri,
-    remoteChange,
+    remoteChange: shownRemoteChange,
     focus,
     blur,
     focusedBy,
     focusListeners,
+    /** @internal */
+    editorKey: { iri: () => iri.value, field: rootProperty.value },
   }
 }

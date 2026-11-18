@@ -2,7 +2,7 @@ import { computed, reactive } from 'vue'
 import type { OrphanedResourceDeletionRequest, OrphanedResourceDeletionResult, OrphanedResourceKind, OrphanedResourceRejection } from '#cwa/api/orphaned-resources'
 import { useCwa } from '#cwa/composables/cwa'
 import { useOrphanedResourceReport } from './useOrphanReport'
-import { useOrphanDeletion, useOrphanView } from './useOrphanActions'
+import { deletionConfirm, useOrphanDeletion, useOrphanView } from './useOrphanActions'
 import type { DeletableRow, OrphanDeleteOutcome, ViewableRow } from './useOrphanActions'
 import { CwaResourceTypes, getResourceTypeFromIri, ResourceTypeFromIri } from '#cwa/resources/resource-utils'
 
@@ -117,7 +117,11 @@ export function useOrphanedResources() {
 
   function deleteRow(row: OrphanedRow) {
     return deletion.run(
-      ['Delete this resource?', '<p>It will be checked again first, then permanently deleted along with anything it contains. This cannot be undone.</p>'],
+      deletionConfirm({
+        title: 'Delete this resource?',
+        lines: ['It will be checked again first, then permanently deleted along with anything it contains.'],
+        go: 'Delete resource',
+      }),
       { iris: [row.iri] },
       [row],
       (label) => {
@@ -132,10 +136,12 @@ export function useOrphanedResources() {
       return Promise.resolve()
     }
     return deletion.run(
-      [
-        `Delete ${rows.length} orphaned ${rows.length === 1 ? section.singular : section.plural}?`,
-        '<p>Each is checked again first, then permanently deleted along with anything it contains. This cannot be undone.</p>',
-      ],
+      deletionConfirm({
+        title: `Delete ${rows.length} orphaned ${rows.length === 1 ? section.singular : section.plural}?`,
+        lines: ['Each is checked again first, then permanently deleted along with anything it contains.'],
+        go: `Delete ${countLabel(section, rows.length)}`,
+        typed: { noun: `number of ${section.plural}`, value: String(rows.length) },
+      }),
       { iris: rows.map(row => row.iri) },
       rows,
       (label) => {
@@ -149,10 +155,12 @@ export function useOrphanedResources() {
       return Promise.resolve()
     }
     return deletion.run(
-      [
-        `Delete all ${totalCount.value} orphaned resources?`,
-        '<p>Everything is checked again first. Whatever is still unused is permanently deleted along with anything it contains, including anything that has become unused since the last scan. This cannot be undone.</p>',
-      ],
+      deletionConfirm({
+        title: `Delete all ${totalCount.value} orphaned resources?`,
+        lines: ['Everything is checked again first. Whatever is still unused is permanently deleted along with anything it contains, including anything that has become unused since the last scan.'],
+        go: 'Delete everything',
+        typed: { noun: 'number of resources', value: String(totalCount.value) },
+      }),
       { all: true },
       sections.flatMap(section => section.rows),
       (label) => {

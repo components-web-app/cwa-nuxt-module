@@ -4,7 +4,7 @@ import type { Ref } from 'vue'
 import ResourceStackManager from './resource-stack-manager'
 
 vi.mock('vuejs-confirm-dialog', () => ({ install: vi.fn(), createConfirmDialog: vi.fn() }))
-vi.mock('#cwa/templates/components/core/ConfirmDialog.vue', () => ({ default: {} }))
+vi.mock('#cwa/templates/components/core/ui/Confirm.vue', () => ({ default: {} }))
 vi.mock('#cwa/templates/components/main/admin/resource-manager/ComponentFocus.vue', () => ({
   default: { name: 'ComponentFocus', render: () => null },
 }))

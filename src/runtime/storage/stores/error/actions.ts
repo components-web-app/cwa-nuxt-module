@@ -82,7 +82,7 @@ export default function (errorState: CwaErrorStateInterface): CwaErrorActionsInt
       delete errorState.byId[id]
       errorState.allIds.splice(errorState.allIds.indexOf(id), 1)
       const endpoint = err.event?.endpoint || 'local'
-      if (endpoint) {
+      if (errorState.allEndpoints.get(endpoint) === id) {
         errorState.allEndpoints.delete(endpoint)
       }
     },

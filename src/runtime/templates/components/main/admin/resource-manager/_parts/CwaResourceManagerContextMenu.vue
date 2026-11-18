@@ -1,44 +1,75 @@
 <script lang="ts" setup>
-import { computed } from 'vue'
-import ResourceContextItem from '../../_common/ResourceContextItem.vue'
-import ContextMenu from '../../../../utils/ContextMenu.vue'
-import { useCwa } from '#imports'
+import { defineAsyncComponent, provide, shallowRef, watch } from 'vue'
+import { useRouter } from '#app/composables/router'
+import { resourceStackLevels } from '#cwa/templates/components/core/ui/resource-stack'
+import type { ResourceStackLevel, StackPoint } from '#cwa/templates/components/core/ui/resource-stack'
+import { createAnnouncer } from '#cwa/templates/components/core/ui/field-context'
+import { announceKey } from '#cwa/templates/components/core/ui/field-keys'
+import { useCwa } from '#cwa/composables/cwa'
 
-const $cwa = useCwa()
+const ResourceStack = defineAsyncComponent(() => import('#cwa/templates/components/core/ui/ResourceStack.vue'))
 
 const props = defineProps<{
   modelValue: boolean
-  virtualElement: any
+  point?: StackPoint & { key: number }
 }>()
 
-const emit = defineEmits(['update:modelValue'])
+const emit = defineEmits<{ 'update:modelValue': [value: boolean] }>()
 
-const stackSize = computed(() => $cwa.admin.resourceStackManager.contextStack.value.length)
+const $cwa = useCwa()
+const stackManager = $cwa.admin.resourceStackManager
+const router = useRouter()
+const announcer = createAnnouncer()
+provide(announceKey, announcer.announce)
 
-const isOpen = computed({
-  get() {
-    return props.modelValue && stackSize.value > 0
-  },
-  set(value) {
-    emit('update:modelValue', value)
-  },
+const opened = shallowRef<{ key: number, at: StackPoint, levels: ResourceStackLevel[], selected?: string }>()
+
+watch(() => props.modelValue ? props.point : undefined, (point) => {
+  const stack = stackManager.contextStack.value
+  const levels = point ? resourceStackLevels(stack) : []
+  if (!point || !levels.length) {
+    opened.value = undefined
+    return
+  }
+  const currentIri = stackManager.currentStackItem.value?.iri
+  opened.value = {
+    key: point.key,
+    at: { x: point.x, y: point.y },
+    levels,
+    selected: levels.find(level => stack[Number(level.key)]?.iri === currentIri)?.key,
+  }
+}, { immediate: true })
+
+watch([() => $cwa.resources.displayPageIri.value, () => router.currentRoute.value.fullPath], () => {
+  opened.value && close()
 })
 
-function selectResource(index: number) {
-  $cwa.admin.resourceStackManager.selectStackIndex(index, true)
-  isOpen.value = false
+async function select(key: string) {
+  const item = stackManager.contextStack.value[Number(key)]
+  await stackManager.selectStackIndex(Number(key), true)
+  return stackManager.currentStackItem.value?.iri === item?.iri
+}
+
+function close() {
+  opened.value = undefined
+  emit('update:modelValue', false)
 }
 </script>
 
 <template>
-  <context-menu
-    v-model="isOpen"
-    :virtual-element="virtualElement"
-    @click.stop
-  >
-    <resource-context-item
-      :index="stackSize - 1"
-      @click="index => selectResource(index)"
-    />
-  </context-menu>
+  <ResourceStack
+    v-if="opened"
+    :key="opened.key"
+    :levels="opened.levels"
+    :selected="opened.selected"
+    :at="opened.at"
+    :select="select"
+    @close="close"
+  />
+  <span
+    role="status"
+    aria-live="polite"
+    class="cwa:sr-only"
+    data-testid="resource-stack-announcer"
+  >{{ announcer.message.value }}</span>
 </template>

@@ -13,6 +13,19 @@ export default defineNuxtConfig({
     'nuxt-og-image',
     '@vite-pwa/nuxt',
     'nuxt-svgo',
+    (_options, nuxt) => {
+      nuxt.hook('pages:extend', (pages) => {
+        const kit = pages.findIndex(page => page.path === '/kit')
+        if (kit === -1) {
+          return
+        }
+        if (!nuxt.options.dev && !nuxt.options.test) {
+          pages.splice(kit, 1)
+          return
+        }
+        pages[kit]!.meta = { ...pages[kit]!.meta, layout: false }
+      })
+    },
   ],
   devtools: {
     enabled: true,
@@ -20,7 +33,6 @@ export default defineNuxtConfig({
   app: {
     pageTransition: { name: 'page', mode: 'out-in' },
     head: {
-      charset: 'utf-8',
       htmlAttrs: {
         lang: 'en-GB',
       },
@@ -62,6 +74,30 @@ export default defineNuxtConfig({
         ignored: ['**/src/runtime/templates/assets/cwa.css', '**/src/runtime/templates/assets/base.css'],
       },
     },
+    optimizeDeps: {
+      include: [
+        'lodash-es/debounce',
+        'lodash-es/get',
+        'lodash-es/isArray',
+        'lodash-es/isEqual',
+        'lodash-es/isObject',
+        'lodash-es/mergeWith',
+        'lodash-es/set',
+        'lodash-es/throttle',
+        'lodash-es/unset',
+        'mitt',
+        'uuid',
+        'workbox-window',
+        'vuejs-confirm-dialog',
+        '@tiptap/extension-collaboration',
+        '@tiptap/extension-link',
+        '@tiptap/y-tiptap',
+        'yjs',
+        'fast-xml-parser',
+        '@heroicons/vue/20/solid',
+        '@vue/devtools-core',
+      ],
+    },
   },
   typescript: {
     typeCheck: false,
@@ -71,18 +107,34 @@ export default defineNuxtConfig({
     resources: {
       Form: {
         name: 'Example Form',
-        description: '<p>Demonstrates all form field types: text, password, select, radio, checkbox, multi-select, and collections.</p>',
+        description: 'Demonstrates all form field types: text, password, select, radio, checkbox, multi-select, and collections.',
       },
       NavigationLink: {
         name: 'Link',
-        description: '<p>Use this component to display a link for a website user to click so they can visit another page or URL</p>',
+        description: 'A link to another page or URL',
+        icon: 'link',
+        group: 'Text',
       },
       HtmlContent: {
         name: 'Body Text',
-        description: '<p>Easily create a body of text with the ability to style and format the content using themes in keeping with your website.</p>',
+        description: 'Paragraphs, headings, lists and links, styled to match the site',
+        icon: 'rich-text',
+        group: 'Text',
       },
       Image: {
         instantAdd: true,
+        icon: 'image',
+        group: 'Media',
+      },
+      Collection: {
+        description: 'A paged list of pages or articles',
+        icon: 'collection',
+        group: 'Layout',
+      },
+      UiComponent: {
+        description: 'A box holding its own group of components',
+        icon: 'card-grid',
+        group: 'Layout',
       },
     },
     layouts: {

@@ -3,6 +3,8 @@
     id="cwa-root-layout"
     ref="rootLayout"
     class="cwa:relative cwa:h-full cwa:flex cwa:flex-col"
+    @click.capture="markInPage"
+    @contextmenu.capture="markInPage"
     @click="onRootClick"
     @contextmenu="onRootContextMenu"
   >
@@ -66,8 +68,16 @@ function callResourceManagerHandler(handler: 'contextMenuHandler' | 'clickHandle
   resourceManager.value && resourceManager.value[handler](e, type)
 }
 
+const eventsInPage = new WeakSet<Event>()
+
+function markInPage(e: MouseEvent) {
+  if (page.value && (page.value === e.target || page.value.contains(e.target as Node))) {
+    eventsInPage.add(e)
+  }
+}
+
 function isInPage(e: MouseEvent) {
-  return !!page.value && (page.value === e.target || page.value.contains(e.target as Node))
+  return eventsInPage.has(e)
 }
 
 function onRootClick(e: MouseEvent) {

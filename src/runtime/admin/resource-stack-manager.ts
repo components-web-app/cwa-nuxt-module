@@ -180,7 +180,7 @@ export default class ResourceStackManager {
     this.currentResourceStack.value = this.previousResourceStack.value
   }
 
-  private async confirmStackChange(alertData: { title: string, content: string }, fromContext?: boolean) {
+  private async confirmStackChange(toLayout: boolean, fromContext?: boolean) {
     let cachedNewStack: ResourceStackItem[] | undefined
     if (!fromContext) {
       cachedNewStack = this.currentResourceStack.value
@@ -188,7 +188,9 @@ export default class ResourceStackManager {
     }
 
     const { confirmResourceAction } = await import('./resource-confirm')
-    if (!await confirmResourceAction(this.vueApp, alertData)) {
+    if (!await confirmResourceAction(this.vueApp, toLayout
+      ? { title: 'Edit the shared layout?', description: 'Changes appear on every page that uses this layout.', keep: 'Cancel', go: 'Edit layout', tone: 'accent' }
+      : { title: 'Edit the page?', description: 'Changes appear on this page only, not on other pages using the layout.', keep: 'Cancel', go: 'Edit page', tone: 'accent' })) {
       if (fromContext) {
         // can prevent the context stack from becoming the currentResourceStack easily here
         this.resetStack(true)
@@ -221,7 +223,7 @@ export default class ResourceStackManager {
 
     // todo: switching to edit the layout from the Dev should also be able to trigger this notice...
     if (this._isEditingLayout.value !== this.isLayoutStack.value) {
-      const confirmed = await this.confirmStackChange({ title: 'Are you sure?', content: `<p>Are you sure you want to switch and edit the ${this.isLayoutStack.value ? 'layout' : 'page'}?</p>` }, fromContext)
+      const confirmed = await this.confirmStackChange(this.isLayoutStack.value, fromContext)
       if (!confirmed) {
         this.isLayoutStack.value = this._isEditingLayout.value
         return

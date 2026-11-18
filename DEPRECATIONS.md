@@ -202,7 +202,7 @@ Until then a short value is still read in places.
 **Delete:**
 
 - `fullPageUiName` and the `pageUiComponentModel` computed in
-  `PageAdminModal.vue` and `PageResourceAdminModal.vue`, binding the Page UI
+  `PageResourceAdminModal.vue`, binding the Page UI
   select straight to `localResourceData.uiComponent`, and their "stored short"
   tests
 - the "still stored short" test in `src/layer/pages/_cwa/index/pages.spec.ts`
@@ -211,3 +211,50 @@ Until then a short value is still read in places.
 
 **Precondition:** the module requires an api-components-bundle release
 containing #431, and its upgrade notes tell sites to run the prefix command.
+
+---
+
+## Remove when every site runs on the admin UI kit
+
+### `states` and `resetValue` on `useCwaResourceModel`
+
+The field model now returns `state` (`CwaFieldState`, read from the resources
+store), `retry()` and `reset()` ([#458](https://github.com/components-web-app/cwa-nuxt-module/issues/458),
+part of [#236](https://github.com/components-web-app/cwa-nuxt-module/issues/236)).
+The old names stay, unchanged, for one minor release so apps and the template
+can move over: `states.pendingSubmit` is `state.value.waiting`,
+`states.submitting` is `state.value.status === 'saving'`, `states.isBusy` is
+either of those, `states.isLongWait` is `state.value.slow`, and `resetValue()`
+is `reset()`.
+
+**Delete:**
+
+- `states` (`pendingSubmit`, `submitting`, `isBusy`, `isLongWait`, with the
+  `isLongWait` timer and the `longWaitThreshold` option) and `resetValue` from
+  the returned object in `composables/cwa-resource-model.ts`, keeping the
+  internal refs the model still needs
+- their tests in `cwa-resource-model.spec.ts`
+- the `states.submitting` watch in `playground/app/components/TipTapHtmlEditor.vue`,
+  moved to `state`
+
+**Precondition:** the template and the sites built on it (CK, bcio) no longer
+read `states` or `resetValue`; this is the kit's removals PR (step 9 of #236).
+
+---
+
+## Remove when every app's component descriptions are plain text
+
+### Stripping HTML from `cwa.resources.<Name>.description`
+
+The add component dialog shows a description as one line of plain text
+([#461](https://github.com/components-web-app/cwa-nuxt-module/issues/461), part of
+[#236](https://github.com/components-web-app/cwa-nuxt-module/issues/236)). Apps
+wrote descriptions as HTML (`'<p>…</p>'`) for the old dialog's `v-html` pane, so
+the dialog removes the tags and warns once per component in development.
+
+**Delete:** `hasMarkup` and `plainText` in
+`resource-manager/_parts/add-component-list.ts` (render the description as it
+is), the `describe` warning in `AddComponentDialog.vue`, and their tests.
+
+**Precondition:** the template and the sites built on it (CK, bcio) configure
+plain-text descriptions; this is the kit's removals PR (step 9 of #236).

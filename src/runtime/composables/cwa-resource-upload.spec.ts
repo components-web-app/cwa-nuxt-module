@@ -49,7 +49,16 @@ vi.mock('vuejs-confirm-dialog', () => ({
   })),
 }))
 
-vi.mock('#cwa/templates/components/core/ConfirmDialog.vue', () => ({
+const stateWrites = vi.hoisted(() => ({
+  started: vi.fn(),
+  settled: vi.fn(),
+  cleared: vi.fn(),
+}))
+vi.mock('#cwa/resources/field-state-writer', () => ({
+  writeFieldStates: (write: (states: typeof stateWrites) => void) => write(stateWrites),
+}))
+
+vi.mock('#cwa/templates/components/core/ui/Confirm.vue', () => ({
   default: {},
 }))
 
@@ -83,47 +92,20 @@ describe('useCwaResourceUpload', () => {
       expect(fileExists.value).toBe(true)
     })
 
-    test('filenameInputModel updates reactively when file data changes', async () => {
+    test('file updates reactively when file data changes', async () => {
       const resourceRef = ref<any>(undefined)
       mockGetResource.mockReturnValue(resourceRef)
-      const { filenameInputModel } = useCwaResourceUpload(iri)
-      expect(filenameInputModel.value).toBe('')
+      const { file } = useCwaResourceUpload(iri)
+      expect(file.value).toBeUndefined()
       resourceRef.value = { data: { _metadata: { mediaObjects: { file: [{ formattedFileSize: '2.4 MB' }] } } } }
       await nextTick()
-      expect(filenameInputModel.value).toBe('Existing File (2.4 MB)')
+      expect(file.value?.size).toBe('2.4 MB')
     })
 
-    test('fileDisplayType overrides the display label', async () => {
-      const resourceRef = ref<any>({ data: { _metadata: { mediaObjects: { file: [{ formattedFileSize: '1 KB' }] } } } })
-      mockGetResource.mockReturnValue(resourceRef)
-      const { filenameInputModel } = useCwaResourceUpload(iri, 'file', 'Image')
-      expect(filenameInputModel.value).toBe('Existing Image (1 KB)')
-    })
-
-    test('filenameInputModel is empty when no file data', () => {
-      const { filenameInputModel } = useCwaResourceUpload(iri)
-      expect(filenameInputModel.value).toBe('')
-    })
-  })
-
-  describe('bind', () => {
-    test('exposes CwaUiFormFile bindings that reflect state and wire the handlers', () => {
-      mockGetResource.mockReturnValue(ref({
-        data: { _metadata: { mediaObjects: { file: [{ formattedFileSize: '1.2 MB' }] } } },
-      }))
-      const upload = useCwaResourceUpload(iri)
-      const b = upload.bind.value
-      expect(b.modelValue).toBe('Existing File (1.2 MB)')
-      expect(b.fileExists).toBe(true)
-      expect(b.disabled).toBe(false)
-      expect(b.onChange).toBe(upload.handleInputChangeFile)
-      expect(b.onDelete).toBe(upload.handleInputDeleteFile)
-    })
-
-    test('onUpdate:modelValue writes back to filenameInputModel', () => {
-      const { bind, filenameInputModel } = useCwaResourceUpload(iri)
-      bind.value['onUpdate:modelValue']('changed')
-      expect(filenameInputModel.value).toBe('changed')
+    test('the upload no longer returns the old file field\'s bindings', () => {
+      const upload = useCwaResourceUpload(iri) as Record<string, unknown>
+      expect(upload.bind).toBeUndefined()
+      expect(upload.filenameInputModel).toBeUndefined()
     })
   })
 
@@ -241,6 +223,18 @@ describe('useCwaResourceUpload', () => {
       expect(fileExists.value).toBe(false)
     })
 
+    test('asks in the kit confirm, naming the file\'s display type', async () => {
+      mockGetResource.mockReturnValue(ref({
+        data: { _metadata: { mediaObjects: { file: [{ formattedFileSize: '1.2 MB' }] } } },
+      }))
+      const reveal = vi.fn().mockResolvedValue({ isCanceled: true })
+      const { createConfirmDialog } = await import('vuejs-confirm-dialog')
+      vi.mocked(createConfirmDialog).mockReturnValue({ reveal } as any)
+      const { handleInputDeleteFile } = useCwaResourceUpload(iri, 'file', 'Image')
+      await handleInputDeleteFile()
+      expect(reveal).toHaveBeenCalledWith({ title: 'Delete this image?', description: 'This can\'t be undone.', keep: 'Don\'t delete', go: 'Delete' })
+    })
+
     test('does not call updateResource when dialog is cancelled', async () => {
       const { createConfirmDialog } = await import('vuejs-confirm-dialog')
       vi.mocked(createConfirmDialog).mockReturnValue({
@@ -264,17 +258,8 @@ describe('useCwaResourceUpload', () => {
       mockGetResource.mockReturnValue(withBoth())
       const file = useCwaResourceUpload(iri, 'file')
       const preview = useCwaResourceUpload(iri, 'preview')
-      expect(file.filenameInputModel.value).toBe('Existing File (1 MB)')
-      expect(preview.filenameInputModel.value).toBe('Existing File (2 MB)')
-    })
-
-    test('selecting/typing on one field does not change the other', () => {
-      mockGetResource.mockReturnValue(withBoth())
-      const file = useCwaResourceUpload(iri, 'file')
-      const preview = useCwaResourceUpload(iri, 'preview')
-      file.bind.value['onUpdate:modelValue']('newly-picked.png')
-      expect(file.filenameInputModel.value).toBe('newly-picked.png')
-      expect(preview.filenameInputModel.value).toBe('Existing File (2 MB)')
+      expect(file.file.value?.size).toBe('1 MB')
+      expect(preview.file.value?.size).toBe('2 MB')
     })
 
     test('a full-resource update keeping both keys leaves the other field intact', async () => {
@@ -289,8 +274,64 @@ describe('useCwaResourceUpload', () => {
         } } },
       }
       await nextTick()
-      expect(file.filenameInputModel.value).toBe('Existing File (9 MB)')
-      expect(preview.filenameInputModel.value).toBe('Existing File (2 MB)')
+      expect(file.file.value?.size).toBe('9 MB')
+      expect(preview.file.value?.size).toBe('2 MB')
+    })
+  })
+
+  describe('the file field\'s own save state (#460)', () => {
+    function answering(outcome: { resource?: unknown, error?: unknown }) {
+      mockUpdateResource.mockImplementation(async (event: { iri?: string, onRequest?: (iri: string, done: Promise<unknown>) => void }) => {
+        event.onRequest?.('/resources/1', Promise.resolve(outcome))
+        return outcome.resource
+      })
+    }
+
+    test('an upload writes saving and then its outcome to the field state of its own field', async () => {
+      const entry = { data: { '@id': '/resources/1', '_metadata': {} }, fieldStates: { image: { status: 'saved', waiting: false, slow: false } } }
+      mockGetResource.mockReturnValue(ref(entry))
+      answering({ resource: { '@id': '/resources/1' } })
+      const upload = useCwaResourceUpload(iri, 'image')
+
+      await upload.handleInputChangeFile(new File(['x'], 'a.png', { type: 'image/png' }))
+      await Promise.resolve()
+
+      expect(stateWrites.started).toHaveBeenCalledWith(entry, ['image'])
+      expect(stateWrites.settled).toHaveBeenCalledWith(entry, ['image'], { '@id': '/resources/1' }, undefined, expect.any(Function))
+      expect(upload.state.value.status).toBe('saved')
+    })
+
+    test('Retry sends the same downscaled file again, without downscaling it twice', async () => {
+      mockGetResource.mockReturnValue(ref({ data: { '@id': '/resources/1', '_metadata': {} } }))
+      answering({ error: { statusCode: 500 } })
+      const upload = useCwaResourceUpload(iri)
+      await upload.handleInputChangeFile(new File(['x'], 'a.png', { type: 'image/png' }))
+
+      await upload.retry()
+
+      expect(mockDownscaleImageFile).toHaveBeenCalledTimes(1)
+      expect(mockUpdateResource).toHaveBeenCalledTimes(2)
+      const [first, second] = mockUpdateResource.mock.calls.map(([event]) => (event.data as FormData).get('file'))
+      expect(second).toBe(first)
+    })
+
+    test('Reset clears the field state and sends nothing', async () => {
+      const entry = { data: { '@id': '/resources/1', '_metadata': {} } }
+      mockGetResource.mockReturnValue(ref(entry))
+      const upload = useCwaResourceUpload(iri)
+
+      await upload.reset()
+      await upload.retry()
+
+      expect(stateWrites.cleared).toHaveBeenCalledWith(entry, 'file')
+      expect(mockUpdateResource).not.toHaveBeenCalled()
+    })
+
+    test('names the stored file from its URL with its size', () => {
+      mockGetResource.mockReturnValue(ref({ data: { _metadata: { mediaObjects: { file: [{ contentUrl: '/files/workshop%20bench.jpg?x=1', formattedFileSize: '240 KB', mimeType: 'image/jpeg' }] } } } }))
+      const upload = useCwaResourceUpload(iri)
+
+      expect(upload.file.value).toEqual({ name: 'workshop bench.jpg', size: '240 KB', url: '/files/workshop%20bench.jpg?x=1', mimeType: 'image/jpeg' })
     })
   })
 })

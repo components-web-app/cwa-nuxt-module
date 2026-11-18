@@ -1,6 +1,7 @@
 // @vitest-environment nuxt
 import { describe, test, expect, vi, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
+import ListRow from '#cwa/templates/components/core/admin/ListRow.vue'
 import { mockNuxtImport } from '@nuxt/test-utils/runtime'
 import LayoutsListPage from './layouts.vue'
 
@@ -27,7 +28,7 @@ function setup(uiComponent: string) {
       stubs: {
         ListContent: {
           name: 'ListContent',
-          props: ['fetchUrl', 'searchFields'],
+          props: ['fetchUrl', 'searchFields', 'columns'],
           setup: () => ({ item }),
           template: '<div><slot name="item" :data="item" /></div>',
         },
@@ -44,12 +45,18 @@ describe('/_cwa/layouts layout UI label', () => {
   test('shows the configured layout UI name for a layout\'s full CwaLayout name', () => {
     const wrapper = setup('CwaLayoutPrimary')
     expect(mockUseCwa).toHaveBeenCalled()
-    expect(wrapper.text()).toContain('UI: Primary Layout')
+    expect(wrapper.findComponent(ListRow).props('sub')).toBe('UI: Primary Layout')
+  })
+
+  test('a layout row offers Edit only, as a layout has no page of its own to view', () => {
+    const wrapper = setup('CwaLayoutPrimary')
+
+    expect(wrapper.findComponent(ListRow).props()).toMatchObject({ actions: true, to: '/_cwa/layouts/x', view: undefined })
+    expect(wrapper.findComponent({ name: 'ListContent' }).props('columns').at(-1)).toMatchObject({ label: 'Actions', labelHidden: true })
   })
 
   test('falls back to the name without CwaLayout when the layout UI is not configured', () => {
     const wrapper = setup('CwaLayoutSecondary')
-    expect(wrapper.text()).toContain('UI: Secondary')
-    expect(wrapper.text()).not.toContain('CwaLayoutSecondary')
+    expect(wrapper.findComponent(ListRow).props('sub')).toBe('UI: Secondary')
   })
 })

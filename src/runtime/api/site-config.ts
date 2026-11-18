@@ -1,6 +1,3 @@
-import { updateSiteConfig } from '#imports'
-import { computed, ref } from 'vue'
-import { consola } from 'consola'
 import type {
   CwaSiteConfigStoreInterface,
   SiteConfigStore,
@@ -9,15 +6,12 @@ import type CwaFetch from '#cwa/api/fetcher/cwa-fetch'
 import { useCwaSiteConfig } from '#cwa/composables/useCwaSiteConfig'
 import type { SiteConfigParams } from '#cwa/types'
 import type { CwaResource } from '#cwa/resources/resource-utils'
+import type { SiteConfigSaveFailure } from '#cwa/api/site-config-save'
 import type { PageCacheWarmProgress, PageCacheWarmSummary } from '#cwa/api/page-cache-warm'
 
 export default class SiteConfig {
   private utils: ReturnType<typeof useCwaSiteConfig>
   private readonly _store: CwaSiteConfigStoreInterface
-  private readonly _apiState = {
-    requests: ref<Promise<CwaResource | undefined>[]>([]),
-    hasError: ref(false),
-  }
 
   constructor(
     private readonly cwaFetch: CwaFetch,
@@ -63,105 +57,9 @@ export default class SiteConfig {
     return resolvedConfig
   }
 
-  public async saveConfig(newConfig: Partial<SiteConfigParams>) {
-    const returnData = {
-      totalConfigsChanged: 0,
-    }
-
-    if (newConfig.sitemapXml) {
-      const { XMLValidator } = await import('fast-xml-parser')
-      const validationResult = XMLValidator.validate(newConfig.sitemapXml)
-      if (validationResult !== true) {
-        consola.error(validationResult)
-        this.store.$patch({
-          isLoading: false,
-        })
-        this._apiState.hasError.value = true
-        this._apiState.requests.value = []
-        return returnData
-      }
-    }
-
-    // only allow one update at a time
-    if (this.totalRequests.value > 0 || !this.savedSiteConfig) {
-      return returnData
-    }
-
-    this._apiState.hasError.value = false
-    this._apiState.requests.value = []
-
-    const changedKeys: (keyof SiteConfigParams)[] = []
-    for (const [newKey, newValue] of Object.entries(newConfig) as [keyof SiteConfigParams, any][]) {
-      if (this.savedSiteConfig[newKey] === undefined || newValue !== this.savedSiteConfig[newKey]) {
-        changedKeys.push(newKey)
-      }
-    }
-    returnData.totalConfigsChanged = changedKeys.length
-
-    const allRequests: Promise<CwaResource | undefined>[] = []
-    for (const changedKey of changedKeys) {
-      const isCreatingConfigKey = this.savedSiteConfig[changedKey] === undefined
-      const method = isCreatingConfigKey ? 'POST' : 'PATCH'
-      const path = isCreatingConfigKey ? `/_/site_config_parameters` : `/_/site_config_parameters/${changedKey}`
-      const value = typeof newConfig[changedKey] === 'boolean' ? JSON.stringify(newConfig[changedKey]) : newConfig[changedKey]
-      const body: {
-        key: keyof SiteConfigParams
-        value: any
-      } = {
-        key: changedKey,
-        value,
-      }
-
-      // @ts-expect-error Better typing for headers in this response from getRequestOptions
-      const request = this.cwaFetch.fetch(path, {
-        ...this.cwaFetch.getRequestOptions(method),
-        body,
-      })
-
-      allRequests.push(request)
-    }
-    this._apiState.requests.value = allRequests
-
-    if (!changedKeys.length) {
-      return returnData
-    }
-
-    Promise.all(this._apiState.requests.value)
-      .then((responses) => {
-        if (responses.filter(r => r === undefined).length) {
-          this._apiState.hasError.value = true
-        }
-
-        const updatedConfig: Partial<SiteConfigParams> = {}
-        for (const response of responses) {
-          if (response === undefined) {
-            continue
-          }
-          const configKey = response.key as keyof SiteConfigParams
-          updatedConfig[configKey] = this.utils.processApiConfigValue(response.value)
-        }
-
-        const config = this.utils.mergeConfig(this.config, updatedConfig)
-
-        this.store.$patch({
-          isLoading: false,
-          config,
-          serverConfig: this.utils.mergeConfig(this.savedSiteConfig || {}, updatedConfig),
-        })
-
-        this._apiState.requests.value = []
-        updateSiteConfig(this.utils.resolvedConfigToSiteConfig(config))
-      })
-      .catch((err) => {
-        console.error(err)
-        this._apiState.hasError.value = true
-        this.store.$patch({
-          isLoading: false,
-        })
-        this._apiState.requests.value = []
-      })
-
-    return returnData
+  public async saveConfig(newConfig: Partial<SiteConfigParams>): Promise<SiteConfigSaveFailure[]> {
+    const { saveSiteConfig } = await import('#cwa/api/site-config-save')
+    return saveSiteConfig(this.cwaFetch, this.store, this.userConfig, newConfig)
   }
 
   public async purgePageCache(): Promise<void> {
@@ -188,14 +86,6 @@ export default class SiteConfig {
     })
     const { readWarmStream } = await import('#cwa/api/page-cache-warm')
     return readWarmStream(stream, onProgress)
-  }
-
-  public get totalRequests() {
-    return computed(() => this._apiState.requests.value.length)
-  }
-
-  public get apiState() {
-    return { ...this._apiState }
   }
 
   public get isLoading() {

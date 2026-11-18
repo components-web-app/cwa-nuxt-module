@@ -17,7 +17,7 @@ const adminSources = [
 
 const forbidden = [
   { marker: 'Sign out', source: 'admin/header/Header.vue' },
-  { marker: 'Add Component', source: 'admin/resource-manager/ResourceManager.vue' },
+  { marker: 'Already in this group', source: 'admin/resource-manager/ResourceManager.vue' },
 ]
 
 const isAdminSource = key => adminSources.some(dir => key.includes(dir))
