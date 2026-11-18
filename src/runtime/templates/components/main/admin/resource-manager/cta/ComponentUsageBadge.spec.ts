@@ -2,7 +2,7 @@
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import { computed, defineComponent, reactive } from 'vue'
 import { flushPromises, mount } from '@vue/test-utils'
-import { drawsOpenState } from '../../../../../../../../test/utils/open-state'
+import { drawsOpenState } from '../../../../../../../../test/utils/kit-css'
 import { axe } from '../../../../../../../../test/utils/axe'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import ComponentUsageBadge from './ComponentUsageBadge.vue'
