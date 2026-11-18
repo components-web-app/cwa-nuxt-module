@@ -1585,7 +1585,7 @@ test.describe('in-page editing', () => {
   })
 })
 
-test('56. outside edit mode the header\'s Edit button and menu sit on the header bar\'s centre, level with the page settings button', async ({ cwa: t }) => {
+test('61. outside edit mode the header\'s Edit button and menu sit on the header bar\'s centre, level with the page settings button', async ({ cwa: t }) => {
   const { page, base, settle, seed } = t
   for (const width of [1280, 390]) {
     await page.setViewportSize({ width, height: 800 })
@@ -1613,7 +1613,7 @@ test('56. outside edit mode the header\'s Edit button and menu sit on the header
   }
 })
 
-test('57. with live editing paused on a phone, the header\'s status is a glyph named for it beside Edit, clear of the page settings button and the menu, and a tap shows its text', async ({ cwa: t }) => {
+test('62. with live editing paused on a phone, the header\'s status is a glyph named for it beside Edit, clear of the page settings button and the menu, and a tap shows its text', async ({ cwa: t }) => {
   const { page, base, settle, seed } = t
   t.allowConsoleErrors(/^Failed to load resource: net::ERR_FAILED/)
   await page.route(`**${mercurePath}**`, route => route.abort())
@@ -1651,7 +1651,7 @@ test('57. with live editing paused on a phone, the header\'s status is a glyph n
   }
 })
 
-test('58. the header\'s Edit or Done button and the page settings button or path selector beside it share one height and one centre, at 1280 and 390, with a fine or a coarse pointer, while live editing is paused', async ({ cwa: t }) => {
+test('63. the header\'s Edit or Done button and the page settings button or path selector beside it share one height and one centre, at 1280 and 390, with a fine or a coarse pointer, while live editing is paused', async ({ cwa: t }) => {
   const { page, base, seed } = t
   const cookies = await page.context().cookies()
   for (const hasTouch of [false, true]) {

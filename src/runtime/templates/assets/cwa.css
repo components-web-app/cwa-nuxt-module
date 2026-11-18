@@ -2951,6 +2951,9 @@
   .cwa\:pointer-coarse\:min-h-12 {
     min-height: calc(var(--cwa-spacing) * 12);
   }
+  .cwa\:pointer-coarse\:min-h-hit {
+    min-height: var(--cwa-spacing-hit);
+  }
   .cwa\:pointer-coarse\:w-hit {
     width: var(--cwa-spacing-hit);
   }
