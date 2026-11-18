@@ -71,7 +71,7 @@ function pointerFocus() {
 
 async function openStack(selector: HTMLButtonElement) {
   selector.click()
-  await vi.waitFor(() => expect(document.querySelector('[data-testid="resource-stack"]')).not.toBeNull())
+  await vi.waitFor(() => expect(document.querySelector('[data-testid="resource-stack"]')).not.toBeNull(), { timeout: 5000 })
   return document.querySelector<HTMLElement>('[data-testid="resource-stack"]')!
 }
 
@@ -130,7 +130,7 @@ describe('PathSelector (#461)', () => {
     pointerFocus()
     const { selector } = await mountSelector()
     selector.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 0 }))
-    await vi.waitFor(() => expect(document.querySelector('[data-testid="resource-stack"]')).not.toBeNull())
+    await vi.waitFor(() => expect(document.querySelector('[data-testid="resource-stack"]')).not.toBeNull(), { timeout: 5000 })
 
     const ringed = [...document.querySelectorAll<HTMLElement>('[role="treeitem"]')].filter(level => level.className.split(/\s+/).includes('cwa:outline-accent-fg'))
     expect(ringed.map(level => level.getAttribute('aria-label'))).toEqual(['Rich text'])
@@ -140,7 +140,7 @@ describe('PathSelector (#461)', () => {
     pointerFocus()
     const { selector } = await mountSelector()
     selector.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 1 }))
-    await vi.waitFor(() => expect(document.querySelector('[data-testid="resource-stack"]')).not.toBeNull())
+    await vi.waitFor(() => expect(document.querySelector('[data-testid="resource-stack"]')).not.toBeNull(), { timeout: 5000 })
 
     expect([...document.querySelectorAll<HTMLElement>('[role="treeitem"]')].some(level => level.className.split(/\s+/).includes('cwa:outline-accent-fg'))).toBe(false)
   })

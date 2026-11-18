@@ -91,7 +91,7 @@ import { createCursorChannel, YRemoteCursors } from '~/tiptap/y-cursors'
 import { acquireYSession } from '~/tiptap/y-session'
 import { createCollaborationState } from '~/tiptap/y-state'
 import type { YSyncData } from '~/tiptap/y-sync'
-import { useCwa, useCwaRealtime } from '#imports'
+import { useCwa, useCwaInlineEditor, useCwaRealtime } from '#imports'
 import type { useCwaResourceModel } from '#imports'
 
 const props = defineProps<{
@@ -290,6 +290,20 @@ async function startSession(focus: boolean) {
   start === 'ahead' && save(built)
   settleSoon()
 }
+
+function editorElement() {
+  try {
+    return editor.value?.view.dom
+  }
+  catch {
+    return undefined
+  }
+}
+
+useCwaInlineEditor(props.model, editorElement, {
+  enabled: () => !props.disabled,
+  focus: () => editor.value?.commands.focus('end'),
+})
 
 onMounted(() => {
   build()

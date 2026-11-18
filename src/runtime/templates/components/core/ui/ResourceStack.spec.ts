@@ -497,6 +497,107 @@ describe('ResourceStack (#461)', () => {
     })
   })
 
+  describe('on a phone', () => {
+    const phone = '(max-width: 639.98px)'
+
+    beforeEach(() => {
+      vi.stubGlobal('matchMedia', vi.fn((query: string) => ({ matches: query === phone, media: query, addEventListener() {}, removeEventListener() {} })))
+    })
+
+    afterEach(() => {
+      vi.unstubAllGlobals()
+    })
+
+    test('below sm it opens as a modal bottom sheet labelled by its Select a resource header, with Close, holding the same tree', async () => {
+      const { panel, tree } = await openStack()
+
+      expect(panel.getAttribute('role')).toBe('dialog')
+      expect(panel.getAttribute('aria-modal')).toBe('true')
+      expect(document.getElementById(panel.getAttribute('aria-labelledby')!)!.textContent).toBe('Select a resource')
+      expect([...panel.querySelectorAll('button')].map(button => button.textContent?.trim())).toContain('Close')
+      expect(tree.getAttribute('role')).toBe('tree')
+      expect(items(panel).map(level => level.getAttribute('aria-label'))).toEqual(['Left column group', 'Component position', 'Rich text'])
+      expect(document.activeElement).toBe(tree)
+      expect(placeResourceStack).not.toHaveBeenCalled()
+    })
+
+    test('sits along the bottom edge at full width, at most 70vh tall, square, above a scrim', async () => {
+      const { panel } = await openStack()
+
+      expect(panel.className).toContain('cwa:inset-x-0')
+      expect(panel.className).toContain('cwa:bottom-0')
+      expect(panel.className).toContain('cwa:max-h-[70vh]')
+      expect(panel.className).not.toMatch(/rounded/)
+      expect(document.querySelector('[data-testid="resource-stack-scrim"]')).not.toBeNull()
+    })
+
+    test('Tab is left to move between the tree, the overflow button and Close, and does not close it', async () => {
+      const { panel, tree, onClose } = await openStack({ levels: levels(7) })
+
+      expect(panel.querySelector('[data-testid="resource-stack-more"]')!.getAttribute('tabindex')).not.toBe('-1')
+      const tab = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true })
+      tree.dispatchEvent(tab)
+      await flushPromises()
+
+      expect(tab.defaultPrevented).toBe(false)
+      expect(onClose).not.toHaveBeenCalled()
+      expect(document.querySelector('[data-testid="resource-stack"]')).not.toBeNull()
+    })
+
+    test('Close, and Escape, close it and return focus to the opener', async () => {
+      const { panel, onClose, returnTo } = await openStack()
+
+      ;[...panel.querySelectorAll('button')].find(button => button.textContent?.trim() === 'Close')!.click()
+      await flushPromises()
+      expect(onClose).toHaveBeenCalledTimes(1)
+      expect(document.activeElement).toBe(returnTo)
+
+      const again = await openStack()
+      again.tree.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
+      await flushPromises()
+      expect(again.onClose).toHaveBeenCalledTimes(1)
+      expect(document.activeElement).toBe(again.returnTo)
+    })
+
+    test('the page behind is inert while it is open, and not after', async () => {
+      const { wrapper, panel } = await openStack()
+      const container = (wrapper.vm.$.appContext.app as unknown as { _container: HTMLElement })._container
+
+      expect(container.hasAttribute('inert')).toBe(true)
+      expect(container.contains(panel)).toBe(false)
+      ;[...panel.querySelectorAll('button')].find(button => button.textContent?.trim() === 'Close')!.click()
+      await flushPromises()
+      expect(container.hasAttribute('inert')).toBe(false)
+    })
+
+    test('choosing a level selects it and closes the sheet', async () => {
+      const { panel, select, onClose } = await openStack()
+
+      nameRow(item(panel, 'Component position')).click()
+      await flushPromises()
+
+      expect(select).toHaveBeenCalledWith('1')
+      expect(onClose).toHaveBeenCalledTimes(1)
+    })
+
+    test('a phone\'s address bar resizing the window, or a scroll, leaves it open', async () => {
+      const { onClose } = await openStack()
+
+      window.dispatchEvent(new Event('resize'))
+      window.scrollTo(0, 40)
+      document.dispatchEvent(new Event('scroll'))
+      await flushPromises()
+
+      expect(onClose).not.toHaveBeenCalled()
+    })
+
+    test('has no axe violations', async () => {
+      const { panel } = await openStack({ levels: levels(7) })
+
+      expect(await axe(panel)).toHaveNoViolations()
+    })
+  })
+
   describe('axe', () => {
     test('has no violations when opened, highlighted by keyboard, hovered, and with the overflow shown and expanded', async () => {
       const { tree, panel } = await openStack({ levels: levels(7), selected: '1' })

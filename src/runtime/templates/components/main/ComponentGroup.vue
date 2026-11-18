@@ -19,16 +19,13 @@
   </template>
   <template v-else-if="isNewPosition">
     <!--cwa-start-->
-    <div class="cwa:flex cwa:justify-center cwa:border-2 cwa:border-dashed cwa:border-gray-200 cwa:p-5 cwa:pb-14 cwa:relative">
+    <EditPlaceholder label="Add the component to populate this component group">
       <LazyHotSpot
         screen-reader-action="Add component position"
         :iri="iri"
         disabled
       />
-      <span class="cwa:absolute cwa:bg-stone-600 cwa:text-light cwa:text-sm cwa:px-3 cwa:py-0.5 cwa:rounded-full cwa:bottom-5">
-        Add the component to populate this component group
-      </span>
-    </div>
+    </EditPlaceholder>
     <!--cwa-end-->
   </template>
   <template v-else-if="hasLocation && !locationResource && !$cwa.resources.isLoading.value">
@@ -42,13 +39,13 @@
   </template>
   <template v-else-if="signedInAndResourceExists">
     <!--cwa-start-->
-    <div class="cwa:flex cwa:justify-center cwa:border-2 cwa:border-dashed cwa:border-gray-200 cwa:p-5 cwa:relative">
+    <EditPlaceholder label="Empty group">
       <LazyHotSpot
         screen-reader-action="Add component position"
         :iri="iri"
         :disabled="!iri || $cwa.admin.resourceStackManager.isComponentGroupDisabled(iri, resolvedLocation)"
       />
-    </div>
+    </EditPlaceholder>
     <!--cwa-end-->
   </template>
 </template>
@@ -81,6 +78,11 @@ import Spinner from '#cwa/templates/components/utils/Spinner.vue'
 const LazyHotSpot = defineAsyncComponent({
   suspensible: false,
   loader: () => import('#cwa/templates/components/utils/HotSpot.vue'),
+})
+
+const EditPlaceholder = defineAsyncComponent({
+  suspensible: false,
+  loader: () => import('#cwa/templates/components/ui/EditPlaceholder.vue'),
 })
 
 const iri = computed<string | undefined>(() => resource.value?.data?.['@id'])

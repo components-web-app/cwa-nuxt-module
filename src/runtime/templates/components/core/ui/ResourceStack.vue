@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, h, nextTick, onBeforeUnmount, onMounted, ref, useId, useTemplateRef, watch } from 'vue'
+import { computed, getCurrentInstance, h, nextTick, onBeforeUnmount, onMounted, ref, useId, useTemplateRef, watch } from 'vue'
 import type { VNode } from 'vue'
-import { PopoverAnchor, PopoverContent, PopoverPortal, PopoverRoot } from 'reka-ui'
+import { createReusableTemplate } from '@vueuse/core'
+import { DialogContent, DialogOverlay, DialogPortal, DialogRoot, DialogTitle, PopoverAnchor, PopoverContent, PopoverPortal, PopoverRoot } from 'reka-ui'
 import { placeResourceStack } from './resource-stack'
 import type { ResourceStackLevel, StackPoint } from './resource-stack'
 import { useAnnounce } from './field-context'
@@ -22,6 +23,10 @@ const { levels, selected, at, label = 'Select a resource', limit = 5, select, mi
 const emit = defineEmits<{ close: [] }>()
 
 const announce = useAnnounce()
+const [DefineBody, ReuseBody] = createReusableTemplate()
+const sheet = typeof window !== 'undefined' && !!window.matchMedia?.('(max-width: 639.98px)').matches
+const app = getCurrentInstance()?.appContext.app as { _container?: unknown } | undefined
+let behind: HTMLElement | undefined
 
 const id = useId()
 const open = ref(true)
@@ -85,8 +90,20 @@ function place() {
   return { panel, inner: { x: innerRect.left - panelRect.left + innerRect.width / 2, y: innerRect.top - panelRect.top + innerRect.height / 2 } }
 }
 
+function reducedMotion(panel: HTMLElement) {
+  return typeof panel.animate !== 'function' || !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+}
+
+function slideUp(panel: HTMLElement) {
+  if (reducedMotion(panel)) {
+    return
+  }
+  panel.animate([{ transform: 'translateY(1.5rem)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 200, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' })
+  document.querySelector<HTMLElement>('[data-testid="resource-stack-scrim"]')?.animate?.([{ opacity: 0 }, { opacity: 1 }], { duration: 200 })
+}
+
 function grow(panel: HTMLElement, origin: { x: number, y: number }) {
-  if (typeof panel.animate !== 'function' || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+  if (reducedMotion(panel)) {
     return
   }
   panel.style.transformOrigin = `${origin.x}px ${origin.y}px`
@@ -99,6 +116,18 @@ const stopPlacing = watch(tree, async (element) => {
   }
   stopPlacing()
   await nextTick()
+  if (sheet) {
+    const container = app?._container
+    if (open.value && container instanceof HTMLElement && !container.hasAttribute('inert')) {
+      behind = container
+      container.setAttribute('inert', '')
+    }
+    position.value = { left: 0, top: 0 }
+    element.focus({ preventScroll: true })
+    const panel = content.value?.$el as HTMLElement | undefined
+    panel && slideUp(panel)
+    return
+  }
   const placed = place()
   await nextTick()
   element.focus({ preventScroll: true })
@@ -122,9 +151,11 @@ function close(refocus: boolean) {
     return
   }
   open.value = false
+  behind?.removeAttribute('inert')
   emit('close')
   const target = returnTo ?? opener
-  refocus && target?.isConnected && target.focus({ preventScroll: true })
+  const refocusTarget = () => refocus && target?.isConnected && target.focus({ preventScroll: true })
+  sheet ? nextTick(refocusTarget) : refocusTarget()
 }
 
 async function choose(index: number) {
@@ -262,11 +293,11 @@ function onEscape(event: KeyboardEvent) {
 }
 
 function onOpenChange(value: boolean) {
-  !value && !busy.value && close(false)
+  !value && !busy.value && close(sheet)
 }
 
 function onResize() {
-  close(false)
+  !sheet && close(false)
 }
 
 const pageScroll = { x: 0, y: 0 }
@@ -274,7 +305,7 @@ const pageScroll = { x: 0, y: 0 }
 function onScroll(event: Event) {
   const panel = content.value?.$el
   const isPage = event.target === document || event.target === window
-  if (busy.value || (panel && event.target instanceof Node && panel.contains(event.target)) || (isPage && window.scrollX === pageScroll.x && window.scrollY === pageScroll.y)) {
+  if (sheet || busy.value || (panel && event.target instanceof Node && panel.contains(event.target)) || (isPage && window.scrollX === pageScroll.x && window.scrollY === pageScroll.y)) {
     return
   }
   close(false)
@@ -287,6 +318,7 @@ onMounted(() => {
   window.addEventListener('resize', onResize)
 })
 onBeforeUnmount(() => {
+  behind?.removeAttribute('inert')
   window.removeEventListener('scroll', onScroll, true)
   window.removeEventListener('resize', onResize)
 })
@@ -332,11 +364,98 @@ function box(index: number): VNode {
 
 const StackTree = () => shown.value ? box(shown.value - 1) : null
 
-defineExpose({ close, contentId: computed(() => position.value && content.value?.$el?.querySelector?.('[role="dialog"]')?.id) })
+function dialogId() {
+  const panel = content.value?.$el as HTMLElement | undefined
+  return panel?.matches?.('[role="dialog"]') ? panel.id : panel?.querySelector?.('[role="dialog"]')?.id
+}
+
+defineExpose({ close, contentId: computed(() => position.value && dialogId()) })
 </script>
 
 <template>
+  <DefineBody>
+    <div
+      :id="id"
+      ref="tree"
+      role="tree"
+      tabindex="-1"
+      :aria-label="label"
+      :aria-activedescendant="levelId(highlight)"
+      :aria-busy="busy || undefined"
+      class="cwa:flex cwa:max-w-full cwa:min-w-0 cwa:flex-col cwa:outline-1 cwa:outline-transparent"
+      :class="sheet ? 'cwa:w-full' : 'cwa:w-max'"
+      @keydown="onTreeKeydown"
+      @mousedown.prevent
+      @pointermove="onPointerMove"
+      @pointerleave="onPointerLeave"
+      @click="onTreeClick"
+    >
+      <StackTree />
+    </div>
+    <div
+      v-if="hiddenCount"
+      class="cwa:px-2 cwa:py-1"
+    >
+      <button
+        ref="moreButton"
+        type="button"
+        :tabindex="sheet ? 0 : -1"
+        data-testid="resource-stack-more"
+        class="cwa:min-h-6 cwa:cursor-pointer cwa:text-helper cwa:text-accent-fg cwa:underline cwa:underline-offset-2 cwa:outline-1 cwa:outline-transparent cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-accent-fg"
+        @keydown="onMoreKeydown"
+        @click="showMore"
+      >
+        Show {{ hiddenCount }} more {{ parentsWord(hiddenCount) }}
+      </button>
+    </div>
+    <span
+      role="status"
+      aria-live="polite"
+      class="cwa:sr-only"
+    >{{ announcement }}</span>
+  </DefineBody>
+  <DialogRoot
+    v-if="sheet"
+    :open="open"
+    @update:open="onOpenChange"
+  >
+    <DialogPortal>
+      <DialogOverlay
+        data-testid="resource-stack-scrim"
+        class="cwa:fixed cwa:inset-0 cwa:z-context cwa:bg-black/40"
+      />
+      <DialogContent
+        ref="content"
+        aria-modal="true"
+        :aria-describedby="undefined"
+        data-testid="resource-stack"
+        class="cwa:fixed cwa:inset-x-0 cwa:bottom-0 cwa:z-context cwa:flex cwa:max-h-[70vh] cwa:flex-col cwa:bg-surface-menu cwa:pb-[env(safe-area-inset-bottom)] cwa:text-fg cwa:shadow-popover cwa:outline-1 cwa:outline-transparent"
+        @open-auto-focus.prevent
+        @close-auto-focus.prevent
+        @pointer-down-outside="onPointerDownOutside"
+        @escape-key-down="onEscape"
+      >
+        <div class="cwa:flex cwa:min-h-11 cwa:shrink-0 cwa:items-center cwa:justify-between cwa:gap-2 cwa:pl-4 cwa:shadow-[inset_0_-1px_0_var(--cwa-color-line)]">
+          <DialogTitle class="cwa:text-label cwa:font-semibold cwa:text-fg">
+            {{ label }}
+          </DialogTitle>
+          <button
+            type="button"
+            data-testid="resource-stack-close"
+            class="cwa:min-h-11 cwa:cursor-pointer cwa:px-4 cwa:text-label cwa:text-fg cwa:outline-1 cwa:outline-transparent cwa:hover:bg-field-hover cwa:focus-visible:outline-2 cwa:focus-visible:-outline-offset-2 cwa:focus-visible:outline-accent-fg"
+            @click="close(true)"
+          >
+            Close
+          </button>
+        </div>
+        <div class="cwa:min-h-0 cwa:overflow-y-auto cwa:p-2">
+          <ReuseBody />
+        </div>
+      </DialogContent>
+    </DialogPortal>
+  </DialogRoot>
   <PopoverRoot
+    v-else
     :open="open"
     @update:open="onOpenChange"
   >
@@ -359,44 +478,7 @@ defineExpose({ close, contentId: computed(() => position.value && content.value?
         @escape-key-down="onEscape"
         @keydown="onPanelKeydown"
       >
-        <div
-          :id="id"
-          ref="tree"
-          role="tree"
-          tabindex="-1"
-          :aria-label="label"
-          :aria-activedescendant="levelId(highlight)"
-          :aria-busy="busy || undefined"
-          class="cwa:flex cwa:w-max cwa:max-w-full cwa:min-w-0 cwa:flex-col cwa:outline-1 cwa:outline-transparent"
-          @keydown="onTreeKeydown"
-          @mousedown.prevent
-          @pointermove="onPointerMove"
-          @pointerleave="onPointerLeave"
-          @click="onTreeClick"
-        >
-          <StackTree />
-        </div>
-        <div
-          v-if="hiddenCount"
-          class="cwa:px-2 cwa:py-1"
-        >
-          <button
-            ref="moreButton"
-            type="button"
-            tabindex="-1"
-            data-testid="resource-stack-more"
-            class="cwa:min-h-6 cwa:cursor-pointer cwa:text-helper cwa:text-accent-fg cwa:underline cwa:underline-offset-2 cwa:outline-1 cwa:outline-transparent cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-accent-fg"
-            @keydown="onMoreKeydown"
-            @click="showMore"
-          >
-            Show {{ hiddenCount }} more {{ parentsWord(hiddenCount) }}
-          </button>
-        </div>
-        <span
-          role="status"
-          aria-live="polite"
-          class="cwa:sr-only"
-        >{{ announcement }}</span>
+        <ReuseBody />
       </PopoverContent>
     </PopoverPortal>
   </PopoverRoot>

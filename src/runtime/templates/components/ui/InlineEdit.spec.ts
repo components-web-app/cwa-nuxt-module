@@ -1,0 +1,174 @@
+// @vitest-environment happy-dom
+import { afterEach, describe, expect, test, vi } from 'vitest'
+import { computed, nextTick, ref } from 'vue'
+import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
+import { axe } from '../../../../../test/utils/axe'
+import { drawsFocusRing } from '../../../../../test/utils/focus-ring'
+import { findInlineEditor, openInlineEditor } from '#cwa/admin/inline-editors'
+import type { RemoteFieldChange, ResourceModelField } from '#cwa/resources/model-editors'
+import InlineEdit from './InlineEdit.vue'
+
+const cwa = vi.hoisted(() => ({ resources: { isIriPublishableEquivalent: () => false } }))
+vi.mock('#cwa/composables/cwa', () => ({ useCwa: () => cwa }))
+
+enableAutoUnmount(afterEach)
+
+afterEach(() => {
+  document.body.innerHTML = ''
+})
+
+function fieldModel(initial: string | null, remote?: RemoteFieldChange<string>) {
+  const focusin = vi.fn()
+  const model: ResourceModelField<string> = {
+    model: ref(initial),
+    remoteChange: computed(() => remote),
+    focusListeners: { onFocusin: focusin, onFocusout: vi.fn(), onPointerdown: vi.fn() },
+    editorKey: { iri: () => '/component/title', field: 'title' },
+  }
+  return { model, focusin }
+}
+
+function mountEdit(initial: string | null = 'How we build a kitchen', props: Record<string, unknown> = {}) {
+  const field = fieldModel(initial)
+  const wrapper = mount(InlineEdit, { props: { model: field.model, label: 'Title', ...props }, attachTo: document.body })
+  return { wrapper, ...field }
+}
+
+function shown(wrapper: ReturnType<typeof mountEdit>['wrapper']) {
+  return wrapper.get<HTMLElement>('[data-testid="inline-edit-value"]')
+}
+
+async function startEditing(wrapper: ReturnType<typeof mountEdit>['wrapper']) {
+  await shown(wrapper).trigger('click')
+  await flushPromises()
+  return wrapper.get<HTMLInputElement>('input')
+}
+
+describe('CwaUiInlineEdit (#461)', () => {
+  test('shows the value as text in the page\'s own font, named as an edit control', () => {
+    const { wrapper } = mountEdit()
+
+    expect(shown(wrapper).text()).toBe('How we build a kitchen')
+    expect(shown(wrapper).attributes('role')).toBe('button')
+    expect(shown(wrapper).attributes('tabindex')).toBe('0')
+    expect(shown(wrapper).attributes('aria-label')).toBe('Edit Title: How we build a kitchen')
+    expect(wrapper.find('input').exists()).toBe(false)
+  })
+
+  test('an empty value shows the placeholder, muted', () => {
+    const { wrapper } = mountEdit(null, { placeholder: 'Add a title' })
+
+    expect(shown(wrapper).text()).toBe('Add a title')
+    expect(shown(wrapper).classes()).toContain('cwa:opacity-60')
+  })
+
+  test('a click or Enter turns it into an input holding the value, focused, named by its label', async () => {
+    const { wrapper } = mountEdit()
+    const input = await startEditing(wrapper)
+
+    expect(input.element.value).toBe('How we build a kitchen')
+    expect(document.activeElement).toBe(input.element)
+    expect(input.attributes('aria-label')).toBe('Title')
+    await input.trigger('keydown', { key: 'Escape' })
+
+    await shown(wrapper).trigger('keydown', { key: 'Enter' })
+    await flushPromises()
+    expect(wrapper.find('input').exists()).toBe(true)
+  })
+
+  test('Enter commits the typed value to the model and shows it', async () => {
+    const { wrapper, model } = mountEdit()
+    const input = await startEditing(wrapper)
+    await input.setValue('How we fit a kitchen')
+    expect(model.model.value).toBe('How we build a kitchen')
+
+    await input.trigger('keydown', { key: 'Enter' })
+
+    expect(model.model.value).toBe('How we fit a kitchen')
+    expect(wrapper.find('input').exists()).toBe(false)
+    expect(shown(wrapper).text()).toBe('How we fit a kitchen')
+    expect(document.activeElement).toBe(shown(wrapper).element)
+  })
+
+  test('Escape reverts without saving, and stops there so it never deselects the component', async () => {
+    const { wrapper, model } = mountEdit()
+    const outer = vi.fn()
+    document.addEventListener('keydown', outer)
+    const input = await startEditing(wrapper)
+    await input.setValue('Something else')
+
+    await input.trigger('keydown', { key: 'Escape' })
+    await flushPromises()
+
+    expect(model.model.value).toBe('How we build a kitchen')
+    expect(wrapper.find('input').exists()).toBe(false)
+    expect(outer).not.toHaveBeenCalled()
+    document.removeEventListener('keydown', outer)
+  })
+
+  test('leaving the input commits, as long as the text changed, and an emptied value saves null', async () => {
+    const { wrapper, model } = mountEdit()
+    let input = await startEditing(wrapper)
+    await input.trigger('blur')
+    expect(model.model.value).toBe('How we build a kitchen')
+
+    input = await startEditing(wrapper)
+    await input.setValue('')
+    await input.trigger('blur')
+
+    expect(model.model.value).toBeNull()
+    expect(wrapper.find('input').exists()).toBe(false)
+  })
+
+  test('reports focus to presence from its root', async () => {
+    const { wrapper, focusin } = mountEdit()
+    await startEditing(wrapper)
+
+    expect(focusin).toHaveBeenCalled()
+  })
+
+  test('the bar\'s Edit on page finds it, opens it with the caret at the end, and Escape goes back to the button without saving', async () => {
+    const { wrapper, model } = mountEdit()
+    const caret = vi.spyOn(HTMLInputElement.prototype, 'setSelectionRange')
+    const button = document.createElement('button')
+    document.body.append(button)
+    const editor = findInlineEditor(cwa, { iri: () => '/component/title', field: 'title' })!
+
+    openInlineEditor(editor, button)
+    await flushPromises()
+    const input = wrapper.get<HTMLInputElement>('input')
+    expect(document.activeElement).toBe(input.element)
+    expect(caret).toHaveBeenCalledWith(22, 22)
+    await input.setValue('Typed then abandoned')
+
+    await input.trigger('keydown', { key: 'Escape' })
+    input.element.dispatchEvent(new FocusEvent('blur'))
+    await nextTick()
+    expect(document.activeElement).toBe(button)
+    expect(model.model.value).toBe('How we build a kitchen')
+    caret.mockRestore()
+  })
+
+  test('shows a held remote change with Use theirs and Keep mine', () => {
+    const remote = { name: 'Alex', value: 'Theirs', accept: vi.fn(), keep: vi.fn() } as unknown as RemoteFieldChange<string>
+    const wrapper = mount(InlineEdit, { props: { model: fieldModel('Mine', remote).model, label: 'Title' }, attachTo: document.body })
+
+    expect(wrapper.get('[data-testid="remote-change"]').text()).toContain('Alex changed this')
+  })
+
+  test('the value and the input draw the kit focus ring without removing the outline', async () => {
+    const { wrapper } = mountEdit()
+    expect(drawsFocusRing(shown(wrapper).classes())).toBe(true)
+    const input = await startEditing(wrapper)
+
+    expect(drawsFocusRing(input.classes())).toBe(true)
+  })
+
+  test('has no axe violations shown or editing', async () => {
+    const { wrapper } = mountEdit()
+    expect(await axe(document.body)).toHaveNoViolations()
+    await startEditing(wrapper)
+
+    expect(await axe(document.body)).toHaveNoViolations()
+  })
+})
