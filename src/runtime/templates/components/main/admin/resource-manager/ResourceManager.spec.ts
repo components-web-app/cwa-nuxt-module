@@ -71,6 +71,7 @@ function makeStackManager(overrides: Record<string, any> = {}) {
     resetStack: vi.fn(),
     isEditingLayout: ref(false),
     resourceStack: ref<{ iri: string }[]>([]),
+    contextStack: ref<{ iri: string, displayName?: string }[]>([{ iri: '/component/1', displayName: 'Rich text' }, { iri: '/_/pages/home' }]),
     currentIri: ref<string | undefined>('/component/1'),
     resetTabs: vi.fn(),
     ...overrides,
@@ -640,6 +641,28 @@ describe('ResourceManager', () => {
       expect(menu().props('modelValue')).toBe(true)
       expect(menu().props('point')).toEqual({ x: 200, y: 300, key: expect.any(Number) })
       expect(menu().props('point').key).not.toBe(first.key)
+    })
+
+    test.each(['page', 'layout'] as const)('a right-click on empty %s space, with no component, position or group under it, leaves the browser\'s menu and opens nothing (#461)', async (type) => {
+      const contextStack = ref<{ iri: string }[]>([])
+      const stackManager = makeStackManager({ isContextPopulating: ref(true), contextStack })
+      stackManager.completeStack.mockImplementation(() => {
+        contextStack.value = contextStack.value.length ? [{ iri: type === 'page' ? '/_/pages/home' : '/_/layouts/main' }] : [{ iri: '/component/1' }]
+      })
+      cwaState.cwa = makeCwa({ isEditing: true, hasRole: true, stackManager })
+      const wrapper = await mountManager()
+      const menu = () => wrapper.findComponent({ name: 'CwaAdminResourceManagerContextMenu' })
+      ;(wrapper.vm as any).contextMenuHandler({ clientX: 20, clientY: 30, preventDefault: vi.fn(), target: document.createElement('div') }, type)
+      await nextTick()
+      expect(menu().props('modelValue')).toBe(true)
+
+      const preventDefault = vi.fn()
+      ;(wrapper.vm as any).contextMenuHandler({ clientX: 400, clientY: 300, preventDefault, target: document.createElement('div') }, type)
+      await nextTick()
+
+      expect(stackManager.completeStack).toHaveBeenLastCalledWith({ clickTarget: expect.any(HTMLElement) }, true, type)
+      expect(preventDefault).not.toHaveBeenCalled()
+      expect(menu().props('modelValue')).toBe(false)
     })
 
     test('closes when the same position is clicked again while open (showDefaultContext)', async () => {

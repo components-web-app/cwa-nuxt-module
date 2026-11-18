@@ -1,10 +1,13 @@
 <script lang="ts" setup>
-import { defineAsyncComponent, shallowRef, watch } from 'vue'
+import { defineAsyncComponent, provide, shallowRef, watch } from 'vue'
+import { useRouter } from '#app/composables/router'
 import { resourceStackLevels } from '#cwa/templates/components/core/ui/resource-stack'
 import type { ResourceStackLevel, StackPoint } from '#cwa/templates/components/core/ui/resource-stack'
+import { createAnnouncer } from '#cwa/templates/components/core/ui/field-context'
+import { announceKey } from '#cwa/templates/components/core/ui/field-keys'
 import { useCwa } from '#cwa/composables/cwa'
 
-const ResourceStack = defineAsyncComponent(() => import('#cwa/templates/components/ui/ResourceStack.vue'))
+const ResourceStack = defineAsyncComponent(() => import('#cwa/templates/components/core/ui/ResourceStack.vue'))
 
 const props = defineProps<{
   modelValue: boolean
@@ -13,7 +16,11 @@ const props = defineProps<{
 
 const emit = defineEmits<{ 'update:modelValue': [value: boolean] }>()
 
-const stackManager = useCwa().admin.resourceStackManager
+const $cwa = useCwa()
+const stackManager = $cwa.admin.resourceStackManager
+const router = useRouter()
+const announcer = createAnnouncer()
+provide(announceKey, announcer.announce)
 
 const opened = shallowRef<{ key: number, at: StackPoint, levels: ResourceStackLevel[], selected?: string }>()
 
@@ -33,8 +40,14 @@ watch(() => props.modelValue ? props.point : undefined, (point) => {
   }
 }, { immediate: true })
 
-function select(key: string) {
-  return stackManager.selectStackIndex(Number(key), true)
+watch([() => $cwa.resources.displayPageIri.value, () => router.currentRoute.value.fullPath], () => {
+  opened.value && close()
+})
+
+async function select(key: string) {
+  const item = stackManager.contextStack.value[Number(key)]
+  await stackManager.selectStackIndex(Number(key), true)
+  return stackManager.currentStackItem.value?.iri === item?.iri
 }
 
 function close() {
@@ -53,4 +66,10 @@ function close() {
     :select="select"
     @close="close"
   />
+  <span
+    role="status"
+    aria-live="polite"
+    class="cwa:sr-only"
+    data-testid="resource-stack-announcer"
+  >{{ announcer.message.value }}</span>
 </template>

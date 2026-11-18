@@ -638,6 +638,9 @@
 .cwa\:max-h-\[50vh\] {
   max-height: 50vh;
 }
+.cwa\:max-h-\[calc\(100dvh-1rem\)\] {
+  max-height: calc(100dvh - 1rem);
+}
 .cwa\:max-h-full {
   max-height: 100%;
 }
@@ -814,9 +817,6 @@
 }
 .cwa\:max-w-\[calc\(100\%-1\.3em\)\] {
   max-width: calc(100% - 1.3em);
-}
-.cwa\:max-w-\[calc\(100vw-1rem\)\] {
-  max-width: calc(100vw - 1rem);
 }
 .cwa\:max-w-\[calc\(100vw-2rem\)\] {
   max-width: calc(100vw - 2rem);
@@ -2808,6 +2808,13 @@
 .cwa\:disabled\:select-none:disabled {
   -webkit-user-select: none;
   user-select: none;
+}
+:where(:focus-visible) .cwa\:in-focus-visible\:outline-2 {
+  outline-style: var(--tw-outline-style);
+  outline-width: 2px;
+}
+:where(:focus-visible) .cwa\:in-focus-visible\:outline-accent-fg {
+  outline-color: var(--cwa-color-accent-fg);
 }
 .cwa\:has-\[\[data-step\]\:hover\]\:bg-field:has(:is([data-step]:hover)) {
   background-color: var(--cwa-color-field);

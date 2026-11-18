@@ -68,7 +68,7 @@ export function placeResourceStack(anchor: StackPoint | StackRect, { panel, inne
       left = avoid.left - margin - panel.width
     }
     else {
-      top = avoid.top + avoid.height + margin
+      top = Math.max(margin, Math.min(avoid.top + avoid.height + margin, viewport.height - panel.height - margin))
     }
   }
   return { left, top }

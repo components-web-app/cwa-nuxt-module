@@ -1393,3 +1393,46 @@ test.describe('co-editing', () => {
     assert(contentWrites(t).length === 0, `Something was written: ${JSON.stringify(contentWrites(t))}`)
   })
 })
+
+test.describe('resource stack', () => {
+  test('55. right-clicking a component, the innermost box\'s corner sits on the pointer at the centre, the right edge and above the bottom edge, and at the bottom edge the panel shifts to stay 8px inside', async ({ cwa: t }) => {
+    const { page } = t
+    await page.setViewportSize({ width: 1280, height: 900 })
+    await openEditMode(t)
+    const component = page.getByText(texts.source, { exact: true }).first()
+    await component.waitFor()
+
+    async function openAt(x, y) {
+      await component.evaluate((el, [clientX, clientY]) => el.dispatchEvent(new MouseEvent('contextmenu', { clientX, clientY, button: 2, bubbles: true, cancelable: true })), [x, y])
+      const panel = page.getByTestId('resource-stack')
+      await eventually(async () => await panel.count() === 1 && await panel.evaluate(el => el.style.visibility !== 'hidden'), `The stack did not show at ${x}, ${y}`)
+      await panel.evaluate(el => Promise.all(el.parentElement.getAnimations().map(animation => animation.finished)))
+      const boxes = await panel.evaluate((el) => {
+        const inner = el.querySelector('[data-stack-innermost]').getBoundingClientRect()
+        const outer = el.getBoundingClientRect()
+        return { inner: { left: inner.left, top: inner.top, right: inner.right, bottom: inner.bottom }, panel: { left: outer.left, top: outer.top, right: outer.right, bottom: outer.bottom } }
+      })
+      await page.keyboard.press('Escape')
+      await eventually(async () => await panel.count() === 0, 'The stack did not close on Escape')
+      return boxes
+    }
+    const near = (a, b) => Math.abs(a - b) <= 1
+
+    const centre = await openAt(640, 450)
+    assert(near(centre.inner.left, 640) && near(centre.inner.top, 450), `At the centre the innermost box's top-left is ${JSON.stringify(centre.inner)}, not on the pointer`)
+
+    const right = await openAt(1220, 450)
+    assert(near(right.inner.right, 1220) && near(right.inner.top, 450), `60px from the right edge the innermost box's top-right is ${JSON.stringify(right.inner)}, not on the pointer`)
+    assert(right.panel.right <= 1272, `60px from the right edge the panel ends at ${right.panel.right}`)
+
+    const below = centre.panel.bottom - centre.inner.bottom
+    const lowY = Math.round(892 - below - (centre.inner.bottom - centre.inner.top) / 2)
+    const low = await openAt(640, lowY)
+    assert(near(low.inner.left, 640) && near(low.inner.bottom, lowY), `At ${lowY}, where only a bottom corner fits, the innermost box's bottom-left is ${JSON.stringify(low.inner)}, not on the pointer`)
+
+    const bottom = await openAt(640, 840)
+    assert(near(bottom.inner.left, 640), `60px from the bottom the innermost box's left is ${bottom.inner.left}, not at the pointer`)
+    assert(bottom.inner.bottom <= 840 + 1, `60px from the bottom the innermost box ends at ${bottom.inner.bottom}, below the pointer`)
+    assert(bottom.panel.bottom <= 892 + 1 && bottom.panel.bottom >= 892 - 1, `60px from the bottom the panel ends at ${bottom.panel.bottom}, not 8px inside the window`)
+  })
+})

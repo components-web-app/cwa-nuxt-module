@@ -21,6 +21,7 @@ import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/resources/resourc
 import BarSummary from '#cwa/templates/components/core/admin/BarSummary.vue'
 import { createAnnouncer } from '#cwa/templates/components/core/ui/field-context'
 import { announceKey, managerTabMountedKey } from '#cwa/templates/components/core/ui/field-keys'
+import { resourceStackLevels } from '#cwa/templates/components/core/ui/resource-stack'
 
 const ComponentUsageBadge = defineAsyncComponent(() => import('#cwa/templates/components/main/admin/resource-manager/cta/ComponentUsageBadge.vue'))
 const SharedInstancesHighlight = defineAsyncComponent(() => import('#cwa/templates/components/main/admin/resource-manager/SharedInstancesHighlight.vue'))
@@ -81,8 +82,12 @@ function contextMenuHandler(e: MouseEvent, type: 'page' | 'layout') {
     isOpen.value = false
     return
   }
-  e.preventDefault()
   completeStack(e, type, true)
+  if (!resourceStackLevels($cwa.admin.resourceStackManager.contextStack.value).length) {
+    isOpen.value = false
+    return
+  }
+  e.preventDefault()
   openContext(pos)
 }
 

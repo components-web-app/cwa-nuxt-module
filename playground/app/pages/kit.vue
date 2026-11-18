@@ -25,7 +25,6 @@ import {
   CwaUiSpinner,
   CwaUiToggle,
   CwaUiTree,
-  CwaUiResourceStack,
 } from '#components'
 import { fakeFieldModel } from '../kit/fake-field-model'
 import { fakeDialogForm } from '../kit/fake-dialog-form'
@@ -35,6 +34,7 @@ import type { CwaResource } from '../../../src/runtime/resources/resource-utils'
 import type { MenuEntry } from '../../../src/runtime/templates/components/core/ui/menu-entries'
 import Toast from '../../../src/runtime/templates/components/core/ui/Toast.vue'
 import FormGroup from '../../../src/runtime/templates/components/core/ui/FormGroup.vue'
+import ResourceStack from '../../../src/runtime/templates/components/core/ui/ResourceStack.vue'
 import type { CwaToastOptions } from '../../../src/runtime/composables/cwa-toast'
 import { badgeTintPercent } from '../../../src/runtime/templates/components/ui/kit-looks'
 import { kitColourLabel, kitColourTokens, kitContrastPairs, kitThemeStyle, kitTokenCss, measureKitPair } from '../../../src/tailwind/kit-tokens'
@@ -188,15 +188,18 @@ const stackLevels = stackNames.map((label, index) => ({ key: String(index), labe
 const stackAt = ref<HTMLElement | { x: number, y: number }>()
 const stackChoice = ref('')
 const stackKey = ref(0)
+const stackByKeyboard = ref(false)
 
 function openStackOver(event: MouseEvent) {
   stackKey.value++
+  stackByKeyboard.value = event.detail === 0
   stackAt.value = event.currentTarget as HTMLElement
 }
 
 function openStackAtPointer(event: MouseEvent) {
   event.preventDefault()
   stackKey.value++
+  stackByKeyboard.value = false
   stackAt.value = { x: event.clientX, y: event.clientY }
 }
 
@@ -853,12 +856,13 @@ const badgeTones = [
             @click="openStackOver"
           />
         </div>
-        <CwaUiResourceStack
+        <ResourceStack
           v-if="stackAt"
           :key="stackKey"
           :levels="stackLevels"
           selected="0"
           :at="stackAt"
+          :keyboard="stackByKeyboard"
           :select="chooseStackLevel"
           @close="stackAt = undefined"
         />

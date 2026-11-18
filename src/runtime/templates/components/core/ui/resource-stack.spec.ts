@@ -67,6 +67,12 @@ describe('placeResourceStack over an element (#461)', () => {
     expect(placeResourceStack(anchor, boxes, viewport, status)).toEqual({ left: 532, top: 40 })
     expect(placeResourceStack({ ...anchor, left: 100 }, boxes, viewport, { ...status, left: 150 })).toEqual({ left: 80, top: 98 })
   })
+
+  test('moved below an element it must not cover, it still stays 8px inside the bottom of the viewport', () => {
+    const tall = { panel: { width: 160, height: 860 }, inner: boxes.inner }
+
+    expect(placeResourceStack({ ...anchor, left: 100 }, tall, viewport, { left: 150, top: 50, width: 100, height: 40 })).toEqual({ left: 80, top: 32 })
+  })
 })
 
 describe('resourceStackLevels (#461)', () => {

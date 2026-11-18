@@ -1,13 +1,18 @@
 // @vitest-environment happy-dom
-import { afterEach, describe, expect, test, vi } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
+import { defineComponent, h } from 'vue'
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
-import { axe } from '../../../../../test/utils/axe'
-import { drawsFocusRing } from '../../../../../test/utils/focus-ring'
-import { placeResourceStack } from '../core/ui/resource-stack'
+import { Dialog, DialogPanel } from '@headlessui/vue'
+import { axe } from '../../../../../../test/utils/axe'
+import { drawsFocusRing } from '../../../../../../test/utils/focus-ring'
+import { placeResourceStack } from './resource-stack'
+import { announceKey } from './field-keys'
 import ResourceStack from './ResourceStack.vue'
 
-vi.mock('../core/ui/resource-stack', async (importOriginal) => {
-  const original = await importOriginal<typeof import('../core/ui/resource-stack')>()
+vi.mock('./resource-stack', async (importOriginal) => {
+  const original = await importOriginal<typeof import('./resource-stack')>()
   return { ...original, placeResourceStack: vi.fn(original.placeResourceStack) }
 })
 
@@ -16,7 +21,7 @@ enableAutoUnmount(afterEach)
 const names = ['Rich text', 'Component position', 'Left column group', 'Two columns', 'Component position', 'Main content group', 'Tabs']
 const levels = (count: number) => names.slice(0, count).map((label, index) => ({ key: String(index), label }))
 
-async function openStack(props: Record<string, unknown> = {}) {
+async function openStack(props: Record<string, unknown> = {}, announce = vi.fn()) {
   const returnTo = document.createElement('button')
   returnTo.textContent = 'Opener'
   returnTo.dataset.testid = 'opener'
@@ -26,6 +31,7 @@ async function openStack(props: Record<string, unknown> = {}) {
   const wrapper = mount(ResourceStack, {
     props: { levels: levels(3), at: { x: 400, y: 300 }, select, returnTo, onClose, ...props },
     attachTo: document.body,
+    global: { provide: { [announceKey as symbol]: announce } },
   })
   await flushPromises()
   const panel = document.querySelector<HTMLElement>('[data-testid="resource-stack"]')!
@@ -45,8 +51,8 @@ function nameRow(level: HTMLElement) {
   return level.querySelector<HTMLElement>(':scope > [data-stack-name]')!
 }
 
-async function press(tree: HTMLElement, key: string) {
-  tree.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }))
+async function press(tree: HTMLElement, key: string, modifiers: KeyboardEventInit = {}) {
+  tree.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, ...modifiers }))
   await flushPromises()
 }
 
@@ -54,12 +60,27 @@ function highlighted(tree: HTMLElement) {
   return document.getElementById(tree.getAttribute('aria-activedescendant')!)!.getAttribute('aria-label')
 }
 
+const matches = Element.prototype.matches
+
+function showsFocus(onTree: boolean) {
+  vi.spyOn(Element.prototype, 'matches').mockImplementation(function (this: Element, selector: string) {
+    return selector === ':focus-visible' ? onTree && this.getAttribute('role') === 'tree' : matches.call(this, selector)
+  })
+}
+
+beforeEach(() => showsFocus(false))
+
 afterEach(() => {
   document.querySelectorAll('[data-testid="opener"]').forEach(element => element.remove())
   vi.mocked(placeResourceStack).mockClear()
+  vi.restoreAllMocks()
 })
 
-describe('CwaUiResourceStack (#461)', () => {
+function compiledCss() {
+  return readFileSync(resolve(import.meta.dirname, '../../../assets/cwa.css'), 'utf8')
+}
+
+describe('ResourceStack (#461)', () => {
   test('is a tree titled Select a resource, each level a treeitem inside its parent\'s group, named by its display name alone, the outermost at level 1', async () => {
     const { panel, tree } = await openStack()
 
@@ -78,8 +99,8 @@ describe('CwaUiResourceStack (#461)', () => {
     expect(inner.hasAttribute('aria-expanded')).toBe(false)
   })
 
-  test('shows the names and nothing else: no icons, second lines, counts or key hints', async () => {
-    const { panel } = await openStack()
+  test('shows the names and nothing else, with something selected: no icons, second lines, counts or key hints', async () => {
+    const { panel } = await openStack({ selected: '1' })
 
     expect([...panel.querySelectorAll('[data-stack-name]')].map(row => row.textContent)).toEqual(['Rich text', 'Component position', 'Left column group'])
     expect(panel.textContent).toBe('Rich textComponent positionLeft column group')
@@ -96,17 +117,16 @@ describe('CwaUiResourceStack (#461)', () => {
     expect(outer.className).toContain('cwa:border-dashed')
   })
 
-  test('the selected level has a check, a heavier name and the accent edge on its own name row only', async () => {
+  test('the selected level has a heavier name and the accent edge on its own name row only, and no check', async () => {
     const { panel } = await openStack({ selected: '1' })
     const selected = item(panel, 'Component position')
 
     expect(selected.getAttribute('aria-selected')).toBe('true')
     expect(item(panel, 'Rich text').getAttribute('aria-selected')).toBe('false')
-    expect(nameRow(selected).querySelector('svg')).not.toBeNull()
     expect(nameRow(selected).className).toContain('cwa:font-semibold')
     expect(nameRow(selected).className).toContain('inset_3px_0_0_var(--cwa-color-accent-fg)')
     expect(selected.className).not.toContain('inset_3px')
-    expect(panel.querySelectorAll('svg')).toHaveLength(1)
+    expect(panel.querySelectorAll('svg')).toHaveLength(0)
   })
 
   test('opens with focus on the tree and the highlight on the selected level, shown only as selected, or on the innermost when nothing is selected', async () => {
@@ -115,6 +135,40 @@ describe('CwaUiResourceStack (#461)', () => {
     expect(document.activeElement).toBe(tree)
     expect(highlighted(tree)).toBe('Component position')
     expect(items(panel).some(level => level.className.includes('cwa:outline-accent-fg') || level.className.includes('cwa:bg-field-hover'))).toBe(false)
+  })
+
+  test('opened by keyboard, the ring shows on the level it starts on', async () => {
+    const { panel } = await openStack({ selected: '1', keyboard: true })
+
+    const ringed = items(panel).filter(level => level.className.split(/\s+/).includes('cwa:outline-accent-fg'))
+    expect(ringed.map(level => level.getAttribute('aria-label'))).toEqual(['Component position'])
+    expect(ringed[0]!.className).toContain('cwa:outline-2')
+  })
+
+  test('opened by pointer while the browser shows focus on the tree, the ring shows on the level it starts on', async () => {
+    showsFocus(true)
+    const { panel } = await openStack({ selected: '1' })
+
+    const ringed = items(panel).filter(level => level.className.split(/\s+/).includes('cwa:outline-accent-fg'))
+    expect(ringed.map(level => level.getAttribute('aria-label'))).toEqual(['Component position'])
+  })
+
+  test('opened by pointer, the level it starts on still draws the ring whenever the tree has visible focus', async () => {
+    const { panel } = await openStack({ selected: '1' })
+    const classes = item(panel, 'Component position').className.split(/\s+/)
+
+    expect(classes).toEqual(expect.arrayContaining(['cwa:in-focus-visible:outline-2', 'cwa:in-focus-visible:outline-accent-fg']))
+    expect(compiledCss()).toContain(':where(:focus-visible) .cwa\\:in-focus-visible\\:outline-2 {')
+    expect(items(panel).filter(level => level.className.includes('in-focus-visible'))).toHaveLength(1)
+  })
+
+  test('the outermost level draws its ring inside its edge, since the panel scrolls and would clip it', async () => {
+    const { panel, tree } = await openStack()
+
+    await press(tree, 'End')
+    expect(item(panel, 'Left column group').className.split(/\s+/)).toContain('cwa:-outline-offset-2')
+    await press(tree, 'Home')
+    expect(item(panel, 'Rich text').className.split(/\s+/)).toContain('cwa:outline-offset-1')
   })
 
   test('starts on the innermost level when nothing is selected', async () => {
@@ -136,6 +190,18 @@ describe('CwaUiResourceStack (#461)', () => {
     expect(highlighted(tree)).toBe('Rich text')
     await press(tree, 'ArrowLeft')
     expect(highlighted(tree)).toBe('Component position')
+  })
+
+  test('arrow keys with Alt or Meta held are left to the browser', async () => {
+    const { tree } = await openStack()
+
+    for (const modifiers of [{ altKey: true }, { metaKey: true }]) {
+      const event = new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true, ...modifiers })
+      tree.dispatchEvent(event)
+      await flushPromises()
+      expect(event.defaultPrevented).toBe(false)
+      expect(highlighted(tree)).toBe('Rich text')
+    }
   })
 
   test('Home goes to the innermost, End to the outermost, and a letter to the next level starting with it', async () => {
@@ -222,15 +288,56 @@ describe('CwaUiResourceStack (#461)', () => {
     expect(document.activeElement).toBe(returnTo)
   })
 
-  test('a choice that is cancelled keeps the panel open with the highlight where it was', async () => {
-    const { tree, select, onClose } = await openStack()
-    select.mockResolvedValue(false)
+  test('a choice says "<name> selected" through the surface\'s announcer', async () => {
+    const announce = vi.fn()
+    const { tree } = await openStack({}, announce)
 
     await press(tree, 'ArrowDown')
     await press(tree, 'Enter')
+    expect(announce).toHaveBeenCalledWith('Component position selected')
+  })
+
+  test('a choice that is cancelled (the layout/page confirm) closes the panel, returns focus and announces nothing', async () => {
+    const announce = vi.fn()
+    const { tree, select, onClose, returnTo } = await openStack({}, announce)
+    select.mockResolvedValue(false)
+
+    await press(tree, 'Enter')
+    expect(onClose).toHaveBeenCalledOnce()
+    expect(document.activeElement).toBe(returnTo)
+    expect(announce).not.toHaveBeenCalled()
+  })
+
+  test('while a choice waits on a Headless UI confirm, Escape reaches the confirm and the stack stays open', async () => {
+    let resolve!: (value: unknown) => void
+    const { tree, select, onClose, panel } = await openStack()
+    select.mockImplementation(() => new Promise((done) => {
+      resolve = done
+    }))
+    await press(tree, 'Enter')
+    const onDialogClose = vi.fn()
+    mount(defineComponent(() => () => h(Dialog, { open: true, onClose: onDialogClose }, () => h(DialogPanel, () => h('button', { type: 'button' }, 'Cancel')))), { attachTo: document.body })
+    await flushPromises()
+
+    const escape = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })
+    ;(document.activeElement ?? document.body).dispatchEvent(escape)
+    await flushPromises()
+    expect(onDialogClose).toHaveBeenCalledWith(false)
     expect(onClose).not.toHaveBeenCalled()
-    expect(highlighted(tree)).toBe('Component position')
-    expect(document.activeElement).toBe(tree)
+    expect(panel.isConnected).toBe(true)
+
+    resolve(false)
+    await flushPromises()
+    expect(onClose).toHaveBeenCalledOnce()
+  })
+
+  test('while a choice is pending, Escape on the tree does not close it', async () => {
+    const { tree, select, onClose } = await openStack()
+    select.mockImplementation(() => new Promise(() => {}))
+    await press(tree, 'Enter')
+
+    await press(tree, 'Escape')
+    expect(onClose).not.toHaveBeenCalled()
   })
 
   test('Escape and Tab close it and return focus', async () => {
@@ -268,6 +375,30 @@ describe('CwaUiResourceStack (#461)', () => {
     await flushPromises()
     expect(onClose).toHaveBeenCalledOnce()
     window.scrollTo(0, 0)
+  })
+
+  test('resizing the window closes it', async () => {
+    const { onClose } = await openStack()
+
+    window.dispatchEvent(new Event('resize'))
+    await flushPromises()
+    expect(onClose).toHaveBeenCalledOnce()
+  })
+
+  test('a tall panel scrolls inside the viewport, and is no wider than the viewport without its scrollbar, less 8px each side', async () => {
+    vi.spyOn(document.documentElement, 'clientWidth', 'get').mockReturnValue(1000)
+    const { panel } = await openStack()
+
+    expect(panel.className.split(/\s+/)).toEqual(expect.arrayContaining(['cwa:max-h-[calc(100dvh-1rem)]', 'cwa:overflow-y-auto']))
+    expect(panel.className).not.toContain('100vw')
+    expect(panel.style.maxWidth).toBe('984px')
+  })
+
+  test('shows itself at the point when the innermost box cannot be measured, never staying hidden', async () => {
+    const { panel } = await openStack({ levels: [], at: { x: 123, y: 45 } })
+
+    expect(panel.style.visibility).not.toBe('hidden')
+    expect(placeResourceStack).not.toHaveBeenCalled()
   })
 
   test('scrolling a container on the page closes it', async () => {
@@ -330,6 +461,26 @@ describe('CwaUiResourceStack (#461)', () => {
       await press(more, 'ArrowUp')
       expect(document.activeElement).toBe(tree)
       expect(highlighted(tree)).toBe('Component position')
+    })
+
+    test('showing them finishes the grow animation before measuring again', async () => {
+      vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: false })))
+      const finish = vi.fn()
+      HTMLElement.prototype.animate = vi.fn(() => ({ finish }) as unknown as Animation)
+      try {
+        const { panel } = await openStack({ levels: levels(7) })
+        vi.mocked(placeResourceStack).mockClear()
+
+        panel.querySelector<HTMLElement>('[data-testid="resource-stack-more"]')!.click()
+        await flushPromises()
+        expect(finish).toHaveBeenCalledOnce()
+        expect(placeResourceStack).toHaveBeenCalledOnce()
+        expect(finish.mock.invocationCallOrder[0]!).toBeLessThan(vi.mocked(placeResourceStack).mock.invocationCallOrder[0]!)
+      }
+      finally {
+        delete (HTMLElement.prototype as { animate?: unknown }).animate
+        vi.unstubAllGlobals()
+      }
     })
 
     test('showing them keeps the highlight and announces how many were shown', async () => {
