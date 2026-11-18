@@ -1,4 +1,5 @@
 import { shallowReactive } from 'vue'
+import type { ResourceModelField } from '#cwa/resources/model-editors'
 
 export interface InlineEditorKey {
   iri: () => string | undefined
@@ -10,6 +11,8 @@ export interface InlineEditor {
   element: () => HTMLElement | null | undefined
   enabled: () => boolean
   focus: () => void
+  model?: ResourceModelField<any>
+  label?: string
   returnTo?: HTMLElement
 }
 
@@ -82,20 +85,19 @@ export function returnFromInlineEditor(editor: InlineEditor) {
   return true
 }
 
-const barStatuses = new WeakMap<object, HTMLElement>()
+export interface BarStatus {
+  open: (field: string) => boolean
+}
 
-export function registerBarStatus(owner: object, element: HTMLElement) {
-  barStatuses.set(owner, element)
+const barStatuses = new WeakMap<object, BarStatus>()
+
+export function registerBarStatus(owner: object, status: BarStatus) {
+  barStatuses.set(owner, status)
   return () => {
-    barStatuses.get(owner) === element && barStatuses.delete(owner)
+    barStatuses.get(owner) === status && barStatuses.delete(owner)
   }
 }
 
-export function focusBarStatus(owner: object) {
-  const element = barStatuses.get(owner)
-  if (!element) {
-    return false
-  }
-  element.focus()
-  return true
+export function openBarStatus(owner: object, field: string) {
+  return barStatuses.get(owner)?.open(field) ?? false
 }

@@ -6,7 +6,7 @@ import { axe } from '../../../../../../test/utils/axe'
 import { drawsFocusRing } from '../../../../../../test/utils/focus-ring'
 import { announceKey } from '../ui/field-keys'
 import BarSummary from './BarSummary.vue'
-import { focusBarStatus } from '#cwa/admin/inline-editors'
+import { openBarStatus, registerInlineEditor } from '#cwa/admin/inline-editors'
 import type { CwaFieldState } from '#cwa/storage/stores/resources/state'
 
 const iri = ref('/component/c1')
@@ -30,6 +30,7 @@ vi.mock('#cwa/composables/cwa', () => ({
     },
     resources: {
       findAllPublishableIris: (each: string) => [each],
+      isIriPublishableEquivalent: () => false,
       getResource: () => ({ value: { data: data.value, fieldStates } }),
     },
     resourcesManager: { requestCount, updateResource },
@@ -66,14 +67,147 @@ describe('BarSummary (#459)', () => {
     updateResource.mockReset()
   })
 
-  test('is where an in-page editor\'s Escape goes while its save has failed, and stops being it when unmounted', async () => {
-    const { summary, wrapper } = mountSummary()
+  function inPageEditor(field = 'title', label?: string) {
+    const element = document.createElement('h1')
+    document.body.append(element)
+    const retry = vi.fn(async () => {})
+    const reset = vi.fn(async () => {})
+    const unregisterEditor = registerInlineEditor(cwa, {
+      key: { iri: () => iri.value, field },
+      element: () => element,
+      enabled: () => true,
+      focus: vi.fn(),
+      model: { model: ref('Mine'), remoteChange: ref(undefined), retry, reset },
+      label,
+    })
+    const unregister = () => {
+      unregisterEditor()
+      element.remove()
+    }
+    return { retry, reset, unregister }
+  }
 
-    expect(focusBarStatus(cwa)).toBe(true)
+  function failed(message?: string): CwaFieldState {
+    return { status: 'error', waiting: false, slow: false, error: message ? { kind: 'server', message } : undefined }
+  }
+
+  const popover = () => document.querySelector<HTMLElement>('[data-testid="bar-summary-popover"]')
+  const retryButton = () => popover()?.querySelector<HTMLElement>('[data-testid="field-status-retry"]')
+  const resetButton = () => popover()?.querySelector<HTMLElement>('[data-testid="field-status-reset"]')
+
+  test('an error from an in-page editor opens from the status: a popover naming the field and the reason, with Retry and Reset, and no field shown', async () => {
+    const editor = inPageEditor('title', 'Title')
+    fieldStates.title = failed('The server is unavailable.')
+    const { wrapper, summary } = mountSummary()
+    await nextTick()
+
+    expect(summary().attributes('aria-label')).toBe('1 not saved, Retry or Reset')
+    expect(summary().attributes('aria-haspopup')).toBe('dialog')
+    expect(summary().attributes('aria-expanded')).toBe('false')
+    await summary().trigger('click')
+    await vi.advanceTimersByTimeAsync(50)
+
+    expect(wrapper.emitted('show')).toBeUndefined()
+    expect(summary().attributes('aria-expanded')).toBe('true')
+    expect(popover()?.getAttribute('aria-label')).toBe('Title: not saved')
+    expect(popover()?.textContent).toContain('Title: not saved')
+    expect(popover()?.textContent).toContain('The server is unavailable.')
+    expect(retryButton()).toBeTruthy()
+    expect(resetButton()).toBeTruthy()
+    editor.unregister()
+  })
+
+  test('Retry sends the field again through its editor\'s model, closes the popover and leaves focus on the status', async () => {
+    const editor = inPageEditor()
+    fieldStates.title = failed()
+    const { summary } = mountSummary()
+    await nextTick()
+    await summary().trigger('click')
+    await vi.advanceTimersByTimeAsync(50)
+
+    expect(popover()?.textContent).toContain('title: not saved')
+    expect(popover()?.textContent).toContain('The server couldn’t save this.')
+    retryButton()!.click()
+    await vi.advanceTimersByTimeAsync(50)
+
+    expect(editor.retry).toHaveBeenCalledOnce()
+    expect(editor.reset).not.toHaveBeenCalled()
+    expect(popover()).toBeNull()
     expect(document.activeElement).toBe(summary().element)
+    editor.unregister()
+  })
+
+  test('Reset puts the field back through its editor\'s model and sends nothing', async () => {
+    const editor = inPageEditor()
+    fieldStates.title = failed()
+    const { summary } = mountSummary()
+    await nextTick()
+    await summary().trigger('click')
+    await vi.advanceTimersByTimeAsync(50)
+
+    resetButton()!.click()
+    await vi.advanceTimersByTimeAsync(50)
+
+    expect(editor.reset).toHaveBeenCalledOnce()
+    expect(editor.retry).not.toHaveBeenCalled()
+    expect(popover()).toBeNull()
+    editor.unregister()
+  })
+
+  test('Escape from a failed in-page editor opens the popover with focus on Retry, and only for a field that has failed', async () => {
+    const editor = inPageEditor('title', 'Title')
+    fieldStates.title = failed()
+    const { summary } = mountSummary()
+    await nextTick()
+
+    expect(openBarStatus(cwa, 'body')).toBe(false)
+    expect(popover()).toBeNull()
+
+    expect(openBarStatus(cwa, 'title')).toBe(true)
+    await vi.advanceTimersByTimeAsync(50)
+
+    expect(summary().attributes('aria-expanded')).toBe('true')
+    expect(document.activeElement).toBe(retryButton())
+    editor.unregister()
+  })
+
+  test('stops being where an in-page editor\'s Escape goes once unmounted', async () => {
+    const editor = inPageEditor()
+    fieldStates.title = failed()
+    const { wrapper } = mountSummary()
+    await nextTick()
 
     wrapper.unmount()
-    expect(focusBarStatus(cwa)).toBe(false)
+    expect(openBarStatus(cwa, 'title')).toBe(false)
+    editor.unregister()
+  })
+
+  test('a conflict on a field an in-page editor holds still shows the field, and Escape there opens nothing', async () => {
+    const editor = inPageEditor()
+    fieldStates.title = of('conflict')
+    const { wrapper, summary } = mountSummary()
+    await nextTick()
+
+    expect(openBarStatus(cwa, 'title')).toBe(false)
+    await summary().trigger('click')
+    await vi.advanceTimersByTimeAsync(50)
+
+    expect(wrapper.emitted('show')).toEqual([['title']])
+    expect(popover()).toBeNull()
+    editor.unregister()
+  })
+
+  test('an error with no in-page editor still shows the field in the bar, whose own status popover has Retry and Reset', async () => {
+    fieldStates.title = failed()
+    const { wrapper, summary } = mountSummary()
+    await nextTick()
+
+    expect(summary().attributes('aria-label')).toBe('1 not saved, show the field')
+    await summary().trigger('click')
+    await vi.advanceTimersByTimeAsync(50)
+
+    expect(wrapper.emitted('show')).toEqual([['title']])
+    expect(popover()).toBeNull()
   })
 
   test.each([

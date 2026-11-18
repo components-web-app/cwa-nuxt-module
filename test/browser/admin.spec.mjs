@@ -1459,7 +1459,7 @@ test.describe('in-page editing', () => {
     await eventually(async () => await sheet.count() === 0, 'Close did not shut the sheet')
   })
 
-  test('57. a title is edited where it sits on the page: Enter saves it, and while a save has failed Escape goes to the bar status', async ({ cwa: t }) => {
+  test('57. a title is edited where it sits on the page: Enter saves it, and while a save has failed Escape opens the bar status on Retry, which saves it', async ({ cwa: t }) => {
     const { page, seed } = t
     const title = (await t.api.create('/component/titles', { title: 'Title on the page' }))['@id']
     await t.api.create('/_/component_positions', { componentGroup: seed.iris.pageAGroup, component: title })
@@ -1493,7 +1493,14 @@ test.describe('in-page editing', () => {
     await page.getByTestId('inline-edit-value').filter({ hasText: 'Title that will not save' }).click()
     expect(await input.getAttribute('aria-invalid')).toBe('true')
     await input.press('Escape')
-    await eventually(() => status.evaluate(el => document.activeElement === el), 'Escape from the failed editor did not go to the bar status')
+    const retry = page.getByTestId('bar-summary-popover').getByRole('button', { name: 'Retry' })
+    await eventually(() => retry.evaluate(el => document.activeElement === el), 'Escape from the failed editor did not open the bar status on Retry')
+    expect(await page.getByTestId('bar-summary-popover').getAttribute('aria-label')).toBe('Title: not saved')
+
+    await page.keyboard.press('Enter')
+    await eventually(() => t.rehearsal.writes.find(w => w.method === 'PATCH' && w.body?.title === 'Title that will not save'), `Retry sent no PATCH: ${JSON.stringify(t.rehearsal.writes)}`)
+    await eventually(async () => await status.getAttribute('data-state') !== 'error' && await page.getByTestId('bar-summary-popover').count() === 0, 'Retry did not clear the failed save')
+    expect(await page.getByTestId('inline-edit-value').filter({ hasText: 'Title that will not save' }).getAttribute('aria-invalid')).toBeNull()
   })
 
   test('58. the Content tab\'s Edit on page focuses the rich-text editor on the page, and Escape there returns to the button', async ({ cwa: t }) => {
