@@ -109,6 +109,7 @@ function onKeydown(event: KeyboardEvent) {
     >
       <div
         data-testid="sub-view-header"
+        data-cwa-sticky
         class="cwa:sticky cwa:z-1 cwa:border-b cwa:border-line cwa:bg-surface cwa:px-6 cwa:pt-3 cwa:pb-4"
         :class="padded ? 'cwa:-mx-6 cwa:-mt-6 cwa:mb-6 cwa:-top-6' : 'cwa:top-0 cwa:max-sm:px-4'"
       >

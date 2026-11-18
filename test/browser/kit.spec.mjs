@@ -153,3 +153,55 @@ for (const width of widths) {
     expect(sizes.group).toBeLessThan(sizes.column)
   })
 }
+
+for (const [width, height] of [[1280, 600], [390, 600]]) {
+  test(`kit at ${width}×${height}: a choice in a slide-over reveals content below the fold, and it scrolls fully into view (#461)`, async ({ page }) => {
+    await openKit(page, width)
+    await page.setViewportSize({ width, height })
+    const nesting = page.getByTestId('kit-reveal-nesting').getByRole('group')
+    await expect(async () => {
+      await page.getByTestId('kit-reveal-open').click()
+      await nesting.waitFor({ state: 'attached', timeout: 1000 })
+    }).toPass()
+    const scroller = nesting.locator('xpath=ancestor::*[@data-cwa-scroll][1]')
+
+    const placeControlAt = edge => nesting.evaluate((group, edge) => {
+      const body = group.closest('[data-cwa-scroll]')
+      const view = body.getBoundingClientRect()
+      const control = group.getBoundingClientRect()
+      const low = view.top + body.clientHeight
+      body.scrollTop += edge === 'bottom' ? control.bottom - low : control.top - view.top - 8
+      const placed = group.getBoundingClientRect()
+      return edge === 'bottom' ? Math.abs(placed.bottom - low) < 2 : Math.abs(placed.top - view.top - 8) < 2
+    }, edge)
+    const choose = async (label) => {
+      const option = nesting.getByRole('button', { name: label, exact: true })
+      await expect(async () => {
+        await option.focus()
+        await page.keyboard.press('Enter')
+        await expect(option).toHaveAttribute('aria-pressed', 'true', { timeout: 500 })
+      }).toPass()
+      return option
+    }
+    const inView = testId => page.getByTestId(testId).evaluate((element) => {
+      const body = element.closest('[data-cwa-scroll]')
+      const view = body.getBoundingClientRect()
+      const box = element.getBoundingClientRect()
+      return box.top >= view.top - 1 && box.bottom <= view.top + body.clientHeight + 1
+    })
+
+    expect(await placeControlAt('bottom')).toBe(true)
+    expect(await inView('kit-reveal-nesting')).toBe(true)
+    const option = await choose('Page data')
+    await expect.poll(() => inView('kit-reveal-parent-data')).toBe(true)
+    await expect(option).toBeFocused()
+
+    await choose('Nothing')
+    expect(await placeControlAt('top')).toBe(true)
+    const before = await scroller.evaluate(body => body.scrollTop)
+    await choose('Page data')
+    await expect.poll(() => inView('kit-reveal-parent-data')).toBe(true)
+    const after = await scroller.evaluate(body => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve(body.scrollTop)))))
+    expect(after).toBe(before)
+  })
+}

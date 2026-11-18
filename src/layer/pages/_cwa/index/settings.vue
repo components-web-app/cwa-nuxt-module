@@ -110,7 +110,7 @@
           field="indexable"
           label="Allow your website to be indexed"
         />
-        <template v-if="local.indexable">
+        <CwaReveal :when="!!local.indexable">
           <CwaUiToggle
             field="robotsAllowNonSeoCrawlers"
             label="Allow non-SEO crawlers (web scrapers and the like)"
@@ -119,7 +119,7 @@
             field="robotsAllowAiBots"
             label="Allow AI bots"
           />
-        </template>
+        </CwaReveal>
         <CwaUiToggle
           field="robotsRemoveSitemap"
           label="Remove sitemap.xml from robots.txt"
@@ -328,6 +328,7 @@ import FormGroup from '#cwa/templates/components/core/ui/FormGroup.vue'
 import CwaUiFormSection from '#cwa/templates/components/ui/FormSection.vue'
 import CwaUiInput from '#cwa/templates/components/ui/Input.vue'
 import CwaUiToggle from '#cwa/templates/components/ui/Toggle.vue'
+import CwaReveal from '#cwa/templates/components/core/ui/Reveal.vue'
 import CwaUiTextarea from '#cwa/templates/components/ui/Textarea.vue'
 import CwaUiAlert from '#cwa/templates/components/ui/Alert.vue'
 import CwaUiButton from '#cwa/templates/components/ui/Button.vue'

@@ -286,6 +286,7 @@ defineExpose({ showField, announce })
     <div
       ref="actions"
       data-testid="form-group-actions"
+      data-cwa-sticky
       class="cwa:sticky cwa:bottom-0 cwa:z-10 cwa:mt-section cwa:flex cwa:items-center cwa:justify-end cwa:gap-actions cwa:bg-stone-800 cwa:py-4 cwa:pb-[calc(1rem+env(safe-area-inset-bottom))]"
     >
       <p

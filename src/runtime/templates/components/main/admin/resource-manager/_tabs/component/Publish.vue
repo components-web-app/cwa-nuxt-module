@@ -7,6 +7,7 @@ import DatePicker from '#cwa/templates/components/ui/DatePicker.vue'
 import CwaUiManagerTab from '#cwa/templates/components/ui/ManagerTab.vue'
 import CwaUiManagerRowDivider from '#cwa/templates/components/ui/ManagerRowDivider.vue'
 import CwaUiToggle from '#cwa/templates/components/ui/Toggle.vue'
+import CwaReveal from '#cwa/templates/components/core/ui/Reveal.vue'
 
 const { exposeMeta, $cwa, iri } = useCwaResourceManagerTab({
   name: 'Publish',
@@ -56,12 +57,13 @@ defineExpose(exposeMeta)
         data-schedule-toggle
         label="Schedule"
       />
-      <DatePicker
-        v-if="scheduling"
-        v-model="scheduleValue"
-        :min="minSchedule"
-        label="Go live"
-      />
+      <CwaReveal :when="scheduling">
+        <DatePicker
+          v-model="scheduleValue"
+          :min="minSchedule"
+          label="Go live"
+        />
+      </CwaReveal>
     </template>
     <span
       v-else-if="publishableState && !alternateIri"

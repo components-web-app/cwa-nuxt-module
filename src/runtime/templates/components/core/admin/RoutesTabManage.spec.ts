@@ -31,6 +31,7 @@ function mountManage(options: {
       routePublication: { liveAt: options.liveAt, effectiveLiveAt: options.effectiveLiveAt },
     } as any,
     shallow: true,
+    global: { stubs: { CwaReveal: false } },
   })
 }
 
