@@ -1436,3 +1436,74 @@ test.describe('resource stack', () => {
     assert(bottom.panel.bottom <= 892 + 1 && bottom.panel.bottom >= 892 - 1, `60px from the bottom the panel ends at ${bottom.panel.bottom}, not 8px inside the window`)
   })
 })
+
+test.describe('in-page editing', () => {
+  test('56. on a phone a long press on a component opens the resource stack as a bottom sheet, and Close shuts it', async ({ cwa: t }) => {
+    const { page } = t
+    await page.setViewportSize({ width: 390, height: 844 })
+    await openEditMode(t)
+    const component = page.getByText(texts.source, { exact: true }).first()
+    await component.waitFor()
+
+    await component.evaluate((el) => {
+      const { left, top, width, height } = el.getBoundingClientRect()
+      el.dispatchEvent(new PointerEvent('pointerdown', { pointerType: 'touch', clientX: left + width / 2, clientY: top + height / 2, bubbles: true, cancelable: true }))
+    })
+    const sheet = page.getByTestId('resource-stack')
+    await eventually(async () => await sheet.count() === 1 && await sheet.getAttribute('aria-modal') === 'true', 'The long press never opened the stack as a sheet')
+    const box = await sheet.boundingBox()
+    assert(Math.abs(box.y + box.height - 844) <= 1 && box.width >= 389, `The sheet is not along the bottom edge: ${JSON.stringify(box)}`)
+
+    await page.getByTestId('resource-stack-close').click()
+    await eventually(async () => await sheet.count() === 0, 'Close did not shut the sheet')
+  })
+
+  test('57. a title is edited where it sits on the page: Enter saves it', async ({ cwa: t }) => {
+    const { page, seed } = t
+    const title = (await t.api.create('/component/titles', { title: 'Title on the page' }))['@id']
+    await t.api.create('/_/component_positions', { componentGroup: seed.iris.pageAGroup, component: title })
+    await openEditMode(t)
+
+    const shown = page.getByTestId('inline-edit-value').filter({ hasText: 'Title on the page' })
+    await shown.click()
+    const input = page.getByRole('textbox', { name: 'Title', exact: true })
+    await input.fill('Title edited on the page')
+    await input.press('Enter')
+
+    await eventually(() => t.rehearsal.writes.find(w => w.method === 'PATCH' && w.path.startsWith(title) && w.body?.title === 'Title edited on the page'), `No PATCH of the title: ${JSON.stringify(t.rehearsal.writes)}`)
+    await page.getByTestId('inline-edit-value').filter({ hasText: 'Title edited on the page' }).waitFor()
+  })
+
+  test('58. the Content tab\'s Edit on page focuses the rich-text editor on the page, and Escape there returns to the button', async ({ cwa: t }) => {
+    const { page } = t
+    await openEditMode(t)
+    await select(page, texts.source)
+
+    const button = page.getByTestId('inline-handoff-edit')
+    await eventually(async () => (await button.textContent()).trim() === 'Edit on page', 'The Content tab never offered Edit on page')
+    await button.click()
+    await eventually(() => page.evaluate(() => document.activeElement?.classList.contains('ProseMirror')), 'Edit on page did not focus the editor')
+
+    await page.keyboard.press('Escape')
+    await eventually(() => button.evaluate(el => document.activeElement === el), 'Escape did not return to Edit on page')
+  })
+
+  test('59. Link in the rich-text editor opens the link popover, and Enter links the selected words', async ({ cwa: t }) => {
+    const { page } = t
+    await openEditMode(t)
+    await select(page, texts.source)
+
+    await placeCaret(page, texts.source, 'start')
+    await page.keyboard.press('Shift+End')
+    await page.getByRole('button', { name: 'Link', exact: true }).click()
+    const popover = page.getByTestId('link-popover')
+    await popover.waitFor()
+    const url = popover.getByRole('textbox', { name: 'URL' })
+    await eventually(() => url.evaluate(el => document.activeElement === el), 'The URL field was not focused')
+    await url.fill('/kitchens')
+    await url.press('Enter')
+
+    await eventually(() => t.rehearsal.writes.find(w => w.method === 'PATCH' && w.body?.html?.includes('href="/kitchens"')), `No PATCH with the link: ${JSON.stringify(t.rehearsal.writes)}`)
+    assert(await popover.count() === 0, 'The popover stayed open after Enter')
+  })
+})
