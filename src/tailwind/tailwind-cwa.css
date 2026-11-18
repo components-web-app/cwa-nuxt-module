@@ -16,12 +16,12 @@
   --color-button: #44403c;
   --color-shimmer: rgb(255 255 255 / 0.24);
   --color-menu-highlight: #57534e;
-  --color-field: #57534e;
-  --color-field-hover: #625d58;
+  --color-field: #44403c;
+  --color-field-hover: #4f4a45;
   --color-chip: #6e6964;
   --color-field-danger: #6f514c;
   --color-field-warning: #6d5e45;
-  --color-muted-on-field: #e7e5e4;
+  --color-muted-on-field: #c1bcb7;
   --color-tree-line: #78716c;
   --color-toggle-off: #78716c;
   --color-step-hover: rgb(255 255 255 / 0.17);
