@@ -57,6 +57,7 @@ const sectionItems = computed<MenuEntry[]>(() => sections.map(section => ({ labe
   <div
     class="kit-toolbar"
     data-testid="kit-toolbar"
+    @click.stop
   >
     <CwaUiManagerTab>
       <CwaUiSegmented
