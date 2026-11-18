@@ -114,6 +114,8 @@
           :model="roleModel"
           label="Role"
           :options="roleOptions"
+          :disabled="isSelf"
+          disabled-reason="You can't change your own role."
         />
       </CwaUiFormSection>
       <CwaUiFormSection
@@ -195,6 +197,8 @@
             tone="danger"
             label="Delete user"
             :loading="isUpdating"
+            :disabled="isSelf"
+            disabled-reason="You can't delete your own account."
             data-testid="user-delete"
             @click="handleDeleteClick"
           />
@@ -256,6 +260,8 @@ const { isAdding, isLoading, isUpdating, localResourceData, formatDate, deleteRe
   },
   dismissStoredErrors: true,
 })
+
+const isSelf = computed(() => !isAdding.value && !!$cwa.auth.user?.['@id'] && $cwa.auth.user['@id'] === localResourceData.value?.['@id'])
 
 const emailField = computed(() => isAdding.value ? 'emailAddress' : 'newEmailAddress')
 
