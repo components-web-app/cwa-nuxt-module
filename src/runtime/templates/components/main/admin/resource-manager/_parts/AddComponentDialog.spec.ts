@@ -6,6 +6,7 @@ import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { mockNuxtImport } from '@nuxt/test-utils/runtime'
 import { consola } from 'consola'
 import { axe } from '../../../../../../../../test/utils/axe'
+import { drawsFocusRing } from '../../../../../../../../test/utils/focus-ring'
 
 const { dynamicOptions, resolvedMeta, cwaState } = vi.hoisted(() => ({
   dynamicOptions: {
@@ -241,6 +242,7 @@ describe('the add component dialog (#461)', () => {
       await openDialog()
 
       expect(chipValues()).toEqual(['Image', 'HtmlContent'])
+      expect(qa('[data-testid="add-component-chip"]').every(chip => drawsFocusRing([...chip.classList]))).toBe(true)
       expect(document.getElementById(q('[data-testid="add-component-quick"]')!.getAttribute('aria-labelledby')!)!.textContent!.trim()).toBe('Already in this group')
       const image = qa('[data-testid="add-component-chip"]')[0]!
       expect(document.getElementById(image.getAttribute('aria-describedby')!)!.textContent).toBe('2 here')

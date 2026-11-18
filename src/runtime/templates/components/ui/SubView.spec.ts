@@ -3,6 +3,7 @@ import { afterEach, describe, expect, test, vi } from 'vitest'
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { defineComponent, h, ref } from 'vue'
 import { axe } from '../../../../../test/utils/axe'
+import { drawsFocusRing } from '../../../../../test/utils/focus-ring'
 import SubView from './SubView.vue'
 
 enableAutoUnmount(afterEach)
@@ -166,6 +167,13 @@ describe('CwaUiSubView (#461)', () => {
     await flushPromises()
 
     expect(container.scrollTop).toBe(120)
+  })
+
+  test('the back link draws its focus ring when focused from the keyboard', async () => {
+    const { open } = mountSubView()
+    await openFrom(document.querySelector('[data-testid="opener"]')!, open)
+
+    expect(drawsFocusRing([...sub()!.querySelector('[data-testid="sub-view-back"]')!.classList])).toBe(true)
   })
 
   test('has no axe violations open or closed', async () => {

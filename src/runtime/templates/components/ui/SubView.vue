@@ -97,7 +97,7 @@ function onKeydown(event: KeyboardEvent) {
           type="button"
           :aria-label="`Back to ${backLabel}`"
           data-testid="sub-view-back"
-          class="cwa:-ms-1 cwa:inline-flex cwa:h-target cwa:cursor-pointer cwa:items-center cwa:gap-1 cwa:px-1 cwa:text-label cwa:text-fg-muted cwa:outline-none cwa:transition-colors cwa:duration-(--cwa-duration-fast) cwa:hover:text-fg cwa:focus-visible:outline-2 cwa:focus-visible:outline-accent-fg cwa:pointer-coarse:h-hit"
+          class="cwa:-ms-1 cwa:inline-flex cwa:h-target cwa:cursor-pointer cwa:items-center cwa:gap-1 cwa:px-1 cwa:text-label cwa:text-fg-muted cwa:outline-1 cwa:outline-transparent cwa:transition-colors cwa:duration-(--cwa-duration-fast) cwa:hover:text-fg cwa:focus-visible:outline-2 cwa:focus-visible:outline-accent-fg cwa:pointer-coarse:h-hit"
           @click="emit('back')"
         >
           <svg

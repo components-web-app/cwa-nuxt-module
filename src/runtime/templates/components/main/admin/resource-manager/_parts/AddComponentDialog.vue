@@ -447,7 +447,7 @@ watch(open, async (isOpen: boolean) => {
                   :aria-describedby="`add-component-chip-${chip.name}`"
                   data-testid="add-component-chip"
                   :data-value="chip.name"
-                  class="cwa:inline-flex cwa:h-control cwa:cursor-pointer cwa:items-center cwa:gap-2 cwa:bg-button cwa:ps-3 cwa:pe-3.5 cwa:text-label cwa:text-fg cwa:outline-none cwa:transition-colors cwa:duration-(--cwa-duration-fast) cwa:hover:bg-field-hover cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-accent-fg cwa:pointer-coarse:h-hit"
+                  class="cwa:inline-flex cwa:h-control cwa:cursor-pointer cwa:items-center cwa:gap-2 cwa:bg-button cwa:ps-3 cwa:pe-3.5 cwa:text-label cwa:text-fg cwa:outline-1 cwa:outline-transparent cwa:transition-colors cwa:duration-(--cwa-duration-fast) cwa:hover:bg-field-hover cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-accent-fg cwa:pointer-coarse:h-hit"
                   @click="openDetail(chip.name, $event.currentTarget as HTMLElement)"
                   @focus="activeChip = index"
                   @keydown="onChipKeydown($event, index)"
