@@ -89,3 +89,9 @@ The right-click menu (`CwaResourceManagerContextMenu` on `utils/ContextMenu.vue`
 - **CWA is off on `/kit`**, so samples never select resources in the real admin (7e).
 - **Edit dialogs become slide-overs from the right** (experiment): a centred dialog shifted as its content changed height. Confirms, the add component dialog and pickers stay centred (7d).
 - **Placeholder messages are behind their icon:** the empty group and empty position placeholders show only the icon and label; the explanation opens on hover, focus or tap (7b).
+- **Slide-overs are the edit dialog** (Daniel prefers them). The header's eye and × sit close together (7d).
+- **List row action icons stay small** (16px); the 5/9 icon rule is for dialog headers and the bar ⋮ only (7d).
+- **The info tooltip matches the artifact's tooltip style**, with an arrow visible on every surface (7f).
+- **The resource stack opens with one animation from both places**: a fade and a small downward settle, never sideways (7f).
+- **The header's hamburger is vertically centred** (7c).
+- **A page form's Save is not pinned to the bottom**: site settings puts Save and Cancel top right, level with the title or tabs; dialogs keep their pinned footer (7g).
