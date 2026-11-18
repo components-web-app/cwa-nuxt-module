@@ -84,8 +84,12 @@ function layoutLink(page, name) {
   return page.locator('header').getByRole('link', { name, exact: true })
 }
 
+function dialogs(page) {
+  return page.locator('[role="dialog"], [role="alertdialog"]')
+}
+
 function dialogWith(page, text) {
-  return page.getByRole('dialog').filter({ hasText: text })
+  return dialogs(page).filter({ hasText: text })
 }
 
 function cloneMenu(page) {
@@ -97,8 +101,8 @@ function moveMenu(page) {
 }
 
 async function reasonsBehind(page, menu, name) {
-  await menu.getByRole('button', { name, exact: true }).click()
-  const reasons = page.getByTestId('clone-option-reasons')
+  await menu.getByRole('menuitem', { name, exact: true }).click()
+  const reasons = page.getByTestId('menu-item-reasons')
   await reasons.waitFor()
   return reasons.innerText()
 }
@@ -108,11 +112,11 @@ async function waitForNoMenu(page, message) {
 }
 
 async function dialogTexts(page) {
-  return (await page.getByRole('dialog').allInnerTexts()).join(' | ')
+  return (await dialogs(page).allInnerTexts()).join(' | ')
 }
 
 async function waitForNoDialog(page, message) {
-  await eventually(async () => (await page.getByRole('dialog').count()) === 0, `${message}: ${await dialogTexts(page)}`)
+  await eventually(async () => (await dialogs(page).count()) === 0, `${message}: ${await dialogTexts(page)}`)
 }
 
 async function visibleHighlights(page) {
@@ -213,7 +217,7 @@ test('3. after navigating, a page click opens the target dialog and Add after cl
   await assertOnSecondPage(t)
   await setNavigation(page, false)
   await page.getByText(texts.pageBOther, { exact: true }).click()
-  await cloneMenu(page).getByRole('button', { name: 'Add after', exact: true }).click()
+  await cloneMenu(page).getByRole('menuitem', { name: 'Add after', exact: true }).click()
   const post = await eventually(() => t.rehearsal.writes.find(w => w.method === 'POST' && w.path.endsWith('/_/component_positions')), 'No position was POSTed')
   assert(post.body.componentGroup === t.seed.iris.pageBGroup, `POSTed to ${post.body.componentGroup}`)
   assert(post.body.component === t.seed.iris.source, `POSTed component ${post.body.component}`)
@@ -249,8 +253,8 @@ test('5. Escape and Cancel end clone mode, turn Enable Navigation off and clear 
     assert(!(await page.getByRole('switch', { name: 'Enable Navigation' }).count()), `${end} left Enable Navigation showing`)
     await eventually(async () => (await visibleHighlights(page)).length === 0, `${end} left a highlight`)
     await layoutLink(page, 'Second').click()
-    const confirm = dialogWith(page, 'switch and edit the layout')
-    await confirm.getByText('switch and edit the layout').waitFor()
+    const confirm = dialogWith(page, 'Edit the shared layout?')
+    await confirm.getByText('Edit the shared layout?').waitFor()
     assert(page.url() === `${base}${t.seed.paths.home}`, `${end} left navigation enabled: navigated to ${page.url()}`)
     await confirm.getByRole('button', { name: 'Cancel', exact: true }).click()
     await waitForNoDialog(page, 'Cancel did not close the confirm')
@@ -281,7 +285,7 @@ test('7. with Enable Navigation on, a layout link click shows no dialog or confi
   await eventually(() => page.url() === `${base}${t.seed.paths.third}`, `Expected /third, at ${page.url()}`)
   await page.getByText(texts.third, { exact: true }).waitFor()
   await settle()
-  assert(await page.getByRole('dialog').count() === 0, `A dialog opened: ${await dialogTexts(page)}`)
+  assert(await dialogs(page).count() === 0, `A dialog opened: ${await dialogTexts(page)}`)
 })
 
 test('8. a redirect route in clone mode lands on the target page and renders its content', async ({ cwa: t }) => {
@@ -375,7 +379,7 @@ test('14. a clone whose source was deleted elsewhere ends clone mode with the so
   await setNavigation(page, false)
   await t.api.remove(t.seed.iris.source)
   await page.getByText(texts.pageAOther, { exact: true }).click()
-  await cloneMenu(page).getByRole('button', { name: 'Add after', exact: true }).click()
+  await cloneMenu(page).getByRole('menuitem', { name: 'Add after', exact: true }).click()
   await assertCloneModeEnded(page, 'Clone mode did not end when the API refused the deleted source')
   await page.getByText('The component being cloned no longer exists').first().waitFor()
 })
@@ -392,7 +396,7 @@ test('15. clone mode starts with Enable Navigation on, and arriving on another p
   await eventually(async () => await toggle.getAttribute('aria-checked') === 'false', 'Enable Navigation stayed on after arriving on another page')
   assert((await page.getByTestId('clone-mode-hint').innerText()).includes('Click a component to place it'), 'The bar does not say how to place the clone')
   await page.getByText(texts.pageBOther, { exact: true }).click()
-  await cloneMenu(page).getByRole('button', { name: 'Add after', exact: true }).waitFor()
+  await cloneMenu(page).getByRole('menuitem', { name: 'Add after', exact: true }).waitFor()
 })
 
 test('16. a redirect in clone mode turns Enable Navigation off only once the target page is shown', async ({ cwa: t }) => {
@@ -461,7 +465,7 @@ test('22. a link to a page already visited, shown at once from the route cache, 
   await setNavigation(page, true)
   await layoutLink(page, 'Second').click()
   await assertOnSecondPage(t)
-  assert(await page.getByRole('dialog').count() === 0, `A dialog opened: ${await dialogTexts(page)}`)
+  assert(await dialogs(page).count() === 0, `A dialog opened: ${await dialogTexts(page)}`)
 })
 
 test('23. Move within a group POSTs the clicked position\'s move after its new neighbour, and the new order survives a reload', async ({ cwa: t }) => {
@@ -472,7 +476,7 @@ test('23. Move within a group POSTs the clicked position\'s move after its new n
   assert((await page.getByTestId('clone-mode-bar').innerText()).includes('Moving:'), 'The bar does not say Moving')
   await setNavigation(page, false)
   await page.getByText(texts.pageAOther, { exact: true }).click()
-  await moveMenu(page).getByRole('button', { name: 'Add after', exact: true }).click()
+  await moveMenu(page).getByRole('menuitem', { name: 'Add after', exact: true }).click()
   assertMove(await moveWrite(t), t.seed.iris.source, { from: { componentPosition: t.seed.positions.aSource }, to: { componentGroup: t.seed.iris.pageAGroup, after: t.seed.positions.aOther } })
   assert(contentWrites(t).length === 1, `A move wrote more than once: ${JSON.stringify(contentWrites(t))}`)
   await assertCloneModeEnded(page, 'Move mode did not end')
@@ -492,7 +496,7 @@ test('24. Move to another page relocates only the clicked instance: it leaves Ho
   await page.getByText(texts.third, { exact: true }).waitFor()
   await eventually(async () => await page.getByRole('switch', { name: 'Enable Navigation' }).getAttribute('aria-checked') === 'false', 'Enable Navigation stayed on after arriving')
   await page.getByText(texts.third, { exact: true }).click()
-  await moveMenu(page).getByRole('button', { name: 'Add after', exact: true }).click()
+  await moveMenu(page).getByRole('menuitem', { name: 'Add after', exact: true }).click()
   assertMove(await moveWrite(t), t.seed.iris.source, { from: { componentPosition: t.seed.positions.aSource }, to: { componentGroup: t.seed.iris.pageCGroup, after: t.seed.positions.cThird } })
   await assertCloneModeEnded(page, 'Move mode did not end')
   await eventually(async () => (await page.getByText(texts.source, { exact: true }).count()) === 1, 'The moved component is not on Third')
@@ -527,7 +531,7 @@ test('26. moving a layout component into the page warns that it will leave every
   const { page } = t
   await openEditMode(t)
   await layoutLink(page, 'Second').click()
-  await dialogWith(page, 'switch and edit the layout').getByRole('button', { name: 'Ok', exact: true }).click()
+  await dialogWith(page, 'Edit the shared layout?').getByRole('button', { name: 'Edit layout', exact: true }).click()
   await page.getByTestId('component-menu').waitFor()
   await page.getByTestId('component-menu').getByTestId('button-options').click()
   await page.getByTestId('component-menu-move').click()
@@ -558,7 +562,7 @@ test('28. after a clone the new instance is selected and its outline flashes, an
   await startClone(page)
   await setNavigation(page, false)
   await page.getByText(texts.pageAOther, { exact: true }).click()
-  await cloneMenu(page).getByRole('button', { name: 'Add after', exact: true }).click()
+  await cloneMenu(page).getByRole('menuitem', { name: 'Add after', exact: true }).click()
   await eventually(() => t.rehearsal.writes.find(w => w.method === 'POST' && w.path.endsWith('/_/component_positions')), 'No position was POSTed')
   await assertCloneModeEnded(page, 'Clone mode did not end')
   await eventually(async () => (await page.getByText(texts.source, { exact: true }).count()) === 2, 'The new instance did not render')
@@ -627,14 +631,14 @@ test('31. switching scope in clone mode asks "Edit the page?" or "Edit the share
   const { page } = t
   await openEditMode(t)
   await layoutLink(page, 'Second').click()
-  await dialogWith(page, 'switch and edit the layout').getByRole('button', { name: 'Ok', exact: true }).click()
+  await dialogWith(page, 'Edit the shared layout?').getByRole('button', { name: 'Edit layout', exact: true }).click()
   await page.getByTestId('component-menu').waitFor()
   await page.getByTestId('component-menu').getByTestId('button-options').click()
   await page.getByTestId('component-menu-clone').click()
   await page.getByTestId('clone-mode-bar').waitFor()
   await setNavigation(page, false)
   await page.getByText(texts.pageAOther, { exact: true }).click()
-  await cloneMenu(page).getByRole('button', { name: 'Add after', exact: true }).click()
+  await cloneMenu(page).getByRole('menuitem', { name: 'Add after', exact: true }).click()
   const toPage = dialogWith(page, 'Edit the page?')
   await toPage.getByRole('button', { name: 'Edit page', exact: true }).waitFor()
   assert(await toPage.getByRole('button', { name: 'Cancel', exact: true }).isVisible(), 'The page confirm has no Cancel')
@@ -648,7 +652,7 @@ test('31. switching scope in clone mode asks "Edit the page?" or "Edit the share
   await page.getByTestId('clone-mode-bar').waitFor()
   await setNavigation(page, false)
   await layoutLink(page, 'Third').click()
-  await cloneMenu(page).getByRole('button', { name: 'Add after', exact: true }).click()
+  await cloneMenu(page).getByRole('menuitem', { name: 'Add after', exact: true }).click()
   const toLayout = dialogWith(page, 'Edit the shared layout?')
   await toLayout.getByRole('button', { name: 'Edit layout', exact: true }).waitFor()
   await toLayout.getByRole('button', { name: 'Cancel', exact: true }).click()
@@ -691,7 +695,7 @@ async function placeInMove(page, text, option) {
     if (!opened && attempt < 3) {
       continue
     }
-    const button = menu.getByRole('button', { name: option, exact: true })
+    const button = menu.getByRole('menuitem', { name: option, exact: true })
     if (await button.count() || attempt === 3) {
       await button.click()
       return
@@ -834,7 +838,7 @@ test('21. cloning a layout component within the layout still says it appears on 
   const { page } = t
   await openEditMode(t)
   await layoutLink(page, 'Second').click()
-  await dialogWith(page, 'switch and edit the layout').getByRole('button', { name: 'Ok', exact: true }).click()
+  await dialogWith(page, 'Edit the shared layout?').getByRole('button', { name: 'Edit layout', exact: true }).click()
   await page.getByTestId('component-menu').waitFor()
   await page.getByTestId('component-menu').getByTestId('button-options').click()
   await page.getByTestId('component-menu-clone').click()
@@ -867,7 +871,7 @@ test('35. selecting a component outlines its other copies on the page, not the s
   await startClone(page)
   await setNavigation(page, false)
   await page.getByText(texts.pageAOther, { exact: true }).click()
-  await cloneMenu(page).getByRole('button', { name: 'Add after', exact: true }).click()
+  await cloneMenu(page).getByRole('menuitem', { name: 'Add after', exact: true }).click()
   await assertCloneModeEnded(page, 'Clone mode did not end')
   await eventually(async () => (await page.getByText(texts.source, { exact: true }).count()) === 2, 'The clone did not render')
   await settle()
@@ -970,7 +974,7 @@ test('44. where nothing can be placed the menu has one disabled row whose ⓘ sh
   assert(reasons.includes('This is where it already is'), `The reasons are "${reasons}"`)
 
   await page.keyboard.press('Escape')
-  await eventually(async () => (await page.getByTestId('clone-option-reasons').count()) === 0, 'Escape did not close the reasons')
+  await eventually(async () => (await page.getByTestId('menu-item-reasons').count()) === 0, 'Escape did not close the reasons')
   assert(await menu.isVisible(), 'Escape on the reasons closed the menu too')
   await page.keyboard.press('Escape')
   await waitForNoMenu(page, 'The second Escape did not close the menu')
@@ -1028,7 +1032,7 @@ function managerInput(page) {
 async function selectLayoutLink(t, name) {
   const { page } = t
   await layoutLink(page, name).click()
-  await dialogWith(page, 'switch and edit the layout').getByRole('button', { name: 'Ok', exact: true }).click()
+  await dialogWith(page, 'Edit the shared layout?').getByRole('button', { name: 'Edit layout', exact: true }).click()
   await page.getByTestId('component-menu').waitFor()
   return presenceSent(t, data => data.state === 'selected' && !!data.component, 'No selected presence was sent for the link')
 }
