@@ -117,6 +117,7 @@ import type { StyleClasses } from '#cwa/composables/cwa-styles'
 
 definePageMeta({
   name: '_cwa-layouts-iri',
+  key: '_cwa-layouts-iri',
 })
 
 const emit = defineEmits<{

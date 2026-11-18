@@ -25,6 +25,23 @@
     :search-fields="['title']"
     @loaded="load"
   >
+    <template #notice>
+      <CwaUiAlert
+        v-if="routesError"
+        tone="warning"
+        title="Route statuses couldn't be loaded."
+        class="cwa:mb-4"
+        data-testid="list-routes-error"
+      >
+        <template #actions>
+          <CwaUiButton
+            label="Retry"
+            data-testid="list-routes-retry"
+            @click="retryRoutes"
+          />
+        </template>
+      </CwaUiAlert>
+    </template>
     <template #item="{ data }">
       <ListRow
         :to="computedItemLink(data['@id'])"
@@ -36,6 +53,7 @@
             :resource="data"
             :route="routes[data['@id']]"
             :known="known"
+            :failed="!!routesError"
             :now="now"
           />
           <span class="cwa:truncate">{{ subLine(data) }}</span>
@@ -45,6 +63,7 @@
             :resource="data"
             :route="routes[data['@id']]"
             :known="known"
+            :failed="!!routesError"
             :now="now"
           />
         </ListCell>
@@ -81,6 +100,7 @@ import PageListStatus from '#cwa/templates/components/core/admin/PageListStatus.
 import { listDate } from '#cwa/templates/components/core/admin/list-date'
 import ResourceModalOverlay from '#cwa/templates/components/core/admin/ResourceModalOverlay.vue'
 import CwaUiButton from '#cwa/templates/components/ui/Button.vue'
+import CwaUiAlert from '#cwa/templates/components/ui/Alert.vue'
 import PlusIcon from '#cwa/templates/components/ui/icon/PlusIcon.vue'
 import ChevronGlyph from '#cwa/templates/components/core/ui/ChevronGlyph.vue'
 import { useDataList } from '#cwa-layer/_composables/useDataList'
@@ -98,7 +118,7 @@ const { pageDataClassName, dataType, dataTypeClassName, pageDataConfig } = useDa
 
 const { goToAdd, triggerReload, computedItemLink } = useListPage(listContent)
 const { loadDynamicPageOptions, dynamicPages } = useDynamicPageLoader()
-const { routes, known, now, load } = useListRoutes('pageData')
+const { routes, known, error: routesError, now, load, retry: retryRoutes } = useListRoutes('pageData')
 
 const endpoint = ref<string>()
 

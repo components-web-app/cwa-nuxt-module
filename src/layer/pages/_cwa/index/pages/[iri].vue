@@ -11,6 +11,7 @@ import { definePageMeta } from '#imports'
 
 definePageMeta({
   name: '_cwa-pages-iri',
+  key: '_cwa-pages-iri',
 })
 
 defineEmits<{

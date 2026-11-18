@@ -30,13 +30,13 @@
         />
       </div>
     </div>
-    <CwaUiListState
+    <ListState
       v-if="isLoadingDataTypes"
       state="loading"
       noun="page data types"
       :rows="3"
     />
-    <CwaUiListState
+    <ListState
       v-else-if="!dataTypes.length"
       state="empty"
       noun="page data types"
@@ -48,7 +48,7 @@
 <script setup lang="ts">
 import ListHeading from '#cwa/templates/components/core/admin/ListHeading.vue'
 import ListRow from '#cwa/templates/components/core/admin/ListRow.vue'
-import CwaUiListState from '#cwa/templates/components/ui/ListState.vue'
+import ListState from '#cwa/templates/components/core/ui/ListState.vue'
 import { useDataList } from '#cwa-layer/_composables/useDataList'
 import { definePageMeta, useHead } from '#imports'
 

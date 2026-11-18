@@ -6,7 +6,7 @@
     <div class="cwa:flex cwa:flex-col cwa:gap-3 cwa:md:flex-row cwa:md:items-center">
       <div class="cwa:flex cwa:gap-3 cwa:md:contents">
         <div class="cwa:min-w-0 cwa:flex-1 cwa:md:max-w-sm">
-          <CwaUiSearchField
+          <SearchField
             v-model="searchModel"
             :label="searchLabel"
           />
@@ -46,7 +46,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import isEqual from 'lodash-es/isEqual'
-import CwaUiSearchField from '#cwa/templates/components/ui/SearchField.vue'
+import SearchField from '#cwa/templates/components/core/ui/SearchField.vue'
 import CwaUiSelect from '#cwa/templates/components/ui/Select.vue'
 import CwaUiButton from '#cwa/templates/components/ui/Button.vue'
 import PlusIcon from '#cwa/templates/components/ui/icon/PlusIcon.vue'

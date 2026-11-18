@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { useTemplateRef } from 'vue'
-import SearchIcon from './icon/SearchIcon.vue'
-import XMarkIcon from './icon/XMarkIcon.vue'
-import { fieldBox, fieldFill } from '../core/ui/field-looks'
+import SearchIcon from '../../ui/icon/SearchIcon.vue'
+import XMarkIcon from '../../ui/icon/XMarkIcon.vue'
+import { fieldBox, fieldFill } from './field-looks'
 
 const { label, placeholder } = defineProps<{
   label: string

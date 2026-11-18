@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, test } from 'vitest'
 import { enableAutoUnmount, mount } from '@vue/test-utils'
-import { axe } from '../../../../../test/utils/axe'
-import { drawsFocusRing } from '../../../../../test/utils/focus-ring'
+import { axe } from '../../../../../../test/utils/axe'
+import { drawsFocusRing } from '../../../../../../test/utils/focus-ring'
 import SearchField from './SearchField.vue'
 
 enableAutoUnmount(afterEach)
@@ -15,7 +15,7 @@ function mountField(modelValue = '') {
   return wrapper
 }
 
-describe('CwaUiSearchField (#461)', () => {
+describe('SearchField (#461)', () => {
   test('is a search box named by its label, which shows as its placeholder', () => {
     const input = mountField().get('input')
 

@@ -27,141 +27,157 @@
       />
     </template>
     <template #details>
-      <CwaUiFormSection v-if="depthChain.length > 1">
-        <CwaUiSegmented
-          v-model="displayIriModel"
-          label="Editing"
-          :options="depthOptions"
-        />
-      </CwaUiFormSection>
-      <CwaUiFormSection>
-        <CwaUiInput
-          v-if="isDisplayingPage"
-          field="reference"
-          label="Reference"
-          description="Only admins see this. It names the page in lists."
-        />
-        <CwaUiInput
-          v-else
-          field="title"
-          label="Title"
-        />
-        <CwaUiSegmented
-          v-if="isDisplayingPage"
-          :model="pageTypeModel"
-          label="Page type"
-          :options="pageTypeOptions"
-        />
-      </CwaUiFormSection>
-      <CwaUiFormSection
-        v-if="isDisplayingPage"
-        title="Appearance"
-        :columns="2"
+      <CwaUiAlert
+        v-if="missing"
+        :title="missing.title"
+        data-testid="page-missing-prerequisite"
       >
-        <CwaUiSelect
-          field="layout"
-          label="Layout"
-          :options="layoutOptions"
-        />
-        <CwaUiSelect
-          :model="pageUiModel"
-          label="Page UI"
-          :options="pageComponentOptions"
-        />
-        <CwaUiSelect
-          v-if="pageStyleOptions.length"
-          :model="pageStyleModel"
-          label="Style"
-          :options="pageStyleOptions"
-          nullable
-          none-label="Default"
-        />
-      </CwaUiFormSection>
-      <CwaUiFormSection
-        title="Search engines"
-        description="What people see in search results."
-      >
-        <CwaUiInput
-          v-if="isDisplayingPage"
-          field="title"
-          label="SEO page title"
-          optional
-        />
-        <CwaUiTextarea
-          field="metaDescription"
-          label="SEO meta description"
-          optional
-          counter
-        />
-      </CwaUiFormSection>
-      <CwaUiFormSection
-        v-if="!isDisplayingPage"
-        title="Template"
-      >
-        <CwaUiSelect
-          field="page"
-          label="Dynamic page"
-          :options="pageOptions"
-        />
-        <div v-if="localResourceData.page">
+        {{ missing.text }}
+        <template #actions>
           <CwaUiButton
-            label="Go to dynamic template"
-            data-testid="go-to-template"
-            @click="goToTemplate"
+            :label="missing.action"
+            data-testid="page-missing-prerequisite-link"
+            @click="goToCreate(missing.to)"
           />
-        </div>
-        <template
-          v-for="metaField of pageDataConfig?.metaFields ?? []"
-          :key="`field-${metaField.field}`"
+        </template>
+      </CwaUiAlert>
+      <template v-else>
+        <CwaUiFormSection v-if="depthChain.length > 1">
+          <CwaUiSegmented
+            v-model="displayIriModel"
+            label="Editing"
+            :options="depthOptions"
+          />
+        </CwaUiFormSection>
+        <CwaUiFormSection>
+          <CwaUiInput
+            v-if="isDisplayingPage"
+            field="reference"
+            label="Reference"
+            description="Only admins see this. It names the page in lists."
+          />
+          <CwaUiInput
+            v-else
+            field="title"
+            label="Title"
+          />
+          <CwaUiSegmented
+            v-if="isDisplayingPage"
+            :model="pageTypeModel"
+            label="Page type"
+            :options="pageTypeOptions"
+          />
+        </CwaUiFormSection>
+        <CwaUiFormSection
+          v-if="isDisplayingPage"
+          title="Appearance"
+          :columns="2"
+        >
+          <CwaUiSelect
+            field="layout"
+            label="Layout"
+            :options="layoutOptions"
+          />
+          <CwaUiSelect
+            :model="pageUiModel"
+            label="Page UI"
+            :options="pageComponentOptions"
+          />
+          <CwaUiSelect
+            v-if="pageStyleOptions.length"
+            :model="pageStyleModel"
+            label="Style"
+            :options="pageStyleOptions"
+            nullable
+            none-label="Default"
+          />
+        </CwaUiFormSection>
+        <CwaUiFormSection
+          title="Search engines"
+          description="What people see in search results."
         >
           <CwaUiInput
-            v-if="metaField.type === 'input'"
-            :field="metaField.field"
-            :label="metaField.label"
+            v-if="isDisplayingPage"
+            field="title"
+            label="SEO page title"
+            optional
+          />
+          <CwaUiTextarea
+            field="metaDescription"
+            label="SEO meta description"
+            optional
+            counter
+          />
+        </CwaUiFormSection>
+        <CwaUiFormSection
+          v-if="!isDisplayingPage"
+          title="Template"
+        >
+          <CwaUiSelect
+            field="page"
+            label="Dynamic page"
+            :options="pageOptions"
+          />
+          <div v-if="localResourceData.page">
+            <CwaUiButton
+              label="Go to dynamic template"
+              data-testid="go-to-template"
+              @click="goToTemplate"
+            />
+          </div>
+          <template
+            v-for="metaField of pageDataConfig?.metaFields ?? []"
+            :key="`field-${metaField.field}`"
+          >
+            <CwaUiInput
+              v-if="metaField.type === 'input'"
+              :field="metaField.field"
+              :label="metaField.label"
+            />
+            <CwaUiSelect
+              v-else
+              :model="metaSelects[metaField.field]!.model"
+              :label="metaField.label"
+              :options="metaSelects[metaField.field]!.options"
+              nullable
+            />
+          </template>
+        </CwaUiFormSection>
+        <CwaUiFormSection title="Nesting">
+          <CwaUiSegmented
+            v-model="parentTypeModel"
+            label="Nested under"
+            :options="parentTypeOptions"
           />
           <CwaUiSelect
-            v-else
-            :model="metaSelects[metaField.field]!.model"
-            :label="metaField.label"
-            :options="metaSelects[metaField.field]!.options"
+            v-if="parentType === 'page'"
+            field="parentPage"
+            label="Parent page"
+            :options="parentPageOptions"
             nullable
           />
-        </template>
-      </CwaUiFormSection>
-      <CwaUiFormSection title="Nesting">
-        <CwaUiSegmented
-          v-model="parentTypeModel"
-          label="Nested under"
-          :options="parentTypeOptions"
-        />
-        <CwaUiSelect
-          v-if="parentType === 'page'"
-          field="parentPage"
-          label="Parent page"
-          :options="parentPageOptions"
-          nullable
-        />
-        <template v-if="parentType === 'data'">
-          <CwaUiSelect
-            v-model="selectedParentDataType"
-            label="Parent data type"
-            :options="dataTypeOptions"
+          <template v-if="parentType === 'data'">
+            <CwaUiSelect
+              v-model="selectedParentDataType"
+              label="Parent data type"
+              :options="dataTypeOptions"
+            />
+            <CwaUiSelect
+              v-if="selectedParentDataType"
+              field="parentPageData"
+              label="Parent data"
+              :options="dataInstanceOptions"
+              nullable
+            />
+          </template>
+          <CwaUiToggle
+            field="isReachableWithoutRoute"
+            label="Public without a route"
+            :disabled="!!resource?.route"
+            :description="resource?.route ? 'Has no effect while this page has a route.' : 'Visitors can reach it through a nested page, even when it has no route of its own. Any parent page must be live too.'"
           />
-          <CwaUiSelect
-            v-if="selectedParentDataType"
-            field="parentPageData"
-            label="Parent data"
-            :options="dataInstanceOptions"
-            nullable
-          />
-        </template>
-        <CwaUiToggle
-          field="isReachableWithoutRoute"
-          label="Public without a route"
-          :disabled="!!resource?.route"
-          :description="resource?.route ? 'Has no effect while this page has a route.' : 'Visitors can reach it through a nested page, even when it has no route of its own. Any parent page must be live too.'"
-        />
-      </CwaUiFormSection>
+        </CwaUiFormSection>
+      </template>
     </template>
     <template #routes>
       <RoutesTab
@@ -232,7 +248,9 @@
 <script setup lang="ts">
 import { pageDataNoun } from './page-data-noun'
 import { computed, onMounted, ref, useTemplateRef, watch, watchEffect } from 'vue'
+import type { RouteLocationRaw } from 'vue-router'
 import isEqual from 'lodash-es/isEqual'
+import { consola } from 'consola'
 import { useRoute } from 'vue-router'
 import { navigateTo, useCwa } from '#imports'
 import { componentNames } from '#components'
@@ -244,6 +262,7 @@ import CwaUiSelect from '#cwa/templates/components/ui/Select.vue'
 import CwaUiSegmented from '#cwa/templates/components/ui/Segmented.vue'
 import CwaUiToggle from '#cwa/templates/components/ui/Toggle.vue'
 import CwaUiButton from '#cwa/templates/components/ui/Button.vue'
+import CwaUiAlert from '#cwa/templates/components/ui/Alert.vue'
 import EyeGlyph from '#cwa/templates/components/ui/icon/EyeIcon.vue'
 import RoutesTab from '#cwa/templates/components/core/admin/RoutesTab.vue'
 import PagePurgeCache from '#cwa/templates/components/core/admin/PagePurgeCache.vue'
@@ -262,6 +281,7 @@ import { useParentPageLoader } from '#cwa-layer/_composables/useParentPageLoader
 import { useParentPageDataLoader } from '#cwa-layer/_composables/useParentPageDataLoader'
 import { useDynamicPageLoader } from '#cwa-layer/_composables/useDynamicPageLoader'
 import { useDataType } from '#cwa-layer/_composables/useDataType'
+import { fetchAllMembers } from '#cwa-layer/_composables/fetchAllMembers'
 
 const emit = defineEmits<{
   close: []
@@ -393,8 +413,8 @@ const { isAdding, isLoading, isUpdating, localResourceData, resource, formatDate
   emit,
   resourceType: props.resourceType,
   defaultResource: () => props.resourceType === 'Page'
-    ? { isTemplate: false, uiComponent: pageComponentNames.value[0] }
-    : linkDefaults,
+    ? { isTemplate: false, uiComponent: pageComponentNames.value[0], layout: layouts.value?.[0]?.['@id'] }
+    : { ...linkDefaults, page: linkDefaults.page ?? dynamicPages.value?.[0]?.['@id'] },
   endpoint: displayIri,
   routeHashAfterAdd: computed(() => (localResourceData.value?.isTemplate ? '#details' : '#routes')),
   excludeFields: ['componentGroups'],
@@ -536,8 +556,7 @@ async function goToPath(path: string) {
 }
 
 async function goToTemplate() {
-  if (!localResourceData.value?.page) return
-  emit('close')
+  if (!localResourceData.value?.page || !await dialog.value?.requestClose()) return
   await navigateTo({
     ...getInternalResourceLink(localResourceData.value.page),
     query: { cwa_force: 'true' },
@@ -550,17 +569,31 @@ const history = computed(() => [
   { label: 'Updated', value: (localResourceData.value?.modifiedAt || localResourceData.value?.updatedAt) ? formatDate(localResourceData.value.modifiedAt || localResourceData.value.updatedAt) : '—' },
 ])
 
-const currentRequestId = ref(0)
 const layouts = ref<CwaResource[]>()
 
 async function loadLayoutOptions() {
-  const thisRequestId = currentRequestId.value + 1
-  currentRequestId.value = thisRequestId
-  const { response } = $cwa.fetch({ path: '/_/layouts', noQuery: true })
-  const { _data: data } = await response
-  if (thisRequestId === currentRequestId.value) {
-    data && (layouts.value = data['member'])
+  layouts.value = await fetchAllMembers($cwa, '/_/layouts')
+}
+
+const missing = computed<{ title: string, text: string, action: string, to: RouteLocationRaw } | undefined>(() => {
+  if (!isAdding.value) {
+    return undefined
   }
+  if (isDisplayingPage.value) {
+    return layouts.value?.length === 0
+      ? { title: 'Create a layout first', text: 'A page is shown inside a layout, and there are none yet.', action: 'Create a layout', to: { name: '_cwa-layouts-iri', params: { iri: 'add' }, query: { cwa_force: 'true' } } }
+      : undefined
+  }
+  return dynamicPages.value?.length === 0
+    ? { title: 'Create a template page first', text: `A ${createNoun.value} is built from a template page, and there are none yet.`, action: 'Create a template page', to: { name: '_cwa-pages-iri', params: { iri: 'add' }, query: { cwa_force: 'true' } } }
+    : undefined
+})
+
+async function goToCreate(to: RouteLocationRaw) {
+  if (!await dialog.value?.requestClose()) {
+    return
+  }
+  await navigateTo(to)
 }
 
 const layoutOptions = computed<MenuEntry[]>(() => (layouts.value ?? []).map(layout => ({
@@ -708,8 +741,19 @@ watchEffect(async () => {
   createEndpoint.value = docs?.entrypoint?.[fqcnToEntrypointKey(props.resourceType) || ''] || ''
 })
 
+function logFailure(what: string) {
+  return (error: unknown) => {
+    consola.error(`[CWA] Could not load the ${what}`, error)
+  }
+}
+
 onMounted(async () => {
-  await Promise.all([loadLayoutOptions(), loadDynamicPageOptions(), loadParentPageOptions(), loadDataTypes()])
+  await Promise.all([
+    loadLayoutOptions().catch(logFailure('layouts')),
+    loadDynamicPageOptions().catch(logFailure('template pages')),
+    loadParentPageOptions().catch(logFailure('parent pages')),
+    loadDataTypes().catch(logFailure('page data types')),
+  ])
   if (!isAdding.value || !localResourceData.value) {
     return
   }
