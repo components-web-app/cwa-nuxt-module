@@ -1,11 +1,23 @@
 // @vitest-environment nuxt
 import { nextTick, reactive, ref, toValue } from 'vue'
 import type { Ref } from 'vue'
-import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { mockNuxtImport } from '@nuxt/test-utils/runtime'
-import CwaPage from './cwa-page.vue'
-import * as cwaComposable from '#cwa/composables/cwa'
+
+const metaDefines = (globalThis as unknown as { __vitest_worker__: { metaDefines: Record<string, unknown> } }).__vitest_worker__.metaDefines
+const { server: initialServer, client: initialClient } = metaDefines
+
+let CwaPage: typeof import('./cwa-page.vue').default
+let cwaComposable: typeof import('#cwa/composables/cwa')
+
+async function loadCwaPageOn(side: 'server' | 'client') {
+  metaDefines.server = side === 'server'
+  metaDefines.client = side === 'client'
+  vi.resetModules()
+  cwaComposable = await import('#cwa/composables/cwa')
+  CwaPage = (await import('./cwa-page.vue')).default
+}
 
 let capturedHeadConfig: { title: () => string | null | undefined } | undefined
 let capturedOgImageArgs: any[] = []
@@ -78,7 +90,14 @@ function mockCwaWithSiteName(config: { siteName: string }) {
 }
 
 describe('CWA page', () => {
-  beforeEach(() => {
+  afterEach(() => {
+    metaDefines.server = initialServer
+    metaDefines.client = initialClient
+  })
+
+  beforeEach(async () => {
+    await loadCwaPageOn('client')
+    capturedOgImageArgs = []
     defineOgImageSpy.mockClear()
     emitRedraw.mockClear()
     mockRoute.path = '/'
@@ -187,42 +206,53 @@ describe('CWA page', () => {
   })
 
   describe('og image', () => {
-    test('calls defineOgImage with CwaDefault component', () => {
+    test('is not defined in the browser, where a client-only /_cwa page has no server render for it', () => {
       mockCwaWithDepths([{ dataTitle: 'Events' }])
-      expect(capturedOgImageArgs[0]).toBe('CwaDefault')
+      expect(defineOgImageSpy).not.toHaveBeenCalled()
     })
 
-    test('renders the image at 630px high, the height CwaDefault is laid out for', () => {
-      mockCwaWithDepths([{ dataTitle: 'Events' }])
-      expect(defineOgImageSpy).toHaveBeenCalledWith('CwaDefault', expect.anything(), { height: 630 })
-    })
+    describe('in the server render', () => {
+      beforeEach(async () => {
+        await loadCwaPageOn('server')
+      })
 
-    test('passes pageTitle computed ref as title prop for flat page', () => {
-      mockCwaWithDepths([{ dataTitle: 'Events' }])
-      expect(capturedOgImageArgs[1].title.value).toBe('Events')
-    })
+      test('calls defineOgImage with CwaDefault component', () => {
+        mockCwaWithDepths([{ dataTitle: 'Events' }])
+        expect(capturedOgImageArgs[0]).toBe('CwaDefault')
+      })
 
-    test('passes leaf-first concatenated title for nested page', () => {
-      mockCwaWithDepths([{ dataTitle: 'Conference' }, { dataTitle: 'Programme' }])
-      expect(capturedOgImageArgs[1].title.value).toBe('Programme | Conference')
-    })
+      test('renders the image at 630px high, the height CwaDefault is laid out for', () => {
+        mockCwaWithDepths([{ dataTitle: 'Events' }])
+        expect(defineOgImageSpy).toHaveBeenCalledWith('CwaDefault', expect.anything(), { height: 630 })
+      })
 
-    test('passes the configured site name so the default image does not fall back to cwa.rocks', () => {
-      mockCwaWithSiteName({ siteName: 'My Site' })
-      expect(defineOgImageSpy).toHaveBeenCalledTimes(1)
-      expect(toValue(capturedOgImageArgs[1].siteName)).toBe('My Site')
-    })
+      test('passes pageTitle computed ref as title prop for flat page', () => {
+        mockCwaWithDepths([{ dataTitle: 'Events' }])
+        expect(capturedOgImageArgs[1].title.value).toBe('Events')
+      })
 
-    test('follows a site name change after mount', () => {
-      const siteConfigState = mockCwaWithSiteName({ siteName: 'My Site' })
-      siteConfigState.config = { fallbackTitle: false, siteName: 'Renamed Site' }
-      expect(defineOgImageSpy).toHaveBeenCalledTimes(1)
-      expect(toValue(capturedOgImageArgs[1].siteName)).toBe('Renamed Site')
-    })
+      test('passes leaf-first concatenated title for nested page', () => {
+        mockCwaWithDepths([{ dataTitle: 'Conference' }, { dataTitle: 'Programme' }])
+        expect(capturedOgImageArgs[1].title.value).toBe('Programme | Conference')
+      })
 
-    test('passes undefined title when no depths have a title', () => {
-      mockCwaWithDepths([{}])
-      expect(capturedOgImageArgs[1].title.value).toBeUndefined()
+      test('passes the configured site name so the default image does not fall back to cwa.rocks', () => {
+        mockCwaWithSiteName({ siteName: 'My Site' })
+        expect(defineOgImageSpy).toHaveBeenCalledTimes(1)
+        expect(toValue(capturedOgImageArgs[1].siteName)).toBe('My Site')
+      })
+
+      test('follows a site name change after mount', () => {
+        const siteConfigState = mockCwaWithSiteName({ siteName: 'My Site' })
+        siteConfigState.config = { fallbackTitle: false, siteName: 'Renamed Site' }
+        expect(defineOgImageSpy).toHaveBeenCalledTimes(1)
+        expect(toValue(capturedOgImageArgs[1].siteName)).toBe('Renamed Site')
+      })
+
+      test('passes undefined title when no depths have a title', () => {
+        mockCwaWithDepths([{}])
+        expect(capturedOgImageArgs[1].title.value).toBeUndefined()
+      })
     })
   })
 })
