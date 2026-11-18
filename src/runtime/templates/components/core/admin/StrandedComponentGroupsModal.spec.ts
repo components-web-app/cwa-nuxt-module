@@ -64,7 +64,7 @@ function mountModal(options: { realDialog?: boolean, attachTo?: HTMLElement } = 
           ? false
           : {
               name: 'CwaUiDialog',
-              props: ['title', 'size'],
+              props: ['title', 'size', 'kind'],
               emits: ['close'],
               template: '<div class="dialog-stub"><button type="button" data-testid="dialog-close" @click="$emit(\'close\')">Close</button><slot /><slot name="footer" /></div>',
             },
@@ -117,6 +117,11 @@ describe('StrandedComponentGroupsModal', () => {
       delete groupData[iri]
     }
     vi.restoreAllMocks()
+  })
+
+  test('its header line is the warning tone, as the old modal\'s orange bar was', async () => {
+    const wrapper = mountModal()
+    expect(wrapper.findComponent({ name: 'CwaUiDialog' }).props('kind')).toEqual({ tone: 'warning' })
   })
 
   test('lists each group with its components', () => {

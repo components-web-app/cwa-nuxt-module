@@ -7,6 +7,7 @@ import { axe } from '../../../../../test/utils/axe'
 import { drawsFocusRing } from '../../../../../test/utils/focus-ring'
 import { fakeFieldModel } from '../../../../../playground/app/kit/fake-field-model'
 import Select from './Select.vue'
+import Field from '../core/ui/Field.vue'
 import { useCwaSelect } from '#cwa/composables/cwa-select'
 
 enableAutoUnmount(afterEach)
@@ -206,5 +207,14 @@ describe('CwaUiSelect (#460)', () => {
 
     expect(trigger.attributes('disabled')).toBeDefined()
     expect(trigger.attributes('aria-disabled')).toBeUndefined()
+  })
+})
+
+describe('Select in a conflict (#461)', () => {
+  test('hands the field a format, so theirs and yours read as the control shows them', () => {
+    const wrapper = mount(Select, { props: { label: 'Width', options: [{ label: 'Wide', value: 'wide' }, { label: 'Narrow', value: 'narrow' }], modelValue: 'wide' } })
+    const format = wrapper.findComponent(Field).props('format') as (value: unknown) => string
+    expect(format('narrow')).toBe('Narrow')
+    expect(format('gone')).toBe('gone')
   })
 })

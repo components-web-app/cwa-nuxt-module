@@ -61,6 +61,16 @@ describe('CwaUiInlineHandoff (#461)', () => {
     expect(wrapper.get('[data-testid="inline-handoff-preview"]').text()).toBe('“One Two”')
   })
 
+  test('the preview is worked out the same on the server as in the browser, so hydration matches, with entities decoded', () => {
+    const parser = globalThis.DOMParser
+    // @ts-expect-error
+    delete globalThis.DOMParser
+    const { wrapper } = mountHandoff(fieldModel('<p>Made in <strong>Norfolk</strong>, by hand &amp; with care</p>'))
+    globalThis.DOMParser = parser
+
+    expect(wrapper.get('[data-testid="inline-handoff-preview"]').text()).toBe('“Made in Norfolk, by hand & with care”')
+  })
+
   test('an empty value previews as Empty', () => {
     const { wrapper } = mountHandoff(fieldModel(null))
 

@@ -151,7 +151,7 @@ async function assertEveryInstanceHighlighted(page, label) {
 async function highlightsWithOrigin(page) {
   return page.getByTestId('clone-highlight').evaluateAll(els => els.map((el) => {
     const r = el.getBoundingClientRect()
-    return { top: r.top, left: r.left, width: r.width, height: r.height, origin: el.dataset.origin === 'true', style: getComputedStyle(el).outlineStyle }
+    return { top: r.top, left: r.left, width: r.width, height: r.height, origin: el.dataset.origin === 'true', style: getComputedStyle(el).outlineStyle, thickness: Number.parseFloat(getComputedStyle(el).outlineWidth) }
   }).filter(r => r.width > 0 && r.height > 0))
 }
 
@@ -343,8 +343,28 @@ test('12. Move up in the Order tab PATCHes the group order and the page keeps th
   await eventually(async () => await sourceAbove(page, texts.pageAOther) === true, 'The fixture order is wrong')
   await select(page, texts.pageAOther)
   await page.getByRole('button', { name: 'Order', exact: true }).click()
-  await page.getByRole('switch', { name: 'Enable reordering' }).click()
+  assert(await page.getByRole('switch', { name: 'Enable reordering' }).getAttribute('aria-checked') === 'false', 'Enable reordering is on')
+  let release
+  const held = new Promise((resolve) => {
+    release = resolve
+  })
+  await page.route(url => url.pathname.endsWith('/order'), async (route) => {
+    route.request().method() === 'PATCH' && await held
+    await route.continue()
+  })
   await page.getByRole('button', { name: 'Move up', exact: true }).click()
+  await page.locator('div#cwa-layout-page-overlay').waitFor({ state: 'attached' })
+  const line = page.getByTestId('manager-saving-line')
+  await line.locator('> *').first().waitFor({ state: 'attached' })
+  await page.addStyleTag({ content: '[data-testid="manager-saving-line"], [data-testid="manager-saving-line"] * { pointer-events: auto !important; }' })
+  const { onTop, track } = await line.evaluate((element) => {
+    const box = element.getBoundingClientRect()
+    const hit = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2)
+    return { onTop: !!hit && element.contains(hit), track: getComputedStyle(element.firstElementChild).backgroundColor }
+  })
+  release()
+  assert(onTop, 'Something covers the saving line above the manager bar while the order is saving')
+  assert(!['transparent', 'rgba(0, 0, 0, 0)'].includes(track), `The saving line is not painted (${track})`)
   const patch = await eventually(() => t.rehearsal.writes.find(w => w.method === 'PATCH' && w.path === `${t.seed.iris.pageAGroup}/order`), 'No PATCH to the group order')
   assert(JSON.stringify(patch.body.componentPositions) === JSON.stringify([t.seed.positions.aOther, t.seed.positions.aSource]), `PATCHed ${JSON.stringify(patch.body)}`)
   await settle()
@@ -605,7 +625,7 @@ test('29. after a move the moved instance is selected and its outline flashes', 
   await page.getByTestId('component-menu').waitFor()
 })
 
-test('30. in clone and move mode the instance started from is outlined solid and the other instance dashed', async ({ cwa: t }) => {
+test('30. in clone and move mode the instance started from has a thicker outline than the other instance', async ({ cwa: t }) => {
   const { page, settle } = t
   await addSecondSourceOnHome(t)
   await openEditMode(t)
@@ -620,7 +640,7 @@ test('30. in clone and move mode the instance started from is outlined solid and
       const rest = highlights.filter(h => !h.origin)
       return highlights.length === 2
         && origin.length === 1 && covers(origin[0], from) && origin[0].style === 'solid'
-        && rest.length === 1 && covers(rest[0], other) && rest[0].style === 'dashed'
+        && rest.length === 1 && covers(rest[0], other) && rest[0].style === 'solid' && origin[0].thickness > rest[0].thickness
     }, `${start.name}: the instance started from is not marked apart from the other: ${JSON.stringify(await highlightsWithOrigin(page))}`)
     await page.keyboard.press('Escape')
     await assertCloneModeEnded(page, 'Escape did not end the mode')
@@ -921,7 +941,7 @@ test.describe('the list of places behind the shared badge', () => {
   })
 })
 
-test('43. a click on a target in clone mode outlines it in blue dashed at once and opens the menu at the click point, and Escape or a click outside closes the menu and keeps clone mode on', async ({ cwa: t }) => {
+test('43. a click on a target in clone mode outlines it in solid blue at once and opens the menu at the click point, and Escape or a click outside closes the menu and keeps clone mode on', async ({ cwa: t }) => {
   const { page } = t
   await openEditMode(t)
   await startClone(page)
@@ -939,7 +959,7 @@ test('43. a click on a target in clone mode outlines it in blue dashed at once a
   })
   const [targetBox] = await boxesOf(page, texts.pageAOther)
   assert(covers(drawn, targetBox), `The target outline ${JSON.stringify(drawn)} does not cover the target ${JSON.stringify(targetBox)}`)
-  assert(drawn.style === 'dashed' && drawn.color === 'rgb(37, 99, 235)', `The target outline is ${drawn.style} ${drawn.color}, not blue dashed`)
+  assert(drawn.style === 'solid' && drawn.color === 'rgb(37, 99, 235)', `The target outline is ${drawn.style} ${drawn.color}, not solid blue`)
   const sourceColors = await page.getByTestId('clone-highlight').evaluateAll(els => els.map(el => getComputedStyle(el).outlineColor))
   assert(sourceColors.length > 0 && !sourceColors.includes(drawn.color), `The target outline has the source outline's colour: ${JSON.stringify(sourceColors)}`)
   const menuBox = await menu.boundingBox()
@@ -1438,5 +1458,76 @@ test.describe('resource stack', () => {
     assert(near(bottom.inner.left, 640), `60px from the bottom the innermost box's left is ${bottom.inner.left}, not at the pointer`)
     assert(bottom.inner.bottom <= 840 + 1, `60px from the bottom the innermost box ends at ${bottom.inner.bottom}, below the pointer`)
     assert(bottom.panel.bottom <= 892 + 1 && bottom.panel.bottom >= 892 - 1, `60px from the bottom the panel ends at ${bottom.panel.bottom}, not 8px inside the window`)
+  })
+})
+
+test.describe('in-page editing', () => {
+  test('56. on a phone a long press on a component opens the resource stack as a bottom sheet, and Close shuts it', async ({ cwa: t }) => {
+    const { page } = t
+    await page.setViewportSize({ width: 390, height: 844 })
+    await openEditMode(t)
+    const component = page.getByText(texts.source, { exact: true }).first()
+    await component.waitFor()
+
+    await component.evaluate((el) => {
+      const { left, top, width, height } = el.getBoundingClientRect()
+      el.dispatchEvent(new PointerEvent('pointerdown', { pointerType: 'touch', clientX: left + width / 2, clientY: top + height / 2, bubbles: true, cancelable: true }))
+    })
+    const sheet = page.getByTestId('resource-stack')
+    await eventually(async () => await sheet.count() === 1 && await sheet.getAttribute('aria-modal') === 'true', 'The long press never opened the stack as a sheet')
+    const box = await sheet.boundingBox()
+    assert(Math.abs(box.y + box.height - 844) <= 1 && box.width >= 389, `The sheet is not along the bottom edge: ${JSON.stringify(box)}`)
+
+    await page.getByTestId('resource-stack-close').click()
+    await eventually(async () => await sheet.count() === 0, 'Close did not shut the sheet')
+  })
+
+  test('57. a title is edited where it sits on the page: Enter saves it', async ({ cwa: t }) => {
+    const { page, seed } = t
+    const title = (await t.api.create('/component/titles', { title: 'Title on the page' }))['@id']
+    await t.api.create('/_/component_positions', { componentGroup: seed.iris.pageAGroup, component: title })
+    await openEditMode(t)
+
+    const shown = page.getByTestId('inline-edit-value').filter({ hasText: 'Title on the page' })
+    await shown.click()
+    const input = page.getByRole('textbox', { name: 'Title', exact: true })
+    await input.fill('Title edited on the page')
+    await input.press('Enter')
+
+    await eventually(() => t.rehearsal.writes.find(w => w.method === 'PATCH' && w.path.startsWith(title) && w.body?.title === 'Title edited on the page'), `No PATCH of the title: ${JSON.stringify(t.rehearsal.writes)}`)
+    await page.getByTestId('inline-edit-value').filter({ hasText: 'Title edited on the page' }).waitFor()
+  })
+
+  test('58. the Content tab\'s Edit on page focuses the rich-text editor on the page, and Escape there returns to the button', async ({ cwa: t }) => {
+    const { page } = t
+    await openEditMode(t)
+    await select(page, texts.source)
+
+    const button = page.getByTestId('inline-handoff-edit')
+    await eventually(async () => (await button.textContent()).trim() === 'Edit on page', 'The Content tab never offered Edit on page')
+    await button.click()
+    await eventually(() => page.evaluate(() => document.activeElement?.classList.contains('ProseMirror')), 'Edit on page did not focus the editor')
+
+    await page.keyboard.press('Escape')
+    await eventually(() => button.evaluate(el => document.activeElement === el), 'Escape did not return to Edit on page')
+  })
+
+  test('59. Link in the rich-text editor opens the link popover, and Enter links the selected words', async ({ cwa: t }) => {
+    const { page } = t
+    await openEditMode(t)
+    await select(page, texts.source)
+
+    await placeCaret(page, texts.source, 'start')
+    await page.keyboard.press('Shift+End')
+    await page.getByRole('button', { name: 'Link', exact: true }).click()
+    const popover = page.getByTestId('link-popover')
+    await popover.waitFor()
+    const url = popover.getByRole('textbox', { name: 'URL' })
+    await eventually(() => url.evaluate(el => document.activeElement === el), 'The URL field was not focused')
+    await url.fill('/kitchens')
+    await url.press('Enter')
+
+    await eventually(() => t.rehearsal.writes.find(w => w.method === 'PATCH' && w.body?.html?.includes('href="/kitchens"')), `No PATCH with the link: ${JSON.stringify(t.rehearsal.writes)}`)
+    assert(await popover.count() === 0, 'The popover stayed open after Enter')
   })
 })

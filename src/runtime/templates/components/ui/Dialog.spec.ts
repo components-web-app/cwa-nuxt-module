@@ -600,6 +600,62 @@ describe('CwaUiDialog without a Save model (#461, the add component dialog)', ()
     expect(body.querySelector('[data-cwa-field] [data-testid="field-presence-flag"]')).toBeNull()
   })
 
+  test('the header\'s icon buttons sit together (gap-1), with the title and kind kept apart from them', async () => {
+    mountPlain({ kind: { tone: 'warning', label: 'Not reachable' } }, { 'header-actions': () => h('button', { 'data-testid': 'eye' }, 'eye') })
+    await flushPromises()
+
+    expect(q('header')!.className.split(' ')).toContain('cwa:gap-1')
+    expect(q('header')!.className.split(' ')).not.toContain('cwa:gap-2')
+    expect(q('h2')!.className.split(' ')).toContain('cwa:me-2')
+    expect(q('[data-testid="dialog-kind"]')!.className.split(' ')).toContain('cwa:me-2')
+  })
+
+  test('the close × draws a 24px icon in its unchanged 44px hit area', async () => {
+    mountPlain()
+    await flushPromises()
+
+    const close = q('[data-testid="dialog-close"]')!
+    expect(close.className.split(' ')).toEqual(expect.arrayContaining(['cwa:size-hit', 'cwa:place-items-center']))
+    expect(close.querySelector('svg')!.getAttribute('class')).toContain('cwa:size-6')
+  })
+
+  test('is centred by default, sized by its size, and does not slide', async () => {
+    mountPlain({ size: 'sm' })
+    await flushPromises()
+
+    const classes = dialog().className.split(' ')
+    expect(classes).toEqual(expect.arrayContaining(['cwa:sm:top-1/2', 'cwa:sm:left-1/2', 'cwa:sm:-translate-y-1/2', 'cwa:sm:w-[28rem]']))
+    expect(dialog().dataset.placement).toBe('center')
+    expect(classes.some(name => name.includes('slide-over'))).toBe(false)
+  })
+
+  test('a right placement is a full-height slide-over anchored right, so its header and footer never move as the content changes height; it slides in only when motion is allowed', async () => {
+    mountPlain({ placement: 'right', size: 'sm' }, { footer: () => h('button', 'Save') })
+    await flushPromises()
+
+    const classes = dialog().className.split(' ')
+    expect(dialog().dataset.placement).toBe('right')
+    expect(classes).toEqual(expect.arrayContaining(['cwa:sm:inset-y-0', 'cwa:sm:right-0', 'cwa:sm:left-auto', 'cwa:sm:w-[min(40rem,100vw)]', 'cwa:sm:motion-safe:animate-[cwa-slide-over-in_var(--cwa-duration-slow)_var(--cwa-ease-out)]']))
+    expect(classes.filter(name => name.includes('animate-')).every(name => name.includes('motion-safe:'))).toBe(true)
+    expect(classes.some(name => /translate|top-1\/2|left-1\/2|max-h-|w-\[28rem\]/.test(name))).toBe(false)
+    expect(q('header')!.className).toContain('cwa:shrink-0')
+    expect(q('[data-testid="dialog-body"]')!.className).toContain('cwa:overflow-y-auto')
+  })
+
+  test.each(['center', 'right'] as const)('a %s dialog gives focus back to what opened it when it closes', async (placement) => {
+    const opener = document.createElement('button')
+    document.body.appendChild(opener)
+    opener.focus()
+    const wrapper = mountPlain({ placement })
+    await flushPromises()
+    expect(document.activeElement).not.toBe(opener)
+
+    wrapper.unmount()
+    await flushPromises()
+    expect(document.activeElement).toBe(opener)
+    opener.remove()
+  })
+
   test('without a kind, the header has the neutral solid 3px line and says no kind', async () => {
     mountPlain()
     await flushPromises()

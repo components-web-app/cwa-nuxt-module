@@ -1,6 +1,7 @@
 <template>
   <CwaUiDialog
     v-if="localResourceData"
+    placement="right"
     :title="dialogTitle"
     :tabs="tabs"
     :form="form"
@@ -21,7 +22,7 @@
         <CwaUiToggle
           field="enabled"
           label="User enabled"
-          description="A disabled user can't sign in."
+          info="A disabled user can't sign in."
         />
       </CwaUiFormSection>
       <CwaUiFormSection title="Email">
@@ -36,7 +37,7 @@
           v-if="isChangingEmail"
           :model="oldPasswordModel"
           label="Your current password"
-          description="Changing the email needs your own password."
+          info="Changing the email needs your own password."
           type="password"
           autocomplete="current-password"
         />

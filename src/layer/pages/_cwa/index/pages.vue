@@ -125,7 +125,7 @@ const { routes, known, error: routesError, now, load, retry: retryRoutes } = use
 
 const columns = [
   { label: 'Page' },
-  { label: 'Status', width: '13rem' },
+  { label: 'Status', width: '17.5rem' },
   { label: 'Updated', width: '8rem', align: 'end' as const },
   { label: 'Actions', width: '4.5rem', labelHidden: true },
 ]

@@ -24,7 +24,7 @@ const { mockOptions, mockConfirm, mockPurgePageCache, mockPurgeHttpCache, mockWa
 
 vi.mock('#build/cwa-options', () => ({
   options: mockOptions,
-  currentModulePackageInfo: { version: '1.0.0', name: '@cwa/nuxt' },
+  currentModulePackageInfo: { version: '2.0.0-alpha.32', name: '@cwa/nuxt' },
 }))
 
 enableAutoUnmount(afterEach)
@@ -48,7 +48,7 @@ const config = {
   maintenanceModeEnabled: false,
 }
 
-async function setup(opts: { loadFails?: boolean, heading?: boolean } = {}) {
+async function setup(opts: { loadFails?: boolean, heading?: boolean, apiDocsVersion?: string, appPackage?: { version: string, name: string } } = {}) {
   storedConfig.value = { ...config }
   const loadConfig = opts.loadFails ? vi.fn().mockRejectedValueOnce(new Error('offline')).mockImplementation(async () => ({ ...storedConfig.value })) : vi.fn(async () => ({ ...storedConfig.value }))
   // @ts-expect-error partial mock
@@ -67,8 +67,8 @@ async function setup(opts: { loadFails?: boolean, heading?: boolean } = {}) {
       fetchFileReport: mockFetchFileReport,
       requestFileScan: mockRequestFileScan,
     },
-    getApiDocumentation: vi.fn().mockResolvedValue(undefined),
-    currentModulePackageInfo: { version: '1.0.0', name: '@cwa/nuxt' },
+    getApiDocumentation: vi.fn().mockResolvedValue(opts.apiDocsVersion === undefined ? undefined : { docs: { info: { version: opts.apiDocsVersion } } }),
+    currentModulePackageInfo: opts.appPackage ?? { version: '2.0.0-alpha.32', name: '@cwa/nuxt' },
   }))
 
   const router = createRouter({ history: createMemoryHistory(), routes: [{ path: '/:any(.*)', component: { render: () => null } }] })
@@ -888,5 +888,63 @@ describe('Site settings form on the kit (#461)', () => {
     }
 
     expect(await axe(document.body)).toHaveNoViolations()
+  })
+})
+
+describe('Site settings CWA version', () => {
+  beforeEach(() => {
+    mockOptions.pageCache = undefined
+    mockFetchOrphanReport.mockReset().mockResolvedValue(undefined)
+    mockFetchFileReport.mockReset().mockResolvedValue(undefined)
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  const apiLink = (wrapper: Wrapper) => wrapper.get('[data-testid="version-api"]')
+  const apiRef = (wrapper: Wrapper) => wrapper.find('[data-testid="version-api-ref"]')
+
+  test('shows the bundle version from the brackets, never the API\'s own version, with its commit short and muted', async () => {
+    const wrapper = await setup({ apiDocsVersion: '1.0.0 (2.0.0-alpha.42@3c99ba175e9c0f6f59306ccdc2f507f1b0fea48c)' })
+
+    expect(apiLink(wrapper).text()).toBe('2.0.0-alpha.42')
+    expect(apiLink(wrapper).attributes('href')).toBe('https://packagist.org/packages/components-web-app/api-components-bundle#2.0.0-alpha.42')
+    expect(apiRef(wrapper).text()).toBe('3c99ba17')
+    expect(apiRef(wrapper).classes()).toContain('cwa:text-fg-muted')
+  })
+
+  test('a development branch is marked unstable and links to its branch', async () => {
+    const wrapper = await setup({ apiDocsVersion: '1.0.0 (dev-main@abc1234def5678901234567890abcdef12345678)' })
+
+    expect(apiLink(wrapper).text()).toBe('dev-main (unstable)')
+    expect(apiLink(wrapper).attributes('href')).toBe('https://packagist.org/packages/components-web-app/api-components-bundle#dev-main')
+    expect(apiRef(wrapper).text()).toBe('abc1234d')
+  })
+
+  test('a version with no brackets is shown whole, with no commit', async () => {
+    const wrapper = await setup({ apiDocsVersion: '2.0.0-beta.1+build.5' })
+
+    expect(apiLink(wrapper).text()).toBe('2.0.0-beta.1+build.5')
+    expect(apiRef(wrapper).exists()).toBe(false)
+  })
+
+  test('no version in the docs is Unknown', async () => {
+    const wrapper = await setup()
+
+    expect(apiLink(wrapper).text()).toBe('Unknown')
+    expect(apiRef(wrapper).exists()).toBe(false)
+  })
+
+  test('the app version is shown whole', async () => {
+    const wrapper = await setup()
+
+    expect(wrapper.get('[data-testid="version-app"]').text()).toBe('2.0.0-alpha.32')
+  })
+
+  test('the edge package is marked unstable without shortening its version', async () => {
+    const wrapper = await setup({ appPackage: { version: '2.0.0-alpha.32-20261118.3c99ba17', name: '@cwa/nuxt-edge' } })
+
+    expect(wrapper.get('[data-testid="version-app"]').text()).toBe('2.0.0-alpha.32-20261118.3c99ba17 (unstable)')
   })
 })

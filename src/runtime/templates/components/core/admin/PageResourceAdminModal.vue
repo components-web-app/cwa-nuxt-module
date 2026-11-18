@@ -3,6 +3,7 @@
     v-if="localResourceData"
     ref="dialog"
     v-model:tab="tab"
+    placement="right"
     :title="dialogTitle"
     :tabs="tabs"
     :form="form"
@@ -17,6 +18,7 @@
     <template #header-actions>
       <CwaUiSelect
         v-if="isDisplayingPage"
+        class="cwa:me-2"
         :model="pageTypeModel"
         label="Page type"
         label-hidden
@@ -28,6 +30,7 @@
         v-if="!hideViewLink && !isAdding"
         variant="ghost"
         icon-only
+        large-icon
         :icon="EyeGlyph"
         label="View page on site"
         data-testid="page-view-on-site"
@@ -39,7 +42,7 @@
       #subheader
     >
       <div
-        class="cwa:shrink-0 cwa:px-6 cwa:pt-3 cwa:max-sm:px-4"
+        class="cwa:shrink-0 cwa:overflow-x-auto cwa:px-6 cwa:pt-3 cwa:max-sm:px-4"
         data-testid="page-depths"
       >
         <CwaUiSegmented
@@ -71,7 +74,7 @@
             v-if="isDisplayingPage"
             field="reference"
             label="Reference"
-            description="Only admins see this. It names the page in lists."
+            info="Only admins see this. It names the page in lists."
           />
           <CwaUiInput
             v-else

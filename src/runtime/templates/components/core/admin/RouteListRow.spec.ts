@@ -104,6 +104,7 @@ describe('RouteListRow', () => {
       expect(wrapper.find('[data-testid="list-row-view"]').exists()).toBe(false)
       const remove = wrapper.get('[data-testid="list-row-actions"] [data-testid="route-delete"]')
       expect(remove.attributes('aria-label')).toBe('Delete the route /topic-1')
+      expect(remove.get('svg').classes()).toContain('cwa:size-4')
       await remove.trigger('click')
       expect(wrapper.emitted('delete')).toEqual([['/_/routes//topic-1']])
     })

@@ -1,5 +1,8 @@
 <template>
-  <EditPlaceholder :label="name || 'Empty position'">
+  <EditPlaceholder
+    :label="name || 'Empty position'"
+    :info="name ? `This page data has no ${name} component yet, so visitors see nothing here.` : 'No component is placed here yet, so visitors see nothing here.'"
+  >
     <ComponentIcon class="cwa:text-fg-muted" />
   </EditPlaceholder>
 </template>

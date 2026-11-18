@@ -5,7 +5,7 @@ import type { DateValue } from '@internationalized/date'
 import { CalendarDateTime, toCalendarDate } from '@internationalized/date'
 import { PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { isZonedDateTime } from 'reka-ui/date'
-import { dateTimeZoneLabel, earliestSelectable, fromLocalDateTime, toLocalDateTime } from '#cwa/resources/date-time-input'
+import { dateTimeZoneLabel, earliestSelectable, formatDateTime, fromLocalDateTime, toLocalDateTime } from '#cwa/resources/date-time-input'
 import type { ResourceModelField } from '#cwa/resources/model-editors'
 import Field from '../core/ui/Field.vue'
 import type { FieldWidth } from '../core/ui/Field.vue'
@@ -108,6 +108,7 @@ function onCalendarUpdate(date?: DateValue) {
     :control-id="id"
     :inactive="inactive"
     :name="field"
+    :format="value => typeof value === 'string' ? formatDateTime(value) : ''"
   >
     <template #default="{ describedBy, tone, busy, labelId }">
       <InputDate

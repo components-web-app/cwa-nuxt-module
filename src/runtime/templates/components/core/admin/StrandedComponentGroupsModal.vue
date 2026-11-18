@@ -2,6 +2,7 @@
   <CwaUiDialog
     title="Stranded component groups"
     size="lg"
+    :kind="{ tone: 'warning' }"
     data-testid="stranded-groups-modal"
     @close="emit('close')"
   >

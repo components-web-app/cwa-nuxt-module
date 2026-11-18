@@ -20,9 +20,12 @@
     />
     <!--cwa-end-->
   </template>
-  <template v-else-if="isNewPosition">
+  <template v-else-if="isNewPosition && $cwa.admin.isEditing">
     <!--cwa-start-->
-    <EditPlaceholder label="Add the component to populate this component group">
+    <EditPlaceholder
+      label="Empty group"
+      info="Add the component to populate this component group."
+    >
       <LazyHotSpot
         screen-reader-action="Add component position"
         :iri="iri"
@@ -42,7 +45,10 @@
   </template>
   <template v-else-if="signedInAndResourceExists">
     <!--cwa-start-->
-    <EditPlaceholder label="Empty group">
+    <EditPlaceholder
+      label="Empty group"
+      info="Visitors see nothing here until a component is added. Use + to add one."
+    >
       <LazyHotSpot
         screen-reader-action="Add component position"
         :iri="iri"

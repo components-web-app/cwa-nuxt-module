@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { nextTick, reactive, ref } from 'vue'
 import ResourceStackManager from './resource-stack-manager'
 
@@ -9,9 +9,6 @@ vi.mock('./resource-confirm', () => ({
     confirm.calls++
     return confirm.answer
   }),
-}))
-vi.mock('#cwa/templates/components/main/admin/resource-manager/ComponentFocus.vue', () => ({
-  default: { name: 'ComponentFocus', render: () => null },
 }))
 vi.mock('#app/nuxt', () => ({
   useNuxtApp: () => ({ vueApp: { _container: null } }),
@@ -90,6 +87,10 @@ function selection(manager: ResourceStackManager) {
 const PAGE_CLICK = [COMPONENT, POSITION, GROUP, PAGE]
 
 describe('ResourceStackManager keeps the clicked stack (#461)', () => {
+  beforeEach(() => {
+    vi.spyOn(ResourceStackManager.prototype as unknown as { createFocusComponent: () => Promise<void> }, 'createFocusComponent').mockResolvedValue()
+  })
+
   afterEach(() => {
     confirm.answer = true
     confirm.calls = 0

@@ -15,6 +15,7 @@ const {
   size = 'md',
   icon,
   iconOnly = false,
+  largeIcon = false,
   loading = false,
   disabled = false,
   disabledReason,
@@ -31,6 +32,8 @@ const {
   size?: 'sm' | 'md'
   icon?: Component
   iconOnly?: boolean
+  /** @internal */
+  largeIcon?: boolean
   loading?: boolean
   disabled?: boolean
   disabledReason?: string
@@ -140,7 +143,7 @@ function onClick(event: MouseEvent) {
           viewBox="0 0 16 16"
           aria-hidden="true"
           fill="currentColor"
-          class="cwa:size-4"
+          :class="size === 'sm' ? 'cwa:size-4' : 'cwa:size-[calc(var(--cwa-spacing-control)*5/9)]'"
         ><circle
           cx="8"
           cy="3"
@@ -178,7 +181,8 @@ function onClick(event: MouseEvent) {
       :is="icon"
       v-else-if="icon"
       aria-hidden="true"
-      class="cwa:size-4 cwa:shrink-0"
+      class="cwa:shrink-0"
+      :class="largeIcon ? 'cwa:size-[calc(var(--cwa-spacing-control)*5/9)]' : 'cwa:size-4'"
     />
     <template v-if="!iconOnly && shortLabel">
       <span

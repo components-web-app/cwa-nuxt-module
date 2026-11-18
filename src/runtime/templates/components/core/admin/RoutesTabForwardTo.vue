@@ -46,7 +46,7 @@ const labelOf = (resource: CwaResource) => resource.path ?? resource['@id']
         noun="routes"
         width="full"
         :label-of="labelOf"
-        :description="isSelf ? undefined : 'Any page on this site.'"
+        :info="isSelf ? undefined : 'Any page on this site.'"
         data-testid="route-forward-search"
       />
       <CwaUiAlert

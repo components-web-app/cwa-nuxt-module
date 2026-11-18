@@ -11,12 +11,14 @@ import Input from '#cwa/templates/components/ui/Input.vue'
 import Select from '#cwa/templates/components/ui/Select.vue'
 import Toggle from '#cwa/templates/components/ui/Toggle.vue'
 import Segmented from '#cwa/templates/components/ui/Segmented.vue'
+import Button from '#cwa/templates/components/ui/Button.vue'
 import EyeGlyph from '#cwa/templates/components/ui/icon/EyeIcon.vue'
 import * as cwaComposable from '#cwa/composables/cwa'
 import { componentNames } from '#components'
 import { consola } from 'consola'
 import { drawsFocusRing } from '../../../../../../test/utils/focus-ring'
 import { axe } from '../../../../../../test/utils/axe'
+import { fieldExplanation } from '../../../../../../test/utils/field-info'
 
 const mockNavigateTo = vi.hoisted(() => vi.fn())
 const routeState = vi.hoisted(() => ({ route: undefined as unknown as { params: Record<string, string>, query: Record<string, string>, hash: string } }))
@@ -63,7 +65,7 @@ afterEach(() => {
 
 const DialogStub = defineComponent({
   name: 'CwaUiDialog',
-  props: ['title', 'tabs', 'form', 'loading', 'noun', 'createNoun', 'tab', 'kind'],
+  props: ['title', 'tabs', 'form', 'loading', 'noun', 'createNoun', 'tab', 'kind', 'placement'],
   emits: ['close', 'save', 'update:tab'],
   setup(props, { slots, expose }) {
     provide(fieldGroupKey, { model: (field: string) => props.form.model(field), undo: () => undefined })
@@ -275,6 +277,7 @@ describe('PageResourceAdminModal on the kit dialog (#461)', () => {
 
     const select = pageType(wrapper)
     expect(wrapper.get('[data-testid="stub-header"]').element.contains(select.element)).toBe(true)
+    expect(select.classes()).toContain('cwa:me-2')
     expect(select.props()).toMatchObject({ labelHidden: true })
     expect(select.props('options')).toEqual([
       { label: 'Static', value: 'static', dot: 'cwa:bg-type-static' },
@@ -362,12 +365,23 @@ describe('PageResourceAdminModal on the kit dialog (#461)', () => {
     expect(field(wrapper, Select, 'Parent page').props('options')).toEqual([{ label: 'A', value: '/_/pages/a' }])
   })
 
+  test('Reference explains itself behind ⓘ, not as a line under the field', () => {
+    const reference = field(setup().wrapper, Input, 'Reference')
+    expect(fieldExplanation(reference.element, 'Only admins see this. It names the page in lists.')).toEqual({ info: true, line: false })
+  })
+
+  test('the page and page data dialogs slide over from the right, so switching tabs never moves its header or footer, while creating too', () => {
+    expect(setup().wrapper.findComponent(DialogStub).props('placement')).toBe('right')
+    expect(setupPageData().wrapper.findComponent(DialogStub).props('placement')).toBe('right')
+    expect(setup({ routeIri: 'add', isAdding: true }).wrapper.findComponent(DialogStub).props('placement')).toBe('right')
+  })
+
   test('public without a route is not a Details field: it lives on the Routes tab, with the route it stands in for (bundle#381)', () => {
     expect(field(setup().wrapper, Toggle, 'Public without a route')).toBeUndefined()
     expect(field(setupPageData().wrapper, Toggle, 'Public without a route')).toBeUndefined()
   })
 
-  test('switching the depth being edited asks the dialog to confirm discarding unsaved edits, and switches only on Discard', async () => {
+  test('switching the depth being edited asks the dialog to confirm discarding unsaved edits, and switches only on Discard; a long chain scrolls sideways under the header instead of widening the dialog', async () => {
     const stored = {
       '/_/pages/uuid-self': { '@id': '/_/pages/uuid-self', 'reference': 'Child', 'parentPage': '/_/pages/parent' },
       '/_/pages/parent': { '@id': '/_/pages/parent', 'reference': 'Parent' },
@@ -377,6 +391,7 @@ describe('PageResourceAdminModal on the kit dialog (#461)', () => {
     const editing = field(wrapper, Segmented, 'Editing')
     expect(editing.props('options')).toEqual([{ label: 'Parent', value: '/_/pages/parent' }, { label: 'Child', value: '/_/pages/uuid-self' }])
     expect(wrapper.get('[data-testid="stub-subheader"]').element.contains(editing.element)).toBe(true)
+    expect(wrapper.get('[data-testid="page-depths"]').classes()).toContain('cwa:overflow-x-auto')
 
     confirmDiscard.mockResolvedValueOnce(false)
     await editing.findAll('button').find(b => b.text() === 'Parent')!.trigger('click')
@@ -394,6 +409,7 @@ describe('PageResourceAdminModal on the kit dialog (#461)', () => {
     requestClose.mockResolvedValueOnce(true)
     const { wrapper } = setup({ hideViewLink: false })
 
+    expect(wrapper.findAllComponents(Button).find(button => button.attributes('data-testid') === 'page-view-on-site')!.props('largeIcon')).toBe(true)
     await wrapper.get('[data-testid="page-view-on-site"]').trigger('click')
     await flushPromises()
 

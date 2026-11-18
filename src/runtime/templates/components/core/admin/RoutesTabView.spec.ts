@@ -147,7 +147,8 @@ describe('RoutesTabView', () => {
       const toggle = publicToggle(wrapper)!
       expect(toggle.props()).toMatchObject({
         field: 'isReachableWithoutRoute',
-        description: 'For a page your app shows on its own URL, loaded by reference. Visitors can read it without a route. It stays private while a parent page isn\'t live.',
+        description: undefined,
+        info: 'For a page your app shows on its own URL, loaded by reference. Visitors can read it without a route. It stays private while a parent page isn\'t live.',
       })
       expect(toggle.props('disabled')).toBe(false)
       expect(wrapper.find('[data-testid="routes-none"]').element.compareDocumentPosition(toggle.element) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
