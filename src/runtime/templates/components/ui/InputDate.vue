@@ -52,7 +52,7 @@ const rootProps = computed(() => ({
   name: props.name,
 }))
 
-const segmentClass = 'cwa:px-0.5 cwa:tabular-nums cwa:focus:outline-none cwa:focus:bg-menu-highlight cwa:focus:text-fg cwa:data-placeholder:text-muted-on-field cwa:data-[segment=literal]:text-fg-muted cwa:data-[segment=literal]:px-0'
+const segmentClass = 'cwa:px-0.5 cwa:tabular-nums cwa:focus:outline-none cwa:focus:bg-menu-highlight cwa:focus:text-fg cwa:data-placeholder:not-data-disabled:text-muted-on-field cwa:data-[segment=literal]:text-fg-muted cwa:data-[segment=literal]:px-0'
 </script>
 
 <template>
@@ -61,7 +61,7 @@ const segmentClass = 'cwa:px-0.5 cwa:tabular-nums cwa:focus:outline-none cwa:foc
     v-slot="{ segments }"
     v-bind="rootProps"
     :model-value="modelValue ?? undefined"
-    class="cwa:relative cwa:flex cwa:items-center cwa:gap-x-0.5 cwa:w-full cwa:data-disabled:opacity-50"
+    class="cwa:relative cwa:flex cwa:items-center cwa:gap-x-0.5 cwa:w-full cwa:data-disabled:text-fg-disabled"
     @update:model-value="(value: any) => emit('update:modelValue', value)"
   >
     <template v-if="Array.isArray(segments)">

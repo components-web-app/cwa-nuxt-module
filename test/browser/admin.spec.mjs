@@ -1577,11 +1577,12 @@ test.describe('in-page editing', () => {
     await page.getByRole('button', { name: 'Edit', exact: true }).click()
     await page.getByRole('button', { name: 'Done', exact: true }).waitFor()
     await page.getByText('Draft only text').first().waitFor()
-    const placeholder = page.getByTestId('edit-placeholder').filter({ hasText: 'Empty group' }).first()
+    const placeholder = page.getByRole('group', { name: 'Empty group' }).first()
     await placeholder.waitFor()
-    assert(await page.getByTestId('field-info-popover').count() === 0, 'The empty group shows its explanation before the info button is hovered')
-    await placeholder.getByTestId('field-info').hover()
-    await page.getByTestId('field-info-popover').filter({ hasText: 'Visitors see nothing here' }).waitFor()
+    assert((await placeholder.evaluate(element => element.innerText)).trim() === '', 'The empty group shows text')
+    assert(await page.getByTestId('edit-placeholder-tooltip').count() === 0, 'The empty group shows its explanation before the + is hovered')
+    await placeholder.getByRole('button', { name: 'Add component position' }).hover()
+    await page.getByTestId('edit-placeholder-tooltip').filter({ hasText: 'Visitors see nothing here' }).waitFor()
   })
 })
 
@@ -1651,7 +1652,7 @@ test('62. with live editing paused on a phone, the header\'s status is a glyph n
   }
 })
 
-test('63. the header\'s Edit or Done button and the page settings button or path selector beside it share one height and one centre, at 1280 and 390, with a fine or a coarse pointer, while live editing is paused', async ({ cwa: t }) => {
+test('63. the header\'s Edit or Done button and the page settings button or path selector beside it share one height and one centre, at 1280 and 390, with a fine or a coarse pointer, while live editing is paused, and the manager bar\'s tabs and their group are exactly as tall as its CTA buttons', async ({ cwa: t }) => {
   const { page, base, seed } = t
   const cookies = await page.context().cookies()
   for (const hasTouch of [false, true]) {
@@ -1691,6 +1692,38 @@ test('63. the header\'s Edit or Done button and the page settings button or path
       await tab.getByTestId('path-selector').waitFor()
       await settle()
       await measure('path-selector')
+      await tab.getByTestId('manager-pin').getByRole('button').first().waitFor()
+      await settle()
+      const bar = await tab.evaluate(() => {
+        const height = element => element.getBoundingClientRect().height
+        const pin = document.querySelector('[data-testid="manager-pin"]')
+        const tablist = document.querySelector('[data-testid="manager-bar"] [role="tablist"]')
+        const selected = tablist.querySelector('[role="tab"][aria-selected="true"]')
+        const after = getComputedStyle(selected, '::after')
+        const underlineBottom = selected.getBoundingClientRect().bottom - Number.parseFloat(after.bottom)
+        return {
+          total: height(document.querySelector('[data-testid="manager-bar"]')),
+          tabs: [...tablist.querySelectorAll('[role="tab"]')].map(height),
+          underline: { top: underlineBottom - Number.parseFloat(after.height), bottom: underlineBottom },
+          line: tablist.parentElement.getBoundingClientRect().bottom,
+          clip: tablist.getBoundingClientRect().bottom,
+          ctas: [...pin.querySelectorAll('button')].filter(button => button.offsetParent && /Publish|More|actions|⋮/i.test(`${button.textContent} ${button.getAttribute('aria-label') ?? ''}`)).map(button => ({ name: (button.getAttribute('aria-label') ?? button.textContent).trim(), height: height(button) })),
+        }
+      })
+      const where = `At ${width}px with a ${hasTouch ? 'coarse' : 'fine'} pointer`
+      assert(bar.ctas.length >= 1, `${where} the bar shows ${bar.ctas.map(cta => cta.name).join(', ') || 'no'} CTA buttons`)
+      for (const cta of bar.ctas) {
+        for (const height of bar.tabs) {
+          assert(Math.abs(height - cta.height) <= 1, `${where} a tab is ${height}px tall and ${cta.name} ${cta.height}px`)
+        }
+        assert(!hasTouch || cta.height >= 44, `${where} ${cta.name} is ${cta.height}px tall, under the 44px hit size`)
+      }
+      for (const height of bar.tabs) {
+        assert(!hasTouch || height >= 44, `${where} a tab is ${height}px tall, under the 44px hit size`)
+      }
+      assert(Math.abs(bar.underline.bottom - bar.line) <= 0.5, `${where} the selected tab's underline ends at ${bar.underline.bottom}, not on the bar's line at ${bar.line}`)
+      assert(bar.underline.bottom <= bar.clip + 0.5, `${where} the underline ends at ${bar.underline.bottom}, below the tab row it is clipped by at ${bar.clip}`)
+      assert(bar.total === (hasTouch ? 112 : 100), `${where} the bar is ${bar.total}px tall`)
       await context.close()
     }
   }
@@ -1718,8 +1751,9 @@ test('64. by keyboard alone a rich-text component is reached with Tab, selected 
   await page.getByTestId('component-menu').waitFor()
   await page.getByRole('textbox', { name: 'Content, Body Text' }).filter({ hasText: texts.source }).waitFor()
 
-  await page.keyboard.press('F6')
   const tablist = page.getByRole('tablist', { name: 'Body Text settings' })
+  await tablist.getByRole('tab', { selected: true }).waitFor()
+  await page.keyboard.press('F6')
   await eventually(() => tablist.evaluate(el => el.contains(document.activeElement)), 'F6 did not move focus to the manager bar\'s tabs')
   for (let moves = 0; moves < 8 && (await page.evaluate(() => document.activeElement?.textContent?.trim())) !== 'Publish'; moves++) {
     await page.keyboard.press('ArrowRight')
@@ -1753,4 +1787,41 @@ test('65. a shared component with unpublished changes offers Remove from here, D
   assert(t.rehearsal.writes.filter(w => w.method === 'DELETE').length === 1, `DELETEd ${JSON.stringify(t.rehearsal.writes.filter(w => w.method === 'DELETE').map(w => w.path))}`)
   assert(await t.api.status(t.seed.iris.source) === 200, 'The live component was deleted')
   assert(await t.api.status(draft['@id']) === 200, 'The draft was deleted')
+})
+
+test('66. at 390 wide the UI tab\'s row shows its fade and scrolls by keyboard, and focusing the Style select brings all of it into the row, with a fine or a coarse pointer', async ({ cwa: t }) => {
+  const { page, base, seed } = t
+  const cookies = await page.context().cookies()
+  for (const hasTouch of [false, true]) {
+    const context = await page.context().browser().newContext({ ignoreHTTPSErrors: true, viewport: { width: 390, height: 844 }, hasTouch })
+    await context.addCookies(cookies)
+    const tab = await context.newPage()
+    await tab.route(`**${mercurePath}**`, route => route.abort())
+    await tab.goto(`${base}${seed.paths.home}`)
+    await tab.getByRole('button', { name: 'Edit', exact: true }).waitFor()
+    await tab.waitForLoadState('networkidle')
+    await tab.getByRole('button', { name: 'Edit', exact: true }).click()
+    await tab.getByRole('button', { name: 'Done', exact: true }).waitFor()
+    await tab.getByText(texts.source, { exact: true }).first().click()
+    await tab.getByRole('tab', { name: 'UI', exact: true }).click()
+    const style = tab.getByTestId('manager-tab-panel').getByRole('combobox', { name: 'Style', exact: true })
+    await style.waitFor()
+    await tab.waitForLoadState('networkidle')
+    const fit = await style.evaluate((input) => {
+      const field = input.parentElement
+      let scroller = field.parentElement
+      while (scroller && getComputedStyle(scroller).overflowX !== 'auto') {
+        scroller = scroller.parentElement
+      }
+      const cue = { overflows: scroller.scrollWidth > scroller.clientWidth + 1, fade: scroller.parentElement.dataset.overflowEnd === 'true', tabindex: scroller.getAttribute('tabindex') }
+      scroller.scrollLeft = 0
+      input.focus()
+      const box = field.getBoundingClientRect()
+      const view = scroller.getBoundingClientRect()
+      return { ...cue, left: Math.round(box.left), right: Math.round(box.right), viewLeft: Math.round(view.left), viewRight: Math.round(view.right), page: document.documentElement.clientWidth, scrollWidth: document.documentElement.scrollWidth }
+    })
+    assert(!fit.overflows || (fit.fade && fit.tabindex === '0'), `With a ${hasTouch ? 'coarse' : 'fine'} pointer the row overflows with no fade or keyboard scroll: ${JSON.stringify(fit)}`)
+    assert(fit.left >= fit.viewLeft - 1 && fit.right <= fit.viewRight + 1 && fit.right <= fit.page, `With a ${hasTouch ? 'coarse' : 'fine'} pointer the Style select is cut off: ${JSON.stringify(fit)}`)
+    await context.close()
+  }
 })

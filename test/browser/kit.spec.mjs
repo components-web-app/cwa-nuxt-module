@@ -9,7 +9,55 @@ async function openKit(page, width) {
   await page.setViewportSize({ width, height: 900 })
   await page.goto(`${kitBase}/kit`)
   await page.getByTestId('kit-presence').getByTestId('field-presence-flag').first().waitFor()
+  await page.waitForFunction(() => !!document.querySelector('#__nuxt')?.__vue_app__, null, { timeout: 120000 })
 }
+
+async function settlePopover(page, testId) {
+  await page.waitForFunction(id => document.querySelector(`[data-testid="${id}"]`)?.getAnimations().every(animation => animation.playState !== 'running'), testId)
+}
+
+function inkGaps(panel) {
+  const box = panel.getBoundingClientRect()
+  const context = document.createElement('canvas').getContext('2d')
+  const caret = [...panel.children].filter(child => getComputedStyle(child).position === 'absolute')
+  const ignored = element => element.closest('svg, .cwa\\:sr-only') || caret.some(part => part.contains(element))
+  const filled = element => element !== panel && !['rgba(0, 0, 0, 0)', 'transparent'].includes(getComputedStyle(element).backgroundColor)
+  const boxes = [...panel.querySelectorAll('*')].filter(element => !ignored(element) && filled(element) && element.getClientRects().length)
+  const ink = boxes.filter(element => !boxes.some(other => other !== element && other.contains(element))).map(element => element.getBoundingClientRect())
+  let wraps = false
+  const walker = document.createTreeWalker(panel, NodeFilter.SHOW_TEXT)
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+    const element = node.parentElement
+    if (!node.textContent.trim() || ignored(element) || boxes.some(filledBox => filledBox.contains(element))) {
+      continue
+    }
+    const style = getComputedStyle(element)
+    context.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`
+    const metrics = context.measureText('H')
+    const range = document.createRange()
+    range.selectNodeContents(node)
+    const lines = [...range.getClientRects()].filter(rect => rect.width)
+    wraps ||= new Set(lines.map(rect => Math.round(rect.top))).size > 1
+    for (const line of lines) {
+      const baseline = line.top + metrics.fontBoundingBoxAscent
+      ink.push({ top: baseline - metrics.actualBoundingBoxAscent, bottom: baseline, left: line.left, right: line.right })
+    }
+  }
+  return {
+    top: Math.min(...ink.map(rect => rect.top)) - box.top,
+    right: box.right - Math.max(...ink.map(rect => rect.right)),
+    bottom: box.bottom - Math.max(...ink.map(rect => rect.bottom)),
+    left: Math.min(...ink.map(rect => rect.left)) - box.left,
+    wraps,
+  }
+}
+
+const tooltipSurfaces = [
+  ['an information popover, with its title and Close', 'field-info-popover', page => page.locator('main').getByTestId('field-info').first().click()],
+  ['a disabled button\'s reason', 'button-reason', page => page.locator('main button[title="Nothing has changed since the last save"]').first().click({ force: true })],
+  ['a field\'s error popover, ending in its buttons', 'field-status-popover', page => page.getByTestId('kit-input-error').locator('input').focus()],
+  ['a field\'s conflict popover', 'field-status-popover', page => page.getByTestId('kit-input-conflict').locator('input').focus()],
+]
 
 for (const width of widths) {
   test(`kit at ${width}: a peer's flag and ring sit clear of every field's label in a manager row`, async ({ page }) => {
@@ -50,6 +98,46 @@ for (const width of widths) {
     await expect(page.locator('.kit-place-bar [data-testid="manager-tab"]')).toHaveCount(await rows.count())
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width)
   })
+
+  test(`kit at ${width}: an information popover stands 4 to 6px from its ⓘ glyph, not from the button's hit area (#461)`, async ({ page }) => {
+    await openKit(page, width)
+    await page.waitForLoadState('networkidle')
+    const trigger = page.locator('main').getByTestId('field-info').first()
+    await trigger.click()
+    await page.getByTestId('field-info-popover').waitFor()
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true')
+    await settlePopover(page, 'field-info-popover')
+
+    const gap = await trigger.evaluate((button) => {
+      const glyph = button.querySelector('svg').getBoundingClientRect()
+      const panel = document.querySelector('[data-testid="field-info-popover"]')
+      const box = panel.getBoundingClientRect()
+      const caret = [...panel.querySelectorAll('svg')].at(-1).getBoundingClientRect()
+      return Math.max(glyph.top - Math.max(box.bottom, caret.bottom), Math.min(box.top, caret.top) - glyph.bottom)
+    })
+    expect(gap).toBeGreaterThanOrEqual(4)
+    expect(gap).toBeLessThanOrEqual(6)
+  })
+
+  for (const [name, testId, open] of tooltipSurfaces) {
+    test(`kit at ${width}: ${name} shows as much space above its text as below it and at its sides, measured to the letters, not to the boxes (#461)`, async ({ page }) => {
+      await openKit(page, width)
+      await page.waitForLoadState('networkidle')
+      await open(page)
+      await page.getByTestId(testId).waitFor()
+      await settlePopover(page, testId)
+
+      const gaps = await page.getByTestId(testId).evaluate(inkGaps)
+      expect(Math.abs(gaps.top - gaps.left)).toBeLessThanOrEqual(1)
+      expect(Math.abs(gaps.bottom - gaps.left)).toBeLessThanOrEqual(1)
+      if (gaps.wraps) {
+        expect(gaps.right).toBeGreaterThanOrEqual(gaps.left - 1)
+      }
+      else {
+        expect(Math.abs(gaps.right - gaps.left)).toBeLessThanOrEqual(1)
+      }
+    })
+  }
 
   test(`kit at ${width}: stacked demo rows never touch`, async ({ page }) => {
     await openKit(page, width)
@@ -373,3 +461,93 @@ test('kit: a field\'s focus ring fades in from transparent, never from white (#4
   expect(frames.some(({ colour }) => colour === 'rgb(96, 165, 250)')).toBe(true)
   expect(white).toEqual([])
 })
+
+test('kit: a textarea beside its label lines the label up with its first line of text, and no manager row holds one (#461)', async ({ page }) => {
+  const warnings = []
+  page.on('console', message => message.text().includes('CwaUiTextarea') && warnings.push(message.text()))
+  await openKit(page, 1280)
+  const textarea = page.locator('[data-kit-field="textarea"]').first()
+  await textarea.scrollIntoViewIfNeeded()
+  const offset = await textarea.evaluate((field) => {
+    const element = field.querySelector('textarea')
+    const label = document.querySelector(`label[for="${element.id}"]`)
+    const firstLine = (box) => {
+      const style = getComputedStyle(box)
+      const top = box.getBoundingClientRect().top + Number.parseFloat(style.paddingTop) + Number.parseFloat(style.borderTopWidth)
+      return top + Number.parseFloat(style.lineHeight) / 2
+    }
+    return firstLine(label) - firstLine(element)
+  })
+  expect(Math.abs(offset)).toBeLessThanOrEqual(1)
+
+  const rows = page.locator('button', { hasText: /^Manager row$/ })
+  for (let index = 0; index < await rows.count(); index++) {
+    await rows.nth(index).scrollIntoViewIfNeeded()
+    await expect(async () => {
+      await rows.nth(index).click()
+      await expect(rows.nth(index)).toHaveAttribute('data-state', 'on', { timeout: 500 })
+    }).toPass()
+  }
+  await expect(page.locator('.kit-place-bar [data-testid="manager-tab"]')).toHaveCount(await rows.count())
+  await expect(page.locator('.kit-place-bar [data-kit-field]').first()).toBeAttached()
+  await expect(page.locator('.kit-place-bar [data-kit-field="textarea"]')).toHaveCount(0)
+  expect(warnings).toEqual([])
+})
+
+for (const [width, height] of [[1280, 600], [390, 600]]) {
+  test(`kit at ${width}×${height}: six toasts show the oldest 3 and "+3 more", which expands them all in a stack that scrolls within the window, and Dismiss all clears them`, async ({ page }) => {
+    await openKit(page, width)
+    await page.setViewportSize({ width, height })
+    const toaster = page.getByTestId('toaster')
+    const more = toaster.getByRole('button', { name: 'Show 3 more notifications' })
+    await expect(async () => {
+      await page.getByTestId('kit-toast-six').click()
+      await expect(more).toBeVisible({ timeout: 500 })
+    }).toPass()
+    await expect(toaster.getByTestId('toast-title')).toHaveText(['Title wasn’t saved', 'Oops! There was a problem.', 'Mercure reconnected'])
+
+    await more.click()
+    await expect(toaster.getByTestId('toast-title')).toHaveCount(6)
+    const list = toaster.getByTestId('toaster-list')
+    const boxes = await page.evaluate(() => {
+      const rect = selector => document.querySelector(selector).getBoundingClientRect()
+      const list = document.querySelector('[data-testid="toaster-list"]')
+      return { list: rect('[data-testid="toaster-list"]'), row: rect('[data-testid="toaster-overflow"]'), scrolls: list.scrollHeight > list.clientHeight, page: document.documentElement.scrollWidth }
+    })
+    expect(boxes.list.top).toBeGreaterThanOrEqual(0)
+    expect(boxes.row.bottom).toBeLessThanOrEqual(height)
+    expect(boxes.scrolls).toBe(true)
+    expect(boxes.page).toBeLessThanOrEqual(width)
+    await list.evaluate(element => element.scrollTo({ top: element.scrollHeight }))
+    await expect(toaster.getByTestId('toast-title').last()).toBeInViewport()
+
+    await page.keyboard.press('Escape')
+    await expect(toaster.getByTestId('toast-title')).toHaveCount(3)
+    await toaster.getByRole('button', { name: 'Dismiss all 6 notifications' }).click()
+    await expect(toaster.getByTestId('toast-title')).toHaveCount(0)
+  })
+}
+
+for (const width of widths) {
+  test(`kit at ${width}: a multi-select keeps its width and height when it opens and closes, and shows its count while open (#461)`, async ({ page }) => {
+    await openKit(page, width)
+    const anchor = page.locator('main').getByTestId('multi-input').first().locator('xpath=..')
+    await anchor.scrollIntoViewIfNeeded()
+    const closed = await anchor.boundingBox()
+
+    await anchor.getByTestId('multi-input').click()
+    await page.getByTestId('multi-menu').waitFor()
+    await expect(anchor.getByTestId('multi-count')).toHaveText(/^\d+ selected$/)
+    const opened = await anchor.boundingBox()
+    await page.keyboard.press('Escape')
+    await page.getByTestId('multi-menu').waitFor({ state: 'detached' })
+    const reclosed = await anchor.boundingBox()
+
+    for (const box of [opened, reclosed]) {
+      expect(Math.abs(box.width - closed.width)).toBeLessThan(0.5)
+      expect(Math.abs(box.height - closed.height)).toBeLessThan(0.5)
+      expect(Math.abs(box.x - closed.x)).toBeLessThan(0.5)
+      expect(Math.abs(box.y - closed.y)).toBeLessThan(0.5)
+    }
+  })
+}

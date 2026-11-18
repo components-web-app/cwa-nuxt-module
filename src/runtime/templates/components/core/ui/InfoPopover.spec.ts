@@ -2,6 +2,8 @@
 import { afterEach, describe, expect, test } from 'vitest'
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { drawsFocusRing } from '../../../../../../test/utils/focus-ring'
+import { drawsOpenState, trimsToLetters } from '../../../../../../test/utils/kit-css'
+import { axe } from '../../../../../../test/utils/axe'
 import InfoPopover from './InfoPopover.vue'
 
 enableAutoUnmount(afterEach)
@@ -12,6 +14,37 @@ describe('InfoPopover (#461)', () => {
 
     expect(drawsFocusRing(wrapper.get('[data-testid="field-info"]').classes())).toBe(true)
   })
+  test('the info button shows itself selected while its popover is open, with its hover fill and a 2px line in its text colour, and not once it closes; the focus ring stays its own', async () => {
+    const wrapper = mount(InfoPopover, { props: { label: 'Reference', text: 'Only admins see this.', textId: 'reference-info' }, attachTo: document.body })
+    const trigger = wrapper.get('[data-testid="field-info"]')
+    expect(drawsOpenState(trigger.element)).toBe(false)
+
+    await trigger.trigger('click')
+    await flushPromises()
+    expect(drawsOpenState(trigger.element)).toBe(true)
+    expect(drawsFocusRing(trigger.classes())).toBe(true)
+    expect(await axe(document.body, { rules: { region: { enabled: false } } })).toHaveNoViolations()
+
+    document.querySelector<HTMLElement>('[data-testid="field-info-popover"] button[aria-label="Close"]')!.click()
+    await flushPromises()
+    expect(drawsOpenState(trigger.element)).toBe(false)
+  })
+
+  test('the popover\'s title row and Close sit inside its padding, never pulled into the corner with negative margins, the row only as tall as its letters and the text trimmed to its capitals and baseline, so the space above the title matches the space below the last line', async () => {
+    const wrapper = mount(InfoPopover, { props: { label: 'Reference', text: 'Only admins see this.', textId: 'reference-info' }, attachTo: document.body })
+
+    await wrapper.get('[data-testid="field-info"]').trigger('click')
+    await flushPromises()
+
+    const popover = document.querySelector('[data-testid="field-info-popover"]')!
+    const title = popover.querySelector('[data-glyph="info"]')!.parentElement!
+    expect([...title.classList].filter(name => name.startsWith('cwa:-'))).toEqual([])
+    expect(title.classList).toContain('cwa:h-[1cap]')
+    expect(title.classList).not.toContain('cwa:min-h-8')
+    expect(trimsToLetters(title.querySelector('span')!)).toBe(true)
+    expect(trimsToLetters(popover.querySelector('p')!)).toBe(true)
+  })
+
   test('the popover is the kit artifact\'s: the menu surface, text colour and shadow, 1rem padding at 1.5 line height, an accent ⓘ before its title and a square caret in the panel\'s fill, with a 1px line ring on the panel and on the caret\'s two outer edges so both stand out on dark surfaces (#461)', async () => {
     const wrapper = mount(InfoPopover, { props: { label: 'Reference', text: 'Only admins see this.', textId: 'reference-info' }, attachTo: document.body })
 

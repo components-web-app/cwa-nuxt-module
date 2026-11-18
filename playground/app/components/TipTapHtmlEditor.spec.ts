@@ -776,6 +776,36 @@ describe('TipTapHtmlEditor: the caret when the editor is rebuilt (#435)', () => 
     component.removeAttribute('tabindex')
   })
 
+  test('focus moved elsewhere while the editable editor is being created, as F6 to the manager bar right after selecting, is not taken back (#461)', async () => {
+    const { wrapper, editor } = await mountEditor('<p>Hello there</p>', { disabled: true })
+    const component = wrapper.element as HTMLElement
+    component.setAttribute('tabindex', '0')
+    const tab = document.body.appendChild(document.createElement('button'))
+    const observer = new MutationObserver(() => {
+      document.querySelector('.ProseMirror[contenteditable="true"]') && document.activeElement === component && tab.focus()
+    })
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true })
+
+    component.focus()
+    await wrapper.setProps({ disabled: false })
+    await vi.waitFor(() => expect([editor().isEditable, document.activeElement]).toEqual([true, tab]))
+    await wait(50)
+    observer.disconnect()
+
+    expect(document.activeElement).toBe(tab)
+    expect(editor().isFocused).toBe(false)
+  })
+
+  test('selecting focuses the editor as it is created, never a frame later, when focus could already have moved on (F6 to the manager bar) (#461)', async () => {
+    const { wrapper, editor } = await mountEditor('<p>Hello there</p>', { disabled: true })
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation(() => 0)
+
+    await wrapper.setProps({ disabled: false })
+    await vi.waitFor(() => expect(editor().isEditable).toBe(true))
+
+    await vi.waitFor(() => expect(editor().isFocused).toBe(true))
+  })
+
   test('a menu opened after selecting keeps focus when the editor becomes editable, so it stays open', async () => {
     const { wrapper, editor } = await mountEditor('<p>Hello there</p>', { disabled: true })
     document.getSelection()!.collapse(editor().view.dom.querySelector('p')!.firstChild!, 5)

@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { resetLocalTimeZone } from '@internationalized/date'
 import { axe } from '../../../../../test/utils/axe'
+import { drawsOpenState } from '../../../../../test/utils/kit-css'
 import { fakeFieldModel } from '../../../../../playground/app/kit/fake-field-model'
 import DatePicker from './DatePicker.vue'
 import Field from '../core/ui/Field.vue'
@@ -103,6 +104,21 @@ describe('CwaUiDatePicker', () => {
 
       expect(emitted(wrapper)).toEqual([])
     })
+  })
+
+  test('the calendar button shows itself selected while the calendar is open, and not once it closes, with no axe violations open', async () => {
+    const wrapper = mountPicker()
+    const button = () => wrapper.get('[data-date-picker-trigger]').element
+    expect(drawsOpenState(button())).toBe(false)
+
+    await openCalendar(wrapper)
+    expect(drawsOpenState(button())).toBe(true)
+    expect(await axe(document.body, { rules: { region: { enabled: false } } })).toHaveNoViolations()
+
+    await wrapper.get('[data-date-picker-trigger]').trigger('click')
+    await flushPromises()
+    expect(drawsOpenState(button())).toBe(false)
+    wrapper.unmount()
   })
 
   describe('the calendar', () => {

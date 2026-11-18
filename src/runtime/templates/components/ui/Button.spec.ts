@@ -3,6 +3,7 @@ import { afterEach, describe, expect, test, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { h } from 'vue'
 import { axe } from '../../../../../test/utils/axe'
+import { drawsOpenState, trimsToLetters } from '../../../../../test/utils/kit-css'
 import Button from './Button.vue'
 import Spinner from './Spinner.vue'
 import { announceKey } from '../core/ui/field-keys'
@@ -201,6 +202,7 @@ describe('CwaUiButton (#456)', () => {
     expect(popover?.getAttribute('aria-label')).toBe('Why Add is unavailable')
     expect([...popover!.classList]).toEqual(expect.arrayContaining(['cwa:bg-surface-menu', 'cwa:text-fg', 'cwa:leading-normal', 'cwa:ring-1', 'cwa:ring-line']))
     expect(popover!.querySelector('svg')!.getAttribute('class')).toContain('cwa:stroke-line')
+    expect(trimsToLetters(popover!.querySelector('p')!)).toBe(true)
     expect(announce).toHaveBeenCalledWith('This group already holds its 3 components')
     expect(clicked).not.toHaveBeenCalled()
     expect(document.activeElement).toBe(wrapper.element)
@@ -293,6 +295,22 @@ describe('CwaUiButton (#456)', () => {
       document.querySelector<HTMLElement>('[data-testid="menu-clone"]')!.click()
       await flushPromises()
       expect(onSelect).toHaveBeenCalledWith(expect.objectContaining({ value: 'clone' }))
+    })
+
+    test('the ⋮ shows itself selected while its menu is open, and not once it closes, with no axe violations open', async () => {
+      const wrapper = mount(Button, { props: { label: 'Publish now', options }, attachTo: document.body })
+      const more = wrapper.get('[data-testid="button-options"]')
+      expect(drawsOpenState(more.element)).toBe(false)
+
+      await more.trigger('keydown', { key: 'Enter' })
+      await flushPromises()
+      expect(drawsOpenState(more.element)).toBe(true)
+      expect(await axe(document.body, { rules: { region: { enabled: false } } })).toHaveNoViolations()
+
+      document.querySelector<HTMLElement>('[data-testid="menu-clone"]')!.click()
+      await flushPromises()
+      expect(drawsOpenState(more.element)).toBe(false)
+      wrapper.unmount()
     })
 
     test('with no main action only the ⋮ is shown, and it is held while loading', () => {

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { POPOVER_GAP } from './popover-gap'
 import { onMounted } from 'vue'
 import { PopoverAnchor, PopoverArrow, PopoverContent, PopoverPortal, PopoverRoot } from 'reka-ui'
 import { useAnnounce } from './field-context'
@@ -25,7 +26,7 @@ onMounted(() => announce(text))
     <PopoverPortal>
       <PopoverContent
         side="top"
-        :side-offset="8"
+        :side-offset="POPOVER_GAP"
         :collision-padding="8"
         :aria-label="label"
         data-testid="button-reason"
@@ -33,7 +34,9 @@ onMounted(() => announce(text))
         @open-auto-focus.prevent
         @close-auto-focus.prevent
       >
-        {{ text }}
+        <p class="cwa:m-0 cwa:trim-text">
+          {{ text }}
+        </p>
         <PopoverArrow
           :width="14"
           :height="7"

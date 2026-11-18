@@ -19,7 +19,7 @@ import type { FieldWidth } from '../core/ui/Field.vue'
 import ChevronGlyph from '../core/ui/ChevronGlyph.vue'
 import CheckGlyph from '../core/ui/CheckGlyph.vue'
 import { useFieldModel } from '../core/ui/field-context'
-import { fieldBox, fieldFill, groupHeading, menuPanel, optionLook } from '../core/ui/field-looks'
+import { fieldBox, fieldDisabled, fieldFill, groupHeading, menuPanel, optionLook } from '../core/ui/field-looks'
 import { menuGroups } from '../core/ui/menu-entries'
 import type { MenuEntry, MenuItem } from '../core/ui/menu-entries'
 import type { ResourceModelField } from '#cwa/resources/model-editors'
@@ -148,11 +148,11 @@ const isOpen = computed({
           :aria-busy="busy ? 'true' : undefined"
           :aria-disabled="blocked ? 'true' : undefined"
           data-testid="select-trigger"
-          :class="[fieldBox, fieldFill(tone, inactive), blocked ? 'cwa:cursor-not-allowed' : 'cwa:cursor-pointer', 'cwa:gap-2 cwa:px-3 cwa:text-left cwa:outline-1 cwa:outline-transparent cwa:data-[state=open]:outline-2 cwa:data-[state=open]:outline-offset-2 cwa:data-[state=open]:outline-accent-fg cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-accent-fg cwa:disabled:cursor-not-allowed', { 'cwa:opacity-50': inactive }]"
+          :class="[fieldBox, fieldFill(tone, inactive), blocked ? 'cwa:cursor-not-allowed' : 'cwa:cursor-pointer', 'cwa:gap-2 cwa:px-3 cwa:text-left cwa:outline-1 cwa:outline-transparent cwa:data-[state=open]:outline-2 cwa:data-[state=open]:outline-offset-2 cwa:data-[state=open]:outline-accent-fg cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-accent-fg cwa:disabled:cursor-not-allowed', { [fieldDisabled]: inactive }]"
         >
           <span
             class="cwa:min-w-0 cwa:flex-1 cwa:truncate"
-            :class="{ 'cwa:text-muted-on-field': !shown }"
+            :class="{ 'cwa:text-muted-on-field': !shown && !inactive }"
           >{{ shown ?? placeholder }}</span>
           <span
             v-if="chosen?.dot"

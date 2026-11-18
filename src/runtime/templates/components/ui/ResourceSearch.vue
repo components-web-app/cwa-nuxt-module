@@ -18,7 +18,7 @@ import CheckGlyph from '../core/ui/CheckGlyph.vue'
 import CwaUiSpinner from './Spinner.vue'
 import SearchIcon from './icon/SearchIcon.vue'
 import { useAnnounce, useFieldModel } from '../core/ui/field-context'
-import { fieldBox, fieldFill, groupHeading, menuPanel, optionLook } from '../core/ui/field-looks'
+import { fieldBox, fieldDisabled, fieldFill, groupHeading, menuPanel, optionLook, placeholderLook } from '../core/ui/field-looks'
 import { useCwa } from '#cwa/composables/cwa'
 import type { CwaResource } from '#cwa/resources/resource-utils'
 import type { ResourceModelField } from '#cwa/resources/model-editors'
@@ -244,7 +244,7 @@ const reducedMotion = typeof window !== 'undefined' && !!window.matchMedia?.('(p
         @update:model-value="choose"
       >
         <ComboboxAnchor
-          :class="[fieldBox, fieldFill(tone, inactive), 'cwa:gap-2 cwa:pr-3 cwa:pl-3', { 'cwa:opacity-50 cwa:cursor-not-allowed': inactive }]"
+          :class="[fieldBox, fieldFill(tone, inactive), 'cwa:gap-2 cwa:pr-3 cwa:pl-3', { [fieldDisabled]: inactive }]"
         >
           <SearchIcon
             class="cwa:size-3.5 cwa:shrink-0 cwa:text-fg-muted"
@@ -264,8 +264,8 @@ const reducedMotion = typeof window !== 'undefined' && !!window.matchMedia?.('(p
             :aria-invalid="tone === 'danger' ? 'true' : undefined"
             :aria-busy="busy || chosenLoading ? 'true' : undefined"
             data-testid="search-input"
-            class="cwa:h-full cwa:w-0 cwa:min-w-0 cwa:flex-1 cwa:appearance-none cwa:truncate cwa:border-0 cwa:bg-transparent cwa:p-0 cwa:text-control cwa:text-inherit cwa:outline-none cwa:placeholder:text-muted-on-field cwa:focus:ring-0 cwa:disabled:cursor-not-allowed cwa:pointer-coarse:text-base"
-            :class="{ 'cwa:sr-only': chosenLoading && !open }"
+            class="cwa:h-full cwa:w-0 cwa:min-w-0 cwa:flex-1 cwa:appearance-none cwa:truncate cwa:border-0 cwa:bg-transparent cwa:p-0 cwa:text-control cwa:text-inherit cwa:outline-none cwa:focus:ring-0 cwa:disabled:cursor-not-allowed cwa:pointer-coarse:text-base"
+            :class="[placeholderLook(inactive), { 'cwa:sr-only': chosenLoading && !open }]"
             @update:model-value="onQuery"
           />
           <ComboboxTrigger

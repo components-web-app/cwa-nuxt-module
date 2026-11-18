@@ -31,8 +31,10 @@
           Italic
         </BubbleMenuButton>
         <button
-          class="px-1.5 py-1 content-center items-center"
+          class="px-1.5 py-1 content-center items-center aria-expanded:shadow-[inset_0_-2px_0_currentColor]"
           :class="[editor.isActive('link') ? 'bg-black text-white' : null]"
+          aria-haspopup="dialog"
+          :aria-expanded="linkOpen ? 'true' : 'false'"
           @click="showLinkManager"
         >
           Link
@@ -246,7 +248,10 @@ function build(shared?: Shared, wantsFocus = false) {
     extensions: extensions(shared),
     onCreate: ({ editor: created }) => {
       rendered = true
-      focus && created.chain().setTextSelection(caret ?? created.state.selection).focus(null, { scrollIntoView: false }).run()
+      if (focus && !focusTaken()) {
+        created.commands.setTextSelection(caret ?? created.state.selection)
+        created.view.focus()
+      }
     },
     onUpdate: ({ editor: changed, transaction }) => {
       if (!rendered || !editable) {
