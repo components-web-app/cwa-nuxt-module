@@ -96,4 +96,30 @@ describe('fetching the template counts (#461)', () => {
 
     expect(await counts).toEqual({})
   })
+
+  test('the 3 s include reading the data endpoints, which can be given while they are still loading', async () => {
+    vi.useFakeTimers()
+    const $cwa = fakeCwa({ [template]: { _metadata: { pageDataCount: 2 } } })
+
+    const counts = fetchTemplateCounts($cwa as any, template, new Promise<string[]>(() => {}))
+    await vi.advanceTimersByTimeAsync(3000)
+
+    expect(await counts).toEqual({})
+  })
+
+  test('data endpoints that fail to load leave the address count unknown', async () => {
+    const $cwa = fakeCwa({ [template]: { _metadata: { pageDataCount: 2 } } })
+
+    expect(await fetchTemplateCounts($cwa as any, template, Promise.reject(new Error('docs')))).toEqual({ templatePages: 2, addresses: undefined })
+  })
+
+  test('data endpoints given as a promise are used once they load', async () => {
+    const $cwa = fakeCwa({
+      [template]: { _metadata: { pageDataCount: 1 } },
+      '/page_data/articles?perPage=100': { member: [{ '@id': '/page_data/articles/1', 'page': template }] },
+      '/_/routes?pageData%5B%5D=%2Fpage_data%2Farticles%2F1&perPage=100': { totalItems: 1 },
+    })
+
+    expect(await fetchTemplateCounts($cwa as any, template, Promise.resolve(['/page_data/articles']))).toEqual({ templatePages: 1, addresses: 1 })
+  })
 })

@@ -210,27 +210,35 @@ async function showField(field: string) {
   target?.focus()
 }
 
-let closing = false
+let confirming = false
 
-async function requestClose() {
-  if (closing) {
+async function confirmDiscard() {
+  const count = unsavedCount.value
+  if (!props.form || !count) {
+    return true
+  }
+  if (confirming) {
     return false
   }
-  const count = unsavedCount.value
-  if (props.form && count) {
-    closing = true
-    const names = props.form.unsavedFields.map(labelOf)
-    const discard = await confirm({
-      title: `Discard ${count} unsaved ${count === 1 ? 'change' : 'changes'}?`,
-      description: `Your changes to ${listText(names)} will be lost.`,
-      keep: 'Keep editing',
-      go: 'Discard',
-    })
-    closing = false
-    if (!discard) {
-      return false
-    }
-    props.form.discard()
+  confirming = true
+  const names = props.form.unsavedFields.map(labelOf)
+  const discard = await confirm({
+    title: `Discard ${count} unsaved ${count === 1 ? 'change' : 'changes'}?`,
+    description: `Your changes to ${listText(names)} will be lost.`,
+    keep: 'Keep editing',
+    go: 'Discard',
+  })
+  confirming = false
+  if (!discard) {
+    return false
+  }
+  props.form.discard()
+  return true
+}
+
+async function requestClose() {
+  if (confirming || !await confirmDiscard()) {
+    return false
   }
   emit('close')
   return true
@@ -269,7 +277,7 @@ function glyphOf(key: string) {
   return kind === 'conflict' || kind === 'error' ? kind : undefined
 }
 
-defineExpose({ requestClose, showField })
+defineExpose({ requestClose, confirmDiscard, showField })
 </script>
 
 <template>
@@ -408,7 +416,6 @@ defineExpose({ requestClose, showField })
                 :key="item.key"
               >
                 <div
-                  v-if="visited.has(item.key)"
                   v-show="currentTab === item.key"
                   :id="`${tabsId}-${item.key}-panel`"
                   role="tabpanel"
@@ -417,6 +424,7 @@ defineExpose({ requestClose, showField })
                   :data-tab="item.key"
                 >
                   <DialogPanel
+                    v-if="visited.has(item.key)"
                     :tab="item.key"
                     :unsaved="isUnsaved"
                     :register="register"

@@ -69,7 +69,7 @@
         />
         <CwaUiSelect
           v-if="pageStyleOptions.length"
-          field="uiClassNames"
+          :model="pageStyleModel"
           label="Style"
           :options="pageStyleOptions"
           nullable
@@ -120,9 +120,9 @@
           />
           <CwaUiSelect
             v-else
-            :field="metaField.field"
+            :model="metaSelects[metaField.field]!.model"
             :label="metaField.label"
-            :options="metaFieldOptions(metaField.options)"
+            :options="metaSelects[metaField.field]!.options"
             nullable
           />
         </template>
@@ -228,6 +228,8 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, useTemplateRef, watch } from 'vue'
+import isEqual from 'lodash-es/isEqual'
+import { useRoute } from 'vue-router'
 import { navigateTo, useCwa } from '#imports'
 import { componentNames } from '#components'
 import CwaUiDialog from '#cwa/templates/components/ui/Dialog.vue'
@@ -247,6 +249,8 @@ import type { SelectOption } from '#cwa/composables/cwa-select-input'
 import type { CwaResource } from '#cwa/resources/resource-utils'
 import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/resources/resource-utils'
 import { useCwaConfirm } from '#cwa/composables/cwa-confirm'
+import { deriveSelectedStyles, mergeSelectedStyles } from '#cwa/composables/cwa-styles'
+import type { StyleClasses } from '#cwa/composables/cwa-styles'
 import { fetchTemplateCounts, pageDeleteConfirmLines, pageDeleteLines } from '#cwa/admin/page-delete'
 import type { PageDeleteFacts } from '#cwa/admin/page-delete'
 import { useItemPage } from '#cwa-layer/_composables/useItemPage'
@@ -268,7 +272,12 @@ const { parentPages, loadParentPageOptions } = useParentPageLoader()
 const { dataTypes, dataInstances, loadDataTypes, loadDataInstances, fqcnToEntrypointKey } = useParentPageDataLoader()
 const { dynamicPages, loadDynamicPageOptions } = useDynamicPageLoader()
 
-const displayIri = ref(props.iri)
+const route = useRoute()
+const rootIri = computed(() => {
+  const param = route.params.iri
+  return props.iri ?? ((Array.isArray(param) ? param[0] : param) || undefined)
+})
+const displayIri = ref(rootIri.value)
 
 const isDisplayingPage = computed(() => getResourceTypeFromIri(displayIri.value ?? '') === CwaResourceTypes.PAGE)
 
@@ -278,7 +287,7 @@ function getResourceData(iri: string) {
 
 const depthChain = computed(() => {
   const chain: SelectOption[] = []
-  let iri: string | null | undefined = props.iri
+  let iri: string | null | undefined = rootIri.value
   while (iri) {
     const res = getResourceData(iri)
     chain.unshift({
@@ -294,8 +303,11 @@ const depthOptions = computed(() => depthChain.value.map(option => ({ label: opt
 
 const displayIriModel = computed({
   get: () => displayIri.value,
-  set: (iri: string | null | undefined) => {
-    iri && (displayIri.value = iri)
+  set: async (iri: string | null | undefined) => {
+    if (!iri || iri === displayIri.value || (dialog.value && !await dialog.value.confirmDiscard())) {
+      return
+    }
+    displayIri.value = iri
   },
 })
 
@@ -332,7 +344,7 @@ function isDescendantOfCurrentPage(candidateIri: string): boolean {
   while (current) {
     if (visited.has(current)) break
     visited.add(current)
-    if (current === props.iri) return true
+    if (current === rootIri.value) return true
     current = byId[current]?.parentPage
   }
   return false
@@ -341,7 +353,7 @@ function isDescendantOfCurrentPage(candidateIri: string): boolean {
 const parentPageOptions = computed<MenuEntry[]>(() => {
   const options: MenuEntry[] = []
   for (const page of parentPages.value ?? []) {
-    if (page['@id'] !== props.iri && !isDescendantOfCurrentPage(page['@id'])) {
+    if (page['@id'] !== rootIri.value && !isDescendantOfCurrentPage(page['@id'])) {
       options.push({ label: page.reference, value: page['@id'] })
     }
   }
@@ -368,6 +380,7 @@ const { isAdding, isLoading, isUpdating, localResourceData, resource, formatDate
   defaultResource: {},
   endpoint: displayIri,
   excludeFields: ['componentGroups'],
+  dismissStoredErrors: true,
 })
 
 const dialogTitle = computed(() => {
@@ -397,7 +410,7 @@ function saveResource(close = false) {
   return _saveResource(close)
 }
 
-const isDisplayedPage = computed(() => !!props.iri && props.iri === $cwa.resources.displayPageIri.value)
+const isDisplayedPage = computed(() => !!rootIri.value && rootIri.value === $cwa.resources.displayPageIri.value)
 
 const adminListingLink = computed(() => {
   if (isDisplayingPage.value) {
@@ -439,7 +452,7 @@ async function refreshCounts() {
     counts.value = {}
     return
   }
-  counts.value = await fetchTemplateCounts($cwa, iri, await dataEndpoints().catch(() => []))
+  counts.value = await fetchTemplateCounts($cwa, iri, dataEndpoints())
 }
 
 async function handleDeleteClick() {
@@ -447,11 +460,15 @@ async function handleDeleteClick() {
     return
   }
   checkingDelete.value = true
-  await refreshCounts()
+  const iri = resource.value?.['@id']
+  const [notice] = await Promise.all([
+    iri ? import('#cwa/admin/resource-confirm').then(({ editingNotice }) => editingNotice($cwa, iri)) : undefined,
+    refreshCounts(),
+  ])
   checkingDelete.value = false
   const confirmed = await confirm({
     title: `Delete “${pageName.value || dialogTitle.value}”?`,
-    lines: pageDeleteConfirmLines(deleteFacts.value, form.unsavedFields.length),
+    lines: [...(notice ? [{ text: notice }] : []), ...pageDeleteConfirmLines(deleteFacts.value, form.unsavedFields.length)],
     keep: 'Don\'t delete',
     go: 'Delete page',
     typed: pageName.value.trim() ? { noun: 'page name', value: pageName.value } : undefined,
@@ -538,24 +555,62 @@ const pageUiModel = {
   }),
 } as ReturnType<typeof form.model<string>>
 
-const pageStyleOptions = computed<MenuEntry[]>(() => {
-  if (!localResourceData.value?.uiComponent) return []
-  const cleanName = cleanUiName(localResourceData.value.uiComponent)
-  const configuredClasses = $cwa.pagesConfig?.[cleanName]?.classes
-  if (!configuredClasses) return []
-  return Object.entries(configuredClasses).map(([label, value]) => ({ label, value: String(value) }))
+const pageStyleClasses = computed<StyleClasses>(() => {
+  const uiComponent = localResourceData.value?.uiComponent
+  return (uiComponent && $cwa.pagesConfig?.[cleanUiName(uiComponent)]?.classes) || {}
 })
+
+const pageStyleOptions = computed<MenuEntry[]>(() => Object.keys(pageStyleClasses.value).map(name => ({ label: name, value: name })))
+
+const pageStyleModel = {
+  ...form.model<string[] | null>('uiClassNames'),
+  model: computed({
+    get: () => deriveSelectedStyles(localResourceData.value?.uiClassNames, pageStyleClasses.value)[0] ?? null,
+    set: (name: string | null | undefined) => {
+      if (!localResourceData.value) {
+        return
+      }
+      const merged = mergeSelectedStyles(name ? [name] : [], pageStyleClasses.value)
+      localResourceData.value.uiClassNames = merged.length ? merged : null
+    },
+  }),
+} as unknown as ReturnType<typeof form.model<string>>
 
 const pageOptions = computed<MenuEntry[]>(() => (dynamicPages.value ?? []).map(page => ({
   label: page.reference,
   value: page['@id'],
 })))
 
-function metaFieldOptions(options: SelectOption[] | undefined) {
-  return (options ?? []).map(option => ({ label: option.label, value: option.value === null || option.value === undefined ? null : String(option.value) }))
+const { pageDataConfig } = useDataType(computed(() => resource.value?.['@type']))
+
+function metaSelect(field: string, options: SelectOption[] | undefined) {
+  const values = new Map<string, unknown>()
+  const entries = (options ?? []).map((option, index) => {
+    if (option.value === null || option.value === undefined) {
+      return { label: option.label, value: null }
+    }
+    const key = String(index)
+    values.set(key, option.value)
+    return { label: option.label, value: key }
+  })
+  const model = {
+    ...form.model(field),
+    model: computed({
+      get: () => {
+        const stored = localResourceData.value?.[field]
+        return [...values.entries()].find(([, value]) => isEqual(value, stored))?.[0] ?? null
+      },
+      set: (key: string | null | undefined) => {
+        localResourceData.value && (localResourceData.value[field] = key ? values.get(key) : null)
+      },
+    }),
+  } as unknown as ReturnType<typeof form.model<string>>
+  return { options: entries, model }
 }
 
-const { pageDataConfig } = useDataType(computed(() => resource.value?.['@type']))
+const metaSelects = computed(() => Object.fromEntries((pageDataConfig.value?.metaFields ?? [])
+  .filter(metaField => metaField.type !== 'input')
+  .map(metaField => [metaField.field, metaSelect(metaField.field, metaField.options)])))
 
 const tabs = computed<DialogTab[]>(() => {
   const t: DialogTab[] = [{ label: 'Details', key: 'details' }]

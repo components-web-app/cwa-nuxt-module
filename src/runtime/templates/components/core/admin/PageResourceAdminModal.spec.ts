@@ -15,9 +15,10 @@ import * as cwaComposable from '#cwa/composables/cwa'
 import { componentNames } from '#components'
 
 const mockNavigateTo = vi.hoisted(() => vi.fn())
+const mockRoute = vi.hoisted(() => ({ params: {} as Record<string, string> }))
 mockNuxtImport('navigateTo', () => mockNavigateTo)
 
-const { mockUseItemPage, mockUseDynamicPageLoader, mockUseParentPageLoader, mockUseParentPageDataLoader, mockUseDataType, confirmMock, countsMock, requestClose } = vi.hoisted(() => ({
+const { mockUseItemPage, mockUseDynamicPageLoader, mockUseParentPageLoader, mockUseParentPageDataLoader, mockUseDataType, confirmMock, countsMock, requestClose, confirmDiscard } = vi.hoisted(() => ({
   mockUseItemPage: vi.fn(),
   mockUseDynamicPageLoader: vi.fn(),
   mockUseParentPageLoader: vi.fn(),
@@ -26,14 +27,23 @@ const { mockUseItemPage, mockUseDynamicPageLoader, mockUseParentPageLoader, mock
   confirmMock: vi.fn(),
   countsMock: vi.fn(),
   requestClose: vi.fn(),
+  confirmDiscard: vi.fn(),
 }))
 
 vi.mock('#cwa-layer/_composables/useItemPage', () => ({ useItemPage: mockUseItemPage }))
+vi.mock('vue-router', async (importOriginal) => {
+  const mod = await importOriginal<typeof import('vue-router')>()
+  return { ...mod, useRoute: () => mockRoute }
+})
 vi.mock('#cwa-layer/_composables/useDynamicPageLoader', () => ({ useDynamicPageLoader: mockUseDynamicPageLoader }))
 vi.mock('#cwa-layer/_composables/useParentPageLoader', () => ({ useParentPageLoader: mockUseParentPageLoader }))
 vi.mock('#cwa-layer/_composables/useParentPageDataLoader', () => ({ useParentPageDataLoader: mockUseParentPageDataLoader }))
 vi.mock('#cwa-layer/_composables/useDataType', () => ({ useDataType: mockUseDataType }))
 vi.mock('#cwa/composables/cwa-confirm', () => ({ useCwaConfirm: () => confirmMock }))
+const realtime = vi.hoisted(() => ({ peers: vi.fn((_iri: string): unknown[] => []) }))
+vi.mock('#cwa/resources/realtime-view', () => ({
+  realtimeView: () => ({ load: async () => ({ peers: realtime.peers }) }),
+}))
 vi.mock('#cwa/admin/page-delete', async (importOriginal) => {
   const original = await importOriginal<typeof import('#cwa/admin/page-delete')>()
   return { ...original, fetchTemplateCounts: countsMock }
@@ -48,7 +58,7 @@ const DialogStub = defineComponent({
   setup(props, { slots, expose }) {
     provide(fieldGroupKey, { model: (field: string) => props.form.model(field), undo: () => undefined })
     provide(formSurfaceKey, { unsaved: (field: string) => props.form.unsavedFields.includes(field), register: () => () => {} })
-    expose({ requestClose })
+    expose({ requestClose, confirmDiscard })
     return () => h('div', { 'data-testid': 'dialog-stub' }, [slots['header-actions']?.(), slots.details?.(), slots.routes?.(), slots.info?.()])
   },
 })
@@ -66,8 +76,12 @@ function setup(opts: {
   hideViewLink?: boolean
   parentPages?: Record<string, any>[]
   routes?: Record<string, any>
+  stored?: Record<string, any>
+  routeIri?: string
+  apiDocumentation?: Promise<unknown>
 } = {}) {
-  const iri = opts.iri ?? '/_/pages/uuid-self'
+  const iri = opts.iri ?? opts.routeIri ?? '/_/pages/uuid-self'
+  mockRoute.params = opts.routeIri ? { iri: opts.routeIri } : {}
   const resource = opts.resource ?? { '@id': iri, '@type': 'Page', 'reference': 'My Page' }
   const form: FakeDialogForm = fakeDialogForm({
     '@id': iri,
@@ -107,20 +121,21 @@ function setup(opts: {
   })
   mockUseDataType.mockReturnValue({ pageDataConfig: ref(opts.pageDataConfig ?? null) })
 
-  const getResource = vi.fn((resourceIri: string) => ref(opts.routes?.[resourceIri] ? { data: opts.routes[resourceIri] } : null))
+  const storedData = { ...opts.routes, ...opts.stored }
+  const getResource = vi.fn((resourceIri: string) => ref(storedData[resourceIri] ? { data: storedData[resourceIri] } : null))
   vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => ({
     resources: {
       displayPageIri: ref(opts.displayPageIri),
       getResource,
     },
     fetch: vi.fn().mockReturnValue({ response: Promise.resolve({ _data: null }) }),
-    getApiDocumentation: vi.fn().mockResolvedValue({ entrypoint: { blogArticleData: '/page_data/blog_article_datas' } }),
+    getApiDocumentation: vi.fn(() => opts.apiDocumentation ?? Promise.resolve({ entrypoint: { blogArticleData: '/page_data/blog_article_datas' } })),
     pagesConfig: opts.pagesConfig ?? {},
     admin: { toggleEdit: vi.fn() },
   }) as unknown as ReturnType<typeof cwaComposable.useCwa>)
 
   const wrapper = mount(PageResourceAdminModal, {
-    props: { iri, resourceType: opts.resourceType ?? 'Page', hideViewLink: opts.hideViewLink ?? true },
+    props: { ...(opts.routeIri ? {} : { iri }), resourceType: opts.resourceType ?? 'Page', hideViewLink: opts.hideViewLink ?? true },
     global: {
       stubs: {
         CwaUiDialog: DialogStub,
@@ -146,6 +161,7 @@ const field = (wrapper: ReturnType<typeof mount>, component: any, label: string)
 
 async function clickDelete(wrapper: ReturnType<typeof mount>) {
   await wrapper.get('[data-testid="page-delete"]').trigger('click')
+  await vi.dynamicImportSettled()
   await flushPromises()
 }
 
@@ -162,6 +178,42 @@ describe('PageResourceAdminModal on the kit dialog (#461)', () => {
     expect(dialog.props('title')).toBe('My Page')
     expect(dialog.props('form')).toStrictEqual(form)
     expect(dialog.props('tabs')).toEqual([{ label: 'Details', key: 'details' }, { label: 'Routes', key: 'routes' }, { label: 'Info', key: 'info' }])
+  })
+
+  test('the dialog shows a failed save itself, so it alone asks useItemPage to dismiss the stored error', () => {
+    setup()
+
+    expect(mockUseItemPage).toHaveBeenCalledWith(expect.objectContaining({ dismissStoredErrors: true }))
+  })
+
+  test('opened from /_cwa/routes/<iri> without an iri, a page opens as a page: its fields, depths, parent filter and typed delete', async () => {
+    const routeIri = '/_/pages/uuid-self'
+    const stored = {
+      [routeIri]: { '@id': routeIri, 'reference': 'Child', 'parentPage': '/_/pages/parent' },
+      '/_/pages/parent': { '@id': '/_/pages/parent', 'reference': 'Parent' },
+    }
+    const { wrapper } = setup({
+      routeIri,
+      stored,
+      resource: { '@id': routeIri, '@type': 'Page', 'reference': 'Child', 'parentPage': '/_/pages/parent' },
+      local: { parentPage: '/_/pages/parent' },
+      parentPages: [
+        { '@id': routeIri, 'reference': 'Child', 'parentPage': '/_/pages/parent' },
+        { '@id': '/_/pages/parent', 'reference': 'Parent' },
+        { '@id': '/_/pages/grandchild', 'reference': 'Grandchild', 'parentPage': routeIri },
+      ],
+    })
+
+    expect(mockUseItemPage.mock.calls[0]![0].endpoint.value).toBe(routeIri)
+    expect(wrapper.find('[data-cwa-field="reference"]').exists()).toBe(true)
+    expect(field(wrapper, Segmented, 'Page type')).toBeDefined()
+    expect(field(wrapper, Select, 'Layout')).toBeDefined()
+    expect(field(wrapper, Select, 'Page UI')).toBeDefined()
+    expect(field(wrapper, Segmented, 'Editing').props('options')).toEqual([{ label: 'Parent', value: '/_/pages/parent' }, { label: 'Child', value: routeIri }])
+    expect(field(wrapper, Select, 'Parent page').props('options')).toEqual([{ label: 'Parent', value: '/_/pages/parent' }])
+    confirmMock.mockResolvedValueOnce(false)
+    await clickDelete(wrapper)
+    expect(confirmMock.mock.calls[0]![0]).toMatchObject({ title: 'Delete “Child”?', typed: { noun: 'page name', value: 'Child' } })
   })
 
   test('creating shows only Details', () => {
@@ -231,6 +283,28 @@ describe('PageResourceAdminModal on the kit dialog (#461)', () => {
     expect(field(unrouted.wrapper, Toggle, 'Public without a route').props('disabled')).toBe(false)
   })
 
+  test('switching the depth being edited asks the dialog to confirm discarding unsaved edits, and switches only on Discard', async () => {
+    const stored = {
+      '/_/pages/uuid-self': { '@id': '/_/pages/uuid-self', 'reference': 'Child', 'parentPage': '/_/pages/parent' },
+      '/_/pages/parent': { '@id': '/_/pages/parent', 'reference': 'Parent' },
+    }
+    const { wrapper } = setup({ stored })
+    const endpoint = mockUseItemPage.mock.calls[0]![0].endpoint
+    const editing = field(wrapper, Segmented, 'Editing')
+    expect(editing.props('options')).toEqual([{ label: 'Parent', value: '/_/pages/parent' }, { label: 'Child', value: '/_/pages/uuid-self' }])
+
+    confirmDiscard.mockResolvedValueOnce(false)
+    await editing.findAll('button').find(b => b.text() === 'Parent')!.trigger('click')
+    await flushPromises()
+    expect(confirmDiscard).toHaveBeenCalledOnce()
+    expect(endpoint.value).toBe('/_/pages/uuid-self')
+
+    confirmDiscard.mockResolvedValueOnce(true)
+    await editing.findAll('button').find(b => b.text() === 'Parent')!.trigger('click')
+    await flushPromises()
+    expect(endpoint.value).toBe('/_/pages/parent')
+  })
+
   test('the view button navigates to the page with cwa_force once the dialog has closed, and is hidden on the page on screen', async () => {
     requestClose.mockResolvedValueOnce(true)
     const { wrapper } = setup({ hideViewLink: false })
@@ -277,7 +351,8 @@ describe('PageResourceAdminModal delete (#461)', () => {
 
     await clickDelete(wrapper)
 
-    expect(countsMock).toHaveBeenCalledWith(expect.anything(), '/_/pages/uuid-self', ['/page_data/blog_article_datas'])
+    expect(countsMock).toHaveBeenCalledWith(expect.anything(), '/_/pages/uuid-self', expect.any(Promise))
+    expect(await countsMock.mock.calls[0]![2]).toEqual(['/page_data/blog_article_datas'])
     expect(confirmMock).toHaveBeenCalledWith({
       title: 'Delete “Shaker kitchens”?',
       lines: [
@@ -289,6 +364,34 @@ describe('PageResourceAdminModal delete (#461)', () => {
       typed: { noun: 'page name', value: 'Shaker kitchens' },
     })
     expect(handlers.deleteResource).not.toHaveBeenCalled()
+  })
+
+  test('the confirm names the other admins editing the page (#429)', async () => {
+    realtime.peers.mockReturnValueOnce([
+      { user: { id: '/users/sam', name: 'Sam' }, name: 'Sam', state: 'editing', idle: false },
+      { user: { id: '/users/jo', name: 'Jo' }, name: 'Jo', state: 'selected', idle: true },
+    ])
+    const { wrapper } = setup()
+    confirmMock.mockResolvedValueOnce(false)
+
+    await clickDelete(wrapper)
+
+    expect(realtime.peers).toHaveBeenCalledWith('/_/pages/uuid-self')
+    expect(confirmMock.mock.calls[0]![0].lines).toEqual([
+      { text: 'Sam is editing this.' },
+      { text: 'This can\'t be undone.' },
+    ])
+  })
+
+  test('the count check starts at once, so the API docs it waits for are inside its 3 s limit (§8.6)', async () => {
+    countsMock.mockResolvedValueOnce({})
+    const { wrapper } = setup({ resource: { '@id': '/_/pages/uuid-self', '@type': 'Page', 'reference': 'T', 'isTemplate': true }, apiDocumentation: new Promise(() => {}) })
+    confirmMock.mockResolvedValueOnce(false)
+
+    await clickDelete(wrapper)
+
+    expect(countsMock).toHaveBeenCalledWith(expect.anything(), '/_/pages/uuid-self', expect.any(Promise))
+    expect(confirmMock).toHaveBeenCalledOnce()
   })
 
   test('a page that is not a template is not counted', async () => {
@@ -388,9 +491,37 @@ describe('PageResourceAdminModal meta fields config', () => {
 
     expect(field(wrapper, Input, 'Subtitle').props('field')).toBe('subtitle')
     expect(field(wrapper, Select, 'Subtitle')).toBeUndefined()
-    expect(field(wrapper, Select, 'Category').props()).toMatchObject({ field: 'category', options: [{ label: 'A', value: 'a' }, { label: 'None', value: null }], nullable: true })
-    expect(field(wrapper, Select, 'Status').props('field')).toBe('status')
+    const category = field(wrapper, Select, 'Category')
+    expect(category.props()).toMatchObject({ options: [{ label: 'A', value: '0' }, { label: 'None', value: null }], nullable: true })
+    expect(category.props('model')).toMatchObject({ field: 'category' })
+    expect(category.props('model').model.value).toBe('0')
+    expect(field(wrapper, Select, 'Status').props('model').field).toBe('status')
     expect(wrapper.get('[data-cwa-field="subtitle"] input').element).toHaveProperty('value', 'Hello')
+  })
+
+  test('a meta select shows and stores its options\' own values, so a number or a boolean is saved as one', () => {
+    const { wrapper, form } = setupPageData({
+      pageDataConfig: {
+        metaFields: [{ field: 'priority', type: 'select', label: 'Priority', options: [{ label: 'One', value: 1 }, { label: 'Text one', value: '1' }, { label: 'Yes', value: true }, { label: 'None', value: null }] }],
+      },
+      local: { priority: 1 },
+    })
+    form.discard()
+    const priority = field(wrapper, Select, 'Priority')
+    const keyOf = (label: string) => priority.props('options').find((option: { label: string }) => option.label === label).value
+
+    expect(priority.props('model').model.value).toBe(keyOf('One'))
+
+    priority.props('model').model.value = keyOf('Yes')
+    expect(form.local.priority).toBe(true)
+    priority.props('model').model.value = keyOf('Text one')
+    expect(form.local.priority).toBe('1')
+    expect(priority.props('model').model.value).toBe(keyOf('Text one'))
+    priority.props('model').model.value = keyOf('One')
+    expect(form.local.priority).toBe(1)
+    expect(form.unsavedFields).toEqual([])
+    priority.props('model').model.value = null
+    expect(form.local.priority).toBeNull()
   })
 
   test('typing in a meta field writes back to the local copy', async () => {
@@ -440,6 +571,46 @@ describe('PageResourceAdminModal Page UI select stores the full CwaPage componen
     model.model.value = 'CwaPageNestedTopicTemplate'
     expect(form.local.uiComponent).toBe('CwaPageNestedTopicTemplate')
     expect(model.field).toBe('uiComponent')
+  })
+})
+
+describe('PageResourceAdminModal Style select', () => {
+  const pagesConfig = { PrimaryPageTemplate: { name: 'Primary', classes: { Wide: ['is-wide', 'cwa-pad'], Dark: 'is-dark' } } }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  test('lists the configured styles by name and shows the one the stored class list holds', () => {
+    const { wrapper } = setup({ pagesConfig, local: { uiComponent: 'CwaPagePrimaryPageTemplate', uiClassNames: ['is-wide cwa-pad'] } })
+    const style = field(wrapper, Select, 'Style')
+
+    expect(style.props('options')).toEqual([{ label: 'Wide', value: 'Wide' }, { label: 'Dark', value: 'Dark' }])
+    expect(style.props('model').field).toBe('uiClassNames')
+    expect(style.props('model').model.value).toBe('Wide')
+  })
+
+  test('choosing a style stores its classes as the one class string in the list, and Default clears it', () => {
+    const { wrapper, form } = setup({ pagesConfig, local: { uiComponent: 'CwaPagePrimaryPageTemplate', uiClassNames: ['is-wide cwa-pad'] } })
+    form.discard()
+    const model = field(wrapper, Select, 'Style').props('model')
+
+    model.model.value = 'Dark'
+    expect(form.local.uiClassNames).toEqual(['is-dark'])
+    expect(form.unsavedFields).toEqual(['uiClassNames'])
+
+    model.model.value = 'Wide'
+    expect(form.local.uiClassNames).toEqual(['is-wide cwa-pad'])
+    expect(form.unsavedFields).toEqual([])
+
+    model.model.value = null
+    expect(form.local.uiClassNames).toBeNull()
+  })
+
+  test('a stored class list that matches no configured style shows Default', () => {
+    const { wrapper } = setup({ pagesConfig, local: { uiComponent: 'CwaPagePrimaryPageTemplate', uiClassNames: ['something-else'] } })
+
+    expect(field(wrapper, Select, 'Style').props('model').model.value).toBeNull()
   })
 })
 

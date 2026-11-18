@@ -16,7 +16,7 @@ vi.mock('vue-router', async (importOriginal) => {
 
 const layoutIri = '/_/layouts/layout-uuid'
 
-function setup(stored: Record<string, any>, ops: { excludeFields?: string[], resourceType?: string | null } = {}) {
+function setup(stored: Record<string, any>, ops: { excludeFields?: string[], resourceType?: string | null, dismissStoredErrors?: boolean } = {}) {
   const store = reactive<Record<string, any>>({
     [layoutIri]: { data: stored, apiState: { status: 'SUCCESS' } },
   })
@@ -47,6 +47,7 @@ function setup(stored: Record<string, any>, ops: { excludeFields?: string[], res
         defaultResource: {},
         endpoint: ref(layoutIri),
         excludeFields: ops.excludeFields,
+        dismissStoredErrors: ops.dismissStoredErrors,
       })
       return () => null
     },
@@ -324,8 +325,8 @@ describe('useItemPage Save model (#461)', () => {
     expect(itemPage.form.model('reference')).toBe(reference)
   })
 
-  test('a 422 puts each violation on its field, keeps the edits unsaved, and shows no request-error toast', async () => {
-    const { itemPage, failWith, errors, removeError } = setup({ ...layout })
+  test('a 422 puts each violation on its field, keeps the edits unsaved, and shows no request-error toast in a dialog that shows the form errors', async () => {
+    const { itemPage, failWith, errors, removeError } = setup({ ...layout }, { dismissStoredErrors: true })
     await flushPromises()
     itemPage.localResourceData.value!.reference = ''
     itemPage.localResourceData.value!.uiComponent = 'Nope'
@@ -345,6 +346,21 @@ describe('useItemPage Save model (#461)', () => {
     expect(itemPage.form.failures).toBe(1)
     expect(removeError).toHaveBeenCalledWith(1)
     expect(errors).toEqual([])
+  })
+
+  test('a failed save keeps its stored error for a page that shows the store\'s errors itself', async () => {
+    const { itemPage, failWith, errors, removeError } = setup({ ...layout })
+    await flushPromises()
+    itemPage.localResourceData.value!.reference = ''
+    failWith(422, { violations: [{ propertyPath: 'reference', message: 'Add a reference.' }] })
+    await itemPage.saveResource()
+
+    failWith(500, { detail: 'Boom' })
+    await itemPage.saveResource()
+
+    expect(removeError).not.toHaveBeenCalled()
+    expect(errors).toHaveLength(2)
+    expect(itemPage.form.failures).toBe(2)
   })
 
   test('editing a field clears its error at once, and only its own', async () => {
@@ -377,7 +393,7 @@ describe('useItemPage Save model (#461)', () => {
   })
 
   test('a 412 marks each sent field another editor changed as a conflict, stores their newer version and keeps mine', async () => {
-    const { itemPage, failWith, storeResource, removeError } = setup({ ...layout, _metadata: { persisted: true, version: 3 } })
+    const { itemPage, failWith, storeResource, removeError } = setup({ ...layout, _metadata: { persisted: true, version: 3 } }, { dismissStoredErrors: true })
     await flushPromises()
     itemPage.localResourceData.value!.reference = 'Mine'
     itemPage.localResourceData.value!.uiComponent = 'CwaLayoutMine'
@@ -423,8 +439,8 @@ describe('useItemPage Save model (#461)', () => {
     expect(storeResource).not.toHaveBeenCalled()
   })
 
-  test('a server or network failure keeps the edits and says so in the form, not in a toast', async () => {
-    const { itemPage, failWith, removeError } = setup({ ...layout })
+  test('a server or network failure keeps the edits and says so in the form, not in a toast, in a dialog that shows the form errors', async () => {
+    const { itemPage, failWith, removeError } = setup({ ...layout }, { dismissStoredErrors: true })
     await flushPromises()
     itemPage.localResourceData.value!.reference = 'Mine'
     failWith(500, { detail: 'Boom' })

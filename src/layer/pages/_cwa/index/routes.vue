@@ -18,7 +18,10 @@
       />
     </template>
   </ListContent>
-  <ResourceModalOverlay @reload="triggerReload" />
+  <ResourceModalOverlay
+    :overlay="false"
+    @reload="triggerReload"
+  />
 </template>
 
 <script lang="ts" setup>

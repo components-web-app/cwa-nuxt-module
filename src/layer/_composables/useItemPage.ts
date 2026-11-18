@@ -34,9 +34,10 @@ type UseItemOps = {
   routeHashAfterAdd?: ComputedRef<StartsWithHash>
   iri?: Ref<string | undefined>
   excludeFields?: string[]
+  dismissStoredErrors?: boolean
 }
 
-export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoint, validate, endpoint: userDefinedEndpoint, routeHashAfterAdd, iri, excludeFields }: UseItemOps) => {
+export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoint, validate, endpoint: userDefinedEndpoint, routeHashAfterAdd, iri, excludeFields, dismissStoredErrors }: UseItemOps) => {
   const $cwa = useCwa()
   const router = useRouter()
   const route = useRoute()
@@ -241,7 +242,7 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
   }
 
   function saveFailed(event: object, failure: FetchError<any>, fields: string[], base: { [key: string]: any }) {
-    dismissStoredError(event)
+    dismissStoredErrors && dismissStoredError(event)
     savedAt.value = undefined
     const status = failure.statusCode
     if (status === 422 && Array.isArray(failure.data?.violations)) {
