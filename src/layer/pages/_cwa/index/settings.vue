@@ -115,16 +115,16 @@
             field="indexable"
             label="Allow your website to be indexed"
           />
-          <template v-if="local.indexable">
-            <CwaUiToggle
-              field="robotsAllowNonSeoCrawlers"
-              label="Allow non-SEO crawlers (web scrapers and the like)"
-            />
-            <CwaUiToggle
-              field="robotsAllowAiBots"
-              label="Allow AI bots"
-            />
-          </template>
+          <CwaUiToggle
+            v-show="local.indexable"
+            field="robotsAllowNonSeoCrawlers"
+            label="Allow non-SEO crawlers (web scrapers and the like)"
+          />
+          <CwaUiToggle
+            v-show="local.indexable"
+            field="robotsAllowAiBots"
+            label="Allow AI bots"
+          />
           <CwaUiToggle
             field="robotsRemoveSitemap"
             label="Remove sitemap.xml from robots.txt"
@@ -377,11 +377,21 @@ function tabFromHash(hash: string) {
   return tabs.some(item => item.key === key) ? key : 'general'
 }
 
-const route = useRouter().currentRoute
-const tab = ref(tabFromHash(route.value.hash))
+const router = useRouter()
+const route = router.currentRoute
+const shownTab = ref(tabFromHash(route.value.hash))
 
 watch(() => route.value.hash, (hash) => {
-  tab.value = tabFromHash(hash)
+  shownTab.value = tabFromHash(hash)
+})
+
+const tab = computed({
+  get: () => shownTab.value,
+  set: (key: string) => {
+    shownTab.value = key
+    const hash = key === 'general' ? '' : `#${key}`
+    hash !== route.value.hash && router.replace({ path: route.value.path, query: route.value.query, hash })
+  },
 })
 
 const {
@@ -437,6 +447,7 @@ useHead({
 definePageMeta({
   name: '_cwa-settings',
   pageTransition: false,
+  hashIsTab: true,
 })
 
 async function setApiVersion() {

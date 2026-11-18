@@ -303,6 +303,19 @@ describe('CwaUiDialog and the Save model (#461)', () => {
     expect(tab('Info').getAttribute('aria-selected')).toBe('true')
   })
 
+  test('Alt, Meta or Ctrl with an arrow key is left to the browser, so Alt+Left goes back instead of switching tabs (#461)', async () => {
+    mountDialog(form)
+    await flushPromises()
+
+    for (const modifier of ['altKey', 'metaKey', 'ctrlKey']) {
+      const event = new KeyboardEvent('keydown', { key: 'ArrowRight', [modifier]: true, bubbles: true, cancelable: true })
+      tab('Details').dispatchEvent(event)
+      await flushPromises()
+      expect(tab('Details').getAttribute('aria-selected')).toBe('true')
+      expect(event.defaultPrevented).toBe(false)
+    }
+  })
+
   test('controls in a dialog take the large control size', async () => {
     mountDialog(form)
     await flushPromises()
