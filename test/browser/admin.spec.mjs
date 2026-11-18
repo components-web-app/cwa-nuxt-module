@@ -1475,6 +1475,7 @@ test.describe('in-page editing', () => {
     })
     const sheet = page.getByTestId('resource-stack')
     await eventually(async () => await sheet.count() === 1 && await sheet.getAttribute('aria-modal') === 'true', 'The long press never opened the stack as a sheet')
+    await sheet.evaluate(el => Promise.all(el.getAnimations({ subtree: true }).map(animation => animation.finished)))
     const box = await sheet.boundingBox()
     assert(Math.abs(box.y + box.height - 844) <= 1 && box.width >= 389, `The sheet is not along the bottom edge: ${JSON.stringify(box)}`)
 
@@ -1490,7 +1491,7 @@ test.describe('in-page editing', () => {
 
     const shown = page.getByTestId('inline-edit-value').filter({ hasText: 'Title on the page' })
     await shown.click()
-    const input = page.getByRole('textbox', { name: 'Title', exact: true })
+    const input = page.getByPlaceholder('Add a title')
     await input.fill('Title edited on the page')
     await input.press('Enter')
 
@@ -1513,7 +1514,7 @@ test.describe('in-page editing', () => {
   })
 
   test('59. Link in the rich-text editor opens the link popover, and Enter links the selected words', async ({ cwa: t }) => {
-    const { page } = t
+    const { page, settle } = t
     await openEditMode(t)
     await select(page, texts.source)
 
@@ -1529,5 +1530,28 @@ test.describe('in-page editing', () => {
 
     await eventually(() => t.rehearsal.writes.find(w => w.method === 'PATCH' && w.body?.html?.includes('href="/kitchens"')), `No PATCH with the link: ${JSON.stringify(t.rehearsal.writes)}`)
     assert(await popover.count() === 0, 'The popover stayed open after Enter')
+    await settle()
+  })
+
+  test('60. empty placeholders show only in edit mode: a draft-only position shows nothing to an admin who is not editing, and its draft once editing', async ({ cwa: t }) => {
+    const { page, seed, settle } = t
+    const draft = (await t.api.create('/component/html_contents', { html: '<p>Draft only text</p>' }))['@id']
+    await t.api.create('/_/component_positions', { componentGroup: seed.iris.pageAGroup, component: draft })
+
+    await page.goto(`${t.base}${seed.paths.home}`)
+    await page.getByRole('button', { name: 'Edit', exact: true }).waitFor()
+    await page.getByText(texts.source, { exact: true }).first().waitFor()
+    await settle()
+    assert(await page.getByTestId('edit-placeholder').count() === 0, 'An admin who is not editing sees a placeholder')
+    assert(await page.getByText('Draft only text').count() === 0, 'An admin who is not editing sees the draft')
+
+    await page.getByRole('button', { name: 'Edit', exact: true }).click()
+    await page.getByRole('button', { name: 'Done', exact: true }).waitFor()
+    await page.getByText('Draft only text').first().waitFor()
+    const placeholder = page.getByTestId('edit-placeholder').filter({ hasText: 'Empty group' }).first()
+    await placeholder.waitFor()
+    assert(await page.getByTestId('field-info-popover').count() === 0, 'The empty group shows its explanation before the info button is hovered')
+    await placeholder.getByTestId('field-info').hover()
+    await page.getByTestId('field-info-popover').filter({ hasText: 'Visitors see nothing here' }).waitFor()
   })
 })

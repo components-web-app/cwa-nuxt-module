@@ -47,7 +47,7 @@ export function useCwaInlineEditor(model: ResourceModelField<any>, element: Mayb
   let listeningOn: HTMLElement | undefined
 
   function onKeydown(event: KeyboardEvent) {
-    if (event.key === 'Escape' && !event.defaultPrevented && returnFromInlineEditor(editor)) {
+    if (event.key === 'Escape' && returnFromInlineEditor(editor)) {
       event.preventDefault()
       event.stopPropagation()
     }

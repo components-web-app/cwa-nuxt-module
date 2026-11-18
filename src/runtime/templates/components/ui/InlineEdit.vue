@@ -104,7 +104,7 @@ useCwaInlineEditor(props.model, root, { focus: start })
       @blur="commit(false)"
     >
     <span
-      v-else
+      v-show="!editing"
       ref="valueEl"
       role="button"
       tabindex="0"
