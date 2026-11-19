@@ -2,7 +2,8 @@
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import { computed, defineComponent, reactive } from 'vue'
 import { flushPromises, mount } from '@vue/test-utils'
-import { drawsOpenLine, drawsOpenState } from '../../../../../../../../test/utils/kit-css'
+import { drawsOpenLine, drawsOpenState, failingInk } from '../../../../../../../../test/utils/kit-css'
+import { menuPanel } from '#cwa/templates/components/core/ui/field-looks'
 import { drawsFocusRing } from '../../../../../../../../test/utils/focus-ring'
 import { axe } from '../../../../../../../../test/utils/axe'
 import { createMemoryHistory, createRouter } from 'vue-router'
@@ -248,6 +249,21 @@ describe('ComponentUsageBadge', () => {
       await badge.trigger('click')
       await flushPromises()
       expect(drawsOpenState(badge.element)).toBe(false)
+      wrapper.unmount()
+    })
+
+    test('the list is the kit\'s menu popover, square and on the kit shadow, its links drawing the kit focus ring, with every line in a kit colour that reads on it in both themes', async () => {
+      const { wrapper, list } = await openList({ total: 4, locations: [
+        location({ layout: { iri: '/_/layouts/l1', reference: 'primary' } }),
+        location({ pageDataProperty: 'hero', renderedOn: [page('/_/pages/a', 'Apple', '/a'), page('/_/pages/b', 'Banana', null)], renderedOnCount: 5 }),
+        location({ renderedOn: [page('/_/pages/c', 'Cherry', '/c')], renderedOnCount: 1 }),
+      ] }, { displayPageIri: '/_/pages/c' })
+      expect([...list!.classList]).toEqual(expect.arrayContaining(menuPanel.split(' ')))
+      const drawn = [list!, ...list!.querySelectorAll('*')].flatMap(element => [...element.classList])
+      expect(drawn.filter(name => /(?:^|:)(?:rounded|shadow-(?:sm|md|lg|xl)|border|text-(?:light|stone-|white|sm))/.test(name))).toEqual([])
+      expect(failingInk(list!)).toEqual([])
+      const link = list!.querySelector('a')!
+      expect(drawsFocusRing([...link.classList])).toBe(true)
       wrapper.unmount()
     })
 
