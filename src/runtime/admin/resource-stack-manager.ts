@@ -187,10 +187,7 @@ export default class ResourceStackManager {
       this.currentResourceStack.value = this.previousResourceStack.value
     }
 
-    const { confirmResourceAction } = await import('./resource-confirm')
-    if (!await confirmResourceAction(this.vueApp, toLayout
-      ? { title: 'Edit the shared layout?', description: 'Changes appear on every page that uses this layout.', keep: 'Cancel', go: 'Edit layout', tone: 'accent' }
-      : { title: 'Edit the page?', description: 'Changes appear on this page only, not on other pages using the layout.', keep: 'Cancel', go: 'Edit page', tone: 'accent' })) {
+    if (!await this.confirmScope(toLayout)) {
       if (fromContext) {
         // can prevent the context stack from becoming the currentResourceStack easily here
         this.resetStack(true)
@@ -201,6 +198,25 @@ export default class ResourceStackManager {
     if (cachedNewStack) {
       this.currentResourceStack.value = cachedNewStack
     }
+    return true
+  }
+
+  private async confirmScope(toLayout: boolean) {
+    const { confirmResourceAction } = await import('./resource-confirm')
+    return confirmResourceAction(this.vueApp, toLayout
+      ? { title: 'Edit the shared layout?', description: 'Changes appear on every page that uses this layout.', keep: 'Cancel', go: 'Edit layout', tone: 'accent' }
+      : { title: 'Edit the page?', description: 'Changes appear on this page only, not on other pages using the layout.', keep: 'Cancel', go: 'Edit page', tone: 'accent' })
+  }
+
+  public async switchScope(type: 'page' | 'layout') {
+    const toLayout = type === 'layout'
+    if (this._isEditingLayout.value === toLayout) {
+      return true
+    }
+    if (!await this.confirmScope(toLayout)) {
+      return false
+    }
+    this._isEditingLayout.value = toLayout
     return true
   }
 

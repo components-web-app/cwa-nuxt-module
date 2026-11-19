@@ -80,6 +80,7 @@ function makeStackManager(overrides: Record<string, any> = {}) {
     completeStack: vi.fn(),
     selectStackIndex: vi.fn(),
     restorePreviousStack: vi.fn(),
+    switchScope: vi.fn(async () => true),
     resetStack: vi.fn(),
     isEditingLayout: ref(false),
     resourceStack: ref<{ iri: string }[]>([]),
@@ -824,22 +825,55 @@ describe('ResourceManager', () => {
       return { wrapper, stackManager, preventDefault }
     }
 
-    test('a click on a link opens the link menu at the click point instead of selecting, keeping the selection and asking nothing yet, and the link does not navigate (#157)', async () => {
+    test('a click on a link opens the link menu at the click point instead of selecting, keeping the selection, once its scope is the one being edited, and the link does not navigate (#157)', async () => {
       const { link, inner } = linkWith()
       const { wrapper, stackManager, preventDefault } = await click(inner)
 
       expect(preventDefault).toHaveBeenCalled()
       expect(stackManager.completeStack).toHaveBeenCalledWith({ clickTarget: inner }, false, 'layout')
+      expect(stackManager.switchScope).toHaveBeenCalledWith('layout')
       expect(stackManager.selectStackIndex).not.toHaveBeenCalled()
       expect(stackManager.restorePreviousStack).toHaveBeenCalled()
-      expect(confirmState.reveal).not.toHaveBeenCalled()
       expect(wrapper.findComponent({ name: 'LinkMenu' }).props()).toEqual({ stack: linkStack, type: 'layout', point: { x: 120, y: 80 }, link })
     })
 
-    test('a link outside every component opens the menu too, for Visit alone', async () => {
-      const { link, inner } = linkWith()
-      const { wrapper } = await click(inner, { stack: [] })
+    test('a link in the other scope opens no menu while the scope confirm is open, and opens it once the switch is confirmed', async () => {
+      const { inner } = linkWith()
+      let answer!: (value: boolean) => void
+      const stackManager = makeStackManager({ isPopulating: ref(true), resourceStack: ref(linkStack), switchScope: vi.fn(() => new Promise<boolean>((resolve) => {
+        answer = resolve
+      })) })
+      cwaState.cwa = makeCwa({ isEditing: true, stackManager })
+      const wrapper = await mountManager()
+      ;(wrapper.vm as any).clickHandler({ target: inner, clientX: 120, clientY: 80, detail: 1, preventDefault: vi.fn() } as unknown as MouseEvent, 'layout')
+      await flushPromises()
 
+      expect(stackManager.switchScope).toHaveBeenCalledWith('layout')
+      expect(wrapper.findComponent({ name: 'LinkMenu' }).exists()).toBe(false)
+
+      answer(true)
+      await flushPromises()
+      expect(wrapper.findComponent({ name: 'LinkMenu' }).props('type')).toBe('layout')
+    })
+
+    test('Cancel on the scope confirm opens nothing', async () => {
+      const { inner } = linkWith()
+      const stackManager = makeStackManager({ isPopulating: ref(true), resourceStack: ref(linkStack), switchScope: vi.fn(async () => false) })
+      cwaState.cwa = makeCwa({ isEditing: true, stackManager })
+      const wrapper = await mountManager()
+      ;(wrapper.vm as any).clickHandler({ target: inner, clientX: 120, clientY: 80, detail: 1, preventDefault: vi.fn() } as unknown as MouseEvent, 'layout')
+      await flushPromises()
+
+      expect(stackManager.switchScope).toHaveBeenCalledWith('layout')
+      expect(stackManager.selectStackIndex).not.toHaveBeenCalled()
+      expect(wrapper.findComponent({ name: 'LinkMenu' }).exists()).toBe(false)
+    })
+
+    test('a link outside every component opens the menu too, for Visit alone, asking about no scope', async () => {
+      const { link, inner } = linkWith()
+      const { wrapper, stackManager } = await click(inner, { stack: [] })
+
+      expect(stackManager.switchScope).not.toHaveBeenCalled()
       expect(wrapper.findComponent({ name: 'LinkMenu' }).props()).toEqual({ stack: [], type: 'layout', point: { x: 120, y: 80 }, link })
     })
 
