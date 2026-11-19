@@ -25,7 +25,7 @@ const root = useTemplateRef<HTMLElement>('root')
 const valueEl = useTemplateRef<HTMLElement>('valueEl')
 const input = useTemplateRef<HTMLInputElement>('input')
 const editing = ref(false)
-const draft = ref('')
+let started: string | null = null
 
 const text = computed(() => value.value ?? '')
 const remoteChange = computed(() => props.model.remoteChange.value)
@@ -39,7 +39,7 @@ async function start() {
     input.value?.focus()
     return
   }
-  draft.value = text.value
+  started = value.value ?? null
   editing.value = true
   await nextTick()
   const el = input.value
@@ -58,13 +58,20 @@ async function finish(refocus: boolean) {
   }
 }
 
+function onInput(event: Event) {
+  const next = (event.target as HTMLInputElement).value
+  value.value = next === '' ? null : next
+}
+
+function revert() {
+  if ((value.value ?? null) !== started) {
+    value.value = started
+  }
+}
+
 function commit(refocus: boolean) {
   if (!editing.value) {
     return
-  }
-  const next = draft.value === '' ? null : draft.value
-  if (next !== (value.value ?? null)) {
-    value.value = next
   }
   finish(refocus)
 }
@@ -79,6 +86,7 @@ function onKeydown(event: KeyboardEvent) {
   else if (event.key === 'Escape') {
     actedOnEscape = true
     const toBar = failed.value
+    revert()
     finish(false).then(() => {
       const field = props.model.editorKey?.field
       if (toBar && field && openBarStatus($cwa, field)) {
@@ -110,12 +118,13 @@ useCwaInlineEditor(props.model, root, { focus: start, label: props.label })
     <input
       v-if="editing"
       ref="input"
-      v-model="draft"
+      :value="text"
       type="text"
       :aria-label="label"
       :placeholder="placeholder"
       v-bind="invalid"
       class="cwa:m-0 cwa:w-full cwa:min-w-[4ch] cwa:appearance-none cwa:border-0 cwa:bg-transparent cwa:p-0 cwa:[font:inherit] cwa:[letter-spacing:inherit] cwa:text-inherit cwa:outline-1 cwa:outline-transparent cwa:focus:ring-0 cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-accent-fg"
+      @input="onInput"
       @keydown="onKeydown"
       @blur="commit(false)"
     >
