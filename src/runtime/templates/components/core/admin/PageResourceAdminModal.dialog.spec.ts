@@ -89,7 +89,7 @@ describe('PageResourceAdminModal in the real dialog, creating (#461)', () => {
     tab('Routes').click()
     await flushPromises()
     expect(tab('Routes').getAttribute('aria-selected')).toBe('true')
-    expect(document.querySelector('[data-tab="routes"]')!.textContent).toContain(`Routes open once the ${noun} is created.`)
+    expect(document.querySelector('[data-tab="routes"] [data-testid="route-go-live-line"]')!.textContent).toBe(`Leave the path empty to create the ${noun} without a route.`)
 
     tab('Details').click()
     await flushPromises()

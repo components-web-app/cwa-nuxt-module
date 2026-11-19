@@ -4,8 +4,8 @@ import { useCwaResourceEndpoint } from '#cwa/composables/cwa-resource-endpoint'
 import { useCwa } from '#cwa/composables/cwa'
 import { useNuxtApp } from '#imports'
 import { writeFieldStates } from '#cwa/resources/field-state-writer'
-import type { CwaResource } from '#cwa/resources/resource-utils'
 import type { CwaFieldState } from '#cwa/storage/stores/resources/state'
+import { fieldStateReporter, heldUpload, holdUpload, releaseUpload, sendHeldUpload, sendUpload } from '#cwa/admin/held-uploads'
 import { createBrowserImageDownscaleDeps, downscaleImageFile, resolveImageDownscaleOptions } from '#cwa/files/image-downscale'
 import type { ImageDownscaleOptions } from '#cwa/files/image-downscale'
 
@@ -20,21 +20,11 @@ export const useCwaResourceUpload = (iri: ComputedRef<string | undefined>, filen
 
   const fileData = computed(() => resource.value?.data?._metadata.mediaObjects?.[filename]?.[0])
 
-  const fileExists = computed(() => !!fileData.value)
   const updating = ref(false)
 
   const IDLE: CwaFieldState = { status: 'idle', waiting: false, slow: false }
   const state = computed<CwaFieldState>(() => resource.value?.fieldStates?.[filename] ?? IDLE)
   let lastSend: (() => Promise<void>) | undefined
-
-  function onRequest(sentTo: string, done?: Promise<{ resource?: CwaResource, error?: any }>) {
-    const sending = $cwa.resources.getResource(sentTo).value
-    if (!done) {
-      return
-    }
-    writeFieldStates(states => states.started(sending, [filename]))
-    done.then(({ resource: answer, error }) => writeFieldStates(states => states.settled(sending, [filename], answer, error, at => $cwa.resources.getResource(at).value)))
-  }
 
   async function send(run: () => Promise<unknown>) {
     updating.value = true
@@ -46,8 +36,15 @@ export const useCwaResourceUpload = (iri: ComputedRef<string | undefined>, filen
     }
   }
 
+  const held = computed(() => iri.value ? heldUpload($cwa, iri.value, filename) : undefined)
+  const persisted = computed(() => resource.value?.data?._metadata?.persisted !== false)
+
   function retry() {
-    return lastSend ? lastSend() : Promise.resolve()
+    if (lastSend) {
+      return lastSend()
+    }
+    const heldIri = iri.value
+    return held.value && heldIri ? send(() => sendHeldUpload($cwa, heldIri, filename, updateEndpoint.value)) : Promise.resolve()
   }
 
   async function reset() {
@@ -56,14 +53,20 @@ export const useCwaResourceUpload = (iri: ComputedRef<string | undefined>, filen
     entry && writeFieldStates(states => states.cleared(entry, filename))
   }
 
-  const file = computed(() => fileData.value
-    ? {
+  const file = computed(() => {
+    if (fileData.value) {
+      return {
         name: decodeURIComponent(fileData.value.contentUrl?.split('?')[0]?.split('/').pop() || fileDisplayType),
         size: fileData.value.formattedFileSize as string,
         url: fileData.value.contentUrl as string | undefined,
         mimeType: fileData.value.mimeType as string | undefined,
       }
-    : undefined)
+    }
+    const holding = held.value
+    return holding ? { name: holding.file.name, size: formatFileSize(holding.file.size), url: holding.url, mimeType: holding.file.type || undefined } : undefined
+  })
+
+  const fileExists = computed(() => !!fileData.value || !!held.value)
 
   const { endpoint: updateEndpoint } = useCwaResourceEndpoint(iri, '/upload')
   const { endpoint: deleteEndpoint } = useCwaResourceEndpoint(iri)
@@ -79,19 +82,13 @@ export const useCwaResourceUpload = (iri: ComputedRef<string | undefined>, filen
       createBrowserImageDownscaleDeps(),
     )
     const uploadIri = iri.value
-    lastSend = () => send(() => {
-      const formData = new FormData()
-      formData.append(filename, uploadFile)
-      return $cwa.resourcesManager.updateResource({
-        iri: uploadIri,
-        endpoint: updateEndpoint.value,
-        data: formData,
-        headers: {
-          accept: '*/*',
-        },
-        onRequest,
-      })
-    })
+    if (!persisted.value) {
+      holdUpload($cwa, uploadIri, filename, uploadFile)
+      updating.value = false
+      return
+    }
+    const endpoint = updateEndpoint.value
+    lastSend = () => send(() => sendUpload($cwa, uploadIri, filename, uploadFile, endpoint))
     await lastSend()
   }
 
@@ -109,6 +106,10 @@ export const useCwaResourceUpload = (iri: ComputedRef<string | undefined>, filen
     if (!fileExists.value || !iri.value) {
       return
     }
+    if (!fileData.value) {
+      releaseUpload($cwa, iri.value, filename)
+      return
+    }
     if (!await confirmDelete()) {
       return
     }
@@ -117,7 +118,7 @@ export const useCwaResourceUpload = (iri: ComputedRef<string | undefined>, filen
       data: {
         [filename]: null,
       },
-      onRequest,
+      onRequest: fieldStateReporter($cwa, filename),
     }))
     await lastSend()
   }
@@ -132,4 +133,11 @@ export const useCwaResourceUpload = (iri: ComputedRef<string | undefined>, filen
     handleInputChangeFile,
     handleInputDeleteFile,
   }
+}
+
+function formatFileSize(bytes: number) {
+  if (bytes < 1024) {
+    return `${bytes} B`
+  }
+  return bytes < 1024 * 1024 ? `${Math.round(bytes / 1024)} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`
 }
