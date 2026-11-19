@@ -10,6 +10,7 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ### Changed
 
+- Information boxes (`CwaUiAlert`'s `info` tone, such as the add component dialog's "Adding to" and an app's login notice) share the route recommendation's look: an accent edge, tint and info glyph ([6221261d](https://github.com/components-web-app/cwa-nuxt-module/commit/6221261daee4fdae608592d770e98f19f7f4753a), [#461](https://github.com/components-web-app/cwa-nuxt-module/issues/461)).
 - The add component dialog no longer shows how many of a component are already in the group, on its rows or its chips ([4d2f86bb](https://github.com/components-web-app/cwa-nuxt-module/commit/4d2f86bbb857043edd329d704c20e9ecb1e6c8b0), [#461](https://github.com/components-web-app/cwa-nuxt-module/issues/461)).
 
 ## [2.0.0-alpha.35] - 2026-11-18
