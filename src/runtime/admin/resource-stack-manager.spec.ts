@@ -16,8 +16,17 @@ vi.mock('vue', async () => {
 vi.mock('vuejs-confirm-dialog', () => ({ install: vi.fn(), createConfirmDialog: vi.fn() }))
 vi.mock('#cwa/templates/components/core/ui/Confirm.vue', () => ({ default: {} }))
 const mockComponentFocusRedraw = vi.hoisted(() => vi.fn())
+const mockComponentFocusProps = vi.hoisted(() => [] as Array<{ iri: { value: string | undefined } }>)
 vi.mock('#cwa/templates/components/main/admin/resource-manager/ComponentFocus.vue', () => ({
-  default: { name: 'ComponentFocus', render: () => null, methods: { redraw: mockComponentFocusRedraw } },
+  default: {
+    name: 'ComponentFocus',
+    props: ['iri', 'domElements'],
+    setup(props: { iri: { value: string | undefined } }) {
+      mockComponentFocusProps.push(props)
+    },
+    render: () => null,
+    methods: { redraw: mockComponentFocusRedraw },
+  },
 }))
 
 const mockVueAppContainer = vi.hoisted(() => ({ value: null as null | HTMLElement }))
@@ -1041,6 +1050,33 @@ describe('Resource Manager', () => {
       expect((manager as any).focusComponent).toBeUndefined()
       expect((manager as any).focusWrapper).toBeUndefined()
       expect(mockVueAppContainer.value!.children).toHaveLength(0)
+    })
+
+    test('the focus drawn for a stack item keeps that item\'s IRI once another is selected, so for the frame before it is replaced it draws no outline or cut-out for the new selection\'s instances, and follows its own item\'s draft', async () => {
+      const draftOf = ref<Record<string, string>>({})
+      const manager = new ResourceStackManager(
+        { useStore: () => ({ state: reactive({ isEditing: true }) }) } as any,
+        { useStore: () => ({ state: reactive({}), isIriPublishableEquivalent: vi.fn().mockReturnValue(false), findDraftComponentIri: (iri: string) => draftOf.value[iri] }) } as any,
+        {} as any,
+        {} as any,
+      )
+      manager.showManager.value = true
+      const first = { iri: '/component/1', domElements: ref([]), childIris: ref([]) }
+      ;(manager as any).currentResourceStack.value = [first]
+      mockComponentFocusProps.length = 0
+      await (manager as any).createFocusComponent()
+      const [focus] = mockComponentFocusProps
+      expect(focus!.iri.value).toBe('/component/1')
+
+      draftOf.value = { '/component/1': '/component/1-draft' }
+      ;(manager as any).currentResourceStack.value = [{ ...first }]
+      expect(focus!.iri.value).toBe('/component/1-draft')
+
+      ;(manager as any).currentResourceStack.value = [{ iri: '/component/2', domElements: ref([]), childIris: ref([]) }]
+      expect(manager.currentIri.value).toBe('/component/2')
+      expect(focus!.iri.value).toBe('/component/1-draft')
+
+      ;(manager as any).removeFocusComponent()
     })
 
     test('mounts the component itself so redrawFocus reaches its exposed redraw', async () => {

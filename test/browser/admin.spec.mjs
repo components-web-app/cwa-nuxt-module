@@ -1913,6 +1913,57 @@ test('69. in edit mode and clone mode a faint outline fades in on the component 
   await outlineOver(texts.pageAOther)
 })
 
+test('72. selecting another component paints no outline and lightens no part of the page outside the two components in any frame between them (#461)', async ({ cwa: t }) => {
+  const { page, settle } = t
+  await openEditMode(t)
+  await select(page, texts.source)
+  await settle()
+  const [from] = await boxesOf(page, texts.source)
+  const [to] = await boxesOf(page, texts.pageAOther)
+  await page.evaluate(({ from, to }) => {
+    const cutout = 8
+    const within = (top, bottom, slack) => [from, to].some(box => top >= box.top - slack && bottom <= box.top + box.height + slack)
+    const x = Math.round(Math.max(from.left, to.left) + Math.min(from.width, to.width) / 2)
+    window.__paints = { frames: 0, stray: [] }
+    const sample = () => {
+      window.__paints.frames++
+      for (const outline of document.querySelectorAll('[data-testid="focus-outline"], [data-testid="hover-outline"], [data-testid="shared-instance-outline"]')) {
+        const r = outline.getBoundingClientRect()
+        if (!within(r.top, r.bottom, 1)) {
+          window.__paints.stray.push(`${outline.dataset.testid} at ${Math.round(r.top)}–${Math.round(r.bottom)}`)
+        }
+      }
+      const canvas = document.querySelector('canvas.cwa\\:z-manager-focus')
+      if (canvas?.width) {
+        const alpha = canvas.getContext('2d').getImageData(x, 0, 1, canvas.height).data
+        let start
+        for (let y = 0; y <= canvas.height; y++) {
+          const light = y < canvas.height && alpha[y * 4 + 3] === 0
+          if (light && start === undefined) {
+            start = y
+          }
+          if (!light && start !== undefined) {
+            if (!within(start, y, cutout)) {
+              window.__paints.stray.push(`page lightened at ${start}–${y}`)
+            }
+            start = undefined
+          }
+        }
+      }
+      if (window.__paints.frames < 45) {
+        requestAnimationFrame(sample)
+      }
+    }
+    requestAnimationFrame(sample)
+  }, { from, to })
+  await page.getByText(texts.pageAOther, { exact: true }).first().click()
+  await eventually(() => page.evaluate(() => window.__paints.frames >= 45), 'Fewer than 45 frames were painted')
+  const { stray } = await page.evaluate(() => window.__paints)
+  assert(stray.length === 0, `Painted outside ${JSON.stringify(from)} and ${JSON.stringify(to)}: ${[...new Set(stray)].join(', ')}`)
+  const outlines = await page.getByTestId('focus-outline').evaluateAll(els => els.map(el => el.getBoundingClientRect().top))
+  assert(outlines.length === 1 && Math.abs(outlines[0] - to.top) <= 1, `The selection outline ended at ${JSON.stringify(outlines)}`)
+})
+
 test('67. with Enable reordering on, every position in the group wobbles and has a grip handle on top of it, and dragging the lower one above the other PATCHes the group order once, keeps the selection and survives a reload', async ({ cwa: t }) => {
   const { page, settle } = t
   await openEditMode(t)
