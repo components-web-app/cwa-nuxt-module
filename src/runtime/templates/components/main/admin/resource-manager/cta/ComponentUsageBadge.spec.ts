@@ -85,7 +85,7 @@ function links(list: HTMLElement | null) {
 
 async function routerEditingOn(path: string) {
   const router = createRouter({ history: createMemoryHistory(), routes: [{ path: '/:path(.*)*', component: defineComponent({ render: () => null }) }] })
-  const state = { isEditing: false, navigationGuardDisabled: false }
+  const state = { isEditing: false }
   const guard = new NavigationGuard(router, { useStore: () => ({ state }) } as unknown as AdminStore)
   router.beforeEach(guard.adminNavigationGuardFn)
   await router.push(path)

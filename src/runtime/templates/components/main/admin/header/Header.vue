@@ -33,11 +33,6 @@
               />
               <span aria-hidden="true">{{ strandedGroups.length }}</span>
             </button>
-            <CwaUiToggle
-              v-if="cloneSource && $cwa.admin.isEditing"
-              v-model="isNavEnabled"
-              label="Enable Navigation"
-            />
           </template>
           <PresenceIndicator />
           <CloneModeBar />
@@ -201,15 +196,6 @@ const editPageLabel = computed(() => {
     return $cwa.resources.pageData?.value?.data?.title || 'Data Page'
   }
   return $cwa.resources.page?.value?.data?.reference
-})
-
-const isNavEnabled = computed({
-  get: () => {
-    return $cwa.admin.navigationGuardDisabled
-  },
-  set: (newValue: boolean) => {
-    $cwa.admin.setNavigationGuardDisabled(newValue)
-  },
 })
 
 const isLoading = computed(() => $cwa.resourcesManager.requestCount.value > 0)

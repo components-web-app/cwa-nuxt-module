@@ -2054,6 +2054,12 @@
 .cwa\:outline-accent-fg {
   outline-color: var(--cwa-color-accent-fg);
 }
+.cwa\:outline-accent-fg\/40 {
+  outline-color: var(--cwa-color-accent-fg);
+  @supports (color: color-mix(in lab, red, red)) {
+    outline-color: color-mix(in oklab, var(--cwa-color-accent-fg) 40%, transparent);
+  }
+}
 .cwa\:outline-blue-600 {
   outline-color: var(--cwa-color-blue-600);
 }
@@ -2654,6 +2660,9 @@
 @media (prefers-reduced-motion: no-preference) {
   .cwa\:motion-safe\:animate-\[cwa-fade-out_var\(--cwa-duration-slow\)_cubic-bezier\(0\.8\,0\,0\.8\,0\.2\)_forwards\] {
     animation: cwa-fade-out var(--cwa-duration-slow) cubic-bezier(0.8,0,0.8,0.2) forwards;
+  }
+  .cwa\:motion-safe\:animate-\[cwa-line-in_150ms_ease-out\] {
+    animation: cwa-line-in 150ms ease-out;
   }
   .cwa\:motion-safe\:animate-\[cwa-sub-view-back_var\(--cwa-duration-base\)_ease\] {
     animation: cwa-sub-view-back var(--cwa-duration-base) ease;

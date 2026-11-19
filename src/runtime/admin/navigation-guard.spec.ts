@@ -12,7 +12,6 @@ vi.mock('../storage/stores/admin/admin-store', () => {
         useStore: vi.fn(() => ({
           state: {
             isEditing: false,
-            navigationGuardDisabled: false,
           },
         })),
       }
@@ -110,14 +109,13 @@ describe('Test NavigationGuard Class', () => {
   })
 
   test.each([
-    { isRouteForcedNavigation: true, programmatic: true, isEditing: true, navigationGuardDisabled: false, response: true },
-    { isRouteForcedNavigation: false, programmatic: false, isEditing: true, navigationGuardDisabled: false, response: true },
-    { isRouteForcedNavigation: false, programmatic: true, isEditing: false, navigationGuardDisabled: false, response: true },
-    { isRouteForcedNavigation: false, programmatic: true, isEditing: true, navigationGuardDisabled: true, response: true },
-    { isRouteForcedNavigation: false, programmatic: true, isEditing: true, navigationGuardDisabled: false, response: false },
+    { isRouteForcedNavigation: true, programmatic: true, isEditing: true, response: true },
+    { isRouteForcedNavigation: false, programmatic: false, isEditing: true, response: true },
+    { isRouteForcedNavigation: false, programmatic: true, isEditing: false, response: true },
+    { isRouteForcedNavigation: false, programmatic: true, isEditing: true, response: false },
   ])(
     'allowNavigation returns $response',
-    ({ isRouteForcedNavigation, programmatic, isEditing, navigationGuardDisabled, response }) => {
+    ({ isRouteForcedNavigation, programmatic, isEditing, response }) => {
       const guard = createNavigationGuard()
 
       const toRoute: any = {
@@ -129,7 +127,6 @@ describe('Test NavigationGuard Class', () => {
       guard._adminStore = {
         state: {
           isEditing,
-          navigationGuardDisabled,
         },
       }
 

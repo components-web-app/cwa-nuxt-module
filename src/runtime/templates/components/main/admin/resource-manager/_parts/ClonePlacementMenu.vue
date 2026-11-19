@@ -57,7 +57,7 @@ import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vu
 import type { Ref } from 'vue'
 import CwaUiMenu from '#cwa/templates/components/ui/Menu.vue'
 import CwaUiSpinner from '#cwa/templates/components/ui/Spinner.vue'
-import type { MenuItem } from '#cwa/templates/components/core/ui/menu-entries'
+import type { MenuEntry, MenuItem } from '#cwa/templates/components/core/ui/menu-entries'
 import { useCwa } from '#cwa/composables/cwa'
 import { useNuxtApp } from '#imports'
 import { excerptOf, useCloneMode } from '#cwa/admin/clone-mode'
@@ -65,6 +65,8 @@ import { cloneComponent, moveComponent } from '#cwa/admin/clone-component'
 import { cloneAnchorIndex, cloneTargetOptions, distinctReasons } from '#cwa/admin/clone-target-options'
 import type { CloneScope, CloneTargetOption } from '#cwa/admin/clone-target-options'
 import type { ApiDocumentationComponentMetadataCollection } from '#cwa/api/api-documentation'
+import { useRouter } from '#app/composables/router'
+import { followPageLink, pageLinkLabel, pageLinkOf } from '#cwa/admin/page-link'
 
 interface CloneStackItem {
   iri: string
@@ -76,6 +78,7 @@ const props = defineProps<{
   stack: CloneStackItem[]
   type: CloneScope
   point: { x: number, y: number }
+  link?: HTMLAnchorElement
 }>()
 
 const emit = defineEmits<{
@@ -97,6 +100,8 @@ const vueApp = useNuxtApp().vueApp
 const cloneMode = useCloneMode($cwa)
 const { source } = cloneMode
 const resourceStackManager = $cwa.admin.resourceStackManager
+const router = useRouter()
+const pageLink = props.link && pageLinkOf(props.link, router.options.history.base)
 
 const menuOpen = ref(true)
 const pending = shallowRef<CloneTargetOption>()
@@ -130,7 +135,11 @@ const nothingReasons = computed(() => {
   return reasons.length ? reasons : ['A component cannot be added here']
 })
 
-const items = computed<MenuItem[]>(() => {
+const visitEntries: MenuEntry[] = pageLink
+  ? [{ group: null, items: [{ label: pageLinkLabel(pageLink), testId: 'clone-visit', onSelect: () => followPageLink($cwa, router, pageLink) }] }]
+  : []
+
+const placementItems = computed<MenuItem[]>(() => {
   if (loading.value || loadError.value || !result.value) {
     return []
   }
@@ -146,6 +155,8 @@ const items = computed<MenuItem[]>(() => {
     onSelect: () => choose(option),
   }))
 })
+
+const items = computed<MenuEntry[]>(() => [...visitEntries, ...placementItems.value])
 
 const anchorIndex = computed(() => cloneAnchorIndex(props.stack))
 

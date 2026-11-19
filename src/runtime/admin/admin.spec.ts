@@ -30,7 +30,6 @@ let adminStoreMock = {
   toggleEdit: vi.fn(),
   state: {
     isEditing: 'isEdit',
-    navigationGuardDisabled: 'ngs',
   },
 }
 
@@ -83,7 +82,6 @@ describe('Admin class', () => {
       toggleEdit: toggleSpy,
       state: {
         isEditing: 'isEdit',
-        navigationGuardDisabled: 'ngs',
       },
     }
 
@@ -91,26 +89,6 @@ describe('Admin class', () => {
 
     expect(admin.toggleEdit(true)).toBeUndefined()
     expect(toggleSpy).toHaveBeenCalledWith(true)
-  })
-  test('setNavigationGuardDisabled', () => {
-    const mockState = {
-      isEditing: 'isEdit',
-      navigationGuardDisabled: 'ngs',
-    }
-
-    adminStoreMock = {
-      toggleEdit: vi.fn(),
-      state: mockState,
-    }
-
-    admin = createAdmin()
-
-    expect(admin.setNavigationGuardDisabled(false)).toBeUndefined()
-    expect(mockState.navigationGuardDisabled).toBe(false)
-  })
-  test('navigationGuardDisabled getter', () => {
-    admin = createAdmin()
-    expect(admin.navigationGuardDisabled).toBe(AdminStore.mock.results[0].value.useStore.mock.results[0].value.state.navigationGuardDisabled)
   })
   test('isEditing getter', () => {
     admin = createAdmin()

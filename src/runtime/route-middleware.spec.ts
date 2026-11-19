@@ -219,7 +219,7 @@ describe('Test route middleware', () => {
       return {
         payload: {},
         $config: { app: { baseURL: '/base/' } },
-        $cwa: { fetchRoute: fetchRouteRedirectFn, initClientSide, adminNavigationGuardFn, resourcesManager: { confirmDiscardAddingResource }, auth: { isAdmin: computed(() => false) }, siteConfig: { loadConfig: vi.fn(async () => {}) } },
+        $cwa: { fetchRoute: fetchRouteRedirectFn, initClientSide, adminNavigationGuardFn, resourcesManager: { confirmDiscardAddingResource }, auth: { isAdmin: computed(() => false) }, followsRedirect: () => true, siteConfig: { loadConfig: vi.fn(async () => {}) } },
       }
     })
     vi.spyOn(processComposables, 'useProcess').mockImplementation(() => {
@@ -236,7 +236,7 @@ describe('Test route middleware', () => {
   test('Client-side redirects stay an internal navigation, so the browser does not reload the page', async () => {
     vi.spyOn(nuxt, 'useNuxtApp').mockImplementationOnce(() => {
       return {
-        $cwa: { fetchRoute: fetchRouteRedirectFn, initClientSide, adminNavigationGuardFn, resourcesManager: { confirmDiscardAddingResource }, auth: { isAdmin: computed(() => false) }, admin: { isEditing: false } },
+        $cwa: { fetchRoute: fetchRouteRedirectFn, initClientSide, adminNavigationGuardFn, resourcesManager: { confirmDiscardAddingResource }, auth: { isAdmin: computed(() => false) }, admin: { isEditing: false }, followsRedirect: () => true },
       }
     })
     vi.spyOn(processComposables, 'useProcess').mockImplementation(() => {
@@ -251,7 +251,8 @@ describe('Test route middleware', () => {
     expect(nuxt.navigateTo).toHaveBeenCalledWith('/redirect-path', { redirectCode: 308 })
   })
 
-  test('client-side: follows a redirect while editing when navigation is enabled (clone mode\'s Enable Navigation)', async () => {
+  test('client-side: follows a redirect while editing when $cwa follows that route\'s redirect, as after Visit', async () => {
+    const followsRedirect = vi.fn(() => true)
     vi.spyOn(nuxt, 'useNuxtApp').mockImplementationOnce(() => ({
       $cwa: {
         fetchRoute: fetchRouteRedirectFn,
@@ -260,12 +261,13 @@ describe('Test route middleware', () => {
         resourcesManager: { confirmDiscardAddingResource },
         auth: { isAdmin: computed(() => false) },
         admin: { isEditing: true },
-        navigationDisabled: false,
+        followsRedirect,
       },
     }))
     vi.spyOn(processComposables, 'useProcess').mockImplementationOnce(() => ({ isClient: true, isServer: false }))
     await routeMiddleware(createToRoute())
     await flushPromises()
+    expect(followsRedirect).toHaveBeenCalledWith({ redirectPath: '/redirect-path' })
     expect(nuxt.navigateTo).toHaveBeenCalledWith('/redirect-path', { redirectCode: 308 })
   })
 
@@ -280,7 +282,7 @@ describe('Test route middleware', () => {
           resourcesManager: { confirmDiscardAddingResource },
           auth: { isAdmin: computed(() => false) },
           admin: { isEditing: true },
-          navigationDisabled: true,
+          followsRedirect: () => false,
           siteConfig: { loadConfig: vi.fn(async () => {}) },
         },
       }))
@@ -299,7 +301,7 @@ describe('Test route middleware', () => {
           resourcesManager: { confirmDiscardAddingResource },
           auth: { isAdmin: computed(() => false) },
           admin: { isEditing: true },
-          navigationDisabled: true,
+          followsRedirect: () => false,
         },
       }))
       vi.spyOn(processComposables, 'useProcess').mockImplementationOnce(() => ({ isClient: true, isServer: false }))
