@@ -279,7 +279,7 @@ function reset() {
         :aria-expanded="actionable && !opensError ? undefined : (shownError || open) ? 'true' : 'false'"
         :data-state="status.state"
         data-testid="bar-summary"
-        class="cwa:inline-flex cwa:h-full cwa:shrink-0 cwa:cursor-pointer cwa:items-center cwa:gap-2 cwa:whitespace-nowrap cwa:px-2 cwa:text-label cwa:text-fg-muted cwa:outline-1 cwa:outline-transparent cwa:hover:bg-button cwa:aria-expanded:bg-button cwa:aria-expanded:text-fg cwa:aria-expanded:shadow-[inset_0_-2px_0_currentColor] cwa:focus-visible:outline-2 cwa:focus-visible:-outline-offset-2 cwa:focus-visible:outline-accent-fg cwa:@max-[40rem]:aspect-square cwa:@max-[40rem]:justify-center cwa:@max-[40rem]:px-0"
+        class="cwa:inline-flex cwa:h-full cwa:shrink-0 cwa:cursor-pointer cwa:items-center cwa:gap-1 cwa:whitespace-nowrap cwa:px-2 cwa:text-label cwa:text-fg-muted cwa:outline-1 cwa:outline-transparent cwa:hover:bg-button cwa:aria-expanded:bg-button cwa:aria-expanded:text-fg cwa:aria-expanded:shadow-[inset_0_-2px_0_currentColor] cwa:focus-visible:outline-2 cwa:focus-visible:-outline-offset-2 cwa:focus-visible:outline-accent-fg cwa:@max-[40rem]:aspect-square cwa:@max-[40rem]:justify-center cwa:@max-[40rem]:px-0"
         :class="actionable ? 'cwa:font-semibold cwa:text-fg' : ''"
         @click="act"
       >
