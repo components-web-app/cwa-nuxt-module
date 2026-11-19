@@ -65,6 +65,10 @@
     --cwa-color-surface: #1c1917;
     --cwa-color-surface-raised: #292524;
     --cwa-color-surface-menu: #292524;
+    --cwa-color-surface-info: #0c0a09;
+    --cwa-color-accent-on-info: #60a5fa;
+    --cwa-color-muted-on-info: #a8a29e;
+    --cwa-color-success-on-info: #9cdd05;
     --cwa-color-button: #44403c;
     --cwa-color-shimmer: rgb(255 255 255 / 0.24);
     --cwa-color-menu-highlight: #57534e;
@@ -1450,6 +1454,9 @@
 .cwa\:bg-surface {
   background-color: var(--cwa-color-surface);
 }
+.cwa\:bg-surface-info {
+  background-color: var(--cwa-color-surface-info);
+}
 .cwa\:bg-surface-menu {
   background-color: var(--cwa-color-surface-menu);
 }
@@ -1492,6 +1499,9 @@
 .cwa\:fill-orange {
   fill: var(--cwa-color-orange);
 }
+.cwa\:fill-surface-info {
+  fill: var(--cwa-color-surface-info);
+}
 .cwa\:fill-surface-menu {
   fill: var(--cwa-color-surface-menu);
 }
@@ -1501,14 +1511,17 @@
 .cwa\:stroke-green {
   stroke: var(--cwa-color-green);
 }
-.cwa\:stroke-line {
-  stroke: var(--cwa-color-line);
-}
 .cwa\:stroke-orange {
   stroke: var(--cwa-color-orange);
 }
 .cwa\:stroke-white {
   stroke: var(--cwa-color-white);
+}
+.cwa\:stroke-white\/15 {
+  stroke: var(--cwa-color-white);
+  @supports (color: color-mix(in lab, red, red)) {
+    stroke: color-mix(in oklab, var(--cwa-color-white) 15%, transparent);
+  }
 }
 .cwa\:stroke-\[5px\] {
   stroke-width: 5px;
@@ -1881,6 +1894,9 @@
 .cwa\:text-accent-fg {
   color: var(--cwa-color-accent-fg);
 }
+.cwa\:text-accent-on-info {
+  color: var(--cwa-color-accent-on-info);
+}
 .cwa\:text-amber-300 {
   color: var(--cwa-color-amber-300);
 }
@@ -1932,6 +1948,9 @@
 .cwa\:text-muted-on-field {
   color: var(--cwa-color-muted-on-field);
 }
+.cwa\:text-muted-on-info {
+  color: var(--cwa-color-muted-on-info);
+}
 .cwa\:text-neutral-400 {
   color: var(--cwa-color-neutral-400);
 }
@@ -1949,6 +1968,9 @@
 }
 .cwa\:text-success {
   color: var(--cwa-color-success);
+}
+.cwa\:text-success-on-info {
+  color: var(--cwa-color-success-on-info);
 }
 .cwa\:text-warning {
   color: var(--cwa-color-warning);
@@ -2048,8 +2070,11 @@
     --tw-shadow-color: color-mix(in oklab, color-mix(in oklab, var(--cwa-color-line-saving) 30%, transparent) var(--tw-shadow-alpha), transparent);
   }
 }
-.cwa\:ring-line {
-  --tw-ring-color: var(--cwa-color-line);
+.cwa\:ring-white\/15 {
+  --tw-ring-color: var(--cwa-color-white);
+  @supports (color: color-mix(in lab, red, red)) {
+    --tw-ring-color: color-mix(in oklab, var(--cwa-color-white) 15%, transparent);
+  }
 }
 .cwa\:outline {
   outline-style: var(--tw-outline-style);
@@ -2424,6 +2449,14 @@
   }
   .cwa\:hover\:bg-stone-700:hover {
     background-color: var(--cwa-color-stone-700);
+  }
+  .cwa\:hover\:bg-white\/15:hover {
+    background-color: var(--cwa-color-white);
+  }
+  @supports (color: color-mix(in lab, red, red)) {
+    .cwa\:hover\:bg-white\/15:hover {
+      background-color: color-mix(in oklab, var(--cwa-color-white) 15%, transparent);
+    }
   }
   .cwa\:hover\:bg-yellow\/10:hover {
     background-color: var(--cwa-color-yellow);

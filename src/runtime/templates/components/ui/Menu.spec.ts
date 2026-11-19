@@ -3,7 +3,7 @@ import { afterEach, describe, expect, test, vi } from 'vitest'
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { h } from 'vue'
 import { axe } from '../../../../../test/utils/axe'
-import { drawsOpenLine, drawsOpenState, shownColour } from '../../../../../test/utils/kit-css'
+import { drawsOpenLine, drawsOpenState, failingInk, shownColour } from '../../../../../test/utils/kit-css'
 import { menuGroups } from '../core/ui/menu-entries'
 import Menu from './Menu.vue'
 
@@ -108,7 +108,8 @@ describe('CwaUiMenu (#459)', () => {
 
     const reasons = document.querySelector<HTMLElement>('[data-testid="menu-item-reasons"]')!
     expect([...reasons.querySelectorAll('li')].map(item => item.textContent)).toEqual(['Main content is full', 'Not allowed here'])
-    expect([...reasons.classList]).toEqual(expect.arrayContaining(['cwa:bg-surface-menu', 'cwa:text-fg', 'cwa:leading-normal', 'cwa:ring-1', 'cwa:ring-line']))
+    expect([...reasons.classList]).toEqual(expect.arrayContaining(['cwa:bg-surface-info', 'cwa:text-white', 'cwa:leading-normal', 'cwa:ring-1', 'cwa:ring-white/15']))
+    expect(failingInk(reasons)).toEqual([])
     expect(document.querySelector('[data-testid="kit-menu"]')).not.toBeNull()
     expect(onSelect).not.toHaveBeenCalled()
   })

@@ -13,6 +13,10 @@
   --color-surface: #1c1917;
   --color-surface-raised: #292524;
   --color-surface-menu: #292524;
+  --color-surface-info: #0c0a09;
+  --color-accent-on-info: #60a5fa;
+  --color-muted-on-info: #a8a29e;
+  --color-success-on-info: #9cdd05;
   --color-button: #44403c;
   --color-shimmer: rgb(255 255 255 / 0.24);
   --color-menu-highlight: #57534e;

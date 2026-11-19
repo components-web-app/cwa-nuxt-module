@@ -2,7 +2,7 @@
 import { afterEach, describe, expect, test } from 'vitest'
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { drawsFocusRing } from '../../../../../../test/utils/focus-ring'
-import { drawsOpenLine, drawsOpenState, fillsOnHover, shownColour, shownFill, trimsToLetters } from '../../../../../../test/utils/kit-css'
+import { drawsOpenLine, drawsOpenState, failingInk, fillsOnHover, shownColour, shownFill, trimsToLetters } from '../../../../../../test/utils/kit-css'
 import { axe } from '../../../../../../test/utils/axe'
 import InfoPopover from './InfoPopover.vue'
 
@@ -53,24 +53,29 @@ describe('InfoPopover (#461)', () => {
     expect(trimsToLetters(popover.querySelector('p')!)).toBe(true)
   })
 
-  test('the popover is the kit artifact\'s: the menu surface, text colour and shadow, 1rem padding at 1.5 line height, an accent ⓘ before its title and a square caret in the panel\'s fill, with a 1px line ring on the panel and on the caret\'s two outer edges so both stand out on dark surfaces (#461)', async () => {
+  test('the popover is the dark information panel in both themes, white text with a white ring at 15% on it and its caret, the shadow, 1rem padding at 1.5 line height, and a blue ⓘ and title, never the menu surface the fields sit beside (#461)', async () => {
     const wrapper = mount(InfoPopover, { props: { label: 'Reference', text: 'Only admins see this.', textId: 'reference-info' }, attachTo: document.body })
 
     await wrapper.get('[data-testid="field-info"]').trigger('click')
     await flushPromises()
 
     const popover = document.querySelector<HTMLElement>('[data-testid="field-info-popover"]')!
-    expect([...popover.classList]).toEqual(expect.arrayContaining(['cwa:bg-surface-menu', 'cwa:text-fg', 'cwa:shadow-popover', 'cwa:p-popover', 'cwa:text-control', 'cwa:leading-normal']))
-    expect(popover.classList).not.toContain('cwa:bg-surface-info')
+    expect([...popover.classList]).toEqual(expect.arrayContaining(['cwa:bg-surface-info', 'cwa:text-white', 'cwa:shadow-popover', 'cwa:p-popover', 'cwa:text-control', 'cwa:leading-normal', 'cwa:ring-1', 'cwa:ring-white/15']))
+    expect(popover.classList).not.toContain('cwa:bg-surface-menu')
+    expect(shownFill(popover)).toBe('surface-info')
     const glyph = popover.querySelector('[data-glyph="info"]')!
-    expect(glyph.getAttribute('class')).toContain('cwa:text-accent-fg')
-    expect(glyph.nextElementSibling?.textContent).toBe('Reference')
+    const title = glyph.nextElementSibling!
+    expect(title.textContent).toBe('Reference')
+    expect(shownColour(glyph)).toBe('accent-on-info')
+    expect(shownColour(title)).toBe('accent-on-info')
+    expect(shownColour(popover.querySelector('p')!)).toBe('white')
+    expect(shownColour(popover.querySelector('button[aria-label="Close"] svg')!)).toBe('white')
+    expect(failingInk(popover)).toEqual([])
     const caret = [...popover.querySelectorAll('svg')].at(-1)!
-    expect(caret.getAttribute('class')).toContain('cwa:fill-surface-menu')
+    expect(caret.getAttribute('class')).toContain('cwa:fill-surface-info')
     expect([caret.getAttribute('width'), caret.getAttribute('height')]).toEqual(['14', '7'])
-    expect(popover.classList).toContain('cwa:ring-1')
-    expect(popover.classList).toContain('cwa:ring-line')
-    expect(caret.getAttribute('class')).toContain('cwa:stroke-line')
+    expect(caret.getAttribute('class')).toContain('cwa:stroke-white/15')
+    expect(await axe(document.body, { rules: { region: { enabled: false } } })).toHaveNoViolations()
     const edge = caret.querySelector('path')!
     expect(edge.getAttribute('d')).toBe('M0 0L6 6L12 0')
     expect(edge.getAttribute('vector-effect')).toBe('non-scaling-stroke')

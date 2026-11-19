@@ -2,7 +2,7 @@
 import { POPOVER_GAP } from '../ui/popover-gap'
 import { computed, onBeforeUnmount, onMounted, ref, useId, useTemplateRef, watch } from 'vue'
 import { PopoverAnchor, PopoverArrow, PopoverClose, PopoverContent, PopoverPortal, PopoverRoot } from 'reka-ui'
-import { infoArrow, infoPanel } from '../ui/field-looks'
+import { infoArrow, infoClose, infoPanel } from '../ui/field-looks'
 import XMarkIcon from '../../ui/icon/XMarkIcon.vue'
 import Spinner from '../../ui/Spinner.vue'
 import StateGlyph from '../ui/StateGlyph.vue'
@@ -352,11 +352,12 @@ function reset() {
           <StateGlyph
             v-if="status.glyph"
             :kind="status.glyph"
+            on-info
           />
           <span class="cwa:min-w-0 cwa:flex-1 cwa:trim-text">{{ status.short }}</span>
           <PopoverClose
             aria-label="Close"
-            class="cwa:grid cwa:size-6 cwa:shrink-0 cwa:cursor-pointer cwa:place-items-center cwa:text-fg cwa:hover:bg-button"
+            :class="infoClose"
           >
             <XMarkIcon class="cwa:size-3" />
           </PopoverClose>

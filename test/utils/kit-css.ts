@@ -1,5 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
+import { contrastRatio, resolveKitColour } from '../../src/tailwind/kit-tokens'
+import type { KitColour, KitTheme } from '../../src/tailwind/kit-tokens'
 
 const css = readFileSync(resolve(import.meta.dirname, '../../src/runtime/templates/assets/cwa.css'), 'utf8')
 
@@ -68,4 +70,33 @@ export function trimsToLetters(element: Element) {
   const rule = css.slice(css.indexOf('.cwa\\:trim-text {'))
   return element.classList.contains('cwa:trim-text')
     && /^\.cwa\\:trim-text \{\s*text-box: trim-both cap alphabetic;/.test(rule)
+}
+
+export interface PanelInk { what: string, colour: string, ratio: number, min: number }
+
+export function panelInk(panel: Element, theme: KitTheme): PanelInk[] {
+  const fill = shownFill(panel)
+  if (!fill) {
+    throw new Error('The panel has no kit fill')
+  }
+  const background = resolveKitColour(fill as KitColour, theme)
+  const measure = (element: Element, what: string, min: number): PanelInk => {
+    const colour = shownColour(element)
+    if (!colour) {
+      throw new Error(`${what} has no kit colour`)
+    }
+    return { what, colour, ratio: contrastRatio(resolveKitColour(colour as KitColour, theme), background), min }
+  }
+  const texts = [panel, ...panel.querySelectorAll('*')]
+    .filter(element => !(element instanceof SVGElement) && [...element.childNodes].some(node => node.nodeType === 3 && node.textContent!.trim()))
+    .map(element => measure(element, `"${element.textContent!.trim()}"`, 4.5))
+  const glyphs = [...panel.querySelectorAll('svg[data-glyph], button svg')]
+    .map(svg => measure(svg, svg.getAttribute('data-glyph') ?? `${svg.closest('button')!.getAttribute('aria-label')} glyph`, 3))
+  return [...texts, ...glyphs]
+}
+
+export function failingInk(panel: Element): string[] {
+  return (['dark', 'light'] as const).flatMap(theme => panelInk(panel, theme)
+    .filter(ink => ink.ratio < ink.min)
+    .map(ink => `${theme}: ${ink.what} in ${ink.colour} at ${ink.ratio.toFixed(2)}:1`))
 }
