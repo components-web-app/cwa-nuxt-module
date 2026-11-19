@@ -88,11 +88,33 @@ describe('CwaUiInlineEdit (#461)', () => {
     expect(value.style.display).toBe('none')
   })
 
-  test('Enter commits the typed value to the model and shows it', async () => {
+  test('each keystroke goes to the model while the input keeps focus, so it saves as you type as the bar input does, and an emptied value is null', async () => {
+    const { wrapper, model } = mountEdit()
+    const input = await startEditing(wrapper)
+
+    await input.setValue('How we fit')
+    expect(model.model.value).toBe('How we fit')
+    expect(document.activeElement).toBe(input.element)
+
+    await input.setValue('')
+    expect(model.model.value).toBeNull()
+    expect(wrapper.find('input').exists()).toBe(true)
+  })
+
+  test('while editing, the input shows a change made to the model elsewhere, such as in the bar input', async () => {
+    const { wrapper, model } = mountEdit()
+    const input = await startEditing(wrapper)
+
+    model.model.value = 'Typed in the bar'
+    await nextTick()
+
+    expect(input.element.value).toBe('Typed in the bar')
+  })
+
+  test('Enter ends editing, keeps the typed value in the model and shows it', async () => {
     const { wrapper, model } = mountEdit()
     const input = await startEditing(wrapper)
     await input.setValue('How we fit a kitchen')
-    expect(model.model.value).toBe('How we build a kitchen')
 
     await input.trigger('keydown', { key: 'Enter' })
 
@@ -102,7 +124,7 @@ describe('CwaUiInlineEdit (#461)', () => {
     expect(document.activeElement).toBe(shown(wrapper).element)
   })
 
-  test('Escape reverts without saving, and stops there so it never deselects the component', async () => {
+  test('Escape puts back the value editing started with, and stops there so it never deselects the component', async () => {
     const { wrapper, model } = mountEdit()
     const outer = vi.fn()
     document.addEventListener('keydown', outer)
@@ -184,17 +206,17 @@ describe('CwaUiInlineEdit (#461)', () => {
     expect(document.activeElement).toBe(shown(wrapper).element)
   })
 
-  test('Enter that confirms an IME composition does not commit, and the next Enter does', async () => {
+  test('Enter that confirms an IME composition does not end editing, and the next Enter does', async () => {
     const { wrapper, model } = mountEdit()
     const input = await startEditing(wrapper)
     await input.setValue('台所')
 
     input.element.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', isComposing: true, bubbles: true, cancelable: true }))
     await flushPromises()
-    expect(model.model.value).toBe('How we build a kitchen')
     expect(wrapper.find('input').exists()).toBe(true)
 
     await input.trigger('keydown', { key: 'Enter' })
+    expect(wrapper.find('input').exists()).toBe(false)
     expect(model.model.value).toBe('台所')
   })
 
@@ -221,7 +243,7 @@ describe('CwaUiInlineEdit (#461)', () => {
     expect(wrapper.find('input').exists()).toBe(true)
   })
 
-  test('leaving the input commits, as long as the text changed, and an emptied value saves null', async () => {
+  test('leaving the input ends editing and keeps what was typed, an emptied value as null', async () => {
     const { wrapper, model } = mountEdit()
     let input = await startEditing(wrapper)
     await input.trigger('blur')
@@ -242,7 +264,7 @@ describe('CwaUiInlineEdit (#461)', () => {
     expect(focusin).toHaveBeenCalled()
   })
 
-  test('the bar\'s Edit on page finds it, opens it with the caret at the end, and Escape goes back to the button without saving', async () => {
+  test('the bar\'s Edit on page finds it, opens it with the caret at the end, and Escape goes back to the button with the value it opened with put back', async () => {
     const { wrapper, model } = mountEdit()
     const caret = vi.spyOn(HTMLInputElement.prototype, 'setSelectionRange')
     const button = document.createElement('button')
