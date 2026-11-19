@@ -5,6 +5,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { DropdownMenuContent } from 'reka-ui'
 import { useCloneMode } from '#cwa/admin/clone-mode'
 import type Cwa from '#cwa/cwa'
+import { onPhone } from '../../../../../../../../test/utils/sheet-media'
 
 const state = vi.hoisted(() => ({ cwa: null as any, editingLayoutWhenCloned: undefined as boolean | undefined, confirm: { answer: true, asked: [] as unknown[] } }))
 
@@ -503,5 +504,35 @@ describe('ClonePlacementMenu', () => {
     await mountMenu()
 
     expect(menu()!.textContent).toContain('Could not load the available components')
+  })
+
+  describe('on a phone (#461)', () => {
+    afterEach(() => {
+      vi.unstubAllGlobals()
+    })
+
+    test('opens as a bottom sheet titled once by its heading, its notes under the title, and placing still clones', async () => {
+      onPhone()
+      startCloning()
+      editingLayout()
+      const { cloneComponent } = await import('#cwa/admin/clone-component')
+      const elements = { value: [textElement('Third page component')] }
+      const wrapper = await mountMenu('layout', [{ iri: COMPONENT, displayName: 'Body Text', domElements: elements }, { iri: POSITION, domElements: elements }, { iri: GROUP }, { iri: LAYOUT }])
+
+      const sheet = document.querySelector<HTMLElement>('[data-testid="kit-menu-sheet"]')!
+      expect(document.getElementById(sheet.getAttribute('aria-labelledby')!)!.textContent!.trim()).toBe('Clone next to “Third page component”')
+      expect(sheet.textContent!.split('Clone next to “Third page component”')).toHaveLength(2)
+      expect(document.querySelector('[data-testid="clone-menu-title"]')).toBeNull()
+      expect(sheet.querySelector('[data-testid="clone-notes"]')!.textContent!.trim()).toBe('Shared layout: this appears on every page')
+      expect(sheet.contains(menu())).toBe(true)
+
+      option('Add after')!.click()
+      await flushPromises()
+      expect(cloneComponent).toHaveBeenCalledWith(state.cwa, {
+        sourceIri: SOURCE,
+        target: { kind: 'position', groupIri: GROUP, anchor: { after: POSITION } },
+      })
+      expect(wrapper.emitted('close')).toHaveLength(1)
+    })
   })
 })

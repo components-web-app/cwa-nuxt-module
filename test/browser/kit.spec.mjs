@@ -627,7 +627,7 @@ for (const [width, height] of [[1280, 600], [390, 600]]) {
   })
 }
 
-for (const width of widths) {
+for (const width of [1280]) {
   test(`kit at ${width}: a multi-select keeps its width and height when it opens and closes, and shows its count while open (#461)`, async ({ page }) => {
     await openKit(page, width)
     const anchor = page.locator('main').getByTestId('multi-input').first().locator('xpath=..')
@@ -650,6 +650,90 @@ for (const width of widths) {
     }
   })
 }
+
+const sheetOpeners = [
+  ['a select', 'select-sheet', page => page.locator('main').getByTestId('select-trigger').first(), 'select-trigger'],
+  ['a multi-select', 'multi-sheet', page => page.locator('main').getByTestId('multi-input').first(), 'multi-toggle'],
+  ['a resource search', 'search-sheet', page => page.locator('main').getByTestId('search-input').first(), 'search-toggle'],
+  ['the split button ⋮', 'kit-menu-sheet', page => page.getByTestId('kit-split').getByTestId('button-options'), 'button-options'],
+]
+
+async function settledSheet(page, testId) {
+  const sheet = page.getByTestId(testId)
+  await sheet.waitFor()
+  await sheet.evaluate(element => Promise.all(element.getAnimations().map(animation => animation.finished)))
+  return sheet
+}
+
+for (const hasTouch of [false, true]) {
+  for (const [name, testId, opener, returnsTo] of sheetOpeners) {
+    test(`kit at 390 with a ${hasTouch ? 'coarse' : 'fine'} pointer: ${name} opens as a bottom sheet along the bottom edge at full width, above a scrim, never scrolling the page sideways, and Escape closes it back to its field (#461)`, async ({ browser }) => {
+      const context = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch })
+      const page = await context.newPage()
+      await page.goto(`${kitBase}/kit`)
+      await page.getByTestId('kit-presence').getByTestId('field-presence-flag').first().waitFor()
+      await page.waitForFunction(() => !!document.querySelector('#__nuxt')?.__vue_app__, null, { timeout: 120000 })
+      await page.waitForLoadState('networkidle')
+      const trigger = opener(page)
+      await trigger.scrollIntoViewIfNeeded()
+      await expect(async () => {
+        hasTouch ? await trigger.tap() : await trigger.click()
+        await expect(page.getByTestId(testId)).toBeVisible({ timeout: 500 })
+      }).toPass()
+      const sheet = await settledSheet(page, testId)
+
+      const box = await sheet.boundingBox()
+      expect(Math.abs(box.y + box.height - 844)).toBeLessThanOrEqual(1)
+      expect(box.x).toBe(0)
+      expect(box.width).toBe(390)
+      expect(box.height).toBeLessThanOrEqual(844 * 0.7 + 1)
+      expect(await page.getByTestId(`${testId}-scrim`).isVisible()).toBe(true)
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390)
+      expect(await sheet.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true)
+      const rows = await sheet.locator('[role="option"], [role="menuitem"]').evaluateAll(items => items.filter(item => item.getClientRects().length).map(item => item.getBoundingClientRect().height))
+      expect(rows.length).toBeGreaterThan(0)
+      expect(Math.min(...rows)).toBeGreaterThanOrEqual(44)
+
+      await page.keyboard.press('Escape')
+      await expect(page.getByTestId(testId)).toHaveCount(0)
+      await expect.poll(() => trigger.evaluate((element, id) => {
+        const field = element.closest('[data-testid="kit-split"], label + *, [data-cwa-field]') ?? element.parentElement.parentElement
+        return document.activeElement?.getAttribute('data-testid') === id && field.contains(document.activeElement)
+      }, returnsTo)).toBe(true)
+      await context.close()
+    })
+  }
+}
+
+test('kit at 390: the resource search sheet keeps within the visual viewport as it shrinks, as it does when the on-screen keyboard rises (#461)', async ({ page }) => {
+  await openKit(page, 390)
+  await page.setViewportSize({ width: 390, height: 844 })
+  const trigger = page.locator('main').getByTestId('search-input').first()
+  await trigger.scrollIntoViewIfNeeded()
+  await expect(async () => {
+    await trigger.click()
+    await expect(page.getByTestId('search-sheet')).toBeVisible({ timeout: 500 })
+  }).toPass()
+  const sheet = await settledSheet(page, 'search-sheet')
+  await expect(page.getByTestId('search-sheet-input')).toBeFocused()
+  const fits = () => sheet.evaluate((element) => {
+    const viewport = window.visualViewport
+    const box = element.getBoundingClientRect()
+    return { top: box.top, bottom: box.bottom, height: box.height, visibleTop: viewport.offsetTop, visibleBottom: viewport.offsetTop + viewport.height, visibleHeight: viewport.height, layout: window.innerHeight }
+  })
+  const full = await fits()
+  expect(Math.abs(full.height - full.layout * 0.6)).toBeLessThanOrEqual(1)
+  expect(Math.abs(full.bottom - full.layout)).toBeLessThanOrEqual(1)
+
+  const cdp = await page.context().newCDPSession(page)
+  await cdp.send('Emulation.setPageScaleFactor', { pageScaleFactor: 2 })
+  await expect.poll(async () => (await fits()).visibleHeight).toBeLessThan(500)
+  await expect.poll(async () => {
+    const shrunk = await fits()
+    return shrunk.top >= shrunk.visibleTop && Math.abs(shrunk.bottom - shrunk.visibleBottom) <= 1 && shrunk.height <= shrunk.visibleHeight - 16 + 1
+  }).toBe(true)
+  await cdp.send('Emulation.setPageScaleFactor', { pageScaleFactor: 1 })
+})
 
 for (const hasTouch of [false, true]) {
   for (const width of widths) {

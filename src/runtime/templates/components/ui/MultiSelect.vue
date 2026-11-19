@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, useId, watch } from 'vue'
+import { computed, ref, useId, useTemplateRef, watch } from 'vue'
 import {
   ComboboxAnchor,
   ComboboxContent,
@@ -17,8 +17,10 @@ import type { FieldWidth } from '../core/ui/Field.vue'
 import ChevronGlyph from '../core/ui/ChevronGlyph.vue'
 import CheckGlyph from '../core/ui/CheckGlyph.vue'
 import XMarkIcon from './icon/XMarkIcon.vue'
+import SheetSearch from '../core/ui/SheetSearch.vue'
+import { opensAsSheet } from '../core/ui/sheet-media'
 import { useAnnounce, useFieldModel } from '../core/ui/field-context'
-import { fieldBox, fieldDisabled, fieldFill, menuPanel, optionLook, placeholderLook } from '../core/ui/field-looks'
+import { fieldBox, fieldDisabled, fieldFill, menuPanel, optionLook, placeholderLook, sheetOptionLook } from '../core/ui/field-looks'
 import type { MenuItem } from '../core/ui/menu-entries'
 import type { ResourceModelField } from '#cwa/resources/model-editors'
 
@@ -58,6 +60,25 @@ const id = useId()
 const open = ref(false)
 const search = ref('')
 const armed = ref(false)
+const sheetOpen = ref(false)
+const sheetId = `${id}-sheet`
+const returnTo = ref<HTMLElement | null>()
+const anchor = useTemplateRef<{ $el: HTMLElement }>('anchor')
+const toggle = useTemplateRef<{ $el: HTMLElement }>('toggle')
+
+function setOpen(next: boolean) {
+  if (next && opensAsSheet()) {
+    const focused = document.activeElement
+    returnTo.value = focused instanceof HTMLElement && anchor.value?.$el.contains(focused) ? focused : toggle.value?.$el
+    sheetOpen.value = true
+    return
+  }
+  open.value = next
+}
+
+function onAnchorMousedown(event: MouseEvent) {
+  opensAsSheet() && event.preventDefault()
+}
 
 const chosen = computed(() => value.value ?? [])
 const labelOf = (val: string) => props.options.find(option => option.value === val)?.label ?? val
@@ -65,7 +86,7 @@ const firstChosen = computed(() => chosen.value[0] === undefined ? undefined : l
 const more = computed(() => Math.max(0, chosen.value.length - 1))
 
 const order = ref<string[]>([])
-watch(open, (isOpen) => {
+watch(() => open.value || sheetOpen.value, (isOpen) => {
   if (isOpen) {
     order.value = [...chosen.value]
     return
@@ -136,7 +157,7 @@ const inactive = computed(() => props.disabled || unbound)
   >
     <template #default="{ describedBy, tone, busy }">
       <ComboboxRoot
-        v-model:open="open"
+        :open="open"
         :model-value="chosen"
         multiple
         ignore-filter
@@ -144,10 +165,13 @@ const inactive = computed(() => props.disabled || unbound)
         :reset-search-term-on-blur="false"
         :reset-search-term-on-select="false"
         :disabled="inactive"
+        @update:open="setOpen"
         @update:model-value="choose"
       >
         <ComboboxAnchor
+          ref="anchor"
           :class="[fieldBox, fieldFill(tone, inactive), 'cwa:gap-1.5 cwa:pr-3', { [fieldDisabled]: inactive }]"
+          @mousedown="onAnchorMousedown"
         >
           <span
             v-if="!open && firstChosen"
@@ -189,12 +213,15 @@ const inactive = computed(() => props.disabled || unbound)
             :aria-invalid="tone === 'danger' ? 'true' : undefined"
             :aria-busy="busy ? 'true' : undefined"
             data-testid="multi-input"
+            v-bind="sheetOpen ? { 'aria-expanded': 'true', 'aria-controls': sheetId } : {}"
             class="cwa:h-full cwa:w-0 cwa:min-w-0 cwa:flex-1 cwa:appearance-none cwa:border-0 cwa:bg-transparent cwa:px-2 cwa:text-control cwa:text-inherit cwa:outline-none cwa:focus:ring-0 cwa:disabled:cursor-not-allowed cwa:pointer-coarse:text-base"
             :class="[placeholderLook(inactive), { 'cwa:pl-3': !open && !firstChosen }]"
             @keydown="onKeydown"
           />
           <ComboboxTrigger
+            ref="toggle"
             :aria-label="`Show ${label} options`"
+            data-testid="multi-toggle"
             tabindex="-1"
             class="cwa:grid cwa:h-full cwa:cursor-pointer cwa:place-items-center cwa:disabled:cursor-not-allowed"
           >
@@ -236,6 +263,66 @@ const inactive = computed(() => props.disabled || unbound)
           </ComboboxContent>
         </ComboboxPortal>
       </ComboboxRoot>
+      <SheetSearch
+        v-if="sheetOpen"
+        v-model:open="sheetOpen"
+        v-model:query="search"
+        multiple
+        :model-value="chosen"
+        :label="label"
+        :placeholder="searchPlaceholder"
+        :panel-id="sheetId"
+        :return-to="returnTo"
+        test-id="multi-sheet"
+        @update:model-value="choose"
+        @keydown="onKeydown"
+      >
+        <template #chips>
+          <div
+            v-if="chosen.length"
+            data-testid="multi-sheet-chips"
+            class="cwa:flex cwa:shrink-0 cwa:gap-1.5 cwa:overflow-x-auto cwa:px-4 cwa:pb-3 cwa:[scrollbar-width:none]"
+          >
+            <span
+              v-for="(item, index) in chosen"
+              :key="item"
+              data-testid="multi-sheet-chip"
+              class="cwa:flex cwa:shrink-0 cwa:items-center cwa:bg-chip cwa:pl-2 cwa:text-control"
+              :class="{ 'cwa:outline-2 cwa:outline-accent-fg': armed && index === chosen.length - 1 }"
+            >
+              <span class="cwa:whitespace-nowrap">{{ labelOf(item) }}</span>
+              <button
+                type="button"
+                :aria-label="`Remove ${labelOf(item)}`"
+                class="cwa:grid cwa:size-hit cwa:shrink-0 cwa:cursor-pointer cwa:place-items-center cwa:hover:bg-field-hover"
+                @click="remove(item)"
+              >
+                <XMarkIcon class="cwa:size-3" />
+              </button>
+            </span>
+          </div>
+        </template>
+        <ComboboxEmpty class="cwa:px-4 cwa:py-2 cwa:text-fg-muted">
+          Nothing matches “{{ search }}”.
+        </ComboboxEmpty>
+        <ComboboxItem
+          v-for="option in listed"
+          :key="option.value"
+          :value="option.value ?? option.label"
+          :disabled="option.disabled"
+          :text-value="option.label"
+          :class="sheetOptionLook"
+        >
+          <span class="cwa:flex cwa:min-w-0 cwa:flex-1 cwa:flex-col">
+            <span :class="{ 'cwa:opacity-50': option.disabled }">{{ option.label }}</span>
+            <span
+              v-if="option.disabled && option.disabledReason"
+              class="cwa:text-helper cwa:text-fg-muted"
+            >{{ option.disabledReason }}</span>
+          </span>
+          <ComboboxItemIndicator><CheckGlyph /></ComboboxItemIndicator>
+        </ComboboxItem>
+      </SheetSearch>
     </template>
   </Field>
 </template>

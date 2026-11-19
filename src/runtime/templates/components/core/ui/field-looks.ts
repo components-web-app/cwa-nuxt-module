@@ -24,4 +24,8 @@ export const infoArrow = 'cwa:fill-surface-menu cwa:stroke-line'
 
 export const optionLook = 'cwa:relative cwa:flex cwa:min-h-option cwa:cursor-pointer cwa:items-center cwa:gap-2 cwa:px-3 cwa:py-1.5 cwa:text-fg cwa:outline-none cwa:select-none cwa:data-highlighted:bg-menu-highlight cwa:data-highlighted:shadow-[inset_2px_0_0_var(--cwa-color-accent-fg)] cwa:data-disabled:cursor-not-allowed cwa:data-[state=checked]:font-medium'
 
+export const sheetOptionLook = 'cwa:relative cwa:flex cwa:min-h-hit cwa:cursor-pointer cwa:items-center cwa:gap-2 cwa:px-4 cwa:py-1.5 cwa:text-fg cwa:outline-none cwa:select-none cwa:data-highlighted:bg-menu-highlight cwa:data-highlighted:shadow-[inset_2px_0_0_var(--cwa-color-accent-fg)] cwa:data-disabled:cursor-not-allowed cwa:data-[state=checked]:font-medium'
+
+export const sheetGroupHeading = 'cwa:px-4 cwa:pt-3 cwa:pb-1 cwa:text-helper cwa:text-fg-muted'
+
 export const groupHeading = 'cwa:px-3 cwa:pt-2 cwa:pb-1 cwa:text-helper cwa:text-fg-muted'
