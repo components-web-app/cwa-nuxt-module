@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed, ref, useTemplateRef } from 'vue'
-import { PopoverArrow, PopoverClose, PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger } from 'reka-ui'
-import { infoArrow, infoClose, infoPanel } from './field-looks'
+import { PopoverArrow, PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger } from 'reka-ui'
+import { infoArrow, infoPopover } from './field-looks'
 import { POPOVER_GAP } from './popover-gap'
 import StateGlyph from './StateGlyph.vue'
-import XMarkIcon from '../../ui/icon/XMarkIcon.vue'
+import InfoPopoverTitle from './InfoPopoverTitle.vue'
 
 const { label, text, textId, hover = false } = defineProps<{
   label: string
@@ -118,25 +118,13 @@ function onOpenAutoFocus(event: Event) {
         :collision-padding="8"
         :aria-label="label"
         data-testid="field-info-popover"
-        :class="['cwa:z-context cwa:w-max cwa:max-w-[min(20rem,calc(100vw-1rem))] cwa:p-popover cwa:text-control cwa:outline-none', infoPanel]"
+        :class="infoPopover"
         @open-auto-focus="onOpenAutoFocus"
         @close-auto-focus="onCloseAutoFocus"
         @pointerenter="onPointerenter"
         @pointerleave="onPointerleave"
       >
-        <div class="cwa:mb-4 cwa:flex cwa:h-[1cap] cwa:items-center cwa:gap-2 cwa:font-semibold cwa:text-accent-on-info">
-          <StateGlyph
-            kind="info"
-            inherit
-          />
-          <span class="cwa:min-w-0 cwa:flex-1 cwa:trim-text">{{ label }}</span>
-          <PopoverClose
-            aria-label="Close"
-            :class="infoClose"
-          >
-            <XMarkIcon class="cwa:size-3" />
-          </PopoverClose>
-        </div>
+        <InfoPopoverTitle :title="label" />
         <p class="cwa:m-0 cwa:trim-text">
           {{ text }}
         </p>

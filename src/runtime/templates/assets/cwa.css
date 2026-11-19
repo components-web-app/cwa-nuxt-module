@@ -2608,6 +2608,9 @@
 .cwa\:focus-visible\:outline-accent-fg:focus-visible {
   outline-color: var(--cwa-color-accent-fg);
 }
+.cwa\:focus-visible\:outline-accent-on-info:focus-visible {
+  outline-color: var(--cwa-color-accent-on-info);
+}
 .cwa\:focus-visible\:outline-blue-600:focus-visible {
   outline-color: var(--cwa-color-blue-600);
 }
