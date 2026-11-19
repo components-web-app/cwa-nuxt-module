@@ -252,7 +252,7 @@ describe('#321 selection outline follows a component root element that changes w
       iri: COMPONENT_A,
       showManager: true,
       elementsConnected: true,
-      outlineStyle: 'top: 100px; left: 10px; width: 200px; height: 50px;',
+      outlineStyle: 'top: 100px; left: 10px; width: 200px; height: 50px; border-radius: 1px;',
     })
   })
 
@@ -273,7 +273,7 @@ describe('#321 selection outline follows a component root element that changes w
       iri: COMPONENT_NEW,
       showManager: true,
       elementsConnected: true,
-      outlineStyle: 'top: 100px; left: 10px; width: 200px; height: 50px;',
+      outlineStyle: 'top: 100px; left: 10px; width: 200px; height: 50px; border-radius: 1px;',
     })
   })
 
@@ -293,7 +293,7 @@ describe('#321 selection outline follows a component root element that changes w
       iri: COMPONENT_NEW,
       showManager: true,
       elementsConnected: true,
-      outlineStyle: 'top: 100px; left: 10px; width: 200px; height: 50px;',
+      outlineStyle: 'top: 100px; left: 10px; width: 200px; height: 50px; border-radius: 1px;',
     })
   })
 
@@ -319,7 +319,7 @@ describe('#321 selection outline follows a component root element that changes w
       iri: COMPONENT_NEW,
       showManager: true,
       elementsConnected: true,
-      outlineStyle: 'top: 100px; left: 10px; width: 200px; height: 50px;',
+      outlineStyle: 'top: 100px; left: 10px; width: 200px; height: 50px; border-radius: 1px;',
     })
   })
 
@@ -351,7 +351,7 @@ describe('#321 selection outline follows a component root element that changes w
       iri: COMPONENT_NEW,
       showManager: true,
       elementsConnected: true,
-      outlineStyle: 'top: 100px; left: 10px; width: 200px; height: 50px;',
+      outlineStyle: 'top: 100px; left: 10px; width: 200px; height: 50px; border-radius: 1px;',
     })
   })
 

@@ -13,7 +13,7 @@ const $cwa = useCwa()
 const currentIri = $cwa.admin.resourceStackManager.currentIri
 const usage = ref<ComponentUsage>()
 const open = ref(false)
-const badgeClass = 'cwa:whitespace-nowrap cwa:text-xs cwa:text-yellow cwa:border cwa:border-yellow/60 cwa:rounded-full cwa:py-1 cwa:px-2.5'
+const badgeClass = 'cwa:whitespace-nowrap cwa:text-xs cwa:text-yellow cwa:border cwa:border-yellow/60 cwa:py-1 cwa:px-2.5'
 let request = 0
 
 const component = computed(() => {

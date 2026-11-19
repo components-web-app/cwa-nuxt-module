@@ -7,7 +7,21 @@ export type SaveOutlinePhase = 'rest' | 'saving' | 'saved' | 'error' | 'conflict
 export type SaveOutlineTone = 'light' | 'dark'
 
 export const SAVE_OUTLINE_GAP = 300
-export const SAVE_OUTLINE_SAVED_FOR = 1180
+export const SAVE_OUTLINE_GLOW_FADE = 700
+export const SAVE_OUTLINE_SAVED_FOR = SAVE_OUTLINE_GLOW_FADE * 2
+export const FOCUS_CUTOUT_OFFSET = 7
+export const FOCUS_CUTOUT_RADIUS = 8
+export const SAVE_OUTLINE_INSET = 6
+
+export function focusRadiusAt(outset: number) {
+  return Math.max(FOCUS_CUTOUT_RADIUS - FOCUS_CUTOUT_OFFSET + outset, 0)
+}
+
+export const saveOutlineStyle = {
+  'inset': `-${SAVE_OUTLINE_INSET}px`,
+  '--save-radius': `${focusRadiusAt(SAVE_OUTLINE_INSET)}px`,
+  '--save-for': `${SAVE_OUTLINE_SAVED_FOR}ms`,
+}
 
 export function useSaveOutline(states: Ref<CwaFieldState[]>, selection: Ref<unknown>): ComputedRef<SaveOutlinePhase> {
   const busy = computed(() => states.value.some(state => state.status === 'saving'))
