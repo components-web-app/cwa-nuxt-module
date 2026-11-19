@@ -265,7 +265,7 @@
 
   .cwa\:status-line[data-line='saved']::before {
     background: var(--cwa-color-success);
-    animation: cwa-line-saved 1.18s ease-out forwards;
+    animation: cwa-line-saved 1.18s ease-out;
   }
 
   .cwa\:status-line[data-line='undo']::before {
