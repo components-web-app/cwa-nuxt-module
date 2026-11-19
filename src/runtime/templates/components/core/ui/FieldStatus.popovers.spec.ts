@@ -185,6 +185,23 @@ describe('one field status popover at a time, and its Close (#461)', () => {
     expect(document.activeElement).toBe(inputs[0])
   })
 
+  test('a pointer passing over a field in error faster than the hover delay leaves no popover and throws nothing, while the popover content was never rendered', async () => {
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { boxes } = mountPair()
+    await settle()
+
+    boxes[0]!.dispatchEvent(new MouseEvent('mouseenter'))
+    await settle(100)
+    boxes[0]!.dispatchEvent(new MouseEvent('mouseleave'))
+    await settle(400)
+
+    expect(errors).not.toHaveBeenCalled()
+    expect(shown()).toEqual([])
+    await hover(boxes[0]!)
+    expect(shown()).toEqual(['Title: not saved'])
+    errors.mockRestore()
+  })
+
   test('two fields with popovers have no axe violations with one open', async () => {
     const { inputs } = mountPair()
     await settle()

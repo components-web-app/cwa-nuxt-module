@@ -87,13 +87,14 @@ const stack = useStatusPopover()
 const shown = computed(() => open.value && stack.front.value)
 let dismissed = false
 let hovered = false
-const content = ref<{ $el?: HTMLElement } | null>(null)
+const content = ref<{ $el?: Node } | null>(null)
 let hoverTimer: ReturnType<typeof setTimeout> | undefined
 let closeTimer: ReturnType<typeof setTimeout> | undefined
 let lastFocused: HTMLElement | undefined
 
-function popoverEl(): HTMLElement | undefined {
-  return content.value?.$el
+function popoverEl(): Element | undefined {
+  const el = content.value?.$el
+  return el instanceof Element ? el : undefined
 }
 
 function within(target: EventTarget | null | undefined) {
