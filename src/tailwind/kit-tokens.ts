@@ -136,6 +136,10 @@ export const kitContrastPairs: KitContrastPair[] = [
   { fg: 'toggle-off', bg: 'surface', min: 3, use: 'Toggle track, off' },
   { fg: 'tree-line', bg: 'surface', min: 3, use: 'Tree line' },
   { fg: 'accent-fg', bg: 'surface-menu', min: 3, use: 'Selected level\'s border in the resource stack' },
+  { fg: 'fg', bg: { tint: 'accent-fg', percent: 10 }, min: 4.5, use: 'Info alert title and route recommendation' },
+  { fg: 'fg-secondary', bg: { tint: 'accent-fg', percent: 10 }, min: 4.5, use: 'Info alert text' },
+  { fg: 'fg-muted', bg: { tint: 'accent-fg', percent: 10 }, min: 4.5, use: 'Route recommendation\'s source line' },
+  { fg: 'accent-fg', bg: { tint: 'accent-fg', percent: 10 }, min: 3, use: 'Info alert glyph' },
   ...buttonPairs(),
   ...badgePairs(),
 ]
