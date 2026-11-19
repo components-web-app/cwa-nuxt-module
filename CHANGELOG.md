@@ -6,7 +6,7 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ### Fixed
 
-- Editing a title on the page (`CwaUiInlineEdit`) saves as you type, as the bar's input does, instead of only when you click off or press Enter ([f79378d5](https://github.com/components-web-app/cwa-nuxt-module/commit/f79378d525effd047a10fecc4dd81dd1a1f4d618)).
+- Editing a title on the page (`CwaUiInlineEdit`) saves as you type, as the bar's input does, instead of only when you click off or press Enter, and Escape stops editing and keeps what was typed ([f79378d5](https://github.com/components-web-app/cwa-nuxt-module/commit/f79378d525effd047a10fecc4dd81dd1a1f4d618), [b5e482ad](https://github.com/components-web-app/cwa-nuxt-module/commit/b5e482ade98bcd4827dcd0215284dc54e3e38c73), [#461](https://github.com/components-web-app/cwa-nuxt-module/issues/461)).
 - Editing a component again right after publishing it no longer shows your own change as a conflict from someone else ([d084073d](https://github.com/components-web-app/cwa-nuxt-module/commit/d084073d8c8a5e29508443e5ad56400cf9edb675), [#429](https://github.com/components-web-app/cwa-nuxt-module/issues/429)).
 
 ### Changed
