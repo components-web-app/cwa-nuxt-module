@@ -133,7 +133,7 @@ describe('ComponentFocus', () => {
       mockCwa()
       const { wrapper } = mountFocus()
       expect(wrapper.find('canvas').exists()).toBe(true)
-      expect(wrapper.find('div.cwa\\:animate-pulse').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="focus-outline"]').exists()).toBe(true)
     })
 
     test('computes the css position from the dom element bounding rects', () => {
@@ -141,7 +141,7 @@ describe('ComponentFocus', () => {
       const { wrapper } = mountFocus({
         els: [makeEl({ top: 10, left: 20, right: 120, bottom: 60 })],
       })
-      const style = wrapper.find('div.cwa\\:animate-pulse').attributes('style') ?? ''
+      const style = wrapper.find('[data-testid="focus-outline"]').attributes('style') ?? ''
       expect(style).toContain('top: 10px')
       expect(style).toContain('left: 20px')
       expect(style).toContain('width: 100px')
@@ -156,7 +156,7 @@ describe('ComponentFocus', () => {
           makeEl({ top: 10, left: 5, right: 200, bottom: 80 }),
         ],
       })
-      const style = wrapper.find('div.cwa\\:animate-pulse').attributes('style') ?? ''
+      const style = wrapper.find('[data-testid="focus-outline"]').attributes('style') ?? ''
       expect(style).toContain('top: 10px')
       expect(style).toContain('left: 5px')
       expect(style).toContain('width: 195px')
@@ -168,7 +168,7 @@ describe('ComponentFocus', () => {
       const { wrapper } = mountFocus({
         els: [makeEl({ top: 10, left: 20, right: 120, bottom: 60 }, 3 /* text node */)],
       })
-      const style = wrapper.find('div.cwa\\:animate-pulse').attributes('style') ?? ''
+      const style = wrapper.find('[data-testid="focus-outline"]').attributes('style') ?? ''
       expect(style).toContain('width: 0px')
       expect(style).toContain('height: 0px')
     })
@@ -272,7 +272,7 @@ describe('ComponentFocus', () => {
     test('is undefined (no border class) when resource is missing', () => {
       mockCwa(() => ref(undefined))
       const { wrapper } = mountFocus()
-      const cls = wrapper.find('div.cwa\\:animate-pulse').classes()
+      const cls = wrapper.find('[data-testid="focus-outline"]').classes()
       expect(cls).not.toContain('cwa:outline-green')
       expect(cls).not.toContain('cwa:outline-orange')
       expect(cls).not.toContain('cwa:outline-magenta')
@@ -281,25 +281,25 @@ describe('ComponentFocus', () => {
     test('is orange when the resource is being added', () => {
       mockCwa(() => ref({ data: { _metadata: { adding: true } } }))
       const { wrapper } = mountFocus()
-      expect(wrapper.find('div.cwa\\:animate-pulse').classes()).toContain('cwa:outline-orange')
+      expect(wrapper.find('[data-testid="focus-outline"]').classes()).toContain('cwa:outline-orange')
     })
 
     test('is green when published state is true', () => {
       mockCwa(() => ref({ data: { _metadata: { publishable: { published: true } } } }))
       const { wrapper } = mountFocus()
-      expect(wrapper.find('div.cwa\\:animate-pulse').classes()).toContain('cwa:outline-green')
+      expect(wrapper.find('[data-testid="focus-outline"]').classes()).toContain('cwa:outline-green')
     })
 
     test('is orange when published state is false', () => {
       mockCwa(() => ref({ data: { _metadata: { publishable: { published: false } } } }))
       const { wrapper } = mountFocus()
-      expect(wrapper.find('div.cwa\\:animate-pulse').classes()).toContain('cwa:outline-orange')
+      expect(wrapper.find('[data-testid="focus-outline"]').classes()).toContain('cwa:outline-orange')
     })
 
     test('is magenta for a non-publishable resource with a /_/ iri', () => {
       mockCwa(() => ref({ data: { _metadata: {} } }))
       const { wrapper } = mountFocus({ iri: '/_/component_groups/abc' })
-      expect(wrapper.find('div.cwa\\:animate-pulse').classes()).toContain('cwa:outline-magenta')
+      expect(wrapper.find('[data-testid="focus-outline"]').classes()).toContain('cwa:outline-magenta')
     })
 
     describe('behind an API path prefix', () => {
@@ -320,20 +320,20 @@ describe('ComponentFocus', () => {
       ])('%s is magenta, as it is with no prefix', (iri) => {
         mockCwa(() => ref({ data: { _metadata: {} } }))
         const { wrapper } = mountFocus({ iri })
-        expect(wrapper.find('div.cwa\\:animate-pulse').classes()).toContain('cwa:outline-magenta')
+        expect(wrapper.find('[data-testid="focus-outline"]').classes()).toContain('cwa:outline-magenta')
       })
 
       test('a component is still green', () => {
         mockCwa(() => ref({ data: { _metadata: {} } }))
         const { wrapper } = mountFocus({ iri: '/_api/component/foo' })
-        expect(wrapper.find('div.cwa\\:animate-pulse').classes()).toContain('cwa:outline-green')
+        expect(wrapper.find('[data-testid="focus-outline"]').classes()).toContain('cwa:outline-green')
       })
     })
 
     test('is green for a non-publishable resource with a non /_/ iri', () => {
       mockCwa(() => ref({ data: { _metadata: {} } }))
       const { wrapper } = mountFocus({ iri: '/component/foo' })
-      expect(wrapper.find('div.cwa\\:animate-pulse').classes()).toContain('cwa:outline-green')
+      expect(wrapper.find('[data-testid="focus-outline"]').classes()).toContain('cwa:outline-green')
     })
   })
 
@@ -373,7 +373,7 @@ describe('ComponentFocus', () => {
       const { wrapper } = mountFocus()
       eventHandlers.reorder()
       await nextTick()
-      expect(wrapper.find('div.cwa\\:animate-pulse').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="focus-outline"]').exists()).toBe(true)
     })
 
     test('redrawFocus handler invokes drawCanvas without throwing', () => {
@@ -475,7 +475,7 @@ describe('ComponentFocus', () => {
       return resources
     }
 
-    test('a field of the draft or the live copy saving sweeps every outline of the selection, which stops pulsing', async () => {
+    test('a field of the draft or the live copy saving sweeps every outline of the selection', async () => {
       withFieldStates({ '/component/foo': { title: { status: 'idle' } }, '/component/foo/draft': { body: { status: 'saving' } } })
       const { wrapper } = mountFocus()
       await flushPromises()
@@ -517,12 +517,17 @@ describe('ComponentFocus', () => {
       getContextSpy.mockRestore()
     })
 
-    test('with nothing saving, the outline is the plain pulsing selection', async () => {
+    test('with nothing saving, the selection outline is steady: no repeating animation, as only spinners repeat', async () => {
       withFieldStates({ '/component/foo': { title: { status: 'pending' } } })
       const { wrapper } = mountFocus()
       await nextTick()
       expect(wrapper.find('[data-testid="focus-save"]').exists()).toBe(false)
-      expect(wrapper.get('[data-testid="focus-outline"]').classes()).toContain('cwa:animate-pulse')
+      const outlines = wrapper.findAll('[data-testid="focus-outline"]')
+      expect(outlines.length).toBeGreaterThan(0)
+      for (const outline of outlines) {
+        expect(outline.attributes('data-save')).toBe('rest')
+        expect(outline.classes().filter(name => /animate-/.test(name))).toEqual([])
+      }
     })
   })
 })
