@@ -91,10 +91,16 @@ describe('CwaUiCombobox, inline-open (#461)', () => {
     expect(document.getElementById(image.getAttribute('aria-describedby')!)!.textContent).toBe('One image with alt text, Media')
   })
 
-  test('the first option is highlighted and named as the active descendant', async () => {
-    mountCombobox()
+  test('nothing is highlighted until an arrow key, so Enter chooses nothing, and then the highlight is the active descendant', async () => {
+    const { onChoose } = mountCombobox()
     await flushPromises()
 
+    expect(highlighted()).toBeUndefined()
+    expect(input().hasAttribute('aria-activedescendant')).toBe(false)
+    await key('Enter')
+    expect(onChoose).not.toHaveBeenCalled()
+
+    await key('ArrowDown')
     expect(highlighted()).toBe('RichText')
     expect(input().getAttribute('aria-activedescendant')).toBe(options()[0]!.id)
   })
@@ -103,6 +109,7 @@ describe('CwaUiCombobox, inline-open (#461)', () => {
     const { onChoose } = mountCombobox()
     await flushPromises()
 
+    await key('ArrowDown')
     await key('ArrowDown')
     await key('ArrowDown')
     expect(highlighted()).toBe('Image')
@@ -155,24 +162,25 @@ describe('CwaUiCombobox, inline-open (#461)', () => {
     await flushPromises()
 
     await key('ArrowDown')
+    await key('ArrowDown')
     await key('ArrowUp')
     await key('ArrowUp')
 
     expect(onLeaveTop).toHaveBeenCalledTimes(1)
   })
 
-  test('Up from the first option leaves the top even when it was highlighted on opening', async () => {
+  test('Up with nothing highlighted leaves the top when asked to', async () => {
     const { onLeaveTop } = mountCombobox({ upLeaves: true })
     await flushPromises()
 
-    expect(highlighted()).toBe('RichText')
+    expect(highlighted()).toBeUndefined()
     const event = await key('ArrowUp')
 
     expect(onLeaveTop).toHaveBeenCalledTimes(1)
     expect(event.defaultPrevented).toBe(true)
   })
 
-  test('Up from the first option wraps to the last when nothing is above', async () => {
+  test('Up with nothing highlighted goes to the last option when nothing is above', async () => {
     const { onLeaveTop } = mountCombobox()
     await flushPromises()
 
@@ -203,6 +211,7 @@ describe('CwaUiCombobox, inline-open (#461)', () => {
     document.body.appendChild(outside)
     input().focus()
     await key('ArrowDown')
+    await key('ArrowDown')
 
     outside.focus()
     await flushPromises()
@@ -219,6 +228,7 @@ describe('CwaUiCombobox, inline-open (#461)', () => {
     mountCombobox()
     await flushPromises()
     await key('ArrowDown')
+    await key('ArrowDown')
 
     const home = await key('Home')
     const end = await key('End')
@@ -228,32 +238,25 @@ describe('CwaUiCombobox, inline-open (#461)', () => {
     expect(highlighted()).toBe('Button')
   })
 
-  test('typing highlights the first result and the match is bold', async () => {
-    const { sections } = mountCombobox()
+  test('typing clears the highlight, so no result looks chosen, and the match is bold', async () => {
+    const { sections, onChoose } = mountCombobox()
     await flushPromises()
     await key('ArrowDown')
-
+    await key('ArrowDown')
     expect(highlighted()).toBe('Button')
 
     await type('i')
-    expect(highlighted()).toBe('RichText')
+    expect(highlighted()).toBeUndefined()
+    expect(options().some(option => option.hasAttribute('data-highlighted'))).toBe(false)
+    expect(input().hasAttribute('aria-activedescendant')).toBe(false)
+    await key('Enter')
+    expect(onChoose).not.toHaveBeenCalled()
 
     sections.value = [allSections[1]!]
     await type('ima')
-
-    expect(highlighted()).toBe('Image')
     expect(options()[0]!.querySelector('mark')!.textContent).toBe('Ima')
-  })
-
-  test('a search highlights its first result without the keyboard focus ring', async () => {
-    mountCombobox()
-    await flushPromises()
     await key('ArrowDown')
-
-    await type('i')
-
-    expect(highlighted()).toBe('RichText')
-    expect(options()[0]!.className).not.toContain('cwa:outline-accent-fg')
+    expect(highlighted()).toBe('Image')
   })
 
   test('the count is announced once typing settles, never per keystroke', async () => {
