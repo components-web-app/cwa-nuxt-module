@@ -443,6 +443,7 @@ for (const width of widths) {
 }
 
 test('kit: only one field status popover shows at a time, and Close or Escape keeps it closed while the pointer and focus stay (#461)', async ({ page }) => {
+  await page.clock.install()
   await openKit(page, 1280)
   const popovers = page.getByTestId('field-status-popover')
   const error = page.getByTestId('kit-input-error').locator('input')
@@ -468,7 +469,7 @@ test('kit: only one field status popover shows at a time, and Close or Escape ke
   await expect(popovers).toHaveCount(0)
   await expect(conflict).toBeFocused()
   await conflict.hover()
-  await page.waitForTimeout(HOVER_DELAY_PASSED)
+  await page.clock.runFor(HOVER_DELAY_PASSED)
   await expect(popovers).toHaveCount(0)
 
   await page.mouse.move(2, 450)
@@ -476,7 +477,7 @@ test('kit: only one field status popover shows at a time, and Close or Escape ke
   await expect(popovers).toHaveAttribute('aria-label', 'error: not saved')
   await page.keyboard.press('Escape')
   await expect(popovers).toHaveCount(0)
-  await page.waitForTimeout(HOVER_DELAY_PASSED)
+  await page.clock.runFor(HOVER_DELAY_PASSED)
   await expect(popovers).toHaveCount(0)
   await expect(error).toBeFocused()
 
@@ -486,7 +487,7 @@ test('kit: only one field status popover shows at a time, and Close or Escape ke
   await expect(popovers).toHaveAttribute('aria-label', 'conflict: changed by Alex')
   await popovers.getByRole('button', { name: 'Close' }).click()
   await expect(popovers).toHaveCount(0)
-  await page.waitForTimeout(HOVER_DELAY_PASSED)
+  await page.clock.runFor(HOVER_DELAY_PASSED)
   await expect(popovers).toHaveCount(0)
   await expect(page.locator('body')).toBeFocused()
   await conflict.hover()
