@@ -43,12 +43,12 @@ export interface CwaUiVariantConfig {
 }
 
 export interface CwaComponentMeta extends CwaTemplateConfig, CwaUiVariantConfig {
-  description?: string
   instantAdd?: boolean
   defaultData?: Record<any, any>
 }
 
 export interface CwaComponentAdminConfig {
+  description?: string
   icon?: CwaComponentKind | `lucide:${LucideIconName}` | `./${string}.svg`
   group?: string
   image?: string

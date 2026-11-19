@@ -4,6 +4,7 @@ export interface AddComponentChoice {
   name: string
   label: string
   description?: string
+  descriptionHtml?: string
   group?: string
   count: number
   allowed: boolean
@@ -19,20 +20,6 @@ export interface AddComponentList {
   quick: AddComponentChoice[]
   sections: AddComponentSection[]
   blocked?: AddComponentChoice
-}
-
-const ENTITIES: Record<string, string> = { amp: '&', lt: '<', gt: '>', quot: '"', apos: '\'', nbsp: ' ', ['#39']: '\'' }
-
-export function hasMarkup(text: string): boolean {
-  return /<[a-z/!][^>]*>/i.test(text)
-}
-
-export function plainText(text: string): string {
-  return text
-    .replace(/<[^>]*>/g, ' ')
-    .replace(/&(amp|lt|gt|quot|apos|nbsp|#39);/g, (_, entity: string) => ENTITIES[entity]!)
-    .replace(/\s+/g, ' ')
-    .trim()
 }
 
 export function normaliseQuery(query: string): string {

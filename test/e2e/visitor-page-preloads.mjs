@@ -35,6 +35,7 @@ const forbidden = [
   { marker: 'Paragraphs, headings, lists and links', source: 'defineCwaConfig description in playground HtmlContent.vue (#453)' },
   { marker: 'Blue Background', source: 'defineCwaConfig style label in playground layouts/primary.vue (#453)' },
   { marker: 'data-cwa-admin-icon', source: 'cwa-admin-resources' },
+  { marker: 'alt text</strong> for screen readers', source: 'Markdown description HTML in cwa-admin-resources, from playground Image.vue' },
   { marker: 'Already in this group', source: 'resource-manager/_parts/AddComponentDialog.vue' },
 ]
 

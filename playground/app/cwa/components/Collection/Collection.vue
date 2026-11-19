@@ -85,7 +85,7 @@ import type { IriProp } from '#cwa/composables/cwa-resource'
 import { useCwaComponent, withCollection, defineCwaConfig } from '#imports'
 
 defineCwaConfig({
-  description: 'A paged list of pages or articles',
+  description: 'A paged list of pages or articles.\n\nThe page `query` filters it. See [the module](https://github.com/components-web-app/cwa-nuxt-module).',
   icon: 'collection',
   group: 'Layout',
 })

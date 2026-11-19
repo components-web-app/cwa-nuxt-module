@@ -85,10 +85,10 @@ function createDefaultCwaPages(
 
 export const NAME = '@cwa/nuxt' as const
 
-const BUILT_IN_RESOURCES_CONFIG: CwaResourcesMeta = {
+const BUILT_IN_RESOURCES_CONFIG: CwaResourcesConfig = {
   ComponentPosition: {
     name: 'Position',
-    description: '<p>Dynamic components can be used on dynamic pages to specify what component should be displayed from a data page in any given location.</p><p>You must select the reference from the data page to load into this position below.</p>',
+    description: 'Dynamic components can be used on dynamic pages to specify what component should be displayed from a data page in any given location.\n\nYou must select the reference from the data page to load into this position below.',
     instantAdd: true,
   },
   ComponentGroup: {
@@ -429,11 +429,11 @@ export default defineNuxtModule<CwaModuleOptions>({
       return { ...options, staticRender: options.staticRender ?? hasStaticRouteRules() }
     }
 
-    const ADMIN_RESOURCE_KEYS = ['icon', 'group', 'image'] as const
+    const ADMIN_RESOURCE_KEYS = ['description', 'icon', 'group', 'image'] as const
 
     function withoutAdminResourceKeys(resources: CwaResourcesConfig): CwaResourcesMeta {
       return Object.fromEntries(Object.entries(resources).map(([name, meta]) => {
-        const { icon: _icon, group: _group, image: _image, ...rest } = meta
+        const { description: _description, icon: _icon, group: _group, image: _image, ...rest } = meta
         return [name, rest]
       }))
     }
