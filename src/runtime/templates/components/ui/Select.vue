@@ -270,7 +270,7 @@ function chooseInSheet(next: unknown) {
         v-if="sheetOpen"
         v-model:open="sheetOpen"
         :label="label"
-        close-label="Done"
+        actions
         :panel-id="sheetId"
         :return-to="trigger?.$el"
         test-id="select-sheet"

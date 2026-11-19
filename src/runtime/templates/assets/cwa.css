@@ -1033,6 +1033,14 @@
 .cwa\:cursor-text {
   cursor: text;
 }
+.cwa\:touch-pan-down {
+  --tw-pan-y: pan-down;
+  touch-action: var(--tw-pan-x,) var(--tw-pan-y,) var(--tw-pinch-zoom,);
+}
+.cwa\:touch-pan-y {
+  --tw-pan-y: pan-y;
+  touch-action: var(--tw-pan-x,) var(--tw-pan-y,) var(--tw-pinch-zoom,);
+}
 .cwa\:touch-none {
   touch-action: none;
 }
@@ -1778,9 +1786,6 @@
 .cwa\:pl-3 {
   padding-left: calc(var(--cwa-spacing) * 3);
 }
-.cwa\:pl-4 {
-  padding-left: calc(var(--cwa-spacing) * 4);
-}
 .cwa\:pl-\[calc\(1px\+var\(--cwa-spacing-cta-inset\)\)\] {
   padding-left: calc(1px + var(--cwa-spacing-cta-inset));
 }
@@ -2220,6 +2225,11 @@
 }
 .cwa\:transition-\[translate\,width\] {
   transition-property: translate,width;
+  transition-timing-function: var(--tw-ease, var(--cwa-default-transition-timing-function));
+  transition-duration: var(--tw-duration, var(--cwa-default-transition-duration));
+}
+.cwa\:transition-\[translate\] {
+  transition-property: translate;
   transition-timing-function: var(--tw-ease, var(--cwa-default-transition-timing-function));
   transition-duration: var(--tw-duration, var(--cwa-default-transition-duration));
 }
@@ -3855,6 +3865,18 @@
   syntax: "*";
   inherits: false;
 }
+@property --tw-pan-x {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-pan-y {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-pinch-zoom {
+  syntax: "*";
+  inherits: false;
+}
 @property --tw-space-x-reverse {
   syntax: "*";
   inherits: false;
@@ -4104,6 +4126,9 @@
       --tw-rotate-z: initial;
       --tw-skew-x: initial;
       --tw-skew-y: initial;
+      --tw-pan-x: initial;
+      --tw-pan-y: initial;
+      --tw-pinch-zoom: initial;
       --tw-space-x-reverse: 0;
       --tw-border-style: solid;
       --tw-leading: initial;

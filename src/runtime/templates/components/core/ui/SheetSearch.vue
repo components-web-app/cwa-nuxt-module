@@ -20,6 +20,7 @@ const query = defineModel<string>('query', { required: true })
 const emit = defineEmits<{
   'update:modelValue': [value: unknown]
   'keydown': [event: KeyboardEvent]
+  'apply': []
 }>()
 
 defineSlots<{
@@ -41,11 +42,12 @@ defineSlots<{
     <BottomSheet
       v-model:open="open"
       :label="label"
-      close-label="Done"
+      actions
       search
       :panel-id="panelId"
       :return-to="returnTo"
       :test-id="testId"
+      @apply="emit('apply')"
     >
       <template #header>
         <div class="cwa:shrink-0 cwa:px-4 cwa:py-3">

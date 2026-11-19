@@ -205,7 +205,7 @@ describe.each(sheetCases)('$name presence with its phone sheet open (#461)', (it
     expect(view.focus).toHaveBeenCalled()
     expect(view.blur).not.toHaveBeenCalled()
 
-    sheet.querySelector<HTMLElement>('[data-testid$="-sheet-close"]')!.click()
+    sheet.querySelector<HTMLElement>('[data-testid$="-sheet-discard"]')!.click()
     await flushPromises()
     expect(wrapper.element.contains(document.activeElement)).toBe(true)
     expect(view.blur).not.toHaveBeenCalled()

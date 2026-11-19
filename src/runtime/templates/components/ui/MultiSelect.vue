@@ -80,15 +80,18 @@ function onAnchorMousedown(event: MouseEvent) {
   opensAsSheet() && event.preventDefault()
 }
 
-const chosen = computed(() => value.value ?? [])
+const saved = computed(() => value.value ?? [])
+const staged = ref<string[]>([])
+const chosen = computed(() => sheetOpen.value ? staged.value : saved.value)
 const labelOf = (val: string) => props.options.find(option => option.value === val)?.label ?? val
-const firstChosen = computed(() => chosen.value[0] === undefined ? undefined : labelOf(chosen.value[0]))
-const more = computed(() => Math.max(0, chosen.value.length - 1))
+const firstChosen = computed(() => saved.value[0] === undefined ? undefined : labelOf(saved.value[0]))
+const more = computed(() => Math.max(0, saved.value.length - 1))
 
 const order = ref<string[]>([])
 watch(() => open.value || sheetOpen.value, (isOpen) => {
   if (isOpen) {
-    order.value = [...chosen.value]
+    staged.value = [...saved.value]
+    order.value = [...saved.value]
     return
   }
   search.value = ''
@@ -106,7 +109,18 @@ const listed = computed(() => {
 })
 
 function write(next: string[]) {
+  if (sheetOpen.value) {
+    staged.value = next
+    return
+  }
   value.value = next
+}
+
+function apply() {
+  const next = staged.value
+  if (next.length !== saved.value.length || next.some((item, index) => item !== saved.value[index])) {
+    value.value = next
+  }
 }
 
 const countText = (count: number) => count ? `${count} selected` : 'None selected'
@@ -158,7 +172,7 @@ const inactive = computed(() => props.disabled || unbound)
     <template #default="{ describedBy, tone, busy }">
       <ComboboxRoot
         :open="open"
-        :model-value="chosen"
+        :model-value="saved"
         multiple
         ignore-filter
         open-on-click
@@ -185,7 +199,7 @@ const inactive = computed(() => props.disabled || unbound)
               :aria-label="`Remove ${firstChosen}`"
               :disabled="inactive"
               class="cwa:grid cwa:h-7 cwa:w-6 cwa:shrink-0 cwa:cursor-pointer cwa:place-items-center cwa:hover:bg-field-hover cwa:pointer-coarse:size-hit"
-              @click.stop="remove(chosen[0]!)"
+              @click.stop="remove(saved[0]!)"
               @pointerdown.stop
             >
               <XMarkIcon class="cwa:size-3" />
@@ -198,18 +212,18 @@ const inactive = computed(() => props.disabled || unbound)
             data-testid="multi-more"
           >+{{ more }}</span>
           <span
-            v-if="chosen.length"
+            v-if="saved.length"
             :id="`${id}-count`"
             aria-hidden="true"
             data-testid="multi-count"
             class="cwa:shrink-0 cwa:pl-3 cwa:text-control cwa:whitespace-nowrap cwa:text-fg-secondary"
             :class="{ 'cwa:sr-only': !open }"
-          >{{ countText(chosen.length) }}</span>
+          >{{ countText(saved.length) }}</span>
           <ComboboxInput
             :id="id"
             v-model="search"
             :placeholder="open ? searchPlaceholder : (firstChosen ? '' : placeholder)"
-            :aria-describedby="[chosen.length ? `${id}-count` : '', describedBy ?? ''].filter(Boolean).join(' ') || undefined"
+            :aria-describedby="[saved.length ? `${id}-count` : '', describedBy ?? ''].filter(Boolean).join(' ') || undefined"
             :aria-invalid="tone === 'danger' ? 'true' : undefined"
             :aria-busy="busy ? 'true' : undefined"
             data-testid="multi-input"
@@ -276,6 +290,7 @@ const inactive = computed(() => props.disabled || unbound)
         test-id="multi-sheet"
         @update:model-value="choose"
         @keydown="onKeydown"
+        @apply="apply"
       >
         <template #chips>
           <div

@@ -2,7 +2,7 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { axe } from '../../../../../test/utils/axe'
-import { onPhone } from '../../../../../test/utils/sheet-media'
+import { drag, onPhone } from '../../../../../test/utils/sheet-media'
 import MultiSelect from './MultiSelect.vue'
 import { announceKey } from '../core/ui/field-keys'
 
@@ -41,6 +41,14 @@ function option(root: HTMLElement, label: string) {
   return [...root.querySelectorAll<HTMLElement>('[role="option"]')].find(item => item.textContent?.includes(label))!
 }
 
+function part(name: string) {
+  return document.querySelector<HTMLElement>(`[data-testid="multi-sheet-${name}"]`)!
+}
+
+function chipLabels() {
+  return [...document.querySelectorAll('[data-testid="multi-sheet-chip"]')].map(chip => chip.textContent!.trim())
+}
+
 function search() {
   return document.querySelector<HTMLInputElement>('[data-testid="multi-sheet-input"]')!
 }
@@ -57,13 +65,14 @@ afterEach(() => {
 describe('CwaUiMultiSelect on a phone (#461)', () => {
   beforeEach(() => onPhone())
 
-  test('a tap opens a 60vh search sheet titled by its label, with Done, instead of the anchored menu, without focusing the field\'s own input', async () => {
+  test('a tap opens a 60vh search sheet titled by its label, with Apply and Discard changes, instead of the anchored menu, without focusing the field\'s own input', async () => {
     const { sheet, input, mousedown } = await tapOpen()
 
     expect(document.querySelector('[data-testid="multi-menu"]')).toBeNull()
     expect(sheet!.getAttribute('role')).toBe('dialog')
     expect(document.getElementById(sheet!.getAttribute('aria-labelledby')!)!.textContent!.trim()).toBe('Style')
-    expect(sheet!.querySelector('[data-testid="multi-sheet-close"]')!.textContent!.trim()).toBe('Done')
+    expect(part('apply').getAttribute('aria-label')).toBe('Apply')
+    expect(part('discard').getAttribute('aria-label')).toBe('Discard changes')
     expect(sheet!.className).toContain('cwa:h-[60vh]')
     expect(mousedown.defaultPrevented).toBe(true)
     expect(document.activeElement).not.toBe(input)
@@ -106,27 +115,34 @@ describe('CwaUiMultiSelect on a phone (#461)', () => {
     expect(option(sheet!, 'Wide').className).toContain('cwa:min-h-hit')
   })
 
-  test('shows the chosen options as a strip of chips under the search, each removable', async () => {
+  test('shows the chosen options as a strip of chips under the search, each removable, staging the removal rather than saving it', async () => {
     const { wrapper, sheet } = await tapOpen()
     const chips = sheet!.querySelector<HTMLElement>('[data-testid="multi-sheet-chips"]')!
 
-    expect([...chips.querySelectorAll('[data-testid="multi-sheet-chip"]')].map(chip => chip.textContent!.trim())).toEqual(['Extra padding', 'Dark background'])
+    expect(chipLabels()).toEqual(['Extra padding', 'Dark background'])
     chips.querySelector<HTMLElement>('button[aria-label="Remove Dark background"]')!.click()
     await flushPromises()
-    expect(wrapper.emitted('update:modelValue')!.at(-1)).toEqual([['padding']])
+    expect(chipLabels()).toEqual(['Extra padding'])
+    expect(option(sheet!, 'Dark background').getAttribute('aria-selected')).toBe('false')
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined()
   })
 
-  test('picking an option adds it and keeps the sheet open, so the next pick is one tap away', async () => {
+  test('picking an option stages it and keeps the sheet open, so the next pick is one tap away; nothing is saved yet', async () => {
     const { wrapper, sheet } = await tapOpen()
 
     option(sheet!, 'Wide').click()
     await flushPromises()
 
-    expect(wrapper.emitted('update:modelValue')!.at(-1)).toEqual([['padding', 'dark', 'wide']])
+    expect(chipLabels()).toEqual(['Extra padding', 'Dark background', 'Wide'])
+    expect(option(sheet!, 'Wide').getAttribute('aria-selected')).toBe('true')
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+    expect(wrapper.get('[data-testid="multi-count"]').text()).toBe('2 selected')
+    expect(wrapper.get('[data-testid="multi-chip"]').text()).toBe('Extra padding')
+    expect(wrapper.get('[data-testid="multi-more"]').text()).toBe('+1')
     expect(document.querySelector('[data-testid="multi-sheet"]')).not.toBeNull()
   })
 
-  test('the arrow keys highlight an option from the search and Enter toggles it', async () => {
+  test('the arrow keys highlight an option from the search and Enter toggles it, staged', async () => {
     const { wrapper } = await tapOpen()
 
     await key(search(), 'ArrowDown')
@@ -134,20 +150,79 @@ describe('CwaUiMultiSelect on a phone (#461)', () => {
     expect(highlighted.textContent).toContain('Dark background')
     await key(search(), 'Enter')
 
-    expect(wrapper.emitted('update:modelValue')!.at(-1)).toEqual([['padding']])
+    expect(chipLabels()).toEqual(['Extra padding'])
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined()
   })
 
-  test('Backspace in an empty search marks the last chip, and a second removes it', async () => {
+  test('Backspace in an empty search marks the last chip, and a second removes it, staged', async () => {
     const { wrapper } = await tapOpen()
 
     await key(search(), 'Backspace')
     expect(document.querySelector('[data-testid="multi-sheet-chip"]:last-child')!.className).toContain('cwa:outline-accent-fg')
     await key(search(), 'Backspace')
-    expect(wrapper.emitted('update:modelValue')!.at(-1)).toEqual([['padding']])
+    expect(chipLabels()).toEqual(['Extra padding'])
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined()
   })
 
   test.each([
-    ['Done', () => document.querySelector<HTMLElement>('[data-testid="multi-sheet-close"]')!.click()],
+    ['Apply', () => part('apply').click()],
+    ['a swipe down', async () => {
+      drag(part('grip'), 100, [160, 220, 300])
+      await new Promise(resolve => setTimeout(resolve, 260))
+    }],
+  ])('%s saves what was staged, once, and closes', async (_, act) => {
+    const { wrapper, sheet } = await tapOpen()
+    option(sheet!, 'Wide').click()
+    await flushPromises()
+    document.querySelector<HTMLElement>('button[aria-label="Remove Extra padding"]')!.click()
+    await flushPromises()
+
+    await act()
+    await flushPromises()
+
+    expect(wrapper.emitted('update:modelValue')).toEqual([[['dark', 'wide']]])
+    expect(document.querySelector('[data-testid="multi-sheet"]')).toBeNull()
+  })
+
+  test.each([
+    ['Discard changes', () => part('discard').click()],
+    ['Escape', () => key(search(), 'Escape')],
+    ['a tap on the scrim', async () => {
+      await new Promise(resolve => setTimeout(resolve))
+      part('scrim').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+    }],
+  ])('%s throws away what was staged and closes, and the next opening starts from what is saved', async (_, act) => {
+    const { wrapper, sheet, input } = await tapOpen()
+    option(sheet!, 'Wide').click()
+    await flushPromises()
+
+    await act()
+    await flushPromises()
+
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+    expect(document.querySelector('[data-testid="multi-sheet"]')).toBeNull()
+    input.click()
+    await flushPromises()
+    expect(chipLabels()).toEqual(['Extra padding', 'Dark background'])
+  })
+
+  test('Apply with nothing changed saves nothing', async () => {
+    const { wrapper, sheet } = await tapOpen()
+    option(sheet!, 'Wide').click()
+    await flushPromises()
+    option(sheet!, 'Wide').click()
+    await flushPromises()
+
+    part('apply').click()
+    await flushPromises()
+
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+    expect(document.querySelector('[data-testid="multi-sheet"]')).toBeNull()
+  })
+
+  test.each([
+    ['Apply', () => part('apply').click()],
+    ['Discard changes', () => part('discard').click()],
     ['Escape', () => key(search(), 'Escape')],
     ['a tap on the scrim', async () => {
       await new Promise(resolve => setTimeout(resolve))

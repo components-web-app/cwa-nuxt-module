@@ -5,6 +5,7 @@ import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { AlertDialogContent, AlertDialogDescription, AlertDialogPortal, AlertDialogRoot, AlertDialogTitle } from 'reka-ui'
 import { axe } from '../../../../../../test/utils/axe'
 import { drawsFocusRing } from '../../../../../../test/utils/focus-ring'
+import { drag } from '../../../../../../test/utils/sheet-media'
 import { placeResourceStack } from './resource-stack'
 import { announceKey } from './field-keys'
 import ResourceStack from './ResourceStack.vue'
@@ -638,13 +639,18 @@ describe('ResourceStack (#461)', () => {
       vi.unstubAllGlobals()
     })
 
-    test('below sm it opens as a modal bottom sheet labelled by its Select a resource header, with Close, holding the same tree', async () => {
+    async function swipe() {
+      drag(document.querySelector('[data-testid="resource-stack-grip"]')!, 100, [160, 220, 300])
+      await new Promise(resolve => setTimeout(resolve, 260))
+    }
+
+    test('below sm it opens as a modal bottom sheet labelled by its Select a resource header, with no Close of its own, holding the same tree', async () => {
       const { panel, tree } = await openStack()
 
       expect(panel.getAttribute('role')).toBe('dialog')
       expect(panel.getAttribute('aria-modal')).toBe('true')
       expect(document.getElementById(panel.getAttribute('aria-labelledby')!)!.textContent).toBe('Select a resource')
-      expect([...panel.querySelectorAll('button')].map(button => button.textContent?.trim())).toContain('Close')
+      expect([...panel.querySelectorAll('button')].filter(button => !tree.contains(button))).toEqual([])
       expect(tree.getAttribute('role')).toBe('tree')
       expect(items(panel).map(level => level.getAttribute('aria-label'))).toEqual(['Left column group', 'Component position', 'Rich text'])
       expect(document.activeElement).toBe(tree)
@@ -661,7 +667,7 @@ describe('ResourceStack (#461)', () => {
       expect(document.querySelector('[data-testid="resource-stack-scrim"]')).not.toBeNull()
     })
 
-    test('Tab is left to move between the tree, the overflow button and Close, and does not close it', async () => {
+    test('Tab is left to move between the tree and the overflow button, and does not close it', async () => {
       const { panel, tree, onClose } = await openStack({ levels: levels(7) })
 
       expect(panel.querySelector('[data-testid="resource-stack-more"]')!.getAttribute('tabindex')).not.toBe('-1')
@@ -674,10 +680,10 @@ describe('ResourceStack (#461)', () => {
       expect(document.querySelector('[data-testid="resource-stack"]')).not.toBeNull()
     })
 
-    test('Close, and Escape, close it and return focus to the opener', async () => {
-      const { panel, onClose, returnTo } = await openStack()
+    test('a swipe down, and Escape, close it and return focus to the opener', async () => {
+      const { onClose, returnTo } = await openStack()
 
-      ;[...panel.querySelectorAll('button')].find(button => button.textContent?.trim() === 'Close')!.click()
+      await swipe()
       await flushPromises()
       expect(onClose).toHaveBeenCalledTimes(1)
       expect(document.activeElement).toBe(returnTo)
@@ -695,7 +701,7 @@ describe('ResourceStack (#461)', () => {
 
       expect(container.hasAttribute('inert')).toBe(true)
       expect(container.contains(panel)).toBe(false)
-      ;[...panel.querySelectorAll('button')].find(button => button.textContent?.trim() === 'Close')!.click()
+      await swipe()
       await flushPromises()
       expect(container.hasAttribute('inert')).toBe(false)
     })
