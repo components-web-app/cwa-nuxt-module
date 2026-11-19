@@ -3,7 +3,7 @@ import { POPOVER_GAP } from './popover-gap'
 import { onMounted } from 'vue'
 import { PopoverAnchor, PopoverArrow, PopoverContent, PopoverPortal, PopoverRoot } from 'reka-ui'
 import { useAnnounce } from './field-context'
-import { infoArrow, infoPanel } from './field-looks'
+import { infoArrow, infoPopover } from './field-looks'
 
 const { anchor, label, text } = defineProps<{
   anchor: HTMLElement
@@ -30,7 +30,7 @@ onMounted(() => announce(text))
         :collision-padding="8"
         :aria-label="label"
         data-testid="button-reason"
-        :class="['cwa:z-context cwa:w-max cwa:max-w-[min(20rem,calc(100vw-1rem))] cwa:p-popover cwa:text-control cwa:outline-none', infoPanel]"
+        :class="infoPopover"
         @open-auto-focus.prevent
         @close-auto-focus.prevent
       >

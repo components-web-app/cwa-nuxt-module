@@ -2,8 +2,9 @@
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import { computed, defineComponent, reactive } from 'vue'
 import { flushPromises, mount } from '@vue/test-utils'
-import { drawsOpenLine, drawsOpenState, failingInk } from '../../../../../../../../test/utils/kit-css'
-import { menuPanel } from '#cwa/templates/components/core/ui/field-looks'
+import { drawsOpenLine, drawsOpenState, failingInk, shownColour, trimsToLetters } from '../../../../../../../../test/utils/kit-css'
+import { infoPopover } from '#cwa/templates/components/core/ui/field-looks'
+import InfoPopoverTitle from '#cwa/templates/components/core/ui/InfoPopoverTitle.vue'
 import { drawsFocusRing } from '../../../../../../../../test/utils/focus-ring'
 import { axe } from '../../../../../../../../test/utils/axe'
 import { createMemoryHistory, createRouter } from 'vue-router'
@@ -252,18 +253,50 @@ describe('ComponentUsageBadge', () => {
       wrapper.unmount()
     })
 
-    test('the list is the kit\'s menu popover, square and on the kit shadow, its links drawing the kit focus ring, with every line in a kit colour that reads on it in both themes', async () => {
-      const { wrapper, list } = await openList({ total: 4, locations: [
+    test('the list is the kit\'s information popover the ⓘ opens, with its panel, padding, type and caret, never the menu surface (#461)', async () => {
+      const { wrapper, list } = await openList({ total: 2, locations: [location({ renderedOn: [page('/_/pages/a', 'Apple', '/a')], renderedOnCount: 1 }), location({ renderedOn: [page('/_/pages/b', 'Banana', '/b')], renderedOnCount: 1 })] })
+      expect([...list!.classList]).toEqual(expect.arrayContaining(infoPopover.split(' ')))
+      expect([...list!.classList]).toEqual(expect.arrayContaining(['cwa:bg-surface-info', 'cwa:p-popover', 'cwa:text-control', 'cwa:leading-normal']))
+      expect(list!.classList).not.toContain('cwa:bg-surface-menu')
+      const caret = [...list!.querySelectorAll('svg')].at(-1)!
+      expect(caret.getAttribute('class')).toContain('cwa:fill-surface-info')
+      expect(await axe(document.body, { rules: { region: { enabled: false } } })).toHaveNoViolations()
+      wrapper.unmount()
+    })
+
+    test('its title is the information popover\'s own title row, the blue ⓘ and "Used in N places" with Close, and Close shuts the list (#461)', async () => {
+      const { wrapper, list } = await openList({ total: 3, locations: [location({ renderedOn: [page('/_/pages/a', 'Apple', '/a')], renderedOnCount: 1 }), location({ renderedOn: [page('/_/pages/b', 'Banana', '/b')], renderedOnCount: 1 })] })
+      expect(wrapper.findComponent(InfoPopoverTitle).exists()).toBe(true)
+      const glyph = list!.querySelector('[data-glyph="info"]')!
+      const title = glyph.nextElementSibling!
+      expect(title.textContent).toBe('Used in 3 places')
+      expect(shownColour(glyph)).toBe('accent-on-info')
+      expect(shownColour(title)).toBe('accent-on-info')
+      expect(trimsToLetters(title)).toBe(true)
+      expect(list!.getAttribute('aria-label')).toBe('Used in 3 places')
+      list!.querySelector<HTMLButtonElement>('button[aria-label="Close"]')!.click()
+      await flushPromises()
+      expect(document.body.querySelector('[data-testid="component-usage-list"]')).toBeNull()
+      wrapper.unmount()
+    })
+
+    test('its links and the page on screen are in the on-info colours, the counts muted on it, every line reading on the panel in both themes, and the links draw a focus ring (#461)', async () => {
+      const { wrapper, list } = await openList({ total: 9, locations: [
         location({ layout: { iri: '/_/layouts/l1', reference: 'primary' } }),
         location({ pageDataProperty: 'hero', renderedOn: [page('/_/pages/a', 'Apple', '/a'), page('/_/pages/b', 'Banana', null)], renderedOnCount: 5 }),
         location({ renderedOn: [page('/_/pages/c', 'Cherry', '/c')], renderedOnCount: 1 }),
       ] }, { displayPageIri: '/_/pages/c' })
-      expect([...list!.classList]).toEqual(expect.arrayContaining(menuPanel.split(' ')))
-      const drawn = [list!, ...list!.querySelectorAll('*')].flatMap(element => [...element.classList])
-      expect(drawn.filter(name => /(?:^|:)(?:rounded|shadow-(?:sm|md|lg|xl)|border|text-(?:light|stone-|white|sm))/.test(name))).toEqual([])
-      expect(failingInk(list!)).toEqual([])
       const link = list!.querySelector('a')!
+      expect(shownColour(link)).toBe('accent-on-info')
       expect(drawsFocusRing([...link.classList])).toBe(true)
+      const thisPage = [...list!.querySelectorAll('span')].find(span => span.textContent === 'This page')!
+      expect(shownColour(thisPage)).toBe('muted-on-info')
+      const more = [...list!.querySelectorAll('li')].find(item => item.textContent?.trim() === 'and 3 more')!
+      expect(shownColour(more)).toBe('muted-on-info')
+      expect(shownColour(list!.querySelector('[data-testid="component-usage-more"]')!)).toBe('muted-on-info')
+      const drawn = [list!, ...list!.querySelectorAll('*')].flatMap(element => [...element.classList])
+      expect(drawn.filter(name => /(?:^|:)(?:rounded|border|text-(?:fg|accent-fg|stone-|sm))/.test(name))).toEqual([])
+      expect(failingInk(list!)).toEqual([])
       wrapper.unmount()
     })
 

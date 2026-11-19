@@ -11,6 +11,7 @@ import type { CwaConfirmLine } from '#cwa/composables/cwa-confirm'
 import CwaUiBadge from '#cwa/templates/components/ui/Badge.vue'
 import CwaUiButton from '#cwa/templates/components/ui/Button.vue'
 import CwaUiInput from '#cwa/templates/components/ui/Input.vue'
+import CopyButton from '#cwa/templates/components/core/ui/CopyButton.vue'
 import CwaUiManagerRowDivider from '#cwa/templates/components/ui/ManagerRowDivider.vue'
 import CwaUiManagerTab from '#cwa/templates/components/ui/ManagerTab.vue'
 
@@ -200,6 +201,14 @@ const deleteLabel = computed(() => {
       width="lg"
       readonly
       data-testid="resource-id"
+    />
+    <CopyButton
+      v-if="!isAddingNew && iri"
+      :text="iri"
+      label="Copy ID"
+      copied="ID copied"
+      failed="The ID couldn't be copied"
+      data-testid="resource-id-copy"
     />
     <CwaUiBadge
       v-if="usage && usage.total > 1"

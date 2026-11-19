@@ -210,3 +210,45 @@ describe('PageResourceAdminModal in the real dialog, editing (#461)', () => {
     routeState.route.params = { iri: 'add' }
   })
 })
+
+describe('PageResourceAdminModal\'s Info tab (#461)', () => {
+  test.each([
+    ['page', 'Page', '/_/pages/one', { '@id': '/_/pages/one', '@type': 'Page', 'reference': 'One', 'isTemplate': false }],
+    ['page data', 'BlogArticleData', '/page_data/blog_article_datas/one', { '@id': '/page_data/blog_article_datas/one', '@type': 'BlogArticleData', 'title': 'One', 'page': '/_/pages/template' }],
+  ])('a %s\'s ID has Copy ID beside it, which copies the IRI for a bug report', async (_label, resourceType, iri, data) => {
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    vi.stubGlobal('navigator', { ...navigator, clipboard: { writeText } })
+    const store = reactive<Record<string, any>>({})
+    vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => ({
+      resources: {
+        displayPageIri: ref(undefined),
+        getResource: (path: string) => computed(() => store[path]),
+      },
+      resourcesManager: { errors: reactive([]), removeError: vi.fn(), addError: vi.fn() },
+      fetch: vi.fn(() => ({ response: Promise.resolve({ _data: { member: [] } }) })),
+      fetchResource: vi.fn(async ({ path }: { path: string }) => {
+        store[path] = { data: path === iri ? data : undefined, apiState: { status: 'SUCCESS' } }
+        return path === iri ? data : undefined
+      }),
+      getApiDocumentation: vi.fn(async () => ({ entrypoint: { blogArticleData: '/page_data/blog_article_datas' }, pageDataMetadata: { member: [] } })),
+      pagesConfig: {},
+      pageDataConfig: {},
+      admin: { toggleEdit: vi.fn() },
+    }) as unknown as ReturnType<typeof cwaComposable.useCwa>)
+    routeState.route.params = { iri }
+
+    mount(PageResourceAdminModal, { props: { resourceType }, attachTo: document.body })
+    await flushPromises()
+    tab('Info').click()
+    await flushPromises()
+
+    expect(document.querySelector('[data-testid="page-id"]')!.textContent!.trim()).toBe(iri)
+    const copy = document.querySelector<HTMLButtonElement>('[data-testid="resource-id-copy"]')!
+    expect(copy.getAttribute('aria-label')).toBe('Copy ID')
+    copy.click()
+    await flushPromises()
+    expect(writeText).toHaveBeenCalledWith(iri)
+    routeState.route.params = { iri: 'add' }
+    vi.unstubAllGlobals()
+  })
+})

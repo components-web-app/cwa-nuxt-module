@@ -1,14 +1,15 @@
 <script lang="ts" setup>
 import { POPOVER_GAP } from '#cwa/templates/components/core/ui/popover-gap'
-import { menuPanel } from '#cwa/templates/components/core/ui/field-looks'
+import { infoArrow, infoPopover } from '#cwa/templates/components/core/ui/field-looks'
 import { computed, ref, watch } from 'vue'
-import { PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger } from 'reka-ui'
+import { PopoverArrow, PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { navigateTo } from '#app/composables/router'
 import { useCwa } from '#cwa/composables/cwa'
 import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/resources/resource-utils'
 import { fetchComponentUsage } from '#cwa/admin/component-usage'
 import type { ComponentUsage, ComponentUsagePage } from '#cwa/admin/component-usage'
 import ShareGlyph from '#cwa/templates/components/core/ui/ShareGlyph.vue'
+import InfoPopoverTitle from '#cwa/templates/components/core/ui/InfoPopoverTitle.vue'
 
 const $cwa = useCwa()
 const currentIri = $cwa.admin.resourceStackManager.currentIri
@@ -85,10 +86,13 @@ async function goTo(routePath: string) {
           side="top"
           align="end"
           :side-offset="POPOVER_GAP"
+          :collision-padding="8"
+          :aria-label="`Used in ${usage.total} places`"
           data-testid="component-usage-list"
-          :class="[menuPanel, 'cwa:min-w-48']"
+          :class="infoPopover"
         >
-          <div class="cwa:max-h-72 cwa:overflow-y-auto cwa:p-3">
+          <InfoPopoverTitle :title="`Used in ${usage.total} places`" />
+          <div class="cwa:max-h-72 cwa:overflow-y-auto">
             <ul class="cwa:m-0 cwa:flex cwa:list-none cwa:flex-col cwa:gap-y-2 cwa:p-0">
               <li
                 v-for="(location, index) in usage.locations"
@@ -98,12 +102,12 @@ async function goTo(routePath: string) {
                 <template v-if="location.layout">
                   <span>Layout: {{ location.layout.reference }}</span>
                   {{ ' ' }}
-                  <span class="cwa:text-fg-muted">on every page using it</span>
+                  <span class="cwa:text-muted-on-info">on every page using it</span>
                 </template>
                 <template v-else>
                   <span
                     v-if="location.pageDataProperty"
-                    class="cwa:block cwa:text-fg-muted"
+                    class="cwa:block cwa:text-muted-on-info"
                   >Template default for {{ location.pageDataProperty }}</span>
                   <ul class="cwa:m-0 cwa:list-none cwa:p-0">
                     <li
@@ -113,19 +117,19 @@ async function goTo(routePath: string) {
                       <template v-if="isThisPage(page)">
                         <span>{{ pageName(page) }}</span>
                         {{ ' ' }}
-                        <span class="cwa:text-accent-fg">This page</span>
+                        <span class="cwa:text-muted-on-info">This page</span>
                       </template>
                       <a
                         v-else-if="page.routePath"
                         :href="page.routePath"
-                        class="cwa:cursor-pointer cwa:text-fg cwa:underline cwa:underline-offset-2 cwa:outline-1 cwa:outline-transparent cwa:hover:text-accent-fg cwa:focus-visible:outline-2 cwa:focus-visible:outline-accent-fg"
+                        class="cwa:cursor-pointer cwa:text-accent-on-info cwa:underline cwa:underline-offset-2 cwa:outline-1 cwa:outline-transparent cwa:hover:text-white cwa:focus-visible:outline-2 cwa:focus-visible:outline-accent-on-info"
                         @click.prevent="goTo(page.routePath)"
                       >{{ pageName(page) }}</a>
                       <span v-else>{{ pageName(page) }}</span>
                     </li>
                     <li
                       v-if="location.renderedOnCount > location.renderedOn.length"
-                      class="cwa:text-fg-muted"
+                      class="cwa:text-muted-on-info"
                     >
                       and {{ location.renderedOnCount - location.renderedOn.length }} more
                     </li>
@@ -136,11 +140,21 @@ async function goTo(routePath: string) {
             <p
               v-if="morePlaces > 0"
               data-testid="component-usage-more"
-              class="cwa:mt-2 cwa:mb-0 cwa:text-fg-muted"
+              class="cwa:mt-2 cwa:mb-0 cwa:text-muted-on-info"
             >
               and {{ morePlaces }} more places
             </p>
           </div>
+          <PopoverArrow
+            :width="14"
+            :height="7"
+            :class="infoArrow"
+          >
+            <path
+              d="M0 0L6 6L12 0"
+              vector-effect="non-scaling-stroke"
+            />
+          </PopoverArrow>
         </PopoverContent>
       </PopoverPortal>
     </PopoverRoot>

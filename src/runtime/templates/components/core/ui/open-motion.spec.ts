@@ -3,7 +3,7 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, test } from 'vitest'
-import { infoPanel, menuPanel } from './field-looks'
+import { infoPanel, infoPopover, menuPanel } from './field-looks'
 import { dialogOpen, overlayOpen, popoverOpen } from './open-motion'
 
 const css = readFileSync(fileURLToPath(new URL('../../../assets/cwa.css', import.meta.url)), 'utf8')
@@ -53,6 +53,7 @@ describe('surfaces that open with the motion (#461)', () => {
     expect([popoverOpen, dialogOpen, overlayOpen]).toEqual(['cwa:pop-in', 'cwa:dialog-in', 'cwa:overlay-in'])
     expect(menuPanel.split(' ')).toContain(popoverOpen)
     expect(infoPanel.split(' ')).toContain(popoverOpen)
+    expect(infoPopover.split(' ')).toContain(popoverOpen)
   })
 
   test('no menu keeps the old fade alone', () => {
@@ -61,7 +62,7 @@ describe('surfaces that open with the motion (#461)', () => {
   })
 
   test('every popover, menu and select in the admin binds the shared popover motion', () => {
-    const bare = floatingSurfaces.filter(surface => !/\b(popoverOpen|menuPanel|infoPanel)\b/.test(surface.tag)).map(surface => `${surface.file} ${surface.name}`)
+    const bare = floatingSurfaces.filter(surface => !/\b(popoverOpen|menuPanel|infoPanel|infoPopover)\b/.test(surface.tag)).map(surface => `${surface.file} ${surface.name}`)
 
     expect(floatingSurfaces.length).toBe(17)
     expect(bare).toEqual([])

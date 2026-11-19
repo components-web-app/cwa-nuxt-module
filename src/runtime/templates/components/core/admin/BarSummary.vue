@@ -3,7 +3,7 @@ import { POPOVER_GAP } from '../ui/popover-gap'
 import { popoverOpen } from '../ui/open-motion'
 import { computed, onBeforeUnmount, onMounted, ref, useId, useTemplateRef, watch } from 'vue'
 import { PopoverAnchor, PopoverArrow, PopoverClose, PopoverContent, PopoverPortal, PopoverRoot } from 'reka-ui'
-import { infoArrow, infoClose, infoPanel } from '../ui/field-looks'
+import { infoArrow, infoClose, infoPopover } from '../ui/field-looks'
 import XMarkIcon from '../../ui/icon/XMarkIcon.vue'
 import Spinner from '../../ui/Spinner.vue'
 import StateGlyph from '../ui/StateGlyph.vue'
@@ -342,7 +342,7 @@ function reset() {
         :aria-label="status.short"
         :aria-describedby="status.about ? aboutId : undefined"
         data-testid="bar-summary-popover"
-        :class="['cwa:z-context cwa:w-max cwa:max-w-[min(20rem,calc(100vw-1rem))] cwa:p-popover cwa:text-control cwa:outline-none', infoPanel]"
+        :class="infoPopover"
         @pointer-down-outside="keepForOwnButton"
         @close-auto-focus="onCloseAutoFocus"
       >

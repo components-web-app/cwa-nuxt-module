@@ -1053,3 +1053,24 @@ test('kit: under reduced motion the tab indicator jumps to the picked tab withou
   expect(state.offLeft).toBeLessThanOrEqual(0.5)
   expect(state.offWidth).toBeLessThanOrEqual(0.5)
 })
+
+for (const width of widths) {
+  test(`kit at ${width}: a segmented control and each of its segments keep the same box whichever segment is pressed (#461)`, async ({ page }) => {
+    await openKit(page, width)
+    const control = page.locator('main [data-testid="segmented"]').filter({ has: page.getByRole('button', { name: 'URL', exact: true }) }).first()
+    await control.scrollIntoViewIfNeeded()
+    const boxes = () => control.evaluate(root => [root, ...root.querySelectorAll('button')].map((element) => {
+      const { left, top, width, height } = element.getBoundingClientRect()
+      return { left, top, width, height }
+    }))
+    const pressed = []
+    for (const name of ['URL', 'Page', 'URL']) {
+      await control.getByRole('button', { name, exact: true }).click()
+      await expect(control.getByRole('button', { name, exact: true })).toHaveAttribute('aria-pressed', 'true')
+      pressed.push(await boxes())
+    }
+    expect(pressed[0].length).toBe(3)
+    expect(pressed[1]).toEqual(pressed[0])
+    expect(pressed[2]).toEqual(pressed[0])
+  })
+}
