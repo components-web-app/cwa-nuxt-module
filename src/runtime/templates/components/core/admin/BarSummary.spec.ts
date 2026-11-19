@@ -1,12 +1,14 @@
 // @vitest-environment happy-dom
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { enableAutoUnmount, mount, flushPromises } from '@vue/test-utils'
-import { nextTick, reactive, ref } from 'vue'
+import { defineComponent, h, nextTick, reactive, ref } from 'vue'
 import { axe } from '../../../../../../test/utils/axe'
 import { drawsOpenState } from '../../../../../../test/utils/kit-css'
 import { drawsFocusRing } from '../../../../../../test/utils/focus-ring'
 import { announceKey } from '../ui/field-keys'
 import BarSummary from './BarSummary.vue'
+import Input from '../../ui/Input.vue'
+import { fakeFieldModel } from '../../../../../../playground/app/kit/fake-field-model'
 import { openBarStatus, registerInlineEditor } from '#cwa/admin/inline-editors'
 import { formatDateTime } from '#cwa/resources/date-time-input'
 import { NEW_RESOURCE_IRI } from '#cwa/storage/stores/resources/state'
@@ -317,6 +319,67 @@ describe('BarSummary (#459)', () => {
     await flushPromises()
     expect(popover()).toBeNull()
     expect(document.activeElement).toBe(summary().element)
+  })
+
+  test('Close on an in-page editor\'s error popover closes it with focus back on the status, and it stays closed', async () => {
+    const editor = inPageEditor('title', 'Title')
+    fieldStates.title = failed()
+    const { summary } = mountSummary()
+    await nextTick()
+    await summary().trigger('click')
+    await vi.advanceTimersByTimeAsync(50)
+
+    popover()!.querySelector<HTMLElement>('[aria-label="Close"]')!.click()
+    await vi.advanceTimersByTimeAsync(400)
+
+    expect(popover()).toBeNull()
+    expect(summary().attributes('aria-expanded')).toBe('false')
+    expect(document.activeElement).toBe(summary().element)
+    editor.unregister()
+  })
+
+  describe('beside a field in error, only one status popover shows (#461)', () => {
+    function mountWithField() {
+      const model = fakeFieldModel<string>('Mine', 'error')
+      const wrapper = mount(defineComponent({
+        setup: () => () => h('div', [h(Input, { label: 'Heading', model }), h(BarSummary, { message: '' })]),
+      }), { global: { provide: { [announceKey as symbol]: vi.fn() } }, attachTo: document.body })
+      const box = wrapper.get('input').element.closest<HTMLElement>('.cwa\\:relative:not(.cwa\\:group\\/field)')!
+      return { box, summary: () => wrapper.get('[data-testid="bar-summary"]') }
+    }
+
+    const fieldPopover = () => document.querySelector('[data-testid="field-status-popover"]')
+
+    test('hovering the field while the status explanation is open closes the explanation and shows the field\'s popover', async () => {
+      draft()
+      const { box, summary } = mountWithField()
+      await flushPromises()
+      await summary().trigger('click')
+      await flushPromises()
+      expect(popover()).not.toBeNull()
+
+      box.dispatchEvent(new MouseEvent('mouseenter'))
+      await vi.advanceTimersByTimeAsync(310)
+
+      expect(fieldPopover()).not.toBeNull()
+      expect(popover()).toBeNull()
+      expect(summary().attributes('aria-expanded')).toBe('false')
+    })
+
+    test('opening the status explanation while the field\'s popover is open hides the field\'s', async () => {
+      draft()
+      const { box, summary } = mountWithField()
+      await flushPromises()
+      box.dispatchEvent(new MouseEvent('mouseenter'))
+      await vi.advanceTimersByTimeAsync(310)
+      expect(fieldPopover()).not.toBeNull()
+
+      await summary().trigger('click')
+      await flushPromises()
+
+      expect(popover()).not.toBeNull()
+      expect(fieldPopover()).toBeNull()
+    })
   })
 
   test('saving shows a spinner, announces "Saving…" only after a second, then holds over a short gap and says all changes saved', async () => {

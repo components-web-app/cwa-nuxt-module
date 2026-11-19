@@ -96,6 +96,23 @@ describe('InfoPopover (#461)', () => {
     expect(popover()).toBeNull()
   })
 
+  test('Close on a clicked-open popover closes it with focus back on the ⓘ, and it stays closed', async () => {
+    const wrapper = mount(InfoPopover, { props: { label: 'Reference', text: 'Only admins see this.', textId: 'reference-info' }, attachTo: document.body })
+    const trigger = wrapper.get<HTMLButtonElement>('[data-testid="field-info"]')
+    trigger.element.focus()
+    await trigger.trigger('click')
+    await flushPromises()
+    expect(popover()).not.toBeNull()
+
+    popover()!.querySelector<HTMLElement>('[aria-label="Close"]')!.click()
+    await wait(20)
+    await flushPromises()
+
+    expect(popover()).toBeNull()
+    expect(trigger.attributes('aria-expanded')).toBe('false')
+    expect(document.activeElement).toBe(trigger.element)
+  })
+
   test('after a keyboard open, one Escape closes it, focus stays on the button and it does not reopen', async () => {
     const { trigger } = mountHover()
     trigger.element.focus()
