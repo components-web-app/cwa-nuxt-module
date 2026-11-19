@@ -2,7 +2,7 @@
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import { computed, defineComponent, reactive } from 'vue'
 import { flushPromises, mount } from '@vue/test-utils'
-import { drawsOpenState } from '../../../../../../../../test/utils/kit-css'
+import { drawsOpenLine, drawsOpenState } from '../../../../../../../../test/utils/kit-css'
 import { drawsFocusRing } from '../../../../../../../../test/utils/focus-ring'
 import { axe } from '../../../../../../../../test/utils/axe'
 import { createMemoryHistory, createRouter } from 'vue-router'
@@ -225,10 +225,11 @@ describe('ComponentUsageBadge', () => {
       wrapper.unmount()
     })
 
-    test('the badge shows itself selected while its list is open, and not once it closes, with no axe violations open', async () => {
+    test('the badge, a labelled trigger, shows its list open with its fill and the line under its label, and not once it closes, with no axe violations open', async () => {
       const { wrapper } = await openList({ total: 2, locations: [location({ renderedOn: [page('/_/pages/a', 'Home', '/')], renderedOnCount: 1 }), location({ renderedOn: [page('/_/pages/b', 'About', '/about')], renderedOnCount: 1 })] })
       const badge = wrapper.get('[data-testid="component-usage-badge"]')
       expect(drawsOpenState(badge.element)).toBe(true)
+      expect(drawsOpenLine(badge.element)).toBe(true)
       expect(await axe(document.body, { rules: { region: { enabled: false } } })).toHaveNoViolations()
 
       await badge.trigger('click')

@@ -31,6 +31,7 @@ export const kitColourTokens = [
   { name: 'fg-muted', use: 'Labels in the bar, helper text', dark: '#a8a29e', light: '#57534e' },
   { name: 'accent', use: 'Primary button fill, selected tab, toggle on', dark: '#2563eb', light: '#2563eb' },
   { name: 'accent-hover', use: 'Primary button hover', dark: '#1d4ed8', light: '#1d4ed8' },
+  { name: 'accent-open', use: 'Primary button while its menu is open', dark: '#1e40af', light: '#1e40af' },
   { name: 'accent-fg', use: 'Focus ring, links, accent text', dark: '#60a5fa', light: '#1d4ed8' },
   { name: 'accent-tint', use: 'Accent badge fill', dark: { mix: 'accent', percent: 28 }, light: { mix: 'accent', percent: 12 } },
   { name: 'success', use: 'Saved glyph', dark: '#9cdd05', light: '#3f6212' },
@@ -42,6 +43,7 @@ export const kitColourTokens = [
   { name: 'danger', use: 'Error glyph', dark: '#fca5a5', light: '#b91c1c' },
   { name: 'danger-fill', use: 'Destructive button fill', dark: '#dc2626', light: '#dc2626' },
   { name: 'danger-fill-hover', use: 'Destructive button hover', dark: '#b91c1c', light: '#b91c1c' },
+  { name: 'danger-fill-open', use: 'Destructive button while its menu is open', dark: '#991b1b', light: '#991b1b' },
   { name: 'danger-fg', use: 'Error text', dark: '#fca5a5', light: '#b91c1c' },
   { name: 'highlight', use: 'Reorder, clone and selection', dark: '#e30a6c', light: '#e30a6c' },
 ] as const satisfies readonly { name: string, use: string, dark: KitTokenValue, light: KitTokenValue }[]
@@ -86,10 +88,11 @@ const badgeTones: BadgeTone[] = ['neutral', 'accent', 'success', 'warning', 'dan
 
 function buttonPairs(): KitContrastPair[] {
   return buttonVariants.flatMap(variant => buttonTones.flatMap((tone) => {
-    const { rest, hover } = buttonLookColours(variant, tone)
+    const { rest, hover, open } = buttonLookColours(variant, tone)
     return [
       { fg: asKitColour(rest.fg), bg: asKitColour(rest.bg), min: 4.5 as const, use: `${capitalise(variant)} ${tone} button` },
       { fg: asKitColour(hover.fg), bg: asKitColour(hover.bg), min: 4.5 as const, use: `${capitalise(variant)} ${tone} button on hover` },
+      { fg: asKitColour(open.fg), bg: asKitColour(open.bg), min: 4.5 as const, use: `${capitalise(variant)} ${tone} button while its menu is open` },
     ]
   }))
 }
@@ -111,7 +114,7 @@ export const kitContrastPairs: KitContrastPair[] = [
   { fg: 'fg', bg: 'menu-highlight', min: 4.5, use: 'Highlighted option' },
   { fg: 'fg', bg: 'field', min: 4.5, use: 'Field value, neutral badge' },
   { fg: 'fg', bg: 'field-hover', min: 4.5, use: 'Field value on hover' },
-  { fg: 'fg', bg: 'step-hover', min: 3, use: 'A nested control\'s glyph and its open mark, hovered or open (the date picker\'s calendar button)' },
+  { fg: 'fg', bg: 'step-hover', min: 3, use: 'A nested control\'s glyph, hovered' },
   { fg: 'muted-on-field', bg: 'field', min: 4.5, use: 'Placeholder' },
   { fg: 'muted-on-field', bg: 'field-hover', min: 4.5, use: 'Placeholder on hover' },
   { fg: 'fg-disabled', bg: 'field', min: 3, use: 'Disabled value and placeholder' },
@@ -136,6 +139,11 @@ export const kitContrastPairs: KitContrastPair[] = [
   { fg: 'toggle-off', bg: 'surface', min: 3, use: 'Toggle track, off' },
   { fg: 'tree-line', bg: 'surface', min: 3, use: 'Tree line' },
   { fg: 'accent-fg', bg: 'surface-menu', min: 3, use: 'Selected level\'s border in the resource stack' },
+  { fg: 'accent-fg', bg: 'surface', min: 3, use: 'An icon-only trigger\'s glyph while its popover is open' },
+  { fg: 'accent-fg', bg: 'surface-menu', min: 3, use: 'An icon-only trigger\'s glyph in a menu or popover while its popover is open' },
+  { fg: 'accent-fg', bg: 'menu-highlight', min: 3, use: 'A menu ⓘ\'s glyph while its reasons are open and it is highlighted' },
+  { fg: 'accent-fg', bg: 'field', min: 3, use: 'A glyph in a field while its popover is open (the date picker\'s calendar button)' },
+  { fg: 'fg-muted', bg: 'accent-tint', min: 4.5, use: 'Presence "+N elsewhere" while its list is open' },
   { fg: 'fg', bg: { tint: 'accent-fg', percent: 10 }, min: 4.5, use: 'Info alert title and route recommendation' },
   { fg: 'fg-secondary', bg: { tint: 'accent-fg', percent: 10 }, min: 4.5, use: 'Info alert text' },
   { fg: 'fg-muted', bg: { tint: 'accent-fg', percent: 10 }, min: 4.5, use: 'Route recommendation\'s source line' },

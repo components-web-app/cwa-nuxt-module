@@ -2,7 +2,7 @@
 import { afterEach, describe, expect, test } from 'vitest'
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { drawsFocusRing } from '../../../../../../test/utils/focus-ring'
-import { drawsOpenState, trimsToLetters } from '../../../../../../test/utils/kit-css'
+import { drawsOpenLine, drawsOpenState, fillsOnHover, shownColour, shownFill, trimsToLetters } from '../../../../../../test/utils/kit-css'
 import { axe } from '../../../../../../test/utils/axe'
 import InfoPopover from './InfoPopover.vue'
 
@@ -14,20 +14,28 @@ describe('InfoPopover (#461)', () => {
 
     expect(drawsFocusRing(wrapper.get('[data-testid="field-info"]').classes())).toBe(true)
   })
-  test('the info button shows itself selected while its popover is open, with its hover fill and a 2px line in its text colour, and not once it closes; the focus ring stays its own', async () => {
+  test('the info button shows its popover open by turning its glyph the accent blue, set from aria-expanded, with no fill behind it and no line under it, and goes back to muted once it closes; hovering changes only the glyph\'s colour, and the focus ring stays its own', async () => {
     const wrapper = mount(InfoPopover, { props: { label: 'Reference', text: 'Only admins see this.', textId: 'reference-info' }, attachTo: document.body })
     const trigger = wrapper.get('[data-testid="field-info"]')
+    const glyph = trigger.get('svg').element
     expect(drawsOpenState(trigger.element)).toBe(false)
+    expect(shownColour(glyph)).toBe('fg-muted')
+    expect(fillsOnHover(trigger.element)).toBe(false)
+    expect(trigger.classes()).toContain('cwa:hover:text-fg')
 
     await trigger.trigger('click')
     await flushPromises()
     expect(drawsOpenState(trigger.element)).toBe(true)
+    expect(drawsOpenLine(trigger.element)).toBe(false)
+    expect(shownColour(glyph)).toBe('accent-fg')
+    expect(shownFill(trigger.element)).toBeUndefined()
     expect(drawsFocusRing(trigger.classes())).toBe(true)
     expect(await axe(document.body, { rules: { region: { enabled: false } } })).toHaveNoViolations()
 
     document.querySelector<HTMLElement>('[data-testid="field-info-popover"] button[aria-label="Close"]')!.click()
     await flushPromises()
     expect(drawsOpenState(trigger.element)).toBe(false)
+    expect(shownColour(glyph)).toBe('fg-muted')
   })
 
   test('the popover\'s title row and Close sit inside its padding, never pulled into the corner with negative margins, the row only as tall as its letters and the text trimmed to its capitals and baseline, so the space above the title matches the space below the last line', async () => {

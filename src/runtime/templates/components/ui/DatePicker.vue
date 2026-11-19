@@ -137,7 +137,7 @@ function onCalendarUpdate(date?: DateValue) {
             aria-label="Choose a date"
             :title="`Times are in ${timeZone}`"
             :disabled="inactive"
-            class="cwa:flex cwa:h-control cwa:w-9 cwa:cursor-pointer cwa:items-center cwa:justify-center cwa:text-fg-muted cwa:hover:bg-step-hover cwa:hover:text-fg cwa:aria-expanded:bg-step-hover cwa:aria-expanded:text-fg cwa:aria-expanded:shadow-[inset_0_-2px_0_currentColor] cwa:focus-visible:outline-2 cwa:focus-visible:-outline-offset-2 cwa:focus-visible:outline-accent-fg cwa:disabled:cursor-not-allowed cwa:pointer-coarse:h-hit"
+            class="cwa:flex cwa:h-control cwa:w-9 cwa:cursor-pointer cwa:items-center cwa:justify-center cwa:text-fg-muted cwa:hover:text-fg cwa:aria-expanded:text-accent-fg cwa:focus-visible:outline-2 cwa:focus-visible:-outline-offset-2 cwa:focus-visible:outline-accent-fg cwa:disabled:cursor-not-allowed cwa:pointer-coarse:h-hit"
           >
             <svg
               class="cwa:size-4"

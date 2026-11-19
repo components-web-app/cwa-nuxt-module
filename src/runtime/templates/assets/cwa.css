@@ -87,6 +87,7 @@
     --cwa-color-fg-muted: #a8a29e;
     --cwa-color-accent: #2563eb;
     --cwa-color-accent-hover: #1d4ed8;
+    --cwa-color-accent-open: #1e40af;
     --cwa-color-accent-fg: #60a5fa;
     --cwa-color-accent-tint: var(--cwa-color-accent);
     @supports (color: color-mix(in lab, red, red)) {
@@ -98,6 +99,7 @@
     --cwa-color-danger: #fca5a5;
     --cwa-color-danger-fill: #dc2626;
     --cwa-color-danger-fill-hover: #b91c1c;
+    --cwa-color-danger-fill-open: #991b1b;
     --cwa-color-danger-fg: #fca5a5;
     --cwa-shadow-popover: 0 8px 24px rgb(0 0 0 / 0.28);
     --cwa-duration-fast: 120ms;
@@ -2518,14 +2520,17 @@
 .cwa\:has-\[\[data-step\]\:hover\]\:bg-field-warning:has(:is([data-step]:hover)) {
   background-color: var(--cwa-color-field-warning);
 }
-.cwa\:aria-expanded\:bg-accent-hover[aria-expanded="true"] {
-  background-color: var(--cwa-color-accent-hover);
+.cwa\:aria-expanded\:bg-accent-open[aria-expanded="true"] {
+  background-color: var(--cwa-color-accent-open);
+}
+.cwa\:aria-expanded\:bg-accent-tint[aria-expanded="true"] {
+  background-color: var(--cwa-color-accent-tint);
 }
 .cwa\:aria-expanded\:bg-button[aria-expanded="true"] {
   background-color: var(--cwa-color-button);
 }
-.cwa\:aria-expanded\:bg-danger-fill-hover[aria-expanded="true"] {
-  background-color: var(--cwa-color-danger-fill-hover);
+.cwa\:aria-expanded\:bg-danger-fill-open[aria-expanded="true"] {
+  background-color: var(--cwa-color-danger-fill-open);
 }
 .cwa\:aria-expanded\:bg-field-danger[aria-expanded="true"] {
   background-color: var(--cwa-color-field-danger);
@@ -2533,17 +2538,14 @@
 .cwa\:aria-expanded\:bg-field-hover[aria-expanded="true"] {
   background-color: var(--cwa-color-field-hover);
 }
-.cwa\:aria-expanded\:bg-menu-highlight[aria-expanded="true"] {
-  background-color: var(--cwa-color-menu-highlight);
-}
-.cwa\:aria-expanded\:bg-step-hover[aria-expanded="true"] {
-  background-color: var(--cwa-color-step-hover);
-}
 .cwa\:aria-expanded\:bg-yellow\/10[aria-expanded="true"] {
   background-color: var(--cwa-color-yellow);
   @supports (color: color-mix(in lab, red, red)) {
     background-color: color-mix(in oklab, var(--cwa-color-yellow) 10%, transparent);
   }
+}
+.cwa\:aria-expanded\:text-accent-fg[aria-expanded="true"] {
+  color: var(--cwa-color-accent-fg);
 }
 .cwa\:aria-expanded\:text-fg[aria-expanded="true"] {
   color: var(--cwa-color-fg);
@@ -2573,6 +2575,9 @@
 .cwa\:data-highlighted\:shadow-\[inset_2px_0_0_var\(--cwa-color-accent-fg\)\][data-highlighted] {
   --tw-shadow: inset 2px 0 0 var(--tw-shadow-color, var(--cwa-color-accent-fg));
   box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+}
+.cwa\:aria-expanded\:data-highlighted\:text-accent-fg[aria-expanded="true"][data-highlighted] {
+  color: var(--cwa-color-accent-fg);
 }
 .cwa\:data-outside-view\:text-stone-500[data-outside-view] {
   color: var(--cwa-color-stone-500);
