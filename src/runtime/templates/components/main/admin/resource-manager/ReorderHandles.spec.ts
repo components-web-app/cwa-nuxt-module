@@ -13,6 +13,8 @@ import * as cwaComposable from '#cwa/composables/cwa'
 import { registerInstance, unregisterInstance } from '#cwa/admin/manageable-instances'
 import type Cwa from '#cwa/cwa'
 
+vi.mock('#build/cwa-config', () => ({ resourcesConfig: { HtmlContent: { name: 'Rich text' } } }))
+
 const appContainer = vi.hoisted(() => ({ element: undefined as HTMLElement | undefined }))
 
 vi.mock('#app/nuxt', async importOriginal => ({
@@ -43,7 +45,6 @@ function setup() {
   eventBus.on('reorder', reorder)
   const cwa = {
     admin: { eventBus },
-    resourcesConfig: { HtmlContent: { name: 'Rich text' } },
     resources: {
       getOrderedPositionsForGroup: vi.fn(() => state.order),
       positionComponentIri: vi.fn((iri: string) => computed(() => iri.replace('component_positions', 'component'))),

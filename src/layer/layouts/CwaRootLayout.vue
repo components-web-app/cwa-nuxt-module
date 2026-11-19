@@ -22,6 +22,7 @@
       :is="resolvedComponent"
       v-if="resolvedComponent"
       class="cwa:relative"
+      :class="layoutStyleClasses"
     >
       <div
         ref="page"
@@ -52,6 +53,8 @@ import { useCwa, useHead } from '#imports'
 import { LazyCwaAdminHeader, LazyCwaAdminResourceManager, LazyCwaAdminResourceManagerLayoutPageOverlay, LazyCwaDefaultLayout } from '#components'
 import OutdatedContentNotice from '#cwa/templates/components/main/admin/header/_parts/OutdatedContentNotice.vue'
 import type { GlobalComponentNames } from '#cwa/types'
+import { resolveStyleClasses } from '#cwa/composables/cwa-styles'
+import { styleClasses } from '#build/cwa-styles'
 
 const $cwa = useCwa()
 const currentRoute = useRouter().currentRoute
@@ -141,6 +144,11 @@ const resolvedComponent = computed(() => {
     return stableLayoutUiComponent.value
   }
   return layoutUiComponent.value
+})
+
+const layoutStyleClasses = computed(() => {
+  const componentName = typeof resolvedComponent.value === 'string' ? resolvedComponent.value : undefined
+  return resolveStyleClasses(styleClasses, componentName, layoutResource.value?.data?.uiClassNames)
 })
 
 const cachedWindowScroll = ref<{ x: number, y: number }>()

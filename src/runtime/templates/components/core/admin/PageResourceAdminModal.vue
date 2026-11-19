@@ -272,6 +272,7 @@
 </template>
 
 <script setup lang="ts">
+import { pagesConfig } from '#build/cwa-config'
 import ResourceIdDetail from '#cwa/templates/components/core/admin/ResourceIdDetail.vue'
 import { pageDataNoun } from './page-data-noun'
 import { computed, onMounted, ref, useTemplateRef, watch, watchEffect } from 'vue'
@@ -301,8 +302,8 @@ import type { SelectOption } from '#cwa/composables/cwa-select'
 import type { CwaResource } from '#cwa/resources/resource-utils'
 import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/resources/resource-utils'
 import { useCwaConfirm } from '#cwa/composables/cwa-confirm'
-import { deriveSelectedStyles, mergeSelectedStyles } from '#cwa/composables/cwa-styles'
-import type { StyleClasses } from '#cwa/composables/cwa-styles'
+import { selectedStyleKeys } from '#cwa/composables/cwa-styles'
+import type { CwaStyles } from '#cwa/types'
 import { fetchTemplateCounts, pageDeleteConfirmLines, pageDeleteLines } from '#cwa/admin/page-delete'
 import type { PageDeleteFacts } from '#cwa/admin/page-delete'
 import { useItemPage } from '#cwa-layer/_composables/useItemPage'
@@ -691,7 +692,7 @@ function fullPageUiName(uiComponent: string | null | undefined) {
 const pageComponentOptions = computed<MenuEntry[]>(() => pageComponentNames.value.map((componentName) => {
   const cleanName = cleanUiName(componentName)
   return {
-    label: $cwa.pagesConfig?.[cleanName]?.name || cleanName,
+    label: pagesConfig[cleanName]?.name || cleanName,
     value: componentName,
   }
 }))
@@ -706,23 +707,22 @@ const pageUiModel = {
   }),
 } as ReturnType<typeof form.model<string>>
 
-const pageStyleClasses = computed<StyleClasses>(() => {
+const pageStyles = computed<CwaStyles | undefined>(() => {
   const uiComponent = localResourceData.value?.uiComponent
-  return (uiComponent && $cwa.pagesConfig?.[cleanUiName(uiComponent)]?.classes) || {}
+  return uiComponent ? pagesConfig[cleanUiName(uiComponent)]?.styles : undefined
 })
 
-const pageStyleOptions = computed<MenuEntry[]>(() => Object.keys(pageStyleClasses.value).map(name => ({ label: name, value: name })))
+const pageStyleOptions = computed<MenuEntry[]>(() => Object.entries(pageStyles.value ?? {}).map(([key, style]) => ({ label: style.label, value: key })))
 
 const pageStyleModel = {
   ...form.model<string[] | null>('uiClassNames'),
   model: computed({
-    get: () => deriveSelectedStyles(localResourceData.value?.uiClassNames, pageStyleClasses.value)[0] ?? null,
-    set: (name: string | null | undefined) => {
+    get: () => selectedStyleKeys(localResourceData.value?.uiClassNames, pageStyles.value)[0] ?? null,
+    set: (key: string | null | undefined) => {
       if (!localResourceData.value) {
         return
       }
-      const merged = mergeSelectedStyles(name ? [name] : [], pageStyleClasses.value)
-      localResourceData.value.uiClassNames = merged.length ? merged : null
+      localResourceData.value.uiClassNames = key ? [`style:${key}`] : null
     },
   }),
 } as unknown as ReturnType<typeof form.model<string>>

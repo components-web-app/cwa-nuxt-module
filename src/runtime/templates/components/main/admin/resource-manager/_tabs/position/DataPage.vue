@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { resourcesConfig } from '#build/cwa-config'
 import { computed, ref } from 'vue'
 import { useCwaResourceManagerTab } from '#cwa/composables/cwa-resource-manager-tab'
 import { DEFAULT_TAB_ORDER } from '#cwa/admin/manager-tabs-resolver'
@@ -54,7 +55,7 @@ const resourceConfig = computed(() => {
   if (!componentName.value) {
     return
   }
-  return $cwa.resourcesConfig[componentName.value]
+  return resourcesConfig[componentName.value]
 })
 
 const dynamicComponentName = computed(() => {

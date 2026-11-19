@@ -32,6 +32,8 @@ const forbidden = [
   { marker: 'cwa-fullscreen-dialog', source: 'core/ui/Toaster.vue' },
   { marker: 'The request could not be sent.', source: 'admin/field-states.ts' },
   { marker: 'remoteCursors', source: 'playground/app/tiptap/co-editing.ts' },
+  { marker: 'Paragraphs, headings, lists and links', source: 'defineCwaConfig description in playground HtmlContent.vue (#453)' },
+  { marker: 'Blue Background', source: 'defineCwaConfig style label in playground layouts/primary.vue (#453)' },
   { marker: 'data-cwa-admin-icon', source: 'cwa-admin-resources' },
   { marker: 'Already in this group', source: 'resource-manager/_parts/AddComponentDialog.vue' },
 ]

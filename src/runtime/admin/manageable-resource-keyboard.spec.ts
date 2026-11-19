@@ -7,6 +7,7 @@ import ManageableResource from './manageable-resource'
 import type Cwa from '../cwa'
 
 vi.mock('./manageable-instances', () => ({ registerInstance: vi.fn(), unregisterInstance: vi.fn() }))
+vi.mock('#build/cwa-config', () => ({ resourcesConfig: { HtmlContent: { name: 'Body Text' }, Title: { name: 'Title' } } }))
 vi.mock('./manager-tabs-resolver', () => ({
   default: vi.fn(function () {
     return { resolve: () => [] }
@@ -45,7 +46,6 @@ function setup(options: { editing?: boolean, tag?: string, attrs?: Record<string
       positionComponentIri: () => ({ value: undefined }),
     },
     resourcesManager: { addResourceEvent: ref() },
-    resourcesConfig: { HtmlContent: { name: 'Body Text' }, Title: { name: 'Title' } },
   } as unknown as Cwa
   const ops = ref({ disabled: options.disabled })
   let manageable: ManageableResource | undefined

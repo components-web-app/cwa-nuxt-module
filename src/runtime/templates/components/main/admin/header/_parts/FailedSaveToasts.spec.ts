@@ -11,6 +11,7 @@ import type { CwaToastOptions } from '#cwa/composables/cwa-toast'
 import type { CwaFieldState } from '#cwa/storage/stores/resources/state'
 
 const fake = vi.hoisted(() => ({ $cwa: undefined as any, router: undefined as any }))
+vi.mock('#build/cwa-config', () => ({ resourcesConfig: { HtmlContent: { name: 'Text' }, Image: { name: 'Picture' } } }))
 vi.mock('#cwa/composables/cwa', () => ({ useCwa: () => fake.$cwa }))
 vi.mock('#app/composables/router', () => ({ useRouter: () => fake.router }))
 
@@ -76,7 +77,6 @@ beforeEach(() => {
       findAllPublishableIris: (iri: string) => store.publishable[iri] ?? [iri],
       isIriPublishableEquivalent: same,
     },
-    resourcesConfig: { HtmlContent: { name: 'Text' }, Image: { name: 'Picture' } },
     admin: {
       isEditing: true,
       toggleEdit: vi.fn((editing: boolean) => {

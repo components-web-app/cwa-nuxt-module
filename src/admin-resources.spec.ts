@@ -33,11 +33,15 @@ async function load(source: string) {
   return { ...values, imports }
 }
 
-function generate(resources: Record<string, any>, previews: Record<string, string> = {}) {
+function generate(resources: Record<string, any>, previews: Record<string, string> = {}, files: Record<string, string> = {}) {
   const warn = vi.fn()
-  const source = adminResourcesTemplate({ resources, previews, lucide, warn })
-  return { source, warn }
+  const componentDirs = Object.fromEntries(Object.keys(resources).map(name => [name, `/app/cwa/components/${name}`]))
+  const readFile = vi.fn((file: string) => files[file])
+  const source = adminResourcesTemplate({ resources, previews, lucide, warn, componentDirs, readFile })
+  return { source, warn, readFile }
 }
+
+const SQUARE = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="app-icon"><rect x="3" y="3" width="18" height="18"/></svg>'
 
 describe('the admin resources template', () => {
   test('a Lucide icon is written once, by its own name', async () => {
@@ -99,8 +103,8 @@ describe('the admin resources template', () => {
 
     expect(adminResources.Odd).toEqual({ group: 'Text' })
     expect(adminResources.Odder).toBeUndefined()
-    expect(warn).toHaveBeenCalledWith(expect.stringContaining('cwa.resources.Odd.icon "lucide:no-such-icon"'))
-    expect(warn).toHaveBeenCalledWith(expect.stringContaining('cwa.resources.Odder.icon "spaceship"'))
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('the icon "lucide:no-such-icon" in the defineCwaConfig of Odd'))
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('the icon "spaceship" in the defineCwaConfig of Odder'))
   })
 
   test('every icon carries the marker the entry bundle guard looks for', async () => {
@@ -147,6 +151,99 @@ describe('the admin resources template', () => {
     const { adminResources } = await load(generate({ Plain: {}, Missing: undefined }).source)
 
     expect(adminResources).toEqual({})
+  })
+})
+
+describe('a custom SVG icon', () => {
+  test('a path to an SVG in the component folder is inlined under its own key, drawn with currentColor', async () => {
+    const { adminResources, adminResourceIcons } = await load(generate(
+      { Badge: { icon: './icons/badge.svg', group: 'Text' } },
+      {},
+      { '/app/cwa/components/Badge/icons/badge.svg': `<?xml version="1.0"?>\n<!-- drawn by hand -->\n${SQUARE.replace('<rect', '<!-- a square --><rect')}\n` },
+    ).source)
+
+    expect(adminResources.Badge).toEqual({ icon: 'file:Badge', group: 'Text' })
+    expect(adminResourceIcons['file:Badge']).toBe('<svg data-cwa-admin-icon xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><rect x="3" y="3" width="18" height="18"/></svg>')
+  })
+
+  test('an icon.svg beside the component is used when no icon is configured', async () => {
+    const { adminResources, adminResourceIcons } = await load(generate(
+      { Badge: {} },
+      {},
+      { '/app/cwa/components/Badge/icon.svg': SQUARE },
+    ).source)
+
+    expect(adminResources.Badge).toEqual({ icon: 'file:Badge' })
+    expect(adminResourceIcons['file:Badge']).toContain('<rect x="3" y="3" width="18" height="18"/>')
+  })
+
+  test('a configured icon wins over an icon.svg beside the component', async () => {
+    const { source, readFile } = generate(
+      { Body: { icon: 'rich-text' } },
+      {},
+      { '/app/cwa/components/Body/icon.svg': SQUARE },
+    )
+    const { adminResources } = await load(source)
+
+    expect(adminResources.Body).toEqual({ icon: 'lucide:letter-text' })
+    expect(readFile).not.toHaveBeenCalled()
+  })
+
+  test('an SVG with no viewBox takes one from its width and height, and one with no colour fills with currentColor', async () => {
+    const { adminResourceIcons } = await load(generate(
+      { Badge: {} },
+      {},
+      { '/app/cwa/components/Badge/icon.svg': '<svg width="16" height="20"><circle cx="8" cy="8" r="4"/></svg>' },
+    ).source)
+
+    expect(adminResourceIcons['file:Badge']).toBe('<svg data-cwa-admin-icon xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 20" fill="currentColor" aria-hidden="true" focusable="false"><circle cx="8" cy="8" r="4"/></svg>')
+  })
+
+  test('scripts, event handlers, foreignObject, styles, animations and external links are removed', async () => {
+    const hostile = `<svg viewBox="0 0 24 24" onload="alert(1)" style="color:red">
+<script>alert(2)</script><SCRIPT type="text/javascript">alert(3)</SCRIPT><script href="x.js"/>
+<scr<script></script>ipt>alert(4)</script>
+<foreignObject><iframe src="https://evil.example"></iframe></foreignObject>
+<style>body{display:none}</style>
+<a href="javascript:alert(5)" xlink:href="https://evil.example"><path d="M0 0" onclick="alert(6)" ONMOUSEOVER='alert(7)'/></a>
+<path/onfocus=alert(8) d="M1 1"/>
+<set attributeName="href" to="javascript:alert(9)"/><animate attributeName="href" values="javascript:alert(10)"/>
+<use href="#local"/><use xlink:href="https://evil.example/sprite.svg#x"/>
+<image href="data:image/svg+xml;base64,AAAA"/>
+<iframe srcdoc="x"></iframe><embed src="x"/><object data="x"></object><embed src="y">
+<circle style="position:fixed" r="1"/>
+</svg>`
+    const { adminResourceIcons } = await load(generate({ Badge: {} }, {}, { '/app/cwa/components/Badge/icon.svg': hostile }).source)
+    const svg = adminResourceIcons['file:Badge'] as string
+
+    expect(svg).not.toMatch(/alert|script|foreignObject|iframe|embed|object|<style|style=|<set|<animate|evil|javascript|data:/i)
+    expect(svg).not.toMatch(/\son/i)
+    expect(svg).toContain('<path d="M0 0"/>')
+    expect(svg).toContain('<use href="#local"/>')
+    expect(svg).toContain('<circle r="1"/>')
+  })
+
+  test.each([
+    ['../Other/icon.svg', 'is not an SVG in the component\'s folder'],
+    ['./missing.svg', 'could not be read'],
+    ['./broken.svg', 'is not an SVG'],
+  ])('the icon %s warns and falls back to the generic icon', async (icon, reason) => {
+    const { source, warn } = generate(
+      { Badge: { icon } },
+      {},
+      { '/app/cwa/components/Other/icon.svg': SQUARE, '/app/cwa/components/Badge/broken.svg': '<html>not svg</html>' },
+    )
+    const { adminResources } = await load(source)
+
+    expect(adminResources.Badge).toBeUndefined()
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining(`the icon "${icon}" in the defineCwaConfig of Badge ${reason}`))
+  })
+
+  test('a broken icon.svg beside the component warns and falls back to the generic icon', async () => {
+    const { source, warn } = generate({ Badge: {} }, {}, { '/app/cwa/components/Badge/icon.svg': 'not svg' })
+
+    expect((await load(source)).adminResources.Badge).toBeUndefined()
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('Badge/icon.svg is not an SVG'))
   })
 })
 

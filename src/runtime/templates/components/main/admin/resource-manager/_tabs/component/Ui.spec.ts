@@ -25,6 +25,13 @@ const mockCwa = {
   admin: { isEditing: true, resourceStackManager: { currentStackItem, currentIri: iri, forcePublishedVersion: ref(undefined) } },
 }
 
+const config = vi.hoisted(() => ({
+  resourcesConfig: {} as Record<string, any>,
+  uiConfig: {} as Record<string, any>,
+}))
+
+vi.mock('#build/cwa-config', () => config)
+
 vi.mock('#cwa/composables/cwa', () => ({ useCwa: () => mockCwa }))
 
 vi.mock('#cwa/composables/cwa-resource-manager-tab', () => ({
@@ -37,27 +44,27 @@ vi.mock('#cwa/composables/cwa-resource-manager-tab', () => ({
 
 vi.mock('#cwa/resources/realtime-view', () => ({ realtimeView: () => ({ view: { value: undefined }, load: vi.fn().mockResolvedValue(undefined) }) }))
 
-const resolvedMeta = vi.hoisted(() => ({ value: [] as any[] }))
-vi.mock('#cwa/templates/components/core/useDataResolver', () => ({
-  useDataResolver: (meta: { value: unknown[] }) => ({
-    startDataResolver: () => {
-      meta.value = resolvedMeta.value
+function setStyles(allowMultiple: boolean, ui: string[] = []) {
+  currentStackItem.value = { ui }
+  config.resourcesConfig = {
+    Hero: {
+      allowMultiple,
+      styles: {
+        bordered: { label: 'Bordered', classes: 'border border-gray-200' },
+        rounded: { label: 'Rounded', classes: 'rounded' },
+      },
     },
-  }),
-}))
-
-function setStyles(multiple: boolean, ui: string[] = []) {
-  currentStackItem.value = {
-    ui,
-    styles: { value: { multiple, classes: {
-      Bordered: 'border border-gray-200',
-      Rounded: 'rounded',
-    } } },
+  }
+  config.uiConfig = {
+    CwaComponentHeroUiTall: {
+      styles: { tall: { label: 'Tall', classes: 'h-screen' } },
+    },
+    CwaComponentHeroUiSplit: {},
   }
 }
 
 function put(at: string, data: Record<string, unknown>) {
-  store.byId[at] = reactive({ data: { '@id': at, 'uiComponent': null, 'uiClassNames': null, ...data }, apiState: {} })
+  store.byId[at] = reactive({ data: { '@id': at, '@type': 'Hero', 'uiComponent': null, 'uiClassNames': null, ...data }, apiState: {} })
 }
 
 function answering(answer: (event: any) => { resource?: any, error?: unknown }) {
@@ -91,7 +98,8 @@ beforeEach(() => {
   store.byId = {}
   iri.value = '/component/1'
   put('/component/1', {})
-  resolvedMeta.value = []
+  config.resourcesConfig = {}
+  config.uiConfig = {}
   exposeMeta.fields.length = 0
   mockUpdateResource.mockReset()
   answering(saveInPlace)
@@ -106,105 +114,151 @@ describe('Ui tab on the kit (#460)', () => {
     expect(exposeMeta.fields).toEqual(['uiComponent', 'uiClassNames'])
   })
 
-  test('offers the UI choices with Default first, named once their metadata resolves, and only when the component has any', async () => {
-    setStyles(false, ['CwaComponentSplit'])
-    resolvedMeta.value = [{ cwaResource: { name: 'Split image' } }]
+  test('offers the UI choices with Default first, named from their defineCwaConfig, and only when the component has any (#453)', () => {
+    setStyles(false, ['CwaComponentHeroUiTall', 'CwaComponentHeroUiSplit'])
+    config.uiConfig.CwaComponentHeroUiTall.name = 'Tall hero'
     const wrapper = mountUi()
-    await nextTick()
 
-    const select = wrapper.getComponent(Select)
+    const select = wrapper.findAllComponents(Select).at(0)!
     expect(select.props('label')).toBe('UI')
     expect(select.props('noneLabel')).toBe('Default')
-    expect(select.props('options')).toEqual([{ label: 'Split image', value: 'CwaComponentSplit' }])
-
-    currentStackItem.value = { ui: ['CwaComponentSplit', 'CwaComponentWide'], styles: undefined }
-    resolvedMeta.value = new Array(2)
-    resolvedMeta.value[1] = { cwaResource: { name: 'Wide' } }
-    const resolving = mountUi()
-    await nextTick()
-    expect(resolving.getComponent(Select).props('options')).toEqual([
-      { label: 'CwaComponentSplit', value: 'CwaComponentSplit' },
-      { label: 'Wide', value: 'CwaComponentWide' },
+    expect(select.props('options')).toEqual([
+      { label: 'Tall hero', value: 'CwaComponentHeroUiTall' },
+      { label: 'CwaComponentHeroUiSplit', value: 'CwaComponentHeroUiSplit' },
     ])
 
-    currentStackItem.value = { ui: [], styles: undefined }
-    resolvedMeta.value = []
+    currentStackItem.value = { ui: [] }
+    config.resourcesConfig = {}
     const plain = mountUi()
     expect(plain.findComponent(Select).exists()).toBe(false)
   })
 
-  test('choosing another UI sends it and clears the styles in the same request', async () => {
-    setStyles(false, ['CwaComponentSplit'])
-    resolvedMeta.value = [{ cwaResource: { name: 'Split image' } }]
-    put('/component/1', { uiClassNames: ['rounded'] })
+  test('the tab mounts no component to find out its styles: the stack item carries none, and the options still show (#453)', () => {
+    setStyles(false)
     const wrapper = mountUi()
-    await nextTick()
 
-    modelOf(wrapper.getComponent(Select)).model.value = 'CwaComponentSplit'
+    expect(currentStackItem.value.styles).toBeUndefined()
+    expect(wrapper.getComponent(Select).props('options')).toEqual([
+      { label: 'Bordered', value: 'bordered' },
+      { label: 'Rounded', value: 'rounded' },
+    ])
+  })
+
+  test('choosing another UI keeps the stored keys the new variant defines and drops the rest, in the same request (#453)', async () => {
+    setStyles(false, ['CwaComponentHeroUiTall'])
+    config.uiConfig.CwaComponentHeroUiTall.styles.bordered = { label: 'Bordered', classes: 'border-4' }
+    put('/component/1', { uiClassNames: ['style:bordered', 'style:rounded', 'legacy classes'] })
+    const wrapper = mountUi()
+
+    modelOf(wrapper.findAllComponents(Select).at(0)!).model.value = 'CwaComponentHeroUiTall'
     await saves()
 
     expect(mockUpdateResource).toHaveBeenCalledTimes(1)
-    expect(mockUpdateResource).toHaveBeenCalledWith(expect.objectContaining({ endpoint: '/component/1', data: { uiComponent: 'CwaComponentSplit', uiClassNames: null } }))
+    expect(mockUpdateResource).toHaveBeenCalledWith(expect.objectContaining({ endpoint: '/component/1', data: { uiComponent: 'CwaComponentHeroUiTall', uiClassNames: ['style:bordered'] } }))
+  })
+
+  test('choosing a UI that defines none of the stored keys stores null with it (#453)', async () => {
+    setStyles(false, ['CwaComponentHeroUiTall'])
+    put('/component/1', { uiClassNames: ['style:rounded'] })
+    const wrapper = mountUi()
+
+    modelOf(wrapper.findAllComponents(Select).at(0)!).model.value = 'CwaComponentHeroUiTall'
+    await saves()
+
+    expect(mockUpdateResource).toHaveBeenCalledWith(expect.objectContaining({ data: { uiComponent: 'CwaComponentHeroUiTall', uiClassNames: null } }))
+  })
+
+  test('choosing another UI that defines every stored key sends only the UI (#453)', async () => {
+    setStyles(false, ['CwaComponentHeroUiSplit'])
+    put('/component/1', { uiComponent: 'CwaComponentHeroUiTall', uiClassNames: ['style:tall'] })
+    config.uiConfig.CwaComponentHeroUiSplit = { styles: { tall: { label: 'Tall', classes: 'h-dvh' } } }
+    currentStackItem.value = { ui: ['CwaComponentHeroUiTall', 'CwaComponentHeroUiSplit'] }
+    const wrapper = mountUi()
+
+    modelOf(wrapper.findAllComponents(Select).at(0)!).model.value = 'CwaComponentHeroUiSplit'
+    await saves()
+
+    expect(mockUpdateResource).toHaveBeenCalledWith(expect.objectContaining({ data: { uiComponent: 'CwaComponentHeroUiSplit' } }))
   })
 
   test('choosing another UI with no styles chosen sends only the UI', async () => {
-    setStyles(false, ['CwaComponentSplit'])
+    setStyles(false, ['CwaComponentHeroUiSplit'])
     const wrapper = mountUi()
-    await nextTick()
 
-    modelOf(wrapper.getComponent(Select)).model.value = 'CwaComponentSplit'
+    modelOf(wrapper.findAllComponents(Select).at(0)!).model.value = 'CwaComponentHeroUiSplit'
     await saves()
 
-    expect(mockUpdateResource).toHaveBeenCalledWith(expect.objectContaining({ data: { uiComponent: 'CwaComponentSplit' } }))
+    expect(mockUpdateResource).toHaveBeenCalledWith(expect.objectContaining({ data: { uiComponent: 'CwaComponentHeroUiSplit' } }))
   })
 
   test.each([
-    ['failed', () => answering(() => ({ error: { statusCode: 500 } })), 'CwaComponentSplit', ['rounded']],
-    ['skipped', () => {}, 'CwaComponentWide', null],
-  ])('a %s UI save never later nulls another resource\'s styles', async (_kind, arrange, picked, styles) => {
-    setStyles(false, ['CwaComponentSplit', 'CwaComponentWide'])
-    put('/component/1', { uiComponent: 'CwaComponentWide', uiClassNames: styles })
-    put('/component/2', { uiComponent: 'CwaComponentSplit', uiClassNames: ['border border-gray-200'] })
+    ['failed', () => answering(() => ({ error: { statusCode: 500 } })), 'CwaComponentHeroUiSplit', ['style:rounded']],
+    ['skipped', () => {}, 'CwaComponentHeroUiTall', null],
+  ])('a %s UI save never later rewrites another resource\'s styles', async (_kind, arrange, picked, styles) => {
+    setStyles(false, ['CwaComponentHeroUiSplit', 'CwaComponentHeroUiTall'])
+    put('/component/1', { uiComponent: 'CwaComponentHeroUiTall', uiClassNames: styles })
+    put('/component/2', { uiComponent: 'CwaComponentHeroUiSplit', uiClassNames: ['style:bordered'] })
     arrange()
     const wrapper = mountUi()
-    await nextTick()
 
-    modelOf(wrapper.getComponent(Select)).model.value = picked
+    modelOf(wrapper.findAllComponents(Select).at(0)!).model.value = picked
     await saves()
     iri.value = '/component/2'
     await saves()
-    store.byId['/component/1'].data.uiComponent = 'CwaComponentSplit'
+    store.byId['/component/1'].data.uiComponent = 'CwaComponentHeroUiSplit'
     await saves()
 
     expect(mockUpdateResource).not.toHaveBeenCalledWith(expect.objectContaining({ endpoint: '/component/2' }))
-    expect(store.byId['/component/2'].data.uiClassNames).toEqual(['border border-gray-200'])
+    expect(store.byId['/component/2'].data.uiClassNames).toEqual(['style:bordered'])
   })
 
-  describe('multiple styles, through a typed mapping from class strings to style names', () => {
+  describe('a UI variant\'s styles (#453)', () => {
+    beforeEach(() => setStyles(false, ['CwaComponentHeroUiTall']))
+
+    test('a UI variant offers its own styles', () => {
+      put('/component/1', { uiComponent: 'CwaComponentHeroUiTall' })
+      const wrapper = mountUi()
+
+      expect(wrapper.findAllComponents(Select).at(-1)!.props('options')).toEqual([{ label: 'Tall', value: 'tall' }])
+    })
+
+    test('a key the variant does not know shows no style selected, and choosing one keeps the other key', async () => {
+      put('/component/1', { uiComponent: 'CwaComponentHeroUiTall', uiClassNames: ['style:bordered'] })
+      const wrapper = mountUi()
+      const model = modelOf(wrapper.findAllComponents(Select).at(-1)!)
+      expect(model.model.value).toBeNull()
+
+      model.model.value = 'tall'
+      await saves()
+      expect(mockUpdateResource).toHaveBeenLastCalledWith(expect.objectContaining({ data: { uiClassNames: ['style:bordered', 'style:tall'] } }))
+    })
+  })
+
+  describe('multiple styles, through a typed mapping from stored keys to style keys', () => {
     beforeEach(() => setStyles(true))
 
-    test('a multi-select of style names shows the stored classes as names', () => {
-      put('/component/1', { uiClassNames: ['rounded'] })
+    test('a multi-select of style labels shows the stored keys as their labels', () => {
+      put('/component/1', { uiClassNames: ['style:rounded'] })
       const wrapper = mountUi()
       const multi = wrapper.getComponent(MultiSelect)
 
       expect(multi.props('options')).toEqual([
-        { label: 'Bordered', value: 'Bordered' },
-        { label: 'Rounded', value: 'Rounded' },
+        { label: 'Bordered', value: 'bordered' },
+        { label: 'Rounded', value: 'rounded' },
       ])
-      expect(modelOf(multi).model.value).toEqual(['Rounded'])
+      expect(modelOf(multi).model.value).toEqual(['rounded'])
       expect(wrapper.get('[data-testid="multi-chip"]').text()).toContain('Rounded')
     })
 
-    test('choosing styles saves one class string per style, and none saves null', async () => {
-      put('/component/1', { uiClassNames: ['rounded'] })
+    test('choosing styles saves each key as style:<key>, and none saves null', async () => {
+      put('/component/1', { uiClassNames: ['style:rounded'] })
       const wrapper = mountUi()
       const model = modelOf(wrapper.getComponent(MultiSelect))
 
-      model.model.value = ['Bordered', 'Rounded']
+      model.model.value = ['bordered', 'rounded']
       await saves()
-      expect(mockUpdateResource).toHaveBeenLastCalledWith(expect.objectContaining({ data: { uiClassNames: ['border border-gray-200', 'rounded'] } }))
-      expect(model.model.value).toEqual(['Bordered', 'Rounded'])
+      expect(mockUpdateResource).toHaveBeenLastCalledWith(expect.objectContaining({ data: { uiClassNames: ['style:bordered', 'style:rounded'] } }))
+      expect(model.model.value).toEqual(['bordered', 'rounded'])
 
       model.model.value = []
       await saves()
@@ -216,24 +270,24 @@ describe('Ui tab on the kit (#460)', () => {
   describe('a single style', () => {
     beforeEach(() => setStyles(false))
 
-    test('a nullable select of style names, with Default for none', () => {
-      put('/component/1', { uiClassNames: ['border border-gray-200'] })
+    test('a nullable select of style labels, with Default for none', () => {
+      put('/component/1', { uiClassNames: ['style:bordered'] })
       const wrapper = mountUi()
       const select = wrapper.getComponent(Select)
 
       expect(select.props('label')).toBe('Style')
       expect(select.props('noneLabel')).toBe('Default')
-      expect(modelOf(select).model.value).toBe('Bordered')
+      expect(modelOf(select).model.value).toBe('bordered')
       expect(wrapper.get('[data-testid="select-trigger"]').text()).toBe('Bordered')
     })
 
-    test('choosing one saves a one-element uiClassNames, and Default saves null', async () => {
+    test('choosing one saves style:<key>, and Default saves null', async () => {
       const wrapper = mountUi()
       const model = modelOf(wrapper.getComponent(Select))
 
-      model.model.value = 'Rounded'
+      model.model.value = 'rounded'
       await saves()
-      expect(mockUpdateResource).toHaveBeenLastCalledWith(expect.objectContaining({ data: { uiClassNames: ['rounded'] } }))
+      expect(mockUpdateResource).toHaveBeenLastCalledWith(expect.objectContaining({ data: { uiClassNames: ['style:rounded'] } }))
 
       model.model.value = null
       await saves()
@@ -243,9 +297,9 @@ describe('Ui tab on the kit (#460)', () => {
   })
 
   test('has no axe violations', async () => {
-    setStyles(true, ['CwaComponentSplit'])
-    resolvedMeta.value = [{ cwaResource: { name: 'Split image' } }]
-    put('/component/1', { uiClassNames: ['rounded', 'border border-gray-200'] })
+    setStyles(true, ['CwaComponentHeroUiSplit'])
+    config.uiConfig.CwaComponentHeroUiSplit.name = 'Split image'
+    put('/component/1', { uiClassNames: ['style:rounded', 'style:bordered'] })
     const wrapper = mountUi()
     await nextTick()
 

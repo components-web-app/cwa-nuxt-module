@@ -21,6 +21,14 @@ import { drawsFocusRing } from '../../../../../../test/utils/focus-ring'
 import { axe } from '../../../../../../test/utils/axe'
 import { fieldExplanation } from '../../../../../../test/utils/field-info'
 
+const cwaConfig = vi.hoisted(() => ({
+  resourcesConfig: {} as Record<string, any>,
+  uiConfig: {} as Record<string, any>,
+  layoutsConfig: {} as Record<string, any>,
+  pagesConfig: {} as Record<string, any>,
+}))
+vi.mock('#build/cwa-config', () => cwaConfig)
+
 const mockNavigateTo = vi.hoisted(() => vi.fn())
 const routeState = vi.hoisted(() => ({ route: undefined as unknown as { params: Record<string, string>, query: Record<string, string>, hash: string } }))
 mockNuxtImport('navigateTo', () => mockNavigateTo)
@@ -149,6 +157,7 @@ function setup(opts: {
   })
   mockUseDataType.mockReturnValue({ pageDataConfig: ref(opts.pageDataConfig ?? null) })
 
+  cwaConfig.pagesConfig = opts.pagesConfig ?? {}
   const storedData = reactive<Record<string, any>>({ ...opts.routes, ...opts.stored })
   const getResource = vi.fn((resourceIri: string) => computed(() => storedData[resourceIri] ? { data: storedData[resourceIri] } : null))
   const fetchResource = vi.fn(opts.fetchResource ?? (async () => undefined))
@@ -160,7 +169,6 @@ function setup(opts: {
     fetch: vi.fn(({ path }: { path: string }) => ({ response: Promise.resolve({ _data: opts.fetchData ? opts.fetchData(path) : path.startsWith('/_/layouts') ? { member: opts.layouts ?? [{ '@id': '/_/layouts/default', 'reference': 'Default' }] } : null }) })),
     getApiDocumentation: vi.fn(() => opts.apiDocumentation ?? Promise.resolve({ entrypoint: { blogArticleData: '/page_data/blog_article_datas' } })),
     fetchResource,
-    pagesConfig: opts.pagesConfig ?? {},
     pageDataConfig: opts.pageDataTypes ?? {},
     admin: { toggleEdit: vi.fn() },
   }) as unknown as ReturnType<typeof cwaComposable.useCwa>)
@@ -835,40 +843,40 @@ describe('PageResourceAdminModal Page UI select stores the full CwaPage componen
 })
 
 describe('PageResourceAdminModal Style select', () => {
-  const pagesConfig = { PrimaryPageTemplate: { name: 'Primary', classes: { Wide: ['is-wide', 'cwa-pad'], Dark: 'is-dark' } } }
+  const pagesConfig = { PrimaryPageTemplate: { name: 'Primary', styles: { wide: { label: 'Wide', classes: 'is-wide cwa-pad' }, dark: { label: 'Dark', classes: 'is-dark' } } } }
 
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
-  test('lists the configured styles by name and shows the one the stored class list holds', () => {
-    const { wrapper } = setup({ pagesConfig, local: { uiComponent: 'CwaPagePrimaryPageTemplate', uiClassNames: ['is-wide cwa-pad'] } })
+  test('lists the configured styles by label and shows the one whose key the stored list holds', () => {
+    const { wrapper } = setup({ pagesConfig, local: { uiComponent: 'CwaPagePrimaryPageTemplate', uiClassNames: ['style:wide'] } })
     const style = field(wrapper, Select, 'Style')
 
-    expect(style.props('options')).toEqual([{ label: 'Wide', value: 'Wide' }, { label: 'Dark', value: 'Dark' }])
+    expect(style.props('options')).toEqual([{ label: 'Wide', value: 'wide' }, { label: 'Dark', value: 'dark' }])
     expect(style.props('model').field).toBe('uiClassNames')
-    expect(style.props('model').model.value).toBe('Wide')
+    expect(style.props('model').model.value).toBe('wide')
   })
 
-  test('choosing a style stores its classes as the one class string in the list, and Default clears it', () => {
-    const { wrapper, form } = setup({ pagesConfig, local: { uiComponent: 'CwaPagePrimaryPageTemplate', uiClassNames: ['is-wide cwa-pad'] } })
+  test('choosing a style stores its key as style:<key>, and Default clears it', () => {
+    const { wrapper, form } = setup({ pagesConfig, local: { uiComponent: 'CwaPagePrimaryPageTemplate', uiClassNames: ['style:wide'] } })
     form.discard()
     const model = field(wrapper, Select, 'Style').props('model')
 
-    model.model.value = 'Dark'
-    expect(form.local.uiClassNames).toEqual(['is-dark'])
+    model.model.value = 'dark'
+    expect(form.local.uiClassNames).toEqual(['style:dark'])
     expect(form.unsavedFields).toEqual(['uiClassNames'])
 
-    model.model.value = 'Wide'
-    expect(form.local.uiClassNames).toEqual(['is-wide cwa-pad'])
+    model.model.value = 'wide'
+    expect(form.local.uiClassNames).toEqual(['style:wide'])
     expect(form.unsavedFields).toEqual([])
 
     model.model.value = null
     expect(form.local.uiClassNames).toBeNull()
   })
 
-  test('a stored class list that matches no configured style shows Default', () => {
-    const { wrapper } = setup({ pagesConfig, local: { uiComponent: 'CwaPagePrimaryPageTemplate', uiClassNames: ['something-else'] } })
+  test('a stored key the page does not define, or an entry without the style: prefix, shows Default', () => {
+    const { wrapper } = setup({ pagesConfig, local: { uiComponent: 'CwaPagePrimaryPageTemplate', uiClassNames: ['style:gone', 'is-dark'] } })
 
     expect(field(wrapper, Select, 'Style').props('model').model.value).toBeNull()
   })

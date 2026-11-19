@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import { useCookie, useNuxtApp, useRuntimeConfig } from '#imports'
 import type { RouteLocationNormalizedLoaded, Router } from 'vue-router'
-import type { CwaResourcesMeta, CwaRuntimeOptions } from '#cwa/types'
+import type { CwaModuleOptions } from '#cwa/types'
 import { Storage } from './storage/storage'
 import type { FetchEvent, FetchResourceEvent } from './api/fetcher/fetcher'
 import Fetcher from './api/fetcher/fetcher'
@@ -28,7 +28,7 @@ import { resolveApiUrl } from '#cwa/api/api-url'
 
 export default class Cwa {
   private readonly apiUrl: string
-  private readonly options: CwaRuntimeOptions
+  private readonly options: CwaModuleOptions
   private readonly storage: Storage
   private readonly apiDocumentation: ApiDocumentation
   private readonly mercure: Mercure
@@ -62,7 +62,7 @@ export default class Cwa {
 
   public readonly currentModulePackageInfo: { version: string, name: string }
 
-  constructor($router: Router, options: CwaRuntimeOptions, currentModulePackageInfo: { version: string, name: string }) {
+  constructor($router: Router, options: CwaModuleOptions, currentModulePackageInfo: { version: string, name: string }) {
     this.currentModulePackageInfo = currentModulePackageInfo
     const { isServer } = useProcess()
     this.apiUrl = resolveApiUrl(useRuntimeConfig() as ApiUrlRuntimeConfig, isServer).url
@@ -154,23 +154,6 @@ export default class Cwa {
 
   public get isStaticRender(): boolean {
     return this.prerendered.value || !!this.options.staticRender
-  }
-
-  public get resourcesConfig(): CwaResourcesMeta {
-    return this.options.resources || {}
-  }
-
-  // @internal
-  public setResourceMeta(meta: CwaResourcesMeta) {
-    this.options.resources = meta
-  }
-
-  public get layoutsConfig() {
-    return this.options.layouts
-  }
-
-  public get pagesConfig() {
-    return this.options.pages
   }
 
   public get pageDataConfig() {

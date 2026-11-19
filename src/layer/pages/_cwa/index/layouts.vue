@@ -46,6 +46,7 @@
 </template>
 
 <script lang="ts" setup>
+import { layoutsConfig } from '#build/cwa-config'
 import { computed, ref } from 'vue'
 import ListHeading from '#cwa/templates/components/core/admin/ListHeading.vue'
 import ListContent from '#cwa/templates/components/core/admin/ListContent.vue'
@@ -58,11 +59,10 @@ import CwaUiButton from '#cwa/templates/components/ui/Button.vue'
 import PlusIcon from '#cwa/templates/components/ui/icon/PlusIcon.vue'
 import { useListPage } from '#cwa-layer/_composables/useListPage'
 import type { CwaResource } from '#cwa/resources/resource-utils'
-import { definePageMeta, useCwa, useHead } from '#imports'
+import { definePageMeta, useHead } from '#imports'
 
 const listContent = ref<InstanceType<typeof ListContent> | null>(null)
 
-const $cwa = useCwa()
 const { goToAdd, triggerReload, computedItemLink } = useListPage(listContent)
 
 const columns = [
@@ -90,7 +90,7 @@ function pageCount(layout: CwaResource) {
 
 function getDisplayLayoutUi(ui: string) {
   const cleanName = ui.replace(/^CwaLayout/, '')
-  return $cwa.layoutsConfig?.[cleanName]?.name || cleanName
+  return layoutsConfig[cleanName]?.name || cleanName
 }
 
 useHead({

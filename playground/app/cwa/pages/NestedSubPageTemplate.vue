@@ -9,6 +9,11 @@
 
 <script setup lang="ts">
 import type { IriProp } from '#cwa/composables/cwa-resource'
+import { defineCwaConfig } from '#imports'
+
+defineCwaConfig({
+  name: 'Nested Sub-Page',
+})
 
 const props = defineProps<IriProp>()
 </script>

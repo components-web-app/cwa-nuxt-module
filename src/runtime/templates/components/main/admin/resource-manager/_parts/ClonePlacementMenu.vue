@@ -59,6 +59,7 @@
 </template>
 
 <script setup lang="ts">
+import { resourcesConfig } from '#build/cwa-config'
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
 import type { Ref } from 'vue'
 import CwaUiMenu from '#cwa/templates/components/ui/Menu.vue'
@@ -130,7 +131,7 @@ const result = computed(() => {
     isEditingLayout: resourceStackManager.isEditingLayout.value,
     type: props.type,
     move: source.value.move,
-    resourcesConfig: $cwa.resourcesConfig,
+    resourcesConfig,
   })
 })
 

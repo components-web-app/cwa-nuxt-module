@@ -430,36 +430,6 @@ describe('Cwa delegation methods and getters', () => {
     expect(fsmInstance.clearPrimaryFetch).toHaveBeenCalledOnce()
   })
 
-  test('resourcesConfig returns options.resources or empty object', () => {
-    const resources = { MyComponent: { instantAdd: true } }
-    const $cwa = createCwa({ storeName, resources })
-    expect($cwa.resourcesConfig).toEqual(resources)
-  })
-
-  test('resourcesConfig returns empty object when not set', () => {
-    const $cwa = createCwa({ storeName })
-    expect($cwa.resourcesConfig).toEqual({})
-  })
-
-  test('setResourceMeta updates resourcesConfig', () => {
-    const $cwa = createCwa({ storeName })
-    const meta = { MyComp: { instantAdd: false } }
-    $cwa.setResourceMeta(meta)
-    expect($cwa.resourcesConfig).toBe(meta)
-  })
-
-  test('layoutsConfig returns options.layouts', () => {
-    const layouts = [{ name: 'Default', label: 'Default Layout' }]
-    const $cwa = createCwa({ storeName, layouts })
-    expect($cwa.layoutsConfig).toBe(layouts)
-  })
-
-  test('pagesConfig returns options.pages', () => {
-    const pages = [{ name: 'Home', label: 'Home Page' }]
-    const $cwa = createCwa({ storeName, pages })
-    expect($cwa.pagesConfig).toBe(pages)
-  })
-
   test('pageDataConfig returns options.pageData', () => {
     const pageData = [{ name: 'Conference', label: 'Conference' }]
     const $cwa = createCwa({ storeName, pageData })

@@ -1,30 +1,39 @@
-export type StyleClassValue = string | string[]
-export type StyleClasses = Record<string, StyleClassValue>
+import type { CwaStyleClasses, CwaStyles } from '#cwa/types'
 
-export function toClassString(value: StyleClassValue): string {
-  return Array.isArray(value) ? value.join(' ') : value
+const STYLE_PREFIX = 'style:'
+
+export function storedStyleKeys(uiClassNames: string[] | null | undefined): string[] {
+  return (uiClassNames ?? [])
+    .filter(entry => entry.startsWith(STYLE_PREFIX))
+    .map(entry => entry.slice(STYLE_PREFIX.length))
 }
 
-export function mergeSelectedStyles(selectedNames: string[], classes: StyleClasses): string[] {
-  const entries: string[] = []
-  for (const [name, value] of Object.entries(classes)) {
-    if (selectedNames.includes(name)) {
-      entries.push(toClassString(value))
-    }
-  }
-  return entries
-}
-
-export function deriveSelectedStyles(uiClassNames: string[] | undefined | null, classes: StyleClasses): string[] {
-  if (!uiClassNames?.length) {
+export function resolveStyleClasses(styleClasses: CwaStyleClasses, componentName: string | undefined, uiClassNames: string[] | null | undefined): string[] {
+  const own = componentName && Object.hasOwn(styleClasses, componentName) ? styleClasses[componentName] : undefined
+  if (!own) {
     return []
   }
-  const present = new Set(uiClassNames)
-  const names: string[] = []
-  for (const [name, value] of Object.entries(classes)) {
-    if (present.has(toClassString(value))) {
-      names.push(name)
-    }
+  return storedStyleKeys(uiClassNames)
+    .filter(key => Object.hasOwn(own, key))
+    .map(key => own[key]!)
+}
+
+export function selectedStyleKeys(uiClassNames: string[] | null | undefined, styles: CwaStyles | undefined): string[] {
+  if (!styles) {
+    return []
   }
-  return names
+  const stored = storedStyleKeys(uiClassNames)
+  return Object.keys(styles).filter(key => stored.includes(key))
+}
+
+export function selectStyleKeys(uiClassNames: string[] | null | undefined, styles: CwaStyles | undefined, keys: string[]): string[] | null {
+  const known = Object.keys(styles ?? {}).map(key => `${STYLE_PREFIX}${key}`)
+  const kept = (uiClassNames ?? []).filter(entry => !known.includes(entry))
+  const next = [...kept, ...keys.map(key => `${STYLE_PREFIX}${key}`)]
+  return next.length ? next : null
+}
+
+export function keepDefinedStyleKeys(uiClassNames: string[] | null | undefined, styles: CwaStyles | undefined): string[] | null {
+  const kept = (uiClassNames ?? []).filter(entry => entry.startsWith(STYLE_PREFIX) && Object.hasOwn(styles ?? {}, entry.slice(STYLE_PREFIX.length)))
+  return kept.length ? kept : null
 }

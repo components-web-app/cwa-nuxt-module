@@ -45,6 +45,9 @@ const Node = {
 }
 vi.stubGlobal('Node', Node)
 
+const cwaConfig = vi.hoisted(() => ({ resourcesConfig: {} as Record<string, any> }))
+vi.mock('#build/cwa-config', () => cwaConfig)
+
 vi.mock('#cwa/resources/resource-utils', () => {
   return {
     getResourceTypeFromIri: vi.fn(() => 'resourceTypeResolved'),
@@ -138,7 +141,7 @@ function createManageableResource($el?: DummyDom) {
   }
   const $cwa = new Cwa()
   return {
-    instance: new ManageableResource(component, $cwa, ref({ styles: { name: ['style'] } })),
+    instance: new ManageableResource(component, $cwa, ref({})),
     $cwa,
   }
 }
@@ -505,13 +508,11 @@ describe('ManageableResource Class', () => {
       const mockEvent = { target: 'mock' }
       const mockName = 'some name'
       const childIris = ['/child']
-      const styles = { name: ['style'] }
 
       vi.spyOn(instance, 'displayName', 'get').mockImplementationOnce(() => mockName)
       vi.spyOn(instance, 'resourceConfig', 'get').mockImplementation(() => (resourceConfig))
       vi.spyOn(instance, 'currentResource', 'get').mockImplementation(() => (resource))
       vi.spyOn(instance, 'childIris', 'get').mockImplementationOnce(() => (childIris))
-      vi.spyOn(vue, 'computed').mockImplementationOnce(input => (input()))
 
       vi.spyOn(ManagerTabsResolver.default.mock.results[0].value, 'resolve').mockImplementationOnce(() => (['abc']))
 
@@ -528,7 +529,6 @@ describe('ManageableResource Class', () => {
         displayName: mockName,
         managerTabs: ['abc'],
         ui: 'ui',
-        styles,
         childIris,
       }, false, instance.ops)
     })
@@ -540,7 +540,6 @@ describe('ManageableResource Class', () => {
       vi.spyOn(instance, 'resourceConfig', 'get').mockReturnValue(null)
       vi.spyOn(instance, 'currentResource', 'get').mockReturnValue({ iri: '/mock' })
       vi.spyOn(instance, 'childIris', 'get').mockReturnValue(computed(() => []))
-      vi.spyOn(vue, 'computed').mockImplementationOnce(input => (input()))
       vi.spyOn(ManagerTabsResolver.default.mock.results[0].value, 'resolve').mockReturnValue([])
 
       const el1 = { nodeType: 1, id: 'el1' }
@@ -570,7 +569,6 @@ describe('ManageableResource Class', () => {
       vi.spyOn(instance, 'resourceConfig', 'get').mockImplementation(() => resourceConfig)
       vi.spyOn(instance, 'currentResource', 'get').mockImplementation(() => resource)
       vi.spyOn(instance, 'childIris', 'get').mockImplementationOnce(() => [])
-      vi.spyOn(vue, 'computed').mockImplementationOnce(input => (input()))
       vi.spyOn(ManagerTabsResolver.default.mock.results[0].value, 'resolve').mockImplementationOnce(() => [])
 
       instance.currentIri = ref('__new__')
@@ -888,16 +886,6 @@ describe('ManageableResource Class', () => {
     })
   })
 
-  describe('resourceConfig getter no resourcesConfig', () => {
-    test('returns undefined when $cwa.resourcesConfig is falsy', () => {
-      const { instance, $cwa } = createManageableResource()
-      ;($cwa.resources as any).getResource.mockReturnValue({ value: { data: { '@type': 'MyComponent' } } })
-      ;($cwa as any).resourcesConfig = undefined
-      instance.currentIri = ref('/component/1')
-      expect((instance as any).resourceConfig).toBeUndefined()
-    })
-  })
-
   describe('currentResource getter', () => {
     test('returns undefined when currentIri is not set', () => {
       const { instance } = createManageableResource()
@@ -948,7 +936,7 @@ describe('ManageableResource Class', () => {
     test('returns undefined when resourceType is not in resourcesConfig', () => {
       const { instance, $cwa } = createManageableResource()
       ;($cwa.resources as any).getResource.mockReturnValue({ value: { data: { '@type': 'UnknownType' } } })
-      ;($cwa as any).resourcesConfig = {}
+      cwaConfig.resourcesConfig = {}
       instance.currentIri = ref('/component/1')
       expect((instance as any).resourceConfig).toBeUndefined()
     })
@@ -957,7 +945,7 @@ describe('ManageableResource Class', () => {
       const { instance, $cwa } = createManageableResource()
       const config = { name: 'My Component', managerTabs: [] }
       ;($cwa.resources as any).getResource.mockReturnValue({ value: { data: { '@type': 'MyComponent' } } })
-      ;($cwa as any).resourcesConfig = { MyComponent: config }
+      cwaConfig.resourcesConfig = { MyComponent: config }
       instance.currentIri = ref('/component/1')
       expect((instance as any).resourceConfig).toBe(config)
     })
@@ -967,7 +955,7 @@ describe('ManageableResource Class', () => {
     test('returns resourceType when resourceConfig has no name', () => {
       const { instance, $cwa } = createManageableResource()
       ;($cwa.resources as any).getResource.mockReturnValue({ value: { data: { '@type': 'MyComponent' } } })
-      ;($cwa as any).resourcesConfig = { MyComponent: {} }
+      cwaConfig.resourcesConfig = { MyComponent: {} }
       instance.currentIri = ref('/component/1')
       expect((instance as any).displayName).toBe('MyComponent')
     })
@@ -975,7 +963,7 @@ describe('ManageableResource Class', () => {
     test('returns resourceConfig.name when set', () => {
       const { instance, $cwa } = createManageableResource()
       ;($cwa.resources as any).getResource.mockReturnValue({ value: { data: { '@type': 'MyComponent' } } })
-      ;($cwa as any).resourcesConfig = { MyComponent: { name: 'Fancy Widget' } }
+      cwaConfig.resourcesConfig = { MyComponent: { name: 'Fancy Widget' } }
       instance.currentIri = ref('/component/1')
       expect((instance as any).displayName).toBe('Fancy Widget')
     })

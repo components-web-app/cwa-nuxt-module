@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { resourcesConfig } from '#build/cwa-config'
 import { POPOVER_GAP } from '#cwa/templates/components/core/ui/popover-gap'
 import { popoverOpen } from '#cwa/templates/components/core/ui/open-motion'
 import { computed, onBeforeUnmount, ref } from 'vue'
@@ -101,7 +102,7 @@ function activity(peer: PresencePeer) {
     return 'Viewing'
   }
   const type = stored(peer.component)?.['@type']
-  return `${peer.state === 'editing' ? 'Editing' : 'Selected'} ${type ? $cwa.resourcesConfig[type]?.name || type : 'a component'}`
+  return `${peer.state === 'editing' ? 'Editing' : 'Selected'} ${type ? resourcesConfig[type]?.name || type : 'a component'}`
 }
 
 function locationOf(page: string) {

@@ -7,7 +7,7 @@ import type { App, ComponentPublicInstance, ComputedRef, Ref, ShallowRef } from 
 import { computed, createApp, nextTick, ref, shallowRef, watch } from 'vue'
 import type { AdminStore, CwaAdminStoreInterface } from '../storage/stores/admin/admin-store'
 import type { CwaResourcesStoreInterface, ResourcesStore } from '../storage/stores/resources/resources-store'
-import type { ManageableResourceOps, StyleOptions } from './manageable-resource'
+import type { ManageableResourceOps } from './manageable-resource'
 
 interface _ResourceStackItem {
   iri: string
@@ -16,7 +16,6 @@ interface _ResourceStackItem {
   managerTabs?: ManagerTab[]
   ui?: ComponentUi[]
   childIris: Ref<string[]>
-  styles?: ComputedRef<StyleOptions | undefined>
   resourceOps?: ManageableResourceOps
 }
 

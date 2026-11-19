@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, shallowReactive, watch } from 'vue'
 import { useRouter } from '#app/composables/router'
+import { resourcesConfig } from '#build/cwa-config'
 import { useCwa } from '#cwa/composables/cwa'
 import { useCwaToast } from '#cwa/composables/cwa-toast'
 import { failedSaves, forgetFailedSave, onFailedSavesChange } from '#cwa/admin/field-states'
@@ -65,7 +66,7 @@ function nameOf(iri: string) {
   for (const each of equivalents(iri)) {
     const type = $cwa.resources.getResource(each).value?.data?.['@type']
     if (type) {
-      return $cwa.resourcesConfig?.[type]?.name || type
+      return resourcesConfig[type]?.name || type
     }
   }
   return 'Component'

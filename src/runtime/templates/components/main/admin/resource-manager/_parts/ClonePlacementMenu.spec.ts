@@ -7,6 +7,14 @@ import { useCloneMode } from '#cwa/admin/clone-mode'
 import type Cwa from '#cwa/cwa'
 import { onPhone } from '../../../../../../../../test/utils/sheet-media'
 
+const cwaConfig = vi.hoisted(() => ({
+  resourcesConfig: { HtmlContent: { name: 'Body Text' } } as Record<string, any>,
+  uiConfig: {} as Record<string, any>,
+  layoutsConfig: {} as Record<string, any>,
+  pagesConfig: {} as Record<string, any>,
+}))
+vi.mock('#build/cwa-config', () => cwaConfig)
+
 const state = vi.hoisted(() => ({ cwa: null as any, editingLayoutWhenCloned: undefined as boolean | undefined, confirm: { answer: true, asked: [] as unknown[] } }))
 
 vi.mock('#app/nuxt', async importOriginal => ({
@@ -85,7 +93,6 @@ function makeCwa() {
       resourceStackManager: { isEditingLayout: ref(false) },
     },
     auth: { user: { '@id': '/_/users/admin' } },
-    resourcesConfig: { HtmlContent: { name: 'Body Text' } },
     getComponentMetadata: vi.fn(async () => ({
       HtmlContent: { resourceName: 'HtmlContent', endpoint: '/component/html_contents', isPublishable: true, explicitAllowOnly: false },
     })),

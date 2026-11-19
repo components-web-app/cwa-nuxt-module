@@ -97,6 +97,7 @@
 </template>
 
 <script lang="ts" setup>
+import { pagesConfig } from '#build/cwa-config'
 import { computed, ref } from 'vue'
 import { useListPage } from '#cwa-layer/_composables/useListPage'
 import { useListRoutes } from '#cwa-layer/_composables/useListRoutes'
@@ -114,11 +115,10 @@ import CwaUiAlert from '#cwa/templates/components/ui/Alert.vue'
 import PlusIcon from '#cwa/templates/components/ui/icon/PlusIcon.vue'
 import { useQueryBoundModel } from '#cwa/composables/cwa-query-bound-model'
 import type { CwaResource } from '#cwa/resources/resource-utils'
-import { definePageMeta, useCwa, useCwaResourceRoute, useHead } from '#imports'
+import { definePageMeta, useCwaResourceRoute, useHead } from '#imports'
 
 const listContent = ref<InstanceType<typeof ListContent> | null>(null)
 
-const $cwa = useCwa()
 const { goToAdd, triggerReload, computedItemLink } = useListPage(listContent)
 const { getInternalResourceLink } = useCwaResourceRoute()
 const { routes, known, error: routesError, now, load, retry: retryRoutes } = useListRoutes('pages')
@@ -169,7 +169,7 @@ function subLine(page: CwaResource) {
 
 function getDisplayPageUi(ui: string) {
   const cleanName = ui.replace(/^CwaPage/, '')
-  return $cwa.pagesConfig?.[cleanName]?.name || cleanName
+  return pagesConfig[cleanName]?.name || cleanName
 }
 
 useHead({

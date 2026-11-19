@@ -46,7 +46,6 @@ function setup(resourceType: string, members: Record<string, Record<string, any>
     fetch,
     fetchResource: vi.fn(),
     getApiDocumentation,
-    pagesConfig: {},
     pageDataConfig: {},
     admin: { toggleEdit: vi.fn() },
   }) as unknown as ReturnType<typeof cwaComposable.useCwa>)
@@ -198,7 +197,6 @@ describe('PageResourceAdminModal in the real dialog, editing (#461)', () => {
       fetch: vi.fn(() => ({ response: Promise.resolve({ _data: { member: [] } }) })),
       fetchResource,
       getApiDocumentation: vi.fn(async () => ({ entrypoint: {}, pageDataMetadata: { member: [] } })),
-      pagesConfig: {},
       pageDataConfig: {},
       admin: { toggleEdit: vi.fn() },
     }) as unknown as ReturnType<typeof cwaComposable.useCwa>)

@@ -7,7 +7,7 @@ import { useCwaComponent } from '#cwa/composables/cwa-component'
 const mockResource = vi.hoisted(() => ({ value: undefined as any }))
 const mockExposeMeta = vi.hoisted(() => ({ cwaResource: {}, disableManager: false }))
 const mockCwa = vi.hoisted(() => ({ resources: {}, admin: { eventBus: { emit: vi.fn() } } }))
-const mockGetCurrentStyleName = vi.hoisted(() => vi.fn())
+const mockStyleKeys = vi.hoisted(() => ({ value: ['filled'] }))
 const mockUseCwaResource = vi.hoisted(() => vi.fn())
 
 vi.mock('#cwa/composables/cwa-resource', () => ({
@@ -21,7 +21,7 @@ describe('useCwaComponent', () => {
       getResource: vi.fn(() => mockResource),
       exposeMeta: mockExposeMeta,
       $cwa: mockCwa,
-      getCurrentStyleName: mockGetCurrentStyleName,
+      styleKeys: mockStyleKeys,
     })
   })
 
@@ -34,6 +34,11 @@ describe('useCwaComponent', () => {
   test('returns exposeMeta from useCwaResource', () => {
     const result = useCwaComponent({ iri: '/component/1' })
     expect(result.exposeMeta).toBe(mockExposeMeta)
+  })
+
+  test('returns styleKeys from useCwaResource', () => {
+    const result = useCwaComponent({ iri: '/component/1' })
+    expect(result.styleKeys).toBe(mockStyleKeys)
   })
 
   test('forwards ops to useCwaResource', () => {

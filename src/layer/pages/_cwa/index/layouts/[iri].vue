@@ -95,6 +95,7 @@
 </template>
 
 <script setup lang="ts">
+import { layoutsConfig } from '#build/cwa-config'
 import ResourceIdDetail from '#cwa/templates/components/core/admin/ResourceIdDetail.vue'
 import { computed } from 'vue'
 import { useItemPage } from '#cwa-layer/_composables/useItemPage'
@@ -109,8 +110,8 @@ import CwaUiButton from '#cwa/templates/components/ui/Button.vue'
 import type { MenuEntry } from '#cwa/templates/components/core/ui/menu-entries'
 import type { DialogTab } from '#cwa/templates/components/core/ui/dialog-form'
 import { useCwaConfirm } from '#cwa/composables/cwa-confirm'
-import { deriveSelectedStyles, mergeSelectedStyles } from '#cwa/composables/cwa-styles'
-import type { StyleClasses } from '#cwa/composables/cwa-styles'
+import { selectedStyleKeys } from '#cwa/composables/cwa-styles'
+import type { CwaStyles } from '#cwa/types'
 
 definePageMeta({
   name: '_cwa-layouts-iri',
@@ -134,7 +135,7 @@ function cleanUiName(componentName: string) {
 const layoutComponentOptions = computed<MenuEntry[]>(() => layoutComponentNames.value.map((componentName) => {
   const cleanName = cleanUiName(componentName)
   return {
-    label: $cwa.layoutsConfig?.[cleanName]?.name || cleanName,
+    label: layoutsConfig[cleanName]?.name || cleanName,
     value: componentName,
   }
 }))
@@ -172,23 +173,22 @@ const layoutUiOptions = computed<MenuEntry[]>(() => {
   ]
 })
 
-const layoutStyleClasses = computed<StyleClasses>(() => {
+const layoutStyles = computed<CwaStyles | undefined>(() => {
   const uiComponent = localResourceData.value?.uiComponent
-  return (uiComponent && $cwa.layoutsConfig?.[cleanUiName(uiComponent)]?.classes) || {}
+  return uiComponent ? layoutsConfig[cleanUiName(uiComponent)]?.styles : undefined
 })
 
-const layoutStyleOptions = computed<MenuEntry[]>(() => Object.keys(layoutStyleClasses.value).map(name => ({ label: name, value: name })))
+const layoutStyleOptions = computed<MenuEntry[]>(() => Object.entries(layoutStyles.value ?? {}).map(([key, style]) => ({ label: style.label, value: key })))
 
 const layoutStyleModel = {
   ...form.model<string[] | null>('uiClassNames'),
   model: computed({
-    get: () => deriveSelectedStyles(localResourceData.value?.uiClassNames, layoutStyleClasses.value)[0] ?? null,
-    set: (name: string | null | undefined) => {
+    get: () => selectedStyleKeys(localResourceData.value?.uiClassNames, layoutStyles.value)[0] ?? null,
+    set: (key: string | null | undefined) => {
       if (!localResourceData.value) {
         return
       }
-      const merged = mergeSelectedStyles(name ? [name] : [], layoutStyleClasses.value)
-      localResourceData.value.uiClassNames = merged.length ? merged : null
+      localResourceData.value.uiClassNames = key ? [`style:${key}`] : null
     },
   }),
 } as unknown as ReturnType<typeof form.model<string>>

@@ -22,20 +22,46 @@ export type CwaComponentKind = 'heading' | 'rich-text' | 'image' | 'gallery' | '
   | 'accordion' | 'quote' | 'testimonial' | 'form' | 'newsletter' | 'sign-up' | 'collection' | 'articles' | 'table'
   | 'steps' | 'file' | 'chart' | 'heatmap' | 'map' | 'contact' | 'social' | 'person' | 'people' | 'notice'
 
-export interface CwaResourceMeta {
+export interface CwaStyle {
+  label: string
+  classes: string
+}
+
+export interface CwaStyles {
+  [key: string]: CwaStyle
+}
+
+export interface CwaTemplateConfig {
   name?: string
+  styles?: CwaStyles
+}
+
+export interface CwaUiVariantConfig {
+  name?: string
+  styles?: CwaStyles
+  allowMultiple?: boolean
+}
+
+export interface CwaComponentMeta extends CwaTemplateConfig, CwaUiVariantConfig {
   description?: string
   instantAdd?: boolean
   defaultData?: Record<any, any>
+}
+
+export interface CwaComponentAdminConfig {
+  icon?: CwaComponentKind | `lucide:${LucideIconName}` | `./${string}.svg`
+  group?: string
+  image?: string
+}
+
+export interface CwaComponentConfig extends CwaComponentMeta, CwaComponentAdminConfig {}
+
+export interface CwaResourceMeta extends CwaComponentMeta {
   managerTabs?: ManagerTab[]
   ui?: ComponentUi[]
 }
 
-export interface CwaResourceConfig extends CwaResourceMeta {
-  icon?: CwaComponentKind | `lucide:${LucideIconName}`
-  group?: string
-  image?: string
-}
+export interface CwaResourceConfig extends CwaResourceMeta, CwaComponentAdminConfig {}
 
 export interface CwaResourcesMeta {
   [type: string]: CwaResourceMeta
@@ -45,10 +71,9 @@ export interface CwaResourcesConfig {
   [type: string]: CwaResourceConfig
 }
 
-export interface CwaUiMeta {
-  name?: string
-  classes?: {
-    [name: string]: string[] | string
+export interface CwaStyleClasses {
+  [componentName: string]: {
+    [key: string]: string
   }
 }
 
@@ -70,7 +95,6 @@ export type SiteConfigParams = {
 export interface CwaModuleOptions {
   storeName: string
   siteConfig: Partial<SiteConfigParams>
-  resources: CwaResourcesConfig
   pagesDepth?: number
   routeCacheLimit?: number
   staticRender?: boolean
@@ -92,14 +116,9 @@ export interface CwaModuleOptions {
     sharedMaxAge?: number
     staleWhileRevalidate?: number
   }
-  layouts?: {
-    [type: string]: CwaUiMeta
-  }
-  pages?: {
-    [type: string]: CwaUiMeta
-  }
   pageData?: {
-    [resourceClass: string]: Pick<CwaUiMeta, 'name'> & {
+    [resourceClass: string]: {
+      name?: string
       properties?: { [propertyName: string]: string }
       metaFields?: {
         field: string
@@ -110,8 +129,4 @@ export interface CwaModuleOptions {
     }
   }
   layoutName?: string
-}
-
-export type CwaRuntimeOptions = Omit<CwaModuleOptions, 'resources'> & {
-  resources: CwaResourcesMeta
 }

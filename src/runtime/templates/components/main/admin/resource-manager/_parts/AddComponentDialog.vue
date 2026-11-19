@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { resourcesConfig } from '#build/cwa-config'
 import { computed, nextTick, ref, unref, useTemplateRef, watch } from 'vue'
 import { consola as logger } from 'consola'
 import { useCwa } from '#imports'
@@ -152,7 +153,7 @@ function describe(name: string, config: CwaResourceMeta) {
   }
   if (import.meta.env.DEV && hasMarkup(config.description) && !warnedMarkup.has(name)) {
     warnedMarkup.add(name)
-    logger.warn(`[CWA] cwa.resources.${name}.description contains HTML. Descriptions are plain text, so the tags are removed.`)
+    logger.warn(`[CWA] The description in the defineCwaConfig of ${name} contains HTML. Descriptions are plain text, so the tags are removed.`)
   }
   return plainText(config.description) || undefined
 }
@@ -172,7 +173,7 @@ async function createDisplayData(event: AddResourceEvent): Promise<DisplayData> 
 
   const available: Record<string, AvailableComponent> = {}
   for (const [name, apiMetadata] of Object.entries(apiComponents)) {
-    const config = $cwa.resourcesConfig?.[name]
+    const config = resourcesConfig[name]
     config && (available[name] = { apiMetadata, config })
   }
 
@@ -426,7 +427,7 @@ watch(open, async (isOpen: boolean) => {
       @back="back"
     >
       <template
-        v-if="detail && !isDynamic && !detailImage"
+        v-if="detail && !isDynamic"
         #lead
       >
         <AddComponentLead

@@ -1,5 +1,8 @@
 <template>
-  <article class="prose prose-stone prose-invert max-w-none min-h-[20px] bg-gray-900 px-4 pt-4 pb-0 border border-stone-200">
+  <article
+    class="prose prose-stone prose-invert max-w-none min-h-[20px]"
+    :class="styleKeys.length ? undefined : 'bg-gray-900 px-4 pt-4 pb-0 border border-stone-200'"
+  >
     <nuxt-img
       src="/logo.svg"
       placeholder
@@ -24,13 +27,17 @@
 <script setup lang="ts">
 import { computed, ref, toRef } from 'vue'
 import type { IriProp } from '#cwa/composables/cwa-resource'
-import { useCwaResource, useHtmlContent } from '#imports'
+import { useCwaResource, useHtmlContent, defineCwaConfig } from '#imports'
 import { useCustomHtmlComponent } from '../../../../composables/useCustomHtmlComponent'
+
+defineCwaConfig({
+  name: 'Alternative',
+})
 
 // Setup the resource
 const props = defineProps<IriProp>()
 const iriRef = toRef(props, 'iri')
-const { getResource, exposeMeta, $cwa } = useCwaResource(iriRef, { name: 'Alternative' })
+const { getResource, exposeMeta, $cwa, styleKeys } = useCwaResource(iriRef, { name: 'Alternative' })
 defineExpose(exposeMeta)
 
 const resource = getResource()

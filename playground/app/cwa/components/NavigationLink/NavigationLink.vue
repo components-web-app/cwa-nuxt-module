@@ -10,7 +10,14 @@
 
 <script setup lang="ts">
 import type { IriProp } from '#cwa/composables/cwa-resource'
-import { useCwaComponent } from '#imports'
+import { useCwaComponent, defineCwaConfig } from '#imports'
+
+defineCwaConfig({
+  name: 'Link',
+  description: 'A link to another page or URL',
+  icon: 'link',
+  group: 'Text',
+})
 
 const props = defineProps<IriProp>()
 const { resource, exposeMeta } = useCwaComponent(props)
