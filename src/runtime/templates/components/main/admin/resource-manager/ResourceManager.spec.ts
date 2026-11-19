@@ -89,6 +89,7 @@ function makeStackManager(overrides: Record<string, any> = {}) {
     currentIri: ref<string | undefined>('/component/1'),
     resetTabs: vi.fn(),
     getState: vi.fn(),
+    setState: vi.fn(),
     getClosestStackItemByType: vi.fn(),
     ...overrides,
   }
@@ -644,21 +645,22 @@ describe('ResourceManager', () => {
     })
   })
 
-  describe('drag handles while reordering', () => {
-    function reorderingCwa(opts: { reordering: boolean, editing?: boolean, group?: string }) {
-      const state = reactive<Record<string, any>>({ reordering: opts.reordering })
+  describe('dragging the positions of a selected group', () => {
+    function selectingCwa(opts: { iri: string, reordering?: boolean, editing?: boolean }) {
+      const currentStackItem = ref({ iri: opts.iri, managerTabs: [] })
+      const state = reactive<Record<string, any>>({ reordering: opts.reordering ?? true })
       const stackManager = makeStackManager({
         showManager: ref(true),
-        currentStackItem: ref({ iri: '/component/1', managerTabs: [] }),
+        currentStackItem,
         getState: (prop: string) => state[prop],
-        getClosestStackItemByType: vi.fn(() => 'group' in opts ? opts.group : '/_/component_groups/g'),
+        getClosestStackItemByType: vi.fn(() => '/_/component_groups/closest'),
       })
       cwaState.cwa = makeCwa({ stackManager, isEditing: opts.editing ?? true })
-      return state
+      return { current: currentStackItem, state }
     }
 
-    test('are loaded for the closest group only once Enable reordering is on', async () => {
-      const state = reorderingCwa({ reordering: false })
+    test('is on only while a component group is the selected resource and its Enable reordering is on, for that group', async () => {
+      const { state } = selectingCwa({ iri: '/_/component_groups/g', reordering: false })
       const wrapper = await mountManager()
       await flushPromises()
       expect(wrapper.find('.reorder-handles-stub').exists()).toBe(false)
@@ -671,17 +673,24 @@ describe('ResourceManager', () => {
     })
 
     test.each([
-      ['outside edit mode', { reordering: true, editing: false }],
-      ['with no group in the stack', { reordering: true, group: undefined }],
-    ])('are not shown %s', async (_label, opts) => {
-      reorderingCwa(opts)
+      ['a component', '/component/1'],
+      ['a position', '/_/component_positions/p'],
+    ])('is off while %s in the group is selected, even with reordering on', async (_label, iri) => {
+      selectingCwa({ iri })
       const wrapper = await mountManager()
       await flushPromises()
       expect(wrapper.find('.reorder-handles-stub').exists()).toBe(false)
     })
 
-    test('are not shown while cloning', async () => {
-      reorderingCwa({ reordering: true })
+    test('is off outside edit mode', async () => {
+      selectingCwa({ iri: '/_/component_groups/g', editing: false })
+      const wrapper = await mountManager()
+      await flushPromises()
+      expect(wrapper.find('.reorder-handles-stub').exists()).toBe(false)
+    })
+
+    test('is off while cloning or moving', async () => {
+      selectingCwa({ iri: '/_/component_groups/g' })
       useCloneMode(cwaState.cwa).start('/component/source')
       const wrapper = await mountManager()
       await flushPromises()

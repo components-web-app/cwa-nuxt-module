@@ -60,34 +60,6 @@ describe('useComponentGroupPositions', () => {
   const groupIri = '/_/component_groups/1'
   const iriRef = computed(() => groupIri)
 
-  describe('groupIsReordering', () => {
-    test('returns false when iri is undefined', () => {
-      const { mockCwa } = buildCwa([])
-      const { groupIsReordering } = useComponentGroupPositions(computed(() => undefined), mockCwa)
-      expect(groupIsReordering.value).toBe(false)
-    })
-
-    test('returns false when getState returns falsy', () => {
-      const { mockCwa } = buildCwa([])
-      mockCwa.admin.resourceStackManager.getState.mockReturnValue(false)
-      const { groupIsReordering } = useComponentGroupPositions(iriRef, mockCwa)
-      expect(groupIsReordering.value).toBe(false)
-    })
-
-    test('returns false when not the closest component group', () => {
-      const { mockCwa } = buildCwa([])
-      mockCwa.admin.resourceStackManager.getClosestStackItemByType.mockReturnValue('/_/component_groups/other')
-      const { groupIsReordering } = useComponentGroupPositions(iriRef, mockCwa)
-      expect(groupIsReordering.value).toBe(false)
-    })
-
-    test('returns true when reordering is active and iri matches closest group', () => {
-      const { mockCwa } = buildCwa([])
-      const { groupIsReordering } = useComponentGroupPositions(iriRef, mockCwa)
-      expect(groupIsReordering.value).toBe(true)
-    })
-  })
-
   describe('componentPositions', () => {
     test('returns positions from getOrderedPositionsForGroup', () => {
       const positions = ['/_/component_positions/a', '/_/component_positions/b']
@@ -120,9 +92,8 @@ describe('useComponentGroupPositions', () => {
       }
     })
 
-    test('moves the position with Enable reordering off, as it only turns on dragging on the page', () => {
+    test('moves the position whatever is selected, as the Order tab and a drag on the selected group both emit it', () => {
       const { mockCwa, getCapturedHandler } = buildCwa(positions, resources)
-      mockCwa.admin.resourceStackManager.getState.mockReturnValue(false)
       useComponentGroupPositions(iriRef, mockCwa)
       getCapturedHandler()({ positionIri: '/_/component_positions/a', location: 'next' })
       expect(mockCwa.resourcesManager.storeResource).toHaveBeenCalledTimes(3)
@@ -719,9 +690,9 @@ describe('group reorder queue against the server (#400, api-components-bundle#47
     expect(group.displayed()).toEqual(['a', 'b', 'c'])
   })
 
-  describe('dragging a position by its handle', () => {
+  describe('dragging a position of the selected group', () => {
     function dragger(group: ReturnType<typeof createGroup>, eventBus: { emit: (event: 'reorder', data: ReorderEvent) => void }) {
-      const handle = document.createElement('button')
+      const handle = document.body.appendChild(document.createElement('div'))
       const drag = createPositionDrag({
         positions: () => group.displayed().map(positionIri),
         boxOf: (iri) => {
@@ -733,8 +704,8 @@ describe('group reorder queue against the server (#400, api-components-bundle#47
       return (name: string, toY: number) => {
         const fromY = group.displayed().indexOf(name) * 100 + 50
         drag.start(new PointerEvent('pointerdown', { clientY: fromY, pointerId: 1 }), positionIri(name), handle)
-        handle.dispatchEvent(new PointerEvent('pointermove', { clientY: toY, pointerId: 1 }))
-        handle.dispatchEvent(new PointerEvent('pointerup', { clientY: toY, pointerId: 1 }))
+        handle.dispatchEvent(new PointerEvent('pointermove', { clientY: toY, pointerId: 1, bubbles: true }))
+        handle.dispatchEvent(new PointerEvent('pointerup', { clientY: toY, pointerId: 1, bubbles: true }))
       }
     }
 

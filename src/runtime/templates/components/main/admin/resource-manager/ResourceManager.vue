@@ -194,10 +194,11 @@ const showSharedInstances = computed(() => {
 })
 
 const reorderGroupIri = computed(() => {
-  if (!$cwa.admin.isEditing || cloneMode.source.value || !$cwa.admin.resourceStackManager.getState('reordering')) {
+  const iri = currentStackItem.value?.iri
+  if (!iri || !$cwa.admin.isEditing || cloneMode.source.value || getResourceTypeFromIri(iri) !== CwaResourceTypes.COMPONENT_GROUP || !$cwa.admin.resourceStackManager.getState('reordering')) {
     return
   }
-  return $cwa.admin.resourceStackManager.getClosestStackItemByType(CwaResourceTypes.COMPONENT_GROUP)
+  return iri
 })
 
 const showAdmin = computed(() => {

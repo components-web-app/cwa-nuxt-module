@@ -10,7 +10,8 @@ export interface DragBox {
 export interface PositionDragState {
   positionIri: string
   targetIndex: number
-  line: { top: number, left: number, right: number }
+  line: { top: number, left: number, right: number } | undefined
+  ghost: DragBox | undefined
 }
 
 export interface PositionDragOptions {
@@ -66,15 +67,17 @@ function attempt(action: () => void) {
 export function createPositionDrag(options: PositionDragOptions) {
   let end: ((commit: boolean) => void) | undefined
 
-  function start(down: PointerEvent, positionIri: string, handle: HTMLElement) {
+  function start(down: PointerEvent, positionIri: string, element: HTMLElement) {
     end?.(false)
-    down.preventDefault()
+    if (down.button !== 0) {
+      return
+    }
     const pointerId = down.pointerId
     const from = options.positions().indexOf(positionIri)
     if (from === -1) {
       return
     }
-    attempt(() => handle.setPointerCapture?.(pointerId))
+    const startBox = options.boxOf(positionIri)
     let dragging = false
     let state: PositionDragState | undefined
 
@@ -82,12 +85,18 @@ export function createPositionDrag(options: PositionDragOptions) {
       if (event.pointerId !== pointerId) {
         return
       }
-      if (!dragging && Math.max(Math.abs(event.clientX - down.clientX), Math.abs(event.clientY - down.clientY)) < DRAG_THRESHOLD) {
+      const dx = event.clientX - down.clientX
+      const dy = event.clientY - down.clientY
+      if (!dragging && Math.max(Math.abs(dx), Math.abs(dy)) < DRAG_THRESHOLD) {
         return
       }
-      dragging = true
+      if (!dragging) {
+        dragging = true
+        attempt(() => element.setPointerCapture?.(pointerId))
+      }
       const { targetIndex, line } = dropTarget(options.positions(), positionIri, options.boxOf, event.clientX, event.clientY)
-      state = line ? { positionIri, targetIndex, line } : undefined
+      const ghost = startBox && { top: startBox.top + dy, bottom: startBox.bottom + dy, left: startBox.left + dx, right: startBox.right + dx }
+      state = { positionIri, targetIndex, line: targetIndex === from ? undefined : line, ghost }
       options.onChange?.(state)
     }
     const up = (event: PointerEvent) => {
@@ -101,34 +110,37 @@ export function createPositionDrag(options: PositionDragOptions) {
       }
     }
     const keydown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
+      if (dragging && event.key === 'Escape') {
         event.preventDefault()
         event.stopPropagation()
         finish(false)
       }
     }
+    const nativeDrag = (event: Event) => event.preventDefault()
 
     function finish(commit: boolean) {
       end = undefined
-      handle.removeEventListener('pointermove', move)
-      handle.removeEventListener('pointerup', up)
-      handle.removeEventListener('pointercancel', cancel)
+      window.removeEventListener('pointermove', move, true)
+      window.removeEventListener('pointerup', up, true)
+      window.removeEventListener('pointercancel', cancel, true)
       window.removeEventListener('keydown', keydown, true)
-      attempt(() => handle.releasePointerCapture?.(pointerId))
+      window.removeEventListener('dragstart', nativeDrag, true)
       if (!dragging) {
         return
       }
+      attempt(() => element.releasePointerCapture?.(pointerId))
       swallowNextClick()
-      state && options.onChange?.(undefined)
+      options.onChange?.(undefined)
       if (commit && state && state.targetIndex !== from) {
         options.onReorder({ positionIri, location: state.targetIndex + 1 })
       }
     }
 
-    handle.addEventListener('pointermove', move)
-    handle.addEventListener('pointerup', up)
-    handle.addEventListener('pointercancel', cancel)
+    window.addEventListener('pointermove', move, true)
+    window.addEventListener('pointerup', up, true)
+    window.addEventListener('pointercancel', cancel, true)
     window.addEventListener('keydown', keydown, true)
+    window.addEventListener('dragstart', nativeDrag, true)
     end = finish
   }
 
