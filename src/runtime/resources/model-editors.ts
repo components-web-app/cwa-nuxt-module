@@ -50,6 +50,15 @@ export interface ModelEditor {
 }
 
 const editors = new WeakMap<Cwa, Set<ModelEditor>>()
+const labels = new WeakMap<object, string>()
+
+export function labelModelField(key: object, label: string | undefined) {
+  label ? labels.set(key, label) : labels.delete(key)
+}
+
+export function modelFieldLabel(key: object) {
+  return labels.get(key)
+}
 
 export function registerModelEditor($cwa: Cwa, editor: ModelEditor) {
   let registered = editors.get($cwa)

@@ -1927,3 +1927,66 @@ test('67. with Enable reordering on, every position in the group wobbles and has
   await settle()
   assert(await sourceAbove(page, texts.pageAOther) === false, 'The new order did not persist')
 })
+
+test('70. a title save that fails once another component is selected raises a toast, which hides while the title is selected again; Retry saves it, and after a second failure Show me selects it with the bar showing the error (#461)', async ({ cwa: t }) => {
+  const { page, seed } = t
+  const first = (await t.api.create('/component/titles', { title: 'First title' }))['@id']
+  const second = (await t.api.create('/component/titles', { title: 'Second title' }))['@id']
+  await t.api.create('/_/component_positions', { componentGroup: seed.iris.pageAGroup, component: first })
+  await t.api.create('/_/component_positions', { componentGroup: seed.iris.pageAGroup, component: second })
+  await openEditMode(t)
+
+  t.allowConsoleErrors(/^Failed to load resource: the server responded with a status of 500/)
+  let refuse = false
+  let held
+  let release
+  await page.route(url => url.pathname.startsWith(first), async (route) => {
+    if (!refuse || route.request().method() !== 'PATCH') {
+      return route.fallback()
+    }
+    refuse = false
+    held = route.request().postDataJSON()
+    await new Promise((resolve) => {
+      release = resolve
+    })
+    return route.fulfill({ status: 500, contentType: 'application/ld+json', body: '{}' })
+  })
+
+  const status = page.getByTestId('bar-summary')
+  async function failWhileSecondSelected(text) {
+    refuse = true
+    held = undefined
+    await page.getByTestId('inline-edit-value').filter({ hasText: /^First title/ }).click()
+    await page.getByPlaceholder('Add a title').fill(text)
+    await eventually(() => held?.title === text, 'The title PATCH was never held')
+    await page.getByTestId('inline-edit-value').filter({ hasText: 'Second title' }).click()
+    await page.getByPlaceholder('Add a title').waitFor()
+    release()
+  }
+
+  const toast = page.locator('[data-toast-id^="cwa-save-failed-"]')
+  await failWhileSecondSelected('First title edited')
+  await toast.waitFor()
+  expect(await toast.getByTestId('toast-title').textContent()).toContain('Title wasn\'t saved')
+  expect(await toast.getByTestId('toast-description').textContent()).toContain('Your last edit to Title wasn\'t saved.')
+  expect((await toast.getByRole('button').allTextContents()).map(text => text.trim())).toEqual(expect.arrayContaining(['Show me', 'Retry', 'Reset']))
+  assert(await status.getAttribute('data-state') !== 'error', 'The bar shows the failed save of a component it does not show')
+
+  await page.getByTestId('inline-edit-value').filter({ hasText: /^First title/ }).click()
+  await eventually(async () => await status.getAttribute('data-state') === 'error', 'Selecting the title did not show its failed save in the bar')
+  await toast.waitFor({ state: 'detached' })
+  await page.getByTestId('inline-edit-value').filter({ hasText: 'Second title' }).click()
+  await toast.waitFor()
+
+  await toast.getByRole('button', { name: 'Retry' }).click()
+  await eventually(() => t.rehearsal.writes.find(w => w.method === 'PATCH' && w.path.startsWith(first) && w.body?.title === 'First title edited'), `Retry sent no PATCH: ${JSON.stringify(t.rehearsal.writes)}`)
+  await toast.waitFor({ state: 'detached' })
+  await t.settle()
+  assert(await toast.count() === 0, 'The toast came back after Retry saved the title')
+
+  await failWhileSecondSelected('First title edited again')
+  await toast.waitFor()
+  await toast.getByRole('button', { name: 'Show me' }).click()
+  await eventually(async () => await status.getAttribute('data-state') === 'error', 'Show me did not select the title with its failed save')
+  await toast.waitFor({ state: 'detached' })
+})

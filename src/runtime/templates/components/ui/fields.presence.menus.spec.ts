@@ -25,7 +25,7 @@ vi.mock('#cwa/composables/cwa', async () => {
     }),
   }
 })
-vi.mock('#cwa/resources/model-editors', () => ({ registerModelEditor: vi.fn(() => () => {}) }))
+vi.mock('#cwa/resources/model-editors', () => ({ registerModelEditor: vi.fn(() => () => {}), labelModelField: vi.fn(), modelFieldLabel: vi.fn() }))
 vi.mock('#cwa/resources/realtime-view', () => ({
   realtimeView: () => ({
     view: { value: { focusedBy: () => view.peers } },

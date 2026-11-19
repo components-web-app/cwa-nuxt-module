@@ -23,7 +23,7 @@ vi.mock('#cwa/composables/cwa', () => ({
     fetchResource: vi.fn(async () => ({ '@id': '/_/routes/a', 'path': '/showrooms' })),
   }),
 }))
-vi.mock('#cwa/resources/model-editors', () => ({ registerModelEditor: vi.fn(() => () => {}) }))
+vi.mock('#cwa/resources/model-editors', () => ({ registerModelEditor: vi.fn(() => () => {}), labelModelField: vi.fn(), modelFieldLabel: vi.fn() }))
 vi.mock('#cwa/resources/realtime-view', () => ({ realtimeView: () => ({ view: { value: undefined }, load: vi.fn().mockResolvedValue(undefined) }) }))
 vi.mock('#cwa/composables/cwa-resource-endpoint', () => ({ useCwaResourceEndpoint: () => ({ endpoint: { value: '/component/links/1' } }) }))
 vi.mock('#cwa/resources/field-state-writer', () => ({

@@ -3,6 +3,7 @@ import { afterEach, describe, expect, test, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref, shallowRef } from 'vue'
 import { enableAutoUnmount, mount } from '@vue/test-utils'
 import { useCwaInlineEditor } from './cwa-inline-editor'
+import { modelFieldLabel } from '#cwa/resources/model-editors'
 import type { ResourceModelField } from '#cwa/resources/model-editors'
 
 const cwa = vi.hoisted(() => ({
@@ -38,6 +39,13 @@ function mountEditor(element: { value: HTMLElement | undefined }, ops: { label?:
 }
 
 describe('useCwaInlineEditor naming (#461)', () => {
+  test('labels its model, so a save that fails once the bar no longer shows it is named by its label', () => {
+    const field = model()
+    mountEditor(shallowRef(editable()), { label: 'Content' }, field)
+
+    expect(modelFieldLabel(field.editorKey!)).toBe('Content')
+  })
+
   test('names an editable editor for its field and component, as a multi-line textbox', async () => {
     const element = shallowRef<HTMLElement | undefined>(editable())
     mountEditor(element, { label: 'Content' })
