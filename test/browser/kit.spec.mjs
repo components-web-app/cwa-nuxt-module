@@ -705,6 +705,87 @@ for (const hasTouch of [false, true]) {
   }
 }
 
+async function openSheetAt390(page, opener, testId) {
+  await openKit(page, 390)
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.waitForLoadState('networkidle')
+  return reopenSheet(page, opener, testId)
+}
+
+async function reopenSheet(page, opener, testId) {
+  const trigger = opener(page)
+  await trigger.scrollIntoViewIfNeeded()
+  await expect(async () => {
+    await trigger.click()
+    await expect(page.getByTestId(testId)).toBeVisible({ timeout: 500 })
+  }).toPass()
+  return settledSheet(page, testId)
+}
+
+async function dragGrip(page, testId, by, { slow = false, release = true } = {}) {
+  const grip = await page.getByTestId(`${testId}-grip`).boundingBox()
+  const x = grip.x + grip.width / 2
+  const y = grip.y + grip.height / 2
+  await page.mouse.move(x, y)
+  await page.mouse.down()
+  for (const step of [0.25, 0.5, 0.75, 1]) {
+    await page.mouse.move(x, y + by * step)
+    slow && await page.waitForTimeout(60)
+  }
+  if (slow) {
+    await page.waitForTimeout(150)
+    await page.mouse.move(x, y + by + 1)
+  }
+  release && await page.mouse.up()
+}
+
+const sheetBottom = sheet => sheet.evaluate(element => element.getBoundingClientRect().bottom)
+
+test('kit at 390: the split button ⋮ sheet follows a drag on its handle, springs back when let go short, and slides away and closes, choosing nothing, when dragged past (#461)', async ({ page }) => {
+  const sheet = await openSheetAt390(page, page => page.getByTestId('kit-split').getByTestId('button-options'), 'kit-menu-sheet')
+  const choice = await page.getByTestId('kit-menu-choice').textContent()
+  expect(Math.abs(await sheetBottom(sheet) - 844)).toBeLessThanOrEqual(1)
+
+  await dragGrip(page, 'kit-menu-sheet', 40, { slow: true, release: false })
+  expect(Math.abs(await sheetBottom(sheet) - 885)).toBeLessThanOrEqual(2)
+  await page.mouse.up()
+  await expect.poll(() => sheetBottom(sheet)).toBeLessThanOrEqual(845)
+  await expect(page.getByTestId('kit-menu-sheet')).toBeVisible()
+
+  await dragGrip(page, 'kit-menu-sheet', 260)
+  await expect(page.getByTestId('kit-menu-sheet')).toHaveCount(0)
+  expect(await page.getByTestId('kit-menu-choice').textContent()).toBe(choice)
+  await expect(page.getByTestId('kit-split').getByTestId('button-options')).toBeFocused()
+})
+
+test('kit at 390: a multi-select sheet stages its picks: Discard changes throws them away, and a swipe down applies them (#461)', async ({ page }) => {
+  const opener = page => page.locator('main').getByTestId('multi-input').first()
+  const field = page.locator('main').getByTestId('multi-input').first().locator('xpath=..')
+  await openKit(page, 390)
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.waitForLoadState('networkidle')
+  const saved = await field.getByTestId('multi-count').textContent()
+  const sheet = await reopenSheet(page, opener, 'multi-sheet')
+  const unchosen = sheet.locator('[role="option"][aria-selected="false"]:not([data-disabled])').first()
+  const label = (await unchosen.textContent()).trim()
+
+  await unchosen.click()
+  await expect(sheet.getByTestId('multi-sheet-chip').filter({ hasText: label })).toHaveCount(1)
+  expect(await field.getByTestId('multi-count').textContent()).toBe(saved)
+  await page.getByTestId('multi-sheet-discard').click()
+  await expect(page.getByTestId('multi-sheet')).toHaveCount(0)
+  expect(await field.getByTestId('multi-count').textContent()).toBe(saved)
+
+  const again = await reopenSheet(page, opener, 'multi-sheet')
+  await again.locator('[role="option"]').filter({ hasText: label }).click()
+  await dragGrip(page, 'multi-sheet', 40, { slow: true })
+  await expect.poll(() => sheetBottom(again)).toBeLessThanOrEqual(845)
+  expect(await field.getByTestId('multi-count').textContent()).toBe(saved)
+  await dragGrip(page, 'multi-sheet', 300)
+  await expect(page.getByTestId('multi-sheet')).toHaveCount(0)
+  expect(await field.getByTestId('multi-count').textContent()).not.toBe(saved)
+})
+
 test('kit at 390: the resource search sheet keeps within the visual viewport as it shrinks, as it does when the on-screen keyboard rises (#461)', async ({ page }) => {
   await openKit(page, 390)
   await page.setViewportSize({ width: 390, height: 844 })

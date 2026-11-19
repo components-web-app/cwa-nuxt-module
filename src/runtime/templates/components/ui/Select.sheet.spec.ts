@@ -2,7 +2,7 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { axe } from '../../../../../test/utils/axe'
-import { onPhone } from '../../../../../test/utils/sheet-media'
+import { drag, onPhone } from '../../../../../test/utils/sheet-media'
 import Select from './Select.vue'
 
 enableAutoUnmount(afterEach)
@@ -44,13 +44,14 @@ afterEach(() => {
 describe('CwaUiSelect on a phone (#461)', () => {
   beforeEach(() => onPhone())
 
-  test('opens a bottom sheet titled by its label, with Done, holding the options as a listbox, instead of the anchored menu', async () => {
+  test('opens a bottom sheet titled by its label, with Apply and Discard changes, holding the options as a listbox, instead of the anchored menu', async () => {
     const { sheet } = await openSelect()
 
     expect(document.querySelector('[data-testid="select-menu"]')).toBeNull()
     expect(sheet!.getAttribute('role')).toBe('dialog')
     expect(document.getElementById(sheet!.getAttribute('aria-labelledby')!)!.textContent!.trim()).toBe('UI')
-    expect(sheet!.querySelector('[data-testid="select-sheet-close"]')!.textContent!.trim()).toBe('Done')
+    expect(sheet!.querySelector('[data-testid="select-sheet-apply"]')!.getAttribute('aria-label')).toBe('Apply')
+    expect(sheet!.querySelector('[data-testid="select-sheet-discard"]')!.getAttribute('aria-label')).toBe('Discard changes')
     const listbox = sheet!.querySelector<HTMLElement>('[role="listbox"]')!
     expect(listbox.getAttribute('aria-label')).toBe('UI')
     expect(listbox.textContent).toContain('More')
@@ -74,7 +75,7 @@ describe('CwaUiSelect on a phone (#461)', () => {
     expect(trigger.getAttribute('aria-expanded')).toBe('true')
     expect(document.getElementById(trigger.getAttribute('aria-controls')!)!.contains(sheet!.querySelector('[role="listbox"]'))).toBe(true)
 
-    sheet!.querySelector<HTMLElement>('[data-testid="select-sheet-close"]')!.click()
+    sheet!.querySelector<HTMLElement>('[data-testid="select-sheet-discard"]')!.click()
     await flushPromises()
     expect(trigger.getAttribute('aria-expanded')).toBe('false')
   })
@@ -103,7 +104,7 @@ describe('CwaUiSelect on a phone (#461)', () => {
       await key(document.activeElement!, 'End')
       await key(document.activeElement!, ' ')
     }],
-  ])('choosing an option with %s emits it, closes the sheet and returns focus to the trigger', async (_, pick) => {
+  ])('choosing an option with %s applies it at once, a single choice needing no ✓, closes the sheet and returns focus to the trigger', async (_, pick) => {
     const { wrapper, sheet, trigger } = await openSelect()
 
     await pick(option(sheet!, 'Padded'))
@@ -134,13 +135,18 @@ describe('CwaUiSelect on a phone (#461)', () => {
   })
 
   test.each([
-    ['Done', () => document.querySelector<HTMLElement>('[data-testid="select-sheet-close"]')!.click()],
+    ['Apply', () => document.querySelector<HTMLElement>('[data-testid="select-sheet-apply"]')!.click()],
+    ['Discard changes', () => document.querySelector<HTMLElement>('[data-testid="select-sheet-discard"]')!.click()],
+    ['a swipe down', async () => {
+      drag(document.querySelector('[data-testid="select-sheet-grip"]')!, 100, [160, 220, 300])
+      await new Promise(resolve => setTimeout(resolve, 260))
+    }],
     ['Escape', () => key(document.activeElement!, 'Escape')],
     ['a tap on the scrim', async () => {
       await new Promise(resolve => setTimeout(resolve))
       document.querySelector('[data-testid="select-sheet-scrim"]')!.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
     }],
-  ])('%s closes it without choosing and returns focus to the trigger', async (_, close) => {
+  ])('with nothing chosen, %s just closes it and returns focus to the trigger', async (_, close) => {
     const { wrapper, trigger } = await openSelect()
 
     await close()

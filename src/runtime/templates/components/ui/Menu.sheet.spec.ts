@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { h } from 'vue'
 import { axe } from '../../../../../test/utils/axe'
-import { onPhone } from '../../../../../test/utils/sheet-media'
+import { drag, onPhone } from '../../../../../test/utils/sheet-media'
 import Menu from './Menu.vue'
 import Button from './Button.vue'
 
@@ -52,12 +52,12 @@ afterEach(() => {
 describe('CwaUiMenu on a phone (#461)', () => {
   beforeEach(() => onPhone())
 
-  test('opens as a bottom sheet titled by its label, with Close, holding the same named menu, never the anchored one', async () => {
+  test('opens as a bottom sheet titled by its label, with no Close, Apply or Discard of its own, holding the same named menu, never the anchored one', async () => {
     const { sheet, menu } = await tapOpen()
 
     expect(sheet!.getAttribute('role')).toBe('dialog')
     expect(document.getElementById(sheet!.getAttribute('aria-labelledby')!)!.textContent!.trim()).toBe('More actions')
-    expect(sheet!.querySelector('[data-testid="kit-menu-sheet-close"]')!.textContent!.trim()).toBe('Close')
+    expect([...sheet!.querySelectorAll('button')].filter(button => !menu!.contains(button))).toEqual([])
     expect(sheet!.contains(menu)).toBe(true)
     expect(menu!.getAttribute('role')).toBe('menu')
     expect(menu!.getAttribute('aria-label')).toBe('More actions')
@@ -119,7 +119,10 @@ describe('CwaUiMenu on a phone (#461)', () => {
   })
 
   test.each([
-    ['Close', () => document.querySelector<HTMLElement>('[data-testid="kit-menu-sheet-close"]')!.click()],
+    ['a swipe down', async () => {
+      drag(document.querySelector('[data-testid="kit-menu-sheet-grip"]')!, 100, [160, 220, 300])
+      await new Promise(resolve => setTimeout(resolve, 260))
+    }],
     ['Escape', () => key(document.activeElement!, 'Escape')],
     ['a tap on the scrim', async () => {
       await new Promise(resolve => setTimeout(resolve))

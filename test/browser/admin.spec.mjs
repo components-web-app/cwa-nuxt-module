@@ -1430,7 +1430,7 @@ test.describe('resource stack', () => {
 })
 
 test.describe('in-page editing', () => {
-  test('56. on a phone a long press on a component opens the resource stack as a bottom sheet, and Close shuts it', async ({ cwa: t }) => {
+  test('56. on a phone a long press on a component opens the resource stack as a bottom sheet, and a swipe down on its handle shuts it', async ({ cwa: t }) => {
     const { page } = t
     await page.setViewportSize({ width: 390, height: 844 })
     await openEditMode(t)
@@ -1447,8 +1447,12 @@ test.describe('in-page editing', () => {
     const box = await sheet.boundingBox()
     assert(Math.abs(box.y + box.height - 844) <= 1 && box.width >= 389, `The sheet is not along the bottom edge: ${JSON.stringify(box)}`)
 
-    await page.getByTestId('resource-stack-close').click()
-    await eventually(async () => await sheet.count() === 0, 'Close did not shut the sheet')
+    const grip = await page.getByTestId('resource-stack-grip').boundingBox()
+    await page.mouse.move(grip.x + grip.width / 2, grip.y + grip.height / 2)
+    await page.mouse.down()
+    await page.mouse.move(grip.x + grip.width / 2, grip.y + grip.height / 2 + 300, { steps: 4 })
+    await page.mouse.up()
+    await eventually(async () => await sheet.count() === 0, 'A swipe down did not shut the sheet')
   })
 
   test('57. a title is edited where it sits on the page: Enter saves it, and while a save has failed Escape opens the bar status on Retry, which saves it', async ({ cwa: t }) => {

@@ -140,7 +140,8 @@ describe('CwaUiResourceSearch on a phone (#461)', () => {
   })
 
   test.each([
-    ['Done', () => document.querySelector<HTMLElement>('[data-testid="search-sheet-close"]')!.click()],
+    ['Apply', () => document.querySelector<HTMLElement>('[data-testid="search-sheet-apply"]')!.click()],
+    ['Discard changes', () => document.querySelector<HTMLElement>('[data-testid="search-sheet-discard"]')!.click()],
     ['Escape', () => key(search(), 'Escape')],
     ['a tap on the scrim', async () => {
       await new Promise(resolve => setTimeout(resolve))
