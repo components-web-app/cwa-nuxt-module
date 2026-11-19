@@ -62,9 +62,17 @@ function settle(entry: CwaCurrentResourceInterface, field: string) {
   return flight.count
 }
 
+function answersFor(propertyPath: string | undefined, field: string) {
+  return propertyPath === field || !!propertyPath?.startsWith(`${field}.`) || !!propertyPath?.startsWith(`${field}[`)
+}
+
+export function violationField(propertyPath: string | undefined, fields: string[]) {
+  return fields.find(field => answersFor(propertyPath, field))
+}
+
 function violationOf(error: RequestError, field: string): string | undefined {
   const violations: { propertyPath?: string, message?: string }[] = error.data?.violations ?? []
-  return violations.find(({ propertyPath }) => propertyPath === field || !!propertyPath?.startsWith(`${field}.`) || !!propertyPath?.startsWith(`${field}[`))?.message
+  return violations.find(({ propertyPath }) => answersFor(propertyPath, field))?.message
 }
 
 function errorOf(error: RequestError, field: string): NonNullable<CwaFieldState['error']> {
@@ -200,6 +208,60 @@ export function held(entry: Entry, field: string, change: CwaFieldState['held'])
 
 export function cleared(entry: Entry, field: string) {
   entry && put(entry, field, undefined)
+}
+
+interface RefusedWrite {
+  id: number
+  fields: string[]
+  retry?: () => unknown
+}
+
+const REFUSED = Symbol('refused')
+const refusedWrites = new WeakMap<object, RefusedWrite>()
+let refusals = 0
+
+function untouched(entry: CwaCurrentResourceInterface, refused: RefusedWrite, field: string) {
+  return (stateOf(entry, field) as { [REFUSED]?: number } | undefined)?.[REFUSED] === refused.id
+}
+
+export function writeSaved(entry: Entry) {
+  const refused = entry && refusedWrites.get(entry)
+  if (!entry || !refused) {
+    return
+  }
+  refusedWrites.delete(entry)
+  for (const field of refused.fields) {
+    untouched(entry, refused, field) && put(entry, field, undefined)
+  }
+}
+
+export function writeRefused(entry: Entry, messages: Record<string, string>, status: number, retry?: () => unknown) {
+  if (!entry) {
+    return
+  }
+  writeSaved(entry)
+  const refused: RefusedWrite = { id: ++refusals, fields: Object.keys(messages), retry }
+  for (const [field, message] of Object.entries(messages)) {
+    const state = stateOf(entry, field)
+    const next: CwaFieldState = {
+      ...base(state),
+      slow: false,
+      status: state?.held ? 'conflict' : 'error',
+      error: { kind: 'violation', status, message },
+      ...(state?.held && { held: state.held }),
+    }
+    put(entry, field, Object.defineProperty(next, REFUSED, { value: refused.id }))
+  }
+  refusedWrites.set(entry, refused)
+}
+
+export function retryWrite(entry: Entry, field: string) {
+  const refused = entry && refusedWrites.get(entry)
+  if (!entry || !refused || !untouched(entry, refused, field)) {
+    return false
+  }
+  refused.retry?.()
+  return true
 }
 
 export interface FailedSave {

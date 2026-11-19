@@ -463,10 +463,17 @@ export default class ResourceStackManager {
     this.removeFocusComponent()
     this.focusGeneration = generation
 
-    this.focusDomElements = stackItem.domElements
+    const domElements = stackItem.domElements
+    let focusIri: string | undefined = this.currentIri.value
+    this.focusDomElements = domElements
     this.focusComponent = createApp(ComponentFocus, {
-      iri: this.currentIri,
-      domElements: stackItem.domElements,
+      iri: computed(() => {
+        if (this.currentStackItem.value?.domElements === domElements) {
+          focusIri = this.currentIri.value
+        }
+        return focusIri
+      }),
+      domElements,
     })
 
     this.focusWrapper = document.createElement('div')

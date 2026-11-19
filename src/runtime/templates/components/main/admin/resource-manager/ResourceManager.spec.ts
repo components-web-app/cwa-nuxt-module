@@ -7,6 +7,7 @@ import { CwaUserRoles } from '#cwa/storage/stores/auth/state'
 import { useCloneMode } from '#cwa/admin/clone-mode'
 import type Cwa from '#cwa/cwa'
 import { announceKey } from '#cwa/templates/components/core/ui/field-keys'
+import { ErrorType } from '#cwa/storage/stores/error/state'
 import { consola } from 'consola'
 import CwaUiManagerTab from '#cwa/templates/components/ui/ManagerTab.vue'
 import Group from './_tabs/group/Group.vue'
@@ -88,6 +89,7 @@ function makeStackManager(overrides: Record<string, any> = {}) {
     currentIri: ref<string | undefined>('/component/1'),
     resetTabs: vi.fn(),
     getState: vi.fn(),
+    setState: vi.fn(),
     getClosestStackItemByType: vi.fn(),
     ...overrides,
   }
@@ -127,7 +129,9 @@ async function mountManager(attachTo?: HTMLElement) {
         ManagerTabs: {
           name: 'ManagerTabs',
           props: ['tabs', 'idPrefix', 'label'],
-          methods: { resetTabs() {}, selectOriginal: (index: number) => selectOriginal.fn(index) },
+          methods: { resetTabs() {}, selectOriginal: (index: number) => selectOriginal.fn(index), fieldsInOrder() {
+            return (this as unknown as { tabs: { fields?: string[] }[] }).tabs.flatMap(tab => tab.fields ?? [])
+          } },
           template: '<div class="manager-tabs-stub" @click="$emit(\'click\', 1)"><button v-for="(tab, index) of tabs" :id="`${idPrefix}-tab-${index}`" type="button">{{ tab.name }}</button></div>',
         },
         CwaAdminResourceManagerContextMenu: {
@@ -350,6 +354,50 @@ describe('ResourceManager', () => {
       expect(calls).toEqual([1])
       expect(document.activeElement).toBe(wrapper.get('[data-testid="title-input"]').element)
       wrapper.unmount()
+    })
+
+    test('a refused write of the selected resource has its violations put on its tab fields, and the tab holding the first is shown without moving focus (#461)', async () => {
+      const { unclaimedViolations } = await import('#cwa/admin/write-violations')
+      const calls: number[] = []
+      selectOriginal.fn = index => calls.push(index)
+      const FieldTab = { name: 'FieldTab', render: () => h('div') }
+      const stackManager = makeStackManager({
+        showManager: ref(true),
+        currentStackItem: ref({ iri: '/component/1', managerTabs: [FieldTab, FieldTab] }),
+      })
+      const cwa = makeCwa({ stackManager })
+      const selected = reactive({ data: { '@id': '/component/1' } })
+      cwaState.cwa = { ...cwa, resourcesManager: {}, resources: { ...cwa.resources, getResource: () => ({ value: selected }), findAllPublishableIris: (iri: string) => [iri] } }
+      const wrapper = await mountManager(document.body)
+      resolverState.allMeta.value = [{ name: 'Publish', fields: [] }, { name: 'Upload', fields: ['file'] }]
+      await nextTick()
+      const outside = document.createElement('button')
+      document.body.append(outside)
+      outside.focus()
+
+      const left = unclaimedViolations(cwaState.cwa, {
+        type: ErrorType.VALIDATION,
+        statusCode: 422,
+        detail: '',
+        violations: [{ property: 'file', message: 'Upload a file.' }, { property: 'credit', message: 'Too long.' }],
+        timestamp: 1,
+        event: { endpoint: '/component/1', data: { publishedAt: 'now' } },
+      })
+
+      expect(left).toEqual([{ property: 'credit', message: 'Too long.' }])
+      expect(calls).toEqual([1])
+      await vi.waitFor(() => expect(selected).toHaveProperty('fieldStates.file.status', 'error'))
+      expect(document.activeElement).toBe(outside)
+      wrapper.unmount()
+      outside.remove()
+      expect(unclaimedViolations(cwaState.cwa, {
+        type: ErrorType.VALIDATION,
+        statusCode: 422,
+        detail: '',
+        violations: [{ property: 'file', message: 'Upload a file.' }],
+        timestamp: 2,
+        event: { endpoint: '/component/1', data: { publishedAt: 'now' } },
+      })).toHaveLength(1)
     })
 
     test('the shown tab is a tabpanel labelled by the selected tab, and the tablist is named for the selection (#461)', async () => {
@@ -597,21 +645,22 @@ describe('ResourceManager', () => {
     })
   })
 
-  describe('drag handles while reordering', () => {
-    function reorderingCwa(opts: { reordering: boolean, editing?: boolean, group?: string }) {
-      const state = reactive<Record<string, any>>({ reordering: opts.reordering })
+  describe('dragging the positions of a selected group', () => {
+    function selectingCwa(opts: { iri: string, reordering?: boolean, editing?: boolean }) {
+      const currentStackItem = ref({ iri: opts.iri, managerTabs: [] })
+      const state = reactive<Record<string, any>>({ reordering: opts.reordering ?? true })
       const stackManager = makeStackManager({
         showManager: ref(true),
-        currentStackItem: ref({ iri: '/component/1', managerTabs: [] }),
+        currentStackItem,
         getState: (prop: string) => state[prop],
-        getClosestStackItemByType: vi.fn(() => 'group' in opts ? opts.group : '/_/component_groups/g'),
+        getClosestStackItemByType: vi.fn(() => '/_/component_groups/closest'),
       })
       cwaState.cwa = makeCwa({ stackManager, isEditing: opts.editing ?? true })
-      return state
+      return { current: currentStackItem, state }
     }
 
-    test('are loaded for the closest group only once Enable reordering is on', async () => {
-      const state = reorderingCwa({ reordering: false })
+    test('is on only while a component group is the selected resource and its Enable reordering is on, for that group', async () => {
+      const { state } = selectingCwa({ iri: '/_/component_groups/g', reordering: false })
       const wrapper = await mountManager()
       await flushPromises()
       expect(wrapper.find('.reorder-handles-stub').exists()).toBe(false)
@@ -624,17 +673,24 @@ describe('ResourceManager', () => {
     })
 
     test.each([
-      ['outside edit mode', { reordering: true, editing: false }],
-      ['with no group in the stack', { reordering: true, group: undefined }],
-    ])('are not shown %s', async (_label, opts) => {
-      reorderingCwa(opts)
+      ['a component', '/component/1'],
+      ['a position', '/_/component_positions/p'],
+    ])('is off while %s in the group is selected, even with reordering on', async (_label, iri) => {
+      selectingCwa({ iri })
       const wrapper = await mountManager()
       await flushPromises()
       expect(wrapper.find('.reorder-handles-stub').exists()).toBe(false)
     })
 
-    test('are not shown while cloning', async () => {
-      reorderingCwa({ reordering: true })
+    test('is off outside edit mode', async () => {
+      selectingCwa({ iri: '/_/component_groups/g', editing: false })
+      const wrapper = await mountManager()
+      await flushPromises()
+      expect(wrapper.find('.reorder-handles-stub').exists()).toBe(false)
+    })
+
+    test('is off while cloning or moving', async () => {
+      selectingCwa({ iri: '/_/component_groups/g' })
       useCloneMode(cwaState.cwa).start('/component/source')
       const wrapper = await mountManager()
       await flushPromises()

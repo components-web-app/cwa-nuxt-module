@@ -189,6 +189,30 @@
 }
 
 @layer components {
+  [data-cwa-hovered],
+  [data-cwa-hovered] a[href] {
+    cursor: crosshair;
+  }
+
+  [data-cwa-hovered] :is(button, input, select, textarea, [role='button'], [role='tab'], [contenteditable]:not([contenteditable='false'])) {
+    cursor: auto;
+  }
+
+  [data-cwa-reorderable] {
+    cursor: grab !important;
+    touch-action: none;
+    user-select: none;
+  }
+
+  [data-cwa-reorderable] * {
+    cursor: grab !important;
+  }
+
+  [data-cwa-reorder-held],
+  [data-cwa-reorder-held] * {
+    cursor: grabbing !important;
+  }
+
   .cwa\:toast {
     --cwa-toast-tone: var(--cwa-color-accent-fg);
     background: color-mix(in srgb, color-mix(in srgb, var(--cwa-color-surface-menu) 88%, var(--cwa-toast-tone)) 85%, transparent);
@@ -464,54 +488,6 @@
   }
   .cwa\:section {
     @apply cwa:p-4;
-  }
-  .cwa\:is-reordering {
-    @apply cwa:relative cwa:z-100;
-  }
-  .cwa\:is-reordering:before {
-    @apply cwa:content-[''] cwa:absolute cwa:z-dialog cwa:top-0 cwa:left-0 cwa:right-0 cwa:bottom-0 cwa:outline-1 cwa:outline-solid cwa:outline-magenta cwa:outline-offset-[7px] cwa:rounded-sm;
-  }
-  .cwa\:is-reordering:after {
-    @apply cwa:content-[attr(data-sort-value)] cwa:absolute cwa:z-dialog cwa:-top-4 cwa:-right-4 cwa:text-sm cwa:bg-magenta cwa:p-1 cwa:text-white cwa:rounded-full cwa:min-w-[25px] cwa:text-center
-  }
-
-  .cwa\:reorder-wobble {
-    animation: cwa-reorder-wobble 0.5s infinite;
-    transform-origin: 30% 5%;
-  }
-
-  .cwa\:reorder-wobble-alt {
-    animation: cwa-reorder-wobble-alt 0.5s infinite;
-    transform-origin: 50% 10%;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .cwa\:reorder-wobble,
-    .cwa\:reorder-wobble-alt {
-      animation: none;
-    }
-  }
-}
-
-@keyframes cwa-reorder-wobble {
-  0%, 100% {
-    rotate: 0.1deg;
-    animation-timing-function: ease-in;
-  }
-  50% {
-    rotate: -0.3deg;
-    animation-timing-function: ease-out;
-  }
-}
-
-@keyframes cwa-reorder-wobble-alt {
-  0%, 100% {
-    rotate: -0.1deg;
-    animation-timing-function: ease-in;
-  }
-  50% {
-    rotate: 0.3deg;
-    animation-timing-function: ease-out;
   }
 }
 

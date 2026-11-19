@@ -13,10 +13,8 @@
     <ResourceLoader
       v-for="positionIri of componentPositions"
       :key="getResourceKey(positionIri)"
-      :data-sort-value="$cwa.resources.getPositionSortDisplayNumber(positionIri)"
       :iri="positionIri"
       :ui-component="ComponentPosition"
-      :class="nestedClasses"
     />
     <!--cwa-end-->
   </template>
@@ -161,18 +159,11 @@ const showLoader = computed(() => {
 
 const componentGroupSynchronizer = new ComponentGroupUtilSynchronizer()
 
-const { groupIsReordering, componentPositions } = useComponentGroupPositions(iri, $cwa)
+const { componentPositions } = useComponentGroupPositions(iri, $cwa)
 
 useComponentGroupEvents(componentPositions, $cwa, {
   onLoaded: pairs => emit('componentsLoaded', pairs),
   onUpdated: pairs => emit('componentsUpdated', pairs),
-})
-
-const nestedClasses = computed(() => {
-  if (!groupIsReordering.value) {
-    return
-  }
-  return ['cwa:is-reordering']
 })
 
 const isNewPosition = computed(() => {

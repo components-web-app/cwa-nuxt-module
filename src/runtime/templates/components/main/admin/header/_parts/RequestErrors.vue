@@ -3,7 +3,8 @@ import { onBeforeUnmount, toDisplayString, watch } from 'vue'
 import { useCwa } from '#cwa/composables/cwa'
 import { useCwaToast } from '#cwa/composables/cwa-toast'
 import { ErrorType } from '#cwa/storage/stores/error/state'
-import type { CwaErrorEvent } from '#cwa/storage/stores/error/state'
+import type { CwaErrorEvent, CwaViolationError } from '#cwa/storage/stores/error/state'
+import { unclaimedViolations } from '#cwa/admin/write-violations'
 
 const $cwa = useCwa()
 const toast = useCwaToast()
@@ -14,9 +15,17 @@ function toasted(error: CwaErrorEvent) {
   return !(error.event && 'onRequest' in error.event && error.event.onRequest)
 }
 
+function violationsOf(error: CwaErrorEvent): CwaViolationError[] {
+  return error.type === ErrorType.VALIDATION ? unclaimedViolations($cwa, error) : []
+}
+
+function onFields(error: CwaErrorEvent) {
+  return error.type === ErrorType.VALIDATION && !!error.violations?.length && !violationsOf(error).length
+}
+
 function description(error: CwaErrorEvent) {
   if (error.type === ErrorType.VALIDATION) {
-    return (error.violations ?? []).map(violation => `${violation.property}: ${violation.message}`).join('\n')
+    return violationsOf(error).map(violation => `${violation.property}: ${violation.message}`).join('\n')
   }
   return `${toDisplayString(error.statusCode || 'Network Error')}: ${toDisplayString(error.detail)}`
 }
@@ -29,6 +38,10 @@ watch(() => $cwa.resourcesManager.errors.filter(toasted), (errors, previous = []
     }
   }
   for (const error of errors) {
+    if (onFields(error)) {
+      $cwa.resourcesManager.removeError(error.timestamp)
+      continue
+    }
     toast.show({
       id: toastId(error),
       tone: 'error',

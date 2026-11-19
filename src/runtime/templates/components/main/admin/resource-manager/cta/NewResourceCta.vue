@@ -36,9 +36,12 @@ async function addResourceAction(publish?: boolean) {
     const fields = heldFields($cwa, NEW_RESOURCE_IRI)
     const publishAfter = !!fields.length && !!publish && !!isPublishable.value
     const draft = !!isPublishable.value
-    const created = await $cwa.resourcesManager.addResourceAction(publishAfter ? false : publish)
+    const created = await $cwa.resourcesManager.addResourceAction(publishAfter ? false : publish, () => addResourceAction(publish))
+    if (!created) {
+      return
+    }
     $cwa.admin.emptyStack()
-    if (created && fields.length) {
+    if (fields.length) {
       moveHeldUploads($cwa, NEW_RESOURCE_IRI, created['@id'])
       await uploadHeld(created['@id'], fields, publishAfter, draft)
     }
@@ -46,7 +49,9 @@ async function addResourceAction(publish?: boolean) {
   catch (e) {
     consola.error(e)
   }
-  isAdding.value = false
+  finally {
+    isAdding.value = false
+  }
 }
 
 async function uploadHeld(iri: string, fields: string[], publishAfter: boolean, draft: boolean) {

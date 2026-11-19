@@ -91,6 +91,7 @@ describe('CurrentResourceCta', () => {
     expect(updateResource).toHaveBeenCalledWith({
       endpoint: '/component/draft',
       data: { publishedAt: 'now' },
+      retry: expect.any(Function),
     })
   })
 
@@ -140,7 +141,7 @@ describe('CurrentResourceCta', () => {
       await flushPromises()
 
       expect(updateResource).toHaveBeenCalledTimes(1)
-      expect(updateResource).toHaveBeenCalledWith({ endpoint: '/component/draft', data: { publishedAt: null } })
+      expect(updateResource).toHaveBeenCalledWith({ endpoint: '/component/draft', data: { publishedAt: null }, retry: expect.any(Function) })
     })
 
     test('with scheduling on the main action reads Schedule and is disabled until a date is chosen, saying why', async () => {
@@ -157,7 +158,7 @@ describe('CurrentResourceCta', () => {
       await nextTick()
       expect(button().props('disabled')).toBe(false)
       await wrapper.find('button').trigger('click')
-      expect(updateResource).toHaveBeenCalledWith({ endpoint: '/component/draft', data: { publishedAt: '2026-10-01T08:00:00.000Z' } })
+      expect(updateResource).toHaveBeenCalledWith({ endpoint: '/component/draft', data: { publishedAt: '2026-10-01T08:00:00.000Z' }, retry: expect.any(Function) })
     })
 
     test('shows loading while publishing, and a second press does not publish twice', async () => {

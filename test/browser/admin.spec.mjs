@@ -344,7 +344,7 @@ test('12. Move up in the Order tab PATCHes the group order and the page keeps th
   await eventually(async () => await sourceAbove(page, texts.pageAOther) === true, 'The fixture order is wrong')
   await select(page, texts.pageAOther)
   await page.getByRole('tab', { name: 'Order', exact: true }).click()
-  assert(await page.getByRole('switch', { name: 'Enable reordering' }).getAttribute('aria-checked') === 'false', 'Enable reordering is on')
+  assert(await page.getByRole('switch', { name: 'Enable reordering' }).count() === 0, 'A component\'s Order tab offers Enable reordering')
   let release
   const held = new Promise((resolve) => {
     release = resolve
@@ -1898,9 +1898,16 @@ test('69. in edit mode and clone mode a faint outline fades in on the component 
     }, `No outline was drawn over "${text}"`)
   }
 
+  const cursorOver = text => page.getByText(text, { exact: true }).first().evaluate((el) => {
+    const r = el.getBoundingClientRect()
+    return getComputedStyle(document.elementFromPoint(r.left + 4, r.top + r.height / 2)).cursor
+  })
+
   const drawn = await outlineOver(texts.pageAOther)
   assert(drawn.width_ === 1, `The hover outline is ${drawn.width_}px, not 1px`)
   assert(drawn.animation === 'cwa-line-in', `The hover outline does not fade in (${drawn.animation})`)
+  const outlinedCursor = await cursorOver(texts.pageAOther)
+  assert(outlinedCursor === 'crosshair', `The cursor over the outlined component is ${outlinedCursor}`)
 
   await select(page, texts.pageAOther)
   const box = await page.getByText(texts.pageAOther, { exact: true }).boundingBox()
@@ -1911,42 +1918,123 @@ test('69. in edit mode and clone mode a faint outline fades in on the component 
   await page.keyboard.press('Escape')
   await startClone(page)
   await outlineOver(texts.pageAOther)
+  assert(await cursorOver(texts.pageAOther) === 'crosshair', 'The cursor over the outlined component in clone mode is not a crosshair')
+
+  await page.keyboard.press('Escape')
+  await page.getByTestId('clone-mode-bar').waitFor({ state: 'detached' })
+  await page.getByRole('button', { name: 'Done', exact: true }).click()
+  await page.getByRole('button', { name: 'Edit', exact: true }).waitFor()
+  const otherBox = await page.getByText(texts.pageAOther, { exact: true }).first().boundingBox()
+  await page.mouse.move(otherBox.x + 8, otherBox.y + otherBox.height / 2)
+  await settle()
+  const viewingCursor = await cursorOver(texts.pageAOther)
+  assert(viewingCursor !== 'crosshair', 'The cursor is still a crosshair after leaving edit mode')
+  assert(await page.locator('[data-cwa-hovered]').count() === 0, 'A component is still marked as hovered after leaving edit mode')
 })
 
-test('67. with Enable reordering on, every position in the group wobbles and has a grip handle on top of it, and dragging the lower one above the other PATCHes the group order once, keeps the selection and survives a reload', async ({ cwa: t }) => {
+test('72. selecting another component paints no outline and lightens no part of the page outside the two components in any frame between them (#461)', async ({ cwa: t }) => {
+  const { page, settle } = t
+  await openEditMode(t)
+  await select(page, texts.source)
+  await settle()
+  const [from] = await boxesOf(page, texts.source)
+  const [to] = await boxesOf(page, texts.pageAOther)
+  await page.evaluate(({ from, to }) => {
+    const cutout = 8
+    const within = (top, bottom, slack) => [from, to].some(box => top >= box.top - slack && bottom <= box.top + box.height + slack)
+    const x = Math.round(Math.max(from.left, to.left) + Math.min(from.width, to.width) / 2)
+    window.__paints = { frames: 0, stray: [] }
+    const sample = () => {
+      window.__paints.frames++
+      for (const outline of document.querySelectorAll('[data-testid="focus-outline"], [data-testid="hover-outline"], [data-testid="shared-instance-outline"]')) {
+        const r = outline.getBoundingClientRect()
+        if (!within(r.top, r.bottom, 1)) {
+          window.__paints.stray.push(`${outline.dataset.testid} at ${Math.round(r.top)}–${Math.round(r.bottom)}`)
+        }
+      }
+      const canvas = document.querySelector('canvas.cwa\\:z-manager-focus')
+      if (canvas?.width) {
+        const alpha = canvas.getContext('2d').getImageData(x, 0, 1, canvas.height).data
+        let start
+        for (let y = 0; y <= canvas.height; y++) {
+          const light = y < canvas.height && alpha[y * 4 + 3] === 0
+          if (light && start === undefined) {
+            start = y
+          }
+          if (!light && start !== undefined) {
+            if (!within(start, y, cutout)) {
+              window.__paints.stray.push(`page lightened at ${start}–${y}`)
+            }
+            start = undefined
+          }
+        }
+      }
+      if (window.__paints.frames < 45) {
+        requestAnimationFrame(sample)
+      }
+    }
+    requestAnimationFrame(sample)
+  }, { from, to })
+  await page.getByText(texts.pageAOther, { exact: true }).first().click()
+  await eventually(() => page.evaluate(() => window.__paints.frames >= 45), 'Fewer than 45 frames were painted')
+  const { stray } = await page.evaluate(() => window.__paints)
+  assert(stray.length === 0, `Painted outside ${JSON.stringify(from)} and ${JSON.stringify(to)}: ${[...new Set(stray)].join(', ')}`)
+  const outlines = await page.getByTestId('focus-outline').evaluateAll(els => els.map(el => el.getBoundingClientRect().top))
+  assert(outlines.length === 1 && Math.abs(outlines[0] - to.top) <= 1, `The selection outline ended at ${JSON.stringify(outlines)}`)
+})
+
+test('67. with the group selected and Enable reordering on, a component dragged by its body shows one drop line and a ghost, moves nothing until the drop, PATCHes the group order once and survives a reload; with a component selected nothing is draggable', async ({ cwa: t }) => {
   const { page, settle } = t
   await openEditMode(t)
   await eventually(async () => await sourceAbove(page, texts.pageAOther) === true, 'The fixture order is wrong')
+  const draggable = () => page.evaluate(() => ({ marked: document.querySelectorAll('[data-cwa-reorderable]').length, grips: document.querySelectorAll('[data-testid="reorder-grip"]').length }))
+
   await select(page, texts.pageAOther)
   await page.getByRole('tab', { name: 'Order', exact: true }).click()
-  await page.getByRole('switch', { name: 'Enable reordering' }).click()
-  const handles = page.getByTestId('reorder-handle')
-  await eventually(async () => await handles.count() === 2, `${await handles.count()} drag handle(s) shown`)
-  const reachable = await handles.evaluateAll(elements => elements.map((handle) => {
-    const box = handle.getBoundingClientRect()
-    const hit = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2)
-    return { onTop: !!hit && handle.contains(hit), label: handle.getAttribute('aria-label'), tabindex: handle.getAttribute('tabindex') }
-  }))
-  assert(reachable.every(handle => handle.onTop), `Something covers a drag handle: ${JSON.stringify(reachable)}`)
-  assert(reachable.every(handle => /^Drag to reorder /.test(handle.label) && handle.tabindex === '-1'), `Handles are named ${JSON.stringify(reachable)}`)
-  const wobbling = await page.evaluate(() => [...document.querySelectorAll('.cwa\\:reorder-wobble, .cwa\\:reorder-wobble-alt')].map(element => getComputedStyle(element).animationName))
-  assert(wobbling.length === 2 && wobbling.every(name => name.startsWith('cwa-reorder-wobble')), `Wobbling: ${JSON.stringify(wobbling)}`)
+  assert(await page.getByRole('switch', { name: 'Enable reordering' }).count() === 0, 'A component offers Enable reordering')
+  await settle()
+  assert(JSON.stringify(await draggable()) === JSON.stringify({ marked: 0, grips: 0 }), `With a component selected: ${JSON.stringify(await draggable())}`)
+
+  const component = page.getByText(texts.pageAOther, { exact: true }).first()
+  const box = await component.boundingBox()
+  await component.click({ button: 'right', position: { x: 10, y: box.height / 2 } })
+  const stack = page.getByTestId('resource-stack')
+  await stack.waitFor()
+  await stack.locator('[role="treeitem"][aria-label*="group" i] > [data-stack-name]').first().click()
+  await stack.waitFor({ state: 'detached' })
+  const toggle = page.getByRole('switch', { name: 'Enable reordering' })
+  await toggle.waitFor()
+  assert(await toggle.getAttribute('aria-checked') === 'false', 'Enable reordering starts on')
+  await settle()
+  assert((await draggable()).marked === 0, 'The group is draggable before Enable reordering is on')
+  await toggle.click()
+  await eventually(async () => JSON.stringify(await draggable()) === JSON.stringify({ marked: 2, grips: 2 }), `With the group selected and reordering on: ${JSON.stringify(await draggable())}`)
+  assert(await page.evaluate(() => getComputedStyle(document.querySelector('[data-cwa-reorderable]')).cursor) === 'grab', 'A draggable component has no grab cursor')
+  const grips = await page.getByTestId('reorder-grip').evaluateAll(els => els.map(el => ({ hidden: el.getAttribute('aria-hidden'), width: el.getBoundingClientRect().width, pointer: getComputedStyle(el).pointerEvents })))
+  assert(grips.every(grip => grip.hidden === 'true' && grip.width <= 20 && grip.pointer === 'none'), `The grips are ${JSON.stringify(grips)}`)
+
   const [sourceBox] = await boxesOf(page, texts.source)
-  const grip = await handles.nth(1).boundingBox()
-  await page.mouse.move(grip.x + grip.width / 2, grip.y + grip.height / 2)
+  const [otherBox] = await boxesOf(page, texts.pageAOther)
+  const startX = otherBox.left + otherBox.width / 2
+  const startY = otherBox.top + otherBox.height / 2
+  await page.mouse.move(startX, startY)
   await page.mouse.down()
-  await page.mouse.move(grip.x + grip.width / 2, grip.y + grip.height / 2 - 10, { steps: 2 })
+  await page.mouse.move(startX, startY - 10, { steps: 2 })
   await page.mouse.move(sourceBox.left + 20, sourceBox.top + 5, { steps: 8 })
   await page.getByTestId('reorder-drop-line').waitFor()
-  const heldWobbles = await page.evaluate(() => document.querySelectorAll('.cwa\\:reorder-wobble, .cwa\\:reorder-wobble-alt').length)
-  assert(heldWobbles === 1, `${heldWobbles} position(s) wobble while one is held`)
+  assert(await page.getByTestId('reorder-drop-line').count() === 1, 'More than one drop line is drawn')
+  assert(await page.getByTestId('reorder-ghost').isVisible(), 'No ghost follows the pointer')
+  const [sourceDuring] = await boxesOf(page, texts.source)
+  const [otherDuring] = await boxesOf(page, texts.pageAOther)
+  assert(sourceDuring.top === sourceBox.top && otherDuring.top === otherBox.top, `The page moved before the drop: ${JSON.stringify({ sourceBox, sourceDuring, otherBox, otherDuring })}`)
   await page.mouse.up()
   assert(await sourceAbove(page, texts.pageAOther) === false, 'The screen did not move at once on the drop')
   const patch = await eventually(() => t.rehearsal.writes.find(w => w.method === 'PATCH' && w.path === `${t.seed.iris.pageAGroup}/order`), 'No PATCH to the group order')
   assert(JSON.stringify(patch.body.componentPositions) === JSON.stringify([t.seed.positions.aOther, t.seed.positions.aSource]), `PATCHed ${JSON.stringify(patch.body)}`)
   await settle()
   assert(t.rehearsal.writes.filter(w => w.path === `${t.seed.iris.pageAGroup}/order`).length === 1, 'The drop sent more than one order request')
-  assert(await page.getByRole('tab', { name: 'Order', exact: true }).getAttribute('aria-selected') === 'true', 'The drop changed the selection')
+  assert(await page.getByTestId('reorder-drop-line').count() === 0 && await page.getByTestId('reorder-ghost').count() === 0, 'The line or ghost stayed after the drop')
+  assert(await toggle.getAttribute('aria-checked') === 'true', 'The drop changed the selection')
   assert(await sourceAbove(page, texts.pageAOther) === false, 'The order snapped back after the order response')
   await page.reload()
   await page.getByText(texts.pageAOther, { exact: true }).waitFor()
@@ -2015,4 +2103,59 @@ test('70. a title save that fails once another component is selected raises a to
   await toast.getByRole('button', { name: 'Show me' }).click()
   await eventually(async () => await status.getAttribute('data-state') === 'error', 'Show me did not select the title with its failed save')
   await toast.waitFor({ state: 'detached' })
+})
+
+test('71. typing in a live title on the page saves as it is typed, with no blur or Enter, and the bar\'s Title field shows each character as it is typed (#461)', async ({ cwa: t }) => {
+  const { page, seed } = t
+  const title = (await t.api.create('/component/titles', { title: 'Live title', publishedAt: 'now' }))['@id']
+  await t.api.create('/_/component_positions', { componentGroup: seed.iris.pageAGroup, component: title })
+  await openEditMode(t)
+
+  await page.getByTestId('inline-edit-value').filter({ hasText: 'Live title' }).click()
+  const input = page.getByPlaceholder('Add a title')
+  await eventually(() => input.evaluate(el => document.activeElement === el), 'The title editor was not focused')
+  const bar = managerPanel(page).getByRole('textbox', { name: 'Title' })
+  await bar.waitFor()
+
+  const patched = text => t.rehearsal.writes.find(w => w.method === 'PATCH' && w.body?.title === text)
+  let typed = 'Live title'
+  for (const words of [' typed', ' again']) {
+    for (const key of words) {
+      await page.keyboard.type(key)
+      typed += key
+      await eventually(async () => await bar.inputValue() === typed, `The bar does not show "${typed}" while it is typed on the page`)
+    }
+    await eventually(() => patched(typed), `Typing "${typed}" sent no PATCH: ${JSON.stringify(t.rehearsal.writes)}`)
+    expect(await input.evaluate(el => document.activeElement === el)).toBe(true)
+    expect(await input.inputValue()).toBe(typed)
+  }
+  await t.settle()
+})
+
+test('73. publishing an image that has no file shows the refusal on its file field and selects the Upload tab, without a toast or moving focus (#461)', async ({ cwa: t }) => {
+  const { page, seed } = t
+  const image = (await t.api.create('/component/images', {}))['@id']
+  await t.api.create('/_/component_positions', { componentGroup: seed.iris.pageAGroup, component: image })
+  await openEditMode(t)
+  t.allowConsoleErrors(refusedResource)
+
+  await page.getByRole('group', { name: 'Image component' }).click()
+  await page.getByTestId('component-menu').waitFor()
+  const tablist = page.getByRole('tablist')
+  const upload = tablist.getByRole('tab', { name: /^Upload/ })
+  await tablist.getByRole('tab', { name: 'Publish', exact: true }).click()
+  assert(await upload.getAttribute('aria-selected') === 'false', 'The Upload tab was still selected')
+
+  const publish = page.getByTestId('component-menu').getByRole('button', { name: /^Publish/ }).first()
+  await publish.click()
+
+  await eventually(() => t.rehearsal.writes.find(w => w.method === 'PATCH' && w.path.startsWith(image) && w.body?.publishedAt === 'now'), `Publish sent no PATCH: ${JSON.stringify(t.rehearsal.writes)}`)
+  const line = page.locator('[data-cwa-field="file"] [data-testid="field-status-line"]')
+  await eventually(async () => await line.getAttribute('data-line') === 'error', 'The file field does not show the refusal')
+  assert(await upload.getAttribute('aria-selected') === 'true', 'The Upload tab holding the refused field was not selected')
+  assert(await upload.getAttribute('data-badge') === 'error', 'The Upload tab has no error badge')
+  await eventually(async () => await page.getByTestId('bar-summary').getAttribute('data-state') === 'error', 'The bar status does not show the refused field')
+  assert(await publish.evaluate(el => el === document.activeElement), 'Showing the refused field moved focus off Publish')
+  await t.settle()
+  assert(await page.locator('[data-toast-id^="cwa-request-error-"]').count() === 0, 'The refusal was also raised as a toast')
 })

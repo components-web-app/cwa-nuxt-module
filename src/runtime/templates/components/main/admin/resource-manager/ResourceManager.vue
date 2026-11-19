@@ -23,6 +23,7 @@ import { createAnnouncer } from '#cwa/templates/components/core/ui/field-context
 import { announceKey, managerTabMountedKey } from '#cwa/templates/components/core/ui/field-keys'
 import { resourceStackLevels } from '#cwa/templates/components/core/ui/resource-stack'
 import { listenForLongPress } from '#cwa/admin/long-press'
+import { registerBarFields } from '#cwa/admin/write-violations'
 import type { ResourceStackItem } from '#cwa/admin/resource-stack-manager'
 
 const ComponentUsageBadge = defineAsyncComponent(() => import('#cwa/templates/components/main/admin/resource-manager/cta/ComponentUsageBadge.vue'))
@@ -167,9 +168,19 @@ const currentFieldStates = computed(() => {
   return iri ? $cwa.resources.getResource(iri).value?.fieldStates : undefined
 })
 
-async function showField(field: string) {
+function showTabOf(field: string) {
   const index = allTabsMeta.value.findIndex(meta => (meta as { fields?: string[] } | null)?.fields?.includes(field))
   index > -1 && managerTabs.value?.selectOriginal(index)
+}
+
+const unregisterBarFields = registerBarFields($cwa, {
+  iri: () => $cwa.admin.resourceStackManager.showManager.value ? $cwa.admin.resourceStackManager.currentIri.value : undefined,
+  fields: () => managerTabs.value?.fieldsInOrder() ?? [],
+  show: showTabOf,
+})
+
+async function showField(field: string) {
+  showTabOf(field)
   await nextTick()
   managerHolder.value?.querySelector<HTMLElement>(`[data-cwa-field="${field}"] :is(input, button, [role="switch"])`)?.focus()
 }
@@ -183,10 +194,11 @@ const showSharedInstances = computed(() => {
 })
 
 const reorderGroupIri = computed(() => {
-  if (!$cwa.admin.isEditing || cloneMode.source.value || !$cwa.admin.resourceStackManager.getState('reordering')) {
+  const iri = currentStackItem.value?.iri
+  if (!iri || !$cwa.admin.isEditing || cloneMode.source.value || getResourceTypeFromIri(iri) !== CwaResourceTypes.COMPONENT_GROUP || !$cwa.admin.resourceStackManager.getState('reordering')) {
     return
   }
-  return $cwa.admin.resourceStackManager.getClosestStackItemByType(CwaResourceTypes.COMPONENT_GROUP)
+  return iri
 })
 
 const showAdmin = computed(() => {
@@ -287,6 +299,7 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  unregisterBarFields()
   window.removeEventListener('resize', $cwa.admin.emitRedraw)
   document.removeEventListener('keydown', onPaneKey)
   stopLongPress?.()
