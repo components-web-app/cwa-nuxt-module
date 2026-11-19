@@ -4,6 +4,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+## [2.0.0-alpha.36] - 2026-11-19
+
 ### Added
 
 - A component's `description` in `defineCwaConfig` can use inline Markdown (`**bold**`, `*italic*`, `` `code` ``, `[links](url)`, line breaks and paragraphs), shown formatted in the add component dialog's detail view and as plain text in its list; it is converted when the app builds and only admin code holds it ([0eaa68f4](https://github.com/components-web-app/cwa-nuxt-module/commit/0eaa68f469836055de6b986a041dfeb29c73d994))
@@ -336,7 +338,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 - First tagged release of `@cwa/nuxt`; releases are now published from `v*` tags ([7c61b7c](https://github.com/components-web-app/cwa-nuxt-module/commit/7c61b7ce331ec4a0cb8e76951a5de2ff806ed07a))
 
-[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.35...HEAD
+[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.36...HEAD
+[2.0.0-alpha.36]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.35...v2.0.0-alpha.36
 [2.0.0-alpha.35]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.34...v2.0.0-alpha.35
 [2.0.0-alpha.34]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.33...v2.0.0-alpha.34
 [2.0.0-alpha.33]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.32...v2.0.0-alpha.33
