@@ -588,7 +588,7 @@ describe('the add component dialog (#461)', () => {
     describe('the configured default data', () => {
       function configureDefaults(defaultData: Record<string, unknown>) {
         cwaConfig.resourcesConfig = { ...resourcesConfig, HtmlContent: { ...resourcesConfig.HtmlContent, defaultData, styles: { 'black-bg': { label: 'Black background', classes: 'bg-black p-2' } } } }
-        cwaConfig.uiConfig = { CwaComponentHtmlContentUiAltHtmlContent: { name: 'Alternative', multipleStyles: true, styles: { boxed: { label: 'Boxed', classes: 'border p-4' }, shadow: { label: 'Shadow', classes: 'shadow' } } } }
+        cwaConfig.uiConfig = { CwaComponentHtmlContentUiAltHtmlContent: { name: 'Alternative', allowMultiple: true, styles: { boxed: { label: 'Boxed', classes: 'border p-4' }, shadow: { label: 'Shadow', classes: 'shadow' } } } }
       }
 
       async function openHtmlContent() {

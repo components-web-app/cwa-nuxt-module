@@ -70,7 +70,7 @@ const singleStyle = computed({
   />
   <template v-if="styleOptions.length">
     <CwaUiMultiSelect
-      v-if="styleConfig?.multipleStyles"
+      v-if="styleConfig?.allowMultiple"
       v-model="chosenStyles"
       label="Style"
       width="full"

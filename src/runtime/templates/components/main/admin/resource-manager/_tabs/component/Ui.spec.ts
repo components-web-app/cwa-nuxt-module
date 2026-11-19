@@ -44,11 +44,11 @@ vi.mock('#cwa/composables/cwa-resource-manager-tab', () => ({
 
 vi.mock('#cwa/resources/realtime-view', () => ({ realtimeView: () => ({ view: { value: undefined }, load: vi.fn().mockResolvedValue(undefined) }) }))
 
-function setStyles(multipleStyles: boolean, ui: string[] = []) {
+function setStyles(allowMultiple: boolean, ui: string[] = []) {
   currentStackItem.value = { ui }
   config.resourcesConfig = {
     Hero: {
-      multipleStyles,
+      allowMultiple,
       styles: {
         bordered: { label: 'Bordered', classes: 'border border-gray-200' },
         rounded: { label: 'Rounded', classes: 'rounded' },

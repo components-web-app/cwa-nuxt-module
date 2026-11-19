@@ -983,7 +983,7 @@ export const componentGroupDeclarations: ComponentGroupDeclarations = {
             name: 'Body Text',
             description: '<p>Rich text</p>',
             defaultData: { html: '<p>New</p>' },
-            multipleStyles: true,
+            allowMultiple: true,
             styles: { 'black-bg': { label: 'Black Background', classes: 'bg-black' } },
           },
         },
@@ -1048,7 +1048,7 @@ export const resourcesConfig: CwaResourcesMeta = {
     "defaultData": {
       "html": "<p>New</p>"
     },
-    "multipleStyles": true,
+    "allowMultiple": true,
     "styles": {
       "black-bg": {
         "label": "Black Background",
@@ -1206,7 +1206,7 @@ export const styleClasses: CwaStyleClasses = {
 
         beforeEach(() => {
           vi.mocked(scanCwaConfigDeclarations).mockReturnValue({
-            components: { Hero: { name: 'Hero', multipleStyles: true, styles: heroStyles } },
+            components: { Hero: { name: 'Hero', allowMultiple: true, styles: heroStyles } },
             ui: {
               CwaComponentHeroUiPlain: { name: 'Plain hero' },
               CwaComponentHeroUiTall: { name: 'Tall hero', styles: { tall: { label: 'Tall', classes: 'h-screen' } } },
@@ -1219,8 +1219,8 @@ export const styleClasses: CwaStyleClasses = {
         test('a variant without styles offers and renders the primary\'s styles', async () => {
           const { uiConfig, styleClasses } = await generate(heroComponents)
 
-          expect(uiConfig.CwaComponentHeroUiPlain).toEqual({ name: 'Plain hero', multipleStyles: true, styles: heroStyles })
-          expect(uiConfig.CwaComponentHeroUiUnconfigured).toEqual({ multipleStyles: true, styles: heroStyles })
+          expect(uiConfig.CwaComponentHeroUiPlain).toEqual({ name: 'Plain hero', allowMultiple: true, styles: heroStyles })
+          expect(uiConfig.CwaComponentHeroUiUnconfigured).toEqual({ allowMultiple: true, styles: heroStyles })
           expect(styleClasses.CwaComponentHeroUiPlain).toEqual({ bordered: 'border', rounded: 'rounded' })
           expect(styleClasses.CwaComponentHeroUiUnconfigured).toEqual({ bordered: 'border', rounded: 'rounded' })
         })

@@ -5,7 +5,7 @@ defineCwaConfig({
   description: '<p>Full-width banner</p>',
   instantAdd: true,
   defaultData: { title: 'New hero' },
-  multipleStyles: true,
+  allowMultiple: true,
   icon: 'hero',
   group: 'Layout',
   styles: {

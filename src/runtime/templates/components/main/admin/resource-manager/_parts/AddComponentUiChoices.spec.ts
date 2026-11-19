@@ -55,7 +55,7 @@ describe('the UI and Style choices of the add component detail (#461)', () => {
   })
 
   test('styles that allow several are chosen with the multi-select', () => {
-    config.resourcesConfig = { Hero: { multipleStyles: true, styles: { dark: { label: 'Dark', classes: 'bg-black' }, boxed: { label: 'Boxed', classes: 'p-4' } } } }
+    config.resourcesConfig = { Hero: { allowMultiple: true, styles: { dark: { label: 'Dark', classes: 'bg-black' }, boxed: { label: 'Boxed', classes: 'p-4' } } } }
     const { wrapper } = mountChoices([])
 
     expect(wrapper.find('[data-testid="add-component-ui"]').exists()).toBe(false)
@@ -64,7 +64,7 @@ describe('the UI and Style choices of the add component detail (#461)', () => {
 
   test('the stored keys the default data sets are chosen against the styles of the chosen UI, and sent as style:<key> (#453)', async () => {
     config.resourcesConfig = { Hero: { styles: { dark: { label: 'Dark', classes: 'bg-black' } } } }
-    config.uiConfig = { CwaComponentHeroUiSplitImage: { multipleStyles: true, styles: { boxed: { label: 'Boxed', classes: 'p-4' }, dark: { label: 'Dark', classes: 'bg-neutral-900' } } } }
+    config.uiConfig = { CwaComponentHeroUiSplitImage: { allowMultiple: true, styles: { boxed: { label: 'Boxed', classes: 'p-4' }, dark: { label: 'Dark', classes: 'bg-neutral-900' } } } }
     const { wrapper } = mountChoices(['CwaComponentHeroUiSplitImage'], ['style:boxed', 'style:dark'])
 
     expect(wrapper.emitted('update:uiClassNames')!.at(-1)).toEqual([['style:dark']])

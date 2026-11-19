@@ -39,7 +39,7 @@ export interface CwaTemplateConfig {
 export interface CwaUiVariantConfig {
   name?: string
   styles?: CwaStyles
-  multipleStyles?: boolean
+  allowMultiple?: boolean
 }
 
 export interface CwaComponentMeta extends CwaTemplateConfig, CwaUiVariantConfig {

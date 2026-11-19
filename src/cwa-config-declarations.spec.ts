@@ -34,7 +34,7 @@ defineCwaConfig({
   description: '<p>Full-width banner</p>',
   instantAdd: true,
   defaultData: { title: 'New hero', tags: ['a', 'b'], count: -1, empty: null },
-  multipleStyles: true,
+  allowMultiple: true,
   styles: {
     'black-bg': { label: 'Black Background', classes: 'bg-black text-white' },
     wide: { label: \`Wide\`, classes: 'w-full' },
@@ -50,7 +50,7 @@ const props = defineProps<IriProp>()`),
           description: '<p>Full-width banner</p>',
           instantAdd: true,
           defaultData: { title: 'New hero', tags: ['a', 'b'], count: -1, empty: null },
-          multipleStyles: true,
+          allowMultiple: true,
           styles: {
             'black-bg': { label: 'Black Background', classes: 'bg-black text-white' },
             'wide': { label: 'Wide', classes: 'w-full' },
@@ -98,10 +98,10 @@ const props = defineProps<IriProp>()`),
 
   test('a variant\'s name comes from its defineCwaConfig', () => {
     const result = scan({
-      [`${APP}/cwa/components/Hero/ui/Wide.vue`]: sfc(`defineCwaConfig({ name: 'Wide hero', multipleStyles: true })`),
+      [`${APP}/cwa/components/Hero/ui/Wide.vue`]: sfc(`defineCwaConfig({ name: 'Wide hero', allowMultiple: true })`),
     }, [template('CwaComponentHeroUiWide', 'cwa/components/Hero/ui/Wide.vue')])
 
-    expect(result.ui).toEqual({ CwaComponentHeroUiWide: { name: 'Wide hero', multipleStyles: true } })
+    expect(result.ui).toEqual({ CwaComponentHeroUiWide: { name: 'Wide hero', allowMultiple: true } })
   })
 
   describe('a key the file kind does not allow', () => {

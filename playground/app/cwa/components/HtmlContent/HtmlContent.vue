@@ -30,7 +30,7 @@ defineCwaConfig({
   description: 'Paragraphs, headings, lists and links, styled to match the site',
   icon: 'rich-text',
   group: 'Text',
-  multipleStyles: true,
+  allowMultiple: true,
   styles: {
     'black-bg': { label: 'Black Background', classes: 'bg-black border border-white p-2' },
   },

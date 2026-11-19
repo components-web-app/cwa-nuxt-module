@@ -327,7 +327,7 @@ export default defineNuxtModule<CwaModuleOptions>({
           warnConfigOnce(`${filePath}\0${reason}`, `${NAME}: the defineCwaConfig in ${filePath} is ignored, because it ${reason}. Pass a single object literal.`)
         },
         onIgnoredKeys: (filePath, keys) => {
-          warnConfigOnce(`${filePath}\0keys\0${keys.join(',')}`, `${NAME}: ${keys.join(', ')} in the defineCwaConfig in ${filePath} ${keys.length > 1 ? 'are' : 'is'} ignored, because this kind of file cannot declare ${keys.length > 1 ? 'them' : 'it'}. A component may declare name, description, instantAdd, defaultData, styles, multipleStyles, icon, group and image; a UI variant name, styles and multipleStyles; a layout or page name and styles.`)
+          warnConfigOnce(`${filePath}\0keys\0${keys.join(',')}`, `${NAME}: ${keys.join(', ')} in the defineCwaConfig in ${filePath} ${keys.length > 1 ? 'are' : 'is'} ignored, because this kind of file cannot declare ${keys.length > 1 ? 'them' : 'it'}. A component may declare name, description, instantAdd, defaultData, styles, allowMultiple, icon, group and image; a UI variant name, styles and allowMultiple; a layout or page name and styles.`)
         },
       })
     }
@@ -401,7 +401,7 @@ export default defineNuxtModule<CwaModuleOptions>({
           const own = declarations.ui[name] ?? {}
           uiConfig[name] = own.styles
             ? own
-            : { ...own, multipleStyles: own.multipleStyles ?? primary.multipleStyles, styles: primary.styles }
+            : { ...own, allowMultiple: own.allowMultiple ?? primary.allowMultiple, styles: primary.styles }
         }
       }
       return {

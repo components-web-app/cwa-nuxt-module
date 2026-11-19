@@ -39,7 +39,7 @@ const styleConfig = computed(() => {
   return styleConfigOf(data?.['@type'], data?.uiComponent)
 })
 const styles = computed<CwaStyles>(() => styleConfig.value?.styles ?? {})
-const isMultipleStyles = computed(() => !!styleConfig.value?.multipleStyles)
+const isMultipleStyles = computed(() => !!styleConfig.value?.allowMultiple)
 const showStyleSelect = computed(() => Object.keys(styles.value).length > 0)
 
 const uiModel = useCwaResourceModel<string>(iri, 'uiComponent', {
