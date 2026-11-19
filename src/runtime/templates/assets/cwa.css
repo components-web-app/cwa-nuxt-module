@@ -105,6 +105,7 @@
     --cwa-duration-fast: 120ms;
     --cwa-duration-base: 200ms;
     --cwa-duration-slow: 300ms;
+    --cwa-duration-indicator: 250ms;
     --cwa-text-flag: 0.75rem;
     --cwa-text-flag--font-weight: 600;
     --cwa-text-flag--line-height: 1.4;
@@ -2119,6 +2120,11 @@
   transition-timing-function: var(--tw-ease, var(--cwa-default-transition-timing-function));
   transition-duration: var(--tw-duration, var(--cwa-default-transition-duration));
 }
+.cwa\:transition-\[translate\,width\] {
+  transition-property: translate,width;
+  transition-timing-function: var(--tw-ease, var(--cwa-default-transition-timing-function));
+  transition-duration: var(--tw-duration, var(--cwa-default-transition-duration));
+}
 .cwa\:transition-all {
   transition-property: all;
   transition-timing-function: var(--tw-ease, var(--cwa-default-transition-timing-function));
@@ -2155,6 +2161,10 @@
   --tw-duration: var(--cwa-duration-fast);
   transition-duration: var(--cwa-duration-fast);
 }
+.cwa\:duration-\(--cwa-duration-indicator\) {
+  --tw-duration: var(--cwa-duration-indicator);
+  transition-duration: var(--cwa-duration-indicator);
+}
 .cwa\:duration-0 {
   --tw-duration: 0ms;
   transition-duration: 0ms;
@@ -2174,6 +2184,10 @@
 .cwa\:duration-300 {
   --tw-duration: 300ms;
   transition-duration: 300ms;
+}
+.cwa\:ease-\(--cwa-ease-out\) {
+  --tw-ease: var(--cwa-ease-out);
+  transition-timing-function: var(--cwa-ease-out);
 }
 .cwa\:ease-in {
   --tw-ease: var(--cwa-ease-in);
@@ -2318,26 +2332,6 @@
 .cwa\:after\:inset-0::after {
   content: var(--tw-content);
   inset: 0px;
-}
-.cwa\:after\:inset-x-0::after {
-  content: var(--tw-content);
-  inset-inline: 0px;
-}
-.cwa\:after\:-bottom-\[calc\(var\(--cwa-spacing-cta-inset\)\+1px\)\]::after {
-  content: var(--tw-content);
-  bottom: calc(calc(var(--cwa-spacing-cta-inset) + 1px) * -1);
-}
-.cwa\:after\:bottom-0::after {
-  content: var(--tw-content);
-  bottom: 0px;
-}
-.cwa\:after\:h-0\.5::after {
-  content: var(--tw-content);
-  height: calc(var(--cwa-spacing) * 0.5);
-}
-.cwa\:after\:bg-accent::after {
-  content: var(--tw-content);
-  background-color: var(--cwa-color-accent);
 }
 .cwa\:after\:content-\[\'\'\]::after {
   --tw-content: '';
