@@ -3,7 +3,7 @@ import { afterEach, describe, expect, test, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { h } from 'vue'
 import { axe } from '../../../../../test/utils/axe'
-import { drawsOpenLine, drawsOpenState, shownFill, trimsToLetters } from '../../../../../test/utils/kit-css'
+import { drawsOpenLine, drawsOpenState, failingInk, shownFill, trimsToLetters } from '../../../../../test/utils/kit-css'
 import Button from './Button.vue'
 import Spinner from './Spinner.vue'
 import { announceKey } from '../core/ui/field-keys'
@@ -218,8 +218,9 @@ describe('CwaUiButton (#456)', () => {
     const popover = document.querySelector<HTMLElement>('[data-testid="button-reason"]')
     expect(popover?.textContent?.trim()).toBe('This group already holds its 3 components')
     expect(popover?.getAttribute('aria-label')).toBe('Why Add is unavailable')
-    expect([...popover!.classList]).toEqual(expect.arrayContaining(['cwa:bg-surface-menu', 'cwa:text-fg', 'cwa:leading-normal', 'cwa:ring-1', 'cwa:ring-line']))
-    expect(popover!.querySelector('svg')!.getAttribute('class')).toContain('cwa:stroke-line')
+    expect([...popover!.classList]).toEqual(expect.arrayContaining(['cwa:bg-surface-info', 'cwa:text-white', 'cwa:leading-normal', 'cwa:ring-1', 'cwa:ring-white/15']))
+    expect(popover!.querySelector('svg')!.getAttribute('class')).toContain('cwa:stroke-white/15')
+    expect(failingInk(popover!)).toEqual([])
     expect(trimsToLetters(popover!.querySelector('p')!)).toBe(true)
     expect(announce).toHaveBeenCalledWith('This group already holds its 3 components')
     expect(clicked).not.toHaveBeenCalled()

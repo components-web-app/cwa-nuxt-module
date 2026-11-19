@@ -1,11 +1,21 @@
 <script setup lang="ts">
 export type GlyphKind = 'error' | 'conflict' | 'saved' | 'draft' | 'live' | 'scheduled' | 'new' | 'group' | 'info'
 
-const { kind, accent = false, inherit = false } = defineProps<{
+const { kind, accent = false, inherit = false, onInfo = false } = defineProps<{
   kind: GlyphKind
   accent?: boolean
   inherit?: boolean
+  onInfo?: boolean
 }>()
+
+const onInfoColours: Partial<Record<GlyphKind, string>> = {
+  saved: 'cwa:text-success-on-info',
+  draft: 'cwa:text-muted-on-info',
+  live: 'cwa:text-success-on-info',
+  scheduled: 'cwa:text-accent-on-info',
+  new: 'cwa:text-muted-on-info',
+  group: 'cwa:text-muted-on-info',
+}
 
 const colours: Record<GlyphKind, string> = {
   error: 'cwa:text-danger-fg',
@@ -25,7 +35,7 @@ const colours: Record<GlyphKind, string> = {
     viewBox="0 0 16 16"
     aria-hidden="true"
     class="cwa:size-4 cwa:shrink-0"
-    :class="inherit ? undefined : accent ? 'cwa:text-accent-fg' : colours[kind]"
+    :class="inherit ? undefined : accent ? 'cwa:text-accent-fg' : onInfo ? onInfoColours[kind] ?? colours[kind] : colours[kind]"
     :data-glyph="kind"
     fill="currentColor"
   >
