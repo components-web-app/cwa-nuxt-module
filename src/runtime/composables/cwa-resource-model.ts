@@ -473,6 +473,7 @@ export const useCwaResourceModel = <T, S = T>(iri: Ref<string | undefined>, prop
 
   function retry() {
     if (localValue.value === undefined) {
+      record(iri.value, (states, entry, field) => states.retryWrite(entry, field))
       return Promise.resolve()
     }
     const value = localValue.value

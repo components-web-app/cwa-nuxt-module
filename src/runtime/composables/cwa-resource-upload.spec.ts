@@ -56,6 +56,7 @@ const stateWrites = vi.hoisted(() => ({
   started: vi.fn(),
   settled: vi.fn(),
   cleared: vi.fn(),
+  retryWrite: vi.fn(),
 }))
 vi.mock('#cwa/resources/field-state-writer', () => ({
   writeFieldStates: (write: (states: typeof stateWrites) => void) => write(stateWrites),
@@ -399,6 +400,27 @@ describe('useCwaResourceUpload', () => {
       expect(mockUpdateResource).toHaveBeenCalledOnce()
       expect(mockUpdateResource.mock.calls[0]![0]).toMatchObject({ iri: '/resources/1', endpoint: '/resources/1/upload' })
       expect((mockUpdateResource.mock.calls[0]![0].data as FormData).get('image')).toBe(held)
+    })
+
+    test('choosing a file for a component not added yet clears the error a refused Add put on its field (#461)', async () => {
+      const entry = { data: { '@id': '__new__', '_metadata': { persisted: false, adding } } }
+      mockGetResource.mockReturnValue(ref(entry))
+      const upload = useCwaResourceUpload(NEW, 'image')
+
+      await upload.handleInputChangeFile(new File(['1'], 'bench.jpg', { type: 'image/jpeg' }))
+
+      expect(stateWrites.cleared).toHaveBeenCalledExactlyOnceWith(entry, 'image')
+    })
+
+    test('Retry with no file to send runs again the write the API refused for this field (#461)', async () => {
+      const entry = { data: { '@id': '/resources/1', '_metadata': {} } }
+      mockGetResource.mockReturnValue(ref(entry))
+      const upload = useCwaResourceUpload(iri, 'poster')
+
+      await upload.retry()
+
+      expect(stateWrites.retryWrite).toHaveBeenCalledExactlyOnceWith(entry, 'poster')
+      expect(mockUpdateResource).not.toHaveBeenCalled()
     })
   })
 })

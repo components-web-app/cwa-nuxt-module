@@ -7,6 +7,7 @@ import { CwaUserRoles } from '#cwa/storage/stores/auth/state'
 import { useCloneMode } from '#cwa/admin/clone-mode'
 import type Cwa from '#cwa/cwa'
 import { announceKey } from '#cwa/templates/components/core/ui/field-keys'
+import { ErrorType } from '#cwa/storage/stores/error/state'
 import { consola } from 'consola'
 import CwaUiManagerTab from '#cwa/templates/components/ui/ManagerTab.vue'
 import Group from './_tabs/group/Group.vue'
@@ -127,7 +128,9 @@ async function mountManager(attachTo?: HTMLElement) {
         ManagerTabs: {
           name: 'ManagerTabs',
           props: ['tabs', 'idPrefix', 'label'],
-          methods: { resetTabs() {}, selectOriginal: (index: number) => selectOriginal.fn(index) },
+          methods: { resetTabs() {}, selectOriginal: (index: number) => selectOriginal.fn(index), fieldsInOrder() {
+            return (this as unknown as { tabs: { fields?: string[] }[] }).tabs.flatMap(tab => tab.fields ?? [])
+          } },
           template: '<div class="manager-tabs-stub" @click="$emit(\'click\', 1)"><button v-for="(tab, index) of tabs" :id="`${idPrefix}-tab-${index}`" type="button">{{ tab.name }}</button></div>',
         },
         CwaAdminResourceManagerContextMenu: {
@@ -350,6 +353,50 @@ describe('ResourceManager', () => {
       expect(calls).toEqual([1])
       expect(document.activeElement).toBe(wrapper.get('[data-testid="title-input"]').element)
       wrapper.unmount()
+    })
+
+    test('a refused write of the selected resource has its violations put on its tab fields, and the tab holding the first is shown without moving focus (#461)', async () => {
+      const { unclaimedViolations } = await import('#cwa/admin/write-violations')
+      const calls: number[] = []
+      selectOriginal.fn = index => calls.push(index)
+      const FieldTab = { name: 'FieldTab', render: () => h('div') }
+      const stackManager = makeStackManager({
+        showManager: ref(true),
+        currentStackItem: ref({ iri: '/component/1', managerTabs: [FieldTab, FieldTab] }),
+      })
+      const cwa = makeCwa({ stackManager })
+      const selected = reactive({ data: { '@id': '/component/1' } })
+      cwaState.cwa = { ...cwa, resourcesManager: {}, resources: { ...cwa.resources, getResource: () => ({ value: selected }), findAllPublishableIris: (iri: string) => [iri] } }
+      const wrapper = await mountManager(document.body)
+      resolverState.allMeta.value = [{ name: 'Publish', fields: [] }, { name: 'Upload', fields: ['file'] }]
+      await nextTick()
+      const outside = document.createElement('button')
+      document.body.append(outside)
+      outside.focus()
+
+      const left = unclaimedViolations(cwaState.cwa, {
+        type: ErrorType.VALIDATION,
+        statusCode: 422,
+        detail: '',
+        violations: [{ property: 'file', message: 'Upload a file.' }, { property: 'credit', message: 'Too long.' }],
+        timestamp: 1,
+        event: { endpoint: '/component/1', data: { publishedAt: 'now' } },
+      })
+
+      expect(left).toEqual([{ property: 'credit', message: 'Too long.' }])
+      expect(calls).toEqual([1])
+      await vi.waitFor(() => expect(selected).toHaveProperty('fieldStates.file.status', 'error'))
+      expect(document.activeElement).toBe(outside)
+      wrapper.unmount()
+      outside.remove()
+      expect(unclaimedViolations(cwaState.cwa, {
+        type: ErrorType.VALIDATION,
+        statusCode: 422,
+        detail: '',
+        violations: [{ property: 'file', message: 'Upload a file.' }],
+        timestamp: 2,
+        event: { endpoint: '/component/1', data: { publishedAt: 'now' } },
+      })).toHaveLength(1)
     })
 
     test('the shown tab is a tabpanel labelled by the selected tab, and the tablist is named for the selection (#461)', async () => {

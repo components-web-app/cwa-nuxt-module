@@ -19,6 +19,9 @@ vi.mock('#cwa/composables/cwa', () => ({
   }),
 }))
 
+const claims = vi.hoisted(() => ({ unclaimedViolations: vi.fn((_cwa: unknown, error: { violations?: unknown[] }) => error.violations ?? []) }))
+vi.mock('#cwa/admin/write-violations', () => claims)
+
 const toast = vi.hoisted(() => ({ show: vi.fn(), dismiss: vi.fn() }))
 vi.mock('#cwa/composables/cwa-toast', () => ({ useCwaToast: () => toast }))
 
@@ -33,6 +36,8 @@ function shown(): CwaToastOptions[] {
 afterEach(() => {
   store.errors = []
   toast.dismiss.mockReset()
+  claims.unclaimedViolations.mockReset()
+  claims.unclaimedViolations.mockImplementation((_cwa, error) => error.violations ?? [])
 })
 
 describe('RequestErrors (#457)', () => {
@@ -115,5 +120,29 @@ describe('RequestErrors (#457)', () => {
 
     wrapper.unmount()
     expect(toast.dismiss.mock.calls).toEqual([['cwa-request-error-2']])
+  })
+
+  test('violations the bar put on the selected resource\'s fields are left out of the toast, which lists only the rest (#461)', () => {
+    const credit = { property: 'credit', message: 'This value is too long.' }
+    const error = { type: ErrorType.VALIDATION, statusCode: 422, detail: '', violations: [{ property: 'file', message: 'Upload a file.' }, credit], timestamp: 1 } as CwaErrorEvent
+    claims.unclaimedViolations.mockImplementation(() => [credit])
+    store.errors = reactive([error])
+    mount(RequestErrors)
+
+    expect(claims.unclaimedViolations).toHaveBeenCalledWith(expect.anything(), error)
+    expect(shown()).toEqual([expect.objectContaining({ id: 'cwa-request-error-1', description: 'credit: This value is too long.' })])
+    expect(store.removeError).not.toHaveBeenCalled()
+  })
+
+  test('a refusal whose every violation went to a field raises no toast and leaves the store, so the fields alone show it (#461)', () => {
+    store.errors = reactive([
+      { type: ErrorType.VALIDATION, statusCode: 422, detail: '', violations: [{ property: 'file', message: 'Upload a file.' }], timestamp: 1 },
+      serverError(2, 500, 'Other'),
+    ])
+    claims.unclaimedViolations.mockImplementation(() => [])
+    mount(RequestErrors)
+
+    expect(shown().map(options => options.id)).toEqual(['cwa-request-error-2'])
+    expect(store.removeError).toHaveBeenCalledExactlyOnceWith(1)
   })
 })

@@ -65,7 +65,11 @@ watchEffect(() => {
   emit('click', newIndex)
 })
 
-defineExpose({ resetTabs, selectOriginal })
+function fieldsInOrder() {
+  return orderedTabs.value.flatMap(tab => tab.fields ?? [])
+}
+
+defineExpose({ resetTabs, selectOriginal, fieldsInOrder })
 </script>
 
 <template>

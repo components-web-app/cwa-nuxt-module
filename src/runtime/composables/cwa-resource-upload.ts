@@ -44,7 +44,12 @@ export const useCwaResourceUpload = (iri: ComputedRef<string | undefined>, filen
       return lastSend()
     }
     const heldIri = iri.value
-    return held.value && heldIri ? send(() => sendHeldUpload($cwa, heldIri, filename, updateEndpoint.value)) : Promise.resolve()
+    if (held.value && heldIri) {
+      return send(() => sendHeldUpload($cwa, heldIri, filename, updateEndpoint.value))
+    }
+    const entry = resource.value
+    entry && writeFieldStates(states => states.retryWrite(entry, filename))
+    return Promise.resolve()
   }
 
   async function reset() {
@@ -84,6 +89,8 @@ export const useCwaResourceUpload = (iri: ComputedRef<string | undefined>, filen
     const uploadIri = iri.value
     if (!persisted.value) {
       holdUpload($cwa, uploadIri, filename, uploadFile)
+      const entry = resource.value
+      entry && writeFieldStates(states => states.cleared(entry, filename))
       updating.value = false
       return
     }
