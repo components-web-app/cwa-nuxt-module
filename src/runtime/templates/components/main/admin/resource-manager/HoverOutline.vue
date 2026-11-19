@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, shallowRef, toValue } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, shallowRef, toValue, watch } from 'vue'
 import type { Ref } from 'vue'
 import { useCwa } from '#cwa/composables/cwa'
 import { boundsOf, instancesAt } from '#cwa/admin/manageable-instances'
@@ -59,6 +59,19 @@ const outline = computed(() => {
   }
   return boundsOf(elements)
 })
+
+const outlined = computed(() => outline.value ? hovered.value?.value ?? [] : [])
+
+watch(outlined, (elements, _, onCleanup) => {
+  for (const element of elements) {
+    element.setAttribute('data-cwa-hovered', '')
+  }
+  onCleanup(() => {
+    for (const element of elements) {
+      element.removeAttribute('data-cwa-hovered')
+    }
+  })
+}, { immediate: true })
 
 function redraw() {
   redrawCount.value++
