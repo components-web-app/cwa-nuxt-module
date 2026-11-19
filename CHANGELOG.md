@@ -4,6 +4,10 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+### Added
+
+- Enable reordering in the Order tab now does what it says: every component in the group gets a grip handle and wobbles gently (it keeps still when the system asks for reduced motion), and dragging a handle, with a mouse or a finger, moves the component to a new place; the page shows the new order at once and saves it in one request, as Move up and Move down do. A click elsewhere still selects ([d3d8829f](https://github.com/components-web-app/cwa-nuxt-module/commit/d3d8829f7b93181b06586d76704f0d834e23cd27)).
+
 ### Fixed
 
 - Editing a title on the page (`CwaUiInlineEdit`) saves as you type, as the bar's input does, instead of only when you click off or press Enter, and Escape stops editing and keeps what was typed ([f79378d5](https://github.com/components-web-app/cwa-nuxt-module/commit/f79378d525effd047a10fecc4dd81dd1a1f4d618), [b5e482ad](https://github.com/components-web-app/cwa-nuxt-module/commit/b5e482ade98bcd4827dcd0215284dc54e3e38c73), [#461](https://github.com/components-web-app/cwa-nuxt-module/issues/461)).
