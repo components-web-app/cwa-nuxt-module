@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch, watchEffect } from 'vue'
-import type { ComputedRef } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useCwa } from '#cwa/composables/cwa'
 import { instancesOf, onInstancesChange } from '#cwa/admin/manageable-instances'
 import { createPositionDrag } from '#cwa/admin/position-drag'
@@ -14,7 +13,7 @@ const $cwa = useCwa()
 const teleportTarget: Element | string = useNuxtApp().vueApp._container ?? 'body'
 const redrawCount = ref(0)
 const held = ref<string>()
-const dropLine = ref<PositionDragState['line']>()
+const dragState = ref<PositionDragState>()
 
 const positions = computed(() => $cwa.resources.getOrderedPositionsForGroup(props.groupIri) ?? [])
 
@@ -40,29 +39,17 @@ function scroll() {
   }
 }
 
-const componentIris = new Map<string, ComputedRef<string | undefined>>()
-
-function componentName(positionIri: string) {
-  let componentIri = componentIris.get(positionIri)
-  if (!componentIri) {
-    componentIri = $cwa.resources.positionComponentIri(positionIri)
-    componentIris.set(positionIri, componentIri)
-  }
-  const type = componentIri.value ? $cwa.resources.getResource(componentIri.value).value?.data?.['@type'] : undefined
-  return (type && $cwa.resourcesConfig?.[type]?.name) || type || 'component'
-}
-
-const handles = computed(() => {
+const grips = computed(() => {
   void redrawCount.value
   const { x, y } = scroll()
   return positions.value.flatMap((positionIri) => {
     const box = boxOf(positionIri)
-    return box ? [{ positionIri, label: `Drag to reorder ${componentName(positionIri)}`, style: { top: `${box.top + y}px`, left: `${box.left + x}px` } }] : []
+    return box ? [{ positionIri, style: { top: `${box.top + y}px`, left: `${box.right + x}px` } }] : []
   })
 })
 
 const lineStyle = computed(() => {
-  const line = dropLine.value
+  const line = dragState.value?.line
   if (!line) {
     return
   }
@@ -70,52 +57,71 @@ const lineStyle = computed(() => {
   return { top: `${line.top + y}px`, left: `${line.left + x}px`, width: `${line.right - line.left}px` }
 })
 
+const ghostStyle = computed(() => {
+  const ghost = dragState.value?.ghost
+  if (!ghost) {
+    return
+  }
+  const { x, y } = scroll()
+  return { top: `${ghost.top + y}px`, left: `${ghost.left + x}px`, width: `${ghost.right - ghost.left}px`, height: `${ghost.bottom - ghost.top}px` }
+})
+
 const drag = createPositionDrag({
   positions: () => positions.value,
   boxOf,
   onReorder: event => $cwa.admin.eventBus.emit('reorder', event),
   onChange: (state) => {
-    dropLine.value = state?.line
-    if (!state) {
-      held.value = undefined
-    }
+    dragState.value = state
+    held.value = state?.positionIri
   },
 })
 
-function press(event: PointerEvent, positionIri: string) {
-  held.value = positionIri
-  drag.start(event, positionIri, event.currentTarget as HTMLElement)
-}
-
-function release() {
-  held.value = undefined
-}
-
-let wobbling = new Map<HTMLElement, string>()
-
-function applyWobble(wanted: Map<HTMLElement, string>) {
-  for (const [element, className] of wobbling) {
-    wanted.get(element) !== className && element.classList.remove(className)
+function positionAt(target: Node) {
+  for (const positionIri of positions.value) {
+    const element = elementsOf(positionIri).find(candidate => candidate.contains(target))
+    if (element) {
+      return { positionIri, element }
+    }
   }
-  for (const [element, className] of wanted) {
-    element.classList.add(className)
-  }
-  wobbling = wanted
 }
 
-watchEffect(() => {
+function press(event: PointerEvent) {
+  const target = event.target
+  if (!(target instanceof Element) || target.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"])')) {
+    return
+  }
+  const found = positionAt(target)
+  found && drag.start(event, found.positionIri, found.element)
+}
+
+let marked = new Map<HTMLElement, boolean>()
+
+function applyMarks(wanted: Map<HTMLElement, boolean>) {
+  for (const element of marked.keys()) {
+    if (!wanted.has(element)) {
+      element.removeAttribute('data-cwa-reorderable')
+      element.removeAttribute('data-cwa-reorder-held')
+    }
+  }
+  for (const [element, isHeld] of wanted) {
+    element.setAttribute('data-cwa-reorderable', '')
+    isHeld ? element.setAttribute('data-cwa-reorder-held', '') : element.removeAttribute('data-cwa-reorder-held')
+  }
+  marked = wanted
+}
+
+watch(() => {
   void redrawCount.value
-  const wanted = new Map<HTMLElement, string>()
-  positions.value.forEach((positionIri, index) => {
-    if (positionIri === held.value) {
-      return
-    }
+  return [positions.value, held.value] as const
+}, () => {
+  const wanted = new Map<HTMLElement, boolean>()
+  for (const positionIri of positions.value) {
     for (const element of elementsOf(positionIri)) {
-      wanted.set(element, index % 2 ? 'cwa:reorder-wobble-alt' : 'cwa:reorder-wobble')
+      wanted.set(element, positionIri === held.value)
     }
-  })
-  applyWobble(wanted)
-}, { flush: 'post' })
+  }
+  applyMarks(wanted)
+}, { immediate: true, flush: 'post' })
 
 function redraw() {
   redrawCount.value++
@@ -141,40 +147,38 @@ watch(() => [$cwa.resources.displayPageIri.value, $cwa.resources.isLoading.value
 onMounted(() => {
   $cwa.admin.eventBus.on('redrawFocus', redraw)
   window.addEventListener('resize', redraw)
+  document.addEventListener('pointerdown', press, true)
 })
 
 onBeforeUnmount(() => {
   frame !== undefined && cancelAnimationFrame(frame)
   drag.stop()
   stopInstances()
-  applyWobble(new Map())
+  applyMarks(new Map())
   $cwa.admin.eventBus.off('redrawFocus', redraw)
   window.removeEventListener('resize', redraw)
+  document.removeEventListener('pointerdown', press, true)
 })
 </script>
 
 <template>
   <Teleport :to="teleportTarget">
-    <button
-      v-for="handle of handles"
-      :key="handle.positionIri"
-      type="button"
-      tabindex="-1"
+    <div
+      v-for="grip of grips"
+      :key="grip.positionIri"
       aria-hidden="true"
-      :aria-label="handle.label"
-      :title="handle.label"
-      :style="handle.style"
-      data-testid="reorder-handle"
-      :data-held="held === handle.positionIri || undefined"
-      class="cwa:absolute cwa:z-manager-focus cwa:m-1 cwa:flex cwa:size-control cwa:pointer-coarse:size-hit cwa:items-center cwa:justify-center cwa:rounded-sm cwa:bg-magenta cwa:text-white cwa:shadow-md cwa:cursor-grab cwa:touch-none cwa:select-none cwa:data-held:cursor-grabbing"
-      @pointerdown="press($event, handle.positionIri)"
-      @pointerup="release"
-      @pointercancel="release"
-      @click.stop.prevent
-      @contextmenu.stop.prevent
+      :style="grip.style"
+      data-testid="reorder-grip"
+      class="cwa:pointer-events-none cwa:absolute cwa:z-manager-focus cwa:-ml-5 cwa:mt-1 cwa:flex cwa:size-4 cwa:items-center cwa:justify-center cwa:rounded-xs cwa:bg-magenta cwa:text-white cwa:shadow-sm"
     >
-      <GripIcon class="cwa:size-5" />
-    </button>
+      <GripIcon class="cwa:size-3" />
+    </div>
+    <div
+      v-if="ghostStyle"
+      :style="ghostStyle"
+      data-testid="reorder-ghost"
+      class="cwa:pointer-events-none cwa:absolute cwa:z-manager-focus cwa:rounded-sm cwa:bg-magenta/10 cwa:outline-1 cwa:outline-solid cwa:outline-magenta/50"
+    />
     <div
       v-if="lineStyle"
       :style="lineStyle"

@@ -63,12 +63,24 @@ function setup() {
   return { cwa, state, reorder, elements }
 }
 
-function handles() {
-  return [...document.querySelectorAll<HTMLElement>('[data-testid="reorder-handle"]')]
+function grips() {
+  return [...document.querySelectorAll<HTMLElement>('[data-testid="reorder-grip"]')]
 }
 
-function pointer(type: string, y: number) {
-  return new PointerEvent(type, { bubbles: true, cancelable: true, clientX: 10, clientY: y, pointerId: 1 })
+function lines() {
+  return [...document.querySelectorAll<HTMLElement>('[data-testid="reorder-drop-line"]')]
+}
+
+function ghost() {
+  return document.querySelector<HTMLElement>('[data-testid="reorder-ghost"]')
+}
+
+function pointer(type: string, y: number, button = 0) {
+  return new PointerEvent(type, { bubbles: true, cancelable: true, clientX: 10, clientY: y, pointerId: 1, button })
+}
+
+function compiledCss() {
+  return postcss.parse(readFileSync(resolve(import.meta.dirname, '../../../../assets/cwa.css'), 'utf8'))
 }
 
 afterEach(async () => {
@@ -79,118 +91,138 @@ afterEach(async () => {
 })
 
 describe('ReorderHandles', () => {
-  test('shows a grip handle on every position in the group, in the app\'s container, named for its component and out of the tab order', async () => {
-    setup()
-    mount(ReorderHandles, { props: { groupIri: GROUP } })
-    await flushPromises()
-    const shown = handles()
-    expect(shown).toHaveLength(3)
-    expect(shown.every(handle => appContainer.element!.contains(handle))).toBe(true)
-    expect(shown[0]!.getAttribute('aria-label')).toBe('Drag to reorder Rich text')
-    expect(shown[0]!.getAttribute('tabindex')).toBe('-1')
-    expect(shown.map(handle => handle.style.top)).toEqual(['0px', '100px', '200px'])
-  })
-
-  test('the positions wobble, alternating, and the one held stops wobbling until it is dropped', async () => {
+  test('marks every position of the group as draggable and shows a small decorative grip in its top right corner, in the app\'s container and never in the tab order', async () => {
     const { elements } = setup()
     mount(ReorderHandles, { props: { groupIri: GROUP } })
     await flushPromises()
-    expect(elements[A]!.classList.contains('cwa:reorder-wobble')).toBe(true)
-    expect(elements[B]!.classList.contains('cwa:reorder-wobble-alt')).toBe(true)
-    expect(elements[C]!.classList.contains('cwa:reorder-wobble')).toBe(true)
-    handles()[1]!.dispatchEvent(pointer('pointerdown', 150))
-    await flushPromises()
-    expect(elements[B]!.className).not.toContain('wobble')
-    expect(elements[A]!.classList.contains('cwa:reorder-wobble')).toBe(true)
-    handles()[1]!.dispatchEvent(pointer('pointerup', 150))
-    await flushPromises()
-    expect(elements[B]!.classList.contains('cwa:reorder-wobble-alt')).toBe(true)
+    expect(Object.values(elements).every(element => element.hasAttribute('data-cwa-reorderable'))).toBe(true)
+    const shown = grips()
+    expect(shown).toHaveLength(3)
+    expect(shown.every(grip => appContainer.element!.contains(grip))).toBe(true)
+    expect(shown.every(grip => grip.getAttribute('aria-hidden') === 'true' && grip.tagName === 'DIV' && !grip.hasAttribute('tabindex'))).toBe(true)
+    expect(shown.every(grip => grip.className.includes('cwa:pointer-events-none'))).toBe(true)
+    expect(shown.map(grip => [grip.style.top, grip.style.left])).toEqual([['0px', '400px'], ['100px', '400px'], ['200px', '400px']])
   })
 
-  test('dragging a handle shows the drop line and a drop emits the reorder the Order tab uses', async () => {
-    const { reorder } = setup()
+  test('a press anywhere inside a component, dragged, shows one drop line where it will land and a ghost of its box, moving nothing in the page, and the drop emits the reorder the Order tab uses', async () => {
+    const { reorder, elements } = setup()
+    const inner = elements[A]!.appendChild(document.createElement('p'))
     mount(ReorderHandles, { props: { groupIri: GROUP } })
     await flushPromises()
-    const handle = handles()[0]!
-    handle.dispatchEvent(pointer('pointerdown', 50))
-    handle.dispatchEvent(pointer('pointermove', 260))
+    inner.dispatchEvent(pointer('pointerdown', 50))
+    document.body.dispatchEvent(pointer('pointermove', 260))
     await flushPromises()
-    expect(document.querySelector<HTMLElement>('[data-testid="reorder-drop-line"]')?.style.top).toBe('300px')
-    handle.dispatchEvent(pointer('pointerup', 260))
+    expect(lines()).toHaveLength(1)
+    expect(lines()[0]!.style.top).toBe('300px')
+    expect([ghost()?.style.top, ghost()?.style.height]).toEqual(['210px', '100px'])
+    expect(Object.values(elements).map(element => element.getAttribute('style'))).toEqual([null, null, null])
+    expect(elements[A]!.hasAttribute('data-cwa-reorder-held')).toBe(true)
+    document.body.dispatchEvent(pointer('pointerup', 260))
     await flushPromises()
     expect(reorder).toHaveBeenCalledOnce()
     expect(reorder).toHaveBeenCalledWith({ positionIri: A, location: 3 })
-    expect(document.querySelector('[data-testid="reorder-drop-line"]')).toBeNull()
+    expect(lines()).toEqual([])
+    expect(ghost()).toBeNull()
+    expect(elements[A]!.hasAttribute('data-cwa-reorder-held')).toBe(false)
   })
 
-  test('unmounting (reordering turned off) mid-drag removes the handles, the line, the wobble and every listener', async () => {
-    const { reorder, elements } = setup()
-    const wrapper = mount(ReorderHandles, { props: { groupIri: GROUP } })
-    await flushPromises()
-    const handle = handles()[0]!
-    handle.dispatchEvent(pointer('pointerdown', 50))
-    handle.dispatchEvent(pointer('pointermove', 260))
-    await flushPromises()
-    wrapper.unmount()
-    handle.dispatchEvent(pointer('pointerup', 260))
-    expect(reorder).not.toHaveBeenCalled()
-    expect(handles()).toEqual([])
-    expect(document.querySelector('[data-testid="reorder-drop-line"]')).toBeNull()
-    expect(Object.values(elements).some(element => element.className.includes('wobble'))).toBe(false)
-  })
-
-  test('a click on a grip over a component holding a link, pressed or dragged, never reaches the page, so the link menu does not open', async () => {
+  test('over its own place there is a ghost but no drop line', async () => {
     const { elements } = setup()
-    const link = document.createElement('a')
+    mount(ReorderHandles, { props: { groupIri: GROUP } })
+    await flushPromises()
+    elements[B]!.dispatchEvent(pointer('pointerdown', 150))
+    document.body.dispatchEvent(pointer('pointermove', 130))
+    await flushPromises()
+    expect(ghost()).not.toBeNull()
+    expect(lines()).toEqual([])
+  })
+
+  test.each([
+    ['outside every position', () => document.body],
+    ['in a field inside a component', (elements: Record<string, HTMLElement>) => elements[A]!.appendChild(document.createElement('input'))],
+    ['with the right button', (elements: Record<string, HTMLElement>) => elements[A]!],
+  ])('a press %s starts no drag', async (label, target) => {
+    const { reorder, elements } = setup()
+    mount(ReorderHandles, { props: { groupIri: GROUP } })
+    await flushPromises()
+    target(elements).dispatchEvent(pointer('pointerdown', 50, label === 'with the right button' ? 2 : 0))
+    document.body.dispatchEvent(pointer('pointermove', 260))
+    document.body.dispatchEvent(pointer('pointerup', 260))
+    await flushPromises()
+    expect(ghost()).toBeNull()
+    expect(reorder).not.toHaveBeenCalled()
+  })
+
+  test('a click under the threshold on a link inside a component reaches the link, and only the click ending a drag is swallowed', async () => {
+    const { elements } = setup()
+    const link = elements[A]!.appendChild(document.createElement('a'))
     link.href = '/second'
-    elements[A]!.appendChild(link)
     const pageClick = vi.fn()
     document.addEventListener('click', pageClick)
     mount(ReorderHandles, { props: { groupIri: GROUP } })
     await flushPromises()
-    const handle = handles()[0]!
 
-    handle.dispatchEvent(pointer('pointerdown', 50))
-    handle.dispatchEvent(pointer('pointerup', 50))
+    link.dispatchEvent(pointer('pointerdown', 50))
+    link.dispatchEvent(pointer('pointerup', 50))
     const pressed = new MouseEvent('click', { bubbles: true, cancelable: true })
-    handle.dispatchEvent(pressed)
+    link.dispatchEvent(pressed)
 
-    handle.dispatchEvent(pointer('pointerdown', 50))
-    handle.dispatchEvent(pointer('pointermove', 260))
-    handle.dispatchEvent(pointer('pointerup', 260))
+    link.dispatchEvent(pointer('pointerdown', 50))
+    document.body.dispatchEvent(pointer('pointermove', 260))
+    document.body.dispatchEvent(pointer('pointerup', 260))
     const dragged = new MouseEvent('click', { bubbles: true, cancelable: true })
-    handle.dispatchEvent(dragged)
+    link.dispatchEvent(dragged)
 
     document.removeEventListener('click', pageClick)
-    expect(handle.contains(link)).toBe(false)
-    expect(handle.closest('a[href]')).toBeNull()
-    expect(pressed.defaultPrevented).toBe(true)
+    expect(pressed.defaultPrevented).toBe(false)
     expect(dragged.defaultPrevented).toBe(true)
-    expect(pageClick).not.toHaveBeenCalled()
+    expect(pageClick).toHaveBeenCalledOnce()
+    expect(pageClick.mock.calls[0]![0]).toBe(pressed)
   })
 
-  test('the wobble rocks gently in the compiled CSS, without touching an app\'s own transform, and stops when the system asks for reduced motion', () => {
-    const css = postcss.parse(readFileSync(resolve(import.meta.dirname, '../../../../assets/cwa.css'), 'utf8'))
-    const declarations = (selector: string, inReduce: boolean) => {
+  test('unmounting (the group no longer selected) mid-drag removes the grips, the line, the ghost, the marks and every listener', async () => {
+    const { reorder, elements } = setup()
+    const wrapper = mount(ReorderHandles, { props: { groupIri: GROUP } })
+    await flushPromises()
+    elements[A]!.dispatchEvent(pointer('pointerdown', 50))
+    document.body.dispatchEvent(pointer('pointermove', 260))
+    await flushPromises()
+    wrapper.unmount()
+    document.body.dispatchEvent(pointer('pointerup', 260))
+    elements[B]!.dispatchEvent(pointer('pointerdown', 150))
+    document.body.dispatchEvent(pointer('pointermove', 20))
+    document.body.dispatchEvent(pointer('pointerup', 20))
+    expect(reorder).not.toHaveBeenCalled()
+    expect(grips()).toEqual([])
+    expect(lines()).toEqual([])
+    expect(ghost()).toBeNull()
+    expect(Object.values(elements).some(element => element.hasAttribute('data-cwa-reorderable') || element.hasAttribute('data-cwa-reorder-held'))).toBe(false)
+  })
+
+  test('the compiled CSS gives a draggable component a grab cursor over everything in it (a link\'s crosshair included), no text selection or touch scroll, and grabbing while held', () => {
+    const css = compiledCss()
+    const declarations = (selector: string) => {
       const found: Record<string, string> = {}
       css.walkRules((rule: Rule) => {
-        const reduce = rule.parent?.type === 'atrule' && /prefers-reduced-motion: reduce/.test((rule.parent as any).params)
-        if (reduce === inReduce && rule.selectors.includes(selector)) {
+        if (rule.selectors.includes(selector)) {
           rule.walkDecls((decl) => {
-            found[decl.prop] = decl.value
+            found[decl.prop] = `${decl.value}${decl.important ? ' !important' : ''}`
           })
         }
       })
       return found
     }
-    const keyframes: string[] = []
-    css.walkAtRules('keyframes', rule => rule.walkDecls(decl => keyframes.push(`${(rule as any).params} ${decl.prop}: ${decl.value}`)))
-    for (const [selector, name] of [['.cwa\\:reorder-wobble', 'cwa-reorder-wobble'], ['.cwa\\:reorder-wobble-alt', 'cwa-reorder-wobble-alt']] as const) {
-      expect(declarations(selector, false).animation).toBe(`${name} 0.5s infinite`)
-      expect(declarations(selector, true).animation).toBe('none')
-      const props = keyframes.filter(line => line.startsWith(`${name} `)).map(line => line.split(' ')[1])
-      expect(props).toContain('rotate:')
-      expect(props).not.toContain('transform:')
-    }
+    expect(declarations('[data-cwa-reorderable]')).toMatchObject({ 'cursor': 'grab !important', 'touch-action': 'none', 'user-select': 'none' })
+    expect(declarations('[data-cwa-reorderable] *').cursor).toBe('grab !important')
+    expect(declarations('[data-cwa-reorder-held] *').cursor).toBe('grabbing !important')
+    expect(declarations('[data-cwa-reorder-held]').cursor).toBe('grabbing !important')
+  })
+
+  test('nothing wobbles: the compiled CSS has no wobble animation left', () => {
+    const css = compiledCss()
+    const names: string[] = []
+    css.walkAtRules('keyframes', rule => names.push((rule as any).params))
+    css.walkRules((rule: Rule) => names.push(...rule.selectors))
+    expect(names.filter(name => /wobble|is-reordering/.test(name))).toEqual([])
   })
 })

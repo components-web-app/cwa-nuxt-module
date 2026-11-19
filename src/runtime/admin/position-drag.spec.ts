@@ -13,12 +13,12 @@ const boxes: Record<string, DragBox> = {
   [C]: { top: 200, bottom: 300, left: 0, right: 400 },
 }
 
-function pointer(type: string, init: { x?: number, y?: number, pointerId?: number } = {}) {
-  return new PointerEvent(type, { bubbles: true, cancelable: true, clientX: init.x ?? 10, clientY: init.y ?? 0, pointerId: init.pointerId ?? 1 })
+function pointer(type: string, init: { x?: number, y?: number, pointerId?: number, button?: number } = {}) {
+  return new PointerEvent(type, { bubbles: true, cancelable: true, clientX: init.x ?? 10, clientY: init.y ?? 0, pointerId: init.pointerId ?? 1, button: init.button ?? 0 })
 }
 
 function setup(positions = [A, B, C]) {
-  const handle = document.createElement('button')
+  const handle = document.createElement('div')
   handle.setPointerCapture = vi.fn()
   handle.releasePointerCapture = vi.fn()
   document.body.appendChild(handle)
@@ -35,8 +35,9 @@ function setup(positions = [A, B, C]) {
     drag.start(down, iri, handle)
     return down
   }
-  const moveTo = (y: number, x = 10) => handle.dispatchEvent(pointer('pointermove', { x, y }))
-  const release = (y: number) => handle.dispatchEvent(pointer('pointerup', { y }))
+  const outside = document.body.appendChild(document.createElement('div'))
+  const moveTo = (y: number, x = 10) => outside.dispatchEvent(pointer('pointermove', { x, y }))
+  const release = (y: number) => outside.dispatchEvent(pointer('pointerup', { y }))
   return { handle, drag, onReorder, states, press, moveTo, release }
 }
 
@@ -50,11 +51,10 @@ afterEach(async () => {
   pageClick.mockClear()
 })
 
-describe('dragging a position by its handle', () => {
-  test('dragging the first of three past the third\'s middle reorders it to place 3, once', () => {
-    const { press, moveTo, release, onReorder, handle } = setup()
+describe('dragging a position by its component', () => {
+  test('dragging the first of three past the third\'s middle reorders it to place 3, once, following the pointer even once it leaves the component', () => {
+    const { press, moveTo, release, onReorder } = setup()
     press(A, 50)
-    expect(handle.setPointerCapture).toHaveBeenCalledWith(1)
     moveTo(200)
     moveTo(260)
     release(260)
@@ -70,13 +70,22 @@ describe('dragging a position by its handle', () => {
     expect(onReorder).toHaveBeenCalledWith({ positionIri: C, location: 1 })
   })
 
-  test('while dragging, the drop line sits where the position will land, and clears on release', () => {
+  test('the pointer is captured only once the press becomes a drag, so a click on a link inside still lands on the link', () => {
+    const { press, moveTo, handle } = setup()
+    press(A, 50)
+    moveTo(50 + DRAG_THRESHOLD - 1)
+    expect(handle.setPointerCapture).not.toHaveBeenCalled()
+    moveTo(160)
+    expect(handle.setPointerCapture).toHaveBeenCalledWith(1)
+  })
+
+  test('while dragging, the one drop line sits where the position will land and a ghost of its box follows the pointer, and both clear on release', () => {
     const { press, moveTo, release, states } = setup()
     press(A, 50)
     moveTo(160)
-    expect(states.at(-1)).toEqual({ positionIri: A, targetIndex: 1, line: { top: 200, left: 0, right: 400 } })
-    moveTo(260)
-    expect(states.at(-1)).toEqual({ positionIri: A, targetIndex: 2, line: { top: 300, left: 0, right: 400 } })
+    expect(states.at(-1)).toEqual({ positionIri: A, targetIndex: 1, line: { top: 200, left: 0, right: 400 }, ghost: { top: 110, bottom: 210, left: 0, right: 400 } })
+    moveTo(260, 30)
+    expect(states.at(-1)).toEqual({ positionIri: A, targetIndex: 2, line: { top: 300, left: 0, right: 400 }, ghost: { top: 210, bottom: 310, left: 20, right: 420 } })
     release(260)
     expect(states.at(-1)).toBeUndefined()
   })
@@ -127,21 +136,21 @@ describe('dragging a position by its handle', () => {
     expect(onReorder).not.toHaveBeenCalled()
   })
 
-  test('dropping where it started reorders nothing', () => {
+  test('over its own place there is no drop line, only the ghost, and dropping there reorders nothing', () => {
     const { press, moveTo, release, onReorder, states } = setup()
     press(B, 150)
     moveTo(120)
-    expect(states.at(-1)?.targetIndex).toBe(1)
+    expect(states.at(-1)).toEqual({ positionIri: B, targetIndex: 1, line: undefined, ghost: { top: 70, bottom: 170, left: 0, right: 400 } })
     release(120)
     expect(onReorder).not.toHaveBeenCalled()
   })
 
   test('another pointer\'s moves and release are ignored', () => {
-    const { press, moveTo, release, onReorder, handle } = setup()
+    const { press, moveTo, release, onReorder } = setup()
     press(A, 50)
     moveTo(160)
-    handle.dispatchEvent(pointer('pointermove', { y: 260, pointerId: 2 }))
-    handle.dispatchEvent(pointer('pointerup', { y: 260, pointerId: 2 }))
+    window.dispatchEvent(pointer('pointermove', { y: 260, pointerId: 2 }))
+    window.dispatchEvent(pointer('pointerup', { y: 260, pointerId: 2 }))
     expect(onReorder).not.toHaveBeenCalled()
     release(160)
     expect(onReorder).toHaveBeenCalledWith({ positionIri: A, location: 2 })
@@ -161,9 +170,40 @@ describe('dragging a position by its handle', () => {
     expect(onReorder).not.toHaveBeenCalled()
   })
 
-  test('the press does not start a text selection or a touch scroll', () => {
+  test('the press is left to the page, so a click under the threshold focuses and selects the component as usual', () => {
     const { press } = setup()
-    expect(press(A, 50).defaultPrevented).toBe(true)
+    expect(press(A, 50).defaultPrevented).toBe(false)
+  })
+
+  test('the browser\'s own drag of a link or image in the component is stopped while it is pressed, and allowed again after', () => {
+    const { press, release } = setup()
+    press(A, 50)
+    const during = new Event('dragstart', { bubbles: true, cancelable: true })
+    document.body.dispatchEvent(during)
+    release(50)
+    const after = new Event('dragstart', { bubbles: true, cancelable: true })
+    document.body.dispatchEvent(after)
+    expect(during.defaultPrevented).toBe(true)
+    expect(after.defaultPrevented).toBe(false)
+  })
+
+  test('Escape before the press becomes a drag is left to the page', () => {
+    const { press, release, onReorder } = setup()
+    press(A, 50)
+    const escape = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })
+    window.dispatchEvent(escape)
+    release(50)
+    expect(escape.defaultPrevented).toBe(false)
+    expect(onReorder).not.toHaveBeenCalled()
+  })
+
+  test('a press with any button but the main one starts nothing, so a right-click still opens the menu', () => {
+    const { drag, handle, moveTo, release, states, onReorder } = setup()
+    drag.start(pointer('pointerdown', { y: 50, button: 2 }), A, handle)
+    moveTo(260)
+    release(260)
+    expect(states).toEqual([])
+    expect(onReorder).not.toHaveBeenCalled()
   })
 
   test('side-by-side positions: a pointer right of one in the same row is past it', () => {
@@ -172,7 +212,7 @@ describe('dragging a position by its handle', () => {
       [B]: { top: 0, bottom: 100, left: 100, right: 200 },
       [C]: { top: 0, bottom: 100, left: 200, right: 300 },
     }
-    const handle = document.createElement('button')
+    const handle = document.body.appendChild(document.createElement('div'))
     const onReorder = vi.fn()
     const drag = createPositionDrag({ positions: () => [A, B, C], boxOf: iri => row[iri], onReorder })
     drag.start(pointer('pointerdown', { x: 50, y: 20 }), A, handle)

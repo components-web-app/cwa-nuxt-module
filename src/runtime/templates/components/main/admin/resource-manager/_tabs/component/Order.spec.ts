@@ -4,9 +4,8 @@ import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { computed, nextTick, ref } from 'vue'
 import { axe } from '../../../../../../../../../test/utils/axe'
 import Order from './Order.vue'
-import CwaUiToggle from '#cwa/templates/components/ui/Toggle.vue'
+import CwaUiNumber from '#cwa/templates/components/ui/Number.vue'
 
-const reordering = ref(true)
 const requestCount = ref(0)
 const displayNumber = ref(2)
 const syncingNumber = ref<number | undefined>()
@@ -34,7 +33,6 @@ vi.mock('#cwa/composables/cwa-resource-manager-tab', () => ({
       componentGroupReorders: { failed: (iri: string) => iri === '/_/component_groups/g1' && reorderFailed.value, retry, dismiss },
     },
     exposeMeta: { disabled: ref(false), fields: [] },
-    createComputedState: () => reordering,
   }),
 }))
 
@@ -53,7 +51,6 @@ function positionLine(wrapper: ReturnType<typeof mount>) {
 describe('Order tab on the kit (#400, #459)', () => {
   afterEach(() => {
     emit.mockReset()
-    reordering.value = true
     requestCount.value = 0
     displayNumber.value = 2
     syncingNumber.value = undefined
@@ -88,17 +85,6 @@ describe('Order tab on the kit (#400, #459)', () => {
     await input.setValue('9')
     await input.trigger('blur')
     expect(emit).toHaveBeenCalledWith('reorder', { positionIri: '/_/component_positions/p1', location: 3 })
-  })
-
-  test('Move up, Move down and the position work with Enable reordering off, which only turns on dragging', async () => {
-    reordering.value = false
-    displayNumber.value = 2
-    const wrapper = mount(Order)
-
-    expect(wrapper.get('input[role="spinbutton"]').attributes('disabled')).toBeUndefined()
-    expect(step(wrapper, 'Move up').attributes('aria-disabled')).toBeUndefined()
-    await step(wrapper, 'Move up').trigger('click')
-    expect(emit).toHaveBeenLastCalledWith('reorder', { positionIri: '/_/component_positions/p1', location: 1 })
   })
 
   test('the position shows saving on its edge line while the new order syncs, then saved', async () => {
@@ -140,12 +126,11 @@ describe('Order tab on the kit (#400, #459)', () => {
     expect(dismiss).toHaveBeenCalledWith('/_/component_groups/g1')
   })
 
-  test('with reordering off, nothing says to turn it on before moving, and the toggle says it is for dragging', () => {
-    reordering.value = false
+  test('has no Enable reordering toggle, which belongs to the selected group, and the position says so', () => {
     const wrapper = mount(Order, { attachTo: document.body })
 
-    expect(document.body.textContent).not.toContain('Turn on Enable reordering')
-    expect(wrapper.findComponent(CwaUiToggle).props('info')).toBe('Shows a handle on each component in this group to drag it to a new place.')
+    expect(document.querySelector('[role="switch"]')).toBeNull()
+    expect(wrapper.findComponent(CwaUiNumber).props('info')).toBe('Its place in this group, from the top. Select the group and turn on Enable reordering to drag its components.')
   })
 
   test('has no axe violations', async () => {
