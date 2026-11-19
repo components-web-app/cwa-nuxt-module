@@ -56,6 +56,9 @@ export default defineNuxtConfig({
       },
     },
   },
+  devServer: {
+    host: 'localhost',
+  },
   // routeRules: {
   // '/': { prerender: true },
   // breaks things like og-image caching all endpoints
