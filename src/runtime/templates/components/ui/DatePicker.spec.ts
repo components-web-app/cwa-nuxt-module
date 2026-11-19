@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { resetLocalTimeZone } from '@internationalized/date'
 import { axe } from '../../../../../test/utils/axe'
-import { drawsOpenState } from '../../../../../test/utils/kit-css'
+import { drawsOpenLine, drawsOpenState, fillsOnHover, shownColour, shownFill } from '../../../../../test/utils/kit-css'
 import { fakeFieldModel } from '../../../../../playground/app/kit/fake-field-model'
 import DatePicker from './DatePicker.vue'
 import Field from '../core/ui/Field.vue'
@@ -106,18 +106,26 @@ describe('CwaUiDatePicker', () => {
     })
   })
 
-  test('the calendar button shows itself selected while the calendar is open, and not once it closes, with no axe violations open', async () => {
+  test('the calendar button shows the calendar open by turning its glyph the accent blue, with no fill behind it, and goes back to muted once it closes; hovering changes only the glyph\'s colour; no axe violations open', async () => {
     const wrapper = mountPicker()
     const button = () => wrapper.get('[data-date-picker-trigger]').element
+    const glyph = () => button().querySelector('svg')!
     expect(drawsOpenState(button())).toBe(false)
+    expect(shownColour(glyph())).toBe('fg-muted')
+    expect(fillsOnHover(button())).toBe(false)
+    expect(button().classList).toContain('cwa:hover:text-fg')
 
     await openCalendar(wrapper)
     expect(drawsOpenState(button())).toBe(true)
+    expect(drawsOpenLine(button())).toBe(false)
+    expect(shownColour(glyph())).toBe('accent-fg')
+    expect(shownFill(button())).toBeUndefined()
     expect(await axe(document.body, { rules: { region: { enabled: false } } })).toHaveNoViolations()
 
     await wrapper.get('[data-date-picker-trigger]').trigger('click')
     await flushPromises()
     expect(drawsOpenState(button())).toBe(false)
+    expect(shownColour(glyph())).toBe('fg-muted')
     wrapper.unmount()
   })
 

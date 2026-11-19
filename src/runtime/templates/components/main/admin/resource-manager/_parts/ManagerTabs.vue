@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { computed, nextTick, ref, toRef, watchEffect } from 'vue'
 import ManagerTab from './ManagerTab.vue'
+import TabIndicator from '#cwa/templates/components/core/ui/TabIndicator.vue'
 import type { CwaResourceManagerTabOptions } from '#cwa/composables/cwa-resource-manager-tab'
 import { badgeFor } from '#cwa/admin/field-badge'
 import type { CwaFieldState } from '#cwa/storage/stores/resources/state'
@@ -19,6 +20,9 @@ function getOrderValue(meta: CwaResourceManagerTabOptions) {
 }
 const orderedTabs = computed(() => {
   const tabsWithOriginalSort: (CwaResourceManagerTabOptions & { fields?: string[], _originalIndex: number })[] = []
+  if (reactiveTabs.value.includes(undefined as never)) {
+    return tabsWithOriginalSort
+  }
   reactiveTabs.value.forEach((tab, index) => {
     tabsWithOriginalSort.push({ ...tab, _originalIndex: index })
   })
@@ -64,14 +68,18 @@ watchEffect(() => {
   emit('click', newIndex)
 })
 
-defineExpose({ resetTabs, selectOriginal })
+function fieldsInOrder() {
+  return orderedTabs.value.flatMap(tab => tab.fields ?? [])
+}
+
+defineExpose({ resetTabs, selectOriginal, fieldsInOrder })
 </script>
 
 <template>
   <div
     role="tablist"
     :aria-label="label"
-    class="cwa:flex cwa:h-full cwa:items-stretch cwa:overflow-x-auto cwa:[scrollbar-width:none] cwa:[&::-webkit-scrollbar]:hidden"
+    class="cwa:relative cwa:flex cwa:h-full cwa:items-stretch cwa:overflow-x-auto cwa:[scrollbar-width:none] cwa:[&::-webkit-scrollbar]:hidden"
   >
     <ManagerTab
       v-for="(tab, index) of orderedTabs"
@@ -84,5 +92,6 @@ defineExpose({ resetTabs, selectOriginal })
       @click="selectIndex(index)"
       @keydown="onKeydown($event, index)"
     />
+    <TabIndicator />
   </div>
 </template>

@@ -1095,7 +1095,7 @@ const badgeTones = [
             <CwaUiToggle
               v-model="barReordering"
               label="Enable reordering"
-              info="Lets you drag components on the page."
+              info="Drag any component in this group to a new place."
             />
             <CwaUiNumber
               v-model="barPosition"

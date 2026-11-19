@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { POPOVER_GAP } from '../core/ui/popover-gap'
+import { popoverOpen } from '../core/ui/open-motion'
 import { computed, ref, useId, watch } from 'vue'
 import { consola as logger } from 'consola'
 import type { DateValue } from '@internationalized/date'
@@ -137,7 +138,7 @@ function onCalendarUpdate(date?: DateValue) {
             aria-label="Choose a date"
             :title="`Times are in ${timeZone}`"
             :disabled="inactive"
-            class="cwa:flex cwa:h-control cwa:w-9 cwa:cursor-pointer cwa:items-center cwa:justify-center cwa:text-fg-muted cwa:hover:bg-step-hover cwa:hover:text-fg cwa:aria-expanded:bg-step-hover cwa:aria-expanded:text-fg cwa:aria-expanded:shadow-[inset_0_-2px_0_currentColor] cwa:focus-visible:outline-2 cwa:focus-visible:-outline-offset-2 cwa:focus-visible:outline-accent-fg cwa:disabled:cursor-not-allowed cwa:pointer-coarse:h-hit"
+            class="cwa:flex cwa:h-control cwa:w-9 cwa:cursor-pointer cwa:items-center cwa:justify-center cwa:text-fg-muted cwa:hover:text-fg cwa:aria-expanded:text-accent-fg cwa:focus-visible:outline-2 cwa:focus-visible:-outline-offset-2 cwa:focus-visible:outline-accent-fg cwa:disabled:cursor-not-allowed cwa:pointer-coarse:h-hit"
           >
             <svg
               class="cwa:size-4"
@@ -168,7 +169,7 @@ function onCalendarUpdate(date?: DateValue) {
               :collision-padding="8"
               role="dialog"
               :aria-label="`${label}: choose a date`"
-              class="cwa:z-context cwa:bg-surface-menu cwa:p-3 cwa:text-fg cwa:shadow-popover cwa:outline-none"
+              :class="['cwa:z-context cwa:bg-surface-menu cwa:p-3 cwa:text-fg cwa:shadow-popover cwa:outline-none', popoverOpen]"
             >
               <Calendar
                 :model-value="calendarValue"

@@ -1,8 +1,9 @@
-import { onBeforeUnmount, onMounted, toValue, watchEffect } from 'vue'
+import { onBeforeUnmount, onMounted, shallowRef, toValue, watchEffect } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 import { useCwa } from '#cwa/composables/cwa'
 import { registerInlineEditor, returnFromInlineEditor } from '#cwa/admin/inline-editors'
 import type { InlineEditor } from '#cwa/admin/inline-editors'
+import { labelModelField } from '#cwa/resources/model-editors'
 import type { ResourceModelField } from '#cwa/resources/model-editors'
 
 export interface CwaInlineEditorOps {
@@ -36,6 +37,7 @@ export function useCwaInlineEditor(model: ResourceModelField<any>, element: Mayb
   if (!key) {
     return
   }
+  ops.label && labelModelField(key, ops.label)
   const target = () => toValue(element) ?? undefined
   const editor: InlineEditor = {
     key,
@@ -86,10 +88,12 @@ export function useCwaInlineEditor(model: ResourceModelField<any>, element: Mayb
     named = undefined
   }
 
+  const typeNames = shallowRef<Record<string, { name?: string }>>()
+
   function componentName() {
     const iri = key!.iri()
     const type = iri ? $cwa.resources.getResource(iri).value?.data?.['@type'] : undefined
-    return type ? ($cwa.resourcesConfig?.[type]?.name ?? type) : undefined
+    return type ? (typeNames.value?.[type]?.name ?? type) : undefined
   }
 
   const stopNaming = watchEffect(() => {
@@ -99,6 +103,12 @@ export function useCwaInlineEditor(model: ResourceModelField<any>, element: Mayb
       unname()
     }
     if (!wanted || named) {
+      return
+    }
+    if (!typeNames.value) {
+      import('#build/cwa-config').then(({ resourcesConfig }) => {
+        typeNames.value = resourcesConfig
+      })
       return
     }
     const values: Record<typeof NAME_ATTRIBUTES[number], string> = { 'role': 'textbox', 'aria-multiline': 'true', 'aria-label': [ops.label, componentName()].filter(Boolean).join(', ') }

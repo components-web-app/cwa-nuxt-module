@@ -16,8 +16,17 @@ vi.mock('vue', async () => {
 vi.mock('vuejs-confirm-dialog', () => ({ install: vi.fn(), createConfirmDialog: vi.fn() }))
 vi.mock('#cwa/templates/components/core/ui/Confirm.vue', () => ({ default: {} }))
 const mockComponentFocusRedraw = vi.hoisted(() => vi.fn())
+const mockComponentFocusProps = vi.hoisted(() => [] as Array<{ iri: { value: string | undefined } }>)
 vi.mock('#cwa/templates/components/main/admin/resource-manager/ComponentFocus.vue', () => ({
-  default: { name: 'ComponentFocus', render: () => null, methods: { redraw: mockComponentFocusRedraw } },
+  default: {
+    name: 'ComponentFocus',
+    props: ['iri', 'domElements'],
+    setup(props: { iri: { value: string | undefined } }) {
+      mockComponentFocusProps.push(props)
+    },
+    render: () => null,
+    methods: { redraw: mockComponentFocusRedraw },
+  },
 }))
 
 const mockVueAppContainer = vi.hoisted(() => ({ value: null as null | HTMLElement }))
@@ -1043,6 +1052,33 @@ describe('Resource Manager', () => {
       expect(mockVueAppContainer.value!.children).toHaveLength(0)
     })
 
+    test('the focus drawn for a stack item keeps that item\'s IRI once another is selected, so for the frame before it is replaced it draws no outline or cut-out for the new selection\'s instances, and follows its own item\'s draft', async () => {
+      const draftOf = ref<Record<string, string>>({})
+      const manager = new ResourceStackManager(
+        { useStore: () => ({ state: reactive({ isEditing: true }) }) } as any,
+        { useStore: () => ({ state: reactive({}), isIriPublishableEquivalent: vi.fn().mockReturnValue(false), findDraftComponentIri: (iri: string) => draftOf.value[iri] }) } as any,
+        {} as any,
+        {} as any,
+      )
+      manager.showManager.value = true
+      const first = { iri: '/component/1', domElements: ref([]), childIris: ref([]) }
+      ;(manager as any).currentResourceStack.value = [first]
+      mockComponentFocusProps.length = 0
+      await (manager as any).createFocusComponent()
+      const [focus] = mockComponentFocusProps
+      expect(focus!.iri.value).toBe('/component/1')
+
+      draftOf.value = { '/component/1': '/component/1-draft' }
+      ;(manager as any).currentResourceStack.value = [{ ...first }]
+      expect(focus!.iri.value).toBe('/component/1-draft')
+
+      ;(manager as any).currentResourceStack.value = [{ iri: '/component/2', domElements: ref([]), childIris: ref([]) }]
+      expect(manager.currentIri.value).toBe('/component/2')
+      expect(focus!.iri.value).toBe('/component/1-draft')
+
+      ;(manager as any).removeFocusComponent()
+    })
+
     test('mounts the component itself so redrawFocus reaches its exposed redraw', async () => {
       const manager = createManagerForFocus()
       manager.showManager.value = true
@@ -1212,6 +1248,122 @@ describe('Resource Manager', () => {
       manager.restorePreviousStack()
 
       expect(manager.resourceStack.value).toBe(selected)
+    })
+  })
+
+  describe('selectStack, the link menu\'s Edit', () => {
+    function createEditingManager() {
+      const mockAdminStore = { useStore: () => ({ state: reactive({ isEditing: true }) }) }
+      const mockResourcesStore = {
+        useStore: () => ({ state: reactive({}), isIriPublishableEquivalent: vi.fn().mockReturnValue(false) }),
+      }
+      return new ResourceStackManager(mockAdminStore as any, mockResourcesStore as any, {} as any, {} as any)
+    }
+
+    test('selects the stack a link click built after the menu put the previous selection back', async () => {
+      const manager = createEditingManager()
+      const selected = [{ iri: '/component/selected', domElements: ref([]), childIris: ref([]) }]
+      const clicked = [{ iri: '/component/link', domElements: ref([]), childIris: ref([]) }]
+      ;(manager as any).currentResourceStack.value = selected
+      manager.showManager.value = true
+
+      await manager.selectStack(clicked, 'page')
+
+      expect(manager.currentStackItem.value).toBe(clicked[0])
+      expect(manager.showManager.value).toBe(true)
+    })
+
+    test('a link in the other scope asks only now, and Cancel keeps the selection from before the click', async () => {
+      const manager = createEditingManager()
+      const selected = [{ iri: '/component/selected', domElements: ref([]), childIris: ref([]) }]
+      const clicked = [{ iri: '/component/layout-link', domElements: ref([]), childIris: ref([]) }]
+      ;(manager as any).currentResourceStack.value = selected
+      manager.showManager.value = true
+      const reveal = vi.fn().mockResolvedValue({ isCanceled: true })
+      vi.mocked(createConfirmDialog).mockReturnValue({ reveal } as any)
+
+      await manager.selectStack(clicked, 'layout')
+
+      expect(reveal).toHaveBeenCalledWith(expect.objectContaining({ title: 'Edit the shared layout?' }))
+      expect(manager.currentStackItem.value).toBe(selected[0])
+      expect(manager.isEditingLayout.value).toBe(false)
+    })
+  })
+
+  describe('switchScope, asked before a link menu in the other scope', () => {
+    function createEditingManager() {
+      const mockAdminStore = { useStore: () => ({ state: reactive({ isEditing: true }) }) }
+      const mockResourcesStore = {
+        useStore: () => ({ state: reactive({}), isIriPublishableEquivalent: vi.fn().mockReturnValue(false) }),
+      }
+      return new ResourceStackManager(mockAdminStore as any, mockResourcesStore as any, {} as any, {} as any)
+    }
+
+    test('in the scope being edited it asks nothing and answers true', async () => {
+      const manager = createEditingManager()
+      const reveal = vi.fn()
+      vi.mocked(createConfirmDialog).mockReturnValue({ reveal } as any)
+
+      expect(await manager.switchScope('page')).toBe(true)
+
+      expect(reveal).not.toHaveBeenCalled()
+      expect(manager.isEditingLayout.value).toBe(false)
+    })
+
+    test('in the other scope it asks, and Edit layout switches and empties the selection, which nothing brings back, so Edit then selects the clicked component with no second confirm', async () => {
+      const manager = createEditingManager()
+      const selected = [{ iri: '/component/selected', domElements: ref([]), childIris: ref([]) }]
+      const clicked = [{ iri: '/component/layout-link', domElements: ref([]), childIris: ref([]) }]
+      ;(manager as any).currentResourceStack.value = selected
+      ;(manager as any).previousResourceStack.value = selected
+      manager.showManager.value = true
+      const reveal = vi.fn().mockResolvedValue({ isCanceled: false })
+      vi.mocked(createConfirmDialog).mockReturnValue({ reveal } as any)
+
+      expect(await manager.switchScope('layout')).toBe(true)
+
+      expect(reveal).toHaveBeenCalledTimes(1)
+      expect(reveal).toHaveBeenCalledWith(expect.objectContaining({ title: 'Edit the shared layout?' }))
+      expect(manager.isEditingLayout.value).toBe(true)
+      expect(manager.currentStackItem.value).toBeUndefined()
+      expect(manager.resourceStack.value).toEqual([])
+      expect(manager.showManager.value).toBe(false)
+      manager.restorePreviousStack()
+      expect(manager.resourceStack.value).toEqual([])
+
+      await manager.selectStack(clicked, 'layout')
+
+      expect(reveal).toHaveBeenCalledTimes(1)
+      expect(manager.currentStackItem.value).toBe(clicked[0])
+    })
+
+    test('Cancel answers false and keeps the scope and the selection', async () => {
+      const manager = createEditingManager()
+      const selected = [{ iri: '/component/selected', domElements: ref([]), childIris: ref([]) }]
+      ;(manager as any).currentResourceStack.value = selected
+      manager.showManager.value = true
+      vi.mocked(createConfirmDialog).mockReturnValue({ reveal: vi.fn().mockResolvedValue({ isCanceled: true }) } as any)
+
+      expect(await manager.switchScope('layout')).toBe(false)
+
+      expect(manager.isEditingLayout.value).toBe(false)
+      expect(manager.currentStackItem.value).toBe(selected[0])
+    })
+
+    test('from the layout, a page link asks Edit the page?, switches back and empties the layout selection', async () => {
+      const manager = createEditingManager()
+      ;(manager as any)._isEditingLayout.value = true
+      ;(manager as any).currentResourceStack.value = [{ iri: '/component/in-layout', domElements: ref([]), childIris: ref([]) }]
+      manager.showManager.value = true
+      const reveal = vi.fn().mockResolvedValue({ isCanceled: false })
+      vi.mocked(createConfirmDialog).mockReturnValue({ reveal } as any)
+
+      expect(await manager.switchScope('page')).toBe(true)
+
+      expect(reveal).toHaveBeenCalledWith(expect.objectContaining({ title: 'Edit the page?' }))
+      expect(manager.isEditingLayout.value).toBe(false)
+      expect(manager.currentStackItem.value).toBeUndefined()
+      expect(manager.resourceStack.value).toEqual([])
     })
   })
 })

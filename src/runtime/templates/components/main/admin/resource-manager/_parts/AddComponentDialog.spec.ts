@@ -2,21 +2,27 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { fieldExplanation } from '../../../../../../../../test/utils/field-info'
 import { reactive, ref } from 'vue'
-import type { Ref } from 'vue'
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { mockNuxtImport } from '@nuxt/test-utils/runtime'
-import { consola } from 'consola'
 import { axe } from '../../../../../../../../test/utils/axe'
 import { drawsFocusRing } from '../../../../../../../../test/utils/focus-ring'
+import { shownColour, shownFill } from '../../../../../../../../test/utils/kit-css'
+import { contrastRatio, resolveKitColour } from '../../../../../../../../src/tailwind/kit-tokens'
+import type { KitColour } from '../../../../../../../../src/tailwind/kit-tokens'
 
-const { dynamicOptions, resolvedMeta, cwaState } = vi.hoisted(() => ({
+const { dynamicOptions, cwaState, cwaConfig } = vi.hoisted(() => ({
   dynamicOptions: {
     getTypeOptions: vi.fn(),
     getPropertyOptions: vi.fn(),
   },
-  resolvedMeta: {} as Record<string, unknown>,
   cwaState: { cwa: null as any },
+  cwaConfig: {
+    resourcesConfig: {} as Record<string, any>,
+    uiConfig: {} as Record<string, any>,
+  },
 }))
+
+vi.mock('#build/cwa-config', () => cwaConfig)
 
 vi.mock('#cwa/templates/components/main/admin/_common/useDynamicPositionSelectOptions', () => ({
   useDynamicPositionSelectOptions: () => dynamicOptions,
@@ -31,17 +37,15 @@ vi.mock('#build/cwa-admin-resources', () => ({
     'skeleton:hero': '<svg data-cwa-admin-icon data-icon="skeleton-hero"></svg>',
   },
   adminResources: {
-    HtmlContent: { icon: 'lucide:letter-text', group: 'Text' },
-    Image: { icon: 'lucide:image', group: 'Media' },
-    Hero: { icon: 'lucide:panel-top', skeleton: 'skeleton:hero', group: 'Layout', image: '/hero.webp' },
+    HtmlContent: {
+      icon: 'lucide:letter-text',
+      group: 'Text',
+      description: 'Paragraphs & links. See the guide for h2.',
+      descriptionHtml: '<p>Paragraphs &amp; <strong>links</strong>.</p><p>See <a href="https://example.com/rich" target="_blank" rel="noopener noreferrer">the guide</a> for <code>h2</code>.</p>',
+    },
+    Image: { icon: 'lucide:image', group: 'Media', description: 'One image with alt text', descriptionHtml: '<p>One image with alt text</p>' },
+    Hero: { icon: 'lucide:panel-top', skeleton: 'skeleton:hero', group: 'Layout', image: '/hero.webp', description: 'Title, subtitle and image', descriptionHtml: '<p>Title, subtitle and image</p>' },
     Map: { group: 'Media' },
-  },
-}))
-
-vi.mock('#cwa/templates/components/core/useDataResolver', () => ({
-  useDataResolver: (meta: Ref<unknown[]>, ops: { components: Ref<string[]> }) => {
-    meta.value = ops.components.value.map(name => resolvedMeta[name] ?? null)
-    return { startDataResolver: vi.fn(), stopDataResolver: vi.fn() }
   },
 }))
 
@@ -66,9 +70,9 @@ const componentMetadata = {
 }
 
 const resourcesConfig = {
-  HtmlContent: { name: 'Rich text', description: '<p>Paragraphs &amp; links</p>', ui: ['CwaComponentHtmlContentUiAltHtmlContent'] },
-  Image: { name: 'Image', description: 'One image with alt text', instantAdd: true },
-  Hero: { name: 'Hero section', description: 'Title, subtitle and image', defaultData: { title: 'New hero' } },
+  HtmlContent: { name: 'Rich text', ui: ['CwaComponentHtmlContentUiAltHtmlContent'] },
+  Image: { name: 'Image', instantAdd: true },
+  Hero: { name: 'Hero section', defaultData: { title: 'New hero' } },
   Map: { name: 'Map location' },
   Spacer: { name: 'Spacer' },
   ComponentPosition: { name: 'Position', instantAdd: true },
@@ -88,7 +92,6 @@ function makeCwa() {
   return {
     store,
     getComponentMetadata: vi.fn(async () => componentMetadata),
-    resourcesConfig,
     resourcesManager: {
       addResourceEvent,
       clearAddResource: vi.fn(() => {
@@ -179,9 +182,8 @@ describe('the add component dialog (#461)', () => {
     cwaState.cwa = makeCwa()
     dynamicOptions.getTypeOptions.mockResolvedValue([{ label: 'Blog articles', value: 'App\\Entity\\BlogArticleData' }])
     dynamicOptions.getPropertyOptions.mockResolvedValue([{ label: 'Hero image', value: 'heroImage' }])
-    for (const name of Object.keys(resolvedMeta)) {
-      delete resolvedMeta[name]
-    }
+    cwaConfig.resourcesConfig = resourcesConfig
+    cwaConfig.uiConfig = {}
   })
 
   test('stays a centred dialog, as a picker, not a slide-over', async () => {
@@ -253,9 +255,13 @@ describe('the add component dialog (#461)', () => {
       expect(qa('[data-testid="add-component-chip"]').every(chip => drawsFocusRing([...chip.classList]))).toBe(true)
       expect(document.getElementById(q('[data-testid="add-component-quick"]')!.getAttribute('aria-labelledby')!)!.textContent!.trim()).toBe('Already in this group')
       const image = qa('[data-testid="add-component-chip"]')[0]!
-      expect(document.getElementById(image.getAttribute('aria-describedby')!)!.textContent).toBe('2 here')
+      expect(image.textContent).not.toContain('here')
+      expect(image.hasAttribute('aria-describedby')).toBe(false)
       expect(optionValues()).toContain('Image')
       expect(optionValues()).toContain('HtmlContent')
+      const imageRow = qa('[role="option"]').find(option => option.dataset.value === 'Image')!
+      expect(shown(imageRow)).not.toContain('here')
+      expect(document.getElementById(imageRow.getAttribute('aria-describedby')!)!.textContent).toBe('One image with alt text, Media')
     })
 
     test('the chips are left out when the group is empty', async () => {
@@ -305,37 +311,41 @@ describe('the add component dialog (#461)', () => {
       expect(optionValues()).toEqual(['Hero', 'Map'])
     })
 
-    test('every row starts with one fixed-size visual: an image, a skeleton, an icon or the generic icon', async () => {
+    test('every row starts with one fixed-size visual: a skeleton, an icon or the generic icon, never the preview image', async () => {
       cwaState.cwa.store[GROUP].data.componentPositions = []
       await mountDialog()
       await openDialog({ targetIri: GROUP })
 
       const leads = Object.fromEntries(qa('[role="option"]').map(option => [option.dataset.value, option.querySelector<HTMLElement>('[data-lead]')!]))
-      expect(leads.Hero!.dataset.lead).toBe('image')
+      expect(leads.Hero!.dataset.lead).toBe('skeleton')
+      expect(leads.Hero!.innerHTML).toContain('data-icon="skeleton-hero"')
+      expect(q('[role="option"] img')).toBeNull()
       expect(leads.Image!.innerHTML).toContain('data-icon="image"')
       expect(leads.Spacer!.innerHTML).toContain('data-icon="component"')
       expect(new Set(qa('[role="option"]').map(option => option.querySelector('[data-lead]')!.parentElement!.className)).size).toBe(1)
     })
 
-    test('a description is plain text, and HTML in it warns once in development', async () => {
-      const warn = vi.spyOn(consola, 'warn').mockImplementation(() => {})
+    test('a row shows its description as plain text, never its Markdown\'s link or code', async () => {
       await mountDialog()
       await openDialog()
       await type('rich')
 
       const rich = qa('[role="option"]').find(option => option.dataset.value === 'HtmlContent')!
-      expect(shown(rich)).toContain('Paragraphs & links')
-      expect(rich.innerHTML).not.toContain('<p>')
-      cwaState.cwa.resourcesManager.addResourceEvent.value = undefined
-      await flushPromises()
+      expect(shown(rich)).toContain('Paragraphs & links. See the guide for h2.')
+      expect(rich.querySelector('a, code, strong, p')).toBeNull()
+    })
+
+    test('a search matches the plain text of a description', async () => {
+      await mountDialog()
       await openDialog()
-      expect(warn.mock.calls.filter(([message]) => String(message).includes('cwa.resources.HtmlContent.description'))).toHaveLength(1)
-      warn.mockRestore()
+      await type('the guide')
+
+      expect(optionValues()).toEqual(['HtmlContent'])
     })
   })
 
   describe('searching', () => {
-    test('hides the chips, lists in-group matches once with their count, and ranks names first', async () => {
+    test('hides the chips, lists in-group matches once without their count, and ranks names first', async () => {
       await mountDialog()
       await openDialog()
 
@@ -344,18 +354,21 @@ describe('the add component dialog (#461)', () => {
       expect(q('[data-testid="add-component-quick"]')).toBeNull()
       expect(optionValues()).toEqual(['Image', 'Hero', 'HtmlContent'])
       const image = qa('[role="option"]')[0]!
-      expect(shown(image)).toContain('2 here')
-      expect(document.getElementById(image.getAttribute('aria-describedby')!)!.textContent).toBe('One image with alt text, 2 here, Media')
+      expect(shown(image)).not.toContain('here')
+      expect(document.getElementById(image.getAttribute('aria-describedby')!)!.textContent).toBe('One image with alt text, Media')
     })
 
-    test('typing a name highlights it first', async () => {
+    test('typing a name lists it first without highlighting any row, and Down highlights it', async () => {
       await mountDialog()
       await openDialog()
 
       await type('text')
 
-      expect(search().getAttribute('aria-activedescendant')).toBe(qa('[role="option"]')[0]!.id)
       expect(optionValues()[0]).toBe('HtmlContent')
+      expect(search().hasAttribute('aria-activedescendant')).toBe(false)
+      expect(qa('[role="option"][data-highlighted]')).toHaveLength(0)
+      await key(search(), 'ArrowDown')
+      expect(search().getAttribute('aria-activedescendant')).toBe(qa('[role="option"]')[0]!.id)
     })
 
     test('no match says so on one line with the trimmed term and no quotes', async () => {
@@ -423,6 +436,35 @@ describe('the add component dialog (#461)', () => {
       expect(announcer()).toBe('Hero section. Adding to Main content, after “Intro text”.')
     })
 
+    test('the description is its Markdown\'s HTML, with links in the kit link look and code in the kit mono look, readable in both themes', async () => {
+      await mountDialog()
+      await openDialog()
+
+      await choose('HtmlContent')
+
+      const description = q('[data-testid="add-component-description"]')!
+      expect(description.querySelectorAll('p')).toHaveLength(2)
+      expect(description.querySelector('strong')!.textContent).toBe('links')
+      const link = description.querySelector('a')!
+      expect(link.getAttribute('href')).toBe('https://example.com/rich')
+      expect(link.target).toBe('_blank')
+      expect(link.rel).toBe('noopener noreferrer')
+      const code = description.querySelector('code')!
+      expect(shownColour(link)).toBe('accent-fg')
+      expect(shownColour(code)).toBe('fg')
+      expect(shownFill(code)).toBe('field')
+      expect(description.className).toContain('cwa:[&_code]:font-mono')
+      expect(description.className).toContain('cwa:[&_a]:underline')
+      expect(description.className).toContain('cwa:[&_a:focus-visible]:outline-accent-fg')
+      const surface = shownFill(description.closest('[role="dialog"]')!) as KitColour
+      for (const theme of ['dark', 'light'] as const) {
+        expect(contrastRatio(resolveKitColour(shownColour(link) as KitColour, theme), resolveKitColour(surface, theme))).toBeGreaterThanOrEqual(4.5)
+        expect(contrastRatio(resolveKitColour(shownColour(description.querySelector('p')!) as KitColour, theme), resolveKitColour(surface, theme))).toBeGreaterThanOrEqual(4.5)
+        expect(contrastRatio(resolveKitColour(shownColour(code) as KitColour, theme), resolveKitColour(shownFill(code) as KitColour, theme))).toBeGreaterThanOrEqual(4.5)
+      }
+      expect(await axe(document.body)).toHaveNoViolations()
+    })
+
     test('a component with neither image nor description is just its name, where it adds and Add', async () => {
       await mountDialog()
       await openDialog()
@@ -465,25 +507,27 @@ describe('the add component dialog (#461)', () => {
       expect(lead.getAttribute('aria-hidden')).toBe('true')
     })
 
-    test('a component with a preview image shows that image, not a second icon in the header', async () => {
+    test('a component with a preview image shows its icon beside the title and the image as well', async () => {
       await mountDialog()
       await openDialog()
 
       await choose('Hero')
 
       expect(q('[data-testid="add-component-image"]')!.getAttribute('src')).toBe('/hero.webp')
-      expect(q('[data-testid="add-component-detail-lead"]')).toBeNull()
+      const lead = q('[data-testid="sub-view-header"] [data-testid="add-component-detail-lead"]')!
+      expect(lead.dataset.lead).toBe('icon')
+      expect(lead.querySelector('[data-icon="panel-top"]')).not.toBeNull()
     })
 
-    test('a component with no configured icon shows none in the header, nothing inferred', async () => {
+    test('a component with no configured icon shows the generic icon its row shows in the header too', async () => {
       await mountDialog()
       await openDialog()
 
-      expect(qa('[role="option"]').find(option => option.dataset.value === 'Spacer')!.querySelector('[data-lead="icon"]')).not.toBeNull()
+      const rowIcon = qa('[role="option"]').find(option => option.dataset.value === 'Spacer')!.querySelector('[data-lead="icon"]')!.innerHTML
 
       await choose('Spacer')
 
-      expect(q('[data-testid="sub-view-header"] [data-lead]')).toBeNull()
+      expect(q('[data-testid="sub-view-header"] [data-lead="icon"]')!.innerHTML).toBe(rowIcon)
     })
 
     test('Enter on the highlighted row opens it', async () => {
@@ -491,6 +535,7 @@ describe('the add component dialog (#461)', () => {
       await openDialog()
       await type('spa')
 
+      await key(search(), 'ArrowDown')
       await key(search(), 'Enter')
 
       expect(document.getElementById(q('[data-testid="sub-view"]')!.getAttribute('aria-labelledby')!)!.textContent!.trim()).toBe('Spacer')
@@ -514,6 +559,7 @@ describe('the add component dialog (#461)', () => {
       await mountDialog()
       await openDialog()
       await type('spa')
+      await key(search(), 'ArrowDown')
       await key(search(), 'Enter')
 
       await key(add(), 'Escape')
@@ -538,6 +584,7 @@ describe('the add component dialog (#461)', () => {
       await mountDialog()
       await openDialog()
       await type('image')
+      await key(search(), 'ArrowDown')
       await key(search(), 'Enter')
 
       expect(shown(add())).toBe('Add now')
@@ -546,8 +593,8 @@ describe('the add component dialog (#461)', () => {
     })
 
     test('the UI and Style chosen go in the create request', async () => {
-      resolvedMeta.CwaComponentHtmlContent = { cwaResource: { styles: { classes: { 'Black background': 'bg-black p-2' } } } }
-      resolvedMeta.CwaComponentHtmlContentUiAltHtmlContent = { cwaResource: { name: 'Alternative', styles: { classes: { Boxed: ['border', 'p-4'] } } } }
+      cwaConfig.resourcesConfig = { ...resourcesConfig, HtmlContent: { ...resourcesConfig.HtmlContent, styles: { 'black-bg': { label: 'Black background', classes: 'bg-black p-2' } } } }
+      cwaConfig.uiConfig = { CwaComponentHtmlContentUiAltHtmlContent: { name: 'Alternative', styles: { boxed: { label: 'Boxed', classes: 'border p-4' } } } }
       await mountDialog()
       await openDialog()
       await choose('Spacer')
@@ -564,12 +611,12 @@ describe('the add component dialog (#461)', () => {
 
       expect(cwaState.cwa.resourcesManager.setAddResourceEventResource).toHaveBeenCalledWith('HtmlContent', '/component/html_contents', true, false, {
         uiComponent: 'CwaComponentHtmlContentUiAltHtmlContent',
-        uiClassNames: ['border p-4'],
+        uiClassNames: ['style:boxed'],
       })
     })
 
     test('with the UI and Style shown but left on Default, none is sent for both', async () => {
-      resolvedMeta.CwaComponentHtmlContent = { cwaResource: { styles: { classes: { 'Black background': 'bg-black' } } } }
+      cwaConfig.resourcesConfig = { ...resourcesConfig, HtmlContent: { ...resourcesConfig.HtmlContent, styles: { 'black-bg': { label: 'Black background', classes: 'bg-black' } } } }
       await mountDialog()
       await openDialog()
       qa('[data-testid="add-component-chip"]')[1]!.click()
@@ -582,9 +629,8 @@ describe('the add component dialog (#461)', () => {
 
     describe('the configured default data', () => {
       function configureDefaults(defaultData: Record<string, unknown>) {
-        cwaState.cwa.resourcesConfig = { ...resourcesConfig, HtmlContent: { ...resourcesConfig.HtmlContent, defaultData } }
-        resolvedMeta.CwaComponentHtmlContent = { cwaResource: { styles: { classes: { 'Black background': 'bg-black p-2' } } } }
-        resolvedMeta.CwaComponentHtmlContentUiAltHtmlContent = { cwaResource: { name: 'Alternative', styles: { multiple: true, classes: { Boxed: ['border', 'p-4'], Shadow: 'shadow' } } } }
+        cwaConfig.resourcesConfig = { ...resourcesConfig, HtmlContent: { ...resourcesConfig.HtmlContent, defaultData, styles: { 'black-bg': { label: 'Black background', classes: 'bg-black p-2' } } } }
+        cwaConfig.uiConfig = { CwaComponentHtmlContentUiAltHtmlContent: { name: 'Alternative', allowMultiple: true, styles: { boxed: { label: 'Boxed', classes: 'border p-4' }, shadow: { label: 'Shadow', classes: 'shadow' } } } }
       }
 
       async function openHtmlContent() {
@@ -597,7 +643,7 @@ describe('the add component dialog (#461)', () => {
       const trigger = (testId: string) => q(`[data-testid="${testId}"] [data-testid="select-trigger"], [data-testid="${testId}"] [data-testid="multi-input"]`)!
 
       test('chooses the UI and the styles the default data sets, and sends them', async () => {
-        configureDefaults({ title: 'Hello', uiComponent: 'CwaComponentHtmlContentUiAltHtmlContent', uiClassNames: ['shadow', 'border p-4'] })
+        configureDefaults({ title: 'Hello', uiComponent: 'CwaComponentHtmlContentUiAltHtmlContent', uiClassNames: ['style:shadow', 'style:boxed'] })
         await openHtmlContent()
 
         expect(trigger('add-component-ui').textContent!.trim()).toBe('Alternative')
@@ -607,12 +653,12 @@ describe('the add component dialog (#461)', () => {
         expect(cwaState.cwa.resourcesManager.setAddResourceEventResource).toHaveBeenCalledWith('HtmlContent', '/component/html_contents', true, false, {
           title: 'Hello',
           uiComponent: 'CwaComponentHtmlContentUiAltHtmlContent',
-          uiClassNames: ['border p-4', 'shadow'],
+          uiClassNames: ['style:boxed', 'style:shadow'],
         })
       })
 
       test('the styles of the default UI are chosen from the default data', async () => {
-        configureDefaults({ uiClassNames: ['bg-black p-2'] })
+        configureDefaults({ uiClassNames: ['style:black-bg'] })
         await openHtmlContent()
 
         expect(trigger('add-component-ui').textContent!.trim()).toBe('Default')
@@ -621,12 +667,12 @@ describe('the add component dialog (#461)', () => {
 
         expect(cwaState.cwa.resourcesManager.setAddResourceEventResource).toHaveBeenCalledWith('HtmlContent', '/component/html_contents', true, false, {
           uiComponent: null,
-          uiClassNames: ['bg-black p-2'],
+          uiClassNames: ['style:black-bg'],
         })
       })
 
       test('choosing Default and no style overwrites the default data with none', async () => {
-        configureDefaults({ uiComponent: 'CwaComponentHtmlContentUiAltHtmlContent', uiClassNames: ['shadow'] })
+        configureDefaults({ uiComponent: 'CwaComponentHtmlContentUiAltHtmlContent', uiClassNames: ['style:shadow'] })
         await openHtmlContent()
 
         await pick('add-component-ui', 'Default')
@@ -639,7 +685,7 @@ describe('the add component dialog (#461)', () => {
       })
 
       test('with no UI or Style to choose, the default data is sent as configured', async () => {
-        cwaState.cwa.resourcesConfig = { ...resourcesConfig, Hero: { ...resourcesConfig.Hero, defaultData: { title: 'New hero', uiComponent: 'CwaComponentHeroUiWide', uiClassNames: ['dark'] } } }
+        cwaConfig.resourcesConfig = { ...resourcesConfig, Hero: { ...resourcesConfig.Hero, defaultData: { title: 'New hero', uiComponent: 'CwaComponentHeroUiWide', uiClassNames: ['style:dark'] } } }
         await mountDialog()
         await openDialog()
         await choose('Hero')
@@ -651,7 +697,7 @@ describe('the add component dialog (#461)', () => {
         expect(cwaState.cwa.resourcesManager.setAddResourceEventResource).toHaveBeenCalledWith('Hero', '/component/heroes', true, false, {
           title: 'New hero',
           uiComponent: 'CwaComponentHeroUiWide',
-          uiClassNames: ['dark'],
+          uiClassNames: ['style:dark'],
         })
       })
     })
@@ -675,6 +721,7 @@ describe('the add component dialog (#461)', () => {
         await mountDialog()
         await openDialog()
         await type('image')
+        await key(search(), 'ArrowDown')
         await key(search(), 'Enter')
       }
 
@@ -772,6 +819,14 @@ describe('the add component dialog (#461)', () => {
       await openDialog()
       await choose('ComponentPosition')
     }
+
+    test('its detail describes it as plain text', async () => {
+      await openDynamic()
+
+      const description = q('[data-testid="add-component-description"]')!
+      expect(shown(description)).toBe('Changes per blog article: each blog article picks what shows here')
+      expect(description.children).toHaveLength(0)
+    })
 
     test('Field is visibly disabled until a data type is chosen, with its reason behind its ⓘ and read with the field, and Data type has focus', async () => {
       await openDynamic()

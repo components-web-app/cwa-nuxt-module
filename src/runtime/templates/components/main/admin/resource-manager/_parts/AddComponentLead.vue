@@ -12,10 +12,8 @@ const { name, dynamic = false, chip = false, heading = false } = defineProps<{
 }>()
 
 const entry = computed(() => adminResources[name])
-const icon = computed(() => heading
-  ? entry.value?.icon ? adminResourceIcons[entry.value.icon] : undefined
-  : adminResourceIcons[entry.value?.icon ?? GENERIC] ?? adminResourceIcons[GENERIC])
-const skeleton = computed(() => !chip && entry.value?.skeleton ? adminResourceIcons[entry.value.skeleton] : undefined)
+const icon = computed(() => adminResourceIcons[entry.value?.icon ?? GENERIC] ?? adminResourceIcons[GENERIC])
+const skeleton = computed(() => !chip && !heading && entry.value?.skeleton ? adminResourceIcons[entry.value.skeleton] : undefined)
 </script>
 
 <template>
@@ -25,13 +23,6 @@ const skeleton = computed(() => !chip && entry.value?.skeleton ? adminResourceIc
     data-lead="dynamic"
     class="cwa:block cwa:size-3 cwa:shrink-0 cwa:rounded-full cwa:bg-type-dynamic"
   />
-  <img
-    v-else-if="entry?.image && !chip"
-    :src="entry.image"
-    alt=""
-    data-lead="image"
-    class="cwa:block cwa:h-8 cwa:w-12 cwa:object-cover cwa:shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--cwa-color-fg)_12%,transparent)]"
-  >
   <span
     v-else-if="skeleton"
     aria-hidden="true"

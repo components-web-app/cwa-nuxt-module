@@ -3,7 +3,7 @@ import { afterEach, describe, expect, test, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { h } from 'vue'
 import { axe } from '../../../../../test/utils/axe'
-import { drawsOpenState, trimsToLetters } from '../../../../../test/utils/kit-css'
+import { drawsOpenLine, drawsOpenState, failingInk, shownFill, trimsToLetters } from '../../../../../test/utils/kit-css'
 import Button from './Button.vue'
 import Spinner from './Spinner.vue'
 import { announceKey } from '../core/ui/field-keys'
@@ -88,6 +88,16 @@ describe('CwaUiButton (#456)', () => {
 
     const small = mount(Button, { props: { label: 'Close', icon: Plus, iconOnly: true, size: 'sm' } })
     expect(small.classes()).toEqual(expect.arrayContaining(['cwa:h-8', 'cwa:w-8', 'cwa:pointer-coarse:h-hit', 'cwa:pointer-coarse:w-hit']))
+  })
+
+  test('a labelled button that opens a popover shows it open with its hover fill and a line under its label; an icon-only one has its fill and no line', () => {
+    const labelled = mount(Button, { props: { label: 'Filters' }, attrs: { 'aria-expanded': 'true' } })
+    expect(drawsOpenLine(labelled.element)).toBe(true)
+    expect(shownFill(labelled.element)).toBe('field-hover')
+
+    const iconOnly = mount(Button, { props: { label: 'Filters', icon: Plus, iconOnly: true }, attrs: { 'aria-expanded': 'true' } })
+    expect(drawsOpenLine(iconOnly.element)).toBe(false)
+    expect(shownFill(iconOnly.element)).toBe('field-hover')
   })
 
   test('an icon-only button keeps the 16px row-action icon; a dialog header\'s asks for the large one, 5/9 of the control (24px in its 44px button), without changing its box', () => {
@@ -208,8 +218,9 @@ describe('CwaUiButton (#456)', () => {
     const popover = document.querySelector<HTMLElement>('[data-testid="button-reason"]')
     expect(popover?.textContent?.trim()).toBe('This group already holds its 3 components')
     expect(popover?.getAttribute('aria-label')).toBe('Why Add is unavailable')
-    expect([...popover!.classList]).toEqual(expect.arrayContaining(['cwa:bg-surface-menu', 'cwa:text-fg', 'cwa:leading-normal', 'cwa:ring-1', 'cwa:ring-line']))
-    expect(popover!.querySelector('svg')!.getAttribute('class')).toContain('cwa:stroke-line')
+    expect([...popover!.classList]).toEqual(expect.arrayContaining(['cwa:bg-surface-info', 'cwa:text-white', 'cwa:leading-normal', 'cwa:ring-1', 'cwa:ring-white/15']))
+    expect(popover!.querySelector('svg')!.getAttribute('class')).toContain('cwa:stroke-white/15')
+    expect(failingInk(popover!)).toEqual([])
     expect(trimsToLetters(popover!.querySelector('p')!)).toBe(true)
     expect(announce).toHaveBeenCalledWith('This group already holds its 3 components')
     expect(clicked).not.toHaveBeenCalled()
@@ -305,19 +316,23 @@ describe('CwaUiButton (#456)', () => {
       expect(onSelect).toHaveBeenCalledWith(expect.objectContaining({ value: 'clone' }))
     })
 
-    test('the ⋮ shows itself selected while its menu is open, and not once it closes, with no axe violations open', async () => {
-      const wrapper = mount(Button, { props: { label: 'Publish now', options }, attachTo: document.body })
+    test('the ⋮ on the solid CTA shows its menu open with a darker fill of its own, never a line under it, and goes back to the CTA\'s fill once it closes, with no axe violations open', async () => {
+      const wrapper = mount(Button, { props: { label: 'Publish now', variant: 'solid', options }, attachTo: document.body })
       const more = wrapper.get('[data-testid="button-options"]')
       expect(drawsOpenState(more.element)).toBe(false)
+      expect(shownFill(more.element)).toBe('accent')
 
       await more.trigger('keydown', { key: 'Enter' })
       await flushPromises()
       expect(drawsOpenState(more.element)).toBe(true)
+      expect(drawsOpenLine(more.element)).toBe(false)
+      expect(shownFill(more.element)).toBe('accent-open')
       expect(await axe(document.body, { rules: { region: { enabled: false } } })).toHaveNoViolations()
 
       document.querySelector<HTMLElement>('[data-testid="menu-clone"]')!.click()
       await flushPromises()
       expect(drawsOpenState(more.element)).toBe(false)
+      expect(shownFill(more.element)).toBe('accent')
       wrapper.unmount()
     })
 

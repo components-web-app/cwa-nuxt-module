@@ -17,6 +17,8 @@ function mountManage(options: {
   recommendedFrom?: string
   childPaths?: string[]
   redirectCount?: number
+  optional?: boolean
+  noun?: string
 } = {}) {
   return mount(RoutesTabManage, {
     props: {
@@ -24,6 +26,8 @@ function mountManage(options: {
       recommendedFrom: options.recommendedFrom,
       childPaths: options.childPaths,
       redirectCount: options.redirectCount,
+      optional: options.optional,
+      noun: options.noun,
       currentPath: options.currentPath ?? '/conference/programme',
       parentRoutePrefix: options.parentRoutePrefix !== undefined ? options.parentRoutePrefix : '/conference',
       modelValue: options.modelValue ?? '/conference/programme',
@@ -196,6 +200,13 @@ describe('RoutesTabManage', () => {
       await getSuffixInput(wrapper).vm.$emit('update:modelValue', '  ')
       expect(wrapper.emitted('update:modelValue')!.at(-1)).toEqual([''])
       expect(wrapper.find('[data-testid="route-go-live-line"]').text()).toBe('Enter a path.')
+    })
+
+    test('an optional new route with no path says the page is created without one, and still says where visitors reach it once typed', async () => {
+      const wrapper = mountManage({ currentPath: '', modelValue: '', parentRoutePrefix: null, optional: true, noun: 'page' })
+      expect(wrapper.find('[data-testid="route-go-live-line"]').text()).toBe('Leave the path empty to create the page without a route.')
+      await getSuffixInput(wrapper).vm.$emit('update:modelValue', 'about')
+      expect(wrapper.find('[data-testid="route-go-live-line"]').text()).toBe('Visitors will reach this page at /about.')
     })
 
     test('typing / is the homepage path', async () => {

@@ -5,14 +5,17 @@ import { DEFAULT_TAB_ORDER } from '#cwa/admin/manager-tabs-resolver'
 import { componentGroupCapacity } from '#cwa/resources/component-group-capacity'
 import CwaUiBadge from '#cwa/templates/components/ui/Badge.vue'
 import CwaUiButton from '#cwa/templates/components/ui/Button.vue'
+import CwaUiManagerRowDivider from '#cwa/templates/components/ui/ManagerRowDivider.vue'
 import CwaUiManagerTab from '#cwa/templates/components/ui/ManagerTab.vue'
+import CwaUiToggle from '#cwa/templates/components/ui/Toggle.vue'
 
-const { exposeMeta, iri, resource, $cwa } = useCwaResourceManagerTab({
+const { exposeMeta, iri, resource, $cwa, createComputedState } = useCwaResourceManagerTab({
   name: 'Group',
   order: DEFAULT_TAB_ORDER,
 })
 
 defineExpose(exposeMeta)
+const reordering = createComputedState<boolean>('reordering', false)
 
 const capacity = computed(() => componentGroupCapacity(resource.value?.data))
 
@@ -61,5 +64,11 @@ function addEnd() {
     >
       Holds {{ capacity.count }} of {{ capacity.max }}. Remove components to add more.
     </CwaUiBadge>
+    <CwaUiManagerRowDivider />
+    <CwaUiToggle
+      v-model="reordering"
+      label="Enable reordering"
+      info="Drag any component in this group to a new place."
+    />
   </CwaUiManagerTab>
 </template>

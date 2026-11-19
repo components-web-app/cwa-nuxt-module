@@ -1,5 +1,7 @@
 <script lang="ts" setup>
+import { resourcesConfig } from '#build/cwa-config'
 import { POPOVER_GAP } from '#cwa/templates/components/core/ui/popover-gap'
+import { popoverOpen } from '#cwa/templates/components/core/ui/open-motion'
 import { computed, onBeforeUnmount, ref } from 'vue'
 import { PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { navigateTo, useRouter } from '#app/composables/router'
@@ -100,7 +102,7 @@ function activity(peer: PresencePeer) {
     return 'Viewing'
   }
   const type = stored(peer.component)?.['@type']
-  return `${peer.state === 'editing' ? 'Editing' : 'Selected'} ${type ? $cwa.resourcesConfig[type]?.name || type : 'a component'}`
+  return `${peer.state === 'editing' ? 'Editing' : 'Selected'} ${type ? resourcesConfig[type]?.name || type : 'a component'}`
 }
 
 function locationOf(page: string) {
@@ -161,7 +163,7 @@ async function goTo(event: MouseEvent, page: string) {
     <PopoverTrigger
       data-testid="presence-indicator"
       :aria-label="label"
-      class="cwa:flex cwa:items-center cwa:gap-x-2 cwa:cursor-pointer cwa:rounded-full cwa:text-fg cwa:hover:bg-button cwa:aria-expanded:bg-button cwa:aria-expanded:shadow-[inset_0_-2px_0_currentColor] cwa:focus-visible:outline-2 cwa:focus-visible:outline-stone-400"
+      class="cwa:flex cwa:items-center cwa:gap-x-2 cwa:cursor-pointer cwa:rounded-full cwa:text-fg cwa:hover:bg-button cwa:aria-expanded:bg-accent-tint cwa:focus-visible:outline-2 cwa:focus-visible:outline-stone-400"
     >
       <span
         v-if="here.length"
@@ -193,7 +195,7 @@ async function goTo(event: MouseEvent, page: string) {
         align="start"
         :side-offset="POPOVER_GAP"
         data-testid="presence-list"
-        class="cwa:z-context cwa:min-w-[220px] cwa:max-w-sm cwa:max-h-[50vh] cwa:overflow-y-auto cwa:p-3 cwa:rounded-lg cwa:bg-surface-menu cwa:border cwa:border-line cwa:shadow-lg cwa:text-sm cwa:text-light"
+        :class="['cwa:z-context cwa:min-w-[220px] cwa:max-w-sm cwa:max-h-[50vh] cwa:overflow-y-auto cwa:p-3 cwa:rounded-lg cwa:bg-surface-menu cwa:border cwa:border-line cwa:shadow-lg cwa:text-sm cwa:text-light', popoverOpen]"
       >
         <ul class="cwa:flex cwa:flex-col cwa:gap-y-2">
           <li

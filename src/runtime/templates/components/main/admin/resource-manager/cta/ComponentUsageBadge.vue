@@ -1,19 +1,21 @@
 <script lang="ts" setup>
 import { POPOVER_GAP } from '#cwa/templates/components/core/ui/popover-gap'
+import { infoArrow, infoPopover } from '#cwa/templates/components/core/ui/field-looks'
 import { computed, ref, watch } from 'vue'
-import { PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger } from 'reka-ui'
+import { PopoverArrow, PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { navigateTo } from '#app/composables/router'
 import { useCwa } from '#cwa/composables/cwa'
 import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/resources/resource-utils'
 import { fetchComponentUsage } from '#cwa/admin/component-usage'
 import type { ComponentUsage, ComponentUsagePage } from '#cwa/admin/component-usage'
 import ShareGlyph from '#cwa/templates/components/core/ui/ShareGlyph.vue'
+import InfoPopoverTitle from '#cwa/templates/components/core/ui/InfoPopoverTitle.vue'
 
 const $cwa = useCwa()
 const currentIri = $cwa.admin.resourceStackManager.currentIri
 const usage = ref<ComponentUsage>()
 const open = ref(false)
-const badgeClass = 'cwa:whitespace-nowrap cwa:text-xs cwa:text-yellow cwa:border cwa:border-yellow/60 cwa:rounded-full cwa:py-1 cwa:px-2.5'
+const badgeClass = 'cwa:whitespace-nowrap cwa:text-xs cwa:text-yellow cwa:border cwa:border-yellow/60 cwa:py-1 cwa:px-2.5'
 let request = 0
 
 const component = computed(() => {
@@ -84,60 +86,75 @@ async function goTo(routePath: string) {
           side="top"
           align="end"
           :side-offset="POPOVER_GAP"
+          :collision-padding="8"
+          :aria-label="`Used in ${usage.total} places`"
           data-testid="component-usage-list"
-          class="cwa:z-context cwa:min-w-[220px] cwa:max-w-sm cwa:max-h-[50vh] cwa:overflow-y-auto cwa:p-3 cwa:rounded-lg cwa:bg-surface-menu cwa:border cwa:border-line cwa:shadow-lg cwa:text-sm cwa:text-light"
+          :class="infoPopover"
         >
-          <ul class="cwa:flex cwa:flex-col cwa:gap-y-2">
-            <li
-              v-for="(location, index) in usage.locations"
-              :key="index"
-              data-testid="component-usage-location"
+          <InfoPopoverTitle :title="`Used in ${usage.total} places`" />
+          <div class="cwa:max-h-72 cwa:overflow-y-auto">
+            <ul class="cwa:m-0 cwa:flex cwa:list-none cwa:flex-col cwa:gap-y-2 cwa:p-0">
+              <li
+                v-for="(location, index) in usage.locations"
+                :key="index"
+                data-testid="component-usage-location"
+              >
+                <template v-if="location.layout">
+                  <span>Layout: {{ location.layout.reference }}</span>
+                  {{ ' ' }}
+                  <span class="cwa:text-muted-on-info">on every page using it</span>
+                </template>
+                <template v-else>
+                  <span
+                    v-if="location.pageDataProperty"
+                    class="cwa:block cwa:text-muted-on-info"
+                  >Template default for {{ location.pageDataProperty }}</span>
+                  <ul class="cwa:m-0 cwa:list-none cwa:p-0">
+                    <li
+                      v-for="page in location.renderedOn"
+                      :key="page.iri"
+                    >
+                      <template v-if="isThisPage(page)">
+                        <span>{{ pageName(page) }}</span>
+                        {{ ' ' }}
+                        <span class="cwa:text-muted-on-info">This page</span>
+                      </template>
+                      <a
+                        v-else-if="page.routePath"
+                        :href="page.routePath"
+                        class="cwa:cursor-pointer cwa:text-accent-on-info cwa:underline cwa:underline-offset-2 cwa:outline-1 cwa:outline-transparent cwa:hover:text-white cwa:focus-visible:outline-2 cwa:focus-visible:outline-accent-on-info"
+                        @click.prevent="goTo(page.routePath)"
+                      >{{ pageName(page) }}</a>
+                      <span v-else>{{ pageName(page) }}</span>
+                    </li>
+                    <li
+                      v-if="location.renderedOnCount > location.renderedOn.length"
+                      class="cwa:text-muted-on-info"
+                    >
+                      and {{ location.renderedOnCount - location.renderedOn.length }} more
+                    </li>
+                  </ul>
+                </template>
+              </li>
+            </ul>
+            <p
+              v-if="morePlaces > 0"
+              data-testid="component-usage-more"
+              class="cwa:mt-2 cwa:mb-0 cwa:text-muted-on-info"
             >
-              <template v-if="location.layout">
-                <span>Layout: {{ location.layout.reference }}</span>
-                {{ ' ' }}
-                <span class="cwa:text-stone-400">on every page using it</span>
-              </template>
-              <template v-else>
-                <span
-                  v-if="location.pageDataProperty"
-                  class="cwa:block cwa:text-stone-400"
-                >Template default for {{ location.pageDataProperty }}</span>
-                <ul>
-                  <li
-                    v-for="page in location.renderedOn"
-                    :key="page.iri"
-                  >
-                    <template v-if="isThisPage(page)">
-                      <span>{{ pageName(page) }}</span>
-                      {{ ' ' }}
-                      <span class="cwa:text-yellow">This page</span>
-                    </template>
-                    <a
-                      v-else-if="page.routePath"
-                      :href="page.routePath"
-                      class="cwa:underline cwa:underline-offset-2 cwa:hover:text-white"
-                      @click.prevent="goTo(page.routePath)"
-                    >{{ pageName(page) }}</a>
-                    <span v-else>{{ pageName(page) }}</span>
-                  </li>
-                  <li
-                    v-if="location.renderedOnCount > location.renderedOn.length"
-                    class="cwa:text-stone-400"
-                  >
-                    and {{ location.renderedOnCount - location.renderedOn.length }} more
-                  </li>
-                </ul>
-              </template>
-            </li>
-          </ul>
-          <p
-            v-if="morePlaces > 0"
-            data-testid="component-usage-more"
-            class="cwa:mt-2 cwa:text-stone-400"
+              and {{ morePlaces }} more places
+            </p>
+          </div>
+          <PopoverArrow
+            :width="14"
+            :height="7"
+            :class="infoArrow"
           >
-            and {{ morePlaces }} more places
-          </p>
+            <path
+              d="M0 0L6 6L12 0"
+              vector-effect="non-scaling-stroke"
+            />
+          </PopoverArrow>
         </PopoverContent>
       </PopoverPortal>
     </PopoverRoot>

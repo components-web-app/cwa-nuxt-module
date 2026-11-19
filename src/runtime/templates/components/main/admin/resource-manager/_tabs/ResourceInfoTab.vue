@@ -7,9 +7,11 @@ import { DEFAULT_TAB_ORDER } from '#cwa/admin/manager-tabs-resolver'
 import { NEW_RESOURCE_IRI } from '#cwa/storage/stores/resources/state'
 import { fetchComponentUsage } from '#cwa/admin/component-usage'
 import type { ComponentUsage } from '#cwa/admin/component-usage'
+import type { CwaConfirmLine } from '#cwa/composables/cwa-confirm'
 import CwaUiBadge from '#cwa/templates/components/ui/Badge.vue'
 import CwaUiButton from '#cwa/templates/components/ui/Button.vue'
 import CwaUiInput from '#cwa/templates/components/ui/Input.vue'
+import CopyButton from '#cwa/templates/components/core/ui/CopyButton.vue'
 import CwaUiManagerRowDivider from '#cwa/templates/components/ui/ManagerRowDivider.vue'
 import CwaUiManagerTab from '#cwa/templates/components/ui/ManagerTab.vue'
 
@@ -40,25 +42,51 @@ watch([iri, isPersistedComponent], async ([currentIri, persisted]) => {
 }, { immediate: true })
 
 type DeleteChoice = 'here' | 'draft' | 'all'
+type DraftState = 'live' | 'never' | undefined
 
-async function chooseDelete(componentIri: string, total: number, here: boolean, draft: boolean): Promise<DeleteChoice | undefined> {
+function deleteLines(total: number, here: boolean, draft: DraftState): CwaConfirmLine[] {
+  const shared = total > 1
+  const others = total - 1
+  const lines: string[] = []
+  if (here) {
+    lines.push(`Remove from here takes it off this location only. It stays in the other ${others === 1 ? 'place' : `${others} places`}.`)
+  }
+  if (draft === 'live') {
+    lines.push(
+      'Delete draft discards the unpublished changes. The live version stays.',
+      `Delete entire component deletes the draft and the live version${shared ? ` from all ${total} places it is used` : ''}.`,
+    )
+  }
+  else if (draft === 'never') {
+    lines.push(`Delete draft deletes ${shared ? `it from all ${total} places` : 'the component'}, as there is no live version to keep.`)
+  }
+  else {
+    lines.push(`Delete from all ${total} places deletes it everywhere it is used.`)
+  }
+  const undo = draft === 'live'
+    ? (here ? 'Neither delete can be undone.' : 'Neither can be undone.')
+    : (here ? 'Deleting can\'t be undone.' : 'This can\'t be undone.')
+  return [...lines.map(text => ({ text })), { text: undo, emphasis: 'strong' }]
+}
+
+async function chooseDelete(componentIri: string, total: number, here: boolean, draft: DraftState): Promise<DeleteChoice | undefined> {
   const { confirmChoice, editingNotice } = await import('#cwa/admin/resource-confirm')
   const notice = await editingNotice($cwa, componentIri)
   const shared = total > 1
-  const choices = [...(here ? ['here' as const] : []), ...(draft ? ['draft' as const] : [])]
-  const labels: Record<'here' | 'draft', string> = { here: 'Remove from here', draft: 'Discard unpublished changes' }
-  const said = [shared ? `It is used in ${total} places` : undefined, draft ? 'has unpublished changes' : undefined].filter(Boolean)
+  const choices = [...(here ? ['here' as const] : []), ...(draft === 'live' ? ['draft' as const] : [])]
+  const labels: Record<'here' | 'draft', string> = { here: 'Remove from here', draft: 'Delete draft' }
+  const state = draft === 'live' ? 'has unpublished changes' : draft === 'never' ? 'has never been published' : undefined
   const choice = await confirmChoice(vueApp, {
     title: 'Delete this component?',
-    description: `${shared ? said.join(' and ') : 'It has unpublished changes'}.`,
-    keep: 'Don\'t delete',
-    extra: labels[choices[0]!],
-    ...(choices[1] ? { alternative: labels[choices[1]] } : {}),
-    go: shared ? `Delete from all ${total} places` : 'Delete',
+    description: shared ? `It is used in ${total} places${state ? ` and ${state}` : ''}.` : `It ${state}.`,
+    keep: 'Cancel',
+    ...(choices[0] ? { extra: labels[choices[0]] } : {}),
+    ...(choices[0] === 'draft' ? { extraTone: 'danger' as const } : {}),
+    ...(choices[1] ? { alternative: labels[choices[1]], alternativeTone: 'danger' as const } : {}),
+    go: draft === 'live' ? 'Delete entire component' : draft === 'never' ? 'Delete draft' : `Delete from all ${total} places`,
     lines: [
       ...(notice ? [{ text: notice }] : []),
-      ...(draft ? [{ text: 'Discarding the unpublished changes keeps the live version.', emphasis: 'muted' as const }] : []),
-      { text: shared ? 'Deleting it from all places can\'t be undone.' : 'Deleting it can\'t be undone.', emphasis: 'muted' as const },
+      ...deleteLines(total, here, draft),
     ],
   })
   return choice === 'go' ? 'all' : choice === 'extra' ? choices[0] : choice === 'alternative' ? choices[1] : undefined
@@ -101,10 +129,11 @@ async function deleteSelected(componentIri: string) {
   const publishedResource = resource.value?.data?.publishedResource
   const liveIri = getPublishedResourceState(resource.value ?? {}) === false && typeof publishedResource === 'string' ? publishedResource : undefined
   const here = !!positionIri && total > 1
-  if (!here && !liveIri) {
+  const draft: DraftState = liveIri ? 'live' : getPublishedResourceState(resource.value ?? {}) === false ? 'never' : undefined
+  if (!here && !draft) {
     return $cwa.resourcesManager.deleteResource({ endpoint: componentIri, refreshEndpoints })
   }
-  const choice = await chooseDelete(componentIri, total, here, !!liveIri)
+  const choice = await chooseDelete(componentIri, total, here, draft)
   if (choice === 'all') {
     return deleteEverywhere(componentIri, liveIri, refreshEndpoints)
   }
@@ -172,6 +201,14 @@ const deleteLabel = computed(() => {
       width="lg"
       readonly
       data-testid="resource-id"
+    />
+    <CopyButton
+      v-if="!isAddingNew && iri"
+      :text="iri"
+      label="Copy ID"
+      copied="ID copied"
+      failed="The ID couldn't be copied"
+      data-testid="resource-id-copy"
     />
     <CwaUiBadge
       v-if="usage && usage.total > 1"

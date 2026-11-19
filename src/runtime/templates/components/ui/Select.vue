@@ -1,7 +1,13 @@
 <script setup lang="ts">
-import { computed, ref, useId, watch } from 'vue'
+import { computed, ref, useId, useTemplateRef, watch } from 'vue'
 import { consola } from 'consola'
 import {
+  ListboxContent,
+  ListboxGroup,
+  ListboxGroupLabel,
+  ListboxItem,
+  ListboxItemIndicator,
+  ListboxRoot,
   SelectContent,
   SelectGroup,
   SelectItem,
@@ -19,7 +25,9 @@ import type { FieldWidth } from '../core/ui/Field.vue'
 import ChevronGlyph from '../core/ui/ChevronGlyph.vue'
 import CheckGlyph from '../core/ui/CheckGlyph.vue'
 import { useFieldModel } from '../core/ui/field-context'
-import { fieldBox, fieldDisabled, fieldFill, groupHeading, menuPanel, optionLook } from '../core/ui/field-looks'
+import BottomSheet from '../core/ui/BottomSheet.vue'
+import { opensAsSheet } from '../core/ui/sheet-media'
+import { fieldBox, fieldDisabled, fieldFill, groupHeading, menuPanel, optionLook, sheetGroupHeading, sheetOptionLook } from '../core/ui/field-looks'
 import { menuGroups } from '../core/ui/menu-entries'
 import type { MenuEntry, MenuItem } from '../core/ui/menu-entries'
 import type { ResourceModelField } from '#cwa/resources/model-editors'
@@ -110,12 +118,30 @@ function labelOfValue(candidate: unknown) {
   return allGroups.value.flatMap(group => group.items).find(item => item.value === candidate)?.label ?? String(candidate)
 }
 const blocked = computed(() => props.disabled && !!props.disabledReason)
+const sheetOpen = ref(false)
+const sheetId = `${id}-sheet`
+const trigger = useTemplateRef<{ $el: HTMLElement }>('trigger')
+const listbox = useTemplateRef<{ highlightSelected: () => void }>('listbox')
 const isOpen = computed({
   get: () => open.value,
   set: (next) => {
+    if (next && !blocked.value && opensAsSheet()) {
+      sheetOpen.value = true
+      return
+    }
     open.value = next && !blocked.value
   },
 })
+
+function enterList(event: Event) {
+  event.preventDefault()
+  listbox.value?.highlightSelected()
+}
+
+function chooseInSheet(next: unknown) {
+  sheetOpen.value = false
+  choose(next)
+}
 </script>
 
 <template>
@@ -143,6 +169,8 @@ const isOpen = computed({
       >
         <SelectTrigger
           :id="id"
+          ref="trigger"
+          as-child
           :aria-describedby="describedBy"
           :aria-invalid="tone === 'danger' ? 'true' : undefined"
           :aria-busy="busy ? 'true' : undefined"
@@ -150,18 +178,24 @@ const isOpen = computed({
           data-testid="select-trigger"
           :class="[fieldBox, fieldFill(tone, inactive), blocked ? 'cwa:cursor-not-allowed' : 'cwa:cursor-pointer', 'cwa:gap-2 cwa:px-3 cwa:text-left cwa:outline-1 cwa:outline-transparent cwa:data-[state=open]:outline-2 cwa:data-[state=open]:outline-offset-2 cwa:data-[state=open]:outline-accent-fg cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-accent-fg cwa:disabled:cursor-not-allowed', { [fieldDisabled]: inactive }]"
         >
-          <span
-            class="cwa:min-w-0 cwa:flex-1 cwa:truncate"
-            :class="{ 'cwa:text-muted-on-field': !shown && !inactive }"
-          >{{ shown ?? placeholder }}</span>
-          <span
-            v-if="chosen?.dot"
-            aria-hidden="true"
-            data-testid="select-dot"
-            class="cwa:size-3 cwa:shrink-0 cwa:rounded-full"
-            :class="chosen.dot"
-          />
-          <ChevronGlyph />
+          <button
+            type="button"
+            :aria-expanded="open || sheetOpen ? 'true' : 'false'"
+            v-bind="sheetOpen ? { 'aria-controls': sheetId } : {}"
+          >
+            <span
+              class="cwa:min-w-0 cwa:flex-1 cwa:truncate"
+              :class="{ 'cwa:text-muted-on-field': !shown && !inactive }"
+            >{{ shown ?? placeholder }}</span>
+            <span
+              v-if="chosen?.dot"
+              aria-hidden="true"
+              data-testid="select-dot"
+              class="cwa:size-3 cwa:shrink-0 cwa:rounded-full"
+              :class="chosen.dot"
+            />
+            <ChevronGlyph />
+          </button>
         </SelectTrigger>
         <SelectPortal>
           <SelectContent
@@ -232,6 +266,84 @@ const isOpen = computed({
           </SelectContent>
         </SelectPortal>
       </SelectRoot>
+      <BottomSheet
+        v-if="sheetOpen"
+        v-model:open="sheetOpen"
+        :label="label"
+        actions
+        :panel-id="sheetId"
+        :return-to="trigger?.$el"
+        test-id="select-sheet"
+      >
+        <ListboxRoot
+          ref="listbox"
+          :model-value="selected"
+          @entry-focus="enterList"
+        >
+          <ListboxContent
+            :aria-label="label"
+            data-sheet-focus
+            class="cwa:py-1 cwa:outline-none"
+          >
+            <ListboxItem
+              v-if="nullable"
+              :value="NONE"
+              :class="[sheetOptionLook, 'cwa:text-fg-muted']"
+              @select.prevent="chooseInSheet(NONE)"
+            >
+              <span class="cwa:flex-1">{{ noneText }}</span>
+              <ListboxItemIndicator><CheckGlyph /></ListboxItemIndicator>
+            </ListboxItem>
+            <template
+              v-for="(group, groupIndex) in groups"
+              :key="groupIndex"
+            >
+              <div
+                v-if="groupIndex > 0 && !group.group"
+                aria-hidden="true"
+                class="cwa:my-1 cwa:h-px cwa:bg-line"
+              />
+              <ListboxGroup>
+                <ListboxGroupLabel
+                  v-if="group.group"
+                  :class="sheetGroupHeading"
+                >
+                  {{ group.group }}
+                </ListboxGroupLabel>
+                <ListboxItem
+                  v-for="item in group.items"
+                  :key="item.value ?? item.label"
+                  :value="item.value ?? item.label"
+                  :disabled="item.disabled"
+                  :aria-disabled="item.disabled ? 'true' : undefined"
+                  :class="sheetOptionLook"
+                  @select.prevent="chooseInSheet(item.value ?? item.label)"
+                >
+                  <span class="cwa:flex cwa:min-w-0 cwa:flex-1 cwa:flex-col">
+                    <span :class="{ 'cwa:opacity-50': item.disabled }">{{ item.label }}</span>
+                    <span
+                      v-if="item.disabled && item.disabledReason"
+                      class="cwa:text-helper cwa:text-fg-muted"
+                    >{{ item.disabledReason }}</span>
+                    <span
+                      v-else-if="item.description"
+                      class="cwa:text-helper cwa:text-fg-muted"
+                    >{{ item.description }}</span>
+                  </span>
+                  <span
+                    v-if="item.dot"
+                    aria-hidden="true"
+                    data-testid="select-dot"
+                    class="cwa:size-2 cwa:shrink-0 cwa:rounded-full"
+                    :class="item.dot"
+                  />
+                  <ListboxItemIndicator><CheckGlyph /></ListboxItemIndicator>
+                </ListboxItem>
+              </ListboxGroup>
+            </template>
+          </ListboxContent>
+        </ListboxRoot>
+      </BottomSheet>
     </template>
   </Field>
 </template>

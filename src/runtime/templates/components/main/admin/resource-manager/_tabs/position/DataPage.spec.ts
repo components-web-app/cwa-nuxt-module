@@ -7,6 +7,14 @@ import DataPage from './DataPage.vue'
 import CwaUiButton from '#cwa/templates/components/ui/Button.vue'
 import * as cwaComposable from '#cwa/composables/cwa'
 
+const cwaConfig = vi.hoisted(() => ({
+  resourcesConfig: {} as Record<string, any>,
+  uiConfig: {} as Record<string, any>,
+  layoutsConfig: {} as Record<string, any>,
+  pagesConfig: {} as Record<string, any>,
+}))
+vi.mock('#build/cwa-config', () => cwaConfig)
+
 interface SetupOpts {
   resourceData?: Record<string, any> | null
   iri?: string | null
@@ -57,7 +65,6 @@ function setup(opts: SetupOpts = {}, errorHandler?: (...args: any[]) => void) {
       pageData: ref({ data: { _metadata: { pageDataMetadata: { properties: [{ property: 'heroImage', componentShortName: 'Image' }] } } } }),
       pageDataIriOf,
     },
-    resourcesConfig: opts.resourcesConfig ?? {},
     resourcesManager: {
       initAddResource,
       setAddResourceEventResource,
@@ -65,6 +72,7 @@ function setup(opts: SetupOpts = {}, errorHandler?: (...args: any[]) => void) {
     getComponentMetadata: opts.getComponentMetadata ?? vi.fn().mockResolvedValue({}),
   }
 
+  cwaConfig.resourcesConfig = opts.resourcesConfig ?? {}
   vi.spyOn(cwaComposable, 'useCwa').mockReturnValue($cwa)
 
   const wrapper = mount(DataPage, {

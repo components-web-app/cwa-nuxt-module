@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, inject, onBeforeUnmount, useId, useTemplateRef, watch } from 'vue'
+import { computed, inject, onBeforeUnmount, useId, useTemplateRef, watch, watchEffect } from 'vue'
 import FieldStatus from './FieldStatus.vue'
 import InfoPopover from './InfoPopover.vue'
 import StateGlyph from './StateGlyph.vue'
@@ -7,6 +7,7 @@ import ConflictNotice from './ConflictNotice.vue'
 import type { FieldValueFormat } from './field-value'
 import CwaUiFieldPresence from '../../ui/FieldPresence.vue'
 import { fieldGroupKey, formSurfaceKey } from './field-keys'
+import { labelModelField } from '#cwa/resources/model-editors'
 import type { ResourceModelField } from '#cwa/resources/model-editors'
 import type { CwaFieldState } from '#cwa/storage/stores/resources/state'
 
@@ -79,6 +80,10 @@ watch(fieldName, (field) => {
   unregister = field && surface ? surface.register(field, label) : undefined
 }, { immediate: true })
 onBeforeUnmount(() => unregister?.())
+
+watchEffect(() => {
+  model?.editorKey && labelModelField(model.editorKey, label)
+})
 
 watch(() => inactive, (now) => {
   now && model?.blur?.()

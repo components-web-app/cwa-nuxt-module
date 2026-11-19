@@ -13,8 +13,8 @@ const { tone = 'info', title } = defineProps<{
 const titleId = useId()
 const root = useTemplateRef<HTMLElement>('root')
 
-const looks: Record<AlertTone, { box: string, glyph: GlyphKind }> = {
-  info: { box: 'cwa:bg-field', glyph: 'info' },
+const looks: Record<AlertTone, { box: string, glyph: GlyphKind, accent?: true }> = {
+  info: { box: 'cwa:border-s-3 cwa:border-accent-fg cwa:bg-[color-mix(in_srgb,var(--cwa-color-accent-fg)_10%,var(--cwa-color-surface))]', glyph: 'info', accent: true },
   success: { box: 'cwa:border-s-3 cwa:border-success cwa:bg-[color-mix(in_srgb,var(--cwa-color-success)_10%,var(--cwa-color-surface))]', glyph: 'saved' },
   warning: { box: 'cwa:border-s-3 cwa:border-warning cwa:bg-[color-mix(in_srgb,var(--cwa-color-warning)_10%,var(--cwa-color-surface))]', glyph: 'conflict' },
   danger: { box: 'cwa:border-s-3 cwa:border-danger-fg cwa:bg-[color-mix(in_srgb,var(--cwa-color-danger-fg)_10%,var(--cwa-color-surface))]', glyph: 'error' },
@@ -39,6 +39,7 @@ defineExpose({ focus: () => root.value?.focus() })
     <StateGlyph
       :kind="look.glyph"
       class="cwa:mt-0.5"
+      :accent="look.accent"
     />
     <div class="cwa:min-w-0 cwa:flex-1">
       <p

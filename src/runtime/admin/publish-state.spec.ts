@@ -42,7 +42,7 @@ describe('usePublishState (#459)', () => {
 
     expect(publish.action.value).toBe('Publish now')
     const running = publish.run()
-    expect(updateResource).toHaveBeenCalledWith({ endpoint: '/component/c1', data: { publishedAt: 'now' } })
+    expect(updateResource).toHaveBeenCalledWith({ endpoint: '/component/c1', data: { publishedAt: 'now' }, retry: expect.any(Function) })
     expect(publish.saving.value).toBe(true)
     finish()
     await running
@@ -59,7 +59,7 @@ describe('usePublishState (#459)', () => {
 
     publish.scheduleValue.value = '2026-10-01T08:00:00.000Z'
     publish.run()
-    expect(updateResource).toHaveBeenCalledWith({ endpoint: '/component/c1', data: { publishedAt: '2026-10-01T08:00:00.000Z' } })
+    expect(updateResource).toHaveBeenCalledWith({ endpoint: '/component/c1', data: { publishedAt: '2026-10-01T08:00:00.000Z' }, retry: expect.any(Function) })
   })
 
   test('a chosen time already past when saved publishes now (#381)', () => {
@@ -68,7 +68,7 @@ describe('usePublishState (#459)', () => {
     publish.scheduling.value = true
     publish.scheduleValue.value = '2026-09-25T11:00:00.000Z'
     publish.run()
-    expect(updateResource).toHaveBeenCalledWith({ endpoint: '/component/c1', data: { publishedAt: 'now' } })
+    expect(updateResource).toHaveBeenCalledWith({ endpoint: '/component/c1', data: { publishedAt: 'now' }, retry: expect.any(Function) })
   })
 
   test('a scheduled draft starts with scheduling on and its date chosen, and Cancel schedule clears it', () => {
@@ -78,7 +78,7 @@ describe('usePublishState (#459)', () => {
     expect(publish.scheduling.value).toBe(true)
     expect(publish.scheduleValue.value).toBe('2026-10-01T08:00:00+00:00')
     publish.cancelSchedule()
-    expect(updateResource).toHaveBeenCalledWith({ endpoint: '/component/c1', data: { publishedAt: null } })
+    expect(updateResource).toHaveBeenCalledWith({ endpoint: '/component/c1', data: { publishedAt: null }, retry: expect.any(Function) })
   })
 
   test('a publish the API refuses is marked failed, and Retry sends it again, clearing the failure once it is saved', async () => {
@@ -90,10 +90,26 @@ describe('usePublishState (#459)', () => {
     expect(publish.failed.value).toBe(true)
 
     const again = publish.retry()
-    expect(updateResource).toHaveBeenLastCalledWith({ endpoint: '/component/c1', data: { publishedAt: 'now' } })
+    expect(updateResource).toHaveBeenLastCalledWith({ endpoint: '/component/c1', data: { publishedAt: 'now' }, retry: expect.any(Function) })
     finish({ '@id': '/component/c1' })
     await again
     expect(updateResource).toHaveBeenCalledTimes(2)
+    expect(publish.failed.value).toBe(false)
+  })
+
+  test('the publish hands the bar a retry, so Retry on a field the API refused it for publishes again (#461)', async () => {
+    const { publish, updateResource, finish } = setup(draft())
+
+    const first = publish.run()
+    finish()
+    await first
+    const { retry } = (updateResource.mock.calls[0] as unknown as [{ retry: () => Promise<void> }])[0]
+    const again = retry()
+
+    expect(updateResource).toHaveBeenCalledTimes(2)
+    expect(updateResource).toHaveBeenLastCalledWith(expect.objectContaining({ data: { publishedAt: 'now' } }))
+    finish({ '@id': '/component/c1' })
+    await again
     expect(publish.failed.value).toBe(false)
   })
 
@@ -108,7 +124,7 @@ describe('usePublishState (#459)', () => {
     vi.setSystemTime(new Date('2026-09-25T12:10:00Z'))
     publish.retry()
 
-    expect(updateResource).toHaveBeenLastCalledWith({ endpoint: '/component/c1', data: { publishedAt: 'now' } })
+    expect(updateResource).toHaveBeenLastCalledWith({ endpoint: '/component/c1', data: { publishedAt: 'now' }, retry: expect.any(Function) })
   })
 
   test('a second press while publishing sends nothing more', () => {

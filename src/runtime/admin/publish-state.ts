@@ -64,6 +64,7 @@ export function usePublishState($cwa: Cwa, iri: Ref<string | undefined>, given?:
       const saved = await $cwa.resourcesManager.updateResource({
         endpoint,
         data: { publishedAt },
+        retry,
       })
       persisted && !saved && stack.setState(FAILED, publishedAt)
     }

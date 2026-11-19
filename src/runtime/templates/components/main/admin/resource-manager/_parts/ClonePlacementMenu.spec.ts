@@ -5,6 +5,15 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { DropdownMenuContent } from 'reka-ui'
 import { useCloneMode } from '#cwa/admin/clone-mode'
 import type Cwa from '#cwa/cwa'
+import { onPhone } from '../../../../../../../../test/utils/sheet-media'
+
+const cwaConfig = vi.hoisted(() => ({
+  resourcesConfig: { HtmlContent: { name: 'Body Text' } } as Record<string, any>,
+  uiConfig: {} as Record<string, any>,
+  layoutsConfig: {} as Record<string, any>,
+  pagesConfig: {} as Record<string, any>,
+}))
+vi.mock('#build/cwa-config', () => cwaConfig)
 
 const state = vi.hoisted(() => ({ cwa: null as any, editingLayoutWhenCloned: undefined as boolean | undefined, confirm: { answer: true, asked: [] as unknown[] } }))
 
@@ -18,6 +27,17 @@ vi.mock('#cwa/admin/resource-confirm', () => ({
     state.confirm.asked.push(options)
     return state.confirm.answer
   }),
+}))
+
+const routerState = vi.hoisted(() => ({ router: { options: { history: { base: '' } } } }))
+
+vi.mock('#app/composables/router', () => ({
+  useRouter: () => routerState.router,
+}))
+
+vi.mock('#cwa/admin/page-link', async importOriginal => ({
+  ...await importOriginal<typeof import('#cwa/admin/page-link')>(),
+  followPageLink: vi.fn(async () => {}),
 }))
 
 vi.mock('#cwa/composables/cwa', () => ({
@@ -70,11 +90,9 @@ function makeCwa() {
   return {
     admin: {
       isEditing: true,
-      setNavigationGuardDisabled: vi.fn(),
       resourceStackManager: { isEditingLayout: ref(false) },
     },
     auth: { user: { '@id': '/_/users/admin' } },
-    resourcesConfig: { HtmlContent: { name: 'Body Text' } },
     getComponentMetadata: vi.fn(async () => ({
       HtmlContent: { resourceName: 'HtmlContent', endpoint: '/component/html_contents', isPublishable: true, explicitAllowOnly: false },
     })),
@@ -92,7 +110,7 @@ function makeCwa() {
 
 const mounted: { unmount: () => void }[] = []
 
-async function mountMenu(type: 'page' | 'layout' = 'layout', stack: Record<string, any>[] = LAYOUT_STACK) {
+async function mountMenu(type: 'page' | 'layout' = 'layout', stack: Record<string, any>[] = LAYOUT_STACK, link?: HTMLAnchorElement) {
   const { default: ClonePlacementMenu } = await import('./ClonePlacementMenu.vue')
   const wrapper = mount(ClonePlacementMenu, {
     attachTo: document.body,
@@ -100,6 +118,7 @@ async function mountMenu(type: 'page' | 'layout' = 'layout', stack: Record<strin
       stack,
       type,
       point: { x: 310, y: 420 },
+      link,
     },
   })
   mounted.push(wrapper)
@@ -150,6 +169,44 @@ describe('ClonePlacementMenu', () => {
     state.confirm.answer = true
     state.confirm.asked = []
     document.body.innerHTML = ''
+  })
+
+  test('a click on a link puts Visit <path> first, apart from the placements, so the editor can go there and place on the next page (#157)', async () => {
+    startCloning()
+    editingLayout()
+    const link = document.createElement('a')
+    link.setAttribute('href', '/blog/post')
+    await mountMenu('layout', LAYOUT_STACK, link)
+
+    const rows = [...menu()!.querySelectorAll<HTMLElement>('[role="menuitem"], [role="separator"]')]
+    expect(rows.map(row => row.getAttribute('role') === 'separator' ? '—' : row.textContent!.trim())).toEqual(['Visit /blog/post', '—', 'Add before', 'Add after'])
+  })
+
+  test('Visit follows the link, places nothing and keeps clone mode on', async () => {
+    const cloneMode = startCloning()
+    editingLayout()
+    const { followPageLink } = await import('#cwa/admin/page-link')
+    const { cloneComponent } = await import('#cwa/admin/clone-component')
+    const link = document.createElement('a')
+    link.setAttribute('href', '/blog/post')
+    const wrapper = await mountMenu('layout', LAYOUT_STACK, link)
+
+    document.body.querySelector<HTMLElement>('[data-testid="clone-visit"]')!.click()
+    await flushPromises()
+
+    expect(followPageLink).toHaveBeenCalledWith(state.cwa, routerState.router, { kind: 'internal', path: '/blog/post' })
+    expect(cloneComponent).not.toHaveBeenCalled()
+    expect(cloneMode.source.value?.iri).toBe(SOURCE)
+    expect(wrapper.emitted('close')).toHaveLength(1)
+  })
+
+  test('a link outside every component offers Visit beside the reason nothing can be placed', async () => {
+    startCloning()
+    const link = document.createElement('a')
+    link.setAttribute('href', '/blog/post')
+    await mountMenu('page', [], link)
+
+    expect([...menu()!.querySelectorAll('[role="menuitem"]')].map(row => row.textContent!.trim())).toEqual(['Visit /blog/post', 'Nothing can be placed here', ''])
   })
 
   test('opens at the click point and flips or shifts to stay on screen near the viewport edges', async () => {
@@ -503,5 +560,35 @@ describe('ClonePlacementMenu', () => {
     await mountMenu()
 
     expect(menu()!.textContent).toContain('Could not load the available components')
+  })
+
+  describe('on a phone (#461)', () => {
+    afterEach(() => {
+      vi.unstubAllGlobals()
+    })
+
+    test('opens as a bottom sheet titled once by its heading, its notes under the title, and placing still clones', async () => {
+      onPhone()
+      startCloning()
+      editingLayout()
+      const { cloneComponent } = await import('#cwa/admin/clone-component')
+      const elements = { value: [textElement('Third page component')] }
+      const wrapper = await mountMenu('layout', [{ iri: COMPONENT, displayName: 'Body Text', domElements: elements }, { iri: POSITION, domElements: elements }, { iri: GROUP }, { iri: LAYOUT }])
+
+      const sheet = document.querySelector<HTMLElement>('[data-testid="kit-menu-sheet"]')!
+      expect(document.getElementById(sheet.getAttribute('aria-labelledby')!)!.textContent!.trim()).toBe('Clone next to “Third page component”')
+      expect(sheet.textContent!.split('Clone next to “Third page component”')).toHaveLength(2)
+      expect(document.querySelector('[data-testid="clone-menu-title"]')).toBeNull()
+      expect(sheet.querySelector('[data-testid="clone-notes"]')!.textContent!.trim()).toBe('Shared layout: this appears on every page')
+      expect(sheet.contains(menu())).toBe(true)
+
+      option('Add after')!.click()
+      await flushPromises()
+      expect(cloneComponent).toHaveBeenCalledWith(state.cwa, {
+        sourceIri: SOURCE,
+        target: { kind: 'position', groupIri: GROUP, anchor: { after: POSITION } },
+      })
+      expect(wrapper.emitted('close')).toHaveLength(1)
+    })
   })
 })

@@ -82,6 +82,12 @@ describe('RoutesTabView', () => {
       expect(wrapper.find('[data-testid="route-recommendation"]').text()).toContain('Based on the page title, “Topic one”.')
     })
 
+    test('the recommendation\'s info glyph is the accent colour, as an info alert\'s is', () => {
+      const glyph = mountView({ recommendedPath: '/topic-one' }).get('[data-testid="route-recommendation"] [data-glyph="info"]')
+      expect(glyph.classes()).toContain('cwa:text-accent-fg')
+      expect(glyph.classes()).not.toContain('cwa:text-fg-muted')
+    })
+
     test('renders no recommendation when the path is the recommended one', () => {
       expect(mountView({ recommendedPath: '/topic-1' }).find('[data-testid="route-recommendation"]').exists()).toBe(false)
     })

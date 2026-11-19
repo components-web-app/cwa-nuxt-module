@@ -1,18 +1,23 @@
 <script setup lang="ts">
 import { POPOVER_GAP } from '../ui/popover-gap'
-import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue'
-import { PopoverAnchor, PopoverArrow, PopoverContent, PopoverPortal, PopoverRoot } from 'reka-ui'
+import { popoverOpen } from '../ui/open-motion'
+import { computed, onBeforeUnmount, onMounted, ref, useId, useTemplateRef, watch } from 'vue'
+import { PopoverAnchor, PopoverArrow, PopoverClose, PopoverContent, PopoverPortal, PopoverRoot } from 'reka-ui'
+import { infoArrow, infoClose, infoPopover } from '../ui/field-looks'
+import XMarkIcon from '../../ui/icon/XMarkIcon.vue'
 import Spinner from '../../ui/Spinner.vue'
 import StateGlyph from '../ui/StateGlyph.vue'
 import FieldStatusTitle from '../ui/FieldStatusTitle.vue'
 import FieldStatusError from '../ui/FieldStatusError.vue'
 import type { GlyphKind } from '../ui/StateGlyph.vue'
 import { useAnnounce } from '../ui/field-context'
+import { useStatusPopover } from '../ui/status-popovers'
 import { useCwa } from '#cwa/composables/cwa'
 import { findInlineEditor, registerBarStatus } from '#cwa/admin/inline-editors'
 import { badgeFor, issueShort, issueText } from '#cwa/admin/field-badge'
 import { usePublishState } from '#cwa/admin/publish-state'
 import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/resources/resource-utils'
+import { formatDateTime } from '#cwa/resources/date-time-input'
 import { NEW_RESOURCE_IRI } from '#cwa/storage/stores/resources/state'
 import type { CwaFieldState } from '#cwa/storage/stores/resources/state'
 
@@ -99,30 +104,42 @@ onBeforeUnmount(() => {
 
 const resourceType = computed(() => iri.value ? getResourceTypeFromIri(iri.value) : undefined)
 
-function shortDate(value: string) {
-  return new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(value))
-}
+const hasLive = computed(() => !!(iri.value && $cwa.resources.getResource(iri.value).value?.data?.publishedResource))
 
-const rest = computed<{ glyph: GlyphKind, full: string, short: string }>(() => {
+const rest = computed<{ glyph: GlyphKind, word: string, about: string }>(() => {
   if (iri.value === NEW_RESOURCE_IRI) {
-    return { glyph: 'new', full: 'New · not added yet', short: 'New' }
+    return { glyph: 'new', word: 'New', about: 'This component has not been added yet. Add it to place it on the page.' }
   }
   if (publish.published.value === false) {
     const at = publish.scheduledAt.value
-    return at
-      ? { glyph: 'scheduled', full: `Scheduled · ${shortDate(at)}`, short: 'Scheduled' }
-      : { glyph: 'draft', full: 'Draft · not live', short: 'Draft' }
+    if (at) {
+      const date = formatDateTime(at)
+      return {
+        glyph: 'scheduled',
+        word: 'Scheduled',
+        about: hasLive.value
+          ? `Visitors see the live version until ${date}, when these changes go live. Until then only content administrators see this draft.`
+          : `This is unpublished until ${date}, when it goes live. Until then only content administrators can see it.`,
+      }
+    }
+    return {
+      glyph: 'draft',
+      word: 'Draft',
+      about: hasLive.value
+        ? 'These changes are unpublished, so visitors still see the live version and only content administrators see this draft. Publish it when you are ready for the changes to go live.'
+        : 'This is unpublished, so only content administrators can see it. Publish it when you are ready for it to go live.',
+    }
   }
   if (publish.published.value === true) {
-    return { glyph: 'live', full: 'Live', short: 'Live' }
+    return { glyph: 'live', word: 'Live', about: 'This is published, so visitors can see it. Your changes are saved as a draft, which goes live when you publish it.' }
   }
   if (resourceType.value === CwaResourceTypes.COMPONENT_GROUP) {
-    return { glyph: 'group', full: 'Component group', short: 'Group' }
+    return { glyph: 'group', word: 'Group', about: 'A component group holds the components placed in it. It is not published itself: each of its components is.' }
   }
-  return { glyph: 'saved', full: 'All changes saved', short: 'Saved' }
+  return { glyph: 'saved', word: 'Saved', about: 'All changes are saved. This is not published separately, so visitors see changes as soon as they are saved.' }
 })
 
-const status = computed<{ state: string, glyph?: GlyphKind, full: string, short: string }>(() => {
+const status = computed<{ state: string, glyph?: GlyphKind, full: string, short: string, about?: string }>(() => {
   if (phase.value === 'saving') {
     return { state: 'saving', full: 'Saving…', short: 'Saving…' }
   }
@@ -135,8 +152,11 @@ const status = computed<{ state: string, glyph?: GlyphKind, full: string, short:
   if (phase.value === 'saved') {
     return { state: 'saved', glyph: 'saved', full: 'All changes saved', short: 'Saved' }
   }
-  return { state: 'rest', ...rest.value }
+  const { glyph, word, about } = rest.value
+  return { state: 'rest', glyph, full: word, short: word, about }
 })
+
+const aboutId = useId()
 
 const actionable = computed(() => (!!badge.value.kind || publish.failed.value) && phase.value !== 'saving')
 
@@ -207,6 +227,13 @@ function onOpenChange(next: boolean) {
   }
 }
 
+const isOpen = computed(() => !!shownError.value || (open.value && !actionable.value))
+const stack = useStatusPopover(() => onOpenChange(false))
+
+watch(isOpen, (opened) => {
+  opened ? stack.claim() : stack.release()
+})
+
 function keepForOwnButton(event: CustomEvent<{ originalEvent: PointerEvent }>) {
   const target = event.detail.originalEvent.target
   target instanceof Node && button.value?.contains(target) && event.preventDefault()
@@ -240,7 +267,7 @@ function reset() {
 
 <template>
   <PopoverRoot
-    :open="!!shownError || (open && !actionable)"
+    :open="isOpen"
     @update:open="onOpenChange"
   >
     <PopoverAnchor as-child>
@@ -252,7 +279,7 @@ function reset() {
         :aria-expanded="actionable && !opensError ? undefined : (shownError || open) ? 'true' : 'false'"
         :data-state="status.state"
         data-testid="bar-summary"
-        class="cwa:inline-flex cwa:h-full cwa:shrink-0 cwa:cursor-pointer cwa:items-center cwa:gap-2 cwa:whitespace-nowrap cwa:px-2 cwa:text-label cwa:text-fg-muted cwa:outline-1 cwa:outline-transparent cwa:hover:bg-button cwa:aria-expanded:bg-button cwa:aria-expanded:text-fg cwa:aria-expanded:shadow-[inset_0_-2px_0_currentColor] cwa:focus-visible:outline-2 cwa:focus-visible:-outline-offset-2 cwa:focus-visible:outline-accent-fg cwa:@max-[40rem]:aspect-square cwa:@max-[40rem]:justify-center cwa:@max-[40rem]:px-0"
+        class="cwa:inline-flex cwa:h-full cwa:shrink-0 cwa:cursor-pointer cwa:items-center cwa:gap-1 cwa:whitespace-nowrap cwa:px-2 cwa:text-label cwa:text-fg-muted cwa:outline-1 cwa:outline-transparent cwa:hover:bg-button cwa:aria-expanded:bg-button cwa:aria-expanded:text-fg cwa:aria-expanded:shadow-[inset_0_-2px_0_currentColor] cwa:focus-visible:outline-2 cwa:focus-visible:-outline-offset-2 cwa:focus-visible:outline-accent-fg cwa:@max-[40rem]:aspect-square cwa:@max-[40rem]:justify-center cwa:@max-[40rem]:px-0"
         :class="actionable ? 'cwa:font-semibold cwa:text-fg' : ''"
         @click="act"
       >
@@ -265,12 +292,14 @@ function reset() {
           :kind="status.glyph"
         />
         <span
+          v-if="actionable"
           aria-hidden="true"
           class="cwa:hidden cwa:@min-[64rem]:inline"
         >{{ status.full }}</span>
         <span
           aria-hidden="true"
-          class="cwa:hidden cwa:@min-[40rem]:inline cwa:@min-[64rem]:hidden"
+          class="cwa:hidden cwa:@min-[40rem]:inline"
+          :class="actionable ? 'cwa:@min-[64rem]:hidden' : ''"
         >{{ status.short }}</span>
       </button>
     </PopoverAnchor>
@@ -283,7 +312,7 @@ function reset() {
         :collision-padding="8"
         :aria-label="`${shownError.editor.label ?? shownError.field}: not saved`"
         data-testid="bar-summary-popover"
-        class="cwa:z-context cwa:w-max cwa:max-w-[min(20rem,calc(100vw-1rem))] cwa:bg-surface-menu cwa:p-popover cwa:text-control cwa:text-fg cwa:shadow-popover cwa:outline-none"
+        :class="['cwa:z-context cwa:w-max cwa:max-w-[min(20rem,calc(100vw-1rem))] cwa:bg-surface-menu cwa:p-popover cwa:text-control cwa:text-fg cwa:shadow-popover cwa:outline-none', popoverOpen]"
         @open-auto-focus="onOpenAutoFocus"
         @close-auto-focus="onCloseAutoFocus"
       >
@@ -310,23 +339,47 @@ function reset() {
         align="end"
         :side-offset="POPOVER_GAP"
         :collision-padding="8"
-        aria-label="Status"
+        :aria-label="status.short"
+        :aria-describedby="status.about ? aboutId : undefined"
         data-testid="bar-summary-popover"
-        class="cwa:z-context cwa:w-max cwa:max-w-[min(20rem,calc(100vw-1rem))] cwa:bg-surface-menu cwa:p-popover cwa:text-control cwa:text-fg cwa:shadow-popover cwa:outline-none"
+        :class="infoPopover"
         @pointer-down-outside="keepForOwnButton"
+        @close-auto-focus="onCloseAutoFocus"
       >
-        <div class="cwa:flex cwa:h-[1cap] cwa:items-center cwa:gap-2">
+        <div
+          class="cwa:flex cwa:h-[1cap] cwa:items-center cwa:gap-2 cwa:font-semibold"
+          :class="status.about ? 'cwa:mb-4' : ''"
+        >
           <StateGlyph
             v-if="status.glyph"
             :kind="status.glyph"
+            on-info
           />
-          <span class="cwa:trim-text">{{ status.full }}</span>
+          <span class="cwa:min-w-0 cwa:flex-1 cwa:trim-text">{{ status.short }}</span>
+          <PopoverClose
+            aria-label="Close"
+            :class="infoClose"
+          >
+            <XMarkIcon class="cwa:size-3" />
+          </PopoverClose>
         </div>
+        <p
+          v-if="status.about"
+          :id="aboutId"
+          class="cwa:m-0 cwa:trim-text"
+        >
+          {{ status.about }}
+        </p>
         <PopoverArrow
-          :width="12"
-          :height="6"
-          class="cwa:fill-surface-menu"
-        />
+          :width="14"
+          :height="7"
+          :class="infoArrow"
+        >
+          <path
+            d="M0 0L6 6L12 0"
+            vector-effect="non-scaling-stroke"
+          />
+        </PopoverArrow>
       </PopoverContent>
     </PopoverPortal>
   </PopoverRoot>

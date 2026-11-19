@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { resourcesConfig } from '#build/cwa-config'
 import { computed, nextTick, ref, unref, useTemplateRef, watch } from 'vue'
 import { consola as logger } from 'consola'
 import { useCwa } from '#imports'
@@ -17,10 +18,8 @@ import {
   buildAddComponentList,
   countComponentsInGroup,
   DYNAMIC_COMPONENT,
-  hasMarkup,
   normaliseQuery,
   pageDataNoun,
-  plainText,
 } from '#cwa/templates/components/main/admin/resource-manager/_parts/add-component-list'
 import type { AddComponentChoice } from '#cwa/templates/components/main/admin/resource-manager/_parts/add-component-list'
 import CwaUiDialog from '#cwa/templates/components/ui/Dialog.vue'
@@ -46,8 +45,6 @@ interface DisplayData {
   groupName: string
   place?: string
 }
-
-const warnedMarkup = new Set<string>()
 
 const $cwa = useCwa()
 const { getTypeOptions, getPropertyOptions } = useDynamicPositionSelectOptions($cwa)
@@ -94,7 +91,6 @@ const sections = computed<ComboboxSection[]>(() => list.value.sections.map(secti
     value: option.name,
     label: option.label,
     description: option.description,
-    detail: option.count ? `${option.count} here` : undefined,
   })),
 })))
 
@@ -147,17 +143,6 @@ function anchorName(event: AddResourceEvent): string | undefined {
   return excerpt ? `“${excerpt}”` : item.displayName
 }
 
-function describe(name: string, config: CwaResourceMeta) {
-  if (!config.description) {
-    return
-  }
-  if (import.meta.env.DEV && hasMarkup(config.description) && !warnedMarkup.has(name)) {
-    warnedMarkup.add(name)
-    logger.warn(`[CWA] cwa.resources.${name}.description contains HTML. Descriptions are plain text, so the tags are removed.`)
-  }
-  return plainText(config.description) || undefined
-}
-
 async function createDisplayData(event: AddResourceEvent): Promise<DisplayData> {
   const groupIri = event.closest.group
   const group = groupIri ? $cwa.resources.getResource(groupIri).value?.data : undefined
@@ -173,7 +158,7 @@ async function createDisplayData(event: AddResourceEvent): Promise<DisplayData> 
 
   const available: Record<string, AvailableComponent> = {}
   for (const [name, apiMetadata] of Object.entries(apiComponents)) {
-    const config = $cwa.resourcesConfig?.[name]
+    const config = resourcesConfig[name]
     config && (available[name] = { apiMetadata, config })
   }
 
@@ -189,7 +174,8 @@ async function createDisplayData(event: AddResourceEvent): Promise<DisplayData> 
     .map(([name, { apiMetadata, config }]) => ({
       name,
       label: config.name || apiMetadata.resourceName,
-      description: describe(name, config),
+      description: adminResources[name]?.description,
+      descriptionHtml: adminResources[name]?.descriptionHtml,
       group: adminResources[name]?.group,
       count: counts[name] ?? 0,
       allowed: isComponentAllowedInGroup(apiMetadata, allowedComponents),
@@ -427,7 +413,7 @@ watch(open, async (isOpen: boolean) => {
       @back="back"
     >
       <template
-        v-if="detail && !isDynamic && !detailImage"
+        v-if="detail && !isDynamic"
         #lead
       >
         <AddComponentLead
@@ -476,7 +462,6 @@ watch(open, async (isOpen: boolean) => {
                   :key="chip.name"
                   type="button"
                   :tabindex="index === activeChip ? 0 : -1"
-                  :aria-describedby="`add-component-chip-${chip.name}`"
                   data-testid="add-component-chip"
                   :data-value="chip.name"
                   class="cwa:inline-flex cwa:h-control cwa:cursor-pointer cwa:items-center cwa:gap-2 cwa:bg-button cwa:ps-3 cwa:pe-3.5 cwa:text-label cwa:text-fg cwa:outline-1 cwa:outline-transparent cwa:transition-colors cwa:duration-(--cwa-duration-fast) cwa:hover:bg-field-hover cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-accent-fg cwa:pointer-coarse:h-hit"
@@ -489,10 +474,6 @@ watch(open, async (isOpen: boolean) => {
                     chip
                   />
                   {{ chip.label }}
-                  <span
-                    :id="`add-component-chip-${chip.name}`"
-                    class="cwa:sr-only"
-                  >{{ chip.count }} here</span>
                 </button>
               </div>
             </div>
@@ -532,8 +513,14 @@ watch(open, async (isOpen: boolean) => {
           data-testid="add-component-image"
           class="cwa:block cwa:aspect-video cwa:w-full cwa:max-w-72 cwa:object-cover cwa:shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--cwa-color-fg)_12%,transparent)]"
         >
+        <div
+          v-if="detail.descriptionHtml"
+          class="cwa:flex cwa:flex-col cwa:gap-2 cwa:[&_p]:m-0 cwa:[&_strong]:font-semibold cwa:[&_code]:bg-field cwa:[&_code]:px-1 cwa:[&_code]:font-mono cwa:[&_code]:text-[0.9em] cwa:[&_code]:text-fg cwa:[&_a]:text-accent-fg cwa:[&_a]:underline cwa:[&_a]:underline-offset-2 cwa:[&_a]:outline-1 cwa:[&_a]:outline-transparent cwa:[&_a:focus-visible]:outline-2 cwa:[&_a:focus-visible]:outline-offset-2 cwa:[&_a:focus-visible]:outline-accent-fg"
+          data-testid="add-component-description"
+          v-html="detail.descriptionHtml"
+        />
         <p
-          v-if="detail.description"
+          v-else-if="detail.description"
           class="cwa:m-0"
           data-testid="add-component-description"
         >

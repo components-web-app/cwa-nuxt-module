@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { POPOVER_GAP } from '../core/ui/popover-gap'
+import { popoverOpen } from '../core/ui/open-motion'
 import { computed, provide, ref, useTemplateRef, watch } from 'vue'
 import { PopoverAnchor, PopoverContent, PopoverPortal, PopoverRoot } from 'reka-ui'
 import CwaUiButton from './Button.vue'
@@ -136,7 +137,7 @@ function onUrlKeydown(event: KeyboardEvent) {
         role="dialog"
         aria-label="Link"
         data-testid="link-popover"
-        class="cwa:z-context cwa:flex cwa:w-[min(22rem,calc(100vw-1rem))] cwa:flex-col cwa:gap-3 cwa:bg-surface-menu cwa:p-3 cwa:text-fg cwa:shadow-popover cwa:outline-1 cwa:outline-transparent"
+        :class="['cwa:z-context cwa:flex cwa:w-[min(22rem,calc(100vw-1rem))] cwa:flex-col cwa:gap-3 cwa:bg-surface-menu cwa:p-3 cwa:text-fg cwa:shadow-popover cwa:outline-1 cwa:outline-transparent', popoverOpen]"
         @open-auto-focus="onOpenAutoFocus"
         @focus-outside.prevent
       >

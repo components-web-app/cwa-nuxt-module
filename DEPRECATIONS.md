@@ -242,19 +242,16 @@ read `states` or `resetValue`; this is the kit's removals PR (step 9 of #236).
 
 ---
 
-## Remove when every app's component descriptions are plain text
+## Remove when no app's component description holds HTML
 
-### Stripping HTML from `cwa.resources.<Name>.description`
+### Stripping HTML from a component's `description`
 
-The add component dialog shows a description as one line of plain text
-([#461](https://github.com/components-web-app/cwa-nuxt-module/issues/461), part of
-[#236](https://github.com/components-web-app/cwa-nuxt-module/issues/236)). Apps
-wrote descriptions as HTML (`'<p>…</p>'`) for the old dialog's `v-html` pane, so
-the dialog removes the tags and warns once per component in development.
+Descriptions are inline Markdown, converted at build time. Apps wrote them as
+HTML (`'<p>…</p>'`) for the old dialog's `v-html` pane, so the build removes the
+tags (keeping paragraphs and line breaks) and warns once per component.
 
-**Delete:** `hasMarkup` and `plainText` in
-`resource-manager/_parts/add-component-list.ts` (render the description as it
-is), the `describe` warning in `AddComponentDialog.vue`, and their tests.
+**Delete:** `hasMarkup` and `withoutMarkup` in `src/markdown-description.ts`, the
+warning in `describe` in `src/admin-resources.ts`, and their tests.
 
 **Precondition:** the template and the sites built on it (CK, bcio) configure
-plain-text descriptions; this is the kit's removals PR (step 9 of #236).
+Markdown descriptions; this is the kit's removals PR (step 9 of #236).

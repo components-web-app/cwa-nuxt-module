@@ -178,7 +178,6 @@ function setClone(on: boolean) {
     $cwa.admin.toggleEdit(true)
   }
   clone.start(PRACTICE.title, 'Title', undefined, { positionIri: PRACTICE.heading, excerpt: 'Shaker kitchens' })
-  $cwa.admin.setNavigationGuardDisabled(false)
   const target = site.value?.querySelector<HTMLElement>('[data-kit-practice="empty"]')
   target && clone.setTarget([target])
 }

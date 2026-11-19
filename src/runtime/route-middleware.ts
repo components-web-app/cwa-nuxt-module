@@ -64,7 +64,7 @@ export default defineNuxtRouteMiddleware(async (to: RouteLocationNormalized, fro
   const handleRouteRedirect = async (resource: CwaResource | undefined) => {
     // only check for the redirect path, we know the resource returned is the primary resource,
     // and we have requested to fetch a route, so will be a route resource.
-    if (resource?.redirectPath && !nuxtApp.$cwa.navigationDisabled) {
+    if (resource?.redirectPath && nuxtApp.$cwa.followsRedirect(resource)) {
       // we are not just returning the route to redirect to for client side, and that's all navigateTo does if processing middleware it true
       if (isClient && nuxtApp._processingMiddleware) {
         await waitForMiddleware()
@@ -74,7 +74,10 @@ export default defineNuxtRouteMiddleware(async (to: RouteLocationNormalized, fro
         const baseURL = nuxtApp.$config.app.baseURL.replace(/\/+$/, '')
         return navigateTo(`${baseURL}${resource.redirectPath}`, { redirectCode: 308, external: true })
       }
-      return navigateTo(resource.redirectPath, { redirectCode: 308 })
+      const redirectPath = nuxtApp.$cwa.navigationDisabled
+        ? `${resource.redirectPath}${resource.redirectPath.includes('?') ? '&' : '?'}cwa_force=true`
+        : resource.redirectPath
+      return navigateTo(redirectPath, { redirectCode: 308 })
       // this may be in place to help with multiple redirects on a client side... stop stop
       // infinite loop and crashing
       // return callWithNuxt(nuxtApp, navigateTo, [resource.redirectPath, { redirectCode: 308 }])

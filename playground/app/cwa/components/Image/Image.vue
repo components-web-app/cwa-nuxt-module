@@ -38,7 +38,15 @@
 <script setup lang="ts">
 import { useTemplateRef } from 'vue'
 import type { IriProp } from '#cwa/composables/cwa-resource'
-import { useCwaComponent, withFile } from '#imports'
+import { useCwaComponent, withFile, defineCwaConfig } from '#imports'
+
+defineCwaConfig({
+  instantAdd: true,
+  description: 'A picture uploaded to the site, with **alt text** for screen readers',
+  icon: 'image',
+  group: 'Media',
+  image: '/icon.png',
+})
 
 const props = defineProps<IriProp>()
 // Opt in to the already-loaded-on-mount check by registering the ref ourselves (#267 — it is no

@@ -10,6 +10,7 @@ import { ResourcesStore } from '#cwa/storage/stores/resources/resources-store'
 import { FetcherStore } from '#cwa/storage/stores/fetcher/fetcher-store'
 import type { CwaResource } from '#cwa/resources/resource-utils'
 import type { ReorderEvent } from '#cwa/admin/admin'
+import { createPositionDrag } from '#cwa/admin/position-drag'
 
 const unmountHooks = vi.hoisted(() => [] as Array<() => void>)
 
@@ -59,34 +60,6 @@ describe('useComponentGroupPositions', () => {
   const groupIri = '/_/component_groups/1'
   const iriRef = computed(() => groupIri)
 
-  describe('groupIsReordering', () => {
-    test('returns false when iri is undefined', () => {
-      const { mockCwa } = buildCwa([])
-      const { groupIsReordering } = useComponentGroupPositions(computed(() => undefined), mockCwa)
-      expect(groupIsReordering.value).toBe(false)
-    })
-
-    test('returns false when getState returns falsy', () => {
-      const { mockCwa } = buildCwa([])
-      mockCwa.admin.resourceStackManager.getState.mockReturnValue(false)
-      const { groupIsReordering } = useComponentGroupPositions(iriRef, mockCwa)
-      expect(groupIsReordering.value).toBe(false)
-    })
-
-    test('returns false when not the closest component group', () => {
-      const { mockCwa } = buildCwa([])
-      mockCwa.admin.resourceStackManager.getClosestStackItemByType.mockReturnValue('/_/component_groups/other')
-      const { groupIsReordering } = useComponentGroupPositions(iriRef, mockCwa)
-      expect(groupIsReordering.value).toBe(false)
-    })
-
-    test('returns true when reordering is active and iri matches closest group', () => {
-      const { mockCwa } = buildCwa([])
-      const { groupIsReordering } = useComponentGroupPositions(iriRef, mockCwa)
-      expect(groupIsReordering.value).toBe(true)
-    })
-  })
-
   describe('componentPositions', () => {
     test('returns positions from getOrderedPositionsForGroup', () => {
       const positions = ['/_/component_positions/a', '/_/component_positions/b']
@@ -119,9 +92,8 @@ describe('useComponentGroupPositions', () => {
       }
     })
 
-    test('moves the position with Enable reordering off, as it only turns on dragging on the page', () => {
+    test('moves the position whatever is selected, as the Order tab and a drag on the selected group both emit it', () => {
       const { mockCwa, getCapturedHandler } = buildCwa(positions, resources)
-      mockCwa.admin.resourceStackManager.getState.mockReturnValue(false)
       useComponentGroupPositions(iriRef, mockCwa)
       getCapturedHandler()({ positionIri: '/_/component_positions/a', location: 'next' })
       expect(mockCwa.resourcesManager.storeResource).toHaveBeenCalledTimes(3)
@@ -404,6 +376,7 @@ describe('group reorder queue against the server (#400, api-components-bundle#47
       requests,
       reorders: mockCwa.componentGroupReorders as ComponentGroupReorders,
       mount,
+      eventBus: mockCwa.admin.eventBus,
       group: helpersFor,
       queueWrite: (group: string, write: () => Promise<unknown>) => mockCwa.resourcesManager.queueComponentGroupWrite(group, write),
       releaseRequests: () => heldRequests.splice(0).forEach(resolve => resolve()),
@@ -715,5 +688,57 @@ describe('group reorder queue against the server (#400, api-components-bundle#47
     expect(otherGroup.serverOrder()).toEqual(['x', 'z', 'y'])
     expect(group.serverOrder()).toEqual(['a', 'b', 'c'])
     expect(group.displayed()).toEqual(['a', 'b', 'c'])
+  })
+
+  describe('dragging a position of the selected group', () => {
+    function dragger(group: ReturnType<typeof createGroup>, eventBus: { emit: (event: 'reorder', data: ReorderEvent) => void }) {
+      const handle = document.body.appendChild(document.createElement('div'))
+      const drag = createPositionDrag({
+        positions: () => group.displayed().map(positionIri),
+        boxOf: (iri) => {
+          const index = group.displayed().indexOf(nameOf(iri))
+          return { top: index * 100, bottom: index * 100 + 100, left: 0, right: 400 }
+        },
+        onReorder: event => eventBus.emit('reorder', event),
+      })
+      return (name: string, toY: number) => {
+        const fromY = group.displayed().indexOf(name) * 100 + 50
+        drag.start(new PointerEvent('pointerdown', { clientY: fromY, pointerId: 1 }), positionIri(name), handle)
+        handle.dispatchEvent(new PointerEvent('pointermove', { clientY: toY, pointerId: 1, bubbles: true }))
+        handle.dispatchEvent(new PointerEvent('pointerup', { clientY: toY, pointerId: 1, bubbles: true }))
+      }
+    }
+
+    test('a drop moves the screen at once and saves the new order in one order request', async () => {
+      const group = createGroup({ a: 0, b: 1, c: 2 })
+      const drag = dragger(group, group.eventBus)
+      drag('a', 260)
+      expect(group.displayed()).toEqual(['b', 'c', 'a'])
+      expect(group.displayNumbers()).toEqual([3, 1, 2])
+      await group.settle()
+      expect(group.requests).toEqual([[groupIri, ['b', 'c', 'a']]])
+      expect(group.serverOrder()).toEqual(['b', 'c', 'a'])
+    })
+
+    test('drops made while an order request is in flight go in one more request with the newest order', async () => {
+      const group = createGroup({ a: 0, b: 1, c: 2, d: 3 }, { holdRequests: true })
+      const drag = dragger(group, group.eventBus)
+      drag('d', 10)
+      await group.settle()
+      drag('c', 10)
+      drag('a', 390)
+      expect(group.displayed()).toEqual(['c', 'd', 'b', 'a'])
+      await group.settle()
+      expect(group.requests).toEqual([[groupIri, ['d', 'a', 'b', 'c']]])
+      group.releaseRequests()
+      await group.settle()
+      expect(group.requests).toEqual([
+        [groupIri, ['d', 'a', 'b', 'c']],
+        [groupIri, ['c', 'd', 'b', 'a']],
+      ])
+      group.releaseRequests()
+      await group.settle()
+      expect(group.displayed()).toEqual(['c', 'd', 'b', 'a'])
+    })
   })
 })

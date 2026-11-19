@@ -20,7 +20,7 @@ const emit = defineEmits<{ use: [] }>()
     <div class="cwa:flex cwa:items-center cwa:gap-3 cwa:px-4 cwa:py-2.5 cwa:@max-[25rem]:flex-wrap">
       <StateGlyph
         kind="info"
-        class="cwa:text-accent-fg"
+        accent
       />
       <div class="cwa:min-w-0 cwa:flex-1">
         <p class="cwa:m-0 cwa:text-control cwa:text-fg">

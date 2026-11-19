@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import { useCookie, useNuxtApp, useRuntimeConfig } from '#imports'
 import type { RouteLocationNormalizedLoaded, Router } from 'vue-router'
-import type { CwaResourcesMeta, CwaRuntimeOptions } from '#cwa/types'
+import type { CwaModuleOptions } from '#cwa/types'
 import { Storage } from './storage/storage'
 import type { FetchEvent, FetchResourceEvent } from './api/fetcher/fetcher'
 import Fetcher from './api/fetcher/fetcher'
@@ -20,6 +20,7 @@ import Admin from './admin/admin'
 import NavigationGuard from './admin/navigation-guard'
 import { ComponentGroupReorders } from './admin/component-group-reorder'
 import { ResourceTypeFromIri } from '#cwa/resources/resource-utils'
+import type { CwaResource } from '#cwa/resources/resource-utils'
 import SiteConfig from '#cwa/api/site-config'
 import OrphanedResources from '#cwa/api/orphaned-resources'
 import type { ApiUrlRuntimeConfig } from '#cwa/api/api-url'
@@ -27,7 +28,7 @@ import { resolveApiUrl } from '#cwa/api/api-url'
 
 export default class Cwa {
   private readonly apiUrl: string
-  private readonly options: CwaRuntimeOptions
+  private readonly options: CwaModuleOptions
   private readonly storage: Storage
   private readonly apiDocumentation: ApiDocumentation
   private readonly mercure: Mercure
@@ -61,7 +62,7 @@ export default class Cwa {
 
   public readonly currentModulePackageInfo: { version: string, name: string }
 
-  constructor($router: Router, options: CwaRuntimeOptions, currentModulePackageInfo: { version: string, name: string }) {
+  constructor($router: Router, options: CwaModuleOptions, currentModulePackageInfo: { version: string, name: string }) {
     this.currentModulePackageInfo = currentModulePackageInfo
     const { isServer } = useProcess()
     this.apiUrl = resolveApiUrl(useRuntimeConfig() as ApiUrlRuntimeConfig, isServer).url
@@ -79,7 +80,7 @@ export default class Cwa {
     this.fetchStatusManager = new FetchStatusManager(this.storage.stores.fetcher, this.mercure, this.apiDocumentation, this.storage.stores.resources, this.options.routeCacheLimit, nuxtApp)
     this.fetchStatusManager.onIncompleteRender(() => this.cwaFetch.markUnstorable())
 
-    this.fetcher = new Fetcher(this.cwaFetch, this.fetchStatusManager, $router, this.storage.stores.resources, isServer, () => !this.navigationDisabled)
+    this.fetcher = new Fetcher(this.cwaFetch, this.fetchStatusManager, $router, this.storage.stores.resources, isServer, route => this.followsRedirect(route))
 
     this.resources = new Resources(this.storage.stores.resources, this.storage.stores.fetcher)
     this.admin = new Admin(this.storage.stores.admin, this.storage.stores.resources, this.resources, nuxtApp.vueApp)
@@ -113,6 +114,10 @@ export default class Cwa {
 
   public get navigationDisabled() {
     return this.adminNavGuard.navigationDisabled
+  }
+
+  public followsRedirect(route: CwaResource) {
+    return !this.navigationDisabled || route.path === this.admin.visitPath
   }
 
   // API Documentation service is private, exposing only function required by applications
@@ -149,23 +154,6 @@ export default class Cwa {
 
   public get isStaticRender(): boolean {
     return this.prerendered.value || !!this.options.staticRender
-  }
-
-  public get resourcesConfig(): CwaResourcesMeta {
-    return this.options.resources || {}
-  }
-
-  // @internal
-  public setResourceMeta(meta: CwaResourcesMeta) {
-    this.options.resources = meta
-  }
-
-  public get layoutsConfig() {
-    return this.options.layouts
-  }
-
-  public get pagesConfig() {
-    return this.options.pages
   }
 
   public get pageDataConfig() {

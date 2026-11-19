@@ -1,12 +1,13 @@
 // @vitest-environment happy-dom
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
-import { createCommentVNode, defineAsyncComponent, h, inject, onMounted, ref, nextTick } from 'vue'
+import { createCommentVNode, defineAsyncComponent, h, inject, onMounted, reactive, ref, nextTick } from 'vue'
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { mockNuxtImport } from '@nuxt/test-utils/runtime'
 import { CwaUserRoles } from '#cwa/storage/stores/auth/state'
 import { useCloneMode } from '#cwa/admin/clone-mode'
 import type Cwa from '#cwa/cwa'
 import { announceKey } from '#cwa/templates/components/core/ui/field-keys'
+import { ErrorType } from '#cwa/storage/stores/error/state'
 import { consola } from 'consola'
 import CwaUiManagerTab from '#cwa/templates/components/ui/ManagerTab.vue'
 import Group from './_tabs/group/Group.vue'
@@ -15,8 +16,17 @@ vi.mock('#cwa/templates/components/main/admin/resource-manager/_parts/ClonePlace
   __esModule: true,
   default: {
     name: 'ClonePlacementMenu',
-    props: ['stack', 'type', 'point'],
+    props: ['stack', 'type', 'point', 'link'],
     template: '<div class="clone-placement-menu-stub" />',
+  },
+}))
+
+vi.mock('#cwa/templates/components/main/admin/resource-manager/_parts/LinkMenu.vue', () => ({
+  __esModule: true,
+  default: {
+    name: 'LinkMenu',
+    props: ['stack', 'type', 'point', 'link'],
+    template: '<div class="link-menu-stub" />',
   },
 }))
 
@@ -71,12 +81,16 @@ function makeStackManager(overrides: Record<string, any> = {}) {
     completeStack: vi.fn(),
     selectStackIndex: vi.fn(),
     restorePreviousStack: vi.fn(),
+    switchScope: vi.fn(async () => true),
     resetStack: vi.fn(),
     isEditingLayout: ref(false),
     resourceStack: ref<{ iri: string }[]>([]),
     contextStack: ref<{ iri: string, displayName?: string }[]>([{ iri: '/component/1', displayName: 'Rich text' }, { iri: '/_/pages/home' }]),
     currentIri: ref<string | undefined>('/component/1'),
     resetTabs: vi.fn(),
+    getState: vi.fn(),
+    setState: vi.fn(),
+    getClosestStackItemByType: vi.fn(),
     ...overrides,
   }
 }
@@ -84,15 +98,12 @@ function makeStackManager(overrides: Record<string, any> = {}) {
 function makeCwa(opts: {
   isEditing?: boolean
   hasRole?: boolean
-  navigationGuardDisabled?: boolean
   stackManager?: ReturnType<typeof makeStackManager>
 } = {}) {
   const stackManager = opts.stackManager ?? makeStackManager()
   return {
     admin: {
       isEditing: opts.isEditing ?? false,
-      navigationGuardDisabled: opts.navigationGuardDisabled ?? false,
-      setNavigationGuardDisabled: vi.fn(),
       resourceStackManager: stackManager,
       emitRedraw: vi.fn(),
     },
@@ -118,8 +129,10 @@ async function mountManager(attachTo?: HTMLElement) {
         ManagerTabs: {
           name: 'ManagerTabs',
           props: ['tabs', 'idPrefix', 'label'],
-          methods: { resetTabs() {}, selectOriginal: (index: number) => selectOriginal.fn(index) },
-          template: '<div class="manager-tabs-stub" @click="$emit(\'click\', 1)"><button v-for="(tab, index) of tabs" :id="`${idPrefix}-tab-${index}`" type="button">{{ tab.name }}</button></div>',
+          methods: { resetTabs() {}, selectOriginal: (index: number) => selectOriginal.fn(index), fieldsInOrder() {
+            return (this as unknown as { tabs: { fields?: string[] }[] }).tabs.flatMap(tab => tab.fields ?? [])
+          } },
+          template: '<div class="manager-tabs-stub" @click="$emit(\'click\', 1)"><button v-for="(tab, index) of tabs" :id="`${idPrefix}-tab-${index}`" type="button">{{ tab?.name }}</button></div>',
         },
         CwaAdminResourceManagerContextMenu: {
           name: 'CwaAdminResourceManagerContextMenu',
@@ -131,6 +144,8 @@ async function mountManager(attachTo?: HTMLElement) {
         ComponentUsageBadge: { template: '<span class="usage-badge-stub" />' },
         SharedInstancesHighlight: { template: '<div class="shared-instances-stub" />' },
         PeerOutlines: { template: '<div class="peer-outlines-stub" />' },
+        HoverOutline: { template: '<div class="hover-outline-stub" />' },
+        ReorderHandles: { name: 'ReorderHandles', props: ['groupIri'], template: '<div class="reorder-handles-stub" />' },
         AddComponentDialog: { template: '<div class="add-dialog-stub" />' },
         Transition: false,
       },
@@ -253,6 +268,20 @@ describe('ResourceManager', () => {
       cloning && useCloneMode(cwaState.cwa).end()
     })
 
+    test.each([
+      ['editing', true, false, true],
+      ['not editing', false, false, false],
+      ['cloning', true, true, true],
+    ])('outlines the component under the pointer only while %s', async (_label, isEditing, cloning, shown) => {
+      cwaState.cwa = makeCwa({ isEditing })
+      cloning && useCloneMode(cwaState.cwa).start('/component/source')
+      const wrapper = await mountManager()
+      await flushPromises()
+
+      expect(wrapper.find('.hover-outline-stub').exists()).toBe(shown)
+      cloning && useCloneMode(cwaState.cwa).end()
+    })
+
     test('the pinned status sits in the tab row ahead of the usage badge and the CTA, and voices what a tab announces, so the region outlives the tab (#459)', async () => {
       const AnnouncingTab = {
         name: 'AnnouncingTab',
@@ -325,6 +354,50 @@ describe('ResourceManager', () => {
       expect(calls).toEqual([1])
       expect(document.activeElement).toBe(wrapper.get('[data-testid="title-input"]').element)
       wrapper.unmount()
+    })
+
+    test('a refused write of the selected resource has its violations put on its tab fields, and the tab holding the first is shown without moving focus (#461)', async () => {
+      const { unclaimedViolations } = await import('#cwa/admin/write-violations')
+      const calls: number[] = []
+      selectOriginal.fn = index => calls.push(index)
+      const FieldTab = { name: 'FieldTab', render: () => h('div') }
+      const stackManager = makeStackManager({
+        showManager: ref(true),
+        currentStackItem: ref({ iri: '/component/1', managerTabs: [FieldTab, FieldTab] }),
+      })
+      const cwa = makeCwa({ stackManager })
+      const selected = reactive({ data: { '@id': '/component/1' } })
+      cwaState.cwa = { ...cwa, resourcesManager: {}, resources: { ...cwa.resources, getResource: () => ({ value: selected }), findAllPublishableIris: (iri: string) => [iri] } }
+      const wrapper = await mountManager(document.body)
+      resolverState.allMeta.value = [{ name: 'Publish', fields: [] }, { name: 'Upload', fields: ['file'] }]
+      await nextTick()
+      const outside = document.createElement('button')
+      document.body.append(outside)
+      outside.focus()
+
+      const left = unclaimedViolations(cwaState.cwa, {
+        type: ErrorType.VALIDATION,
+        statusCode: 422,
+        detail: '',
+        violations: [{ property: 'file', message: 'Upload a file.' }, { property: 'credit', message: 'Too long.' }],
+        timestamp: 1,
+        event: { endpoint: '/component/1', data: { publishedAt: 'now' } },
+      })
+
+      expect(left).toEqual([{ property: 'credit', message: 'Too long.' }])
+      expect(calls).toEqual([1])
+      await vi.waitFor(() => expect(selected).toHaveProperty('fieldStates.file.status', 'error'))
+      expect(document.activeElement).toBe(outside)
+      wrapper.unmount()
+      outside.remove()
+      expect(unclaimedViolations(cwaState.cwa, {
+        type: ErrorType.VALIDATION,
+        statusCode: 422,
+        detail: '',
+        violations: [{ property: 'file', message: 'Upload a file.' }],
+        timestamp: 2,
+        event: { endpoint: '/component/1', data: { publishedAt: 'now' } },
+      })).toHaveLength(1)
     })
 
     test('the shown tab is a tabpanel labelled by the selected tab, and the tablist is named for the selection (#461)', async () => {
@@ -572,6 +645,59 @@ describe('ResourceManager', () => {
     })
   })
 
+  describe('dragging the positions of a selected group', () => {
+    function selectingCwa(opts: { iri: string, reordering?: boolean, editing?: boolean }) {
+      const currentStackItem = ref({ iri: opts.iri, managerTabs: [] })
+      const state = reactive<Record<string, any>>({ reordering: opts.reordering ?? true })
+      const stackManager = makeStackManager({
+        showManager: ref(true),
+        currentStackItem,
+        getState: (prop: string) => state[prop],
+        getClosestStackItemByType: vi.fn(() => '/_/component_groups/closest'),
+      })
+      cwaState.cwa = makeCwa({ stackManager, isEditing: opts.editing ?? true })
+      return { current: currentStackItem, state }
+    }
+
+    test('is on only while a component group is the selected resource and its Enable reordering is on, for that group', async () => {
+      const { state } = selectingCwa({ iri: '/_/component_groups/g', reordering: false })
+      const wrapper = await mountManager()
+      await flushPromises()
+      expect(wrapper.find('.reorder-handles-stub').exists()).toBe(false)
+      state.reordering = true
+      await flushPromises()
+      expect(wrapper.findComponent({ name: 'ReorderHandles' }).props('groupIri')).toBe('/_/component_groups/g')
+      state.reordering = false
+      await flushPromises()
+      expect(wrapper.find('.reorder-handles-stub').exists()).toBe(false)
+    })
+
+    test.each([
+      ['a component', '/component/1'],
+      ['a position', '/_/component_positions/p'],
+    ])('is off while %s in the group is selected, even with reordering on', async (_label, iri) => {
+      selectingCwa({ iri })
+      const wrapper = await mountManager()
+      await flushPromises()
+      expect(wrapper.find('.reorder-handles-stub').exists()).toBe(false)
+    })
+
+    test('is off outside edit mode', async () => {
+      selectingCwa({ iri: '/_/component_groups/g', editing: false })
+      const wrapper = await mountManager()
+      await flushPromises()
+      expect(wrapper.find('.reorder-handles-stub').exists()).toBe(false)
+    })
+
+    test('is off while cloning or moving', async () => {
+      selectingCwa({ iri: '/_/component_groups/g' })
+      useCloneMode(cwaState.cwa).start('/component/source')
+      const wrapper = await mountManager()
+      await flushPromises()
+      expect(wrapper.find('.reorder-handles-stub').exists()).toBe(false)
+    })
+  })
+
   describe('admin context menu visibility', () => {
     test('renders the context menu when the user has the ADMIN role', async () => {
       cwaState.cwa = makeCwa({ hasRole: true })
@@ -603,6 +729,54 @@ describe('ResourceManager', () => {
       await wrapper.findComponent({ name: 'ManagerTabs' }).vm.$emit('click', 1)
       await nextTick()
       expect((wrapper.vm as any).selectedTab.name).toBe('TabB')
+    })
+  })
+
+  describe('tabs still loading', () => {
+    test('no tab is mounted until every tab of the selection has loaded, so a later tab never runs first and fetches what its field shows (a link tab looking up its route)', async () => {
+      const tabA = { name: 'TabA', render: () => null }
+      const tabB = { name: 'TabB', render: () => null }
+      const stackManager = makeStackManager({
+        showManager: ref(true),
+        currentStackItem: ref({ iri: '/component/1', managerTabs: [tabA, tabB] }),
+      })
+      cwaState.cwa = makeCwa({ stackManager })
+      const wrapper = await mountManager()
+      const loading = new Array(2)
+      loading[1] = { name: 'B' }
+      resolverState.allMeta.value = loading
+      await nextTick()
+      await wrapper.findComponent({ name: 'ManagerTabs' }).vm.$emit('click', 1)
+      await nextTick()
+
+      expect((wrapper.vm as any).selectedTab).toBeUndefined()
+      expect(wrapper.findComponent({ name: 'TabB' }).exists()).toBe(false)
+
+      resolverState.allMeta.value = [{ name: 'A' }, { name: 'B' }]
+      await wrapper.findComponent({ name: 'ManagerTabs' }).vm.$emit('click', 0)
+      await nextTick()
+
+      expect(wrapper.findComponent({ name: 'TabA' }).exists()).toBe(true)
+    })
+  })
+
+  describe('reselecting the same resource', () => {
+    test('a click that selects the component already selected gives the tab resolver the same props, so its tabs are not read again and the shown tab is not remounted under the click', async () => {
+      const tabA = { name: 'TabA', render: () => null }
+      const currentStackItem = ref<any>({ iri: '/component/1', managerTabs: [tabA] })
+      cwaState.cwa = makeCwa({ stackManager: makeStackManager({ showManager: ref(true), currentStackItem }) })
+      await mountManager()
+      const before = resolverState.ops.props.value
+
+      currentStackItem.value = { iri: '/component/1', managerTabs: [tabA] }
+      await nextTick()
+
+      expect(resolverState.ops.props.value).toBe(before)
+
+      currentStackItem.value = { iri: '/component/2', managerTabs: [tabA] }
+      await nextTick()
+
+      expect(resolverState.ops.props.value).toEqual({ iri: '/component/2' })
     })
   })
 
@@ -650,14 +824,23 @@ describe('ResourceManager', () => {
 
     const clonedStack = [{ iri: '/component/target' }, { iri: '/_/component_positions/p1' }, { iri: '/_/component_groups/g1' }]
 
-    async function clickInCloneMode(opts: { navigationGuardDisabled?: boolean, stack?: { iri: string }[] } = {}) {
+    async function clickInCloneMode(opts: { stack?: { iri: string }[], target?: Element } = {}) {
       const stackManager = makeStackManager({ isPopulating: ref(true), resourceStack: ref(opts.stack ?? clonedStack) })
-      cwaState.cwa = makeCwa({ isEditing: true, stackManager, navigationGuardDisabled: opts.navigationGuardDisabled })
+      cwaState.cwa = makeCwa({ isEditing: true, stackManager })
       useCloneMode(cwaState.cwa as Cwa).start('/component/source', 'Source')
       const wrapper = await mountManager()
-      ;(wrapper.vm as any).clickHandler({ target: document.createElement('span'), clientX: 310, clientY: 420 } as unknown as MouseEvent, 'layout')
+      const preventDefault = vi.fn()
+      ;(wrapper.vm as any).clickHandler({ target: opts.target ?? document.createElement('span'), clientX: 310, clientY: 420, detail: 1, preventDefault } as unknown as MouseEvent, 'layout')
       await flushPromises()
-      return { wrapper, stackManager }
+      return { wrapper, stackManager, preventDefault }
+    }
+
+    function linkWith() {
+      const link = document.createElement('a')
+      link.setAttribute('href', '/blog/post')
+      const inner = document.createElement('span')
+      link.append(inner)
+      return { link, inner }
     }
 
     test('in clone mode a click opens the placement menu at the click point instead of selecting, keeping the selection and the scope, so the menu decides whether to ask about switching scope (#426)', async () => {
@@ -670,16 +853,24 @@ describe('ResourceManager', () => {
       expect(stackManager.isEditingLayout.value).toBe(false)
       const menu = wrapper.findComponent({ name: 'ClonePlacementMenu' })
       expect(menu.exists()).toBe(true)
-      expect(menu.props()).toEqual({ stack: clonedStack, type: 'layout', point: { x: 310, y: 420 } })
+      expect(menu.props()).toEqual({ stack: clonedStack, type: 'layout', point: { x: 310, y: 420 }, link: undefined })
     })
 
-    test('in clone mode with navigation enabled a click only navigates: no selection, confirm or menu', async () => {
-      const { wrapper, stackManager } = await clickInCloneMode({ navigationGuardDisabled: true })
+    test('in clone mode a click on a link opens the placement menu with that link for its Visit row, and the link does not navigate (#157)', async () => {
+      const { link, inner } = linkWith()
+      const { wrapper, stackManager, preventDefault } = await clickInCloneMode({ target: inner })
 
+      expect(preventDefault).toHaveBeenCalled()
       expect(stackManager.selectStackIndex).not.toHaveBeenCalled()
-      expect(confirmState.reveal).not.toHaveBeenCalled()
-      expect(stackManager.restorePreviousStack).toHaveBeenCalled()
-      expect(wrapper.findComponent({ name: 'ClonePlacementMenu' }).exists()).toBe(false)
+      expect(wrapper.findComponent({ name: 'LinkMenu' }).exists()).toBe(false)
+      expect(wrapper.findComponent({ name: 'ClonePlacementMenu' }).props()).toEqual({ stack: clonedStack, type: 'layout', point: { x: 310, y: 420 }, link })
+    })
+
+    test('in clone mode a link outside every component still opens the placement menu, for its Visit row', async () => {
+      const { link, inner } = linkWith()
+      const { wrapper } = await clickInCloneMode({ stack: [], target: inner })
+
+      expect(wrapper.findComponent({ name: 'ClonePlacementMenu' }).props()).toEqual({ stack: [], type: 'layout', point: { x: 310, y: 420 }, link })
     })
 
     test('in clone mode a click on nothing opens no menu and selects nothing', async () => {
@@ -693,12 +884,12 @@ describe('ResourceManager', () => {
       const { wrapper } = await clickInCloneMode()
       const first = wrapper.findComponent({ name: 'ClonePlacementMenu' }).vm
 
-      ;(wrapper.vm as any).clickHandler({ target: document.createElement('span'), clientX: 40, clientY: 50 } as unknown as MouseEvent, 'page')
+      ;(wrapper.vm as any).clickHandler({ target: document.createElement('span'), clientX: 40, clientY: 50, detail: 1, preventDefault: vi.fn() } as unknown as MouseEvent, 'page')
       await flushPromises()
 
       const menu = wrapper.findComponent({ name: 'ClonePlacementMenu' })
       expect(menu.vm).not.toBe(first)
-      expect(menu.props()).toEqual({ stack: clonedStack, type: 'page', point: { x: 40, y: 50 } })
+      expect(menu.props()).toEqual({ stack: clonedStack, type: 'page', point: { x: 40, y: 50 }, link: undefined })
     })
 
     test('closing the placement menu removes it', async () => {
@@ -708,6 +899,143 @@ describe('ResourceManager', () => {
       await flushPromises()
 
       expect(wrapper.findComponent({ name: 'ClonePlacementMenu' }).exists()).toBe(false)
+    })
+  })
+
+  describe('the link menu in edit mode', () => {
+    const linkStack = [{ iri: '/component/link', displayName: 'Call to action' }, { iri: '/_/component_positions/p1' }]
+
+    function linkWith() {
+      const link = document.createElement('a')
+      link.setAttribute('href', '/blog/post')
+      const inner = document.createElement('span')
+      link.append(inner)
+      return { link, inner }
+    }
+
+    function withRole(tag: string, role: string) {
+      const element = document.createElement(tag)
+      element.setAttribute('role', role)
+      return element
+    }
+
+    async function click(target: Element, opts: { isEditing?: boolean, isModuleSelect?: boolean, stack?: { iri: string }[], event?: Record<string, unknown> } = {}) {
+      const stackManager = makeStackManager({ isPopulating: ref(true), resourceStack: ref(opts.stack ?? linkStack), isModuleSelect: !!opts.isModuleSelect })
+      cwaState.cwa = makeCwa({ isEditing: opts.isEditing ?? true, stackManager })
+      const wrapper = await mountManager()
+      const preventDefault = vi.fn()
+      ;(wrapper.vm as any).clickHandler({ target, clientX: 120, clientY: 80, detail: 1, preventDefault, ...opts.event } as unknown as MouseEvent, 'layout')
+      await flushPromises()
+      return { wrapper, stackManager, preventDefault }
+    }
+
+    test('a click on a link opens the link menu at the click point instead of selecting, keeping the selection, once its scope is the one being edited, and the link does not navigate (#157)', async () => {
+      const { link, inner } = linkWith()
+      const { wrapper, stackManager, preventDefault } = await click(inner)
+
+      expect(preventDefault).toHaveBeenCalled()
+      expect(stackManager.completeStack).toHaveBeenCalledWith({ clickTarget: inner }, false, 'layout')
+      expect(stackManager.switchScope).toHaveBeenCalledWith('layout')
+      expect(stackManager.selectStackIndex).not.toHaveBeenCalled()
+      expect(stackManager.restorePreviousStack).toHaveBeenCalled()
+      expect(wrapper.findComponent({ name: 'LinkMenu' }).props()).toEqual({ stack: linkStack, type: 'layout', point: { x: 120, y: 80 }, link })
+    })
+
+    test('a link in the other scope opens no menu while the scope confirm is open, and opens it once the switch is confirmed', async () => {
+      const { inner } = linkWith()
+      let answer!: (value: boolean) => void
+      const stackManager = makeStackManager({ isPopulating: ref(true), resourceStack: ref(linkStack), switchScope: vi.fn(() => new Promise<boolean>((resolve) => {
+        answer = resolve
+      })) })
+      cwaState.cwa = makeCwa({ isEditing: true, stackManager })
+      const wrapper = await mountManager()
+      ;(wrapper.vm as any).clickHandler({ target: inner, clientX: 120, clientY: 80, detail: 1, preventDefault: vi.fn() } as unknown as MouseEvent, 'layout')
+      await flushPromises()
+
+      expect(stackManager.switchScope).toHaveBeenCalledWith('layout')
+      expect(wrapper.findComponent({ name: 'LinkMenu' }).exists()).toBe(false)
+
+      answer(true)
+      await flushPromises()
+      expect(wrapper.findComponent({ name: 'LinkMenu' }).props('type')).toBe('layout')
+    })
+
+    test('Cancel on the scope confirm opens nothing', async () => {
+      const { inner } = linkWith()
+      const stackManager = makeStackManager({ isPopulating: ref(true), resourceStack: ref(linkStack), switchScope: vi.fn(async () => false) })
+      cwaState.cwa = makeCwa({ isEditing: true, stackManager })
+      const wrapper = await mountManager()
+      ;(wrapper.vm as any).clickHandler({ target: inner, clientX: 120, clientY: 80, detail: 1, preventDefault: vi.fn() } as unknown as MouseEvent, 'layout')
+      await flushPromises()
+
+      expect(stackManager.switchScope).toHaveBeenCalledWith('layout')
+      expect(stackManager.selectStackIndex).not.toHaveBeenCalled()
+      expect(wrapper.findComponent({ name: 'LinkMenu' }).exists()).toBe(false)
+    })
+
+    test('a link outside every component opens the menu too, for Visit alone, asking about no scope', async () => {
+      const { link, inner } = linkWith()
+      const { wrapper, stackManager } = await click(inner, { stack: [] })
+
+      expect(stackManager.switchScope).not.toHaveBeenCalled()
+      expect(wrapper.findComponent({ name: 'LinkMenu' }).props()).toEqual({ stack: [], type: 'layout', point: { x: 120, y: 80 }, link })
+    })
+
+    test.each([
+      ['a button', () => document.createElement('button')],
+      ['a button inside a link', () => linkWith().link.appendChild(document.createElement('button'))],
+      ['a tab', () => withRole('div', 'tab')],
+      ['an anchor with no href', () => document.createElement('a')],
+    ])('%s keeps running its own click and selects as before', async (_name, target) => {
+      const { wrapper, stackManager, preventDefault } = await click(target())
+
+      expect(preventDefault).not.toHaveBeenCalled()
+      expect(stackManager.selectStackIndex).toHaveBeenCalledWith(0, false)
+      expect(wrapper.findComponent({ name: 'LinkMenu' }).exists()).toBe(false)
+    })
+
+    test('outside edit mode a link is left to navigate', async () => {
+      const { inner } = linkWith()
+      const { wrapper, preventDefault } = await click(inner, { isEditing: false })
+
+      expect(preventDefault).not.toHaveBeenCalled()
+      expect(wrapper.findComponent({ name: 'LinkMenu' }).exists()).toBe(false)
+    })
+
+    test('a click the module dispatches to select a component, as after adding one, selects even when the component is a link', async () => {
+      const { link } = linkWith()
+      const { wrapper, stackManager } = await click(link, { isModuleSelect: true })
+
+      expect(stackManager.selectStackIndex).toHaveBeenCalledWith(0, false)
+      expect(wrapper.findComponent({ name: 'LinkMenu' }).exists()).toBe(false)
+    })
+
+    test('Enter on a focused link, a click with no pointer, opens the menu at the link\'s lower left corner even when no component is under it', async () => {
+      const { link } = linkWith()
+      link.getBoundingClientRect = () => ({ left: 30, bottom: 64, top: 40, right: 90, width: 60, height: 24 }) as DOMRect
+      const stackManager = makeStackManager({ isPopulating: ref(false), resourceStack: ref([]) })
+      cwaState.cwa = makeCwa({ isEditing: true, stackManager })
+      const wrapper = await mountManager()
+      ;(wrapper.vm as any).clickHandler({ target: link, clientX: 0, clientY: 0, detail: 0, preventDefault: vi.fn() } as unknown as MouseEvent, 'page')
+      await flushPromises()
+
+      expect(wrapper.findComponent({ name: 'LinkMenu' }).props('point')).toEqual({ x: 30, y: 64 })
+    })
+
+    test('a second link click opens a fresh menu, and closing it removes it', async () => {
+      const { inner } = linkWith()
+      const { wrapper } = await click(inner)
+      const first = wrapper.findComponent({ name: 'LinkMenu' }).vm
+
+      ;(wrapper.vm as any).clickHandler({ target: inner, clientX: 5, clientY: 6, detail: 1, preventDefault: vi.fn() } as unknown as MouseEvent, 'page')
+      await flushPromises()
+      const menu = wrapper.findComponent({ name: 'LinkMenu' })
+      expect(menu.vm).not.toBe(first)
+      expect(menu.props('point')).toEqual({ x: 5, y: 6 })
+
+      menu.vm.$emit('close')
+      await flushPromises()
+      expect(wrapper.findComponent({ name: 'LinkMenu' }).exists()).toBe(false)
     })
   })
 
@@ -811,9 +1139,9 @@ describe('ResourceManager', () => {
   })
 
   describe('contextMenuHandler in clone mode', () => {
-    test.each([false, true])('a right-click never selects or opens the CWA menu, and leaves the browser menu (navigation enabled: %s)', async (navigationGuardDisabled) => {
+    test('a right-click never selects or opens the CWA menu, and leaves the browser menu', async () => {
       const stackManager = makeStackManager({ isContextPopulating: ref(true) })
-      cwaState.cwa = makeCwa({ isEditing: true, hasRole: true, stackManager, navigationGuardDisabled })
+      cwaState.cwa = makeCwa({ isEditing: true, hasRole: true, stackManager })
       useCloneMode(cwaState.cwa as Cwa).start('/component/source', 'Source')
       const wrapper = await mountManager()
 

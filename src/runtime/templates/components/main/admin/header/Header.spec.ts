@@ -54,8 +54,6 @@ function buildResources(overrides: Record<string, any> = {}) {
 function buildAdmin(overrides: Record<string, any> = {}) {
   return reactive({
     isEditing: false,
-    navigationGuardDisabled: false,
-    setNavigationGuardDisabled: vi.fn(),
     toggleEdit: vi.fn(),
     resourceStackManager: { showManager: { value: false } },
     ...overrides,
@@ -93,6 +91,7 @@ function mountHeader(options: { stubs?: Record<string, any>, attachTo?: HTMLElem
       stubs: {
         PathSelector: { name: 'PathSelector', template: '<div class="path-selector-stub" />' },
         RequestErrors: { name: 'RequestErrors', template: '<div class="request-errors-stub" />' },
+        FailedSaveToasts: { name: 'FailedSaveToasts', template: '<div class="failed-save-toasts-stub" />' },
         Menu: { name: 'Menu', template: '<div class="menu-stub" />' },
         SpinnerTick: { name: 'SpinnerTick', props: ['isLoading', 'isPending'], template: '<div class="spinner-tick-stub" />' },
         OutdatedContentNotice: { name: 'OutdatedContentNotice', template: '<div class="outdated-stub" />' },
@@ -542,17 +541,6 @@ describe('Header', () => {
     })
   })
 
-  describe('isNavEnabled model', () => {
-    test('getter reflects admin.navigationGuardDisabled and setter delegates to setNavigationGuardDisabled', () => {
-      const { adm } = mockCwa({ admin: buildAdmin({ navigationGuardDisabled: true }) })
-      const wrapper = mountHeader()
-      const vm = wrapper.vm as any
-      expect(vm.isNavEnabled).toBe(true)
-      vm.isNavEnabled = false
-      expect(adm.setNavigationGuardDisabled).toHaveBeenCalledWith(false)
-    })
-  })
-
   describe('clone mode', () => {
     const SOURCE_IRI = '/component/html_contents/source-uuid'
 
@@ -596,7 +584,7 @@ describe('Header', () => {
       expect(wrapper.find('[data-testid="clone-mode-bar"]').text()).not.toContain('Cloning')
     })
 
-    test('the Cloning bar sits in the header row beside Enable Navigation, never over the layout below the header', async () => {
+    test('the Cloning bar sits in the header row, never over the layout below the header', async () => {
       const { cwa } = mockCwa({ admin: buildAdmin({ isEditing: true }) })
       useCloneMode(cwa).start(SOURCE_IRI, 'Hero text')
       const wrapper = mountHeader()
@@ -605,7 +593,7 @@ describe('Header', () => {
       const bar = refs.header.querySelector('[data-testid="clone-mode-bar"]')!
       expect(bar.className).not.toContain('cwa:top-full')
       expect(bar.className).not.toContain('cwa:absolute')
-      expect(bar.parentElement!.querySelector('.toggle-stub')).not.toBeNull()
+      expect(bar.parentElement!.parentElement).toBe(refs.header.firstElementChild)
     })
 
     test.each([
@@ -615,7 +603,7 @@ describe('Header', () => {
       ['an admin page', () => {
         mockRouteMeta.cwa = { admin: true }
       }],
-    ])('on %s, reached with Enable Navigation on, the Cloning bar and its Cancel still show while clone mode is on', async (_label, arrive) => {
+    ])('on %s, reached by Visit, the Cloning bar and its Cancel still show while clone mode is on', async (_label, arrive) => {
       arrive()
       const { cwa } = mockCwa({ admin: buildAdmin({ isEditing: true }) })
       useCloneMode(cwa).start(SOURCE_IRI, 'Hero text')
@@ -627,15 +615,12 @@ describe('Header', () => {
       expect(useCloneMode(cwa).source.value).toBeUndefined()
     })
 
-    test.each([
-      [true, 'Follow links to the page you want, then turn off Enable Navigation to place it.'],
-      [false, 'Click a component to place it before or after. To use another page, turn on Enable Navigation.'],
-    ])('with Enable Navigation %s, the Cloning bar says what to do next', async (navigationGuardDisabled, hint) => {
-      const { cwa } = mockCwa({ admin: buildAdmin({ isEditing: true, navigationGuardDisabled }) })
+    test('the Cloning bar\'s help is one short line, as a click anywhere opens the placement menu and a link\'s Visit is in it', async () => {
+      const { cwa } = mockCwa({ admin: buildAdmin({ isEditing: true }) })
       useCloneMode(cwa).start(SOURCE_IRI, 'Hero text')
       const wrapper = mountHeader()
       await flushPromises()
-      expect(wrapper.find('[data-testid="clone-mode-hint"]').text()).toBe(hint)
+      expect(wrapper.find('[data-testid="clone-mode-hint"]').text()).toBe('Click where it should go')
     })
 
     test('mounts the clone highlight only while cloning or flashing what was placed', async () => {
@@ -656,37 +641,21 @@ describe('Header', () => {
     })
 
     test('Cancel in the Cloning bar ends clone mode', async () => {
-      const { cwa, adm } = mockCwa({ admin: buildAdmin({ isEditing: true }) })
+      const { cwa } = mockCwa({ admin: buildAdmin({ isEditing: true }) })
       useCloneMode(cwa).start(SOURCE_IRI, 'Hero text')
       const wrapper = mountHeader()
       await wrapper.find('[data-testid="clone-mode-bar"] button').trigger('click')
       expect(useCloneMode(cwa).source.value).toBeUndefined()
-      expect(adm.setNavigationGuardDisabled).toHaveBeenCalledWith(false)
       expect(wrapper.find('[data-testid="clone-mode-bar"]').exists()).toBe(false)
     })
 
-    test('shows the Enable Navigation toggle only while cloning in edit mode', async () => {
-      const { cwa, adm } = mockCwa({ admin: buildAdmin({ isEditing: true }) })
-      const wrapper = mountHeader()
-      expect(wrapper.findComponent({ name: 'CwaUiToggle' }).exists()).toBe(false)
-      useCloneMode(cwa).start(SOURCE_IRI, 'Hero text')
-      await flushPromises()
-      const toggle = wrapper.findComponent({ name: 'CwaUiToggle' })
-      expect(toggle.exists()).toBe(true)
-      expect(toggle.props('label')).toBe('Enable Navigation')
-      adm.isEditing = false
-      await flushPromises()
-      expect(wrapper.findComponent({ name: 'CwaUiToggle' }).exists()).toBe(false)
-    })
-
-    test('the Enable Navigation toggle sets navigationGuardDisabled', async () => {
-      const { cwa, adm } = mockCwa({ admin: buildAdmin({ isEditing: true }) })
+    test('clone mode shows no Enable Navigation toggle', async () => {
+      const { cwa } = mockCwa({ admin: buildAdmin({ isEditing: true }) })
       useCloneMode(cwa).start(SOURCE_IRI, 'Hero text')
       const wrapper = mountHeader()
-      const toggle = wrapper.findComponent({ name: 'CwaUiToggle' })
-      expect(toggle.props('modelValue')).toBe(false)
-      toggle.vm.$emit('update:modelValue', true)
-      expect(adm.setNavigationGuardDisabled).toHaveBeenCalledWith(true)
+      await flushPromises()
+      expect(wrapper.text()).not.toContain('Enable Navigation')
+      expect(wrapper.findComponent({ name: 'CwaUiToggle' }).exists()).toBe(false)
     })
   })
 
@@ -710,6 +679,17 @@ describe('Header', () => {
       await flushPromises()
 
       expect(wrapper.find('.presence-indicator-stub').exists()).toBe(true)
+    })
+
+    test.each([
+      { name: 'in edit mode', isEditing: true },
+      { name: 'outside edit mode, where no bar shows the field', isEditing: false },
+    ])('loads the toasts for saves that failed out of the bar\'s reach $name (#461)', async ({ isEditing }) => {
+      mockCwa({ admin: buildAdmin({ isEditing }) })
+      const wrapper = mountHeader()
+      await flushPromises()
+
+      expect(wrapper.find('.failed-save-toasts-stub').exists()).toBe(true)
     })
   })
 

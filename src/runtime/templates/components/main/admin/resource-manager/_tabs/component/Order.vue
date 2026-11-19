@@ -7,15 +7,13 @@ import type { ResourceModelField } from '#cwa/resources/model-editors'
 import type { CwaFieldState } from '#cwa/storage/stores/resources/state'
 import CwaUiManagerTab from '#cwa/templates/components/ui/ManagerTab.vue'
 import CwaUiNumber from '#cwa/templates/components/ui/Number.vue'
-import CwaUiToggle from '#cwa/templates/components/ui/Toggle.vue'
 
-const { exposeMeta, createComputedState, $cwa } = useCwaResourceManagerTab({
+const { exposeMeta, $cwa } = useCwaResourceManagerTab({
   name: 'Order',
   order: DEFAULT_TAB_ORDER,
 })
 
 defineExpose(exposeMeta)
-const reordering = createComputedState<boolean>('reordering', false)
 
 const stack = $cwa.admin.resourceStackManager
 const positionIri = stack.getClosestStackItemByType(CwaResourceTypes.COMPONENT_POSITION)
@@ -75,15 +73,10 @@ const orderModel: ResourceModelField<number> = {
 
 <template>
   <CwaUiManagerTab>
-    <CwaUiToggle
-      v-model="reordering"
-      label="Enable reordering"
-      info="Lets you drag components on the page to reorder them."
-    />
     <CwaUiNumber
       :model="orderModel"
       label="Position"
-      info="Its place in this group, from the top."
+      info="Its place in this group, from the top. Select the group and turn on Enable reordering to drag its components."
       width="sm"
       :min="1"
       :max="Math.max(positions, 1)"

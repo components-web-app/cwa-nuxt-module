@@ -8,6 +8,8 @@ import Spinner from './Spinner.vue'
 import StateGlyph from '../core/ui/StateGlyph.vue'
 import CheckGlyph from '../core/ui/CheckGlyph.vue'
 import DialogPanel from '../core/ui/DialogPanel.vue'
+import TabIndicator from '../core/ui/TabIndicator.vue'
+import { overlayOpen } from '../core/ui/open-motion'
 import { announceKey, dialogSubViewKey, fieldGroupKey, formSurfaceKey, presenceLayerKey } from '../core/ui/field-keys'
 import type { DialogSubViewClaim, DialogSubViewGuard } from '../core/ui/field-keys'
 import { changesText, dialogTabBadge, dialogTabWords, listText } from '../core/ui/dialog-form'
@@ -430,6 +432,7 @@ function onTabKey(event: KeyboardEvent, index: number) {
 
 const widths = { sm: 'cwa:sm:w-[28rem]', md: 'cwa:sm:w-[36rem]', lg: 'cwa:sm:w-[48rem]' }
 const centred = 'cwa:sm:inset-auto cwa:sm:top-1/2 cwa:sm:left-1/2 cwa:sm:max-h-[calc(100dvh-4rem)] cwa:sm:max-w-[calc(100vw-2rem)] cwa:sm:-translate-x-1/2 cwa:sm:-translate-y-1/2'
+const riseIn = 'cwa:sm:dialog-in'
 const slideOver = 'cwa:sm:inset-y-0 cwa:sm:right-0 cwa:sm:left-auto cwa:sm:w-[min(40rem,100vw)]'
 const slideIn = 'cwa:sm:motion-safe:animate-[cwa-slide-over-in_var(--cwa-duration-slow)_var(--cwa-ease-out)]'
 const slideOut = 'cwa:pointer-events-none cwa:sm:motion-safe:animate-[cwa-slide-over-out_var(--cwa-duration-slow)_cubic-bezier(0.8,0,0.8,0.2)_forwards]'
@@ -451,7 +454,7 @@ defineExpose({ requestClose, confirmDiscard, showField, announce })
       <DialogOverlay
         data-testid="dialog-overlay"
         class="cwa:fixed cwa:inset-0 cwa:z-dialog cwa:bg-black/60 cwa:backdrop-blur-sm"
-        :class="{ 'cwa:pointer-events-none cwa:motion-safe:animate-[cwa-fade-out_var(--cwa-duration-slow)_cubic-bezier(0.8,0,0.8,0.2)_forwards]': closing }"
+        :class="closing ? 'cwa:pointer-events-none cwa:motion-safe:animate-[cwa-fade-out_var(--cwa-duration-slow)_cubic-bezier(0.8,0,0.8,0.2)_forwards]' : overlayOpen"
       />
       <DialogContent
         v-bind="kind?.label ? {} : { 'aria-describedby': undefined }"
@@ -460,7 +463,7 @@ defineExpose({ requestClose, confirmDiscard, showField, announce })
         :data-closing="closing ? 'true' : undefined"
         :inert="closing || undefined"
         class="cwa:fixed cwa:inset-0 cwa:z-dialog cwa:flex cwa:flex-col cwa:bg-surface cwa:text-fg cwa:shadow-popover cwa:outline-none cwa:[--cwa-spacing-control:var(--cwa-spacing-control-lg)] cwa:[--cwa-text-control:var(--cwa-text-control-lg)]"
-        :class="placement === 'right' ? [slideOver, closing ? slideOut : slideIn] : [centred, widths[size]]"
+        :class="placement === 'right' ? [slideOver, closing ? slideOut : slideIn] : [centred, riseIn, widths[size]]"
         @open-auto-focus="focusTitle"
         @animationend="onAnimationEnd"
       >
@@ -508,7 +511,7 @@ defineExpose({ requestClose, confirmDiscard, showField, announce })
           v-if="tabs?.length"
           role="tablist"
           :aria-labelledby="titleId"
-          class="cwa:flex cwa:h-hit cwa:shrink-0 cwa:items-stretch cwa:overflow-x-auto cwa:border-b cwa:border-line cwa:ps-2 cwa:[scrollbar-width:none]"
+          class="cwa:relative cwa:flex cwa:h-hit cwa:shrink-0 cwa:items-stretch cwa:overflow-x-auto cwa:border-b cwa:border-line cwa:ps-2 cwa:[scrollbar-width:none]"
         >
           <button
             v-for="(item, index) in tabs"
@@ -524,8 +527,8 @@ defineExpose({ requestClose, confirmDiscard, showField, announce })
             :tabindex="currentTab === item.key ? 0 : -1"
             :data-badge="badges[item.key]?.kind"
             data-testid="dialog-tab"
-            class="cwa:relative cwa:inline-flex cwa:shrink-0 cwa:cursor-pointer cwa:items-center cwa:gap-2 cwa:whitespace-nowrap cwa:px-4 cwa:text-label cwa:outline-1 cwa:outline-transparent cwa:transition-colors cwa:duration-(--cwa-duration-fast) cwa:focus-visible:outline-2 cwa:focus-visible:-outline-offset-2 cwa:focus-visible:outline-accent-fg cwa:after:absolute cwa:after:inset-x-0 cwa:after:bottom-0 cwa:after:h-0.5 cwa:after:content-['']"
-            :class="[currentTab === item.key ? 'cwa:text-fg cwa:after:bg-accent' : 'cwa:text-fg-muted cwa:hover:text-fg', { 'cwa:opacity-60': item.disabled }]"
+            class="cwa:relative cwa:inline-flex cwa:shrink-0 cwa:cursor-pointer cwa:items-center cwa:gap-2 cwa:whitespace-nowrap cwa:px-4 cwa:text-label cwa:outline-1 cwa:outline-transparent cwa:transition-colors cwa:duration-(--cwa-duration-fast) cwa:focus-visible:outline-2 cwa:focus-visible:-outline-offset-2 cwa:focus-visible:outline-accent-fg"
+            :class="[currentTab === item.key ? 'cwa:text-fg' : 'cwa:text-fg-muted cwa:hover:text-fg', { 'cwa:opacity-60': item.disabled }]"
             @click="selectTab(item.key)"
             @keydown="onTabKey($event, index)"
           >
@@ -541,6 +544,7 @@ defineExpose({ requestClose, confirmDiscard, showField, announce })
               class="cwa:size-2 cwa:rounded-toggle cwa:bg-accent-fg"
             />
           </button>
+          <TabIndicator />
         </div>
         <div
           ref="body"

@@ -3,6 +3,7 @@ import { afterEach, describe, expect, test, vi } from 'vitest'
 import { h } from 'vue'
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { axe } from '../../../../../test/utils/axe'
+import { failingInk, shownColour, shownFill } from '../../../../../test/utils/kit-css'
 import EditPlaceholder from './EditPlaceholder.vue'
 
 enableAutoUnmount(afterEach)
@@ -83,6 +84,16 @@ describe('CwaUiEditPlaceholder (#461)', () => {
     await new Promise(resolve => setTimeout(resolve, 250))
     await flushPromises()
     expect(tooltip()).toBeNull()
+  })
+
+  test('the tooltip is the dark info panel, its white text passing on it in both themes (#461)', async () => {
+    const wrapper = mountPlaceholder()
+    await wrapper.get('[data-testid="edit-placeholder-cue"]').trigger('pointerenter', { pointerType: 'mouse' })
+    await flushPromises()
+
+    expect(shownFill(tooltip()!)).toBe('surface-info')
+    expect(shownColour(tooltip()!.querySelector('p')!)).toBe('white')
+    expect(failingInk(tooltip()!)).toEqual([])
   })
 
   test('focusing the + shows the explanation and keeps focus on it; Escape and blur hide it', async () => {

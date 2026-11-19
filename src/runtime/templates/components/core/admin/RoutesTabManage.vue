@@ -14,7 +14,7 @@ import { getRouteOwnLiveState, isRouteGatedByAncestor, routeReachableAt } from '
 import { formatDateTime } from '#cwa/resources/date-time-input'
 import { normaliseRoutePath, routePathProblem } from '#cwa/resources/route-path'
 
-const { currentPath, parentRoutePrefix, routePublication, recommendedPath, recommendedFrom, childPaths = [], redirectCount = 0, pathError, noun = 'page', deleting = false } = defineProps<{
+const { currentPath, parentRoutePrefix, routePublication, recommendedPath, recommendedFrom, childPaths = [], redirectCount = 0, pathError, noun = 'page', deleting = false, optional = false } = defineProps<{
   currentPath: string
   parentRoutePrefix?: string | null
   routePublication?: CwaRouteLiveAt
@@ -25,6 +25,7 @@ const { currentPath, parentRoutePrefix, routePublication, recommendedPath, recom
   pathError?: string
   noun?: string
   deleting?: boolean
+  optional?: boolean
 }>()
 
 const pathModel = defineModel<string>({ required: true })
@@ -179,7 +180,7 @@ const goLiveLine = computed(() => {
   const state = localPublicationState.value
   if (isNew.value) {
     if (!hasPath.value) {
-      return 'Enter a path.'
+      return optional ? `Leave the path empty to create the ${noun} without a route.` : 'Enter a path.'
     }
     const when = state === 'scheduled' && localLiveAt.value ? ` from ${formatDateTime(localLiveAt.value)}` : state === 'draft' ? ' once it is set live' : ''
     return `Visitors will reach this ${noun} at ${pathModel.value}${when}.`

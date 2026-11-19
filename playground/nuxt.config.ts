@@ -56,6 +56,9 @@ export default defineNuxtConfig({
       },
     },
   },
+  devServer: {
+    host: 'localhost',
+  },
   // routeRules: {
   // '/': { prerender: true },
   // breaks things like og-image caching all endpoints
@@ -104,61 +107,6 @@ export default defineNuxtConfig({
   },
   aiReady: { enabled: false },
   cwa: {
-    resources: {
-      Form: {
-        name: 'Example Form',
-        description: 'Demonstrates all form field types: text, password, select, radio, checkbox, multi-select, and collections.',
-      },
-      NavigationLink: {
-        name: 'Link',
-        description: 'A link to another page or URL',
-        icon: 'link',
-        group: 'Text',
-      },
-      HtmlContent: {
-        name: 'Body Text',
-        description: 'Paragraphs, headings, lists and links, styled to match the site',
-        icon: 'rich-text',
-        group: 'Text',
-      },
-      Image: {
-        instantAdd: true,
-        icon: 'image',
-        group: 'Media',
-      },
-      Collection: {
-        description: 'A paged list of pages or articles',
-        icon: 'collection',
-        group: 'Layout',
-      },
-      UiComponent: {
-        description: 'A box holding its own group of components',
-        icon: 'card-grid',
-        group: 'Layout',
-      },
-    },
-    layouts: {
-      Primary: {
-        name: 'Primary Layout',
-        classes: {
-          'Blue Background': ['bg-blue-600'],
-        },
-      },
-    },
-    pages: {
-      PrimaryPageTemplate: {
-        name: 'Primary Page',
-        classes: {
-          'Big Text': ['text-2xl'],
-        },
-      },
-      NestedTopicTemplate: {
-        name: 'Nested Topic Page',
-      },
-      NestedSubPageTemplate: {
-        name: 'Nested Sub-Page',
-      },
-    },
     pageData: {
       BlogArticleData: {
         name: 'Blog Articles',

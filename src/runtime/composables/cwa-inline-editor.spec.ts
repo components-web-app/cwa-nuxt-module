@@ -3,6 +3,7 @@ import { afterEach, describe, expect, test, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref, shallowRef } from 'vue'
 import { enableAutoUnmount, mount } from '@vue/test-utils'
 import { useCwaInlineEditor } from './cwa-inline-editor'
+import { modelFieldLabel } from '#cwa/resources/model-editors'
 import type { ResourceModelField } from '#cwa/resources/model-editors'
 
 const cwa = vi.hoisted(() => ({
@@ -10,9 +11,9 @@ const cwa = vi.hoisted(() => ({
     isIriPublishableEquivalent: () => false,
     getResource: (iri: string) => ({ value: { '/component/body': { data: { '@type': 'HtmlContent' } }, '/component/plain': { data: { '@type': 'Plain' } } }[iri] }),
   },
-  resourcesConfig: { HtmlContent: { name: 'Body Text' } } as Record<string, { name?: string }>,
 }))
 vi.mock('#cwa/composables/cwa', () => ({ useCwa: () => cwa }))
+vi.mock('#build/cwa-config', () => ({ resourcesConfig: { HtmlContent: { name: 'Body Text' } } }))
 
 enableAutoUnmount(afterEach)
 
@@ -37,11 +38,23 @@ function mountEditor(element: { value: HTMLElement | undefined }, ops: { label?:
   }))
 }
 
+async function settle() {
+  await vi.dynamicImportSettled()
+  await nextTick()
+}
+
 describe('useCwaInlineEditor naming (#461)', () => {
+  test('labels its model, so a save that fails once the bar no longer shows it is named by its label', () => {
+    const field = model()
+    mountEditor(shallowRef(editable()), { label: 'Content' }, field)
+
+    expect(modelFieldLabel(field.editorKey!)).toBe('Content')
+  })
+
   test('names an editable editor for its field and component, as a multi-line textbox', async () => {
     const element = shallowRef<HTMLElement | undefined>(editable())
     mountEditor(element, { label: 'Content' })
-    await nextTick()
+    await settle()
 
     expect(element.value!.getAttribute('aria-label')).toBe('Content, Body Text')
     expect(element.value!.getAttribute('role')).toBe('textbox')
@@ -52,11 +65,11 @@ describe('useCwaInlineEditor naming (#461)', () => {
     const first = editable()
     const element = shallowRef<HTMLElement | undefined>(first)
     mountEditor(element, { label: 'Content' })
-    await nextTick()
+    await settle()
 
     const second = editable()
     element.value = second
-    await nextTick()
+    await settle()
 
     expect(second.getAttribute('aria-label')).toBe('Content, Body Text')
     expect(first.hasAttribute('aria-label')).toBe(false)
@@ -68,26 +81,26 @@ describe('useCwaInlineEditor naming (#461)', () => {
     const enabled = ref(false)
     const element = shallowRef<HTMLElement | undefined>(editable())
     const wrapper = mountEditor(element, { label: 'Content', enabled: () => enabled.value })
-    await nextTick()
+    await settle()
     expect(element.value!.hasAttribute('aria-label')).toBe(false)
 
     enabled.value = true
-    await nextTick()
+    await settle()
     expect(element.value!.getAttribute('aria-label')).toBe('Content, Body Text')
 
     enabled.value = false
-    await nextTick()
+    await settle()
     expect(element.value!.hasAttribute('aria-label')).toBe(false)
     expect(element.value!.hasAttribute('role')).toBe(false)
 
     enabled.value = true
-    await nextTick()
+    await settle()
     wrapper.unmount()
     expect(element.value!.hasAttribute('aria-label')).toBe(false)
 
     const readOnly = shallowRef<HTMLElement | undefined>(editable({ contenteditable: 'false' }))
     mountEditor(readOnly, { label: 'Content' })
-    await nextTick()
+    await settle()
     expect(readOnly.value!.hasAttribute('aria-label')).toBe(false)
   })
 
@@ -98,7 +111,7 @@ describe('useCwaInlineEditor naming (#461)', () => {
     mountEditor(unlabelled)
     const unknown = shallowRef<HTMLElement | undefined>(editable())
     mountEditor(unknown, { label: 'Content' }, model('/component/other'))
-    await nextTick()
+    await settle()
 
     expect(named.value!.getAttribute('aria-label')).toBe('Article body')
     expect(named.value!.hasAttribute('role')).toBe(false)
@@ -109,7 +122,7 @@ describe('useCwaInlineEditor naming (#461)', () => {
   test('a component with no configured name is named by its type, and a role the editor already has is kept', async () => {
     const plain = shallowRef<HTMLElement | undefined>(editable({ 'role': 'region', 'aria-multiline': 'false' }))
     mountEditor(plain, { label: 'Content' }, model('/component/plain'))
-    await nextTick()
+    await settle()
 
     expect(plain.value!.getAttribute('aria-label')).toBe('Content, Plain')
     expect(plain.value!.getAttribute('role')).toBe('region')

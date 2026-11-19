@@ -26,7 +26,6 @@ function buildCwa(ops: { published?: Record<string, string | undefined>, pageDat
   const order: string[] = []
   const admin = reactive({
     isEditing: true,
-    setNavigationGuardDisabled: vi.fn(),
     eventBus: { emit: vi.fn() },
   })
   const auth = reactive({ user: { '@id': '/_/users/admin' } as Record<string, any> | undefined })

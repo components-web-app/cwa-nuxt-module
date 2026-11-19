@@ -4,8 +4,8 @@ export type BadgeTone = 'neutral' | 'accent' | 'success' | 'warning' | 'danger'
 
 export const buttonLooks: Record<ButtonVariant, Record<ButtonTone, { rest: string, hover: string, open: string }>> = {
   solid: {
-    accent: { rest: 'cwa:bg-accent cwa:text-white', hover: 'cwa:hover:bg-accent-hover', open: 'cwa:aria-expanded:bg-accent-hover' },
-    danger: { rest: 'cwa:bg-danger-fill cwa:text-white', hover: 'cwa:hover:bg-danger-fill-hover', open: 'cwa:aria-expanded:bg-danger-fill-hover' },
+    accent: { rest: 'cwa:bg-accent cwa:text-white', hover: 'cwa:hover:bg-accent-hover', open: 'cwa:aria-expanded:bg-accent-open' },
+    danger: { rest: 'cwa:bg-danger-fill cwa:text-white', hover: 'cwa:hover:bg-danger-fill-hover', open: 'cwa:aria-expanded:bg-danger-fill-open' },
   },
   soft: {
     accent: { rest: 'cwa:bg-button cwa:text-fg', hover: 'cwa:hover:bg-field-hover', open: 'cwa:aria-expanded:bg-field-hover' },
@@ -33,7 +33,7 @@ export const badgeTones: Record<BadgeTone, { fill: string, mark: string }> = {
 
 export type KitLookColour = string | { tint: string }
 
-function colourOf(classes: string, property: 'bg' | 'text', state: '' | 'hover:' = ''): KitLookColour | undefined {
+function colourOf(classes: string, property: 'bg' | 'text', state: '' | 'hover:' | 'aria-expanded:' = ''): KitLookColour | undefined {
   for (const name of classes.split(/\s+/)) {
     const prefix = `cwa:${state}${property}-`
     if (!name.startsWith(prefix)) {
@@ -53,11 +53,12 @@ function colourOf(classes: string, property: 'bg' | 'text', state: '' | 'hover:'
 }
 
 export function buttonLookColours(variant: ButtonVariant, tone: ButtonTone) {
-  const { rest, hover } = buttonLooks[variant][tone]
+  const { rest, hover, open } = buttonLooks[variant][tone]
   const text = colourOf(rest, 'text')!
   return {
     rest: { fg: text, bg: colourOf(rest, 'bg')! },
     hover: { fg: colourOf(hover, 'text', 'hover:') ?? text, bg: colourOf(hover, 'bg', 'hover:')! },
+    open: { fg: colourOf(open, 'text', 'aria-expanded:') ?? text, bg: colourOf(open, 'bg', 'aria-expanded:')! },
   }
 }
 

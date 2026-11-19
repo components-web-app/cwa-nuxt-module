@@ -9,6 +9,64 @@ This module is designed to work with the [API Component Bundle](https://github.c
 ### Template using this module for front-end and API Components Bundle for back-end
 https://github.com/components-web-app/components-web-app
 
+## Upgrading
+
+### To `defineCwaConfig` and keyed styles ([#453](https://github.com/components-web-app/cwa-nuxt-module/issues/453))
+
+Components, UI variants, layouts and pages now declare their own config in the SFC with the `defineCwaConfig` macro. `cwa.resources`, `cwa.layouts` and `cwa.pages` are no longer read from `nuxt.config.ts` (`cwa.pageData` stays there), and the `styles` option of `useCwaResource` / `useCwaComponent` is gone.
+
+1. **Move each config entry into its SFC.** `cwa.resources.<Type>` goes into `app/cwa/components/<Type>/<Type>.vue`, `cwa.layouts.<Name>` into `app/cwa/layouts/<Name>.vue` and `cwa.pages.<Name>` into `app/cwa/pages/<Name>.vue`:
+
+   ```vue
+   <script setup lang="ts">
+   defineCwaConfig({
+     name: 'Body Text',
+     description: 'Rich text for the page body',
+     icon: 'rich-text',
+     group: 'Text',
+     instantAdd: true,
+     defaultData: { html: '<p>New text</p>' },
+   })
+   </script>
+   ```
+
+   Components take `name`, `description` (plain text: HTML tags are removed), `instantAdd`, `defaultData`, `styles` and `allowMultiple`, and, for the add component dialog, `icon` (a component kind such as `'rich-text'`, or `'lucide:<name>'`), `group` and `image` (a `<Type>/preview.webp` beside the SFC is used when there is no `image`). Layouts and pages take `name` and `styles`. A `ui/<Variant>.vue` takes `name` (shown in the Ui tab), `styles` and `allowMultiple`: a variant declaring `styles` offers only its own, and one that does not inherits the primary component's. Any other key is reported when the app builds and ignored. A resource type is configured only by `<Type>/<Type>.vue`; other SFCs in its folder (helpers in `_parts/`, say) are neither resource types nor variants. Manager tabs and UI variants are still found from the `admin/` and `ui/` folders. The argument must be a single object literal: a variable, spread, function call, computed key or interpolated template literal, or a second call in the same file, is reported when the app builds and that file's config is ignored. Called in any other file it has no effect, and the build warns once for that file. With implicit auto-imports off, import it: `import { defineCwaConfig } from '#imports'`.
+
+2. **Convert each style to a key with a label and classes.** The key is what content stores, so pick one you will not need to rename; the label can change freely.
+
+   ```ts
+   // before: useCwaComponent(props, [], { styles: { multiple: true, classes: { 'Black Background': ['bg-black', 'text-white'] } } })
+   defineCwaConfig({
+     allowMultiple: true,
+     styles: {
+       'black-bg': { label: 'Black Background', classes: 'bg-black text-white' },
+     },
+   })
+   ```
+
+   Layout and page `classes: { 'Label': '…' }` become `styles: { key: { label: 'Label', classes: '…' } }` in the same way. A style's classes are resolved when the page renders (on the server too), against the styles of the SFC that renders the resource: the component, or the UI variant it uses, the layout, the page. Changing a style's classes in code changes every component using it on the next deploy. Switching a component's UI variant in the admin keeps only the stored keys the new variant's styles define.
+
+3. **Update the content that already has a style.** `uiClassNames` now stores `style:<key>`, and anything else in it renders nothing. Either re-select the styles in the admin, or rewrite the stored values once, for example:
+
+   ```js
+   const keys = { HtmlContent: { 'bg-black text-white': 'black-bg' } }
+   const migrated = resource.uiClassNames.map(entry => keys[resource['@type']]?.[entry] ? `style:${keys[resource['@type']][entry]}` : entry)
+   ```
+
+   and `PATCH` `{ uiClassNames: migrated }` to each resource, adding `?published=true` for a live publishable component so no draft is created.
+
+4. **Forms become UI variants of `Form`.** The module ships the bundle's `Form` type: its config and a default renderer that lists a form's text fields. Delete any copy of a Form renderer from your app and keep only your forms, each as `app/cwa/components/Form/ui/<Name>.vue` with its helper SFCs in `Form/_parts/`; they are found as Form variants without an app `Form/Form.vue`. Stored `uiComponent` values change to the variant's full global name (`ExampleForm` becomes `CwaComponentFormUiExampleForm`). An app that adds its own `Form/Form.vue` replaces both the module's renderer and its config.
+
+5. **`getCurrentStyleName` is replaced by `styleKeys`**, a computed from `useCwaResource` / `useCwaComponent` listing every stored style key, in stored order:
+
+   ```ts
+   // before: const filled = computed(() => getCurrentStyleName(resource.value.data) === 'Filled')
+   const { styleKeys } = useCwaComponent(props)
+   const filled = computed(() => styleKeys.value.includes('filled'))
+   ```
+
+6. **Removed with no replacement:** `useCwaAutoClass` and the `autoClass` option (the root layout and `ResourceLoader` apply the classes), and `$cwa.resourcesConfig`, `$cwa.setResourceMeta`, `$cwa.layoutsConfig` and `$cwa.pagesConfig`.
+
 ## Development
 
 - Run `pnpm run dev:prepare` to generate type stubs.

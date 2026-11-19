@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createConfirmDialog } from 'vuejs-confirm-dialog'
 import StrandedComponentGroupsModal from './StrandedComponentGroupsModal.vue'
+import CopyableText from './CopyableText.vue'
 import * as cwaComposable from '#cwa/composables/cwa'
 import { mergeComponentGroup } from '#cwa/admin/stranded-component-groups'
 import type { ShownComponentGroup, StrandedComponentGroup } from '#cwa/admin/stranded-component-groups'
@@ -134,6 +135,30 @@ describe('StrandedComponentGroupsModal', () => {
     expect(section(wrapper, 1).text()).toContain('This group is empty.')
   })
 
+  test('every group and component IRI it shows has Copy ID, which copies exactly that IRI (#461)', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    vi.stubGlobal('navigator', { ...navigator, clipboard: { writeText } })
+    const wrapper = mountModal()
+    const copies = section(wrapper, 0).findAllComponents(CopyableText)
+    expect(copies.map(copy => [copy.props('text'), copy.element.firstElementChild!.textContent])).toEqual([
+      ['/_/component_groups/top', '/_/component_groups/top'],
+      ['/component/html/1', '/component/html/1'],
+    ])
+    expect(copies.every(copy => copy.props('kind') !== 'path')).toBe(true)
+    await copies[1]!.get('button').trigger('click')
+    await flushPromises()
+    expect(writeText).toHaveBeenCalledWith('/component/html/1')
+    vi.unstubAllGlobals()
+  })
+
+  test('a position with no component offers its own IRI to copy (#461)', () => {
+    const wrapper = mount(StrandedComponentGroupsModal, {
+      props: { groups: [{ iri: '/_/component_groups/g', reference: 'g', positions: [{ iri: '/_/component_positions/empty' }] }], targets },
+      global: { stubs: { CwaUiDialog: { template: '<div><slot /></div>' }, CwaUiSelect: true } },
+    })
+    expect(wrapper.findAllComponents(CopyableText).map(copy => copy.props('text'))).toEqual(['/_/component_groups/g', '/_/component_positions/empty'])
+  })
+
   test('offers only shown groups as merge targets, never the group itself', () => {
     const wrapper = mountModal()
     const options = section(wrapper, 0).findComponent({ name: 'CwaUiSelect' }).props('options')
@@ -155,12 +180,12 @@ describe('StrandedComponentGroupsModal', () => {
   test('cannot merge before a target is chosen, or an empty group at all', async () => {
     const wrapper = mountModal()
     expect(button(wrapper, 0, 'Merge').attributes('aria-disabled')).toBe('true')
-    expect(section(wrapper, 0).findAllComponents({ name: 'CwaUiButton' })[0]!.props('disabledReason')).toBe('Choose a group to merge into first.')
+    expect(section(wrapper, 0).findAllComponents({ name: 'CwaUiButton' }).find(b => b.props('label') === 'Merge')!.props('disabledReason')).toBe('Choose a group to merge into first.')
     await chooseTarget(wrapper, 0, '/_/component_groups/hero')
     expect(button(wrapper, 0, 'Merge').attributes('aria-disabled')).toBeUndefined()
     await chooseTarget(wrapper, 1, '/_/component_groups/hero')
     expect(button(wrapper, 1, 'Merge').attributes('aria-disabled')).toBe('true')
-    expect(section(wrapper, 1).findAllComponents({ name: 'CwaUiButton' })[0]!.props('disabledReason')).toBe('This group is empty.')
+    expect(section(wrapper, 1).findAllComponents({ name: 'CwaUiButton' }).find(b => b.props('label') === 'Merge')!.props('disabledReason')).toBe('This group is empty.')
   })
 
   test('merging asks for confirmation first, and cancelling sends nothing', async () => {
@@ -204,6 +229,7 @@ describe('StrandedComponentGroupsModal', () => {
     expect(outcome.findComponent({ name: 'CwaUiAlert' }).props('tone')).toBe('danger')
     expect(outcome.text()).toContain('kept')
     expect(outcome.text()).toContain('/_/component_positions/a')
+    expect(outcome.findAllComponents(CopyableText).map(copy => copy.props('text'))).toEqual(['/_/component_positions/a'])
   })
 
   test('reports when everything moved but the empty group could not be deleted', async () => {

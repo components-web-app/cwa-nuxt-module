@@ -1,13 +1,14 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, test, expect, vi, beforeEach } from 'vitest'
 import { enableAutoUnmount, mount } from '@vue/test-utils'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { axe } from '../../../../../../../../../test/utils/axe'
 import Group from './Group.vue'
 
 const resource = ref<any>()
 const resourceStack = ref([{ iri: '/_/component_groups/g1' }])
 const initAddResource = vi.fn()
+const stackState = ref<Record<string, any>>({})
 
 vi.mock('#cwa/composables/cwa-resource-manager-tab', () => ({
   useCwaResourceManagerTab: () => ({
@@ -18,6 +19,15 @@ vi.mock('#cwa/composables/cwa-resource-manager-tab', () => ({
       admin: { resourceStackManager: { resourceStack } },
     },
     exposeMeta: { disabled: ref(false) },
+    createComputedState: (prop: string, initial: unknown) => {
+      stackState.value[prop] === undefined && (stackState.value[prop] = initial)
+      return computed({
+        get: () => stackState.value[prop],
+        set: (value) => {
+          stackState.value[prop] = value
+        },
+      })
+    },
   }),
 }))
 vi.mock('#cwa/composables/cwa', () => ({ useCwa: () => ({ admin: { resourceStackManager: { currentIri: ref('/_/component_groups/g1') } } }) }))
@@ -36,6 +46,20 @@ function buttons(wrapper: ReturnType<typeof mountGroup>) {
 describe('Group tab (#398)', () => {
   beforeEach(() => {
     initAddResource.mockClear()
+    stackState.value = {}
+  })
+
+  test('Enable reordering starts off and turns on dragging this group\'s components through the selection\'s reordering state (#461)', async () => {
+    const wrapper = mountGroup({ componentPositions: ['/p1', '/p2'] })
+
+    const toggle = wrapper.get('[role="switch"]')
+    expect(toggle.attributes('aria-checked')).toBe('false')
+    expect(wrapper.text()).toContain('Enable reordering')
+    expect(stackState.value.reordering).toBe(false)
+    await toggle.trigger('click')
+    expect(stackState.value.reordering).toBe(true)
+    expect(toggle.attributes('aria-checked')).toBe('true')
+    expect(await axe(wrapper.element as HTMLElement)).toHaveNoViolations()
   })
 
   test('is one manager bar row (#461)', async () => {

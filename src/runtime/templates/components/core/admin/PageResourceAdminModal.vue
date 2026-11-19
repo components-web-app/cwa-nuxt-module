@@ -200,8 +200,21 @@
       </template>
     </template>
     <template #routes>
+      <RoutesTabManage
+        v-if="isAdding && !missing"
+        v-model="newRoutePath"
+        v-model:live-at="newRouteLiveAt"
+        v-model:awaiting-date="newRouteAwaitingDate"
+        current-path=""
+        :parent-route-prefix="newRouteDefaults.parentRoutePrefix.value"
+        :recommended-path="newRouteDefaults.recommendedPath.value"
+        :recommended-from="localResourceData?.title || undefined"
+        :path-error="form.fieldErrors.route"
+        :noun="createNoun"
+        optional
+      />
       <RoutesTab
-        v-if="resource && resource.hasOwnProperty('@id')"
+        v-else-if="resource && resource.hasOwnProperty('@id')"
         :page-resource="resource as CwaResource"
         @reload="loadResource"
         @open-page="openPage"
@@ -210,17 +223,10 @@
     </template>
     <template #info>
       <CwaUiFormSection>
-        <dl class="cwa:m-0">
-          <dt class="cwa:text-label cwa:text-fg">
-            ID
-          </dt>
-          <dd
-            class="cwa:m-0 cwa:mt-1.5 cwa:break-all cwa:font-mono cwa:text-control cwa:text-fg-secondary"
-            data-testid="page-id"
-          >
-            {{ localResourceData?.['@id'] }}
-          </dd>
-        </dl>
+        <ResourceIdDetail
+          :iri="localResourceData?.['@id']"
+          data-testid="page-id"
+        />
       </CwaUiFormSection>
       <CwaUiFormSection
         title="History"
@@ -266,6 +272,8 @@
 </template>
 
 <script setup lang="ts">
+import { pagesConfig } from '#build/cwa-config'
+import ResourceIdDetail from '#cwa/templates/components/core/admin/ResourceIdDetail.vue'
 import { pageDataNoun } from './page-data-noun'
 import { computed, onMounted, ref, useTemplateRef, watch, watchEffect } from 'vue'
 import type { RouteLocationRaw } from 'vue-router'
@@ -285,6 +293,8 @@ import CwaUiButton from '#cwa/templates/components/ui/Button.vue'
 import CwaUiAlert from '#cwa/templates/components/ui/Alert.vue'
 import EyeGlyph from '#cwa/templates/components/ui/icon/EyeIcon.vue'
 import RoutesTab from '#cwa/templates/components/core/admin/RoutesTab.vue'
+import RoutesTabManage from '#cwa/templates/components/core/admin/RoutesTabManage.vue'
+import { useRouteDefaults } from '#cwa/templates/components/core/admin/route-defaults'
 import PagePurgeCache from '#cwa/templates/components/core/admin/PagePurgeCache.vue'
 import type { MenuEntry } from '#cwa/templates/components/core/ui/menu-entries'
 import type { DialogTab } from '#cwa/templates/components/core/ui/dialog-form'
@@ -292,8 +302,8 @@ import type { SelectOption } from '#cwa/composables/cwa-select'
 import type { CwaResource } from '#cwa/resources/resource-utils'
 import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/resources/resource-utils'
 import { useCwaConfirm } from '#cwa/composables/cwa-confirm'
-import { deriveSelectedStyles, mergeSelectedStyles } from '#cwa/composables/cwa-styles'
-import type { StyleClasses } from '#cwa/composables/cwa-styles'
+import { selectedStyleKeys } from '#cwa/composables/cwa-styles'
+import type { CwaStyles } from '#cwa/types'
 import { fetchTemplateCounts, pageDeleteConfirmLines, pageDeleteLines } from '#cwa/admin/page-delete'
 import type { PageDeleteFacts } from '#cwa/admin/page-delete'
 import { useItemPage } from '#cwa-layer/_composables/useItemPage'
@@ -440,6 +450,10 @@ const linkDefaults = Object.fromEntries(
     .flatMap(([queryKey, field]) => typeof route.query[queryKey] === 'string' ? [[field, route.query[queryKey]]] : []),
 )
 
+const newRoutePath = ref('')
+const newRouteLiveAt = ref<string | null | undefined>()
+const newRouteAwaitingDate = ref(false)
+
 const { isAdding, isLoading, loadFailed, isUpdating, localResourceData, resource, formatDate, deleteResource, saveResource: _saveResource, loadResource, getInternalResourceLink, form } = useItemPage({
   createEndpoint,
   emit,
@@ -451,7 +465,23 @@ const { isAdding, isLoading, loadFailed, isUpdating, localResourceData, resource
   routeHashAfterAdd: computed(() => (localResourceData.value?.isTemplate ? '#details' : '#routes')),
   excludeFields: ['componentGroups'],
   dismissStoredErrors: true,
+  validate: (data): Record<string, string> => data.route && newRouteAwaitingDate.value ? { route: 'Choose when the route goes live.' } : {},
   savedTitle: () => `${createNoun.value.charAt(0).toUpperCase()}${createNoun.value.slice(1)} saved`,
+})
+
+const newRouteDefaults = useRouteDefaults(() => localResourceData.value)
+
+watch([newRoutePath, newRouteLiveAt], ([path, liveAt]) => {
+  const local = localResourceData.value
+  if (!local || !isAdding.value) {
+    return
+  }
+  if (path) {
+    local.route = { path, ...(liveAt !== undefined && { liveAt }) }
+  }
+  else {
+    delete local.route
+  }
 })
 
 const createNoun = computed(() => isDisplayingPage.value ? 'page' : pageDataNoun(props.resourceType))
@@ -662,7 +692,7 @@ function fullPageUiName(uiComponent: string | null | undefined) {
 const pageComponentOptions = computed<MenuEntry[]>(() => pageComponentNames.value.map((componentName) => {
   const cleanName = cleanUiName(componentName)
   return {
-    label: $cwa.pagesConfig?.[cleanName]?.name || cleanName,
+    label: pagesConfig[cleanName]?.name || cleanName,
     value: componentName,
   }
 }))
@@ -677,23 +707,22 @@ const pageUiModel = {
   }),
 } as ReturnType<typeof form.model<string>>
 
-const pageStyleClasses = computed<StyleClasses>(() => {
+const pageStyles = computed<CwaStyles | undefined>(() => {
   const uiComponent = localResourceData.value?.uiComponent
-  return (uiComponent && $cwa.pagesConfig?.[cleanUiName(uiComponent)]?.classes) || {}
+  return uiComponent ? pagesConfig[cleanUiName(uiComponent)]?.styles : undefined
 })
 
-const pageStyleOptions = computed<MenuEntry[]>(() => Object.keys(pageStyleClasses.value).map(name => ({ label: name, value: name })))
+const pageStyleOptions = computed<MenuEntry[]>(() => Object.entries(pageStyles.value ?? {}).map(([key, style]) => ({ label: style.label, value: key })))
 
 const pageStyleModel = {
   ...form.model<string[] | null>('uiClassNames'),
   model: computed({
-    get: () => deriveSelectedStyles(localResourceData.value?.uiClassNames, pageStyleClasses.value)[0] ?? null,
-    set: (name: string | null | undefined) => {
+    get: () => selectedStyleKeys(localResourceData.value?.uiClassNames, pageStyles.value)[0] ?? null,
+    set: (key: string | null | undefined) => {
       if (!localResourceData.value) {
         return
       }
-      const merged = mergeSelectedStyles(name ? [name] : [], pageStyleClasses.value)
-      localResourceData.value.uiClassNames = merged.length ? merged : null
+      localResourceData.value.uiClassNames = key ? [`style:${key}`] : null
     },
   }),
 } as unknown as ReturnType<typeof form.model<string>>
@@ -742,7 +771,7 @@ const tabs = computed<DialogTab[]>(() => {
   if (isAdding.value) {
     return [
       { label: 'Details', key: 'details', fields: detailsFields.value },
-      { label: 'Routes', key: 'routes', disabled: `Routes open once the ${createNoun.value} is created. Create the ${createNoun.value} and this tab lets you add its address.` },
+      missing.value ? { label: 'Routes', key: 'routes', disabled: `${missing.value.title}.` } : { label: 'Routes', key: 'routes', fields: { route: 'Route path' } },
     ]
   }
   return [

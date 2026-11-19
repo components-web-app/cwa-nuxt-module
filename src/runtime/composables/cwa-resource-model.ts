@@ -6,15 +6,22 @@ import isObject from 'lodash-es/isObject'
 import set from 'lodash-es/set'
 import { useCwa } from '#cwa/composables/cwa'
 import { useCwaResourceEndpoint } from '#cwa/composables/cwa-resource-endpoint'
-import { registerModelEditor } from '#cwa/resources/model-editors'
+import { modelFieldLabel, registerModelEditor } from '#cwa/resources/model-editors'
 import type { RemoteFieldChange } from '#cwa/resources/model-editors'
 import { realtimeView } from '#cwa/resources/realtime-view'
 import { writeFieldStates } from '#cwa/resources/field-state-writer'
 import type { FocusedPeer } from '#cwa/admin/presence'
+import type { FailedSave } from '#cwa/admin/field-states'
 import type { CwaFieldState } from '#cwa/storage/stores/resources/state'
 import type { CwaResource } from '#cwa/resources/resource-utils'
 
 export type { FocusedPeer } from '#cwa/admin/presence'
+
+interface Sent {
+  endpoint: string
+  data: Record<string, unknown>
+  value: unknown
+}
 
 interface Change {
   value: any
@@ -52,6 +59,7 @@ export const useCwaResourceModel = <T, S = T>(iri: Ref<string | undefined>, prop
     return property.split('.')[0]?.split('[')[0] || ''
   })
   const rootStoreValue = computed(() => (resource.value?.data ? get(resource.value.data, rootProperty.value) : undefined))
+  const editorKey = { iri: () => iri.value, field: rootProperty.value }
   const isNestedProperty = computed(() => Array.isArray(property) ? property.length > 1 : rootProperty.value !== property)
 
   const localValueWithIri = ref<{ [iri: string]: T | null | undefined }>({})
@@ -172,15 +180,46 @@ export const useCwaResourceModel = <T, S = T>(iri: Ref<string | undefined>, prop
     at && writeFieldStates(states => write(states, resourceAt(at), field))
   }
 
-  function onRequest(sentTo: string, done?: Promise<{ resource?: CwaResource, error?: any }>) {
+  function onRequest(sentTo: string, done: Promise<{ resource?: CwaResource, error?: any }> | undefined, sent: Sent) {
     if (!done) {
       record(sentTo, (states, entry, field) => states.skipped(entry, field))
       return
     }
     const field = rootProperty.value
-    const sending = resourceAt(sentTo)
+    const sending = $cwa.resources.getResource(sentTo).value
     writeFieldStates(states => states.started(sending, [field]))
-    done.then(({ resource, error }) => writeFieldStates(states => states.settled(sending, [field], resource, error, at => $cwa.resources.getResource(at).value)))
+    done.then(({ resource, error }) => writeFieldStates((states) => {
+      states.settled(sending, [field], resource, error, at => $cwa.resources.getResource(at).value)
+      error && states.trackFailedSave($cwa, failedSave(sentTo, sent))
+    }))
+  }
+
+  function failedSave(sentTo: string, sent: Sent): FailedSave {
+    const field = rootProperty.value
+    return {
+      iri: sentTo,
+      field,
+      label: () => modelFieldLabel(editorKey) ?? field,
+      retry: () => {
+        void $cwa.resourcesManager.updateResource({
+          endpoint: sent.endpoint,
+          data: sent.data,
+          source,
+          onRequest: (to, done) => {
+            onRequest(to, done, sent)
+            done?.then(({ error }) => {
+              error || !isEqual(localValueWithIri.value[to], sent.value) || resetValue(to)
+            })
+          },
+        })
+      },
+      reset: () => {
+        for (const at of new Set([sentTo, ...$cwa.resources.findAllPublishableIris(sentTo)])) {
+          resetValue(at)
+          record(at, (states, entry, each) => states.cleared(entry, each))
+        }
+      },
+    }
   }
 
   function cancelPending() {
@@ -293,15 +332,16 @@ export const useCwaResourceModel = <T, S = T>(iri: Ref<string | undefined>, prop
     record(submittingIri, (states, entry, field) => states.unqueued(entry, field))
     let failed = false
     let local = false
+    const data = {
+      [rootProperty.value]: submittingValue,
+      ...(hasExtra && extra),
+    }
     const newResource = await $cwa.resourcesManager.updateResource({
       endpoint: submittingEndpoint,
-      data: {
-        [rootProperty.value]: submittingValue,
-        ...(hasExtra && extra),
-      },
+      data,
       source,
       onRequest: (sentTo, done) => {
-        onRequest(sentTo, done)
+        onRequest(sentTo, done, { endpoint: submittingEndpoint, data, value: newLocalValue })
         local = !done
         done?.then(({ error }) => {
           failed = !!error
@@ -433,6 +473,7 @@ export const useCwaResourceModel = <T, S = T>(iri: Ref<string | undefined>, prop
 
   function retry() {
     if (localValue.value === undefined) {
+      record(iri.value, (states, entry, field) => states.retryWrite(entry, field))
       return Promise.resolve()
     }
     const value = localValue.value
@@ -491,6 +532,6 @@ export const useCwaResourceModel = <T, S = T>(iri: Ref<string | undefined>, prop
     focusedBy,
     focusListeners,
     /** @internal */
-    editorKey: { iri: () => iri.value, field: rootProperty.value },
+    editorKey,
   }
 }

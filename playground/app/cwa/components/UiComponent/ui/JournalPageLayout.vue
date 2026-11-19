@@ -17,7 +17,14 @@
 
 <script setup lang="ts">
 import type { IriProp } from '#cwa/composables/cwa-resource'
-import { useCwaComponent } from '#imports'
+import { useCwaComponent, defineCwaConfig } from '#imports'
+
+defineCwaConfig({
+  name: 'Journal Page',
+  styles: {
+    'top-rule': { label: 'Rule above', classes: 'border-t border-stone-700 pt-10' },
+  },
+})
 
 const props = defineProps<IriProp>()
 const { exposeMeta } = useCwaComponent(props, undefined, { name: 'Journal Page' })

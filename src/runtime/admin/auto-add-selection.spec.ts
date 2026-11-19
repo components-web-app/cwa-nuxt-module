@@ -20,6 +20,14 @@ import { useCwaResource } from '#cwa/composables/cwa-resource'
 import ComponentGroup from '#cwa/templates/components/main/ComponentGroup.vue'
 import ResourceManager from '#cwa/templates/components/main/admin/resource-manager/ResourceManager.vue'
 
+const cwaConfig = vi.hoisted(() => ({
+  resourcesConfig: { Title: { name: 'Title', instantAdd: true } } as Record<string, any>,
+  uiConfig: {} as Record<string, any>,
+  layoutsConfig: {} as Record<string, any>,
+  pagesConfig: {} as Record<string, any>,
+}))
+vi.mock('#build/cwa-config', () => cwaConfig)
+
 const holder = vi.hoisted(() => ({ cwa: undefined as any }))
 mockNuxtImport('useCwa', () => () => holder.cwa)
 
@@ -150,7 +158,6 @@ function build(opts: { publishable?: boolean } = {}) {
     admin,
     componentGroupReorders: new ComponentGroupReorders(admin, resources, resourcesManager),
     auth: { isAdmin: computed(() => true), signedIn: computed(() => true), user: { '@id': '/_api/users/admin' }, hasRole: () => true },
-    resourcesConfig: { Title: { name: 'Title', instantAdd: true } },
     isStaticRender: false,
     addUniquePromise: async (_group: string, _key: string, fn: () => Promise<void>) => fn(),
     fetchResource: (event: any) => fetcher.fetchResource(event),
@@ -252,7 +259,7 @@ describe('#321 selection outline follows a component root element that changes w
       iri: COMPONENT_A,
       showManager: true,
       elementsConnected: true,
-      outlineStyle: 'top: 100px; left: 10px; width: 200px; height: 50px;',
+      outlineStyle: 'top: 100px; left: 10px; width: 200px; height: 50px; border-radius: 1px;',
     })
   })
 
@@ -273,7 +280,7 @@ describe('#321 selection outline follows a component root element that changes w
       iri: COMPONENT_NEW,
       showManager: true,
       elementsConnected: true,
-      outlineStyle: 'top: 100px; left: 10px; width: 200px; height: 50px;',
+      outlineStyle: 'top: 100px; left: 10px; width: 200px; height: 50px; border-radius: 1px;',
     })
   })
 
@@ -293,7 +300,7 @@ describe('#321 selection outline follows a component root element that changes w
       iri: COMPONENT_NEW,
       showManager: true,
       elementsConnected: true,
-      outlineStyle: 'top: 100px; left: 10px; width: 200px; height: 50px;',
+      outlineStyle: 'top: 100px; left: 10px; width: 200px; height: 50px; border-radius: 1px;',
     })
   })
 
@@ -319,7 +326,7 @@ describe('#321 selection outline follows a component root element that changes w
       iri: COMPONENT_NEW,
       showManager: true,
       elementsConnected: true,
-      outlineStyle: 'top: 100px; left: 10px; width: 200px; height: 50px;',
+      outlineStyle: 'top: 100px; left: 10px; width: 200px; height: 50px; border-radius: 1px;',
     })
   })
 
@@ -351,7 +358,7 @@ describe('#321 selection outline follows a component root element that changes w
       iri: COMPONENT_NEW,
       showManager: true,
       elementsConnected: true,
-      outlineStyle: 'top: 100px; left: 10px; width: 200px; height: 50px;',
+      outlineStyle: 'top: 100px; left: 10px; width: 200px; height: 50px; border-radius: 1px;',
     })
   })
 

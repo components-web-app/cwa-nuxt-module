@@ -7,11 +7,17 @@ import { mockNuxtImport } from '@nuxt/test-utils/runtime'
 import PagesListPage from './pages.vue'
 import FilterToggle from '#cwa/templates/components/core/ui/FilterToggle.vue'
 
-const { mockUseCwa, typesModel, listRoutes } = vi.hoisted(() => ({
-  mockUseCwa: vi.fn(),
+const cwaConfig = vi.hoisted(() => ({
+  resourcesConfig: {} as Record<string, any>,
+  uiConfig: {} as Record<string, any>,
+  layoutsConfig: {} as Record<string, any>,
+  pagesConfig: {} as Record<string, any>,
+}))
+const { typesModel, listRoutes } = vi.hoisted(() => ({
   typesModel: { value: [] as string[] },
   listRoutes: { routes: {} as Record<string, any>, load: (() => {}) as (...args: any[]) => void, error: undefined as unknown, retry: (() => {}) as () => void },
 }))
+vi.mock('#build/cwa-config', () => cwaConfig)
 
 vi.mock('#cwa-layer/_composables/useListPage', () => ({
   useListPage: () => ({ goToAdd: vi.fn(), triggerReload: vi.fn(), computedItemLink: vi.fn(() => '/_cwa/pages/x') }),
@@ -38,15 +44,12 @@ vi.mock('#cwa-layer/_composables/useListRoutes', async () => {
   }
 })
 
-mockNuxtImport('useCwa', () => mockUseCwa)
 mockNuxtImport('useCwaResourceRoute', () => () => ({ getInternalResourceLink: (iri: string) => ({ name: '_cwa-resource-page', params: { cwaPage0: iri } }) }))
 
 function setup(uiComponent: string, stored: Record<string, any> = {}, listed: Record<string, any> = {}) {
-  mockUseCwa.mockReturnValue({
-    pagesConfig: {
-      PrimaryPageTemplate: { name: 'Primary Page' },
-    },
-  })
+  cwaConfig.pagesConfig = {
+    PrimaryPageTemplate: { name: 'Primary Page' },
+  }
   const item = { '@id': '/_/pages/1', 'reference': 'Home', 'isTemplate': false, uiComponent, ...stored }
   const raw = { ...item, ...listed }
   return mount(PagesListPage, {
@@ -81,7 +84,6 @@ describe('/_cwa/pages page UI label', () => {
 
   test('shows the configured page UI name for a page stored with the full CwaPage name', () => {
     const wrapper = setup('CwaPagePrimaryPageTemplate')
-    expect(mockUseCwa).toHaveBeenCalled()
     expect(wrapper.findComponent(ListRow).props('sub')).toBe('UI: Primary Page')
   })
 

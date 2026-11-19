@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { POPOVER_GAP } from '../core/ui/popover-gap'
+import { popoverOpen } from '../core/ui/open-motion'
 import { computed, ref, useId } from 'vue'
 import type { DateValue } from '@internationalized/date'
 import { parseDate } from '@internationalized/date'
@@ -151,7 +152,7 @@ function clear() {
               role="dialog"
               :aria-label="`${label}: choose days`"
               data-testid="day-range-popover"
-              class="cwa:z-context cwa:bg-surface-menu cwa:p-3 cwa:text-fg cwa:shadow-popover cwa:outline-1 cwa:outline-transparent"
+              :class="['cwa:z-context cwa:bg-surface-menu cwa:p-3 cwa:text-fg cwa:shadow-popover cwa:outline-1 cwa:outline-transparent', popoverOpen]"
             >
               <Calendar
                 range

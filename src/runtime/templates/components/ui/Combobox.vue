@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, useId, useTemplateRef, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, useId, useTemplateRef, watch } from 'vue'
 import { ComboboxGroup, ComboboxInput, ComboboxItem, ComboboxLabel, ComboboxRoot, ListboxContent } from 'reka-ui'
 import SearchIcon from './icon/SearchIcon.vue'
 import { useAnnounce } from '../core/ui/field-context'
@@ -9,7 +9,6 @@ export interface ComboboxOption {
   value: string
   label: string
   description?: string
-  detail?: string
 }
 
 export interface ComboboxSection {
@@ -55,9 +54,11 @@ interface RekaCombobox {
 const id = useId()
 const root = useTemplateRef<RekaCombobox>('root')
 const input = useTemplateRef<{ $el: HTMLInputElement }>('input')
+const wrapper = useTemplateRef<HTMLElement>('wrapper')
 const announce = useAnnounce()
 const highlighted = ref<string>()
 const keyboard = ref(false)
+let chosenByUser = false
 
 const flat = computed(() => props.sections.flatMap(section => section.options.map(option => ({ option, section }))))
 const term = computed(() => props.query.trim().replace(/\s+/g, ' '))
@@ -68,6 +69,7 @@ function optionId(value: string) {
 }
 
 function highlight(value: string | undefined, byKeyboard = false) {
+  chosenByUser = true
   keyboard.value = byKeyboard
   if (value === undefined) {
     highlighted.value = undefined
@@ -81,11 +83,24 @@ function highlightFirst(byKeyboard = false) {
   highlight(flat.value[0]?.option.value, byKeyboard)
 }
 
-onMounted(() => highlightFirst())
+const ownLeaves = new WeakSet<Event>()
+
+function stopPointerLeave(event: Event) {
+  !ownLeaves.has(event) && event.stopPropagation()
+}
+
+function clearHighlight() {
+  chosenByUser = false
+  keyboard.value = false
+  highlighted.value = undefined
+  const leave = new PointerEvent('pointerleave')
+  ownLeaves.add(leave)
+  wrapper.value?.querySelector('[dir]')?.dispatchEvent(leave)
+}
 
 watch(() => flat.value.map(entry => entry.option.value).join('\n'), () => {
-  if (!flat.value.some(entry => entry.option.value === highlighted.value)) {
-    nextTick(() => highlightFirst())
+  if (highlighted.value !== undefined && !flat.value.some(entry => entry.option.value === highlighted.value)) {
+    nextTick(clearHighlight)
   }
 })
 
@@ -93,7 +108,7 @@ let settle: ReturnType<typeof setTimeout> | undefined
 onBeforeUnmount(() => clearTimeout(settle))
 
 watch(() => props.query, () => {
-  nextTick(() => highlightFirst())
+  nextTick(clearHighlight)
   clearTimeout(settle)
   settle = setTimeout(() => {
     const count = flat.value.length
@@ -102,9 +117,14 @@ watch(() => props.query, () => {
 })
 
 function onHighlight(payload: { value: unknown } | undefined) {
-  if (payload && typeof payload.value === 'string') {
-    highlighted.value = payload.value
+  if (!payload || typeof payload.value !== 'string') {
+    return
   }
+  if (!chosenByUser) {
+    nextTick(clearHighlight)
+    return
+  }
+  highlighted.value = payload.value
 }
 
 function keepHighlight() {
@@ -122,7 +142,7 @@ function onKeydownCapture(event: KeyboardEvent) {
   if (event.target !== input.value?.$el) {
     return
   }
-  if (props.upLeaves && event.key === 'ArrowUp' && indexOfHighlight() === 0) {
+  if (props.upLeaves && event.key === 'ArrowUp' && indexOfHighlight() <= 0) {
     event.preventDefault()
     event.stopPropagation()
     keyboard.value = false
@@ -143,12 +163,14 @@ function onKeydownCapture(event: KeyboardEvent) {
     emit('update:query', '')
     return
   }
-  if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+  if (event.key === 'ArrowDown' || event.key === 'ArrowUp' || event.key === 'PageDown' || event.key === 'PageUp') {
+    chosenByUser = true
     keyboard.value = true
   }
 }
 
 function onPointerMove(value: string) {
+  chosenByUser = true
   if (highlighted.value !== value || keyboard.value) {
     highlighted.value = value
     keyboard.value = false
@@ -169,7 +191,7 @@ function parts(text: string) {
 }
 
 function described(option: ComboboxOption, section: ComboboxSection) {
-  return [option.description, option.detail, section.label].filter(Boolean).join(', ')
+  return [option.description, section.label].filter(Boolean).join(', ')
 }
 
 function focus(byKeyboard = false) {
@@ -184,9 +206,10 @@ defineExpose({ focus, highlighted })
 
 <template>
   <div
+    ref="wrapper"
     data-testid="combobox"
     @keydown.capture="onKeydownCapture"
-    @pointerleave.capture.stop
+    @pointerleave.capture="stopPointerLeave"
   >
     <ComboboxRoot
       ref="root"
@@ -284,11 +307,6 @@ defineExpose({ focus, highlighted })
                 class="cwa:text-helper cwa:text-fg-muted cwa:group-hover:text-muted-on-field cwa:group-data-highlighted:text-muted-on-field cwa:max-sm:line-clamp-2 cwa:sm:truncate"
               >{{ option.description }}</span>
             </span>
-            <span
-              v-if="option.detail"
-              aria-hidden="true"
-              class="cwa:shrink-0 cwa:text-helper cwa:text-fg-muted cwa:group-hover:text-muted-on-field cwa:group-data-highlighted:text-muted-on-field"
-            >{{ option.detail }}</span>
             <span
               v-if="described(option, section)"
               :id="`${optionId(option.value)}-about`"

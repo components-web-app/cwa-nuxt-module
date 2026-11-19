@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { reactive } from 'vue'
-import { edited, failed, held, cleared, settled, skipped, started, succeeded, unqueued } from './field-states'
+import { edited, failed, failedSaves, forgetFailedSave, held, cleared, onFailedSavesChange, retryWrite, settled, skipped, started, succeeded, trackFailedSave, unqueued, violationField, writeRefused, writeSaved } from './field-states'
+import type { FailedSave } from './field-states'
 import type { CwaCurrentResourceInterface } from '#cwa/storage/stores/resources/state'
 import { CwaResourceApiStatuses } from '#cwa/storage/stores/resources/state'
 
@@ -324,5 +325,107 @@ describe('field states (#458)', () => {
       cleared(undefined, 'title')
       unqueued(undefined, 'title')
     }).not.toThrow()
+  })
+})
+
+describe('failed saves kept for a toast once the bar no longer shows the field (#461)', () => {
+  function save(): FailedSave {
+    return { iri: '/component/titles/1', field: 'title', label: () => 'Title', retry: vi.fn(), reset: vi.fn() }
+  }
+
+  test('a newer failure of the same field replaces the older, and forgetting the older keeps the newer', () => {
+    const owner = {}
+    const listener = vi.fn()
+    onFailedSavesChange(owner, listener)
+    const older = save()
+    const newer = save()
+
+    trackFailedSave(owner, older)
+    trackFailedSave(owner, newer)
+    forgetFailedSave(owner, older)
+
+    expect([...failedSaves(owner).values()]).toEqual([newer])
+    expect(listener).toHaveBeenCalledTimes(2)
+    forgetFailedSave(owner, newer)
+    expect(failedSaves(owner).size).toBe(0)
+    expect(listener).toHaveBeenCalledTimes(3)
+  })
+})
+
+describe('a whole-resource write refused for a field shows on that field as a failed save does (#461)', () => {
+  const refusal = (message: string) => ({ status: 'error', waiting: false, slow: false, error: { kind: 'violation', status: 422, message } })
+
+  beforeEach(() => {
+    vi.useFakeTimers()
+    vi.setSystemTime(1_000_000)
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  test('a violation names the field it answers for, or a field it is nested in, never one that only starts the same', () => {
+    expect(violationField('file', ['alt', 'file'])).toBe('file')
+    expect(violationField('file.mimeType', ['alt', 'file'])).toBe('file')
+    expect(violationField('links[0]', ['links'])).toBe('links')
+    expect(violationField('filename', ['file'])).toBeUndefined()
+    expect(violationField('', ['file'])).toBeUndefined()
+  })
+
+  test('each field the write was refused for is in error, and a second refusal replaces the first, clearing a field it no longer names', () => {
+    const image = entry()
+    writeRefused(image, { file: 'Upload a file.', alt: 'Describe it.' }, 422)
+    expect(image.fieldStates).toStrictEqual({ file: refusal('Upload a file.'), alt: refusal('Describe it.') })
+
+    writeRefused(image, { file: 'Still no file.' }, 422)
+
+    expect(image.fieldStates).toStrictEqual({ file: refusal('Still no file.') })
+  })
+
+  test('a later save of the whole resource clears the refusal\'s errors, but not a field whose state an edit has written since', () => {
+    const image = entry()
+    writeRefused(image, { file: 'Upload a file.', alt: 'Describe it.' }, 422)
+    edited(image, 'alt')
+
+    writeSaved(image)
+
+    expect(image.fieldStates).toStrictEqual({ alt: { status: 'pending', waiting: true, slow: false } })
+  })
+
+  test('editing a refused field and saving it clears its error as it clears a failed save\'s', () => {
+    const image = entry()
+    writeRefused(image, { alt: 'Describe it.' }, 422)
+
+    edited(image, 'alt')
+    unqueued(image, 'alt')
+    started(image, ['alt'])
+    succeeded(image, ['alt'])
+
+    expect(image.fieldStates?.alt).toStrictEqual({ status: 'saved', waiting: false, slow: false, savedAt: 1_000_000 })
+  })
+
+  test('a refused field holding a conflict stays a conflict, with the refusal as its error', () => {
+    const image = entry()
+    held(image, 'alt', { value: 'Theirs' })
+
+    writeRefused(image, { alt: 'Describe it.' }, 422)
+
+    expect(image.fieldStates?.alt).toMatchObject({ status: 'conflict', held: { value: 'Theirs' }, error: { message: 'Describe it.' } })
+  })
+
+  test('Retry on a refused field runs the refused write again, and does nothing once the field has moved on', () => {
+    const image = entry()
+    const retry = vi.fn()
+    writeRefused(image, { file: 'Upload a file.', alt: 'Describe it.' }, 422, retry)
+
+    expect(retryWrite(image, 'file')).toBe(true)
+    expect(retry).toHaveBeenCalledOnce()
+
+    cleared(image, 'alt')
+    expect(retryWrite(image, 'alt')).toBe(false)
+    expect(retryWrite(image, 'title')).toBe(false)
+    writeSaved(image)
+    expect(retryWrite(image, 'file')).toBe(false)
+    expect(retry).toHaveBeenCalledOnce()
   })
 })

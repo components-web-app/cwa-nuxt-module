@@ -2,7 +2,9 @@
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import { computed, defineComponent, reactive } from 'vue'
 import { flushPromises, mount } from '@vue/test-utils'
-import { drawsOpenState } from '../../../../../../../../test/utils/kit-css'
+import { drawsOpenLine, drawsOpenState, failingInk, shownColour, trimsToLetters } from '../../../../../../../../test/utils/kit-css'
+import { infoPopover } from '#cwa/templates/components/core/ui/field-looks'
+import InfoPopoverTitle from '#cwa/templates/components/core/ui/InfoPopoverTitle.vue'
 import { drawsFocusRing } from '../../../../../../../../test/utils/focus-ring'
 import { axe } from '../../../../../../../../test/utils/axe'
 import { createMemoryHistory, createRouter } from 'vue-router'
@@ -85,7 +87,7 @@ function links(list: HTMLElement | null) {
 
 async function routerEditingOn(path: string) {
   const router = createRouter({ history: createMemoryHistory(), routes: [{ path: '/:path(.*)*', component: defineComponent({ render: () => null }) }] })
-  const state = { isEditing: false, navigationGuardDisabled: false }
+  const state = { isEditing: false }
   const guard = new NavigationGuard(router, { useStore: () => ({ state }) } as unknown as AdminStore)
   router.beforeEach(guard.adminNavigationGuardFn)
   await router.push(path)
@@ -219,21 +221,82 @@ describe('ComponentUsageBadge', () => {
       const { wrapper } = await openList({ total: 2, locations: [location({ renderedOn: [page('/_/pages/a', 'Home', '/')], renderedOnCount: 1 }), location({ renderedOn: [page('/_/pages/b', 'About', '/about')], renderedOnCount: 1 })] })
       const badge = wrapper.get('[data-testid="component-usage-badge"]')
       expect(badge.classes()).toEqual(expect.arrayContaining(['cwa:h-control', 'cwa:pointer-coarse:h-hit', 'cwa:inline-flex', 'cwa:items-center']))
-      expect(badge.classes()).not.toContain('cwa:rounded-full')
-      expect(badge.get('[data-testid="component-usage-pill"]').classes()).toEqual(expect.arrayContaining(['cwa:rounded-full', 'cwa:border']))
+      expect(badge.get('[data-testid="component-usage-pill"]').classes()).toContain('cwa:border')
       expect(drawsFocusRing(badge.classes())).toBe(true)
       wrapper.unmount()
     })
 
-    test('the badge shows itself selected while its list is open, and not once it closes, with no axe violations open', async () => {
+    test.each([
+      ['a button', { total: 2, locations: [location({ renderedOn: [page('/_/pages/a', 'Home', '/')], renderedOnCount: 1 }), location({ renderedOn: [page('/_/pages/b', 'About', '/about')], renderedOnCount: 1 })] }],
+      ['a plain count', { positionCount: 2, pageDataCount: 0, total: 2 }],
+    ])('as %s, the badge and its pill are square like the kit\'s other controls', async (_label, usage) => {
+      vi.mocked(fetchComponentUsage).mockResolvedValue(usage as never)
+      mockCwa()
+      const wrapper = await mountBadge()
+      const badge = wrapper.get('[data-testid="component-usage-badge"]')
+      const drawn = [badge, ...badge.findAll('[data-testid="component-usage-pill"]')]
+      expect(drawn.flatMap(each => each.classes()).filter(name => /(?:^|:)rounded/.test(name))).toEqual([])
+      expect(drawn.some(each => each.classes().includes('cwa:border'))).toBe(true)
+      wrapper.unmount()
+    })
+
+    test('the badge, a labelled trigger, shows its list open with its fill and the line under its label, and not once it closes, with no axe violations open', async () => {
       const { wrapper } = await openList({ total: 2, locations: [location({ renderedOn: [page('/_/pages/a', 'Home', '/')], renderedOnCount: 1 }), location({ renderedOn: [page('/_/pages/b', 'About', '/about')], renderedOnCount: 1 })] })
       const badge = wrapper.get('[data-testid="component-usage-badge"]')
       expect(drawsOpenState(badge.element)).toBe(true)
+      expect(drawsOpenLine(badge.element)).toBe(true)
       expect(await axe(document.body, { rules: { region: { enabled: false } } })).toHaveNoViolations()
 
       await badge.trigger('click')
       await flushPromises()
       expect(drawsOpenState(badge.element)).toBe(false)
+      wrapper.unmount()
+    })
+
+    test('the list is the kit\'s information popover the ⓘ opens, with its panel, padding, type and caret, never the menu surface (#461)', async () => {
+      const { wrapper, list } = await openList({ total: 2, locations: [location({ renderedOn: [page('/_/pages/a', 'Apple', '/a')], renderedOnCount: 1 }), location({ renderedOn: [page('/_/pages/b', 'Banana', '/b')], renderedOnCount: 1 })] })
+      expect([...list!.classList]).toEqual(expect.arrayContaining(infoPopover.split(' ')))
+      expect([...list!.classList]).toEqual(expect.arrayContaining(['cwa:bg-surface-info', 'cwa:p-popover', 'cwa:text-control', 'cwa:leading-normal']))
+      expect(list!.classList).not.toContain('cwa:bg-surface-menu')
+      const caret = [...list!.querySelectorAll('svg')].at(-1)!
+      expect(caret.getAttribute('class')).toContain('cwa:fill-surface-info')
+      expect(await axe(document.body, { rules: { region: { enabled: false } } })).toHaveNoViolations()
+      wrapper.unmount()
+    })
+
+    test('its title is the information popover\'s own title row, the blue ⓘ and "Used in N places" with Close, and Close shuts the list (#461)', async () => {
+      const { wrapper, list } = await openList({ total: 3, locations: [location({ renderedOn: [page('/_/pages/a', 'Apple', '/a')], renderedOnCount: 1 }), location({ renderedOn: [page('/_/pages/b', 'Banana', '/b')], renderedOnCount: 1 })] })
+      expect(wrapper.findComponent(InfoPopoverTitle).exists()).toBe(true)
+      const glyph = list!.querySelector('[data-glyph="info"]')!
+      const title = glyph.nextElementSibling!
+      expect(title.textContent).toBe('Used in 3 places')
+      expect(shownColour(glyph)).toBe('accent-on-info')
+      expect(shownColour(title)).toBe('accent-on-info')
+      expect(trimsToLetters(title)).toBe(true)
+      expect(list!.getAttribute('aria-label')).toBe('Used in 3 places')
+      list!.querySelector<HTMLButtonElement>('button[aria-label="Close"]')!.click()
+      await flushPromises()
+      expect(document.body.querySelector('[data-testid="component-usage-list"]')).toBeNull()
+      wrapper.unmount()
+    })
+
+    test('its links and the page on screen are in the on-info colours, the counts muted on it, every line reading on the panel in both themes, and the links draw a focus ring (#461)', async () => {
+      const { wrapper, list } = await openList({ total: 9, locations: [
+        location({ layout: { iri: '/_/layouts/l1', reference: 'primary' } }),
+        location({ pageDataProperty: 'hero', renderedOn: [page('/_/pages/a', 'Apple', '/a'), page('/_/pages/b', 'Banana', null)], renderedOnCount: 5 }),
+        location({ renderedOn: [page('/_/pages/c', 'Cherry', '/c')], renderedOnCount: 1 }),
+      ] }, { displayPageIri: '/_/pages/c' })
+      const link = list!.querySelector('a')!
+      expect(shownColour(link)).toBe('accent-on-info')
+      expect(drawsFocusRing([...link.classList])).toBe(true)
+      const thisPage = [...list!.querySelectorAll('span')].find(span => span.textContent === 'This page')!
+      expect(shownColour(thisPage)).toBe('muted-on-info')
+      const more = [...list!.querySelectorAll('li')].find(item => item.textContent?.trim() === 'and 3 more')!
+      expect(shownColour(more)).toBe('muted-on-info')
+      expect(shownColour(list!.querySelector('[data-testid="component-usage-more"]')!)).toBe('muted-on-info')
+      const drawn = [list!, ...list!.querySelectorAll('*')].flatMap(element => [...element.classList])
+      expect(drawn.filter(name => /(?:^|:)(?:rounded|border|text-(?:fg|accent-fg|stone-|sm))/.test(name))).toEqual([])
+      expect(failingInk(list!)).toEqual([])
       wrapper.unmount()
     })
 
@@ -314,7 +377,7 @@ describe('ComponentUsageBadge', () => {
       expect(rows(list)[0]).toBe('Template default for heroComponent Article A Blog template')
     })
 
-    test('following a link while editing navigates past the editing guard, as Enable Navigation does, and closes the list', async () => {
+    test('following a link while editing navigates past the editing guard, as Visit does, and closes the list', async () => {
       const router = await routerEditingOn('/start')
       vi.mocked(navigateTo).mockImplementation(to => router.push(to as any) as any)
       const { list } = await openList({ total: 2, locations: [

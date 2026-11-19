@@ -109,7 +109,7 @@ describe('Info tab — the delete button', () => {
     resourceData.value = data
     const wrapper = mountInfoTab()
 
-    expect(wrapper.find('button').text()).toBe('Delete')
+    expect(wrapper.find('[data-testid="component-delete"] button').text()).toBe('Delete')
   })
 
   test('adding a new resource says Discard, even when it is publishable', () => {
@@ -117,7 +117,7 @@ describe('Info tab — the delete button', () => {
     resourceData.value = publishable(false)
     const wrapper = mountInfoTab()
 
-    expect(wrapper.find('button').text()).toBe('Discard')
+    expect(wrapper.find('[data-testid="component-delete"] button').text()).toBe('Discard')
   })
 })
 
@@ -195,23 +195,27 @@ describe('Info tab — a component in several locations', () => {
     expect(mockCwa.fetch).not.toHaveBeenCalled()
   })
 
-  test('Delete for a component in several locations asks which to delete', async () => {
+  test('Delete for a component in several locations asks which to delete, saying what each action does and that deleting can\'t be undone', async () => {
     inLocations(3)
     inStackPosition()
     revealChoosing()
     const wrapper = mountInfoTab()
     await flushPromises()
 
-    await wrapper.find('button').trigger('click')
+    await wrapper.find('[data-testid="component-delete"] button').trigger('click')
     await flushPromises()
 
     expect(mocks.confirmChoice).toHaveBeenCalledWith(mocks.vueApp, {
       title: 'Delete this component?',
       description: 'It is used in 3 places.',
-      keep: 'Don\'t delete',
+      keep: 'Cancel',
       extra: 'Remove from here',
       go: 'Delete from all 3 places',
-      lines: [{ text: 'Deleting it from all places can\'t be undone.', emphasis: 'muted' }],
+      lines: [
+        { text: 'Remove from here takes it off this location only. It stays in the other 2 places.' },
+        { text: 'Delete from all 3 places deletes it everywhere it is used.' },
+        { text: 'Deleting can\'t be undone.', emphasis: 'strong' },
+      ],
     })
     expect(mockCwa.resourcesManager.deleteResource).not.toHaveBeenCalled()
     expect(mockCwa.admin.emptyStack).not.toHaveBeenCalled()
@@ -225,11 +229,16 @@ describe('Info tab — a component in several locations', () => {
     const wrapper = mountInfoTab()
     await flushPromises()
 
-    await wrapper.find('button').trigger('click')
+    await wrapper.find('[data-testid="component-delete"] button').trigger('click')
     await flushPromises()
 
     expect(mocks.editingNotice).toHaveBeenCalledWith(mockCwa, '/component/abc')
-    expect(mocks.confirmChoice).toHaveBeenCalledWith(mocks.vueApp, expect.objectContaining({ lines: [{ text: 'Sam is editing this.' }, { text: 'Deleting it from all places can\'t be undone.', emphasis: 'muted' }] }))
+    expect(mocks.confirmChoice).toHaveBeenCalledWith(mocks.vueApp, expect.objectContaining({ lines: [
+      { text: 'Sam is editing this.' },
+      { text: 'Remove from here takes it off this location only. It stays in the other 2 places.' },
+      { text: 'Delete from all 3 places deletes it everywhere it is used.' },
+      { text: 'Deleting can\'t be undone.', emphasis: 'strong' },
+    ] }))
   })
 
   test('Delete from all X locations deletes the component without a second confirmation', async () => {
@@ -239,7 +248,7 @@ describe('Info tab — a component in several locations', () => {
     const wrapper = mountInfoTab()
     await flushPromises()
 
-    await wrapper.find('button').trigger('click')
+    await wrapper.find('[data-testid="component-delete"] button').trigger('click')
     await flushPromises()
 
     expect(mockCwa.resourcesManager.deleteResource).toHaveBeenCalledTimes(1)
@@ -257,7 +266,7 @@ describe('Info tab — a component in several locations', () => {
     const wrapper = mountInfoTab()
     await flushPromises()
 
-    await wrapper.find('button').trigger('click')
+    await wrapper.find('[data-testid="component-delete"] button').trigger('click')
     await flushPromises()
 
     expect(mockCwa.resourcesManager.deleteResource).toHaveBeenCalledTimes(1)
@@ -282,7 +291,7 @@ describe('Info tab — a component in several locations', () => {
     const wrapper = mountInfoTab()
     await flushPromises()
 
-    await wrapper.find('button').trigger('click')
+    await wrapper.find('[data-testid="component-delete"] button').trigger('click')
     await flushPromises()
 
     expect(mockCwa.resourcesManager.queueComponentGroupWrite).toHaveBeenCalledTimes(1)
@@ -298,7 +307,7 @@ describe('Info tab — a component in several locations', () => {
     const wrapper = mountInfoTab()
     await flushPromises()
 
-    await wrapper.find('button').trigger('click')
+    await wrapper.find('[data-testid="component-delete"] button').trigger('click')
     await flushPromises()
 
     expect(mockCwa.resourcesManager.deleteResource).toHaveBeenCalledWith({ endpoint: '/_/component_positions/p2', refreshEndpoints: [] }, true)
@@ -313,7 +322,7 @@ describe('Info tab — a component in several locations', () => {
     const wrapper = mountInfoTab()
     await flushPromises()
 
-    await wrapper.find('button').trigger('click')
+    await wrapper.find('[data-testid="component-delete"] button').trigger('click')
     await flushPromises()
 
     expect(mockCwa.resourcesManager.updateResource).toHaveBeenCalledWith({
@@ -334,7 +343,7 @@ describe('Info tab — a component in several locations', () => {
     const wrapper = mountInfoTab()
     await flushPromises()
 
-    await wrapper.find('button').trigger('click')
+    await wrapper.find('[data-testid="component-delete"] button').trigger('click')
     await flushPromises()
 
     expect(mockCwa.resourcesManager.deleteResource).toHaveBeenCalled()
@@ -345,7 +354,7 @@ describe('Info tab — a component in several locations', () => {
     const wrapper = mountInfoTab()
     await flushPromises()
 
-    await wrapper.find('button').trigger('click')
+    await wrapper.find('[data-testid="component-delete"] button').trigger('click')
     await flushPromises()
 
     expect(mocks.confirmChoice).not.toHaveBeenCalled()
@@ -393,11 +402,11 @@ describe('Info tab — a component in several locations', () => {
     async function clickDelete() {
       const wrapper = mountInfoTab()
       await flushPromises()
-      await wrapper.find('button').trigger('click')
+      await wrapper.find('[data-testid="component-delete"] button').trigger('click')
       await flushPromises()
     }
 
-    test('in one place, asks once with Discard unpublished changes beside Delete', async () => {
+    test('in one place, asks once with Delete draft beside Delete entire component, saying what each destroys and that neither can be undone', async () => {
       inLocations(1)
       inStackPosition()
       revealChoosing()
@@ -408,18 +417,20 @@ describe('Info tab — a component in several locations', () => {
       expect(mocks.confirmChoice).toHaveBeenCalledWith(mocks.vueApp, {
         title: 'Delete this component?',
         description: 'It has unpublished changes.',
-        keep: 'Don\'t delete',
-        extra: 'Discard unpublished changes',
-        go: 'Delete',
+        keep: 'Cancel',
+        extra: 'Delete draft',
+        extraTone: 'danger',
+        go: 'Delete entire component',
         lines: [
-          { text: 'Discarding the unpublished changes keeps the live version.', emphasis: 'muted' },
-          { text: 'Deleting it can\'t be undone.', emphasis: 'muted' },
+          { text: 'Delete draft discards the unpublished changes. The live version stays.' },
+          { text: 'Delete entire component deletes the draft and the live version.' },
+          { text: 'Neither can be undone.', emphasis: 'strong' },
         ],
       })
       expect(mockCwa.resourcesManager.deleteResource).not.toHaveBeenCalled()
     })
 
-    test('Discard unpublished changes deletes only the draft', async () => {
+    test('Delete draft deletes only the draft', async () => {
       inLocations(1)
       inStackPosition()
       revealChoosing('extra')
@@ -430,7 +441,7 @@ describe('Info tab — a component in several locations', () => {
       expect(mockCwa.admin.emptyStack).toHaveBeenCalled()
     })
 
-    test('Delete removes the draft and then the live component, so no position is left on either', async () => {
+    test('Delete entire component removes the draft and then the live component, so no position is left on either', async () => {
       inLocations(1)
       inStackPosition()
       revealChoosing('go')
@@ -456,7 +467,7 @@ describe('Info tab — a component in several locations', () => {
       expect(mockCwa.admin.emptyStack).not.toHaveBeenCalled()
     })
 
-    test('in several places, asks once with Remove from here, Discard unpublished changes and Delete from all N places', async () => {
+    test('in several places, asks once with Remove from here, Delete draft and Delete entire component, which says it goes from all N places', async () => {
       inLocations(3)
       inStackPosition()
       revealChoosing()
@@ -466,13 +477,16 @@ describe('Info tab — a component in several locations', () => {
       expect(mocks.confirmChoice).toHaveBeenCalledWith(mocks.vueApp, {
         title: 'Delete this component?',
         description: 'It is used in 3 places and has unpublished changes.',
-        keep: 'Don\'t delete',
+        keep: 'Cancel',
         extra: 'Remove from here',
-        alternative: 'Discard unpublished changes',
-        go: 'Delete from all 3 places',
+        alternative: 'Delete draft',
+        alternativeTone: 'danger',
+        go: 'Delete entire component',
         lines: [
-          { text: 'Discarding the unpublished changes keeps the live version.', emphasis: 'muted' },
-          { text: 'Deleting it from all places can\'t be undone.', emphasis: 'muted' },
+          { text: 'Remove from here takes it off this location only. It stays in the other 2 places.' },
+          { text: 'Delete draft discards the unpublished changes. The live version stays.' },
+          { text: 'Delete entire component deletes the draft and the live version from all 3 places it is used.' },
+          { text: 'Neither delete can be undone.', emphasis: 'strong' },
         ],
       })
     })
@@ -488,7 +502,7 @@ describe('Info tab — a component in several locations', () => {
       expect(mockCwa.resourcesManager.queueComponentGroupWrite).toHaveBeenCalledWith('/_/component_groups/g1', expect.any(Function))
     })
 
-    test('in several places, Discard unpublished changes deletes only the draft', async () => {
+    test('in several places, Delete draft deletes only the draft', async () => {
       inLocations(3)
       inStackPosition()
       revealChoosing('alternative')
@@ -498,7 +512,7 @@ describe('Info tab — a component in several locations', () => {
       expect(mockCwa.resourcesManager.deleteResource.mock.calls).toEqual([[{ endpoint: '/component/abc', refreshEndpoints: ['/_/component_positions/p1'] }, true]])
     })
 
-    test('in several places, Delete from all N places removes the draft and then the live component', async () => {
+    test('in several places, Delete entire component removes the draft and then the live component', async () => {
       inLocations(3)
       inStackPosition()
       revealChoosing('go')
@@ -517,11 +531,11 @@ describe('Info tab — a component in several locations', () => {
 
       await clickDelete()
 
-      expect(mocks.confirmChoice).toHaveBeenCalledWith(mocks.vueApp, expect.objectContaining({ extra: 'Discard unpublished changes', go: 'Delete from all 3 places' }))
+      expect(mocks.confirmChoice).toHaveBeenCalledWith(mocks.vueApp, expect.objectContaining({ extra: 'Delete draft', extraTone: 'danger', go: 'Delete entire component' }))
       expect(mocks.confirmChoice.mock.calls[0]![1]).not.toHaveProperty('alternative')
     })
 
-    test('Don\'t delete sends nothing and keeps the stack', async () => {
+    test('Cancel sends nothing and keeps the stack', async () => {
       inLocations(3)
       inStackPosition()
       revealChoosing()
@@ -530,6 +544,80 @@ describe('Info tab — a component in several locations', () => {
 
       expect(mockCwa.resourcesManager.deleteResource).not.toHaveBeenCalled()
       expect(mockCwa.admin.emptyStack).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('a draft that has never been published', () => {
+    beforeEach(() => {
+      resourceData.value = { ...publishable(false), _metadata: { persisted: true, publishable: { published: false } } }
+    })
+
+    async function clickDelete() {
+      const wrapper = mountInfoTab()
+      await flushPromises()
+      await wrapper.find('[data-testid="component-delete"] button').trigger('click')
+      await flushPromises()
+    }
+
+    test('in one place, asks with Delete draft alone, saying it deletes the component as there is no live version', async () => {
+      inLocations(1)
+      inStackPosition()
+      revealChoosing()
+
+      await clickDelete()
+
+      expect(mocks.confirmChoice).toHaveBeenCalledWith(mocks.vueApp, {
+        title: 'Delete this component?',
+        description: 'It has never been published.',
+        keep: 'Cancel',
+        go: 'Delete draft',
+        lines: [
+          { text: 'Delete draft deletes the component, as there is no live version to keep.' },
+          { text: 'This can\'t be undone.', emphasis: 'strong' },
+        ],
+      })
+    })
+
+    test('in several places, offers Remove from here beside Delete draft, which says it goes from all N places', async () => {
+      inLocations(3)
+      inStackPosition()
+      revealChoosing()
+
+      await clickDelete()
+
+      expect(mocks.confirmChoice).toHaveBeenCalledWith(mocks.vueApp, {
+        title: 'Delete this component?',
+        description: 'It is used in 3 places and has never been published.',
+        keep: 'Cancel',
+        extra: 'Remove from here',
+        go: 'Delete draft',
+        lines: [
+          { text: 'Remove from here takes it off this location only. It stays in the other 2 places.' },
+          { text: 'Delete draft deletes it from all 3 places, as there is no live version to keep.' },
+          { text: 'Deleting can\'t be undone.', emphasis: 'strong' },
+        ],
+      })
+    })
+
+    test('in two places, names the one other place', async () => {
+      inLocations(2)
+      inStackPosition()
+      revealChoosing()
+
+      await clickDelete()
+
+      expect(mocks.confirmChoice.mock.calls[0]![1].lines[0]).toEqual({ text: 'Remove from here takes it off this location only. It stays in the other place.' })
+    })
+
+    test('Delete draft deletes the component once, without a second confirmation', async () => {
+      inLocations(1)
+      inStackPosition()
+      revealChoosing('go')
+
+      await clickDelete()
+
+      expect(mockCwa.resourcesManager.deleteResource.mock.calls).toEqual([[{ endpoint: '/component/abc', refreshEndpoints: ['/_/component_positions/p1'] }, true]])
+      expect(mockCwa.admin.emptyStack).toHaveBeenCalled()
     })
   })
 
@@ -547,5 +635,28 @@ describe('Info tab — a component in several locations', () => {
     expect(row.indexOf('cwa:bg-line')).toBeGreaterThan(row.indexOf('resource-usage'))
     expect(row.indexOf('cwa:bg-line')).toBeLessThan(row.indexOf('component-delete'))
     expect(await axe(wrapper.element as HTMLElement)).toHaveNoViolations()
+  })
+
+  test('the ID has Copy ID beside it, which copies the component\'s IRI for a bug report (#461)', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    vi.stubGlobal('navigator', { ...navigator, clipboard: { writeText } })
+    const wrapper = mountInfoTab()
+    await flushPromises()
+
+    const copy = wrapper.get('[data-testid="resource-id-copy"]')
+    expect(copy.attributes('aria-label')).toBe('Copy ID')
+    expect(copy.element.compareDocumentPosition(wrapper.get('[data-testid="resource-id"]').element) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy()
+    await copy.trigger('click')
+    await flushPromises()
+    expect(writeText).toHaveBeenCalledWith('/component/abc')
+    vi.unstubAllGlobals()
+  })
+
+  test('a component not added yet has no ID to copy (#461)', async () => {
+    iri.value = NEW_RESOURCE_IRI
+    const wrapper = mountInfoTab()
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="resource-id-copy"]').exists()).toBe(false)
   })
 })

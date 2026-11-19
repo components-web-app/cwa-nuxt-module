@@ -3,7 +3,7 @@ import { afterEach, describe, expect, test, vi } from 'vitest'
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { computed, ref } from 'vue'
 import { axe } from '../../../../../test/utils/axe'
-import { drawsOpenState } from '../../../../../test/utils/kit-css'
+import { drawsOpenLine, drawsOpenState } from '../../../../../test/utils/kit-css'
 import { drawsFocusRing } from '../../../../../test/utils/focus-ring'
 import ImageAlt from './ImageAlt.vue'
 import { formSurfaceKey, managerTabKey } from '../core/ui/field-keys'
@@ -49,13 +49,14 @@ describe('CwaUiImageAlt (#461)', () => {
     expect(wrapper.find('[data-testid="image-alt-missing"]').exists()).toBe(false)
   })
 
-  test('the Alt chip shows itself selected while its popover is open, and not once it closes, with no axe violations open', async () => {
+  test('the Alt chip, a labelled trigger, shows its popover open with its hover fill and the line under its label, and not once it closes, with no axe violations open', async () => {
     const wrapper = mount(ImageAlt, { props: { label: 'Image', upload: fakeUpload(), alt: altModel('A bench') }, attachTo: document.body })
     expect(drawsOpenState(chip(wrapper))).toBe(false)
 
     chip(wrapper).click()
     await flushPromises()
     expect(drawsOpenState(chip(wrapper))).toBe(true)
+    expect(drawsOpenLine(chip(wrapper))).toBe(true)
     expect(await axe(document.body, { rules: { region: { enabled: false } } })).toHaveNoViolations()
 
     chip(wrapper).click()

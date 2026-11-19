@@ -1,18 +1,18 @@
 <script lang="ts" setup>
-import { computed, ref, watchEffect } from 'vue'
+import { computed, watchEffect } from 'vue'
 import {
   useCwaResourceManagerTab,
 } from '#cwa/composables/cwa-resource-manager-tab'
 import { DEFAULT_TAB_ORDER } from '#cwa/admin/manager-tabs-resolver'
-import type { CwaResourceMeta } from '#cwa/composables/cwa-resource'
 import { useCwaResourceModel } from '#cwa/composables/cwa-resource-model'
-import { useDataResolver } from '#cwa/templates/components/core/useDataResolver'
 import type { ResourceModelField } from '#cwa/resources/model-editors'
 import type { MenuItem } from '#cwa/templates/components/core/ui/menu-entries'
 import CwaUiManagerTab from '#cwa/templates/components/ui/ManagerTab.vue'
 import CwaUiMultiSelect from '#cwa/templates/components/ui/MultiSelect.vue'
 import CwaUiSelect from '#cwa/templates/components/ui/Select.vue'
-import { deriveSelectedStyles, mergeSelectedStyles } from '#cwa/composables/cwa-styles'
+import { keepDefinedStyleKeys, selectStyleKeys, selectedStyleKeys } from '#cwa/composables/cwa-styles'
+import type { CwaStyles, CwaUiVariantConfig } from '#cwa/types'
+import { resourcesConfig, uiConfig } from '#build/cwa-config'
 
 const { exposeMeta, $cwa, iri } = useCwaResourceManagerTab({
   name: 'UI',
@@ -21,70 +21,66 @@ const { exposeMeta, $cwa, iri } = useCwaResourceManagerTab({
 
 exposeMeta.fields.push('uiComponent', 'uiClassNames')
 
-const componentMeta = ref<(CwaResourceMeta | null)[]>([])
-
 const current = computed(() => $cwa.admin.resourceStackManager.currentStackItem.value)
 
-const styleClasses = computed<Record<string, string | string[]>>(() => current.value?.styles?.value?.classes || {})
-const isMultipleStyles = computed(() => !!current.value?.styles?.value?.multiple)
-const showStyleSelect = computed(() => Object.keys(styleClasses.value).length > 0)
+function storedAt(at: string | undefined) {
+  return at ? $cwa.resources.getResource(at).value?.data : undefined
+}
+
+function styleConfigOf(type: string | undefined, uiComponent: string | null | undefined): CwaUiVariantConfig | undefined {
+  if (uiComponent) {
+    return uiConfig[uiComponent]
+  }
+  return type ? resourcesConfig[type] : undefined
+}
+
+const styleConfig = computed(() => {
+  const data = storedAt(iri.value)
+  return styleConfigOf(data?.['@type'], data?.uiComponent)
+})
+const styles = computed<CwaStyles>(() => styleConfig.value?.styles ?? {})
+const isMultipleStyles = computed(() => !!styleConfig.value?.allowMultiple)
+const showStyleSelect = computed(() => Object.keys(styles.value).length > 0)
 
 const uiModel = useCwaResourceModel<string>(iri, 'uiComponent', {
   debounceTime: 0,
-  alsoSend: (_value, at) => $cwa.resources.getResource(at).value?.data?.uiClassNames?.length ? { uiClassNames: null } : undefined,
+  alsoSend: (value, at) => {
+    const data = storedAt(at)
+    const stored = data?.uiClassNames as string[] | null | undefined
+    const kept = keepDefinedStyleKeys(stored, styleConfigOf(data?.['@type'], value)?.styles)
+    return (kept?.length ?? 0) !== (stored?.length ?? 0) ? { uiClassNames: kept } : undefined
+  },
 })
 
 const styleModel = useCwaResourceModel<string[] | string, string[]>(iri, 'uiClassNames', {
   debounceTime: 0,
   get: (stored) => {
-    const names = deriveSelectedStyles(stored, styleClasses.value)
-    return isMultipleStyles.value ? names : names[0] ?? null
+    const keys = selectedStyleKeys(stored, styles.value)
+    return isMultipleStyles.value ? keys : keys[0] ?? null
   },
   set: (shown) => {
-    const names = Array.isArray(shown) ? shown : shown ? [shown] : []
-    const merged = mergeSelectedStyles(names, styleClasses.value)
-    return merged.length ? merged : null
+    const keys = Array.isArray(shown) ? shown : shown ? [shown] : []
+    return selectStyleKeys(storedAt(iri.value)?.uiClassNames, styles.value, keys)
   },
 })
 
 const styleNamesModel = styleModel as unknown as ResourceModelField<string[]>
 const styleNameModel = styleModel as unknown as ResourceModelField<string>
 
-const uiOptions = computed<MenuItem[]>(() => (current.value?.ui ?? []).map((ui, index) => ({
-  label: componentMeta.value[index]?.cwaResource.name || ui,
+const uiOptions = computed<MenuItem[]>(() => (current.value?.ui ?? []).map(ui => ({
+  label: uiConfig[ui]?.name || ui,
   value: ui,
 })))
 
 const styleNameOptions = computed<MenuItem[]>(() =>
-  Object.keys(styleClasses.value).map(name => ({ label: name, value: name })),
+  Object.entries(styles.value).map(([key, style]) => ({ label: style.label, value: key })),
 )
 
 const disabled = exposeMeta.disabled
 
 watchEffect(() => {
-  const classesObj = current.value?.styles?.value?.classes
-  disabled.value = (!classesObj || !Object.keys(classesObj).length) && !current.value?.ui?.length
+  disabled.value = !showStyleSelect.value && !current.value?.ui?.length
 })
-
-const components = computed(() => {
-  return current.value?.ui
-})
-
-const resolverProps = computed(() => {
-  return {
-    iri: iri.value,
-  }
-})
-
-const { startDataResolver } = useDataResolver(componentMeta, {
-  components,
-  props: resolverProps,
-  propsValidator: (props: typeof resolverProps.value) => {
-    return !!props.iri
-  },
-})
-// seem to need to start here for these to be consistent
-startDataResolver()
 
 defineExpose(exposeMeta)
 </script>

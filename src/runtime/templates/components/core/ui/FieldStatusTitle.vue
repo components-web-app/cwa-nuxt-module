@@ -23,6 +23,7 @@ const emit = defineEmits<{ close: [] }>()
       tabindex="-1"
       aria-label="Close"
       class="cwa:grid cwa:size-6 cwa:shrink-0 cwa:cursor-pointer cwa:place-items-center cwa:text-fg-muted cwa:hover:bg-button cwa:hover:text-fg"
+      @mousedown.prevent
       @click="emit('close')"
     >
       <XMarkIcon class="cwa:size-4" />

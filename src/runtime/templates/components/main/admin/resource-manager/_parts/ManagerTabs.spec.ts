@@ -46,6 +46,12 @@ describe('ManagerTabs (#459)', () => {
     expect(wrapper.emitted('click')!.at(-1)).toEqual([2])
   })
 
+  test('the fields are listed in the order of the tabs shown, leaving out a disabled tab\'s, so a refused write shows the first tab in that order (#461)', () => {
+    const wrapper = mount(ManagerTabs, { props: { tabs: [...tabs, { name: 'Hidden', order: 0, disabled: true, fields: ['secret'] }], idPrefix: 'bar', label: 'Settings' } })
+
+    expect((wrapper.vm as unknown as { fieldsInOrder: () => string[] }).fieldsInOrder()).toEqual(['title', 'body', 'uiClassNames'])
+  })
+
   test('the arrow keys, Home and End select the next, previous, first and last tab, wrapping, and move focus to it', async () => {
     const wrapper = mount(ManagerTabs, { props: { tabs, idPrefix: 'bar', label: 'Settings' }, attachTo: document.body })
     const buttons = () => wrapper.findAll('button')
@@ -82,12 +88,32 @@ describe('ManagerTabs (#459)', () => {
     expect(buttons()[0]!.attributes('aria-selected')).toBe('true')
   })
 
-  test('the selected tab\'s underline is drawn below the tab, past the row\'s inset, on the bar\'s line', () => {
+  test('the selected tab is underlined by one sliding indicator inside the scrolling tab row, at the row\'s bottom past its inset, on the bar\'s line; no tab draws its own', () => {
     const wrapper = mount(ManagerTabs, { props: { tabs, idPrefix: 'bar', label: 'Settings' } })
-    const [selected, other] = wrapper.findAll('button')
-    expect(selected!.classes()).toEqual(expect.arrayContaining(['cwa:after:-bottom-[calc(var(--cwa-spacing-cta-inset)+1px)]', 'cwa:after:bg-accent']))
-    expect(selected!.classes()).not.toContain('cwa:after:bottom-0')
-    expect(other!.classes()).not.toContain('cwa:after:bg-accent')
+    const tablist = wrapper.get('[role="tablist"]')
+    const indicators = wrapper.findAll('[data-testid="tab-indicator"]')
+
+    expect(indicators).toHaveLength(1)
+    expect(indicators[0]!.element.parentElement).toBe(tablist.element)
+    expect(tablist.classes()).toEqual(expect.arrayContaining(['cwa:relative', 'cwa:overflow-x-auto']))
+    expect(indicators[0]!.classes()).toEqual(expect.arrayContaining(['cwa:absolute', 'cwa:bottom-0', 'cwa:h-0.5', 'cwa:bg-accent']))
+    for (const button of wrapper.findAll('button')) {
+      expect(button.classes().filter(name => name.startsWith('cwa:after:'))).toEqual([])
+    }
+  })
+
+  test('while a tab is still loading no tab is listed, and once all have loaded the first in their order is selected, never the one that loaded first', async () => {
+    const loading = new Array(3)
+    loading[2] = tabs[2]
+    const wrapper = mount(ManagerTabs, { props: { tabs: loading, idPrefix: 'bar', label: 'Settings' } })
+
+    expect(wrapper.findAll('button')).toHaveLength(0)
+    expect(wrapper.emitted('click')?.flat() ?? []).not.toContain(2)
+
+    await wrapper.setProps({ tabs })
+
+    expect(wrapper.findAll('button').map(button => button.text())).toEqual(['Content', 'Info', 'Ui'])
+    expect(wrapper.emitted('click')!.at(-1)).toEqual([1])
   })
 
   test('has no axe violations', async () => {

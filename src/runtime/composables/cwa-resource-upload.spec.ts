@@ -2,6 +2,8 @@
 import { describe, expect, test, vi, beforeEach } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
 import { useCwaResourceUpload } from '#cwa/composables/cwa-resource-upload'
+import { heldUpload, holdUpload } from '#cwa/admin/held-uploads'
+import type Cwa from '#cwa/cwa'
 
 const mockUpdateResource = vi.hoisted(() => vi.fn().mockResolvedValue(undefined))
 const mockGetResource = vi.hoisted(() => vi.fn())
@@ -15,14 +17,15 @@ vi.mock('#app/nuxt', async importOriginal => ({
   ...await importOriginal<typeof import('#app/nuxt')>(),
   useNuxtApp: () => ({ vueApp: {} }),
 }))
+const mockCwa = vi.hoisted(() => ({
+  resources: { getResource: (iri: string) => mockGetResource(iri) },
+  resourcesManager: { updateResource: (...args: unknown[]) => mockUpdateResource(...args) },
+  get uploadConfig() {
+    return mockModuleUploadConfig.value
+  },
+}))
 vi.mock('#cwa/composables/cwa', () => ({
-  useCwa: () => ({
-    resources: { getResource: mockGetResource },
-    resourcesManager: { updateResource: mockUpdateResource },
-    get uploadConfig() {
-      return mockModuleUploadConfig.value
-    },
-  }),
+  useCwa: () => mockCwa,
 }))
 
 vi.mock('#cwa/files/image-downscale', async (importOriginal) => {
@@ -53,6 +56,7 @@ const stateWrites = vi.hoisted(() => ({
   started: vi.fn(),
   settled: vi.fn(),
   cleared: vi.fn(),
+  retryWrite: vi.fn(),
 }))
 vi.mock('#cwa/resources/field-state-writer', () => ({
   writeFieldStates: (write: (states: typeof stateWrites) => void) => write(stateWrites),
@@ -332,6 +336,91 @@ describe('useCwaResourceUpload', () => {
       const upload = useCwaResourceUpload(iri)
 
       expect(upload.file.value).toEqual({ name: 'workshop bench.jpg', size: '240 KB', url: '/files/workshop%20bench.jpg?x=1', mimeType: 'image/jpeg' })
+    })
+  })
+  describe('a component not added yet holds its file until it is added (#461)', () => {
+    const NEW = computed(() => '__new__')
+    const adding = { endpoint: '/component/images', isPublishable: true }
+
+    beforeEach(() => {
+      vi.stubGlobal('URL', Object.assign(URL, { createObjectURL: vi.fn(() => 'blob:held'), revokeObjectURL: vi.fn() }))
+      mockGetResource.mockReturnValue(ref({ data: { '@id': '__new__', '_metadata': { persisted: false, adding } } }))
+    })
+
+    test('a chosen file is held, not sent, and shown with a preview from the browser\'s copy', async () => {
+      const upload = useCwaResourceUpload(NEW, 'image', 'Image')
+
+      await upload.handleInputChangeFile(new File(['12345'], 'bench.jpg', { type: 'image/jpeg' }))
+
+      expect(mockUpdateResource).not.toHaveBeenCalled()
+      expect(upload.fileExists.value).toBe(true)
+      expect(upload.file.value).toEqual({ name: 'bench.jpg', size: '5 B', url: 'blob:held', mimeType: 'image/jpeg' })
+      expect(heldUpload(mockCwa as unknown as Cwa, '__new__', 'image')?.file.name).toBe('bench.jpg')
+    })
+
+    test('the held file is the downscaled one', async () => {
+      const smaller = new File(['1'], 'bench.jpg', { type: 'image/jpeg' })
+      mockDownscaleImageFile.mockResolvedValueOnce(smaller)
+      const upload = useCwaResourceUpload(NEW, 'image')
+
+      await upload.handleInputChangeFile(new File(['12345'], 'bench.jpg', { type: 'image/jpeg' }))
+
+      expect(heldUpload(mockCwa as unknown as Cwa, '__new__', 'image')?.file).toBe(smaller)
+    })
+
+    test('removing a held file asks nothing, sends nothing and frees its preview', async () => {
+      const upload = useCwaResourceUpload(NEW, 'image')
+      await upload.handleInputChangeFile(new File(['1'], 'bench.jpg', { type: 'image/jpeg' }))
+
+      await upload.handleInputDeleteFile()
+
+      expect(mockUpdateResource).not.toHaveBeenCalled()
+      expect(upload.fileExists.value).toBe(false)
+      expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:held')
+    })
+
+    test('a file held for an earlier unadded component is not shown on the next one', async () => {
+      const upload = useCwaResourceUpload(NEW, 'image')
+      await upload.handleInputChangeFile(new File(['1'], 'bench.jpg', { type: 'image/jpeg' }))
+
+      mockGetResource.mockReturnValue(ref({ data: { '@id': '__new__', '_metadata': { persisted: false, adding: { ...adding } } } }))
+
+      expect(useCwaResourceUpload(NEW, 'image').fileExists.value).toBe(false)
+    })
+
+    test('Retry on an added component whose held upload failed sends the held file to it', async () => {
+      mockGetResource.mockReturnValue(ref({ data: { '@id': '/resources/1', '_metadata': {} } }))
+      const held = new File(['1'], 'bench.jpg', { type: 'image/jpeg' })
+      holdUpload(mockCwa as unknown as Cwa, '/resources/1', 'image', held)
+      const upload = useCwaResourceUpload(iri, 'image')
+
+      expect(upload.file.value?.name).toBe('bench.jpg')
+      await upload.retry()
+
+      expect(mockUpdateResource).toHaveBeenCalledOnce()
+      expect(mockUpdateResource.mock.calls[0]![0]).toMatchObject({ iri: '/resources/1', endpoint: '/resources/1/upload' })
+      expect((mockUpdateResource.mock.calls[0]![0].data as FormData).get('image')).toBe(held)
+    })
+
+    test('choosing a file for a component not added yet clears the error a refused Add put on its field (#461)', async () => {
+      const entry = { data: { '@id': '__new__', '_metadata': { persisted: false, adding } } }
+      mockGetResource.mockReturnValue(ref(entry))
+      const upload = useCwaResourceUpload(NEW, 'image')
+
+      await upload.handleInputChangeFile(new File(['1'], 'bench.jpg', { type: 'image/jpeg' }))
+
+      expect(stateWrites.cleared).toHaveBeenCalledExactlyOnceWith(entry, 'image')
+    })
+
+    test('Retry with no file to send runs again the write the API refused for this field (#461)', async () => {
+      const entry = { data: { '@id': '/resources/1', '_metadata': {} } }
+      mockGetResource.mockReturnValue(ref(entry))
+      const upload = useCwaResourceUpload(iri, 'poster')
+
+      await upload.retry()
+
+      expect(stateWrites.retryWrite).toHaveBeenCalledExactlyOnceWith(entry, 'poster')
+      expect(mockUpdateResource).not.toHaveBeenCalled()
     })
   })
 })

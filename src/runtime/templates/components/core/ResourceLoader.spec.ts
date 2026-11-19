@@ -1,12 +1,16 @@
 // @vitest-environment happy-dom
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { ref } from 'vue'
+import { createSSRApp, h, ref, transformVNodeArgs } from 'vue'
 import * as vue from 'vue'
+import { renderToString } from 'vue/server-renderer'
 import ResourceLoader from './ResourceLoader.vue'
 import { CwaAuthStatus } from '#cwa/api/auth'
 import { CwaResourceApiStatuses } from '#cwa/storage/stores/resources/state'
 import * as cwaComposables from '#cwa/composables/cwa'
+
+const styleClasses = vi.hoisted(() => ({}) as Record<string, Record<string, string>>)
+vi.mock('#build/cwa-styles', () => ({ styleClasses }))
 
 const mockPrefix = 'TestComponent'
 const mockIri = 'testIri'
@@ -480,6 +484,90 @@ describe('ResourceLoader', () => {
       })
 
       expect(wrapper.element).toMatchSnapshot()
+    })
+  })
+
+  describe('server render of style keys (#453)', () => {
+    const rendered = (name: string) => ({ name, props: ['iri'], render: () => h('div', { class: 'root' }, name) })
+
+    function renderResource(data: Record<string, unknown>, componentPrefix: string, componentNames: string[]) {
+      // @ts-expect-error
+      vi.spyOn(cwaComposables, 'useCwa').mockImplementation(() => ({
+        auth: { user: undefined, signedIn: ref(false) },
+        fetchResource: vi.fn(),
+        resources: {
+          getResource: vi.fn(() => ref({ data, apiState: { status: CwaResourceApiStatuses.SUCCESS } })),
+        },
+        isStaticRender: false,
+      }))
+      const app = createSSRApp(ResourceLoader, { iri: '/component/1', componentPrefix })
+      for (const name of componentNames) {
+        app.component(name, rendered(name))
+      }
+      return renderToString(app)
+    }
+
+    function setStyles(styles: Record<string, Record<string, string>>) {
+      for (const name of Object.keys(styleClasses)) {
+        delete styleClasses[name]
+      }
+      Object.assign(styleClasses, structuredClone(styles))
+    }
+
+    beforeEach(() => {
+      transformVNodeArgs()
+      setStyles({
+        CwaComponentHero: { 'black-bg': 'bg-black text-white', 'wide': 'w-full' },
+        CwaComponentHeroUiTall: { tall: 'h-screen' },
+        CwaComponentCard: { 'black-bg': 'bg-neutral-900' },
+        CwaPagePrimary: { big: 'text-2xl' },
+      })
+    })
+
+    test('the server-rendered HTML carries the resolved classes for the stored keys', async () => {
+      const html = await renderResource({ '@type': 'Hero', 'uiClassNames': ['style:black-bg', 'style:wide'] }, 'CwaComponent', ['CwaComponentHero'])
+
+      expect(html).toBe('<div class="root bg-black text-white w-full">CwaComponentHero</div>')
+    })
+
+    test('the same key resolves against each component type\'s own styles', async () => {
+      const html = await renderResource({ '@type': 'Card', 'uiClassNames': ['style:black-bg'] }, 'CwaComponent', ['CwaComponentCard'])
+
+      expect(html).toBe('<div class="root bg-neutral-900">CwaComponentCard</div>')
+    })
+
+    test('keys resolve against the styles of the SFC that renders, the UI variant or the primary', async () => {
+      const data = { '@type': 'Hero', 'uiComponent': 'CwaComponentHeroUiTall', 'uiClassNames': ['style:black-bg', 'style:tall'] }
+      const components = ['CwaComponentHero', 'CwaComponentHeroUiTall']
+
+      expect(await renderResource(data, 'CwaComponent', components)).toBe('<div class="root h-screen">CwaComponentHeroUiTall</div>')
+
+      const withoutTall = { ...data, uiClassNames: ['style:black-bg'] }
+      expect(await renderResource(withoutTall, 'CwaComponent', components)).toBe('<div class="root">CwaComponentHeroUiTall</div>')
+      expect(withoutTall.uiClassNames).toEqual(['style:black-bg'])
+
+      expect(await renderResource({ ...withoutTall, uiComponent: null }, 'CwaComponent', components)).toBe('<div class="root bg-black text-white">CwaComponentHero</div>')
+    })
+
+    test('an unknown key or an entry without the prefix renders no classes', async () => {
+      const html = await renderResource({ '@type': 'Hero', 'uiClassNames': ['style:nope', 'bg-black text-white'] }, 'CwaComponent', ['CwaComponentHero'])
+
+      expect(html).toBe('<div class="root">CwaComponentHero</div>')
+    })
+
+    test('changing the generated styles changes the rendered classes with no save', async () => {
+      const data = { '@type': 'Hero', 'uiClassNames': ['style:black-bg'] }
+      expect(await renderResource(data, 'CwaComponent', ['CwaComponentHero'])).toBe('<div class="root bg-black text-white">CwaComponentHero</div>')
+
+      setStyles({ CwaComponentHero: { 'black-bg': 'bg-red-500' } })
+
+      expect(await renderResource(data, 'CwaComponent', ['CwaComponentHero'])).toBe('<div class="root bg-red-500">CwaComponentHero</div>')
+    })
+
+    test('a page resolves its own keys the same way', async () => {
+      const html = await renderResource({ '@type': 'Page', 'uiComponent': 'CwaPagePrimary', 'uiClassNames': ['style:big'] }, 'CwaPage', ['CwaPagePrimary'])
+
+      expect(html).toBe('<div class="root text-2xl">CwaPagePrimary</div>')
     })
   })
 })

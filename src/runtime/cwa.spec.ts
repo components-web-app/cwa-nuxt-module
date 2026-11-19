@@ -310,13 +310,18 @@ describe('Cwa class test', () => {
   })
 
   test.each([
-    { navigationDisabled: true, follows: false },
-    { navigationDisabled: false, follows: true },
-  ])('Fetcher follows a route redirect only when navigation is enabled (navigationDisabled: $navigationDisabled)', ({ navigationDisabled, follows }) => {
+    { navigationDisabled: true, visitPath: undefined, follows: false },
+    { navigationDisabled: false, visitPath: undefined, follows: true },
+    { navigationDisabled: true, visitPath: '/old', follows: true },
+    { navigationDisabled: true, visitPath: '/elsewhere', follows: false },
+  ])('the fetcher and the route middleware follow a route redirect only when navigation is enabled or the editor chose Visit for that route (navigationDisabled: $navigationDisabled, visitPath: $visitPath)', ({ navigationDisabled, visitPath, follows }) => {
     const $cwa = createCwa({ storeName })
     Object.defineProperty($cwa.adminNavGuard, 'navigationDisabled', { value: navigationDisabled })
+    $cwa.admin.visitPath = visitPath
+    const route = { '@id': '/_/routes//old', 'path': '/old', 'redirectPath': '/new' }
     const followsRedirects = Fetcher.mock.calls[0][5]
-    expect(followsRedirects()).toBe(follows)
+    expect(followsRedirects(route)).toBe(follows)
+    expect($cwa.followsRedirect(route)).toBe(follows)
   })
 
   test('Resources is initialised and accessible', () => {
@@ -423,36 +428,6 @@ describe('Cwa delegation methods and getters', () => {
     const fsmInstance = FetchStatusManager.mock.results[0].value
     $cwa.clearPrimaryFetch()
     expect(fsmInstance.clearPrimaryFetch).toHaveBeenCalledOnce()
-  })
-
-  test('resourcesConfig returns options.resources or empty object', () => {
-    const resources = { MyComponent: { instantAdd: true } }
-    const $cwa = createCwa({ storeName, resources })
-    expect($cwa.resourcesConfig).toEqual(resources)
-  })
-
-  test('resourcesConfig returns empty object when not set', () => {
-    const $cwa = createCwa({ storeName })
-    expect($cwa.resourcesConfig).toEqual({})
-  })
-
-  test('setResourceMeta updates resourcesConfig', () => {
-    const $cwa = createCwa({ storeName })
-    const meta = { MyComp: { instantAdd: false } }
-    $cwa.setResourceMeta(meta)
-    expect($cwa.resourcesConfig).toBe(meta)
-  })
-
-  test('layoutsConfig returns options.layouts', () => {
-    const layouts = [{ name: 'Default', label: 'Default Layout' }]
-    const $cwa = createCwa({ storeName, layouts })
-    expect($cwa.layoutsConfig).toBe(layouts)
-  })
-
-  test('pagesConfig returns options.pages', () => {
-    const pages = [{ name: 'Home', label: 'Home Page' }]
-    const $cwa = createCwa({ storeName, pages })
-    expect($cwa.pagesConfig).toBe(pages)
   })
 
   test('pageDataConfig returns options.pageData', () => {

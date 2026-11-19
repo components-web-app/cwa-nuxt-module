@@ -130,11 +130,13 @@ describe('CwaUiAlert (#461)', () => {
     expect(await axe(document.body)).toHaveNoViolations()
   })
 
-  test('an info alert is the field tint with no edge', () => {
+  test('an info alert has the route recommendation\'s look: an accent edge and tint, and an accent info glyph', () => {
     const wrapper = mount(Alert, { props: { title: 'Note' } })
 
-    expect(wrapper.classes()).toContain('cwa:bg-field')
-    expect(wrapper.classes()).not.toContain('cwa:border-s-3')
+    expect(wrapper.classes()).toEqual(expect.arrayContaining(['cwa:border-s-3', 'cwa:border-accent-fg', 'cwa:bg-[color-mix(in_srgb,var(--cwa-color-accent-fg)_10%,var(--cwa-color-surface))]']))
+    expect(wrapper.classes()).not.toContain('cwa:bg-field')
+    expect(wrapper.get('[data-glyph="info"]').classes()).toContain('cwa:text-accent-fg')
+    expect(wrapper.get('[data-glyph="info"]').classes()).not.toContain('cwa:text-fg-muted')
   })
 
   test('can take focus, for a failed Save', () => {

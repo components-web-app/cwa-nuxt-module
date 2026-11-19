@@ -37,6 +37,8 @@ interface DataApiResourceEvent extends DeleteApiResourceEvent {
   source?: string
   headers?: Record<string, string>
   onRequest?: (iri: string, done?: Promise<{ resource?: CwaResource, error?: FetchError<any> }>) => void
+  /** @internal */
+  retry?: () => unknown
 }
 
 export type ApiResourceEvent = DataApiResourceEvent | DeleteApiResourceEvent
@@ -68,6 +70,8 @@ export class ResourcesManager {
   private readonly _errorStore: CwaErrorStoreInterface
   /** @internal */
   public preconditionFailed?: (event: ApiResourceEvent, iri: string, resource: CwaResource) => boolean
+  /** @internal */
+  public writeSaved?: (event: DataApiResourceEvent) => void
 
   constructor(
     cwaFetch: CwaFetch,
@@ -407,6 +411,7 @@ export class ResourcesManager {
       if (event.saveCompleteFn) {
         await event.saveCompleteFn(resource as CwaResource | undefined)
       }
+      'data' in event && !event.onRequest && this.writeSaved?.(event)
       return resource
     }
     catch (err) {
@@ -556,7 +561,7 @@ export class ResourcesManager {
     return true
   }
 
-  async addResourceAction(publish?: boolean) {
+  async addResourceAction(publish?: boolean, retry?: () => unknown) {
     const addEvent = this._addResourceEvent.value
     if (!addEvent || !this.resourcesStore.adding?.resource) {
       throw new Error('Cannot add resource. No addResource event is present')
@@ -626,6 +631,7 @@ export class ResourcesManager {
       data: postData,
       refreshEndpoints,
       requestCompleteFn,
+      retry,
     }
 
     const newResource = groupIri && addEvent.addAfter !== null
