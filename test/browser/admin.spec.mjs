@@ -2016,3 +2016,30 @@ test('70. a title save that fails once another component is selected raises a to
   await eventually(async () => await status.getAttribute('data-state') === 'error', 'Show me did not select the title with its failed save')
   await toast.waitFor({ state: 'detached' })
 })
+
+test('71. typing in a live title on the page saves as it is typed, with no blur or Enter, and the bar\'s Title field shows each character as it is typed (#461)', async ({ cwa: t }) => {
+  const { page, seed } = t
+  const title = (await t.api.create('/component/titles', { title: 'Live title', publishedAt: 'now' }))['@id']
+  await t.api.create('/_/component_positions', { componentGroup: seed.iris.pageAGroup, component: title })
+  await openEditMode(t)
+
+  await page.getByTestId('inline-edit-value').filter({ hasText: 'Live title' }).click()
+  const input = page.getByPlaceholder('Add a title')
+  await eventually(() => input.evaluate(el => document.activeElement === el), 'The title editor was not focused')
+  const bar = managerPanel(page).getByRole('textbox', { name: 'Title' })
+  await bar.waitFor()
+
+  const patched = text => t.rehearsal.writes.find(w => w.method === 'PATCH' && w.body?.title === text)
+  let typed = 'Live title'
+  for (const words of [' typed', ' again']) {
+    for (const key of words) {
+      await page.keyboard.type(key)
+      typed += key
+      await eventually(async () => await bar.inputValue() === typed, `The bar does not show "${typed}" while it is typed on the page`)
+    }
+    await eventually(() => patched(typed), `Typing "${typed}" sent no PATCH: ${JSON.stringify(t.rehearsal.writes)}`)
+    expect(await input.evaluate(el => document.activeElement === el)).toBe(true)
+    expect(await input.inputValue()).toBe(typed)
+  }
+  await t.settle()
+})
