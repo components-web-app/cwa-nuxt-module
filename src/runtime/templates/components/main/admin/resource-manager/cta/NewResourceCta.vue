@@ -60,7 +60,7 @@ async function uploadHeld(iri: string, fields: string[], publishAfter: boolean, 
   }
   const one = failed.length === 1
   toast.show({
-    tone: 'danger',
+    tone: 'error',
     title: `${draft ? 'Added as a draft' : 'Added'}, without ${one ? 'its file' : 'some of its files'}`,
     description: `The ${one ? 'file couldn\'t' : 'files couldn\'t'} be uploaded. Retry here, or select the component and use Retry on the ${one ? 'file' : 'files'}.`,
     actions: [{ label: 'Retry', primary: true, onClick: () => uploadHeld(iri, failed, publishAfter, draft) }],

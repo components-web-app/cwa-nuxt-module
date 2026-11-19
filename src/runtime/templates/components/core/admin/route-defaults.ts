@@ -6,7 +6,7 @@ export function pathOfRouteIri(iri?: string | null) {
   return iri ? iri.replace(/^.*\/_\/routes\//, '') : undefined
 }
 
-export function useRouteDefaults(page: () => { parentPage?: string | null, parentPageData?: string | null, title?: string | null } | undefined) {
+export function useRouteDefaults(page: () => Record<string, any> | undefined) {
   const $cwa = useCwa()
   const parentIri = computed(() => page()?.parentPage || page()?.parentPageData || undefined)
   const parentResource = computed(() => parentIri.value ? $cwa.resources.getResource(parentIri.value).value : null)
