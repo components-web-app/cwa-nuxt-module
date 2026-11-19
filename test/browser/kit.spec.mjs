@@ -191,55 +191,65 @@ for (const width of widths) {
 }
 
 const floatingSurfaces = [
-  ['the resource stack at the pointer', async (page) => {
+  ['the resource stack at the pointer', false, async (page) => {
     const area = page.getByTestId('kit-stack-area')
     await area.scrollIntoViewIfNeeded()
     const box = await area.boundingBox()
     await page.mouse.click(box.x + 40, box.y + 20, { button: 'right' })
   }],
-  ['the resource stack over its button', page => page.getByRole('button', { name: 'Rich text' }).click()],
-  ['the split button menu', page => page.getByTestId('kit-split').getByRole('button').last().click()],
-  ['an information popover', page => page.locator('main').getByTestId('field-info').first().click()],
-  ['a select menu', page => page.locator('main').getByTestId('select-trigger').first().click()],
-  ['a multi-select menu', page => page.locator('main').getByTestId('multi-input').first().click()],
-  ['a resource search menu', async (page) => {
+  ['the resource stack over its button', false, page => page.getByRole('button', { name: 'Rich text' }).click()],
+  ['the split button menu', true, page => page.getByTestId('kit-split').getByRole('button').last().click()],
+  ['an information popover', true, page => page.locator('main').getByTestId('field-info').first().click()],
+  ['a disabled button\'s reason', true, page => page.locator('main button[title="Nothing has changed since the last save"]').first().click({ force: true })],
+  ['a field\'s error popover', true, page => page.getByTestId('kit-input-error').locator('input').focus()],
+  ['a select menu', true, page => page.locator('main').getByTestId('select-trigger').first().click()],
+  ['a multi-select menu', true, page => page.locator('main').getByTestId('multi-input').first().click()],
+  ['a resource search menu', true, async (page) => {
     const input = page.locator('main').getByTestId('search-input').first()
     await input.click()
     await input.fill('a')
   }],
+  ['a date picker\'s calendar', true, page => page.locator('main [data-date-picker-trigger]:not([disabled])').first().click()],
+  ['a day range picker\'s calendar', true, page => page.locator('main').getByTestId('day-range-trigger').first().click()],
+  ['an image\'s alt text popover', true, page => page.locator('main').getByTestId('image-alt-chip').first().click()],
+  ['the link popover', true, page => page.locator('main').getByRole('button', { name: 'Link', exact: true }).click()],
 ]
 
-for (const [name, open] of floatingSurfaces) {
-  test(`kit: ${name} is never painted before it is placed (#461)`, async ({ page }) => {
+function sampleFloating() {
+  window.cwaFloatingFrames = []
+  const sample = () => {
+    const wrappers = [...document.querySelectorAll('[data-reka-popper-content-wrapper]')]
+    if (!wrappers.length && !window.cwaFloatingFrames.length) {
+      requestAnimationFrame(sample)
+      return
+    }
+    window.cwaFloatingFrames.push(wrappers.map((wrapper) => {
+      const content = wrapper.firstElementChild
+      const style = getComputedStyle(wrapper)
+      const contentStyle = content ? getComputedStyle(content) : style
+      const placement = new DOMMatrixReadOnly(style.transform === 'none' ? undefined : style.transform)
+      const rect = wrapper.getBoundingClientRect()
+      return {
+        id: content?.getAttribute('data-testid') ?? content?.getAttribute('role'),
+        x: placement.e,
+        y: placement.f,
+        painted: style.visibility !== 'hidden' && contentStyle.visibility !== 'hidden' && Number(contentStyle.opacity) > 0 && rect.width > 0,
+        rising: !!content?.getAnimations().some(animation => animation.animationName === 'cwa-rise' && animation.playState === 'running'),
+        rest: { opacity: contentStyle.opacity, scale: contentStyle.scale, translate: contentStyle.translate },
+      }
+    }))
+    if (window.cwaFloatingFrames.length < 45) {
+      requestAnimationFrame(sample)
+    }
+  }
+  requestAnimationFrame(sample)
+}
+
+for (const [name, rises, open] of floatingSurfaces) {
+  test(`kit: ${name} is never painted before it is placed${rises ? ', rises into place and ends at rest' : ''} (#461)`, async ({ page }) => {
     await openKit(page, 1280)
     await page.waitForLoadState('networkidle')
-    await page.evaluate(() => {
-      window.cwaFloatingFrames = []
-      const sample = () => {
-        const wrappers = [...document.querySelectorAll('[data-reka-popper-content-wrapper]')]
-        if (!wrappers.length && !window.cwaFloatingFrames.length) {
-          requestAnimationFrame(sample)
-          return
-        }
-        window.cwaFloatingFrames.push(wrappers.map((wrapper) => {
-          const content = wrapper.firstElementChild
-          const style = getComputedStyle(wrapper)
-          const contentStyle = content ? getComputedStyle(content) : style
-          const placement = new DOMMatrixReadOnly(style.transform === 'none' ? undefined : style.transform)
-          const rect = wrapper.getBoundingClientRect()
-          return {
-            id: content?.getAttribute('data-testid') ?? content?.getAttribute('role'),
-            x: placement.e,
-            y: placement.f,
-            painted: style.visibility !== 'hidden' && contentStyle.visibility !== 'hidden' && Number(contentStyle.opacity) > 0 && rect.width > 0,
-          }
-        }))
-        if (window.cwaFloatingFrames.length < 45) {
-          requestAnimationFrame(sample)
-        }
-      }
-      requestAnimationFrame(sample)
-    })
+    await page.evaluate(sampleFloating)
     await open(page)
     await page.waitForFunction(() => window.cwaFloatingFrames.length >= 45)
 
@@ -251,8 +261,81 @@ for (const [name, open] of floatingSurfaces) {
       return surface.painted && placed && (Math.abs(placed.x - surface.x) > 1 || Math.abs(placed.y - surface.y) > 1)
     }).map(surface => `frame ${index}: ${surface.id} at ${surface.x},${surface.y}`))
     expect(misplaced).toEqual([])
+    if (rises) {
+      expect(frames.some(frame => frame.some(surface => surface.rising))).toBe(true)
+      expect(final.filter(surface => surface.painted).map(surface => surface.rest)).toEqual(final.filter(surface => surface.painted).map(() => ({ opacity: '1', scale: 'none', translate: 'none' })))
+    }
   })
 }
+
+const kitDialogs = [
+  ['a centred dialog', 'dialog', 'dialog-overlay', page => page.getByTestId('kit-dialog-open').click()],
+  ['a confirm', 'confirm', 'confirm-scrim', page => page.getByTestId('kit-confirm-simple').click()],
+]
+
+for (const [name, testId, overlayId, open] of kitDialogs) {
+  test(`kit: ${name} rises 0.5rem into its centred place over an overlay that fades in, and ends at rest (#461)`, async ({ page }) => {
+    await openKit(page, 1280)
+    await page.waitForLoadState('networkidle')
+    await page.evaluate(([testId, overlayId]) => {
+      window.cwaDialogFrames = []
+      const sample = () => {
+        const panel = document.querySelector(`[data-testid="${testId}"]`)
+        const overlay = document.querySelector(`[data-testid="${overlayId}"]`)
+        if (panel) {
+          const rect = panel.getBoundingClientRect()
+          const style = getComputedStyle(panel)
+          window.cwaDialogFrames.push({
+            centre: { x: rect.left + rect.width / 2 - innerWidth / 2, y: rect.top + rect.height / 2 - innerHeight / 2 },
+            opacity: Number(style.opacity),
+            scale: style.scale,
+            rising: panel.getAnimations().some(animation => animation.animationName === 'cwa-rise' && animation.playState === 'running'),
+            fading: !!overlay?.getAnimations().some(animation => animation.animationName === 'cwa-line-in' && animation.playState === 'running'),
+          })
+        }
+        if (window.cwaDialogFrames.length < 40) {
+          requestAnimationFrame(sample)
+        }
+      }
+      requestAnimationFrame(sample)
+    }, [testId, overlayId])
+    await open(page)
+    await page.waitForFunction(() => window.cwaDialogFrames.length >= 40)
+
+    const frames = await page.evaluate(() => window.cwaDialogFrames)
+    const final = frames.at(-1)
+    expect(frames.some(frame => frame.rising)).toBe(true)
+    expect(frames.some(frame => frame.fading)).toBe(true)
+    expect(frames.some(frame => frame.centre.y > 1)).toBe(true)
+    expect(frames.every(frame => frame.centre.y <= 8.5 && frame.centre.y >= -0.5)).toBe(true)
+    expect(final.rising).toBe(false)
+    expect({ opacity: final.opacity, scale: final.scale }).toEqual({ opacity: 1, scale: 'none' })
+    expect(Math.abs(final.centre.x)).toBeLessThan(1)
+    expect(Math.abs(final.centre.y)).toBeLessThan(1)
+  })
+}
+
+test('kit: under reduced motion nothing rises or fades in as a popover, menu, dialog or confirm opens (#461)', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await openKit(page, 1280)
+  const moving = () => page.evaluate(() => document.getAnimations().map(animation => animation.animationName).filter(name => name === 'cwa-rise' || name === 'cwa-line-in'))
+
+  await page.locator('main').getByTestId('field-info').first().click()
+  await page.getByTestId('field-info-popover').waitFor()
+  expect(await moving()).toEqual([])
+  await page.keyboard.press('Escape')
+  await page.locator('main').getByTestId('select-trigger').first().click()
+  await page.getByRole('listbox').first().waitFor()
+  expect(await moving()).toEqual([])
+  await page.keyboard.press('Escape')
+  await page.getByTestId('kit-confirm-simple').click()
+  await page.getByTestId('confirm').waitFor()
+  expect(await moving()).toEqual([])
+  await page.keyboard.press('Escape')
+  await page.getByTestId('kit-dialog-open').click()
+  await page.getByTestId('dialog').waitFor()
+  expect(await moving()).toEqual([])
+})
 
 for (const width of widths) {
   test(`kit at ${width}: a segmented control in a dialog is only as wide as its options (#461)`, async ({ page }) => {
@@ -328,8 +411,8 @@ for (const [width, height] of [[1280, 600], [390, 600]]) {
 }
 
 const stackOpenings = [
-  ['at the pointer', floatingSurfaces[0][1]],
-  ['over its button, as the header\'s path selector opens it', floatingSurfaces[1][1]],
+  ['at the pointer', floatingSurfaces[0][2]],
+  ['over its button, as the header\'s path selector opens it', floatingSurfaces[1][2]],
 ]
 
 for (const [name, open] of stackOpenings) {
@@ -710,7 +793,9 @@ async function openKitDialog(page) {
     await page.getByTestId('kit-dialog-open').click()
     await expect(page.getByRole('dialog').first().getByRole('tab').first()).toBeVisible({ timeout: 500 })
   }).toPass()
-  return page.getByRole('dialog').first()
+  const dialog = page.getByRole('dialog').first()
+  await dialog.evaluate(element => Promise.all(element.getAnimations().map(animation => animation.finished)))
+  return dialog
 }
 
 const twoFrames = () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve(true))))

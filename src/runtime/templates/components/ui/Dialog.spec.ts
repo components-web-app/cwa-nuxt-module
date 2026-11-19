@@ -264,6 +264,27 @@ describe('CwaUiDialog and the Save model (#461)', () => {
     })
   })
 
+  describe('opening (#461)', () => {
+    const overlay = () => document.querySelector<HTMLElement>('[data-testid="dialog-overlay"]')!
+
+    test('a centred dialog rises into place from sm up, over an overlay that fades in', async () => {
+      mountDialog(form)
+      await flushPromises()
+
+      expect(dialog().className.split(' ')).toEqual(expect.arrayContaining(['cwa:sm:dialog-in', 'cwa:sm:-translate-x-1/2', 'cwa:sm:-translate-y-1/2']))
+      expect(overlay().className.split(' ')).toContain('cwa:overlay-in')
+    })
+
+    test('a slide-over keeps its slide and never rises, over an overlay that fades in', async () => {
+      mountDialog(form, { placement: 'right' })
+      await flushPromises()
+
+      expect(dialog().className).toContain('cwa-slide-over-in')
+      expect(dialog().className).not.toContain('dialog-in')
+      expect(overlay().className.split(' ')).toContain('cwa:overlay-in')
+    })
+  })
+
   describe('closing a slide-over', () => {
     function media(reduced = false, wide = true) {
       return vi.spyOn(window, 'matchMedia').mockImplementation((query: string) => ({
@@ -299,6 +320,7 @@ describe('CwaUiDialog and the Save model (#461)', () => {
       expect(dialog().className).not.toContain('cwa-slide-over-in')
       expect(dialog().hasAttribute('inert')).toBe(true)
       expect(document.querySelector('[data-testid="dialog-overlay"]')!.className).toContain('cwa:motion-safe:animate-[cwa-fade-out_var(--cwa-duration-slow)_cubic-bezier(0.8,0,0.8,0.2)_forwards]')
+      expect(document.querySelector('[data-testid="dialog-overlay"]')!.className).not.toContain('overlay-in')
 
       slidOut('cwa-spin')
       expect(onClose).not.toHaveBeenCalled()

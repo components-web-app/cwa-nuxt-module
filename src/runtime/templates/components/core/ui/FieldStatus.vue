@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { POPOVER_GAP } from './popover-gap'
+import { popoverOpen } from './open-motion'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { PopoverArrow, PopoverContent, PopoverRoot } from 'reka-ui'
 import CwaUiButton from '../../ui/Button.vue'
@@ -282,7 +283,7 @@ defineExpose({ line, open: shown })
       :collision-padding="8"
       :aria-label="title"
       data-testid="field-status-popover"
-      class="cwa:z-context cwa:w-max cwa:max-w-[min(20rem,calc(100vw-1rem))] cwa:bg-surface-menu cwa:p-popover cwa:text-control cwa:text-fg cwa:shadow-popover cwa:outline-none"
+      :class="['cwa:z-context cwa:w-max cwa:max-w-[min(20rem,calc(100vw-1rem))] cwa:bg-surface-menu cwa:p-popover cwa:text-control cwa:text-fg cwa:shadow-popover cwa:outline-none', popoverOpen]"
       @open-auto-focus.prevent
       @close-auto-focus.prevent
       @escape-key-down="onEscape"

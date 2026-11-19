@@ -65,6 +65,14 @@ describe('CwaUiConfirm (#461)', () => {
     expect(classes.some(name => name.includes('slide-over') || name.includes('right-0'))).toBe(false)
   })
 
+  test('rises into its centred place over a scrim that fades in (#461)', async () => {
+    mountConfirm()
+    await flushPromises()
+
+    expect(panel().className.split(' ')).toContain('cwa:dialog-in')
+    expect(q('[data-testid="confirm-scrim"]').className.split(' ')).toContain('cwa:overlay-in')
+  })
+
   test('is an alert dialog with its title and text linked, the consequence in order, and Don\'t delete first', async () => {
     mountConfirm()
     await flushPromises()

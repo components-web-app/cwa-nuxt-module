@@ -38,6 +38,18 @@ describe('InfoPopover (#461)', () => {
     expect(shownColour(glyph)).toBe('fg-muted')
   })
 
+  test('the open popover takes the shared opening motion, with the side reka placed it on, so it rises away from its ⓘ (#461)', async () => {
+    const wrapper = mount(InfoPopover, { props: { label: 'Reference', text: 'Only admins see this.', textId: 'reference-info' }, attachTo: document.body })
+
+    await wrapper.get('[data-testid="field-info"]').trigger('click')
+    await flushPromises()
+
+    const popover = document.querySelector<HTMLElement>('[data-testid="field-info-popover"]')!
+    expect(popover.classList).toContain('cwa:pop-in')
+    expect(popover.dataset.state).toBe('open')
+    expect(popover.dataset.side).toBe('top')
+  })
+
   test('the popover\'s title row and Close sit inside its padding, never pulled into the corner with negative margins, the row only as tall as its letters and the text trimmed to its capitals and baseline, so the space above the title matches the space below the last line', async () => {
     const wrapper = mount(InfoPopover, { props: { label: 'Reference', text: 'Only admins see this.', textId: 'reference-info' }, attachTo: document.body })
 
