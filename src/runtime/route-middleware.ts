@@ -74,7 +74,10 @@ export default defineNuxtRouteMiddleware(async (to: RouteLocationNormalized, fro
         const baseURL = nuxtApp.$config.app.baseURL.replace(/\/+$/, '')
         return navigateTo(`${baseURL}${resource.redirectPath}`, { redirectCode: 308, external: true })
       }
-      return navigateTo(resource.redirectPath, { redirectCode: 308 })
+      const redirectPath = nuxtApp.$cwa.navigationDisabled
+        ? `${resource.redirectPath}${resource.redirectPath.includes('?') ? '&' : '?'}cwa_force=true`
+        : resource.redirectPath
+      return navigateTo(redirectPath, { redirectCode: 308 })
       // this may be in place to help with multiple redirects on a client side... stop stop
       // infinite loop and crashing
       // return callWithNuxt(nuxtApp, navigateTo, [resource.redirectPath, { redirectCode: 308 }])

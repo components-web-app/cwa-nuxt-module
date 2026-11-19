@@ -251,7 +251,7 @@ describe('Test route middleware', () => {
     expect(nuxt.navigateTo).toHaveBeenCalledWith('/redirect-path', { redirectCode: 308 })
   })
 
-  test('client-side: follows a redirect while editing when $cwa follows that route\'s redirect, as after Visit', async () => {
+  test('client-side: follows a redirect while editing when $cwa follows that route\'s redirect, as after Visit, forced past the editing navigation guard', async () => {
     const followsRedirect = vi.fn(() => true)
     vi.spyOn(nuxt, 'useNuxtApp').mockImplementationOnce(() => ({
       $cwa: {
@@ -261,6 +261,7 @@ describe('Test route middleware', () => {
         resourcesManager: { confirmDiscardAddingResource },
         auth: { isAdmin: computed(() => false) },
         admin: { isEditing: true },
+        navigationDisabled: true,
         followsRedirect,
       },
     }))
@@ -268,7 +269,7 @@ describe('Test route middleware', () => {
     await routeMiddleware(createToRoute())
     await flushPromises()
     expect(followsRedirect).toHaveBeenCalledWith({ redirectPath: '/redirect-path' })
-    expect(nuxt.navigateTo).toHaveBeenCalledWith('/redirect-path', { redirectCode: 308 })
+    expect(nuxt.navigateTo).toHaveBeenCalledWith('/redirect-path?cwa_force=true', { redirectCode: 308 })
   })
 
   describe('admin editing guard — redirect suppressed when admin is in edit mode', () => {
