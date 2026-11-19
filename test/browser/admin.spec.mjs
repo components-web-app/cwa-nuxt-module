@@ -1,7 +1,8 @@
 import * as Y from 'yjs'
 import { expect, test } from './fixtures.mjs'
+import { apiPrefix } from './api-client.mjs'
 import { mercurePath } from './rehearsal.mjs'
-import { articleTexts, seedArticlePages, texts } from './seed.mjs'
+import { articleTexts, collectionTexts, seedArticlePages, seedCollection, texts } from './seed.mjs'
 import { controlRows } from './control-rows.mjs'
 
 const notFoundResource = /^Failed to load resource: the server responded with a status of 404/
@@ -2158,4 +2159,80 @@ test('73. publishing an image that has no file shows the refusal on its file fie
   assert(await publish.evaluate(el => el === document.activeElement), 'Showing the refused field moved focus off Publish')
   await t.settle()
   assert(await page.locator('[data-toast-id^="cwa-request-error-"]').count() === 0, 'The refusal was also raised as a toast')
+})
+
+async function collectionRoot(page) {
+  const root = page.getByRole('group', { name: 'Collection component' })
+  await root.waitFor()
+  return root
+}
+
+test('74. in edit mode a Collection is outlined with a crosshair over its own area and selected by a click there, and a click on one of its item links opens the link menu with Edit Collection, which selects it (#461)', async ({ cwa: t }) => {
+  const { page, settle } = t
+  const seeded = await seedCollection(t.api, t.rehearsal.token, t.seed)
+  await openEditMode(t)
+  await page.getByText(collectionTexts.articleA, { exact: true }).waitFor()
+  await settle()
+  const root = await collectionRoot(page)
+  await root.scrollIntoViewIfNeeded()
+  await settle()
+  const box = await root.boundingBox()
+  const own = { x: box.x + 4, y: box.y + box.height - 3 }
+  await page.mouse.move(own.x, own.y)
+  const outline = await eventually(async () => {
+    const [drawn] = await page.getByTestId('hover-outline').evaluateAll(els => els.map((el) => {
+      const r = el.getBoundingClientRect()
+      return { top: r.top, left: r.left, width: r.width, height: r.height }
+    }))
+    return drawn && covers(drawn, { top: box.y, left: box.x, width: box.width, height: box.height }) ? drawn : undefined
+  }, 'No hover outline was drawn over the Collection')
+  assert(outline.width <= box.width + 2, `The hover outline is wider than the Collection: ${JSON.stringify(outline)}`)
+  const cursor = await page.evaluate(({ x, y }) => getComputedStyle(document.elementFromPoint(x, y)).cursor, own)
+  assert(cursor === 'crosshair', `The cursor over the Collection is ${cursor}`)
+
+  await page.mouse.click(own.x, own.y)
+  await page.getByTestId('component-menu').waitFor()
+
+  const selectedName = async () => (await page.getByTestId('path-selector-name').innerText()).trim()
+  await eventually(async () => await selectedName() === 'Collection', 'A click on the Collection\'s own area did not select it')
+
+  await select(page, texts.pageAOther)
+  await eventually(async () => await selectedName() !== 'Collection', 'Selecting another component kept the Collection selected')
+  await page.getByText(collectionTexts.articleB, { exact: true }).click()
+  const menu = linkMenu(page)
+  await menu.getByTestId('link-menu-edit').waitFor()
+  const rows = await menu.getByRole('menuitem').allInnerTexts()
+  assert(rows.length === 2 && rows[0] === 'Edit Collection' && rows[1] === `Visit ${seeded.paths.articleB}`, `The link menu lists ${JSON.stringify(rows)}`)
+  await menu.getByTestId('link-menu-edit').click()
+  await eventually(async () => await selectedName() === 'Collection', 'Edit Collection in the link menu did not select the Collection')
+  assert(page.url().endsWith(t.seed.paths.home), `The item link navigated to ${page.url()}`)
+})
+
+test('75. a Collection\'s Data category shows the stored page data collection, and choosing another saves its IRI with the API path prefix and shows it after a reload (#461)', async ({ cwa: t }) => {
+  const { page, settle } = t
+  const seeded = await seedCollection(t.api, t.rehearsal.token, t.seed, { source: '/page_data/nested_page_datas' })
+  const openCategory = async () => {
+    await (await collectionRoot(page)).click({ position: { x: 4, y: 4 } })
+    await page.getByTestId('component-menu').waitFor()
+    await page.getByRole('tab', { name: 'Collection', exact: true }).click()
+    const select = page.getByTestId('manager-tab-panel').getByRole('combobox', { name: 'Data category', exact: true })
+    await select.waitFor()
+    await settle()
+    return select
+  }
+  await openEditMode(t)
+  const select = await openCategory()
+  assert((await select.innerText()).trim() === 'Nested Topics', `The Data category shows ${await select.innerText()}, not the stored Nested Topics`)
+
+  await select.click()
+  await page.getByRole('option', { name: 'Blog Articles', exact: true }).click()
+  const write = await eventually(() => t.rehearsal.writes.find(w => w.method === 'PATCH' && w.path.startsWith(seeded.collection)), 'Choosing a Data category sent no PATCH')
+  assert(JSON.stringify(write.body) === JSON.stringify({ resourceIri: `${apiPrefix}/page_data/blog_article_datas` }), `PATCHed ${JSON.stringify(write.body)}`)
+  await settle()
+  const stored = await t.api.get(seeded.collection)
+  assert(stored.resourceIri === `${apiPrefix}/page_data/blog_article_datas`, `The API stored ${stored.resourceIri}`)
+
+  await openEditMode(t)
+  const reloaded = await openCategory()
+  assert((await reloaded.innerText()).trim() === 'Blog Articles', `After a reload the Data category shows ${await reloaded.innerText()}`)
 })
