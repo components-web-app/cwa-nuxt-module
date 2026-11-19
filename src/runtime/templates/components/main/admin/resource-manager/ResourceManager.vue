@@ -251,9 +251,10 @@ watch([spacer, managerHolder, currentStackItem, selectedIndex, allTabsMeta], () 
   flush: 'post',
 })
 
+const resolverIri = computed(() => currentStackItem.value?.iri)
 const resolverProps = computed(() => {
   return {
-    iri: currentStackItem.value?.iri,
+    iri: resolverIri.value,
   }
 })
 

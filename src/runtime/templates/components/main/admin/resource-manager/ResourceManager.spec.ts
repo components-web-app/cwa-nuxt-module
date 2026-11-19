@@ -760,6 +760,26 @@ describe('ResourceManager', () => {
     })
   })
 
+  describe('reselecting the same resource', () => {
+    test('a click that selects the component already selected gives the tab resolver the same props, so its tabs are not read again and the shown tab is not remounted under the click', async () => {
+      const tabA = { name: 'TabA', render: () => null }
+      const currentStackItem = ref<any>({ iri: '/component/1', managerTabs: [tabA] })
+      cwaState.cwa = makeCwa({ stackManager: makeStackManager({ showManager: ref(true), currentStackItem }) })
+      await mountManager()
+      const before = resolverState.ops.props.value
+
+      currentStackItem.value = { iri: '/component/1', managerTabs: [tabA] }
+      await nextTick()
+
+      expect(resolverState.ops.props.value).toBe(before)
+
+      currentStackItem.value = { iri: '/component/2', managerTabs: [tabA] }
+      await nextTick()
+
+      expect(resolverState.ops.props.value).toEqual({ iri: '/component/2' })
+    })
+  })
+
   describe('clickHandler', () => {
     test('completes the stack and selects index 0 when target matches mousedown target', async () => {
       const stackManager = makeStackManager({ isPopulating: ref(false) })
