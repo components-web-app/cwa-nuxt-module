@@ -673,7 +673,6 @@ for (const hasTouch of [false, true]) {
       await page.goto(`${kitBase}/kit`)
       await page.getByTestId('kit-presence').getByTestId('field-presence-flag').first().waitFor()
       await page.waitForFunction(() => !!document.querySelector('#__nuxt')?.__vue_app__, null, { timeout: 120000 })
-      await page.waitForLoadState('networkidle')
       const trigger = opener(page)
       await trigger.scrollIntoViewIfNeeded()
       await expect(async () => {
@@ -690,6 +689,7 @@ for (const hasTouch of [false, true]) {
       expect(await page.getByTestId(`${testId}-scrim`).isVisible()).toBe(true)
       expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390)
       expect(await sheet.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true)
+      await sheet.locator('[role="option"], [role="menuitem"]').first().waitFor()
       const rows = await sheet.locator('[role="option"], [role="menuitem"]').evaluateAll(items => items.filter(item => item.getClientRects().length).map(item => item.getBoundingClientRect().height))
       expect(rows.length).toBeGreaterThan(0)
       expect(Math.min(...rows)).toBeGreaterThanOrEqual(44)
@@ -703,6 +703,39 @@ for (const hasTouch of [false, true]) {
       await context.close()
     })
   }
+}
+
+const modalSurfaces = [
+  [390, 'a select sheet', 'select-sheet', page => page.locator('main').getByTestId('select-trigger').first()],
+  [390, 'a multi-select sheet', 'multi-sheet', page => page.locator('main').getByTestId('multi-input').first()],
+  [390, 'a resource search sheet', 'search-sheet', page => page.locator('main').getByTestId('search-input').first()],
+  [390, 'the split button\'s menu sheet', 'kit-menu-sheet', page => page.getByTestId('kit-split').getByTestId('button-options')],
+  [390, 'the resource stack sheet', 'resource-stack', page => page.getByTestId('kit-stack-open')],
+  [390, 'a dialog', 'dialog', page => page.getByTestId('kit-dialog-open')],
+  [390, 'a confirm', 'confirm-scrim', page => page.getByTestId('kit-confirm-simple')],
+  [1280, 'a dialog', 'dialog', page => page.getByTestId('kit-dialog-open')],
+  [1280, 'a confirm', 'confirm-scrim', page => page.getByTestId('kit-confirm-simple')],
+]
+
+for (const [width, name, testId, opener] of modalSurfaces) {
+  test(`kit at ${width}: ${name} opened and closed right after hydration, once the saved lines have played, never crashes the page (#461)`, async ({ page }) => {
+    let crashed = false
+    page.on('crash', () => {
+      crashed = true
+    })
+    await openKit(page, width)
+    await page.waitForFunction(() => document.querySelector('[data-line="saved"]') && !document.getAnimations().some(animation => animation.animationName === 'cwa-line-saved' && animation.playState === 'running'))
+    const trigger = opener(page)
+    await trigger.scrollIntoViewIfNeeded()
+    await expect(async () => {
+      await trigger.click()
+      await expect(page.getByTestId(testId)).toBeVisible({ timeout: 500 })
+    }).toPass()
+    await page.keyboard.press('Escape')
+    await expect(page.getByTestId(testId)).toHaveCount(0)
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))))
+    expect(crashed).toBe(false)
+  })
 }
 
 test('kit at 390: the resource search sheet keeps within the visual viewport as it shrinks, as it does when the on-screen keyboard rises (#461)', async ({ page }) => {
