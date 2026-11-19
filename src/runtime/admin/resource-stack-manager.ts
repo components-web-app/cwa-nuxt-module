@@ -465,7 +465,7 @@ export default class ResourceStackManager {
     this.focusGeneration = generation
 
     const domElements = stackItem.domElements
-    let focusIri = this.currentIri.value
+    let focusIri: string | undefined = this.currentIri.value
     this.focusDomElements = domElements
     this.focusComponent = createApp(ComponentFocus, {
       iri: computed(() => {
