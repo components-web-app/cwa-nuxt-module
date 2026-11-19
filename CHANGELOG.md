@@ -4,6 +4,10 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+### Fixed
+
+- Editing a component again right after publishing it no longer shows your own change as a conflict from someone else ([d084073d](https://github.com/components-web-app/cwa-nuxt-module/commit/d084073d8c8a5e29508443e5ad56400cf9edb675), [#429](https://github.com/components-web-app/cwa-nuxt-module/issues/429)).
+
 ### Changed
 
 - The add component dialog no longer shows how many of a component are already in the group, on its rows or its chips ([4d2f86bb](https://github.com/components-web-app/cwa-nuxt-module/commit/4d2f86bbb857043edd329d704c20e9ecb1e6c8b0), [#461](https://github.com/components-web-app/cwa-nuxt-module/issues/461)).
