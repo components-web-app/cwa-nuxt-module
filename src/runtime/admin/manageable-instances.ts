@@ -61,6 +61,16 @@ export function instancesOf($cwa: Cwa, iri: string | undefined): Ref<HTMLElement
   return all
 }
 
+export function instancesAt($cwa: Cwa, node: Node): { iri: string, elements: Ref<HTMLElement[]> }[] {
+  const found: { iri: string, elements: Ref<HTMLElement[]> }[] = []
+  for (const [iri, instances] of registryOf($cwa).instances) {
+    for (const elements of instances) {
+      elements.value.some(element => element.contains?.(node)) && found.push({ iri, elements })
+    }
+  }
+  return found
+}
+
 export function onInstancesChange($cwa: Cwa, listener: () => void): () => void {
   const { listeners } = registryOf($cwa)
   listeners.add(listener)

@@ -70,7 +70,6 @@ function mockCwa(isEditingLayout = false) {
     admin: {
       eventBus,
       isEditing: true,
-      setNavigationGuardDisabled: vi.fn(),
       resourceStackManager: {
         isEditingLayout: ref(isEditingLayout),
       },

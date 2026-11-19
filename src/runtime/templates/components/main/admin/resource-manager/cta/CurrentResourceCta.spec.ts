@@ -246,7 +246,6 @@ describe('CurrentResourceCta', () => {
         admin: {
           isEditing: true,
           emptyStack,
-          setNavigationGuardDisabled: vi.fn(),
           resourceStackManager: {
             resourceStack: { value: (ops.stack ?? [currentIri]).map(iri => ({ iri })) },
             currentStackItem: { value: { iri: currentIri, displayName: 'Hero Section', domElements: { value: [textElement('  Shared source\n component ')] } } },

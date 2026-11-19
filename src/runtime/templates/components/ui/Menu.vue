@@ -135,7 +135,7 @@ function hideReasons() {
               <DropdownMenuItem
                 :disabled="item.disabled"
                 :data-testid="item.testId"
-                class="cwa:flex cwa:min-h-option cwa:min-w-0 cwa:flex-1 cwa:cursor-pointer cwa:flex-col cwa:justify-center cwa:px-3 cwa:py-1.5 cwa:outline-none cwa:select-none cwa:data-highlighted:bg-menu-highlight cwa:data-highlighted:shadow-[inset_2px_0_0_var(--cwa-color-accent-fg)] cwa:data-disabled:cursor-not-allowed"
+                class="cwa:flex cwa:min-h-option cwa:pointer-coarse:min-h-hit cwa:min-w-0 cwa:flex-1 cwa:cursor-pointer cwa:flex-col cwa:justify-center cwa:px-3 cwa:py-1.5 cwa:outline-none cwa:select-none cwa:data-highlighted:bg-menu-highlight cwa:data-highlighted:shadow-[inset_2px_0_0_var(--cwa-color-accent-fg)] cwa:data-disabled:cursor-not-allowed"
                 :class="item.tone === 'danger' ? 'cwa:text-danger-fg' : 'cwa:text-fg'"
                 @select="choose(item)"
               >
@@ -155,7 +155,7 @@ function hideReasons() {
                 :aria-label="item.reasonsLabel ?? `Why ${item.label} is unavailable`"
                 :aria-expanded="reasonsFor?.item === item ? 'true' : 'false'"
                 data-testid="menu-item-why"
-                class="cwa:grid cwa:min-h-option cwa:w-option cwa:shrink-0 cwa:cursor-pointer cwa:place-items-center cwa:text-fg-muted cwa:outline-none cwa:select-none cwa:data-highlighted:bg-menu-highlight cwa:data-highlighted:text-fg cwa:data-highlighted:shadow-[inset_2px_0_0_var(--cwa-color-accent-fg)] cwa:aria-expanded:text-accent-fg cwa:aria-expanded:data-highlighted:text-accent-fg"
+                class="cwa:grid cwa:min-h-option cwa:pointer-coarse:min-h-hit cwa:w-option cwa:shrink-0 cwa:cursor-pointer cwa:place-items-center cwa:text-fg-muted cwa:outline-none cwa:select-none cwa:data-highlighted:bg-menu-highlight cwa:data-highlighted:text-fg cwa:data-highlighted:shadow-[inset_2px_0_0_var(--cwa-color-accent-fg)] cwa:aria-expanded:text-accent-fg cwa:aria-expanded:data-highlighted:text-accent-fg"
                 @select="showReasons($event, item)"
               >
                 <svg

@@ -23,12 +23,15 @@ import { createAnnouncer } from '#cwa/templates/components/core/ui/field-context
 import { announceKey, managerTabMountedKey } from '#cwa/templates/components/core/ui/field-keys'
 import { resourceStackLevels } from '#cwa/templates/components/core/ui/resource-stack'
 import { listenForLongPress } from '#cwa/admin/long-press'
+import type { ResourceStackItem } from '#cwa/admin/resource-stack-manager'
 
 const ComponentUsageBadge = defineAsyncComponent(() => import('#cwa/templates/components/main/admin/resource-manager/cta/ComponentUsageBadge.vue'))
 const SharedInstancesHighlight = defineAsyncComponent(() => import('#cwa/templates/components/main/admin/resource-manager/SharedInstancesHighlight.vue'))
 const PeerOutlines = defineAsyncComponent(() => import('#cwa/templates/components/main/admin/resource-manager/PeerOutlines.vue'))
 const ReorderHandles = defineAsyncComponent(() => import('#cwa/templates/components/main/admin/resource-manager/ReorderHandles.vue'))
 const ClonePlacementMenu = defineAsyncComponent(() => import('#cwa/templates/components/main/admin/resource-manager/_parts/ClonePlacementMenu.vue'))
+const HoverOutline = defineAsyncComponent(() => import('#cwa/templates/components/main/admin/resource-manager/HoverOutline.vue'))
+const LinkMenu = defineAsyncComponent(() => import('#cwa/templates/components/main/admin/resource-manager/_parts/LinkMenu.vue'))
 
 const $cwa = useCwa()
 const { slideUp } = useTransitions()
@@ -47,8 +50,10 @@ const currentManagerTabs = ref<ManagerTab[] | undefined>()
 const cachedPosition = { top: 0, left: 0 }
 let mousedownTarget: null | EventTarget = null
 const cloneMode = useCloneMode($cwa)
-const cloneTarget = shallowRef<{ stack: { iri: string }[], type: 'page' | 'layout', point: { x: number, y: number }, key: number }>()
-let cloneTargetKey = 0
+type ClickedTarget = { stack: ResourceStackItem[], type: 'page' | 'layout', point: { x: number, y: number }, link?: HTMLAnchorElement, key: number }
+const cloneTarget = shallowRef<ClickedTarget>()
+const linkTarget = shallowRef<ClickedTarget & { link: HTMLAnchorElement }>()
+let clickedTargetKey = 0
 const announcer = createAnnouncer()
 provide(announceKey, announcer.announce)
 
@@ -104,27 +109,46 @@ function mousedownHandler(e: MouseEvent) {
   mousedownTarget = e.target
 }
 
+function clickedLink(e: MouseEvent) {
+  if (!$cwa.admin.isEditing || $cwa.admin.resourceStackManager.isModuleSelect || !(e.target instanceof Element)) {
+    return
+  }
+  const control = e.target.closest('a[href], button, input, select, textarea, summary, [role="button"], [role="tab"]')
+  return control instanceof HTMLAnchorElement ? control : undefined
+}
+
+function clickPoint(e: MouseEvent, link?: HTMLAnchorElement) {
+  if (!link || e.detail) {
+    return { x: e.clientX, y: e.clientY }
+  }
+  const box = link.getBoundingClientRect()
+  return { x: box.left, y: box.bottom }
+}
+
 function clickHandler(e: MouseEvent, type: 'page' | 'layout') {
+  const link = clickedLink(e)
+  link && e.preventDefault()
   // attempt to prevent selecting when dragging mouse over different resources which will not trigger a click on either
-  if (e.target !== mousedownTarget && !$cwa.admin.resourceStackManager.isPopulating.value) {
+  if (e.target !== mousedownTarget && !$cwa.admin.resourceStackManager.isPopulating.value && !(link && !e.detail)) {
     return
   }
   completeStack(e, type)
-  if (cloneMode.source.value) {
-    chooseCloneTarget(type, { x: e.clientX, y: e.clientY })
+  const stackManager = $cwa.admin.resourceStackManager
+  if (!cloneMode.source.value && !link) {
+    stackManager.selectStackIndex(0, false)
     return
   }
-  $cwa.admin.resourceStackManager.selectStackIndex(0, false)
-}
-
-function chooseCloneTarget(type: 'page' | 'layout', point: { x: number, y: number }) {
-  const stackManager = $cwa.admin.resourceStackManager
   const stack = [...stackManager.resourceStack.value]
   stackManager.restorePreviousStack()
-  if ($cwa.admin.navigationGuardDisabled || !stack.length) {
+  if (!stack.length && !link) {
     return
   }
-  cloneTarget.value = { stack, type, point, key: ++cloneTargetKey }
+  const target = { stack, type, point: clickPoint(e, link), link, key: ++clickedTargetKey }
+  if (cloneMode.source.value) {
+    cloneTarget.value = target
+    return
+  }
+  link && (linkTarget.value = { ...target, link })
 }
 
 function completeStack(e: MouseEvent, type: undefined | 'page' | 'layout', isContext: boolean = false) {
@@ -348,12 +372,23 @@ defineExpose({
     :group-iri="reorderGroupIri"
   />
   <PeerOutlines v-if="$cwa.admin.isEditing && !cloneMode.source.value" />
+  <HoverOutline v-if="$cwa.admin.isEditing" />
   <ClonePlacementMenu
     v-if="cloneTarget"
     :key="cloneTarget.key"
     :stack="cloneTarget.stack"
     :type="cloneTarget.type"
     :point="cloneTarget.point"
+    :link="cloneTarget.link"
     @close="cloneTarget = undefined"
+  />
+  <LinkMenu
+    v-if="linkTarget"
+    :key="linkTarget.key"
+    :stack="linkTarget.stack"
+    :type="linkTarget.type"
+    :point="linkTarget.point"
+    :link="linkTarget.link"
+    @close="linkTarget = undefined"
   />
 </template>

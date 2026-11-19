@@ -1,7 +1,7 @@
 import { describe, expect, test, vi } from 'vitest'
 import { ref } from 'vue'
 import type { Ref } from 'vue'
-import { instancesOf, onInstancesChange, registerInstance, unregisterInstance } from './manageable-instances'
+import { instancesAt, instancesOf, onInstancesChange, registerInstance, unregisterInstance } from './manageable-instances'
 import type Cwa from '#cwa/cwa'
 
 const DRAFT_IRI = '/component/html_contents/draft'
@@ -107,5 +107,24 @@ describe('manageable instances', () => {
     registerInstance(buildCwa(), '/component/a', elements())
 
     expect(listener).not.toHaveBeenCalled()
+  })
+
+  test('instancesAt lists every instance holding a node, with its IRI, for the hover outline to pick the innermost', () => {
+    const $cwa = buildCwa()
+    const inner = document.createElement('p')
+    const outer = document.createElement('section')
+    outer.append(inner)
+    const node = document.createTextNode('text')
+    inner.append(node)
+    const outerElements = ref([outer])
+    const innerElements = ref([inner])
+    registerInstance($cwa, '/_/component_positions/p1', outerElements)
+    registerInstance($cwa, '/component/inner', innerElements)
+    registerInstance($cwa, '/component/elsewhere', ref([document.createElement('div')]))
+
+    expect(instancesAt($cwa, node)).toEqual([
+      { iri: '/_/component_positions/p1', elements: outerElements },
+      { iri: '/component/inner', elements: innerElements },
+    ])
   })
 })

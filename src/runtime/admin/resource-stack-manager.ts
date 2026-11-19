@@ -59,7 +59,7 @@ export default class ResourceStackManager {
   private focusWrapper: HTMLElement | undefined
   private focusProxy: ComponentPublicInstance | undefined
   private focusGeneration = 0
-  private isModuleSelect = false
+  public isModuleSelect = false
   private focusDomElements: Ref<HTMLElement[]> | undefined
   private _currentStackItem: ComputedRef<undefined | ResourceStackItem> | undefined
   private _currentIri: ComputedRef<string | undefined> | undefined
@@ -236,6 +236,13 @@ export default class ResourceStackManager {
     if (fromContext) {
       this.resetStack(true)
     }
+  }
+
+  public selectStack(stack: ResourceStackItem[], type: 'page' | 'layout') {
+    this.isLayoutStack.value = type === 'layout'
+    this.previousResourceStack.value = this.currentResourceStack.value
+    this.currentResourceStack.value = stack
+    return this.selectStackIndex(0, false)
   }
 
   private getCurrentTarget(isContext?: boolean) {

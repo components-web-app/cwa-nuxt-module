@@ -35,7 +35,6 @@ function mockCwa() {
   const handlers: Record<string, Set<() => void>> = {}
   const admin = reactive({
     isEditing: true,
-    setNavigationGuardDisabled: vi.fn(),
     eventBus: {
       on: vi.fn((event: string, handler: () => void) => {
         (handlers[event] ??= new Set()).add(handler)

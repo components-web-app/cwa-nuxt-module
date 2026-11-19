@@ -50,7 +50,7 @@ function delay(time: number, returnValue: any = undefined) {
   })
 }
 
-function createFetcher(query?: Record<string, string | null | (string | null)[]>, isServer?: boolean, followsRedirects?: () => boolean): Fetcher {
+function createFetcher(query?: Record<string, string | null | (string | null)[]>, isServer?: boolean, followsRedirects?: (route: CwaResource) => boolean): Fetcher {
   const cwaFetch = new CwaFetch('https://api-url')
   const resourcesStore = new ResourcesStore()
   const statusManager = new FetchStatusManager(new FetcherStore(), new Mercure(), new ApiDocumentation(), resourcesStore)
@@ -422,8 +422,9 @@ describe('Fetcher -> fetchResource', () => {
     expect(FetchStatusManager.mock.instances[0].abortFetch).toBeCalledWith('token', 'redirect')
   })
 
-  test('a redirect the route middleware will not follow (editing with navigation disabled) neither aborts the fetch nor skips its nested fetches, so the old page is not left on screen under the new URL', async () => {
-    const editingFetcher = createFetcher(undefined, false, () => false)
+  test('a redirect the route middleware will not follow (editing, and not a Visit of that route) neither aborts the fetch nor skips its nested fetches, so the old page is not left on screen under the new URL', async () => {
+    const followsRedirects = vi.fn(() => false)
+    const editingFetcher = createFetcher(undefined, false, followsRedirects)
     const manager = FetchStatusManager.mock.instances.at(-1)
     vi.spyOn(manager, 'primaryFetchPath', 'get').mockReturnValue('/_/routes//path')
     vi.spyOn(editingFetcher, 'fetchAssociatedResources').mockImplementation(() => {})
@@ -432,6 +433,7 @@ describe('Fetcher -> fetchResource', () => {
     manager.finishFetchResource.mockImplementationOnce(() => ({ '@id': '/_/routes//path', 'redirectPath': '/my-redirect' }))
     vi.spyOn(editingFetcher, 'fetch').mockImplementation(() => ({ response: Promise.resolve({ _data: {} }), headers: {} }))
     await editingFetcher.fetchResource({ path: '/_/routes//path', token: 'token' })
+    expect(followsRedirects).toHaveBeenCalledWith({ '@id': '/_/routes//path', 'redirectPath': '/my-redirect' })
     expect(manager.abortFetch).not.toHaveBeenCalled()
     expect(editingFetcher.fetchAssociatedResources).toHaveBeenCalled()
   })
