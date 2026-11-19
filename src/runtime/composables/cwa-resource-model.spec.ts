@@ -861,6 +861,20 @@ describe('useCwaResourceModel', () => {
       expect(mockUpdateResource).not.toHaveBeenCalled()
     })
 
+    test('retry() with nothing typed runs again the whole-resource write the API refused for this field (#461)', async () => {
+      const { writeRefused } = await import('#cwa/admin/field-states')
+      const resource = ref<any>({ data: { title: 'Store' } })
+      mockGetResource.mockReturnValue(resource)
+      const write = vi.fn()
+      writeRefused(resource.value, { title: 'Add a title.' }, 422, write)
+      const { retry } = useCwaResourceModel(iri, 'title')
+
+      await retry()
+
+      await vi.waitFor(() => expect(write).toHaveBeenCalledOnce())
+      expect(mockUpdateResource).not.toHaveBeenCalled()
+    })
+
     test('reset() puts the field back to its stored value, clears its state and sends nothing', async () => {
       const resource = ref<any>({ data: { title: 'Store' }, fieldStates: { title: { status: 'error', waiting: false, slow: false, error: { kind: 'server', message: 'Boom' } } } })
       mockGetResource.mockReturnValue(resource)

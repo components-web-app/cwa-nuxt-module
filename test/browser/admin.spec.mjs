@@ -2016,3 +2016,31 @@ test('70. a title save that fails once another component is selected raises a to
   await eventually(async () => await status.getAttribute('data-state') === 'error', 'Show me did not select the title with its failed save')
   await toast.waitFor({ state: 'detached' })
 })
+
+test('71. publishing an image that has no file shows the refusal on its file field and selects the Upload tab, without a toast or moving focus (#461)', async ({ cwa: t }) => {
+  const { page, seed } = t
+  const image = (await t.api.create('/component/images', {}))['@id']
+  await t.api.create('/_/component_positions', { componentGroup: seed.iris.pageAGroup, component: image })
+  await openEditMode(t)
+  t.allowConsoleErrors(refusedResource)
+
+  await page.getByRole('group', { name: 'Image component' }).click()
+  await page.getByTestId('component-menu').waitFor()
+  const tablist = page.getByRole('tablist')
+  const upload = tablist.getByRole('tab', { name: /^Upload/ })
+  await tablist.getByRole('tab', { name: 'Publish', exact: true }).click()
+  assert(await upload.getAttribute('aria-selected') === 'false', 'The Upload tab was still selected')
+
+  const publish = page.getByTestId('component-menu').getByRole('button', { name: /^Publish/ }).first()
+  await publish.click()
+
+  await eventually(() => t.rehearsal.writes.find(w => w.method === 'PATCH' && w.path.startsWith(image) && w.body?.publishedAt === 'now'), `Publish sent no PATCH: ${JSON.stringify(t.rehearsal.writes)}`)
+  const line = page.locator('[data-cwa-field="file"] [data-testid="field-status-line"]')
+  await eventually(async () => await line.getAttribute('data-line') === 'error', 'The file field does not show the refusal')
+  assert(await upload.getAttribute('aria-selected') === 'true', 'The Upload tab holding the refused field was not selected')
+  assert(await upload.getAttribute('data-badge') === 'error', 'The Upload tab has no error badge')
+  await eventually(async () => await page.getByTestId('bar-summary').getAttribute('data-state') === 'error', 'The bar status does not show the refused field')
+  assert(await publish.evaluate(el => el === document.activeElement), 'Showing the refused field moved focus off Publish')
+  await t.settle()
+  assert(await page.locator('[data-toast-id^="cwa-request-error-"]').count() === 0, 'The refusal was also raised as a toast')
+})

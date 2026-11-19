@@ -478,7 +478,7 @@ describe('BarSummary (#459)', () => {
     expect(summary().text()).toContain('Not published · Retry')
 
     await summary().trigger('click')
-    expect(updateResource).toHaveBeenCalledWith({ endpoint: '/component/c1', data: { publishedAt: 'now' } })
+    expect(updateResource).toHaveBeenCalledWith({ endpoint: '/component/c1', data: { publishedAt: 'now' }, retry: expect.any(Function) })
   })
 
   test('voices the message it is given in its polite live region', async () => {

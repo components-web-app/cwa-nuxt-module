@@ -46,6 +46,12 @@ describe('ManagerTabs (#459)', () => {
     expect(wrapper.emitted('click')!.at(-1)).toEqual([2])
   })
 
+  test('the fields are listed in the order of the tabs shown, leaving out a disabled tab\'s, so a refused write shows the first tab in that order (#461)', () => {
+    const wrapper = mount(ManagerTabs, { props: { tabs: [...tabs, { name: 'Hidden', order: 0, disabled: true, fields: ['secret'] }], idPrefix: 'bar', label: 'Settings' } })
+
+    expect((wrapper.vm as unknown as { fieldsInOrder: () => string[] }).fieldsInOrder()).toEqual(['title', 'body', 'uiClassNames'])
+  })
+
   test('the arrow keys, Home and End select the next, previous, first and last tab, wrapping, and move focus to it', async () => {
     const wrapper = mount(ManagerTabs, { props: { tabs, idPrefix: 'bar', label: 'Settings' }, attachTo: document.body })
     const buttons = () => wrapper.findAll('button')

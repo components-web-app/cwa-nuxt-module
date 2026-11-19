@@ -128,3 +128,25 @@ describe('ResourcesManager reports each request to the caller that asked, and wr
     expect(onRequest.mock.calls.map(([iri]) => iri)).toStrictEqual([DRAFT])
   })
 })
+
+describe('ResourcesManager tells the bar when a whole-resource write of a resource succeeds (#461)', () => {
+  test('a publish that saves is reported, a field model\'s save, a refused write and a delete are not', async () => {
+    const { fetch, manager, seed } = setup()
+    seed({ '@id': PAGE, '@type': 'Page', 'title': 'Old', '_metadata': { persisted: true } })
+    const writeSaved = vi.fn()
+    manager.writeSaved = writeSaved
+    const saved = { '@id': PAGE, '@type': 'Page', 'title': 'Old', '_metadata': { persisted: true } }
+    fetch.mockResolvedValueOnce(saved)
+    fetch.mockResolvedValueOnce(saved)
+    fetch.mockRejectedValueOnce(httpError(422, { detail: 'title: Add a title.', violations: [{ propertyPath: 'title', message: 'Add a title.' }] }))
+    fetch.mockResolvedValueOnce(undefined)
+
+    const publish = { endpoint: PAGE, data: { publishedAt: 'now' } }
+    await manager.updateResource(publish)
+    await manager.updateResource({ endpoint: PAGE, data: { title: 'New' }, onRequest: () => {} })
+    await manager.updateResource({ endpoint: PAGE, data: { title: '' } })
+    await manager.deleteResource({ endpoint: PAGE }, true)
+
+    expect(writeSaved).toHaveBeenCalledExactlyOnceWith(publish)
+  })
+})

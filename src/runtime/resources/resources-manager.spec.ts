@@ -972,6 +972,19 @@ describe('Resources manager', () => {
       }))
     })
 
+    test('a refused create keeps the retry it was given on its stored error, for the bar to run from a field (#461)', async () => {
+      const { resourcesManager, cwaFetch, errorStoreActions } = createResourcesManager({ includeAdmin: true })
+      cwaFetch.fetch.mockRejectedValue(Object.assign(new Error('Refused'), { statusCode: 422, data: { detail: 'file: Upload a file.', violations: [{ propertyPath: 'file', message: 'Upload a file.' }] } }))
+      setupStore(resourcesManager, {
+        addEventOverrides: { targetIri: '/_/component_positions/p1', addAfter: null, closest: {} },
+      })
+      const retry = vi.fn()
+
+      expect(await resourcesManager.addResourceAction(true, retry)).toBeUndefined()
+
+      expect(errorStoreActions.error).toHaveBeenCalledWith(expect.objectContaining({ endpoint: '/component', retry }), expect.anything())
+    })
+
     test('sets publishedAt to null when publish=false', async () => {
       const { resourcesManager, cwaFetch } = createResourcesManager({ includeAdmin: true })
       cwaFetch.fetch.mockResolvedValue({ '@id': '/component/1' })

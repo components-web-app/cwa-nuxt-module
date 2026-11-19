@@ -54,7 +54,7 @@ describe('NewResourceCta: a component not added yet, with files held for it (#46
     await button().vm.$emit('click')
     await flushPromises()
 
-    expect($cwa.resourcesManager.addResourceAction).toHaveBeenCalledWith(false)
+    expect($cwa.resourcesManager.addResourceAction).toHaveBeenCalledWith(false, expect.any(Function))
     expect($cwa.resourcesManager.updateResource).not.toHaveBeenCalled()
     expect($cwa.admin.emptyStack).toHaveBeenCalled()
   })
@@ -67,7 +67,7 @@ describe('NewResourceCta: a component not added yet, with files held for it (#46
     await button().vm.$emit('click')
     await flushPromises()
 
-    expect($cwa.resourcesManager.addResourceAction).toHaveBeenCalledWith(false)
+    expect($cwa.resourcesManager.addResourceAction).toHaveBeenCalledWith(false, expect.any(Function))
     expect(sent().map(event => [event.iri, event.endpoint, [...(event.data as FormData).entries()][0]])).toEqual([
       [CREATED, `${CREATED}/upload`, ['image', expect.objectContaining({ name: 'image.jpg' })]],
       [CREATED, `${CREATED}/upload`, ['preview', expect.objectContaining({ name: 'preview.jpg' })]],
@@ -83,7 +83,7 @@ describe('NewResourceCta: a component not added yet, with files held for it (#46
     await button().vm.$emit('select', { value: 'add-publish' })
     await flushPromises()
 
-    expect($cwa.resourcesManager.addResourceAction).toHaveBeenCalledWith(false)
+    expect($cwa.resourcesManager.addResourceAction).toHaveBeenCalledWith(false, expect.any(Function))
     expect(sent().map(event => event.data instanceof FormData ? 'upload' : event)).toEqual(['upload', { endpoint: CREATED, data: { publishedAt: 'now' } }])
   })
 
@@ -94,7 +94,7 @@ describe('NewResourceCta: a component not added yet, with files held for it (#46
     await button().vm.$emit('click')
     await flushPromises()
 
-    expect($cwa.resourcesManager.addResourceAction).toHaveBeenCalledWith(true)
+    expect($cwa.resourcesManager.addResourceAction).toHaveBeenCalledWith(true, expect.any(Function))
     expect(sent()).toHaveLength(1)
   })
 
@@ -130,5 +130,20 @@ describe('NewResourceCta: a component not added yet, with files held for it (#46
 
     expect($cwa.resourcesManager.updateResource).not.toHaveBeenCalled()
     expect(heldFields($cwa as unknown as Cwa, '__new__')).toEqual(['image'])
+  })
+
+  test('a refused Add keeps the component selected, so the bar can show the refusal on its fields, and hands over a retry that adds it the same way (#461)', async () => {
+    const { $cwa, button } = setup()
+    $cwa.resourcesManager.addResourceAction.mockResolvedValueOnce(undefined as never)
+
+    await button().vm.$emit('select', { label: 'Add and publish', value: 'add-publish' })
+    await flushPromises()
+
+    expect($cwa.admin.emptyStack).not.toHaveBeenCalled()
+    expect(button().props('loading')).toBe(false)
+    const retry = ($cwa.resourcesManager.addResourceAction.mock.calls[0] as unknown as [boolean, () => Promise<void>])[1]
+    await retry()
+    expect($cwa.resourcesManager.addResourceAction).toHaveBeenLastCalledWith(true, expect.any(Function))
+    expect($cwa.admin.emptyStack).toHaveBeenCalledOnce()
   })
 })
