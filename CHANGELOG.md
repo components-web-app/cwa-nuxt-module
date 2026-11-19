@@ -7,6 +7,7 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 ### Fixed
 
 - Editing a component again right after publishing it no longer shows your own change as a conflict from someone else ([d084073d](https://github.com/components-web-app/cwa-nuxt-module/commit/d084073d8c8a5e29508443e5ad56400cf9edb675), [#429](https://github.com/components-web-app/cwa-nuxt-module/issues/429)).
+- Only one field status popover shows at a time: hovering another field in error or conflict, or opening the bar status, no longer leaves two open, and a field's Close no longer reopens its popover at once ([def56c08](https://github.com/components-web-app/cwa-nuxt-module/commit/def56c084a6be289f613db53217fd44cddd600c6), [#461](https://github.com/components-web-app/cwa-nuxt-module/issues/461)).
 
 ### Changed
 
