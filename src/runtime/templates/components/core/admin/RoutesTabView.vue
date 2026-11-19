@@ -5,11 +5,10 @@ import CwaUiAlert from '#cwa/templates/components/ui/Alert.vue'
 import CwaUiSpinner from '#cwa/templates/components/ui/Spinner.vue'
 import CwaUiToggle from '#cwa/templates/components/ui/Toggle.vue'
 import CwaUiPlusIcon from '#cwa/templates/components/ui/icon/PlusIcon.vue'
-import CopyGlyph from '#cwa/templates/components/core/ui/CopyGlyph.vue'
+import CopyButton from '#cwa/templates/components/core/ui/CopyButton.vue'
 import RouteStatusBadge from '#cwa/templates/components/core/admin/RouteStatusBadge.vue'
 import RouteSubStatus from '#cwa/templates/components/core/admin/RouteSubStatus.vue'
 import RouteRecommendation from '#cwa/templates/components/core/admin/RouteRecommendation.vue'
-import { useAnnounce } from '#cwa/templates/components/core/ui/field-context'
 import { fieldGroupKey } from '#cwa/templates/components/core/ui/field-keys'
 import { isRouteGatedByAncestor, routePublicationFromResource, routeReachableAt } from '#cwa/resources/route-publication'
 import { formatDateTime } from '#cwa/resources/date-time-input'
@@ -37,7 +36,6 @@ const emit = defineEmits<{
   openParent: []
 }>()
 
-const announce = useAnnounce()
 const fieldGroup = inject(fieldGroupKey, undefined)
 const publicWithoutRoute = computed(() => !!fieldGroup?.model('isReachableWithoutRoute')?.model.value)
 const headingId = useId()
@@ -62,19 +60,6 @@ const rows = computed(() => {
   list.push({ view: 'kids', label: 'Child routes', summary: count(childCount, 'route', 'routes') })
   return list
 })
-
-async function copyPath() {
-  if (!path.value) {
-    return
-  }
-  try {
-    await navigator.clipboard.writeText(path.value)
-    announce('Path copied')
-  }
-  catch {
-    announce('The path couldn\'t be copied')
-  }
-}
 
 defineExpose({ statusElement: () => statusLine.value?.element() ?? null })
 </script>
@@ -116,14 +101,12 @@ defineExpose({ statusElement: () => statusLine.value?.element() ?? null })
                 data-testid="routes-path"
                 class="cwa:min-w-0 cwa:truncate cwa:font-mono cwa:text-control cwa:text-fg"
               >{{ path }}</span>
-              <CwaUiButton
-                variant="ghost"
-                size="sm"
-                icon-only
-                :icon="CopyGlyph"
+              <CopyButton
+                :text="path"
                 label="Copy path"
+                copied="Path copied"
+                failed="The path couldn't be copied"
                 data-testid="routes-copy"
-                @click="copyPath"
               />
             </span>
             <RouteStatusBadge :publication="publication" />

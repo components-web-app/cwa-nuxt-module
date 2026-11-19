@@ -223,17 +223,10 @@
     </template>
     <template #info>
       <CwaUiFormSection>
-        <dl class="cwa:m-0">
-          <dt class="cwa:text-label cwa:text-fg">
-            ID
-          </dt>
-          <dd
-            class="cwa:m-0 cwa:mt-1.5 cwa:break-all cwa:font-mono cwa:text-control cwa:text-fg-secondary"
-            data-testid="page-id"
-          >
-            {{ localResourceData?.['@id'] }}
-          </dd>
-        </dl>
+        <ResourceIdDetail
+          :iri="localResourceData?.['@id']"
+          data-testid="page-id"
+        />
       </CwaUiFormSection>
       <CwaUiFormSection
         title="History"
@@ -279,6 +272,7 @@
 </template>
 
 <script setup lang="ts">
+import ResourceIdDetail from '#cwa/templates/components/core/admin/ResourceIdDetail.vue'
 import { pageDataNoun } from './page-data-noun'
 import { computed, onMounted, ref, useTemplateRef, watch, watchEffect } from 'vue'
 import type { RouteLocationRaw } from 'vue-router'

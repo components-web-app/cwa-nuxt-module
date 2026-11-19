@@ -6,6 +6,7 @@ import Select from '#cwa/templates/components/ui/Select.vue'
 import Alert from '#cwa/templates/components/ui/Alert.vue'
 import Input from '#cwa/templates/components/ui/Input.vue'
 import LayoutItemPage from './[iri].vue'
+import ResourceIdDetail from '#cwa/templates/components/core/admin/ResourceIdDetail.vue'
 import { componentNames } from '#components'
 import * as cwaComposable from '#cwa/composables/cwa'
 
@@ -226,6 +227,13 @@ describe('Layout admin dialog (#461)', () => {
     expect(dialog(wrapper).props('title')).toBe('My Layout')
     expect(dialog(wrapper).props('tabs').map((tab: { key: string }) => tab.key)).toEqual(['details', 'info'])
     expect(dialog(wrapper).props('createNoun')).toBeUndefined()
+  })
+
+  test('the Info tab shows the layout\'s ID with Copy ID beside it, for a bug report', () => {
+    const { wrapper } = setup()
+
+    expect(wrapper.getComponent(ResourceIdDetail).props('iri')).toBe('/_/layouts/uuid-self')
+    expect(wrapper.getComponent(ResourceIdDetail).attributes('data-testid')).toBe('layout-id')
   })
 
   test('creating, it is a "New layout" with Details only and a "+ Layout" save', () => {
