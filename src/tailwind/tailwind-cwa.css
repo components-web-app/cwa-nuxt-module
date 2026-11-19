@@ -13,6 +13,10 @@
   --color-surface: #1c1917;
   --color-surface-raised: #292524;
   --color-surface-menu: #292524;
+  --color-surface-info: #0c0a09;
+  --color-accent-on-info: #60a5fa;
+  --color-muted-on-info: #a8a29e;
+  --color-success-on-info: #9cdd05;
   --color-button: #44403c;
   --color-shimmer: rgb(255 255 255 / 0.24);
   --color-menu-highlight: #57534e;
@@ -35,6 +39,7 @@
   --color-fg-muted: #a8a29e;
   --color-accent: #2563eb;
   --color-accent-hover: #1d4ed8;
+  --color-accent-open: #1e40af;
   --color-accent-fg: #60a5fa;
   --color-accent-tint: color-mix(in srgb, var(--cwa-color-accent) 28%, var(--cwa-color-surface));
   --color-success: #9cdd05;
@@ -46,6 +51,7 @@
   --color-danger: #fca5a5;
   --color-danger-fill: #dc2626;
   --color-danger-fill-hover: #b91c1c;
+  --color-danger-fill-open: #991b1b;
   --color-danger-fg: #fca5a5;
   --color-highlight: #e30a6c;
 
@@ -54,6 +60,7 @@
   --duration-fast: 120ms;
   --duration-base: 200ms;
   --duration-slow: 300ms;
+  --duration-indicator: 250ms;
 }
 
 @theme {
@@ -285,10 +292,18 @@
     --save-danger: #dc2626;
     --save-warning: #b45309;
     position: absolute;
-    inset: -6px;
     pointer-events: none;
-    border-radius: 1px;
+    border-radius: var(--save-radius);
     animation: cwa-line-in 150ms ease-out;
+  }
+
+  .cwa\:focus-save::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    box-shadow: 0 0 4px 0 var(--save-end);
+    opacity: 0;
   }
 
   .cwa\:focus-save[data-tone='dark'] {
@@ -299,57 +314,74 @@
     --save-warning: #fcd34d;
   }
 
-  .cwa\:focus-save > i {
+  .cwa\:focus-save-ring {
+    position: absolute;
+    inset: 0;
+    padding: 2px;
+    border-radius: inherit;
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    mask-composite: exclude;
+  }
+
+  .cwa\:focus-save-ring > i {
     position: absolute;
     background-color: var(--save-base);
     background-repeat: no-repeat;
   }
 
-  .cwa\:focus-save > i[data-side='top'] { inset: 0 0 auto 0; height: 2px; }
-  .cwa\:focus-save > i[data-side='right'] { inset: 0 0 0 auto; width: 2px; }
-  .cwa\:focus-save > i[data-side='bottom'] { inset: auto 0 0 0; height: 2px; }
-  .cwa\:focus-save > i[data-side='left'] { inset: 0 auto 0 0; width: 2px; }
+  .cwa\:focus-save-ring > i[data-side='top'] { inset: 0 0 auto 0; height: max(var(--save-radius), 2px); }
+  .cwa\:focus-save-ring > i[data-side='right'] { inset: max(var(--save-radius), 2px) 0 max(var(--save-radius), 2px) auto; width: max(var(--save-radius), 2px); }
+  .cwa\:focus-save-ring > i[data-side='bottom'] { inset: auto 0 0 0; height: max(var(--save-radius), 2px); }
+  .cwa\:focus-save-ring > i[data-side='left'] { inset: max(var(--save-radius), 2px) auto max(var(--save-radius), 2px) 0; width: max(var(--save-radius), 2px); }
 
-  .cwa\:focus-save[data-save='saving'] > i {
+  .cwa\:focus-save[data-save='saving'] > .cwa\:focus-save-ring > i {
     animation: 1.2s linear infinite;
   }
 
-  .cwa\:focus-save[data-save='saving'] > i[data-side='top'],
-  .cwa\:focus-save[data-save='saving'] > i[data-side='bottom'] {
+  .cwa\:focus-save[data-save='saving'] > .cwa\:focus-save-ring > i[data-side='top'],
+  .cwa\:focus-save[data-save='saving'] > .cwa\:focus-save-ring > i[data-side='bottom'] {
     background-image: linear-gradient(90deg, transparent, var(--save-segment) 25%, var(--save-segment) 75%, transparent);
     background-size: 25% 100%;
   }
 
-  .cwa\:focus-save[data-save='saving'] > i[data-side='right'],
-  .cwa\:focus-save[data-save='saving'] > i[data-side='left'] {
+  .cwa\:focus-save[data-save='saving'] > .cwa\:focus-save-ring > i[data-side='right'],
+  .cwa\:focus-save[data-save='saving'] > .cwa\:focus-save-ring > i[data-side='left'] {
     background-image: linear-gradient(180deg, transparent, var(--save-segment) 25%, var(--save-segment) 75%, transparent);
     background-size: 100% 25%;
   }
 
-  .cwa\:focus-save[data-save='saving'] > i[data-side='top'] { animation-name: cwa-focus-sweep-x; }
-  .cwa\:focus-save[data-save='saving'] > i[data-side='bottom'] { animation-name: cwa-focus-sweep-x; animation-direction: reverse; }
-  .cwa\:focus-save[data-save='saving'] > i[data-side='right'] { animation-name: cwa-focus-sweep-y; }
-  .cwa\:focus-save[data-save='saving'] > i[data-side='left'] { animation-name: cwa-focus-sweep-y; animation-direction: reverse; }
+  .cwa\:focus-save[data-save='saving'] > .cwa\:focus-save-ring > i[data-side='top'] { animation-name: cwa-focus-sweep-x; }
+  .cwa\:focus-save[data-save='saving'] > .cwa\:focus-save-ring > i[data-side='bottom'] { animation-name: cwa-focus-sweep-x; animation-direction: reverse; }
+  .cwa\:focus-save[data-save='saving'] > .cwa\:focus-save-ring > i[data-side='right'] { animation-name: cwa-focus-sweep-y; }
+  .cwa\:focus-save[data-save='saving'] > .cwa\:focus-save-ring > i[data-side='left'] { animation-name: cwa-focus-sweep-y; animation-direction: reverse; }
 
   .cwa\:focus-save[data-save='saved'] {
     --save-end: var(--save-saved);
-    animation: cwa-line-hold 1.18s ease-out forwards;
+    animation: cwa-line-hold var(--save-for) ease-out forwards;
   }
 
   .cwa\:focus-save[data-save='error'] { --save-end: var(--save-danger); }
   .cwa\:focus-save[data-save='conflict'] { --save-end: var(--save-warning); }
 
-  .cwa\:focus-save[data-save='saved'] > i,
-  .cwa\:focus-save[data-save='error'] > i,
-  .cwa\:focus-save[data-save='conflict'] > i {
+  .cwa\:focus-save[data-save='saved'] > .cwa\:focus-save-ring > i,
+  .cwa\:focus-save[data-save='error'] > .cwa\:focus-save-ring > i,
+  .cwa\:focus-save[data-save='conflict'] > .cwa\:focus-save-ring > i {
     background-color: var(--save-end);
-    box-shadow: 0 0 0 transparent;
-    animation: cwa-focus-glow 600ms ease-out;
+  }
+
+  .cwa\:focus-save[data-save='error']::before,
+  .cwa\:focus-save[data-save='conflict']::before,
+  .cwa\:focus-save[data-save='saved']::before {
+    animation: cwa-focus-glow var(--save-for) ease-in-out;
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .cwa\:focus-save > i {
+    .cwa\:focus-save-ring > i {
       background-image: none !important;
+      animation: none !important;
+    }
+
+    .cwa\:focus-save::before {
       animation: none !important;
     }
   }
@@ -442,6 +474,45 @@
   .cwa\:is-reordering:after {
     @apply cwa:content-[attr(data-sort-value)] cwa:absolute cwa:z-dialog cwa:-top-4 cwa:-right-4 cwa:text-sm cwa:bg-magenta cwa:p-1 cwa:text-white cwa:rounded-full cwa:min-w-[25px] cwa:text-center
   }
+
+  .cwa\:reorder-wobble {
+    animation: cwa-reorder-wobble 0.5s infinite;
+    transform-origin: 30% 5%;
+  }
+
+  .cwa\:reorder-wobble-alt {
+    animation: cwa-reorder-wobble-alt 0.5s infinite;
+    transform-origin: 50% 10%;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cwa\:reorder-wobble,
+    .cwa\:reorder-wobble-alt {
+      animation: none;
+    }
+  }
+}
+
+@keyframes cwa-reorder-wobble {
+  0%, 100% {
+    rotate: 0.1deg;
+    animation-timing-function: ease-in;
+  }
+  50% {
+    rotate: -0.3deg;
+    animation-timing-function: ease-out;
+  }
+}
+
+@keyframes cwa-reorder-wobble-alt {
+  0%, 100% {
+    rotate: -0.1deg;
+    animation-timing-function: ease-in;
+  }
+  50% {
+    rotate: 0.3deg;
+    animation-timing-function: ease-out;
+  }
 }
 
 @keyframes cwa-line-band {
@@ -472,8 +543,11 @@
 }
 
 @keyframes cwa-focus-glow {
-  from {
-    box-shadow: 0 0 6px 2px var(--save-end);
+  0%, 100% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.45;
   }
 }
 

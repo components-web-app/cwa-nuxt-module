@@ -108,7 +108,7 @@ describe('NewResourceCta: a component not added yet, with files held for it (#46
     expect(sent()).toHaveLength(1)
     expect(heldUpload($cwa as unknown as Cwa, CREATED, 'image')?.file.name).toBe('image.jpg')
     expect(toast.show).toHaveBeenCalledWith(expect.objectContaining({
-      tone: 'danger',
+      tone: 'error',
       title: 'Added as a draft, without its file',
       description: 'The file couldn\'t be uploaded. Retry here, or select the component and use Retry on the file.',
     }))

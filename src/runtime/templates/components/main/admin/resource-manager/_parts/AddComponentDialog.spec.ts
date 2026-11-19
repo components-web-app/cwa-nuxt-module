@@ -352,14 +352,17 @@ describe('the add component dialog (#461)', () => {
       expect(document.getElementById(image.getAttribute('aria-describedby')!)!.textContent).toBe('One image with alt text, Media')
     })
 
-    test('typing a name highlights it first', async () => {
+    test('typing a name lists it first without highlighting any row, and Down highlights it', async () => {
       await mountDialog()
       await openDialog()
 
       await type('text')
 
-      expect(search().getAttribute('aria-activedescendant')).toBe(qa('[role="option"]')[0]!.id)
       expect(optionValues()[0]).toBe('HtmlContent')
+      expect(search().hasAttribute('aria-activedescendant')).toBe(false)
+      expect(qa('[role="option"][data-highlighted]')).toHaveLength(0)
+      await key(search(), 'ArrowDown')
+      expect(search().getAttribute('aria-activedescendant')).toBe(qa('[role="option"]')[0]!.id)
     })
 
     test('no match says so on one line with the trimmed term and no quotes', async () => {
@@ -479,15 +482,15 @@ describe('the add component dialog (#461)', () => {
       expect(q('[data-testid="add-component-detail-lead"]')).toBeNull()
     })
 
-    test('a component with no configured icon shows none in the header, nothing inferred', async () => {
+    test('a component with no configured icon shows the generic icon its row shows in the header too', async () => {
       await mountDialog()
       await openDialog()
 
-      expect(qa('[role="option"]').find(option => option.dataset.value === 'Spacer')!.querySelector('[data-lead="icon"]')).not.toBeNull()
+      const rowIcon = qa('[role="option"]').find(option => option.dataset.value === 'Spacer')!.querySelector('[data-lead="icon"]')!.innerHTML
 
       await choose('Spacer')
 
-      expect(q('[data-testid="sub-view-header"] [data-lead]')).toBeNull()
+      expect(q('[data-testid="sub-view-header"] [data-lead="icon"]')!.innerHTML).toBe(rowIcon)
     })
 
     test('Enter on the highlighted row opens it', async () => {
@@ -495,6 +498,7 @@ describe('the add component dialog (#461)', () => {
       await openDialog()
       await type('spa')
 
+      await key(search(), 'ArrowDown')
       await key(search(), 'Enter')
 
       expect(document.getElementById(q('[data-testid="sub-view"]')!.getAttribute('aria-labelledby')!)!.textContent!.trim()).toBe('Spacer')
@@ -518,6 +522,7 @@ describe('the add component dialog (#461)', () => {
       await mountDialog()
       await openDialog()
       await type('spa')
+      await key(search(), 'ArrowDown')
       await key(search(), 'Enter')
 
       await key(add(), 'Escape')
@@ -542,6 +547,7 @@ describe('the add component dialog (#461)', () => {
       await mountDialog()
       await openDialog()
       await type('image')
+      await key(search(), 'ArrowDown')
       await key(search(), 'Enter')
 
       expect(shown(add())).toBe('Add now')
@@ -679,6 +685,7 @@ describe('the add component dialog (#461)', () => {
         await mountDialog()
         await openDialog()
         await type('image')
+        await key(search(), 'ArrowDown')
         await key(search(), 'Enter')
       }
 

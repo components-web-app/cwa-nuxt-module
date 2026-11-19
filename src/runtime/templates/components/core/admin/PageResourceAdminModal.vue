@@ -470,7 +470,7 @@ const { isAdding, isLoading, loadFailed, isUpdating, localResourceData, resource
   routeHashAfterAdd: computed(() => (localResourceData.value?.isTemplate ? '#details' : '#routes')),
   excludeFields: ['componentGroups'],
   dismissStoredErrors: true,
-  validate: data => data.route && newRouteAwaitingDate.value ? { route: 'Choose when the route goes live.' } : {},
+  validate: (data): Record<string, string> => data.route && newRouteAwaitingDate.value ? { route: 'Choose when the route goes live.' } : {},
   savedTitle: () => `${createNoun.value.charAt(0).toUpperCase()}${createNoun.value.slice(1)} saved`,
 })
 

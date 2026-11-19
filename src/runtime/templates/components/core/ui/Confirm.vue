@@ -13,14 +13,17 @@ import StateGlyph from './StateGlyph.vue'
 import { fieldBox, fieldFill } from './field-looks'
 import { typedCanStillMatch, typedMatches } from '#cwa/composables/cwa-confirm'
 import type { CwaConfirmLine, CwaConfirmTyped } from '#cwa/composables/cwa-confirm'
+import type { ButtonTone } from '../../ui/kit-looks'
 
-const { title, description, lines = [], keep = 'Keep editing', extra, alternative, go, tone = 'danger', typed } = defineProps<{
+const { title, description, lines = [], keep = 'Keep editing', extra, extraTone, alternative, alternativeTone, go, tone = 'danger', typed } = defineProps<{
   title: string
   description?: string
   lines?: CwaConfirmLine[]
   keep?: string
   extra?: string
+  extraTone?: ButtonTone
   alternative?: string
+  alternativeTone?: ButtonTone
   go: string
   tone?: 'danger' | 'accent'
   typed?: CwaConfirmTyped
@@ -38,6 +41,7 @@ const keepButton = useTemplateRef<InstanceType<typeof CwaUiButton>>('keepButton'
 const extraButton = useTemplateRef<InstanceType<typeof CwaUiButton>>('extraButton')
 const input = useTemplateRef<HTMLInputElement>('input')
 
+const multiple = computed(() => !!(extra || alternative))
 const matches = computed(() => !typed || typedMatches(text.value, typed.value))
 const invalid = computed(() => !!typed && !matches.value && text.value.trim() !== '' && !typedCanStillMatch(text.value, typed.value))
 const helper = computed(() => {
@@ -82,7 +86,8 @@ async function onOpenAutoFocus(event: Event) {
     input.value?.focus()
     return
   }
-  const element = (extraButton.value ?? keepButton.value)?.$el as HTMLElement | undefined
+  const first = extraTone === 'danger' ? undefined : extraButton.value
+  const element = (first ?? keepButton.value)?.$el as HTMLElement | undefined
   element?.focus()
 }
 
@@ -104,7 +109,8 @@ function onEnter() {
       />
       <AlertDialogContent
         data-testid="confirm"
-        class="cwa:fixed cwa:top-1/2 cwa:left-1/2 cwa:z-context cwa:w-[min(24rem,calc(100vw-2rem))] cwa:-translate-x-1/2 cwa:-translate-y-1/2 cwa:bg-surface-menu cwa:p-5 cwa:text-control cwa:text-fg cwa:shadow-popover cwa:outline-none"
+        :class="extra && alternative ? 'cwa:w-[min(40rem,calc(100vw-2rem))]' : multiple ? 'cwa:w-[min(32rem,calc(100vw-2rem))]' : 'cwa:w-[min(24rem,calc(100vw-2rem))]'"
+        class="cwa:fixed cwa:top-1/2 cwa:left-1/2 cwa:z-context cwa:-translate-x-1/2 cwa:-translate-y-1/2 cwa:bg-surface-menu cwa:p-5 cwa:text-control cwa:text-fg cwa:shadow-popover cwa:outline-none"
         @open-auto-focus="onOpenAutoFocus"
         @escape-key-down="answer('cancel')"
       >
@@ -183,8 +189,8 @@ function onEnter() {
           >{{ announcement }}</span>
         </div>
         <div
-          class="cwa:mt-5 cwa:grid cwa:gap-actions cwa:sm:flex cwa:sm:flex-wrap cwa:sm:justify-end"
-          :class="extra || alternative ? 'cwa:grid-cols-1' : 'cwa:grid-cols-2'"
+          class="cwa:mt-5 cwa:gap-actions"
+          :class="multiple ? 'cwa:flex cwa:flex-wrap cwa:items-center' : 'cwa:grid cwa:grid-cols-2 cwa:sm:flex cwa:sm:flex-wrap cwa:sm:justify-end'"
         >
           <CwaUiButton
             ref="keepButton"
@@ -192,28 +198,32 @@ function onEnter() {
             data-testid="confirm-keep"
             @click="answer('cancel')"
           />
-          <CwaUiButton
-            v-if="extra"
-            ref="extraButton"
-            :label="extra"
-            data-testid="confirm-extra"
-            @click="answer('extra')"
-          />
-          <CwaUiButton
-            v-if="alternative"
-            :label="alternative"
-            data-testid="confirm-alternative"
-            @click="answer('alternative')"
-          />
-          <CwaUiButton
-            :label="go"
-            variant="solid"
-            :tone="tone"
-            :disabled="!matches"
-            :disabled-reason="typed ? `Type the ${typed.noun} in the field above to turn this on.` : undefined"
-            data-testid="confirm-go"
-            @click="go_"
-          />
+          <div :class="multiple ? 'cwa:ms-auto cwa:flex cwa:flex-wrap cwa:justify-end cwa:gap-actions' : 'cwa:contents'">
+            <CwaUiButton
+              v-if="extra"
+              ref="extraButton"
+              :label="extra"
+              :tone="extraTone"
+              data-testid="confirm-extra"
+              @click="answer('extra')"
+            />
+            <CwaUiButton
+              v-if="alternative"
+              :label="alternative"
+              :tone="alternativeTone"
+              data-testid="confirm-alternative"
+              @click="answer('alternative')"
+            />
+            <CwaUiButton
+              :label="go"
+              variant="solid"
+              :tone="tone"
+              :disabled="!matches"
+              :disabled-reason="typed ? `Type the ${typed.noun} in the field above to turn this on.` : undefined"
+              data-testid="confirm-go"
+              @click="go_"
+            />
+          </div>
         </div>
       </AlertDialogContent>
     </AlertDialogPortal>

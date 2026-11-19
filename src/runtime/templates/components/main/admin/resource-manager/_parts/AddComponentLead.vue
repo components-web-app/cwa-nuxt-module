@@ -12,9 +12,7 @@ const { name, dynamic = false, chip = false, heading = false } = defineProps<{
 }>()
 
 const entry = computed(() => adminResources[name])
-const icon = computed(() => heading
-  ? entry.value?.icon ? adminResourceIcons[entry.value.icon] : undefined
-  : adminResourceIcons[entry.value?.icon ?? GENERIC] ?? adminResourceIcons[GENERIC])
+const icon = computed(() => adminResourceIcons[entry.value?.icon ?? GENERIC] ?? adminResourceIcons[GENERIC])
 const skeleton = computed(() => !chip && entry.value?.skeleton ? adminResourceIcons[entry.value.skeleton] : undefined)
 </script>
 

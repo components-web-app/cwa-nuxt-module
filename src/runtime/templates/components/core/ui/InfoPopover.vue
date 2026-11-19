@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { computed, ref, useTemplateRef } from 'vue'
 import { PopoverArrow, PopoverClose, PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger } from 'reka-ui'
-import { infoArrow, infoPanel } from './field-looks'
+import { infoArrow, infoClose, infoPanel } from './field-looks'
 import { POPOVER_GAP } from './popover-gap'
-import { openTriggerMark } from '../../ui/kit-looks'
 import StateGlyph from './StateGlyph.vue'
 import XMarkIcon from '../../ui/icon/XMarkIcon.vue'
 
@@ -98,8 +97,7 @@ function onOpenAutoFocus(event: Event) {
       :aria-label="`About ${label}`"
       :aria-describedby="hover ? textId : undefined"
       data-testid="field-info"
-      :class="['cwa:grid cwa:size-6 cwa:shrink-0 cwa:cursor-pointer cwa:place-items-center cwa:text-fg cwa:hover:bg-button cwa:aria-expanded:bg-button', openTriggerMark]"
-      class="cwa:outline-1 cwa:outline-transparent cwa:focus-visible:outline-2 cwa:focus-visible:outline-accent-fg cwa:pointer-coarse:size-hit"
+      class="cwa:grid cwa:size-6 cwa:shrink-0 cwa:cursor-pointer cwa:place-items-center cwa:text-fg-muted cwa:hover:text-fg cwa:aria-expanded:text-accent-fg cwa:outline-1 cwa:outline-transparent cwa:focus-visible:outline-2 cwa:focus-visible:outline-accent-fg cwa:pointer-coarse:size-hit"
       @pointerenter="onPointerenter"
       @pointerleave="onPointerleave"
       @focus="onFocus"
@@ -109,6 +107,7 @@ function onOpenAutoFocus(event: Event) {
       <StateGlyph
         ref="glyph"
         kind="info"
+        inherit
       />
     </PopoverTrigger>
     <PopoverPortal>
@@ -125,15 +124,15 @@ function onOpenAutoFocus(event: Event) {
         @pointerenter="onPointerenter"
         @pointerleave="onPointerleave"
       >
-        <div class="cwa:mb-4 cwa:flex cwa:h-[1cap] cwa:items-center cwa:gap-2 cwa:font-semibold">
+        <div class="cwa:mb-4 cwa:flex cwa:h-[1cap] cwa:items-center cwa:gap-2 cwa:font-semibold cwa:text-accent-on-info">
           <StateGlyph
             kind="info"
-            accent
+            inherit
           />
           <span class="cwa:min-w-0 cwa:flex-1 cwa:trim-text">{{ label }}</span>
           <PopoverClose
             aria-label="Close"
-            class="cwa:grid cwa:size-6 cwa:shrink-0 cwa:cursor-pointer cwa:place-items-center cwa:text-fg cwa:hover:bg-button"
+            :class="infoClose"
           >
             <XMarkIcon class="cwa:size-3" />
           </PopoverClose>

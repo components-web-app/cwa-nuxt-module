@@ -189,6 +189,58 @@ describe('CwaUiConfirm (#461)', () => {
     expect(wrapper.emitted('confirm')).toEqual([['alternative']])
   })
 
+  const draftChoice = { title: 'Delete this component?', keep: 'Cancel', extra: 'Delete draft', extraTone: 'danger', go: 'Delete entire component' }
+  const sharedDraftChoice = { title: 'Delete this component?', keep: 'Cancel', extra: 'Remove from here', alternative: 'Delete draft', alternativeTone: 'danger', go: 'Delete entire component' }
+
+  test('a destructive second action never takes focus, so Enter as it opens deletes nothing: Cancel does', async () => {
+    mountConfirm(draftChoice)
+    await flushPromises()
+
+    expect(document.activeElement).toBe(q('[data-testid="confirm-keep"]'))
+  })
+
+  test.each([
+    ['second', draftChoice, 'confirm-extra'],
+    ['third', sharedDraftChoice, 'confirm-alternative'],
+  ])('a destructive %s action has the danger look, a safe one keeps the plain look', async (_which, props, testId) => {
+    mountConfirm(props)
+    await flushPromises()
+
+    expect(q(`[data-testid="${testId}"]`).className).toContain('cwa:text-danger-fg')
+    expect(q('[data-testid="confirm-keep"]').className).not.toContain('cwa:text-danger-fg')
+    if (props.alternative) {
+      expect(q('[data-testid="confirm-extra"]').className).not.toContain('cwa:text-danger-fg')
+    }
+  })
+
+  test.each([
+    ['two', draftChoice, ['confirm-extra', 'confirm-go']],
+    ['three', sharedDraftChoice, ['confirm-extra', 'confirm-alternative', 'confirm-go']],
+  ])('with %s actions, Cancel sits on its own side of one wrapping row and the actions sit together on the other, never stacked full width', async (_count, props, actions) => {
+    mountConfirm(props)
+    await flushPromises()
+
+    const keep = q('[data-testid="confirm-keep"]')
+    const group = q(`[data-testid="${actions[0]}"]`).parentElement!
+    expect([...group.querySelectorAll('button')].map(button => button.getAttribute('data-testid'))).toEqual(actions)
+    expect(group.contains(keep)).toBe(false)
+    expect(group.className.split(' ')).toEqual(expect.arrayContaining(['cwa:ms-auto', 'cwa:flex', 'cwa:flex-wrap', 'cwa:justify-end']))
+    const row = group.parentElement!
+    expect(row.contains(keep)).toBe(true)
+    expect(row.className.split(' ')).toEqual(expect.arrayContaining(['cwa:flex', 'cwa:flex-wrap']))
+    expect(`${row.className} ${group.className}`).not.toMatch(/grid/)
+  })
+
+  test.each([
+    ['two', draftChoice],
+    ['three', sharedDraftChoice],
+  ])('with %s actions, has no axe violations', async (_count, props) => {
+    mountConfirm(props)
+    await flushPromises()
+
+    expect(await axe(document.body)).toHaveNoViolations()
+  })
+
   test('the main action answers go', async () => {
     const wrapper = mountConfirm({ title: 'Remove this component?', keep: 'Keep it', go: 'Remove' })
     await flushPromises()

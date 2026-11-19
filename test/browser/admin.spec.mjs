@@ -1670,12 +1670,14 @@ test('63. the header\'s Edit or Done button and the page settings button or path
         const pin = document.querySelector('[data-testid="manager-pin"]')
         const tablist = document.querySelector('[data-testid="manager-bar"] [role="tablist"]')
         const selected = tablist.querySelector('[role="tab"][aria-selected="true"]')
-        const after = getComputedStyle(selected, '::after')
-        const underlineBottom = selected.getBoundingClientRect().bottom - Number.parseFloat(after.bottom)
+        const indicators = tablist.querySelectorAll('[data-testid="tab-indicator"]')
+        const underline = indicators[0].getBoundingClientRect()
+        const tabBox = selected.getBoundingClientRect()
         return {
           total: height(document.querySelector('[data-testid="manager-bar"]')),
           tabs: [...tablist.querySelectorAll('[role="tab"]')].map(height),
-          underline: { top: underlineBottom - Number.parseFloat(after.height), bottom: underlineBottom },
+          indicators: indicators.length,
+          underline: { bottom: underline.bottom, height: underline.height, offLeft: Math.abs(underline.left - tabBox.left), offWidth: Math.abs(underline.width - tabBox.width) },
           line: tablist.parentElement.getBoundingClientRect().bottom,
           clip: tablist.getBoundingClientRect().bottom,
           panel: [...document.querySelectorAll('[data-testid="manager-tab-panel"] :is(button, [role="combobox"], [data-testid="segmented"])')].filter(element => element.offsetParent && !element.closest('[data-testid="field-info"], [data-testid="segmented"] button, .cwa\\:sr-only')).map(element => ({ name: (element.getAttribute('aria-label') ?? element.textContent).trim().slice(0, 30), height: height(element) })),
@@ -1699,6 +1701,8 @@ test('63. the header\'s Edit or Done button and the page settings button or path
       for (const height of bar.tabs) {
         assert(!hasTouch || height >= 44, `${where} a tab is ${height}px tall, under the 44px hit size`)
       }
+      assert(bar.indicators === 1, `${where} the tab row has ${bar.indicators} indicators`)
+      assert(bar.underline.height === 2 && bar.underline.offLeft <= 0.5 && bar.underline.offWidth <= 0.5, `${where} the tab indicator is not under the selected tab: ${JSON.stringify(bar.underline)}`)
       assert(Math.abs(bar.underline.bottom - bar.line) <= 0.5, `${where} the selected tab's underline ends at ${bar.underline.bottom}, not on the bar's line at ${bar.line}`)
       assert(bar.underline.bottom <= bar.clip + 0.5, `${where} the underline ends at ${bar.underline.bottom}, below the tab row it is clipped by at ${bar.clip}`)
       assert(bar.total === (hasTouch ? 112 : 100), `${where} the bar is ${bar.total}px tall`)
@@ -1744,7 +1748,7 @@ test('64. by keyboard alone a rich-text component is reached with Tab, selected 
   await eventually(() => page.evaluate(() => document.activeElement?.getAttribute('aria-label') === 'Body Text component'), 'Shift+F6 did not return to the component')
 })
 
-test('65. a shared component with unpublished changes offers Remove from here, Discard unpublished changes and Delete from all 2 places, and Remove from here takes only this instance off the page (#461)', async ({ cwa: t }) => {
+test('65. a shared component with unpublished changes offers Remove from here, Delete draft and Delete entire component in one row with Cancel on its own side, focuses Remove from here, and Remove from here takes only this instance off the page (#461)', async ({ cwa: t }) => {
   const { page, settle } = t
   const draftText = 'Shared source component, unpublished'
   const draft = await t.api.patch(t.seed.iris.source, { html: `<p>${draftText}</p>` })
@@ -1756,7 +1760,13 @@ test('65. a shared component with unpublished changes offers Remove from here, D
   const dialog = dialogWith(page, 'Delete this component?')
   await dialog.getByText('It is used in 2 places and has unpublished changes.').waitFor()
   const labels = await dialog.getByRole('button').allInnerTexts()
-  assert(JSON.stringify(labels.map(label => label.trim())) === JSON.stringify(['Don\'t delete', 'Remove from here', 'Discard unpublished changes', 'Delete from all 2 places']), `The choices are ${JSON.stringify(labels)}`)
+  assert(JSON.stringify(labels.map(label => label.trim())) === JSON.stringify(['Cancel', 'Remove from here', 'Delete draft', 'Delete entire component']), `The choices are ${JSON.stringify(labels)}`)
+  await dialog.getByText('Delete entire component deletes the draft and the live version from all 2 places it is used.').waitFor()
+  await dialog.getByText('Neither delete can be undone.').waitFor()
+  await eventually(() => dialog.getByRole('button', { name: 'Remove from here', exact: true }).evaluate(el => el === document.activeElement), 'Remove from here is not focused')
+  const boxes = await Promise.all(['Cancel', 'Remove from here', 'Delete draft', 'Delete entire component'].map(name => dialog.getByRole('button', { name, exact: true }).boundingBox()))
+  assert(new Set(boxes.map(box => Math.round(box.y))).size === 1, `The buttons are not in one row: ${JSON.stringify(boxes)}`)
+  assert(boxes[1].x - (boxes[0].x + boxes[0].width) > boxes[2].x - (boxes[1].x + boxes[1].width), `Cancel is not on its own side: ${JSON.stringify(boxes)}`)
   await dialog.getByRole('button', { name: 'Remove from here', exact: true }).click()
   const del = await eventually(() => t.rehearsal.writes.find(w => w.method === 'DELETE'), 'Nothing was DELETEd')
   assert(del.path === t.seed.positions.aSource, `DELETEd ${del.path}`)
@@ -1804,7 +1814,7 @@ test('66. at 390 wide the UI tab\'s row shows its fade and scrolls by keyboard, 
   }
 })
 
-test('67. in edit mode a link opens a menu at the click point with Edit focused first: Enter edits it, asking about the layout only then, and Visit goes there, following a redirect, and stays in edit mode', async ({ cwa: t }) => {
+test('68. in edit mode a link opens a menu at the click point with Edit focused first: Enter edits it, asking about the layout only then, and Visit goes there, following a redirect, and stays in edit mode', async ({ cwa: t }) => {
   const { page, base, settle } = t
   await openEditMode(t)
   const box = await layoutLink(page, 'Second').boundingBox()
@@ -1842,7 +1852,7 @@ test('67. in edit mode a link opens a menu at the click point with Edit focused 
   await page.getByRole('button', { name: 'Done', exact: true }).waitFor()
 })
 
-test('68. in edit mode and clone mode a faint outline fades in on the component under the pointer, never on the selected one', async ({ cwa: t }) => {
+test('69. in edit mode and clone mode a faint outline fades in on the component under the pointer, never on the selected one', async ({ cwa: t }) => {
   const { page, settle } = t
   await openEditMode(t)
   await settle()
@@ -1875,4 +1885,45 @@ test('68. in edit mode and clone mode a faint outline fades in on the component 
   await page.keyboard.press('Escape')
   await startClone(page)
   await outlineOver(texts.pageAOther)
+})
+
+test('67. with Enable reordering on, every position in the group wobbles and has a grip handle on top of it, and dragging the lower one above the other PATCHes the group order once, keeps the selection and survives a reload', async ({ cwa: t }) => {
+  const { page, settle } = t
+  await openEditMode(t)
+  await eventually(async () => await sourceAbove(page, texts.pageAOther) === true, 'The fixture order is wrong')
+  await select(page, texts.pageAOther)
+  await page.getByRole('tab', { name: 'Order', exact: true }).click()
+  await page.getByRole('switch', { name: 'Enable reordering' }).click()
+  const handles = page.getByTestId('reorder-handle')
+  await eventually(async () => await handles.count() === 2, `${await handles.count()} drag handle(s) shown`)
+  const reachable = await handles.evaluateAll(elements => elements.map((handle) => {
+    const box = handle.getBoundingClientRect()
+    const hit = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2)
+    return { onTop: !!hit && handle.contains(hit), label: handle.getAttribute('aria-label'), tabindex: handle.getAttribute('tabindex') }
+  }))
+  assert(reachable.every(handle => handle.onTop), `Something covers a drag handle: ${JSON.stringify(reachable)}`)
+  assert(reachable.every(handle => /^Drag to reorder /.test(handle.label) && handle.tabindex === '-1'), `Handles are named ${JSON.stringify(reachable)}`)
+  const wobbling = await page.evaluate(() => [...document.querySelectorAll('.cwa\\:reorder-wobble, .cwa\\:reorder-wobble-alt')].map(element => getComputedStyle(element).animationName))
+  assert(wobbling.length === 2 && wobbling.every(name => name.startsWith('cwa-reorder-wobble')), `Wobbling: ${JSON.stringify(wobbling)}`)
+  const [sourceBox] = await boxesOf(page, texts.source)
+  const grip = await handles.nth(1).boundingBox()
+  await page.mouse.move(grip.x + grip.width / 2, grip.y + grip.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(grip.x + grip.width / 2, grip.y + grip.height / 2 - 10, { steps: 2 })
+  await page.mouse.move(sourceBox.left + 20, sourceBox.top + 5, { steps: 8 })
+  await page.getByTestId('reorder-drop-line').waitFor()
+  const heldWobbles = await page.evaluate(() => document.querySelectorAll('.cwa\\:reorder-wobble, .cwa\\:reorder-wobble-alt').length)
+  assert(heldWobbles === 1, `${heldWobbles} position(s) wobble while one is held`)
+  await page.mouse.up()
+  assert(await sourceAbove(page, texts.pageAOther) === false, 'The screen did not move at once on the drop')
+  const patch = await eventually(() => t.rehearsal.writes.find(w => w.method === 'PATCH' && w.path === `${t.seed.iris.pageAGroup}/order`), 'No PATCH to the group order')
+  assert(JSON.stringify(patch.body.componentPositions) === JSON.stringify([t.seed.positions.aOther, t.seed.positions.aSource]), `PATCHed ${JSON.stringify(patch.body)}`)
+  await settle()
+  assert(t.rehearsal.writes.filter(w => w.path === `${t.seed.iris.pageAGroup}/order`).length === 1, 'The drop sent more than one order request')
+  assert(await page.getByRole('tab', { name: 'Order', exact: true }).getAttribute('aria-selected') === 'true', 'The drop changed the selection')
+  assert(await sourceAbove(page, texts.pageAOther) === false, 'The order snapped back after the order response')
+  await page.reload()
+  await page.getByText(texts.pageAOther, { exact: true }).waitFor()
+  await settle()
+  assert(await sourceAbove(page, texts.pageAOther) === false, 'The new order did not persist')
 })

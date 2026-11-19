@@ -5,6 +5,7 @@ import { PopoverArrow, PopoverContent, PopoverRoot } from 'reka-ui'
 import CwaUiButton from '../../ui/Button.vue'
 import FieldStatusTitle from './FieldStatusTitle.vue'
 import FieldStatusError from './FieldStatusError.vue'
+import { useStatusPopover } from './status-popovers'
 import type { FieldUndo } from './field-keys'
 import { shownValue } from './field-value'
 import type { FieldValueFormat } from './field-value'
@@ -82,6 +83,10 @@ const description = computed(() => {
 const title = computed(() => line.value === 'error' ? `${name}: not saved` : line.value === 'undo' ? `${name}: saved` : `${name}: changed by ${who.value}`)
 
 const open = ref(false)
+const stack = useStatusPopover()
+const shown = computed(() => open.value && stack.front.value)
+let dismissed = false
+let hovered = false
 const content = ref<{ $el?: HTMLElement } | null>(null)
 let hoverTimer: ReturnType<typeof setTimeout> | undefined
 let closeTimer: ReturnType<typeof setTimeout> | undefined
@@ -99,7 +104,7 @@ function within(target: EventTarget | null | undefined) {
 function show() {
   clearTimeout(closeTimer)
   clearTimeout(hoverTimer)
-  if (hasPopover.value) {
+  if (hasPopover.value && !dismissed) {
     open.value = true
   }
 }
@@ -109,6 +114,15 @@ function hide() {
   clearTimeout(closeTimer)
   open.value = false
 }
+
+function dismiss() {
+  hide()
+  dismissed = true
+}
+
+watch(open, (isOpen) => {
+  isOpen ? stack.claim() : stack.release()
+})
 
 function scheduleClose() {
   clearTimeout(closeTimer)
@@ -130,18 +144,22 @@ function onFocusin(event: FocusEvent) {
 function onFocusout(event: FocusEvent) {
   if (!within(event.relatedTarget)) {
     hide()
+    dismissed &&= hovered
   }
 }
 
 function onMouseenter() {
+  hovered = true
   clearTimeout(closeTimer)
   clearTimeout(hoverTimer)
   hoverTimer = setTimeout(show, HOVER_DELAY)
 }
 
 function onMouseleave() {
+  hovered = false
   clearTimeout(hoverTimer)
   if (!within(document.activeElement)) {
+    dismissed = false
     scheduleClose()
   }
 }
@@ -197,8 +215,9 @@ function keepIfInside(event: Event & { detail?: { originalEvent?: Event } }) {
 }
 
 function act(run?: () => unknown) {
-  hide()
-  returnFocus()
+  const focusWasInPopover = !!popoverEl()?.contains(document.activeElement)
+  dismiss()
+  focusWasInPopover && returnFocus()
   run?.()
 }
 
@@ -233,7 +252,7 @@ onBeforeUnmount(() => {
   clearTimeout(closeTimer)
 })
 
-defineExpose({ line, open })
+defineExpose({ line, open: shown })
 </script>
 
 <template>
@@ -250,7 +269,7 @@ defineExpose({ line, open })
   >{{ description }}</span>
   <PopoverRoot
     v-if="hasPopover"
-    :open="open"
+    :open="shown"
     @update:open="onOpenChange"
   >
     <PopoverContent
@@ -267,7 +286,7 @@ defineExpose({ line, open })
       @close-auto-focus.prevent
       @escape-key-down="onEscape"
       @pointer-down-outside="keepIfInside"
-      @focus-outside="keepIfInside"
+      @focus-outside.prevent
       @mouseenter="show"
       @mouseleave="scheduleClose"
     >

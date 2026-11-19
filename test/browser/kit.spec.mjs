@@ -120,6 +120,38 @@ for (const width of widths) {
     expect(gap).toBeLessThanOrEqual(6)
   })
 
+  test(`kit at ${width}: the ⓘ shows its popover open by its glyph turning the accent blue, with no fill behind it and no line under it, and hovering it changes only the glyph's colour (#461)`, async ({ page }) => {
+    await openKit(page, width)
+    await page.waitForLoadState('networkidle')
+    const trigger = page.locator('main').getByTestId('field-info').first()
+    const look = () => trigger.evaluate((button) => {
+      const probe = document.createElement('span')
+      probe.style.color = 'var(--cwa-color-accent-fg)'
+      button.after(probe)
+      const accent = getComputedStyle(probe).color
+      probe.remove()
+      const style = getComputedStyle(button)
+      return { glyph: getComputedStyle(button.querySelector('svg')).color, accent, fill: style.backgroundColor, shadow: style.boxShadow, open: button.getAttribute('aria-expanded') }
+    })
+    const rest = await look()
+    expect(rest.open).toBe('false')
+    expect(rest.glyph).not.toBe(rest.accent)
+    expect(rest.fill).toBe('rgba(0, 0, 0, 0)')
+
+    await trigger.hover()
+    const hovered = await look()
+    expect(hovered.fill).toBe('rgba(0, 0, 0, 0)')
+    expect(hovered.glyph).not.toBe(rest.glyph)
+
+    await trigger.click()
+    await page.getByTestId('field-info-popover').waitFor()
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true')
+    const open = await look()
+    expect(open.glyph).toBe(open.accent)
+    expect(open.fill).toBe('rgba(0, 0, 0, 0)')
+    expect(open.shadow).toBe('none')
+  })
+
   for (const [name, testId, open] of tooltipSurfaces) {
     test(`kit at ${width}: ${name} shows as much space above its text as below it and at its sides, measured to the letters, not to the boxes (#461)`, async ({ page }) => {
       await openKit(page, width)
@@ -442,6 +474,58 @@ for (const width of widths) {
   }
 }
 
+test('kit: only one field status popover shows at a time, and Close or Escape keeps it closed while the pointer and focus stay (#461)', async ({ page }) => {
+  await page.clock.install()
+  await openKit(page, 1280)
+  const popovers = page.getByTestId('field-status-popover')
+  const error = page.getByTestId('kit-input-error').locator('input')
+  const conflict = page.getByTestId('kit-input-conflict').locator('input')
+  const labels = () => popovers.evaluateAll(each => each.map(popover => popover.getAttribute('aria-label')))
+  const HOVER_DELAY_PASSED = 700
+
+  await error.scrollIntoViewIfNeeded()
+  await error.hover()
+  await expect(popovers).toHaveAttribute('aria-label', 'error: not saved')
+  await conflict.hover()
+  await expect(popovers).toHaveAttribute('aria-label', 'conflict: changed by Alex')
+  expect(await labels()).toEqual(['conflict: changed by Alex'])
+
+  await conflict.click()
+  await error.hover()
+  await expect(popovers).toHaveAttribute('aria-label', 'error: not saved')
+  expect(await labels()).toEqual(['error: not saved'])
+  await page.mouse.move(2, 450)
+  await expect(popovers).toHaveAttribute('aria-label', 'conflict: changed by Alex')
+
+  await popovers.getByRole('button', { name: 'Close' }).click()
+  await expect(popovers).toHaveCount(0)
+  await expect(conflict).toBeFocused()
+  await conflict.hover()
+  await page.clock.runFor(HOVER_DELAY_PASSED)
+  await expect(popovers).toHaveCount(0)
+
+  await page.mouse.move(2, 450)
+  await error.click()
+  await expect(popovers).toHaveAttribute('aria-label', 'error: not saved')
+  await page.keyboard.press('Escape')
+  await expect(popovers).toHaveCount(0)
+  await page.clock.runFor(HOVER_DELAY_PASSED)
+  await expect(popovers).toHaveCount(0)
+  await expect(error).toBeFocused()
+
+  await page.mouse.move(2, 450)
+  await page.locator('body').evaluate(() => document.activeElement?.blur())
+  await conflict.hover()
+  await expect(popovers).toHaveAttribute('aria-label', 'conflict: changed by Alex')
+  await popovers.getByRole('button', { name: 'Close' }).click()
+  await expect(popovers).toHaveCount(0)
+  await page.clock.runFor(HOVER_DELAY_PASSED)
+  await expect(popovers).toHaveCount(0)
+  await expect(page.locator('body')).toBeFocused()
+  await conflict.hover()
+  await expect(popovers).toHaveAttribute('aria-label', 'conflict: changed by Alex')
+})
+
 test('kit: a field\'s focus ring fades in from transparent, never from white (#461)', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'dark' })
   await page.setViewportSize({ width: 1280, height: 900 })
@@ -603,3 +687,86 @@ for (const hasTouch of [false, true]) {
     }
   }
 }
+
+function tabIndicator(dialog) {
+  const tablist = dialog.querySelector('[role="tablist"]')
+  const indicators = tablist.querySelectorAll('[data-testid="tab-indicator"]')
+  const tab = tablist.querySelector('[role="tab"][aria-selected="true"]')
+  const selected = tab.getBoundingClientRect()
+  const bar = indicators[0].getBoundingClientRect()
+  return {
+    count: indicators.length,
+    selected: tab.textContent.trim(),
+    offLeft: Math.abs(bar.left - selected.left),
+    offWidth: Math.abs(bar.width - selected.width),
+    offBottom: Math.abs(bar.bottom - selected.bottom),
+    height: bar.height,
+    transitions: indicators[0].getAnimations().length,
+  }
+}
+
+async function openKitDialog(page) {
+  await expect(async () => {
+    await page.getByTestId('kit-dialog-open').click()
+    await expect(page.getByRole('dialog').first().getByRole('tab').first()).toBeVisible({ timeout: 500 })
+  }).toPass()
+  return page.getByRole('dialog').first()
+}
+
+const twoFrames = () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve(true))))
+
+for (const width of widths) {
+  test(`kit at ${width}: one tab indicator sits under the selected tab, slides there when another tab is picked, and jumps there on resize and when the tab's width changes (#461)`, async ({ page }) => {
+    await openKit(page, width)
+    const dialog = await openKitDialog(page)
+    const read = () => dialog.evaluate(tabIndicator)
+    const settled = async () => {
+      await dialog.evaluate(element => Promise.all(element.querySelector('[data-testid="tab-indicator"]').getAnimations().map(animation => animation.finished)))
+      return read()
+    }
+    const under = (state, name) => {
+      expect(state.count).toBe(1)
+      expect(state.selected).toBe(name)
+      expect(state.offLeft).toBeLessThanOrEqual(0.5)
+      expect(state.offWidth).toBeLessThanOrEqual(0.5)
+      expect(state.offBottom).toBeLessThanOrEqual(0.5)
+      expect(state.height).toBe(2)
+    }
+
+    under(await settled(), 'Details')
+
+    await dialog.getByRole('tab', { name: 'Info' }).click()
+    const sliding = await read()
+    expect(sliding.transitions).toBeGreaterThan(0)
+    expect(sliding.offLeft).toBeGreaterThan(0.5)
+    under(await settled(), 'Info')
+
+    await page.setViewportSize({ width: width === 390 ? 360 : 1024, height: 900 })
+    await page.evaluate(twoFrames)
+    const resized = await read()
+    expect(resized.transitions).toBe(0)
+    under(resized, 'Info')
+
+    await dialog.evaluate((element) => {
+      const tab = element.querySelector('[role="tab"][aria-selected="true"]')
+      tab.firstChild.textContent = 'Info and more'
+    })
+    await page.evaluate(twoFrames)
+    const widened = await read()
+    expect(widened.transitions).toBe(0)
+    expect(widened.offWidth).toBeLessThanOrEqual(0.5)
+    under(widened, 'Info and more')
+  })
+}
+
+test('kit: under reduced motion the tab indicator jumps to the picked tab without a transition (#461)', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await openKit(page, 1280)
+  const dialog = await openKitDialog(page)
+  await dialog.getByRole('tab', { name: 'Info' }).click()
+  const state = await dialog.evaluate(tabIndicator)
+  expect(state.transitions).toBe(0)
+  expect(state.selected).toBe('Info')
+  expect(state.offLeft).toBeLessThanOrEqual(0.5)
+  expect(state.offWidth).toBeLessThanOrEqual(0.5)
+})

@@ -5,7 +5,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import type { Router } from 'vue-router'
 import { axe } from '../../../../../../../../test/utils/axe'
-import { drawsOpenState } from '../../../../../../../../test/utils/kit-css'
+import { drawsOpenLine, drawsOpenState, shownFill } from '../../../../../../../../test/utils/kit-css'
 import PresenceIndicator from './PresenceIndicator.vue'
 import { navigateTo } from '#app/composables/router'
 import * as cwaComposable from '#cwa/composables/cwa'
@@ -116,18 +116,21 @@ afterEach(() => {
 })
 
 describe('PresenceIndicator (#429)', () => {
-  test('the indicator shows itself selected while its list is open, and not once it closes, with no axe violations open', async () => {
+  test('the indicator shows its list open with an accent-tinted fill behind the avatars, never a line under them, and none once it closes, with no axe violations open', async () => {
     mockCwa()
     presence!.start(true)
     arrive(ids[0]!, SAM, {})
     const { wrapper } = await openList()
     const trigger = wrapper.get('[data-testid="presence-indicator"]')
     expect(drawsOpenState(trigger.element)).toBe(true)
+    expect(drawsOpenLine(trigger.element)).toBe(false)
+    expect(shownFill(trigger.element)).toBe('accent-tint')
     expect(await axe(document.body, { rules: { region: { enabled: false } } })).toHaveNoViolations()
 
     await trigger.trigger('click')
     await flushPromises()
     expect(drawsOpenState(trigger.element)).toBe(false)
+    expect(shownFill(trigger.element)).toBeUndefined()
   })
 
   test('renders nothing while presence is not running', async () => {

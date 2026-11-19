@@ -155,7 +155,7 @@ function hideReasons() {
                 :aria-label="item.reasonsLabel ?? `Why ${item.label} is unavailable`"
                 :aria-expanded="reasonsFor?.item === item ? 'true' : 'false'"
                 data-testid="menu-item-why"
-                class="cwa:grid cwa:min-h-option cwa:pointer-coarse:min-h-hit cwa:w-option cwa:shrink-0 cwa:cursor-pointer cwa:place-items-center cwa:text-fg-muted cwa:outline-none cwa:select-none cwa:data-highlighted:bg-menu-highlight cwa:data-highlighted:text-fg cwa:data-highlighted:shadow-[inset_2px_0_0_var(--cwa-color-accent-fg)] cwa:aria-expanded:bg-menu-highlight cwa:aria-expanded:text-fg cwa:aria-expanded:shadow-[inset_0_-2px_0_currentColor]"
+                class="cwa:grid cwa:min-h-option cwa:pointer-coarse:min-h-hit cwa:w-option cwa:shrink-0 cwa:cursor-pointer cwa:place-items-center cwa:text-fg-muted cwa:outline-none cwa:select-none cwa:data-highlighted:bg-menu-highlight cwa:data-highlighted:text-fg cwa:data-highlighted:shadow-[inset_2px_0_0_var(--cwa-color-accent-fg)] cwa:aria-expanded:text-accent-fg cwa:aria-expanded:data-highlighted:text-accent-fg"
                 @select="showReasons($event, item)"
               >
                 <svg

@@ -2,11 +2,14 @@ import type { App } from 'vue'
 import { createConfirmDialog } from './confirm-dialog'
 import type Cwa from '#cwa/cwa'
 import type { CwaConfirmOptions } from '#cwa/composables/cwa-confirm'
+import type { ButtonTone } from '#cwa/templates/components/ui/kit-looks'
 import { realtimeView } from '#cwa/resources/realtime-view'
 
 export interface ConfirmChoiceOptions extends CwaConfirmOptions {
   extra?: string
+  extraTone?: ButtonTone
   alternative?: string
+  alternativeTone?: ButtonTone
 }
 
 const discardDraft: CwaConfirmOptions = {

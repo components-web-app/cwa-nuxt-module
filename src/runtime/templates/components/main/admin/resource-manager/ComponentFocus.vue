@@ -5,7 +5,7 @@ import { useElementSize, useWindowSize } from '@vueuse/core'
 import { v4 as uuidv4 } from 'uuid'
 import { useCwa } from '#imports'
 import { CwaResourceTypes, getPublishedResourceState, getResourceTypeFromIri } from '#cwa/resources/resource-utils'
-import { toneBehind, useSaveOutline } from '#cwa/admin/save-outline'
+import { FOCUS_CUTOUT_OFFSET, FOCUS_CUTOUT_RADIUS, focusRadiusAt, saveOutlineStyle, toneBehind, useSaveOutline } from '#cwa/admin/save-outline'
 import { NEW_RESOURCE_IRI } from '#cwa/storage/stores/resources/state'
 
 const props = defineProps<{
@@ -136,6 +136,7 @@ function styleOf(focusPosition: FocusPosition) {
     left: `${focusPosition.left}px`,
     width: `${focusPosition.width}px`,
     height: `${focusPosition.height}px`,
+    borderRadius: `${focusRadiusAt(0)}px`,
   }
 }
 
@@ -178,7 +179,7 @@ function drawCanvas() {
     return
   }
 
-  const offset = 7
+  const offset = FOCUS_CUTOUT_OFFSET
   const width = Math.max(windowSize.width.value, document.body.clientWidth)
   const height = Math.max(windowSize.height.value, document.body.clientHeight)
   ctx.reset()
@@ -189,7 +190,7 @@ function drawCanvas() {
   ctx.beginPath()
   ctx.rect(0, 0, width, height)
   for (const cutOut of [position.value, ...otherPositions.value]) {
-    drawRoundedRect(ctx, cutOut.left - offset, cutOut.top - offset, cutOut.width + (offset * 2), cutOut.height + (offset * 2), 8)
+    drawRoundedRect(ctx, cutOut.left - offset, cutOut.top - offset, cutOut.width + (offset * 2), cutOut.height + (offset * 2), FOCUS_CUTOUT_RADIUS)
   }
   ctx.fill()
 }
@@ -238,25 +239,28 @@ defineExpose({
     <div
       v-for="(outlineStyle, index) of [cssStyle, ...otherCssStyles]"
       :key="index"
-      :class="[borderColor, { 'cwa:animate-pulse': savePhase === 'rest' }]"
+      :class="borderColor"
       :style="outlineStyle"
       :data-save="savePhase"
-      class="cwa:absolute cwa:outline-2 cwa:outline-offset-4 cwa:pointer-events-none cwa:outline cwa:rounded-[1px]"
+      class="cwa:absolute cwa:outline-2 cwa:outline-offset-4 cwa:pointer-events-none cwa:outline"
       data-testid="focus-outline"
     >
       <span
         v-if="savePhase !== 'rest'"
         :key="savePhase"
         class="cwa:focus-save"
+        :style="saveOutlineStyle"
         :data-save="savePhase"
         :data-tone="saveTone"
         data-testid="focus-save"
       >
-        <i
-          v-for="side of sides"
-          :key="side"
-          :data-side="side"
-        />
+        <span class="cwa:focus-save-ring">
+          <i
+            v-for="side of sides"
+            :key="side"
+            :data-side="side"
+          />
+        </span>
       </span>
     </div>
   </client-only>
