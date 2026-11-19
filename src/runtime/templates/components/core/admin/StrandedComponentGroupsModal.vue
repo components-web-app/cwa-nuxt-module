@@ -26,7 +26,10 @@
           <h3 class="cwa:m-0 cwa:break-all cwa:text-section cwa:text-fg-secondary">
             {{ group.reference }}
           </h3>
-          <span class="cwa:break-all cwa:font-mono cwa:text-helper cwa:text-fg-muted">{{ group.iri }}</span>
+          <CopyableText
+            :text="group.iri"
+            class="cwa:break-all cwa:font-mono cwa:text-helper cwa:text-fg-muted"
+          />
         </div>
         <p
           v-if="!group.positions.length"
@@ -49,7 +52,10 @@
             </template>
             <template v-else>
               <span>{{ position.componentType || 'Component' }}</span>
-              <span class="cwa:break-all cwa:font-mono cwa:text-fg-muted">{{ position.component || position.iri }}</span>
+              <CopyableText
+                :text="position.component || position.iri"
+                class="cwa:break-all cwa:font-mono cwa:text-fg-muted"
+              />
             </template>
           </li>
         </ul>
@@ -93,9 +99,11 @@
               <li
                 v-for="positionIri of outcomes[group.iri]"
                 :key="positionIri"
-                class="cwa:break-all cwa:font-mono cwa:text-helper"
               >
-                {{ positionIri }}
+                <CopyableText
+                  :text="positionIri"
+                  class="cwa:break-all cwa:font-mono cwa:text-helper"
+                />
               </li>
             </ul>
           </CwaUiAlert>
@@ -107,6 +115,7 @@
 
 <script setup lang="ts">
 import { reactive } from 'vue'
+import CopyableText from '#cwa/templates/components/core/admin/CopyableText.vue'
 import { useCwa } from '#cwa/composables/cwa'
 import { useNuxtApp } from '#imports'
 import { mergeComponentGroup } from '#cwa/admin/stranded-component-groups'
