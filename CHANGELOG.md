@@ -12,6 +12,7 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ### Changed
 
+- In edit mode a link in the other scope asks to switch first: a layout link while editing the page (or a page link while editing the layout) shows "Edit the shared layout?" or "Edit the page?" before any menu, and once confirmed the link menu opens at the click point, where Edit selects the component with no second confirm. Cancel opens nothing ([a841f366](https://github.com/components-web-app/cwa-nuxt-module/commit/a841f3662aa1b5db3ebb7e861381b50d298e2121), [#157](https://github.com/components-web-app/cwa-nuxt-module/issues/157)).
 - The list of places a shared component is used, opened from its badge beside Publish, is now the admin's usual menu popover, square and in the same colours as the other menus ([a659cd92](https://github.com/components-web-app/cwa-nuxt-module/commit/a659cd92aca06540107e1bbf63b9832902a774c1), [#461](https://github.com/components-web-app/cwa-nuxt-module/issues/461)).
 
 ### Fixed
