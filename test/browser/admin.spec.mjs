@@ -10,6 +10,11 @@ const refusedResource = /^Failed to load resource: the server responded with a s
 
 class AssertionError extends Error {}
 
+async function settledBox(locator) {
+  await locator.evaluate(el => Promise.all(el.getAnimations({ subtree: true }).map(animation => animation.finished.catch(() => undefined))))
+  return locator.boundingBox()
+}
+
 function assert(condition, message) {
   if (!condition) {
     throw new AssertionError(message)
@@ -933,7 +938,7 @@ test('43. a click on a target in clone mode outlines it in solid blue at once an
   assert(drawn.style === 'solid' && drawn.color === 'rgb(37, 99, 235)', `The target outline is ${drawn.style} ${drawn.color}, not solid blue`)
   const sourceColors = await page.getByTestId('clone-highlight').evaluateAll(els => els.map(el => getComputedStyle(el).outlineColor))
   assert(sourceColors.length > 0 && !sourceColors.includes(drawn.color), `The target outline has the source outline's colour: ${JSON.stringify(sourceColors)}`)
-  const menuBox = await menu.boundingBox()
+  const menuBox = await settledBox(menu)
   assert(Math.abs(menuBox.x - point.x) <= 2 && menuBox.y >= point.y && menuBox.y - point.y <= 8, `The menu is at ${JSON.stringify(menuBox)}, not at the click point ${JSON.stringify(point)}`)
 
   await page.keyboard.press('Escape')
@@ -985,7 +990,7 @@ test('45. near the right edge of the window the placement menu shifts left to st
   const menu = cloneMenu(page)
   await menu.getByTestId('clone-option').first().waitFor()
   await eventually(async () => {
-    const m = await menu.boundingBox()
+    const m = await settledBox(menu)
     return m && m.x >= 0 && m.x + m.width <= viewport.width && m.x < point.x && m.y >= point.y
   }, `The menu ${JSON.stringify(await menu.boundingBox())} is not on screen below ${JSON.stringify(point)} in the ${JSON.stringify(viewport)} window`)
 })
@@ -1848,7 +1853,7 @@ test('68. in edit mode a layout link asks to edit the layout first; Cancel opens
   const rows = await menu.getByRole('menuitem').allInnerTexts()
   assert(rows.length === 2 && rows[0].startsWith('Edit ') && rows[1] === `Visit ${t.seed.paths.second}`, `The menu lists ${JSON.stringify(rows)}`)
   await eventually(() => edit.evaluate(el => el === document.activeElement), 'Edit is not focused')
-  const menuBox = await menu.boundingBox()
+  const menuBox = await settledBox(menu)
   assert(Math.abs(menuBox.x - point.x) <= 2 && menuBox.y >= point.y && menuBox.y - point.y <= 8, `The menu is at ${JSON.stringify(menuBox)}, not at the click point ${JSON.stringify(point)}`)
   assert(page.url() === `${base}${t.seed.paths.home}`, `The confirm navigated to ${page.url()}`)
 
