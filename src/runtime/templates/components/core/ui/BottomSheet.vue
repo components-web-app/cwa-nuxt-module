@@ -107,7 +107,14 @@ function finish(how: 'apply' | 'discard') {
     return
   }
   finished = true
-  actions && emit(how)
+  if (actions) {
+    if (how === 'apply') {
+      emit('apply')
+    }
+    else {
+      emit('discard')
+    }
+  }
   open.value = false
 }
 
