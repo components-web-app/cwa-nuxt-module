@@ -102,6 +102,20 @@ describe('ManagerTabs (#459)', () => {
     }
   })
 
+  test('while a tab is still loading no tab is listed, and once all have loaded the first in their order is selected, never the one that loaded first', async () => {
+    const loading = new Array(3)
+    loading[2] = tabs[2]
+    const wrapper = mount(ManagerTabs, { props: { tabs: loading, idPrefix: 'bar', label: 'Settings' } })
+
+    expect(wrapper.findAll('button')).toHaveLength(0)
+    expect(wrapper.emitted('click')?.flat() ?? []).not.toContain(2)
+
+    await wrapper.setProps({ tabs })
+
+    expect(wrapper.findAll('button').map(button => button.text())).toEqual(['Content', 'Info', 'Ui'])
+    expect(wrapper.emitted('click')!.at(-1)).toEqual([1])
+  })
+
   test('has no axe violations', async () => {
     const panel = document.createElement('div')
     panel.id = 'bar-panel'

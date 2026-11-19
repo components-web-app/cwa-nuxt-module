@@ -210,6 +210,9 @@ const showSpacer = computed(() => {
 })
 
 const selectedTab = computed(() => {
+  if (allTabsMeta.value.includes(undefined as never)) {
+    return
+  }
   const tab = currentStackItem.value?.managerTabs?.[selectedIndex.value]
   return tab ? toRaw(tab) : tab
 })
