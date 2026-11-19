@@ -10,6 +10,7 @@ import {
 } from 'reka-ui'
 import CwaUiButton from '../../ui/Button.vue'
 import StateGlyph from './StateGlyph.vue'
+import { dialogOpen, overlayOpen } from './open-motion'
 import { fieldBox, fieldFill } from './field-looks'
 import { typedCanStillMatch, typedMatches } from '#cwa/composables/cwa-confirm'
 import type { CwaConfirmLine, CwaConfirmTyped } from '#cwa/composables/cwa-confirm'
@@ -104,12 +105,12 @@ function onEnter() {
     <AlertDialogPortal>
       <AlertDialogOverlay
         data-testid="confirm-scrim"
-        class="cwa:fixed cwa:inset-0 cwa:z-context cwa:bg-black/60"
+        :class="['cwa:fixed cwa:inset-0 cwa:z-context cwa:bg-black/60', overlayOpen]"
         @click="answer('cancel')"
       />
       <AlertDialogContent
         data-testid="confirm"
-        :class="extra && alternative ? 'cwa:w-[min(40rem,calc(100vw-2rem))]' : multiple ? 'cwa:w-[min(32rem,calc(100vw-2rem))]' : 'cwa:w-[min(24rem,calc(100vw-2rem))]'"
+        :class="[extra && alternative ? 'cwa:w-[min(40rem,calc(100vw-2rem))]' : multiple ? 'cwa:w-[min(32rem,calc(100vw-2rem))]' : 'cwa:w-[min(24rem,calc(100vw-2rem))]', dialogOpen]"
         class="cwa:fixed cwa:top-1/2 cwa:left-1/2 cwa:z-context cwa:-translate-x-1/2 cwa:-translate-y-1/2 cwa:bg-surface-menu cwa:p-5 cwa:text-control cwa:text-fg cwa:shadow-popover cwa:outline-none"
         @open-auto-focus="onOpenAutoFocus"
         @escape-key-down="answer('cancel')"

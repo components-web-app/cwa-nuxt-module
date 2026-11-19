@@ -967,6 +967,45 @@
 .cwa\:transform-gpu {
   transform: translateZ(0) var(--tw-rotate-x,) var(--tw-rotate-y,) var(--tw-rotate-z,) var(--tw-skew-x,) var(--tw-skew-y,);
 }
+.cwa\:pop-in {
+  --cwa-rise-from: 0 -0.25rem;
+  &[data-side='top'] {
+    --cwa-rise-from: 0 0.25rem;
+  }
+  &[data-side='left'] {
+    --cwa-rise-from: 0.25rem 0;
+  }
+  &[data-side='right'] {
+    --cwa-rise-from: -0.25rem 0;
+  }
+  &[data-state='open'] {
+    animation: cwa-rise var(--cwa-duration-fast) var(--cwa-ease-out);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    &[data-state='open'] {
+      animation: none;
+    }
+  }
+}
+.cwa\:dialog-in {
+  --cwa-rise-from: -50% calc(-50% + 0.5rem);
+  &[data-state='open'] {
+    animation: cwa-rise var(--cwa-duration-slow) var(--cwa-ease-out);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    &[data-state='open'] {
+      animation: none;
+    }
+  }
+}
+.cwa\:overlay-in[data-state='open'] {
+  animation: cwa-line-in var(--cwa-duration-base) ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cwa\:overlay-in[data-state='open'] {
+    animation: none;
+  }
+}
 .cwa\:animate-clone-placed {
   animation: var(--cwa-animate-clone-placed);
 }
@@ -2755,9 +2794,6 @@
   .cwa\:motion-safe\:animate-\[cwa-sub-view-in_var\(--cwa-duration-base\)_ease\] {
     animation: cwa-sub-view-in var(--cwa-duration-base) ease;
   }
-  .cwa\:motion-safe\:data-\[state\=open\]\:animate-\[cwa-line-in_150ms_ease-out\][data-state="open"] {
-    animation: cwa-line-in 150ms ease-out;
-  }
 }
 @media (prefers-reduced-motion: reduce) {
   .cwa\:motion-reduce\:animate-spinner-reduced {
@@ -2955,6 +2991,17 @@
   .cwa\:sm\:translate-y-0 {
     --tw-translate-y: 0px;
     translate: var(--tw-translate-x) var(--tw-translate-y);
+  }
+  .cwa\:sm\:dialog-in {
+    --cwa-rise-from: -50% calc(-50% + 0.5rem);
+  }
+  .cwa\:sm\:dialog-in[data-state='open'] {
+    animation: cwa-rise var(--cwa-duration-slow) var(--cwa-ease-out);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cwa\:sm\:dialog-in[data-state='open'] {
+      animation: none;
+    }
   }
   .cwa\:sm\:flex-row {
     flex-direction: row;
@@ -3602,6 +3649,13 @@
   from {
     opacity: 0;
     transform: translateX(-2rem);
+  }
+}
+@keyframes cwa-rise {
+  from {
+    opacity: 0;
+    translate: var(--cwa-rise-from);
+    scale: 0.98;
   }
 }
 @layer base {

@@ -1,3 +1,5 @@
+import { popoverOpen } from './open-motion'
+
 export type FieldTone = 'danger' | 'warning' | undefined
 
 export const fieldBox = 'cwa:flex cwa:h-control cwa:w-full cwa:min-w-0 cwa:items-center cwa:text-control cwa:text-fg cwa:transition-colors cwa:duration-(--cwa-duration-fast) cwa:ease-out cwa:motion-reduce:transition-none cwa:outline-1 cwa:outline-transparent cwa:focus-within:outline-2 cwa:focus-within:outline-offset-2 cwa:focus-within:outline-accent-fg cwa:pointer-coarse:h-hit'
@@ -16,9 +18,9 @@ export function fieldFill(tone: FieldTone, inactive: boolean) {
   return inactive ? 'cwa:bg-field' : 'cwa:bg-field cwa:hover:bg-field-hover'
 }
 
-export const menuPanel = 'cwa:z-context cwa:max-h-72 cwa:max-w-[min(22rem,calc(100vw-1rem))] cwa:overflow-hidden cwa:bg-surface-menu cwa:text-control cwa:text-fg cwa:shadow-popover cwa:outline-none cwa:motion-safe:data-[state=open]:animate-[cwa-line-in_150ms_ease-out]'
+export const menuPanel = `cwa:z-context cwa:max-h-72 cwa:max-w-[min(22rem,calc(100vw-1rem))] cwa:overflow-hidden cwa:bg-surface-menu cwa:text-control cwa:text-fg cwa:shadow-popover cwa:outline-none ${popoverOpen}`
 
-export const infoPanel = 'cwa:bg-surface-info cwa:text-white cwa:leading-normal cwa:shadow-popover cwa:ring-1 cwa:ring-white/15'
+export const infoPanel = `cwa:bg-surface-info cwa:text-white cwa:leading-normal cwa:shadow-popover cwa:ring-1 cwa:ring-white/15 ${popoverOpen}`
 
 export const infoArrow = 'cwa:fill-surface-info cwa:stroke-white/15'
 

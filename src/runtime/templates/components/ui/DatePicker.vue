@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { POPOVER_GAP } from '../core/ui/popover-gap'
+import { popoverOpen } from '../core/ui/open-motion'
 import { computed, ref, useId, watch } from 'vue'
 import { consola as logger } from 'consola'
 import type { DateValue } from '@internationalized/date'
@@ -168,7 +169,7 @@ function onCalendarUpdate(date?: DateValue) {
               :collision-padding="8"
               role="dialog"
               :aria-label="`${label}: choose a date`"
-              class="cwa:z-context cwa:bg-surface-menu cwa:p-3 cwa:text-fg cwa:shadow-popover cwa:outline-none"
+              :class="['cwa:z-context cwa:bg-surface-menu cwa:p-3 cwa:text-fg cwa:shadow-popover cwa:outline-none', popoverOpen]"
             >
               <Calendar
                 :model-value="calendarValue"

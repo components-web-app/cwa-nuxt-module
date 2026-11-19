@@ -20,6 +20,7 @@ import {
 import BottomSheet from '../core/ui/BottomSheet.vue'
 import { opensAsSheet } from '../core/ui/sheet-media'
 import { infoPanel } from '../core/ui/field-looks'
+import { popoverOpen } from '../core/ui/open-motion'
 import { menuGroups } from '../core/ui/menu-entries'
 import type { MenuEntry, MenuItem } from '../core/ui/menu-entries'
 
@@ -159,7 +160,7 @@ function hideReasons() {
         :avoid-collisions="true"
         :aria-label="label"
         data-testid="kit-menu"
-        class="cwa:z-context cwa:min-w-48 cwa:max-w-72 cwa:max-h-72 cwa:overflow-y-auto cwa:bg-surface-menu cwa:py-1 cwa:text-control cwa:text-fg cwa:shadow-popover cwa:outline-none cwa:motion-safe:data-[state=open]:animate-[cwa-line-in_150ms_ease-out]"
+        :class="['cwa:z-context cwa:min-w-48 cwa:max-w-72 cwa:max-h-72 cwa:overflow-y-auto cwa:bg-surface-menu cwa:py-1 cwa:text-control cwa:text-fg cwa:shadow-popover cwa:outline-none', popoverOpen]"
         v-bind="$attrs"
         @focus-outside="keepOpenForReasons"
         @pointer-down-outside="keepOpenForReasons"
