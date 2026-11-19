@@ -4,6 +4,10 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+### Added
+
+- On a phone, the admin's selects, multi-selects, resource searches and menus (the split button's ⋮, the clone placement menu) open as a bottom sheet with larger rows, a scrim and Done or Close; a searchable sheet stays above the on-screen keyboard ([8ab9d7e6](https://github.com/components-web-app/cwa-nuxt-module/commit/8ab9d7e6cbb3635b6eb43181ae30b9875fdb372d), [#461](https://github.com/components-web-app/cwa-nuxt-module/issues/461)).
+
 ### Fixed
 
 - Editing a title on the page (`CwaUiInlineEdit`) saves as you type, as the bar's input does, instead of only when you click off or press Enter, and Escape stops editing and keeps what was typed ([f79378d5](https://github.com/components-web-app/cwa-nuxt-module/commit/f79378d525effd047a10fecc4dd81dd1a1f4d618), [b5e482ad](https://github.com/components-web-app/cwa-nuxt-module/commit/b5e482ade98bcd4827dcd0215284dc54e3e38c73), [#461](https://github.com/components-web-app/cwa-nuxt-module/issues/461)).
