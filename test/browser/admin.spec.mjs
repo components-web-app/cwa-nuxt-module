@@ -1814,9 +1814,10 @@ test('66. at 390 wide the UI tab\'s row shows its fade and scrolls by keyboard, 
   }
 })
 
-test('68. in edit mode a layout link asks to edit the layout first, and only once that is confirmed opens a menu at the click point with Edit focused, which selects without asking again; Cancel opens nothing; in the layout a layout link opens the menu at once, and Visit follows a redirect and stays in edit mode', async ({ cwa: t }) => {
+test('68. in edit mode a layout link asks to edit the layout first; Cancel opens nothing and keeps the page selection; confirming clears it and only then opens a menu at the click point with Edit focused, which selects without asking again; in the layout a layout link opens the menu at once, and Visit follows a redirect and stays in edit mode', async ({ cwa: t }) => {
   const { page, base, settle } = t
   await openEditMode(t)
+  await select(page, texts.pageAOther)
   const box = await layoutLink(page, 'Second').boundingBox()
   const point = { x: box.x + 4, y: box.y + box.height / 2 }
   const menu = linkMenu(page)
@@ -1831,11 +1832,15 @@ test('68. in edit mode a layout link asks to edit the layout first, and only onc
   await waitForNoDialog(page, 'Cancel did not close the confirm')
   await settle()
   assert(!(await menu.count()), 'Cancel on the scope confirm opened the link menu')
+  assert(await page.getByTestId('component-menu').isVisible(), 'Cancel on the scope confirm cleared the page selection')
 
   await page.mouse.click(point.x, point.y)
   await confirm.getByRole('button', { name: 'Edit layout', exact: true }).click()
   const edit = menu.getByTestId('link-menu-edit')
   await edit.waitFor()
+  await page.getByTestId('component-menu').waitFor({ state: 'detached' }).catch(() => {
+    throw new AssertionError('Switching to the layout kept the page component selected')
+  })
   const rows = await menu.getByRole('menuitem').allInnerTexts()
   assert(rows.length === 2 && rows[0].startsWith('Edit ') && rows[1] === `Visit ${t.seed.paths.second}`, `The menu lists ${JSON.stringify(rows)}`)
   await eventually(() => edit.evaluate(el => el === document.activeElement), 'Edit is not focused')

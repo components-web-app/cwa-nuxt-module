@@ -217,6 +217,9 @@ export default class ResourceStackManager {
       return false
     }
     this._isEditingLayout.value = toLayout
+    this.previousResourceStack.value = []
+    this.currentResourceStack.value = []
+    this.showManager.value = false
     return true
   }
 
