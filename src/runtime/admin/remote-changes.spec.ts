@@ -260,6 +260,19 @@ describe('RemoteChanges: another admin\'s saved drafts reach a signed-in admin (
       expect(stored(L)?.draftResource).toBe(D)
     })
 
+    test('the unchanged public copy of the live version, arriving after this tab published and started a new draft, is no conflict for the draft\'s unsent change', async () => {
+      const L = '/component/titles/republished-live'
+      const D = '/component/titles/new-draft'
+      seed({ '@id': L, '@type': 'Title', 'title': 'B', 'draftResource': D, '_metadata': { version: 2, publishable: { published: true } } })
+      seed({ '@id': D, '@type': 'Title', 'title': 'C', 'publishedResource': L, '_metadata': { version: 1, publishable: { published: false } } })
+      const { editor } = editorOn({ iri: D, field: 'title', hasUnsentChange: () => true })
+
+      await remote.receive({ '@id': L, '@type': 'Title', 'title': 'B', '_metadata': { version: 2, publishable: { published: true } } }, '/page')
+
+      expect(editor.conflict).not.toHaveBeenCalled()
+      expect(stored(D)?.title).toBe('C')
+    })
+
     test('another admin\'s new draft is stored as on screen, with the path it was fetched for, so it is re-fetched on reconnect', async () => {
       const NEW_DRAFT = '/component/titles/new-draft'
 

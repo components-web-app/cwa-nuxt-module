@@ -185,7 +185,7 @@ export class RemoteChanges {
     const conflicting = this.editorsOf(iri, resource).filter((editor) => {
       const field = editor.field()
       const editorStored = this.stored(editor.iri())
-      return editor.hasUnsentChange() && !!editorStored && !isSame(editorStored[field], resource[field])
+      return editor.hasUnsentChange() && changedFields.includes(field) && !!editorStored && !isSame(editorStored[field], resource[field])
     })
     const held = conflicting.filter(editor => editor.iri() === iri)
 
