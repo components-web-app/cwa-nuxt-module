@@ -8,6 +8,7 @@ import * as cwaComposable from '#cwa/composables/cwa'
 import { registerInstance, unregisterInstance } from '#cwa/admin/manageable-instances'
 import type Cwa from '#cwa/cwa'
 import { ResourceTypeFromIri } from '#cwa/resources/resource-utils'
+import { FOCUS_CUTOUT_OFFSET, FOCUS_CUTOUT_RADIUS, focusRadiusAt, saveOutlineStyle } from '#cwa/admin/save-outline'
 
 vi.mock('uuid', () => ({ v4: vi.fn(() => 'mock-reorder-id') }))
 
@@ -494,6 +495,26 @@ describe('ComponentFocus', () => {
       const save = wrapper.get('[data-testid="focus-save"]')
       expect(save.attributes('data-save')).toBe('error')
       expect(save.attributes('data-tone')).toBe('light')
+    })
+
+    test('the save ring, the outline and the dimmed cutout are all rounded from the one shared radius, so their corners never drift apart', async () => {
+      withFieldStates({ '/component/foo': { title: { status: 'saving' } } })
+      const ctx = { reset: vi.fn(), beginPath: vi.fn(), rect: vi.fn(), fill: vi.fn(), moveTo: vi.fn(), arcTo: vi.fn(), fillStyle: '' }
+      const getContextSpy = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx as any)
+      const { wrapper } = mountFocus()
+      await flushPromises()
+      ;(wrapper.vm as any).redraw()
+      expect(ctx.arcTo.mock.calls.map(call => call[4])).toEqual(Array(4).fill(FOCUS_CUTOUT_RADIUS))
+      expect(ctx.moveTo).toHaveBeenCalledWith(20 - FOCUS_CUTOUT_OFFSET, 10 - FOCUS_CUTOUT_OFFSET + FOCUS_CUTOUT_RADIUS)
+      const outline = wrapper.get('[data-testid="focus-outline"]')
+      expect(outline.classes().filter(name => /rounded/.test(name))).toEqual([])
+      expect((outline.element as HTMLElement).style.borderRadius).toBe(`${focusRadiusAt(0)}px`)
+      const save = wrapper.get('[data-testid="focus-save"]').element as HTMLElement
+      expect(save.style.getPropertyValue('--save-radius')).toBe(saveOutlineStyle['--save-radius'])
+      expect(save.style.inset).toBe(saveOutlineStyle.inset)
+      expect(save.style.getPropertyValue('--save-for')).toBe(saveOutlineStyle['--save-for'])
+      expect(wrapper.findAll('[data-testid="focus-save"] > .cwa\\:focus-save-ring > i')).toHaveLength(4)
+      getContextSpy.mockRestore()
     })
 
     test('with nothing saving, the outline is the plain pulsing selection', async () => {

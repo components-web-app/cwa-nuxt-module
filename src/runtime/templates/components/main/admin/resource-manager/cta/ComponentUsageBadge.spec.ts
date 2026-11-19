@@ -219,9 +219,22 @@ describe('ComponentUsageBadge', () => {
       const { wrapper } = await openList({ total: 2, locations: [location({ renderedOn: [page('/_/pages/a', 'Home', '/')], renderedOnCount: 1 }), location({ renderedOn: [page('/_/pages/b', 'About', '/about')], renderedOnCount: 1 })] })
       const badge = wrapper.get('[data-testid="component-usage-badge"]')
       expect(badge.classes()).toEqual(expect.arrayContaining(['cwa:h-control', 'cwa:pointer-coarse:h-hit', 'cwa:inline-flex', 'cwa:items-center']))
-      expect(badge.classes()).not.toContain('cwa:rounded-full')
-      expect(badge.get('[data-testid="component-usage-pill"]').classes()).toEqual(expect.arrayContaining(['cwa:rounded-full', 'cwa:border']))
+      expect(badge.get('[data-testid="component-usage-pill"]').classes()).toContain('cwa:border')
       expect(drawsFocusRing(badge.classes())).toBe(true)
+      wrapper.unmount()
+    })
+
+    test.each([
+      ['a button', { total: 2, locations: [location({ renderedOn: [page('/_/pages/a', 'Home', '/')], renderedOnCount: 1 }), location({ renderedOn: [page('/_/pages/b', 'About', '/about')], renderedOnCount: 1 })] }],
+      ['a plain count', { positionCount: 2, pageDataCount: 0, total: 2 }],
+    ])('as %s, the badge and its pill are square like the kit\'s other controls', async (_label, usage) => {
+      vi.mocked(fetchComponentUsage).mockResolvedValue(usage as never)
+      mockCwa()
+      const wrapper = await mountBadge()
+      const badge = wrapper.get('[data-testid="component-usage-badge"]')
+      const drawn = [badge, ...badge.findAll('[data-testid="component-usage-pill"]')]
+      expect(drawn.flatMap(each => each.classes()).filter(name => /(?:^|:)rounded/.test(name))).toEqual([])
+      expect(drawn.some(each => each.classes().includes('cwa:border'))).toBe(true)
       wrapper.unmount()
     })
 
