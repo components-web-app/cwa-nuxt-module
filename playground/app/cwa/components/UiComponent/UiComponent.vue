@@ -15,6 +15,9 @@ defineCwaConfig({
   description: 'A box holding its own group of components',
   icon: 'card-grid',
   group: 'Layout',
+  styles: {
+    boxed: { label: 'Boxed', classes: 'border border-stone-700 rounded-lg p-4' },
+  },
 })
 
 const props = defineProps<IriProp>()

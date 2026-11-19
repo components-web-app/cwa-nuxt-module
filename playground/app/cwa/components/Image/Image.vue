@@ -42,8 +42,10 @@ import { useCwaComponent, withFile, defineCwaConfig } from '#imports'
 
 defineCwaConfig({
   instantAdd: true,
+  description: 'A picture uploaded to the site',
   icon: 'image',
   group: 'Media',
+  image: '/icon.png',
 })
 
 const props = defineProps<IriProp>()

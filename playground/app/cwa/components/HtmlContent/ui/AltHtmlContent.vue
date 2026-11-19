@@ -24,8 +24,12 @@
 <script setup lang="ts">
 import { computed, ref, toRef } from 'vue'
 import type { IriProp } from '#cwa/composables/cwa-resource'
-import { useCwaResource, useHtmlContent } from '#imports'
+import { useCwaResource, useHtmlContent, defineCwaConfig } from '#imports'
 import { useCustomHtmlComponent } from '../../../../composables/useCustomHtmlComponent'
+
+defineCwaConfig({
+  name: 'Alternative',
+})
 
 // Setup the resource
 const props = defineProps<IriProp>()
