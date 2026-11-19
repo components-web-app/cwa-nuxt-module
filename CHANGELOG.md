@@ -14,6 +14,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 - Editing a component again right after publishing it no longer shows your own change as a conflict from someone else ([d084073d](https://github.com/components-web-app/cwa-nuxt-module/commit/d084073d8c8a5e29508443e5ad56400cf9edb675), [#429](https://github.com/components-web-app/cwa-nuxt-module/issues/429)).
 - Only one field status popover shows at a time: hovering another field in error or conflict, or opening the bar status, no longer leaves two open, and a field's Close no longer reopens its popover at once ([def56c08](https://github.com/components-web-app/cwa-nuxt-module/commit/def56c084a6be289f613db53217fd44cddd600c6), [#461](https://github.com/components-web-app/cwa-nuxt-module/issues/461)).
 
+- Passing the pointer over a field in error or conflict faster than its popover opens no longer throws an error ([8c4ecee8](https://github.com/components-web-app/cwa-nuxt-module/commit/8c4ecee8a329abf132f2bcb42f5fb3ca41a72348), [#461](https://github.com/components-web-app/cwa-nuxt-module/issues/461)).
+
 ### Changed
 
 - The selected component's outline no longer pulses at rest: it stays steady, and only the save sweep, saved and error looks move ([24faa17d](https://github.com/components-web-app/cwa-nuxt-module/commit/24faa17d4b23981e9394bf8f2451fb73c78ee3ce), [#461](https://github.com/components-web-app/cwa-nuxt-module/issues/461)).
