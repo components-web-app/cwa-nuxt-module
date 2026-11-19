@@ -758,6 +758,12 @@
 .cwa\:w-\[min\(24rem\,calc\(100vw-2rem\)\)\] {
   width: min(24rem, calc(100vw - 2rem));
 }
+.cwa\:w-\[min\(32rem\,calc\(100vw-2rem\)\)\] {
+  width: min(32rem, calc(100vw - 2rem));
+}
+.cwa\:w-\[min\(40rem\,calc\(100vw-2rem\)\)\] {
+  width: min(40rem, calc(100vw - 2rem));
+}
 .cwa\:w-auto {
   width: auto;
 }

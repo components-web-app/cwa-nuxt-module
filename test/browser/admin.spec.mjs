@@ -1778,7 +1778,7 @@ test('64. by keyboard alone a rich-text component is reached with Tab, selected 
   await eventually(() => page.evaluate(() => document.activeElement?.getAttribute('aria-label') === 'Body Text component'), 'Shift+F6 did not return to the component')
 })
 
-test('65. a shared component with unpublished changes offers Remove from here, Discard unpublished changes and Delete from all 2 places, and Remove from here takes only this instance off the page (#461)', async ({ cwa: t }) => {
+test('65. a shared component with unpublished changes offers Remove from here, Delete draft and Delete entire component in one row with Cancel on its own side, focuses Remove from here, and Remove from here takes only this instance off the page (#461)', async ({ cwa: t }) => {
   const { page, settle } = t
   const draftText = 'Shared source component, unpublished'
   const draft = await t.api.patch(t.seed.iris.source, { html: `<p>${draftText}</p>` })
@@ -1790,7 +1790,13 @@ test('65. a shared component with unpublished changes offers Remove from here, D
   const dialog = dialogWith(page, 'Delete this component?')
   await dialog.getByText('It is used in 2 places and has unpublished changes.').waitFor()
   const labels = await dialog.getByRole('button').allInnerTexts()
-  assert(JSON.stringify(labels.map(label => label.trim())) === JSON.stringify(['Don\'t delete', 'Remove from here', 'Discard unpublished changes', 'Delete from all 2 places']), `The choices are ${JSON.stringify(labels)}`)
+  assert(JSON.stringify(labels.map(label => label.trim())) === JSON.stringify(['Cancel', 'Remove from here', 'Delete draft', 'Delete entire component']), `The choices are ${JSON.stringify(labels)}`)
+  await dialog.getByText('Delete entire component deletes the draft and the live version from all 2 places it is used.').waitFor()
+  await dialog.getByText('Neither delete can be undone.').waitFor()
+  await eventually(() => dialog.getByRole('button', { name: 'Remove from here', exact: true }).evaluate(el => el === document.activeElement), 'Remove from here is not focused')
+  const boxes = await Promise.all(['Cancel', 'Remove from here', 'Delete draft', 'Delete entire component'].map(name => dialog.getByRole('button', { name, exact: true }).boundingBox()))
+  assert(new Set(boxes.map(box => Math.round(box.y))).size === 1, `The buttons are not in one row: ${JSON.stringify(boxes)}`)
+  assert(boxes[1].x - (boxes[0].x + boxes[0].width) > boxes[2].x - (boxes[1].x + boxes[1].width), `Cancel is not on its own side: ${JSON.stringify(boxes)}`)
   await dialog.getByRole('button', { name: 'Remove from here', exact: true }).click()
   const del = await eventually(() => t.rehearsal.writes.find(w => w.method === 'DELETE'), 'Nothing was DELETEd')
   assert(del.path === t.seed.positions.aSource, `DELETEd ${del.path}`)
