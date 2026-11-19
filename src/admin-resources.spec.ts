@@ -147,6 +147,30 @@ describe('the admin resources template', () => {
     expect(adminResources.Card).toEqual({ image: '/card.webp' })
   })
 
+  test('a Markdown description is written as its HTML and its plain text', async () => {
+    const { adminResources } = await load(generate({ Hero: { description: 'A **wide** banner.\n\nSee [the guide](https://example.com/hero).' } }).source)
+
+    expect(adminResources.Hero).toEqual({
+      description: 'A wide banner. See the guide.',
+      descriptionHtml: '<p>A <strong>wide</strong> banner.</p><p>See <a href="https://example.com/hero" target="_blank" rel="noopener noreferrer">the guide</a>.</p>',
+    })
+  })
+
+  test('HTML in a description warns once and its tags are removed', async () => {
+    const { source, warn } = generate({ Rich: { description: '<p>Paragraphs &amp; <b>links</b></p><p>Two</p>' }, Plain: { description: 'Use `<h2>` here' } })
+    const { adminResources } = await load(source)
+
+    expect(adminResources.Rich).toEqual({ description: 'Paragraphs & links Two', descriptionHtml: '<p>Paragraphs &amp; links</p><p>Two</p>' })
+    expect(adminResources.Plain.descriptionHtml).toBe('<p>Use <code>&lt;h2&gt;</code> here</p>')
+    expect(warn.mock.calls).toEqual([['the description in the defineCwaConfig of Rich contains HTML. Descriptions are Markdown, so the tags are removed.']])
+  })
+
+  test('an empty description is left out', async () => {
+    const { adminResources } = await load(generate({ Blank: { description: ' \n ' } }).source)
+
+    expect(adminResources).toEqual({})
+  })
+
   test('a component with nothing configured is left out', async () => {
     const { adminResources } = await load(generate({ Plain: {}, Missing: undefined }).source)
 

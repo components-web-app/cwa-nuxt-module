@@ -610,18 +610,20 @@ export type CwaComponentName = typeof CwaComponentNames[keyof typeof CwaComponen
         }
       }
 
-      test('holds the icon, group and image a component declares in defineCwaConfig, and the resources config never does', async () => {
+      test('holds the description, icon, group and image a component declares in defineCwaConfig, and the resources config never does', async () => {
         vi.mocked(scanCwaConfigDeclarations).mockReturnValue(declarations)
         const { admin, config } = await prepare()
 
         expect(admin.write).toBe(true)
         const adminSource = await admin.getContents({ app: { components } })
-        expect(adminSource).toContain('"HtmlContent": { icon: "lucide:letter-text", group: "Text", image: "/body.webp" }')
+        expect(adminSource).toContain('"HtmlContent": { icon: "lucide:letter-text", group: "Text", description: "Text", descriptionHtml: "<p>Text</p>", image: "/body.webp" }')
         expect(adminSource).toContain('data-cwa-admin-icon')
+        expect(adminSource).toContain('"Form": { description: "A form from the API, shown as a list of its text fields unless a UI variant lays it out.", descriptionHtml: "<p>A form from the API, shown as a list of its text fields unless a UI variant lays it out.</p>" }')
+        expect(adminSource).toMatch(/"ComponentPosition": \{ description: "Dynamic components [^"<]+ below\.", descriptionHtml: "<p>Dynamic components [^"]+<\/p><p>You must [^"]+<\/p>" \}/)
 
         const configSource = await config.getContents({ app: { components } })
         expect(configSource).toContain('"name": "Body text"')
-        expect(configSource).toContain('"description": "Text"')
+        expect(configSource).not.toContain('"description"')
         expect(configSource).not.toContain('"icon"')
         expect(configSource).not.toContain('"group"')
         expect(configSource).not.toContain('/body.webp')
@@ -1072,7 +1074,6 @@ export const componentGroupDeclarations: ComponentGroupDeclarations = {
 export const resourcesConfig: CwaResourcesMeta = {
   "ComponentPosition": {
     "name": "Position",
-    "description": "<p>Dynamic components can be used on dynamic pages to specify what component should be displayed from a data page in any given location.</p><p>You must select the reference from the data page to load into this position below.</p>",
     "instantAdd": true
   },
   "ComponentGroup": {
@@ -1080,7 +1081,6 @@ export const resourcesConfig: CwaResourcesMeta = {
   },
   "Form": {
     "name": "Form",
-    "description": "A form from the API, shown as a list of its text fields unless a UI variant lays it out.",
     "managerTabs": [],
     "ui": []
   },
@@ -1092,7 +1092,6 @@ export const resourcesConfig: CwaResourcesMeta = {
     "ui": [
       "CwaComponentHtmlContentUiAltUi"
     ],
-    "description": "<p>Rich text</p>",
     "defaultData": {
       "html": "<p>New</p>"
     },
@@ -1307,7 +1306,6 @@ export const styleClasses: CwaStyleClasses = {
             const { resourcesConfig } = await generate([])
             expect(resourcesConfig.Form).toEqual({
               name: 'Form',
-              description: expect.stringMatching(/^[^<>]+$/),
               managerTabs: [],
               ui: [],
             })

@@ -3207,6 +3207,54 @@
     --cwa-spacing-manager: 7rem;
   }
 }
+.cwa\:\[\&_a\]\:text-accent-fg a {
+  color: var(--cwa-color-accent-fg);
+}
+.cwa\:\[\&_a\]\:underline a {
+  text-decoration-line: underline;
+}
+.cwa\:\[\&_a\]\:underline-offset-2 a {
+  text-underline-offset: 2px;
+}
+.cwa\:\[\&_a\]\:outline-1 a {
+  outline-style: var(--tw-outline-style);
+  outline-width: 1px;
+}
+.cwa\:\[\&_a\]\:outline-transparent a {
+  outline-color: transparent;
+}
+.cwa\:\[\&_a\:focus-visible\]\:outline-2 a:focus-visible {
+  outline-style: var(--tw-outline-style);
+  outline-width: 2px;
+}
+.cwa\:\[\&_a\:focus-visible\]\:outline-offset-2 a:focus-visible {
+  outline-offset: 2px;
+}
+.cwa\:\[\&_a\:focus-visible\]\:outline-accent-fg a:focus-visible {
+  outline-color: var(--cwa-color-accent-fg);
+}
+.cwa\:\[\&_code\]\:bg-field code {
+  background-color: var(--cwa-color-field);
+}
+.cwa\:\[\&_code\]\:px-1 code {
+  padding-inline: var(--cwa-spacing);
+}
+.cwa\:\[\&_code\]\:font-mono code {
+  font-family: var(--cwa-font-mono);
+}
+.cwa\:\[\&_code\]\:text-\[0\.9em\] code {
+  font-size: 0.9em;
+}
+.cwa\:\[\&_code\]\:text-fg code {
+  color: var(--cwa-color-fg);
+}
+.cwa\:\[\&_p\]\:m-0 p {
+  margin: 0px;
+}
+.cwa\:\[\&_strong\]\:font-semibold strong {
+  --tw-font-weight: var(--cwa-font-weight-semibold);
+  font-weight: var(--cwa-font-weight-semibold);
+}
 .cwa\:\[\&\:\:-webkit-scrollbar\]\:hidden::-webkit-scrollbar {
   display: none;
 }

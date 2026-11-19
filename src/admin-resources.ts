@@ -1,5 +1,6 @@
 import { relative, resolve } from 'node:path'
 import type { CwaComponentKind } from './runtime/types'
+import { hasMarkup, markdownDescription, withoutMarkup } from './markdown-description'
 
 export const GENERIC_ICON = 'lucide:component'
 
@@ -74,6 +75,7 @@ export interface LucideIconSet {
 }
 
 export interface AdminResourceConfig {
+  description?: string
   icon?: string
   group?: string
   image?: string
@@ -207,15 +209,28 @@ function resolveIcon(icon: string, lucide: LucideIconSet): ResolvedIcon | undefi
   }
 }
 
+type AdminResourceEntry = { icon?: string, skeleton?: string, group?: string, image?: string, description?: string, descriptionHtml?: string }
+
+function describe(name: string, description: string | undefined, warn: (message: string) => void): Pick<AdminResourceEntry, 'description' | 'descriptionHtml'> {
+  if (!description) {
+    return {}
+  }
+  if (hasMarkup(description)) {
+    warn(`the description in the defineCwaConfig of ${name} contains HTML. Descriptions are Markdown, so the tags are removed.`)
+  }
+  const { html, text } = markdownDescription(hasMarkup(description) ? withoutMarkup(description) : description)
+  return text ? { description: text, descriptionHtml: html } : {}
+}
+
 export function adminResourcesTemplate({ resources, previews, lucide, warn, componentDirs = {}, readFile = () => undefined }: AdminResourcesTemplateInput): string {
   const icons: Record<string, string> = { [GENERIC_ICON]: lucideSvg(lucideBody(lucide, 'component') ?? '') }
-  const entries: Record<string, { icon?: string, skeleton?: string, group?: string, image?: string }> = {}
+  const entries: Record<string, AdminResourceEntry> = {}
   const imports: string[] = []
   const imageRefs: Record<string, string> = {}
 
   for (const name of Object.keys(resources).sort()) {
     const config = resources[name] ?? {}
-    const entry: { icon?: string, skeleton?: string, group?: string, image?: string } = {}
+    const entry: AdminResourceEntry = {}
     if (!config.icon || isIconPath(config.icon)) {
       const svg = customIcon(name, config.icon, componentDirs[name], readFile, warn)
       if (svg) {
@@ -240,6 +255,7 @@ export function adminResourcesTemplate({ resources, previews, lucide, warn, comp
     if (config.group) {
       entry.group = config.group
     }
+    Object.assign(entry, describe(name, config.description, warn))
     const asset = config.image || previews[name]
     if (asset && isImageUrl(asset) && asset === config.image) {
       entry.image = asset
@@ -261,7 +277,7 @@ export function adminResourcesTemplate({ resources, previews, lucide, warn, comp
   })
 
   return `${imports.map(line => `${line}\n`).join('')}export const adminResourceIcons: Record<string, string> = ${JSON.stringify(icons, undefined, 2)}
-export const adminResources: Record<string, { icon?: string, skeleton?: string, group?: string, image?: string }> = {
+export const adminResources: Record<string, { icon?: string, skeleton?: string, group?: string, image?: string, description?: string, descriptionHtml?: string }> = {
 ${body.join('\n')}
 }
 `

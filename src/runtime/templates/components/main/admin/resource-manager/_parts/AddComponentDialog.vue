@@ -18,10 +18,8 @@ import {
   buildAddComponentList,
   countComponentsInGroup,
   DYNAMIC_COMPONENT,
-  hasMarkup,
   normaliseQuery,
   pageDataNoun,
-  plainText,
 } from '#cwa/templates/components/main/admin/resource-manager/_parts/add-component-list'
 import type { AddComponentChoice } from '#cwa/templates/components/main/admin/resource-manager/_parts/add-component-list'
 import CwaUiDialog from '#cwa/templates/components/ui/Dialog.vue'
@@ -47,8 +45,6 @@ interface DisplayData {
   groupName: string
   place?: string
 }
-
-const warnedMarkup = new Set<string>()
 
 const $cwa = useCwa()
 const { getTypeOptions, getPropertyOptions } = useDynamicPositionSelectOptions($cwa)
@@ -147,17 +143,6 @@ function anchorName(event: AddResourceEvent): string | undefined {
   return excerpt ? `“${excerpt}”` : item.displayName
 }
 
-function describe(name: string, config: CwaResourceMeta) {
-  if (!config.description) {
-    return
-  }
-  if (import.meta.env.DEV && hasMarkup(config.description) && !warnedMarkup.has(name)) {
-    warnedMarkup.add(name)
-    logger.warn(`[CWA] The description in the defineCwaConfig of ${name} contains HTML. Descriptions are plain text, so the tags are removed.`)
-  }
-  return plainText(config.description) || undefined
-}
-
 async function createDisplayData(event: AddResourceEvent): Promise<DisplayData> {
   const groupIri = event.closest.group
   const group = groupIri ? $cwa.resources.getResource(groupIri).value?.data : undefined
@@ -189,7 +174,8 @@ async function createDisplayData(event: AddResourceEvent): Promise<DisplayData> 
     .map(([name, { apiMetadata, config }]) => ({
       name,
       label: config.name || apiMetadata.resourceName,
-      description: describe(name, config),
+      description: adminResources[name]?.description,
+      descriptionHtml: adminResources[name]?.descriptionHtml,
       group: adminResources[name]?.group,
       count: counts[name] ?? 0,
       allowed: isComponentAllowedInGroup(apiMetadata, allowedComponents),
@@ -527,8 +513,14 @@ watch(open, async (isOpen: boolean) => {
           data-testid="add-component-image"
           class="cwa:block cwa:aspect-video cwa:w-full cwa:max-w-72 cwa:object-cover cwa:shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--cwa-color-fg)_12%,transparent)]"
         >
+        <div
+          v-if="detail.descriptionHtml"
+          class="cwa:flex cwa:flex-col cwa:gap-2 cwa:[&_p]:m-0 cwa:[&_strong]:font-semibold cwa:[&_code]:bg-field cwa:[&_code]:px-1 cwa:[&_code]:font-mono cwa:[&_code]:text-[0.9em] cwa:[&_code]:text-fg cwa:[&_a]:text-accent-fg cwa:[&_a]:underline cwa:[&_a]:underline-offset-2 cwa:[&_a]:outline-1 cwa:[&_a]:outline-transparent cwa:[&_a:focus-visible]:outline-2 cwa:[&_a:focus-visible]:outline-offset-2 cwa:[&_a:focus-visible]:outline-accent-fg"
+          data-testid="add-component-description"
+          v-html="detail.descriptionHtml"
+        />
         <p
-          v-if="detail.description"
+          v-else-if="detail.description"
           class="cwa:m-0"
           data-testid="add-component-description"
         >

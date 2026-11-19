@@ -4,9 +4,11 @@ import { fieldExplanation } from '../../../../../../../../test/utils/field-info'
 import { reactive, ref } from 'vue'
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { mockNuxtImport } from '@nuxt/test-utils/runtime'
-import { consola } from 'consola'
 import { axe } from '../../../../../../../../test/utils/axe'
 import { drawsFocusRing } from '../../../../../../../../test/utils/focus-ring'
+import { shownColour, shownFill } from '../../../../../../../../test/utils/kit-css'
+import { contrastRatio, resolveKitColour } from '../../../../../../../../src/tailwind/kit-tokens'
+import type { KitColour } from '../../../../../../../../src/tailwind/kit-tokens'
 
 const { dynamicOptions, cwaState, cwaConfig } = vi.hoisted(() => ({
   dynamicOptions: {
@@ -35,9 +37,14 @@ vi.mock('#build/cwa-admin-resources', () => ({
     'skeleton:hero': '<svg data-cwa-admin-icon data-icon="skeleton-hero"></svg>',
   },
   adminResources: {
-    HtmlContent: { icon: 'lucide:letter-text', group: 'Text' },
-    Image: { icon: 'lucide:image', group: 'Media' },
-    Hero: { icon: 'lucide:panel-top', skeleton: 'skeleton:hero', group: 'Layout', image: '/hero.webp' },
+    HtmlContent: {
+      icon: 'lucide:letter-text',
+      group: 'Text',
+      description: 'Paragraphs & links. See the guide for h2.',
+      descriptionHtml: '<p>Paragraphs &amp; <strong>links</strong>.</p><p>See <a href="https://example.com/rich" target="_blank" rel="noopener noreferrer">the guide</a> for <code>h2</code>.</p>',
+    },
+    Image: { icon: 'lucide:image', group: 'Media', description: 'One image with alt text', descriptionHtml: '<p>One image with alt text</p>' },
+    Hero: { icon: 'lucide:panel-top', skeleton: 'skeleton:hero', group: 'Layout', image: '/hero.webp', description: 'Title, subtitle and image', descriptionHtml: '<p>Title, subtitle and image</p>' },
     Map: { group: 'Media' },
   },
 }))
@@ -63,9 +70,9 @@ const componentMetadata = {
 }
 
 const resourcesConfig = {
-  HtmlContent: { name: 'Rich text', description: '<p>Paragraphs &amp; links</p>', ui: ['CwaComponentHtmlContentUiAltHtmlContent'] },
-  Image: { name: 'Image', description: 'One image with alt text', instantAdd: true },
-  Hero: { name: 'Hero section', description: 'Title, subtitle and image', defaultData: { title: 'New hero' } },
+  HtmlContent: { name: 'Rich text', ui: ['CwaComponentHtmlContentUiAltHtmlContent'] },
+  Image: { name: 'Image', instantAdd: true },
+  Hero: { name: 'Hero section', defaultData: { title: 'New hero' } },
   Map: { name: 'Map location' },
   Spacer: { name: 'Spacer' },
   ComponentPosition: { name: 'Position', instantAdd: true },
@@ -318,20 +325,22 @@ describe('the add component dialog (#461)', () => {
       expect(new Set(qa('[role="option"]').map(option => option.querySelector('[data-lead]')!.parentElement!.className)).size).toBe(1)
     })
 
-    test('a description is plain text, and HTML in it warns once in development', async () => {
-      const warn = vi.spyOn(consola, 'warn').mockImplementation(() => {})
+    test('a row shows its description as plain text, never its Markdown\'s link or code', async () => {
       await mountDialog()
       await openDialog()
       await type('rich')
 
       const rich = qa('[role="option"]').find(option => option.dataset.value === 'HtmlContent')!
-      expect(shown(rich)).toContain('Paragraphs & links')
-      expect(rich.innerHTML).not.toContain('<p>')
-      cwaState.cwa.resourcesManager.addResourceEvent.value = undefined
-      await flushPromises()
+      expect(shown(rich)).toContain('Paragraphs & links. See the guide for h2.')
+      expect(rich.querySelector('a, code, strong, p')).toBeNull()
+    })
+
+    test('a search matches the plain text of a description', async () => {
+      await mountDialog()
       await openDialog()
-      expect(warn.mock.calls.filter(([message]) => String(message).includes('The description in the defineCwaConfig of HtmlContent'))).toHaveLength(1)
-      warn.mockRestore()
+      await type('the guide')
+
+      expect(optionValues()).toEqual(['HtmlContent'])
     })
   })
 
@@ -425,6 +434,35 @@ describe('the add component dialog (#461)', () => {
       expect(document.activeElement).toBe(add())
       expect(q('[data-testid="sub-view-main"]')!.hidden).toBe(true)
       expect(announcer()).toBe('Hero section. Adding to Main content, after “Intro text”.')
+    })
+
+    test('the description is its Markdown\'s HTML, with links in the kit link look and code in the kit mono look, readable in both themes', async () => {
+      await mountDialog()
+      await openDialog()
+
+      await choose('HtmlContent')
+
+      const description = q('[data-testid="add-component-description"]')!
+      expect(description.querySelectorAll('p')).toHaveLength(2)
+      expect(description.querySelector('strong')!.textContent).toBe('links')
+      const link = description.querySelector('a')!
+      expect(link.getAttribute('href')).toBe('https://example.com/rich')
+      expect(link.target).toBe('_blank')
+      expect(link.rel).toBe('noopener noreferrer')
+      const code = description.querySelector('code')!
+      expect(shownColour(link)).toBe('accent-fg')
+      expect(shownColour(code)).toBe('fg')
+      expect(shownFill(code)).toBe('field')
+      expect(description.className).toContain('cwa:[&_code]:font-mono')
+      expect(description.className).toContain('cwa:[&_a]:underline')
+      expect(description.className).toContain('cwa:[&_a:focus-visible]:outline-accent-fg')
+      const surface = shownFill(description.closest('[role="dialog"]')!) as KitColour
+      for (const theme of ['dark', 'light'] as const) {
+        expect(contrastRatio(resolveKitColour(shownColour(link) as KitColour, theme), resolveKitColour(surface, theme))).toBeGreaterThanOrEqual(4.5)
+        expect(contrastRatio(resolveKitColour(shownColour(description.querySelector('p')!) as KitColour, theme), resolveKitColour(surface, theme))).toBeGreaterThanOrEqual(4.5)
+        expect(contrastRatio(resolveKitColour(shownColour(code) as KitColour, theme), resolveKitColour(shownFill(code) as KitColour, theme))).toBeGreaterThanOrEqual(4.5)
+      }
+      expect(await axe(document.body)).toHaveNoViolations()
     })
 
     test('a component with neither image nor description is just its name, where it adds and Add', async () => {
@@ -781,6 +819,14 @@ describe('the add component dialog (#461)', () => {
       await openDialog()
       await choose('ComponentPosition')
     }
+
+    test('its detail describes it as plain text', async () => {
+      await openDynamic()
+
+      const description = q('[data-testid="add-component-description"]')!
+      expect(shown(description)).toBe('Changes per blog article: each blog article picks what shows here')
+      expect(description.children).toHaveLength(0)
+    })
 
     test('Field is visibly disabled until a data type is chosen, with its reason behind its ⓘ and read with the field, and Data type has focus', async () => {
       await openDynamic()

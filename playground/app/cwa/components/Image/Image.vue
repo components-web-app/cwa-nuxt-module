@@ -42,7 +42,7 @@ import { useCwaComponent, withFile, defineCwaConfig } from '#imports'
 
 defineCwaConfig({
   instantAdd: true,
-  description: 'A picture uploaded to the site',
+  description: 'A picture uploaded to the site, with **alt text** for screen readers',
   icon: 'image',
   group: 'Media',
   image: '/icon.png',

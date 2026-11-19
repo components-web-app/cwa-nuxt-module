@@ -3,12 +3,10 @@ import {
   addTargetPlace,
   buildAddComponentList,
   countComponentsInGroup,
-  hasMarkup,
   matchRank,
   normaliseQuery,
   groupDisplayName,
   pageDataNoun,
-  plainText,
 } from './add-component-list'
 import type { AddComponentChoice } from './add-component-list'
 
@@ -156,17 +154,6 @@ describe('where a component is added', () => {
     expect(addTargetPlace({ targetIsGroup: true, addAfter: false, groupHasPositions: true })).toBe('at the start')
     expect(addTargetPlace({ targetIsGroup: true, addAfter: true, groupHasPositions: false })).toBeUndefined()
     expect(addTargetPlace({ targetIsGroup: false, addAfter: null, groupHasPositions: true })).toBeUndefined()
-  })
-})
-
-describe('descriptions are plain text', () => {
-  test('tags are removed, entities decoded and spaces collapsed', () => {
-    expect(plainText('<p>Use this &amp; that</p><p>Two&nbsp; lines</p>')).toBe('Use this & that Two lines')
-  })
-
-  test('markup is detected so a development warning can name the component', () => {
-    expect(hasMarkup('<p>Hello</p>')).toBe(true)
-    expect(hasMarkup('5 < 6 and 7 > 3')).toBe(false)
   })
 })
 
