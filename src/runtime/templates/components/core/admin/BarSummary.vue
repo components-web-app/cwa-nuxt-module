@@ -234,7 +234,7 @@ watch(isOpen, (opened) => {
   opened ? stack.claim() : stack.release()
 })
 
-function keepForOwnButton(event: CustomEvent<{ originalEvent: PointerEvent }>) {
+function keepForOwnButton(event: CustomEvent<{ originalEvent: Event }>) {
   const target = event.detail.originalEvent.target
   target instanceof Node && button.value?.contains(target) && event.preventDefault()
 }
@@ -343,7 +343,7 @@ function reset() {
         :aria-describedby="status.about ? aboutId : undefined"
         data-testid="bar-summary-popover"
         :class="infoPopover"
-        @pointer-down-outside="keepForOwnButton"
+        @interact-outside="keepForOwnButton"
         @close-auto-focus="onCloseAutoFocus"
       >
         <div

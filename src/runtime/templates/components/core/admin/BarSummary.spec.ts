@@ -313,11 +313,13 @@ describe('BarSummary (#459)', () => {
     expect(failingInk(panel)).toEqual([])
   })
 
-  test('the explanation is the info panel, and clicking the status again closes it', async () => {
+  test('the explanation is the info panel, and clicking the status again closes it, the press moving focus to the status as a browser does', async () => {
     draft()
     const { summary } = mountSummary()
     const press = async () => {
-      summary().element.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, pointerType: 'mouse' }))
+      const button = summary().element as HTMLButtonElement
+      button.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, pointerType: 'mouse' }))
+      button.focus()
       await flushPromises()
       await summary().trigger('click')
       await flushPromises()
