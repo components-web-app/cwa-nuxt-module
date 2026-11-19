@@ -345,6 +345,9 @@
     margin-block: calc((1em - 1lh) / 2);
   }
 }
+.cwa\:-my-1\.5 {
+  margin-block: calc(var(--cwa-spacing) * -1.5);
+}
 .cwa\:my-0 {
   margin-block: 0px;
 }
@@ -3174,6 +3177,9 @@
   }
 }
 @media (pointer: coarse) {
+  .cwa\:pointer-coarse\:-my-3 {
+    margin-block: calc(var(--cwa-spacing) * -3);
+  }
   .cwa\:pointer-coarse\:size-hit {
     width: var(--cwa-spacing-hit);
     height: var(--cwa-spacing-hit);

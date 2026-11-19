@@ -84,7 +84,10 @@
                 :key="item.iri"
                 class="cwa:flex cwa:flex-wrap cwa:gap-x-2"
               >
-                <span class="cwa:break-all cwa:font-mono cwa:text-fg">{{ item.iri }}</span>
+                <CopyableText
+                  :text="item.iri"
+                  class="cwa:break-all cwa:font-mono cwa:text-fg"
+                />
                 <span>{{ item.reason }}</span>
               </li>
             </ul>
@@ -146,10 +149,11 @@
                 v-for="row of section.rows"
                 :key="row.iri"
               >
-                <span
+                <CopyableText
+                  :text="row.iri"
                   data-testid="orphaned-row-iri"
                   class="cwa:break-all cwa:font-mono cwa:text-control cwa:text-fg"
-                >{{ row.iri }}</span>
+                />
                 <span
                   v-if="row.collection"
                   class="cwa:text-helper cwa:text-fg-muted"
@@ -275,7 +279,11 @@
                 :key="item.path"
                 class="cwa:flex cwa:flex-wrap cwa:gap-x-2"
               >
-                <span class="cwa:break-all cwa:font-mono cwa:text-fg">{{ item.path }}</span>
+                <CopyableText
+                  :text="item.path"
+                  kind="path"
+                  class="cwa:break-all cwa:font-mono cwa:text-fg"
+                />
                 <span>{{ item.reason }}</span>
               </li>
             </ul>
@@ -337,7 +345,11 @@
                 :key="row.key"
                 data-testid="orphaned-file-row"
               >
-                <span class="cwa:break-all cwa:font-mono cwa:text-control cwa:text-fg">{{ row.path }}</span>
+                <CopyableText
+                  :text="row.path"
+                  kind="path"
+                  class="cwa:break-all cwa:font-mono cwa:text-control cwa:text-fg"
+                />
                 <span class="cwa:text-helper cwa:text-fg-muted">{{ row.adapter }}</span>
                 <p
                   v-if="row.error"
@@ -380,7 +392,11 @@
                 :key="row.key"
                 data-testid="orphaned-file-row"
               >
-                <span class="cwa:break-all cwa:font-mono cwa:text-control cwa:text-fg">{{ row.path }}</span>
+                <CopyableText
+                  :text="row.path"
+                  kind="path"
+                  class="cwa:break-all cwa:font-mono cwa:text-control cwa:text-fg"
+                />
                 <span class="cwa:text-helper cwa:text-fg-muted">{{ row.adapter }}</span>
               </OrphanRow>
             </ul>
@@ -405,8 +421,15 @@
                 :key="row.key"
                 data-testid="orphaned-file-row"
               >
-                <span class="cwa:break-all cwa:font-mono cwa:text-control cwa:text-fg">{{ row.iri }}</span>
-                <span class="cwa:break-all cwa:font-mono cwa:text-helper cwa:text-fg-secondary">{{ row.path }}</span>
+                <CopyableText
+                  :text="row.iri"
+                  class="cwa:break-all cwa:font-mono cwa:text-control cwa:text-fg"
+                />
+                <CopyableText
+                  :text="row.path"
+                  kind="path"
+                  class="cwa:break-all cwa:font-mono cwa:text-helper cwa:text-fg-secondary"
+                />
                 <span class="cwa:text-helper cwa:text-fg-muted">{{ row.adapter }}</span>
                 <template #actions>
                   <CwaUiButton
@@ -450,14 +473,20 @@
                 :key="row.key"
                 data-testid="orphaned-file-row"
               >
-                <NuxtLink
-                  :to="getInternalResourceLink(row.iri)"
-                  :class="linkClasses"
-                >
-                  {{ row.iri }}
-                </NuxtLink>
+                <CopyableText :text="row.iri">
+                  <NuxtLink
+                    :to="getInternalResourceLink(row.iri)"
+                    :class="linkClasses"
+                  >
+                    {{ row.iri }}
+                  </NuxtLink>
+                </CopyableText>
                 <span class="cwa:text-helper cwa:text-fg-muted">{{ row.field }}</span>
-                <span class="cwa:break-all cwa:font-mono cwa:text-helper cwa:text-fg-secondary">{{ row.path }}</span>
+                <CopyableText
+                  :text="row.path"
+                  kind="path"
+                  class="cwa:break-all cwa:font-mono cwa:text-helper cwa:text-fg-secondary"
+                />
                 <span class="cwa:text-helper cwa:text-fg-muted">{{ row.adapter }}</span>
                 <ul class="cwa:m-0 cwa:mt-1 cwa:list-disc cwa:ps-5 cwa:text-helper cwa:text-danger-fg">
                   <li
@@ -485,16 +514,18 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, watch } from 'vue'
+import { computed, onMounted, provide, watch } from 'vue'
 import ListHeading from '#cwa/templates/components/core/admin/ListHeading.vue'
 import ListContainer from '#cwa/templates/components/core/admin/ListContainer.vue'
 import OrphanRow from '#cwa/templates/components/core/admin/OrphanRow.vue'
 import OrphanRowView from '#cwa/templates/components/core/admin/OrphanRowView.vue'
+import CopyableText from '#cwa/templates/components/core/admin/CopyableText.vue'
 import CwaUiAlert from '#cwa/templates/components/ui/Alert.vue'
 import CwaUiButton from '#cwa/templates/components/ui/Button.vue'
 import CwaUiFormSection from '#cwa/templates/components/ui/FormSection.vue'
 import Spinner from '#cwa/templates/components/ui/Spinner.vue'
 import { createAnnouncer } from '#cwa/templates/components/core/ui/field-context'
+import { announceKey } from '#cwa/templates/components/core/ui/field-keys'
 import { formatDateTime } from '#cwa/resources/date-time-input'
 import { useOrphanedResources } from '#cwa-layer/_composables/useOrphanedResources'
 import { useOrphanedFiles } from '#cwa-layer/_composables/useOrphanedFiles'
@@ -539,6 +570,8 @@ const busyReason = 'Wait for the scan or delete to finish.'
 const linkClasses = 'cwa:break-all cwa:font-mono cwa:text-control cwa:text-fg cwa:underline cwa:underline-offset-2 cwa:outline-1 cwa:outline-transparent cwa:hover:text-accent-fg cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-accent-fg'
 
 const { message, announce } = createAnnouncer()
+
+provide(announceKey, announce)
 
 const announcements = computed(() => [
   loadError.value || scanError.value || deleteError.value,

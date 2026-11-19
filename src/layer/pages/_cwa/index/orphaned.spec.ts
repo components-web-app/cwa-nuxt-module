@@ -2,6 +2,7 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import OrphanedPage from './orphaned.vue'
+import CopyableText from '#cwa/templates/components/core/admin/CopyableText.vue'
 import * as cwaComposable from '#cwa/composables/cwa'
 import { useRouter } from '#app/composables/router'
 import cwaAdmin from '#cwa-layer/middleware/cwa-admin'
@@ -214,9 +215,9 @@ describe('Orphaned resources page', () => {
     test('every row button names the row it acts on', async () => {
       const wrapper = await setup()
       const names = wrapper.find('[data-testid="orphaned-section-componentGroups"]').findAll('li button').map(b => b.attributes('aria-label'))
-      expect(names).toEqual([`View ${GROUP}`, `Delete ${GROUP}`])
+      expect(names).toEqual([`Copy ID ${GROUP}`, `View ${GROUP}`, `Delete ${GROUP}`])
       const fileNames = wrapper.find('[data-testid="orphaned-files-section-orphaned"]').findAll('li button').map(b => b.attributes('aria-label'))
-      expect(fileNames).toEqual(['Delete files/a.png (local)', 'Delete files/b.pdf (s3)'])
+      expect(fileNames).toEqual(['Copy path files/a.png', 'Delete files/a.png (local)', 'Copy path files/b.pdf', 'Delete files/b.pdf (s3)'])
     })
 
     test('a failure is announced once through the page\'s polite region', async () => {
@@ -225,6 +226,57 @@ describe('Orphaned resources page', () => {
       await click(wrapper, 'Scan again')
       await vi.waitFor(() => expect(wrapper.find('[data-testid="orphaned-announcer"]').text()).toBe('The scan could not be requested (403). Please try again.'))
       expect(wrapper.find('[data-testid="orphaned-announcer"]').attributes('aria-live')).toBe('polite')
+    })
+  })
+
+  describe('copying IDs and paths (#461)', () => {
+    function copies(wrapper: Wrapper, within: string) {
+      return wrapper.find(`[data-testid="${within}"]`).findAllComponents(CopyableText).map(copy => [copy.props('text'), copy.props('kind') ?? 'id'])
+    }
+
+    test('every resource row offers Copy ID for exactly the IRI it shows', async () => {
+      const wrapper = await setup()
+      expect(copies(wrapper, 'orphaned-section-components')).toEqual([[COMPONENT, 'id']])
+      expect(copies(wrapper, 'orphaned-section-componentPositions')).toEqual([[POSITION, 'id']])
+      expect(copies(wrapper, 'orphaned-section-componentGroups')).toEqual([[GROUP, 'id']])
+      expect(wrapper.find('[data-testid="orphaned-section-components"]').findComponent(CopyableText).text()).toBe(COMPONENT)
+    })
+
+    test('copying a row copies its IRI and the page announces it', async () => {
+      const writeText = vi.fn().mockResolvedValue(undefined)
+      vi.stubGlobal('navigator', { ...navigator, clipboard: { writeText } })
+      const wrapper = await setup()
+      await wrapper.find('[data-testid="orphaned-section-componentGroups"]').get(`button[aria-label="Copy ID ${GROUP}"]`).trigger('click')
+      await flushPromises()
+      expect(writeText).toHaveBeenCalledWith(GROUP)
+      await vi.waitFor(() => expect(wrapper.find('[data-testid="orphaned-announcer"]').text()).toBe('ID copied'))
+      vi.unstubAllGlobals()
+    })
+
+    test('a file row offers Copy path for its path, and a row naming a resource Copy ID for its IRI', async () => {
+      const writeText = vi.fn().mockResolvedValue(undefined)
+      vi.stubGlobal('navigator', { ...navigator, clipboard: { writeText } })
+      const wrapper = await setup()
+      expect(copies(wrapper, 'orphaned-files-section-orphaned')).toEqual([['files/a.png', 'path'], ['files/b.pdf', 'path']])
+      expect(copies(wrapper, 'orphaned-files-section-unknown')).toEqual([['files/logo.png', 'path']])
+      expect(copies(wrapper, 'orphaned-files-section-missing')).toEqual([['/component/images/i1', 'id'], ['files/gone.png', 'path']])
+      expect(copies(wrapper, 'orphaned-files-section-invalid')).toEqual([['/component/images/i2', 'id'], ['files/huge.png', 'path']])
+      expect(wrapper.find('[data-testid="orphaned-files-section-invalid"]').findComponent(CopyableText).findComponent({ name: 'NuxtLink' }).text()).toBe('/component/images/i2')
+      await wrapper.find('[data-testid="orphaned-files-section-orphaned"]').get('button[aria-label="Copy path files/a.png"]').trigger('click')
+      await flushPromises()
+      expect(writeText).toHaveBeenCalledWith('files/a.png')
+      await vi.waitFor(() => expect(wrapper.find('[data-testid="orphaned-announcer"]').text()).toBe('Path copied'))
+      vi.unstubAllGlobals()
+    })
+
+    test('what a delete kept is listed with Copy ID or Copy path', async () => {
+      const wrapper = await setup()
+      mockDeleteOrphans.mockResolvedValue(deletion({}, [{ iri: COMPONENT, reason: 'not_orphaned' }]))
+      await click(wrapper, 'Delete everything')
+      expect(copies(wrapper, 'orphaned-delete-outcome')).toEqual([[COMPONENT, 'id']])
+      mockDeleteOrphanedFiles.mockResolvedValue({ deleted: [], rejected: [{ path: 'files/x.png', reason: 'not_orphaned' }] })
+      await click(wrapper, 'Delete everything', 'orphaned-files')
+      expect(copies(wrapper, 'orphaned-files-delete-outcome')).toEqual([['files/x.png', 'path']])
     })
   })
 
@@ -369,7 +421,7 @@ describe('Orphaned resources page', () => {
     ]))
     mockFetchReport.mockResolvedValue(report({ componentGroups: [] }))
     await click(wrapper, 'Delete everything')
-    const items = wrapper.find('[data-testid="orphaned-delete-outcome"]').findAll('li').map(li => li.findAll('span').map(span => span.text()))
+    const items = wrapper.find('[data-testid="orphaned-delete-outcome"]').findAll('li').map(li => [li.findComponent(CopyableText).text(), li.findAll('span').at(-1)!.text()])
     expect(items).toEqual([
       [COMPONENT, 'Kept: it is in use again, or it is a draft.'],
       [GROUP, 'Already gone.'],
@@ -473,19 +525,19 @@ describe('Orphaned resources page', () => {
       expect(button(wrapper, 'Delete everything', FILES)!.attributes('aria-disabled')).toBe('true')
     })
 
-    test('unknown files are listed with their adapter and path, explained, and have no buttons', async () => {
+    test('unknown files are listed with their adapter and path, explained, and have no buttons but Copy path', async () => {
       const wrapper = await setup()
       const section = wrapper.find('[data-testid="orphaned-files-section-unknown"]')
       expect(fileRows(wrapper, 'unknown')).toEqual([expect.stringContaining('files/logo.png')])
       expect(fileRows(wrapper, 'unknown')[0]).toContain('local')
       expect(section.text()).toContain('do not look like files the CWA uploaded')
-      expect(section.findAll('button')).toHaveLength(0)
+      expect(section.findAll('button').map(b => b.attributes('aria-label'))).toEqual(['Copy path files/logo.png'])
     })
 
     test('missing files offer View and never Delete', async () => {
       const wrapper = await setup()
       const section = wrapper.find('[data-testid="orphaned-files-section-missing"]')
-      expect(section.findAll('button').map(b => b.text())).toEqual(['View'])
+      expect(section.findAll('button').map(b => b.attributes('aria-label'))).toEqual(['Copy ID /component/images/i1', 'Copy path files/gone.png', 'View /component/images/i1'])
     })
 
     test('invalid files show a link to each resource in the admin, the field, path, adapter and every violation', async () => {
@@ -515,7 +567,7 @@ describe('Orphaned resources page', () => {
       const wrapper = await setup()
       const section = wrapper.find('[data-testid="orphaned-files-section-invalid"]')
       expect(section.findAll('[data-testid="orphaned-file-row"]')).toHaveLength(1)
-      expect(section.findAll('button')).toHaveLength(0)
+      expect(section.findAll('button').map(b => b.attributes('aria-label'))).toEqual(['Copy ID /component/images/i2', 'Copy path files/huge.png'])
     })
 
     test('no invalid files says so', async () => {
@@ -566,7 +618,7 @@ describe('Orphaned resources page', () => {
       expect(fileRows(wrapper, 'orphaned')).toEqual([expect.stringContaining('files/b.pdf')])
       const outcome = wrapper.find('[data-testid="orphaned-files-delete-outcome"]')
       expect(outcome.text()).toContain('Deleted 1 file.')
-      expect(outcome.findAll('li').map(li => li.findAll('span').map(span => span.text()))).toEqual([
+      expect(outcome.findAll('li').map(li => [li.findComponent(CopyableText).text(), li.findAll('span').at(-1)!.text()])).toEqual([
         ['files/x.png', 'Kept: something references it again.'],
         ['files/y.png', 'Already gone.'],
         ['files/z.png', 'Could not be deleted from storage.'],
