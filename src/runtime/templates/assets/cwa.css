@@ -2773,10 +2773,6 @@
 .cwa\:data-\[state\=on\]\:bg-surface[data-state="on"] {
   background-color: var(--cwa-color-surface);
 }
-.cwa\:data-\[state\=on\]\:font-medium[data-state="on"] {
-  --tw-font-weight: var(--cwa-font-weight-medium);
-  font-weight: var(--cwa-font-weight-medium);
-}
 .cwa\:data-\[state\=on\]\:text-fg[data-state="on"] {
   color: var(--cwa-color-fg);
 }
