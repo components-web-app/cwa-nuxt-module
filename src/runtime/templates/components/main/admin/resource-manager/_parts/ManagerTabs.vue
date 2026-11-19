@@ -20,6 +20,9 @@ function getOrderValue(meta: CwaResourceManagerTabOptions) {
 }
 const orderedTabs = computed(() => {
   const tabsWithOriginalSort: (CwaResourceManagerTabOptions & { fields?: string[], _originalIndex: number })[] = []
+  if (reactiveTabs.value.includes(undefined as never)) {
+    return tabsWithOriginalSort
+  }
   reactiveTabs.value.forEach((tab, index) => {
     tabsWithOriginalSort.push({ ...tab, _originalIndex: index })
   })

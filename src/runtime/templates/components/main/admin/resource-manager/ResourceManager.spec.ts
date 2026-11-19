@@ -132,7 +132,7 @@ async function mountManager(attachTo?: HTMLElement) {
           methods: { resetTabs() {}, selectOriginal: (index: number) => selectOriginal.fn(index), fieldsInOrder() {
             return (this as unknown as { tabs: { fields?: string[] }[] }).tabs.flatMap(tab => tab.fields ?? [])
           } },
-          template: '<div class="manager-tabs-stub" @click="$emit(\'click\', 1)"><button v-for="(tab, index) of tabs" :id="`${idPrefix}-tab-${index}`" type="button">{{ tab.name }}</button></div>',
+          template: '<div class="manager-tabs-stub" @click="$emit(\'click\', 1)"><button v-for="(tab, index) of tabs" :id="`${idPrefix}-tab-${index}`" type="button">{{ tab?.name }}</button></div>',
         },
         CwaAdminResourceManagerContextMenu: {
           name: 'CwaAdminResourceManagerContextMenu',
@@ -729,6 +729,54 @@ describe('ResourceManager', () => {
       await wrapper.findComponent({ name: 'ManagerTabs' }).vm.$emit('click', 1)
       await nextTick()
       expect((wrapper.vm as any).selectedTab.name).toBe('TabB')
+    })
+  })
+
+  describe('tabs still loading', () => {
+    test('no tab is mounted until every tab of the selection has loaded, so a later tab never runs first and fetches what its field shows (a link tab looking up its route)', async () => {
+      const tabA = { name: 'TabA', render: () => null }
+      const tabB = { name: 'TabB', render: () => null }
+      const stackManager = makeStackManager({
+        showManager: ref(true),
+        currentStackItem: ref({ iri: '/component/1', managerTabs: [tabA, tabB] }),
+      })
+      cwaState.cwa = makeCwa({ stackManager })
+      const wrapper = await mountManager()
+      const loading = new Array(2)
+      loading[1] = { name: 'B' }
+      resolverState.allMeta.value = loading
+      await nextTick()
+      await wrapper.findComponent({ name: 'ManagerTabs' }).vm.$emit('click', 1)
+      await nextTick()
+
+      expect((wrapper.vm as any).selectedTab).toBeUndefined()
+      expect(wrapper.findComponent({ name: 'TabB' }).exists()).toBe(false)
+
+      resolverState.allMeta.value = [{ name: 'A' }, { name: 'B' }]
+      await wrapper.findComponent({ name: 'ManagerTabs' }).vm.$emit('click', 0)
+      await nextTick()
+
+      expect(wrapper.findComponent({ name: 'TabA' }).exists()).toBe(true)
+    })
+  })
+
+  describe('reselecting the same resource', () => {
+    test('a click that selects the component already selected gives the tab resolver the same props, so its tabs are not read again and the shown tab is not remounted under the click', async () => {
+      const tabA = { name: 'TabA', render: () => null }
+      const currentStackItem = ref<any>({ iri: '/component/1', managerTabs: [tabA] })
+      cwaState.cwa = makeCwa({ stackManager: makeStackManager({ showManager: ref(true), currentStackItem }) })
+      await mountManager()
+      const before = resolverState.ops.props.value
+
+      currentStackItem.value = { iri: '/component/1', managerTabs: [tabA] }
+      await nextTick()
+
+      expect(resolverState.ops.props.value).toBe(before)
+
+      currentStackItem.value = { iri: '/component/2', managerTabs: [tabA] }
+      await nextTick()
+
+      expect(resolverState.ops.props.value).toEqual({ iri: '/component/2' })
     })
   })
 
