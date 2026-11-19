@@ -13,6 +13,10 @@
   --color-surface: #1c1917;
   --color-surface-raised: #292524;
   --color-surface-menu: #292524;
+  --color-surface-info: #0c0a09;
+  --color-accent-on-info: #60a5fa;
+  --color-muted-on-info: #a8a29e;
+  --color-success-on-info: #9cdd05;
   --color-button: #44403c;
   --color-shimmer: rgb(255 255 255 / 0.24);
   --color-menu-highlight: #57534e;
@@ -56,6 +60,7 @@
   --duration-fast: 120ms;
   --duration-base: 200ms;
   --duration-slow: 300ms;
+  --duration-indicator: 250ms;
 }
 
 @theme {
@@ -468,6 +473,45 @@
   }
   .cwa\:is-reordering:after {
     @apply cwa:content-[attr(data-sort-value)] cwa:absolute cwa:z-dialog cwa:-top-4 cwa:-right-4 cwa:text-sm cwa:bg-magenta cwa:p-1 cwa:text-white cwa:rounded-full cwa:min-w-[25px] cwa:text-center
+  }
+
+  .cwa\:reorder-wobble {
+    animation: cwa-reorder-wobble 0.5s infinite;
+    transform-origin: 30% 5%;
+  }
+
+  .cwa\:reorder-wobble-alt {
+    animation: cwa-reorder-wobble-alt 0.5s infinite;
+    transform-origin: 50% 10%;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cwa\:reorder-wobble,
+    .cwa\:reorder-wobble-alt {
+      animation: none;
+    }
+  }
+}
+
+@keyframes cwa-reorder-wobble {
+  0%, 100% {
+    rotate: 0.1deg;
+    animation-timing-function: ease-in;
+  }
+  50% {
+    rotate: -0.3deg;
+    animation-timing-function: ease-out;
+  }
+}
+
+@keyframes cwa-reorder-wobble-alt {
+  0%, 100% {
+    rotate: -0.1deg;
+    animation-timing-function: ease-in;
+  }
+  50% {
+    rotate: 0.3deg;
+    animation-timing-function: ease-out;
   }
 }
 

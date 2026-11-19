@@ -78,7 +78,7 @@ const orderModel: ResourceModelField<number> = {
     <CwaUiToggle
       v-model="reordering"
       label="Enable reordering"
-      info="Lets you drag components on the page to reorder them."
+      info="Shows a handle on each component in this group to drag it to a new place."
     />
     <CwaUiNumber
       :model="orderModel"

@@ -165,6 +165,17 @@ describe('kit colour tokens (#456)', () => {
     expect(contrastRatio(resolveKitColour('fg', theme), resolveKitColour('fg-disabled', theme))).toBeGreaterThanOrEqual(2.2)
   })
 
+  test('information popovers sit on a surface darker than every fill in both themes, so what is on them keeps its dark-theme colour in the light theme too: white text, a blue title, the status glyphs (#461)', () => {
+    expect(themeValues('dark')).toMatchObject({ 'surface-info': '#0c0a09', 'accent-on-info': '#60a5fa', 'muted-on-info': '#a8a29e', 'success-on-info': '#9cdd05' })
+    expect(themeValues('light')).toMatchObject({ 'surface-info': '#1c1917', 'accent-on-info': '#60a5fa', 'muted-on-info': '#a8a29e', 'success-on-info': '#9cdd05' })
+    expect(kitContrastPairs).toEqual(expect.arrayContaining([
+      expect.objectContaining({ fg: 'white', bg: 'surface-info', min: 4.5 }),
+      expect.objectContaining({ fg: 'accent-on-info', bg: 'surface-info', min: 4.5 }),
+      expect.objectContaining({ fg: 'muted-on-info', bg: 'surface-info', min: 3 }),
+      expect.objectContaining({ fg: 'success-on-info', bg: 'surface-info', min: 3 }),
+    ]))
+  })
+
   test('the colours the admin already uses keep their names', () => {
     for (const name of ['dark', 'light', 'danger', 'danger-dark', 'magenta', 'orange', 'green', 'stone-700']) {
       expect(compiled, name).toContain(`--cwa-color-${name}:`)

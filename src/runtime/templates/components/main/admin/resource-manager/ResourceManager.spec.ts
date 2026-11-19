@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
-import { createCommentVNode, defineAsyncComponent, h, inject, onMounted, ref, nextTick } from 'vue'
+import { createCommentVNode, defineAsyncComponent, h, inject, onMounted, reactive, ref, nextTick } from 'vue'
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { mockNuxtImport } from '@nuxt/test-utils/runtime'
 import { CwaUserRoles } from '#cwa/storage/stores/auth/state'
@@ -77,6 +77,8 @@ function makeStackManager(overrides: Record<string, any> = {}) {
     contextStack: ref<{ iri: string, displayName?: string }[]>([{ iri: '/component/1', displayName: 'Rich text' }, { iri: '/_/pages/home' }]),
     currentIri: ref<string | undefined>('/component/1'),
     resetTabs: vi.fn(),
+    getState: vi.fn(),
+    getClosestStackItemByType: vi.fn(),
     ...overrides,
   }
 }
@@ -131,6 +133,7 @@ async function mountManager(attachTo?: HTMLElement) {
         ComponentUsageBadge: { template: '<span class="usage-badge-stub" />' },
         SharedInstancesHighlight: { template: '<div class="shared-instances-stub" />' },
         PeerOutlines: { template: '<div class="peer-outlines-stub" />' },
+        ReorderHandles: { name: 'ReorderHandles', props: ['groupIri'], template: '<div class="reorder-handles-stub" />' },
         AddComponentDialog: { template: '<div class="add-dialog-stub" />' },
         Transition: false,
       },
@@ -569,6 +572,51 @@ describe('ResourceManager', () => {
       await show([{ name: 'PlainTab', render: () => h('div', 'Title') }], ['Title'])
 
       expect(warn).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('drag handles while reordering', () => {
+    function reorderingCwa(opts: { reordering: boolean, editing?: boolean, group?: string }) {
+      const state = reactive<Record<string, any>>({ reordering: opts.reordering })
+      const stackManager = makeStackManager({
+        showManager: ref(true),
+        currentStackItem: ref({ iri: '/component/1', managerTabs: [] }),
+        getState: (prop: string) => state[prop],
+        getClosestStackItemByType: vi.fn(() => 'group' in opts ? opts.group : '/_/component_groups/g'),
+      })
+      cwaState.cwa = makeCwa({ stackManager, isEditing: opts.editing ?? true })
+      return state
+    }
+
+    test('are loaded for the closest group only once Enable reordering is on', async () => {
+      const state = reorderingCwa({ reordering: false })
+      const wrapper = await mountManager()
+      await flushPromises()
+      expect(wrapper.find('.reorder-handles-stub').exists()).toBe(false)
+      state.reordering = true
+      await flushPromises()
+      expect(wrapper.findComponent({ name: 'ReorderHandles' }).props('groupIri')).toBe('/_/component_groups/g')
+      state.reordering = false
+      await flushPromises()
+      expect(wrapper.find('.reorder-handles-stub').exists()).toBe(false)
+    })
+
+    test.each([
+      ['outside edit mode', { reordering: true, editing: false }],
+      ['with no group in the stack', { reordering: true, group: undefined }],
+    ])('are not shown %s', async (_label, opts) => {
+      reorderingCwa(opts)
+      const wrapper = await mountManager()
+      await flushPromises()
+      expect(wrapper.find('.reorder-handles-stub').exists()).toBe(false)
+    })
+
+    test('are not shown while cloning', async () => {
+      reorderingCwa({ reordering: true })
+      useCloneMode(cwaState.cwa).start('/component/source')
+      const wrapper = await mountManager()
+      await flushPromises()
+      expect(wrapper.find('.reorder-handles-stub').exists()).toBe(false)
     })
   })
 

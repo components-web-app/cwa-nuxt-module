@@ -65,6 +65,10 @@
     --cwa-color-surface: #1c1917;
     --cwa-color-surface-raised: #292524;
     --cwa-color-surface-menu: #292524;
+    --cwa-color-surface-info: #0c0a09;
+    --cwa-color-accent-on-info: #60a5fa;
+    --cwa-color-muted-on-info: #a8a29e;
+    --cwa-color-success-on-info: #9cdd05;
     --cwa-color-button: #44403c;
     --cwa-color-shimmer: rgb(255 255 255 / 0.24);
     --cwa-color-menu-highlight: #57534e;
@@ -105,6 +109,7 @@
     --cwa-duration-fast: 120ms;
     --cwa-duration-base: 200ms;
     --cwa-duration-slow: 300ms;
+    --cwa-duration-indicator: 250ms;
     --cwa-text-flag: 0.75rem;
     --cwa-text-flag--font-weight: 600;
     --cwa-text-flag--line-height: 1.4;
@@ -318,6 +323,9 @@
 .cwa\:m-0\.5 {
   margin: calc(var(--cwa-spacing) * 0.5);
 }
+.cwa\:m-1 {
+  margin: var(--cwa-spacing);
+}
 .cwa\:-mx-6 {
   margin-inline: calc(var(--cwa-spacing) * -6);
 }
@@ -371,6 +379,9 @@
 }
 .cwa\:-mt-6 {
   margin-top: calc(var(--cwa-spacing) * -6);
+}
+.cwa\:-mt-px {
+  margin-top: -1px;
 }
 .cwa\:mt-0 {
   margin-top: 0px;
@@ -959,6 +970,9 @@
 .cwa\:cursor-default {
   cursor: default;
 }
+.cwa\:cursor-grab {
+  cursor: grab;
+}
 .cwa\:cursor-not-allowed {
   cursor: not-allowed;
 }
@@ -970,6 +984,9 @@
 }
 .cwa\:cursor-text {
   cursor: text;
+}
+.cwa\:touch-none {
+  touch-action: none;
 }
 .cwa\:resize-none {
   resize: none;
@@ -1416,6 +1433,9 @@
     background-color: color-mix(in oklab, var(--cwa-color-line-saving) 70%, transparent);
   }
 }
+.cwa\:bg-magenta {
+  background-color: var(--cwa-color-magenta);
+}
 .cwa\:bg-neutral-800 {
   background-color: var(--cwa-color-neutral-800);
 }
@@ -1433,6 +1453,9 @@
 }
 .cwa\:bg-surface {
   background-color: var(--cwa-color-surface);
+}
+.cwa\:bg-surface-info {
+  background-color: var(--cwa-color-surface-info);
 }
 .cwa\:bg-surface-menu {
   background-color: var(--cwa-color-surface-menu);
@@ -1476,6 +1499,9 @@
 .cwa\:fill-orange {
   fill: var(--cwa-color-orange);
 }
+.cwa\:fill-surface-info {
+  fill: var(--cwa-color-surface-info);
+}
 .cwa\:fill-surface-menu {
   fill: var(--cwa-color-surface-menu);
 }
@@ -1485,14 +1511,17 @@
 .cwa\:stroke-green {
   stroke: var(--cwa-color-green);
 }
-.cwa\:stroke-line {
-  stroke: var(--cwa-color-line);
-}
 .cwa\:stroke-orange {
   stroke: var(--cwa-color-orange);
 }
 .cwa\:stroke-white {
   stroke: var(--cwa-color-white);
+}
+.cwa\:stroke-white\/15 {
+  stroke: var(--cwa-color-white);
+  @supports (color: color-mix(in lab, red, red)) {
+    stroke: color-mix(in oklab, var(--cwa-color-white) 15%, transparent);
+  }
 }
 .cwa\:stroke-\[5px\] {
   stroke-width: 5px;
@@ -1865,6 +1894,9 @@
 .cwa\:text-accent-fg {
   color: var(--cwa-color-accent-fg);
 }
+.cwa\:text-accent-on-info {
+  color: var(--cwa-color-accent-on-info);
+}
 .cwa\:text-amber-300 {
   color: var(--cwa-color-amber-300);
 }
@@ -1916,6 +1948,9 @@
 .cwa\:text-muted-on-field {
   color: var(--cwa-color-muted-on-field);
 }
+.cwa\:text-muted-on-info {
+  color: var(--cwa-color-muted-on-info);
+}
 .cwa\:text-neutral-400 {
   color: var(--cwa-color-neutral-400);
 }
@@ -1933,6 +1968,9 @@
 }
 .cwa\:text-success {
   color: var(--cwa-color-success);
+}
+.cwa\:text-success-on-info {
+  color: var(--cwa-color-success-on-info);
 }
 .cwa\:text-warning {
   color: var(--cwa-color-warning);
@@ -2010,6 +2048,10 @@
   --tw-shadow: 0 10px 15px -3px var(--tw-shadow-color, rgb(0 0 0 / 0.1)), 0 4px 6px -4px var(--tw-shadow-color, rgb(0 0 0 / 0.1));
   box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
 }
+.cwa\:shadow-md {
+  --tw-shadow: 0 4px 6px -1px var(--tw-shadow-color, rgb(0 0 0 / 0.1)), 0 2px 4px -2px var(--tw-shadow-color, rgb(0 0 0 / 0.1));
+  box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+}
 .cwa\:shadow-popover {
   --tw-shadow: 0 8px 24px var(--tw-shadow-color, rgb(0 0 0 / 0.28));
   box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
@@ -2028,8 +2070,11 @@
     --tw-shadow-color: color-mix(in oklab, color-mix(in oklab, var(--cwa-color-line-saving) 30%, transparent) var(--tw-shadow-alpha), transparent);
   }
 }
-.cwa\:ring-line {
-  --tw-ring-color: var(--cwa-color-line);
+.cwa\:ring-white\/15 {
+  --tw-ring-color: var(--cwa-color-white);
+  @supports (color: color-mix(in lab, red, red)) {
+    --tw-ring-color: color-mix(in oklab, var(--cwa-color-white) 15%, transparent);
+  }
 }
 .cwa\:outline {
   outline-style: var(--tw-outline-style);
@@ -2119,6 +2164,11 @@
   transition-timing-function: var(--tw-ease, var(--cwa-default-transition-timing-function));
   transition-duration: var(--tw-duration, var(--cwa-default-transition-duration));
 }
+.cwa\:transition-\[translate\,width\] {
+  transition-property: translate,width;
+  transition-timing-function: var(--tw-ease, var(--cwa-default-transition-timing-function));
+  transition-duration: var(--tw-duration, var(--cwa-default-transition-duration));
+}
 .cwa\:transition-all {
   transition-property: all;
   transition-timing-function: var(--tw-ease, var(--cwa-default-transition-timing-function));
@@ -2155,6 +2205,10 @@
   --tw-duration: var(--cwa-duration-fast);
   transition-duration: var(--cwa-duration-fast);
 }
+.cwa\:duration-\(--cwa-duration-indicator\) {
+  --tw-duration: var(--cwa-duration-indicator);
+  transition-duration: var(--cwa-duration-indicator);
+}
 .cwa\:duration-0 {
   --tw-duration: 0ms;
   transition-duration: 0ms;
@@ -2174,6 +2228,10 @@
 .cwa\:duration-300 {
   --tw-duration: 300ms;
   transition-duration: 300ms;
+}
+.cwa\:ease-\(--cwa-ease-out\) {
+  --tw-ease: var(--cwa-ease-out);
+  transition-timing-function: var(--cwa-ease-out);
 }
 .cwa\:ease-in {
   --tw-ease: var(--cwa-ease-in);
@@ -2319,26 +2377,6 @@
   content: var(--tw-content);
   inset: 0px;
 }
-.cwa\:after\:inset-x-0::after {
-  content: var(--tw-content);
-  inset-inline: 0px;
-}
-.cwa\:after\:-bottom-\[calc\(var\(--cwa-spacing-cta-inset\)\+1px\)\]::after {
-  content: var(--tw-content);
-  bottom: calc(calc(var(--cwa-spacing-cta-inset) + 1px) * -1);
-}
-.cwa\:after\:bottom-0::after {
-  content: var(--tw-content);
-  bottom: 0px;
-}
-.cwa\:after\:h-0\.5::after {
-  content: var(--tw-content);
-  height: calc(var(--cwa-spacing) * 0.5);
-}
-.cwa\:after\:bg-accent::after {
-  content: var(--tw-content);
-  background-color: var(--cwa-color-accent);
-}
 .cwa\:after\:content-\[\'\'\]::after {
   --tw-content: '';
   content: var(--tw-content);
@@ -2411,6 +2449,14 @@
   }
   .cwa\:hover\:bg-stone-700:hover {
     background-color: var(--cwa-color-stone-700);
+  }
+  .cwa\:hover\:bg-white\/15:hover {
+    background-color: var(--cwa-color-white);
+  }
+  @supports (color: color-mix(in lab, red, red)) {
+    .cwa\:hover\:bg-white\/15:hover {
+      background-color: color-mix(in oklab, var(--cwa-color-white) 15%, transparent);
+    }
   }
   .cwa\:hover\:bg-yellow\/10:hover {
     background-color: var(--cwa-color-yellow);
@@ -2571,6 +2617,9 @@
 }
 .cwa\:data-disabled\:text-stone-600[data-disabled] {
   color: var(--cwa-color-stone-600);
+}
+.cwa\:data-held\:cursor-grabbing[data-held] {
+  cursor: grabbing;
 }
 .cwa\:data-highlighted\:bg-menu-highlight[data-highlighted] {
   background-color: var(--cwa-color-menu-highlight);
@@ -3385,6 +3434,40 @@
     color: var(--cwa-color-white);
     --tw-content: attr(data-sort-value);
     content: var(--tw-content);
+  }
+  .cwa\:reorder-wobble {
+    animation: cwa-reorder-wobble 0.5s infinite;
+    transform-origin: 30% 5%;
+  }
+  .cwa\:reorder-wobble-alt {
+    animation: cwa-reorder-wobble-alt 0.5s infinite;
+    transform-origin: 50% 10%;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cwa\:reorder-wobble,
+    .cwa\:reorder-wobble-alt {
+      animation: none;
+    }
+  }
+}
+@keyframes cwa-reorder-wobble {
+  0%, 100% {
+    rotate: 0.1deg;
+    animation-timing-function: ease-in;
+  }
+  50% {
+    rotate: -0.3deg;
+    animation-timing-function: ease-out;
+  }
+}
+@keyframes cwa-reorder-wobble-alt {
+  0%, 100% {
+    rotate: -0.1deg;
+    animation-timing-function: ease-in;
+  }
+  50% {
+    rotate: 0.3deg;
+    animation-timing-function: ease-out;
   }
 }
 @keyframes cwa-line-band {

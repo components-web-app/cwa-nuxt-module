@@ -145,7 +145,7 @@ describe('Order tab on the kit (#400, #459)', () => {
     const wrapper = mount(Order, { attachTo: document.body })
 
     expect(document.body.textContent).not.toContain('Turn on Enable reordering')
-    expect(wrapper.findComponent(CwaUiToggle).props('info')).toBe('Lets you drag components on the page to reorder them.')
+    expect(wrapper.findComponent(CwaUiToggle).props('info')).toBe('Shows a handle on each component in this group to drag it to a new place.')
   })
 
   test('has no axe violations', async () => {

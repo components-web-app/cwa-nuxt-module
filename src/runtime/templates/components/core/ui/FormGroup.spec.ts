@@ -399,3 +399,29 @@ describe('FormGroup and the page Save model (#461)', () => {
     expect(links.map(element => drawsFocusRing([...element.classList]))).toEqual([true])
   })
 })
+
+describe('FormGroup tabs', () => {
+  test('the selected tab is underlined by one sliding indicator inside the tab row, at its bottom; no tab draws its own', async () => {
+    const form = fakeDialogForm({ siteName: 'Kitchens' })
+    const router = createRouter({ history: createMemoryHistory(), routes: [{ path: '/', component: { render: () => h('p') } }] })
+    await router.push('/')
+    await router.isReady()
+    mount(FormGroup, {
+      props: { form, tabs: [{ label: 'General', key: 'general' }, { label: 'About', key: 'about' }] },
+      slots: { general: () => h('p', 'General'), about: () => h('p', 'About') },
+      attachTo: document.body,
+      global: { plugins: [router] },
+    })
+    await flushPromises()
+    const tablist = q('[role="tablist"]')!
+    const indicators = qa('[data-testid="tab-indicator"]')
+
+    expect(indicators).toHaveLength(1)
+    expect(indicators[0]!.parentElement).toBe(tablist)
+    expect([...tablist.classList]).toEqual(expect.arrayContaining(['cwa:relative', 'cwa:overflow-x-auto']))
+    expect([...indicators[0]!.classList]).toEqual(expect.arrayContaining(['cwa:absolute', 'cwa:bottom-0', 'cwa:bg-accent']))
+    for (const element of qa('[role="tab"]')) {
+      expect([...element.classList].filter(name => name.startsWith('cwa:after:'))).toEqual([])
+    }
+  })
+})

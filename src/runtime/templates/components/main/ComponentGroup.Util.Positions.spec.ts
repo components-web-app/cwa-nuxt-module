@@ -10,6 +10,7 @@ import { ResourcesStore } from '#cwa/storage/stores/resources/resources-store'
 import { FetcherStore } from '#cwa/storage/stores/fetcher/fetcher-store'
 import type { CwaResource } from '#cwa/resources/resource-utils'
 import type { ReorderEvent } from '#cwa/admin/admin'
+import { createPositionDrag } from '#cwa/admin/position-drag'
 
 const unmountHooks = vi.hoisted(() => [] as Array<() => void>)
 
@@ -404,6 +405,7 @@ describe('group reorder queue against the server (#400, api-components-bundle#47
       requests,
       reorders: mockCwa.componentGroupReorders as ComponentGroupReorders,
       mount,
+      eventBus: mockCwa.admin.eventBus,
       group: helpersFor,
       queueWrite: (group: string, write: () => Promise<unknown>) => mockCwa.resourcesManager.queueComponentGroupWrite(group, write),
       releaseRequests: () => heldRequests.splice(0).forEach(resolve => resolve()),
@@ -715,5 +717,57 @@ describe('group reorder queue against the server (#400, api-components-bundle#47
     expect(otherGroup.serverOrder()).toEqual(['x', 'z', 'y'])
     expect(group.serverOrder()).toEqual(['a', 'b', 'c'])
     expect(group.displayed()).toEqual(['a', 'b', 'c'])
+  })
+
+  describe('dragging a position by its handle', () => {
+    function dragger(group: ReturnType<typeof createGroup>, eventBus: { emit: (event: 'reorder', data: ReorderEvent) => void }) {
+      const handle = document.createElement('button')
+      const drag = createPositionDrag({
+        positions: () => group.displayed().map(positionIri),
+        boxOf: (iri) => {
+          const index = group.displayed().indexOf(nameOf(iri))
+          return { top: index * 100, bottom: index * 100 + 100, left: 0, right: 400 }
+        },
+        onReorder: event => eventBus.emit('reorder', event),
+      })
+      return (name: string, toY: number) => {
+        const fromY = group.displayed().indexOf(name) * 100 + 50
+        drag.start(new PointerEvent('pointerdown', { clientY: fromY, pointerId: 1 }), positionIri(name), handle)
+        handle.dispatchEvent(new PointerEvent('pointermove', { clientY: toY, pointerId: 1 }))
+        handle.dispatchEvent(new PointerEvent('pointerup', { clientY: toY, pointerId: 1 }))
+      }
+    }
+
+    test('a drop moves the screen at once and saves the new order in one order request', async () => {
+      const group = createGroup({ a: 0, b: 1, c: 2 })
+      const drag = dragger(group, group.eventBus)
+      drag('a', 260)
+      expect(group.displayed()).toEqual(['b', 'c', 'a'])
+      expect(group.displayNumbers()).toEqual([3, 1, 2])
+      await group.settle()
+      expect(group.requests).toEqual([[groupIri, ['b', 'c', 'a']]])
+      expect(group.serverOrder()).toEqual(['b', 'c', 'a'])
+    })
+
+    test('drops made while an order request is in flight go in one more request with the newest order', async () => {
+      const group = createGroup({ a: 0, b: 1, c: 2, d: 3 }, { holdRequests: true })
+      const drag = dragger(group, group.eventBus)
+      drag('d', 10)
+      await group.settle()
+      drag('c', 10)
+      drag('a', 390)
+      expect(group.displayed()).toEqual(['c', 'd', 'b', 'a'])
+      await group.settle()
+      expect(group.requests).toEqual([[groupIri, ['d', 'a', 'b', 'c']]])
+      group.releaseRequests()
+      await group.settle()
+      expect(group.requests).toEqual([
+        [groupIri, ['d', 'a', 'b', 'c']],
+        [groupIri, ['c', 'd', 'b', 'a']],
+      ])
+      group.releaseRequests()
+      await group.settle()
+      expect(group.displayed()).toEqual(['c', 'd', 'b', 'a'])
+    })
   })
 })

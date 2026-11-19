@@ -27,6 +27,7 @@ import { listenForLongPress } from '#cwa/admin/long-press'
 const ComponentUsageBadge = defineAsyncComponent(() => import('#cwa/templates/components/main/admin/resource-manager/cta/ComponentUsageBadge.vue'))
 const SharedInstancesHighlight = defineAsyncComponent(() => import('#cwa/templates/components/main/admin/resource-manager/SharedInstancesHighlight.vue'))
 const PeerOutlines = defineAsyncComponent(() => import('#cwa/templates/components/main/admin/resource-manager/PeerOutlines.vue'))
+const ReorderHandles = defineAsyncComponent(() => import('#cwa/templates/components/main/admin/resource-manager/ReorderHandles.vue'))
 const ClonePlacementMenu = defineAsyncComponent(() => import('#cwa/templates/components/main/admin/resource-manager/_parts/ClonePlacementMenu.vue'))
 
 const $cwa = useCwa()
@@ -152,6 +153,13 @@ const showSharedInstances = computed(() => {
     && $cwa.admin.resourceStackManager.showManager.value
     && !cloneMode.source.value
     && getResourceTypeFromIri(iri) === CwaResourceTypes.COMPONENT
+})
+
+const reorderGroupIri = computed(() => {
+  if (!$cwa.admin.isEditing || cloneMode.source.value || !$cwa.admin.resourceStackManager.getState('reordering')) {
+    return
+  }
+  return $cwa.admin.resourceStackManager.getClosestStackItemByType(CwaResourceTypes.COMPONENT_GROUP)
 })
 
 const showAdmin = computed(() => {
@@ -335,6 +343,10 @@ defineExpose({
   />
   <AddComponentDialog />
   <SharedInstancesHighlight v-if="showSharedInstances" />
+  <ReorderHandles
+    v-if="reorderGroupIri"
+    :group-iri="reorderGroupIri"
+  />
   <PeerOutlines v-if="$cwa.admin.isEditing && !cloneMode.source.value" />
   <ClonePlacementMenu
     v-if="cloneTarget"

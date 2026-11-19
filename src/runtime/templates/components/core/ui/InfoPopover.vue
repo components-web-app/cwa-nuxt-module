@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, useTemplateRef } from 'vue'
 import { PopoverArrow, PopoverClose, PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger } from 'reka-ui'
-import { infoArrow, infoPanel } from './field-looks'
+import { infoArrow, infoClose, infoPanel } from './field-looks'
 import { POPOVER_GAP } from './popover-gap'
 import StateGlyph from './StateGlyph.vue'
 import XMarkIcon from '../../ui/icon/XMarkIcon.vue'
@@ -124,15 +124,15 @@ function onOpenAutoFocus(event: Event) {
         @pointerenter="onPointerenter"
         @pointerleave="onPointerleave"
       >
-        <div class="cwa:mb-4 cwa:flex cwa:h-[1cap] cwa:items-center cwa:gap-2 cwa:font-semibold">
+        <div class="cwa:mb-4 cwa:flex cwa:h-[1cap] cwa:items-center cwa:gap-2 cwa:font-semibold cwa:text-accent-on-info">
           <StateGlyph
             kind="info"
-            accent
+            inherit
           />
           <span class="cwa:min-w-0 cwa:flex-1 cwa:trim-text">{{ label }}</span>
           <PopoverClose
             aria-label="Close"
-            class="cwa:grid cwa:size-6 cwa:shrink-0 cwa:cursor-pointer cwa:place-items-center cwa:text-fg cwa:hover:bg-button"
+            :class="infoClose"
           >
             <XMarkIcon class="cwa:size-3" />
           </PopoverClose>

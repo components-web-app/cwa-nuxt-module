@@ -239,7 +239,7 @@ defineExpose({
     <div
       v-for="(outlineStyle, index) of [cssStyle, ...otherCssStyles]"
       :key="index"
-      :class="[borderColor, { 'cwa:animate-pulse': savePhase === 'rest' }]"
+      :class="borderColor"
       :style="outlineStyle"
       :data-save="savePhase"
       class="cwa:absolute cwa:outline-2 cwa:outline-offset-4 cwa:pointer-events-none cwa:outline"

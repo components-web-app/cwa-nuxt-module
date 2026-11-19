@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { enableAutoUnmount, mount, flushPromises } from '@vue/test-utils'
 import { defineComponent, h, nextTick, reactive, ref } from 'vue'
 import { axe } from '../../../../../../test/utils/axe'
-import { drawsOpenLine, drawsOpenState } from '../../../../../../test/utils/kit-css'
+import { drawsOpenLine, drawsOpenState, failingInk, shownColour, shownFill } from '../../../../../../test/utils/kit-css'
 import { drawsFocusRing } from '../../../../../../test/utils/focus-ring'
 import { announceKey } from '../ui/field-keys'
 import BarSummary from './BarSummary.vue'
@@ -280,6 +280,39 @@ describe('BarSummary (#459)', () => {
     expect(popover()?.querySelector('p')?.textContent?.trim()).toBe(about(formatDateTime('2026-10-01T08:00:00Z')))
   })
 
+  test.each([
+    ['Draft', () => draft(), 'muted-on-info'],
+    ['Scheduled', () => draft('2026-10-01T08:00:00Z'), 'accent-on-info'],
+    ['Live', () => {
+      data.value = { '@id': iri.value, '_metadata': { publishable: { published: true } } }
+    }, 'success-on-info'],
+    ['New', () => {
+      iri.value = NEW_RESOURCE_IRI
+    }, 'muted-on-info'],
+    ['Group', () => {
+      iri.value = '/_/component_groups/g1'
+      data.value = { '@id': iri.value, '_metadata': {} }
+    }, 'muted-on-info'],
+    ['Saved', () => {
+      iri.value = '/_/component_positions/p1'
+      data.value = { '@id': iri.value, '_metadata': {} }
+    }, 'success-on-info'],
+  ])('%s explains itself on the dark info panel in both themes: its glyph in a colour made for the panel, white text and a white Close, each passing on it (#461)', async (word, given, glyphColour) => {
+    given()
+    const { summary } = mountSummary()
+
+    await summary().trigger('click')
+    await nextTick()
+
+    const panel = popover()!
+    expect(panel.getAttribute('aria-label')).toBe(word)
+    expect(shownFill(panel)).toBe('surface-info')
+    expect(shownColour(panel.querySelector('[data-glyph]')!)).toBe(glyphColour)
+    expect(shownColour(panel.querySelector('p')!)).toBe('white')
+    expect(shownColour(panel.querySelector('button[aria-label="Close"] svg')!)).toBe('white')
+    expect(failingInk(panel)).toEqual([])
+  })
+
   test('the explanation is the info panel, and clicking the status again closes it', async () => {
     draft()
     const { summary } = mountSummary()
@@ -291,8 +324,8 @@ describe('BarSummary (#459)', () => {
     }
 
     await press()
-    expect(popover()?.classList).toContain('cwa:bg-surface-menu')
-    expect(popover()?.classList).toContain('cwa:ring-line')
+    expect(popover()?.classList).toContain('cwa:bg-surface-info')
+    expect(popover()?.classList).toContain('cwa:ring-white/15')
     expect(summary().attributes('aria-expanded')).toBe('true')
     await vi.advanceTimersByTimeAsync(0)
 

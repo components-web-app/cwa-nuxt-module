@@ -644,6 +644,21 @@ describe('CwaUiDialog and the Save model (#461)', () => {
     expect(tab('Info').getAttribute('aria-selected')).toBe('true')
   })
 
+  test('the selected tab is underlined by one sliding indicator inside the tab row, at its bottom; no tab draws its own', async () => {
+    mountDialog(form)
+    await flushPromises()
+    const tablist = q('[role="tablist"]')!
+    const indicators = qa('[data-testid="tab-indicator"]')
+
+    expect(indicators).toHaveLength(1)
+    expect(indicators[0]!.parentElement).toBe(tablist)
+    expect([...tablist.classList]).toEqual(expect.arrayContaining(['cwa:relative', 'cwa:overflow-x-auto']))
+    expect([...indicators[0]!.classList]).toEqual(expect.arrayContaining(['cwa:absolute', 'cwa:bottom-0', 'cwa:bg-accent']))
+    for (const element of qa('[role="tab"]')) {
+      expect([...element.classList].filter(name => name.startsWith('cwa:after:'))).toEqual([])
+    }
+  })
+
   test('Alt, Meta or Ctrl with an arrow key is left to the browser, so Alt+Left goes back instead of switching tabs (#461)', async () => {
     mountDialog(form)
     await flushPromises()
