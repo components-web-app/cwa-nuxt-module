@@ -91,6 +91,7 @@ function mountHeader(options: { stubs?: Record<string, any>, attachTo?: HTMLElem
       stubs: {
         PathSelector: { name: 'PathSelector', template: '<div class="path-selector-stub" />' },
         RequestErrors: { name: 'RequestErrors', template: '<div class="request-errors-stub" />' },
+        FailedSaveToasts: { name: 'FailedSaveToasts', template: '<div class="failed-save-toasts-stub" />' },
         Menu: { name: 'Menu', template: '<div class="menu-stub" />' },
         SpinnerTick: { name: 'SpinnerTick', props: ['isLoading', 'isPending'], template: '<div class="spinner-tick-stub" />' },
         OutdatedContentNotice: { name: 'OutdatedContentNotice', template: '<div class="outdated-stub" />' },
@@ -678,6 +679,17 @@ describe('Header', () => {
       await flushPromises()
 
       expect(wrapper.find('.presence-indicator-stub').exists()).toBe(true)
+    })
+
+    test.each([
+      { name: 'in edit mode', isEditing: true },
+      { name: 'outside edit mode, where no bar shows the field', isEditing: false },
+    ])('loads the toasts for saves that failed out of the bar\'s reach $name (#461)', async ({ isEditing }) => {
+      mockCwa({ admin: buildAdmin({ isEditing }) })
+      const wrapper = mountHeader()
+      await flushPromises()
+
+      expect(wrapper.find('.failed-save-toasts-stub').exists()).toBe(true)
     })
   })
 

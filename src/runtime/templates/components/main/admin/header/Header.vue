@@ -133,6 +133,7 @@
       <ResourceLoadingIndicator class="cwa:absolute cwa:top-full cwa:left-0 cwa:z-notifications" />
     </div>
     <RequestErrors />
+    <FailedSaveToasts />
     <PageResourceAdminModal
       v-if="showEditModal && $cwa.resources.displayPageIri.value"
       :iri="$cwa.resources.displayPageIri.value"
@@ -172,6 +173,7 @@ import { useStrandedComponentGroups } from '#cwa/admin/stranded-component-groups
 import { useCloneMode } from '#cwa/admin/clone-mode'
 
 const CloneHighlight = defineAsyncComponent(() => import('../resource-manager/CloneHighlight.vue').then(module => module.default))
+const FailedSaveToasts = defineAsyncComponent(() => import('./_parts/FailedSaveToasts.vue').then(module => module.default))
 const PresenceIndicator = defineAsyncComponent(() => import('./_parts/PresenceIndicator.vue').then(module => module.default))
 const StrandedComponentGroupsModal = defineAsyncComponent(() => import('#cwa/templates/components/core/admin/StrandedComponentGroupsModal.vue').then(module => module.default))
 

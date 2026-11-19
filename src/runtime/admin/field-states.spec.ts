@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { reactive } from 'vue'
-import { edited, failed, held, cleared, settled, skipped, started, succeeded, unqueued } from './field-states'
+import { edited, failed, failedSaves, forgetFailedSave, held, cleared, onFailedSavesChange, settled, skipped, started, succeeded, trackFailedSave, unqueued } from './field-states'
+import type { FailedSave } from './field-states'
 import type { CwaCurrentResourceInterface } from '#cwa/storage/stores/resources/state'
 import { CwaResourceApiStatuses } from '#cwa/storage/stores/resources/state'
 
@@ -324,5 +325,29 @@ describe('field states (#458)', () => {
       cleared(undefined, 'title')
       unqueued(undefined, 'title')
     }).not.toThrow()
+  })
+})
+
+describe('failed saves kept for a toast once the bar no longer shows the field (#461)', () => {
+  function save(): FailedSave {
+    return { iri: '/component/titles/1', field: 'title', label: () => 'Title', retry: vi.fn(), reset: vi.fn() }
+  }
+
+  test('a newer failure of the same field replaces the older, and forgetting the older keeps the newer', () => {
+    const owner = {}
+    const listener = vi.fn()
+    onFailedSavesChange(owner, listener)
+    const older = save()
+    const newer = save()
+
+    trackFailedSave(owner, older)
+    trackFailedSave(owner, newer)
+    forgetFailedSave(owner, older)
+
+    expect([...failedSaves(owner).values()]).toEqual([newer])
+    expect(listener).toHaveBeenCalledTimes(2)
+    forgetFailedSave(owner, newer)
+    expect(failedSaves(owner).size).toBe(0)
+    expect(listener).toHaveBeenCalledTimes(3)
   })
 })

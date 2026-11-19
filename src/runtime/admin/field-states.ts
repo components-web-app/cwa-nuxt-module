@@ -201,3 +201,56 @@ export function held(entry: Entry, field: string, change: CwaFieldState['held'])
 export function cleared(entry: Entry, field: string) {
   entry && put(entry, field, undefined)
 }
+
+export interface FailedSave {
+  iri: string
+  field: string
+  label: () => string
+  retry: () => void
+  reset: () => void
+}
+
+const failures = new WeakMap<object, { saves: Map<string, FailedSave>, listeners: Set<() => void> }>()
+
+function failuresOf(owner: object) {
+  let registry = failures.get(owner)
+  if (!registry) {
+    registry = { saves: new Map(), listeners: new Set() }
+    failures.set(owner, registry)
+  }
+  return registry
+}
+
+function failedSaveKey(save: FailedSave) {
+  return `${save.iri} ${save.field}`
+}
+
+export function failedSaves(owner: object): ReadonlyMap<string, FailedSave> {
+  return failuresOf(owner).saves
+}
+
+export function onFailedSavesChange(owner: object, listener: () => void) {
+  const { listeners } = failuresOf(owner)
+  listeners.add(listener)
+  return () => {
+    listeners.delete(listener)
+  }
+}
+
+function changed(owner: object) {
+  failuresOf(owner).listeners.forEach(listener => listener())
+}
+
+export function trackFailedSave(owner: object, save: FailedSave) {
+  failuresOf(owner).saves.set(failedSaveKey(save), save)
+  changed(owner)
+}
+
+export function forgetFailedSave(owner: object, save: FailedSave) {
+  const { saves } = failuresOf(owner)
+  const key = failedSaveKey(save)
+  if (saves.get(key) === save) {
+    saves.delete(key)
+    changed(owner)
+  }
+}
