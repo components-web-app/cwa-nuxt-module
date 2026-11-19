@@ -4,6 +4,10 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+### Changed
+
+- The add component dialog no longer shows how many of a component are already in the group, on its rows or its chips ([4d2f86bb](https://github.com/components-web-app/cwa-nuxt-module/commit/4d2f86bbb857043edd329d704c20e9ecb1e6c8b0), [#461](https://github.com/components-web-app/cwa-nuxt-module/issues/461)).
+
 ## [2.0.0-alpha.35] - 2026-11-18
 
 ### Changed
