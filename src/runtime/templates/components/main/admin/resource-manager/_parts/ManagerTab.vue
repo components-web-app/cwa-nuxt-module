@@ -26,8 +26,8 @@ const words = computed(() => badge?.kind ? badgeWords(badge) : undefined)
     :aria-keyshortcuts="selected ? 'F6' : undefined"
     :title="words"
     :data-badge="badge?.kind"
-    class="cwa:relative cwa:inline-flex cwa:h-full cwa:shrink-0 cwa:cursor-pointer cwa:items-center cwa:gap-2 cwa:whitespace-nowrap cwa:px-4 cwa:text-label cwa:outline-1 cwa:outline-transparent cwa:transition-colors cwa:duration-(--cwa-duration-fast) cwa:focus-visible:outline-2 cwa:focus-visible:-outline-offset-2 cwa:focus-visible:outline-accent-fg cwa:after:absolute cwa:after:inset-x-0 cwa:after:-bottom-[calc(var(--cwa-spacing-cta-inset)+1px)] cwa:after:h-0.5 cwa:after:content-['']"
-    :class="selected ? 'cwa:text-fg cwa:after:bg-accent' : 'cwa:text-fg-muted cwa:hover:text-fg'"
+    class="cwa:relative cwa:inline-flex cwa:h-full cwa:shrink-0 cwa:cursor-pointer cwa:items-center cwa:gap-2 cwa:whitespace-nowrap cwa:px-4 cwa:text-label cwa:outline-1 cwa:outline-transparent cwa:transition-colors cwa:duration-(--cwa-duration-fast) cwa:focus-visible:outline-2 cwa:focus-visible:-outline-offset-2 cwa:focus-visible:outline-accent-fg"
+    :class="selected ? 'cwa:text-fg' : 'cwa:text-fg-muted cwa:hover:text-fg'"
   >
     {{ tab.name }}
     <StateGlyph

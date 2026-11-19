@@ -687,3 +687,86 @@ for (const hasTouch of [false, true]) {
     }
   }
 }
+
+function tabIndicator(dialog) {
+  const tablist = dialog.querySelector('[role="tablist"]')
+  const indicators = tablist.querySelectorAll('[data-testid="tab-indicator"]')
+  const tab = tablist.querySelector('[role="tab"][aria-selected="true"]')
+  const selected = tab.getBoundingClientRect()
+  const bar = indicators[0].getBoundingClientRect()
+  return {
+    count: indicators.length,
+    selected: tab.textContent.trim(),
+    offLeft: Math.abs(bar.left - selected.left),
+    offWidth: Math.abs(bar.width - selected.width),
+    offBottom: Math.abs(bar.bottom - selected.bottom),
+    height: bar.height,
+    transitions: indicators[0].getAnimations().length,
+  }
+}
+
+async function openKitDialog(page) {
+  await expect(async () => {
+    await page.getByTestId('kit-dialog-open').click()
+    await expect(page.getByRole('dialog').first().getByRole('tab').first()).toBeVisible({ timeout: 500 })
+  }).toPass()
+  return page.getByRole('dialog').first()
+}
+
+const twoFrames = () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve(true))))
+
+for (const width of widths) {
+  test(`kit at ${width}: one tab indicator sits under the selected tab, slides there when another tab is picked, and jumps there on resize and when the tab's width changes (#461)`, async ({ page }) => {
+    await openKit(page, width)
+    const dialog = await openKitDialog(page)
+    const read = () => dialog.evaluate(tabIndicator)
+    const settled = async () => {
+      await dialog.evaluate(element => Promise.all(element.querySelector('[data-testid="tab-indicator"]').getAnimations().map(animation => animation.finished)))
+      return read()
+    }
+    const under = (state, name) => {
+      expect(state.count).toBe(1)
+      expect(state.selected).toBe(name)
+      expect(state.offLeft).toBeLessThanOrEqual(0.5)
+      expect(state.offWidth).toBeLessThanOrEqual(0.5)
+      expect(state.offBottom).toBeLessThanOrEqual(0.5)
+      expect(state.height).toBe(2)
+    }
+
+    under(await settled(), 'Details')
+
+    await dialog.getByRole('tab', { name: 'Info' }).click()
+    const sliding = await read()
+    expect(sliding.transitions).toBeGreaterThan(0)
+    expect(sliding.offLeft).toBeGreaterThan(0.5)
+    under(await settled(), 'Info')
+
+    await page.setViewportSize({ width: width === 390 ? 360 : 1024, height: 900 })
+    await page.evaluate(twoFrames)
+    const resized = await read()
+    expect(resized.transitions).toBe(0)
+    under(resized, 'Info')
+
+    await dialog.evaluate((element) => {
+      const tab = element.querySelector('[role="tab"][aria-selected="true"]')
+      tab.firstChild.textContent = 'Info and more'
+    })
+    await page.evaluate(twoFrames)
+    const widened = await read()
+    expect(widened.transitions).toBe(0)
+    expect(widened.offWidth).toBeLessThanOrEqual(0.5)
+    under(widened, 'Info and more')
+  })
+}
+
+test('kit: under reduced motion the tab indicator jumps to the picked tab without a transition (#461)', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await openKit(page, 1280)
+  const dialog = await openKitDialog(page)
+  await dialog.getByRole('tab', { name: 'Info' }).click()
+  const state = await dialog.evaluate(tabIndicator)
+  expect(state.transitions).toBe(0)
+  expect(state.selected).toBe('Info')
+  expect(state.offLeft).toBeLessThanOrEqual(0.5)
+  expect(state.offWidth).toBeLessThanOrEqual(0.5)
+})

@@ -8,6 +8,7 @@ import Spinner from './Spinner.vue'
 import StateGlyph from '../core/ui/StateGlyph.vue'
 import CheckGlyph from '../core/ui/CheckGlyph.vue'
 import DialogPanel from '../core/ui/DialogPanel.vue'
+import TabIndicator from '../core/ui/TabIndicator.vue'
 import { announceKey, dialogSubViewKey, fieldGroupKey, formSurfaceKey, presenceLayerKey } from '../core/ui/field-keys'
 import type { DialogSubViewClaim, DialogSubViewGuard } from '../core/ui/field-keys'
 import { changesText, dialogTabBadge, dialogTabWords, listText } from '../core/ui/dialog-form'
@@ -508,7 +509,7 @@ defineExpose({ requestClose, confirmDiscard, showField, announce })
           v-if="tabs?.length"
           role="tablist"
           :aria-labelledby="titleId"
-          class="cwa:flex cwa:h-hit cwa:shrink-0 cwa:items-stretch cwa:overflow-x-auto cwa:border-b cwa:border-line cwa:ps-2 cwa:[scrollbar-width:none]"
+          class="cwa:relative cwa:flex cwa:h-hit cwa:shrink-0 cwa:items-stretch cwa:overflow-x-auto cwa:border-b cwa:border-line cwa:ps-2 cwa:[scrollbar-width:none]"
         >
           <button
             v-for="(item, index) in tabs"
@@ -524,8 +525,8 @@ defineExpose({ requestClose, confirmDiscard, showField, announce })
             :tabindex="currentTab === item.key ? 0 : -1"
             :data-badge="badges[item.key]?.kind"
             data-testid="dialog-tab"
-            class="cwa:relative cwa:inline-flex cwa:shrink-0 cwa:cursor-pointer cwa:items-center cwa:gap-2 cwa:whitespace-nowrap cwa:px-4 cwa:text-label cwa:outline-1 cwa:outline-transparent cwa:transition-colors cwa:duration-(--cwa-duration-fast) cwa:focus-visible:outline-2 cwa:focus-visible:-outline-offset-2 cwa:focus-visible:outline-accent-fg cwa:after:absolute cwa:after:inset-x-0 cwa:after:bottom-0 cwa:after:h-0.5 cwa:after:content-['']"
-            :class="[currentTab === item.key ? 'cwa:text-fg cwa:after:bg-accent' : 'cwa:text-fg-muted cwa:hover:text-fg', { 'cwa:opacity-60': item.disabled }]"
+            class="cwa:relative cwa:inline-flex cwa:shrink-0 cwa:cursor-pointer cwa:items-center cwa:gap-2 cwa:whitespace-nowrap cwa:px-4 cwa:text-label cwa:outline-1 cwa:outline-transparent cwa:transition-colors cwa:duration-(--cwa-duration-fast) cwa:focus-visible:outline-2 cwa:focus-visible:-outline-offset-2 cwa:focus-visible:outline-accent-fg"
+            :class="[currentTab === item.key ? 'cwa:text-fg' : 'cwa:text-fg-muted cwa:hover:text-fg', { 'cwa:opacity-60': item.disabled }]"
             @click="selectTab(item.key)"
             @keydown="onTabKey($event, index)"
           >
@@ -541,6 +542,7 @@ defineExpose({ requestClose, confirmDiscard, showField, announce })
               class="cwa:size-2 cwa:rounded-toggle cwa:bg-accent-fg"
             />
           </button>
+          <TabIndicator />
         </div>
         <div
           ref="body"

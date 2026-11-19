@@ -1704,12 +1704,14 @@ test('63. the header\'s Edit or Done button and the page settings button or path
         const pin = document.querySelector('[data-testid="manager-pin"]')
         const tablist = document.querySelector('[data-testid="manager-bar"] [role="tablist"]')
         const selected = tablist.querySelector('[role="tab"][aria-selected="true"]')
-        const after = getComputedStyle(selected, '::after')
-        const underlineBottom = selected.getBoundingClientRect().bottom - Number.parseFloat(after.bottom)
+        const indicators = tablist.querySelectorAll('[data-testid="tab-indicator"]')
+        const underline = indicators[0].getBoundingClientRect()
+        const tabBox = selected.getBoundingClientRect()
         return {
           total: height(document.querySelector('[data-testid="manager-bar"]')),
           tabs: [...tablist.querySelectorAll('[role="tab"]')].map(height),
-          underline: { top: underlineBottom - Number.parseFloat(after.height), bottom: underlineBottom },
+          indicators: indicators.length,
+          underline: { bottom: underline.bottom, height: underline.height, offLeft: Math.abs(underline.left - tabBox.left), offWidth: Math.abs(underline.width - tabBox.width) },
           line: tablist.parentElement.getBoundingClientRect().bottom,
           clip: tablist.getBoundingClientRect().bottom,
           panel: [...document.querySelectorAll('[data-testid="manager-tab-panel"] :is(button, [role="combobox"], [data-testid="segmented"])')].filter(element => element.offsetParent && !element.closest('[data-testid="field-info"], [data-testid="segmented"] button, .cwa\\:sr-only')).map(element => ({ name: (element.getAttribute('aria-label') ?? element.textContent).trim().slice(0, 30), height: height(element) })),
@@ -1733,6 +1735,8 @@ test('63. the header\'s Edit or Done button and the page settings button or path
       for (const height of bar.tabs) {
         assert(!hasTouch || height >= 44, `${where} a tab is ${height}px tall, under the 44px hit size`)
       }
+      assert(bar.indicators === 1, `${where} the tab row has ${bar.indicators} indicators`)
+      assert(bar.underline.height === 2 && bar.underline.offLeft <= 0.5 && bar.underline.offWidth <= 0.5, `${where} the tab indicator is not under the selected tab: ${JSON.stringify(bar.underline)}`)
       assert(Math.abs(bar.underline.bottom - bar.line) <= 0.5, `${where} the selected tab's underline ends at ${bar.underline.bottom}, not on the bar's line at ${bar.line}`)
       assert(bar.underline.bottom <= bar.clip + 0.5, `${where} the underline ends at ${bar.underline.bottom}, below the tab row it is clipped by at ${bar.clip}`)
       assert(bar.total === (hasTouch ? 112 : 100), `${where} the bar is ${bar.total}px tall`)

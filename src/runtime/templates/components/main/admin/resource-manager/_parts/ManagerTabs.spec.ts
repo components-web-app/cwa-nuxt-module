@@ -82,12 +82,18 @@ describe('ManagerTabs (#459)', () => {
     expect(buttons()[0]!.attributes('aria-selected')).toBe('true')
   })
 
-  test('the selected tab\'s underline is drawn below the tab, past the row\'s inset, on the bar\'s line', () => {
+  test('the selected tab is underlined by one sliding indicator inside the scrolling tab row, at the row\'s bottom past its inset, on the bar\'s line; no tab draws its own', () => {
     const wrapper = mount(ManagerTabs, { props: { tabs, idPrefix: 'bar', label: 'Settings' } })
-    const [selected, other] = wrapper.findAll('button')
-    expect(selected!.classes()).toEqual(expect.arrayContaining(['cwa:after:-bottom-[calc(var(--cwa-spacing-cta-inset)+1px)]', 'cwa:after:bg-accent']))
-    expect(selected!.classes()).not.toContain('cwa:after:bottom-0')
-    expect(other!.classes()).not.toContain('cwa:after:bg-accent')
+    const tablist = wrapper.get('[role="tablist"]')
+    const indicators = wrapper.findAll('[data-testid="tab-indicator"]')
+
+    expect(indicators).toHaveLength(1)
+    expect(indicators[0]!.element.parentElement).toBe(tablist.element)
+    expect(tablist.classes()).toEqual(expect.arrayContaining(['cwa:relative', 'cwa:overflow-x-auto']))
+    expect(indicators[0]!.classes()).toEqual(expect.arrayContaining(['cwa:absolute', 'cwa:bottom-0', 'cwa:h-0.5', 'cwa:bg-accent']))
+    for (const button of wrapper.findAll('button')) {
+      expect(button.classes().filter(name => name.startsWith('cwa:after:'))).toEqual([])
+    }
   })
 
   test('has no axe violations', async () => {

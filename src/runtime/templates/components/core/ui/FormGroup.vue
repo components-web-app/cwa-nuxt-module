@@ -7,6 +7,7 @@ import CwaUiAlert from '../../ui/Alert.vue'
 import CheckGlyph from './CheckGlyph.vue'
 import StateGlyph from './StateGlyph.vue'
 import DialogPanel from './DialogPanel.vue'
+import TabIndicator from './TabIndicator.vue'
 import { announceKey, fieldGroupKey, formSurfaceKey, sectionHeadingKey } from './field-keys'
 import { changesText, dialogTabBadge, dialogTabWords, listText } from './dialog-form'
 import type { DialogForm, DialogTab } from './dialog-form'
@@ -283,7 +284,7 @@ defineExpose({ showField, announce })
         v-if="tabs?.length"
         role="tablist"
         aria-label="Sections"
-        class="cwa:flex cwa:h-hit cwa:min-w-0 cwa:items-stretch cwa:overflow-x-auto cwa:[scrollbar-width:none] cwa:max-sm:border-b cwa:max-sm:border-line cwa:sm:flex-1"
+        class="cwa:relative cwa:flex cwa:h-hit cwa:min-w-0 cwa:items-stretch cwa:overflow-x-auto cwa:[scrollbar-width:none] cwa:max-sm:border-b cwa:max-sm:border-line cwa:sm:flex-1"
       >
         <button
           v-for="(item, index) in tabs"
@@ -299,8 +300,8 @@ defineExpose({ showField, announce })
           :data-badge="badges[item.key]?.kind"
           :data-tab="item.key"
           data-testid="form-group-tab"
-          class="cwa:relative cwa:inline-flex cwa:shrink-0 cwa:cursor-pointer cwa:items-center cwa:gap-2 cwa:whitespace-nowrap cwa:px-4 cwa:text-label cwa:outline-1 cwa:outline-transparent cwa:transition-colors cwa:duration-(--cwa-duration-fast) cwa:focus-visible:outline-2 cwa:focus-visible:-outline-offset-2 cwa:focus-visible:outline-accent-fg cwa:after:absolute cwa:after:inset-x-0 cwa:after:bottom-0 cwa:after:h-0.5 cwa:after:content-['']"
-          :class="currentTab === item.key ? 'cwa:text-fg cwa:after:bg-accent' : 'cwa:text-fg-muted cwa:hover:text-fg'"
+          class="cwa:relative cwa:inline-flex cwa:shrink-0 cwa:cursor-pointer cwa:items-center cwa:gap-2 cwa:whitespace-nowrap cwa:px-4 cwa:text-label cwa:outline-1 cwa:outline-transparent cwa:transition-colors cwa:duration-(--cwa-duration-fast) cwa:focus-visible:outline-2 cwa:focus-visible:-outline-offset-2 cwa:focus-visible:outline-accent-fg"
+          :class="currentTab === item.key ? 'cwa:text-fg' : 'cwa:text-fg-muted cwa:hover:text-fg'"
           @click="currentTab = item.key"
           @keydown="onTabKey($event, index)"
         >
@@ -316,6 +317,7 @@ defineExpose({ showField, announce })
             class="cwa:size-2 cwa:rounded-toggle cwa:bg-accent-fg"
           />
         </button>
+        <TabIndicator />
       </div>
       <div
         data-testid="form-group-actions"
