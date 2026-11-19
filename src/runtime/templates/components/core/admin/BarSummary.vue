@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { POPOVER_GAP } from '../ui/popover-gap'
-import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue'
-import { PopoverAnchor, PopoverArrow, PopoverContent, PopoverPortal, PopoverRoot } from 'reka-ui'
+import { computed, onBeforeUnmount, onMounted, ref, useId, useTemplateRef, watch } from 'vue'
+import { PopoverAnchor, PopoverArrow, PopoverClose, PopoverContent, PopoverPortal, PopoverRoot } from 'reka-ui'
+import { infoArrow, infoPanel } from '../ui/field-looks'
+import XMarkIcon from '../../ui/icon/XMarkIcon.vue'
 import Spinner from '../../ui/Spinner.vue'
 import StateGlyph from '../ui/StateGlyph.vue'
 import FieldStatusTitle from '../ui/FieldStatusTitle.vue'
@@ -13,6 +15,7 @@ import { findInlineEditor, registerBarStatus } from '#cwa/admin/inline-editors'
 import { badgeFor, issueShort, issueText } from '#cwa/admin/field-badge'
 import { usePublishState } from '#cwa/admin/publish-state'
 import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/resources/resource-utils'
+import { formatDateTime } from '#cwa/resources/date-time-input'
 import { NEW_RESOURCE_IRI } from '#cwa/storage/stores/resources/state'
 import type { CwaFieldState } from '#cwa/storage/stores/resources/state'
 
@@ -99,30 +102,42 @@ onBeforeUnmount(() => {
 
 const resourceType = computed(() => iri.value ? getResourceTypeFromIri(iri.value) : undefined)
 
-function shortDate(value: string) {
-  return new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(value))
-}
+const hasLive = computed(() => !!(iri.value && $cwa.resources.getResource(iri.value).value?.data?.publishedResource))
 
-const rest = computed<{ glyph: GlyphKind, full: string, short: string }>(() => {
+const rest = computed<{ glyph: GlyphKind, word: string, about: string }>(() => {
   if (iri.value === NEW_RESOURCE_IRI) {
-    return { glyph: 'new', full: 'New · not added yet', short: 'New' }
+    return { glyph: 'new', word: 'New', about: 'This component has not been added yet. Add it to place it on the page.' }
   }
   if (publish.published.value === false) {
     const at = publish.scheduledAt.value
-    return at
-      ? { glyph: 'scheduled', full: `Scheduled · ${shortDate(at)}`, short: 'Scheduled' }
-      : { glyph: 'draft', full: 'Draft · not live', short: 'Draft' }
+    if (at) {
+      const date = formatDateTime(at)
+      return {
+        glyph: 'scheduled',
+        word: 'Scheduled',
+        about: hasLive.value
+          ? `Visitors see the live version until ${date}, when these changes go live. Until then only content administrators see this draft.`
+          : `This is unpublished until ${date}, when it goes live. Until then only content administrators can see it.`,
+      }
+    }
+    return {
+      glyph: 'draft',
+      word: 'Draft',
+      about: hasLive.value
+        ? 'These changes are unpublished, so visitors still see the live version and only content administrators see this draft. Publish it when you are ready for the changes to go live.'
+        : 'This is unpublished, so only content administrators can see it. Publish it when you are ready for it to go live.',
+    }
   }
   if (publish.published.value === true) {
-    return { glyph: 'live', full: 'Live', short: 'Live' }
+    return { glyph: 'live', word: 'Live', about: 'This is published, so visitors can see it. Your changes are saved as a draft, which goes live when you publish it.' }
   }
   if (resourceType.value === CwaResourceTypes.COMPONENT_GROUP) {
-    return { glyph: 'group', full: 'Component group', short: 'Group' }
+    return { glyph: 'group', word: 'Group', about: 'A component group holds the components placed in it. It is not published itself: each of its components is.' }
   }
-  return { glyph: 'saved', full: 'All changes saved', short: 'Saved' }
+  return { glyph: 'saved', word: 'Saved', about: 'All changes are saved. This is not published separately, so visitors see changes as soon as they are saved.' }
 })
 
-const status = computed<{ state: string, glyph?: GlyphKind, full: string, short: string }>(() => {
+const status = computed<{ state: string, glyph?: GlyphKind, full: string, short: string, about?: string }>(() => {
   if (phase.value === 'saving') {
     return { state: 'saving', full: 'Saving…', short: 'Saving…' }
   }
@@ -135,8 +150,11 @@ const status = computed<{ state: string, glyph?: GlyphKind, full: string, short:
   if (phase.value === 'saved') {
     return { state: 'saved', glyph: 'saved', full: 'All changes saved', short: 'Saved' }
   }
-  return { state: 'rest', ...rest.value }
+  const { glyph, word, about } = rest.value
+  return { state: 'rest', glyph, full: word, short: word, about }
 })
+
+const aboutId = useId()
 
 const actionable = computed(() => (!!badge.value.kind || publish.failed.value) && phase.value !== 'saving')
 
@@ -265,12 +283,14 @@ function reset() {
           :kind="status.glyph"
         />
         <span
+          v-if="actionable"
           aria-hidden="true"
           class="cwa:hidden cwa:@min-[64rem]:inline"
         >{{ status.full }}</span>
         <span
           aria-hidden="true"
-          class="cwa:hidden cwa:@min-[40rem]:inline cwa:@min-[64rem]:hidden"
+          class="cwa:hidden cwa:@min-[40rem]:inline"
+          :class="actionable ? 'cwa:@min-[64rem]:hidden' : ''"
         >{{ status.short }}</span>
       </button>
     </PopoverAnchor>
@@ -310,23 +330,46 @@ function reset() {
         align="end"
         :side-offset="POPOVER_GAP"
         :collision-padding="8"
-        aria-label="Status"
+        :aria-label="status.short"
+        :aria-describedby="status.about ? aboutId : undefined"
         data-testid="bar-summary-popover"
-        class="cwa:z-context cwa:w-max cwa:max-w-[min(20rem,calc(100vw-1rem))] cwa:bg-surface-menu cwa:p-popover cwa:text-control cwa:text-fg cwa:shadow-popover cwa:outline-none"
+        :class="['cwa:z-context cwa:w-max cwa:max-w-[min(20rem,calc(100vw-1rem))] cwa:p-popover cwa:text-control cwa:outline-none', infoPanel]"
         @pointer-down-outside="keepForOwnButton"
+        @close-auto-focus="onCloseAutoFocus"
       >
-        <div class="cwa:flex cwa:h-[1cap] cwa:items-center cwa:gap-2">
+        <div
+          class="cwa:flex cwa:h-[1cap] cwa:items-center cwa:gap-2 cwa:font-semibold"
+          :class="status.about ? 'cwa:mb-4' : ''"
+        >
           <StateGlyph
             v-if="status.glyph"
             :kind="status.glyph"
           />
-          <span class="cwa:trim-text">{{ status.full }}</span>
+          <span class="cwa:min-w-0 cwa:flex-1 cwa:trim-text">{{ status.short }}</span>
+          <PopoverClose
+            aria-label="Close"
+            class="cwa:grid cwa:size-6 cwa:shrink-0 cwa:cursor-pointer cwa:place-items-center cwa:text-fg cwa:hover:bg-button"
+          >
+            <XMarkIcon class="cwa:size-3" />
+          </PopoverClose>
         </div>
+        <p
+          v-if="status.about"
+          :id="aboutId"
+          class="cwa:m-0 cwa:trim-text"
+        >
+          {{ status.about }}
+        </p>
         <PopoverArrow
-          :width="12"
-          :height="6"
-          class="cwa:fill-surface-menu"
-        />
+          :width="14"
+          :height="7"
+          :class="infoArrow"
+        >
+          <path
+            d="M0 0L6 6L12 0"
+            vector-effect="non-scaling-stroke"
+          />
+        </PopoverArrow>
       </PopoverContent>
     </PopoverPortal>
   </PopoverRoot>

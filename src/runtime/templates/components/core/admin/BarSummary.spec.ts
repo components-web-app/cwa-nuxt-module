@@ -8,6 +8,8 @@ import { drawsFocusRing } from '../../../../../../test/utils/focus-ring'
 import { announceKey } from '../ui/field-keys'
 import BarSummary from './BarSummary.vue'
 import { openBarStatus, registerInlineEditor } from '#cwa/admin/inline-editors'
+import { formatDateTime } from '#cwa/resources/date-time-input'
+import { NEW_RESOURCE_IRI } from '#cwa/storage/stores/resources/state'
 import type { CwaFieldState } from '#cwa/storage/stores/resources/state'
 
 const iri = ref('/component/c1')
@@ -58,6 +60,7 @@ describe('BarSummary (#459)', () => {
   })
   afterEach(() => {
     vi.useRealTimers()
+    iri.value = '/component/c1'
     requestCount.value = 0
     for (const key of Object.keys(fieldStates)) {
       delete fieldStates[key]
@@ -213,32 +216,68 @@ describe('BarSummary (#459)', () => {
     expect(popover()).toBeNull()
   })
 
+  const DRAFT_ABOUT = 'This is unpublished, so only content administrators can see it. Publish it when you are ready for it to go live.'
+  const LIVE_DRAFT_ABOUT = 'These changes are unpublished, so visitors still see the live version and only content administrators see this draft. Publish it when you are ready for the changes to go live.'
+  const LIVE_ABOUT = 'This is published, so visitors can see it. Your changes are saved as a draft, which goes live when you publish it.'
+
   test.each([
-    ['a draft', () => draft(), 'Draft · not live'],
-    ['a scheduled draft', () => draft('2026-10-01T08:00:00Z'), 'Scheduled ·'],
+    ['a draft', () => draft(), 'Draft', DRAFT_ABOUT],
+    ['a draft of a live component', () => {
+      data.value = { '@id': iri.value, 'publishedResource': '/component/live', '_metadata': { publishable: { published: false } } }
+    }, 'Draft', LIVE_DRAFT_ABOUT],
     ['a live resource', () => {
       data.value = { '@id': iri.value, '_metadata': { publishable: { published: true } } }
-    }, 'Live'],
-  ])('at rest, %s is a button named by its full status, which opens it in a popover for phones that show only the glyph', async (_label, given, text) => {
+    }, 'Live', LIVE_ABOUT],
+    ['a component not added yet', () => {
+      iri.value = NEW_RESOURCE_IRI
+    }, 'New', 'This component has not been added yet. Add it to place it on the page.'],
+    ['a component group', () => {
+      iri.value = '/_/component_groups/g1'
+      data.value = { '@id': iri.value, '_metadata': {} }
+    }, 'Group', 'A component group holds the components placed in it. It is not published itself: each of its components is.'],
+    ['a resource that is not published separately', () => {
+      iri.value = '/_/component_positions/p1'
+      data.value = { '@id': iri.value, '_metadata': {} }
+    }, 'Saved', 'All changes are saved. This is not published separately, so visitors see changes as soon as they are saved.'],
+  ])('at rest, %s shows only its status word, is named by it, and opens a popover explaining it', async (_label, given, word, about) => {
     given()
     const { summary, wrapper } = mountSummary()
 
     expect(summary().element.tagName).toBe('BUTTON')
-    expect(summary().attributes('aria-label')).toContain(`Status: ${text}`)
+    expect(summary().attributes('aria-label')).toBe(`Status: ${word}`)
+    expect(summary().text()).toBe(word)
     expect(summary().attributes('aria-expanded')).toBe('false')
-    expect(document.querySelector('[data-testid="bar-summary-popover"]')).toBeNull()
+    expect(popover()).toBeNull()
 
     await summary().trigger('click')
     await nextTick()
 
-    const popover = document.querySelector<HTMLElement>('[data-testid="bar-summary-popover"]')!
-    expect(popover.textContent).toContain(text)
+    expect(popover()?.getAttribute('aria-label')).toBe(word)
+    expect(popover()?.querySelector('p')?.textContent?.trim()).toBe(about)
+    expect(document.getElementById(popover()!.getAttribute('aria-describedby')!)?.textContent?.trim()).toBe(about)
     expect(summary().attributes('aria-expanded')).toBe('true')
     expect(wrapper.emitted('show')).toBeUndefined()
     expect(document.querySelectorAll('[aria-live]')).toHaveLength(1)
   })
 
-  test('the status opens a popover with its full text, and clicking the status again closes it', async () => {
+  test.each([
+    ['a scheduled draft', () => draft('2026-10-01T08:00:00Z'), (date: string) => `This is unpublished until ${date}, when it goes live. Until then only content administrators can see it.`],
+    ['a scheduled draft of a live component', () => {
+      data.value = { '@id': iri.value, 'publishedAt': '2026-10-01T08:00:00Z', 'publishedResource': '/component/live', '_metadata': { publishable: { published: false } } }
+    }, (date: string) => `Visitors see the live version until ${date}, when these changes go live. Until then only content administrators see this draft.`],
+  ])('%s reads Scheduled and its popover names the date as the date picker shows it', async (_label, given, about) => {
+    given()
+    const { summary } = mountSummary()
+
+    expect(summary().attributes('aria-label')).toBe('Status: Scheduled')
+    expect(summary().text()).toBe('Scheduled')
+    await summary().trigger('click')
+    await nextTick()
+
+    expect(popover()?.querySelector('p')?.textContent?.trim()).toBe(about(formatDateTime('2026-10-01T08:00:00Z')))
+  })
+
+  test('the explanation is the info panel, and clicking the status again closes it', async () => {
     draft()
     const { summary } = mountSummary()
     const press = async () => {
@@ -249,7 +288,8 @@ describe('BarSummary (#459)', () => {
     }
 
     await press()
-    expect(popover()?.textContent?.trim()).toBe('Draft · not live')
+    expect(popover()?.classList).toContain('cwa:bg-surface-menu')
+    expect(popover()?.classList).toContain('cwa:ring-line')
     expect(summary().attributes('aria-expanded')).toBe('true')
     await vi.advanceTimersByTimeAsync(0)
 
@@ -258,12 +298,25 @@ describe('BarSummary (#459)', () => {
     expect(summary().attributes('aria-expanded')).toBe('false')
   })
 
-  test('the full status of a scheduled draft names its date', async () => {
-    draft('2026-10-01T08:00:00Z')
+  test('from the keyboard, Enter opens the explanation, and Escape or its Close closes it with focus back on the status', async () => {
+    draft()
     const { summary } = mountSummary()
+    summary().element.focus()
 
-    const date = new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date('2026-10-01T08:00:00Z'))
-    expect(summary().attributes('aria-label')).toBe(`Status: Scheduled · ${date}`)
+    await summary().trigger('click')
+    await flushPromises()
+    expect(popover()).not.toBeNull()
+    document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    await flushPromises()
+    expect(popover()).toBeNull()
+    expect(document.activeElement).toBe(summary().element)
+
+    await summary().trigger('click')
+    await flushPromises()
+    popover()!.querySelector<HTMLElement>('[aria-label="Close"]')!.click()
+    await flushPromises()
+    expect(popover()).toBeNull()
+    expect(document.activeElement).toBe(summary().element)
   })
 
   test('saving shows a spinner, announces "Saving…" only after a second, then holds over a short gap and says all changes saved', async () => {
@@ -347,6 +400,17 @@ describe('BarSummary (#459)', () => {
 
     vi.useRealTimers()
     expect(await axe(wrapper.element.parentElement as HTMLElement)).toHaveNoViolations()
+  })
+
+  test('has no axe violations with the explanation open', async () => {
+    draft()
+    const { summary } = mountSummary()
+    await summary().trigger('click')
+    await flushPromises()
+    expect(popover()).not.toBeNull()
+
+    vi.useRealTimers()
+    expect(await axe(document.body)).toHaveNoViolations()
   })
 
   test('the status draws its focus ring when focused from the keyboard', () => {
