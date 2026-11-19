@@ -608,6 +608,13 @@
   }
 }
 
+@keyframes cwa-sheet-in {
+  from {
+    opacity: 0.4;
+    translate: 0 1.5rem;
+  }
+}
+
 @keyframes cwa-sub-view-in {
   from {
     opacity: 0;

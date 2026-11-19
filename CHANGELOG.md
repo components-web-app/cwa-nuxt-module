@@ -7,6 +7,7 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 ### Added
 
 - Enable reordering in the Order tab now does what it says: every component in the group gets a grip handle and wobbles gently (it keeps still when the system asks for reduced motion), and dragging a handle, with a mouse or a finger, moves the component to a new place; the page shows the new order at once and saves it in one request, as Move up and Move down do. A click elsewhere still selects ([d3d8829f](https://github.com/components-web-app/cwa-nuxt-module/commit/d3d8829f7b93181b06586d76704f0d834e23cd27)).
+- On a phone, the admin's selects, multi-selects, resource searches and menus (the split button's ⋮, the clone placement menu) open as a bottom sheet with larger rows, a scrim and Done or Close; a searchable sheet stays above the on-screen keyboard ([8ab9d7e6](https://github.com/components-web-app/cwa-nuxt-module/commit/8ab9d7e6cbb3635b6eb43181ae30b9875fdb372d), [#461](https://github.com/components-web-app/cwa-nuxt-module/issues/461)).
 
 ### Fixed
 

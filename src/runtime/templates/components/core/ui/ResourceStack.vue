@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { computed, getCurrentInstance, h, nextTick, onBeforeUnmount, onMounted, ref, useId, useTemplateRef, watch } from 'vue'
+import { computed, h, nextTick, onBeforeUnmount, onMounted, ref, useId, useTemplateRef, watch } from 'vue'
 import type { VNode } from 'vue'
 import { createReusableTemplate } from '@vueuse/core'
-import { DialogContent, DialogOverlay, DialogPortal, DialogRoot, DialogTitle, PopoverAnchor, PopoverContent, PopoverPortal, PopoverRoot } from 'reka-ui'
+import { PopoverAnchor, PopoverContent, PopoverPortal, PopoverRoot } from 'reka-ui'
+import BottomSheet from './BottomSheet.vue'
 import { placeResourceStack } from './resource-stack'
 import type { ResourceStackLevel, StackPoint } from './resource-stack'
 import { useAnnounce } from './field-context'
+import { opensAsSheet } from './sheet-media'
 
 const { levels, selected, at, label = 'Select a resource', limit = 5, select, minWidth, avoid, returnTo, keyboard = false } = defineProps<{
   levels: ResourceStackLevel[]
@@ -24,9 +26,7 @@ const emit = defineEmits<{ close: [] }>()
 
 const announce = useAnnounce()
 const [DefineBody, ReuseBody] = createReusableTemplate()
-const sheet = typeof window !== 'undefined' && !!window.matchMedia?.('(max-width: 639.98px)').matches
-const app = getCurrentInstance()?.appContext.app as { _container?: unknown } | undefined
-let behind: HTMLElement | undefined
+const sheet = opensAsSheet()
 
 const id = useId()
 const open = ref(true)
@@ -96,14 +96,6 @@ function reducedMotion(panel: HTMLElement) {
   return typeof panel.animate !== 'function' || !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
 }
 
-function slideUp(panel: HTMLElement) {
-  if (reducedMotion(panel)) {
-    return
-  }
-  panel.animate([{ transform: 'translateY(1.5rem)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 200, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' })
-  document.querySelector<HTMLElement>('[data-testid="resource-stack-scrim"]')?.animate?.([{ opacity: 0 }, { opacity: 1 }], { duration: 200 })
-}
-
 async function standsPlaced(panel: HTMLElement) {
   for (let frame = 0; frame < 10; frame++) {
     const { left, top, width } = panel.getBoundingClientRect()
@@ -129,15 +121,8 @@ const stopPlacing = watch(tree, async (element) => {
   stopPlacing()
   await nextTick()
   if (sheet) {
-    const container = app?._container
-    if (open.value && container instanceof HTMLElement && !container.hasAttribute('inert')) {
-      behind = container
-      container.setAttribute('inert', '')
-    }
     position.value = { left: 0, top: 0 }
     element.focus({ preventScroll: true })
-    const panel = content.value?.$el as HTMLElement | undefined
-    panel && slideUp(panel)
     return
   }
   const placed = place()
@@ -154,11 +139,9 @@ function close(refocus: boolean) {
     return
   }
   open.value = false
-  behind?.removeAttribute('inert')
   emit('close')
   const target = returnTo ?? opener
-  const refocusTarget = () => refocus && target?.isConnected && target.focus({ preventScroll: true })
-  sheet ? nextTick(refocusTarget) : refocusTarget()
+  !sheet && refocus && target?.isConnected && target.focus({ preventScroll: true })
 }
 
 async function choose(index: number) {
@@ -321,7 +304,6 @@ onMounted(() => {
   window.addEventListener('resize', onResize)
 })
 onBeforeUnmount(() => {
-  behind?.removeAttribute('inert')
   window.removeEventListener('scroll', onScroll, true)
   window.removeEventListener('resize', onResize)
 })
@@ -365,7 +347,7 @@ function box(index: number): VNode {
 const StackTree = () => shown.value ? box(shown.value - 1) : null
 
 function dialogId() {
-  const panel = content.value?.$el as HTMLElement | undefined
+  const panel = sheet ? document.querySelector<HTMLElement>('[data-testid="resource-stack"]') : content.value?.$el as HTMLElement | undefined
   return panel?.matches?.('[role="dialog"]') ? panel.id : panel?.querySelector?.('[role="dialog"]')?.id
 }
 
@@ -414,46 +396,20 @@ defineExpose({ close, contentId: computed(() => position.value && dialogId()) })
       class="cwa:sr-only"
     >{{ announcement }}</span>
   </DefineBody>
-  <DialogRoot
+  <BottomSheet
     v-if="sheet"
     :open="open"
+    :label="label"
+    :return-to="returnTo ?? opener"
+    test-id="resource-stack"
     @update:open="onOpenChange"
+    @pointer-down-outside="onPointerDownOutside"
+    @escape-key-down="onEscape"
   >
-    <DialogPortal>
-      <DialogOverlay
-        data-testid="resource-stack-scrim"
-        class="cwa:fixed cwa:inset-0 cwa:z-context cwa:bg-black/40"
-      />
-      <DialogContent
-        ref="content"
-        aria-modal="true"
-        :aria-describedby="undefined"
-        data-testid="resource-stack"
-        class="cwa:fixed cwa:inset-x-0 cwa:bottom-0 cwa:z-context cwa:flex cwa:max-h-[70vh] cwa:flex-col cwa:bg-surface-menu cwa:pb-[env(safe-area-inset-bottom)] cwa:text-fg cwa:shadow-popover cwa:outline-1 cwa:outline-transparent"
-        @open-auto-focus.prevent
-        @close-auto-focus.prevent
-        @pointer-down-outside="onPointerDownOutside"
-        @escape-key-down="onEscape"
-      >
-        <div class="cwa:flex cwa:min-h-11 cwa:shrink-0 cwa:items-center cwa:justify-between cwa:gap-2 cwa:pl-4 cwa:shadow-[inset_0_-1px_0_var(--cwa-color-line)]">
-          <DialogTitle class="cwa:text-label cwa:font-semibold cwa:text-fg">
-            {{ label }}
-          </DialogTitle>
-          <button
-            type="button"
-            data-testid="resource-stack-close"
-            class="cwa:min-h-11 cwa:cursor-pointer cwa:px-4 cwa:text-label cwa:text-fg cwa:outline-1 cwa:outline-transparent cwa:hover:bg-field-hover cwa:focus-visible:outline-2 cwa:focus-visible:-outline-offset-2 cwa:focus-visible:outline-accent-fg"
-            @click="close(true)"
-          >
-            Close
-          </button>
-        </div>
-        <div class="cwa:min-h-0 cwa:overflow-y-auto cwa:p-2">
-          <ReuseBody />
-        </div>
-      </DialogContent>
-    </DialogPortal>
-  </DialogRoot>
+    <div class="cwa:p-2">
+      <ReuseBody />
+    </div>
+  </BottomSheet>
   <PopoverRoot
     v-else
     :open="open"

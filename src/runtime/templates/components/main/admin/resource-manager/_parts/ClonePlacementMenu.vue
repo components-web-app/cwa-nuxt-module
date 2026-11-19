@@ -9,9 +9,14 @@
     data-testid="clone-menu"
     @focus-outside="preventFocusOutside"
   >
-    <template #header>
-      <div class="cwa:border-b cwa:border-line cwa:px-3 cwa:pt-2 cwa:pb-2">
+    <template #header="{ sheet }">
+      <div
+        v-if="!sheet || notes.length"
+        class="cwa:border-b cwa:border-line cwa:pt-2 cwa:pb-2"
+        :class="sheet ? 'cwa:px-4' : 'cwa:px-3'"
+      >
         <p
+          v-if="!sheet"
           data-testid="clone-menu-title"
           class="cwa:m-0 cwa:text-label cwa:text-fg"
         >
@@ -20,7 +25,8 @@
         <p
           v-if="notes.length"
           data-testid="clone-notes"
-          class="cwa:m-0 cwa:mt-0.5 cwa:text-helper cwa:text-fg-muted"
+          class="cwa:m-0 cwa:text-helper cwa:text-fg-muted"
+          :class="{ 'cwa:mt-0.5': !sheet }"
         >
           <template
             v-for="(note, index) of notes"

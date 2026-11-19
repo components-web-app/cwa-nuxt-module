@@ -558,6 +558,9 @@
 .cwa\:h-0\.5 {
   height: calc(var(--cwa-spacing) * 0.5);
 }
+.cwa\:h-1 {
+  height: var(--cwa-spacing);
+}
 .cwa\:h-1\/2 {
   height: calc(1 / 2 * 100%);
 }
@@ -605,6 +608,9 @@
 }
 .cwa\:h-\[3\.75rem\] {
   height: 3.75rem;
+}
+.cwa\:h-\[60vh\] {
+  height: 60vh;
 }
 .cwa\:h-auto {
   height: auto;
@@ -788,6 +794,9 @@
 }
 .cwa\:w-full {
   width: 100%;
+}
+.cwa\:w-hit {
+  width: var(--cwa-spacing-hit);
 }
 .cwa\:w-max {
   width: max-content;
@@ -2512,6 +2521,9 @@
 .cwa\:focus-visible\:z-1:focus-visible {
   z-index: 1;
 }
+.cwa\:focus-visible\:bg-menu-highlight:focus-visible {
+  background-color: var(--cwa-color-menu-highlight);
+}
 .cwa\:focus-visible\:bg-step-hover:focus-visible {
   background-color: var(--cwa-color-step-hover);
 }
@@ -2520,6 +2532,10 @@
 }
 .cwa\:focus-visible\:text-fg:focus-visible {
   color: var(--cwa-color-fg);
+}
+.cwa\:focus-visible\:shadow-\[inset_2px_0_0_var\(--cwa-color-accent-fg\)\]:focus-visible {
+  --tw-shadow: inset 2px 0 0 var(--tw-shadow-color, var(--cwa-color-accent-fg));
+  box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
 }
 .cwa\:focus-visible\:outline-2:focus-visible {
   outline-style: var(--tw-outline-style);
@@ -2577,6 +2593,9 @@
 }
 .cwa\:has-\[\[data-step\]\:hover\]\:bg-field-warning:has(:is([data-step]:hover)) {
   background-color: var(--cwa-color-field-warning);
+}
+.cwa\:aria-disabled\:cursor-not-allowed[aria-disabled="true"] {
+  cursor: not-allowed;
 }
 .cwa\:aria-expanded\:bg-accent-open[aria-expanded="true"] {
   background-color: var(--cwa-color-accent-open);
@@ -2723,6 +2742,12 @@
   }
   .cwa\:motion-safe\:animate-\[cwa-line-in_150ms_ease-out\] {
     animation: cwa-line-in 150ms ease-out;
+  }
+  .cwa\:motion-safe\:animate-\[cwa-line-in_var\(--cwa-duration-base\)_ease-out\] {
+    animation: cwa-line-in var(--cwa-duration-base) ease-out;
+  }
+  .cwa\:motion-safe\:animate-\[cwa-sheet-in_var\(--cwa-duration-base\)_cubic-bezier\(0\.2\,0\.8\,0\.2\,1\)\] {
+    animation: cwa-sheet-in var(--cwa-duration-base) cubic-bezier(0.2,0.8,0.2,1);
   }
   .cwa\:motion-safe\:animate-\[cwa-sub-view-back_var\(--cwa-duration-base\)_ease\] {
     animation: cwa-sub-view-back var(--cwa-duration-base) ease;
@@ -3559,6 +3584,12 @@
 @keyframes cwa-slide-over-in {
   from {
     transform: translateX(100%);
+  }
+}
+@keyframes cwa-sheet-in {
+  from {
+    opacity: 0.4;
+    translate: 0 1.5rem;
   }
 }
 @keyframes cwa-sub-view-in {
