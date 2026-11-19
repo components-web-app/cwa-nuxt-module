@@ -124,7 +124,7 @@ describe('CwaUiInlineEdit (#461)', () => {
     expect(document.activeElement).toBe(shown(wrapper).element)
   })
 
-  test('Escape puts back the value editing started with, and stops there so it never deselects the component', async () => {
+  test('Escape stops editing and keeps what was typed, and stops there so it never deselects the component', async () => {
     const { wrapper, model } = mountEdit()
     const outer = vi.fn()
     document.addEventListener('keydown', outer)
@@ -134,13 +134,13 @@ describe('CwaUiInlineEdit (#461)', () => {
     await input.trigger('keydown', { key: 'Escape' })
     await flushPromises()
 
-    expect(model.model.value).toBe('How we build a kitchen')
+    expect(model.model.value).toBe('Something else')
     expect(wrapper.find('input').exists()).toBe(false)
     expect(outer).not.toHaveBeenCalled()
     document.removeEventListener('keydown', outer)
   })
 
-  test('while its save has failed the editor is invalid, says Escape leads to Retry and Reset, and Escape reverts and opens the bar status on Retry', async () => {
+  test('while its save has failed the editor is invalid, says Escape leads to Retry and Reset, and Escape keeps what was typed and opens the bar status on Retry', async () => {
     const { wrapper, model, state } = mountEdit('How we build a kitchen', {}, 'error')
     const open = vi.fn(() => true)
     const unregister = registerBarStatus(cwa, { open })
@@ -155,7 +155,7 @@ describe('CwaUiInlineEdit (#461)', () => {
     await input.trigger('keydown', { key: 'Escape' })
     await flushPromises()
 
-    expect(model.model.value).toBe('How we build a kitchen')
+    expect(model.model.value).toBe('Something else')
     expect(open).toHaveBeenCalledExactlyOnceWith('title')
     expect(document.activeElement).not.toBe(shown(wrapper).element)
 
@@ -264,7 +264,7 @@ describe('CwaUiInlineEdit (#461)', () => {
     expect(focusin).toHaveBeenCalled()
   })
 
-  test('the bar\'s Edit on page finds it, opens it with the caret at the end, and Escape goes back to the button with the value it opened with put back', async () => {
+  test('the bar\'s Edit on page finds it, opens it with the caret at the end, and Escape goes back to the button keeping what was typed', async () => {
     const { wrapper, model } = mountEdit()
     const caret = vi.spyOn(HTMLInputElement.prototype, 'setSelectionRange')
     const button = document.createElement('button')
@@ -282,7 +282,7 @@ describe('CwaUiInlineEdit (#461)', () => {
     input.element.dispatchEvent(new FocusEvent('blur'))
     await nextTick()
     expect(document.activeElement).toBe(button)
-    expect(model.model.value).toBe('How we build a kitchen')
+    expect(model.model.value).toBe('Typed then abandoned')
     caret.mockRestore()
   })
 

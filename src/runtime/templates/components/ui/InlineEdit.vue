@@ -25,7 +25,6 @@ const root = useTemplateRef<HTMLElement>('root')
 const valueEl = useTemplateRef<HTMLElement>('valueEl')
 const input = useTemplateRef<HTMLInputElement>('input')
 const editing = ref(false)
-let started: string | null = null
 
 const text = computed(() => value.value ?? '')
 const remoteChange = computed(() => props.model.remoteChange.value)
@@ -39,7 +38,6 @@ async function start() {
     input.value?.focus()
     return
   }
-  started = value.value ?? null
   editing.value = true
   await nextTick()
   const el = input.value
@@ -63,12 +61,6 @@ function onInput(event: Event) {
   value.value = next === '' ? null : next
 }
 
-function revert() {
-  if ((value.value ?? null) !== started) {
-    value.value = started
-  }
-}
-
 function commit(refocus: boolean) {
   if (!editing.value) {
     return
@@ -86,7 +78,6 @@ function onKeydown(event: KeyboardEvent) {
   else if (event.key === 'Escape') {
     actedOnEscape = true
     const toBar = failed.value
-    revert()
     finish(false).then(() => {
       const field = props.model.editorKey?.field
       if (toBar && field && openBarStatus($cwa, field)) {
