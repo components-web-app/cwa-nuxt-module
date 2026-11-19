@@ -148,8 +148,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, inject, nextTick, onBeforeUnmount, ref, useTemplateRef, watch, watchEffect } from 'vue'
-import slugify from 'slugify'
+import { computed, inject, nextTick, onBeforeUnmount, ref, useTemplateRef, watch } from 'vue'
 import type { CwaResource } from '#cwa/resources/resource-utils'
 import { useItemPage } from '#cwa-layer/_composables/useItemPage'
 import { normaliseRoutePath, routePathProblem } from '#cwa/resources/route-path'
@@ -169,6 +168,7 @@ import { dialogSubViewKey } from '#cwa/templates/components/core/ui/field-keys'
 import type { DialogSubFooter } from '#cwa/templates/components/core/ui/field-keys'
 import { useCwaConfirm } from '#cwa/composables/cwa-confirm'
 import { useCwaResourceRoute } from '#cwa/composables/useCwaResourceRoute'
+import { pathOfRouteIri, useRouteDefaults } from '#cwa/templates/components/core/admin/route-defaults'
 import { CwaResourceApiStatuses } from '#cwa/storage/stores/resources/state'
 
 const OLD_ADDRESS = /^\//
@@ -200,32 +200,7 @@ const view = useTemplateRef<InstanceType<typeof RoutesTabView>>('view')
 const subBody = useTemplateRef<HTMLElement>('subBody')
 const failureAlert = useTemplateRef<InstanceType<typeof CwaUiAlert>>('failureAlert')
 
-const parentIri = computed(() => props.pageResource.parentPage || props.pageResource.parentPageData)
-const parentResource = computed(() => parentIri.value ? $cwa.resources.getResource(parentIri.value).value : null)
-const parentName = computed(() => parentResource.value?.data?.reference || parentResource.value?.data?.title || undefined)
-
-watchEffect(() => {
-  const iri = parentIri.value
-  if (iri && !parentResource.value?.data) {
-    $cwa.fetchResource({ path: iri, shallowFetch: true })
-  }
-})
-
-function pathOfRouteIri(iri?: string | null) {
-  return iri ? iri.replace(/^.*\/_\/routes\//, '') : undefined
-}
-
-const parentRoutePrefix = computed(() => pathOfRouteIri(parentResource.value?.data?.route) ?? null)
-const parentHasNoRoute = computed(() => !!parentIri.value && !parentRoutePrefix.value)
-
-const recommendedPath = computed(() => {
-  const title = props.pageResource.title
-  if (!title) {
-    return undefined
-  }
-  const suffix = '/' + slugify(title.toLowerCase(), { strict: true })
-  return parentRoutePrefix.value && parentRoutePrefix.value !== '/' ? parentRoutePrefix.value + suffix : suffix
-})
+const { parentIri, parentName, parentRoutePrefix, parentHasNoRoute, recommendedPath } = useRouteDefaults(() => props.pageResource)
 
 const redirectIri = computed<string | undefined>(() => {
   const r = resource.value?.redirect

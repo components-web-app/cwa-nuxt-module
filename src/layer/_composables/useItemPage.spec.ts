@@ -656,6 +656,18 @@ describe('useItemPage creating (#461)', () => {
     expect(emit).not.toHaveBeenCalledWith('close')
   })
 
+  test('a create sending its route puts the route\'s refused path on the route field (api-components-bundle#595)', async () => {
+    const { itemPage, refuseWith } = setupAdding(() => ({ isTemplate: false }), { dismissStoredErrors: true })
+    await flushPromises()
+    itemPage.localResourceData.value!.route = { path: '/taken' }
+    refuseWith(422, { violations: [{ propertyPath: 'route.path', message: 'This path is already in use.' }] })
+
+    expect(await itemPage.saveResource()).toBeUndefined()
+
+    expect(itemPage.form.fieldErrors).toEqual({ route: 'This path is already in use.' })
+    expect(itemPage.form.formError).toBeUndefined()
+  })
+
   test('a create the server could not save says so in the form, and keeps its stored error for a page that shows the store\'s errors', async () => {
     const { itemPage, refuseWith, errors, removeError } = setupAdding(() => ({}))
     await flushPromises()

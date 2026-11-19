@@ -200,8 +200,21 @@
       </template>
     </template>
     <template #routes>
+      <RoutesTabManage
+        v-if="isAdding && !missing"
+        v-model="newRoutePath"
+        v-model:live-at="newRouteLiveAt"
+        v-model:awaiting-date="newRouteAwaitingDate"
+        current-path=""
+        :parent-route-prefix="newRouteDefaults.parentRoutePrefix.value"
+        :recommended-path="newRouteDefaults.recommendedPath.value"
+        :recommended-from="localResourceData?.title || undefined"
+        :path-error="form.fieldErrors.route"
+        :noun="createNoun"
+        optional
+      />
       <RoutesTab
-        v-if="resource && resource.hasOwnProperty('@id')"
+        v-else-if="resource && resource.hasOwnProperty('@id')"
         :page-resource="resource as CwaResource"
         @reload="loadResource"
         @open-page="openPage"
@@ -285,6 +298,8 @@ import CwaUiButton from '#cwa/templates/components/ui/Button.vue'
 import CwaUiAlert from '#cwa/templates/components/ui/Alert.vue'
 import EyeGlyph from '#cwa/templates/components/ui/icon/EyeIcon.vue'
 import RoutesTab from '#cwa/templates/components/core/admin/RoutesTab.vue'
+import RoutesTabManage from '#cwa/templates/components/core/admin/RoutesTabManage.vue'
+import { useRouteDefaults } from '#cwa/templates/components/core/admin/route-defaults'
 import PagePurgeCache from '#cwa/templates/components/core/admin/PagePurgeCache.vue'
 import type { MenuEntry } from '#cwa/templates/components/core/ui/menu-entries'
 import type { DialogTab } from '#cwa/templates/components/core/ui/dialog-form'
@@ -440,6 +455,10 @@ const linkDefaults = Object.fromEntries(
     .flatMap(([queryKey, field]) => typeof route.query[queryKey] === 'string' ? [[field, route.query[queryKey]]] : []),
 )
 
+const newRoutePath = ref('')
+const newRouteLiveAt = ref<string | null | undefined>()
+const newRouteAwaitingDate = ref(false)
+
 const { isAdding, isLoading, loadFailed, isUpdating, localResourceData, resource, formatDate, deleteResource, saveResource: _saveResource, loadResource, getInternalResourceLink, form } = useItemPage({
   createEndpoint,
   emit,
@@ -451,7 +470,23 @@ const { isAdding, isLoading, loadFailed, isUpdating, localResourceData, resource
   routeHashAfterAdd: computed(() => (localResourceData.value?.isTemplate ? '#details' : '#routes')),
   excludeFields: ['componentGroups'],
   dismissStoredErrors: true,
+  validate: data => data.route && newRouteAwaitingDate.value ? { route: 'Choose when the route goes live.' } : {},
   savedTitle: () => `${createNoun.value.charAt(0).toUpperCase()}${createNoun.value.slice(1)} saved`,
+})
+
+const newRouteDefaults = useRouteDefaults(() => localResourceData.value)
+
+watch([newRoutePath, newRouteLiveAt], ([path, liveAt]) => {
+  const local = localResourceData.value
+  if (!local || !isAdding.value) {
+    return
+  }
+  if (path) {
+    local.route = { path, ...(liveAt !== undefined && { liveAt }) }
+  }
+  else {
+    delete local.route
+  }
 })
 
 const createNoun = computed(() => isDisplayingPage.value ? 'page' : pageDataNoun(props.resourceType))
@@ -742,7 +777,7 @@ const tabs = computed<DialogTab[]>(() => {
   if (isAdding.value) {
     return [
       { label: 'Details', key: 'details', fields: detailsFields.value },
-      { label: 'Routes', key: 'routes', disabled: `Routes open once the ${createNoun.value} is created. Create the ${createNoun.value} and this tab lets you add its address.` },
+      missing.value ? { label: 'Routes', key: 'routes', disabled: `${missing.value.title}.` } : { label: 'Routes', key: 'routes', fields: { route: 'Route path' } },
     ]
   }
   return [
