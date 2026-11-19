@@ -10,6 +10,7 @@ import FieldStatusTitle from '../ui/FieldStatusTitle.vue'
 import FieldStatusError from '../ui/FieldStatusError.vue'
 import type { GlyphKind } from '../ui/StateGlyph.vue'
 import { useAnnounce } from '../ui/field-context'
+import { useStatusPopover } from '../ui/status-popovers'
 import { useCwa } from '#cwa/composables/cwa'
 import { findInlineEditor, registerBarStatus } from '#cwa/admin/inline-editors'
 import { badgeFor, issueShort, issueText } from '#cwa/admin/field-badge'
@@ -225,6 +226,13 @@ function onOpenChange(next: boolean) {
   }
 }
 
+const isOpen = computed(() => !!shownError.value || (open.value && !actionable.value))
+const stack = useStatusPopover(() => onOpenChange(false))
+
+watch(isOpen, (opened) => {
+  opened ? stack.claim() : stack.release()
+})
+
 function keepForOwnButton(event: CustomEvent<{ originalEvent: PointerEvent }>) {
   const target = event.detail.originalEvent.target
   target instanceof Node && button.value?.contains(target) && event.preventDefault()
@@ -258,7 +266,7 @@ function reset() {
 
 <template>
   <PopoverRoot
-    :open="!!shownError || (open && !actionable)"
+    :open="isOpen"
     @update:open="onOpenChange"
   >
     <PopoverAnchor as-child>

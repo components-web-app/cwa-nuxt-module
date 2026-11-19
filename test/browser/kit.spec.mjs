@@ -474,6 +474,58 @@ for (const width of widths) {
   }
 }
 
+test('kit: only one field status popover shows at a time, and Close or Escape keeps it closed while the pointer and focus stay (#461)', async ({ page }) => {
+  await page.clock.install()
+  await openKit(page, 1280)
+  const popovers = page.getByTestId('field-status-popover')
+  const error = page.getByTestId('kit-input-error').locator('input')
+  const conflict = page.getByTestId('kit-input-conflict').locator('input')
+  const labels = () => popovers.evaluateAll(each => each.map(popover => popover.getAttribute('aria-label')))
+  const HOVER_DELAY_PASSED = 700
+
+  await error.scrollIntoViewIfNeeded()
+  await error.hover()
+  await expect(popovers).toHaveAttribute('aria-label', 'error: not saved')
+  await conflict.hover()
+  await expect(popovers).toHaveAttribute('aria-label', 'conflict: changed by Alex')
+  expect(await labels()).toEqual(['conflict: changed by Alex'])
+
+  await conflict.click()
+  await error.hover()
+  await expect(popovers).toHaveAttribute('aria-label', 'error: not saved')
+  expect(await labels()).toEqual(['error: not saved'])
+  await page.mouse.move(2, 450)
+  await expect(popovers).toHaveAttribute('aria-label', 'conflict: changed by Alex')
+
+  await popovers.getByRole('button', { name: 'Close' }).click()
+  await expect(popovers).toHaveCount(0)
+  await expect(conflict).toBeFocused()
+  await conflict.hover()
+  await page.clock.runFor(HOVER_DELAY_PASSED)
+  await expect(popovers).toHaveCount(0)
+
+  await page.mouse.move(2, 450)
+  await error.click()
+  await expect(popovers).toHaveAttribute('aria-label', 'error: not saved')
+  await page.keyboard.press('Escape')
+  await expect(popovers).toHaveCount(0)
+  await page.clock.runFor(HOVER_DELAY_PASSED)
+  await expect(popovers).toHaveCount(0)
+  await expect(error).toBeFocused()
+
+  await page.mouse.move(2, 450)
+  await page.locator('body').evaluate(() => document.activeElement?.blur())
+  await conflict.hover()
+  await expect(popovers).toHaveAttribute('aria-label', 'conflict: changed by Alex')
+  await popovers.getByRole('button', { name: 'Close' }).click()
+  await expect(popovers).toHaveCount(0)
+  await page.clock.runFor(HOVER_DELAY_PASSED)
+  await expect(popovers).toHaveCount(0)
+  await expect(page.locator('body')).toBeFocused()
+  await conflict.hover()
+  await expect(popovers).toHaveAttribute('aria-label', 'conflict: changed by Alex')
+})
+
 test('kit: a field\'s focus ring fades in from transparent, never from white (#461)', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'dark' })
   await page.setViewportSize({ width: 1280, height: 900 })
