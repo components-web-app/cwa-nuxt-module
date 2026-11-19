@@ -125,7 +125,7 @@ function clickPoint(e: MouseEvent, link?: HTMLAnchorElement) {
   return { x: box.left, y: box.bottom }
 }
 
-function clickHandler(e: MouseEvent, type: 'page' | 'layout') {
+async function clickHandler(e: MouseEvent, type: 'page' | 'layout') {
   const link = clickedLink(e)
   link && e.preventDefault()
   // attempt to prevent selecting when dragging mouse over different resources which will not trigger a click on either
@@ -148,7 +148,10 @@ function clickHandler(e: MouseEvent, type: 'page' | 'layout') {
     cloneTarget.value = target
     return
   }
-  link && (linkTarget.value = { ...target, link })
+  if (!link || (stack.length && !await stackManager.switchScope(type))) {
+    return
+  }
+  linkTarget.value = { ...target, link }
 }
 
 function completeStack(e: MouseEvent, type: undefined | 'page' | 'layout', isContext: boolean = false) {

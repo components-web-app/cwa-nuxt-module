@@ -83,6 +83,7 @@ function linkMenu(page) {
 
 async function editLayoutLink(page, name) {
   await layoutLink(page, name).click()
+  await dialogWith(page, 'Edit the shared layout?').getByRole('button', { name: 'Edit layout', exact: true }).click()
   await linkMenu(page).getByTestId('link-menu-edit').click()
 }
 
@@ -239,8 +240,8 @@ test('4. every on-screen instance of the source is highlighted, on each page', a
   await assertEveryInstanceHighlighted(page, 'On the second page')
 })
 
-test('5. Escape and Cancel end clone mode and clear the highlight, and a link clicked then opens the link menu without navigating or asking', async ({ cwa: t }) => {
-  const { page, base } = t
+test('5. Escape and Cancel end clone mode and clear the highlight, and a layout link clicked then asks to edit the layout before any menu, without navigating', async ({ cwa: t }) => {
+  const { page, base, settle } = t
   await openEditMode(t)
   for (const end of ['Escape', 'Cancel']) {
     await startClone(page)
@@ -253,11 +254,14 @@ test('5. Escape and Cancel end clone mode and clear the highlight, and a link cl
     await assertCloneModeEnded(page, `${end} did not end clone mode`)
     await eventually(async () => (await visibleHighlights(page)).length === 0, `${end} left a highlight`)
     await layoutLink(page, 'Second').click()
-    await linkMenu(page).getByTestId('link-menu-edit').waitFor()
+    const confirm = dialogWith(page, 'Edit the shared layout?')
+    await confirm.getByRole('button', { name: 'Cancel', exact: true }).waitFor()
     assert(page.url() === `${base}${t.seed.paths.home}`, `${end} left the link navigating: at ${page.url()}`)
-    assert(!(await dialogWith(page, 'Edit the shared layout?').count()), `After ${end} the link asked to edit the layout before Edit was chosen`)
-    await page.keyboard.press('Escape')
-    await eventually(async () => (await linkMenu(page).count()) === 0, 'Escape did not close the link menu')
+    assert(!(await linkMenu(page).count()), `After ${end} the link menu opened before the scope was confirmed`)
+    await confirm.getByRole('button', { name: 'Cancel', exact: true }).click()
+    await waitForNoDialog(page, 'Cancel did not close the confirm')
+    await settle()
+    assert(!(await linkMenu(page).count()), 'Cancel on the scope confirm opened the link menu')
   }
 })
 
@@ -533,7 +537,6 @@ test('26. moving a layout component into the page warns that it will leave every
   const { page } = t
   await openEditMode(t)
   await editLayoutLink(page, 'Second')
-  await dialogWith(page, 'Edit the shared layout?').getByRole('button', { name: 'Edit layout', exact: true }).click()
   await page.getByTestId('component-menu').waitFor()
   await page.getByTestId('component-menu').getByTestId('button-options').click()
   await page.getByTestId('component-menu-move').click()
@@ -629,7 +632,6 @@ test('31. switching scope in clone mode asks "Edit the page?" or "Edit the share
   const { page } = t
   await openEditMode(t)
   await editLayoutLink(page, 'Second')
-  await dialogWith(page, 'Edit the shared layout?').getByRole('button', { name: 'Edit layout', exact: true }).click()
   await page.getByTestId('component-menu').waitFor()
   await page.getByTestId('component-menu').getByTestId('button-options').click()
   await page.getByTestId('component-menu-clone').click()
@@ -831,7 +833,6 @@ test('21. cloning a layout component within the layout still says it appears on 
   const { page } = t
   await openEditMode(t)
   await editLayoutLink(page, 'Second')
-  await dialogWith(page, 'Edit the shared layout?').getByRole('button', { name: 'Edit layout', exact: true }).click()
   await page.getByTestId('component-menu').waitFor()
   await page.getByTestId('component-menu').getByTestId('button-options').click()
   await page.getByTestId('component-menu-clone').click()
@@ -1020,7 +1021,6 @@ function managerInput(page) {
 async function selectLayoutLink(t, name) {
   const { page } = t
   await editLayoutLink(page, name)
-  await dialogWith(page, 'Edit the shared layout?').getByRole('button', { name: 'Edit layout', exact: true }).click()
   await page.getByTestId('component-menu').waitFor()
   return presenceSent(t, data => data.state === 'selected' && !!data.component, 'No selected presence was sent for the link')
 }
@@ -1818,27 +1818,44 @@ test('66. at 390 wide the UI tab\'s row shows its fade and scrolls by keyboard, 
   }
 })
 
-test('68. in edit mode a link opens a menu at the click point with Edit focused first: Enter edits it, asking about the layout only then, and Visit goes there, following a redirect, and stays in edit mode', async ({ cwa: t }) => {
+test('68. in edit mode a layout link asks to edit the layout first; Cancel opens nothing and keeps the page selection; confirming clears it and only then opens a menu at the click point with Edit focused, which selects without asking again; in the layout a layout link opens the menu at once, and Visit follows a redirect and stays in edit mode', async ({ cwa: t }) => {
   const { page, base, settle } = t
   await openEditMode(t)
+  await select(page, texts.pageAOther)
   const box = await layoutLink(page, 'Second').boundingBox()
   const point = { x: box.x + 4, y: box.y + box.height / 2 }
-  await page.mouse.click(point.x, point.y)
   const menu = linkMenu(page)
+  const confirm = dialogWith(page, 'Edit the shared layout?')
+
+  await page.mouse.click(point.x, point.y)
+  await confirm.getByRole('button', { name: 'Cancel', exact: true }).waitFor()
+  assert(!(await menu.count()), 'The link menu opened before the scope was confirmed')
+  assert(!(await confirm.getByRole('button', { name: /Visit/ }).count()), 'The scope confirm offers Visit')
+  assert(page.url() === `${base}${t.seed.paths.home}`, `The click navigated to ${page.url()}`)
+  await confirm.getByRole('button', { name: 'Cancel', exact: true }).click()
+  await waitForNoDialog(page, 'Cancel did not close the confirm')
+  await settle()
+  assert(!(await menu.count()), 'Cancel on the scope confirm opened the link menu')
+  assert(await page.getByTestId('component-menu').isVisible(), 'Cancel on the scope confirm cleared the page selection')
+
+  await page.mouse.click(point.x, point.y)
+  await confirm.getByRole('button', { name: 'Edit layout', exact: true }).click()
   const edit = menu.getByTestId('link-menu-edit')
   await edit.waitFor()
+  await page.getByTestId('component-menu').waitFor({ state: 'detached' }).catch(() => {
+    throw new AssertionError('Switching to the layout kept the page component selected')
+  })
   const rows = await menu.getByRole('menuitem').allInnerTexts()
   assert(rows.length === 2 && rows[0].startsWith('Edit ') && rows[1] === `Visit ${t.seed.paths.second}`, `The menu lists ${JSON.stringify(rows)}`)
   await eventually(() => edit.evaluate(el => el === document.activeElement), 'Edit is not focused')
   const menuBox = await menu.boundingBox()
   assert(Math.abs(menuBox.x - point.x) <= 2 && menuBox.y >= point.y && menuBox.y - point.y <= 8, `The menu is at ${JSON.stringify(menuBox)}, not at the click point ${JSON.stringify(point)}`)
-  assert(page.url() === `${base}${t.seed.paths.home}`, `The click navigated to ${page.url()}`)
-  assert(!(await dialogWith(page, 'Edit the shared layout?').count()), 'It asked to edit the layout before Edit was chosen')
+  assert(page.url() === `${base}${t.seed.paths.home}`, `The confirm navigated to ${page.url()}`)
 
   await page.keyboard.press('Enter')
-  const confirm = dialogWith(page, 'Edit the shared layout?')
-  await confirm.getByRole('button', { name: 'Edit layout', exact: true }).click()
   await page.getByTestId('component-menu').waitFor()
+  await settle()
+  assert(await dialogs(page).count() === 0, `Edit asked again: ${await dialogTexts(page)}`)
   assert(page.url() === `${base}${t.seed.paths.home}`, `Edit navigated to ${page.url()}`)
 
   await layoutLink(page, 'Redirect').click()
