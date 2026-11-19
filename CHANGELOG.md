@@ -4,6 +4,10 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+### Fixed
+
+- Clicking the manager bar's status (Draft, Live, …) again closes its explanation instead of opening it again ([6c12ee08](https://github.com/components-web-app/cwa-nuxt-module/commit/6c12ee089319c468e0b4cf7f847176db4bf6e64e), [#461](https://github.com/components-web-app/cwa-nuxt-module/issues/461)).
+
 ## [2.0.0-alpha.36] - 2026-11-19
 
 ### Added
