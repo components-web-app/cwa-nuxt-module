@@ -120,6 +120,38 @@ for (const width of widths) {
     expect(gap).toBeLessThanOrEqual(6)
   })
 
+  test(`kit at ${width}: the ⓘ shows its popover open by its glyph turning the accent blue, with no fill behind it and no line under it, and hovering it changes only the glyph's colour (#461)`, async ({ page }) => {
+    await openKit(page, width)
+    await page.waitForLoadState('networkidle')
+    const trigger = page.locator('main').getByTestId('field-info').first()
+    const look = () => trigger.evaluate((button) => {
+      const probe = document.createElement('span')
+      probe.style.color = 'var(--cwa-color-accent-fg)'
+      button.after(probe)
+      const accent = getComputedStyle(probe).color
+      probe.remove()
+      const style = getComputedStyle(button)
+      return { glyph: getComputedStyle(button.querySelector('svg')).color, accent, fill: style.backgroundColor, shadow: style.boxShadow, open: button.getAttribute('aria-expanded') }
+    })
+    const rest = await look()
+    expect(rest.open).toBe('false')
+    expect(rest.glyph).not.toBe(rest.accent)
+    expect(rest.fill).toBe('rgba(0, 0, 0, 0)')
+
+    await trigger.hover()
+    const hovered = await look()
+    expect(hovered.fill).toBe('rgba(0, 0, 0, 0)')
+    expect(hovered.glyph).not.toBe(rest.glyph)
+
+    await trigger.click()
+    await page.getByTestId('field-info-popover').waitFor()
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true')
+    const open = await look()
+    expect(open.glyph).toBe(open.accent)
+    expect(open.fill).toBe('rgba(0, 0, 0, 0)')
+    expect(open.shadow).toBe('none')
+  })
+
   for (const [name, testId, open] of tooltipSurfaces) {
     test(`kit at ${width}: ${name} shows as much space above its text as below it and at its sides, measured to the letters, not to the boxes (#461)`, async ({ page }) => {
       await openKit(page, width)

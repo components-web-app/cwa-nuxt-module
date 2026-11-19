@@ -5,6 +5,7 @@ import { describe, expect, test } from 'vitest'
 import { badgeLookColours, badgeTintPercent, badgeTones, buttonLookColours, buttonLooks } from '../runtime/templates/components/ui/kit-looks'
 import type { KitLookColour } from '../runtime/templates/components/ui/kit-looks'
 import { contrastRatio, kitColourLabel, kitColourTokens, kitContrastPairs, kitThemeStyle, kitTokenCss, measureKitPair, parseColour, resolveKitColour } from './kit-tokens'
+import type { KitColourToken } from './kit-tokens'
 
 const read = (path: string) => readFileSync(fileURLToPath(new URL(path, import.meta.url)), 'utf8')
 const source = read('./tailwind-cwa.css')
@@ -91,8 +92,8 @@ describe('kit colour tokens (#456)', () => {
 
   test('every token the components colour with is in the compiled CSS', () => {
     const buttons = (['solid', 'soft', 'ghost'] as const).flatMap(variant => (['accent', 'danger'] as const).flatMap((tone) => {
-      const { rest, hover } = buttonLookColours(variant, tone)
-      return [rest.fg, rest.bg, hover.fg, hover.bg]
+      const { rest, hover, open } = buttonLookColours(variant, tone)
+      return [rest.fg, rest.bg, hover.fg, hover.bg, open.fg, open.bg]
     }))
     const badges = (['neutral', 'accent', 'success', 'warning', 'danger'] as const).flatMap((tone) => {
       const { text, fill, mark } = badgeLookColours(tone)
@@ -116,6 +117,8 @@ describe('kit colour tokens (#456)', () => {
     expect(kitContrastPairs).toEqual(expect.arrayContaining([
       expect.objectContaining({ fg: 'white', bg: 'accent', min: 4.5 }),
       expect.objectContaining({ fg: 'white', bg: 'accent-hover', min: 4.5 }),
+      expect.objectContaining({ fg: 'white', bg: 'accent-open', min: 4.5 }),
+      expect.objectContaining({ fg: 'white', bg: 'danger-fill-open', min: 4.5 }),
       expect.objectContaining({ fg: 'danger-fg', bg: 'transparent', min: 4.5 }),
       expect.objectContaining({ fg: 'fg', bg: 'field-danger', min: 4.5 }),
       expect.objectContaining({ fg: 'fg', bg: 'accent-tint', min: 4.5 }),
@@ -133,6 +136,24 @@ describe('kit colour tokens (#456)', () => {
     test.each(kitContrastPairs.map(pair => [`${kitColourLabel(pair.fg)} on ${kitColourLabel(pair.bg)} (${pair.use})`, pair] as const))('%s meets its minimum', (_, pair) => {
       expect(measureKitPair(pair, theme)).toBeGreaterThanOrEqual(pair.min)
     })
+  })
+
+  test.each(['dark', 'light'] as const)('in %s a solid button\'s open fill stands clearly apart from its rest fill, at least 1.5:1, where its hover fill alone barely shows', (theme) => {
+    for (const tone of ['accent', 'danger'] as const) {
+      const { rest, hover, open } = buttonLookColours('solid', tone)
+      const fill = (colour: typeof rest.bg) => resolveKitColour(tokenOf(colour) as KitColourToken, theme)
+      expect(contrastRatio(fill(open.bg), fill(rest.bg)), tone).toBeGreaterThanOrEqual(1.5)
+      expect(contrastRatio(fill(open.bg), fill(rest.bg)), tone).toBeGreaterThan(contrastRatio(fill(hover.bg), fill(rest.bg)))
+    }
+  })
+
+  test('an icon-only trigger\'s glyph turns the accent blue while its popover is open, and that blue meets 3:1 on every surface such a trigger sits on', () => {
+    for (const bg of ['surface', 'surface-menu', 'menu-highlight', 'field'] as const) {
+      expect(kitContrastPairs, bg).toEqual(expect.arrayContaining([expect.objectContaining({ fg: 'accent-fg', bg, min: expect.any(Number) })]))
+    }
+    expect(kitContrastPairs).toEqual(expect.arrayContaining([
+      expect.objectContaining({ fg: 'fg-muted', bg: 'accent-tint', min: 4.5 }),
+    ]))
   })
 
   test('a placeholder reads clearly dimmer than a typed value, at least 2.2:1 between the two, so an empty field never looks filled in', () => {

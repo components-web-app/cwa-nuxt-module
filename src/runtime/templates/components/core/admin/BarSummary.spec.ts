@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { enableAutoUnmount, mount, flushPromises } from '@vue/test-utils'
 import { nextTick, reactive, ref } from 'vue'
 import { axe } from '../../../../../../test/utils/axe'
-import { drawsOpenState } from '../../../../../../test/utils/kit-css'
+import { drawsOpenLine, drawsOpenState } from '../../../../../../test/utils/kit-css'
 import { drawsFocusRing } from '../../../../../../test/utils/focus-ring'
 import { announceKey } from '../ui/field-keys'
 import BarSummary from './BarSummary.vue'
@@ -115,6 +115,7 @@ describe('BarSummary (#459)', () => {
     expect(wrapper.emitted('show')).toBeUndefined()
     expect(summary().attributes('aria-expanded')).toBe('true')
     expect(drawsOpenState(summary().element)).toBe(true)
+    expect(drawsOpenLine(summary().element)).toBe(true)
     expect(popover()?.getAttribute('aria-label')).toBe('Title: not saved')
     expect(popover()?.textContent).toContain('Title: not saved')
     expect(popover()?.textContent).toContain('The server is unavailable.')

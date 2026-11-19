@@ -161,7 +161,7 @@ async function goTo(event: MouseEvent, page: string) {
     <PopoverTrigger
       data-testid="presence-indicator"
       :aria-label="label"
-      class="cwa:flex cwa:items-center cwa:gap-x-2 cwa:cursor-pointer cwa:rounded-full cwa:text-fg cwa:hover:bg-button cwa:aria-expanded:bg-button cwa:aria-expanded:shadow-[inset_0_-2px_0_currentColor] cwa:focus-visible:outline-2 cwa:focus-visible:outline-stone-400"
+      class="cwa:flex cwa:items-center cwa:gap-x-2 cwa:cursor-pointer cwa:rounded-full cwa:text-fg cwa:hover:bg-button cwa:aria-expanded:bg-accent-tint cwa:focus-visible:outline-2 cwa:focus-visible:outline-stone-400"
     >
       <span
         v-if="here.length"

@@ -3,7 +3,7 @@ import { afterEach, describe, expect, test, vi } from 'vitest'
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { h } from 'vue'
 import { axe } from '../../../../../test/utils/axe'
-import { drawsOpenState } from '../../../../../test/utils/kit-css'
+import { drawsOpenLine, drawsOpenState, shownColour } from '../../../../../test/utils/kit-css'
 import { menuGroups } from '../core/ui/menu-entries'
 import Menu from './Menu.vue'
 
@@ -113,22 +113,30 @@ describe('CwaUiMenu (#459)', () => {
     expect(onSelect).not.toHaveBeenCalled()
   })
 
-  test('the ⓘ shows itself selected while its reasons are open, and not once they close, with no axe violations open', async () => {
+  test('the ⓘ shows its reasons open by turning its glyph the accent blue, even while it is the highlighted item, and goes back once they close, with no axe violations open', async () => {
     mount(Menu, {
       props: { items: [{ label: 'Add before', value: 'before', disabled: true, reasons: ['Main content is full'], reasonsLabel: 'Why Add before is unavailable' }], label: 'Clone', open: true, at: { x: 0, y: 0 } },
       attachTo: document.body,
     })
     await flushPromises()
     const why = document.querySelector<HTMLElement>('[data-testid="menu-item-why"]')!
+    const glyph = why.querySelector('svg')!
     expect(drawsOpenState(why)).toBe(false)
+    expect(shownColour(glyph)).toBe('fg-muted')
 
     why.click()
     await flushPromises()
     expect(drawsOpenState(why)).toBe(true)
+    expect(drawsOpenLine(why)).toBe(false)
+    why.setAttribute('data-highlighted', '')
+    expect(shownColour(glyph)).toBe('accent-fg')
+    why.removeAttribute('data-highlighted')
+    expect(shownColour(glyph)).toBe('accent-fg')
     expect(await axe(document.body, { rules: { region: { enabled: false } } })).toHaveNoViolations()
 
     why.click()
     await flushPromises()
     expect(drawsOpenState(why)).toBe(false)
+    expect(shownColour(glyph)).toBe('fg-muted')
   })
 })

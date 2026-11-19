@@ -35,6 +35,7 @@
   --color-fg-muted: #a8a29e;
   --color-accent: #2563eb;
   --color-accent-hover: #1d4ed8;
+  --color-accent-open: #1e40af;
   --color-accent-fg: #60a5fa;
   --color-accent-tint: color-mix(in srgb, var(--cwa-color-accent) 28%, var(--cwa-color-surface));
   --color-success: #9cdd05;
@@ -46,6 +47,7 @@
   --color-danger: #fca5a5;
   --color-danger-fill: #dc2626;
   --color-danger-fill-hover: #b91c1c;
+  --color-danger-fill-open: #991b1b;
   --color-danger-fg: #fca5a5;
   --color-highlight: #e30a6c;
 
