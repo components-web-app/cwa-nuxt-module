@@ -438,6 +438,19 @@ export default defineNuxtModule<CwaModuleOptions>({
       }))
     }
 
+    function resolveComponentDirs(components: Component[]): Record<string, string> {
+      return Object.fromEntries(resolveUserComponents(components).userComponents.map(component => [toResourceType(component), path.dirname(component.filePath)]))
+    }
+
+    function readComponentFile(file: string): string | undefined {
+      try {
+        return statSync(file).isFile() ? readFileSync(file, 'utf8') : undefined
+      }
+      catch {
+        return undefined
+      }
+    }
+
     function resolvePreviews(components: Component[]): Record<string, string> {
       const previews: Record<string, string> = {}
       for (const component of resolveUserComponents(components).userComponents) {
@@ -541,6 +554,8 @@ export const componentGroupDeclarations: ComponentGroupDeclarations = ${JSON.str
           return adminResourcesTemplate({
             resources: Object.fromEntries(Object.entries(resources).map(([name, meta]) => [name, Object.fromEntries(ADMIN_RESOURCE_KEYS.filter(key => meta[key]).map(key => [key, meta[key]]))])),
             previews: resolvePreviews(app.components),
+            componentDirs: resolveComponentDirs(app.components),
+            readFile: readComponentFile,
             lucide: readLucideIcons(),
             warn: (message) => {
               if (!reportedIcons.has(message)) {
@@ -773,6 +788,9 @@ declare module 'vue-router' {
       if (['add', 'unlink'].includes(event) && cwaDirs.some(dir => dir === path || path.startsWith(dir + '/'))) {
         logger.info(`File added or removed - updating options for ${NAME} module...`)
         filenames.push('cwa-options.ts', 'cwa-component-names.ts', 'cwa-admin-resources.ts', '#cwa/server-options.ts')
+      }
+      if (event === 'change' && relativePath.endsWith('.svg') && path.startsWith(userComponentsPath + '/')) {
+        filenames.push('cwa-admin-resources.ts')
       }
       if (['add', 'change', 'unlink'].includes(event) && relativePath.endsWith('.vue')) {
         filenames.push('cwa-component-group-declarations.ts')

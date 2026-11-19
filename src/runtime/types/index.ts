@@ -49,7 +49,7 @@ export interface CwaComponentMeta extends CwaTemplateConfig, CwaUiVariantConfig 
 }
 
 export interface CwaComponentAdminConfig {
-  icon?: CwaComponentKind | `lucide:${LucideIconName}`
+  icon?: CwaComponentKind | `lucide:${LucideIconName}` | `./${string}.svg`
   group?: string
   image?: string
 }

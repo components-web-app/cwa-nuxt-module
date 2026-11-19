@@ -643,6 +643,28 @@ export type CwaComponentName = typeof CwaComponentNames[keyof typeof CwaComponen
         expect(adminSource).not.toContain(join('HtmlContent', 'preview.webp'))
       })
 
+      test('inlines a component folder\'s icon.svg when no icon is configured', async () => {
+        const fs = await import('node:fs')
+        const actual = await vi.importActual<typeof import('node:fs')>('node:fs')
+        const iconFile = join('cwa/components/Hero', 'icon.svg')
+        vi.mocked(fs.statSync).mockImplementation(((file: string) => ({
+          isDirectory: () => !file.endsWith('.svg') && !file.endsWith('.webp'),
+          isFile: () => file.endsWith(iconFile),
+        })) as any)
+        vi.mocked(fs.readFileSync).mockImplementation(((file: string, encoding: BufferEncoding) => file.endsWith('@iconify-json/lucide/icons.json')
+          ? actual.readFileSync(file, encoding)
+          : file.endsWith(iconFile) ? '<svg viewBox="0 0 10 10"><path d="M0 0h10"/></svg>' : '{ "name": "@cwa/nuxt", "version": "1.0.0" }') as any)
+        const { admin } = await prepare()
+
+        const adminSource = await admin.getContents({ app: { components } })
+        vi.mocked(fs.statSync).mockImplementation((() => ({ isDirectory: () => true })) as any)
+        vi.mocked(fs.readFileSync).mockImplementation(((file: string, encoding: BufferEncoding) => file.endsWith('@iconify-json/lucide/icons.json') ? actual.readFileSync(file, encoding) : '{ "name": "@cwa/nuxt", "version": "1.0.0" }') as any)
+
+        expect(adminSource).toContain('"Hero": { icon: "file:Hero" }')
+        expect(adminSource).toContain('<path d=\\"M0 0h10\\"/>')
+        expect(fs.readFileSync).toHaveBeenCalledWith(expect.stringMatching(/cwa\/components\/Hero\/icon\.svg$/), 'utf8')
+      })
+
       test('generates the Lucide icon names as a type for the app and its nuxt.config', async () => {
         await prepare()
 
@@ -670,6 +692,32 @@ export type CwaComponentName = typeof CwaComponentNames[keyof typeof CwaComponen
 
         const [{ filter }] = (nuxtKit.updateTemplates as Mock).mock.lastCall!
         expect(filter!({ filename: 'cwa-admin-resources.ts' } as any)).toBe(true)
+      })
+
+      test('is regenerated when an SVG in a component folder changes in dev, and nothing else is', async () => {
+        vi.spyOn(nuxtKit, 'createResolver').mockReturnValue({
+          resolve: vi.fn((...args: string[]) => join(...args)),
+          resolvePath: vi.fn(),
+        })
+        let watchCallback: ((event: string, path: string) => Promise<void>) | undefined
+        await prepareMockNuxt({}, {
+          hook: vi.fn((hookName, callback) => {
+            if (hookName === 'builder:watch') {
+              watchCallback = callback
+            }
+          }),
+        })
+        ;(nuxtKit.updateTemplates as Mock).mockClear()
+
+        await watchCallback!('change', 'cwa/components/Hero/icon.svg')
+
+        const [{ filter }] = (nuxtKit.updateTemplates as Mock).mock.lastCall!
+        expect(filter!({ filename: 'cwa-admin-resources.ts' } as any)).toBe(true)
+        expect(filter!({ filename: 'cwa-options.ts' } as any)).toBe(false)
+
+        ;(nuxtKit.updateTemplates as Mock).mockClear()
+        await watchCallback!('change', 'assets/logo.svg')
+        expect(nuxtKit.updateTemplates).not.toHaveBeenCalled()
       })
     })
 

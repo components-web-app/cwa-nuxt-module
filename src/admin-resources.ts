@@ -1,3 +1,4 @@
+import { relative, resolve } from 'node:path'
 import type { CwaComponentKind } from './runtime/types'
 
 export const GENERIC_ICON = 'lucide:component'
@@ -83,6 +84,8 @@ export interface AdminResourcesTemplateInput {
   previews: Record<string, string>
   lucide: LucideIconSet
   warn: (message: string) => void
+  componentDirs?: Record<string, string>
+  readFile?: (path: string) => string | undefined
 }
 
 function isImageUrl(image: string) {
@@ -100,6 +103,85 @@ function lucideSvg(body: string) {
 
 function skeletonSvg(body: string) {
   return `<svg data-cwa-admin-icon xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 32" aria-hidden="true" focusable="false"><rect x=".5" y=".5" width="47" height="31" rx="2" fill="${FRAME}" stroke="${STROKE}"/>${body}</svg>`
+}
+
+const UNSAFE_ELEMENTS = 'script|foreignObject|style|iframe|embed|object|set|animate|animateMotion|animateTransform|discard'
+const ROOT_ATTRIBUTES = ['fill', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin']
+const UNSAFE_MARKUP: [RegExp, string][] = [
+  [/<!--[\s\S]*?-->/g, ''],
+  [new RegExp(`<(${UNSAFE_ELEMENTS})\\b[^>]*?\\/>`, 'gi'), ''],
+  [new RegExp(`<(${UNSAFE_ELEMENTS})\\b[\\s\\S]*?<\\/\\1\\s*>`, 'gi'), ''],
+  [new RegExp(`<\\/?(${UNSAFE_ELEMENTS})\\b[^>]*>`, 'gi'), ''],
+  [/[\s/]on[\w-]*\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, ''],
+  [/\sstyle\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, ''],
+  [/\s(?:xlink:)?href\s*=\s*(?:"(?!#)[^"]*"|'(?!#)[^']*'|(?!["'#])[^\s>]+)/gi, ''],
+]
+
+function attribute(attributes: string, name: string): string | undefined {
+  const match = new RegExp(`(?:^|\\s)${name}\\s*=\\s*(?:"([^"]*)"|'([^']*)')`, 'i').exec(attributes)
+  return match ? (match[1] ?? match[2]) : undefined
+}
+
+function withoutUnsafeMarkup(body: string): string {
+  let current = body
+  for (let pass = 0; pass < UNSAFE_MARKUP.length;) {
+    const [pattern, replacement] = UNSAFE_MARKUP[pass]!
+    const next = current.replace(pattern, replacement)
+    pass = next === current ? pass + 1 : 0
+    current = next
+  }
+  return current.trim()
+}
+
+export function customIconSvg(source: string): string | undefined {
+  const root = /<svg\b([^>]*)>([\s\S]*)<\/svg\s*>/i.exec(source)
+  if (!root) {
+    return undefined
+  }
+  const attributes = root[1]!
+  const width = attribute(attributes, 'width')
+  const height = attribute(attributes, 'height')
+  const viewBox = attribute(attributes, 'viewBox')
+    ?? (width && height && /^[\d.]+$/.test(width) && /^[\d.]+$/.test(height) ? `0 0 ${width} ${height}` : '0 0 24 24')
+  if (!/^[\d.\s,-]+$/.test(viewBox)) {
+    return undefined
+  }
+  const presentation = ROOT_ATTRIBUTES
+    .map((name): [string, string | undefined] => [name, attribute(attributes, name)])
+    .filter((entry): entry is [string, string] => !!entry[1] && /^[\w.#%(),\s-]+$/.test(entry[1]))
+  if (!presentation.some(([name]) => name === 'fill' || name === 'stroke')) {
+    presentation.unshift(['fill', 'currentColor'])
+  }
+  const colours = presentation.map(([name, value]) => ` ${name}="${value}"`).join('')
+  return `<svg data-cwa-admin-icon xmlns="http://www.w3.org/2000/svg" viewBox="${viewBox}"${colours} aria-hidden="true" focusable="false">${withoutUnsafeMarkup(root[2]!)}</svg>`
+}
+
+function isIconPath(icon: string) {
+  return icon.toLowerCase().endsWith('.svg')
+}
+
+function customIcon(name: string, icon: string | undefined, dir: string | undefined, readFile: (path: string) => string | undefined, warn: (message: string) => void): string | undefined {
+  if (!dir) {
+    icon && warn(`the icon "${icon}" in the defineCwaConfig of ${name} is not an SVG in the component's folder, so the generic component icon is shown.`)
+    return undefined
+  }
+  const file = resolve(dir, icon ?? './icon.svg')
+  if (relative(dir, file).startsWith('..')) {
+    warn(`the icon "${icon}" in the defineCwaConfig of ${name} is not an SVG in the component's folder, so the generic component icon is shown.`)
+    return undefined
+  }
+  const source = readFile(file)
+  if (source === undefined) {
+    icon && warn(`the icon "${icon}" in the defineCwaConfig of ${name} could not be read, so the generic component icon is shown.`)
+    return undefined
+  }
+  const svg = customIconSvg(source)
+  if (!svg) {
+    warn(icon
+      ? `the icon "${icon}" in the defineCwaConfig of ${name} is not an SVG, so the generic component icon is shown.`
+      : `${file} is not an SVG, so the generic component icon is shown for ${name}.`)
+  }
+  return svg
 }
 
 interface ResolvedIcon {
@@ -125,7 +207,7 @@ function resolveIcon(icon: string, lucide: LucideIconSet): ResolvedIcon | undefi
   }
 }
 
-export function adminResourcesTemplate({ resources, previews, lucide, warn }: AdminResourcesTemplateInput): string {
+export function adminResourcesTemplate({ resources, previews, lucide, warn, componentDirs = {}, readFile = () => undefined }: AdminResourcesTemplateInput): string {
   const icons: Record<string, string> = { [GENERIC_ICON]: lucideSvg(lucideBody(lucide, 'component') ?? '') }
   const entries: Record<string, { icon?: string, skeleton?: string, group?: string, image?: string }> = {}
   const imports: string[] = []
@@ -134,7 +216,14 @@ export function adminResourcesTemplate({ resources, previews, lucide, warn }: Ad
   for (const name of Object.keys(resources).sort()) {
     const config = resources[name] ?? {}
     const entry: { icon?: string, skeleton?: string, group?: string, image?: string } = {}
-    if (config.icon) {
+    if (!config.icon || isIconPath(config.icon)) {
+      const svg = customIcon(name, config.icon, componentDirs[name], readFile, warn)
+      if (svg) {
+        icons[`file:${name}`] = svg
+        entry.icon = `file:${name}`
+      }
+    }
+    else {
       const resolved = resolveIcon(config.icon, lucide)
       if (resolved) {
         icons[resolved.icon.key] = resolved.icon.svg

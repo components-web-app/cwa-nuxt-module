@@ -427,7 +427,7 @@ watch(open, async (isOpen: boolean) => {
       @back="back"
     >
       <template
-        v-if="detail && !isDynamic && !detailImage"
+        v-if="detail && !isDynamic"
         #lead
       >
         <AddComponentLead

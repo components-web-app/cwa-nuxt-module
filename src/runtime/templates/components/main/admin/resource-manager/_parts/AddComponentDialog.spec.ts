@@ -304,13 +304,15 @@ describe('the add component dialog (#461)', () => {
       expect(optionValues()).toEqual(['Hero', 'Map'])
     })
 
-    test('every row starts with one fixed-size visual: an image, a skeleton, an icon or the generic icon', async () => {
+    test('every row starts with one fixed-size visual: a skeleton, an icon or the generic icon, never the preview image', async () => {
       cwaState.cwa.store[GROUP].data.componentPositions = []
       await mountDialog()
       await openDialog({ targetIri: GROUP })
 
       const leads = Object.fromEntries(qa('[role="option"]').map(option => [option.dataset.value, option.querySelector<HTMLElement>('[data-lead]')!]))
-      expect(leads.Hero!.dataset.lead).toBe('image')
+      expect(leads.Hero!.dataset.lead).toBe('skeleton')
+      expect(leads.Hero!.innerHTML).toContain('data-icon="skeleton-hero"')
+      expect(q('[role="option"] img')).toBeNull()
       expect(leads.Image!.innerHTML).toContain('data-icon="image"')
       expect(leads.Spacer!.innerHTML).toContain('data-icon="component"')
       expect(new Set(qa('[role="option"]').map(option => option.querySelector('[data-lead]')!.parentElement!.className)).size).toBe(1)
@@ -467,14 +469,16 @@ describe('the add component dialog (#461)', () => {
       expect(lead.getAttribute('aria-hidden')).toBe('true')
     })
 
-    test('a component with a preview image shows that image, not a second icon in the header', async () => {
+    test('a component with a preview image shows its icon beside the title and the image as well', async () => {
       await mountDialog()
       await openDialog()
 
       await choose('Hero')
 
       expect(q('[data-testid="add-component-image"]')!.getAttribute('src')).toBe('/hero.webp')
-      expect(q('[data-testid="add-component-detail-lead"]')).toBeNull()
+      const lead = q('[data-testid="sub-view-header"] [data-testid="add-component-detail-lead"]')!
+      expect(lead.dataset.lead).toBe('icon')
+      expect(lead.querySelector('[data-icon="panel-top"]')).not.toBeNull()
     })
 
     test('a component with no configured icon shows the generic icon its row shows in the header too', async () => {
