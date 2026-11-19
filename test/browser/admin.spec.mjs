@@ -1898,9 +1898,16 @@ test('69. in edit mode and clone mode a faint outline fades in on the component 
     }, `No outline was drawn over "${text}"`)
   }
 
+  const cursorOver = text => page.getByText(text, { exact: true }).first().evaluate((el) => {
+    const r = el.getBoundingClientRect()
+    return getComputedStyle(document.elementFromPoint(r.left + 4, r.top + r.height / 2)).cursor
+  })
+
   const drawn = await outlineOver(texts.pageAOther)
   assert(drawn.width_ === 1, `The hover outline is ${drawn.width_}px, not 1px`)
   assert(drawn.animation === 'cwa-line-in', `The hover outline does not fade in (${drawn.animation})`)
+  const outlinedCursor = await cursorOver(texts.pageAOther)
+  assert(outlinedCursor === 'crosshair', `The cursor over the outlined component is ${outlinedCursor}`)
 
   await select(page, texts.pageAOther)
   const box = await page.getByText(texts.pageAOther, { exact: true }).boundingBox()
@@ -1911,6 +1918,18 @@ test('69. in edit mode and clone mode a faint outline fades in on the component 
   await page.keyboard.press('Escape')
   await startClone(page)
   await outlineOver(texts.pageAOther)
+  assert(await cursorOver(texts.pageAOther) === 'crosshair', 'The cursor over the outlined component in clone mode is not a crosshair')
+
+  await page.keyboard.press('Escape')
+  await page.getByTestId('clone-mode-bar').waitFor({ state: 'detached' })
+  await page.getByRole('button', { name: 'Done', exact: true }).click()
+  await page.getByRole('button', { name: 'Edit', exact: true }).waitFor()
+  const otherBox = await page.getByText(texts.pageAOther, { exact: true }).first().boundingBox()
+  await page.mouse.move(otherBox.x + 8, otherBox.y + otherBox.height / 2)
+  await settle()
+  const viewingCursor = await cursorOver(texts.pageAOther)
+  assert(viewingCursor !== 'crosshair', 'The cursor is still a crosshair after leaving edit mode')
+  assert(await page.locator('[data-cwa-hovered]').count() === 0, 'A component is still marked as hovered after leaving edit mode')
 })
 
 test('72. selecting another component paints no outline and lightens no part of the page outside the two components in any frame between them (#461)', async ({ cwa: t }) => {

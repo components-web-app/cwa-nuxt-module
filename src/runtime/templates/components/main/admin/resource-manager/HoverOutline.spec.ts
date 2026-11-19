@@ -137,6 +137,39 @@ describe('HoverOutline', () => {
     expect(outlines()).toHaveLength(0)
   })
 
+  test('the outlined component is marked for the crosshair cursor while, and only while, its outline is drawn, and unmounting clears the mark', async () => {
+    const { cwa, currentStackItem } = mockCwa()
+    const first = elementAt({ top: 0, left: 0, right: 100, bottom: 50 })
+    const second = elementAt({ top: 60, left: 0, right: 100, bottom: 110 })
+    const empty = elementAt({ top: 200, left: 0, right: 100, bottom: 250 })
+    register(cwa, COMPONENT, first)
+    const secondElements = register(cwa, INNER, second)
+    const wrapper = await mountOutline()
+    const marked = () => [first, second].filter(element => element.hasAttribute('data-cwa-hovered'))
+
+    await hover(first)
+    expect(marked()).toEqual([first])
+
+    await hover(second)
+    expect(marked()).toEqual([second])
+
+    currentStackItem.value = { domElements: secondElements }
+    await flushPromises()
+    expect(outlines()).toHaveLength(0)
+    expect(marked()).toEqual([])
+
+    currentStackItem.value = undefined
+    await flushPromises()
+    expect(marked()).toEqual([second])
+
+    await hover(empty)
+    expect(marked()).toEqual([])
+
+    await hover(first)
+    wrapper.unmount()
+    expect(marked()).toEqual([])
+  })
+
   test('a position or group alone under the pointer is not outlined', async () => {
     const { cwa } = mockCwa()
     const position = elementAt({ top: 0, left: 0, right: 100, bottom: 50 })
@@ -199,5 +232,6 @@ describe('HoverOutline', () => {
     await hover(element)
 
     expect(outlines()).toHaveLength(0)
+    expect(element.hasAttribute('data-cwa-hovered')).toBe(false)
   })
 })

@@ -189,6 +189,15 @@
 }
 
 @layer components {
+  [data-cwa-hovered],
+  [data-cwa-hovered] a[href] {
+    cursor: crosshair;
+  }
+
+  [data-cwa-hovered] :is(button, input, select, textarea, [role='button'], [role='tab'], [contenteditable]:not([contenteditable='false'])) {
+    cursor: auto;
+  }
+
   .cwa\:toast {
     --cwa-toast-tone: var(--cwa-color-accent-fg);
     background: color-mix(in srgb, color-mix(in srgb, var(--cwa-color-surface-menu) 88%, var(--cwa-toast-tone)) 85%, transparent);
