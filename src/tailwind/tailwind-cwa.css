@@ -265,7 +265,7 @@
 
   .cwa\:status-line[data-line='saved']::before {
     background: var(--cwa-color-success);
-    animation: cwa-line-saved 1.18s ease-out forwards;
+    animation: cwa-line-saved 1.18s ease-out;
   }
 
   .cwa\:status-line[data-line='undo']::before {
@@ -608,6 +608,13 @@
   }
 }
 
+@keyframes cwa-sheet-in {
+  from {
+    opacity: 0.4;
+    translate: 0 1.5rem;
+  }
+}
+
 @keyframes cwa-sub-view-in {
   from {
     opacity: 0;
@@ -627,5 +634,65 @@
 
   @supports not (text-box: trim-both cap alphabetic) {
     margin-block: calc((1em - 1lh) / 2);
+  }
+}
+
+@keyframes cwa-rise {
+  from {
+    opacity: 0;
+    translate: var(--cwa-rise-from);
+    scale: 0.98;
+  }
+}
+
+@utility pop-in {
+  --cwa-rise-from: 0 -0.25rem;
+
+  &[data-side='top'] {
+    --cwa-rise-from: 0 0.25rem;
+  }
+
+  &[data-side='left'] {
+    --cwa-rise-from: 0.25rem 0;
+  }
+
+  &[data-side='right'] {
+    --cwa-rise-from: -0.25rem 0;
+  }
+
+  &[data-state='open'] {
+    animation: cwa-rise var(--cwa-duration-fast) var(--cwa-ease-out);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &[data-state='open'] {
+      animation: none;
+    }
+  }
+}
+
+@utility dialog-in {
+  --cwa-rise-from: -50% calc(-50% + 0.5rem);
+
+  &[data-state='open'] {
+    animation: cwa-rise var(--cwa-duration-slow) var(--cwa-ease-out);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &[data-state='open'] {
+      animation: none;
+    }
+  }
+}
+
+@utility overlay-in {
+  &[data-state='open'] {
+    animation: cwa-line-in var(--cwa-duration-base) ease-out;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &[data-state='open'] {
+      animation: none;
+    }
   }
 }

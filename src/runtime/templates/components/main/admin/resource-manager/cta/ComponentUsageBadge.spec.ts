@@ -2,7 +2,8 @@
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import { computed, defineComponent, reactive } from 'vue'
 import { flushPromises, mount } from '@vue/test-utils'
-import { drawsOpenLine, drawsOpenState } from '../../../../../../../../test/utils/kit-css'
+import { drawsOpenLine, drawsOpenState, failingInk } from '../../../../../../../../test/utils/kit-css'
+import { menuPanel } from '#cwa/templates/components/core/ui/field-looks'
 import { drawsFocusRing } from '../../../../../../../../test/utils/focus-ring'
 import { axe } from '../../../../../../../../test/utils/axe'
 import { createMemoryHistory, createRouter } from 'vue-router'
@@ -85,7 +86,7 @@ function links(list: HTMLElement | null) {
 
 async function routerEditingOn(path: string) {
   const router = createRouter({ history: createMemoryHistory(), routes: [{ path: '/:path(.*)*', component: defineComponent({ render: () => null }) }] })
-  const state = { isEditing: false, navigationGuardDisabled: false }
+  const state = { isEditing: false }
   const guard = new NavigationGuard(router, { useStore: () => ({ state }) } as unknown as AdminStore)
   router.beforeEach(guard.adminNavigationGuardFn)
   await router.push(path)
@@ -251,6 +252,21 @@ describe('ComponentUsageBadge', () => {
       wrapper.unmount()
     })
 
+    test('the list is the kit\'s menu popover, square and on the kit shadow, its links drawing the kit focus ring, with every line in a kit colour that reads on it in both themes', async () => {
+      const { wrapper, list } = await openList({ total: 4, locations: [
+        location({ layout: { iri: '/_/layouts/l1', reference: 'primary' } }),
+        location({ pageDataProperty: 'hero', renderedOn: [page('/_/pages/a', 'Apple', '/a'), page('/_/pages/b', 'Banana', null)], renderedOnCount: 5 }),
+        location({ renderedOn: [page('/_/pages/c', 'Cherry', '/c')], renderedOnCount: 1 }),
+      ] }, { displayPageIri: '/_/pages/c' })
+      expect([...list!.classList]).toEqual(expect.arrayContaining(menuPanel.split(' ')))
+      const drawn = [list!, ...list!.querySelectorAll('*')].flatMap(element => [...element.classList])
+      expect(drawn.filter(name => /(?:^|:)(?:rounded|shadow-(?:sm|md|lg|xl)|border|text-(?:light|stone-|white|sm))/.test(name))).toEqual([])
+      expect(failingInk(list!)).toEqual([])
+      const link = list!.querySelector('a')!
+      expect(drawsFocusRing([...link.classList])).toBe(true)
+      wrapper.unmount()
+    })
+
     test('lists the places in the order the API returns them, without re-sorting', async () => {
       const { list } = await openList({ total: 3, locations: [
         location({ renderedOn: [page('/_/pages/z', 'Zebra', '/z')], renderedOnCount: 1 }),
@@ -328,7 +344,7 @@ describe('ComponentUsageBadge', () => {
       expect(rows(list)[0]).toBe('Template default for heroComponent Article A Blog template')
     })
 
-    test('following a link while editing navigates past the editing guard, as Enable Navigation does, and closes the list', async () => {
+    test('following a link while editing navigates past the editing guard, as Visit does, and closes the list', async () => {
       const router = await routerEditingOn('/start')
       vi.mocked(navigateTo).mockImplementation(to => router.push(to as any) as any)
       const { list } = await openList({ total: 2, locations: [

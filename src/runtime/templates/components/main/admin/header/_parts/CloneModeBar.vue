@@ -20,7 +20,7 @@ const { source, end } = useCloneMode($cwa)
     <span
       class="cwa:text-helper cwa:text-fg-muted"
       data-testid="clone-mode-hint"
-    >{{ $cwa.admin.navigationGuardDisabled ? 'Follow links to the page you want, then turn off Enable Navigation to place it.' : 'Click a component to place it before or after. To use another page, turn on Enable Navigation.' }}</span>
+    >Click where it should go</span>
     <CwaUiButton
       label="Cancel"
       size="sm"

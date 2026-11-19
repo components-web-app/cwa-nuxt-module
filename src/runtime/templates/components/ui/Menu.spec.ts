@@ -51,6 +51,14 @@ describe('CwaUiMenu (#459)', () => {
     expect(disabled.textContent).toContain('Main is full')
   })
 
+  test('on touch every row is the hit height, so a tap lands on the row meant', async () => {
+    const { menu } = await openMenu()
+
+    const rows = [...menu.querySelectorAll<HTMLElement>('[role="menuitem"]')]
+    expect(rows.length).toBeGreaterThan(0)
+    expect(rows.every(row => row.classList.contains('cwa:pointer-coarse:min-h-hit'))).toBe(true)
+  })
+
   test('choosing an item emits it', async () => {
     const { menu, onSelect } = await openMenu()
 

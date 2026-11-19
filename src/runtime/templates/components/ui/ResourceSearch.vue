@@ -1,11 +1,9 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, useId, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, useId, useTemplateRef, watch } from 'vue'
 import {
   ComboboxAnchor,
   ComboboxContent,
   ComboboxInput,
-  ComboboxItem,
-  ComboboxItemIndicator,
   ComboboxPortal,
   ComboboxRoot,
   ComboboxTrigger,
@@ -14,11 +12,12 @@ import {
 import Field from '../core/ui/Field.vue'
 import type { FieldWidth } from '../core/ui/Field.vue'
 import ChevronGlyph from '../core/ui/ChevronGlyph.vue'
-import CheckGlyph from '../core/ui/CheckGlyph.vue'
-import CwaUiSpinner from './Spinner.vue'
 import SearchIcon from './icon/SearchIcon.vue'
+import ResourceSearchList from '../core/ui/ResourceSearchList.vue'
+import SheetSearch from '../core/ui/SheetSearch.vue'
+import { opensAsSheet } from '../core/ui/sheet-media'
 import { useAnnounce, useFieldModel } from '../core/ui/field-context'
-import { fieldBox, fieldDisabled, fieldFill, groupHeading, menuPanel, optionLook, placeholderLook } from '../core/ui/field-looks'
+import { fieldBox, fieldDisabled, fieldFill, menuPanel, placeholderLook } from '../core/ui/field-looks'
 import { useCwa } from '#cwa/composables/cwa'
 import type { CwaResource } from '#cwa/resources/resource-utils'
 import type { ResourceModelField } from '#cwa/resources/model-editors'
@@ -26,8 +25,6 @@ import type { ResourceModelField } from '#cwa/resources/model-editors'
 const DEBOUNCE = 250
 const SLOW_SEARCH = 3000
 const SLOW_FIRST = 5000
-const SHOW_MORE = '__cwa-show-more__'
-const RETRY = '__cwa-retry__'
 
 export interface ResourceSearchPage {
   items: CwaResource[]
@@ -83,6 +80,11 @@ const { model, value, state, unbound } = useFieldModel<string>(props, emit)
 const announce = useAnnounce()
 const id = useId()
 const open = ref(false)
+const sheetOpen = ref(false)
+const sheetId = `${id}-sheet`
+const returnTo = ref<HTMLElement | null>()
+const anchor = useTemplateRef<{ $el: HTMLElement }>('anchor')
+const toggle = useTemplateRef<{ $el: HTMLElement }>('toggle')
 const query = ref('')
 const results = ref<CwaResource[]>()
 const total = ref(0)
@@ -183,21 +185,38 @@ function onQuery(next: string | undefined) {
   debounceTimer = setTimeout(() => run(query.value.trim(), 1), DEBOUNCE)
 }
 
-watch(open, (isOpen) => {
+watch(() => open.value || sheetOpen.value, (isOpen) => {
   if (isOpen) {
-    query.value = ''
     !results.value && announce(`Loading ${props.noun}`)
-    run('', 1)
+    run(query.value.trim(), 1)
     return
   }
+  query.value = ''
   cancel()
 })
 
+function setOpen(next: boolean) {
+  if (next && opensAsSheet()) {
+    const focused = document.activeElement
+    returnTo.value = focused instanceof HTMLElement && anchor.value?.$el.contains(focused) ? focused : toggle.value?.$el
+    sheetOpen.value = true
+    return
+  }
+  open.value = next
+}
+
+function onAnchorMousedown(event: MouseEvent) {
+  opensAsSheet() && event.preventDefault()
+}
+
 onBeforeUnmount(cancel)
 
-function act(event: Event, action: string) {
-  event.preventDefault()
-  action === SHOW_MORE ? run(searched.value, page.value + 1) : run(query.value.trim(), 1)
+function showMore() {
+  run(searched.value, page.value + 1)
+}
+
+function retry() {
+  run(query.value.trim(), 1)
 }
 
 function choose(next: unknown) {
@@ -209,6 +228,7 @@ function choose(next: unknown) {
     value.value = next
   }
   open.value = false
+  sheetOpen.value = false
 }
 
 const firstLoad = computed(() => loading.value && !results.value)
@@ -216,6 +236,24 @@ const chosenFirst = computed(() => !!value.value && !!chosenResource.value && !r
 const more = computed(() => (results.value?.length ?? 0) < total.value)
 const inactive = computed(() => props.disabled || unbound)
 const reducedMotion = typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+const list = computed(() => ({
+  firstLoad: firstLoad.value,
+  loading: loading.value,
+  slow: slow.value,
+  reducedMotion,
+  failure: failure.value,
+  noun: props.noun,
+  value: value.value,
+  chosenFirst: chosenFirst.value,
+  chosenLabel: chosenLabel.value,
+  results: results.value,
+  labelOf: props.labelOf,
+  descriptionOf: props.descriptionOf,
+  searched: searched.value,
+  more: more.value,
+  total: total.value,
+  perPage: props.perPage,
+}))
 </script>
 
 <template>
@@ -234,17 +272,20 @@ const reducedMotion = typeof window !== 'undefined' && !!window.matchMedia?.('(p
   >
     <template #default="{ describedBy, tone, busy }">
       <ComboboxRoot
-        v-model:open="open"
+        :open="open"
         :model-value="value ?? undefined"
         ignore-filter
         open-on-click
         :reset-search-term-on-blur="false"
         :reset-search-term-on-select="false"
         :disabled="inactive"
+        @update:open="setOpen"
         @update:model-value="choose"
       >
         <ComboboxAnchor
+          ref="anchor"
           :class="[fieldBox, fieldFill(tone, inactive), 'cwa:gap-2 cwa:pr-3 cwa:pl-3', { [fieldDisabled]: inactive }]"
+          @mousedown="onAnchorMousedown"
         >
           <SearchIcon
             class="cwa:size-3.5 cwa:shrink-0 cwa:text-fg-muted"
@@ -264,12 +305,15 @@ const reducedMotion = typeof window !== 'undefined' && !!window.matchMedia?.('(p
             :aria-invalid="tone === 'danger' ? 'true' : undefined"
             :aria-busy="busy || chosenLoading ? 'true' : undefined"
             data-testid="search-input"
+            v-bind="sheetOpen ? { 'aria-expanded': 'true', 'aria-controls': sheetId } : {}"
             class="cwa:h-full cwa:w-0 cwa:min-w-0 cwa:flex-1 cwa:appearance-none cwa:truncate cwa:border-0 cwa:bg-transparent cwa:p-0 cwa:text-control cwa:text-inherit cwa:outline-none cwa:focus:ring-0 cwa:disabled:cursor-not-allowed cwa:pointer-coarse:text-base"
             :class="[placeholderLook(inactive), { 'cwa:sr-only': chosenLoading && !open }]"
             @update:model-value="onQuery"
           />
           <ComboboxTrigger
+            ref="toggle"
             :aria-label="`Show ${label} results`"
+            data-testid="search-toggle"
             tabindex="-1"
             class="cwa:grid cwa:h-full cwa:cursor-pointer cwa:place-items-center cwa:disabled:cursor-not-allowed"
           >
@@ -290,114 +334,35 @@ const reducedMotion = typeof window !== 'undefined' && !!window.matchMedia?.('(p
               class="cwa:max-h-72 cwa:overflow-y-auto cwa:py-1"
               :aria-busy="loading ? 'true' : undefined"
             >
-              <div
-                v-if="firstLoad"
-                data-testid="search-loading"
-              >
-                <p
-                  v-if="reducedMotion || slow"
-                  class="cwa:m-0 cwa:flex cwa:items-center cwa:gap-2 cwa:px-3 cwa:py-2 cwa:text-fg-muted"
-                >
-                  <CwaUiSpinner
-                    v-if="reducedMotion"
-                    size="sm"
-                  />
-                  {{ slow ? 'Still loading…' : `Loading ${noun}…` }}
-                </p>
-                <div
-                  v-for="row in 5"
-                  :key="row"
-                  aria-hidden="true"
-                  class="cwa:flex cwa:h-option cwa:flex-col cwa:justify-center cwa:gap-1.5 cwa:px-3"
-                  data-testid="search-skeleton"
-                >
-                  <span
-                    class="cwa:skeleton cwa:h-2.5"
-                    :style="{ width: `${50 + ((row * 37) % 40)}%` }"
-                  />
-                </div>
-              </div>
-              <template v-else>
-                <p
-                  v-if="loading"
-                  class="cwa:m-0 cwa:flex cwa:items-center cwa:gap-2 cwa:px-3 cwa:py-2 cwa:text-fg-muted"
-                  data-testid="search-searching"
-                >
-                  <CwaUiSpinner size="sm" />
-                  {{ slow ? 'Still searching…' : 'Searching…' }}
-                </p>
-                <template v-if="failure">
-                  <p
-                    class="cwa:m-0 cwa:px-3 cwa:py-2 cwa:text-danger-fg"
-                    data-testid="search-failure"
-                  >
-                    {{ failure === 'offline' ? 'You’re offline, so this search didn’t run.' : 'The server couldn’t search just now.' }}
-                  </p>
-                  <ComboboxItem
-                    :value="RETRY"
-                    :class="[optionLook, 'cwa:font-semibold cwa:text-accent-fg']"
-                    @select="act($event, RETRY)"
-                  >
-                    Retry
-                  </ComboboxItem>
-                </template>
-                <div :class="{ 'cwa:opacity-55': loading }">
-                  <template v-if="chosenFirst">
-                    <div :class="groupHeading">
-                      Chosen
-                    </div>
-                    <ComboboxItem
-                      :value="value!"
-                      :class="optionLook"
-                    >
-                      <span class="cwa:min-w-0 cwa:flex-1 cwa:truncate">{{ chosenLabel }}</span>
-                      <ComboboxItemIndicator><CheckGlyph /></ComboboxItemIndicator>
-                    </ComboboxItem>
-                  </template>
-                  <ComboboxItem
-                    v-for="resource in results"
-                    :key="resource['@id']"
-                    :value="resource['@id']"
-                    :text-value="labelOf(resource)"
-                    :class="optionLook"
-                  >
-                    <span class="cwa:flex cwa:min-w-0 cwa:flex-1 cwa:flex-col">
-                      <span class="cwa:truncate">{{ labelOf(resource) }}</span>
-                      <span
-                        v-if="descriptionOf?.(resource)"
-                        class="cwa:truncate cwa:text-helper cwa:text-fg-muted"
-                      >{{ descriptionOf(resource) }}</span>
-                    </span>
-                    <ComboboxItemIndicator><CheckGlyph /></ComboboxItemIndicator>
-                  </ComboboxItem>
-                  <p
-                    v-if="results && !results.length && !loading && !failure"
-                    class="cwa:m-0 cwa:px-3 cwa:py-2 cwa:text-fg-muted"
-                    data-testid="search-empty"
-                  >
-                    No {{ noun }} match “{{ searched }}”.
-                  </p>
-                  <template v-if="more && !failure">
-                    <p
-                      class="cwa:m-0 cwa:px-3 cwa:pt-2 cwa:pb-1 cwa:text-helper cwa:text-fg-muted"
-                      data-testid="search-count"
-                    >
-                      Showing {{ results?.length }} of {{ total }}. Keep typing to narrow it down.
-                    </p>
-                    <ComboboxItem
-                      :value="SHOW_MORE"
-                      :class="[optionLook, 'cwa:font-semibold cwa:text-accent-fg']"
-                      @select="act($event, SHOW_MORE)"
-                    >
-                      Show {{ Math.min(perPage, total - (results?.length ?? 0)) }} more
-                    </ComboboxItem>
-                  </template>
-                </div>
-              </template>
+              <ResourceSearchList
+                v-bind="list"
+                @retry="retry"
+                @more="showMore"
+              />
             </ComboboxViewport>
           </ComboboxContent>
         </ComboboxPortal>
       </ComboboxRoot>
+      <SheetSearch
+        v-if="sheetOpen"
+        v-model:open="sheetOpen"
+        :query="query"
+        :model-value="value ?? undefined"
+        :label="label"
+        :placeholder="placeholder"
+        :panel-id="sheetId"
+        :return-to="returnTo"
+        test-id="search-sheet"
+        @update:query="onQuery"
+        @update:model-value="choose"
+      >
+        <ResourceSearchList
+          v-bind="list"
+          sheet
+          @retry="retry"
+          @more="showMore"
+        />
+      </SheetSearch>
     </template>
   </Field>
 </template>

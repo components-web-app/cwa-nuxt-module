@@ -3,6 +3,7 @@ import type { MaybeRefOrGetter } from 'vue'
 import { useCwa } from '#cwa/composables/cwa'
 import { registerInlineEditor, returnFromInlineEditor } from '#cwa/admin/inline-editors'
 import type { InlineEditor } from '#cwa/admin/inline-editors'
+import { labelModelField } from '#cwa/resources/model-editors'
 import type { ResourceModelField } from '#cwa/resources/model-editors'
 
 export interface CwaInlineEditorOps {
@@ -36,6 +37,7 @@ export function useCwaInlineEditor(model: ResourceModelField<any>, element: Mayb
   if (!key) {
     return
   }
+  ops.label && labelModelField(key, ops.label)
   const target = () => toValue(element) ?? undefined
   const editor: InlineEditor = {
     key,

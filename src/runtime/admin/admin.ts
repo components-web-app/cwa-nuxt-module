@@ -57,13 +57,7 @@ export default class Admin {
     this.adminStore.toggleEdit(editing)
   }
 
-  public setNavigationGuardDisabled(disabled: boolean) {
-    this.adminStore.state.navigationGuardDisabled = disabled
-  }
-
-  public get navigationGuardDisabled() {
-    return this.adminStore.state.navigationGuardDisabled
-  }
+  public visitPath: string | undefined
 
   public get isEditing() {
     return this.adminStore.state.isEditing

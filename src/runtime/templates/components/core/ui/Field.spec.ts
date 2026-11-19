@@ -6,6 +6,7 @@ import { axe } from '../../../../../../test/utils/axe'
 import { fakeFieldModel } from '../../../../../../playground/app/kit/fake-field-model'
 import type { FakeStatus } from '../../../../../../playground/app/kit/fake-field-model'
 import Input from '../../ui/Input.vue'
+import { modelFieldLabel } from '#cwa/resources/model-editors'
 
 enableAutoUnmount(afterEach)
 
@@ -32,6 +33,15 @@ function popover() {
 describe('Field and its status (#459)', () => {
   afterEach(() => {
     vi.useRealTimers()
+  })
+
+  test('labels its model with its label, following a new label, so a save that fails once the bar no longer shows it is named by its label (#461)', async () => {
+    const model = { ...fakeFieldModel<string>('Mine', 'idle'), editorKey: { iri: () => '/component/a', field: 'title' } }
+    const wrapper = mount(Input, { props: { label: 'Title', model } })
+
+    expect(modelFieldLabel(model.editorKey)).toBe('Title')
+    await wrapper.setProps({ label: 'Heading' })
+    expect(modelFieldLabel(model.editorKey)).toBe('Heading')
   })
 
   test.each([

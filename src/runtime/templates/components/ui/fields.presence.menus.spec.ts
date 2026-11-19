@@ -7,6 +7,8 @@ import MultiSelect from './MultiSelect.vue'
 import ResourceSearch from './ResourceSearch.vue'
 import DatePicker from './DatePicker.vue'
 import Input from './Input.vue'
+import Select from './Select.vue'
+import { onPhone } from '../../../../../test/utils/sheet-media'
 import { useCwaResourceModel } from '#cwa/composables/cwa-resource-model'
 
 const store = vi.hoisted(() => ({ entry: undefined as any }))
@@ -25,7 +27,7 @@ vi.mock('#cwa/composables/cwa', async () => {
     }),
   }
 })
-vi.mock('#cwa/resources/model-editors', () => ({ registerModelEditor: vi.fn(() => () => {}) }))
+vi.mock('#cwa/resources/model-editors', () => ({ registerModelEditor: vi.fn(() => () => {}), labelModelField: vi.fn(), modelFieldLabel: vi.fn() }))
 vi.mock('#cwa/resources/realtime-view', () => ({
   realtimeView: () => ({
     view: { value: { focusedBy: () => view.peers } },
@@ -144,6 +146,74 @@ describe.each(cases)('$name presence with its menu open (#461)', (item) => {
     await flushPromises()
     expect(view.blur).toHaveBeenCalledTimes(1)
     next.remove()
+  })
+})
+
+interface SheetCase {
+  name: string
+  component: Component
+  field: string
+  stored: unknown
+  props: Record<string, unknown>
+  opener: string
+  open: (opener: HTMLElement) => void
+  sheet: string
+}
+
+const sheetCases: SheetCase[] = [
+  {
+    name: 'CwaUiSelect',
+    component: Select,
+    field: 'uiComponent',
+    stored: 'wide',
+    props: { options: [{ label: 'Wide', value: 'wide' }, { label: 'Split image', value: 'split' }] },
+    opener: '[data-testid="select-trigger"]',
+    open: opener => opener.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true })),
+    sheet: '[data-testid="select-sheet"]',
+  },
+  { ...cases[0]!, open: opener => opener.click(), sheet: '[data-testid="multi-sheet"]' },
+  { ...cases[1]!, open: opener => opener.click(), sheet: '[data-testid="search-sheet"]' },
+]
+
+describe.each(sheetCases)('$name presence with its phone sheet open (#461)', (item) => {
+  beforeEach(() => {
+    onPhone()
+    store.entry = reactive({ data: { '@id': '/component/1', [item.field]: item.stored }, apiState: {} })
+    view.focus.mockClear()
+    view.blur.mockClear()
+    view.peers = []
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  test('moving into the sheet it opened and closing it again never reports leaving the field; a pointerdown elsewhere afterwards does', async () => {
+    const wrapper = mountCase(item as unknown as MenuCase)
+    const opener = wrapper.get<HTMLElement>(item.opener)
+    await opener.trigger('focusin')
+    item.open(opener.element)
+    await flushPromises()
+    const sheet = document.querySelector<HTMLElement>(item.sheet)!
+    const inside = sheet.querySelector<HTMLElement>('[role="option"]')!
+    expect(wrapper.element.contains(sheet)).toBe(false)
+
+    opener.element.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: inside }))
+    inside.dispatchEvent(new FocusEvent('focusin', { bubbles: true }))
+    inside.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+    await flushPromises()
+    expect(view.focus).toHaveBeenCalled()
+    expect(view.blur).not.toHaveBeenCalled()
+
+    sheet.querySelector<HTMLElement>('[data-testid$="-sheet-discard"]')!.click()
+    await flushPromises()
+    expect(wrapper.element.contains(document.activeElement)).toBe(true)
+    expect(view.blur).not.toHaveBeenCalled()
+
+    ;(document.activeElement as HTMLElement | null)?.blur()
+    document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+    await flushPromises()
+    expect(view.blur).toHaveBeenCalledTimes(1)
   })
 })
 

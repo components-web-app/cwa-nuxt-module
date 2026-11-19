@@ -37,6 +37,7 @@ function createRouterSim(h: Harness) {
       resourcesManager: { confirmDiscardAddingResource: () => true },
       auth: { isAdmin: computed(() => false) },
       admin: { isEditing: false },
+      followsRedirect: () => true,
       siteConfig: { loadConfig: vi.fn() },
     },
   }

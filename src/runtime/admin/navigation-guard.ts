@@ -34,7 +34,6 @@ export default class NavigationGuard {
 
   public get navigationDisabled() {
     return this.adminStore.state.isEditing
-      && !this.adminStore.state.navigationGuardDisabled
   }
 
   public get adminNavigationGuardFn() {

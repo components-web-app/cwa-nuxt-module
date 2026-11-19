@@ -58,7 +58,7 @@ export default class ResourceStackManager {
   private focusWrapper: HTMLElement | undefined
   private focusProxy: ComponentPublicInstance | undefined
   private focusGeneration = 0
-  private isModuleSelect = false
+  public isModuleSelect = false
   private focusDomElements: Ref<HTMLElement[]> | undefined
   private _currentStackItem: ComputedRef<undefined | ResourceStackItem> | undefined
   private _currentIri: ComputedRef<string | undefined> | undefined
@@ -186,10 +186,7 @@ export default class ResourceStackManager {
       this.currentResourceStack.value = this.previousResourceStack.value
     }
 
-    const { confirmResourceAction } = await import('./resource-confirm')
-    if (!await confirmResourceAction(this.vueApp, toLayout
-      ? { title: 'Edit the shared layout?', description: 'Changes appear on every page that uses this layout.', keep: 'Cancel', go: 'Edit layout', tone: 'accent' }
-      : { title: 'Edit the page?', description: 'Changes appear on this page only, not on other pages using the layout.', keep: 'Cancel', go: 'Edit page', tone: 'accent' })) {
+    if (!await this.confirmScope(toLayout)) {
       if (fromContext) {
         // can prevent the context stack from becoming the currentResourceStack easily here
         this.resetStack(true)
@@ -200,6 +197,28 @@ export default class ResourceStackManager {
     if (cachedNewStack) {
       this.currentResourceStack.value = cachedNewStack
     }
+    return true
+  }
+
+  private async confirmScope(toLayout: boolean) {
+    const { confirmResourceAction } = await import('./resource-confirm')
+    return confirmResourceAction(this.vueApp, toLayout
+      ? { title: 'Edit the shared layout?', description: 'Changes appear on every page that uses this layout.', keep: 'Cancel', go: 'Edit layout', tone: 'accent' }
+      : { title: 'Edit the page?', description: 'Changes appear on this page only, not on other pages using the layout.', keep: 'Cancel', go: 'Edit page', tone: 'accent' })
+  }
+
+  public async switchScope(type: 'page' | 'layout') {
+    const toLayout = type === 'layout'
+    if (this._isEditingLayout.value === toLayout) {
+      return true
+    }
+    if (!await this.confirmScope(toLayout)) {
+      return false
+    }
+    this._isEditingLayout.value = toLayout
+    this.previousResourceStack.value = []
+    this.currentResourceStack.value = []
+    this.showManager.value = false
     return true
   }
 
@@ -235,6 +254,13 @@ export default class ResourceStackManager {
     if (fromContext) {
       this.resetStack(true)
     }
+  }
+
+  public selectStack(stack: ResourceStackItem[], type: 'page' | 'layout') {
+    this.isLayoutStack.value = type === 'layout'
+    this.previousResourceStack.value = this.currentResourceStack.value
+    this.currentResourceStack.value = stack
+    return this.selectStackIndex(0, false)
   }
 
   private getCurrentTarget(isContext?: boolean) {

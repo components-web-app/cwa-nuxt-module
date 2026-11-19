@@ -140,6 +140,36 @@ describe('ReorderHandles', () => {
     expect(Object.values(elements).some(element => element.className.includes('wobble'))).toBe(false)
   })
 
+  test('a click on a grip over a component holding a link, pressed or dragged, never reaches the page, so the link menu does not open', async () => {
+    const { elements } = setup()
+    const link = document.createElement('a')
+    link.href = '/second'
+    elements[A]!.appendChild(link)
+    const pageClick = vi.fn()
+    document.addEventListener('click', pageClick)
+    mount(ReorderHandles, { props: { groupIri: GROUP } })
+    await flushPromises()
+    const handle = handles()[0]!
+
+    handle.dispatchEvent(pointer('pointerdown', 50))
+    handle.dispatchEvent(pointer('pointerup', 50))
+    const pressed = new MouseEvent('click', { bubbles: true, cancelable: true })
+    handle.dispatchEvent(pressed)
+
+    handle.dispatchEvent(pointer('pointerdown', 50))
+    handle.dispatchEvent(pointer('pointermove', 260))
+    handle.dispatchEvent(pointer('pointerup', 260))
+    const dragged = new MouseEvent('click', { bubbles: true, cancelable: true })
+    handle.dispatchEvent(dragged)
+
+    document.removeEventListener('click', pageClick)
+    expect(handle.contains(link)).toBe(false)
+    expect(handle.closest('a[href]')).toBeNull()
+    expect(pressed.defaultPrevented).toBe(true)
+    expect(dragged.defaultPrevented).toBe(true)
+    expect(pageClick).not.toHaveBeenCalled()
+  })
+
   test('the wobble rocks gently in the compiled CSS, without touching an app\'s own transform, and stops when the system asks for reduced motion', () => {
     const css = postcss.parse(readFileSync(resolve(import.meta.dirname, '../../../../assets/cwa.css'), 'utf8'))
     const declarations = (selector: string, inReduce: boolean) => {

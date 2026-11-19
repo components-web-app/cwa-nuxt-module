@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { resourcesConfig } from '#build/cwa-config'
 import { POPOVER_GAP } from '#cwa/templates/components/core/ui/popover-gap'
+import { popoverOpen } from '#cwa/templates/components/core/ui/open-motion'
 import { computed, onBeforeUnmount, ref } from 'vue'
 import { PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { navigateTo, useRouter } from '#app/composables/router'
@@ -194,7 +195,7 @@ async function goTo(event: MouseEvent, page: string) {
         align="start"
         :side-offset="POPOVER_GAP"
         data-testid="presence-list"
-        class="cwa:z-context cwa:min-w-[220px] cwa:max-w-sm cwa:max-h-[50vh] cwa:overflow-y-auto cwa:p-3 cwa:rounded-lg cwa:bg-surface-menu cwa:border cwa:border-line cwa:shadow-lg cwa:text-sm cwa:text-light"
+        :class="['cwa:z-context cwa:min-w-[220px] cwa:max-w-sm cwa:max-h-[50vh] cwa:overflow-y-auto cwa:p-3 cwa:rounded-lg cwa:bg-surface-menu cwa:border cwa:border-line cwa:shadow-lg cwa:text-sm cwa:text-light', popoverOpen]"
       >
         <ul class="cwa:flex cwa:flex-col cwa:gap-y-2">
           <li

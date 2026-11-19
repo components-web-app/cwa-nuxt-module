@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { POPOVER_GAP } from '../core/ui/popover-gap'
+import { popoverOpen } from '../core/ui/open-motion'
 import { computed } from 'vue'
 import { PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger } from 'reka-ui'
 import CwaUiFileUpload from './FileUpload.vue'
@@ -74,7 +75,7 @@ const altText = computed(() => altModel.value?.model.value ?? '')
             role="dialog"
             :aria-label="`${label} alt text`"
             data-testid="image-alt-popover"
-            class="cwa:z-context cwa:w-[min(20rem,calc(100vw-1rem))] cwa:bg-surface-menu cwa:p-3 cwa:text-fg cwa:shadow-popover cwa:outline-1 cwa:outline-transparent"
+            :class="['cwa:z-context cwa:w-[min(20rem,calc(100vw-1rem))] cwa:bg-surface-menu cwa:p-3 cwa:text-fg cwa:shadow-popover cwa:outline-1 cwa:outline-transparent', popoverOpen]"
           >
             <PopoverFormSurface>
               <CwaUiInput
