@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, useId, useTemplateRef } from 'vue'
 import { PopoverArrow, PopoverContent, PopoverPortal, PopoverRoot } from 'reka-ui'
-import { infoArrow, infoPanel } from '../core/ui/field-looks'
+import { infoArrow, infoPopover } from '../core/ui/field-looks'
 import { POPOVER_GAP } from '../core/ui/popover-gap'
 
 const { label, info } = defineProps<{
@@ -95,7 +95,7 @@ function onKeydown(event: KeyboardEvent) {
           :collision-padding="8"
           aria-hidden="true"
           data-testid="edit-placeholder-tooltip"
-          :class="['cwa:z-context cwa:w-max cwa:max-w-[min(20rem,calc(100vw-1rem))] cwa:p-popover cwa:text-control cwa:outline-none', infoPanel]"
+          :class="infoPopover"
           @open-auto-focus.prevent
           @close-auto-focus.prevent
           @pointerenter="onPointerenter"

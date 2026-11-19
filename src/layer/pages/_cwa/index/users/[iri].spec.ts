@@ -265,6 +265,22 @@ describe('admin user dialog (#461)', () => {
     expect(updateResource).toHaveBeenCalledWith(expect.objectContaining({ data: { roles: ['ROLE_SUPER_ADMIN'] } }))
   })
 
+  test('the Info tab\'s ID has Copy ID beside it, which copies the user\'s IRI for a bug report (#461)', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    vi.stubGlobal('navigator', { ...navigator, clipboard: { writeText } })
+    await setup()
+    tab('Info').click()
+    await flushPromises()
+
+    expect(q('[data-testid="user-id"]')!.textContent!.trim()).toBe(userIri)
+    const copy = q<HTMLButtonElement>('[data-testid="resource-id-copy"]')!
+    expect(copy.getAttribute('aria-label')).toBe('Copy ID')
+    copy.click()
+    await flushPromises()
+    expect(writeText).toHaveBeenCalledWith(userIri)
+    vi.unstubAllGlobals()
+  })
+
   test('another admin\'s account can have its role changed and be deleted', async () => {
     const { wrapper } = await setup()
     const role = wrapper.findAllComponents(Select).find(select => select.props('label') === 'Role')!

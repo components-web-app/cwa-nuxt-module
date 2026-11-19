@@ -2608,6 +2608,9 @@
 .cwa\:focus-visible\:outline-accent-fg:focus-visible {
   outline-color: var(--cwa-color-accent-fg);
 }
+.cwa\:focus-visible\:outline-accent-on-info:focus-visible {
+  outline-color: var(--cwa-color-accent-on-info);
+}
 .cwa\:focus-visible\:outline-blue-600:focus-visible {
   outline-color: var(--cwa-color-blue-600);
 }
@@ -2769,10 +2772,6 @@
 }
 .cwa\:data-\[state\=on\]\:bg-surface[data-state="on"] {
   background-color: var(--cwa-color-surface);
-}
-.cwa\:data-\[state\=on\]\:font-medium[data-state="on"] {
-  --tw-font-weight: var(--cwa-font-weight-medium);
-  font-weight: var(--cwa-font-weight-medium);
 }
 .cwa\:data-\[state\=on\]\:text-fg[data-state="on"] {
   color: var(--cwa-color-fg);

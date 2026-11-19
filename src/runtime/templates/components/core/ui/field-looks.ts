@@ -22,6 +22,8 @@ export const menuPanel = `cwa:z-context cwa:max-h-72 cwa:max-w-[min(22rem,calc(1
 
 export const infoPanel = `cwa:bg-surface-info cwa:text-white cwa:leading-normal cwa:shadow-popover cwa:ring-1 cwa:ring-white/15 ${popoverOpen}`
 
+export const infoPopover = `cwa:z-context cwa:w-max cwa:max-w-[min(20rem,calc(100vw-1rem))] cwa:p-popover cwa:text-control cwa:outline-none ${infoPanel}`
+
 export const infoArrow = 'cwa:fill-surface-info cwa:stroke-white/15'
 
 export const infoClose = 'cwa:grid cwa:size-6 cwa:shrink-0 cwa:cursor-pointer cwa:place-items-center cwa:text-white cwa:hover:bg-white/15'

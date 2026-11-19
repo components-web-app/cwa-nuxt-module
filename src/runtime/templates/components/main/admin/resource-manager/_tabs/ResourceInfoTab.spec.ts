@@ -109,7 +109,7 @@ describe('Info tab — the delete button', () => {
     resourceData.value = data
     const wrapper = mountInfoTab()
 
-    expect(wrapper.find('button').text()).toBe('Delete')
+    expect(wrapper.find('[data-testid="component-delete"] button').text()).toBe('Delete')
   })
 
   test('adding a new resource says Discard, even when it is publishable', () => {
@@ -117,7 +117,7 @@ describe('Info tab — the delete button', () => {
     resourceData.value = publishable(false)
     const wrapper = mountInfoTab()
 
-    expect(wrapper.find('button').text()).toBe('Discard')
+    expect(wrapper.find('[data-testid="component-delete"] button').text()).toBe('Discard')
   })
 })
 
@@ -202,7 +202,7 @@ describe('Info tab — a component in several locations', () => {
     const wrapper = mountInfoTab()
     await flushPromises()
 
-    await wrapper.find('button').trigger('click')
+    await wrapper.find('[data-testid="component-delete"] button').trigger('click')
     await flushPromises()
 
     expect(mocks.confirmChoice).toHaveBeenCalledWith(mocks.vueApp, {
@@ -229,7 +229,7 @@ describe('Info tab — a component in several locations', () => {
     const wrapper = mountInfoTab()
     await flushPromises()
 
-    await wrapper.find('button').trigger('click')
+    await wrapper.find('[data-testid="component-delete"] button').trigger('click')
     await flushPromises()
 
     expect(mocks.editingNotice).toHaveBeenCalledWith(mockCwa, '/component/abc')
@@ -248,7 +248,7 @@ describe('Info tab — a component in several locations', () => {
     const wrapper = mountInfoTab()
     await flushPromises()
 
-    await wrapper.find('button').trigger('click')
+    await wrapper.find('[data-testid="component-delete"] button').trigger('click')
     await flushPromises()
 
     expect(mockCwa.resourcesManager.deleteResource).toHaveBeenCalledTimes(1)
@@ -266,7 +266,7 @@ describe('Info tab — a component in several locations', () => {
     const wrapper = mountInfoTab()
     await flushPromises()
 
-    await wrapper.find('button').trigger('click')
+    await wrapper.find('[data-testid="component-delete"] button').trigger('click')
     await flushPromises()
 
     expect(mockCwa.resourcesManager.deleteResource).toHaveBeenCalledTimes(1)
@@ -291,7 +291,7 @@ describe('Info tab — a component in several locations', () => {
     const wrapper = mountInfoTab()
     await flushPromises()
 
-    await wrapper.find('button').trigger('click')
+    await wrapper.find('[data-testid="component-delete"] button').trigger('click')
     await flushPromises()
 
     expect(mockCwa.resourcesManager.queueComponentGroupWrite).toHaveBeenCalledTimes(1)
@@ -307,7 +307,7 @@ describe('Info tab — a component in several locations', () => {
     const wrapper = mountInfoTab()
     await flushPromises()
 
-    await wrapper.find('button').trigger('click')
+    await wrapper.find('[data-testid="component-delete"] button').trigger('click')
     await flushPromises()
 
     expect(mockCwa.resourcesManager.deleteResource).toHaveBeenCalledWith({ endpoint: '/_/component_positions/p2', refreshEndpoints: [] }, true)
@@ -322,7 +322,7 @@ describe('Info tab — a component in several locations', () => {
     const wrapper = mountInfoTab()
     await flushPromises()
 
-    await wrapper.find('button').trigger('click')
+    await wrapper.find('[data-testid="component-delete"] button').trigger('click')
     await flushPromises()
 
     expect(mockCwa.resourcesManager.updateResource).toHaveBeenCalledWith({
@@ -343,7 +343,7 @@ describe('Info tab — a component in several locations', () => {
     const wrapper = mountInfoTab()
     await flushPromises()
 
-    await wrapper.find('button').trigger('click')
+    await wrapper.find('[data-testid="component-delete"] button').trigger('click')
     await flushPromises()
 
     expect(mockCwa.resourcesManager.deleteResource).toHaveBeenCalled()
@@ -354,7 +354,7 @@ describe('Info tab — a component in several locations', () => {
     const wrapper = mountInfoTab()
     await flushPromises()
 
-    await wrapper.find('button').trigger('click')
+    await wrapper.find('[data-testid="component-delete"] button').trigger('click')
     await flushPromises()
 
     expect(mocks.confirmChoice).not.toHaveBeenCalled()
@@ -402,7 +402,7 @@ describe('Info tab — a component in several locations', () => {
     async function clickDelete() {
       const wrapper = mountInfoTab()
       await flushPromises()
-      await wrapper.find('button').trigger('click')
+      await wrapper.find('[data-testid="component-delete"] button').trigger('click')
       await flushPromises()
     }
 
@@ -555,7 +555,7 @@ describe('Info tab — a component in several locations', () => {
     async function clickDelete() {
       const wrapper = mountInfoTab()
       await flushPromises()
-      await wrapper.find('button').trigger('click')
+      await wrapper.find('[data-testid="component-delete"] button').trigger('click')
       await flushPromises()
     }
 
@@ -635,5 +635,28 @@ describe('Info tab — a component in several locations', () => {
     expect(row.indexOf('cwa:bg-line')).toBeGreaterThan(row.indexOf('resource-usage'))
     expect(row.indexOf('cwa:bg-line')).toBeLessThan(row.indexOf('component-delete'))
     expect(await axe(wrapper.element as HTMLElement)).toHaveNoViolations()
+  })
+
+  test('the ID has Copy ID beside it, which copies the component\'s IRI for a bug report (#461)', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    vi.stubGlobal('navigator', { ...navigator, clipboard: { writeText } })
+    const wrapper = mountInfoTab()
+    await flushPromises()
+
+    const copy = wrapper.get('[data-testid="resource-id-copy"]')
+    expect(copy.attributes('aria-label')).toBe('Copy ID')
+    expect(copy.element.compareDocumentPosition(wrapper.get('[data-testid="resource-id"]').element) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy()
+    await copy.trigger('click')
+    await flushPromises()
+    expect(writeText).toHaveBeenCalledWith('/component/abc')
+    vi.unstubAllGlobals()
+  })
+
+  test('a component not added yet has no ID to copy (#461)', async () => {
+    iri.value = NEW_RESOURCE_IRI
+    const wrapper = mountInfoTab()
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="resource-id-copy"]').exists()).toBe(false)
   })
 })

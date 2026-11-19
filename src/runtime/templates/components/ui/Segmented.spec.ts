@@ -1,4 +1,6 @@
 // @vitest-environment happy-dom
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { afterEach, describe, expect, test } from 'vitest'
 import { enableAutoUnmount, mount } from '@vue/test-utils'
 import { axe } from '../../../../../test/utils/axe'
@@ -66,5 +68,22 @@ describe('CwaUiSegmented (#460)', () => {
     expect(group.element.parentElement!.classList).toContain('cwa:max-w-full')
     expect(drawsFocusRing(group.findAll('button')[0]!.classes())).toBe(true)
     expect(group.findAll('button')[0]!.classes()).toContain('cwa:focus-visible:-outline-offset-2')
+  })
+
+  test('the pressed segment is shown by its fill and colour alone, so no segment and not the control changes size when the choice changes (#461)', () => {
+    const css = readFileSync(resolve(import.meta.dirname, '../../assets/cwa.css'), 'utf8')
+    const wrapper = mount(Segmented, { props: { label: 'Link', options, modelValue: 'page' } })
+    const [pressed, other] = wrapper.findAll('button')
+    const sizing = /(?:^|\s)(?:font-weight|font-size|letter-spacing|padding[\w-]*|border[\w-]*width|border|width|min-width|line-height|--tw-font-weight):/
+
+    expect(pressed!.classes()).toEqual(other!.classes())
+    const stateRules = pressed!.classes().filter(name => name.includes('data-[state=')).map((name) => {
+      const selector = `.${name.replace(/[:[\]=/().!]/g, match => `\\${match}`)}`
+      const start = css.indexOf(`${selector}`)
+      expect(start, name).toBeGreaterThan(-1)
+      return { name, body: css.slice(css.indexOf('{', start), css.indexOf('}', start)) }
+    })
+    expect(stateRules.length).toBeGreaterThan(0)
+    expect(stateRules.filter(rule => sizing.test(rule.body)).map(rule => rule.name)).toEqual([])
   })
 })
