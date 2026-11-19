@@ -94,7 +94,6 @@ const sections = computed<ComboboxSection[]>(() => list.value.sections.map(secti
     value: option.name,
     label: option.label,
     description: option.description,
-    detail: option.count ? `${option.count} here` : undefined,
   })),
 })))
 
@@ -476,7 +475,6 @@ watch(open, async (isOpen: boolean) => {
                   :key="chip.name"
                   type="button"
                   :tabindex="index === activeChip ? 0 : -1"
-                  :aria-describedby="`add-component-chip-${chip.name}`"
                   data-testid="add-component-chip"
                   :data-value="chip.name"
                   class="cwa:inline-flex cwa:h-control cwa:cursor-pointer cwa:items-center cwa:gap-2 cwa:bg-button cwa:ps-3 cwa:pe-3.5 cwa:text-label cwa:text-fg cwa:outline-1 cwa:outline-transparent cwa:transition-colors cwa:duration-(--cwa-duration-fast) cwa:hover:bg-field-hover cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-accent-fg cwa:pointer-coarse:h-hit"
@@ -489,10 +487,6 @@ watch(open, async (isOpen: boolean) => {
                     chip
                   />
                   {{ chip.label }}
-                  <span
-                    :id="`add-component-chip-${chip.name}`"
-                    class="cwa:sr-only"
-                  >{{ chip.count }} here</span>
                 </button>
               </div>
             </div>

@@ -9,7 +9,6 @@ export interface ComboboxOption {
   value: string
   label: string
   description?: string
-  detail?: string
 }
 
 export interface ComboboxSection {
@@ -169,7 +168,7 @@ function parts(text: string) {
 }
 
 function described(option: ComboboxOption, section: ComboboxSection) {
-  return [option.description, option.detail, section.label].filter(Boolean).join(', ')
+  return [option.description, section.label].filter(Boolean).join(', ')
 }
 
 function focus(byKeyboard = false) {
@@ -284,11 +283,6 @@ defineExpose({ focus, highlighted })
                 class="cwa:text-helper cwa:text-fg-muted cwa:group-hover:text-muted-on-field cwa:group-data-highlighted:text-muted-on-field cwa:max-sm:line-clamp-2 cwa:sm:truncate"
               >{{ option.description }}</span>
             </span>
-            <span
-              v-if="option.detail"
-              aria-hidden="true"
-              class="cwa:shrink-0 cwa:text-helper cwa:text-fg-muted cwa:group-hover:text-muted-on-field cwa:group-data-highlighted:text-muted-on-field"
-            >{{ option.detail }}</span>
             <span
               v-if="described(option, section)"
               :id="`${optionId(option.value)}-about`"

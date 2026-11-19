@@ -253,9 +253,13 @@ describe('the add component dialog (#461)', () => {
       expect(qa('[data-testid="add-component-chip"]').every(chip => drawsFocusRing([...chip.classList]))).toBe(true)
       expect(document.getElementById(q('[data-testid="add-component-quick"]')!.getAttribute('aria-labelledby')!)!.textContent!.trim()).toBe('Already in this group')
       const image = qa('[data-testid="add-component-chip"]')[0]!
-      expect(document.getElementById(image.getAttribute('aria-describedby')!)!.textContent).toBe('2 here')
+      expect(image.textContent).not.toContain('here')
+      expect(image.hasAttribute('aria-describedby')).toBe(false)
       expect(optionValues()).toContain('Image')
       expect(optionValues()).toContain('HtmlContent')
+      const imageRow = qa('[role="option"]').find(option => option.dataset.value === 'Image')!
+      expect(shown(imageRow)).not.toContain('here')
+      expect(document.getElementById(imageRow.getAttribute('aria-describedby')!)!.textContent).toBe('One image with alt text, Media')
     })
 
     test('the chips are left out when the group is empty', async () => {
@@ -335,7 +339,7 @@ describe('the add component dialog (#461)', () => {
   })
 
   describe('searching', () => {
-    test('hides the chips, lists in-group matches once with their count, and ranks names first', async () => {
+    test('hides the chips, lists in-group matches once without their count, and ranks names first', async () => {
       await mountDialog()
       await openDialog()
 
@@ -344,8 +348,8 @@ describe('the add component dialog (#461)', () => {
       expect(q('[data-testid="add-component-quick"]')).toBeNull()
       expect(optionValues()).toEqual(['Image', 'Hero', 'HtmlContent'])
       const image = qa('[role="option"]')[0]!
-      expect(shown(image)).toContain('2 here')
-      expect(document.getElementById(image.getAttribute('aria-describedby')!)!.textContent).toBe('One image with alt text, 2 here, Media')
+      expect(shown(image)).not.toContain('here')
+      expect(document.getElementById(image.getAttribute('aria-describedby')!)!.textContent).toBe('One image with alt text, Media')
     })
 
     test('typing a name highlights it first', async () => {

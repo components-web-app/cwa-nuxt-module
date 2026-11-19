@@ -12,10 +12,10 @@ enableAutoUnmount(afterEach)
 const allSections: ComboboxSection[] = [
   { key: 'text', label: 'Text', options: [
     { value: 'RichText', label: 'Rich text', description: 'Paragraphs and links' },
-    { value: 'Button', label: 'Button', detail: '2 here' },
+    { value: 'Button', label: 'Button' },
   ] },
   { key: 'media', label: 'Media', options: [
-    { value: 'Image', label: 'Image', description: 'One image with alt text', detail: '3 here' },
+    { value: 'Image', label: 'Image', description: 'One image with alt text' },
   ] },
 ]
 
@@ -82,13 +82,13 @@ describe('CwaUiCombobox, inline-open (#461)', () => {
     expect(groups.map(group => document.getElementById(group.getAttribute('aria-labelledby')!)!.textContent!.trim())).toEqual(['Text', 'Media'])
   })
 
-  test('an option is named by its label and described by its description, detail and section', async () => {
+  test('an option is named by its label and described by its description and section', async () => {
     mountCombobox()
     await flushPromises()
 
     const image = options().find(option => option.dataset.value === 'Image')!
     expect(document.getElementById(image.getAttribute('aria-labelledby')!)!.textContent).toBe('Image')
-    expect(document.getElementById(image.getAttribute('aria-describedby')!)!.textContent).toBe('One image with alt text, 3 here, Media')
+    expect(document.getElementById(image.getAttribute('aria-describedby')!)!.textContent).toBe('One image with alt text, Media')
   })
 
   test('the first option is highlighted and named as the active descendant', async () => {
