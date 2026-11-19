@@ -1,7 +1,7 @@
 import * as Y from 'yjs'
 import { expect, test } from './fixtures.mjs'
 import { mercurePath } from './rehearsal.mjs'
-import { articleTexts, seedArticlePages, texts } from './seed.mjs'
+import { articleTexts, collectionTexts, seedArticlePages, seedCollection, texts } from './seed.mjs'
 import { controlRows } from './control-rows.mjs'
 
 const notFoundResource = /^Failed to load resource: the server responded with a status of 404/
@@ -2158,4 +2158,51 @@ test('73. publishing an image that has no file shows the refusal on its file fie
   assert(await publish.evaluate(el => el === document.activeElement), 'Showing the refused field moved focus off Publish')
   await t.settle()
   assert(await page.locator('[data-toast-id^="cwa-request-error-"]').count() === 0, 'The refusal was also raised as a toast')
+})
+
+async function collectionRoot(page) {
+  const root = page.getByRole('group', { name: 'Collection component' })
+  await root.waitFor()
+  return root
+}
+
+test('74. in edit mode a Collection is outlined with a crosshair over its own area and selected by a click there, and a click on one of its item links opens the link menu with Edit Collection, which selects it (#461)', async ({ cwa: t }) => {
+  const { page, settle } = t
+  const seeded = await seedCollection(t.api, t.rehearsal.token, t.seed)
+  await openEditMode(t)
+  await page.getByText(collectionTexts.articleA, { exact: true }).waitFor()
+  await settle()
+  const root = await collectionRoot(page)
+  await root.scrollIntoViewIfNeeded()
+  await settle()
+  const box = await root.boundingBox()
+  const own = { x: box.x + 4, y: box.y + box.height - 3 }
+  await page.mouse.move(own.x, own.y)
+  const outline = await eventually(async () => {
+    const [drawn] = await page.getByTestId('hover-outline').evaluateAll(els => els.map((el) => {
+      const r = el.getBoundingClientRect()
+      return { top: r.top, left: r.left, width: r.width, height: r.height }
+    }))
+    return drawn && covers(drawn, { top: box.y, left: box.x, width: box.width, height: box.height }) ? drawn : undefined
+  }, 'No hover outline was drawn over the Collection')
+  assert(outline.width <= box.width + 2, `The hover outline is wider than the Collection: ${JSON.stringify(outline)}`)
+  const cursor = await page.evaluate(({ x, y }) => getComputedStyle(document.elementFromPoint(x, y)).cursor, own)
+  assert(cursor === 'crosshair', `The cursor over the Collection is ${cursor}`)
+
+  await page.mouse.click(own.x, own.y)
+  await page.getByTestId('component-menu').waitFor()
+
+  const selectedName = async () => (await page.getByTestId('path-selector-name').innerText()).trim()
+  await eventually(async () => await selectedName() === 'Collection', 'A click on the Collection\'s own area did not select it')
+
+  await select(page, texts.pageAOther)
+  await eventually(async () => await selectedName() !== 'Collection', 'Selecting another component kept the Collection selected')
+  await page.getByText(collectionTexts.articleB, { exact: true }).click()
+  const menu = linkMenu(page)
+  await menu.getByTestId('link-menu-edit').waitFor()
+  const rows = await menu.getByRole('menuitem').allInnerTexts()
+  assert(rows.length === 2 && rows[0] === 'Edit Collection' && rows[1] === `Visit ${seeded.paths.articleB}`, `The link menu lists ${JSON.stringify(rows)}`)
+  await menu.getByTestId('link-menu-edit').click()
+  await eventually(async () => await selectedName() === 'Collection', 'Edit Collection in the link menu did not select the Collection')
+  assert(page.url().endsWith(t.seed.paths.home), `The item link navigated to ${page.url()}`)
 })
