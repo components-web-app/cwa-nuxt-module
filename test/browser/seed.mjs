@@ -113,3 +113,23 @@ export async function seedClonePages(api, token) {
     },
   }
 }
+
+export const collectionTexts = {
+  articleA: 'E2E collection article A',
+  articleB: 'E2E collection article B',
+}
+
+export async function seedCollection(api, token, { iris }, { source = '/page_data/blog_article_datas' } = {}) {
+  const name = key => `e2e-${token}-${key}`
+  const template = await api.create('/_/pages', { reference: name('collection-template'), title: 'E2E collection template', layout: iris.layout, uiComponent: 'CwaPagePrimaryPageTemplate', isTemplate: true })
+  const articles = {}
+  const paths = {}
+  for (const [key, title] of Object.entries(collectionTexts)) {
+    articles[key] = (await api.create('/page_data/blog_article_datas', { title, page: template['@id'] }))['@id']
+    paths[key] = `/${name(`collection-${key}`)}`
+    await api.create('/_/routes', { path: paths[key], name: name(`collection-${key}`), pageData: articles[key] })
+  }
+  const collection = await api.create('/component/collections', { resourceIri: `${apiPrefix}${source}`, perPage: 4 })
+  const position = await api.create('/_/component_positions', { componentGroup: iris.pageAGroup, component: collection['@id'] })
+  return { collection: collection['@id'], position: position['@id'], articles, paths }
+}
