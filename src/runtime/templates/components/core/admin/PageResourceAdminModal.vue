@@ -1,266 +1,323 @@
 <template>
-  <ResourceModal
-    v-if="localResourceData"
-    v-model="titleModel"
-    :title-placeholder="isDisplayingPage ? 'No Reference' : 'No Title'"
-    :is-loading="isLoading"
-    :border-color-class="borderColorClass"
+  <CwaUiDialog
+    v-if="localResourceData || isLoading || loadFailed"
+    ref="dialog"
+    v-model:tab="tab"
+    placement="right"
+    :title="dialogTitle"
+    :tabs="tabs"
+    :form="form"
+    :loading="isLoading"
+    :load-failed="loadFailed"
+    :kind="kind"
+    :noun="createNoun"
+    :create-noun="isAdding ? createNoun : undefined"
+    data-testid="page-dialog"
     @close="$emit('close')"
-    @save="saveTitle"
+    @retry="loadResource()"
+    @save="saveResource()"
   >
-    <template
-      v-if="isDisplayingPage"
-      #title
-    >
-      <PageTypeSelect v-model="localResourceData.isTemplate" />
-    </template>
-    <template
-      v-if="!hideViewLink && !isAdding"
-      #icons
-    >
-      <div>
-        <NuxtLink :to="getInternalResourceLink(localResourceData['@id'])">
-          <CwaUiIconEyeIcon class="cwa:w-9" />
-        </NuxtLink>
-      </div>
+    <template #header-actions>
+      <CwaUiSelect
+        v-if="isDisplayingPage && localResourceData"
+        class="cwa:me-2"
+        :model="pageTypeModel"
+        label="Page type"
+        label-hidden
+        width="sm"
+        :options="pageTypeOptions"
+        data-testid="page-type"
+      />
+      <CwaUiButton
+        v-if="!hideViewLink && !isAdding"
+        variant="ghost"
+        icon-only
+        large-icon
+        :icon="EyeGlyph"
+        label="View page on site"
+        data-testid="page-view-on-site"
+        @click="viewOnSite"
+      />
     </template>
     <template
       v-if="depthChain.length > 1"
       #subheader
     >
-      <div class="cwa:flex cwa:gap-x-1 cwa:justify-center cwa:flex-wrap">
-        <button
-          v-for="option in depthChain"
-          :key="String(option.value)"
-          type="button"
-          class="cwa:py-1 cwa:px-3 cwa:text-sm cwa:rounded cwa:transition cwa:cursor-pointer"
-          :class="displayIri === option.value
-            ? 'cwa:text-stone-100 cwa:bg-stone-700/80'
-            : 'cwa:text-stone-400 cwa:hover:text-stone-300'"
-          @click="displayIri = option.value as string"
-        >
-          {{ option.label }}
-        </button>
+      <div
+        class="cwa:shrink-0 cwa:overflow-x-auto cwa:px-6 cwa:pt-3 cwa:max-sm:px-4"
+        data-testid="page-depths"
+      >
+        <CwaUiSegmented
+          v-model="displayIriModel"
+          label="Editing"
+          label-hidden
+          :options="depthOptions"
+        />
       </div>
     </template>
-    <ResourceModalTabs :tabs="tabs">
-      <template #details>
-        <div class="cwa:flex cwa:flex-col cwa:gap-y-2">
-          <div class="cwa:flex cwa:flex-col cwa:gap-y-2 cwa:pb-2 cwa:border-b cwa:border-stone-500">
-            <span class="cwa:text-xs cwa:text-stone-400 cwa:uppercase cwa:tracking-wide cwa:px-1">Parent page</span>
-            <ModalRadioTabs
-              v-model="parentType"
-              :options="parentTypeOptions"
-            />
-            <div v-if="parentType === 'page'">
-              <ModalSelect
-                v-model="localResourceData.parentPage"
-                label="Parent Page"
-                :options="parentPageOptions"
-              />
-            </div>
-            <template v-if="parentType === 'data'">
-              <div>
-                <ModalSelect
-                  v-model="selectedParentDataType"
-                  label="Parent Data Type"
-                  :options="dataTypeOptions"
-                />
-              </div>
-              <div v-if="selectedParentDataType">
-                <ModalSelect
-                  v-model="localResourceData.parentPageData"
-                  label="Parent Data"
-                  :options="dataInstanceOptions"
-                />
-              </div>
-            </template>
-          </div>
-          <template v-if="isDisplayingPage">
-            <div>
-              <ModalInput
-                v-model="localResourceData.title"
-                label="SEO Page Title"
-              />
-            </div>
-          </template>
-          <div>
-            <ModalInput
-              v-model="localResourceData.metaDescription"
-              label="SEO Meta Description"
-            />
-          </div>
-          <template v-if="isDisplayingPage">
-            <div>
-              <ModalSelect
-                v-model="localResourceData.layout"
-                label="Layout"
-                :options="layoutOptions"
-              />
-            </div>
-            <div class="cwa:flex cwa:gap-x-2">
-              <div class="cwa:grow">
-                <ModalSelect
-                  v-model="pageUiComponentModel"
-                  label="Page UI"
-                  :options="pageComponentOptions"
-                />
-              </div>
-              <div
-                v-if="pageStyleOptions.length"
-                class="cwa:w-1/2"
-              >
-                <ModalSelect
-                  v-model="localResourceData.uiClassNames"
-                  label="Style"
-                  :options="pageStyleOptions"
-                />
-              </div>
-            </div>
-          </template>
-          <template v-if="!isDisplayingPage">
-            <div>
-              <ModalSelect
-                v-model="localResourceData.page"
-                label="Dynamic Page"
-                :options="pageOptions"
-              />
-            </div>
-            <div class="cwa:flex cwa:items-center cwa:gap-x-1.5 cwa:text-xs">
-              <CwaUiIconEyeIcon
-                class="cwa:w-4 cwa:flex-none"
-                :class="localResourceData?.page ? 'cwa:text-yellow' : 'cwa:text-stone-500'"
-              />
-              <button
-                v-if="localResourceData?.page"
-                type="button"
-                class="cwa:cursor-pointer cwa:text-yellow cwa:transition cwa:hover:opacity-80"
-                @click="goToTemplate"
-              >
-                Go to dynamic template
-              </button>
-              <span
-                v-else
-                class="cwa:text-stone-500"
-              >No template selected</span>
-            </div>
-            <div v-if="pageDataConfig?.metaFields">
-              <template
-                v-for="field of pageDataConfig.metaFields"
-                :key="`field-${field.field}`"
-              >
-                <ModalInput
-                  v-if="field.type === 'input'"
-                  v-model="localResourceData[field.field]"
-                  :label="field.label"
-                />
-                <ModalSelect
-                  v-else
-                  v-model="localResourceData[field.field]"
-                  :label="field.label"
-                  :options="field.options || []"
-                />
-              </template>
-            </div>
-          </template>
-          <ModalReachableToggle
-            v-model="localResourceData.isReachableWithoutRoute"
-            :has-route="!!resource?.route"
+    <template #details>
+      <CwaUiAlert
+        v-if="missing"
+        :title="missing.title"
+        data-testid="page-missing-prerequisite"
+      >
+        {{ missing.text }}
+        <template #actions>
+          <CwaUiButton
+            :label="missing.action"
+            data-testid="page-missing-prerequisite-link"
+            @click="goToCreate(missing.to)"
           />
-          <div class="cwa:flex cwa:justify-end cwa:pt-2 cwa:gap-x-2">
-            <div>
-              <CwaUiFormButton
-                color="dark"
-                :disabled="isUpdating"
-                @click="saveResource(true)"
-              >
-                Save &amp; Close
-              </CwaUiFormButton>
-            </div>
-            <div>
-              <CwaUiFormButton
-                color="blue"
-                :disabled="isUpdating"
-                @click="() => saveResource(false)"
-              >
-                Save
-              </CwaUiFormButton>
-            </div>
-          </div>
-        </div>
-      </template>
-      <template #routes>
-        <RoutesTab
-          v-if="resource && resource.hasOwnProperty('@id')"
-          :page-resource="resource as CwaResource"
-          @reload="loadResource"
-        />
-      </template>
-      <template #info>
-        <div class="cwa:flex cwa:flex-col cwa:gap-y-2">
-          <div>
-            <ModalInfo
-              label="Created"
-              :content="formatDate(localResourceData.createdAt)"
-            />
-          </div>
-          <div>
-            <ModalInfo
-              label="Updated"
-              :content="formatDate(localResourceData.updatedAt)"
-            />
-          </div>
-          <div>
-            <ModalInfo
-              label="ID"
-              :content="localResourceData['@id']"
-            />
-          </div>
-          <PagePurgeCache
-            v-if="isDisplayedPage"
-            class="cwa:pt-6"
+        </template>
+      </CwaUiAlert>
+      <template v-else>
+        <CwaUiFormSection>
+          <CwaUiInput
+            v-if="isDisplayingPage"
+            field="reference"
+            label="Reference"
+            info="Only admins see this. It names the page in lists."
           />
-          <div class="cwa:flex cwa:justify-start cwa:pt-6">
-            <div>
-              <CwaUiFormButton
-                :disabled="isUpdating"
-                @click="handleDeleteClick"
-              >
-                Delete
-              </CwaUiFormButton>
-            </div>
+          <CwaUiInput
+            v-else
+            field="title"
+            label="Title"
+          />
+        </CwaUiFormSection>
+        <CwaUiFormSection
+          v-if="isDisplayingPage"
+          title="Appearance"
+          :columns="2"
+        >
+          <CwaUiSelect
+            field="layout"
+            label="Layout"
+            :options="layoutOptions"
+          />
+          <CwaUiSelect
+            :model="pageUiModel"
+            label="Page UI"
+            :options="pageComponentOptions"
+          />
+          <CwaUiSelect
+            v-if="pageStyleOptions.length"
+            :model="pageStyleModel"
+            label="Style"
+            :options="pageStyleOptions"
+            nullable
+            none-label="Default"
+          />
+        </CwaUiFormSection>
+        <CwaUiFormSection
+          title="Search engines"
+          description="What people see in search results."
+        >
+          <CwaUiInput
+            v-if="isDisplayingPage"
+            field="title"
+            label="SEO page title"
+            optional
+          />
+          <CwaUiTextarea
+            field="metaDescription"
+            label="SEO meta description"
+            optional
+            counter
+          />
+        </CwaUiFormSection>
+        <CwaUiFormSection
+          v-if="!isDisplayingPage"
+          title="Template"
+        >
+          <CwaUiSelect
+            field="page"
+            label="Dynamic page"
+            :options="pageOptions"
+          />
+          <div v-if="localResourceData?.page">
+            <CwaUiButton
+              label="Go to dynamic template"
+              :icon="EyeGlyph"
+              data-testid="go-to-template"
+              @click="goToTemplate"
+            />
           </div>
-        </div>
+          <p
+            v-else
+            class="cwa:m-0 cwa:text-helper cwa:text-fg-muted"
+            data-testid="no-template"
+          >
+            No template selected
+          </p>
+          <template
+            v-for="metaField of pageDataConfig?.metaFields ?? []"
+            :key="`field-${metaField.field}`"
+          >
+            <CwaUiInput
+              v-if="metaField.type === 'input'"
+              :field="metaField.field"
+              :label="metaField.label"
+            />
+            <CwaUiSelect
+              v-else
+              :model="metaSelects[metaField.field]!.model"
+              :label="metaField.label"
+              :options="metaSelects[metaField.field]!.options"
+              nullable
+            />
+          </template>
+        </CwaUiFormSection>
+        <CwaUiFormSection title="Nesting">
+          <CwaUiSegmented
+            v-model="parentTypeModel"
+            label="Nested under"
+            :options="parentTypeOptions"
+          />
+          <CwaReveal :when="parentType === 'page'">
+            <CwaUiSelect
+              field="parentPage"
+              label="Parent page"
+              :options="parentPageOptions"
+              nullable
+            />
+          </CwaReveal>
+          <CwaReveal :when="parentType === 'data'">
+            <CwaUiSelect
+              v-model="selectedParentDataType"
+              label="Parent data type"
+              :options="dataTypeOptions"
+            />
+            <CwaReveal :when="!!selectedParentDataType">
+              <CwaUiSelect
+                field="parentPageData"
+                label="Parent data"
+                :options="dataInstanceOptions"
+                nullable
+              />
+            </CwaReveal>
+          </CwaReveal>
+        </CwaUiFormSection>
       </template>
-    </ResourceModalTabs>
-  </ResourceModal>
+    </template>
+    <template #routes>
+      <RoutesTabManage
+        v-if="isAdding && !missing"
+        v-model="newRoutePath"
+        v-model:live-at="newRouteLiveAt"
+        v-model:awaiting-date="newRouteAwaitingDate"
+        current-path=""
+        :parent-route-prefix="newRouteDefaults.parentRoutePrefix.value"
+        :recommended-path="newRouteDefaults.recommendedPath.value"
+        :recommended-from="localResourceData?.title || undefined"
+        :path-error="form.fieldErrors.route"
+        :noun="createNoun"
+        optional
+      />
+      <RoutesTab
+        v-else-if="resource && resource.hasOwnProperty('@id')"
+        :page-resource="resource as CwaResource"
+        @reload="loadResource"
+        @open-page="openPage"
+        @go-to="goToPath"
+      />
+    </template>
+    <template #info>
+      <CwaUiFormSection>
+        <dl class="cwa:m-0">
+          <dt class="cwa:text-label cwa:text-fg">
+            ID
+          </dt>
+          <dd
+            class="cwa:m-0 cwa:mt-1.5 cwa:break-all cwa:font-mono cwa:text-control cwa:text-fg-secondary"
+            data-testid="page-id"
+          >
+            {{ localResourceData?.['@id'] }}
+          </dd>
+        </dl>
+      </CwaUiFormSection>
+      <CwaUiFormSection
+        title="History"
+        :columns="2"
+      >
+        <dl
+          v-for="entry in history"
+          :key="entry.label"
+          class="cwa:m-0"
+        >
+          <dt class="cwa:text-label cwa:text-fg">
+            {{ entry.label }}
+          </dt>
+          <dd class="cwa:m-0 cwa:mt-1.5 cwa:text-control cwa:text-fg-secondary">
+            {{ entry.value }}
+          </dd>
+        </dl>
+      </CwaUiFormSection>
+      <CwaUiFormSection
+        v-if="isDisplayedPage"
+        title="Cache"
+        description="Visitors may see a cached copy for a while after a change."
+      >
+        <PagePurgeCache />
+      </CwaUiFormSection>
+      <CwaUiFormSection
+        title="Delete this page"
+        :description="deleteSentence"
+        data-testid="page-delete-section"
+      >
+        <div>
+          <CwaUiButton
+            tone="danger"
+            :label="checkingDelete ? 'Checking' : 'Delete page'"
+            :loading="checkingDelete || isUpdating"
+            data-testid="page-delete"
+            @click="handleDeleteClick"
+          />
+        </div>
+      </CwaUiFormSection>
+    </template>
+  </CwaUiDialog>
 </template>
 
 <script setup lang="ts">
 import { pagesConfig } from '#build/cwa-config'
-import { styleSelectOptions } from '#cwa/admin/style-options'
-import { computed, onMounted, ref, watch } from 'vue'
+import { pageDataNoun } from './page-data-noun'
+import { computed, onMounted, ref, useTemplateRef, watch, watchEffect } from 'vue'
+import type { RouteLocationRaw } from 'vue-router'
+import isEqual from 'lodash-es/isEqual'
+import { consola } from 'consola'
+import { useRoute } from 'vue-router'
 import { navigateTo, useCwa } from '#imports'
 import { componentNames } from '#components'
-import ResourceModal from '#cwa/templates/components/core/admin/ResourceModal.vue'
-import ResourceModalTabs from '#cwa/templates/components/core/admin/ResourceModalTabs.vue'
-import type { ResourceModalTab } from '#cwa/templates/components/core/admin/ResourceModalTabs.vue'
-import ModalInfo from '#cwa/templates/components/core/admin/form/ModalInfo.vue'
-import ModalInput from '#cwa/templates/components/core/admin/form/ModalInput.vue'
-import ModalSelect from '#cwa/templates/components/core/admin/form/ModalSelect.vue'
-import ModalRadioTabs from '#cwa/templates/components/core/admin/form/ModalRadioTabs.vue'
-import ModalReachableToggle from '#cwa/templates/components/core/admin/form/ModalReachableToggle.vue'
-import PageTypeSelect from '#cwa/templates/components/core/admin/form/PageTypeSelect.vue'
+import CwaUiDialog from '#cwa/templates/components/ui/Dialog.vue'
+import CwaUiFormSection from '#cwa/templates/components/ui/FormSection.vue'
+import CwaUiInput from '#cwa/templates/components/ui/Input.vue'
+import CwaUiTextarea from '#cwa/templates/components/ui/Textarea.vue'
+import CwaUiSelect from '#cwa/templates/components/ui/Select.vue'
+import CwaUiSegmented from '#cwa/templates/components/ui/Segmented.vue'
+import CwaReveal from '#cwa/templates/components/core/ui/Reveal.vue'
+import CwaUiButton from '#cwa/templates/components/ui/Button.vue'
+import CwaUiAlert from '#cwa/templates/components/ui/Alert.vue'
+import EyeGlyph from '#cwa/templates/components/ui/icon/EyeIcon.vue'
 import RoutesTab from '#cwa/templates/components/core/admin/RoutesTab.vue'
+import RoutesTabManage from '#cwa/templates/components/core/admin/RoutesTabManage.vue'
+import { useRouteDefaults } from '#cwa/templates/components/core/admin/route-defaults'
 import PagePurgeCache from '#cwa/templates/components/core/admin/PagePurgeCache.vue'
-import type { SelectOption } from '#cwa/composables/cwa-select-input'
+import type { MenuEntry } from '#cwa/templates/components/core/ui/menu-entries'
+import type { DialogTab } from '#cwa/templates/components/core/ui/dialog-form'
+import type { SelectOption } from '#cwa/composables/cwa-select'
 import type { CwaResource } from '#cwa/resources/resource-utils'
 import { CwaResourceTypes, getResourceTypeFromIri } from '#cwa/resources/resource-utils'
+import { useCwaConfirm } from '#cwa/composables/cwa-confirm'
+import { selectedStyleKeys } from '#cwa/composables/cwa-styles'
+import type { CwaStyles } from '#cwa/types'
+import { fetchTemplateCounts, pageDeleteConfirmLines, pageDeleteLines } from '#cwa/admin/page-delete'
+import type { PageDeleteFacts } from '#cwa/admin/page-delete'
 import { useItemPage } from '#cwa-layer/_composables/useItemPage'
 import { useParentPageLoader } from '#cwa-layer/_composables/useParentPageLoader'
 import { useParentPageDataLoader } from '#cwa-layer/_composables/useParentPageDataLoader'
 import { useDynamicPageLoader } from '#cwa-layer/_composables/useDynamicPageLoader'
 import { useDataType } from '#cwa-layer/_composables/useDataType'
+import { fetchAllMembers } from '#cwa-layer/_composables/fetchAllMembers'
 
 const emit = defineEmits<{
   close: []
@@ -269,13 +326,24 @@ const emit = defineEmits<{
 const props = defineProps<{ iri?: string, hideViewLink?: boolean, resourceType?: string }>()
 
 const $cwa = useCwa()
+const confirm = useCwaConfirm()
+const dialog = useTemplateRef<InstanceType<typeof CwaUiDialog>>('dialog')
 const { parentPages, loadParentPageOptions } = useParentPageLoader()
 const { dataTypes, dataInstances, loadDataTypes, loadDataInstances, fqcnToEntrypointKey } = useParentPageDataLoader()
 const { dynamicPages, loadDynamicPageOptions } = useDynamicPageLoader()
 
-const displayIri = ref(props.iri)
+const route = useRoute()
+const rootIri = computed(() => {
+  const param = route.params.iri
+  return props.iri ?? ((Array.isArray(param) ? param[0] : param) || undefined)
+})
+const displayIri = ref(rootIri.value)
 
-const isDisplayingPage = computed(() => getResourceTypeFromIri(displayIri.value ?? '') === CwaResourceTypes.PAGE)
+watch(rootIri, (iri) => {
+  displayIri.value = iri
+})
+
+const isDisplayingPage = computed(() => displayIri.value === 'add' ? props.resourceType === 'Page' : getResourceTypeFromIri(displayIri.value ?? '') === CwaResourceTypes.PAGE)
 
 function getResourceData(iri: string) {
   return $cwa.resources.getResource(iri).value
@@ -283,7 +351,7 @@ function getResourceData(iri: string) {
 
 const depthChain = computed(() => {
   const chain: SelectOption[] = []
-  let iri: string | null | undefined = props.iri
+  let iri: string | null | undefined = rootIri.value
   while (iri) {
     const res = getResourceData(iri)
     chain.unshift({
@@ -295,14 +363,54 @@ const depthChain = computed(() => {
   return chain
 })
 
+const requestedDepths = new Set<string>()
+watch(depthChain, (chain) => {
+  chain.forEach(({ value }) => {
+    const iri = String(value)
+    if (iri === 'add' || iri === displayIri.value || getResourceData(iri) || requestedDepths.has(iri)) {
+      return
+    }
+    requestedDepths.add(iri)
+    $cwa.fetchResource({ path: iri, shallowFetch: true }).catch(() => undefined)
+  })
+}, { immediate: true })
+
+const depthOptions = computed(() => depthChain.value.map(option => ({ label: option.label, value: String(option.value) })))
+
+const displayIriModel = computed({
+  get: () => displayIri.value,
+  set: async (iri: string | null | undefined) => {
+    if (!iri || iri === displayIri.value || (dialog.value && !await dialog.value.confirmDiscard())) {
+      return
+    }
+    displayIri.value = iri
+  },
+})
+
 const parentTypeOptions = [
-  { label: 'None', value: null },
-  { label: 'Page', value: 'page' },
-  { label: 'Data', value: 'data' },
+  { label: 'Nothing', value: 'none' },
+  { label: 'A page', value: 'page' },
+  { label: 'A data page', value: 'data' },
 ]
 
 const selectedParentDataType = ref<string | null>(null)
 const parentType = ref<string | null>(null)
+
+const parentTypeModel = computed({
+  get: () => parentType.value ?? 'none',
+  set: (type: string | null | undefined) => {
+    parentType.value = type === 'none' || !type ? null : type
+    if (!localResourceData.value) {
+      return
+    }
+    if (parentType.value !== 'page' && localResourceData.value.parentPage) {
+      localResourceData.value.parentPage = null
+    }
+    if (parentType.value !== 'data' && localResourceData.value.parentPageData) {
+      localResourceData.value.parentPageData = null
+    }
+  },
+})
 
 function isDescendantOfCurrentPage(candidateIri: string): boolean {
   const allPages = parentPages.value ?? []
@@ -312,24 +420,24 @@ function isDescendantOfCurrentPage(candidateIri: string): boolean {
   while (current) {
     if (visited.has(current)) break
     visited.add(current)
-    if (current === props.iri) return true
+    if (current === rootIri.value) return true
     current = byId[current]?.parentPage
   }
   return false
 }
 
-const parentPageOptions = computed<SelectOption[]>(() => {
-  const options: SelectOption[] = [{ label: 'None', value: null }]
+const parentPageOptions = computed<MenuEntry[]>(() => {
+  const options: MenuEntry[] = []
   for (const page of parentPages.value ?? []) {
-    if (page['@id'] !== props.iri && !isDescendantOfCurrentPage(page['@id'])) {
+    if (page['@id'] !== rootIri.value && !isDescendantOfCurrentPage(page['@id'])) {
       options.push({ label: page.reference, value: page['@id'] })
     }
   }
   return options
 })
 
-const dataTypeOptions = computed<SelectOption[]>(() => {
-  const options: SelectOption[] = [{ label: 'Select type…', value: null }]
+const dataTypeOptions = computed<MenuEntry[]>(() => {
+  const options: MenuEntry[] = []
   for (const type of dataTypes.value ?? []) {
     const key = fqcnToEntrypointKey(type.resourceClass)
     if (key) {
@@ -339,57 +447,97 @@ const dataTypeOptions = computed<SelectOption[]>(() => {
   return options
 })
 
-const dataInstanceOptions = computed<SelectOption[]>(() => {
-  const options: SelectOption[] = [{ label: 'Select…', value: null }]
-  for (const instance of dataInstances.value ?? []) {
-    options.push({ label: instance.title || instance['@id'], value: instance['@id'] })
-  }
-  return options
-})
+const dataInstanceOptions = computed<MenuEntry[]>(() => (dataInstances.value ?? []).map(instance => ({ label: instance.title || instance['@id'], value: instance['@id'] })))
 
-const { isAdding, isLoading, isUpdating, localResourceData, resource, formatDate, deleteResource, saveResource: _saveResource, saveTitle: _saveTitle, loadResource, getInternalResourceLink } = useItemPage({
-  createEndpoint: '/_/pages',
+const createEndpoint = ref(props.resourceType === 'Page' ? '/_/pages' : '')
+
+const linkDefaults = Object.fromEntries(
+  ([['parentPage', 'parentPage'], ['parentPageData', 'parentPageData'], ['template', 'page']] as const)
+    .flatMap(([queryKey, field]) => typeof route.query[queryKey] === 'string' ? [[field, route.query[queryKey]]] : []),
+)
+
+const newRoutePath = ref('')
+const newRouteLiveAt = ref<string | null | undefined>()
+const newRouteAwaitingDate = ref(false)
+
+const { isAdding, isLoading, loadFailed, isUpdating, localResourceData, resource, formatDate, deleteResource, saveResource: _saveResource, loadResource, getInternalResourceLink, form } = useItemPage({
+  createEndpoint,
   emit,
   resourceType: props.resourceType,
-  defaultResource: {},
+  defaultResource: () => props.resourceType === 'Page'
+    ? { isTemplate: false, uiComponent: pageComponentNames.value[0], layout: layouts.value?.[0]?.['@id'] }
+    : { ...linkDefaults, page: linkDefaults.page ?? dynamicPages.value?.[0]?.['@id'] },
   endpoint: displayIri,
+  routeHashAfterAdd: computed(() => (localResourceData.value?.isTemplate ? '#details' : '#routes')),
   excludeFields: ['componentGroups'],
+  dismissStoredErrors: true,
+  validate: (data): Record<string, string> => data.route && newRouteAwaitingDate.value ? { route: 'Choose when the route goes live.' } : {},
+  savedTitle: () => `${createNoun.value.charAt(0).toUpperCase()}${createNoun.value.slice(1)} saved`,
 })
 
-const titleModel = computed({
-  get: () => isDisplayingPage.value ? localResourceData.value?.reference : localResourceData.value?.title,
-  set: (val: string) => {
-    if (!localResourceData.value) return
-    if (isDisplayingPage.value) {
-      localResourceData.value.reference = val
-    }
-    else {
-      localResourceData.value.title = val
-    }
-  },
-})
+const newRouteDefaults = useRouteDefaults(() => localResourceData.value)
 
-const borderColorClass = computed(() => {
-  if (isDisplayingPage.value) {
-    return localResourceData.value?.isTemplate ? 'cwa:border-b-yellow' : 'cwa:border-b-blue-600'
+watch([newRoutePath, newRouteLiveAt], ([path, liveAt]) => {
+  const local = localResourceData.value
+  if (!local || !isAdding.value) {
+    return
   }
-  return resource.value?.route || resource.value?.isReachableWithoutRoute ? 'cwa:border-b-green' : 'cwa:border-b-orange'
+  if (path) {
+    local.route = { path, ...(liveAt !== undefined && { liveAt }) }
+  }
+  else {
+    delete local.route
+  }
+})
+
+const createNoun = computed(() => isDisplayingPage.value ? 'page' : pageDataNoun(props.resourceType))
+
+const dialogTitle = computed(() => {
+  if (isAdding.value) {
+    return `New ${createNoun.value}`
+  }
+  const stored = resource.value
+  if (!localResourceData.value) {
+    return isDisplayingPage.value ? 'Page' : 'Page data'
+  }
+  const name = isDisplayingPage.value ? stored?.reference : stored?.title
+  return name || (isDisplayingPage.value ? 'Untitled page' : 'Untitled')
+})
+
+const pageName = computed(() => (isDisplayingPage.value ? resource.value?.reference : resource.value?.title) || '')
+
+const pageTypeOptions: MenuEntry[] = [
+  { label: 'Static', value: 'static', dot: 'cwa:bg-type-static' },
+  { label: 'Dynamic', value: 'template', dot: 'cwa:bg-type-dynamic' },
+]
+
+const pageTypeModel = {
+  ...form.model<boolean>('isTemplate'),
+  model: computed({
+    get: () => localResourceData.value?.isTemplate ? 'template' : 'static',
+    set: (type: string | null | undefined) => {
+      localResourceData.value && (localResourceData.value.isTemplate = type === 'template')
+    },
+  }),
+} as ReturnType<typeof form.model<string>>
+
+const kind = computed(() => {
+  if (!localResourceData.value) {
+    return undefined
+  }
+  if (isDisplayingPage.value) {
+    return { tone: localResourceData.value?.isTemplate ? 'dynamic' as const : 'static' as const }
+  }
+  return resource.value?.route || localResourceData.value?.isReachableWithoutRoute
+    ? { tone: 'success' as const, label: 'Reachable' }
+    : { tone: 'warning' as const, label: 'Not reachable' }
 })
 
 function saveResource(close = false) {
-  if (localResourceData.value) {
-    if (parentType.value !== 'page') localResourceData.value.parentPage = null
-    if (parentType.value !== 'data') localResourceData.value.parentPageData = null
-  }
   return _saveResource(close)
 }
 
-function saveTitle() {
-  if (isAdding.value) return
-  return saveResource()
-}
-
-const isDisplayedPage = computed(() => !!props.iri && props.iri === $cwa.resources.displayPageIri.value)
+const isDisplayedPage = computed(() => !!rootIri.value && rootIri.value === $cwa.resources.displayPageIri.value)
 
 const adminListingLink = computed(() => {
   if (isDisplayingPage.value) {
@@ -401,19 +549,98 @@ const adminListingLink = computed(() => {
     : { name: '_cwa-data', query: { cwa_force: 'true' } }
 })
 
-function handleDeleteClick() {
-  if (!isDisplayedPage.value) {
-    return deleteResource()
+const counts = ref<Pick<PageDeleteFacts, 'templatePages' | 'addresses'>>({})
+const checkingDelete = ref(false)
+
+const deleteFacts = computed<PageDeleteFacts>(() => {
+  const route = resource.value?.route as string | undefined
+  return {
+    template: !!resource.value?.isTemplate,
+    ...counts.value,
+    hasRoute: !!route,
+    routePath: route ? $cwa.resources.getResource(route).value?.data?.path : undefined,
+    nested: (parentPages.value ?? []).filter(page => page.parentPage === resource.value?.['@id']).length,
+  }
+})
+
+const deleteSentence = computed(() => pageDeleteLines(deleteFacts.value).map(line => line.text).join(' ') || undefined)
+
+async function dataEndpoints() {
+  const docs = await $cwa.getApiDocumentation()
+  return (dataTypes.value ?? [])
+    .map(type => fqcnToEntrypointKey(type.resourceClass))
+    .map(key => key ? docs?.entrypoint?.[key] : undefined)
+    .filter((endpoint): endpoint is string => !!endpoint)
+}
+
+async function refreshCounts() {
+  const iri = resource.value?.['@id']
+  if (!iri || !resource.value?.isTemplate) {
+    counts.value = {}
+    return
+  }
+  counts.value = await fetchTemplateCounts($cwa, iri, dataEndpoints())
+}
+
+async function handleDeleteClick() {
+  if (checkingDelete.value) {
+    return
+  }
+  checkingDelete.value = true
+  const iri = resource.value?.['@id']
+  const [notice] = await Promise.all([
+    iri ? import('#cwa/admin/resource-confirm').then(({ editingNotice }) => editingNotice($cwa, iri)).catch(() => undefined) : undefined,
+    refreshCounts(),
+  ])
+  checkingDelete.value = false
+  const confirmed = await confirm({
+    title: `Delete “${pageName.value || dialogTitle.value}”?`,
+    lines: [...(notice ? [{ text: notice }] : []), ...pageDeleteConfirmLines(deleteFacts.value, form.unsavedFields.length)],
+    keep: 'Don\'t delete',
+    go: 'Delete page',
+    typed: pageName.value.trim() ? { noun: 'page name', value: pageName.value } : undefined,
+  })
+  if (!confirmed) {
+    return
   }
   const destination = adminListingLink.value
-  return deleteResource(undefined, async () => {
-    await navigateTo(destination)
-  })
+  const onDeleted = isDisplayedPage.value
+    ? async () => {
+      form.discard()
+      await navigateTo(destination)
+    }
+    : () => form.discard()
+  return deleteResource(undefined, onDeleted, true)
+}
+
+async function viewOnSite() {
+  const iri = resource.value?.['@id']
+  if (!iri || !await dialog.value?.requestClose()) {
+    return
+  }
+  await navigateTo({ ...getInternalResourceLink(iri), query: { cwa_force: 'true' } })
+}
+
+async function openPage(iri: string) {
+  if (depthChain.value.some(option => option.value === iri)) {
+    displayIriModel.value = iri
+    return
+  }
+  if (!await dialog.value?.requestClose()) {
+    return
+  }
+  await navigateTo({ name: '_cwa-routes-iri', params: { iri }, query: { cwa_force: 'true' } })
+}
+
+async function goToPath(path: string) {
+  if (!await dialog.value?.requestClose()) {
+    return
+  }
+  await navigateTo({ path, query: { cwa_force: 'true' } })
 }
 
 async function goToTemplate() {
-  if (!localResourceData.value?.page) return
-  emit('close')
+  if (!localResourceData.value?.page || !await dialog.value?.requestClose()) return
   await navigateTo({
     ...getInternalResourceLink(localResourceData.value.page),
     query: { cwa_force: 'true' },
@@ -421,26 +648,42 @@ async function goToTemplate() {
   $cwa.admin.toggleEdit(false)
 }
 
-const currentRequestId = ref(0)
+const history = computed(() => [
+  { label: 'Created', value: localResourceData.value?.createdAt ? formatDate(localResourceData.value.createdAt) : '—' },
+  { label: 'Updated', value: (localResourceData.value?.modifiedAt || localResourceData.value?.updatedAt) ? formatDate(localResourceData.value.modifiedAt || localResourceData.value.updatedAt) : '—' },
+])
+
 const layouts = ref<CwaResource[]>()
 
 async function loadLayoutOptions() {
-  const thisRequestId = currentRequestId.value + 1
-  currentRequestId.value = thisRequestId
-  const { response } = $cwa.fetch({ path: '/_/layouts', noQuery: true })
-  const { _data: data } = await response
-  if (thisRequestId === currentRequestId.value) {
-    data && (layouts.value = data['member'])
-  }
+  layouts.value = await fetchAllMembers($cwa, '/_/layouts')
 }
 
-const layoutOptions = computed(() => {
-  if (!layouts.value) return []
-  return layouts.value.map(layout => ({
-    label: layout.reference,
-    value: layout['@id'],
-  }))
+const missing = computed<{ title: string, text: string, action: string, to: RouteLocationRaw } | undefined>(() => {
+  if (!isAdding.value) {
+    return undefined
+  }
+  if (isDisplayingPage.value) {
+    return layouts.value?.length === 0
+      ? { title: 'Create a layout first', text: 'A page is shown inside a layout, and there are none yet.', action: 'Create a layout', to: { name: '_cwa-layouts-iri', params: { iri: 'add' }, query: { cwa_force: 'true' } } }
+      : undefined
+  }
+  return dynamicPages.value?.length === 0
+    ? { title: 'Create a template page first', text: `A ${createNoun.value} is built from a template page, and there are none yet.`, action: 'Create a template page', to: { name: '_cwa-pages-iri', params: { iri: 'add' }, query: { cwa_force: 'true' } } }
+    : undefined
 })
+
+async function goToCreate(to: RouteLocationRaw) {
+  if (!await dialog.value?.requestClose()) {
+    return
+  }
+  await navigateTo(to)
+}
+
+const layoutOptions = computed<MenuEntry[]>(() => (layouts.value ?? []).map(layout => ({
+  label: layout.reference,
+  value: layout['@id'],
+})))
 
 const pageComponentNames = computed(() => componentNames.filter(n => n.startsWith('CwaPage')))
 
@@ -452,53 +695,110 @@ function fullPageUiName(uiComponent: string | null | undefined) {
   return uiComponent ? 'CwaPage' + cleanUiName(uiComponent) : uiComponent
 }
 
-const pageComponentOptions = computed(() => {
-  return pageComponentNames.value.map((componentName) => {
-    const cleanName = cleanUiName(componentName)
-    return {
-      label: pagesConfig[cleanName]?.name || cleanName,
-      value: componentName,
-    }
-  })
+const pageComponentOptions = computed<MenuEntry[]>(() => pageComponentNames.value.map((componentName) => {
+  const cleanName = cleanUiName(componentName)
+  return {
+    label: pagesConfig[cleanName]?.name || cleanName,
+    value: componentName,
+  }
+}))
+
+const pageUiModel = {
+  ...form.model<string>('uiComponent'),
+  model: computed({
+    get: () => fullPageUiName(localResourceData.value?.uiComponent),
+    set: (value: string | null | undefined) => {
+      localResourceData.value && (localResourceData.value.uiComponent = value)
+    },
+  }),
+} as ReturnType<typeof form.model<string>>
+
+const pageStyles = computed<CwaStyles | undefined>(() => {
+  const uiComponent = localResourceData.value?.uiComponent
+  return uiComponent ? pagesConfig[cleanUiName(uiComponent)]?.styles : undefined
 })
 
-const pageUiComponentModel = computed({
-  get: () => fullPageUiName(localResourceData.value?.uiComponent),
-  set: (value: string) => {
-    if (localResourceData.value) {
-      localResourceData.value.uiComponent = value
-    }
-  },
-})
+const pageStyleOptions = computed<MenuEntry[]>(() => Object.entries(pageStyles.value ?? {}).map(([key, style]) => ({ label: style.label, value: key })))
 
-const pageStyleOptions = computed(() => {
-  if (!localResourceData.value?.uiComponent) return []
-  return styleSelectOptions(pagesConfig[cleanUiName(localResourceData.value.uiComponent)]?.styles)
-})
+const pageStyleModel = {
+  ...form.model<string[] | null>('uiClassNames'),
+  model: computed({
+    get: () => selectedStyleKeys(localResourceData.value?.uiClassNames, pageStyles.value)[0] ?? null,
+    set: (key: string | null | undefined) => {
+      if (!localResourceData.value) {
+        return
+      }
+      localResourceData.value.uiClassNames = key ? [`style:${key}`] : null
+    },
+  }),
+} as unknown as ReturnType<typeof form.model<string>>
 
-const pageOptions = computed<SelectOption[]>(() => {
-  if (!dynamicPages.value) return []
-  return dynamicPages.value.map(page => ({
-    label: page.reference,
-    value: page['@id'],
-  }))
-})
+const pageOptions = computed<MenuEntry[]>(() => (dynamicPages.value ?? []).map(page => ({
+  label: page.reference,
+  value: page['@id'],
+})))
 
 const { pageDataConfig } = useDataType(computed(() => resource.value?.['@type']))
 
-const tabs = computed<ResourceModalTab[]>(() => {
-  const t: ResourceModalTab[] = [{ label: 'Details', id: 'details' }]
-  if (!isAdding.value) {
-    t.push({ label: 'Routes', id: 'routes' })
-    t.push({ label: 'Info', id: 'info' })
+function metaSelect(field: string, options: SelectOption[] | undefined) {
+  const values = new Map<string, unknown>()
+  const entries = (options ?? []).map((option, index) => {
+    if (option.value === null || option.value === undefined) {
+      return { label: option.label, value: null }
+    }
+    const key = String(index)
+    values.set(key, option.value)
+    return { label: option.label, value: key }
+  })
+  const model = {
+    ...form.model(field),
+    model: computed({
+      get: () => {
+        const stored = localResourceData.value?.[field]
+        return [...values.entries()].find(([, value]) => isEqual(value, stored))?.[0] ?? null
+      },
+      set: (key: string | null | undefined) => {
+        localResourceData.value && (localResourceData.value[field] = key ? values.get(key) : null)
+      },
+    }),
+  } as unknown as ReturnType<typeof form.model<string>>
+  return { options: entries, model }
+}
+
+const metaSelects = computed(() => Object.fromEntries((pageDataConfig.value?.metaFields ?? [])
+  .filter(metaField => metaField.type !== 'input')
+  .map(metaField => [metaField.field, metaSelect(metaField.field, metaField.options)])))
+
+const pageFields: Record<string, string> = { reference: 'Reference', layout: 'Layout', uiComponent: 'Page UI', uiClassNames: 'Style', title: 'SEO page title', metaDescription: 'SEO meta description', parentPage: 'Parent page', parentPageData: 'Parent data' }
+const pageDataFields: Record<string, string> = { title: 'Title', metaDescription: 'SEO meta description', page: 'Dynamic page', parentPage: 'Parent page', parentPageData: 'Parent data' }
+const detailsFields = computed(() => isDisplayingPage.value ? pageFields : pageDataFields)
+
+const tabs = computed<DialogTab[]>(() => {
+  if (isAdding.value) {
+    return [
+      { label: 'Details', key: 'details', fields: detailsFields.value },
+      missing.value ? { label: 'Routes', key: 'routes', disabled: `${missing.value.title}.` } : { label: 'Routes', key: 'routes', fields: { route: 'Route path' } },
+    ]
   }
-  return t
+  return [
+    { label: 'Details', key: 'details', fields: detailsFields.value },
+    { label: 'Routes', key: 'routes', ...(!isDisplayingPage.value && { fields: { isReachableWithoutRoute: 'Public without a route' } }) },
+    { label: 'Info', key: 'info' },
+  ]
 })
 
-watch(() => localResourceData.value?.isTemplate, (isTemplate, oldIsTemplate) => {
-  if (!isDisplayingPage.value) return
-  !isAdding.value && isTemplate !== undefined && oldIsTemplate !== undefined && saveResource(false)
+function tabFromHash(hash: string) {
+  const key = hash.replace(/^#/, '')
+  return tabs.value.some(item => item.key === key && !item.disabled) ? key : 'details'
+}
+
+const tab = ref(tabFromHash(route.hash ?? ''))
+
+watch(() => route.hash, (hash) => {
+  tab.value = tabFromHash(hash ?? '')
 })
+
+watch(tab, key => key === 'info' && refreshCounts())
 
 watch(selectedParentDataType, (key, oldKey) => {
   if (oldKey && localResourceData.value) localResourceData.value.parentPageData = null
@@ -520,7 +820,34 @@ watch(localResourceData, (data, oldData) => {
   }
 }, { immediate: true })
 
+watchEffect(async () => {
+  if (!props.resourceType || props.resourceType === 'Page') {
+    return
+  }
+  const docs = await $cwa.getApiDocumentation()
+  createEndpoint.value = docs?.entrypoint?.[fqcnToEntrypointKey(props.resourceType) || ''] || ''
+})
+
+function logFailure(what: string) {
+  return (error: unknown) => {
+    consola.error(`[CWA] Could not load the ${what}`, error)
+  }
+}
+
 onMounted(async () => {
-  await Promise.all([loadLayoutOptions(), loadDynamicPageOptions(), loadParentPageOptions(), loadDataTypes()])
+  await Promise.all([
+    loadLayoutOptions().catch(logFailure('layouts')),
+    loadDynamicPageOptions().catch(logFailure('template pages')),
+    loadParentPageOptions().catch(logFailure('parent pages')),
+    loadDataTypes().catch(logFailure('page data types')),
+  ])
+  if (!isAdding.value || !localResourceData.value) {
+    return
+  }
+  if (isDisplayingPage.value) {
+    localResourceData.value.layout ||= layouts.value?.[0]?.['@id']
+    return
+  }
+  localResourceData.value.page ||= dynamicPages.value?.[0]?.['@id']
 })
 </script>

@@ -2,6 +2,9 @@
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import { computed, defineComponent, reactive } from 'vue'
 import { flushPromises, mount } from '@vue/test-utils'
+import { drawsOpenLine, drawsOpenState } from '../../../../../../../../test/utils/kit-css'
+import { drawsFocusRing } from '../../../../../../../../test/utils/focus-ring'
+import { axe } from '../../../../../../../../test/utils/axe'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import ComponentUsageBadge from './ComponentUsageBadge.vue'
 import { navigateTo } from '#app/composables/router'
@@ -91,6 +94,13 @@ async function routerEditingOn(path: string) {
   return router
 }
 
+function fullText(badge: { element: Element }) {
+  const text = (node: Node): string => node instanceof Element
+    ? node.getAttribute('aria-hidden') === 'true' ? '' : [...node.childNodes].map(text).join('')
+    : node.textContent ?? ''
+  return text(badge.element).trim()
+}
+
 describe('ComponentUsageBadge', () => {
   afterEach(() => {
     vi.restoreAllMocks()
@@ -103,7 +113,7 @@ describe('ComponentUsageBadge', () => {
     const { cwa } = mockCwa()
     const wrapper = await mountBadge()
     expect(fetchComponentUsage).toHaveBeenCalledWith(cwa, COMPONENT)
-    expect(wrapper.get('[data-testid="component-usage-badge"]').text()).toBe('Shared · 3 places')
+    expect(fullText(wrapper.get('[data-testid="component-usage-badge"]'))).toBe('Shared · 3 places')
   })
 
   test.each([
@@ -141,7 +151,7 @@ describe('ComponentUsageBadge', () => {
     expect(wrapper.find('[data-testid="component-usage-badge"]').exists()).toBe(false)
     resolveOther({ positionCount: 2, pageDataCount: 0, total: 2 })
     await flushPromises()
-    expect(wrapper.get('[data-testid="component-usage-badge"]').text()).toBe('Shared · 2 places')
+    expect(fullText(wrapper.get('[data-testid="component-usage-badge"]'))).toBe('Shared · 2 places')
     expect(vi.mocked(fetchComponentUsage).mock.calls.map(call => call[1])).toEqual([COMPONENT, OTHER])
   })
 
@@ -193,7 +203,7 @@ describe('ComponentUsageBadge', () => {
       const wrapper = await mountBadge()
       const badge = wrapper.get('[data-testid="component-usage-badge"]')
       expect(badge.element.tagName).toBe('SPAN')
-      expect(badge.text()).toBe('Shared · 2 places')
+      expect(fullText(badge)).toBe('Shared · 2 places')
       expect(wrapper.find('button').exists()).toBe(false)
     })
 
@@ -201,8 +211,44 @@ describe('ComponentUsageBadge', () => {
       const { wrapper, list } = await openList({ total: 2, locations: [location({ renderedOn: [page('/_/pages/a', 'Home', '/')], renderedOnCount: 1 }), location({ renderedOn: [page('/_/pages/b', 'About', '/about')], renderedOnCount: 1 })] })
       const badge = wrapper.get('[data-testid="component-usage-badge"]')
       expect(badge.element.tagName).toBe('BUTTON')
-      expect(badge.text()).toBe('Shared · 2 places')
+      expect(fullText(badge)).toBe('Shared · 2 places')
       expect(list).not.toBeNull()
+    })
+
+    test('as a button, the badge is the control height the CTA beside it shares, with its pill drawn inside, and draws its focus ring', async () => {
+      const { wrapper } = await openList({ total: 2, locations: [location({ renderedOn: [page('/_/pages/a', 'Home', '/')], renderedOnCount: 1 }), location({ renderedOn: [page('/_/pages/b', 'About', '/about')], renderedOnCount: 1 })] })
+      const badge = wrapper.get('[data-testid="component-usage-badge"]')
+      expect(badge.classes()).toEqual(expect.arrayContaining(['cwa:h-control', 'cwa:pointer-coarse:h-hit', 'cwa:inline-flex', 'cwa:items-center']))
+      expect(badge.get('[data-testid="component-usage-pill"]').classes()).toContain('cwa:border')
+      expect(drawsFocusRing(badge.classes())).toBe(true)
+      wrapper.unmount()
+    })
+
+    test.each([
+      ['a button', { total: 2, locations: [location({ renderedOn: [page('/_/pages/a', 'Home', '/')], renderedOnCount: 1 }), location({ renderedOn: [page('/_/pages/b', 'About', '/about')], renderedOnCount: 1 })] }],
+      ['a plain count', { positionCount: 2, pageDataCount: 0, total: 2 }],
+    ])('as %s, the badge and its pill are square like the kit\'s other controls', async (_label, usage) => {
+      vi.mocked(fetchComponentUsage).mockResolvedValue(usage as never)
+      mockCwa()
+      const wrapper = await mountBadge()
+      const badge = wrapper.get('[data-testid="component-usage-badge"]')
+      const drawn = [badge, ...badge.findAll('[data-testid="component-usage-pill"]')]
+      expect(drawn.flatMap(each => each.classes()).filter(name => /(?:^|:)rounded/.test(name))).toEqual([])
+      expect(drawn.some(each => each.classes().includes('cwa:border'))).toBe(true)
+      wrapper.unmount()
+    })
+
+    test('the badge, a labelled trigger, shows its list open with its fill and the line under its label, and not once it closes, with no axe violations open', async () => {
+      const { wrapper } = await openList({ total: 2, locations: [location({ renderedOn: [page('/_/pages/a', 'Home', '/')], renderedOnCount: 1 }), location({ renderedOn: [page('/_/pages/b', 'About', '/about')], renderedOnCount: 1 })] })
+      const badge = wrapper.get('[data-testid="component-usage-badge"]')
+      expect(drawsOpenState(badge.element)).toBe(true)
+      expect(drawsOpenLine(badge.element)).toBe(true)
+      expect(await axe(document.body, { rules: { region: { enabled: false } } })).toHaveNoViolations()
+
+      await badge.trigger('click')
+      await flushPromises()
+      expect(drawsOpenState(badge.element)).toBe(false)
+      wrapper.unmount()
     })
 
     test('lists the places in the order the API returns them, without re-sorting', async () => {
@@ -301,5 +347,21 @@ describe('ComponentUsageBadge', () => {
       await router.push('/b')
       expect(router.currentRoute.value.fullPath).toBe('/start')
     })
+  })
+
+  test('below sm the badge is a share glyph and the count, and its accessible name stays the full text (#460)', async () => {
+    vi.mocked(fetchComponentUsage).mockResolvedValue({ positionCount: 2, pageDataCount: 0, total: 2 })
+    mockCwa()
+    const wrapper = await mountBadge()
+    const badge = wrapper.get('[data-testid="component-usage-badge"]')
+    const compact = badge.get('[data-testid="component-usage-compact"]')
+
+    expect(compact.attributes('aria-hidden')).toBe('true')
+    expect(compact.classes()).toContain('cwa:sm:hidden')
+    expect(compact.find('svg').exists()).toBe(true)
+    expect(compact.text()).toBe('2')
+    const full = badge.findAll('span').find(span => span.classes().includes('cwa:sr-only'))!
+    expect(full.text()).toBe('Shared · 2 places')
+    expect(full.classes()).toContain('cwa:sm:not-sr-only')
   })
 })

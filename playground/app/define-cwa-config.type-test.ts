@@ -6,6 +6,8 @@ defineCwaConfig({
   instantAdd: true,
   defaultData: { title: 'New hero' },
   multipleStyles: true,
+  icon: 'hero',
+  group: 'Layout',
   styles: {
     'black-bg': { label: 'Black Background', classes: 'bg-black text-white' },
   },
@@ -21,4 +23,9 @@ defineCwaConfig({
     // @ts-expect-error a style is { label, classes }, never a bare class string
     'black-bg': 'bg-black text-white',
   },
+})
+
+defineCwaConfig({
+  // @ts-expect-error an icon is a component kind or lucide:<name>
+  icon: 'spaceship',
 })

@@ -1,64 +1,92 @@
 <template>
-  <ListHeading
-    title="Layouts"
+  <ListHeading title="Layouts" />
+  <ListFilter
+    :order-options="orderOptions"
+    search-label="Search layouts"
+    :count="countText"
+    create-noun="layout"
     @add="goToAdd"
   />
-  <ListFilter :order-options="orderOptions" />
   <ListContent
     ref="listContent"
     fetch-url="/_/layouts"
+    noun="layouts"
+    :columns="columns"
     :search-fields="['reference', 'uiComponent']"
   >
     <template #item="{ data }">
-      <div class="cwa:flex cwa:border-b cwa:border-b-stone-700 cwa:py-6 cwa:gap-x-4 cwa:items-center">
-        <div class="cwa:grow cwa:flex cwa:flex-col cwa:gap-y-1">
-          <span class="cwa:text-xl">{{ data.reference }}</span>
-          <span class="cwa:text-stone-400">UI: {{ data.uiComponent ? getDisplayLayoutUi(data.uiComponent) : 'Unknown' }}</span>
-        </div>
-        <div>
-          <CwaUiFormButton :to="computedItemLink(data['@id'])">
-            <CwaUiIconCogIcon class="cwa:w-6" />
-            <span class="cwa:sr-only">Settings</span>
-          </CwaUiFormButton>
-        </div>
-      </div>
+      <ListRow
+        :to="computedItemLink(data['@id'])"
+        actions
+        :title="data.reference || 'Untitled layout'"
+        :sub="`UI: ${data.uiComponent ? getDisplayLayoutUi(data.uiComponent) : 'Unknown'}`"
+      >
+        <ListCell align="end">
+          {{ pageCount(data) }}
+        </ListCell>
+        <ListCell align="end">
+          {{ listDate(data.modifiedAt) }}
+        </ListCell>
+      </ListRow>
+    </template>
+    <template #empty>
+      <CwaUiButton
+        variant="solid"
+        :icon="PlusIcon"
+        label="Layout"
+        aria-label="Create layout"
+        @click="goToAdd"
+      />
     </template>
   </ListContent>
-  <ResourceModalOverlay @reload="triggerReload" />
+  <ResourceModalOverlay
+    :overlay="false"
+    @reload="triggerReload"
+  />
 </template>
 
 <script lang="ts" setup>
 import { layoutsConfig } from '#build/cwa-config'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import ListHeading from '#cwa/templates/components/core/admin/ListHeading.vue'
 import ListContent from '#cwa/templates/components/core/admin/ListContent.vue'
 import ListFilter from '#cwa/templates/components/core/admin/ListFilter.vue'
+import ListRow from '#cwa/templates/components/core/admin/ListRow.vue'
+import ListCell from '#cwa/templates/components/core/admin/ListCell.vue'
+import { listDate } from '#cwa/templates/components/core/admin/list-date'
 import ResourceModalOverlay from '#cwa/templates/components/core/admin/ResourceModalOverlay.vue'
+import CwaUiButton from '#cwa/templates/components/ui/Button.vue'
+import PlusIcon from '#cwa/templates/components/ui/icon/PlusIcon.vue'
 import { useListPage } from '#cwa-layer/_composables/useListPage'
+import type { CwaResource } from '#cwa/resources/resource-utils'
 import { definePageMeta, useHead } from '#imports'
 
 const listContent = ref<InstanceType<typeof ListContent> | null>(null)
 
 const { goToAdd, triggerReload, computedItemLink } = useListPage(listContent)
 
-const orderOptions = [
-  {
-    label: 'New - Old',
-    value: { createdAt: 'desc' },
-  },
-  {
-    label: 'Old - New',
-    value: { createdAt: 'asc' },
-  },
-  {
-    label: 'A - Z',
-    value: { reference: 'asc' },
-  },
-  {
-    label: 'Z - A',
-    value: { reference: 'desc' },
-  },
+const columns = [
+  { label: 'Layout' },
+  { label: 'Pages', width: '5rem', align: 'end' as const },
+  { label: 'Updated', width: '8rem', align: 'end' as const },
+  { label: 'Actions', width: '2.5rem', labelHidden: true },
 ]
+
+const orderOptions = [
+  { label: 'Newest first', value: { createdAt: 'desc' } },
+  { label: 'Oldest first', value: { createdAt: 'asc' } },
+  { label: 'A to Z', value: { reference: 'asc' } },
+  { label: 'Z to A', value: { reference: 'desc' } },
+]
+
+const countText = computed(() => {
+  const total = listContent.value?.total
+  return typeof total === 'number' ? `${total} ${total === 1 ? 'layout' : 'layouts'}` : undefined
+})
+
+function pageCount(layout: CwaResource) {
+  return Array.isArray(layout.pages) ? layout.pages.length : ''
+}
 
 function getDisplayLayoutUi(ui: string) {
   const cleanName = ui.replace(/^CwaLayout/, '')

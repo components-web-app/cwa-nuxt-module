@@ -1,116 +1,71 @@
-<template>
-  <DialogBox
-    v-model="open"
-    title="Add Component"
-    :buttons="buttons"
-    :is-loading="dialogLoading"
-  >
-    <Spinner
-      v-if="loadingComponents"
-      :show="true"
-    />
-    <CwaUiAlertWarning v-else-if="loadError">
-      Could not load the available components
-    </CwaUiAlertWarning>
-    <template v-else-if="displayData">
-      <div class="cwa:flex cwa:gap-x-4">
-        <div class="cwa:flex cwa:flex-col cwa:w-4/12 cwa:gap-y-3 cwa:min-h-64">
-          <button
-            v-for="(component, name) of displayData.displayAvailableComponents"
-            :key="`add-${name}`"
-            :class="buttonClass"
-            :aria-selected="selectedComponent === name"
-            @click="selectComponent(name as string)"
-          >
-            {{ getComponentName(component) }}
-          </button>
-          <div v-if="displayData.enableDynamicPosition">
-            <button
-              :class="buttonClass"
-              class="cwa:border-yellow cwa:border-2 cwa:cursor-pointer"
-              :aria-selected="selectedComponent === 'ComponentPosition'"
-              @click="selectComponent('ComponentPosition')"
-            >
-              Dynamic
-            </button>
-          </div>
-        </div>
-        <div class="cwa:grow cwa:w-8/12">
-          <div
-            class="cwa:mb-6 cwa:gap-y-4"
-            v-html="resourceDescription"
-          />
-          <template v-if="selectedComponent === 'ComponentPosition'">
-            <div class="cwa:flex cwa:flex-col cwa:gap-y-3">
-              <ModalSelect
-                :model-value="selectedDynamicType"
-                label="Data type"
-                :options="dynamicTypeOptions"
-                @update:model-value="onDynamicTypeChange"
-              />
-              <ModalSelect
-                v-if="selectedDynamicType"
-                :model-value="selectedDynamicProperty"
-                label="Field"
-                :options="dynamicPropertyOptions"
-                @update:model-value="val => selectedDynamicProperty = val"
-              />
-            </div>
-          </template>
-        </div>
-      </div>
-    </template>
-  </DialogBox>
-</template>
-
 <script setup lang="ts">
 import { resourcesConfig } from '#build/cwa-config'
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, ref, unref, useTemplateRef, watch } from 'vue'
 import { consola as logger } from 'consola'
-import DialogBox from '#cwa/templates/components/core/DialogBox.vue'
-import type { ActionButton } from '#cwa/templates/components/core/DialogBox.vue'
 import { useCwa } from '#imports'
+import { adminResources } from '#build/cwa-admin-resources'
 import type { AddResourceEvent } from '#cwa/admin/resource-stack-manager'
-import type {
-  ApiDocumentationComponentMetadata,
-} from '#cwa/api/api-documentation'
-import Spinner from '#cwa/templates/components/utils/Spinner.vue'
+import type { ApiDocumentationComponentMetadata } from '#cwa/api/api-documentation'
 import type { CwaResourceMeta } from '#cwa/types'
-import {
-  useDynamicPositionSelectOptions,
-} from '#cwa/templates/components/main/admin/_common/useDynamicPositionSelectOptions'
-import ModalSelect from '#cwa/templates/components/core/admin/form/ModalSelect.vue'
-import { ResourceTypeFromIri } from '#cwa/resources/resource-utils'
+import { CwaResourceTypes, getResourceTypeFromIri, ResourceTypeFromIri } from '#cwa/resources/resource-utils'
+import { excerptOf } from '#cwa/admin/clone-mode'
+import { useDynamicPositionSelectOptions } from '#cwa/templates/components/main/admin/_common/useDynamicPositionSelectOptions'
 import { isComponentAllowedInGroup } from '#cwa/templates/components/main/admin/resource-manager/_parts/available-components'
 import { canInsertSelection } from '#cwa/templates/components/main/admin/resource-manager/_parts/add-component-selection'
+import {
+  addTargetPlace,
+  groupDisplayName,
+  buildAddComponentList,
+  countComponentsInGroup,
+  DYNAMIC_COMPONENT,
+  hasMarkup,
+  normaliseQuery,
+  pageDataNoun,
+  plainText,
+} from '#cwa/templates/components/main/admin/resource-manager/_parts/add-component-list'
+import type { AddComponentChoice } from '#cwa/templates/components/main/admin/resource-manager/_parts/add-component-list'
+import CwaUiDialog from '#cwa/templates/components/ui/Dialog.vue'
+import CwaUiSubView from '#cwa/templates/components/ui/SubView.vue'
+import CwaUiCombobox from '#cwa/templates/components/ui/Combobox.vue'
+import type { ComboboxSection } from '#cwa/templates/components/ui/Combobox.vue'
+import CwaUiButton from '#cwa/templates/components/ui/Button.vue'
+import CwaUiSelect from '#cwa/templates/components/ui/Select.vue'
+import CwaUiAlert from '#cwa/templates/components/ui/Alert.vue'
+import AddComponentLead from '#cwa/templates/components/main/admin/resource-manager/_parts/AddComponentLead.vue'
+import AddComponentUiChoices from '#cwa/templates/components/main/admin/resource-manager/_parts/AddComponentUiChoices.vue'
 
-interface MergedComponentMetadata {
+interface AvailableComponent {
   apiMetadata: ApiDocumentationComponentMetadata
   config: CwaResourceMeta
 }
 
-interface ComponentMetadataCollection {
-  [key: string]: MergedComponentMetadata
+interface DisplayData {
+  event: AddResourceEvent
+  available: Record<string, AvailableComponent>
+  choices: AddComponentChoice[]
+  dynamic?: AddComponentChoice
+  groupName: string
+  place?: string
 }
 
-interface DisplayDataI {
-  event: AddResourceEvent
-  availableComponents: ComponentMetadataCollection
-  displayAvailableComponents: ComponentMetadataCollection
-  enableDynamicPosition: boolean
-}
-const buttonClass = 'w-full cwa:rounded-lg cwa:py-3 cwa:px-4 cwa:text-white/70 cwa:bg-stone-800 cwa:hover:bg-stone-700 cwa:aria-selected:bg-stone-700 cwa:hover:text-white cwa:aria-selected:text-white cwa:transition cwa:border cwa:border-solid cwa:border-stone-700 cwa:hover:border-opacity-100 cwa:cursor-pointer'
+const warnedMarkup = new Set<string>()
 
 const $cwa = useCwa()
 const { getTypeOptions, getPropertyOptions } = useDynamicPositionSelectOptions($cwa)
 
+const dialog = useTemplateRef<InstanceType<typeof CwaUiDialog>>('dialog')
+const combobox = useTemplateRef<InstanceType<typeof CwaUiCombobox>>('combobox')
 const loadingComponents = ref(true)
 const loadError = ref(false)
-// We want as a local variable for when we close the dialog and the add event is cleared immediately - so it doesn't flicker etc.
-const displayData = ref<DisplayDataI>()
-const selectedComponent = ref<string | undefined>()
+const displayData = ref<DisplayData>()
 const dialogLoading = ref(false)
+const query = ref('')
+const detailName = ref<string>()
+const detailOpener = ref<HTMLElement | null>(null)
+const activeChip = ref(0)
 
+const uiComponent = ref<string | null | undefined>()
+const uiClassNames = ref<string[] | undefined>()
 const selectedDynamicType = ref<string | null>(null)
 const selectedDynamicProperty = ref<string | null>(null)
 const dynamicTypeOptions = ref<{ label: string, value: string }[]>([])
@@ -121,131 +76,242 @@ const isInstantAddResourceSaved = computed(() => {
   return !!$cwa.resources.newResource.value?.data?._metadata.adding?.instantAdd
 })
 
-const open = computed({
-  get() {
-    // the event will not have a group in the stack if we are on a dynamic data page, but we may be adding a component pre-configured which will not require this dialog
-    return !!addResourceEvent.value && !!addResourceEvent.value?.closest.group && (!$cwa.resources.newResource.value || isInstantAddResourceSaved.value)
-  },
-  set(value: boolean) {
-    if (!value) {
-      $cwa.resourcesManager.clearAddResource()
-    }
-  },
+const open = computed(() => {
+  return !!addResourceEvent.value && !!addResourceEvent.value?.closest.group && (!$cwa.resources.newResource.value || isInstantAddResourceSaved.value)
 })
 
-const instantAdd = computed(() => (!!selectedResourceMeta.value?.instantAdd))
+function close() {
+  $cwa.resourcesManager.clearAddResource()
+}
 
-const buttons = computed<ActionButton[]>(() => {
-  return [
-    {
-      label: instantAdd.value ? 'Add Now' : 'Insert',
-      color: 'blue',
-      buttonClass: 'cwa:min-w-[120px]',
-      callbackFn: handleAdd,
-      disabled: !canInsertSelection(selectedComponent.value, selectedDynamicType.value, selectedDynamicProperty.value),
-    },
-    {
-      label: 'Cancel',
-      color: 'grey',
-    },
-  ]
+const list = computed(() => displayData.value
+  ? buildAddComponentList(displayData.value.choices, query.value, displayData.value.dynamic)
+  : { quick: [], sections: [] })
+
+const sections = computed<ComboboxSection[]>(() => list.value.sections.map(section => ({
+  key: section.key,
+  label: section.label,
+  options: section.options.map(option => ({
+    value: option.name,
+    label: option.label,
+    description: option.description,
+  })),
+})))
+
+const quickShown = computed(() => !normaliseQuery(query.value) && list.value.quick.length > 0)
+const term = computed(() => normaliseQuery(query.value))
+
+const noneText = computed(() => list.value.blocked
+  ? `${list.value.blocked.label} isn't allowed in ${displayData.value?.groupName}`
+  : `No component called ${term.value}`)
+
+const detail = computed(() => {
+  const name = detailName.value
+  if (!name || !displayData.value) {
+    return
+  }
+  if (name === DYNAMIC_COMPONENT) {
+    return displayData.value.dynamic
+  }
+  return displayData.value.choices.find(choice => choice.name === name)
 })
 
-function getComponentName(metadata: MergedComponentMetadata) {
-  return metadata.config.name || metadata.apiMetadata.resourceName
+const isDynamic = computed(() => detailName.value === DYNAMIC_COMPONENT)
+const detailConfig = computed(() => detailName.value ? displayData.value?.available[detailName.value]?.config : undefined)
+const detailImage = computed(() => detailName.value && !isDynamic.value ? adminResources[detailName.value]?.image : undefined)
+const instantAdd = computed(() => !!detailConfig.value?.instantAdd)
+
+const ready = computed(() => canInsertSelection(detailName.value, selectedDynamicType.value, selectedDynamicProperty.value))
+const addReason = computed(() => ready.value ? undefined : 'Choose a data type and a field first.')
+
+const placeSuffix = computed(() => displayData.value?.place ? `, ${displayData.value.place}` : '')
+
+const targetText = computed(() => {
+  const data = displayData.value
+  return data ? `${data.groupName}${data.place ? `, ${data.place}` : ''}` : ''
+})
+
+function anchorName(event: AddResourceEvent): string | undefined {
+  const stack = $cwa.admin.resourceStackManager.resourceStack.value
+  const index = stack.findIndex(item => item.iri === event.targetIri)
+  if (index < 0) {
+    return
+  }
+  const isComponent = (at: number) => stack[at] && getResourceTypeFromIri(stack[at].iri) === CwaResourceTypes.COMPONENT
+  const at = isComponent(index) ? index : isComponent(index - 1) ? index - 1 : -1
+  const item = stack[at]
+  if (!item) {
+    return
+  }
+  const excerpt = excerptOf(unref(item.domElements) ?? [])
+  return excerpt ? `“${excerpt}”` : item.displayName
 }
 
-function selectComponent(name?: string) {
-  selectedComponent.value = name
+function describe(name: string, config: CwaResourceMeta) {
+  if (!config.description) {
+    return
+  }
+  if (import.meta.env.DEV && hasMarkup(config.description) && !warnedMarkup.has(name)) {
+    warnedMarkup.add(name)
+    logger.warn(`[CWA] The description in the defineCwaConfig of ${name} contains HTML. Descriptions are plain text, so the tags are removed.`)
+  }
+  return plainText(config.description) || undefined
 }
 
-async function findAvailableComponents(allowedComponents: undefined | string[], includePosition = false): Promise<ComponentMetadataCollection> {
-  const apiComponents = await $cwa.getComponentMetadata(true, includePosition)
+async function createDisplayData(event: AddResourceEvent): Promise<DisplayData> {
+  const groupIri = event.closest.group
+  const group = groupIri ? $cwa.resources.getResource(groupIri).value?.data : undefined
+  const enableDynamicPosition = !$cwa.admin.resourceStackManager.isEditingLayout.value && $cwa.resources.isDynamicPage.value
+  const apiComponents = await $cwa.getComponentMetadata(true, enableDynamicPosition)
   if (!apiComponents) {
     throw new Error('Could not retrieve component metadata from the API')
   }
 
-  const asEntries = Object.entries(apiComponents)
   const prefix = ResourceTypeFromIri.getPathPrefix()
-  const normalizedAllowed = prefix
-    ? allowedComponents?.map(iri => iri.startsWith(prefix) ? iri.slice(prefix.length) : iri)
-    : allowedComponents
-  const filteredAllowed = asEntries.filter(
-    ([_, value]) => isComponentAllowedInGroup(value, normalizedAllowed),
-  )
-  // if no config, the front-end component does not exist to add
-  const filteredHasResourceConfig = filteredAllowed.filter(([name]) => resourcesConfig[name])
-  const mapped = filteredHasResourceConfig.map(([name, apiMetadata]) => ([name, { apiMetadata, config: resourcesConfig[name] }]))
-  return Object.fromEntries(mapped)
-}
+  const strip = (iri: string) => prefix && iri.startsWith(prefix) ? iri.slice(prefix.length) : iri
+  const allowedComponents: string[] | undefined = group?.allowedComponents?.map(strip)
 
-const selectedResourceMeta = computed(() => {
-  if (!selectedComponent.value) {
-    return
-  }
-  return resourcesConfig[selectedComponent.value]
-})
-
-const selectedResourceDescription = computed(() => {
-  if (!selectedResourceMeta.value) {
-    return
-  }
-  return selectedResourceMeta.value?.description
-})
-
-const resourceDescription = computed(() => {
-  return selectedResourceDescription.value || (selectedComponent.value ? '<p>No Description</p>' : '<p>Please select a resource to add</p>')
-})
-
-const defaultComponentData = computed<{ [key: string]: any }>(() => {
-  const defaultData = selectedResourceMeta.value?.defaultData || {}
-  if (selectedComponent.value !== 'ComponentPosition') {
-    return defaultData
-  }
-  return {
-    ...defaultData,
-    pageDataClass: selectedDynamicType.value ?? null,
-    pageDataProperty: selectedDynamicProperty.value ?? null,
-  }
-})
-
-async function createDisplayData(): Promise<undefined | DisplayDataI> {
-  const event = addResourceEvent.value
-  if (!event) {
-    return
+  const available: Record<string, AvailableComponent> = {}
+  for (const [name, apiMetadata] of Object.entries(apiComponents)) {
+    const config = resourcesConfig[name]
+    config && (available[name] = { apiMetadata, config })
   }
 
-  const allowedComponents = event.closest.group ? findAllowedComponents(event.closest.group) : undefined
-  const enableDynamicPosition = !$cwa.admin.resourceStackManager.isEditingLayout.value && $cwa.resources.isDynamicPage.value
-  const availableComponents = await findAvailableComponents(allowedComponents, enableDynamicPosition)
-  const displayAvailableComponents = { ...availableComponents }
-  delete displayAvailableComponents.ComponentPosition
+  const endpoints = Object.fromEntries(Object.entries(available).map(([name, { apiMetadata }]) => [name, apiMetadata.endpoint]))
+  const positionComponents = (group?.componentPositions ?? []).map((positionIri: string) => {
+    const component = $cwa.resources.getResource(positionIri).value?.data?.component
+    return typeof component === 'string' ? strip(component) : undefined
+  })
+  const counts = countComponentsInGroup(positionComponents, endpoints)
 
+  const choices = Object.entries(available)
+    .filter(([name]) => name !== DYNAMIC_COMPONENT)
+    .map(([name, { apiMetadata, config }]) => ({
+      name,
+      label: config.name || apiMetadata.resourceName,
+      description: describe(name, config),
+      group: adminResources[name]?.group,
+      count: counts[name] ?? 0,
+      allowed: isComponentAllowedInGroup(apiMetadata, allowedComponents),
+    }))
+
+  const position = available[DYNAMIC_COMPONENT]
+  const noun = pageDataNoun($cwa.resources.pageData.value?.data?.['@type'])
+  const dynamic = enableDynamicPosition && position && isComponentAllowedInGroup(position.apiMetadata, allowedComponents)
+    ? { name: DYNAMIC_COMPONENT, label: 'Dynamic', description: `Changes per ${noun}: each ${noun} picks what shows here`, count: 0, allowed: true }
+    : undefined
+
+  const targetIsGroup = getResourceTypeFromIri(event.targetIri) === CwaResourceTypes.COMPONENT_GROUP
   return {
     event,
-    availableComponents,
-    enableDynamicPosition,
-    displayAvailableComponents,
+    available,
+    choices,
+    dynamic,
+    groupName: groupDisplayName(group?.reference),
+    place: addTargetPlace({
+      targetIsGroup,
+      addAfter: event.addAfter,
+      groupHasPositions: !!group?.componentPositions?.length,
+      anchor: targetIsGroup ? undefined : anchorName(event),
+    }),
   }
 }
 
-function findAllowedComponents(groupIri: string): undefined | string[] {
-  return $cwa.resources.getResource(groupIri).value?.data?.allowedComponents
+function resetDetail(defaults?: Record<string, any>) {
+  uiComponent.value = defaults?.uiComponent ?? undefined
+  uiClassNames.value = Array.isArray(defaults?.uiClassNames) ? [...defaults.uiClassNames] : undefined
+  selectedDynamicType.value = null
+  selectedDynamicProperty.value = null
+  dynamicPropertyOptions.value = []
 }
 
-function handleAdd() {
-  if (!selectedComponent.value) {
-    return
+function openDetail(name: string, opener?: HTMLElement) {
+  resetDetail(displayData.value?.available[name]?.config.defaultData)
+  detailOpener.value = opener ?? null
+  detailName.value = name
+  if (name === DYNAMIC_COMPONENT && !dynamicTypeOptions.value.length) {
+    loadDynamicTypeOptions()
   }
-  const meta = displayData.value?.availableComponents[selectedComponent.value]
-  if (!meta) {
-    return
-  }
-  $cwa.resourcesManager.setAddResourceEventResource(selectedComponent.value, meta.apiMetadata.endpoint, meta.apiMetadata.isPublishable, instantAdd.value, defaultComponentData.value)
+  const label = detail.value?.label
+  label && dialog.value?.announce(`${label}. Adding to ${targetText.value}.`)
 }
+
+function back() {
+  detailName.value = undefined
+}
+
+function dialogElement(testId: string) {
+  return document.querySelector<HTMLElement>(`[data-testid="dialog"] [data-testid="${testId}"]`)
+}
+
+function initialFocus() {
+  return isDynamic.value
+    ? dialogElement('add-component-data-type')?.querySelector<HTMLElement>('[data-testid="select-trigger"]')
+    : dialogElement('add-component-add')
+}
+
+function returnFocus() {
+  return detailOpener.value?.isConnected ? detailOpener.value : dialogElement('combobox-input')
+}
+
+function chips() {
+  return [...document.querySelectorAll<HTMLElement>('[data-testid="dialog"] [data-testid="add-component-chip"]')]
+}
+
+function focusChip(index: number) {
+  activeChip.value = index
+  nextTick(() => chips()[index]?.focus({ preventScroll: true }))
+}
+
+function onChipKeydown(event: KeyboardEvent, index: number) {
+  const count = list.value.quick.length
+  const moves: Record<string, number> = { ArrowRight: (index + 1) % count, ArrowLeft: (index - 1 + count) % count, Home: 0, End: count - 1 }
+  if (event.key in moves) {
+    event.preventDefault()
+    focusChip(moves[event.key]!)
+    return
+  }
+  if (event.key === 'ArrowDown' || (event.key === 'Tab' && !event.shiftKey)) {
+    event.preventDefault()
+    combobox.value?.focus(true)
+  }
+}
+
+function onAddClick() {
+  if (dialogLoading.value || isInstantAddResourceSaved.value) {
+    return
+  }
+  if (addReason.value) {
+    dialog.value?.announce(addReason.value)
+    return
+  }
+  add()
+}
+
+function add() {
+  const name = detailName.value
+  const meta = name ? displayData.value?.available[name] : undefined
+  if (!name || !meta) {
+    return
+  }
+  const data: Record<string, any> = { ...(meta.config.defaultData || {}) }
+  if (name === DYNAMIC_COMPONENT) {
+    data.pageDataClass = selectedDynamicType.value ?? null
+    data.pageDataProperty = selectedDynamicProperty.value ?? null
+  }
+  else {
+    uiComponent.value !== undefined && (data.uiComponent = uiComponent.value)
+    uiClassNames.value && (data.uiClassNames = [...uiClassNames.value])
+  }
+  $cwa.resourcesManager.setAddResourceEventResource(name, meta.apiMetadata.endpoint, meta.apiMetadata.isPublishable, instantAdd.value, data)
+}
+
 async function loadDynamicTypeOptions() {
   dynamicTypeOptions.value = await getTypeOptions() as { label: string, value: string }[]
 }
+
+const loadingProperties = ref(false)
+let propertyRequest = 0
 
 async function loadDynamicPropertyOptions() {
   if (!selectedDynamicType.value) {
@@ -253,25 +319,42 @@ async function loadDynamicPropertyOptions() {
     return
   }
   const groupIri = displayData.value?.event.closest.group
-  const allowedComponents = groupIri ? findAllowedComponents(groupIri) ?? null : null
-  dynamicPropertyOptions.value = [{ label: 'Loading...', value: '' }]
-  dynamicPropertyOptions.value = await getPropertyOptions(selectedDynamicType.value, allowedComponents) as { label: string, value: string }[]
+  const allowedComponents = groupIri ? $cwa.resources.getResource(groupIri).value?.data?.allowedComponents ?? null : null
+  dynamicPropertyOptions.value = []
+  const request = ++propertyRequest
+  loadingProperties.value = true
+  try {
+    const options = await getPropertyOptions(selectedDynamicType.value, allowedComponents) as { label: string, value: string }[]
+    if (request === propertyRequest) {
+      dynamicPropertyOptions.value = options
+    }
+  }
+  finally {
+    if (request === propertyRequest) {
+      loadingProperties.value = false
+    }
+  }
 }
 
-function onDynamicTypeChange(value: string | null) {
-  selectedDynamicType.value = value
+function onDynamicTypeChange(value: string | null | undefined) {
+  selectedDynamicType.value = value ?? null
   selectedDynamicProperty.value = null
   loadDynamicPropertyOptions()
 }
 
-onMounted(() => {
-  loadDynamicTypeOptions()
-})
+function holdFocusOnAdd() {
+  const root = document.querySelector<HTMLElement>('[data-testid="dialog"]')
+  const active = document.activeElement
+  if (root && (!root.contains(active) || active === root || dialogElement('dialog-body')?.contains(active))) {
+    dialogElement('add-component-add')?.focus({ preventScroll: true })
+  }
+}
 
 watch(isInstantAddResourceSaved, async (newlySaved) => {
   if (!newlySaved) {
     return
   }
+  holdFocusOnAdd()
   dialogLoading.value = true
   try {
     const newResource = await $cwa.resourcesManager.addResourceAction()
@@ -288,16 +371,19 @@ watch(isInstantAddResourceSaved, async (newlySaved) => {
   }
 })
 
-// We do not want the modal content to disappear as soon as the add event is gone, so we populate and cache the data which determines the display
 watch(open, async (isOpen: boolean) => {
   if (!isOpen) {
     return
   }
-  selectComponent()
+  const event = addResourceEvent.value!
+  query.value = ''
+  detailName.value = undefined
+  activeChip.value = 0
+  resetDetail()
   loadingComponents.value = true
   loadError.value = false
   try {
-    displayData.value = await createDisplayData()
+    displayData.value = await createDisplayData(event)
   }
   catch (error) {
     displayData.value = undefined
@@ -307,5 +393,208 @@ watch(open, async (isOpen: boolean) => {
   finally {
     loadingComponents.value = false
   }
-})
+  await nextTick()
+  combobox.value?.focus()
+}, { immediate: true })
 </script>
+
+<template>
+  <CwaUiDialog
+    v-if="open"
+    ref="dialog"
+    title="Add a component"
+    flush
+    :loading="loadingComponents || dialogLoading"
+    @close="close"
+  >
+    <div
+      v-if="loadError"
+      class="cwa:p-6"
+    >
+      <CwaUiAlert
+        tone="danger"
+        title="Could not load the available components"
+        data-testid="add-component-error"
+      />
+    </div>
+    <CwaUiSubView
+      v-else-if="displayData"
+      :open="!!detail"
+      :title="detail?.label"
+      back-label="Components"
+      :initial-focus="initialFocus"
+      :return-focus="returnFocus"
+      @back="back"
+    >
+      <template
+        v-if="detail && !isDynamic && !detailImage"
+        #lead
+      >
+        <AddComponentLead
+          :name="detail.name"
+          heading
+          data-testid="add-component-detail-lead"
+        />
+      </template>
+      <template #main>
+        <CwaUiCombobox
+          ref="combobox"
+          v-model:query="query"
+          label="Search components"
+          :sections="sections"
+          :noun="['component', 'components']"
+          :none-text="noneText"
+          :up-leaves="quickShown"
+          @choose="openDetail"
+          @leave-top="focusChip(activeChip)"
+        >
+          <template #header>
+            <p
+              class="cwa:m-0 cwa:mb-3 cwa:text-fg-muted"
+              data-testid="add-component-target"
+            >
+              To <b class="cwa:font-semibold cwa:text-fg">{{ displayData.groupName }}</b>{{ placeSuffix }}
+            </p>
+          </template>
+          <template #before>
+            <div
+              v-if="quickShown"
+              role="group"
+              aria-labelledby="add-component-quick-heading"
+              data-testid="add-component-quick"
+              class="cwa:mx-3 cwa:px-4 cwa:pb-3 cwa:shadow-[inset_0_-1px_0_var(--cwa-color-line)] cwa:max-sm:mx-1"
+            >
+              <div
+                id="add-component-quick-heading"
+                class="cwa:pt-1 cwa:pb-2 cwa:text-helper cwa:text-fg-muted"
+              >
+                Already in this group
+              </div>
+              <div class="cwa:flex cwa:flex-wrap cwa:gap-2">
+                <button
+                  v-for="(chip, index) in list.quick"
+                  :key="chip.name"
+                  type="button"
+                  :tabindex="index === activeChip ? 0 : -1"
+                  data-testid="add-component-chip"
+                  :data-value="chip.name"
+                  class="cwa:inline-flex cwa:h-control cwa:cursor-pointer cwa:items-center cwa:gap-2 cwa:bg-button cwa:ps-3 cwa:pe-3.5 cwa:text-label cwa:text-fg cwa:outline-1 cwa:outline-transparent cwa:transition-colors cwa:duration-(--cwa-duration-fast) cwa:hover:bg-field-hover cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-accent-fg cwa:pointer-coarse:h-hit"
+                  @click="openDetail(chip.name, $event.currentTarget as HTMLElement)"
+                  @focus="activeChip = index"
+                  @keydown="onChipKeydown($event, index)"
+                >
+                  <AddComponentLead
+                    :name="chip.name"
+                    chip
+                  />
+                  {{ chip.label }}
+                </button>
+              </div>
+            </div>
+          </template>
+          <template #lead="{ option }">
+            <AddComponentLead
+              :name="option.value"
+              :dynamic="option.value === DYNAMIC_COMPONENT"
+            />
+          </template>
+          <template #empty>
+            <div
+              class="cwa:flex cwa:min-h-hit cwa:flex-wrap cwa:items-center cwa:gap-x-4 cwa:gap-y-1 cwa:px-4 cwa:py-2 cwa:text-fg-muted"
+              data-testid="add-component-none"
+            >
+              <span v-if="list.blocked"><b class="cwa:font-medium cwa:text-fg">{{ list.blocked.label }}</b> isn't allowed in <b class="cwa:font-medium cwa:text-fg">{{ displayData.groupName }}</b></span>
+              <span v-else>No component called <b class="cwa:font-medium cwa:text-fg">{{ term }}</b></span>
+              <CwaUiButton
+                label="Clear search"
+                size="sm"
+                data-testid="add-component-clear"
+                @click="query = ''; combobox?.focus()"
+              />
+            </div>
+          </template>
+        </CwaUiCombobox>
+      </template>
+      <div
+        v-if="detail"
+        class="cwa:flex cwa:flex-col cwa:gap-4 cwa:px-6 cwa:pt-5 cwa:pb-6 cwa:max-sm:px-4"
+        data-testid="add-component-detail"
+      >
+        <img
+          v-if="detailImage"
+          :src="detailImage"
+          :alt="`Preview of ${detail.label}`"
+          data-testid="add-component-image"
+          class="cwa:block cwa:aspect-video cwa:w-full cwa:max-w-72 cwa:object-cover cwa:shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--cwa-color-fg)_12%,transparent)]"
+        >
+        <p
+          v-if="detail.description"
+          class="cwa:m-0"
+          data-testid="add-component-description"
+        >
+          {{ detail.description }}
+        </p>
+        <CwaUiAlert
+          data-testid="add-component-adding-to"
+        >
+          Adding to <b class="cwa:font-semibold cwa:text-fg">{{ displayData.groupName }}</b>{{ placeSuffix }}
+        </CwaUiAlert>
+        <template v-if="isDynamic">
+          <CwaUiSelect
+            :model-value="selectedDynamicType"
+            label="Data type"
+            width="full"
+            placeholder="Choose a data type"
+            :options="dynamicTypeOptions"
+            data-testid="add-component-data-type"
+            @update:model-value="onDynamicTypeChange"
+          />
+          <CwaUiSelect
+            v-model="selectedDynamicProperty"
+            label="Field"
+            width="full"
+            :placeholder="loadingProperties ? 'Loading…' : 'Choose a field'"
+            :options="dynamicPropertyOptions"
+            :disabled="!selectedDynamicType || loadingProperties"
+            :disabled-reason="loadingProperties && selectedDynamicType ? 'The fields are loading.' : 'Choose a data type first.'"
+            info="The page data property that holds the component."
+            data-testid="add-component-field"
+          />
+        </template>
+        <AddComponentUiChoices
+          v-else
+          v-model:ui-component="uiComponent"
+          v-model:ui-class-names="uiClassNames"
+          :name="detail.name"
+          :ui="(detailConfig?.ui ?? []) as string[]"
+        />
+      </div>
+    </CwaUiSubView>
+    <template #footer>
+      <div
+        class="cwa:grid cwa:gap-actions cwa:max-sm:w-full cwa:sm:flex"
+        :class="{ 'cwa:grid-cols-2': detail }"
+      >
+        <CwaUiButton
+          label="Cancel"
+          data-testid="add-component-cancel"
+          @click="dialog?.requestClose()"
+        />
+        <span
+          v-if="detail"
+          class="cwa:contents"
+          @click="onAddClick"
+        >
+          <CwaUiButton
+            variant="solid"
+            :label="instantAdd ? 'Add now' : 'Add'"
+            :loading="dialogLoading"
+            :disabled="!!addReason"
+            :disabled-reason="addReason"
+            data-testid="add-component-add"
+          />
+        </span>
+      </div>
+    </template>
+  </CwaUiDialog>
+</template>

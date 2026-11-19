@@ -3,7 +3,7 @@
     v-model="credentials"
     :error="error"
     :submitting="submitting"
-    submit-button-text="Sign In"
+    submit-button-text="Sign in"
     @submit="signIn"
   />
 </template>
@@ -26,7 +26,7 @@ useHead({
     class: 'cwa:h-full',
   },
   htmlAttrs: {
-    class: 'cwa:h-full cwa:bg-neutral-900',
+    class: 'cwa:h-full cwa:bg-stone-950',
   },
 })
 </script>

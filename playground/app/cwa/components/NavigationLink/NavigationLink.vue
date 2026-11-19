@@ -14,7 +14,9 @@ import { useCwaComponent, defineCwaConfig } from '#imports'
 
 defineCwaConfig({
   name: 'Link',
-  description: '<p>Use this component to display a link for a website user to click so they can visit another page or URL</p>',
+  description: 'A link to another page or URL',
+  icon: 'link',
+  group: 'Text',
 })
 
 const props = defineProps<IriProp>()

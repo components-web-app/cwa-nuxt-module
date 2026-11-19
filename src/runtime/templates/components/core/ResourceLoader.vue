@@ -1,6 +1,9 @@
 <template>
   <div v-if="isLoading">
-    <Spinner :show="true" />
+    <span
+      role="status"
+      class="cwa:inline-flex"
+    ><Spinner /><span class="cwa:sr-only">Loading</span></span>
   </div>
   <CwaUiAlertWarning v-else-if="warningPlaceholder">
     <p>{{ warningPlaceholder }}</p>
@@ -27,7 +30,7 @@ import {
   getPublishedResourceState,
   getResourceTypeFromIri,
 } from '#cwa/resources/resource-utils'
-import Spinner from '#cwa/templates/components/utils/Spinner.vue'
+import Spinner from '#cwa/templates/components/ui/Spinner.vue'
 import { resolveStyleClasses } from '#cwa/composables/cwa-styles'
 import { styleClasses } from '#build/cwa-styles'
 

@@ -1,5 +1,5 @@
 // @vitest-environment nuxt
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { useOrphanedFiles } from './useOrphanedFiles'
 import * as cwaComposable from '#cwa/composables/cwa'
@@ -70,6 +70,11 @@ function files(rows: { adapter: string, path: string }[]) {
 }
 
 describe('useOrphanedFiles', () => {
+  beforeAll(async () => {
+    await import('#cwa/admin/confirm-dialog')
+    await import('#cwa/templates/components/core/ui/Confirm.vue')
+  })
+
   beforeEach(() => {
     mockFetchFileReport.mockReset().mockResolvedValue(report())
     mockRequestFileScan.mockReset().mockResolvedValue(undefined)
@@ -199,7 +204,10 @@ describe('useOrphanedFiles', () => {
       await orphans.deleteRow(orphans.orphanedFiles.rows[0]!)
       expect(mockReveal).toHaveBeenCalledWith({
         title: 'Delete this file?',
-        content: '<p>It will be checked again first, then permanently deleted from storage, from every adapter where it is orphaned. This cannot be undone.</p>',
+        lines: [{ text: 'It will be checked again first, then permanently deleted from storage, from every adapter where it is orphaned.' }, { text: 'This can\'t be undone.' }],
+        keep: 'Don\'t delete',
+        go: 'Delete file',
+        typed: undefined,
       })
       expect(mockDeleteOrphanedFiles).toHaveBeenCalledTimes(1)
       expect(mockDeleteOrphanedFiles).toHaveBeenCalledWith({ paths: [A.path] })
@@ -221,7 +229,10 @@ describe('useOrphanedFiles', () => {
       expect(mockReveal).toHaveBeenCalledTimes(1)
       expect(mockReveal).toHaveBeenCalledWith({
         title: 'Delete 3 orphaned files?',
-        content: '<p>Each is checked again first, then permanently deleted from storage. This cannot be undone.</p>',
+        lines: [{ text: 'Each is checked again first, then permanently deleted from storage.' }, { text: 'This can\'t be undone.' }],
+        keep: 'Don\'t delete',
+        go: 'Delete 3 files',
+        typed: { noun: 'number of files', value: '3' },
       })
       expect(mockDeleteOrphanedFiles).toHaveBeenCalledTimes(1)
       expect(mockDeleteOrphanedFiles).toHaveBeenCalledWith({ paths: [A.path, B_LOCAL.path, B_S3.path] })
@@ -239,7 +250,10 @@ describe('useOrphanedFiles', () => {
       await orphans.deleteAll()
       expect(mockReveal).toHaveBeenCalledWith({
         title: 'Delete all 3 orphaned files?',
-        content: '<p>Everything is checked again first. Whatever is still unused is permanently deleted from storage, including anything that has become unused since the last scan. Unknown files, missing files and invalid files are never deleted. This cannot be undone.</p>',
+        lines: [{ text: 'Everything is checked again first. Whatever is still unused is permanently deleted from storage, including anything that has become unused since the last scan. Unknown files, missing files and invalid files are never deleted.' }, { text: 'This can\'t be undone.' }],
+        keep: 'Don\'t delete',
+        go: 'Delete everything',
+        typed: { noun: 'number of files', value: '3' },
       })
       expect(mockDeleteOrphanedFiles).toHaveBeenCalledTimes(1)
       expect(mockDeleteOrphanedFiles).toHaveBeenCalledWith({ all: true })

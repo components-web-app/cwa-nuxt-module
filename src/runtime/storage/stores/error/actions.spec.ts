@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, test } from 'vitest'
+import { afterEach, describe, expect, test, vi } from 'vitest'
 import { createFetchError } from 'ofetch'
 import state, { ErrorType } from './state'
 import actions from './actions'
@@ -48,6 +48,23 @@ describe('Errors -> error', () => {
     expect(errorsState.byId[id]).toBeUndefined()
     expect(errorsState.allIds).toHaveLength(0)
     expect(errorsState.allEndpoints.has('/bar')).toBeFalsy()
+  })
+
+  test('removing an older error by id keeps the newer error its endpoint now maps to', () => {
+    vi.useFakeTimers({ now: 1000 })
+    const failure = () => createFetchError({
+      options: { method: 'GET' },
+      response: { status: 409, statusText: 'Teapot', _data: { '@type': 'Error', 'description': 'Conflict' } },
+    })
+    errorsActions.error({ endpoint: '/bar', data: {} }, failure())
+    vi.setSystemTime(2000)
+    errorsActions.error({ endpoint: '/bar', data: {} }, failure())
+    vi.useRealTimers()
+
+    errorsActions.removeById(1000)
+    expect(errorsState.allEndpoints.get('/bar')).toBe(2000)
+    errorsActions.removeById(2000)
+    expect(errorsState.allEndpoints.has('/bar')).toBe(false)
   })
 
   test('add javascript error in the state', () => {

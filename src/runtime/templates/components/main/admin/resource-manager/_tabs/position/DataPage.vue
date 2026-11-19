@@ -3,6 +3,8 @@ import { resourcesConfig } from '#build/cwa-config'
 import { computed, ref } from 'vue'
 import { useCwaResourceManagerTab } from '#cwa/composables/cwa-resource-manager-tab'
 import { DEFAULT_TAB_ORDER } from '#cwa/admin/manager-tabs-resolver'
+import CwaUiButton from '#cwa/templates/components/ui/Button.vue'
+import CwaUiManagerTab from '#cwa/templates/components/ui/ManagerTab.vue'
 
 const loadingDynamicMetadata = ref(false)
 
@@ -99,23 +101,17 @@ function selectComponent() {
 </script>
 
 <template>
-  <div>
-    <div class="cwa:flex cwa:gap-x-4 cwa:items-center">
-      <div>
-        <CwaUiFormButton
-          v-if="hasDynamicComponent"
-          @click="selectComponent"
-        >
-          Select Component
-        </CwaUiFormButton>
-        <CwaUiFormButton
-          v-else-if="dynamicComponentName"
-          :disabled="loadingDynamicMetadata"
-          @click="addDynamicComponent"
-        >
-          Add {{ dynamicComponentName }}
-        </CwaUiFormButton>
-      </div>
-    </div>
-  </div>
+  <CwaUiManagerTab>
+    <CwaUiButton
+      v-if="hasDynamicComponent"
+      label="Select component"
+      @click="selectComponent"
+    />
+    <CwaUiButton
+      v-else-if="dynamicComponentName"
+      :label="`Add ${dynamicComponentName}`"
+      :loading="loadingDynamicMetadata"
+      @click="addDynamicComponent"
+    />
+  </CwaUiManagerTab>
 </template>

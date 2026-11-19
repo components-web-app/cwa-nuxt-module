@@ -1,14 +1,17 @@
 <script lang="ts" setup>
-import { computed, onMounted, ref, watch, watchEffect } from 'vue'
+import { computed, watchEffect } from 'vue'
 import {
   useCwaResourceManagerTab,
 } from '#cwa/composables/cwa-resource-manager-tab'
 import { DEFAULT_TAB_ORDER } from '#cwa/admin/manager-tabs-resolver'
 import { useCwaResourceModel } from '#cwa/composables/cwa-resource-model'
-import { useCwaSelect } from '#cwa/composables/cwa-select'
-import type { SelectOption } from '#cwa/composables/cwa-select-input'
+import type { ResourceModelField } from '#cwa/resources/model-editors'
+import type { MenuItem } from '#cwa/templates/components/core/ui/menu-entries'
+import CwaUiManagerTab from '#cwa/templates/components/ui/ManagerTab.vue'
+import CwaUiMultiSelect from '#cwa/templates/components/ui/MultiSelect.vue'
+import CwaUiSelect from '#cwa/templates/components/ui/Select.vue'
 import { keepDefinedStyleKeys, selectStyleKeys, selectedStyleKeys } from '#cwa/composables/cwa-styles'
-import type { CwaUiVariantConfig } from '#cwa/types'
+import type { CwaStyles, CwaUiVariantConfig } from '#cwa/types'
 import { resourcesConfig, uiConfig } from '#build/cwa-config'
 
 const { exposeMeta, $cwa, iri } = useCwaResourceManagerTab({
@@ -16,74 +19,62 @@ const { exposeMeta, $cwa, iri } = useCwaResourceManagerTab({
   order: DEFAULT_TAB_ORDER,
 })
 
-const savedData = computed(() => iri.value ? $cwa.resources.getResource(iri.value).value?.data : undefined)
-
-const uiComponentModel = useCwaResourceModel<string>(iri, 'uiComponent', {
-  debounceTime: 0,
-})
-const uiClassNamesModel = useCwaResourceModel<string[]>(iri, 'uiClassNames', {
-  debounceTime: 0,
-})
-
-const uiSelect = useCwaSelect(uiComponentModel.model)
-
-const switchingTo = ref<string | null>()
-const selectedUi = computed({
-  get: () => uiSelect.model.value,
-  set: (value) => {
-    switchingTo.value = (value as string | null | undefined) ?? null
-    uiSelect.model.value = value
-  },
-})
+exposeMeta.fields.push('uiComponent', 'uiClassNames')
 
 const current = computed(() => $cwa.admin.resourceStackManager.currentStackItem.value)
 
-const uiOptions = computed(() => {
-  const options: SelectOption[] = [{
-    label: 'Default',
-    value: null,
-  }]
-  for (const ui of current.value?.ui ?? []) {
-    options.push({
-      label: uiConfig[ui]?.name || ui,
-      value: ui,
-    })
-  }
-  return options
-})
+function storedAt(at: string | undefined) {
+  return at ? $cwa.resources.getResource(at).value?.data : undefined
+}
 
-const styleConfig = computed<CwaUiVariantConfig | undefined>(() => {
-  const uiComponent = savedData.value?.uiComponent
+function styleConfigOf(type: string | undefined, uiComponent: string | null | undefined): CwaUiVariantConfig | undefined {
   if (uiComponent) {
     return uiConfig[uiComponent]
   }
-  const type = savedData.value?.['@type']
   return type ? resourcesConfig[type] : undefined
+}
+
+const styleConfig = computed(() => {
+  const data = storedAt(iri.value)
+  return styleConfigOf(data?.['@type'], data?.uiComponent)
 })
-const styles = computed(() => styleConfig.value?.styles ?? {})
+const styles = computed<CwaStyles>(() => styleConfig.value?.styles ?? {})
 const isMultipleStyles = computed(() => !!styleConfig.value?.multipleStyles)
 const showStyleSelect = computed(() => Object.keys(styles.value).length > 0)
 
-const styleNameOptions = computed<SelectOption[]>(() =>
+const uiModel = useCwaResourceModel<string>(iri, 'uiComponent', {
+  debounceTime: 0,
+  alsoSend: (value, at) => {
+    const data = storedAt(at)
+    const stored = data?.uiClassNames as string[] | null | undefined
+    const kept = keepDefinedStyleKeys(stored, styleConfigOf(data?.['@type'], value)?.styles)
+    return (kept?.length ?? 0) !== (stored?.length ?? 0) ? { uiClassNames: kept } : undefined
+  },
+})
+
+const styleModel = useCwaResourceModel<string[] | string, string[]>(iri, 'uiClassNames', {
+  debounceTime: 0,
+  get: (stored) => {
+    const keys = selectedStyleKeys(stored, styles.value)
+    return isMultipleStyles.value ? keys : keys[0] ?? null
+  },
+  set: (shown) => {
+    const keys = Array.isArray(shown) ? shown : shown ? [shown] : []
+    return selectStyleKeys(storedAt(iri.value)?.uiClassNames, styles.value, keys)
+  },
+})
+
+const styleNamesModel = styleModel as unknown as ResourceModelField<string[]>
+const styleNameModel = styleModel as unknown as ResourceModelField<string>
+
+const uiOptions = computed<MenuItem[]>(() => (current.value?.ui ?? []).map(ui => ({
+  label: uiConfig[ui]?.name || ui,
+  value: ui,
+})))
+
+const styleNameOptions = computed<MenuItem[]>(() =>
   Object.entries(styles.value).map(([key, style]) => ({ label: style.label, value: key })),
 )
-const singleStyleOptions = computed<SelectOption[]>(() => [
-  { label: 'Default', value: null },
-  ...styleNameOptions.value,
-])
-
-const selectedStyleNames = computed<string[]>({
-  get: () => selectedStyleKeys(uiClassNamesModel.model.value, styles.value),
-  set: (keys) => {
-    uiClassNamesModel.model.value = selectStyleKeys(uiClassNamesModel.model.value, styles.value, keys)
-  },
-})
-const selectedStyleName = computed<string | null>({
-  get: () => selectedStyleKeys(uiClassNamesModel.model.value, styles.value)[0] ?? null,
-  set: (key) => {
-    uiClassNamesModel.model.value = selectStyleKeys(uiClassNamesModel.model.value, styles.value, key ? [key] : [])
-  },
-})
 
 const disabled = exposeMeta.disabled
 
@@ -91,56 +82,39 @@ watchEffect(() => {
   disabled.value = !showStyleSelect.value && !current.value?.ui?.length
 })
 
-watch(() => savedData.value?.uiComponent ?? null, (uiComponent) => {
-  if (switchingTo.value === undefined || uiComponent !== switchingTo.value) {
-    return
-  }
-  switchingTo.value = undefined
-  const stored = uiClassNamesModel.model.value
-  const kept = keepDefinedStyleKeys(stored, styles.value)
-  if ((kept?.length ?? 0) !== (stored?.length ?? 0)) {
-    uiClassNamesModel.model.value = kept
-  }
-})
-
-onMounted(() => {
-  watchEffect(() => {
-    uiSelect.options.value = uiOptions.value
-  })
-})
-
 defineExpose(exposeMeta)
 </script>
 
 <template>
-  <div>
-    <div class="cwa:flex cwa:gap-x-6">
-      <CwaUiFormLabelWrapper
-        v-if="uiSelect.options.value.length > 1"
-        label="UI:"
-      >
-        <CwaUiSelect
-          v-model="selectedUi"
-          :options="uiSelect.options.value"
-        />
-      </CwaUiFormLabelWrapper>
-      <CwaUiFormLabelWrapper
-        v-if="showStyleSelect"
-        label="Style:"
-      >
-        <CwaUiSelect
-          v-if="isMultipleStyles"
-          v-model="selectedStyleNames"
-          :options="styleNameOptions"
-          multiple
-          placeholder="Default"
-        />
-        <CwaUiSelect
-          v-else
-          v-model="selectedStyleName"
-          :options="singleStyleOptions"
-        />
-      </CwaUiFormLabelWrapper>
-    </div>
-  </div>
+  <CwaUiManagerTab>
+    <CwaUiSelect
+      v-if="uiOptions.length"
+      :model="uiModel"
+      label="UI"
+      nullable
+      none-label="Default"
+      :options="uiOptions"
+      data-testid="ui-select"
+    />
+    <template v-if="showStyleSelect">
+      <CwaUiMultiSelect
+        v-if="isMultipleStyles"
+        :model="styleNamesModel"
+        label="Style"
+        placeholder="Default"
+        search-placeholder="Search styles"
+        :options="styleNameOptions"
+        data-testid="style-select"
+      />
+      <CwaUiSelect
+        v-else
+        :model="styleNameModel"
+        label="Style"
+        nullable
+        none-label="Default"
+        :options="styleNameOptions"
+        data-testid="style-select"
+      />
+    </template>
+  </CwaUiManagerTab>
 </template>

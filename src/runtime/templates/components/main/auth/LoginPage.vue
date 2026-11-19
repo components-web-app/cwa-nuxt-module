@@ -1,29 +1,30 @@
 <template>
   <AuthTemplate
+    :title="title"
     :submitting="submitting"
     :submit-button-text="submitButtonText"
     :error="error"
+    :main="main"
     @submit="$emit('submit')"
   >
     <slot name="header" />
-    <InputField
+    <CwaUiInput
       v-model="credentials.username"
       label="Username or Email"
       name="username"
-      type="text"
       autocomplete="username"
-      :required="true"
+      required
     />
-    <InputField
+    <CwaUiInput
       v-model="credentials.password"
       label="Password"
       name="password"
       type="password"
       autocomplete="current-password"
-      :required="true"
+      required
     />
     <slot name="footer">
-      <div class="cwa:flex cwa:items-center cwa:justify-between">
+      <div class="cwa:flex cwa:flex-wrap cwa:items-center cwa:justify-between cwa:gap-x-4 cwa:gap-y-2">
         <AuthPageLink
           link-to="/"
           link-text="< Back to home"
@@ -40,12 +41,13 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import AuthTemplate from './_parts/AuthTemplate.vue'
-import InputField from './_parts/InputField.vue'
 import AuthPageLink from './_parts/AuthPageLink.vue'
+import CwaUiInput from '../../ui/Input.vue'
 
 const emit = defineEmits(['submit', 'update:modelValue'])
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
+  title?: string
   submitButtonText: string
   submitting: boolean
   modelValue: {
@@ -53,7 +55,12 @@ const props = defineProps<{
     password: string
   }
   error?: string
-}>()
+  main?: boolean
+}>(), {
+  title: 'Sign in',
+  error: undefined,
+  main: true,
+})
 
 defineSlots<{
   header(): any

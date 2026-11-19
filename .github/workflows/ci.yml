@@ -57,6 +57,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
+      - name: Check the committed compiled CSS is current
+        run: pnpm run tailwind:check
+
       - name: Prepare
         run: pnpm run dev:prepare
 

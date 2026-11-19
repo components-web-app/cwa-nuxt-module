@@ -1,123 +1,237 @@
 <script setup lang="ts">
+import { computed, ref, useId, watch } from 'vue'
+import { consola } from 'consola'
 import {
-  Listbox,
-  ListboxButton,
-  ListboxOptions,
-  ListboxOption,
-} from '@headlessui/vue'
-import { computed } from 'vue'
-import { useCwaSelectInput } from '#cwa/composables/cwa-select-input'
-import type { SelectInputProps } from '#cwa/composables/cwa-select-input'
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectItemIndicator,
+  SelectItemText,
+  SelectLabel,
+  SelectPortal,
+  SelectRoot,
+  SelectSeparator,
+  SelectTrigger,
+  SelectViewport,
+} from 'reka-ui'
+import Field from '../core/ui/Field.vue'
+import type { FieldWidth } from '../core/ui/Field.vue'
+import ChevronGlyph from '../core/ui/ChevronGlyph.vue'
+import CheckGlyph from '../core/ui/CheckGlyph.vue'
+import { useFieldModel } from '../core/ui/field-context'
+import { fieldBox, fieldDisabled, fieldFill, groupHeading, menuPanel, optionLook } from '../core/ui/field-looks'
+import { menuGroups } from '../core/ui/menu-entries'
+import type { MenuEntry, MenuItem } from '../core/ui/menu-entries'
 import type { ResourceModelField } from '#cwa/resources/model-editors'
-import RemoteChangeConflict from '#cwa/templates/components/ui/RemoteChangeConflict.vue'
-import FieldPresence from '#cwa/templates/components/ui/FieldPresence.vue'
 
-const emit = defineEmits(['update:modelValue'])
-const props = defineProps<Omit<SelectInputProps, 'modelValue'> & {
-  modelValue?: SelectInputProps['modelValue']
-  model?: ResourceModelField<SelectInputProps['modelValue']>
-}>()
-const inputProps = computed<SelectInputProps>(() => ({ ...props, modelValue: props.model ? props.model.model.value : props.modelValue }))
-const { value, compareOptions, displayLabel, selectedOptions, trigger, container } = useCwaSelectInput(inputProps, (event, next) => {
-  if (props.model) {
-    // eslint-disable-next-line vue/no-mutating-props
-    props.model.model.value = next
-    return
-  }
-  emit(event, next)
+const NONE = '__cwa-none__'
+
+type NullItem = Omit<MenuItem, 'value'> & { value: null }
+
+const props = withDefaults(defineProps<{
+  label: string
+  labelHidden?: boolean
+  info?: string
+  description?: string
+  optional?: boolean
+  placeholder?: string
+  width?: FieldWidth
+  disabled?: boolean
+  disabledReason?: string
+  options: (MenuEntry | NullItem)[]
+  nullable?: boolean
+  noneLabel?: string
+  field?: string
+  model?: ResourceModelField<string>
+  modelValue?: string | null
+}>(), {
+  labelHidden: false,
+  info: undefined,
+  description: undefined,
+  optional: false,
+  placeholder: 'Choose…',
+  width: 'md',
+  disabled: false,
+  disabledReason: undefined,
+  nullable: false,
+  noneLabel: undefined,
+  field: undefined,
+  model: undefined,
+  modelValue: undefined,
 })
-const remoteChange = computed(() => props.model?.remoteChange.value)
 
-const hasSelection = computed(() => selectedOptions.value.length > 0)
+const emit = defineEmits<{ 'update:modelValue': [value: string | null | undefined] }>()
+
+const { model, value, state, unbound } = useFieldModel<string>(props, emit)
+const id = useId()
+const open = ref(false)
+
+function isNone(item: { value?: unknown }) {
+  return item.value === null || item.value === undefined
+}
+
+const allGroups = computed(() => menuGroups(props.options as MenuEntry[]))
+const noneItem = computed(() => props.nullable ? allGroups.value.flatMap(group => group.items).find(isNone) : undefined)
+const noneText = computed(() => props.noneLabel ?? noneItem.value?.label ?? 'None')
+const groups = computed(() => props.nullable
+  ? allGroups.value.map(group => ({ ...group, items: group.items.filter(item => !isNone(item)) })).filter(group => group.items.length)
+  : allGroups.value)
+const items = computed(() => groups.value.flatMap(group => group.items))
+const chosen = computed<MenuItem | undefined>(() => items.value.find(item => item.value === value.value))
+const shown = computed(() => {
+  if (chosen.value) {
+    return chosen.value.label
+  }
+  return props.nullable && (value.value === null || value.value === undefined) ? noneText.value : undefined
+})
+
+if (import.meta.env.DEV) {
+  watch(() => props.options, (options) => {
+    const values = menuGroups(options as MenuEntry[]).flatMap(group => group.items).map(item => item.value as unknown)
+    values.some(option => option !== null && option !== undefined && typeof option !== 'string')
+    && consola.warn(`CwaUiSelect "${props.label}": option values must be strings.`)
+    !props.nullable && values.includes(null)
+    && consola.warn(`CwaUiSelect "${props.label}": an option with a null value needs \`nullable\`, which shows it as the None option.`)
+  }, { immediate: true })
+}
+
+const selected = computed(() => value.value === null || value.value === undefined ? (props.nullable ? NONE : undefined) : value.value)
+
+function choose(next: unknown) {
+  const picked = next === NONE ? null : next as string
+  if (picked !== value.value) {
+    value.value = picked
+  }
+}
+
+const inactive = computed(() => props.disabled || unbound)
+
+function labelOfValue(candidate: unknown) {
+  return allGroups.value.flatMap(group => group.items).find(item => item.value === candidate)?.label ?? String(candidate)
+}
+const blocked = computed(() => props.disabled && !!props.disabledReason)
+const isOpen = computed({
+  get: () => open.value,
+  set: (next) => {
+    open.value = next && !blocked.value
+  },
+})
 </script>
 
 <template>
-  <Listbox
-    v-model="value"
-    :by="compareOptions"
-    :multiple="multiple"
+  <Field
+    :disabled-reason="blocked ? disabledReason : undefined"
+    :label="label"
+    :label-hidden="labelHidden"
+    :info="info"
+    :description="description"
+    :optional="optional"
+    :width="width"
+    :state="state"
+    :model="model"
+    :control-id="id"
+    :inactive="inactive"
+    :name="field"
+    :format="labelOfValue"
   >
-    <FieldPresence
-      :model="model"
-      class="cwa:inline-flex cwa:w-full cwa:items-center cwa:gap-x-3"
-      v-bind="model?.focusListeners"
-    >
-      <ListboxButton
-        ref="trigger"
-        class="cwa:relative cwa:py-2 cwa:pl-4 cwa:pr-10 cwa:text-left cwa:text-light cwa:w-full cwa:dark-blur cwa:border-0 cwa:outline-dotted cwa:outline-1 cwa:outline-stone-700 cwa:hover:outline-stone-400 cwa:focus-visible:ring-2 cwa:focus-visible:ring-stone-600 cwa:cursor-pointer"
+    <template #default="{ describedBy, tone, busy }">
+      <SelectRoot
+        v-model:open="isOpen"
+        :model-value="selected"
+        :disabled="inactive && !blocked"
+        @update:model-value="choose"
       >
-        <span
-          class="cwa:block cwa:truncate"
-          :class="{ 'cwa:text-stone-500': !hasSelection }"
-        >{{ displayLabel }}</span>
-        <span class="cwa:pointer-events-none cwa:absolute cwa:inset-y-0 cwa:right-0 cwa:flex cwa:items-center cwa:pr-3">
-          <svg
-            class="cwa:h-4 cwa:w-4 cwa:text-stone-400"
-            viewBox="0 0 20 20"
-            fill="none"
-            stroke="currentColor"
-            aria-hidden="true"
-          >
-            <path
-              d="M6 8l4 4 4-4"
-              stroke-width="1.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-        </span>
-      </ListboxButton>
-      <ListboxOptions
-        ref="container"
-        class="cwa:absolute cwa:z-10 cwa:mt-1 cwa:max-h-60 cwa:min-w-full cwa:max-w-[300px] cwa:overflow-auto cwa:dark-blur cwa:border-0 cwa:outline-dotted cwa:outline-1 cwa:outline-stone-400 cwa:focus:outline-none"
-      >
-        <ListboxOption
-          v-for="option in options"
-          :key="option.label"
-          v-slot="{ active, selected }"
-          as="template"
-          :value="option.value"
-          :disabled="option.disabled"
+        <SelectTrigger
+          :id="id"
+          :aria-describedby="describedBy"
+          :aria-invalid="tone === 'danger' ? 'true' : undefined"
+          :aria-busy="busy ? 'true' : undefined"
+          :aria-disabled="blocked ? 'true' : undefined"
+          data-testid="select-trigger"
+          :class="[fieldBox, fieldFill(tone, inactive), blocked ? 'cwa:cursor-not-allowed' : 'cwa:cursor-pointer', 'cwa:gap-2 cwa:px-3 cwa:text-left cwa:outline-1 cwa:outline-transparent cwa:data-[state=open]:outline-2 cwa:data-[state=open]:outline-offset-2 cwa:data-[state=open]:outline-accent-fg cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-accent-fg cwa:disabled:cursor-not-allowed', { [fieldDisabled]: inactive }]"
         >
-          <li
-            :class="[
-              active ? 'cwa:text-white cwa:bg-stone-700/40' : 'cwa:text-stone-400',
-              option.disabled ? 'cwa:opacity-50 cwa:cursor-not-allowed' : 'cwa:cursor-pointer',
-              'cwa:relative cwa:select-none cwa:py-2 cwa:pl-4 cwa:pr-9',
-            ]"
+          <span
+            class="cwa:min-w-0 cwa:flex-1 cwa:truncate"
+            :class="{ 'cwa:text-muted-on-field': !shown && !inactive }"
+          >{{ shown ?? placeholder }}</span>
+          <span
+            v-if="chosen?.dot"
+            aria-hidden="true"
+            data-testid="select-dot"
+            class="cwa:size-3 cwa:shrink-0 cwa:rounded-full"
+            :class="chosen.dot"
+          />
+          <ChevronGlyph />
+        </SelectTrigger>
+        <SelectPortal>
+          <SelectContent
+            position="popper"
+            side="bottom"
+            align="start"
+            :side-offset="4"
+            :collision-padding="8"
+            :class="[menuPanel, 'cwa:min-w-(--reka-select-trigger-width)']"
+            data-testid="select-menu"
           >
-            <span
-              :class="[
-                selected ? 'cwa:text-white cwa:font-medium' : '',
-                'cwa:block cwa:truncate',
-              ]"
-            >{{ option.label }}</span>
-            <span
-              v-if="selected"
-              class="cwa:absolute cwa:inset-y-0 cwa:right-0 cwa:flex cwa:items-center cwa:pr-3 cwa:text-white"
-            >
-              <svg
-                class="cwa:h-4 cwa:w-4"
-                viewBox="0 0 20 20"
-                fill="none"
-                stroke="currentColor"
-                aria-hidden="true"
+            <SelectViewport class="cwa:py-1">
+              <SelectItem
+                v-if="nullable"
+                :value="NONE"
+                :class="[optionLook, 'cwa:text-fg-muted']"
               >
-                <path
-                  d="M5 10l3 3 7-7"
-                  stroke-width="1.75"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
+                <SelectItemText class="cwa:flex-1">
+                  {{ noneText }}
+                </SelectItemText>
+                <SelectItemIndicator><CheckGlyph /></SelectItemIndicator>
+              </SelectItem>
+              <template
+                v-for="(group, groupIndex) in groups"
+                :key="groupIndex"
+              >
+                <SelectSeparator
+                  v-if="groupIndex > 0 && !group.group"
+                  class="cwa:my-1 cwa:h-px cwa:bg-line"
                 />
-              </svg>
-            </span>
-          </li>
-        </ListboxOption>
-      </ListboxOptions>
-      <RemoteChangeConflict
-        v-if="remoteChange"
-        :change="remoteChange"
-      />
-    </FieldPresence>
-  </Listbox>
+                <SelectGroup>
+                  <SelectLabel
+                    v-if="group.group"
+                    :class="groupHeading"
+                  >
+                    {{ group.group }}
+                  </SelectLabel>
+                  <SelectItem
+                    v-for="item in group.items"
+                    :key="item.value ?? item.label"
+                    :value="item.value ?? item.label"
+                    :disabled="item.disabled"
+                    :class="optionLook"
+                  >
+                    <span class="cwa:flex cwa:min-w-0 cwa:flex-1 cwa:flex-col">
+                      <SelectItemText :class="{ 'cwa:opacity-50': item.disabled }">{{ item.label }}</SelectItemText>
+                      <span
+                        v-if="item.disabled && item.disabledReason"
+                        class="cwa:text-helper cwa:text-fg-muted"
+                      >{{ item.disabledReason }}</span>
+                      <span
+                        v-else-if="item.description"
+                        class="cwa:text-helper cwa:text-fg-muted"
+                      >{{ item.description }}</span>
+                    </span>
+                    <span
+                      v-if="item.dot"
+                      aria-hidden="true"
+                      data-testid="select-dot"
+                      class="cwa:size-2 cwa:shrink-0 cwa:rounded-full"
+                      :class="item.dot"
+                    />
+                    <SelectItemIndicator><CheckGlyph /></SelectItemIndicator>
+                  </SelectItem>
+                </SelectGroup>
+              </template>
+            </SelectViewport>
+          </SelectContent>
+        </SelectPortal>
+      </SelectRoot>
+    </template>
+  </Field>
 </template>

@@ -1,8 +1,11 @@
 // @vitest-environment happy-dom
-import { describe, expect, test, vi, beforeEach } from 'vitest'
+import { afterEach, describe, expect, test, vi, beforeEach } from 'vitest'
 import { nextTick } from 'vue'
-import { mount, flushPromises } from '@vue/test-utils'
+import { enableAutoUnmount, mount, flushPromises } from '@vue/test-utils'
+import { axe } from '../../../../../../../../../test/utils/axe'
 import DynamicPage from './DynamicPage.vue'
+import CwaUiButton from '#cwa/templates/components/ui/Button.vue'
+import CwaUiSelect from '#cwa/templates/components/ui/Select.vue'
 
 const mockCurrentIriObj = vi.hoisted(() => ({ value: '/_/component_positions/pos-1' as string | undefined }))
 const mockResourceStore = vi.hoisted(() => ({ value: {} as Record<string, any> }))
@@ -46,34 +49,15 @@ const PROPERTY_OPTIONS = [
   { label: 'Ticket Link', value: 'ticketLink' },
 ]
 
-const ModalSelectStub = {
-  name: 'ModalSelect',
-  props: ['modelValue', 'label', 'options'],
-  emits: ['update:modelValue'],
-  template: '<div class="modal-select" />',
-}
-
-const FormButtonStub = {
-  name: 'CwaUiFormButton',
-  props: ['color'],
-  emits: ['click'],
-  template: '<button @click="$emit(\'click\')"><slot /></button>',
-}
-
 function setPositionResource(data: Record<string, any> = {}) {
   mockResourceStore.value[mockCurrentIriObj.value as string] = { data }
 }
 
 function mountComponent() {
-  return mount(DynamicPage, {
-    global: {
-      stubs: {
-        ModalSelect: ModalSelectStub,
-        CwaUiFormButton: FormButtonStub,
-      },
-    },
-  })
+  return mount(DynamicPage, { attachTo: document.body })
 }
+
+enableAutoUnmount(afterEach)
 
 describe('DynamicPage', () => {
   beforeEach(() => {
@@ -85,13 +69,33 @@ describe('DynamicPage', () => {
     mockGetPropertyOptions.mockResolvedValue(PROPERTY_OPTIONS)
   })
 
+  test.each([
+    ['unconfigured', {}],
+    ['part configured', null],
+    ['configured with a component', { component: '/component/images/1', pageDataClass: 'App\\Entity\\EventData', pageDataProperty: 'heroImage' }],
+  ])('is one manager bar row when %s (#461)', async (_label, data) => {
+    setPositionResource(data ?? {})
+    const wrapper = mountComponent()
+    await flushPromises()
+    if (!data) {
+      wrapper.findAllComponents(CwaUiSelect)[0]!.vm.$emit('update:modelValue', 'App\\Entity\\Blog')
+      await flushPromises()
+      expect(wrapper.get('[data-testid="dynamic-incomplete"]').exists()).toBe(true)
+    }
+
+    const row = wrapper.get('[data-testid="manager-tab"]')
+    expect(row.element).toBe(wrapper.element)
+    expect(wrapper.findAllComponents(CwaUiButton).every(button => row.element.contains(button.element))).toBe(true)
+    expect(await axe(wrapper.element as HTMLElement)).toHaveNoViolations()
+  })
+
   describe('onMounted', () => {
     test('loads type options on mount', async () => {
       setPositionResource({})
       const wrapper = mountComponent()
       await flushPromises()
       expect(mockGetTypeOptions).toHaveBeenCalled()
-      const typeSelect = wrapper.findAllComponents(ModalSelectStub).find(s => s.props('label') === 'Data type')
+      const typeSelect = wrapper.findAllComponents(CwaUiSelect).find(s => s.props('label') === 'Data type')
       expect(typeSelect).toBeTruthy()
       expect(typeSelect!.props('options')).toEqual(TYPE_OPTIONS)
     })
@@ -101,9 +105,9 @@ describe('DynamicPage', () => {
       const wrapper = mountComponent()
       await flushPromises()
       expect(mockGetPropertyOptions).toHaveBeenCalledWith('App\\Entity\\EventData', null)
-      const typeSelect = wrapper.findAllComponents(ModalSelectStub).find(s => s.props('label') === 'Data type')
+      const typeSelect = wrapper.findAllComponents(CwaUiSelect).find(s => s.props('label') === 'Data type')
       expect(typeSelect!.props('modelValue')).toBe('App\\Entity\\EventData')
-      const fieldSelect = wrapper.findAllComponents(ModalSelectStub).find(s => s.props('label') === 'Field')
+      const fieldSelect = wrapper.findAllComponents(CwaUiSelect).find(s => s.props('label') === 'Field')
       expect(fieldSelect).toBeTruthy()
       expect(fieldSelect!.props('modelValue')).toBe('heroImage')
     })
@@ -112,9 +116,30 @@ describe('DynamicPage', () => {
       setPositionResource({})
       const wrapper = mountComponent()
       await flushPromises()
-      const fieldSelect = wrapper.findAllComponents(ModalSelectStub).find(s => s.props('label') === 'Field')
+      const fieldSelect = wrapper.findAllComponents(CwaUiSelect).find(s => s.props('label') === 'Field')
       expect(fieldSelect).toBeFalsy()
     })
+  })
+
+  test('the Field select says it is loading, and cannot be opened, until its options arrive (#461)', async () => {
+    let resolveOptions: (options: typeof PROPERTY_OPTIONS) => void = () => {}
+    mockGetPropertyOptions.mockImplementation(() => new Promise((resolve) => {
+      resolveOptions = resolve
+    }))
+    setPositionResource({ pageDataClass: 'App\\Entity\\EventData' })
+    const wrapper = mountComponent()
+    await flushPromises()
+
+    const field = () => wrapper.findAllComponents(CwaUiSelect).find(select => select.props('label') === 'Field')!
+    expect(field().get('[data-testid="select-trigger"]').text()).toBe('Loading…')
+    expect(field().props('disabled')).toBe(true)
+    expect(field().props('options')).toEqual([])
+    expect(await axe(wrapper.element as HTMLElement)).toHaveNoViolations()
+
+    resolveOptions(PROPERTY_OPTIONS)
+    await flushPromises()
+    expect(field().props('disabled')).toBe(false)
+    expect(field().props('options')).toEqual(PROPERTY_OPTIONS)
   })
 
   describe('allowedComponents', () => {
@@ -151,14 +176,46 @@ describe('DynamicPage', () => {
       await flushPromises()
       mockGetPropertyOptions.mockClear()
 
-      const typeSelect = wrapper.findAllComponents(ModalSelectStub).find(s => s.props('label') === 'Data type')
+      const typeSelect = wrapper.findAllComponents(CwaUiSelect).find(s => s.props('label') === 'Data type')
       await typeSelect!.vm.$emit('update:modelValue', 'App\\Entity\\Blog')
       await flushPromises()
 
       expect(mockGetPropertyOptions).toHaveBeenCalledWith('App\\Entity\\Blog', null)
-      const fieldSelect = wrapper.findAllComponents(ModalSelectStub).find(s => s.props('label') === 'Field')
+      const fieldSelect = wrapper.findAllComponents(CwaUiSelect).find(s => s.props('label') === 'Field')
       expect(fieldSelect).toBeTruthy()
       expect(fieldSelect!.props('modelValue')).toBeNull()
+    })
+
+    test('only the latest data type\'s fields are offered when an earlier type\'s fields arrive after it (#476 review 7)', async () => {
+      setPositionResource({})
+      const wrapper = mountComponent()
+      await flushPromises()
+      const answers: ((options: { label: string, value: string }[]) => void)[] = []
+      mockGetPropertyOptions.mockImplementation(() => new Promise(resolve => answers.push(resolve)))
+      const typeSelect = () => wrapper.findAllComponents(CwaUiSelect).find(s => s.props('label') === 'Data type')!
+      const fieldSelect = () => wrapper.findAllComponents(CwaUiSelect).find(s => s.props('label') === 'Field')!
+
+      typeSelect().vm.$emit('update:modelValue', 'App\\Entity\\EventData')
+      await flushPromises()
+      typeSelect().vm.$emit('update:modelValue', 'App\\Entity\\Blog')
+      await flushPromises()
+      answers[1]!([{ label: 'Author', value: 'author' }])
+      await flushPromises()
+      answers[0]!(PROPERTY_OPTIONS)
+      await flushPromises()
+
+      expect(fieldSelect().props('options')).toEqual([{ label: 'Author', value: 'author' }])
+      expect(fieldSelect().props('disabled')).toBe(false)
+
+      typeSelect().vm.$emit('update:modelValue', 'App\\Entity\\EventData')
+      await flushPromises()
+      typeSelect().vm.$emit('update:modelValue', 'App\\Entity\\Blog')
+      await flushPromises()
+      answers[2]!(PROPERTY_OPTIONS)
+      await flushPromises()
+
+      expect(fieldSelect().props('disabled')).toBe(true)
+      expect(fieldSelect().props('options')).toEqual([])
     })
 
     test('clearing the type (null) empties property options and hides Field select', async () => {
@@ -166,11 +223,11 @@ describe('DynamicPage', () => {
       const wrapper = mountComponent()
       await flushPromises()
 
-      const typeSelect = wrapper.findAllComponents(ModalSelectStub).find(s => s.props('label') === 'Data type')
+      const typeSelect = wrapper.findAllComponents(CwaUiSelect).find(s => s.props('label') === 'Data type')
       await typeSelect!.vm.$emit('update:modelValue', null)
       await flushPromises()
 
-      const fieldSelect = wrapper.findAllComponents(ModalSelectStub).find(s => s.props('label') === 'Field')
+      const fieldSelect = wrapper.findAllComponents(CwaUiSelect).find(s => s.props('label') === 'Field')
       expect(fieldSelect).toBeFalsy()
     })
   })
@@ -181,7 +238,7 @@ describe('DynamicPage', () => {
       const wrapper = mountComponent()
       await flushPromises()
 
-      const fieldSelect = wrapper.findAllComponents(ModalSelectStub).find(s => s.props('label') === 'Field')
+      const fieldSelect = wrapper.findAllComponents(CwaUiSelect).find(s => s.props('label') === 'Field')
       await fieldSelect!.vm.$emit('update:modelValue', 'ticketLink')
       await flushPromises()
 
@@ -196,7 +253,7 @@ describe('DynamicPage', () => {
       const wrapper = mountComponent()
       await flushPromises()
 
-      const fieldSelect = wrapper.findAllComponents(ModalSelectStub).find(s => s.props('label') === 'Field')
+      const fieldSelect = wrapper.findAllComponents(CwaUiSelect).find(s => s.props('label') === 'Field')
       await fieldSelect!.vm.$emit('update:modelValue', null)
       await flushPromises()
 
@@ -210,12 +267,12 @@ describe('DynamicPage', () => {
       const wrapper = mountComponent()
       await flushPromises()
 
-      const typeSelect = wrapper.findAllComponents(ModalSelectStub).find(s => s.props('label') === 'Data type')
+      const typeSelect = wrapper.findAllComponents(CwaUiSelect).find(s => s.props('label') === 'Data type')
       await typeSelect!.vm.$emit('update:modelValue', 'App\\Entity\\Blog')
       await flushPromises()
 
       expect(wrapper.text()).toContain('Select a field to complete the configuration.')
-      expect(wrapper.findAllComponents(FormButtonStub).some(b => b.text().trim() === 'Cancel')).toBe(true)
+      expect(wrapper.findAllComponents(CwaUiButton).some(b => b.text().trim() === 'Cancel')).toBe(true)
     })
 
     test('cancel restores stored values and hides the prompt', async () => {
@@ -223,17 +280,17 @@ describe('DynamicPage', () => {
       const wrapper = mountComponent()
       await flushPromises()
 
-      const fieldSelect = wrapper.findAllComponents(ModalSelectStub).find(s => s.props('label') === 'Field')
+      const fieldSelect = wrapper.findAllComponents(CwaUiSelect).find(s => s.props('label') === 'Field')
       await fieldSelect!.vm.$emit('update:modelValue', null)
       await flushPromises()
       expect(wrapper.text()).toContain('Select a field to complete the configuration.')
 
-      const cancelBtn = wrapper.findAllComponents(FormButtonStub).find(b => b.text().trim() === 'Cancel')
+      const cancelBtn = wrapper.findAllComponents(CwaUiButton).find(b => b.text().trim() === 'Cancel')
       await cancelBtn!.trigger('click')
       await flushPromises()
 
       expect(wrapper.text()).not.toContain('Select a field to complete the configuration.')
-      const fieldSelectAfter = wrapper.findAllComponents(ModalSelectStub).find(s => s.props('label') === 'Field')
+      const fieldSelectAfter = wrapper.findAllComponents(CwaUiSelect).find(s => s.props('label') === 'Field')
       expect(fieldSelectAfter!.props('modelValue')).toBe('heroImage')
     })
   })
@@ -247,7 +304,7 @@ describe('DynamicPage', () => {
       })
       const wrapper = mountComponent()
       await flushPromises()
-      expect(wrapper.findAllComponents(FormButtonStub).some(b => b.text().trim() === 'Make static')).toBe(true)
+      expect(wrapper.findAllComponents(CwaUiButton).some(b => b.text().trim() === 'Make static')).toBe(true)
     })
 
     test('makeStatic clears the config via updateResource and local state', async () => {
@@ -259,7 +316,7 @@ describe('DynamicPage', () => {
       const wrapper = mountComponent()
       await flushPromises()
 
-      const makeStaticBtn = wrapper.findAllComponents(FormButtonStub).find(b => b.text().trim() === 'Make static')
+      const makeStaticBtn = wrapper.findAllComponents(CwaUiButton).find(b => b.text().trim() === 'Make static')
       await makeStaticBtn!.trigger('click')
       await flushPromises()
 
@@ -268,7 +325,7 @@ describe('DynamicPage', () => {
         data: { pageDataProperty: null, pageDataClass: null },
       })
       await nextTick()
-      const fieldSelect = wrapper.findAllComponents(ModalSelectStub).find(s => s.props('label') === 'Field')
+      const fieldSelect = wrapper.findAllComponents(CwaUiSelect).find(s => s.props('label') === 'Field')
       expect(fieldSelect).toBeFalsy()
     })
 
@@ -276,16 +333,16 @@ describe('DynamicPage', () => {
       setPositionResource({ pageDataClass: 'App\\Entity\\EventData', pageDataProperty: 'heroImage' })
       const wrapper = mountComponent()
       await flushPromises()
-      expect(wrapper.findAllComponents(FormButtonStub).some(b => b.text().trim() === 'Make static')).toBe(false)
+      expect(wrapper.findAllComponents(CwaUiButton).some(b => b.text().trim() === 'Make static')).toBe(false)
     })
   })
 
   describe('addFallbackComponent', () => {
-    test('shows "Add Fallback Component" when no component set', async () => {
+    test('shows "Add fallback component" when no component set', async () => {
       setPositionResource({})
       const wrapper = mountComponent()
       await flushPromises()
-      expect(wrapper.findAllComponents(FormButtonStub).some(b => b.text().trim() === 'Add Fallback Component')).toBe(true)
+      expect(wrapper.findAllComponents(CwaUiButton).some(b => b.text().trim() === 'Add fallback component')).toBe(true)
     })
 
     test('clicking it calls initAddResource with iri, null and the resource stack', async () => {
@@ -293,18 +350,18 @@ describe('DynamicPage', () => {
       const wrapper = mountComponent()
       await flushPromises()
 
-      const addBtn = wrapper.findAllComponents(FormButtonStub).find(b => b.text().trim() === 'Add Fallback Component')
+      const addBtn = wrapper.findAllComponents(CwaUiButton).find(b => b.text().trim() === 'Add fallback component')
       await addBtn!.trigger('click')
       await flushPromises()
 
       expect(mockInitAddResource).toHaveBeenCalledWith('/_/component_positions/pos-1', null, ['stack-item'])
     })
 
-    test('hides "Add Fallback Component" when a component is set', async () => {
+    test('hides "Add fallback component" when a component is set', async () => {
       setPositionResource({ component: '/component/images/1' })
       const wrapper = mountComponent()
       await flushPromises()
-      expect(wrapper.findAllComponents(FormButtonStub).some(b => b.text().trim() === 'Add Fallback Component')).toBe(false)
+      expect(wrapper.findAllComponents(CwaUiButton).some(b => b.text().trim() === 'Add fallback component')).toBe(false)
     })
   })
 
@@ -314,7 +371,7 @@ describe('DynamicPage', () => {
       const wrapper = mountComponent()
       await flushPromises()
 
-      const addBtn = wrapper.findAllComponents(FormButtonStub).find(b => b.text().trim() === 'Add Fallback Component')
+      const addBtn = wrapper.findAllComponents(CwaUiButton).find(b => b.text().trim() === 'Add fallback component')
       if (addBtn) {
         await addBtn.trigger('click')
         await flushPromises()

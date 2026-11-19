@@ -27,7 +27,9 @@ import { useCustomHtmlComponent } from '~/composables/useCustomHtmlComponent'
 
 defineCwaConfig({
   name: 'Body Text',
-  description: '<p>Easily create a body of text with the ability to style and format the content using themes in keeping with your website.</p>',
+  description: 'Paragraphs, headings, lists and links, styled to match the site',
+  icon: 'rich-text',
+  group: 'Text',
   multipleStyles: true,
   styles: {
     'black-bg': { label: 'Black Background', classes: 'bg-black border border-white p-2' },

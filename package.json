@@ -1,6 +1,6 @@
 {
   "name": "@cwa/nuxt",
-  "version": "2.0.0-alpha.32",
+  "version": "2.0.0-alpha.35",
   "license": "MIT",
   "type": "module",
   "description": "Components Web Apps Nuxt Module. UI for creating component-driven web apps with the API Components Bundle",
@@ -65,12 +65,13 @@
     "tailwind:main": "postcss src/tailwind/tailwind-cwa.css -o ./src/runtime/templates/assets/cwa.css",
     "tailwind:base": "postcss src/tailwind/tailwind-base.css -o ./src/runtime/templates/assets/base.css",
     "tailwind:watch": "postcss src/tailwind/tailwind-cwa.css -o ./src/runtime/templates/assets/cwa.css --watch",
+    "tailwind:check": "node scripts/check-compiled-css.mjs",
     "test:fresh-install": "node test/e2e/fresh-install.mjs",
     "test:browser": "playwright test -c test/browser/playwright.config.mjs",
     "test:browser:rehearse": "node test/browser/rehearse.mjs"
   },
   "dependencies": {
-    "@headlessui/vue": "^1.7.23",
+    "@iconify-json/lucide": "^1.2.155",
     "@internationalized/date": "^3.12.4",
     "@nuxt/kit": "^4.6.0",
     "@nuxt/schema": "^4.6.0",
@@ -78,13 +79,12 @@
     "@nuxtjs/seo": "^6.0.1",
     "@nuxtjs/sitemap": "^9.1.0",
     "@pinia/nuxt": "1.0.3",
-    "@popperjs/core": "^2.11.8",
     "@vueuse/core": "^15.0.0",
     "consola": "^3.4.2",
     "cookie": "^2.0.1",
     "dayjs": "^1.11.23",
     "defu": "^6.1.7",
-    "fast-xml-parser": "^5.11.2",
+    "fast-xml-parser": "^5.12.1",
     "h3": "^1.15.11",
     "jwt-decode": "^4.0.0",
     "lodash-es": "^4.18.1",
@@ -100,7 +100,6 @@
     "slugify": "^1.6.9",
     "uuid": "^14.0.3",
     "vue": "^3.5.44",
-    "vue-input-autowidth": "^2.2.1",
     "vuejs-confirm-dialog": "^1.1.0"
   },
   "peerDependencies": {
@@ -142,7 +141,7 @@
     "eslint": "^10.14.0",
     "globby": "^16.2.4",
     "happy-dom": "^21.0.4",
-    "nuxt": "^4.6.3",
+    "nuxt": "^4.6.4",
     "pathe": "^2.0.3",
     "playwright-core": "1.64.1",
     "postcss": "^8.5.32",
@@ -153,6 +152,7 @@
     "unbuild": "^3.6.1",
     "vite-tsconfig-paths": "^6.1.1",
     "vitest": "^5.0.5",
+    "vitest-axe": "^0.1.0",
     "vitest-environment-nuxt": "^2.0.0",
     "vue-tsc": "3.3.11"
   },

@@ -186,9 +186,9 @@ describe('ManageableResource Class', () => {
       expect(instance.clear).toHaveBeenCalledWith(false)
       expect(instance.currentIri).toEqual(newIri)
       expect(instance.unwatchCurrentIri).toEqual('unwatchFn')
-      expect(watchSpy.mock.lastCall[0]).toEqual(instance.currentIri)
-      expect(Object.create(instance._initNewIri.prototype) instanceof watchSpy.mock.lastCall[1]).toBe(true)
-      expect(watchSpy.mock.lastCall[2]).toEqual({
+      expect(watchSpy.mock.calls[0][0]).toEqual(instance.currentIri)
+      expect(Object.create(instance._initNewIri.prototype) instanceof watchSpy.mock.calls[0][1]).toBe(true)
+      expect(watchSpy.mock.calls[0][2]).toEqual({
         immediate: true,
         flush: 'post',
       })

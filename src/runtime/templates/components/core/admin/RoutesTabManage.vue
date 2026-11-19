@@ -1,31 +1,44 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
-import slugify from 'slugify'
-import ModalInfo from '#cwa/templates/components/core/admin/form/ModalInfo.vue'
-import ModalInput from '#cwa/templates/components/core/admin/form/ModalInput.vue'
-import ModalSelect from '#cwa/templates/components/core/admin/form/ModalSelect.vue'
-import type { CwaResource } from '#cwa/resources/resource-utils'
+import { computed, ref, useId, watch } from 'vue'
+import CwaUiInput from '#cwa/templates/components/ui/Input.vue'
+import CwaUiSelect from '#cwa/templates/components/ui/Select.vue'
+import CwaUiSegmented from '#cwa/templates/components/ui/Segmented.vue'
+import CwaReveal from '#cwa/templates/components/core/ui/Reveal.vue'
+import CwaUiDatePicker from '#cwa/templates/components/ui/DatePicker.vue'
+import CwaUiButton from '#cwa/templates/components/ui/Button.vue'
+import CwaUiFormSection from '#cwa/templates/components/ui/FormSection.vue'
+import StateGlyph from '#cwa/templates/components/core/ui/StateGlyph.vue'
+import RouteRecommendation from '#cwa/templates/components/core/admin/RouteRecommendation.vue'
 import type { CwaRouteLiveAt, RouteLiveState } from '#cwa/resources/route-publication'
 import { getRouteOwnLiveState, isRouteGatedByAncestor, routeReachableAt } from '#cwa/resources/route-publication'
 import { formatDateTime } from '#cwa/resources/date-time-input'
-import DatePicker from '#cwa/templates/components/ui/DatePicker.vue'
+import { normaliseRoutePath, routePathProblem } from '#cwa/resources/route-path'
 
-const { pageResource, parentRoutePrefix, currentPath, disableButtons, routePublication } = defineProps<{
-  disableButtons: boolean
-  pageResource: CwaResource
+const { currentPath, parentRoutePrefix, routePublication, recommendedPath, recommendedFrom, childPaths = [], redirectCount = 0, pathError, noun = 'page', deleting = false, optional = false } = defineProps<{
   currentPath: string
   parentRoutePrefix?: string | null
   routePublication?: CwaRouteLiveAt
+  recommendedPath?: string
+  recommendedFrom?: string
+  childPaths?: string[]
+  redirectCount?: number
+  pathError?: string
+  noun?: string
+  deleting?: boolean
+  optional?: boolean
 }>()
 
 const pathModel = defineModel<string>({ required: true })
 const liveAtModel = defineModel<string | null | undefined>('liveAt')
+const cascadeModel = defineModel<boolean>('cascade', { default: true })
+const awaitingDateModel = defineModel<boolean>('awaitingDate', { default: false })
 
 defineEmits<{
-  save: []
   delete: []
-  generate: []
 }>()
+
+const pathLabelId = useId()
+const isNew = computed(() => !currentPath)
 
 function splitPath(fullPath: string, prefix: string | null | undefined): { prefix: string, suffix: string } {
   if (prefix && prefix !== '/') {
@@ -44,8 +57,11 @@ const localPrefix = ref(initial.prefix)
 const localSuffix = ref(initial.suffix)
 
 watch([localPrefix, localSuffix], ([prefix, suffix]) => {
-  suffix = suffix.trim()
-  if (prefix === '/') {
+  suffix = normaliseRoutePath(suffix ?? '')
+  if (!suffix) {
+    pathModel.value = ''
+  }
+  else if (prefix === '/') {
     pathModel.value = suffix.startsWith('/') ? suffix : '/' + suffix
   }
   else {
@@ -66,28 +82,41 @@ watch(() => parentRoutePrefix, (newPrefix) => {
 const prefixOptions = computed(() => {
   const options = [{ label: '/ (root)', value: '/' }]
   if (parentRoutePrefix && parentRoutePrefix !== '/') {
-    options.push({ label: parentRoutePrefix, value: parentRoutePrefix })
+    options.push({ label: `${parentRoutePrefix}/`, value: parentRoutePrefix })
   }
   return options
 })
 
-const recommendedSuffix = computed(() => {
-  if (!pageResource.title) {
-    return undefined
-  }
-  return '/' + slugify(pageResource.title.toLowerCase(), { strict: true })
+const prefixModel = computed({
+  get: () => localPrefix.value,
+  set: (value: string | null | undefined) => {
+    localPrefix.value = value || '/'
+  },
 })
 
-const fullRecommendedPath = computed(() => {
-  if (!recommendedSuffix.value) {
-    return undefined
-  }
-  return parentRoutePrefix && parentRoutePrefix !== '/' ? parentRoutePrefix + recommendedSuffix.value : recommendedSuffix.value
+const suffixModel = computed({
+  get: () => localSuffix.value,
+  set: (value: string | null | undefined) => {
+    localSuffix.value = value ?? ''
+  },
 })
 
-const isApplyDisabled = computed(() => disableButtons || fullRecommendedPath.value === currentPath)
+const hasPath = computed(() => !!localSuffix.value.trim())
+const pathInvalid = computed(() => pathError ?? routePathProblem(pathModel.value))
 
-const pageResourceRouteIri = computed(() => pageResource.route)
+function normaliseSuffix() {
+  localSuffix.value = normaliseRoutePath(localSuffix.value)
+}
+const isRecommended = computed(() => !!recommendedPath && pathModel.value === recommendedPath)
+
+function useRecommended() {
+  if (!recommendedPath) {
+    return
+  }
+  const split = splitPath(recommendedPath, parentRoutePrefix)
+  localPrefix.value = split.prefix
+  localSuffix.value = split.suffix
+}
 
 const publicationOptions = [
   { label: 'Live', value: 'live' },
@@ -95,14 +124,28 @@ const publicationOptions = [
   { label: 'Not live', value: 'draft' },
 ]
 
-const localPublicationState = ref<RouteLiveState>(getRouteOwnLiveState({ liveAt: liveAtModel.value }))
+const localPublicationState = ref<RouteLiveState>(isNew.value && liveAtModel.value === undefined ? 'live' : getRouteOwnLiveState({ liveAt: liveAtModel.value }))
+const savedState = getRouteOwnLiveState({ liveAt: routePublication?.liveAt })
 const localLiveAt = ref<string | null>(liveAtModel.value ?? null)
 const minLiveAt = new Date().toISOString()
 
 const editedPublication = computed<CwaRouteLiveAt>(() => ({ ...routePublication, liveAt: liveAtModel.value }))
-const gatedByAncestor = computed(() => isRouteGatedByAncestor(editedPublication.value))
+const gatedByAncestor = computed(() => !isNew.value && isRouteGatedByAncestor(editedPublication.value))
 const reachableAt = computed(() => formatDateTime(routeReachableAt(editedPublication.value)))
-const liveSince = computed(() => localPublicationState.value === 'live' ? formatDateTime(liveAtModel.value) : '')
+const liveSince = computed(() => localPublicationState.value === 'live' && !isNew.value ? formatDateTime(liveAtModel.value) : '')
+
+const publicationModel = computed({
+  get: () => localPublicationState.value,
+  set: (state: string | null | undefined) => state && handlePublicationStateChange(state as RouteLiveState),
+})
+
+const liveAtPickerModel = computed({
+  get: () => localLiveAt.value,
+  set: (value: string | null | undefined) => {
+    localLiveAt.value = value ?? null
+    liveAtModel.value = value
+  },
+})
 
 function handlePublicationStateChange(state: RouteLiveState) {
   localPublicationState.value = state
@@ -126,126 +169,173 @@ function handlePublicationStateChange(state: RouteLiveState) {
   liveAtModel.value = isFuture ? scheduled : null
 }
 
-function handleLiveAtChange(value: string) {
-  localLiveAt.value = value
-  liveAtModel.value = value
-}
+watch(() => localPublicationState.value === 'scheduled' && !localLiveAt.value, (awaiting) => {
+  awaitingDateModel.value = awaiting
+}, { immediate: true })
+
+const pathChanged = computed(() => !isNew.value && pathModel.value !== currentPath)
+const childrenUnder = computed(() => childPaths.filter(path => path.startsWith(`${currentPath}/`)).length)
+
+const goLiveLine = computed(() => {
+  const state = localPublicationState.value
+  if (isNew.value) {
+    if (!hasPath.value) {
+      return optional ? `Leave the path empty to create the ${noun} without a route.` : 'Enter a path.'
+    }
+    const when = state === 'scheduled' && localLiveAt.value ? ` from ${formatDateTime(localLiveAt.value)}` : state === 'draft' ? ' once it is set live' : ''
+    return `Visitors will reach this ${noun} at ${pathModel.value}${when}.`
+  }
+  if (state === savedState && (state !== 'scheduled' || liveAtModel.value === routePublication?.liveAt)) {
+    return undefined
+  }
+  if (state === 'live') {
+    return 'The route goes live as soon as you save.'
+  }
+  if (state === 'scheduled') {
+    return localLiveAt.value ? `The route goes live on ${formatDateTime(localLiveAt.value)}.` : 'Choose when the route goes live.'
+  }
+  return `Visitors can no longer reach this ${noun} once you save.`
+})
+
+const deleteDescription = computed(() => {
+  const lines = [`Visitors to ${currentPath} get “Page not found”.`]
+  redirectCount && lines.push(`Its ${redirectCount} old ${redirectCount === 1 ? 'address goes' : 'addresses go'} too.`)
+  return lines.join(' ')
+})
 </script>
 
 <template>
-  <div
-    class="cwa:flex cwa:flex-col cwa:gap-y-6"
-  >
-    <div class="cwa:flex cwa:flex-col cwa:gap-y-4">
-      <div class="cwa:flex">
-        <div class="cwa:flex-none cwa:w-40">
-          <ModalSelect
-            v-model="localPrefix"
-            label="Prefix"
-            :options="prefixOptions"
-            container-class="cwa:rounded-r-none cwa:border-r-0"
-          />
-        </div>
-        <div class="cwa:flex-1">
-          <ModalInput
-            v-model="localSuffix"
-            label="Route suffix"
-            class="cwa:rounded-l-none"
-          />
+  <div data-testid="route-form">
+    <CwaUiFormSection>
+      <div>
+        <span
+          :id="pathLabelId"
+          aria-hidden="true"
+          class="cwa:mb-1.5 cwa:block cwa:text-label cwa:text-fg"
+        >Path</span>
+        <div class="cwa:@container">
+          <div class="cwa:flex cwa:items-start cwa:@max-[25rem]:flex-col">
+            <CwaUiSelect
+              v-if="prefixOptions.length > 1"
+              v-model="prefixModel"
+              label="Path prefix"
+              label-hidden
+              width="sm"
+              :options="prefixOptions"
+              data-testid="route-prefix"
+              class="cwa:shrink-0 cwa:@max-[25rem]:w-full"
+            />
+            <CwaUiInput
+              v-model="suffixModel"
+              :label="prefixOptions.length > 1 ? 'Rest of the path' : 'Path'"
+              label-hidden
+              width="full"
+              :invalid="pathInvalid"
+              :description="isRecommended ? 'This is the recommended path.' : undefined"
+              data-testid="route-suffix"
+              class="cwa:min-w-0 cwa:flex-1 cwa:@max-[25rem]:w-full"
+              @focusout="normaliseSuffix"
+            />
+          </div>
         </div>
       </div>
-      <div>
-        <p class="cwa:text-sm cwa:text-stone-300">
-          When updating, we will automatically create a new redirect from the old path.
+      <RouteRecommendation
+        v-if="recommendedPath && !isRecommended && currentPath !== '/'"
+        :path="recommendedPath"
+        :from="recommendedFrom"
+        @use="useRecommended"
+      />
+      <div class="cwa:flex cwa:flex-col cwa:gap-3">
+        <CwaUiSegmented
+          v-model="publicationModel"
+          label="Go live"
+          :options="publicationOptions"
+          data-publication-state
+        />
+        <CwaReveal :when="localPublicationState === 'scheduled'">
+          <CwaUiDatePicker
+            v-model="liveAtPickerModel"
+            label="Goes live"
+            :min="minLiveAt"
+            data-live-at
+          />
+        </CwaReveal>
+        <p
+          v-if="liveSince"
+          data-live-since
+          class="cwa:m-0 cwa:text-helper cwa:text-fg-muted"
+        >
+          Live since {{ liveSince }}.
         </p>
       </div>
-      <div class="cwa:flex cwa:justify-between">
-        <div>
-          <CwaUiFormButton
-            color="blue"
-            :disabled="disableButtons"
-            @click="$emit('save')"
-          >
-            Save Route
-          </CwaUiFormButton>
-        </div>
-        <div v-if="!!pageResourceRouteIri">
-          <CwaUiFormButton
-            color="grey"
-            :disabled="disableButtons"
-            @click="$emit('delete')"
-          >
-            Delete Route
-          </CwaUiFormButton>
-        </div>
-      </div>
-    </div>
-    <div class="cwa:flex cwa:flex-col cwa:gap-y-4">
-      <ModalSelect
-        data-publication-state
-        :model-value="localPublicationState"
-        label="Visibility"
-        :options="publicationOptions"
-        @update:model-value="handlePublicationStateChange"
-      />
       <div
-        v-if="localPublicationState === 'scheduled'"
-        class="cwa:flex cwa:flex-col cwa:gap-y-2"
+        v-if="pathChanged || goLiveLine || gatedByAncestor"
+        data-testid="route-consequences"
+        class="cwa:flex cwa:flex-col cwa:gap-3 cwa:text-control cwa:text-fg"
       >
-        <DatePicker
-          data-live-at
-          label="Goes live"
-          :model-value="localLiveAt"
-          :min="minLiveAt"
-          @update:model-value="handleLiveAtChange"
-        />
+        <p
+          v-if="pathChanged"
+          data-testid="route-old-path"
+          class="cwa:m-0 cwa:flex cwa:items-start cwa:gap-2"
+        >
+          <StateGlyph
+            kind="info"
+            class="cwa:mt-0.5"
+          />
+          <span>The old path, <span class="cwa:font-mono">{{ currentPath }}</span>, keeps working: it will redirect here.</span>
+        </p>
+        <label
+          v-if="pathChanged && childrenUnder"
+          class="cwa:flex cwa:cursor-pointer cwa:items-start cwa:gap-2"
+        >
+          <input
+            v-model="cascadeModel"
+            type="checkbox"
+            data-testid="route-cascade"
+            class="cwa:mt-0.5 cwa:size-4 cwa:shrink-0 cwa:cursor-pointer cwa:rounded-none cwa:border-0 cwa:bg-field cwa:text-accent cwa:outline-1 cwa:outline-transparent cwa:focus:ring-0 cwa:focus:ring-offset-0 cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-accent-fg"
+          >
+          <span>Also change the {{ childrenUnder }} child {{ childrenUnder === 1 ? 'route that starts' : 'routes that start' }} with <span class="cwa:font-mono">{{ currentPath }}/</span></span>
+        </label>
+        <p
+          v-if="goLiveLine"
+          data-testid="route-go-live-line"
+          class="cwa:m-0 cwa:flex cwa:items-start cwa:gap-2"
+        >
+          <StateGlyph
+            kind="info"
+            class="cwa:mt-0.5"
+          />
+          <span>{{ goLiveLine }}</span>
+        </p>
+        <p
+          v-if="gatedByAncestor"
+          data-effective-live-at
+          class="cwa:m-0 cwa:flex cwa:items-start cwa:gap-2"
+        >
+          <StateGlyph
+            kind="conflict"
+            class="cwa:mt-0.5"
+          />
+          <span v-if="reachableAt">A parent route goes live later, on {{ reachableAt }}. Visitors can't reach this {{ noun }} before then.</span>
+          <span v-else>A parent route has no go-live date, so visitors can't reach this {{ noun }} until it has one.</span>
+        </p>
       </div>
-      <p
-        v-if="liveSince"
-        data-live-since
-        class="cwa:text-xs cwa:text-stone-300"
-      >
-        Live since {{ liveSince }}.
-      </p>
-      <p
-        v-if="gatedByAncestor"
-        data-effective-live-at
-        class="cwa:text-xs cwa:text-stone-300"
-      >
-        <template v-if="reachableAt">
-          A parent route holds this page back — it is not reachable until {{ reachableAt }}.
-        </template>
-        <template v-else>
-          A parent route has no go-live date — this page cannot be reached until that is set.
-        </template>
-      </p>
-    </div>
-    <div
-      v-if="recommendedSuffix"
-      class="cwa:p-4 cwa:bg-dark/80 cwa:rounded-lg cwa:flex cwa:flex-col cwa:gap-y-2 cwa:text-sm"
+    </CwaUiFormSection>
+    <CwaUiFormSection
+      v-if="!isNew"
+      title="Delete this route"
+      :description="deleteDescription"
+      data-testid="route-delete-section"
     >
       <div>
-        <ModalInfo
-          label="SEO recommendation"
-          class="cwa:font-bold"
-        >
-          <span data-seo-recommendation>{{ fullRecommendedPath }}</span>
-        </ModalInfo>
+        <CwaUiButton
+          tone="danger"
+          :label="deleting ? 'Deleting…' : 'Delete route'"
+          :loading="deleting"
+          data-testid="route-delete"
+          @click="$emit('delete')"
+        />
       </div>
-      <div class="cwa:flex cwa:justify-start">
-        <CwaUiFormButton
-          data-apply-seo
-          :color="isApplyDisabled ? 'grey' : 'blue'"
-          :disabled="isApplyDisabled"
-          class="cwa:text-sm"
-          @click="$emit('generate')"
-        >
-          {{ fullRecommendedPath === currentPath ? 'You are using the recommended route' : 'Apply' }}
-        </CwaUiFormButton>
-      </div>
-      <div class="cwa:text-xs cwa:text-stone-300 cwa:flex cwa:flex-col cwa:gap-y-2">
-        <p>Recommended route is based on your page title <b>`{{ pageResource.title }}`</b>.</p>
-      </div>
-    </div>
+    </CwaUiFormSection>
   </div>
 </template>

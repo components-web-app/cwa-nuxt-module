@@ -2,7 +2,9 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { ref, reactive } from 'vue'
 import { mount, flushPromises } from '@vue/test-utils'
+import { axe } from '../../../../../../../../../test/utils/axe'
 import DataPage from './DataPage.vue'
+import CwaUiButton from '#cwa/templates/components/ui/Button.vue'
 import * as cwaComposable from '#cwa/composables/cwa'
 
 const cwaConfig = vi.hoisted(() => ({
@@ -12,13 +14,6 @@ const cwaConfig = vi.hoisted(() => ({
   pagesConfig: {} as Record<string, any>,
 }))
 vi.mock('#build/cwa-config', () => cwaConfig)
-
-const CwaUiFormButtonStub = {
-  name: 'CwaUiFormButton',
-  props: ['disabled'],
-  emits: ['click'],
-  template: '<button type="button" :disabled="disabled" @click="$emit(\'click\')"><slot /></button>',
-}
 
 interface SetupOpts {
   resourceData?: Record<string, any> | null
@@ -82,9 +77,6 @@ function setup(opts: SetupOpts = {}, errorHandler?: (...args: any[]) => void) {
 
   const wrapper = mount(DataPage, {
     global: {
-      stubs: {
-        CwaUiFormButton: CwaUiFormButtonStub,
-      },
       config: errorHandler ? { errorHandler } : {},
     },
   })
@@ -93,12 +85,21 @@ function setup(opts: SetupOpts = {}, errorHandler?: (...args: any[]) => void) {
 }
 
 function findButton(wrapper: any) {
-  return wrapper.findComponent(CwaUiFormButtonStub)
+  return wrapper.findComponent(CwaUiButton)
 }
 
 describe('DataPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+  })
+
+  test('is one manager bar row (#461)', async () => {
+    const { wrapper } = setup({
+      resourceData: { data: { component: '/component/foo/1', _metadata: { staticComponent: null } } },
+    })
+
+    expect(wrapper.get('[data-testid="manager-tab"]').element).toBe(wrapper.element)
+    expect(await axe(wrapper.element as HTMLElement)).toHaveNoViolations()
   })
 
   describe('hasDynamicComponent -> "Select Component" button', () => {
@@ -108,14 +109,14 @@ describe('DataPage', () => {
       })
       const btn = findButton(wrapper)
       expect(btn.exists()).toBe(true)
-      expect(btn.text()).toBe('Select Component')
+      expect(btn.text()).toBe('Select component')
     })
 
     test('shows Select Component when component differs from staticComponent', () => {
       const { wrapper } = setup({
         resourceData: { data: { component: '/component/foo/1', _metadata: { staticComponent: '/component/foo/static' } } },
       })
-      expect(findButton(wrapper).text()).toBe('Select Component')
+      expect(findButton(wrapper).text()).toBe('Select component')
     })
 
     test('does NOT show Select Component when component equals staticComponent', () => {
@@ -267,10 +268,11 @@ describe('DataPage', () => {
       const btn = findButton(wrapper)
       await btn.trigger('click')
       await flushPromises()
-      expect(btn.props('disabled')).toBe(true)
+      expect(btn.attributes('aria-disabled')).toBe('true')
+      expect(btn.attributes('aria-busy')).toBe('true')
       resolveMeta({ Image: { endpoint: '/_/images', isPublishable: false } })
       await flushPromises()
-      expect(findButton(wrapper).props('disabled')).toBe(false)
+      expect(findButton(wrapper).attributes('aria-disabled')).toBeUndefined()
     })
 
     test('throws and re-enables when getComponentMetadata returns nothing', async () => {
@@ -287,7 +289,7 @@ describe('DataPage', () => {
       await flushPromises()
       expect(errorHandler).toHaveBeenCalled()
       expect(initAddResource).not.toHaveBeenCalled()
-      expect(findButton(wrapper).props('disabled')).toBe(false)
+      expect(findButton(wrapper).attributes('aria-disabled')).toBeUndefined()
     })
 
     test('returns early (no init/event) when apiMetadata for the component is missing', async () => {

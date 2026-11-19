@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { resourcesConfig } from '#build/cwa-config'
-import { computed, ref } from 'vue'
+import { POPOVER_GAP } from '#cwa/templates/components/core/ui/popover-gap'
+import { computed, onBeforeUnmount, ref } from 'vue'
 import { PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { navigateTo, useRouter } from '#app/composables/router'
 import { useCwa } from '#cwa/composables/cwa'
@@ -22,6 +23,18 @@ interface Person {
 const $cwa = useCwa()
 const { active, paused, onThisPage, elsewhere } = usePresence($cwa)
 const open = ref(false)
+const pausedTip = ref(false)
+let pausedTipTimer: ReturnType<typeof setTimeout> | undefined
+
+function showPausedTip() {
+  pausedTip.value = true
+  clearTimeout(pausedTipTimer)
+  pausedTipTimer = setTimeout(() => {
+    pausedTip.value = false
+  }, 2000)
+}
+
+onBeforeUnmount(() => clearTimeout(pausedTipTimer))
 const { getInternalResourceLink } = useCwaResourceRoute()
 const router = useRouter()
 
@@ -114,8 +127,34 @@ async function goTo(event: MouseEvent, page: string) {
     data-testid="presence-paused"
     role="status"
     title="Other editors' changes and who is here will catch up when the connection returns. You can keep editing."
-    class="cwa:self-center cwa:whitespace-nowrap cwa:text-sm cwa:text-stone-400"
-  >Live editing paused</span>
+    class="cwa:relative cwa:flex cwa:shrink-0 cwa:items-center cwa:self-center cwa:whitespace-nowrap cwa:text-sm cwa:text-stone-400"
+  >
+    <span class="cwa:max-sm:hidden">Live editing paused</span>
+    <button
+      type="button"
+      data-testid="presence-paused-glyph"
+      class="cwa:flex cwa:size-hit cwa:items-center cwa:justify-center cwa:cursor-pointer cwa:outline-1 cwa:outline-transparent cwa:focus-visible:outline-2 cwa:focus-visible:-outline-offset-2 cwa:focus-visible:outline-accent-fg cwa:sm:hidden"
+      @click="showPausedTip"
+    >
+      <svg
+        viewBox="0 0 24 24"
+        aria-hidden="true"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        class="cwa:size-5"
+      ><path d="m2 2 20 20" /><path d="M5.782 5.782A7 7 0 0 0 9 19h8.5a4.5 4.5 0 0 0 1.307-.193" /><path d="M21.532 16.5A4.5 4.5 0 0 0 17.5 10h-1.79A7.008 7.008 0 0 0 10 5.07" /></svg>
+      <span class="cwa:sr-only">Live editing paused</span>
+    </button>
+    <span
+      v-if="pausedTip"
+      aria-hidden="true"
+      data-testid="presence-paused-tip"
+      class="cwa:absolute cwa:top-full cwa:left-0 cwa:z-context cwa:mt-1 cwa:rounded-sm cwa:border cwa:border-line cwa:bg-surface-menu cwa:px-2 cwa:py-1 cwa:text-xs cwa:text-light cwa:shadow-lg cwa:sm:hidden"
+    >Live editing paused</span>
+  </span>
   <PopoverRoot
     v-else-if="active && (here.length || elsewhereCount)"
     v-model:open="open"
@@ -123,7 +162,7 @@ async function goTo(event: MouseEvent, page: string) {
     <PopoverTrigger
       data-testid="presence-indicator"
       :aria-label="label"
-      class="cwa:flex cwa:items-center cwa:gap-x-2 cwa:cursor-pointer cwa:rounded-full cwa:focus-visible:outline-2 cwa:focus-visible:outline-stone-400"
+      class="cwa:flex cwa:items-center cwa:gap-x-2 cwa:cursor-pointer cwa:rounded-full cwa:text-fg cwa:hover:bg-button cwa:aria-expanded:bg-accent-tint cwa:focus-visible:outline-2 cwa:focus-visible:outline-stone-400"
     >
       <span
         v-if="here.length"
@@ -153,9 +192,9 @@ async function goTo(event: MouseEvent, page: string) {
       <PopoverContent
         side="bottom"
         align="start"
-        :side-offset="8"
+        :side-offset="POPOVER_GAP"
         data-testid="presence-list"
-        class="cwa:z-context cwa:min-w-[220px] cwa:max-w-sm cwa:max-h-[50vh] cwa:overflow-y-auto cwa:p-3 cwa:rounded-lg cwa:dark-blur cwa:outline-dotted cwa:outline-1 cwa:outline-stone-400 cwa:shadow-lg cwa:text-sm cwa:text-light"
+        class="cwa:z-context cwa:min-w-[220px] cwa:max-w-sm cwa:max-h-[50vh] cwa:overflow-y-auto cwa:p-3 cwa:rounded-lg cwa:bg-surface-menu cwa:border cwa:border-line cwa:shadow-lg cwa:text-sm cwa:text-light"
       >
         <ul class="cwa:flex cwa:flex-col cwa:gap-y-2">
           <li

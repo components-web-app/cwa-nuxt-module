@@ -1,4 +1,4 @@
-import type { SelectOption } from '../composables/cwa-select-input'
+import type { SelectOption } from '../composables/cwa-select'
 import type { ImageDownscaleOptions } from '../files/image-downscale'
 import type { DefineComponent, GlobalComponents } from 'vue'
 import type { CwaComponentName } from '#build/cwa-component-names'
@@ -9,6 +9,18 @@ export type CwaAllowedComponent = CwaComponentName | `/${string}`
 
 export type ManagerTab = GlobalComponentNames | DefineComponent<object, object, any>
 export type ComponentUi = GlobalComponentNames
+
+declare global {
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
+  interface CwaLucideIconNames {}
+}
+
+export type LucideIconName = keyof CwaLucideIconNames & string
+
+export type CwaComponentKind = 'heading' | 'rich-text' | 'image' | 'gallery' | 'carousel' | 'video' | 'hero' | 'banner'
+  | 'card' | 'card-grid' | 'section' | 'media-text' | 'columns' | 'container' | 'link' | 'button' | 'link-group' | 'tabs'
+  | 'accordion' | 'quote' | 'testimonial' | 'form' | 'newsletter' | 'sign-up' | 'collection' | 'articles' | 'table'
+  | 'steps' | 'file' | 'chart' | 'heatmap' | 'map' | 'contact' | 'social' | 'person' | 'people' | 'notice'
 
 export interface CwaStyle {
   label: string
@@ -30,19 +42,33 @@ export interface CwaUiVariantConfig {
   multipleStyles?: boolean
 }
 
-export interface CwaComponentConfig extends CwaTemplateConfig, CwaUiVariantConfig {
+export interface CwaComponentMeta extends CwaTemplateConfig, CwaUiVariantConfig {
   description?: string
   instantAdd?: boolean
   defaultData?: Record<any, any>
 }
 
-export interface CwaResourceMeta extends CwaComponentConfig {
+export interface CwaComponentAdminConfig {
+  icon?: CwaComponentKind | `lucide:${LucideIconName}`
+  group?: string
+  image?: string
+}
+
+export interface CwaComponentConfig extends CwaComponentMeta, CwaComponentAdminConfig {}
+
+export interface CwaResourceMeta extends CwaComponentMeta {
   managerTabs?: ManagerTab[]
   ui?: ComponentUi[]
 }
 
+export interface CwaResourceConfig extends CwaResourceMeta, CwaComponentAdminConfig {}
+
 export interface CwaResourcesMeta {
   [type: string]: CwaResourceMeta
+}
+
+export interface CwaResourcesConfig {
+  [type: string]: CwaResourceConfig
 }
 
 export interface CwaStyleClasses {

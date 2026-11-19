@@ -45,12 +45,13 @@ vi.mock('./cwa-config-declarations', () => ({
   scanCwaConfigDeclarations: vi.fn(() => ({ components: {}, ui: {}, layouts: {}, pages: {} })),
 }))
 
-vi.mock('node:fs', () => {
+vi.mock('node:fs', async () => {
+  const actual = await vi.importActual<typeof import('node:fs')>('node:fs')
   const fs = {
     statSync: vi.fn(() => ({
       isDirectory: vi.fn(() => true),
     })),
-    readFileSync: vi.fn(() => ('{ "name": "@cwa/nuxt", "version": "1.0.0" }')),
+    readFileSync: vi.fn((file: string, encoding: BufferEncoding) => file.endsWith('@iconify-json/lucide/icons.json') ? actual.readFileSync(file, encoding) : '{ "name": "@cwa/nuxt", "version": "1.0.0" }'),
   }
   return { ...fs, default: fs }
 })
@@ -577,6 +578,101 @@ export type CwaComponentName = typeof CwaComponentNames[keyof typeof CwaComponen
       })
     })
 
+    describe('admin resources template (#461)', () => {
+      const components = [
+        { filePath: 'cwa/components/HtmlContent/HtmlContent.vue', pascalName: 'CwaComponentHtmlContent' },
+        { filePath: 'cwa/components/Hero/Hero.vue', pascalName: 'CwaComponentHero' },
+      ]
+      const declarations = {
+        components: { HtmlContent: { name: 'Body text', description: 'Text', icon: 'rich-text' as const, group: 'Text', image: '/body.webp' } },
+        ui: {},
+        layouts: {},
+        pages: {},
+      }
+
+      afterEach(() => {
+        vi.mocked(scanCwaConfigDeclarations).mockReset()
+        vi.mocked(scanCwaConfigDeclarations).mockImplementation(() => ({ components: {}, ui: {}, layouts: {}, pages: {} }))
+      })
+
+      async function prepare() {
+        await prepareMockNuxt({}, {
+          hook: vi.fn((hookName, callback) => {
+            if (hookName === 'modules:done') {
+              callback()
+            }
+          }),
+        })
+        const templates = (nuxtKit.addTemplate as Mock).mock.calls.map(([template]) => template)
+        return {
+          admin: templates.find(({ filename }) => filename === 'cwa-admin-resources.ts'),
+          config: templates.find(({ filename }) => filename === 'cwa-config.ts'),
+        }
+      }
+
+      test('holds the icon, group and image a component declares in defineCwaConfig, and the resources config never does', async () => {
+        vi.mocked(scanCwaConfigDeclarations).mockReturnValue(declarations)
+        const { admin, config } = await prepare()
+
+        expect(admin.write).toBe(true)
+        const adminSource = await admin.getContents({ app: { components } })
+        expect(adminSource).toContain('"HtmlContent": { icon: "lucide:letter-text", group: "Text", image: "/body.webp" }')
+        expect(adminSource).toContain('data-cwa-admin-icon')
+
+        const configSource = await config.getContents({ app: { components } })
+        expect(configSource).toContain('"name": "Body text"')
+        expect(configSource).toContain('"description": "Text"')
+        expect(configSource).not.toContain('"icon"')
+        expect(configSource).not.toContain('"group"')
+        expect(configSource).not.toContain('/body.webp')
+      })
+
+      test('imports a component folder\'s preview.webp when no image is configured', async () => {
+        const fs = await import('node:fs')
+        vi.mocked(fs.statSync).mockImplementation(((file: string) => ({
+          isDirectory: () => !file.endsWith('.webp'),
+          isFile: () => file.endsWith(join('Hero', 'preview.webp')),
+        })) as any)
+        const { admin } = await prepare()
+
+        const adminSource = await admin.getContents({ app: { components } })
+        vi.mocked(fs.statSync).mockImplementation((() => ({ isDirectory: () => true })) as any)
+
+        expect(adminSource).toContain(`import preview0 from ${JSON.stringify(join('cwa/components/Hero', 'preview.webp'))}`)
+        expect(adminSource).toContain('"Hero": { image: preview0 }')
+        expect(adminSource).not.toContain(join('HtmlContent', 'preview.webp'))
+      })
+
+      test('generates the Lucide icon names as a type for the app and its nuxt.config', async () => {
+        await prepare()
+
+        const call = (nuxtKit.addTypeTemplate as Mock).mock.calls.find(([{ filename }]) => filename === 'types/cwa-lucide-icons.d.ts')
+        expect(call![1]).toEqual({ nuxt: true, node: true })
+        expect(call![0].write).toBe(true)
+        expect(await call![0].getContents()).toContain('"map-pin": true')
+      })
+
+      test('is regenerated when a file is added to or removed from a component folder in dev', async () => {
+        vi.spyOn(nuxtKit, 'createResolver').mockReturnValue({
+          resolve: vi.fn((...args: string[]) => join(...args)),
+          resolvePath: vi.fn(),
+        })
+        let watchCallback: ((event: string, path: string) => Promise<void>) | undefined
+        await prepareMockNuxt({}, {
+          hook: vi.fn((hookName, callback) => {
+            if (hookName === 'builder:watch') {
+              watchCallback = callback
+            }
+          }),
+        })
+
+        await watchCallback!('add', 'cwa/components/Hero/preview.webp')
+
+        const [{ filter }] = (nuxtKit.updateTemplates as Mock).mock.lastCall!
+        expect(filter!({ filename: 'cwa-admin-resources.ts' } as any)).toBe(true)
+      })
+    })
+
     describe('page cache warm route', () => {
       const warmHandler = {
         route: '/_cwa/page-cache/warm',
@@ -936,7 +1032,7 @@ export const resourcesConfig: CwaResourcesMeta = {
   },
   "Form": {
     "name": "Form",
-    "description": "<p>A form from the API, shown as a list of its text fields unless a UI variant lays it out.</p>",
+    "description": "A form from the API, shown as a list of its text fields unless a UI variant lays it out.",
     "managerTabs": [],
     "ui": []
   },
@@ -1055,7 +1151,7 @@ export const styleClasses: CwaStyleClasses = {
         expect(warnings[0]).toContain('is ignored')
       })
 
-      test('editing a .vue under app/cwa in dev regenerates the config and styles, and nothing else does', async () => {
+      test('editing a .vue under app/cwa in dev regenerates the config, styles and admin resources, and nothing else does', async () => {
         vi.spyOn(nuxtKit, 'createResolver').mockReturnValue({
           resolve: vi.fn((...args: string[]) => join(...args)),
           resolvePath: vi.fn(),
@@ -1072,15 +1168,15 @@ export const styleClasses: CwaStyleClasses = {
           vi.mocked(nuxtKit.updateTemplates).mockClear()
           await watchCallback!(event, path)
           const call = vi.mocked(nuxtKit.updateTemplates).mock.lastCall
-          return ['cwa-config.ts', 'cwa-styles.ts'].map(filename => !!call?.[0]?.filter?.({ filename } as any))
+          return ['cwa-config.ts', 'cwa-styles.ts', 'cwa-admin-resources.ts'].map(filename => !!call?.[0]?.filter?.({ filename } as any))
         }
 
-        expect(await regenerates('change', 'cwa/components/Hero/Hero.vue')).toEqual([true, true])
-        expect(await regenerates('change', 'cwa/layouts/primary.vue')).toEqual([true, true])
-        expect(await regenerates('add', 'cwa/pages/Landing.vue')).toEqual([true, true])
-        expect(await regenerates('unlink', 'cwa/components/Hero/admin/Tab.vue')).toEqual([true, true])
-        expect(await regenerates('change', 'components/HeaderMenuLinks.vue')).toEqual([false, false])
-        expect(await regenerates('change', 'cwa/components/Hero/useHero.ts')).toEqual([false, false])
+        expect(await regenerates('change', 'cwa/components/Hero/Hero.vue')).toEqual([true, true, true])
+        expect(await regenerates('change', 'cwa/layouts/primary.vue')).toEqual([true, true, true])
+        expect(await regenerates('add', 'cwa/pages/Landing.vue')).toEqual([true, true, true])
+        expect(await regenerates('unlink', 'cwa/components/Hero/admin/Tab.vue')).toEqual([true, true, true])
+        expect(await regenerates('change', 'components/HeaderMenuLinks.vue')).toEqual([false, false, false])
+        expect(await regenerates('change', 'cwa/components/Hero/useHero.ts')).toEqual([false, false, false])
       })
 
       function generated(contents: string) {
@@ -1163,7 +1259,7 @@ export const styleClasses: CwaStyleClasses = {
             const { resourcesConfig } = await generate([])
             expect(resourcesConfig.Form).toEqual({
               name: 'Form',
-              description: expect.stringMatching(/^<p>.+<\/p>$/),
+              description: expect.stringMatching(/^[^<>]+$/),
               managerTabs: [],
               ui: [],
             })

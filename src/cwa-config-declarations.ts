@@ -23,7 +23,7 @@ export interface CwaConfigDeclarations {
 
 const MACRO = 'defineCwaConfig'
 
-const COMPONENT_KEYS = ['name', 'description', 'instantAdd', 'defaultData', 'styles', 'multipleStyles'] as const
+const COMPONENT_KEYS = ['name', 'description', 'instantAdd', 'defaultData', 'styles', 'multipleStyles', 'icon', 'group', 'image'] as const
 const UI_KEYS = ['name', 'styles', 'multipleStyles'] as const
 const TEMPLATE_KEYS = ['name', 'styles'] as const
 

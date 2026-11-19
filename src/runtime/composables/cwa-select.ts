@@ -1,8 +1,14 @@
 import { ref, watch } from 'vue'
 import type { Ref } from 'vue'
 import isEqual from 'lodash-es/isEqual'
-import type { SelectOption } from '#cwa/composables/cwa-select-input'
-import type { ModelValue } from '#cwa/templates/components/ui/form/Button.vue'
+
+export type ModelValue = undefined | string | number | boolean | object | null | (string | number | boolean | object)[]
+
+export interface SelectOption {
+  label: string
+  value: ModelValue
+  disabled?: boolean
+}
 
 export const useCwaSelect = (model: Ref<ModelValue>, ops: SelectOption[] = []) => {
   // use a new model - prevent updating the model and immediately triggering updates

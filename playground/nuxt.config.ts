@@ -13,6 +13,19 @@ export default defineNuxtConfig({
     'nuxt-og-image',
     '@vite-pwa/nuxt',
     'nuxt-svgo',
+    (_options, nuxt) => {
+      nuxt.hook('pages:extend', (pages) => {
+        const kit = pages.findIndex(page => page.path === '/kit')
+        if (kit === -1) {
+          return
+        }
+        if (!nuxt.options.dev && !nuxt.options.test) {
+          pages.splice(kit, 1)
+          return
+        }
+        pages[kit]!.meta = { ...pages[kit]!.meta, layout: false }
+      })
+    },
   ],
   devtools: {
     enabled: true,
@@ -20,7 +33,6 @@ export default defineNuxtConfig({
   app: {
     pageTransition: { name: 'page', mode: 'out-in' },
     head: {
-      charset: 'utf-8',
       htmlAttrs: {
         lang: 'en-GB',
       },
@@ -61,6 +73,30 @@ export default defineNuxtConfig({
         // dependency change, which would otherwise cause an HMR feedback loop.
         ignored: ['**/src/runtime/templates/assets/cwa.css', '**/src/runtime/templates/assets/base.css'],
       },
+    },
+    optimizeDeps: {
+      include: [
+        'lodash-es/debounce',
+        'lodash-es/get',
+        'lodash-es/isArray',
+        'lodash-es/isEqual',
+        'lodash-es/isObject',
+        'lodash-es/mergeWith',
+        'lodash-es/set',
+        'lodash-es/throttle',
+        'lodash-es/unset',
+        'mitt',
+        'uuid',
+        'workbox-window',
+        'vuejs-confirm-dialog',
+        '@tiptap/extension-collaboration',
+        '@tiptap/extension-link',
+        '@tiptap/y-tiptap',
+        'yjs',
+        'fast-xml-parser',
+        '@heroicons/vue/20/solid',
+        '@vue/devtools-core',
+      ],
     },
   },
   typescript: {

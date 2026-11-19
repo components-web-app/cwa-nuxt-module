@@ -1,17 +1,27 @@
 <script setup lang="ts">
 import { useCwa } from '#cwa/composables/cwa'
+import { buttonLooks } from '#cwa/templates/components/ui/kit-looks'
 
 const $cwa = useCwa()
+
+const updateClass = [
+  'cwa:inline-flex cwa:h-8 cwa:shrink-0 cwa:cursor-pointer cwa:items-center cwa:justify-center cwa:whitespace-nowrap cwa:px-3 cwa:text-helper cwa:font-semibold cwa:leading-5 cwa:transition-colors cwa:duration-(--cwa-duration-fast) cwa:ease-out cwa:motion-reduce:transition-none cwa:outline-1 cwa:outline-transparent cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-accent-fg cwa:pointer-coarse:h-hit',
+  buttonLooks.solid.accent.rest,
+  buttonLooks.solid.accent.hover,
+]
 </script>
 
 <template>
   <div
     v-if="$cwa.resources.hasNewResources"
-    class="cwa:dark-blur cwa:py-2 cwa:px-3 cwa:rounded-full cwa:flex cwa:gap-x-1.5 cwa:items-center cwa:opacity-75 cwa:hover:opacity-100 cwa:transition"
+    role="status"
+    data-testid="outdated-content-notice"
+    class="cwa:flex cwa:items-center cwa:gap-x-3 cwa:bg-surface-menu cwa:py-1 cwa:ps-3 cwa:pe-1 cwa:text-control cwa:text-fg cwa:shadow-popover"
   >
-    <span class="cwa:text-stone-300">The content on this page is outdated</span>
+    <span>The content on this page is outdated</span>
     <button
-      class="cwa:bg-light/90 cwa:hover:bg-light cwa:text-dark cwa:py-1 cwa:px-2 cwa:rounded-full cwa:cursor-pointer"
+      type="button"
+      :class="updateClass"
       @click.stop="$cwa.resourcesManager.mergeNewResources"
     >
       Update

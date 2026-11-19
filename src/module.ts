@@ -1,6 +1,7 @@
 import { join } from 'path'
 import path from 'node:path'
 import { statSync, readFileSync } from 'node:fs'
+import { createRequire } from 'node:module'
 import { defu } from 'defu'
 import {
   addImports,
@@ -27,7 +28,9 @@ import { READINESS_DEFAULTS } from './runtime/server/readiness'
 import { defaultSiteConfig } from './runtime/composables/useCwaSiteConfig'
 import { scanComponentGroupDeclarations } from './component-group-declarations'
 import { scanCwaConfigDeclarations } from './cwa-config-declarations'
-import type { CwaModuleOptions, CwaResourcesMeta, CwaStyleClasses, CwaStyles, CwaUiVariantConfig, GlobalComponentNames } from './runtime/types'
+import { adminResourcesTemplate, lucideNamesTypeTemplate } from './admin-resources'
+import type { LucideIconSet } from './admin-resources'
+import type { CwaModuleOptions, CwaResourcesConfig, CwaResourcesMeta, CwaStyleClasses, CwaStyles, CwaUiVariantConfig, GlobalComponentNames } from './runtime/types'
 
 declare module 'nuxt/schema' {
   interface PublicRuntimeConfig {
@@ -93,7 +96,7 @@ const BUILT_IN_RESOURCES_CONFIG: CwaResourcesMeta = {
   },
   Form: {
     name: 'Form',
-    description: '<p>A form from the API, shown as a list of its text fields unless a UI variant lays it out.</p>',
+    description: 'A form from the API, shown as a list of its text fields unless a UI variant lays it out.',
   },
 }
 
@@ -324,7 +327,7 @@ export default defineNuxtModule<CwaModuleOptions>({
           warnConfigOnce(`${filePath}\0${reason}`, `${NAME}: the defineCwaConfig in ${filePath} is ignored, because it ${reason}. Pass a single object literal.`)
         },
         onIgnoredKeys: (filePath, keys) => {
-          warnConfigOnce(`${filePath}\0keys\0${keys.join(',')}`, `${NAME}: ${keys.join(', ')} in the defineCwaConfig in ${filePath} ${keys.length > 1 ? 'are' : 'is'} ignored, because this kind of file cannot declare ${keys.length > 1 ? 'them' : 'it'}. A component may declare name, description, instantAdd, defaultData, styles and multipleStyles; a UI variant name, styles and multipleStyles; a layout or page name and styles.`)
+          warnConfigOnce(`${filePath}\0keys\0${keys.join(',')}`, `${NAME}: ${keys.join(', ')} in the defineCwaConfig in ${filePath} ${keys.length > 1 ? 'are' : 'is'} ignored, because this kind of file cannot declare ${keys.length > 1 ? 'them' : 'it'}. A component may declare name, description, instantAdd, defaultData, styles, multipleStyles, icon, group and image; a UI variant name, styles and multipleStyles; a layout or page name and styles.`)
         },
       })
     }
@@ -348,7 +351,7 @@ export default defineNuxtModule<CwaModuleOptions>({
 
     function resolveCwaConfig(components: Component[]) {
       const declarations = scanCwaConfig(components)
-      const resourcesConfig: CwaResourcesMeta = { ...BUILT_IN_RESOURCES_CONFIG }
+      const resourcesConfig: CwaResourcesConfig = { ...BUILT_IN_RESOURCES_CONFIG }
       const uiConfig: Record<string, CwaUiVariantConfig> = {}
 
       const { allUserComponents, userComponents } = resolveUserComponents(components)
@@ -426,6 +429,35 @@ export default defineNuxtModule<CwaModuleOptions>({
       return { ...options, staticRender: options.staticRender ?? hasStaticRouteRules() }
     }
 
+    const ADMIN_RESOURCE_KEYS = ['icon', 'group', 'image'] as const
+
+    function withoutAdminResourceKeys(resources: CwaResourcesConfig): CwaResourcesMeta {
+      return Object.fromEntries(Object.entries(resources).map(([name, meta]) => {
+        const { icon: _icon, group: _group, image: _image, ...rest } = meta
+        return [name, rest]
+      }))
+    }
+
+    function resolvePreviews(components: Component[]): Record<string, string> {
+      const previews: Record<string, string> = {}
+      for (const component of resolveUserComponents(components).userComponents) {
+        const preview = join(path.dirname(component.filePath), 'preview.webp')
+        try {
+          statSync(preview).isFile() && (previews[toResourceType(component)] = preview)
+        }
+        catch {
+          continue
+        }
+      }
+      return previews
+    }
+
+    let lucideIcons: LucideIconSet | undefined
+    function readLucideIcons(): LucideIconSet {
+      lucideIcons ??= JSON.parse(readFileSync(createRequire(import.meta.url).resolve('@iconify-json/lucide/icons.json'), 'utf8')) as LucideIconSet
+      return lucideIcons
+    }
+
     function resolveSessionEndCaches(): string[] {
       if (!hasNuxtModule('@vite-pwa/nuxt', nuxt)) {
         return []
@@ -500,13 +532,39 @@ export const componentGroupDeclarations: ComponentGroupDeclarations = ${JSON.str
         },
       })
 
+      const reportedIcons = new Set<string>()
+      addTemplate({
+        filename: 'cwa-admin-resources.ts',
+        write: true,
+        getContents: ({ app }) => {
+          const resources = resolveCwaConfig(app.components).resourcesConfig
+          return adminResourcesTemplate({
+            resources: Object.fromEntries(Object.entries(resources).map(([name, meta]) => [name, Object.fromEntries(ADMIN_RESOURCE_KEYS.filter(key => meta[key]).map(key => [key, meta[key]]))])),
+            previews: resolvePreviews(app.components),
+            lucide: readLucideIcons(),
+            warn: (message) => {
+              if (!reportedIcons.has(message)) {
+                reportedIcons.add(message)
+                logger.warn(`${NAME}: ${message}`)
+              }
+            },
+          })
+        },
+      })
+
+      addTypeTemplate({
+        filename: 'types/cwa-lucide-icons.d.ts',
+        write: true,
+        getContents: () => lucideNamesTypeTemplate(readLucideIcons()),
+      }, { nuxt: true, node: true })
+
       addTemplate({
         filename: 'cwa-config.ts',
         write: true,
         getContents: ({ app }) => {
           const { resourcesConfig, uiConfig, layoutsConfig, pagesConfig } = resolveCwaConfig(app.components)
           return `import type { CwaResourcesMeta, CwaTemplateConfig, CwaUiVariantConfig } from '#cwa/types'
-export const resourcesConfig: CwaResourcesMeta = ${JSON.stringify(resourcesConfig, undefined, 2)}
+export const resourcesConfig: CwaResourcesMeta = ${JSON.stringify(withoutAdminResourceKeys(resourcesConfig), undefined, 2)}
 export const uiConfig: Record<string, CwaUiVariantConfig> = ${JSON.stringify(uiConfig, undefined, 2)}
 export const layoutsConfig: Record<string, CwaTemplateConfig> = ${JSON.stringify(layoutsConfig, undefined, 2)}
 export const pagesConfig: Record<string, CwaTemplateConfig> = ${JSON.stringify(pagesConfig, undefined, 2)}
@@ -714,12 +772,12 @@ declare module 'vue-router' {
       const cwaDirs = [userComponentsPath]
       if (['add', 'unlink'].includes(event) && cwaDirs.some(dir => dir === path || path.startsWith(dir + '/'))) {
         logger.info(`File added or removed - updating options for ${NAME} module...`)
-        filenames.push('cwa-options.ts', 'cwa-component-names.ts', '#cwa/server-options.ts')
+        filenames.push('cwa-options.ts', 'cwa-component-names.ts', 'cwa-admin-resources.ts', '#cwa/server-options.ts')
       }
       if (['add', 'change', 'unlink'].includes(event) && relativePath.endsWith('.vue')) {
         filenames.push('cwa-component-group-declarations.ts')
         if (path.startsWith(cwaAppDir + '/')) {
-          filenames.push('cwa-config.ts', 'cwa-styles.ts')
+          filenames.push('cwa-config.ts', 'cwa-styles.ts', 'cwa-admin-resources.ts')
         }
       }
       if (filenames.length) {

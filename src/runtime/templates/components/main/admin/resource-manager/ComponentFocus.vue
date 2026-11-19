@@ -4,7 +4,9 @@ import type { ComputedRef, Ref } from 'vue'
 import { useElementSize, useWindowSize } from '@vueuse/core'
 import { v4 as uuidv4 } from 'uuid'
 import { useCwa } from '#imports'
-import { getPublishedResourceState } from '#cwa/resources/resource-utils'
+import { CwaResourceTypes, getPublishedResourceState, getResourceTypeFromIri } from '#cwa/resources/resource-utils'
+import { FOCUS_CUTOUT_OFFSET, FOCUS_CUTOUT_RADIUS, focusRadiusAt, saveOutlineStyle, toneBehind, useSaveOutline } from '#cwa/admin/save-outline'
+import { NEW_RESOURCE_IRI } from '#cwa/storage/stores/resources/state'
 
 const props = defineProps<{
   iri: Ref<string | undefined>
@@ -66,6 +68,19 @@ const resource = computed(() => {
   return $cwa.resources.getResource(iri.value).value
 })
 
+const fieldStates = computed(() => {
+  const current = iri.value
+  if (!current) {
+    return []
+  }
+  const iris = current === NEW_RESOURCE_IRI ? [current] : $cwa.resources.findAllPublishableIris(current)
+  return iris.flatMap(each => Object.values($cwa.resources.getResource(each).value?.fieldStates ?? {}))
+})
+
+const savePhase = useSaveOutline(fieldStates, iri)
+const saveTone = computed(() => savePhase.value === 'rest' ? undefined : toneBehind(domElements.value[0]))
+const sides = ['top', 'right', 'bottom', 'left'] as const
+
 type FocusPosition = {
   top: number
   left: number
@@ -121,11 +136,20 @@ function styleOf(focusPosition: FocusPosition) {
     left: `${focusPosition.left}px`,
     width: `${focusPosition.width}px`,
     height: `${focusPosition.height}px`,
+    borderRadius: `${focusRadiusAt(0)}px`,
   }
 }
 
 const cssStyle = computed(() => styleOf(position.value))
 const otherCssStyles = computed(() => otherPositions.value.map(styleOf))
+
+const MAGENTA_TYPES = [
+  CwaResourceTypes.ROUTE,
+  CwaResourceTypes.PAGE,
+  CwaResourceTypes.LAYOUT,
+  CwaResourceTypes.COMPONENT_GROUP,
+  CwaResourceTypes.COMPONENT_POSITION,
+]
 
 const borderColor = computed(() => {
   if (!resource.value) {
@@ -138,7 +162,8 @@ const borderColor = computed(() => {
   if (publishedState !== undefined) {
     return publishedState ? 'cwa:outline-green' : 'cwa:outline-orange'
   }
-  return iri.value?.startsWith('/_/') ? 'cwa:outline-magenta' : 'cwa:outline-green'
+  const type = iri.value ? getResourceTypeFromIri(iri.value) : undefined
+  return type && MAGENTA_TYPES.includes(type) ? 'cwa:outline-magenta' : 'cwa:outline-green'
 })
 
 async function redraw() {
@@ -154,7 +179,7 @@ function drawCanvas() {
     return
   }
 
-  const offset = 7
+  const offset = FOCUS_CUTOUT_OFFSET
   const width = Math.max(windowSize.width.value, document.body.clientWidth)
   const height = Math.max(windowSize.height.value, document.body.clientHeight)
   ctx.reset()
@@ -165,7 +190,7 @@ function drawCanvas() {
   ctx.beginPath()
   ctx.rect(0, 0, width, height)
   for (const cutOut of [position.value, ...otherPositions.value]) {
-    drawRoundedRect(ctx, cutOut.left - offset, cutOut.top - offset, cutOut.width + (offset * 2), cutOut.height + (offset * 2), 8)
+    drawRoundedRect(ctx, cutOut.left - offset, cutOut.top - offset, cutOut.width + (offset * 2), cutOut.height + (offset * 2), FOCUS_CUTOUT_RADIUS)
   }
   ctx.fill()
 }
@@ -212,16 +237,31 @@ defineExpose({
       class="cwa:z-manager-focus cwa:pointer-events-none cwa:absolute cwa:top-0 cwa:left-0"
     />
     <div
-      :class="[borderColor]"
-      :style="cssStyle"
-      class="cwa:animate-pulse cwa:absolute cwa:outline-2 cwa:outline-offset-4 cwa:pointer-events-none cwa:outline cwa:rounded-[1px]"
-    />
-    <div
-      v-for="(otherCssStyle, index) of otherCssStyles"
+      v-for="(outlineStyle, index) of [cssStyle, ...otherCssStyles]"
       :key="index"
-      :class="[borderColor]"
-      :style="otherCssStyle"
-      class="cwa:animate-pulse cwa:absolute cwa:outline-2 cwa:outline-offset-4 cwa:pointer-events-none cwa:outline cwa:rounded-[1px]"
-    />
+      :class="[borderColor, { 'cwa:animate-pulse': savePhase === 'rest' }]"
+      :style="outlineStyle"
+      :data-save="savePhase"
+      class="cwa:absolute cwa:outline-2 cwa:outline-offset-4 cwa:pointer-events-none cwa:outline"
+      data-testid="focus-outline"
+    >
+      <span
+        v-if="savePhase !== 'rest'"
+        :key="savePhase"
+        class="cwa:focus-save"
+        :style="saveOutlineStyle"
+        :data-save="savePhase"
+        :data-tone="saveTone"
+        data-testid="focus-save"
+      >
+        <span class="cwa:focus-save-ring">
+          <i
+            v-for="side of sides"
+            :key="side"
+            :data-side="side"
+          />
+        </span>
+      </span>
+    </div>
   </client-only>
 </template>

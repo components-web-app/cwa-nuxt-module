@@ -5,7 +5,12 @@ import { DEFAULT_TAB_ORDER } from '#cwa/admin/manager-tabs-resolver'
 import {
   useDynamicPositionSelectOptions,
 } from '#cwa/templates/components/main/admin/_common/useDynamicPositionSelectOptions'
-import ModalSelect from '#cwa/templates/components/core/admin/form/ModalSelect.vue'
+import CwaUiBadge from '#cwa/templates/components/ui/Badge.vue'
+import CwaUiButton from '#cwa/templates/components/ui/Button.vue'
+import CwaUiManagerRowDivider from '#cwa/templates/components/ui/ManagerRowDivider.vue'
+import CwaUiManagerTab from '#cwa/templates/components/ui/ManagerTab.vue'
+import CwaUiSelect from '#cwa/templates/components/ui/Select.vue'
+import CwaReveal from '#cwa/templates/components/core/ui/Reveal.vue'
 
 const { exposeMeta, iri, $cwa, resource } = useCwaResourceManagerTab({
   name: 'Dynamic Component',
@@ -18,6 +23,7 @@ const selectedType = ref<string | null>(null)
 const selectedProperty = ref<string | null>(null)
 const typeOptions = ref<{ label: string, value: string }[]>([])
 const propertyOptions = ref<{ label: string, value: string }[]>([])
+const loadingProperties = ref(false)
 
 const storedClass = computed(() => resource.value?.data?.pageDataClass ?? null)
 const storedProperty = computed(() => resource.value?.data?.pageDataProperty ?? null)
@@ -39,13 +45,27 @@ async function loadTypeOptions() {
   typeOptions.value = await getTypeOptions() as { label: string, value: string }[]
 }
 
+let propertyRequest = 0
+
 async function loadPropertyOptions() {
+  const request = ++propertyRequest
+  propertyOptions.value = []
   if (!selectedType.value) {
-    propertyOptions.value = []
+    loadingProperties.value = false
     return
   }
-  propertyOptions.value = [{ label: 'Loading...', value: '' }]
-  propertyOptions.value = await getPropertyOptions(selectedType.value, allowedComponents.value) as { label: string, value: string }[]
+  loadingProperties.value = true
+  try {
+    const options = await getPropertyOptions(selectedType.value, allowedComponents.value) as { label: string, value: string }[]
+    if (request === propertyRequest) {
+      propertyOptions.value = options
+    }
+  }
+  finally {
+    if (request === propertyRequest) {
+      loadingProperties.value = false
+    }
+  }
 }
 
 async function save() {
@@ -66,14 +86,14 @@ onMounted(async () => {
   await loadPropertyOptions()
 })
 
-function onTypeChange(value: string | null) {
-  selectedType.value = value
+function onTypeChange(value: string | null | undefined) {
+  selectedType.value = value ?? null
   selectedProperty.value = null
   loadPropertyOptions()
 }
 
-function onPropertyChange(value: string | null) {
-  selectedProperty.value = value
+function onPropertyChange(value: string | null | undefined) {
+  selectedProperty.value = value ?? null
   if (selectedType.value && value) {
     save()
   }
@@ -93,7 +113,7 @@ async function makeStatic() {
   })
   selectedType.value = null
   selectedProperty.value = null
-  propertyOptions.value = []
+  loadPropertyOptions()
 }
 
 async function addFallbackComponent() {
@@ -105,49 +125,48 @@ defineExpose(exposeMeta)
 </script>
 
 <template>
-  <div class="cwa:flex cwa:flex-col cwa:gap-y-3">
-    <ModalSelect
+  <CwaUiManagerTab>
+    <CwaUiSelect
       :model-value="selectedType"
       label="Data type"
       :options="typeOptions"
       @update:model-value="onTypeChange"
     />
-    <ModalSelect
-      v-if="selectedType"
-      :model-value="selectedProperty"
-      label="Field"
-      :options="propertyOptions"
-      @update:model-value="onPropertyChange"
-    />
-    <div
-      v-if="isDirtyIncomplete"
-      class="cwa:flex cwa:items-center cwa:justify-between cwa:gap-x-4"
-    >
-      <p class="cwa:text-sm cwa:text-yellow">
+    <CwaReveal :when="!!selectedType">
+      <CwaUiSelect
+        :model-value="selectedProperty"
+        label="Field"
+        :options="propertyOptions"
+        :disabled="loadingProperties"
+        :placeholder="loadingProperties ? 'Loading…' : undefined"
+        @update:model-value="onPropertyChange"
+      />
+    </CwaReveal>
+    <template v-if="isDirtyIncomplete">
+      <CwaUiBadge
+        tone="warning"
+        data-testid="dynamic-incomplete"
+      >
         Select a field to complete the configuration.
-      </p>
-      <CwaUiFormButton
-        color="dark"
+      </CwaUiBadge>
+      <CwaUiButton
+        label="Cancel"
         @click="cancelChanges"
-      >
-        Cancel
-      </CwaUiFormButton>
-    </div>
-    <div
-      v-if="canMakeStatic && !isDirtyIncomplete"
-      class="cwa:pt-1"
-    >
-      <CwaUiFormButton
-        color="error"
+      />
+    </template>
+    <template v-else-if="canMakeStatic || !resource?.data?.component">
+      <CwaUiManagerRowDivider />
+      <CwaUiButton
+        v-if="canMakeStatic"
+        label="Make static"
+        tone="danger"
         @click="makeStatic"
-      >
-        Make static
-      </CwaUiFormButton>
-    </div>
-    <div v-if="!resource?.data?.component && !isDirtyIncomplete">
-      <CwaUiFormButton @click="addFallbackComponent">
-        Add Fallback Component
-      </CwaUiFormButton>
-    </div>
-  </div>
+      />
+      <CwaUiButton
+        v-if="!resource?.data?.component"
+        label="Add fallback component"
+        @click="addFallbackComponent"
+      />
+    </template>
+  </CwaUiManagerTab>
 </template>

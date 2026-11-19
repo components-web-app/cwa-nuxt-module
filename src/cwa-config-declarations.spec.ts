@@ -135,6 +135,18 @@ const props = defineProps<IriProp>()`),
       expect(reported).toEqual([[file, ['instantAdd']]])
     })
 
+    test('a component declares its add dialog icon, group and image, and a variant declaring them is reported and they are ignored', () => {
+      const variant = `${APP}/cwa/components/Hero/ui/Wide.vue`
+      const { result, reported } = ignoredKeys({
+        [`${APP}/cwa/components/Hero/Hero.vue`]: sfc(`defineCwaConfig({ icon: 'hero', group: 'Layout', image: '~/assets/hero.webp' })`),
+        [variant]: sfc(`defineCwaConfig({ name: 'Wide hero', icon: 'banner', group: 'Layout', image: '/wide.webp' })`),
+      }, [template('CwaComponentHero', 'cwa/components/Hero/Hero.vue'), template('CwaComponentHeroUiWide', 'cwa/components/Hero/ui/Wide.vue')])
+
+      expect(result.components).toEqual({ Hero: { icon: 'hero', group: 'Layout', image: '~/assets/hero.webp' } })
+      expect(result.ui).toEqual({ CwaComponentHeroUiWide: { name: 'Wide hero' } })
+      expect(reported).toEqual([[variant, ['icon', 'group', 'image']]])
+    })
+
     test('a file declaring only allowed keys reports nothing', () => {
       const { reported } = ignoredKeys({
         [`${APP}/cwa/components/Hero/Hero.vue`]: sfc(`defineCwaConfig({ name: 'Hero', description: '<p>Hero</p>', instantAdd: true })`),

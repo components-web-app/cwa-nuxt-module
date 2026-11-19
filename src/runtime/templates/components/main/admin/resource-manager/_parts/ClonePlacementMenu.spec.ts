@@ -2,7 +2,7 @@
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import { computed, ref } from 'vue'
 import { flushPromises, mount } from '@vue/test-utils'
-import { PopoverAnchor, PopoverContent } from 'reka-ui'
+import { DropdownMenuContent } from 'reka-ui'
 import { useCloneMode } from '#cwa/admin/clone-mode'
 import type Cwa from '#cwa/cwa'
 
@@ -14,7 +14,19 @@ const cwaConfig = vi.hoisted(() => ({
 }))
 vi.mock('#build/cwa-config', () => cwaConfig)
 
-const state = vi.hoisted(() => ({ cwa: null as any, editingLayoutWhenCloned: undefined as boolean | undefined }))
+const state = vi.hoisted(() => ({ cwa: null as any, editingLayoutWhenCloned: undefined as boolean | undefined, confirm: { answer: true, asked: [] as unknown[] } }))
+
+vi.mock('#app/nuxt', async importOriginal => ({
+  ...await importOriginal<typeof import('#app/nuxt')>(),
+  useNuxtApp: () => ({ vueApp: { name: 'vue-app' } }),
+}))
+
+vi.mock('#cwa/admin/resource-confirm', () => ({
+  confirmResourceAction: vi.fn(async (_app: unknown, options: unknown) => {
+    state.confirm.asked.push(options)
+    return state.confirm.answer
+  }),
+}))
 
 vi.mock('#cwa/composables/cwa', () => ({
   useCwa: vi.fn(() => state.cwa),
@@ -96,16 +108,6 @@ async function mountMenu(type: 'page' | 'layout' = 'layout', stack: Record<strin
       type,
       point: { x: 310, y: 420 },
     },
-    global: {
-      stubs: {
-        DialogBox: {
-          props: ['modelValue', 'buttons', 'title', 'isLoading'],
-          emits: ['update:modelValue'],
-          template: '<div v-if="modelValue" class="dialog-stub"><h3 class="dialog-title">{{ title }}</h3><slot /><button v-for="b of buttons" :key="b.label" class="dialog-button" @click="b.callbackFn ? b.callbackFn() : $emit(\'update:modelValue\', false)">{{ b.label }}</button></div>',
-        },
-        Spinner: { template: '<div class="spinner-stub" />' },
-      },
-    },
   })
   mounted.push(wrapper)
   await flushPromises()
@@ -117,15 +119,15 @@ function menu() {
 }
 
 function options() {
-  return [...document.body.querySelectorAll<HTMLButtonElement>('[data-testid="clone-option"]')]
+  return [...document.body.querySelectorAll<HTMLElement>('[data-testid="clone-option"]')]
+}
+
+function isDisabled(element: HTMLElement) {
+  return element.getAttribute('aria-disabled') === 'true'
 }
 
 function option(label: string) {
   return options().find(button => button.textContent?.trim() === label)
-}
-
-function dialogButton(wrapper: Awaited<ReturnType<typeof mountMenu>>, label: string) {
-  return wrapper.findAll('.dialog-button').find(button => button.text() === label)
 }
 
 async function openWhy(name: string) {
@@ -133,7 +135,7 @@ async function openWhy(name: string) {
   expect(trigger).not.toBeNull()
   trigger!.click()
   await flushPromises()
-  return document.body.querySelector<HTMLElement>('[data-testid="clone-option-reasons"]')
+  return document.body.querySelector<HTMLElement>('[data-testid="menu-item-reasons"]')
 }
 
 function startCloning(move?: typeof MOVE | typeof MOVE_FIRST) {
@@ -152,6 +154,8 @@ describe('ClonePlacementMenu', () => {
     mounted.splice(0).forEach(wrapper => wrapper.unmount())
     state.cwa && useCloneMode(state.cwa as Cwa).end()
     state.editingLayoutWhenCloned = undefined
+    state.confirm.answer = true
+    state.confirm.asked = []
     document.body.innerHTML = ''
   })
 
@@ -160,15 +164,16 @@ describe('ClonePlacementMenu', () => {
     editingLayout()
     const wrapper = await mountMenu()
 
-    const reference = wrapper.findComponent(PopoverAnchor).props('reference')
-    expect(reference.getBoundingClientRect()).toMatchObject({ x: 310, y: 420, top: 420, left: 310, right: 310, bottom: 420, width: 0, height: 0 })
-    const content = wrapper.findComponent(PopoverContent)
+    const content = wrapper.findComponent(DropdownMenuContent)
+    expect(content.props('reference').getBoundingClientRect()).toMatchObject({ x: 310, y: 420, top: 420, left: 310, right: 310, bottom: 420, width: 0, height: 0 })
     expect(content.props('avoidCollisions')).toBe(true)
     expect(content.props('collisionPadding')).toBeGreaterThan(0)
+    expect(content.props('side')).toBe('bottom')
+    expect(content.props('align')).toBe('start')
     expect(menu()).not.toBeNull()
   })
 
-  test('lists the options from cloneTargetOptions under the heading, styled like the manager bar\'s more menu', async () => {
+  test('lists the options from cloneTargetOptions under the heading, as items of a kit menu', async () => {
     startCloning()
     editingLayout()
     const elements = { value: [textElement('Third page component')] }
@@ -176,8 +181,10 @@ describe('ClonePlacementMenu', () => {
 
     expect(menu()!.querySelector('[data-testid="clone-menu-title"]')!.textContent!.trim()).toBe('Clone next to “Third page component”')
     expect(options().map(button => button.textContent!.trim())).toEqual(['Add before', 'Add after'])
-    expect(options().every(button => !button.disabled)).toBe(true)
-    expect(menu()!.classList).toContain('cwa:dark-blur')
+    expect(options().every(item => !isDisabled(item) && item.getAttribute('role') === 'menuitem')).toBe(true)
+    expect(menu()!.getAttribute('role')).toBe('menu')
+    expect(menu()!.getAttribute('aria-label')).toBe('Clone next to “Third page component”')
+    expect(menu()!.classList).toContain('cwa:bg-surface-menu')
   })
 
   test('a disabled option is greyed with a ⓘ that shows its reasons in a popover on click, and choosing it sends nothing', async () => {
@@ -188,15 +195,12 @@ describe('ClonePlacementMenu', () => {
     const toStart = option('Add to Start')!
     const toEnd = option('Add to End')!
 
-    expect(toStart.disabled).toBe(true)
-    expect(toStart.className).toContain('cwa:text-stone-400')
-    expect(toStart.className).toContain('cwa:cursor-not-allowed')
-    expect(toStart.className).not.toContain('cwa:text-white')
-    expect(toEnd.disabled).toBe(false)
-    expect(toEnd.className).toContain('cwa:text-white')
-    expect(toEnd.className).toContain('cwa:cursor-pointer')
+    expect(isDisabled(toStart)).toBe(true)
+    expect(toStart.querySelector('.cwa\\:opacity-50')).not.toBeNull()
+    expect(isDisabled(toEnd)).toBe(false)
+    expect(toEnd.querySelector('.cwa\\:opacity-50')).toBeNull()
     expect(document.body.querySelector('[aria-label="Why Add to End is unavailable"]')).toBeNull()
-    expect(document.body.querySelector('[data-testid="clone-option-reasons"]')).toBeNull()
+    expect(document.body.querySelector('[data-testid="menu-item-reasons"]')).toBeNull()
     expect(menu()!.textContent).not.toContain('This is where it already is')
 
     const reasons = await openWhy('Why Add to Start is unavailable')
@@ -216,8 +220,8 @@ describe('ClonePlacementMenu', () => {
 
       const notes = menu()!.querySelector<HTMLElement>('[data-testid="clone-notes"]')!
       expect(notes.textContent!.trim()).toBe('Shared layout: this appears on every page')
-      expect(notes.className).toContain('cwa:text-stone-400')
-      expect(notes.className).not.toContain('cwa:text-yellow')
+      expect(notes.className).toContain('cwa:text-fg-muted')
+      expect(notes.className).not.toContain('cwa:text-warning-fg')
     })
 
     test('a move from the layout into the page says the scope and that it leaves the layout on one muted line', async () => {
@@ -230,7 +234,7 @@ describe('ClonePlacementMenu', () => {
       expect(notes).toHaveLength(1)
       expect(notes[0]!.textContent!.trim()).toBe('This is in the page: it will not appear on other pages using the layout · This takes it out of the layout: it will no longer appear on other pages')
       expect(notes[0]!.querySelector('[data-testid="move-leaves-layout"]')).not.toBeNull()
-      expect(notes[0]!.className).toContain('cwa:text-stone-400')
+      expect(notes[0]!.className).toContain('cwa:text-fg-muted')
     })
 
     test('a clone gives no leave-the-layout note', async () => {
@@ -246,7 +250,7 @@ describe('ClonePlacementMenu', () => {
       state.cwa.resources.isDataPage = computed(() => true)
       await mountMenu('page', [{ iri: DYNAMIC }, { iri: PAGE }])
 
-      expect(option('Use here')!.disabled).toBe(false)
+      expect(isDisabled(option('Use here')!)).toBe(false)
       expect(menu()!.querySelector('[data-testid="clone-notes"]')!.textContent!.trim()).toBe('This replaces Body Text')
     })
 
@@ -266,13 +270,13 @@ describe('ClonePlacementMenu', () => {
         await mountMenu()
 
         expect(options()).toHaveLength(0)
-        const row = menu()!.querySelector<HTMLButtonElement>('[data-testid="clone-nothing"]')!
+        const row = menu()!.querySelector<HTMLElement>('[data-testid="clone-nothing"]')!
         expect(row.textContent!.trim()).toBe('Nothing can be placed here')
-        expect(row.disabled).toBe(true)
+        expect(isDisabled(row)).toBe(true)
         const reasons = await openWhy('Why nothing can be placed here')
         expect([...reasons!.querySelectorAll('li')].map(item => item.textContent!.trim())).toEqual(['This group does not allow Body Text'])
         expect(document.body.textContent).not.toContain('HtmlContent')
-        expect(document.body.querySelector('.dialog-stub')).toBeNull()
+        expect(state.confirm.asked).toEqual([])
       }
       finally {
         delete byId[GROUP]!.allowedComponents
@@ -310,7 +314,7 @@ describe('ClonePlacementMenu', () => {
       window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', cancelable: true }))
       await flushPromises()
 
-      expect(document.body.querySelector('[data-testid="clone-option-reasons"]')).toBeNull()
+      expect(document.body.querySelector('[data-testid="menu-item-reasons"]')).toBeNull()
       expect(menu()).not.toBeNull()
       expect(wrapper.emitted('close')).toBeUndefined()
     })
@@ -357,7 +361,7 @@ describe('ClonePlacementMenu', () => {
       option('Add after')!.click()
       await flushPromises()
 
-      expect(document.body.querySelector('.dialog-stub')).toBeNull()
+      expect(state.confirm.asked).toEqual([])
       expect(cloneComponent).toHaveBeenCalledWith(state.cwa, {
         sourceIri: SOURCE,
         target: { kind: 'position', groupIri: GROUP, anchor: { after: POSITION } },
@@ -390,19 +394,21 @@ describe('ClonePlacementMenu', () => {
       const { cloneComponent } = await import('#cwa/admin/clone-component')
       const wrapper = await mountMenu()
 
-      expect(document.body.querySelector('.dialog-stub')).toBeNull()
+      let editingLayoutWhenAsked: boolean | undefined
+      const { confirmResourceAction } = await import('#cwa/admin/resource-confirm')
+      vi.mocked(confirmResourceAction).mockImplementationOnce(async (_app, options) => {
+        state.confirm.asked.push(options)
+        editingLayoutWhenAsked = state.cwa.admin.resourceStackManager.isEditingLayout.value
+        expect(cloneComponent).not.toHaveBeenCalled()
+        expect(menu()).toBeNull()
+        return true
+      })
       option('Add after')!.click()
+      await vi.waitFor(() => expect(cloneComponent).toHaveBeenCalled())
       await flushPromises()
 
-      expect(cloneComponent).not.toHaveBeenCalled()
-      expect(menu()).toBeNull()
-      expect(wrapper.get('.dialog-title').text()).toBe('Edit the shared layout?')
-      expect(wrapper.get('[data-testid="clone-confirm-scope"]').text()).toBe('It will appear on every page that uses this layout.')
-      expect(wrapper.findAll('.dialog-button').map(button => button.text())).toEqual(['Edit layout', 'Cancel'])
-      expect(state.cwa.admin.resourceStackManager.isEditingLayout.value).toBe(false)
-
-      await dialogButton(wrapper, 'Edit layout')!.trigger('click')
-      await flushPromises()
+      expect(state.confirm.asked).toEqual([{ title: 'Edit the shared layout?', description: 'It will appear on every page that uses this layout.', go: 'Edit layout', keep: 'Cancel', tone: 'accent' }])
+      expect(editingLayoutWhenAsked).toBe(false)
 
       expect(cloneComponent).toHaveBeenCalledWith(state.cwa, {
         sourceIri: SOURCE,
@@ -416,12 +422,12 @@ describe('ClonePlacementMenu', () => {
       const cloneMode = startCloning()
       const { cloneComponent } = await import('#cwa/admin/clone-component')
       const wrapper = await mountMenu()
+      state.confirm.answer = false
       option('Add after')!.click()
+      await vi.waitFor(() => expect(wrapper.emitted('close')).toHaveLength(1))
       await flushPromises()
 
-      await dialogButton(wrapper, 'Cancel')!.trigger('click')
-      await flushPromises()
-
+      expect(state.confirm.asked).toHaveLength(1)
       expect(wrapper.emitted('close')).toHaveLength(1)
       expect(cloneComponent).not.toHaveBeenCalled()
       expect(cloneMode.source.value).toBeDefined()
@@ -431,12 +437,11 @@ describe('ClonePlacementMenu', () => {
     test('an option in the page while editing the layout asks "Edit the page?" with Edit page', async () => {
       startCloning()
       editingLayout()
-      const wrapper = await mountMenu('page')
+      await mountMenu('page')
       option('Add after')!.click()
-      await flushPromises()
+      await vi.waitFor(() => expect(state.confirm.asked).toHaveLength(1))
 
-      expect(wrapper.get('.dialog-title').text()).toBe('Edit the page?')
-      expect(wrapper.findAll('.dialog-button').map(button => button.text())).toEqual(['Edit page', 'Cancel'])
+      expect(state.confirm.asked[0]).toMatchObject({ title: 'Edit the page?', go: 'Edit page', keep: 'Cancel' })
     })
   })
 
@@ -475,12 +480,15 @@ describe('ClonePlacementMenu', () => {
       const wrapper = await mountMenu('layout', [{ iri: COMPONENT, domElements: { value: [] } }, { iri: POSITION, domElements: elements }, { iri: GROUP }, { iri: LAYOUT }])
 
       expect(cloneMode.target.value).toEqual(elements.value)
+      let targetWhenAsked: unknown
+      const { confirmResourceAction } = await import('#cwa/admin/resource-confirm')
+      vi.mocked(confirmResourceAction).mockImplementationOnce(async () => {
+        targetWhenAsked = cloneMode.target.value
+        return false
+      })
       option('Add after')!.click()
-      await flushPromises()
-      expect(cloneMode.target.value).toEqual(elements.value)
-
-      await dialogButton(wrapper, 'Cancel')!.trigger('click')
-      await flushPromises()
+      await vi.waitFor(() => expect(wrapper.emitted('close')).toHaveLength(1))
+      expect(targetWhenAsked).toEqual(elements.value)
       wrapper.unmount()
       mounted.splice(mounted.indexOf(wrapper), 1)
       expect(cloneMode.target.value).toBeUndefined()

@@ -17,6 +17,30 @@ function resolveRedirectTarget(target: unknown): string {
   return target
 }
 
+const INVALID_CREDENTIALS = 'Invalid credentials.'
+const COOKIE_NOT_KEPT = 'We couldn\'t keep you signed in. Your browser didn\'t store the sign-in cookie; check the site\'s cookie settings or try again.'
+const SIGN_IN_FAILED = 'We couldn\'t sign you in. Please try again.'
+
+function requestPath(request: FetchError['request']) {
+  const url = typeof request === 'string' ? request : request instanceof Request ? request.url : undefined
+  if (!url) {
+    return undefined
+  }
+  try {
+    return new URL(url, 'http://localhost').pathname.replace(/\/+$/, '')
+  }
+  catch {
+    return undefined
+  }
+}
+
+function signInFailure(error: FetchError) {
+  if (error.status !== 401) {
+    return SIGN_IN_FAILED
+  }
+  return requestPath(error.request)?.endsWith('/login') ? INVALID_CREDENTIALS : COOKIE_NOT_KEPT
+}
+
 export const useLogin = (ops: UseLoginOps = {}) => {
   const $cwa = useCwa()
   const route = useRoute()
@@ -39,7 +63,7 @@ export const useLogin = (ops: UseLoginOps = {}) => {
     error.value = undefined
     const user = await $cwa.auth.signIn(credentials)
     if (user instanceof FetchError) {
-      error.value = user.data?.message || user.statusMessage || 'Unknown/Network Error'
+      error.value = signInFailure(user)
     }
     else {
       navigateTo(getRedirectTarget())

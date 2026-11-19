@@ -67,7 +67,7 @@ onBeforeUnmount(() => {
       :style="outline"
       data-testid="shared-instance-outline"
       title="Also used here"
-      class="cwa:absolute cwa:z-manager-focus cwa:outline-2 cwa:outline-dotted cwa:outline-white/60 cwa:outline-offset-4 cwa:pointer-events-none cwa:rounded-[1px]"
+      class="cwa:absolute cwa:z-manager-focus cwa:outline-1 cwa:outline-solid cwa:outline-white/60 cwa:outline-offset-4 cwa:pointer-events-none cwa:rounded-[1px]"
     />
   </Teleport>
 </template>

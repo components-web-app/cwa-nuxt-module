@@ -1,54 +1,118 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import SearchResource from '#cwa/templates/components/ui/form/SearchResource.vue'
+import { computed } from 'vue'
+import CwaUiButton from '#cwa/templates/components/ui/Button.vue'
+import CwaUiAlert from '#cwa/templates/components/ui/Alert.vue'
+import CwaUiResourceSearch from '#cwa/templates/components/ui/ResourceSearch.vue'
+import RouteSubStatus from '#cwa/templates/components/core/admin/RouteSubStatus.vue'
+import type { CwaResource } from '#cwa/resources/resource-utils'
 
-const props = defineProps<{
-  disableButtons: boolean
+const { path, forwardToPath, form = false, currentRouteIri, removing = false, status, pickedPath } = defineProps<{
+  path: string
+  forwardToPath?: string
+  form?: boolean
   currentRouteIri: string
-  initialIri?: string
+  removing?: boolean
+  status?: string
+  pickedPath?: string
 }>()
+
+const pick = defineModel<string | null | undefined>()
 
 defineEmits<{
-  create: [iri: string]
+  start: []
+  remove: []
 }>()
 
-const forwardIri = ref(props.initialIri ?? '')
+const isSelf = computed(() => !!pick.value && pick.value === currentRouteIri)
 
-const isSelf = computed(() => !!forwardIri.value && forwardIri.value === props.currentRouteIri)
-const canSave = computed(() => !!forwardIri.value && !isSelf.value)
+const labelOf = (resource: CwaResource) => resource.path ?? resource['@id']
 </script>
 
 <template>
-  <div class="cwa:flex cwa:flex-col cwa:gap-y-6">
-    <div class="cwa:flex cwa:flex-col cwa:gap-y-4">
-      <SearchResource
-        v-model="forwardIri"
+  <div
+    data-testid="route-forward"
+    class="cwa:flex cwa:flex-col cwa:gap-stack"
+  >
+    <RouteSubStatus :text="status" />
+    <p class="cwa:m-0 cwa:text-helper cwa:text-fg-muted">
+      Sends visitors from this page's address to another page instead.
+    </p>
+    <template v-if="form">
+      <CwaUiResourceSearch
+        v-model="pick"
+        label="Send visitors to"
         endpoint="/_/routes"
-        property="path"
-        not-nullable
+        :search-params="['search', 'path']"
+        :order="{ path: 'asc' }"
+        noun="routes"
+        width="full"
+        :label-of="labelOf"
+        :info="isSelf ? undefined : 'Any page on this site.'"
+        data-testid="route-forward-search"
       />
-      <p
+      <CwaUiAlert
         v-if="isSelf"
-        class="cwa:text-sm cwa:text-amber-400"
+        tone="danger"
+        title="A route cannot redirect to itself."
+        data-testid="route-forward-self"
       >
-        A route cannot redirect to itself.
-      </p>
+        Choose another page.
+      </CwaUiAlert>
+      <CwaUiAlert
+        v-else-if="pick"
+        tone="warning"
+        title="Visitors will no longer see this page."
+        data-testid="route-forward-warning"
+      >
+        Visitors to <span class="cwa:font-mono">{{ path }}</span> will be sent to <span class="cwa:font-mono">{{ pickedPath ?? 'the page you chose' }}</span>.
+      </CwaUiAlert>
+    </template>
+    <div
+      v-else-if="forwardToPath"
+      class="cwa:flex cwa:flex-col cwa:gap-3"
+    >
       <p
-        v-else-if="forwardIri"
-        class="cwa:text-sm cwa:text-stone-300"
+        data-testid="route-forward-direction"
+        class="cwa:m-0 cwa:text-control cwa:text-fg"
       >
-        Visitors will be automatically forwarded. The page's own content will not be shown directly.
+        <span class="cwa:font-mono">{{ path }}</span><span aria-hidden="true"> → </span><span class="cwa:sr-only"> redirects to </span><span class="cwa:font-mono">{{ forwardToPath }}</span>
       </p>
+      <p class="cwa:m-0 cwa:text-helper cwa:text-fg-muted">
+        Visitors never see this page.
+      </p>
+      <div class="cwa:flex cwa:flex-wrap cwa:gap-actions">
+        <CwaUiButton
+          label="Change"
+          data-edit-forward
+          :disabled="removing"
+          @click="$emit('start')"
+        />
+        <CwaUiButton
+          tone="danger"
+          :label="removing ? 'Removing…' : 'Remove'"
+          :loading="removing"
+          data-remove-forward
+          @click="$emit('remove')"
+        />
+      </div>
     </div>
-    <div class="cwa:flex cwa:justify-start">
-      <CwaUiFormButton
-        data-save-forward
-        color="blue"
-        :disabled="disableButtons || !canSave"
-        @click="$emit('create', forwardIri)"
+    <div
+      v-else
+      class="cwa:flex cwa:flex-col cwa:gap-3"
+    >
+      <p
+        data-testid="route-forward-off"
+        class="cwa:m-0 cwa:text-control cwa:text-fg"
       >
-        Save Forward
-      </CwaUiFormButton>
+        Not redirecting. Visitors to <span class="cwa:font-mono">{{ path }}</span> see this page.
+      </p>
+      <div>
+        <CwaUiButton
+          label="Redirect to another page"
+          data-set-forward
+          @click="$emit('start')"
+        />
+      </div>
     </div>
   </div>
 </template>

@@ -36,6 +36,7 @@ interface DataApiResourceEvent extends DeleteApiResourceEvent {
   data: any
   source?: string
   headers?: Record<string, string>
+  onRequest?: (iri: string, done?: Promise<{ resource?: CwaResource, error?: FetchError<any> }>) => void
 }
 
 export type ApiResourceEvent = DataApiResourceEvent | DeleteApiResourceEvent
@@ -187,7 +188,12 @@ export class ResourcesManager {
       event.endpoint,
       { ...this.requestOptions('POST'), body: event.data },
     ]
-    return this.doResourceRequest(event, args)
+    let error: FetchError<any> | undefined
+    const request = this.doResourceRequest(event, args, undefined, undefined, (failure) => {
+      error = failure
+    })
+    event.onRequest?.(event.endpoint, request.then(resource => ({ resource, error })))
+    return request
   }
 
   private async confirm(action: 'delete' | 'discard', iri?: string) {
@@ -291,6 +297,7 @@ export class ResourcesManager {
       this.storeResource({
         resource: newResource,
       })
+      event.onRequest?.(iri)
       return
     }
 
@@ -323,7 +330,12 @@ export class ResourcesManager {
       }
     }
 
-    const resource = await this.doResourceRequest(event, args, postRequestFn, postSaveFn)
+    let error: FetchError<any> | undefined
+    const request = this.doResourceRequest(event, args, postRequestFn, postSaveFn, (failure) => {
+      error = failure
+    })
+    event.onRequest?.(iri, request.then(resource => ({ resource, error })))
+    const resource = await request
 
     const responseId = resource?.['@id']
     if (responseId && responseId !== iri) {
@@ -347,7 +359,7 @@ export class ResourcesManager {
     }
   }
 
-  private async doResourceRequest(event: ApiResourceEvent, args: [string, RequestOptions], postRequestFn?: (resource?: CwaResource) => void | Promise<void>, postSaveFn?: (resource?: CwaResource) => void | Promise<void>) {
+  private async doResourceRequest(event: ApiResourceEvent, args: [string, RequestOptions], postRequestFn?: (resource?: CwaResource) => void | Promise<void>, postSaveFn?: (resource?: CwaResource) => void | Promise<void>, onError?: (error: FetchError<any>) => void) {
     const source = 'source' in event ? event.source || 'unknown' : 'delete'
     const id = ++this.reqCount.value
     const eventIriOrEndpoint: string = (event.iri || event.endpoint)
@@ -402,6 +414,7 @@ export class ResourcesManager {
       if (error?.statusCode !== 412 || !this.preconditionFailed?.(event, iri, error.data)) {
         this.errorStore.error(event, error)
       }
+      onError?.(error)
     }
     finally {
       unset(this.requestsInProgress, [source, id])

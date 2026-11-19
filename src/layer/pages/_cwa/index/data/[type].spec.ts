@@ -4,13 +4,14 @@ import { ref } from 'vue'
 import { flushPromises, mount } from '@vue/test-utils'
 import { mockNuxtImport } from '@nuxt/test-utils/runtime'
 import DataTypeListPage from './[type].vue'
+import ListFilter from '#cwa/templates/components/core/admin/ListFilter.vue'
 
 const { mockGetApiDocumentation } = vi.hoisted(() => ({
   mockGetApiDocumentation: vi.fn(),
 }))
 
 vi.mock('#cwa-layer/_composables/useDataType', () => ({
-  useDataType: () => ({ pageDataClassName: ref('EventData'), dataType: ref('event_data') }),
+  useDataType: () => ({ pageDataClassName: ref('Events'), dataTypeClassName: ref('EventData'), pageDataConfig: ref({ name: 'Events' }), dataType: ref('event_data') }),
 }))
 vi.mock('#cwa-layer/_composables/useListPage', () => ({
   useListPage: () => ({ goToAdd: vi.fn(), triggerReload: vi.fn(), computedItemLink: vi.fn(() => '/_cwa/data/event_data/x') }),
@@ -21,7 +22,7 @@ vi.mock('#cwa-layer/_composables/useDynamicPageLoader', () => ({
 vi.mock('#cwa-layer/_composables/useDataList', () => ({ useDataList: vi.fn() }))
 
 mockNuxtImport('useCwa', () => () => ({ getApiDocumentation: mockGetApiDocumentation }))
-mockNuxtImport('useCwaResourceRoute', () => () => ({ getInternalResourceLink: vi.fn() }))
+mockNuxtImport('useCwaResourceRoute', () => () => ({ getInternalResourceLink: (iri: string) => ({ name: '_cwa-resource-page', params: { cwaPage0: iri } }) }))
 
 async function setup(item: Record<string, any>) {
   mockGetApiDocumentation.mockResolvedValue({ entrypoint: { event_data: '/event_data' } })
@@ -31,10 +32,13 @@ async function setup(item: Record<string, any>) {
       stubs: {
         ListContent: {
           name: 'ListContent',
-          props: ['fetchUrl', 'searchFields'],
+          props: ['fetchUrl', 'searchFields', 'columns'],
           setup: () => ({ item }),
           template: '<div><slot name="item" :data="item" /></div>',
         },
+        ListRow: false,
+        ListCell: false,
+        PageListStatus: false,
       },
     },
   })
@@ -42,8 +46,8 @@ async function setup(item: Record<string, any>) {
   return wrapper
 }
 
-function statusDotClasses(wrapper: Awaited<ReturnType<typeof setup>>) {
-  return wrapper.find('span.cwa\\:rounded-full').classes()
+function status(wrapper: Awaited<ReturnType<typeof setup>>) {
+  return wrapper.findAll('[role="cell"]')[1]!.text()
 }
 
 describe('/_cwa/data/[type]', () => {
@@ -51,20 +55,41 @@ describe('/_cwa/data/[type]', () => {
     vi.clearAllMocks()
   })
 
-  test('a page data with a route shows the green dot', async () => {
+  test('each row offers Edit, which opens its modal, and View, which goes to the page data on the site', async () => {
+    const wrapper = await setup({ '@id': '/event_data/1', 'title': 'Routed', 'route': null })
+
+    expect(wrapper.get('[data-testid="list-row-edit"]').attributes()).toMatchObject({ 'to': '/_cwa/data/event_data/x', 'aria-label': 'Edit Routed' })
+    expect(wrapper.get('[data-testid="list-row-view"]').attributes('aria-label')).toBe('View Routed')
+    expect(wrapper.findComponent({ name: 'ListContent' }).props('columns').at(-1)).toMatchObject({ label: 'Actions', labelHidden: true })
+  })
+
+  test('the Status column fits the widest status badge, Inherited scheduled with its date (#461)', async () => {
+    const wrapper = await setup({ '@id': '/page_data/1' })
+    const status = wrapper.findComponent({ name: 'ListContent' }).props('columns').find((column: { label: string }) => column.label === 'Status')
+    expect(status.width).toBe('17.5rem')
+  })
+
+  test('a page data with a route shows a loading badge until its route is read', async () => {
     const wrapper = await setup({ '@id': '/event_data/1', 'title': 'Routed', 'route': '/_/routes/r', 'isReachableWithoutRoute': false })
-    expect(statusDotClasses(wrapper)).toContain('cwa:bg-green')
+    expect(status(wrapper)).toBe('Loading status')
+    expect(wrapper.find('[data-testid="page-status-no-route"]').exists()).toBe(false)
   })
 
-  test('a routeless page data public without a route shows the green dot, as it is publicly loadable', async () => {
+  test('a routeless page data public without a route says so, as it is publicly loadable', async () => {
     const wrapper = await setup({ '@id': '/event_data/1', 'title': 'Flagged', 'route': null, 'isReachableWithoutRoute': true })
-    expect(statusDotClasses(wrapper)).toContain('cwa:bg-green')
-    expect(statusDotClasses(wrapper)).not.toContain('cwa:bg-orange')
+    expect(wrapper.find('[data-testid="page-status-public"]').exists()).toBe(true)
+    expect(status(wrapper)).toBe('Public without a route')
   })
 
-  test('a routeless page data not flagged shows the orange dot', async () => {
+  test('a routeless page data not flagged says it has no route', async () => {
     const wrapper = await setup({ '@id': '/event_data/1', 'title': 'Private', 'route': null, 'isReachableWithoutRoute': false })
-    expect(statusDotClasses(wrapper)).toContain('cwa:bg-orange')
-    expect(statusDotClasses(wrapper)).not.toContain('cwa:bg-green')
+    expect(wrapper.find('[data-testid="page-status-no-route"]').exists()).toBe(true)
+    expect(status(wrapper)).toBe('No route')
+  })
+
+  test('the create button is named by one item of the type, never the list\'s plural title (#461)', async () => {
+    const wrapper = await setup({ '@id': '/event_data/1', 'title': 'Private', 'route': null })
+    expect(wrapper.findComponent(ListFilter).props('createNoun')).toBe('event')
+    expect(wrapper.findComponent(ListFilter).props('searchLabel')).toBe('Search events')
   })
 })
