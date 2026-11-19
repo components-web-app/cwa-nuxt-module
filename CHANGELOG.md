@@ -6,6 +6,7 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ### Added
 
+- A field save that fails after you have selected another component, left edit mode or gone to another page raises a toast naming the component and its fields, which stays until you close it: Show me selects the component (going back to its page when it is not on screen), Retry sends the change again and Reset puts the stored value back. It hides while the component is selected, since the bar shows the error, and closes once the field saves ([40d7b6d1](https://github.com/components-web-app/cwa-nuxt-module/commit/40d7b6d14c69bb57a7dbbda072c718a91222c5c9), [#461](https://github.com/components-web-app/cwa-nuxt-module/issues/461)).
 - Enable reordering in the Order tab now does what it says: every component in the group gets a grip handle and wobbles gently (it keeps still when the system asks for reduced motion), and dragging a handle, with a mouse or a finger, moves the component to a new place; the page shows the new order at once and saves it in one request, as Move up and Move down do. A click elsewhere still selects ([d3d8829f](https://github.com/components-web-app/cwa-nuxt-module/commit/d3d8829f7b93181b06586d76704f0d834e23cd27)).
 
 ### Fixed
