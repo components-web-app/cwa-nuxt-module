@@ -279,7 +279,8 @@ import { computed, onMounted, ref, useTemplateRef, watch, watchEffect } from 'vu
 import type { RouteLocationRaw } from 'vue-router'
 import isEqual from 'lodash-es/isEqual'
 import { consola } from 'consola'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+import { followMovedRoute } from '#cwa/admin/moved-route'
 import { navigateTo, useCwa } from '#imports'
 import { componentNames } from '#components'
 import CwaUiDialog from '#cwa/templates/components/ui/Dialog.vue'
@@ -327,6 +328,7 @@ const { dataTypes, dataInstances, loadDataTypes, loadDataInstances, fqcnToEntryp
 const { dynamicPages, loadDynamicPageOptions } = useDynamicPageLoader()
 
 const route = useRoute()
+const router = useRouter()
 const rootIri = computed(() => {
   const param = route.params.iri
   return props.iri ?? ((Array.isArray(param) ? param[0] : param) || undefined)
@@ -527,8 +529,11 @@ const kind = computed(() => {
     : { tone: 'warning' as const, label: 'Not reachable' }
 })
 
-function saveResource(close = false) {
-  return _saveResource(close)
+async function saveResource(close = false) {
+  const moved = !isAdding.value && (['parentPage', 'parentPageData'] as const).some(field => (localResourceData.value?.[field] ?? null) !== (resource.value?.[field] ?? null))
+  const saved = await _saveResource(close)
+  saved && moved && await followMovedRoute($cwa, router)
+  return saved
 }
 
 const isDisplayedPage = computed(() => !!rootIri.value && rootIri.value === $cwa.resources.displayPageIri.value)
