@@ -3,6 +3,7 @@ import { nextTick, reactive, ref } from 'vue'
 import ResourceStackManager from './resource-stack-manager'
 
 vi.mock('#app/nuxt', () => ({ useNuxtApp: () => ({ vueApp: { _container: null } }) }))
+vi.mock('#cwa/templates/components/main/admin/resource-manager/ComponentFocus.vue', () => ({ default: { name: 'ComponentFocus', props: ['iri', 'domElements'], render: () => null } }))
 
 function setup() {
   const displayPageIri = ref<string | undefined>('/_/pages/home')
