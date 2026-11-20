@@ -4,6 +4,10 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+### Fixed
+
+- Going back to a window or tab whose size changed while you were away (DevTools closed, the window resized) puts the selection outline back around the component, instead of where it was ([8a2fc62a](https://github.com/components-web-app/cwa-nuxt-module/commit/8a2fc62ab908d04ebc785a81a9c13ce2df171f11), [#461](https://github.com/components-web-app/cwa-nuxt-module/issues/461)).
+
 ## [2.0.0-alpha.37] - 2026-11-20
 
 ### Fixed
