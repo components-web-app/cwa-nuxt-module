@@ -4,6 +4,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+## [2.0.0-alpha.37] - 2026-11-20
+
 ### Fixed
 
 - Moving to another page while editing (a link's Visit, Back) no longer keeps a component selected from the page left behind: Remove from here on a component shown on both pages deleted its place on the old page, so nothing changed on screen until it was pressed again ([0cf8e898](https://github.com/components-web-app/cwa-nuxt-module/commit/0cf8e89883f23fb10c0d05d63b552218d94536e2), [#461](https://github.com/components-web-app/cwa-nuxt-module/issues/461)).
@@ -339,7 +341,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 - First tagged release of `@cwa/nuxt`; releases are now published from `v*` tags ([7c61b7c](https://github.com/components-web-app/cwa-nuxt-module/commit/7c61b7ce331ec4a0cb8e76951a5de2ff806ed07a))
 
-[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.36...HEAD
+[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.37...HEAD
+[2.0.0-alpha.37]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.36...v2.0.0-alpha.37
 [2.0.0-alpha.36]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.35...v2.0.0-alpha.36
 [2.0.0-alpha.35]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.34...v2.0.0-alpha.35
 [2.0.0-alpha.34]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.33...v2.0.0-alpha.34
