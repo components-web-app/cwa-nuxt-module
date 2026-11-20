@@ -292,9 +292,15 @@ function onPaneKey(e: KeyboardEvent) {
   target.focus()
 }
 
+function redrawWhenShown() {
+  document.visibilityState === 'visible' && $cwa.admin.emitRedraw()
+}
+
 onMounted(() => {
   window.addEventListener('mousedown', mousedownHandler)
   window.addEventListener('resize', $cwa.admin.emitRedraw, false)
+  window.addEventListener('focus', $cwa.admin.emitRedraw)
+  document.addEventListener('visibilitychange', redrawWhenShown)
   document.addEventListener('keydown', onPaneKey)
   watch(() => $cwa.admin.isEditing, (editing) => {
     stopLongPress?.()
@@ -305,6 +311,8 @@ onMounted(() => {
 onBeforeUnmount(() => {
   unregisterBarFields()
   window.removeEventListener('resize', $cwa.admin.emitRedraw)
+  window.removeEventListener('focus', $cwa.admin.emitRedraw)
+  document.removeEventListener('visibilitychange', redrawWhenShown)
   document.removeEventListener('keydown', onPaneKey)
   stopLongPress?.()
   stopLongPress = undefined

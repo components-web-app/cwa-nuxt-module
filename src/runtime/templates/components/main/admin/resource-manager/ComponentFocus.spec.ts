@@ -10,8 +10,6 @@ import type Cwa from '#cwa/cwa'
 import { ResourceTypeFromIri } from '#cwa/resources/resource-utils'
 import { FOCUS_CUTOUT_OFFSET, FOCUS_CUTOUT_RADIUS, focusRadiusAt, saveOutlineStyle } from '#cwa/admin/save-outline'
 
-vi.mock('uuid', () => ({ v4: vi.fn(() => 'mock-reorder-id') }))
-
 const { instanceListenerStops } = vi.hoisted(() => ({ instanceListenerStops: [] as Array<ReturnType<typeof vi.fn>> }))
 
 vi.mock('#cwa/admin/manageable-instances', async (importOriginal) => {
@@ -351,6 +349,49 @@ describe('ComponentFocus', () => {
     })
   })
 
+  describe('returning to the window', () => {
+    function movable() {
+      const rect = { top: 10, left: 20, right: 120, bottom: 60 }
+      const el = { nodeType: 1, getBoundingClientRect: () => ({ width: 0, height: 0, ...rect }) } as unknown as HTMLElement
+      return { el, rect }
+    }
+
+    test('the outline follows a component that moved while the window was away, once it has focus again', async () => {
+      mockCwa()
+      const { el, rect } = movable()
+      const { wrapper } = mountFocus({ els: [el] })
+      Object.assign(rect, { top: 200, bottom: 250 })
+      window.dispatchEvent(new Event('focus'))
+      await nextTick()
+      expect(wrapper.find('[data-testid="focus-outline"]').attributes('style')).toContain('top: 200px')
+      wrapper.unmount()
+    })
+
+    test('the outline follows a component that moved while the tab was hidden, once it is shown again', async () => {
+      mockCwa()
+      const { el, rect } = movable()
+      const { wrapper } = mountFocus({ els: [el] })
+      Object.assign(rect, { top: 300, bottom: 350 })
+      document.dispatchEvent(new Event('visibilitychange'))
+      await nextTick()
+      expect(wrapper.find('[data-testid="focus-outline"]').attributes('style')).toContain('top: 300px')
+      wrapper.unmount()
+    })
+
+    test('stops listening once unmounted', async () => {
+      mockCwa()
+      const { el } = movable()
+      const { wrapper } = mountFocus({ els: [el] })
+      const removeWindow = vi.spyOn(window, 'removeEventListener')
+      const removeDocument = vi.spyOn(document, 'removeEventListener')
+      wrapper.unmount()
+      expect(removeWindow).toHaveBeenCalledWith('focus', expect.any(Function))
+      expect(removeDocument).toHaveBeenCalledWith('visibilitychange', expect.any(Function))
+      removeWindow.mockRestore()
+      removeDocument.mockRestore()
+    })
+  })
+
   describe('event bus wiring', () => {
     test('registers redrawFocus and reorder listeners on mount', () => {
       mockCwa()
@@ -368,7 +409,7 @@ describe('ComponentFocus', () => {
       expect(eventHandlers.reorder).toBeUndefined()
     })
 
-    test('reorder event assigns a new reorderId from uuid', async () => {
+    test('a reorder re-measures the outline', async () => {
       mockCwa()
       const { wrapper } = mountFocus()
       eventHandlers.reorder()
