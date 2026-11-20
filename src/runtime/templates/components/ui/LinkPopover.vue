@@ -116,6 +116,11 @@ function remove() {
   open.value = false
 }
 
+function keepForAnchor(event: CustomEvent<{ originalEvent: Event }>) {
+  const target = event.detail.originalEvent.target
+  at instanceof HTMLElement && target instanceof Node && at.contains(target) && event.preventDefault()
+}
+
 function onUrlKeydown(event: KeyboardEvent) {
   if (event.key === 'Enter' && !event.isComposing) {
     event.preventDefault()
@@ -140,6 +145,7 @@ function onUrlKeydown(event: KeyboardEvent) {
         :class="['cwa:z-context cwa:flex cwa:w-[min(22rem,calc(100vw-1rem))] cwa:flex-col cwa:gap-3 cwa:bg-surface-menu cwa:p-3 cwa:text-fg cwa:shadow-popover cwa:outline-1 cwa:outline-transparent', popoverOpen]"
         @open-auto-focus="onOpenAutoFocus"
         @focus-outside.prevent
+        @pointer-down-outside="keepForAnchor"
       >
         <div data-testid="link-popover-page">
           <CwaUiResourceSearch

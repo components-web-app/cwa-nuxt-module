@@ -9,7 +9,7 @@ import type { ResourceStackLevel, StackPoint } from './resource-stack'
 import { useAnnounce } from './field-context'
 import { opensAsSheet } from './sheet-media'
 
-const { levels, selected, at, label = 'Select a resource', limit = 5, select, minWidth, avoid, returnTo, keyboard = false } = defineProps<{
+const { levels, selected, at, label = 'Select a resource', limit = 5, select, minWidth, avoid, returnTo, trigger, keyboard = false } = defineProps<{
   levels: ResourceStackLevel[]
   at: HTMLElement | StackPoint
   select: (key: string) => unknown
@@ -19,6 +19,7 @@ const { levels, selected, at, label = 'Select a resource', limit = 5, select, mi
   minWidth?: number
   avoid?: HTMLElement | null
   returnTo?: HTMLElement | null
+  trigger?: HTMLElement | null
   keyboard?: boolean
 }>()
 
@@ -265,7 +266,8 @@ function onTreeClick(event: MouseEvent) {
 
 function onPointerDownOutside(event: CustomEvent<{ originalEvent: PointerEvent }>) {
   const { originalEvent } = event.detail
-  if (busy.value || originalEvent.button === 2 || (at instanceof HTMLElement && originalEvent.target instanceof Node && at.contains(originalEvent.target))) {
+  const target = originalEvent.target instanceof Node ? originalEvent.target : null
+  if (busy.value || originalEvent.button === 2 || (at instanceof HTMLElement && at.contains(target)) || trigger?.contains(target)) {
     event.preventDefault()
   }
 }

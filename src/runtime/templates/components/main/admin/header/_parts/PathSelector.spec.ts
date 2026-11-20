@@ -204,6 +204,21 @@ describe('PathSelector (#461)', () => {
     expect(selector.getAttribute('aria-expanded')).toBe('false')
   })
 
+  test('a second click on the selector\'s ▾, beside the name the stack opens over, closes the stack too', async () => {
+    const { selector } = await mountSelector()
+    await openStack(selector)
+    await new Promise(resolve => setTimeout(resolve))
+    const chevron = selector.querySelector<HTMLElement>('[aria-hidden="true"]')!
+
+    chevron.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, pointerType: 'mouse' }))
+    selector.focus()
+    await flushPromises()
+    chevron.click()
+    await flushPromises()
+    await vi.waitFor(() => expect(document.querySelector('[data-testid="resource-stack"]')).toBeNull())
+    expect(selector.getAttribute('aria-expanded')).toBe('false')
+  })
+
   test('closes when another page is shown', async () => {
     const { selector, cwa } = await mountSelector()
     await openStack(selector)

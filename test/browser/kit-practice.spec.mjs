@@ -80,6 +80,14 @@ for (const path of ['bar', 'page']) {
     await expect(chrome.getByText(/not saved/).first()).toBeVisible()
     await expect(page.getByText('Oops! There was a problem.')).toHaveCount(0)
     await expect(page.getByText('Edit the shared layout?')).toHaveCount(0)
+    if (path === 'page') {
+      const barStatus = page.getByTestId('bar-summary')
+      await barStatus.click()
+      await expect(page.getByTestId('bar-summary-popover')).toContainText('not saved')
+      await barStatus.click()
+      await expect(page.getByTestId('bar-summary-popover')).toHaveCount(0)
+      await expect(barStatus).toHaveAttribute('aria-expanded', 'false')
+    }
   })
 }
 

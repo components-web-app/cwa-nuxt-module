@@ -136,6 +136,23 @@ describe('CwaUiLinkPopover (#461)', () => {
     outside.remove()
   })
 
+  test('a press on the element it is anchored to leaves it open, so that element\'s click can close it; a press elsewhere closes it', async () => {
+    const trigger = document.createElement('button')
+    trigger.append(document.createElement('span'))
+    document.body.append(trigger)
+    const { onUpdateOpen } = await openPopover({ at: trigger })
+    await new Promise(resolve => setTimeout(resolve))
+
+    trigger.firstElementChild!.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, pointerType: 'mouse' }))
+    await flushPromises()
+    expect(onUpdateOpen).not.toHaveBeenCalled()
+
+    document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, pointerType: 'mouse' }))
+    await flushPromises()
+    expect(onUpdateOpen).toHaveBeenCalledWith(false)
+    trigger.remove()
+  })
+
   test('has no axe violations', async () => {
     const { panel } = await openPopover({ href: '/kitchens' })
 

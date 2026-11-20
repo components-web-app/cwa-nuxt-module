@@ -211,6 +211,10 @@ function act() {
     return
   }
   if (badge.value.kind) {
+    if (shownError.value) {
+      errorField.value = undefined
+      return
+    }
     const field = firstToFix()
     if (field && !openError(field)) {
       emit('show', field)
@@ -234,7 +238,7 @@ watch(isOpen, (opened) => {
   opened ? stack.claim() : stack.release()
 })
 
-function keepForOwnButton(event: CustomEvent<{ originalEvent: PointerEvent }>) {
+function keepForOwnButton(event: CustomEvent<{ originalEvent: Event }>) {
   const target = event.detail.originalEvent.target
   target instanceof Node && button.value?.contains(target) && event.preventDefault()
 }
@@ -313,6 +317,7 @@ function reset() {
         :aria-label="`${shownError.editor.label ?? shownError.field}: not saved`"
         data-testid="bar-summary-popover"
         :class="['cwa:z-context cwa:w-max cwa:max-w-[min(20rem,calc(100vw-1rem))] cwa:bg-surface-menu cwa:p-popover cwa:text-control cwa:text-fg cwa:shadow-popover cwa:outline-none', popoverOpen]"
+        @interact-outside="keepForOwnButton"
         @open-auto-focus="onOpenAutoFocus"
         @close-auto-focus="onCloseAutoFocus"
       >
@@ -343,7 +348,7 @@ function reset() {
         :aria-describedby="status.about ? aboutId : undefined"
         data-testid="bar-summary-popover"
         :class="infoPopover"
-        @pointer-down-outside="keepForOwnButton"
+        @interact-outside="keepForOwnButton"
         @close-auto-focus="onCloseAutoFocus"
       >
         <div
