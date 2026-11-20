@@ -10,6 +10,7 @@ import { formatDateTime } from '#cwa/resources/date-time-input'
 function mountManage(options: {
   modelValue?: string
   parentRoutePrefix?: string | null
+  lockedPrefix?: string
   currentPath?: string
   liveAt?: string | null
   effectiveLiveAt?: string | null
@@ -30,6 +31,7 @@ function mountManage(options: {
       noun: options.noun,
       currentPath: options.currentPath ?? '/conference/programme',
       parentRoutePrefix: options.parentRoutePrefix !== undefined ? options.parentRoutePrefix : '/conference',
+      lockedPrefix: options.lockedPrefix,
       modelValue: options.modelValue ?? '/conference/programme',
       liveAt: options.liveAt,
       routePublication: { liveAt: options.liveAt, effectiveLiveAt: options.effectiveLiveAt },
@@ -166,6 +168,44 @@ describe('RoutesTabManage', () => {
       const wrapper = mountManage({ modelValue: '/my-page', parentRoutePrefix: null })
       expect(getPrefixInput(wrapper).exists()).toBe(false)
       expect(getSuffixInput(wrapper).props('label')).toBe('Path')
+    })
+  })
+
+  describe('a page data class\'s fixed prefix (api-components-bundle#601)', () => {
+    function locked(wrapper: ReturnType<typeof mountManage>) {
+      return wrapper.find('[data-testid="route-locked-prefix"]')
+    }
+
+    test('stands locked in front of the path, with no prefix to choose, and the rest is typed after it', async () => {
+      const wrapper = mountManage({ currentPath: '', modelValue: '', parentRoutePrefix: '/conference', lockedPrefix: '/conference/updates' })
+      expect(getPrefixInput(wrapper).exists()).toBe(false)
+      expect(locked(wrapper).text()).toBe('/conference/updates')
+      expect(getSuffixInput(wrapper).props('label')).toBe('Rest of the path after /conference/updates')
+
+      await getSuffixInput(wrapper).vm.$emit('update:modelValue', 'gates-open')
+      expect(wrapper.emitted('update:modelValue')?.at(-1)).toEqual(['/conference/updates/gates-open'])
+    })
+
+    test('the recommended path fills only the rest after it', async () => {
+      const wrapper = mountManage({ currentPath: '', modelValue: '', parentRoutePrefix: null, lockedPrefix: '/announcements', recommendedPath: '/announcements/summer-fair' })
+      await wrapper.findComponent(RouteRecommendation).vm.$emit('use')
+      expect(getSuffixInput(wrapper).props('modelValue')).toBe('/summer-fair')
+      expect(wrapper.emitted('update:modelValue')?.at(-1)).toEqual(['/announcements/summer-fair'])
+    })
+
+    test('a prefix that arrives once the field is open keeps what was typed after it', async () => {
+      const wrapper = mountManage({ currentPath: '', modelValue: '', parentRoutePrefix: null })
+      await getSuffixInput(wrapper).vm.$emit('update:modelValue', 'summer-fair')
+      await wrapper.setProps({ lockedPrefix: '/announcements' })
+      expect(locked(wrapper).text()).toBe('/announcements')
+      expect(getSuffixInput(wrapper).props('modelValue')).toBe('summer-fair')
+      expect(wrapper.emitted('update:modelValue')?.at(-1)).toEqual(['/announcements/summer-fair'])
+    })
+
+    test('without one the field is as before', () => {
+      const wrapper = mountManage({ currentPath: '', modelValue: '', parentRoutePrefix: '/conference' })
+      expect(locked(wrapper).exists()).toBe(false)
+      expect(getPrefixInput(wrapper).props('modelValue')).toBe('/conference')
     })
   })
 

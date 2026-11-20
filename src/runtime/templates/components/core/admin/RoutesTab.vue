@@ -79,6 +79,7 @@
         v-model:awaiting-date="awaitingDate"
         :current-path="hasRoute ? resource?.path ?? '' : ''"
         :parent-route-prefix="parentRoutePrefix"
+        :locked-prefix="hasRoute ? undefined : lockedPrefix"
         :route-publication="routePublication"
         :recommended-path="recommendedPath"
         :recommended-from="pageResource.title || undefined"
@@ -200,7 +201,7 @@ const view = useTemplateRef<InstanceType<typeof RoutesTabView>>('view')
 const subBody = useTemplateRef<HTMLElement>('subBody')
 const failureAlert = useTemplateRef<InstanceType<typeof CwaUiAlert>>('failureAlert')
 
-const { parentIri, parentName, parentRoutePrefix, parentHasNoRoute, recommendedPath } = useRouteDefaults(() => props.pageResource)
+const { parentIri, parentName, parentRoutePrefix, parentHasNoRoute, recommendedPath, lockedPrefix } = useRouteDefaults(() => props.pageResource)
 
 const redirectIri = computed<string | undefined>(() => {
   const r = resource.value?.redirect

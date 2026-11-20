@@ -207,6 +207,7 @@
         v-model:awaiting-date="newRouteAwaitingDate"
         current-path=""
         :parent-route-prefix="newRouteDefaults.parentRoutePrefix.value"
+        :locked-prefix="newRouteDefaults.lockedPrefix.value"
         :recommended-path="newRouteDefaults.recommendedPath.value"
         :recommended-from="localResourceData?.title || undefined"
         :path-error="form.fieldErrors.route"
@@ -469,7 +470,7 @@ const { isAdding, isLoading, loadFailed, isUpdating, localResourceData, resource
   savedTitle: () => `${createNoun.value.charAt(0).toUpperCase()}${createNoun.value.slice(1)} saved`,
 })
 
-const newRouteDefaults = useRouteDefaults(() => localResourceData.value)
+const newRouteDefaults = useRouteDefaults(() => localResourceData.value, () => props.resourceType)
 
 watch([newRoutePath, newRouteLiveAt], ([path, liveAt]) => {
   const local = localResourceData.value

@@ -14,9 +14,10 @@ import { getRouteOwnLiveState, isRouteGatedByAncestor, routeReachableAt } from '
 import { formatDateTime } from '#cwa/resources/date-time-input'
 import { normaliseRoutePath, routePathProblem } from '#cwa/resources/route-path'
 
-const { currentPath, parentRoutePrefix, routePublication, recommendedPath, recommendedFrom, childPaths = [], redirectCount = 0, pathError, noun = 'page', deleting = false, optional = false } = defineProps<{
+const { currentPath, parentRoutePrefix, lockedPrefix, routePublication, recommendedPath, recommendedFrom, childPaths = [], redirectCount = 0, pathError, noun = 'page', deleting = false, optional = false } = defineProps<{
   currentPath: string
   parentRoutePrefix?: string | null
+  lockedPrefix?: string
   routePublication?: CwaRouteLiveAt
   recommendedPath?: string
   recommendedFrom?: string
@@ -52,7 +53,7 @@ function splitPath(fullPath: string, prefix: string | null | undefined): { prefi
   return { prefix: '/', suffix: fullPath }
 }
 
-const initial = splitPath(pathModel.value, parentRoutePrefix)
+const initial = splitPath(pathModel.value, lockedPrefix ?? parentRoutePrefix)
 const localPrefix = ref(initial.prefix)
 const localSuffix = ref(initial.suffix)
 
@@ -71,8 +72,12 @@ watch([localPrefix, localSuffix], ([prefix, suffix]) => {
   }
 })
 
+watch(() => lockedPrefix, (prefix) => {
+  prefix && (localPrefix.value = prefix)
+})
+
 watch(() => parentRoutePrefix, (newPrefix) => {
-  if (newPrefix && localPrefix.value === '/') {
+  if (newPrefix && !lockedPrefix && localPrefix.value === '/') {
     const split = splitPath(pathModel.value, newPrefix)
     localPrefix.value = split.prefix
     localSuffix.value = split.suffix
@@ -81,7 +86,7 @@ watch(() => parentRoutePrefix, (newPrefix) => {
 
 const prefixOptions = computed(() => {
   const options = [{ label: '/ (root)', value: '/' }]
-  if (parentRoutePrefix && parentRoutePrefix !== '/') {
+  if (!lockedPrefix && parentRoutePrefix && parentRoutePrefix !== '/') {
     options.push({ label: `${parentRoutePrefix}/`, value: parentRoutePrefix })
   }
   return options
@@ -113,7 +118,7 @@ function useRecommended() {
   if (!recommendedPath) {
     return
   }
-  const split = splitPath(recommendedPath, parentRoutePrefix)
+  const split = splitPath(recommendedPath, lockedPrefix ?? parentRoutePrefix)
   localPrefix.value = split.prefix
   localSuffix.value = split.suffix
 }
@@ -225,9 +230,15 @@ const deleteDescription = computed(() => {
               data-testid="route-prefix"
               class="cwa:shrink-0 cwa:@max-[25rem]:w-full"
             />
+            <span
+              v-if="lockedPrefix"
+              aria-hidden="true"
+              data-testid="route-locked-prefix"
+              class="cwa:flex cwa:h-control cwa:shrink-0 cwa:items-center cwa:pe-1 cwa:text-fg-muted cwa:pointer-coarse:h-hit"
+            >{{ lockedPrefix }}</span>
             <CwaUiInput
               v-model="suffixModel"
-              :label="prefixOptions.length > 1 ? 'Rest of the path' : 'Path'"
+              :label="lockedPrefix ? `Rest of the path after ${lockedPrefix}` : prefixOptions.length > 1 ? 'Rest of the path' : 'Path'"
               label-hidden
               width="full"
               :invalid="pathInvalid"

@@ -1170,6 +1170,21 @@ describe('PageResourceAdminModal creating from a list (#461)', () => {
       expect(manage.props('recommendedFrom')).toBe('Our team')
     })
 
+    test('a new page data whose class has a routePrefix gets it locked in front of its route (api-components-bundle#601)', async () => {
+      const { wrapper } = setup({
+        routeIri: 'add',
+        isAdding: true,
+        resourceType: 'AnnouncementData',
+        local: { title: 'Summer Fair' },
+        apiDocumentation: Promise.resolve({ entrypoint: {}, docs: { supportedClass: [{ title: 'AnnouncementData', routePrefix: '/announcements' }] } }),
+      })
+      await flushPromises()
+      const manage = wrapper.findComponent(RoutesTabManage)
+
+      expect(manage.props('lockedPrefix')).toBe('/announcements')
+      expect(manage.props('recommendedPath')).toBe('/announcements/summer-fair')
+    })
+
     test('once created, the Routes tab is the full one again', async () => {
       const { wrapper, handlers } = setup({ routeIri: 'add', isAdding: true })
 

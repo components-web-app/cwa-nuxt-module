@@ -55,6 +55,7 @@ function mockCwa(overrides: Record<string, any> = {}, store: Record<string, any>
     resourcesManager: { createResource: vi.fn().mockResolvedValue({ '@id': '/_/routes//new' }), deleteResource: vi.fn().mockResolvedValue(undefined), updateResource: vi.fn().mockResolvedValue({ '@id': ROUTE_IRI }) },
     fetchResource: vi.fn(),
     fetch,
+    getApiDocumentation: vi.fn().mockResolvedValue(undefined),
     ...overrides,
   }
   // @ts-expect-error
@@ -214,6 +215,28 @@ describe('RoutesTab', () => {
       mountTab({ parentPage: '/_/pages/conference-uuid' })
       await flushPromises()
       expect(cwa.fetchResource).toHaveBeenCalledWith({ path: '/_/pages/conference-uuid', shallowFetch: true })
+    })
+  })
+
+  describe('a page data class\'s fixed prefix (api-components-bundle#601)', () => {
+    const prefixed = { getApiDocumentation: vi.fn().mockResolvedValue({ docs: { supportedClass: [{ title: 'AnnouncementData', routePrefix: '/announcements' }] } }) }
+
+    test('locks the prefix in front of a new route for page data with none', async () => {
+      setupItemPage({ adding: true })
+      mockCwa(prefixed)
+      const wrapper = mountTab({ '@id': '/_/page_data/announcement_datas/a1', '@type': 'AnnouncementData', 'title': 'Summer Fair', 'route': null })
+      await flushPromises()
+      await openSub(wrapper, 'route')
+      expect(wrapper.findComponent(RoutesTabManage).props('lockedPrefix')).toBe('/announcements')
+    })
+
+    test('leaves an existing route\'s path as it is', async () => {
+      setupItemPage({ path: '/summer-fair' })
+      mockCwa(prefixed)
+      const wrapper = mountTab({ '@id': '/_/page_data/announcement_datas/a1', '@type': 'AnnouncementData', 'title': 'Summer Fair' })
+      await flushPromises()
+      await openSub(wrapper, 'route')
+      expect(wrapper.findComponent(RoutesTabManage).props('lockedPrefix')).toBeUndefined()
     })
   })
 
