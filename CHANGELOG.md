@@ -6,6 +6,7 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ### Fixed
 
+- A second click on a popover's trigger closes it everywhere: the bar status's error popover (an on-page title that failed to save) no longer stays open, the header's path selector closes from anywhere on its button, its ▾ included, and the Link popover's button toggles it ([d8bf7d76](https://github.com/components-web-app/cwa-nuxt-module/commit/d8bf7d7654ca6683414c5b2a67db52a0ab63b16b), [#461](https://github.com/components-web-app/cwa-nuxt-module/issues/461)).
 - Clicking the manager bar's status (Draft, Live, …) again closes its explanation instead of opening it again ([6c12ee08](https://github.com/components-web-app/cwa-nuxt-module/commit/6c12ee089319c468e0b4cf7f847176db4bf6e64e), [#461](https://github.com/components-web-app/cwa-nuxt-module/issues/461)).
 
 ## [2.0.0-alpha.36] - 2026-11-19
