@@ -2288,3 +2288,59 @@ test('77. a navigation in edit mode drops a selection that left with the page, s
   await settle()
   assert(await t.api.status(t.seed.positions.aSource) === 200, 'The position on the page left behind was deleted')
 })
+
+async function seedNestedPages(t, children) {
+  const name = key => `e2e-${t.rehearsal.token}-${key}`
+  const pages = {}
+  const paths = {}
+  for (const [key, { parent, path }] of Object.entries(children)) {
+    const page = await t.api.create('/_/pages', { reference: name(key), title: `E2E ${key}`, layout: t.seed.iris.layout, uiComponent: 'CwaPagePrimaryPageTemplate', isTemplate: false, ...(parent && { parentPage: pages[parent] }) })
+    pages[key] = page['@id']
+    const group = await t.api.create('/_/component_groups', { reference: `primary_${page['@id']}`, location: page['@id'], pages: [page['@id']] })
+    const text = (await t.api.create('/component/html_contents', { html: `<p>E2E ${key} text</p>`, publishedAt: 'now' }))['@id']
+    await t.api.create('/_/component_positions', { componentGroup: group['@id'], component: text })
+    if (path) {
+      paths[key] = `/${name(path)}`
+      await t.api.create('/_/routes', { path: paths[key], name: name(key), page: page['@id'] })
+    }
+  }
+  t.rehearsal.writes.length = 0
+  return { pages, paths, name }
+}
+
+test('78. a child page\'s new route starts with its parent\'s path, locked in front of the path, and is saved under it (api-components-bundle#601)', async ({ cwa: t }) => {
+  const { page, base, settle } = t
+  const { pages, paths } = await seedNestedPages(t, { parent: { path: 'parent' }, child: { parent: 'parent' } })
+  await page.goto(`${base}/_cwa/pages/${encodeURIComponent(pages.child)}`)
+  await page.getByRole('tab', { name: 'Routes', exact: true }).click()
+  await page.getByTestId('routes-add').click()
+  await page.getByTestId('route-locked-prefix').waitFor()
+  assert(await page.getByTestId('route-locked-prefix').innerText() === `${paths.parent}/`, `Locked ${await page.getByTestId('route-locked-prefix').innerText()}`)
+  await page.getByRole('textbox', { name: `Rest of the path after ${paths.parent}/`, exact: true }).fill('our-team')
+  await settle()
+  await page.getByRole('button', { name: 'Add route', exact: true }).click()
+  const post = await eventually(() => t.rehearsal.writes.find(w => w.method === 'POST' && w.path.endsWith('/_/routes')), 'No route was POSTed')
+  assert(post.body.path === `${paths.parent}/our-team`, `POSTed the path ${post.body.path}`)
+  await page.getByTestId('routes-path').filter({ hasText: `${paths.parent}/our-team` }).waitFor()
+})
+
+test('79. moving the page on screen to another parent page moves its route under the new parent, replaces the address with it, and leaves the old path redirecting to it (api-components-bundle#603)', async ({ cwa: t }) => {
+  const { page, settle } = t
+  const { pages, paths, name } = await seedNestedPages(t, { blog: { path: 'blog' }, news: { path: 'news' }, post: { parent: 'blog', path: 'blog/my-post' } })
+  await page.goto(`${t.base}${paths.post}`)
+  await page.getByText('E2E post text', { exact: true }).waitFor()
+  await settle()
+  await page.getByTestId('page-settings').click()
+  await page.getByRole('combobox', { name: 'Parent page', exact: true }).click()
+  await page.getByRole('option', { name: name('news'), exact: true }).click()
+  await settle()
+  await page.getByTestId('dialog-save').click()
+  const patch = await eventually(() => t.rehearsal.writes.find(w => w.method === 'PATCH' && w.path.endsWith(pages.post)), 'The page was not PATCHed')
+  assert(patch.body.parentPage === pages.news, `PATCHed ${JSON.stringify(patch.body)}`)
+  const moved = `${paths.news}/my-post`
+  await eventually(() => new URL(page.url()).pathname === moved, `Expected ${moved}, at ${page.url()}`)
+  await settle()
+  await page.getByText('E2E post text', { exact: true }).waitFor()
+  const old = await t.api.get(`/_/routes/${paths.post}`)
+  assert(old.redirectPath === moved, `The old path redirects to ${old.redirectPath}`)
+})

@@ -1,4 +1,4 @@
-import { computed, ref, watch, watchEffect } from 'vue'
+import { computed, ref, watch } from 'vue'
 import slugify from 'slugify'
 import { useCwa } from '#cwa/composables/cwa'
 
@@ -49,10 +49,9 @@ export function useRouteDefaults(page: () => Record<string, any> | undefined, cl
     return {}
   })
 
-  watchEffect(() => {
-    const iri = ancestry.value.unloaded
+  watch(() => ancestry.value.unloaded, (iri) => {
     iri && $cwa.fetchResource({ path: iri, shallowFetch: true })
-  })
+  }, { immediate: true })
 
   const startPath = computed(() => {
     const path = ancestry.value.routedPath
