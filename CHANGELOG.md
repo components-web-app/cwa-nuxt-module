@@ -4,15 +4,22 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+## [2.0.0-alpha.39] - 2026-11-20
+
+### Fixed
+
+- Opening a nested page's dialog while its parent page isn't loaded, as from the Pages list, no longer freezes the browser tab. This came in with alpha.38's route start. [8af54939](https://github.com/components-web-app/cwa-nuxt-module/commit/8af5493cefa26c1ef1f6a4b7c266e93208fc0d06)
+- The loading shimmer repeats seamlessly, with no jump at the start of each sweep. [5daa5555](https://github.com/components-web-app/cwa-nuxt-module/commit/5daa55552d681e7903aa843a5873d363d566b563)
+
 ## [2.0.0-alpha.38] - 2026-11-20
 
 ### Changed
 
-- **Breaking:** a route's path now starts with its nearest routed ancestor's path (unrouted parents are skipped), then its page data class's fixed `routePrefix` if it declares one (api-components-bundle#601), shown as a locked part in front of the path for new and existing routes alike; the Path prefix choice is gone, as the API now refuses a child path outside its parent's. It needs a bundle release with #601 ([492247f7](https://github.com/components-web-app/cwa-nuxt-module/commit/492247f79fcd365c480ad18fad2349abf8724c12), [14e014bc](https://github.com/components-web-app/cwa-nuxt-module/commit/14e014bca05b56b26bf035bf0868a9b36610c89d), [api-components-bundle#601](https://github.com/components-web-app/api-components-bundle/issues/601)).
+- **Breaking:** a route's path now starts with its nearest routed ancestor's path (unrouted parents are skipped), then its page data class's fixed `routePrefix` if it declares one (api-components-bundle#601), shown as a locked part in front of the path for new and existing routes alike; the Path prefix choice is gone, as the API now refuses a child path outside its parent's. It needs api-components-bundle 2.0.0-alpha.44 ([492247f7](https://github.com/components-web-app/cwa-nuxt-module/commit/492247f79fcd365c480ad18fad2349abf8724c12), [14e014bc](https://github.com/components-web-app/cwa-nuxt-module/commit/14e014bca05b56b26bf035bf0868a9b36610c89d), [api-components-bundle#601](https://github.com/components-web-app/api-components-bundle/issues/601)).
 
 ### Added
 
-- Moving a page or page data to another parent (api-components-bundle#603, which rewrites its route and its descendants' routes) replaces the address bar with the new path when the page on screen moved with it, rather than leaving the old path, now a redirect ([7738f0e7](https://github.com/components-web-app/cwa-nuxt-module/commit/7738f0e702db2185c6daa2a82cad20458a53e992), [api-components-bundle#603](https://github.com/components-web-app/api-components-bundle/issues/603)).
+- Moving a page or page data to another parent (api-components-bundle#603, which rewrites its route and its descendants' routes) replaces the address bar with the new path when the page on screen moved with it, rather than leaving the old path, now a redirect. It needs api-components-bundle 2.0.0-alpha.44 ([7738f0e7](https://github.com/components-web-app/cwa-nuxt-module/commit/7738f0e702db2185c6daa2a82cad20458a53e992), [api-components-bundle#603](https://github.com/components-web-app/api-components-bundle/issues/603)).
 
 ### Fixed
 
@@ -355,7 +362,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 - First tagged release of `@cwa/nuxt`; releases are now published from `v*` tags ([7c61b7c](https://github.com/components-web-app/cwa-nuxt-module/commit/7c61b7ce331ec4a0cb8e76951a5de2ff806ed07a))
 
-[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.38...HEAD
+[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.39...HEAD
+[2.0.0-alpha.39]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.38...v2.0.0-alpha.39
 [2.0.0-alpha.38]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.37...v2.0.0-alpha.38
 [2.0.0-alpha.37]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.36...v2.0.0-alpha.37
 [2.0.0-alpha.36]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.35...v2.0.0-alpha.36

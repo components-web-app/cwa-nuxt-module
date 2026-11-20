@@ -115,4 +115,18 @@ describe('useRouteDefaults, a route starts with its nearest routed ancestor\'s p
     expect(result.lockedPrefix.value).toBeUndefined()
     expect(result.recommendedPath.value).toBe('/summer-fair')
   })
+
+  test('an unloaded parent is fetched once, although the fetch reads the store at once and writes it later, as the real fetch does', async () => {
+    const { fetchResource, store } = mockCwa([])
+    store.fetches = 0
+    fetchResource.mockImplementation(async () => {
+      const fetches = store.fetches
+      await Promise.resolve()
+      fetches < 5 && (store.fetches = fetches + 1)
+    })
+    await defaults({ title: 'Child', parentPage: '/_/pages/parent' }, 'Page')
+    await flushPromises()
+    expect(fetchResource).toHaveBeenCalledTimes(1)
+    expect(fetchResource).toHaveBeenCalledWith({ path: '/_/pages/parent', shallowFetch: true })
+  })
 })
