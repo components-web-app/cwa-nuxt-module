@@ -61,6 +61,7 @@ function mockCwa(extra: Record<string, any> = {}) {
     resourcesManager: { createResource, updateResource, deleteResource: vi.fn(), addError: vi.fn() },
     fetchResource: vi.fn(),
     fetch: vi.fn(() => ({ response: Promise.resolve({ _data: { children: [] } }) })),
+    getApiDocumentation: vi.fn().mockResolvedValue(undefined),
   }))
   return { createResource, updateResource }
 }

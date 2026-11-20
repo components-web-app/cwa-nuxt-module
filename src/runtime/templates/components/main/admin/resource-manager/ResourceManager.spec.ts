@@ -1251,6 +1251,22 @@ describe('ResourceManager', () => {
       wrapper.unmount()
       expect(removeSpy).toHaveBeenCalledWith('resize', cwa.admin.emitRedraw)
     })
+
+    test('returning to the window redraws the outlines, while mounted', async () => {
+      const cwa = makeCwa()
+      cwaState.cwa = cwa
+      const wrapper = await mountManager()
+      vi.mocked(cwa.admin.emitRedraw).mockClear()
+
+      window.dispatchEvent(new Event('focus'))
+      document.dispatchEvent(new Event('visibilitychange'))
+      expect(cwa.admin.emitRedraw).toHaveBeenCalledTimes(2)
+
+      wrapper.unmount()
+      window.dispatchEvent(new Event('focus'))
+      document.dispatchEvent(new Event('visibilitychange'))
+      expect(cwa.admin.emitRedraw).toHaveBeenCalledTimes(2)
+    })
   })
   describe('long press (#461)', () => {
     test('a long touch press on the page is a right-click while the manager is mounted, and not after', async () => {

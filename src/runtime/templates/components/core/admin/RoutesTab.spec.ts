@@ -55,6 +55,7 @@ function mockCwa(overrides: Record<string, any> = {}, store: Record<string, any>
     resourcesManager: { createResource: vi.fn().mockResolvedValue({ '@id': '/_/routes//new' }), deleteResource: vi.fn().mockResolvedValue(undefined), updateResource: vi.fn().mockResolvedValue({ '@id': ROUTE_IRI }) },
     fetchResource: vi.fn(),
     fetch,
+    getApiDocumentation: vi.fn().mockResolvedValue(undefined),
     ...overrides,
   }
   // @ts-expect-error
@@ -177,13 +178,13 @@ describe('RoutesTab', () => {
   })
 
   describe('the parent route', () => {
-    test('passes the parent route path as the prefix and names the parent', async () => {
+    test('locks the parent route\'s path in front of the path', async () => {
       setupItemPage()
       mockCwa({}, { '/_/pages/conference-uuid': { data: { route: '/_/routes//conference', reference: 'Conference' } } })
       const wrapper = mountTab({ parentPage: '/_/pages/conference-uuid' })
       await openSub(wrapper, 'route')
 
-      expect(wrapper.findComponent(RoutesTabManage).props('parentRoutePrefix')).toBe('/conference')
+      expect(wrapper.findComponent(RoutesTabManage).props('lockedPrefix')).toBe('/conference')
       expect(wrapper.findComponent(RoutesTabView).props('parentHasNoRoute')).toBe(false)
     })
 
@@ -214,6 +215,41 @@ describe('RoutesTab', () => {
       mountTab({ parentPage: '/_/pages/conference-uuid' })
       await flushPromises()
       expect(cwa.fetchResource).toHaveBeenCalledWith({ path: '/_/pages/conference-uuid', shallowFetch: true })
+    })
+  })
+
+  describe('a page data class\'s fixed prefix (api-components-bundle#601)', () => {
+    const prefixed = { getApiDocumentation: vi.fn().mockResolvedValue({ docs: { supportedClass: [{ title: 'AnnouncementData', routePrefix: '/announcements' }] } }) }
+
+    test('locks the prefix in front of a new route for page data with none', async () => {
+      setupItemPage({ adding: true })
+      mockCwa(prefixed)
+      const wrapper = mountTab({ '@id': '/_/page_data/announcement_datas/a1', '@type': 'AnnouncementData', 'title': 'Summer Fair', 'route': null })
+      await flushPromises()
+      await openSub(wrapper, 'route')
+      expect(wrapper.findComponent(RoutesTabManage).props('lockedPrefix')).toBe('/announcements')
+    })
+
+    test.each([
+      ['a new route linked to the page', { adding: true }, { route: null }],
+      ['a changed path', {}, {}],
+    ])('the API refusing %s for not starting with it shows on the path field', async (_, itemOptions, pageOverrides) => {
+      const itemPage = setupItemPage(itemOptions)
+      itemPage.form.fieldErrors.path = 'This path must start with /announcements/.'
+      mockCwa(prefixed)
+      const wrapper = mountTab({ '@id': '/_/page_data/announcement_datas/a1', '@type': 'AnnouncementData', 'title': 'Summer Fair', ...pageOverrides })
+      await flushPromises()
+      await openSub(wrapper, 'route')
+      expect(wrapper.findComponent(RoutesTabManage).props('pathError')).toBe('This path must start with /announcements/.')
+    })
+
+    test('locks it in front of an existing route\'s path too, since a path change is checked as well', async () => {
+      setupItemPage({ path: '/announcements/summer-fair' })
+      mockCwa(prefixed)
+      const wrapper = mountTab({ '@id': '/_/page_data/announcement_datas/a1', '@type': 'AnnouncementData', 'title': 'Summer Fair' })
+      await flushPromises()
+      await openSub(wrapper, 'route')
+      expect(wrapper.findComponent(RoutesTabManage).props('lockedPrefix')).toBe('/announcements')
     })
   })
 
@@ -1254,32 +1290,6 @@ describe('RoutesTab', () => {
       expect(confirmMock.mock.calls[0]![0].description).toBe('Your changes to Route path will be lost. Changes on the other tabs are kept.')
       expect(dialog().querySelector('[data-testid="sub-view"]')).toBeNull()
       expect(itemPage.localResourceData.value.path).toBe('/conference/programme')
-    })
-
-    test('Escape in an open Select closes the Select and stays in the sub-view', async () => {
-      setupItemPage()
-      mockCwa({}, { '/_/pages/conference-uuid': { data: { route: '/_/routes//conference' } } })
-      const form = fakeDialogForm({ reference: 'Programme' })
-      const Host = defineComponent({
-        setup() {
-          return () => h(CwaUiDialog, { title: 'Programme', tabs: [{ key: 'routes', label: 'Routes' }], form }, {
-            routes: () => h(RoutesTab, { pageResource: { '@id': '/_/pages/programme-uuid', '@type': 'Page', 'title': 'My Programme', 'route': ROUTE_IRI, 'parentPage': '/_/pages/conference-uuid' } as any }),
-          })
-        },
-      })
-      const wrapper = mount(Host, { attachTo: document.body, global: { stubs: { ResourceSearch: true } } })
-      await flushPromises()
-      await openSub(wrapper as unknown as Wrapper, 'route')
-      const trigger = dialog().querySelector<HTMLElement>('[data-testid="select-trigger"]')!
-      trigger.focus()
-      trigger.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
-      await flushPromises()
-      expect(trigger.getAttribute('aria-expanded')).toBe('true')
-
-      trigger.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
-      await flushPromises()
-
-      expect(dialog().querySelector('[data-testid="sub-view"]')).not.toBeNull()
     })
   })
 })

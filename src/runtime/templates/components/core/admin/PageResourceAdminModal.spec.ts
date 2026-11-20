@@ -57,6 +57,8 @@ vi.mock('#cwa-layer/_composables/useParentPageLoader', () => ({ useParentPageLoa
 vi.mock('#cwa-layer/_composables/useParentPageDataLoader', () => ({ useParentPageDataLoader: mockUseParentPageDataLoader }))
 vi.mock('#cwa-layer/_composables/useDataType', () => ({ useDataType: mockUseDataType }))
 vi.mock('#cwa/composables/cwa-confirm', () => ({ useCwaConfirm: () => confirmMock }))
+const followMovedRoute = vi.hoisted(() => vi.fn())
+vi.mock('#cwa/admin/moved-route', () => ({ followMovedRoute }))
 const realtime = vi.hoisted(() => ({ peers: vi.fn((_iri: string): unknown[] => []) }))
 vi.mock('#cwa/resources/realtime-view', () => ({
   realtimeView: () => ({ load: async () => ({ peers: realtime.peers }) }),
@@ -316,6 +318,33 @@ describe('PageResourceAdminModal on the kit dialog (#461)', () => {
       { label: 'Details', key: 'details', fields: { reference: 'Reference', layout: 'Layout', uiComponent: 'Page UI', uiClassNames: 'Style', title: 'SEO page title', metaDescription: 'SEO meta description', parentPage: 'Parent page', parentPageData: 'Parent data' } },
       { label: 'Routes', key: 'routes', fields: { route: 'Route path' } },
     ])
+  })
+
+  describe('a move to another parent, whose route the API rewrites (api-components-bundle#603)', () => {
+    test.each([
+      ['parent page', { parentPage: '/_/pages/blog' }, { parentPage: '/_/pages/news' }],
+      ['parent data', { parentPageData: '/page_data/a' }, { parentPageData: '/page_data/b' }],
+      ['parent added', {}, { parentPage: '/_/pages/news' }],
+    ])('a saved change of %s follows the path on screen to where it moved', async (_, stored, local) => {
+      const { wrapper, handlers } = setup({ resource: { '@id': '/_/pages/uuid-self', '@type': 'Page', 'reference': 'My Page', ...stored }, local: { parentPage: null, parentPageData: null, ...stored, ...local } })
+      handlers.saveResource.mockResolvedValue({ '@id': '/_/pages/uuid-self' })
+      await wrapper.findComponent(DialogStub).vm.$emit('save')
+      await flushPromises()
+      expect(followMovedRoute).toHaveBeenCalledTimes(1)
+    })
+
+    test('a save that changes no parent, or fails, leaves the address alone', async () => {
+      const { wrapper, handlers } = setup({ resource: { '@id': '/_/pages/uuid-self', '@type': 'Page', 'reference': 'My Page', 'parentPage': '/_/pages/blog' }, local: { parentPage: '/_/pages/blog', reference: 'Renamed' } })
+      handlers.saveResource.mockResolvedValue({ '@id': '/_/pages/uuid-self' })
+      await wrapper.findComponent(DialogStub).vm.$emit('save')
+      await flushPromises()
+
+      handlers.localResourceData.value!.parentPage = '/_/pages/news'
+      handlers.saveResource.mockResolvedValue(undefined)
+      await wrapper.findComponent(DialogStub).vm.$emit('save')
+      await flushPromises()
+      expect(followMovedRoute).not.toHaveBeenCalled()
+    })
   })
 
   test('Save on the dialog saves without closing, and nothing is saved as you type', async () => {
@@ -1165,9 +1194,24 @@ describe('PageResourceAdminModal creating from a list (#461)', () => {
       await flushPromises()
       const manage = wrapper.findComponent(RoutesTabManage)
 
-      expect(manage.props('parentRoutePrefix')).toBe('/about')
+      expect(manage.props('lockedPrefix')).toBe('/about')
       expect(manage.props('recommendedPath')).toBe('/about/our-team')
       expect(manage.props('recommendedFrom')).toBe('Our team')
+    })
+
+    test('a new page data whose class has a routePrefix gets it locked in front of its route (api-components-bundle#601)', async () => {
+      const { wrapper } = setup({
+        routeIri: 'add',
+        isAdding: true,
+        resourceType: 'AnnouncementData',
+        local: { title: 'Summer Fair' },
+        apiDocumentation: Promise.resolve({ entrypoint: {}, docs: { supportedClass: [{ title: 'AnnouncementData', routePrefix: '/announcements' }] } }),
+      })
+      await flushPromises()
+      const manage = wrapper.findComponent(RoutesTabManage)
+
+      expect(manage.props('lockedPrefix')).toBe('/announcements')
+      expect(manage.props('recommendedPath')).toBe('/announcements/summer-fair')
     })
 
     test('once created, the Routes tab is the full one again', async () => {

@@ -2,7 +2,6 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, toRef, useTemplateRef, watch } from 'vue'
 import type { ComputedRef, Ref } from 'vue'
 import { useElementSize, useWindowSize } from '@vueuse/core'
-import { v4 as uuidv4 } from 'uuid'
 import { useCwa } from '#imports'
 import { CwaResourceTypes, getPublishedResourceState, getResourceTypeFromIri } from '#cwa/resources/resource-utils'
 import { FOCUS_CUTOUT_OFFSET, FOCUS_CUTOUT_RADIUS, focusRadiusAt, saveOutlineStyle, toneBehind, useSaveOutline } from '#cwa/admin/save-outline'
@@ -19,7 +18,7 @@ const iri = toRef(props, 'iri')
 const canvas = useTemplateRef<HTMLCanvasElement | undefined>('canvas')
 const windowSize = useWindowSize()
 const elementSizeInstances = ref<ReturnType<typeof useElementSize>[]>([])
-const reorderId = ref<string>()
+const measured = ref(0)
 const manageableInstances = shallowRef<typeof import('#cwa/admin/manageable-instances')>()
 const instancesVersion = ref(0)
 let isUnmounted = false
@@ -99,7 +98,7 @@ function boundsOf(elements: HTMLElement[]): FocusPosition {
       height: windowSize.height.value,
     },
     totalWidthAndHeight: totalWidthAndHeight.value,
-    reorderId: reorderId.value,
+    measured: measured.value,
   }
 
   for (const domElement of elements) {
@@ -203,13 +202,19 @@ function drawRoundedRect(ctx: CanvasRenderingContext2D, x: number, y: number, wi
   ctx.arcTo(x, y, x, y + radius, radius)
 }
 
-function assignReorderId() {
-  reorderId.value = uuidv4()
+function remeasure() {
+  measured.value++
+}
+
+function remeasureWhenShown() {
+  document.visibilityState === 'visible' && remeasure()
 }
 
 onMounted(() => {
   $cwa.admin.eventBus.on('redrawFocus', redraw)
-  $cwa.admin.eventBus.on('reorder', assignReorderId)
+  $cwa.admin.eventBus.on('reorder', remeasure)
+  window.addEventListener('focus', remeasure)
+  document.addEventListener('visibilitychange', remeasureWhenShown)
   watch([totalWidthAndHeight, position, otherPositions], $cwa.admin.emitRedraw)
   watch(canvas, newCanvas => newCanvas && redraw())
   watch(() => resource.value?.data, async () => {
@@ -222,7 +227,9 @@ onBeforeUnmount(() => {
   isUnmounted = true
   stopInstances?.()
   $cwa.admin.eventBus.off('redrawFocus', redraw)
-  $cwa.admin.eventBus.off('reorder', assignReorderId)
+  $cwa.admin.eventBus.off('reorder', remeasure)
+  window.removeEventListener('focus', remeasure)
+  document.removeEventListener('visibilitychange', remeasureWhenShown)
 })
 
 defineExpose({
