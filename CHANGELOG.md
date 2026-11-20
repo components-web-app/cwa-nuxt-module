@@ -4,6 +4,10 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+### Added
+
+- A new route for page data whose class declares a fixed `routePrefix` (api-components-bundle#601) starts with it, after the parent's route, as a locked part in front of the path; the recommended path goes under it. It needs a bundle release with #601 ([492247f7](https://github.com/components-web-app/cwa-nuxt-module/commit/492247f79fcd365c480ad18fad2349abf8724c12), [api-components-bundle#601](https://github.com/components-web-app/api-components-bundle/issues/601)).
+
 ### Fixed
 
 - Going back to a window or tab whose size changed while you were away (DevTools closed, the window resized) puts the selection outline back around the component, instead of where it was ([8a2fc62a](https://github.com/components-web-app/cwa-nuxt-module/commit/8a2fc62ab908d04ebc785a81a9c13ce2df171f11), [#461](https://github.com/components-web-app/cwa-nuxt-module/issues/461)).
