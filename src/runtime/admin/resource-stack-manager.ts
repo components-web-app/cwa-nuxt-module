@@ -4,7 +4,7 @@ import type { ComponentUi, ManagerTab } from '#cwa/types'
 import { useNuxtApp } from '#imports'
 import { consola as logger } from 'consola'
 import type { App, ComponentPublicInstance, ComputedRef, Ref, ShallowRef } from 'vue'
-import { computed, createApp, nextTick, ref, shallowRef, watch } from 'vue'
+import { computed, createApp, nextTick, ref, shallowRef, unref, watch } from 'vue'
 import type { AdminStore, CwaAdminStoreInterface } from '../storage/stores/admin/admin-store'
 import type { CwaResourcesStoreInterface, ResourcesStore } from '../storage/stores/resources/resources-store'
 import type { ManageableResourceOps } from './manageable-resource'
@@ -72,6 +72,18 @@ export default class ResourceStackManager {
     watch(this.currentIri, this.listenCurrentIri.bind(this))
     watch(this.currentStackItem, this.handleCurrentStackItemChange.bind(this))
     watch(this.showManager, newValue => !newValue && this.removeFocusComponent())
+    watch(() => this.resources.displayPageIri?.value, () => nextTick(() => this.dropDetachedSelection()))
+  }
+
+  private dropDetachedSelection() {
+    const detached = this.currentResourceStack.value.some((item) => {
+      const elements = unref(item.domElements)
+      return elements.length > 0 && elements.every(element => !element.isConnected)
+    })
+    if (detached) {
+      this.completeStack({ clickTarget: window }, false)
+      this.showManager.value = false
+    }
   }
 
   private async handleCurrentStackItemChange(currentStackItem: ResourceStackItem | undefined) {
