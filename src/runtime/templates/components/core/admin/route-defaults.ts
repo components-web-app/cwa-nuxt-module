@@ -30,19 +30,35 @@ export function useRouteDefaults(page: () => Record<string, any> | undefined, cl
   const parentIri = computed(() => page()?.parentPage || page()?.parentPageData || undefined)
   const parentResource = computed(() => parentIri.value ? $cwa.resources.getResource(parentIri.value).value : null)
   const parentName = computed(() => parentResource.value?.data?.reference || parentResource.value?.data?.title || undefined)
+  const parentHasNoRoute = computed(() => !!parentIri.value && !!parentResource.value?.data && !parentResource.value.data.route)
 
-  watchEffect(() => {
-    const iri = parentIri.value
-    if (iri && !parentResource.value?.data) {
-      $cwa.fetchResource({ path: iri, shallowFetch: true })
+  const ancestry = computed(() => {
+    const seen = new Set<string>()
+    let iri: string | undefined = parentIri.value
+    while (iri && !seen.has(iri)) {
+      seen.add(iri)
+      const data = $cwa.resources.getResource(iri).value?.data
+      if (!data) {
+        return { unloaded: iri }
+      }
+      if (data.route) {
+        return { routedPath: pathOfRouteIri(data.route) }
+      }
+      iri = data.parentPage || data.parentPageData || undefined
     }
+    return {}
   })
 
-  const parentRoutePrefix = computed(() => pathOfRouteIri(parentResource.value?.data?.route) ?? null)
-  const parentHasNoRoute = computed(() => !!parentIri.value && !parentRoutePrefix.value)
+  watchEffect(() => {
+    const iri = ancestry.value.unloaded
+    iri && $cwa.fetchResource({ path: iri, shallowFetch: true })
+  })
 
-  const startPath = computed(() => parentRoutePrefix.value && parentRoutePrefix.value !== '/' ? parentRoutePrefix.value : '')
-  const lockedPrefix = computed(() => classRoutePrefix.value ? startPath.value + classRoutePrefix.value : undefined)
+  const startPath = computed(() => {
+    const path = ancestry.value.routedPath
+    return path && path !== '/' ? path : ''
+  })
+  const lockedPrefix = computed(() => (startPath.value + (classRoutePrefix.value ?? '')) || undefined)
 
   const recommendedPath = computed(() => {
     const title = page()?.title
@@ -50,8 +66,8 @@ export function useRouteDefaults(page: () => Record<string, any> | undefined, cl
       return undefined
     }
     const suffix = '/' + slugify(title.toLowerCase(), { strict: true })
-    return (lockedPrefix.value ?? startPath.value) + suffix
+    return (lockedPrefix.value ?? '') + suffix
   })
 
-  return { parentIri, parentName, parentRoutePrefix, parentHasNoRoute, recommendedPath, lockedPrefix }
+  return { parentIri, parentName, parentHasNoRoute, recommendedPath, lockedPrefix }
 }

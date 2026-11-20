@@ -206,7 +206,6 @@
         v-model:live-at="newRouteLiveAt"
         v-model:awaiting-date="newRouteAwaitingDate"
         current-path=""
-        :parent-route-prefix="newRouteDefaults.parentRoutePrefix.value"
         :locked-prefix="newRouteDefaults.lockedPrefix.value"
         :recommended-path="newRouteDefaults.recommendedPath.value"
         :recommended-from="localResourceData?.title || undefined"

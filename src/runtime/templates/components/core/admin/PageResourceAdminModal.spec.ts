@@ -1165,7 +1165,7 @@ describe('PageResourceAdminModal creating from a list (#461)', () => {
       await flushPromises()
       const manage = wrapper.findComponent(RoutesTabManage)
 
-      expect(manage.props('parentRoutePrefix')).toBe('/about')
+      expect(manage.props('lockedPrefix')).toBe('/about')
       expect(manage.props('recommendedPath')).toBe('/about/our-team')
       expect(manage.props('recommendedFrom')).toBe('Our team')
     })

@@ -4,13 +4,11 @@ import { mount } from '@vue/test-utils'
 import RoutesTabManage from './RoutesTabManage.vue'
 import RouteRecommendation from './RouteRecommendation.vue'
 import CwaUiInput from '#cwa/templates/components/ui/Input.vue'
-import CwaUiSelect from '#cwa/templates/components/ui/Select.vue'
 import { formatDateTime } from '#cwa/resources/date-time-input'
 
 function mountManage(options: {
   modelValue?: string
-  parentRoutePrefix?: string | null
-  lockedPrefix?: string
+  lockedPrefix?: string | null
   currentPath?: string
   liveAt?: string | null
   effectiveLiveAt?: string | null
@@ -30,8 +28,7 @@ function mountManage(options: {
       optional: options.optional,
       noun: options.noun,
       currentPath: options.currentPath ?? '/conference/programme',
-      parentRoutePrefix: options.parentRoutePrefix !== undefined ? options.parentRoutePrefix : '/conference',
-      lockedPrefix: options.lockedPrefix,
+      lockedPrefix: options.lockedPrefix !== undefined ? options.lockedPrefix ?? undefined : '/conference',
       modelValue: options.modelValue ?? '/conference/programme',
       liveAt: options.liveAt,
       routePublication: { liveAt: options.liveAt, effectiveLiveAt: options.effectiveLiveAt },
@@ -49,103 +46,89 @@ function getLiveAtInput(wrapper: ReturnType<typeof mountManage>) {
   return wrapper.findComponent('[data-live-at]')
 }
 
-function getPrefixInput(wrapper: ReturnType<typeof mountManage>) {
-  return wrapper.findComponent(CwaUiSelect)
-}
-
 function getSuffixInput(wrapper: ReturnType<typeof mountManage>) {
   return wrapper.findComponent(CwaUiInput)
 }
 
 describe('RoutesTabManage', () => {
-  describe('prefix/suffix initialisation', () => {
-    test('initialises prefix from parentRoutePrefix and suffix from remainder when path starts with prefix', () => {
-      const wrapper = mountManage({ modelValue: '/conference/programme', parentRoutePrefix: '/conference' })
-      expect(getPrefixInput(wrapper).props('modelValue')).toBe('/conference')
-      expect(getSuffixInput(wrapper).props('modelValue')).toBe('/programme')
+  describe('the start a route must have (api-components-bundle#601)', () => {
+    function locked(wrapper: ReturnType<typeof mountManage>) {
+      return wrapper.find('[data-testid="route-locked-prefix"]')
+    }
+
+    test('stands locked in front of the path, and only the rest after it is typed', async () => {
+      const wrapper = mountManage({ currentPath: '', modelValue: '', lockedPrefix: '/conference/updates' })
+      expect(locked(wrapper).text()).toBe('/conference/updates/')
+      expect(getSuffixInput(wrapper).props('label')).toBe('Rest of the path after /conference/updates/')
+      expect(getSuffixInput(wrapper).props('modelValue')).toBe('')
+
+      await getSuffixInput(wrapper).vm.$emit('update:modelValue', 'gates-open')
+      expect(wrapper.emitted('update:modelValue')?.at(-1)).toEqual(['/conference/updates/gates-open'])
     })
 
-    test('resets prefix to "/" and uses full path as suffix when path does not start with parentRoutePrefix', () => {
-      const wrapper = mountManage({ modelValue: '/standalone-page', parentRoutePrefix: '/conference' })
-      expect(getPrefixInput(wrapper).props('modelValue')).toBe('/')
-      expect(getSuffixInput(wrapper).props('modelValue')).toBe('/standalone-page')
+    test('an existing route under it shows only the rest, and is not changed until something is typed', () => {
+      const wrapper = mountManage({ modelValue: '/conference/programme', lockedPrefix: '/conference' })
+      expect(getSuffixInput(wrapper).props('modelValue')).toBe('programme')
+      expect(wrapper.emitted('update:modelValue')).toBeUndefined()
     })
 
-    test('uses "/" as prefix and full path as suffix when no parentRoutePrefix', () => {
-      const wrapper = mountManage({ modelValue: '/my-page', parentRoutePrefix: null })
-      expect(getPrefixInput(wrapper).exists()).toBe(false)
+    test('an older route outside it keeps its whole path after the lock, so editing it makes it valid', async () => {
+      const wrapper = mountManage({ modelValue: '/standalone-page', lockedPrefix: '/conference' })
+      expect(getSuffixInput(wrapper).props('modelValue')).toBe('standalone-page')
+      expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+
+      await getSuffixInput(wrapper).vm.$emit('update:modelValue', 'standalone-pages')
+      expect(wrapper.emitted('update:modelValue')?.at(-1)).toEqual(['/conference/standalone-pages'])
+    })
+
+    test.each([
+      ['a leading slash', '/new-page', '/conference/new-page'],
+      ['no slash', 'no-slash', '/conference/no-slash'],
+      ['spaces either side (#209)', ' /new-page ', '/conference/new-page'],
+    ])('the rest typed with %s goes after it', async (_, typed, path) => {
+      const wrapper = mountManage({ modelValue: '/conference/programme', lockedPrefix: '/conference' })
+      await getSuffixInput(wrapper).vm.$emit('update:modelValue', typed)
+      expect(wrapper.emitted('update:modelValue')).toEqual([[path]])
+    })
+
+    test('the recommended path fills only the rest after it', async () => {
+      const wrapper = mountManage({ currentPath: '', modelValue: '', lockedPrefix: '/announcements', recommendedPath: '/announcements/summer-fair' })
+      await wrapper.findComponent(RouteRecommendation).vm.$emit('use')
+      expect(getSuffixInput(wrapper).props('modelValue')).toBe('summer-fair')
+      expect(wrapper.emitted('update:modelValue')?.at(-1)).toEqual(['/announcements/summer-fair'])
+    })
+
+    test('one that arrives once the field is open goes in front of what was typed', async () => {
+      const wrapper = mountManage({ currentPath: '', modelValue: '', lockedPrefix: null })
+      await getSuffixInput(wrapper).vm.$emit('update:modelValue', 'summer-fair')
+      await wrapper.setProps({ lockedPrefix: '/announcements' })
+      expect(locked(wrapper).text()).toBe('/announcements/')
+      expect(getSuffixInput(wrapper).props('modelValue')).toBe('summer-fair')
+      expect(wrapper.emitted('update:modelValue')?.at(-1)).toEqual(['/announcements/summer-fair'])
+    })
+
+    test('one that arrives for an existing route only splits the field, never changing the path', async () => {
+      const wrapper = mountManage({ modelValue: '/conference/programme', lockedPrefix: null })
+      expect(getSuffixInput(wrapper).props('modelValue')).toBe('/conference/programme')
+      await wrapper.setProps({ lockedPrefix: '/conference' })
+      expect(getSuffixInput(wrapper).props('modelValue')).toBe('programme')
+      expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+    })
+
+    test('without one the whole path is typed, with its leading slash', async () => {
+      const wrapper = mountManage({ modelValue: '/my-page', lockedPrefix: null })
+      expect(locked(wrapper).exists()).toBe(false)
+      expect(getSuffixInput(wrapper).props('label')).toBe('Path')
       expect(getSuffixInput(wrapper).props('modelValue')).toBe('/my-page')
-    })
-
-    test('defaults prefix to parentRoutePrefix when path is empty (creating a new route) (#230)', () => {
-      const wrapper = mountManage({ modelValue: '', parentRoutePrefix: '/conference' })
-      expect(getPrefixInput(wrapper).props('modelValue')).toBe('/conference')
-      expect(getSuffixInput(wrapper).props('modelValue')).toBe('')
-    })
-
-    test('updates prefix to parentRoutePrefix when it loads asynchronously and path is empty (#230)', async () => {
-      const wrapper = mountManage({ modelValue: '', parentRoutePrefix: null })
-      expect(getPrefixInput(wrapper).exists()).toBe(false)
-      await wrapper.setProps({ parentRoutePrefix: '/conference' })
-      expect(getPrefixInput(wrapper).props('modelValue')).toBe('/conference')
-      expect(getSuffixInput(wrapper).props('modelValue')).toBe('')
-    })
-  })
-
-  describe('path assembly', () => {
-    test('emits prefix + suffix when suffix changes', async () => {
-      const wrapper = mountManage({ modelValue: '/conference/programme', parentRoutePrefix: '/conference' })
-      await getSuffixInput(wrapper).vm.$emit('update:modelValue', '/new-page')
-      expect(wrapper.emitted('update:modelValue')).toEqual([['/conference/new-page']])
-    })
-
-    test('emits newPrefix + suffix when prefix changes', async () => {
-      const wrapper = mountManage({ modelValue: '/conference/programme', parentRoutePrefix: '/conference' })
-      await getPrefixInput(wrapper).vm.$emit('update:modelValue', '/events')
-      expect(wrapper.emitted('update:modelValue')).toEqual([['/events/programme']])
-    })
-
-    test('emits just the suffix when prefix is "/"', async () => {
-      const wrapper = mountManage({ modelValue: '/my-page', parentRoutePrefix: null })
-      await getSuffixInput(wrapper).vm.$emit('update:modelValue', '/new-page')
-      expect(wrapper.emitted('update:modelValue')).toEqual([['/new-page']])
-    })
-
-    test('normalises missing leading slash on suffix when prefix is not "/"', async () => {
-      const wrapper = mountManage({ modelValue: '/conference/programme', parentRoutePrefix: '/conference' })
-      await getSuffixInput(wrapper).vm.$emit('update:modelValue', 'no-slash')
-      expect(wrapper.emitted('update:modelValue')).toEqual([['/conference/no-slash']])
-    })
-
-    test('normalises missing leading slash on suffix when prefix is "/"', async () => {
-      const wrapper = mountManage({ modelValue: '/my-page', parentRoutePrefix: null })
-      await getSuffixInput(wrapper).vm.$emit('update:modelValue', 'no-slash')
-      expect(wrapper.emitted('update:modelValue')).toEqual([['/no-slash']])
-    })
-
-    test('trims leading/trailing spaces from suffix before assembling path (#209)', async () => {
-      const wrapper = mountManage({ modelValue: '/conference/programme', parentRoutePrefix: '/conference' })
-      await getSuffixInput(wrapper).vm.$emit('update:modelValue', ' /new-page ')
-      expect(wrapper.emitted('update:modelValue')).toEqual([['/conference/new-page']])
-    })
-
-    test('trims leading space from suffix when prefix is "/" (#209)', async () => {
-      const wrapper = mountManage({ modelValue: '/my-page', parentRoutePrefix: null })
-      await getSuffixInput(wrapper).vm.$emit('update:modelValue', ' /journal')
+      await getSuffixInput(wrapper).vm.$emit('update:modelValue', ' journal')
       expect(wrapper.emitted('update:modelValue')).toEqual([['/journal']])
     })
   })
 
   describe('the recommendation', () => {
-    test('offers the recommended path when the path differs, and Use this fills the prefix and the rest', async () => {
+    test('offers the recommended path when the path differs', () => {
       const wrapper = mountManage({ modelValue: '/conference/programme', recommendedPath: '/conference/my-programme' })
       expect(wrapper.findComponent(RouteRecommendation).props('path')).toBe('/conference/my-programme')
-
-      await wrapper.findComponent(RouteRecommendation).vm.$emit('use')
-
-      expect(getPrefixInput(wrapper).props('modelValue')).toBe('/conference')
-      expect(getSuffixInput(wrapper).props('modelValue')).toBe('/my-programme')
-      expect(wrapper.emitted('update:modelValue')?.at(-1)).toEqual(['/conference/my-programme'])
     })
 
     test('names the page title the recommendation is based on', () => {
@@ -154,7 +137,7 @@ describe('RoutesTabManage', () => {
     })
 
     test('never recommends a path for the route at /, the homepage', () => {
-      const wrapper = mountManage({ currentPath: '/', modelValue: '/', parentRoutePrefix: null, recommendedPath: '/welcome-to-cwa' })
+      const wrapper = mountManage({ currentPath: '/', modelValue: '/', lockedPrefix: null, recommendedPath: '/welcome-to-cwa' })
       expect(wrapper.findComponent(RouteRecommendation).exists()).toBe(false)
     })
 
@@ -162,50 +145,6 @@ describe('RoutesTabManage', () => {
       const wrapper = mountManage({ modelValue: '/conference/programme', recommendedPath: '/conference/programme' })
       expect(wrapper.findComponent(RouteRecommendation).exists()).toBe(false)
       expect(getSuffixInput(wrapper).props('description')).toBe('This is the recommended path.')
-    })
-
-    test('shows no prefix choice when there is no parent route', () => {
-      const wrapper = mountManage({ modelValue: '/my-page', parentRoutePrefix: null })
-      expect(getPrefixInput(wrapper).exists()).toBe(false)
-      expect(getSuffixInput(wrapper).props('label')).toBe('Path')
-    })
-  })
-
-  describe('a page data class\'s fixed prefix (api-components-bundle#601)', () => {
-    function locked(wrapper: ReturnType<typeof mountManage>) {
-      return wrapper.find('[data-testid="route-locked-prefix"]')
-    }
-
-    test('stands locked in front of the path, with no prefix to choose, and the rest is typed after it', async () => {
-      const wrapper = mountManage({ currentPath: '', modelValue: '', parentRoutePrefix: '/conference', lockedPrefix: '/conference/updates' })
-      expect(getPrefixInput(wrapper).exists()).toBe(false)
-      expect(locked(wrapper).text()).toBe('/conference/updates')
-      expect(getSuffixInput(wrapper).props('label')).toBe('Rest of the path after /conference/updates')
-
-      await getSuffixInput(wrapper).vm.$emit('update:modelValue', 'gates-open')
-      expect(wrapper.emitted('update:modelValue')?.at(-1)).toEqual(['/conference/updates/gates-open'])
-    })
-
-    test('the recommended path fills only the rest after it', async () => {
-      const wrapper = mountManage({ currentPath: '', modelValue: '', parentRoutePrefix: null, lockedPrefix: '/announcements', recommendedPath: '/announcements/summer-fair' })
-      await wrapper.findComponent(RouteRecommendation).vm.$emit('use')
-      expect(getSuffixInput(wrapper).props('modelValue')).toBe('/summer-fair')
-      expect(wrapper.emitted('update:modelValue')?.at(-1)).toEqual(['/announcements/summer-fair'])
-    })
-
-    test('a prefix that arrives once the field is open keeps what was typed after it', async () => {
-      const wrapper = mountManage({ currentPath: '', modelValue: '', parentRoutePrefix: null })
-      await getSuffixInput(wrapper).vm.$emit('update:modelValue', 'summer-fair')
-      await wrapper.setProps({ lockedPrefix: '/announcements' })
-      expect(locked(wrapper).text()).toBe('/announcements')
-      expect(getSuffixInput(wrapper).props('modelValue')).toBe('summer-fair')
-      expect(wrapper.emitted('update:modelValue')?.at(-1)).toEqual(['/announcements/summer-fair'])
-    })
-
-    test('without one the field is as before', () => {
-      const wrapper = mountManage({ currentPath: '', modelValue: '', parentRoutePrefix: '/conference' })
-      expect(locked(wrapper).exists()).toBe(false)
-      expect(getPrefixInput(wrapper).props('modelValue')).toBe('/conference')
     })
   })
 
@@ -233,8 +172,8 @@ describe('RoutesTabManage', () => {
     test.each([
       ['/ (root)', null, ''],
       ['a parent route', '/conference', '/conference'],
-    ])('a new route with an empty path under %s asks for one, and has no path yet', async (_, parentRoutePrefix, modelValue) => {
-      const wrapper = mountManage({ currentPath: '', modelValue, parentRoutePrefix })
+    ])('a new route with an empty path under %s asks for one, and has no path yet', async (_, lockedPrefix, modelValue) => {
+      const wrapper = mountManage({ currentPath: '', modelValue, lockedPrefix })
       expect(wrapper.find('[data-testid="route-go-live-line"]').text()).toBe('Enter a path.')
       await getSuffixInput(wrapper).vm.$emit('update:modelValue', 'talks')
       await getSuffixInput(wrapper).vm.$emit('update:modelValue', '  ')
@@ -243,14 +182,14 @@ describe('RoutesTabManage', () => {
     })
 
     test('an optional new route with no path says the page is created without one, and still says where visitors reach it once typed', async () => {
-      const wrapper = mountManage({ currentPath: '', modelValue: '', parentRoutePrefix: null, optional: true, noun: 'page' })
+      const wrapper = mountManage({ currentPath: '', modelValue: '', lockedPrefix: null, optional: true, noun: 'page' })
       expect(wrapper.find('[data-testid="route-go-live-line"]').text()).toBe('Leave the path empty to create the page without a route.')
       await getSuffixInput(wrapper).vm.$emit('update:modelValue', 'about')
       expect(wrapper.find('[data-testid="route-go-live-line"]').text()).toBe('Visitors will reach this page at /about.')
     })
 
     test('typing / is the homepage path', async () => {
-      const wrapper = mountManage({ currentPath: '', modelValue: '', parentRoutePrefix: null })
+      const wrapper = mountManage({ currentPath: '', modelValue: '', lockedPrefix: null })
       await getSuffixInput(wrapper).vm.$emit('update:modelValue', '/')
       expect(wrapper.emitted('update:modelValue')).toEqual([['/']])
       expect(wrapper.find('[data-testid="route-go-live-line"]').text()).toBe('Visitors will reach this page at /.')
@@ -259,8 +198,8 @@ describe('RoutesTabManage', () => {
     test.each([
       ['/ (root)', null, '', 'spring  sale ', '/spring-sale'],
       ['a parent route', '/conference', '/conference', 'spring sale', '/conference/spring-sale'],
-    ])('spaces typed under %s become one hyphen each run in the path and its hint as they are typed, and in the field once it is left, so the caret never jumps', async (_, parentRoutePrefix, modelValue, typed, path) => {
-      const wrapper = mountManage({ currentPath: '', modelValue, parentRoutePrefix })
+    ])('spaces typed under %s become one hyphen each run in the path and its hint as they are typed, and in the field once it is left, so the caret never jumps', async (_, lockedPrefix, modelValue, typed, path) => {
+      const wrapper = mountManage({ currentPath: '', modelValue, lockedPrefix })
       await getSuffixInput(wrapper).vm.$emit('update:modelValue', typed)
       expect(wrapper.emitted('update:modelValue')!.at(-1)).toEqual([path])
       expect(wrapper.find('[data-testid="route-go-live-line"]').text()).toBe(`Visitors will reach this page at ${path}.`)
@@ -273,7 +212,7 @@ describe('RoutesTabManage', () => {
     })
 
     test.each(['spring?sale', 'spring#sale'])('“%s” is refused as it is typed, and the API\'s own error still wins', async (typed) => {
-      const wrapper = mountManage({ currentPath: '', modelValue: '', parentRoutePrefix: null })
+      const wrapper = mountManage({ currentPath: '', modelValue: '', lockedPrefix: null })
       await getSuffixInput(wrapper).vm.$emit('update:modelValue', typed)
       expect(getSuffixInput(wrapper).props('invalid')).toBe('A path can\'t contain ? or #. They start a query or a page anchor.')
       await getSuffixInput(wrapper).vm.$emit('update:modelValue', 'spring-sale')
