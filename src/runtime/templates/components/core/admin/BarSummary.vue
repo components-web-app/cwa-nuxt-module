@@ -211,6 +211,10 @@ function act() {
     return
   }
   if (badge.value.kind) {
+    if (shownError.value) {
+      errorField.value = undefined
+      return
+    }
     const field = firstToFix()
     if (field && !openError(field)) {
       emit('show', field)
@@ -313,6 +317,7 @@ function reset() {
         :aria-label="`${shownError.editor.label ?? shownError.field}: not saved`"
         data-testid="bar-summary-popover"
         :class="['cwa:z-context cwa:w-max cwa:max-w-[min(20rem,calc(100vw-1rem))] cwa:bg-surface-menu cwa:p-popover cwa:text-control cwa:text-fg cwa:shadow-popover cwa:outline-none', popoverOpen]"
+        @interact-outside="keepForOwnButton"
         @open-auto-focus="onOpenAutoFocus"
         @close-auto-focus="onCloseAutoFocus"
       >

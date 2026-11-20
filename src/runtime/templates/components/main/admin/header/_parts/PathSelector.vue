@@ -31,6 +31,7 @@
       :selected="levels[0]!.key"
       :at="nameLabel"
       :return-to="selector"
+      :trigger="selector"
       :min-width="selector.offsetWidth"
       :avoid="avoid"
       :keyboard="openedByKeyboard"

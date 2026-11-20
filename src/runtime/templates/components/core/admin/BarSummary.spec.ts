@@ -146,6 +146,34 @@ describe('BarSummary (#459)', () => {
     editor.unregister()
   })
 
+  test('clicking the status again closes an in-page editor\'s error popover, the press moving focus to the status as a browser does', async () => {
+    const editor = inPageEditor()
+    fieldStates.title = failed()
+    const { summary } = mountSummary()
+    await nextTick()
+    const press = async () => {
+      const button = summary().element as HTMLButtonElement
+      button.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, pointerType: 'mouse' }))
+      button.focus()
+      await flushPromises()
+      await summary().trigger('click')
+      await vi.advanceTimersByTimeAsync(50)
+    }
+
+    await press()
+    expect(popover()?.textContent).toContain('title: not saved')
+    expect(summary().attributes('aria-expanded')).toBe('true')
+
+    await press()
+    expect(popover()).toBeNull()
+    expect(summary().attributes('aria-expanded')).toBe('false')
+    expect(editor.retry).not.toHaveBeenCalled()
+
+    await press()
+    expect(popover()?.textContent).toContain('title: not saved')
+    editor.unregister()
+  })
+
   test('Reset puts the field back through its editor\'s model and sends nothing', async () => {
     const editor = inPageEditor()
     fieldStates.title = failed()

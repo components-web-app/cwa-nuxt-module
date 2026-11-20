@@ -1074,3 +1074,38 @@ for (const width of widths) {
     expect(pressed[2]).toEqual(pressed[0])
   })
 }
+
+for (const tab of ['kit', 'practice']) {
+  test(`kit ${tab}: every popover, menu and picker opened by a click closes when its trigger is clicked again (#461)`, async ({ page }) => {
+    test.setTimeout(240_000)
+    if (tab === 'kit') {
+      await openKit(page, 1280)
+    }
+    else {
+      await page.setViewportSize({ width: 1280, height: 900 })
+      await page.goto(`${kitBase}/kit?tab=practice`)
+      await expect(page.getByTestId('kit-practice-status')).toContainText('Selected: Title')
+    }
+    const triggers = page.locator('button[aria-haspopup]:not([disabled]):not([aria-disabled="true"])')
+    const stayedOpen = []
+    let toggled = 0
+    for (let index = 0; index < await triggers.count(); index++) {
+      const trigger = triggers.nth(index)
+      if (!await trigger.isVisible()) {
+        continue
+      }
+      await trigger.scrollIntoViewIfNeeded()
+      await trigger.click()
+      await expect.poll(() => trigger.getAttribute('aria-expanded')).toBe('true')
+      await trigger.click({ force: true })
+      const name = await trigger.getAttribute('aria-label') ?? (await trigger.innerText()).trim()
+      await expect.poll(() => trigger.getAttribute('aria-expanded')).not.toBe('true').catch(() => stayedOpen.push(name))
+      toggled++
+      for (let presses = 0; presses < 3 && await page.locator('[data-reka-popper-content-wrapper], [role="dialog"]').count(); presses++) {
+        await page.keyboard.press('Escape')
+      }
+    }
+    expect(stayedOpen).toEqual([])
+    expect(toggled).toBeGreaterThan(tab === 'kit' ? 40 : 5)
+  })
+}

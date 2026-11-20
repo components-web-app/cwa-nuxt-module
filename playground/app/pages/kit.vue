@@ -157,7 +157,7 @@ onBeforeUnmount(() => stopLongPress?.())
 
 function openLink(event: MouseEvent) {
   linkAt.value = event.currentTarget as HTMLElement
-  linkOpen.value = true
+  linkOpen.value = !linkOpen.value
 }
 const kitPages: CwaResource[] = Array.from({ length: 42 }, (_, index) => ({ '@id': `/_/routes/${index + 1}`, '@type': 'Route', 'path': index ? `/showrooms/branch-${index}` : '/', '_metadata': { persisted: true } } as CwaResource))
 const kitPageLabel = (resource: CwaResource) => resource.path ?? ''
