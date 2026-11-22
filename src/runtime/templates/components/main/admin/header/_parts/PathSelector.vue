@@ -16,7 +16,7 @@
       <span
         ref="nameLabel"
         data-testid="path-selector-name"
-        :class="{ 'cwa:invisible': isOpen }"
+        :class="{ 'cwa:invisible': isOpen && !opensAsSheet() }"
       >{{ name }}</span>
       <span
         v-if="hasLevels"
@@ -54,6 +54,7 @@ import { resourceStackLevels } from '#cwa/templates/components/core/ui/resource-
 import { createAnnouncer } from '#cwa/templates/components/core/ui/field-context'
 import { announceKey } from '#cwa/templates/components/core/ui/field-keys'
 import { useCwa } from '#cwa/composables/cwa'
+import { opensAsSheet } from '#cwa/templates/components/core/ui/sheet-media'
 
 const ResourceStack = defineAsyncComponent(() => import('#cwa/templates/components/core/ui/ResourceStack.vue'))
 

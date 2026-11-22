@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, test, vi } from 'vitest'
-import { defineComponent, h, ref } from 'vue'
+import { defineComponent, h, nextTick, ref } from 'vue'
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { axe } from '../../../../../../test/utils/axe'
 import { drag, onPhone, stubVisualViewport } from '../../../../../../test/utils/sheet-media'
@@ -10,6 +10,8 @@ enableAutoUnmount(afterEach)
 
 afterEach(() => {
   vi.unstubAllGlobals()
+  vi.restoreAllMocks()
+  vi.useRealTimers()
 })
 
 async function openSheet(props: Record<string, unknown> = {}) {
@@ -59,6 +61,21 @@ function settled() {
   return new Promise(resolve => setTimeout(resolve, 260))
 }
 
+const SLIDES_IN = 'cwa:motion-safe:data-[state=open]:animate-[cwa-sheet-in_var(--cwa-duration-slow)_cubic-bezier(0.32,0.72,0,1)]'
+const SLIDES_OUT = 'cwa:motion-safe:animate-[cwa-sheet-out_var(--cwa-duration-slow)_cubic-bezier(0.32,0.72,0,1)_forwards]'
+const FADES_IN = 'cwa:motion-safe:data-[state=open]:animate-[cwa-line-in_var(--cwa-duration-slow)_ease-out]'
+const FADES_OUT = 'cwa:motion-safe:animate-[cwa-fade-out_var(--cwa-duration-slow)_ease-out_forwards]'
+
+function leaving(name: string) {
+  return document.querySelector<HTMLElement>(`[data-sheet-leaving="${name}"]`)
+}
+
+function ended(element: HTMLElement, animationName: string) {
+  const event = new Event('animationend')
+  Object.defineProperty(event, 'animationName', { value: animationName })
+  element.dispatchEvent(event)
+}
+
 describe('BottomSheet (#461)', () => {
   test('is a modal dialog titled by its label, with a grab handle hidden from screen readers, its header and a scrolling body, and as a menu has no buttons of its own', async () => {
     const { sheet } = await openSheet()
@@ -102,17 +119,102 @@ describe('BottomSheet (#461)', () => {
     expect(document.activeElement).toBe(sheet.opener)
   })
 
-  test('sits along the bottom edge at full width, at most 70vh tall, square, above a scrim, and slides up only with motion allowed', async () => {
+  test('sits along the bottom edge at full width, at most 70vh tall, square, above a scrim, and slides up from below the screen as the scrim fades in, only with motion allowed', async () => {
     const { sheet } = await openSheet()
 
     expect(sheet.className).toContain('cwa:inset-x-0')
     expect(sheet.className).toContain('cwa:bottom-0')
     expect(sheet.className).toContain('cwa:max-h-[70vh]')
-    expect(sheet.className).toContain('cwa:motion-safe:animate-[cwa-sheet-in_var(--cwa-duration-base)_cubic-bezier(0.2,0.8,0.2,1)]')
+    expect(sheet.className).toContain(SLIDES_IN)
     expect(sheet.className).not.toMatch(/rounded/)
     const scrim = document.querySelector<HTMLElement>('[data-testid="sheet-scrim"]')!
     expect(scrim.className).toContain('cwa:inset-0')
-    expect(scrim.className).toContain('cwa:motion-safe:animate-[cwa-line-in_var(--cwa-duration-base)_ease-out]')
+    expect(scrim.className).toContain(FADES_IN)
+  })
+
+  test.each([
+    ['a choice', async ({ open }: Awaited<ReturnType<typeof openSheet>>) => {
+      open.value = false
+    }],
+    ['its consumer unmounting it', async ({ shown }: Awaited<ReturnType<typeof openSheet>>) => {
+      shown.value = false
+    }],
+    ['Escape', async () => {
+      document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
+    }],
+    ['a swipe down', async () => {
+      drag(part('grip'), 100, [150, 250, 400])
+    }],
+  ])('closed by %s, an inert copy slides down as a copy of the scrim fades out, until its own slide ends, while the page behind is usable again at once', async (_, close) => {
+    const opened = await openSheet()
+    await new Promise(resolve => setTimeout(resolve))
+
+    await close(opened)
+    await flushPromises()
+
+    expect(document.querySelector('[data-testid="sheet"]')).toBeNull()
+    expect(opened.container.hasAttribute('inert')).toBe(false)
+    expect(document.activeElement).toBe(opened.opener)
+    const sheet = leaving('sheet')!
+    const scrim = leaving('sheet-scrim')!
+    for (const copy of [sheet, scrim]) {
+      expect(copy.inert).toBe(true)
+      expect(copy.getAttribute('aria-hidden')).toBe('true')
+      expect(copy.getAttribute('data-state')).toBe('closed')
+      expect(copy.style.pointerEvents).toBe('none')
+      expect(copy.querySelector('[id], [data-testid]')).toBeNull()
+      expect(copy.id).toBe('')
+    }
+    expect(sheet.textContent).toContain('Dark')
+    expect(sheet.className).toContain(SLIDES_OUT)
+    expect(scrim.className).toContain(FADES_OUT)
+
+    ended(sheet, 'cwa-sheet-in')
+    ended(scrim, 'cwa-line-in')
+    expect(leaving('sheet')).not.toBeNull()
+    expect(leaving('sheet-scrim')).not.toBeNull()
+
+    ended(sheet, 'cwa-sheet-out')
+    ended(scrim, 'cwa-fade-out')
+    expect(leaving('sheet')).toBeNull()
+    expect(leaving('sheet-scrim')).toBeNull()
+  })
+
+  test('a copy whose slide never ends is still removed once the slide would have', async () => {
+    const { open } = await openSheet()
+    vi.useFakeTimers()
+
+    open.value = false
+    await nextTick()
+    await nextTick()
+    expect(leaving('sheet')).not.toBeNull()
+    vi.advanceTimersByTime(500)
+
+    expect(leaving('sheet')).toBeNull()
+    expect(leaving('sheet-scrim')).toBeNull()
+  })
+
+  test('with reduced motion it closes without leaving a copy', async () => {
+    onPhone(true, { reducedMotion: true })
+    const { open } = await openSheet()
+
+    open.value = false
+    await flushPromises()
+
+    expect(leaving('sheet')).toBeNull()
+    expect(leaving('sheet-scrim')).toBeNull()
+  })
+
+  test('a swipe past the threshold hands over to the slide down at once, from where the finger left it', async () => {
+    const { open, onApply } = await openSheet({ actions: true })
+
+    drag(part('grip'), 100, [150, 250, 400])
+    await flushPromises()
+
+    expect(open.value).toBe(false)
+    expect(onApply).toHaveBeenCalledTimes(1)
+    expect(leaving('sheet')!.style.translate).toBe('0px 300px')
+    expect(leaving('sheet')!.className).not.toContain('cwa:transition-[translate]')
   })
 
   test('focuses the element its content marks on opening, with the caret after any text already typed', async () => {
@@ -221,15 +323,10 @@ describe('BottomSheet swiped down (#461)', () => {
   test.each([
     ['a menu', {}, 'onPick'],
     ['a picker, applying its changes', { actions: true }, 'onApply'],
-  ] as const)('released past the threshold, %s slides away and closes, returning focus', async (_, props, said) => {
+  ] as const)('released past the threshold, %s closes, returning focus', async (_, props, said) => {
     const opened = await openSheet(props)
 
     drag(part('grip'), 100, [150, 200, 260])
-    await flushPromises()
-    expect(opened.open.value).toBe(true)
-    expect(opened.sheet.className).toContain('cwa:transition-[translate]')
-    expect(opened.sheet.style.translate).toBe(`0px ${window.innerHeight}px`)
-    await settled()
     await flushPromises()
 
     expect(opened.open.value).toBe(false)

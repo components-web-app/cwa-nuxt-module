@@ -1,3 +1,4 @@
+import { beforeEach } from 'vitest'
 import { config } from '@vue/test-utils'
 import { defineComponent, h } from 'vue'
 
@@ -13,3 +14,7 @@ config.plugins.createStubs = function ({ name, component }) {
     },
   })
 }
+
+beforeEach(() => {
+  globalThis.document?.querySelectorAll('[data-sheet-leaving]').forEach(copy => copy.remove())
+})

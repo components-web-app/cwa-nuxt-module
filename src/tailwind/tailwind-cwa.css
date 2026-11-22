@@ -586,8 +586,13 @@
 
 @keyframes cwa-sheet-in {
   from {
-    opacity: 0.4;
-    translate: 0 1.5rem;
+    translate: 0 100%;
+  }
+}
+
+@keyframes cwa-sheet-out {
+  to {
+    translate: 0 100%;
   }
 }
 
