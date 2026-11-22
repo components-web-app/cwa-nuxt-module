@@ -4,6 +4,10 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+### Changed
+
+- On a phone, the select, menu, picker and resource stack sheets slide up from below the screen and slide back down however they close, with the page behind fading in and out. The path selector now keeps its name in the header while its stack is open. [0468a0b2](https://github.com/components-web-app/cwa-nuxt-module/commit/0468a0b2706e779c8ad5f9d229dc91617cdf8d48) ([#461](https://github.com/components-web-app/cwa-nuxt-module/issues/461))
+
 ## [2.0.0-alpha.39] - 2026-11-20
 
 ### Fixed
