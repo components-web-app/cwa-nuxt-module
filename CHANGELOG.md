@@ -4,6 +4,10 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+### Added
+
+- Another Nuxt module can add a folder laid out like `app/cwa` in the `cwa:dirs` hook, and its components, layouts and pages are registered like the app's own, with their admin tabs, UI variants and `defineCwaConfig`. Admin menu entries (`label`, `to`, an optional `lucide:` icon) come from the app's `cwa.admin.nav` and the `cwa:admin:nav` hook, and are shown after the built-in primary links. [aa705efe](https://github.com/components-web-app/cwa-nuxt-module/commit/aa705efece0390e410a64c6ec80e16d6a1e2a8fd)
+
 ### Changed
 
 - On a phone, the select, menu, picker and resource stack sheets slide up from below the screen and slide back down however they close, with the page behind fading in and out. The path selector now keeps its name in the header while its stack is open. [0468a0b2](https://github.com/components-web-app/cwa-nuxt-module/commit/0468a0b2706e779c8ad5f9d229dc91617cdf8d48) ([#461](https://github.com/components-web-app/cwa-nuxt-module/issues/461))
