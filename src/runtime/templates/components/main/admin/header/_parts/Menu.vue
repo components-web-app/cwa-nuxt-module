@@ -69,6 +69,22 @@
                     <IconUsers class="cwa:w-7" />
                   </MenuPrimaryLink>
                 </li>
+                <li
+                  v-for="item in adminNav"
+                  :key="item.to"
+                >
+                  <MenuPrimaryLink
+                    :label="item.label"
+                    :to="item.to"
+                  >
+                    <span
+                      v-if="item.icon"
+                      aria-hidden="true"
+                      class="cwa:block cwa:size-7 cwa:[&>svg]:size-full"
+                      v-html="item.icon"
+                    />
+                  </MenuPrimaryLink>
+                </li>
               </ul>
             </div>
             <div class="cwa:flex cwa:flex-col cwa:gap-y-4">
@@ -120,6 +136,7 @@
 <script setup lang="ts">
 import { nextTick, ref, useId, useTemplateRef, watch } from 'vue'
 import { onClickOutside } from '@vueuse/core'
+import { adminNav } from '#build/cwa-admin-nav'
 import MenuPrimaryLink from './MenuPrimaryLink.vue'
 import CwaLogo from '#cwa/templates/components/core/assets/CwaLogo.vue'
 import { useCwa } from '#cwa/composables/cwa'

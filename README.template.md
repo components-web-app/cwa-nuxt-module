@@ -67,6 +67,35 @@ Components, UI variants, layouts and pages now declare their own config in the S
 
 6. **Removed with no replacement:** `useCwaAutoClass` and the `autoClass` option (the root layout and `ResourceLoader` apply the classes), and `$cwa.resourcesConfig`, `$cwa.setResourceMeta`, `$cwa.layoutsConfig` and `$cwa.pagesConfig`.
 
+## Extending from another module or layer
+
+A Nuxt module (an e-commerce package, say) can ship CWA components and add admin menu entries without the app copying them.
+
+**CWA folders.** Push a folder laid out like `app/cwa` (with any of `components/`, `layouts/` and `pages/`) in the `cwa:dirs` hook. Its components, layouts and pages are registered exactly like the app's: `<Name>/<Name>.vue` becomes the global `CwaComponent<Name>` with its `admin/` tabs, `ui/` variants and `defineCwaConfig`, and `layouts/` and `pages/` become `CwaLayout<Name>` and `CwaPage<Name>`. The app's own folders are scanned first, so an app component of the same name wins.
+
+```ts
+export default defineNuxtModule({
+  setup(_options, nuxt) {
+    const { resolve } = createResolver(import.meta.url)
+    nuxt.hook('cwa:dirs', dirs => dirs.push(resolve('./runtime/cwa')))
+  },
+})
+```
+
+**Admin menu entries.** The app lists its own in `cwa.admin.nav`, and a module pushes entries in the `cwa:admin:nav` hook. They are shown after the built-in primary links (Layouts, Pages, Data, Routes, Users), the app's first. `icon` is an optional `lucide:<name>`, inlined at build time; any other value is reported when the app builds and the entry has no icon.
+
+```ts
+// nuxt.config.ts
+export default defineNuxtConfig({
+  cwa: { admin: { nav: [{ label: 'Orders', to: '/_cwa/orders', icon: 'lucide:receipt' }] } },
+})
+
+// a module's setup
+nuxt.hook('cwa:admin:nav', items => items.push({ label: 'Coupons', to: '/_cwa/coupons', icon: 'lucide:ticket-percent' }))
+```
+
+Both hooks run after every module has been set up, so the order modules are listed in does not matter.
+
 ## Development
 
 - Run `pnpm run dev:prepare` to generate type stubs.

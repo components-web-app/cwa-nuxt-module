@@ -283,6 +283,24 @@ ${body.join('\n')}
 `
 }
 
+export interface AdminNavTemplateInput {
+  items: { label: string, to: string, icon?: string }[]
+  lucide: LucideIconSet
+  warn: (message: string) => void
+}
+
+export function adminNavTemplate({ items, lucide, warn }: AdminNavTemplateInput): string {
+  const entries = items.map(({ label, to, icon }) => {
+    const body = icon?.startsWith('lucide:') ? lucideBody(lucide, icon.slice('lucide:'.length)) : undefined
+    if (icon && !body) {
+      warn(`the icon "${icon}" of the admin menu entry ${label} is not a Lucide icon, so it has no icon.`)
+    }
+    return body ? { label, to, icon: lucideSvg(body) } : { label, to }
+  })
+  return `export const adminNav: { label: string, to: string, icon?: string }[] = ${JSON.stringify(entries, undefined, 2)}
+`
+}
+
 export function lucideNamesTypeTemplate(lucide: LucideIconSet): string {
   const names = [...Object.keys(lucide.icons), ...Object.keys(lucide.aliases ?? {})].sort()
   return `declare global {

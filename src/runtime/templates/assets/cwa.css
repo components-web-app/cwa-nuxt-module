@@ -535,6 +535,10 @@
   width: calc(var(--cwa-spacing) * 6);
   height: calc(var(--cwa-spacing) * 6);
 }
+.cwa\:size-7 {
+  width: calc(var(--cwa-spacing) * 7);
+  height: calc(var(--cwa-spacing) * 7);
+}
 .cwa\:size-8 {
   width: calc(var(--cwa-spacing) * 8);
   height: calc(var(--cwa-spacing) * 8);

@@ -71,7 +71,7 @@ async function prepareMockNuxt(options = {}, nuxt?: any) {
   const defaultOptions = {
     srcDir: 'app', sitemap: {}, runtimeConfig: { public: { cwa: {} } }, alias: {}, css: [], build: { transpile: [] }, dir: { app: '' },
   }
-  const mockNuxt = Object.assign({ hook: vi.fn() }, nuxt || {}, { options: { ...defaultOptions, ...(nuxt?.options || {}) } })
+  const mockNuxt = Object.assign({ hook: vi.fn(), callHook: vi.fn(async () => {}) }, nuxt || {}, { options: { ...defaultOptions, ...(nuxt?.options || {}) } })
 
   await setup(options, mockNuxt)
 
@@ -1419,6 +1419,157 @@ export const styleClasses: CwaStyleClasses = {
 
         const imported = vi.mocked(nuxtKit.addImports).mock.calls.flatMap(([imports]) => [imports].flat())
         expect(imported.some(({ from }) => ['#build/cwa-config', '#build/cwa-styles'].includes(from))).toBe(false)
+      })
+    })
+
+    describe('CWA folders from other modules', () => {
+      const extensionDir = '/ext/cwa'
+      const components = [
+        { filePath: 'cwa/components/HtmlContent/HtmlContent.vue', pascalName: 'CwaComponentHtmlContent' },
+        { filePath: '/ext/cwa/components/AddToBasket/AddToBasket.vue', pascalName: 'CwaComponentAddToBasket' },
+        { filePath: '/ext/cwa/components/AddToBasket/admin/PriceTab.vue', pascalName: 'CwaComponentAddToBasketAdminPriceTab', global: true },
+        { filePath: '/ext/cwa/components/AddToBasket/ui/Compact.vue', pascalName: 'CwaComponentAddToBasketUiCompact', global: true },
+        { filePath: '/ext/cwa/components/AddToBasket/_parts/Quantity.vue', pascalName: 'CwaComponentAddToBasketPartsQuantity', global: true },
+        { filePath: '/ext/cwa/layouts/Shop.vue', pascalName: 'CwaLayoutShop' },
+        { filePath: '/ext/cwa/pages/Product.vue', pascalName: 'CwaPageProduct' },
+        { filePath: '/ext/components/AddToBasket/AddToBasket.vue', pascalName: 'AddToBasket' },
+      ]
+
+      async function prepare() {
+        const callbacks: Record<string, (...args: any[]) => any> = {}
+        const callHook = vi.fn(async (hookName: string, dirs: string[]) => {
+          if (hookName === 'cwa:dirs') {
+            dirs.push(extensionDir)
+          }
+        })
+        await prepareMockNuxt({}, {
+          hook: vi.fn((hookName, callback) => {
+            callbacks[hookName] = callback
+          }),
+          callHook,
+        })
+        const dirs: any[] = []
+        await callbacks['components:dirs']!(dirs)
+        callbacks['modules:done']!()
+        const templates = (nuxtKit.addTemplate as Mock).mock.calls.map(([template]) => template)
+        return { callHook, dirs, template: (filename: string) => templates.findLast(template => template.filename === filename) }
+      }
+
+      afterEach(() => {
+        vi.mocked(scanCwaConfigDeclarations).mockReset()
+        vi.mocked(scanCwaConfigDeclarations).mockImplementation(() => ({ components: {}, ui: {}, layouts: {}, pages: {} }))
+      })
+
+      test('a module adds a folder laid out like app/cwa through the cwa:dirs hook, and its components, layouts and pages are registered globally after the app\'s own', async () => {
+        const { callHook, dirs } = await prepare()
+
+        expect(callHook).toHaveBeenCalledWith('cwa:dirs', expect.any(Array))
+        const paths = dirs.map(({ path }) => path)
+        const appComponents = paths.indexOf(join('cwa', 'components'))
+        expect(appComponents).toBeGreaterThanOrEqual(0)
+        expect(dirs).toContainEqual({ path: join(extensionDir, 'components'), prefix: 'CwaComponent', global: true, ignore: ['**/*.spec.{cts,mts,ts}'] })
+        expect(dirs).toContainEqual({ path: join(extensionDir, 'layouts'), prefix: 'CwaLayout', global: true, ignore: ['**/*.spec.{cts,mts,ts}'] })
+        expect(dirs).toContainEqual({ path: join(extensionDir, 'pages'), prefix: 'CwaPage', global: true, ignore: ['**/admin/*', '**/*.spec.{cts,mts,ts}'] })
+        for (const folder of ['components', 'layouts', 'pages']) {
+          expect(paths.indexOf(join(extensionDir, folder))).toBeGreaterThan(paths.indexOf(join('cwa', folder)))
+        }
+      })
+
+      test('a module\'s components get their admin tabs, ui variants and defineCwaConfig exactly like the app\'s', async () => {
+        vi.mocked(scanCwaConfigDeclarations).mockReturnValue({
+          components: { AddToBasket: { name: 'Add to basket' } },
+          ui: { CwaComponentAddToBasketUiCompact: { name: 'Compact' } },
+          layouts: { Shop: { name: 'Shop layout' } },
+          pages: { Product: { name: 'Product page' } },
+        })
+        const { template } = await prepare()
+
+        const contents = await template('cwa-config.ts').getContents({ app: { components } })
+        expect(contents).toContain(`"AddToBasket": {
+    "name": "Add to basket",
+    "managerTabs": [
+      "CwaComponentAddToBasketAdminPriceTab"
+    ],
+    "ui": [
+      "CwaComponentAddToBasketUiCompact"
+    ]
+  }`)
+        expect(contents).toContain('"CwaComponentAddToBasketUiCompact": {\n    "name": "Compact"\n  }')
+        expect(contents).toContain('"Shop": {\n    "name": "Shop layout"\n  }')
+        expect(contents).toContain('"Product": {\n    "name": "Product page"\n  }')
+
+        const [scanOptions] = vi.mocked(scanCwaConfigDeclarations).mock.lastCall!
+        expect(scanOptions.templates.map(({ pascalName }) => pascalName)).toEqual([
+          'CwaComponentHtmlContent',
+          'CwaComponentAddToBasket',
+          'CwaComponentAddToBasketUiCompact',
+          'CwaLayoutShop',
+          'CwaPageProduct',
+        ])
+      })
+
+      test('a module\'s components are in the component names constant', async () => {
+        const { template } = await prepare()
+
+        expect(await template('cwa-component-names.ts').getContents({ app: { components } })).toContain(`{
+  "HtmlContent": "HtmlContent",
+  "AddToBasket": "AddToBasket"
+}`)
+      })
+    })
+
+    describe('admin menu entries', () => {
+      async function prepare(options = {}, items: { label: string, to: string, icon?: string }[] = []) {
+        const logger = { info: vi.fn(), warn: vi.fn(), debug: vi.fn(), error: vi.fn(), success: vi.fn() }
+        vi.spyOn(nuxtKit, 'useLogger').mockReturnValue(logger as any)
+        const callHook = vi.fn(async (hookName: string, nav: unknown[]) => {
+          if (hookName === 'cwa:admin:nav') {
+            nav.push(...items)
+          }
+        })
+        await prepareMockNuxt(options, {
+          hook: vi.fn((hookName, callback) => {
+            if (hookName === 'modules:done') {
+              callback()
+            }
+          }),
+          callHook,
+        })
+        const templates = (nuxtKit.addTemplate as Mock).mock.calls.map(([template]) => template)
+        return { callHook, logger, template: (filename: string) => templates.findLast(template => template.filename === filename) }
+      }
+
+      test('the app\'s admin.nav option and the entries modules add through the cwa:admin:nav hook are generated in order, with Lucide icons inlined', async () => {
+        const { callHook, template } = await prepare(
+          { admin: { nav: [{ label: 'Orders', to: '/_cwa/orders', icon: 'lucide:receipt' }] } },
+          [{ label: 'Coupons', to: '/_cwa/coupons' }],
+        )
+
+        const nav = template('cwa-admin-nav.ts')
+        expect(nav.write).toBe(true)
+        const contents = await nav.getContents({ app: { components: [] } })
+        expect(callHook).toHaveBeenCalledWith('cwa:admin:nav', expect.any(Array))
+        const json = contents.replace(/^[\s\S]*?= /, '')
+        const entries = JSON.parse(json)
+        expect(entries).toEqual([
+          { label: 'Orders', to: '/_cwa/orders', icon: expect.stringMatching(/^<svg data-cwa-admin-icon [^>]*viewBox="0 0 24 24"[^>]*>.+<\/svg>$/) },
+          { label: 'Coupons', to: '/_cwa/coupons' },
+        ])
+        expect(contents.startsWith('export const adminNav: { label: string, to: string, icon?: string }[] = ')).toBe(true)
+      })
+
+      test('an icon that is not a Lucide icon is left out with a warning naming the entry', async () => {
+        const { logger, template } = await prepare({}, [{ label: 'Orders', to: '/_cwa/orders', icon: 'lucide:not-an-icon' }])
+
+        const contents = await template('cwa-admin-nav.ts').getContents({ app: { components: [] } })
+        expect(JSON.parse(contents.replace(/^[\s\S]*?= /, ''))).toEqual([{ label: 'Orders', to: '/_cwa/orders' }])
+        expect(logger.warn).toHaveBeenCalledWith('@cwa/nuxt: the icon "lucide:not-an-icon" of the admin menu entry Orders is not a Lucide icon, so it has no icon.')
+      })
+
+      test('the module options template does not carry the menu entries', async () => {
+        const { template } = await prepare({ admin: { nav: [{ label: 'Orders', to: '/_cwa/orders' }] } })
+
+        expect(await template('cwa-options.ts').getContents()).not.toContain('Orders')
       })
     })
 

@@ -162,6 +162,8 @@ app/cwa/pages/<Name>.vue                  → CwaPage<Name> (global)
 
 Each of these SFCs declares its own config with `defineCwaConfig({...})`. The module scans `admin/` and `ui/` subdirectories at build time and populates `managerTabs` / `ui` in the generated `cwa-config.ts`. Editing a `.vue` under `app/cwa` in dev triggers a `builder:watch` hook that re-generates `cwa-config.ts` and `cwa-styles.ts`.
 
+**Other modules extend the same scan** through two hooks, both called after every module's setup (README, "Extending from another module or layer"). `cwa:dirs` takes folders laid out like `app/cwa`; they are registered after the app's own in `components:dirs` (so an app component of the same name wins) and every scan (`resolveUserComponents`, `isCwaTemplate`) reads `cwaDirs`, never `userComponentsPath` alone. `cwa:admin:nav` receives the app's `cwa.admin.nav` and generates `cwa-admin-nav.ts`, which `Menu.vue` renders after the built-in primary links; `admin` is deleted from the options template. Trap: `components:dirs` awaits `cwa:dirs`, so a mock Nuxt needs `callHook` and a spec must await the `components:dirs` callback. Not yet: `builder:watch` still only regenerates for files under the app's own `app/cwa`.
+
 ### Composables (`src/runtime/composables/`)
 
 Auto-imported by the module via `addImportsDir`. Key ones:

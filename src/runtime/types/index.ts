@@ -92,6 +92,12 @@ export type SiteConfigParams = {
   canonicalUrl: string
 }
 
+export interface CwaAdminNavItem {
+  label: string
+  to: string
+  icon?: `lucide:${LucideIconName}`
+}
+
 export interface CwaModuleOptions {
   storeName: string
   siteConfig: Partial<SiteConfigParams>
@@ -129,4 +135,7 @@ export interface CwaModuleOptions {
     }
   }
   layoutName?: string
+  admin?: {
+    nav?: CwaAdminNavItem[]
+  }
 }

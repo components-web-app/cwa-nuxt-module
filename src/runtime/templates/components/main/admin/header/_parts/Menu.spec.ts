@@ -20,6 +20,13 @@ vi.mock('#cwa/composables/cwa', () => ({
   }),
 }))
 
+vi.mock('#build/cwa-admin-nav', () => ({
+  adminNav: [
+    { label: 'Orders', to: '/_cwa/orders', icon: '<svg data-cwa-admin-icon viewBox="0 0 24 24" aria-hidden="true"><path d="M0 0h24"/></svg>' },
+    { label: 'Coupons', to: '/_cwa/coupons' },
+  ],
+}))
+
 const LinkStub = defineComponent({
   props: { to: { type: [String, Object], default: '#' } },
   setup(props, { slots }) {
@@ -130,5 +137,20 @@ describe('the header menu is operable from the keyboard', () => {
     await flushPromises()
 
     expect(toggle.attributes('aria-expanded')).toBe('true')
+  })
+})
+
+describe('admin menu entries from the app and other modules', () => {
+  test('are primary links after the built-in ones, each with its icon when it has one', async () => {
+    wrapper = mountMenu()
+    await wrapper.get('button').trigger('click')
+
+    const primary = wrapper.findAll('ul.cwa\\:text-xl > li > a')
+    expect(primary.map(link => link.text())).toEqual(['Layouts', 'Pages', 'Data', 'Routes', 'Users', 'Orders', 'Coupons'])
+    expect(primary[5]!.attributes('href')).toBe('/_cwa/orders')
+    expect(primary[5]!.find('svg[data-cwa-admin-icon]').exists()).toBe(true)
+    expect(primary[6]!.attributes('href')).toBe('/_cwa/coupons')
+    expect(primary[6]!.find('svg').exists()).toBe(false)
+    expect(await axe(document.body.innerHTML)).toHaveNoViolations()
   })
 })

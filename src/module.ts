@@ -23,16 +23,20 @@ import {
   hasNuxtModule,
   tryResolveModule,
 } from '@nuxt/kit'
-import type { Component, ModuleDependencies, Nuxt, NuxtPage, ViteConfig } from '@nuxt/schema'
+import type { Component, HookResult, ModuleDependencies, Nuxt, NuxtPage, ViteConfig } from '@nuxt/schema'
 import { READINESS_DEFAULTS } from './runtime/server/readiness'
 import { defaultSiteConfig } from './runtime/composables/useCwaSiteConfig'
 import { scanComponentGroupDeclarations } from './component-group-declarations'
 import { scanCwaConfigDeclarations } from './cwa-config-declarations'
-import { adminResourcesTemplate, lucideNamesTypeTemplate } from './admin-resources'
+import { adminNavTemplate, adminResourcesTemplate, lucideNamesTypeTemplate } from './admin-resources'
 import type { LucideIconSet } from './admin-resources'
-import type { CwaModuleOptions, CwaResourcesConfig, CwaResourcesMeta, CwaStyleClasses, CwaStyles, CwaUiVariantConfig, GlobalComponentNames } from './runtime/types'
+import type { CwaAdminNavItem, CwaModuleOptions, CwaResourcesConfig, CwaResourcesMeta, CwaStyleClasses, CwaStyles, CwaUiVariantConfig, GlobalComponentNames } from './runtime/types'
 
 declare module 'nuxt/schema' {
+  interface NuxtHooks {
+    'cwa:dirs': (dirs: string[]) => HookResult
+    'cwa:admin:nav': (items: CwaAdminNavItem[]) => HookResult
+  }
   interface PublicRuntimeConfig {
     cwa: {
       apiUrl: string
@@ -250,8 +254,16 @@ export default defineNuxtModule<CwaModuleOptions>({
     const userComponentsPath = join(cwaAppDir, 'components')
     nuxt.options.alias['#cwaComponents'] = userComponentsPath
 
+    const cwaDirs = [cwaAppDir]
+    const cwaDirsWith = (folder: string) => cwaDirs.map(dir => join(dir, folder))
+
+    function componentsRoot(filePath: string) {
+      return cwaDirsWith('components').find(root => filePath.startsWith(`${root}/`))
+    }
+
     function userComponentPath(filePath: string) {
-      const [name, ...rest] = path.relative(userComponentsPath, filePath).split('/')
+      const root = componentsRoot(filePath)
+      const [name, ...rest] = root ? path.relative(root, filePath).split('/') : []
       return { name, rest }
     }
 
@@ -266,7 +278,7 @@ export default defineNuxtModule<CwaModuleOptions>({
     }
 
     function resolveUserComponents(components: Component[]) {
-      const allUserComponents = components.filter(({ filePath }) => filePath.startsWith(userComponentsPath))
+      const allUserComponents = components.filter(({ filePath }) => componentsRoot(filePath))
       return {
         allUserComponents,
         userComponents: allUserComponents.filter(({ filePath }) => isPrimaryComponent(filePath)),
@@ -275,13 +287,13 @@ export default defineNuxtModule<CwaModuleOptions>({
 
     function isCwaTemplate({ filePath }: Component) {
       const within = (dir: string) => filePath.startsWith(`${dir}/`)
-      if (within(join(appDir, 'cwa', 'layouts'))) {
+      if (cwaDirsWith('layouts').some(within)) {
         return true
       }
-      if (within(join(appDir, 'cwa', 'pages'))) {
+      if (cwaDirsWith('pages').some(within)) {
         return !filePath.includes('/admin/')
       }
-      if (!within(userComponentsPath)) {
+      if (!componentsRoot(filePath)) {
         return false
       }
       return isPrimaryComponent(filePath) || isUiVariant(filePath)
@@ -502,6 +514,28 @@ export default defineNuxtModule<CwaModuleOptions>({
       else {
         delete options.auth
       }
+
+      const configuredAdminNav = options.admin?.nav ?? []
+      delete options.admin
+      const reportedNavIcons = new Set<string>()
+      addTemplate({
+        filename: 'cwa-admin-nav.ts',
+        write: true,
+        getContents: async () => {
+          const items = [...configuredAdminNav]
+          await nuxt.callHook('cwa:admin:nav', items)
+          return adminNavTemplate({
+            items,
+            lucide: readLucideIcons(),
+            warn: (message) => {
+              if (!reportedNavIcons.has(message)) {
+                reportedNavIcons.add(message)
+                logger.warn(`${NAME}: ${message}`)
+              }
+            },
+          })
+        },
+      })
 
       addTemplate({
         filename: 'cwa-component-names.ts',
@@ -741,9 +775,8 @@ declare module 'vue-router' {
       }
     })
 
-    nuxt.hook('components:dirs', (dirs) => {
+    nuxt.hook('components:dirs', async (dirs) => {
       logger.info(`Configuring component directories for ${NAME} module...`)
-      // component dirs from module
       dirs.unshift({
         path: join(cwaVueComponentsDir, 'main'),
         prefix: 'Cwa',
@@ -757,35 +790,42 @@ declare module 'vue-router' {
 
       // todo: https://github.com/nuxt/nuxt/issues/14036#issuecomment-2110180751
       // todo: components do not need to be global and can be imported using import.meta.glob("~/components/modal/*.vue"); to reduce bundle size
-      // component dirs to be configured by application - global, so they are split and can be loaded dynamically
-      dirs.unshift({
-        path: join(appDir, 'cwa', 'layouts'),
-        prefix: 'CwaLayout',
-        global: true,
-        ignore: ['**/*.spec.{cts,mts,ts}'],
-      })
+      const cwaComponentDirs = (cwaDir: string) => [
+        {
+          path: join(cwaDir, 'components'),
+          prefix: 'CwaComponent',
+          global: true,
+          ignore: ['**/*.spec.{cts,mts,ts}'],
+        },
+        {
+          path: join(cwaDir, 'pages'),
+          prefix: 'CwaPage',
+          global: true,
+          ignore: ['**/admin/*', '**/*.spec.{cts,mts,ts}'],
+        },
+        {
+          path: join(cwaDir, 'layouts'),
+          prefix: 'CwaLayout',
+          global: true,
+          ignore: ['**/*.spec.{cts,mts,ts}'],
+        },
+      ]
+      const appDirs = cwaComponentDirs(cwaAppDir)
+      dirs.unshift(...appDirs)
 
-      dirs.unshift({
-        path: join(appDir, 'cwa', 'pages'),
-        prefix: 'CwaPage',
-        global: true,
-        ignore: ['**/admin/*', '**/*.spec.{cts,mts,ts}'],
-      })
-
-      dirs.unshift({
-        path: userComponentsPath,
-        prefix: 'CwaComponent',
-        global: true,
-        ignore: ['**/*.spec.{cts,mts,ts}'],
-      })
+      const extensionDirs: string[] = []
+      await nuxt.callHook('cwa:dirs', extensionDirs)
+      const added = extensionDirs.map(dir => path.resolve(dir)).filter(dir => !cwaDirs.includes(dir))
+      cwaDirs.push(...added)
+      dirs.splice(appDirs.length, 0, ...added.flatMap(cwaComponentDirs))
     })
 
     // todo: test - this will rebuild the options template when cwa files are added or deleted so that we auto-detect tabs to change in dev
     nuxt.hook('builder:watch', async (event, relativePath) => {
       const filenames: string[] = []
       const path = resolve(appDir, relativePath)
-      const cwaDirs = [userComponentsPath]
-      if (['add', 'unlink'].includes(event) && cwaDirs.some(dir => dir === path || path.startsWith(dir + '/'))) {
+      const watchedDirs = [userComponentsPath]
+      if (['add', 'unlink'].includes(event) && watchedDirs.some(dir => dir === path || path.startsWith(dir + '/'))) {
         logger.info(`File added or removed - updating options for ${NAME} module...`)
         filenames.push('cwa-options.ts', 'cwa-component-names.ts', 'cwa-admin-resources.ts', '#cwa/server-options.ts')
       }
