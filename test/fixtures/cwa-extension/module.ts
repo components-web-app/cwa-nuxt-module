@@ -14,7 +14,7 @@ export default defineNuxtModule({
           { path: 'fixture-orders', file: resolve('./admin/orders.vue'), menu: { label: 'Orders' } },
           { path: 'fixture-reports', file: resolve('./admin/reports.vue'), role: 'ROLE_FIXTURE_REPORTS', menu: { label: 'Reports' } },
         ],
-        pageCache: { '/fixture-basket': false },
+        pageCache: { '/fixture-basket': false, '/fixture-account/**': false },
       })
     })
   },

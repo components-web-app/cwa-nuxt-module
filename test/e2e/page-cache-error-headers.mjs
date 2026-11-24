@@ -171,6 +171,7 @@ async function main() {
 
   expectStored('a CWA page with no rule is stored', await load('/real'))
   expectNotStored('a CWA page an extension\'s route rule keeps out of the cache', await load('/fixture-basket'), 200)
+  expectNotStored('the bare path of an extension\'s /** rule, which Nitro matches too', await load('/fixture-account'), 200)
 
   console.log(`\nwrong: ${failures}`)
   if (failures) {

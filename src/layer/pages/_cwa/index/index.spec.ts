@@ -42,6 +42,17 @@ describe('/_cwa', () => {
     expect(mockCwaAdminMiddleware.mock.calls[0][0].fullPath).toBe('/_cwa/pages')
   })
 
+  test('runs the admin guard again on a move between two admin pages, so a page with a narrower role is never reached from one that allows more', async () => {
+    const router = useRouter()
+    await router.push('/_cwa/pages')
+    mockCwaAdminMiddleware.mockClear()
+
+    await router.push('/_cwa/routes')
+
+    expect(mockCwaAdminMiddleware).toHaveBeenCalledTimes(1)
+    expect(mockCwaAdminMiddleware.mock.calls[0][0].fullPath).toBe('/_cwa/routes')
+  })
+
   test('leaves who gets in to the cwa-admin guard, so a user the guard let in for an extension page\'s role is not sent home', async () => {
     mount(CwaAdminParentPage, { shallow: true })
     await flushPromises()
