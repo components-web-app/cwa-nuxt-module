@@ -144,7 +144,6 @@ import IconUsers from '#cwa/templates/components/core/assets/IconUsers.vue'
 import MenuLink from '#cwa/templates/components/main/admin/header/_parts/MenuLink.vue'
 import IconRoutes from '#cwa/templates/components/core/assets/IconRoutes.vue'
 import IconData from '#cwa/templates/components/core/assets/IconData.vue'
-import { canOpenAdminPage } from '#cwa/admin/admin-role'
 // @ts-ignore
 import { extensionMenu } from '#build/cwa-extension-menu'
 
@@ -153,7 +152,7 @@ const { menu: menuTransition } = useTransitions()
 const route = useRoute()
 
 const showMenu = ref(false)
-const extensionEntries = computed(() => (extensionMenu as { label: string, to: { name: string }, role: string }[]).filter(entry => canOpenAdminPage($cwa.auth, entry.role)))
+const extensionEntries = computed(() => (extensionMenu as { label: string, to: { name: string }, role: string }[]).filter(entry => $cwa.auth.hasRole(entry.role)))
 
 const menu = useTemplateRef('menu')
 const hamburger = ref<{ $el?: HTMLElement }>()

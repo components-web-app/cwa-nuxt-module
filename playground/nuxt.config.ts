@@ -13,6 +13,7 @@ export default defineNuxtConfig({
     'nuxt-og-image',
     '@vite-pwa/nuxt',
     'nuxt-svgo',
+    '../test/fixtures/cwa-extension/module',
     (_options, nuxt) => {
       nuxt.hook('pages:extend', (pages) => {
         const kit = pages.findIndex(page => page.path === '/kit')

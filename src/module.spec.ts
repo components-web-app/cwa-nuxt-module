@@ -131,6 +131,22 @@ describe('CWA module', () => {
       expect(dirs.filter(dir => !dir.path.startsWith('/ext/shop')).every(dir => dir.priority === undefined)).toBe(true)
     })
 
+    test('registers only the folders an extension has, so Nuxt never warns about a missing one', async () => {
+      const fs = await import('node:fs')
+      vi.mocked(fs.statSync).mockImplementation(((dirPath: string) => ({ isDirectory: () => !dirPath.startsWith('/ext/shop/') || dirPath === '/ext/shop/components' })) as never)
+      try {
+        const { hooks } = await setupWithExtension()
+        const dirs: any[] = []
+
+        hooks['components:dirs']!(dirs)
+
+        expect(dirs.filter(dir => dir.path.startsWith('/ext/shop')).map(dir => dir.path)).toEqual(['/ext/shop/components'])
+      }
+      finally {
+        vi.mocked(fs.statSync).mockImplementation((() => ({ isDirectory: vi.fn(() => true) })) as never)
+      }
+    })
+
     test('adds an extension\'s admin pages under /_cwa before the layout pass, so they sit in the admin layout', async () => {
       const { pageCallbacks } = await setupWithExtension()
       const pages: any[] = [{ path: '/_cwa', file: '/layer/pages/_cwa/index.vue', children: [] }]

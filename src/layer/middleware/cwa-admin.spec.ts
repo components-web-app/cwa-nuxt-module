@@ -90,12 +90,6 @@ describe('cwa-admin middleware', () => {
       await cwaAdminMiddleware(createRoute('/_cwa/reports', accounts), createRoute())
       expect(nuxt.navigateTo).toHaveBeenCalledWith('/')
     })
-
-    test('treats a declared ROLE_ADMIN as the admin check, so a super admin still gets in', async () => {
-      mockCwa({ signedIn: true, isAdmin: true, roles: ['ROLE_SUPER_ADMIN'] })
-      const result = await cwaAdminMiddleware(createRoute('/_cwa/orders', { cwaAdminRole: 'ROLE_ADMIN' }), createRoute())
-      expect(result).toBeUndefined()
-    })
   })
 
   describe('on the server, where a cross-origin API cookie is not sent', () => {

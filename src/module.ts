@@ -306,6 +306,15 @@ export default defineNuxtModule<CwaModuleOptions>({
       return isPrimaryComponent(filePath) || isUiVariant(filePath)
     }
 
+    function isDirectory(dirPath: string) {
+      try {
+        return statSync(dirPath).isDirectory()
+      }
+      catch {
+        return false
+      }
+    }
+
     function readCwaNames(root: string): ExtensionNames {
       const entries = (dir: string) => {
         try {
@@ -848,11 +857,11 @@ declare module 'vue-router' {
         if (!dir) {
           continue
         }
-        dirs.push(
+        dirs.push(...[
           { path: join(dir, 'components'), prefix: 'CwaComponent', global: true, priority: 0, ignore: ['**/*.spec.{cts,mts,ts}'] },
           { path: join(dir, 'layouts'), prefix: 'CwaLayout', global: true, priority: 0, ignore: ['**/*.spec.{cts,mts,ts}'] },
           { path: join(dir, 'pages'), prefix: 'CwaPage', global: true, priority: 0, ignore: ['**/admin/*', '**/*.spec.{cts,mts,ts}'] },
-        )
+        ].filter(({ path }) => isDirectory(path)))
       }
     })
 
