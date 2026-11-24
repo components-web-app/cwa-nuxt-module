@@ -89,7 +89,7 @@ function createGroupSynchronizer() {
   }
 }
 
-function createSyncWatcher(groupSynchronizer: ComponentGroupUtilSynchronizer, ops?: { resource: any, allowedComponents?: null | string[], maxComponents?: null | number, location?: string, fullReference?: string }) {
+function createSyncWatcher(groupSynchronizer: ComponentGroupUtilSynchronizer, ops?: { resource: any, allowedComponents?: null | any[], maxComponents?: null | number, location?: string, fullReference?: string }) {
   const mockResource = computed(() => {
     return (ops?.resource !== undefined ? ops.resource : { data: {} })
   })
@@ -522,6 +522,115 @@ describe('Group synchronizer', () => {
       await vi.waitFor(() => expect(resourcesManager.updateResource).toHaveBeenCalled())
 
       expect(getComponentMetadata).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('allowed UIs and styles per component (#488)', () => {
+    const metadata = {
+      HtmlContent: { resourceName: 'HtmlContent', endpoint: '/component/html_contents', isPublishable: true, explicitAllowOnly: false },
+      Image: { resourceName: 'Image', endpoint: '/component/images', isPublishable: false, explicitAllowOnly: false },
+    }
+
+    beforeEach(() => {
+      ResourceUtils.ResourceTypeFromIri.setPathPrefix('/_api')
+    })
+
+    afterEach(() => {
+      ResourceUtils.ResourceTypeFromIri.setPathPrefix(undefined)
+      vi.restoreAllMocks()
+    })
+
+    function existingGroup(data: Record<string, unknown> = {}) {
+      return {
+        data: { '@id': '/test', ...data },
+        apiState: { status: CwaResourceApiStatuses.SUCCESS },
+      }
+    }
+
+    async function sync(resource: any, allowedComponents: any[] | null) {
+      const setup = createGroupSynchronizer()
+      setup.getComponentMetadata.mockResolvedValue(metadata)
+      createSyncWatcher(setup.groupSynchronizer, { resource, allowedComponents })
+      setup.auth.signedIn.value = true
+      await vi.waitFor(() => expect(setup.getComponentMetadata).toHaveBeenCalled())
+      await flushPromises()
+      return setup
+    }
+
+    test('sends a rule\'s UIs and styles as the values a component stores, keyed by its endpoint, in the same PATCH as allowedComponents', async () => {
+      const { resourcesManager } = await sync(existingGroup(), [
+        'HtmlContent',
+        { component: 'Image', ui: ['CwaComponentImage', 'CwaComponentImageUiHero'], styles: ['large'] },
+      ])
+
+      expect(resourcesManager.updateResource).toHaveBeenCalledTimes(1)
+      expect(resourcesManager.updateResource).toHaveBeenCalledWith({
+        endpoint: '/test',
+        data: {
+          allowedComponents: ['/_api/component/html_contents', '/_api/component/images'],
+          allowedComponentUi: { '/_api/component/images': { ui: [null, 'CwaComponentImageUiHero'], styles: ['style:large'] } },
+        },
+      })
+    })
+
+    test('does not PATCH a group whose stored rules already match', async () => {
+      const { resourcesManager } = await sync(existingGroup({
+        allowedComponents: ['/_api/component/images'],
+        allowedComponentUi: { '/_api/component/images': { ui: ['CwaComponentImageUiHero'] } },
+      }), [{ component: 'Image', ui: ['CwaComponentImageUiHero'] }])
+
+      expect(resourcesManager.updateResource).not.toHaveBeenCalled()
+    })
+
+    test('clears stored rules when the template lists names only', async () => {
+      const { resourcesManager } = await sync(existingGroup({
+        allowedComponents: ['/_api/component/images'],
+        allowedComponentUi: { '/_api/component/images': { ui: ['CwaComponentImageUiHero'] } },
+      }), ['Image'])
+
+      expect(resourcesManager.updateResource).toHaveBeenCalledWith({ endpoint: '/test', data: { allowedComponentUi: null } })
+    })
+
+    test('leaves out a rule with no UIs or styles, and empty lists, since leaving a list out allows any value', async () => {
+      const { resourcesManager } = await sync(existingGroup(), [
+        { component: 'HtmlContent' },
+        { component: 'Image', ui: [], styles: ['large'] },
+      ])
+
+      expect(resourcesManager.updateResource).toHaveBeenCalledWith({
+        endpoint: '/test',
+        data: {
+          allowedComponents: ['/_api/component/html_contents', '/_api/component/images'],
+          allowedComponentUi: { '/_api/component/images': { styles: ['style:large'] } },
+        },
+      })
+    })
+
+    test('creates a new group with its rules', async () => {
+      const setup = createGroupSynchronizer()
+      setup.getComponentMetadata.mockResolvedValue(metadata)
+      createSyncWatcher(setup.groupSynchronizer, { resource: null, allowedComponents: [{ component: 'Image', ui: ['CwaComponentImageUiHero'] }] })
+      setup.auth.signedIn.value = true
+      await vi.waitFor(() => expect(setup.resourcesManager.createResource).toHaveBeenCalled())
+
+      expect(setup.resourcesManager.createResource.mock.calls[0]![0].data).toMatchObject({
+        allowedComponents: ['/_api/component/images'],
+        allowedComponentUi: { '/_api/component/images': { ui: ['CwaComponentImageUiHero'] } },
+      })
+    })
+
+    test('warns once that a collection IRI entry is the old syntax and will be removed without further warning', async () => {
+      const warn = vi.spyOn(consola, 'warn').mockImplementation(() => undefined)
+      for (let i = 0; i < 2; i++) {
+        const { auth, groupSynchronizer, resourcesManager } = createGroupSynchronizer()
+        createSyncWatcher(groupSynchronizer, { resource: existingGroup(), allowedComponents: ['/component/legacy_things'] })
+        auth.signedIn.value = true
+        await vi.waitFor(() => expect(resourcesManager.updateResource).toHaveBeenCalled())
+      }
+
+      expect(warn.mock.calls.filter(([message]) => String(message).includes('/component/legacy_things'))).toEqual([[
+        '[CWA] The allowedComponents entry \'/component/legacy_things\' is a collection IRI, the old syntax. Use the component name, from CwaComponentNames. IRIs will stop working in the next alpha, without further warning.',
+      ]])
     })
   })
 

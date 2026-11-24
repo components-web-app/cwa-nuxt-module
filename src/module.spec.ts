@@ -535,7 +535,13 @@ declare module 'vue-router' {
         return { mockNuxt, template }
       }
 
-      test('generates a constant and a union type from each <Name>/<Name>.vue only', async () => {
+      test('generates a constant and a union type from each <Name>/<Name>.vue only, with each one\'s full UI names and style keys, so an allowedComponents rule is type-checked (#488)', async () => {
+        vi.mocked(scanCwaConfigDeclarations).mockReturnValueOnce({
+          components: { HtmlContent: { styles: { small: { name: 'Small', classes: 's' }, large: { name: 'Large', classes: 'l' } } } },
+          ui: { CwaComponentHtmlContentUiAltUi: { styles: { wide: { name: 'Wide', classes: 'w' }, large: { name: 'Large', classes: 'l' } } } },
+          layouts: {},
+          pages: {},
+        } as never)
         const { template } = await prepare()
 
         expect(template).toBeDefined()
@@ -545,7 +551,44 @@ declare module 'vue-router' {
   "WatchPastConference": "WatchPastConference"
 } as const
 export type CwaComponentName = typeof CwaComponentNames[keyof typeof CwaComponentNames]
+export interface CwaComponentUis {
+  "HtmlContent": "CwaComponentHtmlContent" | "CwaComponentHtmlContentUiAltUi"
+  "WatchPastConference": "CwaComponentWatchPastConference"
+}
+export interface CwaComponentStyles {
+  "HtmlContent": "small" | "large" | "wide"
+  "WatchPastConference": never
+}
 `)
+      })
+
+      test('auto-imports the UI and style types with the names', async () => {
+        await prepare()
+
+        expect(nuxtKit.addImports as Mock).toHaveBeenCalledWith(expect.arrayContaining([
+          { name: 'CwaComponentUis', from: '#build/cwa-component-names', type: true },
+          { name: 'CwaComponentStyles', from: '#build/cwa-component-names', type: true },
+        ]))
+      })
+
+      test('is regenerated when a component file changes in dev, since its styles may have', async () => {
+        vi.spyOn(nuxtKit, 'createResolver').mockReturnValue({
+          resolve: vi.fn((...args: string[]) => join(...args)),
+          resolvePath: vi.fn(),
+        })
+        let watchCallback: ((event: string, path: string) => Promise<void>) | undefined
+        await prepareMockNuxt({}, {
+          hook: vi.fn((hookName, callback) => {
+            if (hookName === 'builder:watch') {
+              watchCallback = callback
+            }
+          }),
+        })
+
+        await watchCallback!('change', 'cwa/components/HtmlContent/HtmlContent.vue')
+
+        const [{ filter }] = (nuxtKit.updateTemplates as Mock).mock.lastCall!
+        expect(filter!({ filename: 'cwa-component-names.ts' } as any)).toBe(true)
       })
 
       test('auto-imports the constant and the type from the generated template', async () => {
@@ -554,6 +597,8 @@ export type CwaComponentName = typeof CwaComponentNames[keyof typeof CwaComponen
         expect(nuxtKit.addImports as Mock).toHaveBeenCalledWith([
           { name: 'CwaComponentNames', from: '#build/cwa-component-names' },
           { name: 'CwaComponentName', from: '#build/cwa-component-names', type: true },
+          { name: 'CwaComponentUis', from: '#build/cwa-component-names', type: true },
+          { name: 'CwaComponentStyles', from: '#build/cwa-component-names', type: true },
         ])
       })
 
@@ -1011,7 +1056,6 @@ export const componentGroupDeclarations: ComponentGroupDeclarations = {
 
         const [{ filter }] = vi.mocked(nuxtKit.updateTemplates).mock.lastCall!
         expect(filter!({ filename: 'cwa-options.ts' } as any)).toBe(false)
-        expect(filter!({ filename: 'cwa-component-names.ts' } as any)).toBe(false)
       })
     })
 

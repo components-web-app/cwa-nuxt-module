@@ -24,15 +24,35 @@ const resourceTypeProperty: {
 
 type LocationProperty = typeof resourceTypeProperty[keyof typeof resourceTypeProperty]
 
+interface AllowedComponentRule {
+  component: string
+  ui?: string[]
+  styles?: string[]
+}
+
+type AllowedComponentEntry = string | AllowedComponentRule
+
+type AllowedComponentUi = Record<string, { ui?: (string | null)[], styles?: string[] }>
+
+interface ResolvedAllowedComponents {
+  allowedComponents: string[] | null
+  allowedComponentUi: AllowedComponentUi | null
+}
+
 interface SyncWatcherOps {
   resource: ComputedRef<CwaCurrentResourceInterface | undefined>
   location: string
   fullReference: ComputedRef<string>
-  allowedComponents: string[] | null | undefined
+  allowedComponents: AllowedComponentEntry[] | null | undefined
   maxComponents?: number | null
 }
 
 const UNRESOLVED = Symbol('unresolved')
+const warnedIriEntries = new Set<string>()
+
+function isRule(entry: unknown): entry is AllowedComponentRule {
+  return !!entry && typeof entry === 'object' && typeof (entry as AllowedComponentRule).component === 'string'
+}
 const COMPONENT_GROUPS_ENDPOINT = '/_/component_groups'
 
 export class ComponentGroupUtilSynchronizer {
@@ -162,9 +182,9 @@ export class ComponentGroupUtilSynchronizer {
     return resourceTypeProperty[locationResourceType as keyof typeof resourceTypeProperty]
   }
 
-  private async createComponentGroup(iri: string, locationProperty: LocationProperty, fullReference: ComputedRef<string | undefined>, allowedComponents: string[] | null | undefined, maxComponents: number | null | undefined) {
-    const resolvedAllowedComponents = await this.resolveAllowedComponents(allowedComponents)
-    if (resolvedAllowedComponents === UNRESOLVED) {
+  private async createComponentGroup(iri: string, locationProperty: LocationProperty, fullReference: ComputedRef<string | undefined>, allowedComponents: AllowedComponentEntry[] | null | undefined, maxComponents: number | null | undefined) {
+    const resolved = await this.resolveAllowedComponents(allowedComponents)
+    if (resolved === UNRESOLVED) {
       return
     }
     const resolvedMaxComponents = this.resolveMaxComponents(maxComponents)
@@ -174,7 +194,8 @@ export class ComponentGroupUtilSynchronizer {
       data: {
         reference: fullReference.value,
         location: iri,
-        allowedComponents: resolvedAllowedComponents,
+        allowedComponents: resolved?.allowedComponents,
+        ...(resolved?.allowedComponentUi ? { allowedComponentUi: resolved.allowedComponentUi } : {}),
         ...(resolvedMaxComponents === UNRESOLVED || resolvedMaxComponents === undefined ? {} : { maxComponents: resolvedMaxComponents }),
         [locationProperty]: [iri],
       },
@@ -203,17 +224,26 @@ export class ComponentGroupUtilSynchronizer {
     }, [])
   }
 
-  private async resolveAllowedComponents(allowedComponents: string[] | null | undefined): Promise<string[] | null | undefined | typeof UNRESOLVED> {
-    if (!allowedComponents) return allowedComponents
-    if (!allowedComponents.length) return null
+  private async resolveAllowedComponents(allowedComponents: AllowedComponentEntry[] | null | undefined): Promise<ResolvedAllowedComponents | undefined | typeof UNRESOLVED> {
+    if (allowedComponents === undefined) return undefined
+    if (!allowedComponents?.length) return { allowedComponents: null, allowedComponentUi: null }
 
-    const invalid = allowedComponents.filter(entry => typeof entry !== 'string')
+    const invalid = allowedComponents.filter(entry => typeof entry !== 'string' && !isRule(entry))
     if (invalid.length) {
       logger.warn(`[CWA] allowedComponents was not synced: ${invalid.map(String).join(', ')} is not a component name.`)
       return UNRESOLVED
     }
 
-    const names = allowedComponents.filter(entry => !entry.startsWith('/'))
+    const nameOf = (entry: AllowedComponentEntry) => isRule(entry) ? entry.component : entry
+    for (const entry of allowedComponents) {
+      const name = nameOf(entry)
+      if (name.startsWith('/') && !warnedIriEntries.has(name)) {
+        warnedIriEntries.add(name)
+        logger.warn(`[CWA] The allowedComponents entry '${name}' is a collection IRI, the old syntax. Use the component name, from CwaComponentNames. IRIs will stop working in the next alpha, without further warning.`)
+      }
+    }
+
+    const names = allowedComponents.map(nameOf).filter(name => !name.startsWith('/'))
     let endpoints: Record<string, string> = {}
     if (names.length) {
       const metadata = await this.$cwa.getComponentMetadata()
@@ -228,19 +258,42 @@ export class ComponentGroupUtilSynchronizer {
       endpoints = Object.fromEntries(names.map(name => [name, metadata[name]!.endpoint]))
     }
 
-    const iris = allowedComponents.map(entry => endpoints[entry] ?? entry)
     const prefix = ResourceTypeFromIri.getPathPrefix()
-    if (!prefix) return iris
-    return iris.map(iri => iri.startsWith(prefix) ? iri : `${prefix}${iri}`)
+    const iriOf = (name: string) => {
+      const iri = endpoints[name] ?? name
+      return prefix && !iri.startsWith(prefix) ? `${prefix}${iri}` : iri
+    }
+
+    const allowedComponentUi: AllowedComponentUi = {}
+    for (const rule of allowedComponents.filter(isRule)) {
+      const restriction: AllowedComponentUi[string] = {}
+      if (rule.ui?.length) {
+        restriction.ui = rule.ui.map(ui => ui === `CwaComponent${rule.component}` ? null : ui)
+      }
+      if (rule.styles?.length) {
+        restriction.styles = rule.styles.map(style => `style:${style}`)
+      }
+      if (Object.keys(restriction).length) {
+        allowedComponentUi[iriOf(rule.component)] = restriction
+      }
+    }
+
+    return {
+      allowedComponents: allowedComponents.map(entry => iriOf(nameOf(entry))),
+      allowedComponentUi: Object.keys(allowedComponentUi).length ? allowedComponentUi : null,
+    }
   }
 
-  private async updateComponentGroup(allowedComponents: string[] | null | undefined, maxComponents: number | null | undefined, resource: any) {
-    const data: { allowedComponents?: string[] | null, maxComponents?: number | null } = {}
+  private async updateComponentGroup(allowedComponents: AllowedComponentEntry[] | null | undefined, maxComponents: number | null | undefined, resource: any) {
+    const data: { allowedComponents?: string[] | null, allowedComponentUi?: AllowedComponentUi | null, maxComponents?: number | null } = {}
 
-    if (allowedComponents !== undefined) {
-      const normalized = await this.resolveAllowedComponents(allowedComponents)
-      if (normalized !== UNRESOLVED && !isEqual(normalized, resource?.data?.allowedComponents ?? null)) {
-        data.allowedComponents = normalized
+    const resolved = await this.resolveAllowedComponents(allowedComponents)
+    if (resolved && resolved !== UNRESOLVED) {
+      if (!isEqual(resolved.allowedComponents, resource?.data?.allowedComponents ?? null)) {
+        data.allowedComponents = resolved.allowedComponents
+      }
+      if (!isEqual(resolved.allowedComponentUi, resource?.data?.allowedComponentUi ?? null)) {
+        data.allowedComponentUi = resolved.allowedComponentUi
       }
     }
 
