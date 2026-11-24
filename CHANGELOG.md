@@ -6,6 +6,7 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ### Changed
 
+- A redirect, or any other page response that is never stored, now sends `Cache-Control: private, no-store` instead of a bare `no-store`, so the template's Souin cache never coalesces concurrent visitors onto one response. [f54557d7](https://github.com/components-web-app/cwa-nuxt-module/commit/f54557d77ccf3c436a3838640b1ff0e4931ead4f)
 - On a phone, the select, menu, picker and resource stack sheets slide up from below the screen and slide back down however they close, with the page behind fading in and out. The path selector now keeps its name in the header while its stack is open. [0468a0b2](https://github.com/components-web-app/cwa-nuxt-module/commit/0468a0b2706e779c8ad5f9d229dc91617cdf8d48) ([#461](https://github.com/components-web-app/cwa-nuxt-module/issues/461))
 
 ## [2.0.0-alpha.39] - 2026-11-20
