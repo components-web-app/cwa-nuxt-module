@@ -4,6 +4,11 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+### Added
+
+- Extensions: a Nuxt module can register with CWA through the `cwa:extend` hook, adding prefixed components, layouts and CWA page templates an app can override by name, admin pages under `/_cwa` with an optional role and a menu entry, and paths kept out of the page cache. Two extensions that clash fail the build. [2d8267ae](https://github.com/components-web-app/cwa-nuxt-module/commit/2d8267ae1f79b0e7b50ec1d851c1399b00f40087) [139e221f](https://github.com/components-web-app/cwa-nuxt-module/commit/139e221f10f20117f0cc7d37d1d5d7700e4b0736) ([#487](https://github.com/components-web-app/cwa-nuxt-module/issues/487))
+- A route rule of `cwa: { pageCache: false }` keeps a page out of the shared page cache. [2d8267ae](https://github.com/components-web-app/cwa-nuxt-module/commit/2d8267ae1f79b0e7b50ec1d851c1399b00f40087) ([#487](https://github.com/components-web-app/cwa-nuxt-module/issues/487))
+
 ### Changed
 
 - Cached page HTML is now tagged with every resource the page fetched, of any type, not only CWA's own, so a write to an extension's resource (a product) purges the pages showing it. Embedded objects are not tagged: reference them by IRI and fetch them. [d8c5aac6](https://github.com/components-web-app/cwa-nuxt-module/commit/d8c5aac6439f6d196b29f57d9403a9530cb03651) [472d4686](https://github.com/components-web-app/cwa-nuxt-module/commit/472d4686894207dbf829a318ecb8bfe43d069760)
