@@ -172,6 +172,120 @@ describe('buildPageCacheHeaders', () => {
     expect(buildPageCacheHeaders({ ids: ['/'], api: storable, options })).toEqual({})
   })
 
+  describe('resources that are not CWA types', () => {
+    const product = { '@id': '/_api/products/1', 'name': 'Book' }
+
+    test('tags a stored resource of any type, so a write to an extension resource purges the page', () => {
+      const data: Record<string, unknown> = { '/_api/products/1': product }
+      const decision = buildPageCacheHeaders({
+        ids: ['/_api/_/routes//', '/_api/products/1'],
+        dataOf: id => data[id],
+        api: storable,
+        options,
+      })
+
+      expect(decision.surrogateKey).toBe('cwa-html, /_api/_/routes//, /_api/products/1')
+    })
+
+    test('tags a stored resource of any type when the API has no path prefix', () => {
+      ResourceTypeFromIri.setPathPrefix('/')
+      const data: Record<string, unknown> = { '/products/1': { '@id': '/products/1' } }
+      const decision = buildPageCacheHeaders({
+        ids: ['/', '/_/routes//', '/products/1'],
+        dataOf: id => data[id],
+        api: storable,
+        options,
+      })
+
+      expect(decision.surrogateKey).toBe('cwa-html, /_/routes//, /products/1')
+    })
+
+    test('never tags a stored id whose data is not that resource, such as a bare / or __new__', () => {
+      const data: Record<string, unknown> = { '/': { '@id': '/_api/_/routes//' }, '__new__': { '@id': '__new__' } }
+      const decision = buildPageCacheHeaders({
+        ids: ['/', '__new__', '/_api/_/routes//'],
+        dataOf: id => data[id],
+        api: storable,
+        options,
+      })
+
+      expect(decision.surrogateKey).toBe('cwa-html, /_api/_/routes//')
+    })
+  })
+
+  describe('embedded resources', () => {
+    test('tags every embedded object, at any depth and inside arrays, so a write to it purges the page', () => {
+      const pageData = {
+        '@id': '/_api/page_data/book_page_datas/1',
+        'product': {
+          '@id': '/_api/products/1',
+          'variants': [
+            { '@id': '/_api/product_variants/1', 'price': { '@id': '/_api/prices/1' } },
+            { '@id': '/_api/product_variants/2' },
+          ],
+        },
+      }
+      const decision = buildPageCacheHeaders({
+        ids: ['/_api/page_data/book_page_datas/1'],
+        dataOf: () => pageData,
+        api: storable,
+        options,
+      })
+
+      expect(decision.surrogateKey).toBe([
+        RENDERED_HTML_SURROGATE_KEY,
+        '/_api/page_data/book_page_datas/1',
+        '/_api/products/1',
+        '/_api/product_variants/1',
+        '/_api/prices/1',
+        '/_api/product_variants/2',
+      ].join(SURROGATE_KEY_SEPARATOR))
+    })
+
+    test('adds no tag for a blank node or anything under _metadata', () => {
+      const pageData = {
+        '@id': '/_api/page_data/book_page_datas/1',
+        'address': { '@id': '_:b0', 'line': { '@id': '/_api/lines/1', '_metadata': { owner: { '@id': '/_api/owners/1' } } } },
+        '_metadata': { publishable: { '@id': '/_api/products/9' } },
+      }
+      const decision = buildPageCacheHeaders({
+        ids: ['/_api/page_data/book_page_datas/1'],
+        dataOf: () => pageData,
+        api: storable,
+        options,
+      })
+
+      expect(decision.surrogateKey).toBe('cwa-html, /_api/page_data/book_page_datas/1, /_api/lines/1')
+    })
+
+    test('adds no tag for a reference given only as an IRI, which the page shows only once it is fetched and stored', () => {
+      const pageData = { '@id': '/_api/page_data/book_page_datas/1', 'product': '/_api/products/1', 'links': ['/_api/products/2'] }
+      const decision = buildPageCacheHeaders({
+        ids: ['/_api/page_data/book_page_datas/1'],
+        dataOf: () => pageData,
+        api: storable,
+        options,
+      })
+
+      expect(decision.surrogateKey).toBe('cwa-html, /_api/page_data/book_page_datas/1')
+    })
+
+    test('tags an embedded object once when several resources embed it', () => {
+      const data: Record<string, unknown> = {
+        '/_api/component/books/1': { '@id': '/_api/component/books/1', 'product': { '@id': '/_api/products/1' } },
+        '/_api/component/books/2': { '@id': '/_api/component/books/2', 'product': { '@id': '/_api/products/1' } },
+      }
+      const decision = buildPageCacheHeaders({
+        ids: ['/_api/component/books/1', '/_api/component/books/2'],
+        dataOf: id => data[id],
+        api: storable,
+        options,
+      })
+
+      expect(decision.surrogateKey).toBe('cwa-html, /_api/component/books/1, /_api/component/books/2, /_api/products/1')
+    })
+  })
+
   test('declines when the API marked any response unstorable', () => {
     expect(buildPageCacheHeaders({
       ids: ['/_api/_/routes//'],

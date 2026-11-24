@@ -32,6 +32,7 @@ export default defineNuxtPlugin({
 
       event.context.cwaPageCache = buildPageCacheHeaders({
         ids: $cwa.resources.allIds,
+        dataOf: id => $cwa.resources.getResource(id).value?.data,
         api: $cwa.apiHttpCacheState,
         options: resolvePageCacheOptions(options.pageCache),
       })

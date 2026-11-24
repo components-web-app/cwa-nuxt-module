@@ -1,4 +1,5 @@
 import { getResourceTypeFromIri } from '#cwa/resources/resource-utils'
+import { NEW_RESOURCE_IRI } from '#cwa/storage/stores/resources/state'
 
 export const SURROGATE_KEY_SEPARATOR = ', '
 
@@ -29,6 +30,7 @@ export interface ResponseHeadersLike {
 
 export interface BuildPageCacheHeadersEvent {
   ids: string[]
+  dataOf?: (id: string) => unknown
   api: ApiCacheDirectives
   options: PageCacheOptions
 }
@@ -101,12 +103,39 @@ export function mergeCacheDirectives(a: ApiCacheDirectives, b: ApiCacheDirective
   }
 }
 
-export function buildPageCacheHeaders({ ids, api, options }: BuildPageCacheHeadersEvent): PageCacheDecision {
+function iriOf(value: unknown): string | undefined {
+  const iri = value && typeof value === 'object' ? (value as Record<string, unknown>)['@id'] : undefined
+  return typeof iri === 'string' && !iri.startsWith('_:') ? iri : undefined
+}
+
+function collectEmbeddedIris(value: unknown, into: Set<string>) {
+  if (Array.isArray(value)) {
+    value.forEach(item => collectEmbeddedIris(item, into))
+    return
+  }
+  if (!value || typeof value !== 'object') {
+    return
+  }
+  const iri = iriOf(value)
+  iri && into.add(iri)
+  for (const [key, child] of Object.entries(value)) {
+    key !== '_metadata' && collectEmbeddedIris(child, into)
+  }
+}
+
+function pageIris(ids: string[], dataOf?: (id: string) => unknown): string[] {
+  const stored = ids.filter(id => id !== NEW_RESOURCE_IRI && (getResourceTypeFromIri(id) !== undefined || iriOf(dataOf?.(id)) === id))
+  const iris = new Set(stored)
+  stored.forEach(id => collectEmbeddedIris(dataOf?.(id), iris))
+  return [...iris]
+}
+
+export function buildPageCacheHeaders({ ids, dataOf, api, options }: BuildPageCacheHeadersEvent): PageCacheDecision {
   if (!api.storable) {
     return { unstorable: true }
   }
 
-  const iris = ids.filter(id => getResourceTypeFromIri(id) !== undefined)
+  const iris = pageIris(ids, dataOf)
   if (!iris.length) {
     return {}
   }

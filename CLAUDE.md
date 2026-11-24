@@ -274,6 +274,8 @@ Code kept only for an older API, or to work around someone else's bug, is logged
 
 On by default (`cwa.pageCache.enabled`; the `?? true` in `module.ts` and `resolvePageCacheOptions` must agree). Tags HTML with API resource IRIs in `Surrogate-Key` (joined `', '`), plus `cwa-html`.
 
+- **The tags are every stored resource of any type, plus every object embedded in one** (its `@id`, skipping blank nodes `_:` and anything under `_metadata`), so a write to an extension's resource or to an embedded object purges the page. A store id is a resource only when it is a CWA type or its data's own `@id` is that id: the store also holds a bare `/`, which would put every page under one key, and `__new__`, which is excluded by name. An IRI given only as a string is not tagged: the page shows it only once it is fetched, and then it is stored.
+
 - **Decide-then-emit:** `plugin-page-cache.server.ts` decides at `app:rendered`; `server/page-cache-plugin.ts` emits at `beforeResponse`.
 - **Never a bare `no-store`**: Souin does not store it, but its singleflight still hands concurrent requests one upstream body, and guests share a cache key, so anything not stored sends `private, no-store`.
 - **TTL follows the lowest API `s-maxage`/`Expires`** (converted using that response's own `Date`), capped by optional `sharedMaxAge`; 3600 only when nothing carries freshness ([#325](https://github.com/components-web-app/cwa-nuxt-module/issues/325)). `max-age=0` always. Untagged time-sensitive output needs `sharedMaxAge`.
