@@ -105,7 +105,7 @@ export function mergeCacheDirectives(a: ApiCacheDirectives, b: ApiCacheDirective
 
 function iriOf(value: unknown): string | undefined {
   const iri = value && typeof value === 'object' ? (value as Record<string, unknown>)['@id'] : undefined
-  return typeof iri === 'string' && !iri.startsWith('_:') ? iri : undefined
+  return typeof iri === 'string' && !iri.includes('/.well-known/') && !iri.endsWith('/_/resource_metadatas') ? iri : undefined
 }
 
 function collectEmbeddedIris(value: unknown, into: Set<string>) {

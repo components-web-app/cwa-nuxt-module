@@ -242,10 +242,11 @@ describe('buildPageCacheHeaders', () => {
       ].join(SURROGATE_KEY_SEPARATOR))
     })
 
-    test('adds no tag for a blank node or anything under _metadata', () => {
+    test('adds no tag for a blank node, resource metadata or anything under _metadata, as the API leaves them out of its own tags', () => {
       const pageData = {
         '@id': '/_api/page_data/book_page_datas/1',
-        'address': { '@id': '_:b0', 'line': { '@id': '/_api/lines/1', '_metadata': { owner: { '@id': '/_api/owners/1' } } } },
+        'address': { '@id': '/_api/.well-known/genid/b0', 'line': { '@id': '/_api/lines/1', '_metadata': { owner: { '@id': '/_api/owners/1' } } } },
+        'meta': { '@id': '/_api/_/resource_metadatas' },
         '_metadata': { publishable: { '@id': '/_api/products/9' } },
       }
       const decision = buildPageCacheHeaders({
