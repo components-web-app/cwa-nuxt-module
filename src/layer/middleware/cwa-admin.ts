@@ -1,13 +1,14 @@
 import { defineNuxtRouteMiddleware, navigateTo, useNuxtApp } from 'nuxt/app'
 import type { RouteLocationNormalized } from 'vue-router'
 import { useProcess } from '#cwa/composables/process'
+import { canOpenAdminPage } from '#cwa/admin/admin-role'
 
 export default defineNuxtRouteMiddleware(async (to: RouteLocationNormalized) => {
   const { $cwa } = useNuxtApp()
 
   await $cwa.auth.init()
 
-  if ($cwa.auth.isAdmin.value) {
+  if (canOpenAdminPage($cwa.auth, to.meta.cwaAdminRole as string | undefined)) {
     return
   }
 
