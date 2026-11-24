@@ -11,7 +11,7 @@ export default defineNitroPlugin((nitroApp) => {
 
     if (event.node.res.statusCode !== 200) {
       removeResponseHeader(event, 'Surrogate-Key')
-      setResponseHeader(event, 'Cache-Control', 'no-store')
+      setResponseHeader(event, 'Cache-Control', 'private, no-store')
       return
     }
 

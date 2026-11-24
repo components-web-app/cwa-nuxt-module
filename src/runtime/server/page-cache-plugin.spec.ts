@@ -54,7 +54,7 @@ describe('cwa page cache nitro plugin', () => {
     expect(mockSetResponseHeader).toHaveBeenCalledWith(event, 'Cache-Control', 'public, max-age=0, s-maxage=300')
   })
 
-  test('sends no-store and no Surrogate-Key when the render resolved to a redirect', async () => {
+  test('sends private, no-store and no Surrogate-Key when the render resolved to a redirect, so Souin never coalesces concurrent visitors onto one response', async () => {
     const beforeResponse = await captureBeforeResponse()
     const event = createEvent(308, {
       surrogateKey: '/_api/_/routes//',
@@ -64,11 +64,11 @@ describe('cwa page cache nitro plugin', () => {
     beforeResponse(event)
 
     expect(mockRemoveResponseHeader).toHaveBeenCalledWith(event, 'Surrogate-Key')
-    expect(mockSetResponseHeader).toHaveBeenCalledWith(event, 'Cache-Control', 'no-store')
+    expect(mockSetResponseHeader).toHaveBeenCalledWith(event, 'Cache-Control', 'private, no-store')
     expect(mockSetResponseHeader).toHaveBeenCalledTimes(1)
   })
 
-  test('sends no-store and no Surrogate-Key when a failed primary fetch left the render cacheable', async () => {
+  test('sends private, no-store and no Surrogate-Key when a failed primary fetch left the render cacheable', async () => {
     const beforeResponse = await captureBeforeResponse()
     const event = createEvent(404, {
       surrogateKey: '/_api/_/routes//missing',
@@ -78,7 +78,7 @@ describe('cwa page cache nitro plugin', () => {
     beforeResponse(event)
 
     expect(mockRemoveResponseHeader).toHaveBeenCalledWith(event, 'Surrogate-Key')
-    expect(mockSetResponseHeader).toHaveBeenCalledWith(event, 'Cache-Control', 'no-store')
+    expect(mockSetResponseHeader).toHaveBeenCalledWith(event, 'Cache-Control', 'private, no-store')
     expect(mockSetResponseHeader).toHaveBeenCalledTimes(1)
   })
 
