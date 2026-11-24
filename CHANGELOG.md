@@ -6,7 +6,7 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ### Changed
 
-- Cached page HTML is now tagged with every resource the page fetched, of any type, and with every object embedded in those resources. A write to an extension's own resource (a product) or to an embedded object (a variant's price) now purges the pages showing it. [d8c5aac6](https://github.com/components-web-app/cwa-nuxt-module/commit/d8c5aac6439f6d196b29f57d9403a9530cb03651)
+- Cached page HTML is now tagged with every resource the page fetched, of any type, and with every object embedded in those resources. A write to an extension's own resource (a product) or to an embedded object (a variant's price) now purges the pages showing it. [d8c5aac6](https://github.com/components-web-app/cwa-nuxt-module/commit/d8c5aac6439f6d196b29f57d9403a9530cb03651) [0df2020c](https://github.com/components-web-app/cwa-nuxt-module/commit/0df2020c8a23821c6ba5504ef00052491d010c18)
 - A redirect, or any other page response that is never stored, now sends `Cache-Control: private, no-store` instead of a bare `no-store`, so the template's Souin cache never coalesces concurrent visitors onto one response. [f54557d7](https://github.com/components-web-app/cwa-nuxt-module/commit/f54557d77ccf3c436a3838640b1ff0e4931ead4f)
 - On a phone, the select, menu, picker and resource stack sheets slide up from below the screen and slide back down however they close, with the page behind fading in and out. The path selector now keeps its name in the header while its stack is open. [0468a0b2](https://github.com/components-web-app/cwa-nuxt-module/commit/0468a0b2706e779c8ad5f9d229dc91617cdf8d48) ([#461](https://github.com/components-web-app/cwa-nuxt-module/issues/461))
 
