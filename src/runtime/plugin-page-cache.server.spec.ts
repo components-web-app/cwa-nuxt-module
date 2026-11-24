@@ -71,7 +71,7 @@ describe('cwa page cache plugin', () => {
     })
   })
 
-  test('tags the page with every stored resource and the objects embedded in them, read from the store', async () => {
+  test('tags the page with every stored resource of any type, read from the store', async () => {
     const plugin = await importPlugin()
     const stored: Record<string, unknown> = {
       '/_api/page_data/books/1': { '@id': '/_api/page_data/books/1', 'product': { '@id': '/_api/products/1' } },
@@ -88,7 +88,7 @@ describe('cwa page cache plugin', () => {
     rendered()
 
     expect(mockEvent.value!.context.cwaPageCache).toMatchObject({
-      surrogateKey: 'cwa-html, /_api/page_data/books/1, /_api/products/2, /_api/products/1',
+      surrogateKey: 'cwa-html, /_api/page_data/books/1, /_api/products/2',
     })
   })
 

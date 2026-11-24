@@ -213,78 +213,19 @@ describe('buildPageCacheHeaders', () => {
     })
   })
 
-  describe('embedded resources', () => {
-    test('tags every embedded object, at any depth and inside arrays, so a write to it purges the page', () => {
-      const pageData = {
-        '@id': '/_api/page_data/book_page_datas/1',
-        'product': {
-          '@id': '/_api/products/1',
-          'variants': [
-            { '@id': '/_api/product_variants/1', 'price': { '@id': '/_api/prices/1' } },
-            { '@id': '/_api/product_variants/2' },
-          ],
-        },
-      }
-      const decision = buildPageCacheHeaders({
-        ids: ['/_api/page_data/book_page_datas/1'],
-        dataOf: () => pageData,
-        api: storable,
-        options,
-      })
-
-      expect(decision.surrogateKey).toBe([
-        RENDERED_HTML_SURROGATE_KEY,
-        '/_api/page_data/book_page_datas/1',
-        '/_api/products/1',
-        '/_api/product_variants/1',
-        '/_api/prices/1',
-        '/_api/product_variants/2',
-      ].join(SURROGATE_KEY_SEPARATOR))
+  test('adds no tag for an embedded object, so one shared resource changing never clears every page that embeds it', () => {
+    const pageData = {
+      '@id': '/_api/page_data/book_page_datas/1',
+      'product': { '@id': '/_api/products/1', 'variants': [{ '@id': '/_api/product_variants/1' }] },
+    }
+    const decision = buildPageCacheHeaders({
+      ids: ['/_api/page_data/book_page_datas/1'],
+      dataOf: () => pageData,
+      api: storable,
+      options,
     })
 
-    test('adds no tag for a blank node, resource metadata or anything under _metadata, as the API leaves them out of its own tags', () => {
-      const pageData = {
-        '@id': '/_api/page_data/book_page_datas/1',
-        'address': { '@id': '/_api/.well-known/genid/b0', 'line': { '@id': '/_api/lines/1', '_metadata': { owner: { '@id': '/_api/owners/1' } } } },
-        'meta': { '@id': '/_api/_/resource_metadatas' },
-        '_metadata': { publishable: { '@id': '/_api/products/9' } },
-      }
-      const decision = buildPageCacheHeaders({
-        ids: ['/_api/page_data/book_page_datas/1'],
-        dataOf: () => pageData,
-        api: storable,
-        options,
-      })
-
-      expect(decision.surrogateKey).toBe('cwa-html, /_api/page_data/book_page_datas/1, /_api/lines/1')
-    })
-
-    test('adds no tag for a reference given only as an IRI, which the page shows only once it is fetched and stored', () => {
-      const pageData = { '@id': '/_api/page_data/book_page_datas/1', 'product': '/_api/products/1', 'links': ['/_api/products/2'] }
-      const decision = buildPageCacheHeaders({
-        ids: ['/_api/page_data/book_page_datas/1'],
-        dataOf: () => pageData,
-        api: storable,
-        options,
-      })
-
-      expect(decision.surrogateKey).toBe('cwa-html, /_api/page_data/book_page_datas/1')
-    })
-
-    test('tags an embedded object once when several resources embed it', () => {
-      const data: Record<string, unknown> = {
-        '/_api/component/books/1': { '@id': '/_api/component/books/1', 'product': { '@id': '/_api/products/1' } },
-        '/_api/component/books/2': { '@id': '/_api/component/books/2', 'product': { '@id': '/_api/products/1' } },
-      }
-      const decision = buildPageCacheHeaders({
-        ids: ['/_api/component/books/1', '/_api/component/books/2'],
-        dataOf: id => data[id],
-        api: storable,
-        options,
-      })
-
-      expect(decision.surrogateKey).toBe('cwa-html, /_api/component/books/1, /_api/component/books/2, /_api/products/1')
-    })
+    expect(decision.surrogateKey).toBe('cwa-html, /_api/page_data/book_page_datas/1')
   })
 
   test('declines when the API marked any response unstorable', () => {
