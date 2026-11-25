@@ -4,6 +4,12 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+### Added
+
+- `useItemPage` (and so `useCwaAdminItem`) takes dotted field paths, such as `field="gatewayConfig.vendor"`: a nested value is unsaved and sent on its own, nested under its parent, and a 422 on that path shows on its field. [62fef0c5](https://github.com/components-web-app/cwa-nuxt-module/commit/62fef0c5a8ebf6a08d24811d3d09bd86aaf7ee24) ([#494](https://github.com/components-web-app/cwa-nuxt-module/issues/494))
+- `CwaUiDescriptorFields` renders a dialog or FormGroup's fields from descriptors (`{ name, label, type, required, secret }`, typed as `CwaFieldDescriptor`) under a path: `bool`, `int`, `text`, `string`, or a secret. [1055d152](https://github.com/components-web-app/cwa-nuxt-module/commit/1055d152466626581d49920a0a1d6040a18b975f) ([#494](https://github.com/components-web-app/cwa-nuxt-module/issues/494))
+- `CwaUiSecretInput` edits a write-only value read back as `{ set }`: it shows Set or Not set, never the value, sends one only once it is typed, and offers Replace and Remove (which sends `null`; not for a required secret). [5bdef217](https://github.com/components-web-app/cwa-nuxt-module/commit/5bdef2176ad916b6b7591ee07e7edb43955e2962) ([#494](https://github.com/components-web-app/cwa-nuxt-module/issues/494))
+
 ### Fixed
 
 - The header's status for a lost real-time connection reads "Collaborative editing unavailable", not "Live editing paused", which read as editing being switched off; its ⓘ explains that editing carries on and saves as normal. [e8e12e24](https://github.com/components-web-app/cwa-nuxt-module/commit/e8e12e24b215eafec54d9cc16fe443a79f193abe)

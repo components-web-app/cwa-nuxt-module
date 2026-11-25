@@ -36,6 +36,7 @@ import type { CwaExtension, ExtensionNames } from './extensions'
 import type { CwaModuleOptions, CwaResourcesConfig, CwaResourcesMeta, CwaStyleClasses, CwaStyles, CwaUiVariantConfig, GlobalComponentNames } from './runtime/types'
 
 export type { CwaExtension, CwaExtensionAdminPage } from './extensions'
+export type { CwaFieldDescriptor } from './runtime/templates/components/core/ui/field-descriptors'
 
 declare module 'nuxt/schema' {
   interface NuxtHooks {
