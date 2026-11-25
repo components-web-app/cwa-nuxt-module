@@ -4,6 +4,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+## [2.0.0-alpha.40] - 2026-11-25
+
 ### Added
 
 - A page outside CWA names its CWA layout by reference with `definePageMeta({ cwa: { disabled: true, layout: '<reference>' } })`: the layout loads on the server render and after navigation, so its component groups render; a layout that fails to load shows the default layout. Needs bundle 2.0.0-alpha.47. [f8375dab](https://github.com/components-web-app/cwa-nuxt-module/commit/f8375daba3fedf6ace9b712defd31b0864ad65e7)
@@ -389,7 +391,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 - First tagged release of `@cwa/nuxt`; releases are now published from `v*` tags ([7c61b7c](https://github.com/components-web-app/cwa-nuxt-module/commit/7c61b7ce331ec4a0cb8e76951a5de2ff806ed07a))
 
-[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.39...HEAD
+[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.40...HEAD
+[2.0.0-alpha.40]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.39...v2.0.0-alpha.40
 [2.0.0-alpha.39]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.38...v2.0.0-alpha.39
 [2.0.0-alpha.38]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.37...v2.0.0-alpha.38
 [2.0.0-alpha.37]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.36...v2.0.0-alpha.37
