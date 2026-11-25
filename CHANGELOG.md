@@ -6,7 +6,7 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ### Added
 
-- A page outside CWA names its CWA layout by reference with `definePageMeta({ cwa: { disabled: true, layout: '<reference>' } })`: the layout loads on the server render and after navigation, so its component groups render; a layout that fails to load shows the default layout. Needs bundle 2.0.0-alpha.47. [6e7e93c8](https://github.com/components-web-app/cwa-nuxt-module/commit/6e7e93c81d2c7878d1e552a79de33351477b1fbc)
+- A page outside CWA names its CWA layout by reference with `definePageMeta({ cwa: { disabled: true, layout: '<reference>' } })`: the layout loads on the server render and after navigation, so its component groups render; a layout that fails to load shows the default layout. Needs bundle 2.0.0-alpha.47. [f8375dab](https://github.com/components-web-app/cwa-nuxt-module/commit/f8375daba3fedf6ace9b712defd31b0864ad65e7)
 - Extension admin pages can name an `item` page, registered as the list's `:iri` dialog route. [6ca4e4cb](https://github.com/components-web-app/cwa-nuxt-module/commit/6ca4e4cb128f3106a9a5c5bd48db7cccfdf71ae9) ([#487](https://github.com/components-web-app/cwa-nuxt-module/issues/487))
 - `CwaAdminList`, `CwaAdminListRow`, `CwaAdminListCell`, `CwaAdminResourceId` and `useCwaAdminItem` (with `runAction` for a confirmed action) build an extension's admin list and item dialog from the built-in parts. [a29c11cb](https://github.com/components-web-app/cwa-nuxt-module/commit/a29c11cb89e43d6b199ec2d063b3397f61c2ae84) [89c0c6a8](https://github.com/components-web-app/cwa-nuxt-module/commit/89c0c6a81f638f12441e081b15675582f214cc1b) [a0df5219](https://github.com/components-web-app/cwa-nuxt-module/commit/a0df52195ede7a29ab9482fcbd0fd5f0621bfdf9) ([#487](https://github.com/components-web-app/cwa-nuxt-module/issues/487))
 - `CwaUiDetailList` and `CwaUiDataTable` show read-only details and tables in admin dialogs. [fc6040ee](https://github.com/components-web-app/cwa-nuxt-module/commit/fc6040eeb486bfd8f81d7da9a30827bf8646ef14) ([#487](https://github.com/components-web-app/cwa-nuxt-module/issues/487))
@@ -24,7 +24,7 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ### Deprecated
 
-- `cwa.staticLayout` in page meta: name the layout by reference with `cwa.layout`. It warns once and is removed in the next alpha without further warning. [6e7e93c8](https://github.com/components-web-app/cwa-nuxt-module/commit/6e7e93c81d2c7878d1e552a79de33351477b1fbc)
+- `cwa.staticLayout` in page meta: name the layout by reference with `cwa.layout`. It warns once and is removed in the next alpha without further warning. [f8375dab](https://github.com/components-web-app/cwa-nuxt-module/commit/f8375daba3fedf6ace9b712defd31b0864ad65e7)
 - A collection IRI in `allowedComponents` (`'/component/images'`) now warns: use the component name. IRIs will stop working in the next alpha, without further warning. [bfc40c58](https://github.com/components-web-app/cwa-nuxt-module/commit/bfc40c5834286f6ed581e4ef0f77f016bcd2ad4a) ([#488](https://github.com/components-web-app/cwa-nuxt-module/issues/488))
 
 ### Fixed
