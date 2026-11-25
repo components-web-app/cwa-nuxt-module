@@ -181,6 +181,27 @@ export const extensionAdminRoles: { role: string, label: string }[] = []
 `)
     })
 
+    test('an app component replacing an extension\'s takes its manager tabs and UI variants only from the app\'s folder, never the extension\'s', async () => {
+      await setupWithExtension()
+      const template = (nuxtKit.addTemplate as Mock).mock.calls.map(([entry]) => entry).findLast(entry => entry.filename === 'cwa-config.ts')
+      const components = [
+        { filePath: 'cwa/components/ShopPrice/ShopPrice.vue', pascalName: 'CwaComponentShopPrice' },
+        { filePath: 'cwa/components/ShopPrice/admin/SiteTab.vue', pascalName: 'CwaComponentShopPriceAdminSiteTab', global: true },
+        { filePath: '/ext/shop/components/ShopPrice/admin/RefundTab.vue', pascalName: 'CwaComponentShopPriceAdminRefundTab', global: true },
+        { filePath: '/ext/shop/components/ShopPrice/ui/Compact.vue', pascalName: 'CwaComponentShopPriceUiCompact', global: true },
+      ]
+
+      const contents: string = await template.getContents({ app: { components } })
+
+      expect(contents).toContain(`"ShopPrice": {
+    "name": "Shop Price",
+    "managerTabs": [
+      "CwaComponentShopPriceAdminSiteTab"
+    ],
+    "ui": []
+  }`)
+    })
+
     test('fails the build when an extension breaks a rule, before any template is written', async () => {
       const outcomes: Promise<unknown>[] = []
       await prepareMockNuxt({}, {
@@ -601,6 +622,8 @@ export const currentModulePackageInfo:{ version: string, name: string } = {
       expect(await tGetContents()).toEqual(`interface CwaRouteMeta {
   admin?: boolean
   disabled?: boolean
+  layout?: string
+  /** @deprecated name the layout by its reference with layout */
   staticLayout?: GlobalComponentNames
   fetch?: {
     iri: string

@@ -726,6 +726,8 @@ declare module '#og-image/components' {
         getContents: () => /* ts */`interface CwaRouteMeta {
   admin?: boolean
   disabled?: boolean
+  layout?: string
+  /** @deprecated name the layout by its reference with layout */
   staticLayout?: GlobalComponentNames
   fetch?: {
     iri: string
