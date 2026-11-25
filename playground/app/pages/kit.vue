@@ -10,6 +10,7 @@ import {
   CwaUiButton,
   CwaUiDatePicker,
   CwaUiDayRangePicker,
+  CwaUiDescriptorFields,
   CwaUiEditPlaceholder,
   CwaUiImageAlt,
   CwaUiImageSlots,
@@ -19,6 +20,7 @@ import {
   CwaUiFileUpload,
   CwaUiMultiSelect,
   CwaUiResourceSearch,
+  CwaUiSecretInput,
   CwaUiSegmented,
   CwaUiSelect,
   CwaUiIconBinIcon,
@@ -266,6 +268,17 @@ function chooseStackLevel(key: string) {
 const dialogOpen = ref(false)
 const dialogForm = fakeDialogForm({ reference: 'Shaker kitchens', title: 'Shaker kitchens | Hand-built', metaDescription: 'Hand-built shaker kitchens, made to measure.', isReachableWithoutRoute: false }, { title: kitPeers })
 const dialogTabs = [{ label: 'Details', key: 'details' }, { label: 'Info', key: 'info' }]
+const descriptorForm = fakeDialogForm({ 'config.vendor': 'shaker', 'config.sandbox': true, 'config.retries': 2, 'config.notes': '', 'config.key': { set: true }, 'config.webhook': { set: false } })
+const kitDescriptors = [
+  { name: 'vendor', label: 'Vendor name', type: 'string', required: true },
+  { name: 'sandbox', label: 'Sandbox', type: 'bool' },
+  { name: 'retries', label: 'Retries', type: 'int' },
+  { name: 'notes', label: 'Notes', type: 'text' },
+  { name: 'key', label: 'Integration key', type: 'string', required: true, secret: true },
+  { name: 'webhook', label: 'Webhook secret', type: 'string', secret: true },
+]
+const secretConflict = fakeFieldModel<string | { set: boolean } | null>('typed value', 'conflict', { set: true })
+const secretSet = fakeFieldModel<string | { set: boolean } | null>({ set: true })
 const pageForm = fakeDialogForm({ siteName: 'Shaker kitchens', canonicalUrl: 'https://shaker.example', maintenanceModeEnabled: false })
 const confirm = useCwaConfirm()
 const confirmResult = ref('')
@@ -1285,6 +1298,37 @@ const badgeTones = [
               />
             </CwaUiFormSection>
           </FormGroup>
+        </div>
+      </section>
+
+      <section aria-labelledby="kit-descriptor-fields">
+        <h2 id="kit-descriptor-fields">
+          Fields from descriptors, and secrets
+        </h2>
+        <p class="kit-note">
+          <code>CwaUiDescriptorFields</code> renders a kit control for each field descriptor (<code>string</code>, <code>bool</code>, <code>int</code>, <code>text</code>, or a secret), bound under <code>path</code>, inside a dialog or FormGroup. <code>CwaUiSecretInput</code> never shows a stored value: it reads <code>{ set }</code>, sends a value only once one is typed, and only Remove sends <code>null</code>. A required secret can only be replaced. This sample uses <code>fakeDialogForm()</code>; last saved: <output data-testid="kit-descriptor-saved">{{ JSON.stringify(descriptorForm.saves.at(-1) ?? null) }}</output>
+        </p>
+        <FormGroup
+          :form="descriptorForm"
+          data-testid="kit-descriptor-form"
+          @save="descriptorForm.save()"
+        >
+          <CwaUiFormSection title="Provider">
+            <CwaUiDescriptorFields
+              :fields="kitDescriptors"
+              path="config"
+            />
+          </CwaUiFormSection>
+        </FormGroup>
+        <div class="kit-row">
+          <CwaUiSecretInput
+            label="API token"
+            :model="secretConflict"
+          />
+          <CwaUiSecretInput
+            label="Signing key"
+            :model="secretSet"
+          />
         </div>
       </section>
 
