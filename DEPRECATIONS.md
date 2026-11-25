@@ -8,6 +8,23 @@ entry with no precondition is not a deprecation, it is a todo.
 
 ---
 
+## Remove in the alpha after 2.0.0-alpha.40
+
+### Collection IRIs in `allowedComponents`
+
+A `CwaComponentGroup`'s `allowedComponents` still accepts a collection IRI
+(`/component/images`), the syntax from before component names (#352). The
+synchroniser warns once per entry that IRIs will stop working in the next alpha
+without further warning ([#488](https://github.com/components-web-app/cwa-nuxt-module/issues/488)).
+
+**Delete:** the `` `/${string}` `` member of `CwaAllowedComponent`, the IRI branch
+and `warnedIriEntries` in `ComponentGroup.Util.Synchronizer.ts`, and the IRI tests
+in its spec. An IRI entry then fails like any unknown name.
+
+**First:** 2.0.0-alpha.40 is released, so apps have had one alpha of warnings.
+
+---
+
 ## Remove when the bundle defaults a page's title to `null`
 
 ### Skipping the `'Unnamed Page'` title

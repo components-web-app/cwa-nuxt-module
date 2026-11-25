@@ -13,7 +13,7 @@ vi.mock('#build/cwa-config', () => config)
 
 enableAutoUnmount(afterEach)
 
-function mountChoices(ui: string[], uiClassNames?: string[]) {
+function mountChoices(ui: string[], uiClassNames?: string[], allowance?: { ui?: (string | null)[], styles?: string[] }) {
   const mounted: string[] = []
   const globals = Object.fromEntries(['CwaComponentHero', ...ui].map(name => [name, defineComponent({
     setup() {
@@ -22,7 +22,7 @@ function mountChoices(ui: string[], uiClassNames?: string[]) {
     },
   })]))
   const wrapper = mount(AddComponentUiChoices, {
-    props: { name: 'Hero', ui, uiClassNames },
+    props: { name: 'Hero', ui, uiClassNames, ...(allowance ? { allowance } : {}) },
     global: { components: globals },
   })
   return { wrapper, mounted }
@@ -79,5 +79,42 @@ describe('the UI and Style choices of the add component detail (#461)', () => {
 
     expect(wrapper.find('[data-testid="add-component-ui"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="add-component-style"]').exists()).toBe(false)
+  })
+})
+
+describe('a group that restricts the UIs and styles it allows (#488)', () => {
+  afterEach(() => {
+    config.resourcesConfig = {}
+    config.uiConfig = {}
+  })
+
+  async function optionsOf(wrapper: ReturnType<typeof mountChoices>['wrapper'], testId: string) {
+    await wrapper.get(`[data-testid="${testId}"] [data-testid="select-trigger"]`).trigger('keydown', { key: 'Enter' })
+    await flushPromises()
+    return [...document.querySelectorAll('[data-testid="select-menu"] [role="option"]')].map(option => option.textContent?.trim())
+  }
+
+  test('offers only the UIs the group allows, with no Default when it does not allow the primary, and starts on the first allowed', async () => {
+    config.uiConfig = { CwaComponentHeroUiSplitImage: { name: 'Split image' }, CwaComponentHeroUiWide: { name: 'Wide' } }
+    const { wrapper } = mountChoices(['CwaComponentHeroUiSplitImage', 'CwaComponentHeroUiWide'], undefined, { ui: ['CwaComponentHeroUiWide'] })
+
+    expect(wrapper.emitted('update:uiComponent')!.at(-1)).toEqual(['CwaComponentHeroUiWide'])
+    expect(await optionsOf(wrapper, 'add-component-ui')).toEqual(['Wide'])
+  })
+
+  test('keeps Default when the group allows the primary', async () => {
+    config.uiConfig = { CwaComponentHeroUiSplitImage: { name: 'Split image' }, CwaComponentHeroUiWide: { name: 'Wide' } }
+    const { wrapper } = mountChoices(['CwaComponentHeroUiSplitImage', 'CwaComponentHeroUiWide'], undefined, { ui: [null, 'CwaComponentHeroUiWide'] })
+
+    expect(wrapper.emitted('update:uiComponent')!.at(-1)).toEqual([null])
+    expect(await optionsOf(wrapper, 'add-component-ui')).toEqual(['Default', 'Wide'])
+  })
+
+  test('offers only the styles the group allows, and drops a default style it does not', async () => {
+    config.resourcesConfig = { Hero: { styles: { dark: { label: 'Dark', classes: 'bg-black' }, light: { label: 'Light', classes: 'bg-white' } } } }
+    const { wrapper } = mountChoices([], ['style:light'], { styles: ['style:dark'] })
+
+    expect(wrapper.emitted('update:uiClassNames')!.at(-1)).toEqual([[]])
+    expect(await optionsOf(wrapper, 'add-component-style')).toEqual(['Default', 'Dark'])
   })
 })

@@ -12,16 +12,21 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 - Apps and extensions can hook `cwa:auth:signed-in`, which carries the user, and `cwa:auth:signed-out`, called when a session ends in the browser. [ec48b72b](https://github.com/components-web-app/cwa-nuxt-module/commit/ec48b72b804caaf1b919818567a7fa05e5a38dcd) [1aaafb2b](https://github.com/components-web-app/cwa-nuxt-module/commit/1aaafb2b716fc682594d3e5aa5b862a00c10f5d5) ([#487](https://github.com/components-web-app/cwa-nuxt-module/issues/487))
 - Extensions: a Nuxt module can register with CWA through the `cwa:extend` hook, adding prefixed components, layouts and CWA page templates an app can override by name, admin pages under `/_cwa` with an optional role and a menu entry, and paths kept out of the page cache. Two extensions that clash fail the build. [2d8267ae](https://github.com/components-web-app/cwa-nuxt-module/commit/2d8267ae1f79b0e7b50ec1d851c1399b00f40087) [139e221f](https://github.com/components-web-app/cwa-nuxt-module/commit/139e221f10f20117f0cc7d37d1d5d7700e4b0736) ([#487](https://github.com/components-web-app/cwa-nuxt-module/issues/487))
 - A route rule of `cwa: { pageCache: false }` keeps a page out of the shared page cache. [2d8267ae](https://github.com/components-web-app/cwa-nuxt-module/commit/2d8267ae1f79b0e7b50ec1d851c1399b00f40087) ([#487](https://github.com/components-web-app/cwa-nuxt-module/issues/487))
-
-### Fixed
-
-- When the API's site config can't be fetched during a server render (a timeout, say), the page title uses the site name from `cwa.siteConfig` instead of showing `%siteName`, and that page is not stored in the page cache. [cc4e68a2](https://github.com/components-web-app/cwa-nuxt-module/commit/cc4e68a29d7827744f8166a41cdb2345835e88ed)
+- A component group can restrict the UIs and styles a component uses in it: an `allowedComponents` entry can be `{ component, ui, styles }`, type-checked against the component's UI names and style keys. The admin's add dialog, UI tab, clone and move offer only what every group the component is in allows, and the bundle enforces it. Needs api-components-bundle 2.0.0-alpha.46. [bfc40c58](https://github.com/components-web-app/cwa-nuxt-module/commit/bfc40c5834286f6ed581e4ef0f77f016bcd2ad4a) [88fc5927](https://github.com/components-web-app/cwa-nuxt-module/commit/88fc5927c70b1f1c9b2bdb514a801e29687f456b) ([#488](https://github.com/components-web-app/cwa-nuxt-module/issues/488))
 
 ### Changed
 
 - Cached page HTML is now tagged with every resource the page fetched, of any type, not only CWA's own, so a write to an extension's resource (a product) purges the pages showing it. Embedded objects are not tagged: reference them by IRI and fetch them. [d8c5aac6](https://github.com/components-web-app/cwa-nuxt-module/commit/d8c5aac6439f6d196b29f57d9403a9530cb03651) [472d4686](https://github.com/components-web-app/cwa-nuxt-module/commit/472d4686894207dbf829a318ecb8bfe43d069760)
 - A redirect, or any other page response that is never stored, now sends `Cache-Control: private, no-store` instead of a bare `no-store`, so the template's Souin cache never coalesces concurrent visitors onto one response. [f54557d7](https://github.com/components-web-app/cwa-nuxt-module/commit/f54557d77ccf3c436a3838640b1ff0e4931ead4f)
 - On a phone, the select, menu, picker and resource stack sheets slide up from below the screen and slide back down however they close, with the page behind fading in and out. The path selector now keeps its name in the header while its stack is open. [0468a0b2](https://github.com/components-web-app/cwa-nuxt-module/commit/0468a0b2706e779c8ad5f9d229dc91617cdf8d48) ([#461](https://github.com/components-web-app/cwa-nuxt-module/issues/461))
+
+### Deprecated
+
+- A collection IRI in `allowedComponents` (`'/component/images'`) now warns: use the component name. IRIs will stop working in the next alpha, without further warning. [bfc40c58](https://github.com/components-web-app/cwa-nuxt-module/commit/bfc40c5834286f6ed581e4ef0f77f016bcd2ad4a) ([#488](https://github.com/components-web-app/cwa-nuxt-module/issues/488))
+
+### Fixed
+
+- When the API's site config can't be fetched during a server render (a timeout, say), the page title uses the site name from `cwa.siteConfig` instead of showing `%siteName`, and that page is not stored in the page cache. [cc4e68a2](https://github.com/components-web-app/cwa-nuxt-module/commit/cc4e68a29d7827744f8166a41cdb2345835e88ed)
 
 ## [2.0.0-alpha.39] - 2026-11-20
 

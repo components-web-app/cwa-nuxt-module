@@ -627,6 +627,25 @@ describe('the add component dialog (#461)', () => {
       expect(cwaState.cwa.resourcesManager.setAddResourceEventResource).toHaveBeenCalledWith('HtmlContent', '/component/html_contents', true, false, { uiComponent: null, uiClassNames: [] })
     })
 
+    test('a group that allows only some UIs and styles offers only those, and adds with an allowed UI when the primary is not allowed (#488)', async () => {
+      cwaConfig.resourcesConfig = { ...resourcesConfig, HtmlContent: { ...resourcesConfig.HtmlContent, styles: { 'black-bg': { label: 'Black background', classes: 'bg-black' } } } }
+      cwaConfig.uiConfig = { CwaComponentHtmlContentUiAltHtmlContent: { name: 'Alternative', styles: { boxed: { label: 'Boxed', classes: 'border p-4' }, shadow: { label: 'Shadow', classes: 'shadow' } } } }
+      cwaState.cwa.store[GROUP].data.allowedComponentUi = { '/component/html_contents': { ui: ['CwaComponentHtmlContentUiAltHtmlContent'], styles: ['style:shadow'] } }
+      await mountDialog()
+      await openDialog()
+      qa('[data-testid="add-component-chip"]')[1]!.click()
+      await flushPromises()
+
+      expect(q('[data-testid="add-component-ui"] [data-testid="select-trigger"]')!.textContent!.trim()).toBe('Alternative')
+      await pick('add-component-style', 'Shadow')
+      add().click()
+
+      expect(cwaState.cwa.resourcesManager.setAddResourceEventResource).toHaveBeenCalledWith('HtmlContent', '/component/html_contents', true, false, {
+        uiComponent: 'CwaComponentHtmlContentUiAltHtmlContent',
+        uiClassNames: ['style:shadow'],
+      })
+    })
+
     describe('the configured default data', () => {
       function configureDefaults(defaultData: Record<string, unknown>) {
         cwaConfig.resourcesConfig = { ...resourcesConfig, HtmlContent: { ...resourcesConfig.HtmlContent, defaultData, styles: { 'black-bg': { label: 'Black background', classes: 'bg-black p-2' } } } }

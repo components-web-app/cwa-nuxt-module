@@ -233,6 +233,22 @@ describe('cloneTargetOptions', () => {
     ])
   })
 
+  test('a group that does not allow the source\'s UI or styles is disabled with the reason, for a clone and a move alike (#488)', () => {
+    ResourceTypeFromIri.setPathPrefix('/_api')
+    const restricting = (source: Data, rule: Data) => buildResources({
+      ...pageStore,
+      [SOURCE]: { ...pageStore[SOURCE], ...source },
+      [GROUP]: { ...pageStore[GROUP], allowedComponentUi: { '/_api/component/html_contents': rule } },
+    })
+    const reasonsOf = (resources: CloneTargetOptionsInput['resources'], move?: CloneTargetOptionsInput['move']) =>
+      cloneTargetOptions(input({ resources, ...(move ? { move } : {}) })).options.map(option => option.reasons)
+
+    expect(reasonsOf(restricting({ uiComponent: null }, { ui: ['CwaComponentHtmlContentUiWide'] }))).toEqual([['This group does not allow its UI'], ['This group does not allow its UI']])
+    expect(reasonsOf(restricting({ uiComponent: 'CwaComponentHtmlContentUiWide', uiClassNames: ['style:small'] }, { ui: ['CwaComponentHtmlContentUiWide'], styles: ['style:large'] }), { positionIri: '/_/component_positions/other', fromLayout: false, from: { componentPosition: '/_/component_positions/other' } } as never))
+      .toEqual([['This group does not allow its style'], ['This group does not allow its style']])
+    expect(reasonsOf(restricting({ uiComponent: 'CwaComponentHtmlContentUiWide', uiClassNames: ['style:large'] }, { ui: ['CwaComponentHtmlContentUiWide'], styles: ['style:large'] }))).toEqual([[], []])
+  })
+
   test('an explicitAllowOnly type is disabled in a group with no allowed list (#249)', () => {
     const result = cloneTargetOptions(input({ sourceType: 'Restricted' }))
     expect(summary(result)).toEqual([

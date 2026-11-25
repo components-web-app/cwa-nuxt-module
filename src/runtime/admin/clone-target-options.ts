@@ -1,5 +1,6 @@
 import { CwaResourceTypes, getResourceTypeFromIri, ResourceTypeFromIri } from '../resources/resource-utils'
 import { componentGroupCapacity } from '../resources/component-group-capacity'
+import { componentUiAllowance, isUiAllowed, refusedStyles } from '../resources/component-ui-allowance'
 import type { Resources } from '../resources/resources'
 import type { ApiDocumentationComponentMetadataCollection } from '../api/api-documentation'
 import type { CloneAnchor, CloneTarget } from './clone-component'
@@ -87,6 +88,14 @@ function groupReasons(input: CloneTargetOptionsInput, groupIndex: number, typeNa
     const allowed: string[] | null | undefined = group?.allowedComponents
     if (!isComponentAllowedInGroup(meta, allowed?.map(withoutPrefix))) {
       reasons.push(`This group does not allow ${displayName(input, typeName!)}`)
+    }
+    const source = input.resources.getResource(input.sourceIri).value?.data
+    const allowance = componentUiAllowance([group], meta.endpoint, ResourceTypeFromIri.getPathPrefix())
+    if (!isUiAllowed(allowance, source?.uiComponent)) {
+      reasons.push('This group does not allow its UI')
+    }
+    if (refusedStyles(allowance, source?.uiClassNames).length) {
+      reasons.push('This group does not allow its style')
     }
   }
   if (isInsideSource(input, groupIndex)) {

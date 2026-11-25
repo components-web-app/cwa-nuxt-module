@@ -580,8 +580,18 @@ export default defineNuxtModule<CwaModuleOptions>({
         getContents: ({ app }) => {
           const names = resolveUserComponents(app.components).userComponents.map(toResourceType)
           const constant = JSON.stringify(Object.fromEntries(names.map(name => [name, name])), undefined, 2)
+          const { resourcesConfig, uiConfig } = resolveCwaConfig(app.components)
+          const union = (values: string[]) => values.length ? [...new Set(values)].map(value => JSON.stringify(value)).join(' | ') : 'never'
+          const typeMap = (valuesOf: (name: string) => string[]) => names.map(name => `  ${JSON.stringify(name)}: ${union(valuesOf(name))}`).join('\n')
+          const uiOf = (name: string) => (resourcesConfig[name]?.ui ?? []) as string[]
           return `export const CwaComponentNames = ${constant} as const
 export type CwaComponentName = typeof CwaComponentNames[keyof typeof CwaComponentNames]
+export interface CwaComponentUis {
+${typeMap(name => [`CwaComponent${name}`, ...uiOf(name)])}
+}
+export interface CwaComponentStyles {
+${typeMap(name => [resourcesConfig[name]?.styles, ...uiOf(name).map(ui => uiConfig[ui]?.styles)].flatMap(styles => Object.keys(styles ?? {})))}
+}
 `
         },
       })
@@ -595,6 +605,8 @@ export type CwaComponentName = typeof CwaComponentNames[keyof typeof CwaComponen
       addImports([
         { name: 'CwaComponentNames', from: '#build/cwa-component-names' },
         { name: 'CwaComponentName', from: '#build/cwa-component-names', type: true },
+        { name: 'CwaComponentUis', from: '#build/cwa-component-names', type: true },
+        { name: 'CwaComponentStyles', from: '#build/cwa-component-names', type: true },
       ])
 
       const reportedUncheckable = new Set<string>()
@@ -891,7 +903,7 @@ declare module '#app' {
       if (['add', 'change', 'unlink'].includes(event) && relativePath.endsWith('.vue')) {
         filenames.push('cwa-component-group-declarations.ts')
         if (cwaRoots().some(root => path.startsWith(root + '/'))) {
-          filenames.push('cwa-config.ts', 'cwa-styles.ts', 'cwa-admin-resources.ts')
+          filenames.push('cwa-config.ts', 'cwa-styles.ts', 'cwa-admin-resources.ts', 'cwa-component-names.ts')
         }
       }
       if (filenames.length) {

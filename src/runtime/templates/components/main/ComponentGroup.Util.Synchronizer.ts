@@ -4,13 +4,14 @@ import type { ComputedRef, WatchStopHandle } from 'vue'
 import isEqual from 'lodash-es/isEqual'
 import { consola as logger } from 'consola'
 import type { ResourcesManager } from '../../../resources/resources-manager'
-import { CwaResourceTypes, ResourceTypeFromIri, getResourceTypeFromIri } from '../../../resources/resource-utils'
+import { CwaResourceTypes, getResourceTypeFromIri } from '../../../resources/resource-utils'
 import type { Resources } from '../../../resources/resources'
 import type Auth from '../../../api/auth'
 import type { CwaCurrentResourceInterface } from '../../../storage/stores/resources/state'
 import type { CwaResource } from '../../../resources/resource-utils'
 import { CwaResourceApiStatuses } from '../../../storage/stores/resources/state'
 import { useCwa } from '../../../composables/cwa'
+import type { AllowedComponentEntry, AllowedComponentUi, ResolvedAllowedComponents } from '../../../admin/allowed-components'
 
 const resourceTypeProperty: {
   [CwaResourceTypes.PAGE]: 'pages'
@@ -28,7 +29,7 @@ interface SyncWatcherOps {
   resource: ComputedRef<CwaCurrentResourceInterface | undefined>
   location: string
   fullReference: ComputedRef<string>
-  allowedComponents: string[] | null | undefined
+  allowedComponents: AllowedComponentEntry[] | null | undefined
   maxComponents?: number | null
 }
 
@@ -162,9 +163,9 @@ export class ComponentGroupUtilSynchronizer {
     return resourceTypeProperty[locationResourceType as keyof typeof resourceTypeProperty]
   }
 
-  private async createComponentGroup(iri: string, locationProperty: LocationProperty, fullReference: ComputedRef<string | undefined>, allowedComponents: string[] | null | undefined, maxComponents: number | null | undefined) {
-    const resolvedAllowedComponents = await this.resolveAllowedComponents(allowedComponents)
-    if (resolvedAllowedComponents === UNRESOLVED) {
+  private async createComponentGroup(iri: string, locationProperty: LocationProperty, fullReference: ComputedRef<string | undefined>, allowedComponents: AllowedComponentEntry[] | null | undefined, maxComponents: number | null | undefined) {
+    const resolved = await this.resolveAllowedComponents(allowedComponents)
+    if (resolved === UNRESOLVED) {
       return
     }
     const resolvedMaxComponents = this.resolveMaxComponents(maxComponents)
@@ -174,7 +175,8 @@ export class ComponentGroupUtilSynchronizer {
       data: {
         reference: fullReference.value,
         location: iri,
-        allowedComponents: resolvedAllowedComponents,
+        allowedComponents: resolved?.allowedComponents,
+        ...(resolved?.allowedComponentUi ? { allowedComponentUi: resolved.allowedComponentUi } : {}),
         ...(resolvedMaxComponents === UNRESOLVED || resolvedMaxComponents === undefined ? {} : { maxComponents: resolvedMaxComponents }),
         [locationProperty]: [iri],
       },
@@ -203,44 +205,22 @@ export class ComponentGroupUtilSynchronizer {
     }, [])
   }
 
-  private async resolveAllowedComponents(allowedComponents: string[] | null | undefined): Promise<string[] | null | undefined | typeof UNRESOLVED> {
-    if (!allowedComponents) return allowedComponents
-    if (!allowedComponents.length) return null
-
-    const invalid = allowedComponents.filter(entry => typeof entry !== 'string')
-    if (invalid.length) {
-      logger.warn(`[CWA] allowedComponents was not synced: ${invalid.map(String).join(', ')} is not a component name.`)
-      return UNRESOLVED
-    }
-
-    const names = allowedComponents.filter(entry => !entry.startsWith('/'))
-    let endpoints: Record<string, string> = {}
-    if (names.length) {
-      const metadata = await this.$cwa.getComponentMetadata()
-      if (!metadata) {
-        return UNRESOLVED
-      }
-      const unknown = names.filter(name => !metadata[name])
-      if (unknown.length) {
-        logger.warn(`[CWA] allowedComponents was not synced: the API has no component named ${unknown.join(', ')}.`)
-        return UNRESOLVED
-      }
-      endpoints = Object.fromEntries(names.map(name => [name, metadata[name]!.endpoint]))
-    }
-
-    const iris = allowedComponents.map(entry => endpoints[entry] ?? entry)
-    const prefix = ResourceTypeFromIri.getPathPrefix()
-    if (!prefix) return iris
-    return iris.map(iri => iri.startsWith(prefix) ? iri : `${prefix}${iri}`)
+  private async resolveAllowedComponents(allowedComponents: AllowedComponentEntry[] | null | undefined): Promise<ResolvedAllowedComponents | undefined | typeof UNRESOLVED> {
+    if (allowedComponents === undefined) return undefined
+    const { resolveAllowedComponents } = await import('../../../admin/allowed-components')
+    return (await resolveAllowedComponents(allowedComponents, () => this.$cwa.getComponentMetadata())) ?? UNRESOLVED
   }
 
-  private async updateComponentGroup(allowedComponents: string[] | null | undefined, maxComponents: number | null | undefined, resource: any) {
-    const data: { allowedComponents?: string[] | null, maxComponents?: number | null } = {}
+  private async updateComponentGroup(allowedComponents: AllowedComponentEntry[] | null | undefined, maxComponents: number | null | undefined, resource: any) {
+    const data: { allowedComponents?: string[] | null, allowedComponentUi?: AllowedComponentUi | null, maxComponents?: number | null } = {}
 
-    if (allowedComponents !== undefined) {
-      const normalized = await this.resolveAllowedComponents(allowedComponents)
-      if (normalized !== UNRESOLVED && !isEqual(normalized, resource?.data?.allowedComponents ?? null)) {
-        data.allowedComponents = normalized
+    const resolved = await this.resolveAllowedComponents(allowedComponents)
+    if (resolved && resolved !== UNRESOLVED) {
+      if (!isEqual(resolved.allowedComponents, resource?.data?.allowedComponents ?? null)) {
+        data.allowedComponents = resolved.allowedComponents
+      }
+      if (!isEqual(resolved.allowedComponentUi, resource?.data?.allowedComponentUi ?? null)) {
+        data.allowedComponentUi = resolved.allowedComponentUi
       }
     }
 
