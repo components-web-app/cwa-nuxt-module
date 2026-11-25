@@ -4,13 +4,14 @@ import type { ComputedRef, WatchStopHandle } from 'vue'
 import isEqual from 'lodash-es/isEqual'
 import { consola as logger } from 'consola'
 import type { ResourcesManager } from '../../../resources/resources-manager'
-import { CwaResourceTypes, ResourceTypeFromIri, getResourceTypeFromIri } from '../../../resources/resource-utils'
+import { CwaResourceTypes, getResourceTypeFromIri } from '../../../resources/resource-utils'
 import type { Resources } from '../../../resources/resources'
 import type Auth from '../../../api/auth'
 import type { CwaCurrentResourceInterface } from '../../../storage/stores/resources/state'
 import type { CwaResource } from '../../../resources/resource-utils'
 import { CwaResourceApiStatuses } from '../../../storage/stores/resources/state'
 import { useCwa } from '../../../composables/cwa'
+import type { AllowedComponentEntry, AllowedComponentUi, ResolvedAllowedComponents } from '../../../admin/allowed-components'
 
 const resourceTypeProperty: {
   [CwaResourceTypes.PAGE]: 'pages'
@@ -24,21 +25,6 @@ const resourceTypeProperty: {
 
 type LocationProperty = typeof resourceTypeProperty[keyof typeof resourceTypeProperty]
 
-interface AllowedComponentRule {
-  component: string
-  ui?: string[]
-  styles?: string[]
-}
-
-type AllowedComponentEntry = string | AllowedComponentRule
-
-type AllowedComponentUi = Record<string, { ui?: (string | null)[], styles?: string[] }>
-
-interface ResolvedAllowedComponents {
-  allowedComponents: string[] | null
-  allowedComponentUi: AllowedComponentUi | null
-}
-
 interface SyncWatcherOps {
   resource: ComputedRef<CwaCurrentResourceInterface | undefined>
   location: string
@@ -48,11 +34,6 @@ interface SyncWatcherOps {
 }
 
 const UNRESOLVED = Symbol('unresolved')
-const warnedIriEntries = new Set<string>()
-
-function isRule(entry: unknown): entry is AllowedComponentRule {
-  return !!entry && typeof entry === 'object' && typeof (entry as AllowedComponentRule).component === 'string'
-}
 const COMPONENT_GROUPS_ENDPOINT = '/_/component_groups'
 
 export class ComponentGroupUtilSynchronizer {
@@ -226,62 +207,8 @@ export class ComponentGroupUtilSynchronizer {
 
   private async resolveAllowedComponents(allowedComponents: AllowedComponentEntry[] | null | undefined): Promise<ResolvedAllowedComponents | undefined | typeof UNRESOLVED> {
     if (allowedComponents === undefined) return undefined
-    if (!allowedComponents?.length) return { allowedComponents: null, allowedComponentUi: null }
-
-    const invalid = allowedComponents.filter(entry => typeof entry !== 'string' && !isRule(entry))
-    if (invalid.length) {
-      logger.warn(`[CWA] allowedComponents was not synced: ${invalid.map(String).join(', ')} is not a component name.`)
-      return UNRESOLVED
-    }
-
-    const nameOf = (entry: AllowedComponentEntry) => isRule(entry) ? entry.component : entry
-    for (const entry of allowedComponents) {
-      const name = nameOf(entry)
-      if (name.startsWith('/') && !warnedIriEntries.has(name)) {
-        warnedIriEntries.add(name)
-        logger.warn(`[CWA] The allowedComponents entry '${name}' is a collection IRI, the old syntax. Use the component name, from CwaComponentNames. IRIs will stop working in the next alpha, without further warning.`)
-      }
-    }
-
-    const names = allowedComponents.map(nameOf).filter(name => !name.startsWith('/'))
-    let endpoints: Record<string, string> = {}
-    if (names.length) {
-      const metadata = await this.$cwa.getComponentMetadata()
-      if (!metadata) {
-        return UNRESOLVED
-      }
-      const unknown = names.filter(name => !metadata[name])
-      if (unknown.length) {
-        logger.warn(`[CWA] allowedComponents was not synced: the API has no component named ${unknown.join(', ')}.`)
-        return UNRESOLVED
-      }
-      endpoints = Object.fromEntries(names.map(name => [name, metadata[name]!.endpoint]))
-    }
-
-    const prefix = ResourceTypeFromIri.getPathPrefix()
-    const iriOf = (name: string) => {
-      const iri = endpoints[name] ?? name
-      return prefix && !iri.startsWith(prefix) ? `${prefix}${iri}` : iri
-    }
-
-    const allowedComponentUi: AllowedComponentUi = {}
-    for (const rule of allowedComponents.filter(isRule)) {
-      const restriction: AllowedComponentUi[string] = {}
-      if (rule.ui?.length) {
-        restriction.ui = rule.ui.map(ui => ui === `CwaComponent${rule.component}` ? null : ui)
-      }
-      if (rule.styles?.length) {
-        restriction.styles = rule.styles.map(style => `style:${style}`)
-      }
-      if (Object.keys(restriction).length) {
-        allowedComponentUi[iriOf(rule.component)] = restriction
-      }
-    }
-
-    return {
-      allowedComponents: allowedComponents.map(entry => iriOf(nameOf(entry))),
-      allowedComponentUi: Object.keys(allowedComponentUi).length ? allowedComponentUi : null,
-    }
+    const { resolveAllowedComponents } = await import('../../../admin/allowed-components')
+    return (await resolveAllowedComponents(allowedComponents, () => this.$cwa.getComponentMetadata())) ?? UNRESOLVED
   }
 
   private async updateComponentGroup(allowedComponents: AllowedComponentEntry[] | null | undefined, maxComponents: number | null | undefined, resource: any) {

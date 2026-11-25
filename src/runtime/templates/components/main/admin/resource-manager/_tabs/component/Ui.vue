@@ -13,6 +13,8 @@ import CwaUiSelect from '#cwa/templates/components/ui/Select.vue'
 import { keepDefinedStyleKeys, selectStyleKeys, selectedStyleKeys } from '#cwa/composables/cwa-styles'
 import type { CwaStyles, CwaUiVariantConfig } from '#cwa/types'
 import { resourcesConfig, uiConfig } from '#build/cwa-config'
+import { componentUiAllowance, isUiAllowed } from '#cwa/resources/component-ui-allowance'
+import { ResourceTypeFromIri } from '#cwa/resources/resource-utils'
 
 const { exposeMeta, $cwa, iri } = useCwaResourceManagerTab({
   name: 'UI',
@@ -67,13 +69,34 @@ const styleModel = useCwaResourceModel<string[] | string, string[]>(iri, 'uiClas
 const styleNamesModel = styleModel as unknown as ResourceModelField<string[]>
 const styleNameModel = styleModel as unknown as ResourceModelField<string>
 
-const uiOptions = computed<MenuItem[]>(() => (current.value?.ui ?? []).map(ui => ({
-  label: uiConfig[ui]?.name || ui,
-  value: ui,
-})))
+const allowance = computed(() => {
+  if (!iri.value) {
+    return {}
+  }
+  const prefix = ResourceTypeFromIri.getPathPrefix()
+  const owner = $cwa.resources.findPublishedComponentIri(iri.value).value ?? iri.value
+  const positions: string[] = storedAt(owner)?.componentPositions ?? []
+  const groups = positions.map(position => storedAt(storedAt(position)?.componentGroup))
+  const path = prefix && owner.startsWith(prefix) ? owner.slice(prefix.length) : owner
+  return componentUiAllowance(groups, path.split('?')[0]!.replace(/\/[^/]*$/, ''), prefix)
+})
+
+const storedUi = computed(() => storedAt(iri.value)?.uiComponent as string | null | undefined)
+const storedStyles = computed(() => (storedAt(iri.value)?.uiClassNames ?? []) as string[])
+
+const uiOptions = computed<MenuItem[]>(() => (current.value?.ui ?? [])
+  .filter(ui => isUiAllowed(allowance.value, ui) || ui === storedUi.value)
+  .map(ui => ({
+    label: uiConfig[ui]?.name || ui,
+    value: ui,
+  })))
+
+const primaryAllowed = computed(() => isUiAllowed(allowance.value, null) || !storedUi.value)
 
 const styleNameOptions = computed<MenuItem[]>(() =>
-  Object.entries(styles.value).map(([key, style]) => ({ label: style.label, value: key })),
+  Object.entries(styles.value)
+    .filter(([key]) => !allowance.value.styles || allowance.value.styles.includes(`style:${key}`) || storedStyles.value.includes(`style:${key}`))
+    .map(([key, style]) => ({ label: style.label, value: key })),
 )
 
 const disabled = exposeMeta.disabled
@@ -91,7 +114,7 @@ defineExpose(exposeMeta)
       v-if="uiOptions.length"
       :model="uiModel"
       label="UI"
-      nullable
+      :nullable="primaryAllowed"
       none-label="Default"
       :options="uiOptions"
       data-testid="ui-select"

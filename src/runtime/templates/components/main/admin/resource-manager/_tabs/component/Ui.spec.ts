@@ -9,14 +9,17 @@ import Ui from './Ui.vue'
 
 enableAutoUnmount(afterEach)
 
-const store = vi.hoisted(() => ({ byId: {} as Record<string, any> }))
+const store = vi.hoisted(() => ({ byId: {} as Record<string, any>, published: {} as Record<string, string> }))
 const iri = ref('/component/1')
 const currentStackItem = ref<any>(null)
 const exposeMeta = { disabled: ref(false), fields: [] as string[] }
 const mockUpdateResource = vi.fn()
 
 const mockCwa = {
-  resources: { getResource: (at: string) => computed(() => store.byId[at]) },
+  resources: {
+    getResource: (at: string) => computed(() => store.byId[at]),
+    findPublishedComponentIri: (at: string) => computed(() => store.published[at] ?? at),
+  },
   resourcesManager: {
     getWaitForRequestPromise: vi.fn().mockResolvedValue(undefined),
     updateResource: mockUpdateResource,
@@ -96,6 +99,7 @@ function mountUi() {
 
 beforeEach(() => {
   store.byId = {}
+  store.published = {}
   iri.value = '/component/1'
   put('/component/1', {})
   config.resourcesConfig = {}
@@ -293,6 +297,67 @@ describe('Ui tab on the kit (#460)', () => {
       await saves()
       expect(mockUpdateResource).toHaveBeenLastCalledWith(expect.objectContaining({ data: { uiClassNames: null } }))
       expect(wrapper.get('[data-testid="select-trigger"]').text()).toBe('Default')
+    })
+  })
+
+  describe('in groups that restrict the UIs and styles they allow (#488)', () => {
+    const HERO = '/component/heroes/1'
+
+    function placeIn(groups: Record<string, unknown>[]) {
+      iri.value = HERO
+      put(HERO, { componentPositions: groups.map((_, index) => `/_/component_positions/${index}`) })
+      groups.forEach((group, index) => {
+        store.byId[`/_/component_positions/${index}`] = { data: { '@id': `/_/component_positions/${index}`, 'componentGroup': `/_/component_groups/${index}` } }
+        store.byId[`/_/component_groups/${index}`] = { data: { '@id': `/_/component_groups/${index}`, ...group } }
+      })
+    }
+
+    test('offers only the UIs every group allows, with no Default when one does not allow the primary', () => {
+      setStyles(false, ['CwaComponentHeroUiTall', 'CwaComponentHeroUiSplit'])
+      placeIn([
+        { allowedComponentUi: { '/component/heroes': { ui: [null, 'CwaComponentHeroUiTall', 'CwaComponentHeroUiSplit'] } } },
+        { allowedComponentUi: { '/component/heroes': { ui: ['CwaComponentHeroUiSplit'] } } },
+      ])
+      store.byId[HERO].data.uiComponent = 'CwaComponentHeroUiSplit'
+      const select = mountUi().findAllComponents(Select).at(0)!
+
+      expect(select.props('options')).toEqual([{ label: 'CwaComponentHeroUiSplit', value: 'CwaComponentHeroUiSplit' }])
+      expect(select.props('nullable')).toBe(false)
+    })
+
+    test('a draft is checked against the groups of its published component', () => {
+      setStyles(false, ['CwaComponentHeroUiTall', 'CwaComponentHeroUiSplit'])
+      placeIn([{ allowedComponentUi: { '/component/heroes': { ui: [null, 'CwaComponentHeroUiTall'] } } }])
+      iri.value = '/component/heroes/draft'
+      put('/component/heroes/draft', {})
+      store.published['/component/heroes/draft'] = HERO
+      const select = mountUi().findAllComponents(Select).at(0)!
+
+      expect(select.props('options')).toEqual([{ label: 'CwaComponentHeroUiTall', value: 'CwaComponentHeroUiTall' }])
+      expect(select.props('nullable')).toBe(true)
+    })
+
+    test('still shows a stored UI or style the groups no longer allow, since existing content is never changed for you', () => {
+      setStyles(false, ['CwaComponentHeroUiTall', 'CwaComponentHeroUiSplit'])
+      placeIn([{ allowedComponentUi: { '/component/heroes': { ui: ['CwaComponentHeroUiTall'], styles: ['style:rounded'] } } }])
+      Object.assign(store.byId[HERO].data, { uiComponent: 'CwaComponentHeroUiSplit' })
+      const [ui] = mountUi().findAllComponents(Select)
+
+      expect(ui!.props('options')).toEqual([
+        { label: 'CwaComponentHeroUiTall', value: 'CwaComponentHeroUiTall' },
+        { label: 'CwaComponentHeroUiSplit', value: 'CwaComponentHeroUiSplit' },
+      ])
+    })
+
+    test('offers only the styles every group allows, keeping a stored one', () => {
+      setStyles(false)
+      placeIn([{ allowedComponentUi: { '/component/heroes': { styles: ['style:rounded'] } } }])
+      const style = mountUi().findAllComponents(Select).at(-1)!
+      expect(style.props('options')).toEqual([{ label: 'Rounded', value: 'rounded' }])
+
+      store.byId[HERO].data.uiClassNames = ['style:bordered']
+      const kept = mountUi().findAllComponents(Select).at(-1)!
+      expect(kept.props('options')).toEqual([{ label: 'Bordered', value: 'bordered' }, { label: 'Rounded', value: 'rounded' }])
     })
   })
 

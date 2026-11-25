@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest'
 import { computed, ref } from 'vue'
 import * as vue from 'vue'
 import { CwaResourceApiStatuses } from '../../../storage/stores/resources/state'
@@ -108,6 +108,10 @@ function createSyncWatcher(groupSynchronizer: ComponentGroupUtilSynchronizer, op
 }
 
 describe('Group synchronizer', () => {
+  beforeAll(async () => {
+    await import('../../../admin/allowed-components')
+  })
+
   beforeEach(() => {
     vi.clearAllMocks()
   })
