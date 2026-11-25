@@ -24,7 +24,7 @@
           :dim="!data.enabled"
         >
           <ListCell>
-            {{ getUserRole(data.roles) }}
+            {{ userRoleLevel(data.roles).label }}
           </ListCell>
           <ListCell>
             <CwaUiBadge
@@ -73,7 +73,7 @@ import ResourceModalOverlay from '#cwa/templates/components/core/admin/ResourceM
 import CwaUiBadge from '#cwa/templates/components/ui/Badge.vue'
 import CwaUiButton from '#cwa/templates/components/ui/Button.vue'
 import PlusIcon from '#cwa/templates/components/ui/icon/PlusIcon.vue'
-import { CwaUserRoles } from '#cwa/storage/stores/auth/state'
+import { userRoleLevel } from '#cwa/admin/user-roles'
 import { useListPage } from '#cwa-layer/_composables/useListPage'
 import { definePageMeta, useHead } from '#imports'
 
@@ -100,21 +100,9 @@ const countText = computed(() => {
   return typeof total === 'number' ? `${total} ${total === 1 ? 'user' : 'users'}` : undefined
 })
 
-function getUserRole(roles: CwaUserRoles[]) {
-  if (roles.includes(CwaUserRoles.SUPER_ADMIN)) {
-    return 'Super Admin'
-  }
-  if (roles.includes(CwaUserRoles.ADMIN)) {
-    return 'Admin'
-  }
-  if (roles.includes(CwaUserRoles.USER)) {
-    return 'User'
-  }
-  return 'Unknown'
-}
-
 definePageMeta({
   name: '_cwa-users-user',
+  cwaAdminRole: 'ROLE_USER_ADMIN',
 })
 
 useHead({

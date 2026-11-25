@@ -739,15 +739,20 @@ describe('Auth', () => {
     })
   })
 
-  describe('isAdmin getter', () => {
-    test('should return true IF user has the admin role', () => {
+  describe('isAdmin getter: content admins, the roles /me reaches (bundle #611)', () => {
+    test.each([
+      ['an admin', ['ROLE_ADMIN', 'ROLE_CMS_ADMIN', 'ROLE_USER']],
+      ['a content admin who is not an admin', ['ROLE_CMS_ADMIN', 'ROLE_USER']],
+    ])('is true for %s', (_name, roles) => {
       const { auth, authStore } = createAuth()
-
-      authStore.useStore().data.user = {
-        roles: [CwaUserRoles.ADMIN],
-      }
-
+      authStore.useStore().data.user = { roles }
       expect(auth.isAdmin.value).toBe(true)
+    })
+
+    test('is false for a user admin who cannot edit content', () => {
+      const { auth, authStore } = createAuth()
+      authStore.useStore().data.user = { roles: ['ROLE_USER_ADMIN', 'ROLE_USER'] }
+      expect(auth.isAdmin.value).toBe(false)
     })
 
     test('should return false IF user does NOT have the admin role', () => {

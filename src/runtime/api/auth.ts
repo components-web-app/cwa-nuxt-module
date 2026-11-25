@@ -270,7 +270,7 @@ export default class Auth {
   }
 
   public get isAdmin() {
-    return computed(() => this.hasRole(CwaUserRoles.ADMIN))
+    return computed(() => this.hasRole(CwaUserRoles.CMS_ADMIN))
   }
 
   public onSessionEnd(handler: () => unknown) {

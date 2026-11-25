@@ -64,17 +64,19 @@ function mockCwa({
   resources,
   admin,
   requestCount = 0,
+  roles = ['ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_USER_ADMIN', 'ROLE_CMS_ADMIN', 'ROLE_USER'],
 }: {
   resources?: any
   admin?: any
   requestCount?: number
+  roles?: string[]
 } = {}) {
   const res = resources ?? buildResources()
   const adm = admin ?? buildAdmin()
   const cwa = {
     resources: res,
     admin: adm,
-    auth: reactive({ user: { '@id': '/_/users/admin' } }),
+    auth: { user: { '@id': '/_/users/admin' }, isAdmin: computed(() => roles.includes('ROLE_CMS_ADMIN')), hasRole: (role: string) => roles.includes(role) },
     resourcesManager: { requestCount: { value: requestCount }, confirmDiscardAddingResource: vi.fn(async () => true) },
   } as unknown as Cwa
   vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => cwa)
@@ -694,4 +696,38 @@ describe('Header', () => {
   })
 
   void computed
+})
+
+describe('the header for the narrow admin roles (bundle #611)', () => {
+  afterEach(() => {
+    mockRouteMeta.cwa = { admin: false }
+    errorRef.value = null
+  })
+
+  const adminLinks = (wrapper: ReturnType<typeof mountHeader>) => wrapper.findAll('[data-testid="header-centre"] a .cwa\\:sr-only').map(label => label.text())
+
+  test('on an admin page a content admin who is not a user admin gets the content areas and no Users', () => {
+    mockRouteMeta.cwa = { admin: true }
+    mockCwa({ roles: ['ROLE_CMS_ADMIN', 'ROLE_USER'] })
+    expect(adminLinks(mountHeader())).toEqual(['Layouts', 'Pages', 'Data', 'Routes'])
+  })
+
+  test('on an admin page a user admin who cannot edit content gets Users alone', () => {
+    mockRouteMeta.cwa = { admin: true }
+    mockCwa({ roles: ['ROLE_USER_ADMIN', 'ROLE_USER'] })
+    expect(adminLinks(mountHeader())).toEqual(['Users'])
+  })
+
+  test('on a page of the site a user admin who cannot edit content gets no Edit and no page settings', () => {
+    mockCwa({ roles: ['ROLE_USER_ADMIN', 'ROLE_USER'] })
+    const wrapper = mountHeader()
+    expect(wrapper.findAll('button').map(button => button.text())).not.toContain('Edit')
+    expect(wrapper.find('[data-testid="page-settings"]').exists()).toBe(false)
+    expect(wrapper.find('.menu-stub').exists()).toBe(true)
+  })
+
+  test('on a page of the site a content admin gets Edit', () => {
+    mockCwa({ roles: ['ROLE_CMS_ADMIN', 'ROLE_USER'] })
+    expect(mountHeader().findAll('button').map(button => button.text())).toContain('Edit')
+  })
 })

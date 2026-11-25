@@ -20,7 +20,7 @@ function createRoute(fullPath = '/reports', meta: Record<string, unknown> = {}):
   }
 }
 
-function mockCwa({ signedIn, isAdmin, roles = isAdmin ? ['ROLE_ADMIN'] : [] }: { signedIn: boolean, isAdmin: boolean, roles?: string[] }) {
+function mockCwa({ signedIn, isAdmin, roles = isAdmin ? ['ROLE_ADMIN', 'ROLE_CMS_ADMIN', 'ROLE_USER'] : [] }: { signedIn: boolean, isAdmin: boolean, roles?: string[] }) {
   const init = vi.fn()
   const hasRole = vi.fn((role: string) => roles.includes(role))
   vi.spyOn(nuxt, 'useNuxtApp').mockImplementation(() => ({
@@ -51,6 +51,31 @@ describe('cwa-admin middleware', () => {
     const result = await cwaAdminMiddleware(createRoute(), createRoute())
     expect(result).toBeUndefined()
     expect(nuxt.navigateTo).not.toHaveBeenCalled()
+  })
+
+  describe('narrow admin roles (bundle #611)', () => {
+    test('a content admin who is not an admin enters an admin page with no role of its own', async () => {
+      mockCwa({ signedIn: true, isAdmin: true, roles: ['ROLE_CMS_ADMIN', 'ROLE_USER'] })
+      expect(await cwaAdminMiddleware(createRoute('/_cwa/layouts'), createRoute())).toBeUndefined()
+      expect(nuxt.navigateTo).not.toHaveBeenCalled()
+    })
+
+    test('a user admin who cannot edit content is sent home from an admin page with no role of its own', async () => {
+      mockCwa({ signedIn: true, isAdmin: false, roles: ['ROLE_USER_ADMIN', 'ROLE_USER'] })
+      await cwaAdminMiddleware(createRoute('/_cwa/layouts'), createRoute())
+      expect(nuxt.navigateTo).toHaveBeenCalledWith('/')
+    })
+
+    test('a user admin enters the users pages, which a content admin without the role cannot', async () => {
+      const users = { cwaAdminRole: 'ROLE_USER_ADMIN' }
+      mockCwa({ signedIn: true, isAdmin: false, roles: ['ROLE_USER_ADMIN', 'ROLE_USER'] })
+      expect(await cwaAdminMiddleware(createRoute('/_cwa/users', users), createRoute())).toBeUndefined()
+
+      vi.mocked(nuxt.navigateTo).mockClear()
+      mockCwa({ signedIn: true, isAdmin: true, roles: ['ROLE_CMS_ADMIN', 'ROLE_USER'] })
+      await cwaAdminMiddleware(createRoute('/_cwa/users', users), createRoute())
+      expect(nuxt.navigateTo).toHaveBeenCalledWith('/')
+    })
   })
 
   test('sends a signed-in non-admin home, not to login', async () => {

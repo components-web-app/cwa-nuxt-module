@@ -174,8 +174,8 @@ onMounted(() => {
           <div class="cwa:text-sm cwa:text-stone-400">
             Are you the owner of this website?
             <NuxtLink
-              v-if="$cwa.auth.hasRole('ROLE_ADMIN')"
-              to="/_cwa/layouts"
+              v-if="$cwa.auth.isAdmin.value || $cwa.auth.hasRole('ROLE_USER_ADMIN')"
+              :to="$cwa.auth.isAdmin.value ? '/_cwa/layouts' : '/_cwa/users'"
               class="cwa:font-semibold cwa:hover:text-dark cwa:dark:hover:text-white"
             >Go to admin <span aria-hidden="true">&rarr;</span></NuxtLink>
             <NuxtLink

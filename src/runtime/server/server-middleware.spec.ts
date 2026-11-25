@@ -42,9 +42,9 @@ vi.mock('#cwa/server/useFetcher', () => ({
   fallbackSiteConfig: () => mockFallbackSiteConfig(),
 }))
 
-vi.mock('#cwa/server/is-admin', () => ({
+vi.mock('#cwa/server/is-admin', async importOriginal => ({
+  ...await importOriginal<typeof import('./is-admin')>(),
   isAdmin: (...args: any[]) => mockIsAdmin(...args),
-  ADMIN_ROLES: ['ROLE_ADMIN', 'ROLE_SUPER_ADMIN'],
 }))
 
 const importHandler = async () => (await import('./server-middleware')).default
@@ -177,6 +177,16 @@ describe('server-middleware', () => {
     expect(mockIsAdmin).toHaveBeenCalledWith('cwa_auth=1; api_component=token', 3000)
   })
 
+  test.each([['ROLE_SUPER_ADMIN'], ['ROLE_ADMIN'], ['ROLE_CMS_ADMIN']])('asks the API for a token storing %s, since a token holds the stored roles, not the ones they reach (bundle #611)', async (role) => {
+    mockResolveConfigEventHandler.mockResolvedValue({ maintenanceModeEnabled: true })
+    mockParseCookies.mockReturnValue({ cwa_auth: '1', api_component: 'token' })
+    mockJwtDecode.mockReturnValue({ roles: [role, 'ROLE_USER'], exp: Math.floor(Date.now() / 1e3) + 3600 })
+    const handler = await importHandler()
+
+    await expect(handler(createEvent({ path: '/some-page' }))).resolves.toBeUndefined()
+    expect(mockIsAdmin).toHaveBeenCalled()
+  })
+
   test('throws 503 when the JWT claims admin but the API does not confirm it', async () => {
     mockResolveConfigEventHandler.mockResolvedValue({ maintenanceModeEnabled: true })
     mockParseCookies.mockReturnValue({ cwa_auth: '1', api_component: 'forged-token' })
@@ -205,6 +215,7 @@ describe('server-middleware', () => {
 
   test.each([
     ['the token has no admin role', { roles: ['ROLE_USER'], exp: Math.floor(Date.now() / 1e3) + 3600 }],
+    ['the token is a user admin\'s, who cannot edit content', { roles: ['ROLE_USER_ADMIN', 'ROLE_USER'], exp: Math.floor(Date.now() / 1e3) + 3600 }],
     ['the token has no roles', { exp: Math.floor(Date.now() / 1e3) + 3600 }],
     ['the token has no exp', { roles: ['ROLE_ADMIN'] }],
     ['the token has expired', { roles: ['ROLE_ADMIN'], exp: Math.floor(Date.now() / 1e3) - 10 }],

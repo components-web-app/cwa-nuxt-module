@@ -34,4 +34,26 @@ describe('/_cwa/users', () => {
     expect(wrapper.findComponent(ListRow).props()).toMatchObject({ actions: true, to: '/_cwa/users/x', view: undefined })
     expect(wrapper.findComponent({ name: 'ListContent' }).props('columns').at(-1)).toMatchObject({ label: 'Actions', labelHidden: true })
   })
+
+  test.each([
+    [['ROLE_USER'], 'User'],
+    [['ROLE_CMS_ADMIN', 'ROLE_USER'], 'Content admin'],
+    [['ROLE_USER_ADMIN', 'ROLE_USER'], 'User admin'],
+    [['ROLE_ADMIN', 'ROLE_CMS_ADMIN', 'ROLE_USER'], 'Admin'],
+    [['ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_USER_ADMIN', 'ROLE_CMS_ADMIN', 'ROLE_USER'], 'Super admin'],
+  ])('a user reaching %j is listed as %s, the level the dialog shows (bundle #611)', (roles, label) => {
+    const item = { '@id': '/users/1', 'username': 'someone', roles, 'enabled': true }
+    const wrapper = mount(UsersListPage, {
+      shallow: true,
+      global: {
+        stubs: {
+          ListContent: { name: 'ListContent', props: ['fetchUrl', 'searchFields', 'columns'], setup: () => ({ item }), template: '<div><slot name="item" :data="item" /></div>' },
+          ListRow: { name: 'ListRow', template: '<div><slot /></div>' },
+          ListCell: { name: 'ListCell', template: '<span class="cell"><slot /></span>' },
+        },
+      },
+    })
+
+    expect(wrapper.findAll('.cell').map(cell => cell.text())).toContain(label)
+  })
 })

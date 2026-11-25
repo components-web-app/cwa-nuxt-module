@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import type { NuxtPage } from '@nuxt/schema'
-import { addExtensionAdminPages, checkExtensions, extensionAdminMenu, extensionRouteRules } from './extensions'
+import { addExtensionAdminPages, checkExtensions, extensionAdminMenu, extensionAdminRoles, extensionRouteRules } from './extensions'
 import type { CwaExtension, ExtensionNames } from './extensions'
 
 const noNames: ExtensionNames = { components: [], layouts: [], pages: [] }
@@ -174,6 +174,23 @@ describe('extensionAdminMenu', () => {
     ])).toEqual([
       { label: 'Orders', to: { name: '_cwa-orders' }, role: 'ROLE_ADMIN' },
       { label: 'Reports', to: { name: '_cwa-reports' }, role: 'ROLE_SHOP_ACCOUNTS' },
+    ])
+  })
+})
+
+describe('extensionAdminRoles (bundle #611)', () => {
+  test('lists each role a page declares, once, labelled by the menu labels of its pages, else the role, leaving out the admin default', () => {
+    expect(extensionAdminRoles([
+      { ...shop, adminPages: [
+        { path: 'orders', file: '/o.vue', menu: { label: 'Orders' } },
+        { path: 'accounts', file: '/a.vue', role: 'ROLE_SHOP_ACCOUNTS', menu: { label: 'Accounts' } },
+        { path: 'invoices', file: '/i.vue', role: 'ROLE_SHOP_ACCOUNTS', menu: { label: 'Invoices' } },
+        { path: 'exports', file: '/e.vue', role: 'ROLE_SHOP_EXPORTS' },
+        { path: 'settings', file: '/s.vue', role: 'ROLE_ADMIN', menu: { label: 'Shop settings' } },
+      ] },
+    ])).toEqual([
+      { role: 'ROLE_SHOP_ACCOUNTS', label: 'Accounts, Invoices' },
+      { role: 'ROLE_SHOP_EXPORTS', label: 'ROLE_SHOP_EXPORTS' },
     ])
   })
 })

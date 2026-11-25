@@ -29,7 +29,7 @@
           <div class="cwa:flex cwa:justify-between cwa:w-full cwa:max-w-[350px]">
             <div class="cwa:mt-2">
               <ul class="cwa:text-xl cwa:flex cwa:flex-col cwa:gap-y-5">
-                <li>
+                <li v-if="$cwa.auth.isAdmin.value">
                   <MenuPrimaryLink
                     label="Layouts"
                     to="/_cwa/layouts"
@@ -37,7 +37,7 @@
                     <IconLayouts class="cwa:w-7" />
                   </MenuPrimaryLink>
                 </li>
-                <li>
+                <li v-if="$cwa.auth.isAdmin.value">
                   <MenuPrimaryLink
                     label="Pages"
                     to="/_cwa/pages"
@@ -45,7 +45,7 @@
                     <IconPages class="cwa:w-5 cwa:mx-1" />
                   </MenuPrimaryLink>
                 </li>
-                <li>
+                <li v-if="$cwa.auth.isAdmin.value">
                   <MenuPrimaryLink
                     label="Data"
                     to="/_cwa/data"
@@ -53,7 +53,7 @@
                     <IconData class="cwa:w-6 cwa:mx-0.5" />
                   </MenuPrimaryLink>
                 </li>
-                <li>
+                <li v-if="$cwa.auth.isAdmin.value">
                   <MenuPrimaryLink
                     label="Routes"
                     to="/_cwa/routes"
@@ -61,7 +61,7 @@
                     <IconRoutes class="cwa:w-7" />
                   </MenuPrimaryLink>
                 </li>
-                <li>
+                <li v-if="$cwa.auth.hasRole('ROLE_USER_ADMIN')">
                   <MenuPrimaryLink
                     label="Users"
                     :to="{ name: '_cwa-users-user' }"
@@ -72,7 +72,7 @@
               </ul>
             </div>
             <div class="cwa:flex cwa:flex-col cwa:gap-y-4">
-              <div>
+              <div v-if="$cwa.auth.isAdmin.value">
                 <h3>General</h3>
                 <ul class="cwa:text-sm">
                   <li>

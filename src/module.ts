@@ -31,7 +31,7 @@ import { scanComponentGroupDeclarations } from './component-group-declarations'
 import { scanCwaConfigDeclarations } from './cwa-config-declarations'
 import { adminResourcesTemplate, lucideNamesTypeTemplate } from './admin-resources'
 import type { LucideIconSet } from './admin-resources'
-import { addExtensionAdminPages, checkExtensions, extensionAdminMenu, extensionRouteRules } from './extensions'
+import { addExtensionAdminPages, checkExtensions, extensionAdminMenu, extensionAdminRoles, extensionRouteRules } from './extensions'
 import type { CwaExtension, ExtensionNames } from './extensions'
 import type { CwaModuleOptions, CwaResourcesConfig, CwaResourcesMeta, CwaStyleClasses, CwaStyles, CwaUiVariantConfig, GlobalComponentNames } from './runtime/types'
 
@@ -599,6 +599,7 @@ ${typeMap(name => [resourcesConfig[name]?.styles, ...uiOf(name).map(ui => uiConf
         filename: 'cwa-extension-menu.ts',
         write: true,
         getContents: () => `export const extensionMenu: { label: string, to: { name: string }, role: string }[] = ${JSON.stringify(extensionAdminMenu(extensions), undefined, 2)}
+export const extensionAdminRoles: { role: string, label: string }[] = ${JSON.stringify(extensionAdminRoles(extensions), undefined, 2)}
 `,
       })
 
