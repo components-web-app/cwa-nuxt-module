@@ -2,7 +2,8 @@
 import { resourcesConfig } from '#build/cwa-config'
 import { POPOVER_GAP } from '#cwa/templates/components/core/ui/popover-gap'
 import { popoverOpen } from '#cwa/templates/components/core/ui/open-motion'
-import { computed, onBeforeUnmount, ref } from 'vue'
+import InfoPopover from '#cwa/templates/components/core/ui/InfoPopover.vue'
+import { computed, ref } from 'vue'
 import { PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { navigateTo, useRouter } from '#app/composables/router'
 import { useCwa } from '#cwa/composables/cwa'
@@ -24,18 +25,6 @@ interface Person {
 const $cwa = useCwa()
 const { active, paused, onThisPage, elsewhere } = usePresence($cwa)
 const open = ref(false)
-const pausedTip = ref(false)
-let pausedTipTimer: ReturnType<typeof setTimeout> | undefined
-
-function showPausedTip() {
-  pausedTip.value = true
-  clearTimeout(pausedTipTimer)
-  pausedTipTimer = setTimeout(() => {
-    pausedTip.value = false
-  }, 2000)
-}
-
-onBeforeUnmount(() => clearTimeout(pausedTipTimer))
 const { getInternalResourceLink } = useCwaResourceRoute()
 const router = useRouter()
 
@@ -125,36 +114,27 @@ async function goTo(event: MouseEvent, page: string) {
 <template>
   <span
     v-if="active && paused"
-    data-testid="presence-paused"
+    data-testid="presence-unavailable"
     role="status"
-    title="Other editors' changes and who is here will catch up when the connection returns. You can keep editing."
-    class="cwa:relative cwa:flex cwa:shrink-0 cwa:items-center cwa:self-center cwa:whitespace-nowrap cwa:text-sm cwa:text-stone-400"
+    class="cwa:flex cwa:shrink-0 cwa:items-center cwa:gap-x-1 cwa:self-center cwa:whitespace-nowrap cwa:text-sm cwa:text-stone-400"
   >
-    <span class="cwa:max-sm:hidden">Live editing paused</span>
-    <button
-      type="button"
-      data-testid="presence-paused-glyph"
-      class="cwa:flex cwa:size-hit cwa:items-center cwa:justify-center cwa:cursor-pointer cwa:outline-1 cwa:outline-transparent cwa:focus-visible:outline-2 cwa:focus-visible:-outline-offset-2 cwa:focus-visible:outline-accent-fg cwa:sm:hidden"
-      @click="showPausedTip"
-    >
-      <svg
-        viewBox="0 0 24 24"
-        aria-hidden="true"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        class="cwa:size-5"
-      ><path d="m2 2 20 20" /><path d="M5.782 5.782A7 7 0 0 0 9 19h8.5a4.5 4.5 0 0 0 1.307-.193" /><path d="M21.532 16.5A4.5 4.5 0 0 0 17.5 10h-1.79A7.008 7.008 0 0 0 10 5.07" /></svg>
-      <span class="cwa:sr-only">Live editing paused</span>
-    </button>
-    <span
-      v-if="pausedTip"
+    <svg
+      data-testid="presence-unavailable-glyph"
+      viewBox="0 0 24 24"
       aria-hidden="true"
-      data-testid="presence-paused-tip"
-      class="cwa:absolute cwa:top-full cwa:left-0 cwa:z-context cwa:mt-1 cwa:rounded-sm cwa:border cwa:border-line cwa:bg-surface-menu cwa:px-2 cwa:py-1 cwa:text-xs cwa:text-light cwa:shadow-lg cwa:sm:hidden"
-    >Live editing paused</span>
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      class="cwa:size-5 cwa:sm:hidden"
+    ><path d="m2 2 20 20" /><path d="M5.782 5.782A7 7 0 0 0 9 19h8.5a4.5 4.5 0 0 0 1.307-.193" /><path d="M21.532 16.5A4.5 4.5 0 0 0 17.5 10h-1.79A7.008 7.008 0 0 0 10 5.07" /></svg>
+    <span class="cwa:max-sm:hidden">Collaborative editing unavailable</span>
+    <InfoPopover
+      label="Collaborative editing unavailable"
+      text="You can keep editing, and your changes save as normal. Other editors' changes, and who else is here, show again when the connection returns. If someone saved the same thing meanwhile, you'll be asked which version to keep."
+      text-id="presence-unavailable-info"
+    />
   </span>
   <PopoverRoot
     v-else-if="active && (here.length || elsewhereCount)"
