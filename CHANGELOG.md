@@ -4,6 +4,10 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+### Fixed
+
+- A user whose only admin role is one an extension's admin page needs now gets the admin header, so its menu reaches those pages. [64b1c858](https://github.com/components-web-app/cwa-nuxt-module/commit/64b1c85891d4efe86c587f04652ec6edf94b1e36)
+
 ## [2.0.0-alpha.40] - 2026-11-25
 
 ### Added
