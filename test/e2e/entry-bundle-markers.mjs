@@ -23,7 +23,7 @@ const forbidden = [
   { marker: 'The component being cloned no longer exists', source: 'admin/clone-component.ts' },
   { marker: 'were saved to a new draft', source: 'admin/remote-changes.ts' },
   { marker: 'Real-time presence is turned off on the API', source: 'admin/presence.ts' },
-  { marker: 'Live editing paused', source: 'header/_parts/PresenceIndicator.vue' },
+  { marker: 'Collaborative editing unavailable', source: 'header/_parts/PresenceIndicator.vue' },
   { marker: 'cwa:z-peer-outline', source: 'resource-manager/PeerOutlines.vue' },
   { marker: 'field-presence-flag', source: 'ui/FieldPresence.vue' },
   { marker: 'remote-change-accept', source: 'ui/RemoteChangeConflict.vue' },
