@@ -15,6 +15,7 @@ vi.mock('@nuxt/kit', async () => {
     addPlugin: vi.fn(),
     addImports: vi.fn(),
     addImportsDir: vi.fn(),
+    addComponent: vi.fn(),
     tryResolveModule: vi.fn(async (id: string) => `/node_modules/${id}`),
     addTemplate: vi.fn(),
     addVitePlugin: vi.fn(),
@@ -626,6 +627,18 @@ declare module 'vue-router' {
       expect(mockResolver).toHaveBeenCalledWith('./runtime/composables')
 
       expect(nuxtKit.addImportsDir as Mock).toHaveBeenCalledWith(mockResolver('./runtime/composables'))
+    })
+
+    test('gives an extension\'s admin pages the building blocks of the built-in lists and dialogs, under public names, so each stays one implementation (#487)', async () => {
+      await prepareMockNuxt()
+
+      const added = (nuxtKit.addComponent as Mock).mock.calls.map(([component]) => [component.name, component.filePath])
+      expect(added).toEqual(expect.arrayContaining([
+        ['CwaAdminListRow', './runtime/templates/components/core/admin/ListRow.vue'],
+        ['CwaAdminListCell', './runtime/templates/components/core/admin/ListCell.vue'],
+        ['CwaAdminResourceId', './runtime/templates/components/core/admin/ResourceIdDetail.vue'],
+      ]))
+      expect(nuxtKit.addImports as Mock).toHaveBeenCalledWith({ name: 'useCwaAdminItem', from: './layer/_composables/useCwaAdminItem' })
     })
 
     describe('component names constant (#352)', () => {

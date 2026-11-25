@@ -4,6 +4,7 @@ import { statSync, readFileSync, readdirSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { defu } from 'defu'
 import {
+  addComponent,
   addImports,
   addImportsDir,
   addPlugin,
@@ -211,6 +212,10 @@ export default defineNuxtModule<CwaModuleOptions>({
     logger.info(`Configuring auto-imports for CWA composables...`)
     addImportsDir(resolve('./runtime/composables'))
     addImportsDir(resolve('./runtime/composables/component'))
+    addImports({ name: 'useCwaAdminItem', from: resolve('./layer/_composables/useCwaAdminItem') })
+    for (const [name, file] of [['CwaAdminListRow', 'ListRow'], ['CwaAdminListCell', 'ListCell'], ['CwaAdminResourceId', 'ResourceIdDetail']]) {
+      addComponent({ name: name!, filePath: resolve(`./runtime/templates/components/core/admin/${file}.vue`) })
+    }
 
     logger.info(`Configuring CWA default pages and components...`)
     const vueTemplatesDir = resolve('./runtime/templates')
