@@ -12,6 +12,7 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ### Fixed
 
+- A signed-in non-admin sent from a `/_cwa` page to a CWA page no longer gets a 500 in development ("defineOgImage() … client-only context"): the page's og image is defined on the server or after hydration. [ed94b138](https://github.com/components-web-app/cwa-nuxt-module/commit/ed94b138bc9a43987ac407cd3ed17417558cb8bb)
 - The header's status for a lost real-time connection reads "Collaborative editing unavailable", not "Live editing paused", which read as editing being switched off; its ⓘ explains that editing carries on and saves as normal. [e8e12e24](https://github.com/components-web-app/cwa-nuxt-module/commit/e8e12e24b215eafec54d9cc16fe443a79f193abe)
 - A user whose only admin role is one an extension's admin page needs now gets the admin header, so its menu reaches those pages. [64b1c858](https://github.com/components-web-app/cwa-nuxt-module/commit/64b1c85891d4efe86c587f04652ec6edf94b1e36)
 
