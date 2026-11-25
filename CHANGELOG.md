@@ -4,6 +4,10 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+### Fixed
+
+- When the API's site config can't be fetched during a server render (a timeout, say), the page title uses the site name from `cwa.siteConfig` instead of showing `%siteName`, and that page is not stored in the page cache. [cc4e68a2](https://github.com/components-web-app/cwa-nuxt-module/commit/cc4e68a29d7827744f8166a41cdb2345835e88ed)
+
 ### Changed
 
 - Cached page HTML is now tagged with every resource the page fetched, of any type, not only CWA's own, so a write to an extension's resource (a product) purges the pages showing it. Embedded objects are not tagged: reference them by IRI and fetch them. [d8c5aac6](https://github.com/components-web-app/cwa-nuxt-module/commit/d8c5aac6439f6d196b29f57d9403a9530cb03651) [472d4686](https://github.com/components-web-app/cwa-nuxt-module/commit/472d4686894207dbf829a318ecb8bfe43d069760)
