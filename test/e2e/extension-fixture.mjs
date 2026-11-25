@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -29,6 +29,10 @@ check('its component\'s defineCwaConfig is read', /"FixtureBadge": \{\s+"name": 
 const menu = read('cwa-extension-menu.ts')
 check('its admin page is in the menu for admins', /"label": "Orders",\s+"to": \{\s+"name": "_cwa-fixture-orders"\s+\},\s+"role": "ROLE_ADMIN"/.test(menu))
 check('its role-gated admin page is in the menu with its role', /"label": "Reports",\s+"to": \{\s+"name": "_cwa-fixture-reports"\s+\},\s+"role": "ROLE_FIXTURE_REPORTS"/.test(menu))
+
+const clientDir = resolve(dirname(fileURLToPath(import.meta.url)), '../../playground/.output/public/_nuxt')
+const clientCode = readdirSync(clientDir).filter(file => file.endsWith('.js')).map(file => readFileSync(resolve(clientDir, file), 'utf8')).join('\n')
+check('its orders list has its order dialog as an item route', /name:\s*["'`]_cwa-fixture-orders-iri["'`],\s*path:\s*["'`]:iri["'`]/.test(clientCode))
 
 console.log(`\nwrong: ${failures}`)
 if (failures) {
