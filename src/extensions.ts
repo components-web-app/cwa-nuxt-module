@@ -3,6 +3,7 @@ import type { NuxtPage } from '@nuxt/schema'
 export interface CwaExtensionAdminPage {
   path: string
   file: string
+  item?: string
   role?: string
   menu?: { label: string }
 }
@@ -126,11 +127,14 @@ export function addExtensionAdminPages(pages: NuxtPage[], extensions: CwaExtensi
   parent.children ??= []
   for (const extension of withPages) {
     for (const page of extension.adminPages!) {
+      const name = adminRouteName(page.path)
+      const cwaAdminRole = page.role ?? DEFAULT_ADMIN_ROLE
       parent.children.push({
         path: trimPath(page.path),
-        name: adminRouteName(page.path),
+        name,
         file: page.file,
-        meta: { cwaAdminRole: page.role ?? DEFAULT_ADMIN_ROLE },
+        meta: { cwaAdminRole },
+        ...(page.item ? { children: [{ path: ':iri', name: `${name}-iri`, file: page.item, meta: { cwaAdminRole, key: `${name}-iri` } }] } : {}),
       })
     }
   }

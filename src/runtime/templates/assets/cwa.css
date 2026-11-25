@@ -1811,6 +1811,9 @@
 .cwa\:text-start {
   text-align: start;
 }
+.cwa\:align-bottom {
+  vertical-align: bottom;
+}
 .cwa\:align-top {
   vertical-align: top;
 }
@@ -2457,9 +2460,15 @@
   --tw-content: '';
   content: var(--tw-content);
 }
+.cwa\:first\:ps-0:first-child {
+  padding-inline-start: 0px;
+}
 .cwa\:last\:border-b-0:last-child {
   border-bottom-style: var(--tw-border-style);
   border-bottom-width: 0px;
+}
+.cwa\:last\:pe-0:last-child {
+  padding-inline-end: 0px;
 }
 .cwa\:focus-within\:outline-2:focus-within {
   outline-style: var(--tw-outline-style);
