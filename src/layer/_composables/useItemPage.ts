@@ -20,6 +20,44 @@ function fieldOfPath(path: string | undefined) {
   return path?.split(/[.[]/)[0] || undefined
 }
 
+type Data = { [key: string]: any }
+
+function isPlainObject(value: unknown): value is Data {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function readPath(data: Data | undefined, path: string) {
+  return path.split('.').reduce<any>((value, key) => (isPlainObject(value) ? value[key] : undefined), data)
+}
+
+function writePath(data: Data, path: string, value: unknown): Data {
+  const [key, ...rest] = path.split('.') as [string, ...string[]]
+  if (!rest.length) {
+    return { ...data, [key]: value }
+  }
+  return { ...data, [key]: writePath(isPlainObject(data[key]) ? data[key] : {}, rest.join('.'), value) }
+}
+
+function leafChanges(local: unknown, stored: unknown, path: string, into: Record<string, unknown>) {
+  if (isPlainObject(local) && isPlainObject(stored)) {
+    for (const key of new Set([...Object.keys(local), ...Object.keys(stored)])) {
+      leafChanges(local[key], stored[key], `${path}.${key}`, into)
+    }
+    return
+  }
+  if (!isEqual(local, stored)) {
+    into[path] = local === undefined ? null : local
+  }
+}
+
+function nestPaths(paths: Record<string, unknown>) {
+  return Object.entries(paths).reduce<Data>((data, [path, value]) => writePath(data, path, value), {})
+}
+
+function isUnder(path: string, field: string) {
+  return path === field || path.startsWith(`${field}.`) || path.startsWith(`${field}[`)
+}
+
 export type TempCwaResource = Omit<CwaResource, '@id' | '_metadata'>
 
 type StartsWithHash = `#${string}`
@@ -132,16 +170,26 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
     return saveResource()
   }
 
-  function changedFields() {
-    const local: { [key: string]: any } = localResourceData.value || {}
-    const stored: { [key: string]: any } = resource.value || {}
-    const changed: { [key: string]: any } = {}
+  function nestedKeys() {
+    return new Set([...models.keys()].filter(field => field.includes('.')).map(field => fieldOfPath(field)!))
+  }
+
+  function changedPaths(local: Data, stored: Data) {
+    const nested = nestedKeys()
+    const changed: Record<string, unknown> = {}
     for (const [key, value] of Object.entries(local)) {
-      if (!isEqual(value, stored[key])) {
+      if (nested.has(key)) {
+        leafChanges(value, stored[key], key, changed)
+      }
+      else if (!isEqual(value, stored[key])) {
         changed[key] = value
       }
     }
     return changed
+  }
+
+  function changedFields() {
+    return nestPaths(changedPaths(localResourceData.value || {}, resource.value || {}))
   }
 
   async function saveResource(close = false, extraData?: Record<string, any>) {
@@ -196,6 +244,10 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
         return newResource
       }
 
+      const sent = [
+        ...Object.keys(changedPaths(localResourceData.value || {}, resource.value || {})).filter(path => fieldOfPath(path)! in data),
+        ...Object.keys(extraData ?? {}),
+      ]
       if (!Object.keys(data).length) {
         if (close) {
           emit('close')
@@ -215,10 +267,10 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
       const updatedResource = await $cwa.resourcesManager.updateResource(event)
       const failure = updatedResource ? undefined : (await outcome)?.error
       if (failure) {
-        saveFailed(event, failure, Object.keys(data), base)
+        saveFailed(event, failure, sent, base)
       }
       else if (updatedResource) {
-        saveSucceeded(Object.keys(data))
+        saveSucceeded(sent)
       }
       if (updatedResource && localResourceData.value && updatedResource['@id'] === resource.value?.['@id']) {
         const local: { [key: string]: any } = { ...localResourceData.value }
@@ -257,8 +309,8 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
 
   function saveSucceeded(fields: string[]) {
     const errors = { ...fieldErrors.value }
-    for (const field of fields) {
-      delete errors[field]
+    for (const field of Object.keys(errors)) {
+      fields.some(path => isUnder(field, path) || isUnder(path, field)) && delete errors[field]
     }
     fieldErrors.value = errors
     formError.value = undefined
@@ -272,10 +324,13 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
     if (status === 422 && Array.isArray(failure.data?.violations)) {
       const errors: Record<string, string> = {}
       const general: string[] = []
+      const nested = nestedKeys()
+      const paths = [...models.keys()].filter(path => path.includes('.')).sort((a, b) => b.length - a.length)
       for (const violation of failure.data.violations as { propertyPath?: string, message?: string }[]) {
-        const field = fieldOfPath(violation.propertyPath)
+        const top = fieldOfPath(violation.propertyPath)
+        const field = top && nested.has(top) ? paths.find(path => isUnder(violation.propertyPath!, path)) : top
         const message = violation.message || 'This value is not valid.'
-        if (field && (fields.includes(field) || (isAdding.value && models.has(field)))) {
+        if (field && (field.includes('.') || fields.includes(field) || (isAdding.value && models.has(field)))) {
           errors[field] ??= message
         }
         else {
@@ -289,8 +344,9 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
       const theirs: { [key: string]: any } = failure.data
       const found: Record<string, DialogFieldConflict> = {}
       for (const field of fields) {
-        if (field in theirs && !isEqual(theirs[field], base[field])) {
-          found[field] = { name: SOMEONE_ELSE, value: theirs[field] }
+        const their = readPath(theirs, field)
+        if (their !== undefined && !isEqual(their, readPath(base, field))) {
+          found[field] = { name: SOMEONE_ELSE, value: their }
         }
       }
       conflicts.value = { ...conflicts.value, ...found }
@@ -314,13 +370,18 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
   function addedFields() {
     const local: { [key: string]: any } = localResourceData.value || {}
     const defaults: { [key: string]: any } = { '@type': resourceType, ...toValue(defaultResource) }
-    return Object.keys(local).filter(key => !isEqual(local[key], defaults[key]) && !(isBlank(local[key]) && isBlank(defaults[key])))
+    return Object.entries(changedPaths(local, defaults)).filter(([path, value]) => !(isBlank(value) && isBlank(readPath(defaults, path)))).map(([path]) => path)
   }
 
-  const unsavedFields = computed(() => (isAdding.value ? addedFields() : Object.keys(changedFields())).filter(field => !excludeFields?.includes(field)))
+  const modelCount = ref(0)
+  const unsavedFields = computed(() => {
+    void modelCount.value
+    const fields = isAdding.value ? addedFields() : Object.keys(changedPaths(localResourceData.value || {}, resource.value || {}))
+    return fields.filter(field => !excludeFields?.includes(fieldOfPath(field)!))
+  })
 
   watch(() => ({ ...localResourceData.value }) as { [key: string]: any }, (now, before) => {
-    const cleared = Object.keys(fieldErrors.value).filter(field => !isEqual(now[field], before?.[field]))
+    const cleared = Object.keys(fieldErrors.value).filter(field => !isEqual(readPath(now, field), readPath(before, field)))
     if (cleared.length) {
       const errors = { ...fieldErrors.value }
       cleared.forEach(field => delete errors[field])
@@ -332,7 +393,7 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
     const { [field]: _resolved, ...rest } = conflicts.value
     conflicts.value = rest
     if (value && localResourceData.value) {
-      (localResourceData.value as { [key: string]: any })[field] = value.value
+      localResourceData.value = writePath(localResourceData.value, field, value.value) as TempCwaResource
     }
   }
 
@@ -345,11 +406,16 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
       found = {
         field,
         model: computed({
-          get: () => (localResourceData.value as { [key: string]: any } | undefined)?.[field],
+          get: () => readPath(localResourceData.value, field),
           set: (value) => {
-            if (localResourceData.value) {
-              (localResourceData.value as { [key: string]: any })[field] = value
+            if (!localResourceData.value) {
+              return
             }
+            if (field.includes('.')) {
+              localResourceData.value = writePath(localResourceData.value, field, value) as TempCwaResource
+              return
+            }
+            (localResourceData.value as { [key: string]: any })[field] = value
           },
         }),
         state: computed<CwaFieldState>(() => {
@@ -369,6 +435,7 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
           : undefined),
       }
       models.set(field, found)
+      field.includes('.') && modelCount.value++
     }
     return found as ResourceModelField<T>
   }
