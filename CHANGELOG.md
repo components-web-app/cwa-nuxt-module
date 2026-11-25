@@ -4,6 +4,14 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+### Added
+
+- A component group can restrict the UIs and styles a component uses in it: an `allowedComponents` entry can be `{ component, ui, styles }`, type-checked against the component's UI names and style keys. The admin's add dialog, UI tab, clone and move offer only what every group the component is in allows, and the bundle enforces it. Needs api-components-bundle 2.0.0-alpha.46. [bfc40c58](https://github.com/components-web-app/cwa-nuxt-module/commit/bfc40c5834286f6ed581e4ef0f77f016bcd2ad4a) [88fc5927](https://github.com/components-web-app/cwa-nuxt-module/commit/88fc5927c70b1f1c9b2bdb514a801e29687f456b) ([#488](https://github.com/components-web-app/cwa-nuxt-module/issues/488))
+
+### Deprecated
+
+- A collection IRI in `allowedComponents` (`'/component/images'`) now warns: use the component name. IRIs will stop working in the next alpha, without further warning. [bfc40c58](https://github.com/components-web-app/cwa-nuxt-module/commit/bfc40c5834286f6ed581e4ef0f77f016bcd2ad4a) ([#488](https://github.com/components-web-app/cwa-nuxt-module/issues/488))
+
 ### Changed
 
 - Cached page HTML is now tagged with every resource the page fetched, of any type, not only CWA's own, so a write to an extension's resource (a product) purges the pages showing it. Embedded objects are not tagged: reference them by IRI and fetch them. [d8c5aac6](https://github.com/components-web-app/cwa-nuxt-module/commit/d8c5aac6439f6d196b29f57d9403a9530cb03651) [472d4686](https://github.com/components-web-app/cwa-nuxt-module/commit/472d4686894207dbf829a318ecb8bfe43d069760)
