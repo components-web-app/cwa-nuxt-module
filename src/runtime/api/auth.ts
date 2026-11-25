@@ -1,6 +1,7 @@
 import type { CookieRef, NuxtApp } from 'nuxt/app'
 import type { RouteLocationNormalizedLoaded } from 'vue-router'
 import { FetchError } from 'ofetch'
+import { consola as logger } from 'consola'
 import { computed, ref } from 'vue'
 import type { ComputedRef, Ref } from 'vue'
 import type { AuthStore, CwaAuthStoreInterface } from '../storage/stores/auth/auth-store'
@@ -78,7 +79,11 @@ export default class Auth {
       return result
     }
     this.mercure.init(true)
-    return this.refreshUser()
+    const user = await this.refreshUser()
+    if (!(user instanceof FetchError)) {
+      this.announce('cwa:auth:signed-in', { user })
+    }
+    return user
   }
 
   public async forgotPassword(username: string) {
@@ -282,6 +287,10 @@ export default class Auth {
     }
   }
 
+  private announce(...args: ['cwa:auth:signed-in', { user: CwaUser }] | ['cwa:auth:signed-out']) {
+    (this.nuxtApp.callHook as (...hook: unknown[]) => Promise<unknown>)(...args).catch(error => logger.error(error))
+  }
+
   private notifySessionEnded() {
     const handler = this.sessionEndHandler
     if (!handler) {
@@ -324,6 +333,9 @@ export default class Auth {
     if (sessionEnded) {
       if (useProcess().isServer) {
         this.authStore.data.sessionEnded = true
+      }
+      else {
+        this.announce('cwa:auth:signed-out')
       }
       this.notifySessionEnded()
     }

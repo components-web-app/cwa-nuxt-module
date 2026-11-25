@@ -720,6 +720,12 @@ declare module 'vue-router' {
     cwa?: CwaRouteMeta
     cwaAdminRole?: string
   }
+}
+declare module '#app' {
+  interface RuntimeNuxtHooks {
+    'cwa:auth:signed-in': (payload: { user: import('#cwa/storage/stores/auth/state').CwaUser }) => void | Promise<void>
+    'cwa:auth:signed-out': () => void | Promise<void>
+  }
 }`,
       })
 
