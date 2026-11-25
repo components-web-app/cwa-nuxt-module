@@ -857,6 +857,76 @@ async function dragGrip(page, testId, by, { slow = false, release = true } = {})
 
 const sheetBottom = sheet => sheet.evaluate(element => element.getBoundingClientRect().bottom)
 
+function trackSheet(page, testId) {
+  return page.evaluate((testId) => {
+    window.__sheetTops = []
+    window.__sheetTracked = false
+    const started = performance.now()
+    const frame = () => {
+      const sheet = document.querySelector(`[data-testid="${testId}"], [data-sheet-leaving="${testId}"]`)
+      window.__sheetTops.push(sheet ? Math.round(sheet.getBoundingClientRect().top) : null)
+      if (performance.now() - started < 700) {
+        requestAnimationFrame(frame)
+        return
+      }
+      window.__sheetTracked = true
+    }
+    requestAnimationFrame(frame)
+  }, testId)
+}
+
+async function sheetTops(page) {
+  await page.waitForFunction(() => window.__sheetTracked)
+  return page.evaluate(() => window.__sheetTops)
+}
+
+test('kit at 390: a select sheet slides up from below the screen, and slides back down before it goes once an option is tapped (#461)', async ({ page }) => {
+  await openKit(page, 390)
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.waitForLoadState('networkidle')
+  const trigger = page.locator('main').getByTestId('select-trigger').first()
+  await trigger.scrollIntoViewIfNeeded()
+
+  await trackSheet(page, 'select-sheet')
+  await trigger.click()
+  const opening = (await sheetTops(page)).filter(top => top !== null)
+  const settledTop = opening.at(-1)
+  expect(opening[0]).toBeGreaterThan(settledTop + (844 - settledTop) * 0.8)
+  expect(new Set(opening).size).toBeGreaterThanOrEqual(5)
+  expect(opening.every((top, index) => index === 0 || top <= opening[index - 1])).toBe(true)
+
+  const option = page.getByTestId('select-sheet').locator('[role="option"]:not([data-state="checked"])').first()
+  await trackSheet(page, 'select-sheet')
+  await option.click()
+  const closing = await sheetTops(page)
+  const shown = closing.slice(0, closing.indexOf(null))
+  expect(closing.indexOf(null)).toBeGreaterThan(0)
+  expect(new Set(shown).size).toBeGreaterThanOrEqual(5)
+  expect(shown.every((top, index) => index === 0 || top >= shown[index - 1])).toBe(true)
+  expect(shown.at(-1)).toBeGreaterThan(settledTop + (844 - settledTop) * 0.8)
+  await expect(trigger).toBeFocused()
+})
+
+test('kit at 390 with reduced motion: a select sheet appears and goes without sliding (#461)', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await openKit(page, 390)
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.waitForLoadState('networkidle')
+  const trigger = page.locator('main').getByTestId('select-trigger').first()
+  await trigger.scrollIntoViewIfNeeded()
+
+  await trackSheet(page, 'select-sheet')
+  await trigger.click()
+  const opening = (await sheetTops(page)).filter(top => top !== null)
+  expect(new Set(opening).size).toBe(1)
+
+  await trackSheet(page, 'select-sheet')
+  await page.getByTestId('select-sheet').locator('[role="option"]:not([data-state="checked"])').first().click()
+  const closing = await sheetTops(page)
+  expect(closing.indexOf(null)).toBeGreaterThan(0)
+  expect(new Set(closing.slice(0, closing.indexOf(null))).size).toBe(1)
+})
+
 test('kit at 390: the split button ⋮ sheet follows a drag on its handle, springs back when let go short, and slides away and closes, choosing nothing, when dragged past (#461)', async ({ page }) => {
   const sheet = await openSheetAt390(page, page => page.getByTestId('kit-split').getByTestId('button-options'), 'kit-menu-sheet')
   const choice = await page.getByTestId('kit-menu-choice').textContent()

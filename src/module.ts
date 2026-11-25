@@ -1,9 +1,10 @@
 import { join } from 'path'
 import path from 'node:path'
-import { statSync, readFileSync } from 'node:fs'
+import { statSync, readFileSync, readdirSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { defu } from 'defu'
 import {
+  addComponent,
   addImports,
   addImportsDir,
   addPlugin,
@@ -30,9 +31,16 @@ import { scanComponentGroupDeclarations } from './component-group-declarations'
 import { scanCwaConfigDeclarations } from './cwa-config-declarations'
 import { adminResourcesTemplate, lucideNamesTypeTemplate } from './admin-resources'
 import type { LucideIconSet } from './admin-resources'
+import { addExtensionAdminPages, checkExtensions, extensionAdminMenu, extensionAdminRoles, extensionRouteRules } from './extensions'
+import type { CwaExtension, ExtensionNames } from './extensions'
 import type { CwaModuleOptions, CwaResourcesConfig, CwaResourcesMeta, CwaStyleClasses, CwaStyles, CwaUiVariantConfig, GlobalComponentNames } from './runtime/types'
 
+export type { CwaExtension, CwaExtensionAdminPage } from './extensions'
+
 declare module 'nuxt/schema' {
+  interface NuxtHooks {
+    'cwa:extend': (register: (extension: CwaExtension) => void) => void | Promise<void>
+  }
   interface PublicRuntimeConfig {
     cwa: {
       apiUrl: string
@@ -204,6 +212,10 @@ export default defineNuxtModule<CwaModuleOptions>({
     logger.info(`Configuring auto-imports for CWA composables...`)
     addImportsDir(resolve('./runtime/composables'))
     addImportsDir(resolve('./runtime/composables/component'))
+    addImports({ name: 'useCwaAdminItem', from: resolve('./layer/_composables/useCwaAdminItem') })
+    for (const [name, file] of [['CwaAdminListRow', 'ListRow'], ['CwaAdminListCell', 'ListCell'], ['CwaAdminResourceId', 'ResourceIdDetail']]) {
+      addComponent({ name: name!, filePath: resolve(`./runtime/templates/components/core/admin/${file}.vue`) })
+    }
 
     logger.info(`Configuring CWA default pages and components...`)
     const vueTemplatesDir = resolve('./runtime/templates')
@@ -211,6 +223,11 @@ export default defineNuxtModule<CwaModuleOptions>({
     extendPages((pages: NuxtPage[]) => {
       const pageComponent = resolve(vueTemplatesDir, 'cwa-page.vue')
       createDefaultCwaPages(pages, pageComponent, options.pagesDepth || 4, options.layoutName)
+    })
+
+    const extensions: CwaExtension[] = []
+    extendPages((pages: NuxtPage[]) => {
+      addExtensionAdminPages(pages, extensions)
     })
 
     nuxt.hook('pages:routerOptions', ({ files }) => {
@@ -250,8 +267,16 @@ export default defineNuxtModule<CwaModuleOptions>({
     const userComponentsPath = join(cwaAppDir, 'components')
     nuxt.options.alias['#cwaComponents'] = userComponentsPath
 
+    function cwaRoots() {
+      return [cwaAppDir, ...extensions.flatMap(extension => extension.dir ? [extension.dir] : [])]
+    }
+
+    function rootOf(filePath: string, kind: 'components' | 'layouts' | 'pages') {
+      return cwaRoots().map(root => join(root, kind)).find(dir => filePath.startsWith(`${dir}/`))
+    }
+
     function userComponentPath(filePath: string) {
-      const [name, ...rest] = path.relative(userComponentsPath, filePath).split('/')
+      const [name, ...rest] = path.relative(rootOf(filePath, 'components') ?? userComponentsPath, filePath).split('/')
       return { name, rest }
     }
 
@@ -266,7 +291,7 @@ export default defineNuxtModule<CwaModuleOptions>({
     }
 
     function resolveUserComponents(components: Component[]) {
-      const allUserComponents = components.filter(({ filePath }) => filePath.startsWith(userComponentsPath))
+      const allUserComponents = components.filter(({ filePath }) => rootOf(filePath, 'components'))
       return {
         allUserComponents,
         userComponents: allUserComponents.filter(({ filePath }) => isPrimaryComponent(filePath)),
@@ -274,17 +299,62 @@ export default defineNuxtModule<CwaModuleOptions>({
     }
 
     function isCwaTemplate({ filePath }: Component) {
-      const within = (dir: string) => filePath.startsWith(`${dir}/`)
-      if (within(join(appDir, 'cwa', 'layouts'))) {
+      if (rootOf(filePath, 'layouts')) {
         return true
       }
-      if (within(join(appDir, 'cwa', 'pages'))) {
+      if (rootOf(filePath, 'pages')) {
         return !filePath.includes('/admin/')
       }
-      if (!within(userComponentsPath)) {
+      if (!rootOf(filePath, 'components')) {
         return false
       }
       return isPrimaryComponent(filePath) || isUiVariant(filePath)
+    }
+
+    function isDirectory(dirPath: string) {
+      try {
+        return statSync(dirPath).isDirectory()
+      }
+      catch {
+        return false
+      }
+    }
+
+    function readCwaNames(root: string): ExtensionNames {
+      const entries = (dir: string) => {
+        try {
+          return readdirSync(join(root, dir), { withFileTypes: true })
+        }
+        catch {
+          return []
+        }
+      }
+      const vueFiles = (dir: string) => entries(dir).filter(entry => entry.isFile() && entry.name.endsWith('.vue')).map(entry => entry.name.slice(0, -4))
+      return {
+        components: entries('components').filter(entry => entry.isDirectory() && readComponentFile(join(root, 'components', entry.name, `${entry.name}.vue`)) !== undefined).map(entry => entry.name),
+        layouts: vueFiles('layouts'),
+        pages: vueFiles('pages'),
+      }
+    }
+
+    function builtInAdminPaths() {
+      return [...new Set(readdirSync(resolve('./layer/pages/_cwa/index')).filter(name => !name.includes('.spec.')).map(name => name.replace(/\.vue$/, '')))]
+    }
+
+    async function collectExtensions() {
+      await nuxt.callHook('cwa:extend', (extension) => {
+        extensions.push(extension)
+      })
+      const { overrides } = checkExtensions({
+        extensions,
+        namesOf: extension => extension.dir ? readCwaNames(extension.dir) : { components: [], layouts: [], pages: [] },
+        appNames: readCwaNames(cwaAppDir),
+        builtInAdminPaths: builtInAdminPaths(),
+      })
+      for (const override of overrides) {
+        logger.info(`${NAME}: ${override}`)
+      }
+      extensionRouteRules((nuxt.options.routeRules ??= {}) as Record<string, Record<string, unknown>>, extensions)
     }
 
     function resolveComponentImport(source: string, importer: string) {
@@ -486,7 +556,8 @@ export default defineNuxtModule<CwaModuleOptions>({
       return Object.values(routeRules).some(rule => !!(rule?.isr || rule?.swr || rule?.prerender))
     }
 
-    nuxt.hook('modules:done', () => {
+    nuxt.hook('modules:done', async () => {
+      await collectExtensions()
       logger.info(`Configuring template to propagate module options and adding plugin for ${NAME} module...`)
       // clear options no longer needed and add plugin
       delete options.pagesDepth
@@ -509,14 +580,34 @@ export default defineNuxtModule<CwaModuleOptions>({
         getContents: ({ app }) => {
           const names = resolveUserComponents(app.components).userComponents.map(toResourceType)
           const constant = JSON.stringify(Object.fromEntries(names.map(name => [name, name])), undefined, 2)
+          const { resourcesConfig, uiConfig } = resolveCwaConfig(app.components)
+          const union = (values: string[]) => values.length ? [...new Set(values)].map(value => JSON.stringify(value)).join(' | ') : 'never'
+          const typeMap = (valuesOf: (name: string) => string[]) => names.map(name => `  ${JSON.stringify(name)}: ${union(valuesOf(name))}`).join('\n')
+          const uiOf = (name: string) => (resourcesConfig[name]?.ui ?? []) as string[]
           return `export const CwaComponentNames = ${constant} as const
 export type CwaComponentName = typeof CwaComponentNames[keyof typeof CwaComponentNames]
+export interface CwaComponentUis {
+${typeMap(name => [`CwaComponent${name}`, ...uiOf(name)])}
+}
+export interface CwaComponentStyles {
+${typeMap(name => [resourcesConfig[name]?.styles, ...uiOf(name).map(ui => uiConfig[ui]?.styles)].flatMap(styles => Object.keys(styles ?? {})))}
+}
 `
         },
       })
+      addTemplate({
+        filename: 'cwa-extension-menu.ts',
+        write: true,
+        getContents: () => `export const extensionMenu: { label: string, to: { name: string }, role: string }[] = ${JSON.stringify(extensionAdminMenu(extensions), undefined, 2)}
+export const extensionAdminRoles: { role: string, label: string }[] = ${JSON.stringify(extensionAdminRoles(extensions), undefined, 2)}
+`,
+      })
+
       addImports([
         { name: 'CwaComponentNames', from: '#build/cwa-component-names' },
         { name: 'CwaComponentName', from: '#build/cwa-component-names', type: true },
+        { name: 'CwaComponentUis', from: '#build/cwa-component-names', type: true },
+        { name: 'CwaComponentStyles', from: '#build/cwa-component-names', type: true },
       ])
 
       const reportedUncheckable = new Set<string>()
@@ -635,6 +726,8 @@ declare module '#og-image/components' {
         getContents: () => /* ts */`interface CwaRouteMeta {
   admin?: boolean
   disabled?: boolean
+  layout?: string
+  /** @deprecated name the layout by its reference with layout */
   staticLayout?: GlobalComponentNames
   fetch?: {
     iri: string
@@ -645,6 +738,13 @@ export * from 'vue-router'
 declare module 'vue-router' {
   interface RouteMeta {
     cwa?: CwaRouteMeta
+    cwaAdminRole?: string
+  }
+}
+declare module '#app' {
+  interface RuntimeNuxtHooks {
+    'cwa:auth:signed-in': (payload: { user: import('#cwa/storage/stores/auth/state').CwaUser }) => void | Promise<void>
+    'cwa:auth:signed-out': () => void | Promise<void>
   }
 }`,
       })
@@ -778,24 +878,35 @@ declare module 'vue-router' {
         global: true,
         ignore: ['**/*.spec.{cts,mts,ts}'],
       })
+
+      for (const { dir } of extensions) {
+        if (!dir) {
+          continue
+        }
+        dirs.push(...[
+          { path: join(dir, 'components'), prefix: 'CwaComponent', global: true, priority: 0, ignore: ['**/*.spec.{cts,mts,ts}'] },
+          { path: join(dir, 'layouts'), prefix: 'CwaLayout', global: true, priority: 0, ignore: ['**/*.spec.{cts,mts,ts}'] },
+          { path: join(dir, 'pages'), prefix: 'CwaPage', global: true, priority: 0, ignore: ['**/admin/*', '**/*.spec.{cts,mts,ts}'] },
+        ].filter(({ path }) => isDirectory(path)))
+      }
     })
 
     // todo: test - this will rebuild the options template when cwa files are added or deleted so that we auto-detect tabs to change in dev
     nuxt.hook('builder:watch', async (event, relativePath) => {
       const filenames: string[] = []
       const path = resolve(appDir, relativePath)
-      const cwaDirs = [userComponentsPath]
+      const cwaDirs = cwaRoots().map(root => join(root, 'components'))
       if (['add', 'unlink'].includes(event) && cwaDirs.some(dir => dir === path || path.startsWith(dir + '/'))) {
         logger.info(`File added or removed - updating options for ${NAME} module...`)
         filenames.push('cwa-options.ts', 'cwa-component-names.ts', 'cwa-admin-resources.ts', '#cwa/server-options.ts')
       }
-      if (event === 'change' && relativePath.endsWith('.svg') && path.startsWith(userComponentsPath + '/')) {
+      if (event === 'change' && relativePath.endsWith('.svg') && rootOf(path, 'components')) {
         filenames.push('cwa-admin-resources.ts')
       }
       if (['add', 'change', 'unlink'].includes(event) && relativePath.endsWith('.vue')) {
         filenames.push('cwa-component-group-declarations.ts')
-        if (path.startsWith(cwaAppDir + '/')) {
-          filenames.push('cwa-config.ts', 'cwa-styles.ts', 'cwa-admin-resources.ts')
+        if (cwaRoots().some(root => path.startsWith(root + '/'))) {
+          filenames.push('cwa-config.ts', 'cwa-styles.ts', 'cwa-admin-resources.ts', 'cwa-component-names.ts')
         }
       }
       if (filenames.length) {

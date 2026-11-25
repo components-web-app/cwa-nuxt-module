@@ -108,6 +108,7 @@ function expectNotStored(label, response, expectedStatus) {
     label,
     response.status === expectedStatus
     && !!response.cacheControl?.includes('no-store')
+    && !!response.cacheControl?.includes('private')
     && response.surrogateKey === null,
     detail,
   )
@@ -166,12 +167,18 @@ async function main() {
   setScheduledRouteLive(true)
   expectStored('the same route once it goes live', await load('/scheduled'))
 
+  console.log('\n#487 an extension\'s page cache rule keeps its page out of a shared cache\n')
+
+  expectStored('a CWA page with no rule is stored', await load('/real'))
+  expectNotStored('a CWA page an extension\'s route rule keeps out of the cache', await load('/fixture-basket'), 200)
+  expectNotStored('the bare path of an extension\'s /** rule, which Nitro matches too', await load('/fixture-account'), 200)
+
   console.log(`\nwrong: ${failures}`)
   if (failures) {
     console.error('\nFAIL: an error page carried cacheable headers, so a shared cache would store it (#340).')
     return finish(1)
   }
-  console.log('\nPASS: every error response was marked no-store and carried no surrogate key.')
+  console.log('\nPASS: every error response was marked private, no-store and carried no surrogate key.')
   return finish(0)
 }
 

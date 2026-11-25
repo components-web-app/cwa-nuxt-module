@@ -16,17 +16,8 @@
 </template>
 
 <script lang="ts" setup>
-import { onBeforeMount } from 'vue'
-import { definePageMeta, useCwa, navigateTo, useHead } from '#imports'
+import { definePageMeta, useHead } from '#imports'
 import cwaAdmin from '#cwa-layer/middleware/cwa-admin'
-
-const $cwa = useCwa()
-
-onBeforeMount(async () => {
-  if (!$cwa.auth.isAdmin.value) {
-    await navigateTo('/')
-  }
-})
 
 definePageMeta({
   middleware: cwaAdmin,

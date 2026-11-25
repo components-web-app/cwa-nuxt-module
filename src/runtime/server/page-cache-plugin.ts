@@ -1,6 +1,6 @@
 import type { H3Event } from 'h3'
 import { removeResponseHeader, setResponseHeader } from 'h3'
-import { defineNitroPlugin } from 'nitropack/runtime'
+import { defineNitroPlugin, getRouteRules } from 'nitropack/runtime'
 
 export default defineNitroPlugin((nitroApp) => {
   nitroApp.hooks.hook('beforeResponse', (event: H3Event) => {
@@ -9,13 +9,13 @@ export default defineNitroPlugin((nitroApp) => {
       return
     }
 
-    if (event.node.res.statusCode !== 200) {
+    if (event.node.res.statusCode !== 200 || (getRouteRules(event) as { cwa?: { pageCache?: boolean } }).cwa?.pageCache === false) {
       removeResponseHeader(event, 'Surrogate-Key')
-      setResponseHeader(event, 'Cache-Control', 'no-store')
+      setResponseHeader(event, 'Cache-Control', 'private, no-store')
       return
     }
 
-    if (decision.unstorable) {
+    if (decision.unstorable || event.context.cwaSiteConfigUnavailable) {
       setResponseHeader(event, 'Cache-Control', 'private, no-store')
       return
     }

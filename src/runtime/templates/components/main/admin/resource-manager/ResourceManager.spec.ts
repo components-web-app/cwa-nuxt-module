@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
-import { createCommentVNode, defineAsyncComponent, h, inject, onMounted, reactive, ref, nextTick } from 'vue'
+import { computed, createCommentVNode, defineAsyncComponent, h, inject, onMounted, reactive, ref, nextTick } from 'vue'
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { mockNuxtImport } from '@nuxt/test-utils/runtime'
 import { CwaUserRoles } from '#cwa/storage/stores/auth/state'
@@ -109,7 +109,8 @@ function makeCwa(opts: {
     },
     auth: {
       user: { '@id': '/_/users/admin' },
-      hasRole: vi.fn((role: string) => (opts.hasRole ?? false) && role === CwaUserRoles.ADMIN),
+      hasRole: vi.fn((role: string) => (opts.hasRole ?? false) && role === CwaUserRoles.CMS_ADMIN),
+      isAdmin: computed(() => opts.hasRole ?? false),
     },
     resources: {
       displayPageIri: { value: undefined },
@@ -699,13 +700,13 @@ describe('ResourceManager', () => {
   })
 
   describe('admin context menu visibility', () => {
-    test('renders the context menu when the user has the ADMIN role', async () => {
+    test('renders the context menu for a content admin (bundle #611)', async () => {
       cwaState.cwa = makeCwa({ hasRole: true })
       const wrapper = await mountManager()
       expect(wrapper.findComponent({ name: 'CwaAdminResourceManagerContextMenu' }).exists()).toBe(true)
     })
 
-    test('hides the context menu when the user lacks the ADMIN role', async () => {
+    test('hides the context menu from a user who is not a content admin', async () => {
       cwaState.cwa = makeCwa({ hasRole: false })
       const wrapper = await mountManager()
       expect(wrapper.findComponent({ name: 'CwaAdminResourceManagerContextMenu' }).exists()).toBe(false)

@@ -121,6 +121,15 @@
           :disabled="isSelf"
           disabled-reason="You can't change your own role."
         />
+        <CwaUiToggle
+          v-for="extensionRole in extensionRoleToggles"
+          :key="extensionRole.role"
+          :label="extensionRole.label"
+          :model-value="extensionRole.on"
+          :disabled="!!extensionRole.disabledReason"
+          :disabled-reason="extensionRole.disabledReason"
+          @update:model-value="setExtensionRole(extensionRole.role, !!$event)"
+        />
       </CwaUiFormSection>
       <CwaUiFormSection
         v-if="isAdding"
@@ -216,6 +225,10 @@ import { useCwa } from '#cwa/composables/cwa'
 import { useCwaConfirm } from '#cwa/composables/cwa-confirm'
 import { formatCountdown } from '#cwa/api/retry-after'
 import { definePageMeta } from '#imports'
+// @ts-ignore
+import { extensionAdminRoles as builtExtensionAdminRoles } from '#build/cwa-extension-menu'
+import { rolesForLevel, userRoleLevel, userRoleLevels } from '#cwa/admin/user-roles'
+import type { UserRoleLevel } from '#cwa/admin/user-roles'
 import CwaUiDialog from '#cwa/templates/components/ui/Dialog.vue'
 import CwaUiFormSection from '#cwa/templates/components/ui/FormSection.vue'
 import CwaUiInput from '#cwa/templates/components/ui/Input.vue'
@@ -325,33 +338,56 @@ async function save() {
   return savedResource
 }
 
-const roleOptions: MenuEntry[] = [
-  { label: 'User', value: 'ROLE_USER' },
-  { label: 'Admin', value: 'ROLE_ADMIN' },
-  { label: 'Super Admin', value: 'ROLE_SUPER_ADMIN' },
-]
+const extensionAdminRoles = builtExtensionAdminRoles as { role: string, label: string }[]
 
-function highestRole(roles: unknown) {
-  if (!Array.isArray(roles)) {
-    return undefined
+const cannotGrant = 'You can\'t grant a role you don\'t have.'
+const canGrant = (roles: string[]) => roles.every(role => $cwa.auth.hasRole(role))
+
+const roleOptions = computed<MenuEntry[]>(() => userRoleLevels.map(level => ({
+  label: level.label,
+  value: level.value,
+  description: level.description,
+  ...(canGrant(level.roles) ? {} : { disabled: true, disabledReason: cannotGrant }),
+})))
+
+const reachedRoles = computed<string[]>(() => Array.isArray(localResourceData.value?.roles) ? localResourceData.value.roles : [])
+const currentLevel = computed(() => userRoleLevel(reachedRoles.value))
+const chosenExtensionRoles = computed(() => currentLevel.value.reachesExtensionRoles ? [] : extensionAdminRoles.map(entry => entry.role).filter(role => reachedRoles.value.includes(role)))
+
+function writeRoles(level: UserRoleLevel, extensionRoles: string[]) {
+  if (localResourceData.value) {
+    localResourceData.value.roles = rolesForLevel(level, extensionRoles)
   }
-  return [...roleOptions].reverse().find(option => 'value' in option && roles.includes(option.value))
 }
 
 const roleModel = {
   ...form.model<string[]>('roles'),
   model: computed({
-    get: () => {
-      const option = highestRole(localResourceData.value?.roles)
-      return option && 'value' in option ? option.value : undefined
-    },
-    set: (role: string | null | undefined) => {
-      if (localResourceData.value && role) {
-        localResourceData.value.roles = [role]
+    get: () => currentLevel.value.value,
+    set: (value: string | null | undefined) => {
+      const level = userRoleLevels.find(entry => entry.value === value)
+      if (level) {
+        writeRoles(level, chosenExtensionRoles.value)
       }
     },
   }),
 } as unknown as ResourceModelField<string>
+
+const extensionRoleToggles = computed(() => extensionAdminRoles.map(({ role, label }) => ({
+  role,
+  label,
+  on: currentLevel.value.reachesExtensionRoles || reachedRoles.value.includes(role),
+  disabledReason: isSelf.value
+    ? 'You can\'t change your own role.'
+    : currentLevel.value.reachesExtensionRoles
+      ? 'Admins have this role.'
+      : canGrant([role]) ? undefined : cannotGrant,
+})))
+
+function setExtensionRole(role: string, on: boolean) {
+  const others = chosenExtensionRoles.value.filter(entry => entry !== role)
+  writeRoles(currentLevel.value, on ? [...others, role] : others)
+}
 
 const username = computed(() => (resource.value?.username as string | undefined) || '')
 

@@ -38,7 +38,7 @@ function hideModal() {
     return
   }
   router.push({
-    name: route.name.toString().replace('-iri', ''),
+    name: route.name.toString().replace(/-iri$/, ''),
     query: route.query,
   })
 }

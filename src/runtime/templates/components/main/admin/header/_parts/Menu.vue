@@ -29,7 +29,7 @@
           <div class="cwa:flex cwa:justify-between cwa:w-full cwa:max-w-[350px]">
             <div class="cwa:mt-2">
               <ul class="cwa:text-xl cwa:flex cwa:flex-col cwa:gap-y-5">
-                <li>
+                <li v-if="$cwa.auth.isAdmin.value">
                   <MenuPrimaryLink
                     label="Layouts"
                     to="/_cwa/layouts"
@@ -37,7 +37,7 @@
                     <IconLayouts class="cwa:w-7" />
                   </MenuPrimaryLink>
                 </li>
-                <li>
+                <li v-if="$cwa.auth.isAdmin.value">
                   <MenuPrimaryLink
                     label="Pages"
                     to="/_cwa/pages"
@@ -45,7 +45,7 @@
                     <IconPages class="cwa:w-5 cwa:mx-1" />
                   </MenuPrimaryLink>
                 </li>
-                <li>
+                <li v-if="$cwa.auth.isAdmin.value">
                   <MenuPrimaryLink
                     label="Data"
                     to="/_cwa/data"
@@ -53,7 +53,7 @@
                     <IconData class="cwa:w-6 cwa:mx-0.5" />
                   </MenuPrimaryLink>
                 </li>
-                <li>
+                <li v-if="$cwa.auth.isAdmin.value">
                   <MenuPrimaryLink
                     label="Routes"
                     to="/_cwa/routes"
@@ -61,7 +61,7 @@
                     <IconRoutes class="cwa:w-7" />
                   </MenuPrimaryLink>
                 </li>
-                <li>
+                <li v-if="$cwa.auth.hasRole('ROLE_USER_ADMIN')">
                   <MenuPrimaryLink
                     label="Users"
                     :to="{ name: '_cwa-users-user' }"
@@ -72,12 +72,25 @@
               </ul>
             </div>
             <div class="cwa:flex cwa:flex-col cwa:gap-y-4">
-              <div>
+              <div v-if="$cwa.auth.isAdmin.value">
                 <h3>General</h3>
                 <ul class="cwa:text-sm">
                   <li>
                     <MenuLink :to="{ name: '_cwa-settings' }">
                       Site settings
+                    </MenuLink>
+                  </li>
+                </ul>
+              </div>
+              <div v-if="extensionEntries.length">
+                <h3>Extensions</h3>
+                <ul class="cwa:text-sm">
+                  <li
+                    v-for="entry in extensionEntries"
+                    :key="entry.to.name"
+                  >
+                    <MenuLink :to="entry.to">
+                      {{ entry.label }}
                     </MenuLink>
                   </li>
                 </ul>
@@ -118,7 +131,7 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, ref, useId, useTemplateRef, watch } from 'vue'
+import { computed, nextTick, ref, useId, useTemplateRef, watch } from 'vue'
 import { onClickOutside } from '@vueuse/core'
 import MenuPrimaryLink from './MenuPrimaryLink.vue'
 import CwaLogo from '#cwa/templates/components/core/assets/CwaLogo.vue'
@@ -131,12 +144,15 @@ import IconUsers from '#cwa/templates/components/core/assets/IconUsers.vue'
 import MenuLink from '#cwa/templates/components/main/admin/header/_parts/MenuLink.vue'
 import IconRoutes from '#cwa/templates/components/core/assets/IconRoutes.vue'
 import IconData from '#cwa/templates/components/core/assets/IconData.vue'
+// @ts-ignore
+import { extensionMenu } from '#build/cwa-extension-menu'
 
 const $cwa = useCwa()
 const { menu: menuTransition } = useTransitions()
 const route = useRoute()
 
 const showMenu = ref(false)
+const extensionEntries = computed(() => (extensionMenu as { label: string, to: { name: string }, role: string }[]).filter(entry => $cwa.auth.hasRole(entry.role)))
 
 const menu = useTemplateRef('menu')
 const hamburger = ref<{ $el?: HTMLElement }>()

@@ -29,11 +29,11 @@ defineSlots<{
 }>()
 
 const SLOP = 6
-const SLIDE = 220
 const FLICK = 0.5
 
 const app = getCurrentInstance()?.appContext.app as { _container?: unknown } | undefined
 const content = useTemplateRef<{ $el: HTMLElement } | null>('content')
+const scrim = useTemplateRef<{ $el: HTMLElement } | null>('scrim')
 const viewport = ref<{ bottom: number, height: number, layout: number }>()
 const offset = ref<number>()
 const dragging = ref(false)
@@ -43,7 +43,6 @@ let behind: HTMLElement | undefined
 let gesture: { id: number, startY: number, lastY: number, lastAt: number, velocity: number } | undefined
 let swallowClick = false
 let finished = false
-let timer: ReturnType<typeof setTimeout> | undefined
 
 function measure() {
   const visual = window.visualViewport
@@ -88,7 +87,6 @@ function hold() {
 function release() {
   window.visualViewport?.removeEventListener('resize', measure)
   window.visualViewport?.removeEventListener('scroll', measure)
-  clearTimeout(timer)
   if (!holding) {
     return
   }
@@ -99,8 +97,51 @@ function release() {
   nextTick(() => target?.isConnected && target.focus({ preventScroll: true }))
 }
 
-watch(open, isOpen => isOpen ? hold() : release(), { immediate: true })
-onBeforeUnmount(release)
+const LEAVING = {
+  sheet: ['cwa-sheet-out', 'cwa:motion-safe:animate-[cwa-sheet-out_var(--cwa-duration-slow)_cubic-bezier(0.32,0.72,0,1)_forwards]'],
+  scrim: ['cwa-fade-out', 'cwa:motion-safe:animate-[cwa-fade-out_var(--cwa-duration-slow)_ease-out_forwards]'],
+} as const
+const LEAVE_FALLBACK = 500
+
+function leave() {
+  if (prefersReducedMotion()) {
+    return
+  }
+  for (const [part, name, [animation, look]] of [[scrim.value?.$el, `${testId}-scrim`, LEAVING.scrim], [content.value?.$el, testId, LEAVING.sheet]] as const) {
+    if (!(part instanceof HTMLElement) || !part.isConnected) {
+      continue
+    }
+    const copy = part.cloneNode(true) as HTMLElement
+    for (const element of [copy, ...copy.querySelectorAll('[id], [data-testid]')]) {
+      element.removeAttribute('id')
+      element.removeAttribute('data-testid')
+    }
+    copy.inert = true
+    copy.style.pointerEvents = 'none'
+    copy.setAttribute('aria-hidden', 'true')
+    copy.setAttribute('data-state', 'closed')
+    copy.setAttribute('data-sheet-leaving', name)
+    copy.className = `${copy.className} ${look}`
+    part === content.value?.$el && offset.value !== undefined && (copy.style.translate = `0px ${offset.value}px`)
+    const remove = () => copy.remove()
+    copy.addEventListener('animationend', event => event.animationName === animation && remove())
+    setTimeout(remove, LEAVE_FALLBACK)
+    part.ownerDocument.body.append(copy)
+  }
+}
+
+watch(open, (isOpen) => {
+  if (isOpen) {
+    hold()
+    return
+  }
+  holding && leave()
+  release()
+}, { immediate: true })
+onBeforeUnmount(() => {
+  holding && leave()
+  release()
+})
 
 function finish(how: 'apply' | 'discard') {
   if (finished) {
@@ -148,7 +189,6 @@ function start(event: PointerEvent, fromBody: boolean) {
 function begin() {
   dragging.value = true
   sliding.value = false
-  clearTimeout(timer)
   content.value?.$el.setPointerCapture?.(gesture!.id)
 }
 
@@ -174,10 +214,9 @@ function move(event: PointerEvent) {
   offset.value = Math.max(0, distance)
 }
 
-function slide(to: number, then?: () => void) {
+function slide(to: number) {
   sliding.value = true
   offset.value = to
-  timer = setTimeout(() => then?.(), SLIDE)
 }
 
 function end(event: PointerEvent) {
@@ -194,11 +233,7 @@ function end(event: PointerEvent) {
   swallowClick = moved > SLOP
   const height = content.value?.$el.getBoundingClientRect().height ?? 0
   if (event.type === 'pointerup' && (moved > Math.max(80, height * 0.25) || velocity > FLICK)) {
-    if (prefersReducedMotion()) {
-      finish('apply')
-      return
-    }
-    slide(height || window.innerHeight, () => finish('apply'))
+    finish('apply')
     return
   }
   if (prefersReducedMotion()) {
@@ -227,15 +262,16 @@ const sideButton = 'cwa:grid cwa:size-hit cwa:shrink-0 cwa:cursor-pointer cwa:pl
   >
     <DialogPortal>
       <DialogOverlay
+        ref="scrim"
         :data-testid="`${testId}-scrim`"
-        class="cwa:fixed cwa:inset-0 cwa:z-context cwa:bg-black/40 cwa:motion-safe:animate-[cwa-line-in_var(--cwa-duration-base)_ease-out]"
+        class="cwa:fixed cwa:inset-0 cwa:z-context cwa:bg-black/40 cwa:motion-safe:data-[state=open]:animate-[cwa-line-in_var(--cwa-duration-slow)_ease-out]"
       />
       <DialogContent
         ref="content"
         aria-modal="true"
         :aria-describedby="undefined"
         :data-testid="testId"
-        class="cwa:fixed cwa:inset-x-0 cwa:bottom-0 cwa:z-context cwa:flex cwa:max-h-[70vh] cwa:flex-col cwa:bg-surface-menu cwa:pb-[env(safe-area-inset-bottom)] cwa:text-control cwa:text-fg cwa:shadow-popover cwa:outline-1 cwa:outline-transparent cwa:motion-safe:animate-[cwa-sheet-in_var(--cwa-duration-base)_cubic-bezier(0.2,0.8,0.2,1)]"
+        class="cwa:fixed cwa:inset-x-0 cwa:bottom-0 cwa:z-context cwa:flex cwa:max-h-[70vh] cwa:flex-col cwa:bg-surface-menu cwa:pb-[env(safe-area-inset-bottom)] cwa:text-control cwa:text-fg cwa:shadow-popover cwa:outline-1 cwa:outline-transparent cwa:motion-safe:data-[state=open]:animate-[cwa-sheet-in_var(--cwa-duration-slow)_cubic-bezier(0.32,0.72,0,1)]"
         :class="[{ 'cwa:h-[60vh]': search }, motion]"
         :style="fit"
         v-bind="$attrs"

@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process'
-import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync, readdirSync } from 'node:fs'
+import { cpSync, existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync, readdirSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -18,13 +18,14 @@ const APP_FILES = {
     type: 'module',
     dependencies: {
       '@cwa/nuxt': '',
+      '@nuxt/kit': '^4.6.0',
       'nuxt': '^4.6.0',
       'vue': '^3.5.41',
     },
   }, undefined, 2),
   'nuxt.config.ts': `export default defineNuxtConfig({
   extends: ['@cwa/nuxt/layer'],
-  modules: ['@cwa/nuxt'],
+  modules: ['@cwa/nuxt', './extension/module'],
   runtimeConfig: {
     public: { cwa: { apiUrl: 'https://localhost/_api', apiUrlBrowser: 'https://localhost/_api' } },
   },
@@ -64,12 +65,27 @@ function writeApp(appDir, tarball, hoist) {
   for (const [file, contents] of Object.entries(APP_FILES)) {
     writeFileSync(join(appDir, file), file === 'package.json' ? contents.replace('"@cwa/nuxt": ""', `"@cwa/nuxt": "file:${tarball}"`) : contents)
   }
+  cpSync(join(repoRoot, 'test/fixtures/cwa-extension'), join(appDir, 'extension'), { recursive: true })
   writeFileSync(join(appDir, 'pnpm-workspace.yaml'), `hoist: ${hoist}\nstrictDepBuilds: false\n${minimumReleaseAgeExclude()}`)
 }
 
 function build(appDir) {
   run('pnpm', ['install', '--no-frozen-lockfile'], { cwd: appDir })
   run('node', [join(appDir, 'node_modules/nuxt/bin/nuxt.mjs'), 'build'], { cwd: appDir })
+}
+
+function checkExtension(appDir) {
+  const buildDir = [join(appDir, '.nuxt'), join(appDir, 'node_modules/.cache/nuxt/.nuxt')].find(dir => existsSync(join(dir, 'cwa-component-names.ts')))
+  if (!buildDir) {
+    throw new Error('the build wrote no cwa-component-names.ts')
+  }
+  const read = file => readFileSync(join(buildDir, file), 'utf8')
+  if (!read('cwa-component-names.ts').includes('"FixtureBadge": "FixtureBadge"')) {
+    throw new Error('the fixture extension\'s FixtureBadge component is not a CWA component name')
+  }
+  if (!read('cwa-extension-menu.ts').includes('"name": "_cwa-fixture-orders"')) {
+    throw new Error('the fixture extension\'s admin page is not in the admin menu')
+  }
 }
 
 function report(label, error) {
@@ -92,7 +108,8 @@ try {
     const started = Date.now()
     try {
       build(appDir)
-      console.log(`✓ ${round.name}: installs and builds with no optional packages (${Math.round((Date.now() - started) / 1000)}s)`)
+      checkExtension(appDir)
+      console.log(`✓ ${round.name}: installs and builds with no optional packages and an extension registered through cwa:extend (${Math.round((Date.now() - started) / 1000)}s)`)
     }
     catch (error) {
       failed = true

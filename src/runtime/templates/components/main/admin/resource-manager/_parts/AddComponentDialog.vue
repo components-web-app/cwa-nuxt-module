@@ -11,6 +11,7 @@ import { CwaResourceTypes, getResourceTypeFromIri, ResourceTypeFromIri } from '#
 import { excerptOf } from '#cwa/admin/clone-mode'
 import { useDynamicPositionSelectOptions } from '#cwa/templates/components/main/admin/_common/useDynamicPositionSelectOptions'
 import { isComponentAllowedInGroup } from '#cwa/templates/components/main/admin/resource-manager/_parts/available-components'
+import { componentUiAllowance } from '#cwa/resources/component-ui-allowance'
 import { canInsertSelection } from '#cwa/templates/components/main/admin/resource-manager/_parts/add-component-selection'
 import {
   addTargetPlace,
@@ -114,6 +115,13 @@ const detail = computed(() => {
 
 const isDynamic = computed(() => detailName.value === DYNAMIC_COMPONENT)
 const detailConfig = computed(() => detailName.value ? displayData.value?.available[detailName.value]?.config : undefined)
+const detailAllowance = computed(() => {
+  const groupIri = displayData.value?.event.closest.group
+  const endpoint = detailName.value ? displayData.value?.available[detailName.value]?.apiMetadata.endpoint : undefined
+  return groupIri && endpoint
+    ? componentUiAllowance([$cwa.resources.getResource(groupIri).value?.data], endpoint, ResourceTypeFromIri.getPathPrefix())
+    : {}
+})
 const detailImage = computed(() => detailName.value && !isDynamic.value ? adminResources[detailName.value]?.image : undefined)
 const instantAdd = computed(() => !!detailConfig.value?.instantAdd)
 
@@ -559,6 +567,7 @@ watch(open, async (isOpen: boolean) => {
           v-model:ui-class-names="uiClassNames"
           :name="detail.name"
           :ui="(detailConfig?.ui ?? []) as string[]"
+          :allowance="detailAllowance"
         />
       </div>
     </CwaUiSubView>

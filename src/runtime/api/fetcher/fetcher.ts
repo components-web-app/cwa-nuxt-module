@@ -82,6 +82,12 @@ export default class Fetcher {
 
   public async fetchRoute(route: RouteLocationNormalizedLoaded): Promise<CwaResource | undefined> {
     if (route.meta.cwa?.disabled === true) {
+      if (route.meta.cwa.layout) {
+        return await this.fetchResource({
+          path: `${ResourceTypeFromIri.getPathPrefix() || ''}/_/layouts/${encodeURIComponent(route.meta.cwa.layout)}`,
+          isPrimary: true,
+        })
+      }
       this.fetchStatusManager.clearPrimaryFetch()
       return
     }

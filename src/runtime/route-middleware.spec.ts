@@ -122,6 +122,24 @@ describe('Test route middleware', () => {
     expect(nuxt.callWithNuxt).not.toHaveBeenCalled()
   })
 
+  test('a page outside CWA that names its layout still fetches, so its layout loads on every navigation', async () => {
+    const toRoute = createToRoute(false)
+    toRoute.meta.cwa!.layout = 'main'
+    await routeMiddleware(toRoute)
+    expect(fetchRouteFn).toHaveBeenCalledExactlyOnceWith(toRoute)
+    expect(clearPrimaryFetch).not.toHaveBeenCalled()
+  })
+
+  test('a page still choosing its layout component with staticLayout is warned once that it goes without further warning', async () => {
+    const warn = vi.spyOn(consola, 'warn').mockImplementation(() => {})
+    const toRoute = createToRoute(false)
+    toRoute.meta.cwa!.staticLayout = 'CwaLayoutPrimary'
+    await routeMiddleware(toRoute)
+    await routeMiddleware(toRoute)
+    expect(warn).toHaveBeenCalledExactlyOnceWith('[CWA] `cwa.staticLayout` in page meta is deprecated and will be removed without further warning. Name the layout by its reference with `cwa.layout` instead.')
+    warn.mockRestore()
+  })
+
   test('Server-side passes event context to loadConfig so preloaded config skips API call', async () => {
     const loadConfigFn = vi.fn(async () => {})
     vi.spyOn(nuxt, 'useNuxtApp').mockImplementationOnce(() => {

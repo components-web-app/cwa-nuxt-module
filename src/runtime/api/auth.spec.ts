@@ -739,15 +739,20 @@ describe('Auth', () => {
     })
   })
 
-  describe('isAdmin getter', () => {
-    test('should return true IF user has the admin role', () => {
+  describe('isAdmin getter: content admins, the roles /me reaches (bundle #611)', () => {
+    test.each([
+      ['an admin', ['ROLE_ADMIN', 'ROLE_CMS_ADMIN', 'ROLE_USER']],
+      ['a content admin who is not an admin', ['ROLE_CMS_ADMIN', 'ROLE_USER']],
+    ])('is true for %s', (_name, roles) => {
       const { auth, authStore } = createAuth()
-
-      authStore.useStore().data.user = {
-        roles: [CwaUserRoles.ADMIN],
-      }
-
+      authStore.useStore().data.user = { roles }
       expect(auth.isAdmin.value).toBe(true)
+    })
+
+    test('is false for a user admin who cannot edit content', () => {
+      const { auth, authStore } = createAuth()
+      authStore.useStore().data.user = { roles: ['ROLE_USER_ADMIN', 'ROLE_USER'] }
+      expect(auth.isAdmin.value).toBe(false)
     })
 
     test('should return false IF user does NOT have the admin role', () => {
@@ -1152,5 +1157,83 @@ describe('Auth session end handler', () => {
     created.auth.onSessionEnd(handler)
 
     expect(handler).not.toHaveBeenCalled()
+  })
+})
+
+describe('sign-in and sign-out events for apps and extensions (#487)', () => {
+  function appWithHooks() {
+    const app = createCapturedApp(true)
+    app.callHook = vi.fn().mockResolvedValue(undefined)
+    return app
+  }
+
+  test('a successful sign-in calls cwa:auth:signed-in with the signed-in user, on the app captured when Auth was built', async () => {
+    const app = appWithHooks()
+    const { auth } = createAuthWithCapturedApp(app, appWithHooks())
+    const user = { '@id': '/users/1' }
+    vi.spyOn(auth as any, 'loginRequest').mockResolvedValue(undefined)
+    vi.spyOn(auth, 'refreshUser').mockResolvedValue(user as never)
+
+    await auth.signIn({ username: 'a', password: 'b' })
+
+    expect(app.callHook).toHaveBeenCalledWith('cwa:auth:signed-in', { user })
+  })
+
+  test('a sign-in whose user cannot be loaded calls no event', async () => {
+    const app = appWithHooks()
+    const { auth } = createAuthWithCapturedApp(app, appWithHooks())
+    vi.spyOn(auth as any, 'loginRequest').mockResolvedValue(undefined)
+    vi.spyOn(auth, 'refreshUser').mockResolvedValue(new FetchError('401') as never)
+
+    await auth.signIn({ username: 'a', password: 'b' })
+
+    expect(app.callHook).not.toHaveBeenCalled()
+  })
+
+  test('a sign-in that loads no user calls no event', async () => {
+    const app = appWithHooks()
+    const { auth } = createAuthWithCapturedApp(app, appWithHooks())
+    vi.spyOn(auth as any, 'loginRequest').mockResolvedValue(undefined)
+    vi.spyOn(auth, 'refreshUser').mockResolvedValue(undefined)
+
+    await auth.signIn({ username: 'a', password: 'b' })
+
+    expect(app.callHook).not.toHaveBeenCalled()
+  })
+
+  test('a session ending in the browser calls cwa:auth:signed-out once, and only for a session that was signed in', async () => {
+    vi.spyOn(processComposables, 'useProcess').mockReturnValue({ isClient: true, isServer: false })
+    const app = appWithHooks()
+    const { auth, cookie } = createAuthWithCapturedApp(app, appWithHooks())
+    cookie.value = '1'
+
+    await (auth as any).clearSession()
+    await (auth as any).clearSession()
+
+    expect(app.callHook.mock.calls).toEqual([['cwa:auth:signed-out']])
+  })
+
+  test('a session ending during the server render calls no event, since the page then loads signed out', async () => {
+    vi.spyOn(processComposables, 'useProcess').mockReturnValue({ isClient: false, isServer: true })
+    const app = appWithHooks()
+    const { auth, cookie } = createAuthWithCapturedApp(app, appWithHooks())
+    cookie.value = '1'
+
+    await (auth as any).clearSession()
+
+    expect(app.callHook).not.toHaveBeenCalled()
+  })
+
+  test('a handler that throws is logged and never fails the sign-in', async () => {
+    const app = appWithHooks()
+    app.callHook = vi.fn().mockRejectedValue(new Error('shop broke'))
+    const error = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    const { auth } = createAuthWithCapturedApp(app, appWithHooks())
+    const user = { '@id': '/users/1' }
+    vi.spyOn(auth as any, 'loginRequest').mockResolvedValue(undefined)
+    vi.spyOn(auth, 'refreshUser').mockResolvedValue(user as never)
+
+    await expect(auth.signIn({ username: 'a', password: 'b' })).resolves.toBe(user)
+    await vi.waitFor(() => expect(error).toHaveBeenCalled())
   })
 })

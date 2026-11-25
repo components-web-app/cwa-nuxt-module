@@ -78,7 +78,11 @@ export default class Auth {
       return result
     }
     this.mercure.init(true)
-    return this.refreshUser()
+    const user = await this.refreshUser()
+    if (user && !(user instanceof FetchError)) {
+      this.announce('cwa:auth:signed-in', { user })
+    }
+    return user
   }
 
   public async forgotPassword(username: string) {
@@ -266,7 +270,7 @@ export default class Auth {
   }
 
   public get isAdmin() {
-    return computed(() => this.hasRole(CwaUserRoles.ADMIN))
+    return computed(() => this.hasRole(CwaUserRoles.CMS_ADMIN))
   }
 
   public onSessionEnd(handler: () => unknown) {
@@ -280,6 +284,10 @@ export default class Auth {
       this.authStore.data.sessionEnded = false
       this.notifySessionEnded()
     }
+  }
+
+  private announce(...args: ['cwa:auth:signed-in', { user: CwaUser }] | ['cwa:auth:signed-out']) {
+    (this.nuxtApp.callHook as (...hook: unknown[]) => Promise<unknown>)(...args).catch(error => console.error(error))
   }
 
   private notifySessionEnded() {
@@ -324,6 +332,9 @@ export default class Auth {
     if (sessionEnded) {
       if (useProcess().isServer) {
         this.authStore.data.sessionEnded = true
+      }
+      else {
+        this.announce('cwa:auth:signed-out')
       }
       this.notifySessionEnded()
     }

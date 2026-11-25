@@ -4,6 +4,7 @@ import { computed, ref, shallowRef } from 'vue'
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { axe } from '../../../../../../../../test/utils/axe'
 import { drawsFocusRing } from '../../../../../../../../test/utils/focus-ring'
+import { onPhone } from '../../../../../../../../test/utils/sheet-media'
 import PathSelector from './PathSelector.vue'
 
 const state = vi.hoisted(() => ({ cwa: null as any, route: null as any }))
@@ -20,6 +21,7 @@ enableAutoUnmount(afterEach)
 
 afterEach(() => {
   vi.restoreAllMocks()
+  vi.unstubAllGlobals()
 })
 
 beforeAll(async () => {
@@ -264,5 +266,15 @@ describe('PathSelector (#461)', () => {
     const name = selector.querySelector<HTMLElement>('[data-testid="path-selector-name"]')!
     expect(wrapper.findComponent({ name: 'ResourceStack' }).props('at')).toBe(name)
     expect(name.className).toContain('cwa:invisible')
+  })
+
+  test('on a phone, where the stack opens as a sheet at the bottom, its name stays in the header under the sheet\'s scrim', async () => {
+    onPhone()
+    const { selector } = await mountSelector()
+    const sheet = await openStack(selector)
+
+    expect(sheet.getAttribute('role')).toBe('dialog')
+    expect(document.querySelector('[data-testid="resource-stack-scrim"]')).not.toBeNull()
+    expect(selector.querySelector<HTMLElement>('[data-testid="path-selector-name"]')!.className).not.toContain('cwa:invisible')
   })
 })

@@ -32,7 +32,7 @@ function createNuxtApp(cwa: Record<string, unknown>, ssrContext: Record<string, 
 function createCwa(overrides: Record<string, any> = {}) {
   return {
     auth: { signedIn: computed(() => false) },
-    resources: { allIds: ['/_api/_/routes//', '/_api/component/titles/abc'] },
+    resources: { allIds: ['/_api/_/routes//', '/_api/component/titles/abc'], getResource: () => computed(() => undefined) },
     apiHttpCacheState: { storable: true, sharedMaxAge: undefined },
     ...overrides,
   }
@@ -68,6 +68,27 @@ describe('cwa page cache plugin', () => {
     expect(mockEvent.value!.context.cwaPageCache).toEqual({
       surrogateKey: 'cwa-html, /_api/_/routes//, /_api/component/titles/abc',
       cacheControl: 'public, max-age=0, s-maxage=300',
+    })
+  })
+
+  test('tags the page with every stored resource of any type, read from the store', async () => {
+    const plugin = await importPlugin()
+    const stored: Record<string, unknown> = {
+      '/_api/page_data/books/1': { '@id': '/_api/page_data/books/1', 'product': { '@id': '/_api/products/1' } },
+      '/_api/products/2': { '@id': '/_api/products/2' },
+    }
+    const { nuxtApp, rendered } = createNuxtApp(createCwa({
+      resources: {
+        allIds: ['/_api/page_data/books/1', '/_api/products/2'],
+        getResource: (id: string) => computed(() => ({ data: stored[id] })),
+      },
+    }))
+
+    plugin.setup(nuxtApp as never)
+    rendered()
+
+    expect(mockEvent.value!.context.cwaPageCache).toMatchObject({
+      surrogateKey: 'cwa-html, /_api/page_data/books/1, /_api/products/2',
     })
   })
 

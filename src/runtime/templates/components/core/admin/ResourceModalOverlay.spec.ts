@@ -45,4 +45,14 @@ describe('ResourceModalOverlay', () => {
     expect(push).toHaveBeenCalledWith({ name: '_cwa-routes', query: { page: '2' } })
     expect(wrapper.emitted('reload')).toHaveLength(1)
   })
+
+  test('closes to the list whose name the item route ends with, even when the list\'s own name holds -iri, as an extension\'s may', () => {
+    mockRoute.name = '_cwa-shop-sku-iris-iri'
+    const page = mountOverlay({ overlay: false }).findComponent({ name: 'NuxtPage' })
+
+    page.vm.$emit('close')
+
+    expect(push).toHaveBeenCalledWith({ name: '_cwa-shop-sku-iris', query: { page: '2' } })
+    mockRoute.name = '_cwa-routes-iri'
+  })
 })

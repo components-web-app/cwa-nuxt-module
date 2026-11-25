@@ -9,7 +9,6 @@ import CwaAdminResourceManagerContextMenu from './_parts/CwaResourceManagerConte
 import { useCwa } from '#imports'
 import { useTransitions } from '#cwa/composables/transitions'
 import type { CwaResourceManagerTabOptions } from '#cwa/composables/cwa-resource-manager-tab'
-import { CwaUserRoles } from '#cwa/storage/stores/auth/state'
 import type { ManagerTab } from '#cwa/types'
 import ResourceManagerCtaButton
   from '#cwa/templates/components/main/admin/resource-manager/cta/ResourceManagerCtaButton.vue'
@@ -202,7 +201,7 @@ const reorderGroupIri = computed(() => {
 })
 
 const showAdmin = computed(() => {
-  return $cwa.auth.hasRole(CwaUserRoles.ADMIN)
+  return $cwa.auth.isAdmin.value
 })
 
 const showSpacer = computed(() => {

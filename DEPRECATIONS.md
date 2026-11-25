@@ -8,6 +8,39 @@ entry with no precondition is not a deprecation, it is a todo.
 
 ---
 
+## Remove in the alpha after 2.0.0-alpha.40
+
+### Collection IRIs in `allowedComponents`
+
+A `CwaComponentGroup`'s `allowedComponents` still accepts a collection IRI
+(`/component/images`), the syntax from before component names (#352). The
+synchroniser warns once per entry that IRIs will stop working in the next alpha
+without further warning ([#488](https://github.com/components-web-app/cwa-nuxt-module/issues/488)).
+
+**Delete:** the `` `/${string}` `` member of `CwaAllowedComponent`, the IRI branch
+and `warnedIriEntries` in `ComponentGroup.Util.Synchronizer.ts`, and the IRI tests
+in its spec. An IRI entry then fails like any unknown name.
+
+**First:** 2.0.0-alpha.40 is released, so apps have had one alpha of warnings.
+
+---
+
+### `cwa.staticLayout` in page meta
+
+A page outside CWA can still pick its layout component with `cwa.staticLayout`,
+which renders the component but loads no layout, so the layout's component
+groups are empty. `cwa.layout` names the layout by its reference instead. The
+route middleware warns once per process that it goes without further warning.
+
+**Delete:** `staticLayout` from `CwaRouteMeta` in `module.ts` (and its type
+template assertion), the `staticLayout` reads in `CwaRootLayout.vue`, the warning
+and `warnedStaticLayout` in `route-middleware.ts` with its test, and switch the
+playground's `pages/static.vue` to `cwa.layout`.
+
+**First:** 2.0.0-alpha.40 is released, so apps have had one alpha of warnings.
+
+---
+
 ## Remove when the bundle defaults a page's title to `null`
 
 ### Skipping the `'Unnamed Page'` title

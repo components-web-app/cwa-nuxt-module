@@ -4,6 +4,7 @@ import { computed, reactive } from 'vue'
 import { flushPromises, mount, renderToString } from '@vue/test-utils'
 import { mockNuxtImport } from '@nuxt/test-utils/runtime'
 import CwaRootLayout from './CwaRootLayout.vue'
+import OutdatedContentNotice from '#cwa/templates/components/main/admin/header/_parts/OutdatedContentNotice.vue'
 import * as cwaComposable from '#cwa/composables/cwa'
 
 const styleClasses = vi.hoisted(() => ({
@@ -32,6 +33,7 @@ type SetupOpts = {
   layoutIri?: string
   registeredComponents?: string[]
   isAdmin?: boolean
+  roles?: string[]
   isEditing?: boolean
   stubs?: Record<string, unknown>
 }
@@ -46,7 +48,7 @@ function mockCwa(opts: SetupOpts) {
   const merged = computed(() => ({ ...state }))
 
   vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => ({
-    auth: { isAdmin: computed(() => opts.isAdmin ?? false) },
+    auth: { isAdmin: computed(() => opts.isAdmin ?? false), hasRole: (role: string) => (opts.roles ?? []).includes(role) },
     admin: reactive({ isEditing: opts.isEditing ?? false }),
     resources: {
       layout: computed(() => opts.uiComponent ? { data: { uiComponent: opts.uiComponent, uiClassNames: opts.uiClassNames } } : undefined),
@@ -128,6 +130,33 @@ describe('CwaRootLayout admin overlay', () => {
     const { wrapper } = setup({ isAdmin: true, isEditing: false, registeredComponents: ['CwaLayoutPrimary'] })
     await flushPromises()
     expect(hasOverlay(wrapper)).toBe(false)
+  })
+})
+
+describe('CwaRootLayout for the narrow admin roles (bundle #611)', () => {
+  const shows = (wrapper: ReturnType<typeof setup>['wrapper'], name: 'LazyCwaAdminHeader' | 'LazyCwaAdminResourceManager') => name === 'LazyCwaAdminHeader'
+    ? !wrapper.findComponent(OutdatedContentNotice).exists()
+    : !!wrapper.element.lastElementChild?.querySelector('asynccomponentwrapper-stub')
+
+  test('a user admin who cannot edit content gets the admin header, for its menu, and no resource manager', async () => {
+    const { wrapper } = setup({ isAdmin: false, roles: ['ROLE_USER_ADMIN', 'ROLE_USER'], registeredComponents: ['CwaLayoutPrimary'] })
+    await flushPromises()
+    expect(shows(wrapper, 'LazyCwaAdminHeader')).toBe(true)
+    expect(shows(wrapper, 'LazyCwaAdminResourceManager')).toBe(false)
+  })
+
+  test('a content admin gets the header and the resource manager', async () => {
+    const { wrapper } = setup({ isAdmin: true, roles: ['ROLE_CMS_ADMIN', 'ROLE_USER'], registeredComponents: ['CwaLayoutPrimary'] })
+    await flushPromises()
+    expect(shows(wrapper, 'LazyCwaAdminHeader')).toBe(true)
+    expect(shows(wrapper, 'LazyCwaAdminResourceManager')).toBe(true)
+  })
+
+  test('a signed-in user with neither role gets neither', async () => {
+    const { wrapper } = setup({ isAdmin: false, roles: ['ROLE_USER'], registeredComponents: ['CwaLayoutPrimary'] })
+    await flushPromises()
+    expect(shows(wrapper, 'LazyCwaAdminHeader')).toBe(false)
+    expect(shows(wrapper, 'LazyCwaAdminResourceManager')).toBe(false)
   })
 })
 

@@ -2,8 +2,8 @@ import { defineEventHandler, parseCookies, getRequestURL, getRequestHeader, crea
 import { jwtDecode } from 'jwt-decode'
 import useCwaSiteConfig from '#cwa/composables/useCwaSiteConfig'
 import { updateSiteConfig } from '#site-config/server/composables'
-import { resolveConfigEventHandler } from '#cwa/server/useFetcher'
-import { ADMIN_ROLES, isAdmin } from '#cwa/server/is-admin'
+import { fallbackSiteConfig, resolveConfigEventHandler } from '#cwa/server/useFetcher'
+import { ADMIN_TOKEN_ROLES, isAdmin } from '#cwa/server/is-admin'
 
 const ADMIN_CHECK_TIMEOUT = 3000
 const OPERATIONAL_PATHS = ['/_cwa/healthcheck', '/_cwa/readiness']
@@ -24,52 +24,55 @@ export default defineEventHandler(async (e) => {
     return false
   }
 
+  const { resolvedConfigToSiteConfig } = useCwaSiteConfig()
   const resolvedConfig = await resolveConfigEventHandler(e)
-  if (resolvedConfig) {
-    const { resolvedConfigToSiteConfig } = useCwaSiteConfig()
-    updateSiteConfig(e, resolvedConfigToSiteConfig(resolvedConfig))
+  if (!resolvedConfig) {
+    e.context.cwaSiteConfigUnavailable = true
+    updateSiteConfig(e, resolvedConfigToSiteConfig(fallbackSiteConfig()))
+    return
+  }
+  updateSiteConfig(e, resolvedConfigToSiteConfig(resolvedConfig))
 
-    if (skipMaintenanceChecks()) return
+  if (skipMaintenanceChecks()) return
 
-    if (resolvedConfig.maintenanceModeEnabled) {
-      const claimsLiveAdminToken = () => {
-        const cookies = parseCookies(e)
-        if (cookies.cwa_auth !== '1' || !cookies.api_component) {
+  if (resolvedConfig.maintenanceModeEnabled) {
+    const claimsLiveAdminToken = () => {
+      const cookies = parseCookies(e)
+      if (cookies.cwa_auth !== '1' || !cookies.api_component) {
+        return false
+      }
+      try {
+        const decoded = jwtDecode<{
+          roles?: string[]
+          exp?: number
+        }>(cookies.api_component)
+        if (!decoded.roles || !Array.isArray(decoded.roles)) {
           return false
         }
-        try {
-          const decoded = jwtDecode<{
-            roles?: string[]
-            exp?: number
-          }>(cookies.api_component)
-          if (!decoded.roles || !Array.isArray(decoded.roles)) {
-            return false
-          }
-          if (!decoded.roles.some(role => ADMIN_ROLES.includes(role))) {
-            return false
-          }
-          if (!decoded.exp) {
-            return false
-          }
-          return Date.now() < decoded.exp * 1e3
-        }
-        catch {
+        if (!decoded.roles.some(role => ADMIN_TOKEN_ROLES.includes(role))) {
           return false
         }
+        if (!decoded.exp) {
+          return false
+        }
+        return Date.now() < decoded.exp * 1e3
       }
-      if (claimsLiveAdminToken() && await isAdmin(getRequestHeader(e, 'cookie'), ADMIN_CHECK_TIMEOUT)) {
-        return
+      catch {
+        return false
       }
-      const url = getRequestURL(e)
-      const allowedPaths2 = ['/__nuxt_error', '/login']
-      if (!allowedPaths2.includes(url.pathname) && !url.pathname.startsWith('/_cwa')) {
-        const maintenanceError = createError({
-          statusCode: 503,
-          statusMessage: 'Website under maintenance',
-        })
-        maintenanceError.message = 'We will be back up and running as soon as possible'
-        throw maintenanceError
-      }
+    }
+    if (claimsLiveAdminToken() && await isAdmin(getRequestHeader(e, 'cookie'), ADMIN_CHECK_TIMEOUT)) {
+      return
+    }
+    const url = getRequestURL(e)
+    const allowedPaths2 = ['/__nuxt_error', '/login']
+    if (!allowedPaths2.includes(url.pathname) && !url.pathname.startsWith('/_cwa')) {
+      const maintenanceError = createError({
+        statusCode: 503,
+        statusMessage: 'Website under maintenance',
+      })
+      maintenanceError.message = 'We will be back up and running as soon as possible'
+      throw maintenanceError
     }
   }
 })

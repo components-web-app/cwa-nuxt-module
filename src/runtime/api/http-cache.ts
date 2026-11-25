@@ -1,4 +1,5 @@
 import { getResourceTypeFromIri } from '#cwa/resources/resource-utils'
+import { NEW_RESOURCE_IRI } from '#cwa/storage/stores/resources/state'
 
 export const SURROGATE_KEY_SEPARATOR = ', '
 
@@ -29,6 +30,7 @@ export interface ResponseHeadersLike {
 
 export interface BuildPageCacheHeadersEvent {
   ids: string[]
+  dataOf?: (id: string) => unknown
   api: ApiCacheDirectives
   options: PageCacheOptions
 }
@@ -101,12 +103,16 @@ export function mergeCacheDirectives(a: ApiCacheDirectives, b: ApiCacheDirective
   }
 }
 
-export function buildPageCacheHeaders({ ids, api, options }: BuildPageCacheHeadersEvent): PageCacheDecision {
+function storedIris(ids: string[], dataOf?: (id: string) => unknown): string[] {
+  return ids.filter(id => id !== NEW_RESOURCE_IRI && (getResourceTypeFromIri(id) !== undefined || (dataOf?.(id) as { '@id'?: unknown } | undefined)?.['@id'] === id))
+}
+
+export function buildPageCacheHeaders({ ids, dataOf, api, options }: BuildPageCacheHeadersEvent): PageCacheDecision {
   if (!api.storable) {
     return { unstorable: true }
   }
 
-  const iris = ids.filter(id => getResourceTypeFromIri(id) !== undefined)
+  const iris = storedIris(ids, dataOf)
   if (!iris.length) {
     return {}
   }

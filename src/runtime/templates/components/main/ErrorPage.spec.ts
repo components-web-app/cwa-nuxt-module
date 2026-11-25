@@ -13,9 +13,13 @@ mockNuxtImport('useHead', () => () => {})
 mockNuxtImport('clearError', () => () => {})
 mockNuxtImport('navigateTo', () => () => {})
 
-vi.mock('#cwa/composables/cwa', () => ({
-  useCwa: () => ({ auth: { hasRole: () => false } }),
-}))
+const roles = vi.hoisted(() => ({ list: [] as string[] }))
+vi.mock('#cwa/composables/cwa', async () => {
+  const { computed } = await import('vue')
+  return {
+    useCwa: () => ({ auth: { hasRole: (role: string) => roles.list.includes(role), isAdmin: computed(() => roles.list.includes('ROLE_CMS_ADMIN')) } }),
+  }
+})
 
 function createWrapper(error: Record<string, unknown>, path = '/') {
   mockRoute.path = path
@@ -37,6 +41,7 @@ const actions = (wrapper: ReturnType<typeof createWrapper>) => wrapper.find('[da
 
 describe('ErrorPage', () => {
   beforeEach(() => {
+    roles.list = []
     mockRoute.path = '/'
   })
 
@@ -113,5 +118,23 @@ describe('ErrorPage', () => {
     const wrapper = createWrapper({ statusCode: 502, data: '{"apiUnreachable":true}' }, '/about')
 
     expect(wrapper.text()).toContain('isn’t responding yet')
+  })
+})
+
+describe('ErrorPage owner link for the narrow admin roles (bundle #611)', () => {
+  const ownerLink = (wrapper: ReturnType<typeof createWrapper>) => wrapper.findAll('a').find(link => link.text().startsWith('Go to admin'))
+
+  test.each([
+    ['a content admin', ['ROLE_CMS_ADMIN', 'ROLE_USER'], '/_cwa/layouts'],
+    ['a super admin', ['ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_USER_ADMIN', 'ROLE_CMS_ADMIN', 'ROLE_USER'], '/_cwa/layouts'],
+    ['a user admin who cannot edit content', ['ROLE_USER_ADMIN', 'ROLE_USER'], '/_cwa/users'],
+  ])('takes %s to the admin they can open', (_name, list, to) => {
+    roles.list = list
+    expect(ownerLink(createWrapper({ statusCode: 404 }, '/missing'))?.attributes('href')).toBe(to)
+  })
+
+  test('offers a signed-in user with neither role a sign in, not the admin', () => {
+    roles.list = ['ROLE_USER']
+    expect(ownerLink(createWrapper({ statusCode: 404 }, '/missing'))).toBeUndefined()
   })
 })

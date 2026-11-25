@@ -123,6 +123,35 @@ describe('Fetcher -> fetchRoute', () => {
 
     expect(fetchResourceSpy).not.toHaveBeenCalled()
   })
+
+  describe('a page outside CWA that names its layout by reference', () => {
+    afterEach(() => {
+      ResourceTypeFromIri.setPathPrefix('')
+    })
+
+    test.each([
+      ['', '/_/layouts/main'],
+      ['/_api', '/_api/_/layouts/main'],
+    ])('fetches the layout as its primary fetch, with no manifest, so the layout\'s groups render on the server (API prefix %j)', async (prefix, path) => {
+      ResourceTypeFromIri.setPathPrefix(prefix)
+      const fetchResourceSpy = vi.spyOn(fetcher, 'fetchResource').mockResolvedValue(undefined)
+
+      // @ts-expect-error partial route
+      await fetcher.fetchRoute({ meta: { cwa: { disabled: true, layout: 'main' } } })
+
+      expect(fetchResourceSpy).toHaveBeenCalledExactlyOnceWith({ path, isPrimary: true })
+      expect(FetchStatusManager.mock.instances[0].clearPrimaryFetch).not.toHaveBeenCalled()
+    })
+
+    test('encodes the reference, so it is always one path segment', async () => {
+      const fetchResourceSpy = vi.spyOn(fetcher, 'fetchResource').mockResolvedValue(undefined)
+
+      // @ts-expect-error partial route
+      await fetcher.fetchRoute({ meta: { cwa: { disabled: true, layout: 'shop/main?x' } } })
+
+      expect(fetchResourceSpy).toHaveBeenCalledExactlyOnceWith({ path: '/_/layouts/shop%2Fmain%3Fx', isPrimary: true })
+    })
+  })
 })
 
 describe('Fetcher -> fetchResource', () => {

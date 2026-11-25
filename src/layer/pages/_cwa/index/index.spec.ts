@@ -1,28 +1,22 @@
 // @vitest-environment nuxt
 import { describe, test, expect, vi, afterEach } from 'vitest'
-import { computed } from 'vue'
 import { flushPromises, mount } from '@vue/test-utils'
 import { mockNuxtImport } from '@nuxt/test-utils/runtime'
 import { useRouter } from '#app/composables/router'
 import CwaAdminParentPage from '../index.vue'
 
-const { mockNavigateTo, adminState, mockCwaAdminMiddleware } = vi.hoisted(() => ({
+const { mockNavigateTo, mockCwaAdminMiddleware } = vi.hoisted(() => ({
   mockNavigateTo: vi.fn(),
-  adminState: { isAdmin: false },
   mockCwaAdminMiddleware: vi.fn(),
 }))
 
 vi.mock('#cwa-layer/middleware/cwa-admin', () => ({ default: mockCwaAdminMiddleware }))
 
 mockNuxtImport('navigateTo', () => mockNavigateTo)
-mockNuxtImport('useCwa', () => () => ({
-  auth: { isAdmin: computed(() => adminState.isAdmin) },
-}))
 
 describe('/_cwa', () => {
   afterEach(async () => {
     vi.clearAllMocks()
-    adminState.isAdmin = false
     await useRouter().replace('/')
   })
 
@@ -48,15 +42,18 @@ describe('/_cwa', () => {
     expect(mockCwaAdminMiddleware.mock.calls[0][0].fullPath).toBe('/_cwa/pages')
   })
 
-  test('a non-admin reaching the admin area is sent home', async () => {
-    adminState.isAdmin = false
-    mount(CwaAdminParentPage, { shallow: true })
-    await flushPromises()
-    expect(mockNavigateTo).toHaveBeenCalledWith('/')
+  test('runs the admin guard again on a move between two admin pages, so a page with a narrower role is never reached from one that allows more', async () => {
+    const router = useRouter()
+    await router.push('/_cwa/pages')
+    mockCwaAdminMiddleware.mockClear()
+
+    await router.push('/_cwa/routes')
+
+    expect(mockCwaAdminMiddleware).toHaveBeenCalledTimes(1)
+    expect(mockCwaAdminMiddleware.mock.calls[0][0].fullPath).toBe('/_cwa/routes')
   })
 
-  test('an admin reaching the admin area stays', async () => {
-    adminState.isAdmin = true
+  test('leaves who gets in to the cwa-admin guard, so a user the guard let in for an extension page\'s role is not sent home', async () => {
     mount(CwaAdminParentPage, { shallow: true })
     await flushPromises()
     expect(mockNavigateTo).not.toHaveBeenCalled()
