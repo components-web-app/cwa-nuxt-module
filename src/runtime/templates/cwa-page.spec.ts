@@ -6,6 +6,7 @@ import { mount } from '@vue/test-utils'
 import { mockNuxtImport } from '@nuxt/test-utils/runtime'
 import CwaPage from './cwa-page.vue'
 import * as cwaComposable from '#cwa/composables/cwa'
+import { useNuxtApp } from '#app/nuxt'
 
 let capturedHeadConfig: { title: () => string | null | undefined } | undefined
 let capturedOgImageArgs: any[] = []
@@ -187,6 +188,22 @@ describe('CWA page', () => {
   })
 
   describe('og image', () => {
+    test('is not defined while the browser hydrates, which a client redirect from a page the server rendered can land in, and is after hydration', () => {
+      const nuxtApp = useNuxtApp()
+      const hydrating = nuxtApp.isHydrating
+      nuxtApp.isHydrating = true
+      try {
+        mockCwaWithDepths([{ dataTitle: 'Events' }])
+        expect(defineOgImageSpy).not.toHaveBeenCalled()
+      }
+      finally {
+        nuxtApp.isHydrating = hydrating
+      }
+
+      mockCwaWithDepths([{ dataTitle: 'Events' }])
+      expect(defineOgImageSpy).toHaveBeenCalledTimes(1)
+    })
+
     test('calls defineOgImage with CwaDefault component', () => {
       mockCwaWithDepths([{ dataTitle: 'Events' }])
       expect(capturedOgImageArgs[0]).toBe('CwaDefault')
