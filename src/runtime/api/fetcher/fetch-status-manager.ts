@@ -216,10 +216,15 @@ export default class FetchStatusManager {
       return
     }
 
-    const showErrorPage = this.finishFetchShowError(fetchStatus, event.resource)
+    const isPrimaryResource = this.finishFetchShowError(fetchStatus, event.resource)
+    const isPrimaryLayout = isPrimaryResource && getResourceTypeFromIri(event.resource) === CwaResourceTypes.LAYOUT
+    const showErrorPage = isPrimaryResource && !isPrimaryLayout
 
     const setFinalResourceFetchError = (error: CwaResourceError | undefined) => {
-      if (showErrorPage || !isClientErrorStatus(error?.statusCode)) {
+      if (isPrimaryLayout) {
+        logger.warn(`[CWA] The layout '${event.resource}' this page names could not be loaded, so the default layout is shown.`, error)
+      }
+      if (isPrimaryResource || !isClientErrorStatus(error?.statusCode)) {
         this.incompleteRender.handler?.()
       }
       this.resourcesStore.setResourceFetchError({

@@ -206,6 +206,10 @@ export class Resources {
   }
 
   private getLayoutIriByFetchStatus(fetchStatus?: FetchStatus): string | undefined {
+    if (fetchStatus?.path && this.getFetchStatusType(fetchStatus) === CwaResourceTypes.LAYOUT) {
+      const apiState = this.getResource(fetchStatus.path).value?.apiState
+      return apiState && 'responseIri' in apiState ? apiState.responseIri : undefined
+    }
     const irisByDepth = fetchStatus?.manifest?.irisByDepth
     const pageIri = irisByDepth?.[0]
       ? this.getPageIriFromDepthGroup(irisByDepth[0])

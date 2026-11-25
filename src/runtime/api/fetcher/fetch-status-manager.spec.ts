@@ -946,6 +946,23 @@ describe('FetchStatusManager -> onIncompleteRender (#340, #401)', () => {
     expect(markUnstorable).toHaveBeenCalledTimes(1)
   })
 
+  test('a layout named by a page outside CWA that fails to load shows no error page: the page renders in the default layout, warns, and is not stored', () => {
+    const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {})
+    fetchStatusManager._fetcherStore.fetches['a-token'] = { isPrimary: true, path: '/_/layouts/main' }
+
+    fetchStatusManager.finishFetchResource({
+      resource: '/_/layouts/main',
+      success: false,
+      token: 'a-token',
+      error: createCwaResourceError({ statusCode: 404 }),
+    })
+
+    expect(ResourcesStore.mock.results[0].value.useStore.mock.results[0].value.setResourceFetchError).toHaveBeenCalledWith(expect.objectContaining({ iri: '/_/layouts/main', showErrorPage: false }))
+    expect(warn).toHaveBeenCalledExactlyOnceWith(expect.stringContaining('/_/layouts/main'), expect.anything())
+    expect(markUnstorable).toHaveBeenCalledTimes(1)
+    delete fetchStatusManager._fetcherStore.fetches['a-token']
+  })
+
   test('does not notify when a nested resource is a 404, which the page renders without', () => {
     vi.spyOn(fetchStatusManager, 'finishFetchShowError').mockReturnValue(false)
 

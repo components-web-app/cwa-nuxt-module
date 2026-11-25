@@ -601,6 +601,8 @@ export const currentModulePackageInfo:{ version: string, name: string } = {
       expect(await tGetContents()).toEqual(`interface CwaRouteMeta {
   admin?: boolean
   disabled?: boolean
+  layout?: string
+  /** @deprecated name the layout by its reference with layout */
   staticLayout?: GlobalComponentNames
   fetch?: {
     iri: string

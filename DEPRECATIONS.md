@@ -25,6 +25,22 @@ in its spec. An IRI entry then fails like any unknown name.
 
 ---
 
+### `cwa.staticLayout` in page meta
+
+A page outside CWA can still pick its layout component with `cwa.staticLayout`,
+which renders the component but loads no layout, so the layout's component
+groups are empty. `cwa.layout` names the layout by its reference instead. The
+route middleware warns once per process that it goes without further warning.
+
+**Delete:** `staticLayout` from `CwaRouteMeta` in `module.ts` (and its type
+template assertion), the `staticLayout` reads in `CwaRootLayout.vue`, the warning
+and `warnedStaticLayout` in `route-middleware.ts` with its test, and switch the
+playground's `pages/static.vue` to `cwa.layout`.
+
+**First:** 2.0.0-alpha.40 is released, so apps have had one alpha of warnings.
+
+---
+
 ## Remove when the bundle defaults a page's title to `null`
 
 ### Skipping the `'Unnamed Page'` title

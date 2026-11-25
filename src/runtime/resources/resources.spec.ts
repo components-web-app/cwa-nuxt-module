@@ -1279,6 +1279,27 @@ describe('Resources', () => {
   describe('getLayoutIriByFetchStatus', () => {
     const { resources } = createResources()
 
+    test('a primary fetch of a layout, from a page outside CWA, is that layout, stored under the IRI the API answered with', () => {
+      vi.restoreAllMocks()
+      const mockStore = {
+        getResource: vi.fn((iri: string) => iri === '/_/layouts/main'
+          ? { apiState: { status: 1, headers: {}, fetchedAt: 0, iri: '/_/layouts/main', responseIri: '/_/layouts/uuid-main' } }
+          : undefined),
+        current: { currentIds: [] },
+      }
+      const { resources: layoutResources } = createResources(undefined, mockStore)
+
+      expect(layoutResources.getLayoutIriByFetchStatus({ path: '/_/layouts/main' } as any)).toBe('/_/layouts/uuid-main')
+    })
+
+    test('a layout fetch not answered yet has no layout', () => {
+      vi.restoreAllMocks()
+      const mockStore = { getResource: vi.fn(() => undefined), current: { currentIds: [] } }
+      const { resources: layoutResources } = createResources(undefined, mockStore)
+
+      expect(layoutResources.getLayoutIriByFetchStatus({ path: '/_/layouts/main' } as any)).toBeUndefined()
+    })
+
     test('should return nothing IF page iri is not found', () => {
       const mockStatus = { path: '/test' }
 
