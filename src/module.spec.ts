@@ -15,6 +15,7 @@ vi.mock('@nuxt/kit', async () => {
     addPlugin: vi.fn(),
     addImports: vi.fn(),
     addImportsDir: vi.fn(),
+    addComponent: vi.fn(),
     tryResolveModule: vi.fn(async (id: string) => `/node_modules/${id}`),
     addTemplate: vi.fn(),
     addVitePlugin: vi.fn(),
@@ -51,6 +52,7 @@ vi.mock('node:fs', async () => {
     statSync: vi.fn(() => ({
       isDirectory: vi.fn(() => true),
     })),
+    readdirSync: vi.fn(() => []),
     readFileSync: vi.fn((file: string, encoding: BufferEncoding) => file.endsWith('@iconify-json/lucide/icons.json') ? actual.readFileSync(file, encoding) : '{ "name": "@cwa/nuxt", "version": "1.0.0" }'),
   }
   return { ...fs, default: fs }
@@ -71,14 +73,129 @@ async function prepareMockNuxt(options = {}, nuxt?: any) {
   const defaultOptions = {
     srcDir: 'app', sitemap: {}, runtimeConfig: { public: { cwa: {} } }, alias: {}, css: [], build: { transpile: [] }, dir: { app: '' },
   }
-  const mockNuxt = Object.assign({ hook: vi.fn() }, nuxt || {}, { options: { ...defaultOptions, ...(nuxt?.options || {}) } })
+  const mockNuxt = Object.assign({ hook: vi.fn(), callHook: vi.fn(async () => {}) }, nuxt || {}, { options: { ...defaultOptions, ...(nuxt?.options || {}) } })
 
   await setup(options, mockNuxt)
+  await new Promise(resolve => setTimeout(resolve))
 
   return mockNuxt
 }
 
 describe('CWA module', () => {
+  describe('extensions', () => {
+    const shop = { name: '@acme/shop', prefix: 'Shop', dir: '/ext/shop', adminPages: [{ path: 'orders', file: '/ext/shop/admin/orders.vue', menu: { label: 'Orders' } }], pageCache: { '/basket': false as const } }
+
+    async function setupWithExtension(extension: Record<string, unknown> = shop, options: Record<string, unknown> = {}) {
+      const hooks: Record<string, (...args: any[]) => any> = {}
+      const pageCallbacks: ((pages: any[]) => void)[] = []
+      vi.spyOn(nuxtKit, 'extendPages').mockImplementation((callback) => {
+        pageCallbacks.push(callback)
+      })
+      const mockNuxt = await prepareMockNuxt({}, {
+        hook: vi.fn((name: string, callback: (...args: any[]) => any) => {
+          hooks[name] = callback
+          if (name === 'modules:done') {
+            callback()
+          }
+        }),
+        callHook: vi.fn(async (name: string, register: (extension: unknown) => void) => {
+          if (name === 'cwa:extend') {
+            register(extension)
+          }
+        }),
+        options,
+      })
+      return { hooks, pageCallbacks, mockNuxt }
+    }
+
+    afterEach(() => {
+      vi.restoreAllMocks()
+    })
+
+    test('collects extensions through the cwa:extend hook once every module has set up', async () => {
+      const { mockNuxt } = await setupWithExtension()
+
+      expect(mockNuxt.callHook).toHaveBeenCalledWith('cwa:extend', expect.any(Function))
+    })
+
+    test('scans an extension\'s components, layouts and pages below the app\'s, so an app file with the same name wins', async () => {
+      const { hooks } = await setupWithExtension()
+      const dirs: any[] = []
+
+      hooks['components:dirs']!(dirs)
+
+      expect(dirs.filter(dir => dir.path.startsWith('/ext/shop'))).toEqual([
+        { path: '/ext/shop/components', prefix: 'CwaComponent', global: true, priority: 0, ignore: ['**/*.spec.{cts,mts,ts}'] },
+        { path: '/ext/shop/layouts', prefix: 'CwaLayout', global: true, priority: 0, ignore: ['**/*.spec.{cts,mts,ts}'] },
+        { path: '/ext/shop/pages', prefix: 'CwaPage', global: true, priority: 0, ignore: ['**/admin/*', '**/*.spec.{cts,mts,ts}'] },
+      ])
+      expect(dirs.filter(dir => !dir.path.startsWith('/ext/shop')).every(dir => dir.priority === undefined)).toBe(true)
+    })
+
+    test('registers only the folders an extension has, so Nuxt never warns about a missing one', async () => {
+      const fs = await import('node:fs')
+      vi.mocked(fs.statSync).mockImplementation(((dirPath: string) => ({ isDirectory: () => !dirPath.startsWith('/ext/shop/') || dirPath === '/ext/shop/components' })) as never)
+      try {
+        const { hooks } = await setupWithExtension()
+        const dirs: any[] = []
+
+        hooks['components:dirs']!(dirs)
+
+        expect(dirs.filter(dir => dir.path.startsWith('/ext/shop')).map(dir => dir.path)).toEqual(['/ext/shop/components'])
+      }
+      finally {
+        vi.mocked(fs.statSync).mockImplementation((() => ({ isDirectory: vi.fn(() => true) })) as never)
+      }
+    })
+
+    test('adds an extension\'s admin pages under /_cwa before the layout pass, so they sit in the admin layout', async () => {
+      const { pageCallbacks } = await setupWithExtension()
+      const pages: any[] = [{ path: '/_cwa', file: '/layer/pages/_cwa/index.vue', children: [] }]
+
+      pageCallbacks.forEach(callback => callback(pages))
+
+      expect(pages[0].children).toContainEqual({ path: 'orders', name: '_cwa-orders', file: '/ext/shop/admin/orders.vue', meta: { cwaAdminRole: 'ROLE_ADMIN', layout: 'cwa-root-layout' } })
+    })
+
+    test('turns an extension\'s page cache rules into route rules', async () => {
+      const { mockNuxt } = await setupWithExtension()
+
+      expect(mockNuxt.options.routeRules).toEqual({ '/basket': { cwa: { pageCache: false } } })
+    })
+
+    test('writes the menu entries of the extensions\' admin pages to a template the admin menu reads', async () => {
+      await setupWithExtension()
+
+      const template = (nuxtKit.addTemplate as Mock).mock.calls.map(([template]) => template).find(template => template.filename === 'cwa-extension-menu.ts')
+
+      expect(template.getContents()).toBe(`export const extensionMenu: { label: string, to: { name: string }, role: string }[] = [
+  {
+    "label": "Orders",
+    "to": {
+      "name": "_cwa-orders"
+    },
+    "role": "ROLE_ADMIN"
+  }
+]
+`)
+    })
+
+    test('fails the build when an extension breaks a rule, before any template is written', async () => {
+      const outcomes: Promise<unknown>[] = []
+      await prepareMockNuxt({}, {
+        hook: vi.fn((name: string, callback: () => Promise<void>) => {
+          if (name === 'modules:done') {
+            outcomes.push(callback().then(() => undefined, (error: Error) => error.message))
+          }
+        }),
+        callHook: vi.fn(async (_name: string, register: (extension: unknown) => void) => register({ ...shop, prefix: 'shop' })),
+      })
+
+      expect(await outcomes[0]).toBe('@acme/shop\'s prefix "shop" must be PascalCase letters and digits')
+      expect((nuxtKit.addTemplate as Mock).mock.calls.some(([template]) => template.filename === 'cwa-extension-menu.ts')).toBe(false)
+    })
+  })
+
   describe('params', () => {
     test('should be called with correct meta', async () => {
       await import('./module')
@@ -493,6 +610,7 @@ export * from 'vue-router'
 declare module 'vue-router' {
   interface RouteMeta {
     cwa?: CwaRouteMeta
+    cwaAdminRole?: string
   }
 }`)
     })
@@ -509,6 +627,18 @@ declare module 'vue-router' {
       expect(mockResolver).toHaveBeenCalledWith('./runtime/composables')
 
       expect(nuxtKit.addImportsDir as Mock).toHaveBeenCalledWith(mockResolver('./runtime/composables'))
+    })
+
+    test('gives an extension\'s admin pages the building blocks of the built-in lists and dialogs, under public names, so each stays one implementation (#487)', async () => {
+      await prepareMockNuxt()
+
+      const added = (nuxtKit.addComponent as Mock).mock.calls.map(([component]) => [component.name, component.filePath])
+      expect(added).toEqual(expect.arrayContaining([
+        ['CwaAdminListRow', './runtime/templates/components/core/admin/ListRow.vue'],
+        ['CwaAdminListCell', './runtime/templates/components/core/admin/ListCell.vue'],
+        ['CwaAdminResourceId', './runtime/templates/components/core/admin/ResourceIdDetail.vue'],
+      ]))
+      expect(nuxtKit.addImports as Mock).toHaveBeenCalledWith({ name: 'useCwaAdminItem', from: './layer/_composables/useCwaAdminItem' })
     })
 
     describe('component names constant (#352)', () => {
@@ -1531,7 +1661,7 @@ export const styleClasses: CwaStyleClasses = {
 
       await prepareMockNuxt()
 
-      expect(callbacks).toHaveLength(2)
+      expect(callbacks).toHaveLength(3)
 
       callbacks[0](mockPages)
 
@@ -1585,7 +1715,7 @@ export const styleClasses: CwaStyleClasses = {
       const withChildren: any = { name: 'parent', path: '/parent', children: [{ name: 'child', path: 'child' }] }
 
       const pages = [noLayout, explicitLayout, disabledLayout, withChildren]
-      callbacks[1](pages)
+      callbacks[2](pages)
 
       expect(noLayout.meta.layout).toBe('cwa-root-layout')
       expect(explicitLayout.meta.layout).toBe('alternate-layout')

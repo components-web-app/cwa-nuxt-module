@@ -7,6 +7,8 @@ const pageIri = `${prefix}/_/pages/e2e-page`
 const layoutIri = `${prefix}/_/layouts/e2e-layout`
 const brokenRouteIri = `${prefix}/_/routes//broken`
 const brokenRenderRouteIri = `${prefix}/_/routes//e2e-broken-render`
+const fixtureBasketRouteIri = `${prefix}/_/routes//fixture-basket`
+const fixtureAccountRouteIri = `${prefix}/_/routes//fixture-account`
 
 const resources = {
   [routeIri]: {
@@ -52,6 +54,32 @@ const resources = {
   [`${prefix}/_/resource_manifest//e2e-broken-render`]: {
     resource_iris: [
       { iri: brokenRenderRouteIri, children: [{ iri: pageIri, children: [{ iri: layoutIri, children: [] }] }] },
+    ],
+  },
+  [fixtureBasketRouteIri]: {
+    '@id': fixtureBasketRouteIri,
+    '@type': 'Route',
+    'path': '/fixture-basket',
+    'name': 'fixture-basket',
+    'page': pageIri,
+    '_metadata': { persisted: true },
+  },
+  [`${prefix}/_/resource_manifest//fixture-basket`]: {
+    resource_iris: [
+      { iri: fixtureBasketRouteIri, children: [{ iri: pageIri, children: [{ iri: layoutIri, children: [] }] }] },
+    ],
+  },
+  [fixtureAccountRouteIri]: {
+    '@id': fixtureAccountRouteIri,
+    '@type': 'Route',
+    'path': '/fixture-account',
+    'name': 'fixture-account',
+    'page': pageIri,
+    '_metadata': { persisted: true },
+  },
+  [`${prefix}/_/resource_manifest//fixture-account`]: {
+    resource_iris: [
+      { iri: fixtureAccountRouteIri, children: [{ iri: pageIri, children: [{ iri: layoutIri, children: [] }] }] },
     ],
   },
   [`${prefix}/_/site_config_parameters`]: {

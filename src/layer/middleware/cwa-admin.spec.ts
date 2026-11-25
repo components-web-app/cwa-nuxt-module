@@ -6,7 +6,7 @@ import cwaAdminMiddleware from './cwa-admin'
 import * as nuxt from 'nuxt/app'
 import * as processComposables from '#cwa/composables/process'
 
-function createRoute(fullPath = '/reports'): RouteLocationNormalizedLoaded {
+function createRoute(fullPath = '/reports', meta: Record<string, unknown> = {}): RouteLocationNormalizedLoaded {
   return {
     name: '',
     path: fullPath,
@@ -15,23 +15,25 @@ function createRoute(fullPath = '/reports'): RouteLocationNormalizedLoaded {
     hash: '',
     matched: [],
     params: {},
-    meta: {},
+    meta,
     redirectedFrom: undefined,
   }
 }
 
-function mockCwa({ signedIn, isAdmin }: { signedIn: boolean, isAdmin: boolean }) {
+function mockCwa({ signedIn, isAdmin, roles = isAdmin ? ['ROLE_ADMIN'] : [] }: { signedIn: boolean, isAdmin: boolean, roles?: string[] }) {
   const init = vi.fn()
+  const hasRole = vi.fn((role: string) => roles.includes(role))
   vi.spyOn(nuxt, 'useNuxtApp').mockImplementation(() => ({
     $cwa: {
       auth: {
         init,
         signedIn: computed(() => signedIn),
         isAdmin: computed(() => isAdmin),
+        hasRole,
       },
     },
   }) as never)
-  return { init }
+  return { init, hasRole }
 }
 
 describe('cwa-admin middleware', () => {
@@ -70,6 +72,24 @@ describe('cwa-admin middleware', () => {
     const { init } = mockCwa({ signedIn: true, isAdmin: true })
     await cwaAdminMiddleware(createRoute(), createRoute())
     expect(init).toHaveBeenCalled()
+  })
+
+  describe('an extension admin page that declares a role', () => {
+    const accounts = { cwaAdminRole: 'ROLE_SHOP_ACCOUNTS' }
+
+    test('lets in a signed-in user who has the role without being an admin', async () => {
+      const { hasRole } = mockCwa({ signedIn: true, isAdmin: false, roles: ['ROLE_SHOP_ACCOUNTS'] })
+      const result = await cwaAdminMiddleware(createRoute('/_cwa/reports', accounts), createRoute())
+      expect(hasRole).toHaveBeenCalledWith('ROLE_SHOP_ACCOUNTS')
+      expect(result).toBeUndefined()
+      expect(nuxt.navigateTo).not.toHaveBeenCalled()
+    })
+
+    test('sends home an admin who lacks the role', async () => {
+      mockCwa({ signedIn: true, isAdmin: true })
+      await cwaAdminMiddleware(createRoute('/_cwa/reports', accounts), createRoute())
+      expect(nuxt.navigateTo).toHaveBeenCalledWith('/')
+    })
   })
 
   describe('on the server, where a cross-origin API cookie is not sent', () => {

@@ -82,6 +82,19 @@
                   </li>
                 </ul>
               </div>
+              <div v-if="extensionEntries.length">
+                <h3>Extensions</h3>
+                <ul class="cwa:text-sm">
+                  <li
+                    v-for="entry in extensionEntries"
+                    :key="entry.to.name"
+                  >
+                    <MenuLink :to="entry.to">
+                      {{ entry.label }}
+                    </MenuLink>
+                  </li>
+                </ul>
+              </div>
               <div>
                 <h3>Account</h3>
                 <ul class="cwa:text-sm">
@@ -118,7 +131,7 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, ref, useId, useTemplateRef, watch } from 'vue'
+import { computed, nextTick, ref, useId, useTemplateRef, watch } from 'vue'
 import { onClickOutside } from '@vueuse/core'
 import MenuPrimaryLink from './MenuPrimaryLink.vue'
 import CwaLogo from '#cwa/templates/components/core/assets/CwaLogo.vue'
@@ -131,12 +144,15 @@ import IconUsers from '#cwa/templates/components/core/assets/IconUsers.vue'
 import MenuLink from '#cwa/templates/components/main/admin/header/_parts/MenuLink.vue'
 import IconRoutes from '#cwa/templates/components/core/assets/IconRoutes.vue'
 import IconData from '#cwa/templates/components/core/assets/IconData.vue'
+// @ts-ignore
+import { extensionMenu } from '#build/cwa-extension-menu'
 
 const $cwa = useCwa()
 const { menu: menuTransition } = useTransitions()
 const route = useRoute()
 
 const showMenu = ref(false)
+const extensionEntries = computed(() => (extensionMenu as { label: string, to: { name: string }, role: string }[]).filter(entry => $cwa.auth.hasRole(entry.role)))
 
 const menu = useTemplateRef('menu')
 const hamburger = ref<{ $el?: HTMLElement }>()
