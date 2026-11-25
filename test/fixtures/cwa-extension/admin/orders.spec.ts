@@ -29,13 +29,12 @@ function cwa(order: Record<string, unknown>) {
   const send = vi.fn(async () => undefined)
   const fetchResource = vi.fn()
   const fetch = vi.fn(() => ({ response: Promise.resolve({ _data: { member: [order], totalItems: 1 } }) }))
-  // @ts-expect-error a partial Cwa
   vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => ({
     fetch,
     fetchResource,
     resources: { getResource: (iri: string) => computed(() => store[iri]) },
     resourcesManager: { send, errors, removeError: vi.fn(), createResource: vi.fn(), updateResource: vi.fn(), deleteResource: vi.fn() },
-  }))
+  }) as unknown as ReturnType<typeof cwaComposable.useCwa>)
   return { send, fetch, fetchResource }
 }
 
