@@ -12,6 +12,9 @@ const styleClasses = vi.hoisted(() => ({
   CwaLayoutSecondary: { dark: 'bg-black' },
 }))
 vi.mock('#build/cwa-styles', () => ({ styleClasses }))
+vi.mock('#build/cwa-extension-menu', () => ({
+  extensionMenu: [{ label: 'Orders', to: { name: '_cwa-orders' }, role: 'ROLE_SHOP_ADMIN' }],
+}))
 
 const headOptions: Record<string, any>[] = []
 const mockUseHead = vi.hoisted(() => vi.fn())
@@ -157,6 +160,18 @@ describe('CwaRootLayout for the narrow admin roles (bundle #611)', () => {
     await flushPromises()
     expect(shows(wrapper, 'LazyCwaAdminHeader')).toBe(false)
     expect(shows(wrapper, 'LazyCwaAdminResourceManager')).toBe(false)
+  })
+  test('a user whose only admin role is one an extension admin page needs gets the header, for its menu, and no resource manager', async () => {
+    const { wrapper } = setup({ isAdmin: false, roles: ['ROLE_SHOP_ADMIN', 'ROLE_USER'], registeredComponents: ['CwaLayoutPrimary'] })
+    await flushPromises()
+    expect(shows(wrapper, 'LazyCwaAdminHeader')).toBe(true)
+    expect(shows(wrapper, 'LazyCwaAdminResourceManager')).toBe(false)
+  })
+
+  test('a role no extension admin page needs gets no header', async () => {
+    const { wrapper } = setup({ isAdmin: false, roles: ['ROLE_SHOP_CUSTOMER', 'ROLE_USER'], registeredComponents: ['CwaLayoutPrimary'] })
+    await flushPromises()
+    expect(shows(wrapper, 'LazyCwaAdminHeader')).toBe(false)
   })
 })
 
