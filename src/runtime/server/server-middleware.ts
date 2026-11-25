@@ -3,7 +3,7 @@ import { jwtDecode } from 'jwt-decode'
 import useCwaSiteConfig from '#cwa/composables/useCwaSiteConfig'
 import { updateSiteConfig } from '#site-config/server/composables'
 import { fallbackSiteConfig, resolveConfigEventHandler } from '#cwa/server/useFetcher'
-import { ADMIN_ROLES, isAdmin } from '#cwa/server/is-admin'
+import { ADMIN_TOKEN_ROLES, isAdmin } from '#cwa/server/is-admin'
 
 const ADMIN_CHECK_TIMEOUT = 3000
 const OPERATIONAL_PATHS = ['/_cwa/healthcheck', '/_cwa/readiness']
@@ -49,7 +49,7 @@ export default defineEventHandler(async (e) => {
         if (!decoded.roles || !Array.isArray(decoded.roles)) {
           return false
         }
-        if (!decoded.roles.some(role => ADMIN_ROLES.includes(role))) {
+        if (!decoded.roles.some(role => ADMIN_TOKEN_ROLES.includes(role))) {
           return false
         }
         if (!decoded.exp) {

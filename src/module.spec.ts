@@ -163,7 +163,7 @@ describe('CWA module', () => {
       expect(mockNuxt.options.routeRules).toEqual({ '/basket': { cwa: { pageCache: false } } })
     })
 
-    test('writes the menu entries of the extensions\' admin pages to a template the admin menu reads', async () => {
+    test('writes the menu entries of the extensions\' admin pages, and the roles they declare, to a template the admin menu and user dialog read', async () => {
       await setupWithExtension()
 
       const template = (nuxtKit.addTemplate as Mock).mock.calls.map(([template]) => template).find(template => template.filename === 'cwa-extension-menu.ts')
@@ -177,6 +177,7 @@ describe('CWA module', () => {
     "role": "ROLE_ADMIN"
   }
 ]
+export const extensionAdminRoles: { role: string, label: string }[] = []
 `)
     })
 

@@ -40,7 +40,7 @@ let statuses: Record<string, number>
 let locations: Record<string, string>
 let handlerUrl: string
 
-function adminSession(roles = ['ROLE_USER', 'ROLE_ADMIN']) {
+function adminSession(roles = ['ROLE_ADMIN', 'ROLE_CMS_ADMIN', 'ROLE_USER']) {
   mockFetcher.mockImplementation(async (url: string) => {
     if (url === '/me') {
       return { roles }
@@ -177,8 +177,19 @@ describe('POST /_cwa/page-cache/warm admin gate', () => {
     expect(originRequests).toHaveLength(0)
   })
 
-  test('accepts a super admin', async () => {
-    adminSession(['ROLE_SUPER_ADMIN'])
+  test('refuses a user admin who cannot edit content (bundle #611)', async () => {
+    adminSession(['ROLE_USER_ADMIN', 'ROLE_USER'])
+    const response = await postWarm().response
+
+    expect(response.statusCode).toBe(403)
+    expect(originRequests).toHaveLength(0)
+  })
+
+  test.each([
+    [['ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_USER_ADMIN', 'ROLE_ALLOWED_TO_SWITCH', 'ROLE_CMS_ADMIN', 'ROLE_USER']],
+    [['ROLE_CMS_ADMIN', 'ROLE_USER']],
+  ])('accepts a content admin, from the roles /me reaches %j', async (roles) => {
+    adminSession(roles)
     const response = await postWarm().response
     await readAll(response)
 

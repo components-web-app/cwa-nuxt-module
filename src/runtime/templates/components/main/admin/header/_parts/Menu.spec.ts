@@ -12,13 +12,13 @@ vi.mock('#app/composables/router', async () => {
   const current = reactive(route)
   return { useRoute: () => current }
 })
-const roles = vi.hoisted(() => ({ list: ['ROLE_ADMIN'] }))
+const roles = vi.hoisted(() => ({ list: ['ROLE_ADMIN', 'ROLE_CMS_ADMIN', 'ROLE_USER'] }))
 vi.mock('#cwa/composables/cwa', async () => {
   const { computed } = await import('vue')
   return {
     useCwa: () => ({
       config: { siteName: 'Site' },
-      auth: { user: undefined, signOut: vi.fn(), isAdmin: computed(() => roles.list.includes('ROLE_ADMIN')), hasRole: (role: string) => roles.list.includes(role) },
+      auth: { user: undefined, signOut: vi.fn(), isAdmin: computed(() => roles.list.includes('ROLE_CMS_ADMIN')), hasRole: (role: string) => roles.list.includes(role) },
       navigationDisabled: false,
     }),
   }
@@ -143,9 +143,43 @@ describe('the header menu is operable from the keyboard', () => {
   })
 })
 
+describe('the narrow admin roles (bundle #611)', () => {
+  afterEach(() => {
+    roles.list = ['ROLE_ADMIN', 'ROLE_CMS_ADMIN', 'ROLE_USER']
+  })
+
+  async function shownLinks() {
+    wrapper = mountMenu()
+    await wrapper.get('button').trigger('click')
+    return wrapper.findAll('a').map(link => link.text().trim()).filter(Boolean)
+  }
+
+  test('a content admin who is not a user admin gets the content areas and site settings, and no Users', async () => {
+    roles.list = ['ROLE_CMS_ADMIN', 'ROLE_USER']
+    const links = await shownLinks()
+    expect(links).toEqual(expect.arrayContaining(['Layouts', 'Pages', 'Data', 'Routes', 'Site settings']))
+    expect(links).not.toContain('Users')
+  })
+
+  test('a user admin who cannot edit content gets Users and no content areas or site settings', async () => {
+    roles.list = ['ROLE_USER_ADMIN', 'ROLE_USER']
+    const links = await shownLinks()
+    expect(links).toContain('Users')
+    for (const label of ['Layouts', 'Pages', 'Data', 'Routes', 'Site settings']) {
+      expect(links).not.toContain(label)
+    }
+  })
+
+  test('a super admin, reaching both, gets both', async () => {
+    roles.list = ['ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_USER_ADMIN', 'ROLE_CMS_ADMIN', 'ROLE_USER']
+    const links = await shownLinks()
+    expect(links).toEqual(expect.arrayContaining(['Layouts', 'Pages', 'Data', 'Routes', 'Site settings', 'Users']))
+  })
+})
+
 describe('extension admin pages', () => {
   afterEach(() => {
-    roles.list = ['ROLE_ADMIN']
+    roles.list = ['ROLE_ADMIN', 'ROLE_CMS_ADMIN', 'ROLE_USER']
   })
 
   test('lists the pages extensions put in the menu that the user\'s roles open', async () => {

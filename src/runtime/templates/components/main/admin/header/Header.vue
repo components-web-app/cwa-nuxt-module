@@ -10,7 +10,7 @@
     >
       <div class="cwa:flex cwa:min-w-0 cwa:flex-1 cwa:justify-between cwa:items-center cwa:max-sm:gap-x-2">
         <div class="cwa:flex cwa:shrink-0 cwa:items-center cwa:justify-start cwa:gap-x-4">
-          <template v-if="!pageIsAdmin && !isErrorPage">
+          <template v-if="!pageIsAdmin && !isErrorPage && $cwa.auth.isAdmin.value">
             <CwaUiButton
               variant="solid"
               class="cwa:min-w-24"
@@ -43,7 +43,7 @@
         >
           <template v-if="!pageIsAdmin && !isErrorPage">
             <CwaUiButton
-              v-if="!$cwa.admin.isEditing && $cwa.resources?.page?.value?.data"
+              v-if="!$cwa.admin.isEditing && $cwa.resources?.page?.value?.data && $cwa.auth.isAdmin.value"
               :label="editPageLabel"
               :aria-label="`Page settings: ${editPageLabel}`"
               :icon="CogIcon"
@@ -58,7 +58,7 @@
           </template>
           <template v-else>
             <ul class="cwa:flex cwa:gap-x-8 cwa:text-stone-400 cwa:items-center">
-              <li>
+              <li v-if="$cwa.auth.isAdmin.value">
                 <NuxtLink
                   to="/_cwa/layouts"
                   class="cwa:hover:text-white cwa:transition-colors"
@@ -68,7 +68,7 @@
                   <span class="cwa:sr-only">Layouts</span>
                 </NuxtLink>
               </li>
-              <li>
+              <li v-if="$cwa.auth.isAdmin.value">
                 <NuxtLink
                   to="/_cwa/pages"
                   class="cwa:hover:text-white cwa:transition-colors"
@@ -78,7 +78,7 @@
                   <span class="cwa:sr-only">Pages</span>
                 </NuxtLink>
               </li>
-              <li>
+              <li v-if="$cwa.auth.isAdmin.value">
                 <NuxtLink
                   to="/_cwa/data"
                   class="cwa:hover:text-white cwa:transition-colors"
@@ -88,7 +88,7 @@
                   <span class="cwa:sr-only">Data</span>
                 </NuxtLink>
               </li>
-              <li>
+              <li v-if="$cwa.auth.isAdmin.value">
                 <NuxtLink
                   to="/_cwa/routes"
                   class="cwa:hover:text-white cwa:transition-colors"
@@ -98,7 +98,7 @@
                   <span class="cwa:sr-only">Routes</span>
                 </NuxtLink>
               </li>
-              <li>
+              <li v-if="$cwa.auth.hasRole('ROLE_USER_ADMIN')">
                 <NuxtLink
                   to="/_cwa/users"
                   class="cwa:hover:text-white cwa:transition-colors"

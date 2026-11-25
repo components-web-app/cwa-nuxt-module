@@ -22,7 +22,11 @@ describe('isAdmin', () => {
     expect(mockFetcher).not.toHaveBeenCalled()
   })
 
-  test.each([['ROLE_ADMIN'], ['ROLE_SUPER_ADMIN'], ['ROLE_USER', 'ROLE_ADMIN']])('confirms an admin with roles %s', async (...roles) => {
+  test.each([
+    ['ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_USER_ADMIN', 'ROLE_ALLOWED_TO_SWITCH', 'ROLE_CMS_ADMIN', 'ROLE_USER'],
+    ['ROLE_ADMIN', 'ROLE_CMS_ADMIN', 'ROLE_USER'],
+    ['ROLE_CMS_ADMIN', 'ROLE_USER'],
+  ])('lets a content admin past maintenance, from the roles /me reaches %s (bundle #611)', async (...roles) => {
     mockFetcher.mockResolvedValue({ roles })
     const isAdmin = await importIsAdmin()
 
@@ -40,6 +44,7 @@ describe('isAdmin', () => {
 
   test.each([
     ['a user without an admin role', { roles: ['ROLE_USER'] }],
+    ['a user admin who cannot edit content', { roles: ['ROLE_USER_ADMIN', 'ROLE_USER'] }],
     ['a response with no roles', {}],
     ['a response whose roles are not an array', { roles: 'ROLE_ADMIN' }],
   ])('refuses %s', async (_name, user) => {

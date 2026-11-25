@@ -4,6 +4,8 @@ import type { CwaResource } from '../../../resources/resource-utils'
 export enum CwaUserRoles {
   SUPER_ADMIN = 'ROLE_SUPER_ADMIN',
   ADMIN = 'ROLE_ADMIN',
+  CMS_ADMIN = 'ROLE_CMS_ADMIN',
+  USER_ADMIN = 'ROLE_USER_ADMIN',
   ALLOWED_TO_SWITCH = 'ROLE_ALLOWED_TO_SWITCH',
   USER = 'ROLE_USER',
 }

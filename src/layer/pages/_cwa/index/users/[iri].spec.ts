@@ -7,6 +7,7 @@ import { axe } from '../../../../../../test/utils/axe'
 import { fieldExplanation } from '../../../../../../test/utils/field-info'
 import * as cwaComposable from '#cwa/composables/cwa'
 import Select from '#cwa/templates/components/ui/Select.vue'
+import Toggle from '#cwa/templates/components/ui/Toggle.vue'
 
 const { mockUseResendVerifyEmail, mockConfirm, showToast, route } = vi.hoisted(() => ({
   mockUseResendVerifyEmail: vi.fn(),
@@ -21,6 +22,11 @@ vi.mock('#cwa/composables/useResendVerifyEmail', () => ({
 
 vi.mock('#cwa/composables/cwa-toast', () => ({
   useCwaToast: () => ({ show: showToast, dismiss: vi.fn() }),
+}))
+
+vi.mock('#build/cwa-extension-menu', () => ({
+  extensionMenu: [],
+  extensionAdminRoles: [{ role: 'ROLE_SHOP_ACCOUNTS', label: 'Accounts' }],
 }))
 
 vi.mock('#cwa/composables/cwa-confirm', () => ({
@@ -65,7 +71,8 @@ function resendState(opts: { error?: string, retryIn?: number, success?: boolean
   return state
 }
 
-async function setup(user: Record<string, any> = stored, opts: { adding?: boolean, signedInAs?: string, held?: Promise<void> } = {}) {
+async function setup(user: Record<string, any> = stored, opts: { adding?: boolean, signedInAs?: string, signedInRoles?: string[], held?: Promise<void> } = {}) {
+  const signedInRoles = opts.signedInRoles ?? ['ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_USER_ADMIN', 'ROLE_ALLOWED_TO_SWITCH', 'ROLE_CMS_ADMIN', 'ROLE_USER', 'ROLE_SHOP_ACCOUNTS']
   route.params = { iri: opts.adding ? 'add' : userIri }
   const store = reactive<Record<string, any>>({})
   const errors = ref<any[]>([])
@@ -91,7 +98,7 @@ async function setup(user: Record<string, any> = stored, opts: { adding?: boolea
       storeResource: vi.fn(),
       get errors() { return errors.value },
     },
-    auth: { user: { '@id': opts.signedInAs ?? '/users/uuid-admin', 'roles': ['ROLE_SUPER_ADMIN'] } },
+    auth: { user: { '@id': opts.signedInAs ?? '/users/uuid-admin', 'roles': signedInRoles }, hasRole: (role: string) => signedInRoles.includes(role) },
     fetchResource: vi.fn(async () => {
       await opts.held
       store[userIri] = { data: { ...user }, apiState: { status: 'SUCCESS' } }
@@ -252,17 +259,78 @@ describe('admin user dialog (#461)', () => {
     expect(document.querySelector(`[data-testid="input-reveal"][aria-controls="${input.id}"]`)).toBeNull()
   })
 
-  test('the role select edits `roles` as the highest chosen role', async () => {
-    const { wrapper, updateResource } = await setup({ ...stored, roles: ['ROLE_USER', 'ROLE_ADMIN'] })
-    const role = wrapper.findAllComponents(Select).find(select => select.props('label') === 'Role')!
+  describe('the role select and extension roles (bundle #611)', () => {
+    const roleSelect = (wrapper: Awaited<ReturnType<typeof setup>>['wrapper']) => wrapper.findAllComponents(Select).find(select => select.props('label') === 'Role')!
+    const accounts = (wrapper: Awaited<ReturnType<typeof setup>>['wrapper']) => wrapper.findAllComponents(Toggle).find(toggle => toggle.props('label') === 'Accounts')!
 
-    expect(role.props('model').model.value).toBe('ROLE_ADMIN')
-    role.props('model').model.value = 'ROLE_SUPER_ADMIN'
-    await flushPromises()
-    expect(shown(save())).toBe('Save 1 change')
-    await clickSave()
+    test('offers every level, and reads the user\'s from the roles they reach, so an admin is Admin, not Content admin', async () => {
+      const { wrapper } = await setup({ ...stored, roles: ['ROLE_ADMIN', 'ROLE_CMS_ADMIN', 'ROLE_USER'] })
+      const role = roleSelect(wrapper)
 
-    expect(updateResource).toHaveBeenCalledWith(expect.objectContaining({ data: { roles: ['ROLE_SUPER_ADMIN'] } }))
+      expect(role.props('options').map((option: { label: string }) => option.label)).toEqual(['User', 'Content admin', 'User admin', 'Content and user admin', 'Admin', 'Admin and user admin', 'Super admin'])
+      expect(role.props('model').model.value).toBe('admin')
+    })
+
+    test('choosing a level saves only the roles it stands for, never the ones it reaches', async () => {
+      const { wrapper, updateResource } = await setup({ ...stored, roles: ['ROLE_ADMIN', 'ROLE_CMS_ADMIN', 'ROLE_USER'] })
+      roleSelect(wrapper).props('model').model.value = 'content'
+      await flushPromises()
+      expect(shown(save())).toBe('Save 1 change')
+      await clickSave()
+
+      expect(updateResource).toHaveBeenCalledWith(expect.objectContaining({ data: { roles: ['ROLE_CMS_ADMIN'] } }))
+    })
+
+    test('a level needing a role the signed-in admin does not reach is disabled, saying why', async () => {
+      const { wrapper } = await setup(stored, { signedInRoles: ['ROLE_USER_ADMIN', 'ROLE_USER'] })
+      const options = roleSelect(wrapper).props('options') as { label: string, disabled?: boolean, disabledReason?: string }[]
+
+      expect(options.filter(option => !option.disabled).map(option => option.label)).toEqual(['User', 'User admin'])
+      expect(options.find(option => option.label === 'Admin')!.disabledReason).toBe('You can\'t grant a role you don\'t have.')
+    })
+
+    test('an extension role is a toggle that adds or removes only its own role below admin', async () => {
+      const { wrapper, updateResource } = await setup({ ...stored, roles: ['ROLE_CMS_ADMIN', 'ROLE_USER'] })
+      const toggle = accounts(wrapper)
+      expect(toggle.props('modelValue')).toBe(false)
+      expect(toggle.props('disabled')).toBe(false)
+
+      toggle.vm.$emit('update:modelValue', true)
+      await flushPromises()
+      await clickSave()
+      expect(updateResource).toHaveBeenCalledWith(expect.objectContaining({ data: { roles: ['ROLE_CMS_ADMIN', 'ROLE_SHOP_ACCOUNTS'] } }))
+    })
+
+    test('turning an extension role off keeps the level', async () => {
+      const { wrapper, updateResource } = await setup({ ...stored, roles: ['ROLE_USER', 'ROLE_SHOP_ACCOUNTS'] })
+      expect(accounts(wrapper).props('modelValue')).toBe(true)
+      accounts(wrapper).vm.$emit('update:modelValue', false)
+      await flushPromises()
+      await clickSave()
+      expect(updateResource).toHaveBeenCalledWith(expect.objectContaining({ data: { roles: ['ROLE_USER'] } }))
+    })
+
+    test('for an admin an extension role shows on and locked, since admins reach it', async () => {
+      const { wrapper } = await setup({ ...stored, roles: ['ROLE_ADMIN', 'ROLE_CMS_ADMIN', 'ROLE_USER', 'ROLE_SHOP_ACCOUNTS'] })
+      expect(accounts(wrapper).props('modelValue')).toBe(true)
+      expect(accounts(wrapper).props('disabled')).toBe(true)
+      expect(accounts(wrapper).props('disabledReason')).toBe('Admins have this role.')
+    })
+
+    test('an extension role the signed-in admin does not reach cannot be granted', async () => {
+      const { wrapper } = await setup(stored, { signedInRoles: ['ROLE_USER_ADMIN', 'ROLE_USER'] })
+      expect(accounts(wrapper).props('disabled')).toBe(true)
+      expect(accounts(wrapper).props('disabledReason')).toBe('You can\'t grant a role you don\'t have.')
+    })
+
+    test('a role the API refuses shows on the Role field', async () => {
+      const { wrapper, refuseWith422 } = await setup()
+      roleSelect(wrapper).props('model').model.value = 'admin'
+      await flushPromises()
+      refuseWith422('roles', 'You cannot assign ROLE_ADMIN.')
+      await clickSave()
+      expect(roleSelect(wrapper).find('[data-testid="field-error"]').text()).toBe('You cannot assign ROLE_ADMIN.')
+    })
   })
 
   test('the Info tab\'s ID has Copy ID beside it, which copies the user\'s IRI for a bug report (#461)', async () => {

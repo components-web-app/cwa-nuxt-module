@@ -9,7 +9,7 @@
     @contextmenu="onRootContextMenu"
   >
     <ClientOnly>
-      <LazyCwaAdminHeader v-if="showAdmin" />
+      <LazyCwaAdminHeader v-if="showHeader" />
       <OutdatedContentNotice
         v-else
         class="cwa:absolute cwa:top-0 cwa:mt-1.5 cwa:left-1/2 cwa:-translate-x-1/2 cwa:z-50"
@@ -178,6 +178,7 @@ watch(() => $cwa.admin.isEditing, async () => {
 })
 
 const showAdmin = $cwa.auth.isAdmin
+const showHeader = computed(() => showAdmin.value || $cwa.auth.hasRole('ROLE_USER_ADMIN'))
 useHead({
   titleTemplate: () => {
     if ($cwa.siteConfig.config.concatTitle) {

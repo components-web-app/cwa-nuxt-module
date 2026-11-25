@@ -146,6 +146,21 @@ export function extensionAdminMenu(extensions: CwaExtension[]): CwaExtensionMenu
     .map(page => ({ label: page.menu!.label, to: { name: adminRouteName(page.path) }, role: page.role ?? DEFAULT_ADMIN_ROLE })))
 }
 
+export function extensionAdminRoles(extensions: CwaExtension[]): { role: string, label: string }[] {
+  const labels = new Map<string, string[]>()
+  for (const page of extensions.flatMap(extension => extension.adminPages ?? [])) {
+    if (!page.role || page.role === DEFAULT_ADMIN_ROLE) {
+      continue
+    }
+    const pageLabels = labels.get(page.role) ?? []
+    if (page.menu) {
+      pageLabels.push(page.menu.label)
+    }
+    labels.set(page.role, pageLabels)
+  }
+  return [...labels].map(([role, pageLabels]) => ({ role, label: pageLabels.join(', ') || role }))
+}
+
 export function extensionRouteRules(routeRules: Record<string, Record<string, unknown>>, extensions: CwaExtension[]) {
   for (const extension of extensions) {
     for (const [path, pageCache] of Object.entries(extension.pageCache ?? {})) {
