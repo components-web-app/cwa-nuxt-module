@@ -7,6 +7,7 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 ### Added
 
 - `useItemPage` (and so `useCwaAdminItem`) takes dotted field paths, such as `field="gatewayConfig.vendor"`: a nested value is unsaved and sent on its own, nested under its parent, and a 422 on that path shows on its field. [SHA](https://github.com/components-web-app/cwa-nuxt-module/commit/SHA) ([#494](https://github.com/components-web-app/cwa-nuxt-module/issues/494))
+- `CwaUiSecretInput` edits a write-only value read back as `{ set }`: it shows Set or Not set, never the value, sends one only once it is typed, and offers Replace and Remove (which sends `null`; not for a required secret). [SHA](https://github.com/components-web-app/cwa-nuxt-module/commit/SHA) ([#494](https://github.com/components-web-app/cwa-nuxt-module/issues/494))
 
 ### Fixed
 
