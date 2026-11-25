@@ -13,7 +13,7 @@ import { computed, provide, useTemplateRef, watch } from 'vue'
 import { withoutTrailingSlash } from 'ufo'
 import { titleCase } from 'scule'
 import CwaPage from './components/main/CwaPage.vue'
-import { defineOgImage, useCwa, useError, useHead, useRoute } from '#imports'
+import { defineOgImage, useCwa, useError, useHead, useNuxtApp, useRoute } from '#imports'
 
 // to prevent errors navigating between pages, a page should have a single root element
 // resource loader will be 1 at a time but can switch between 3 states
@@ -90,9 +90,11 @@ useHead({
   ],
 }, minimalPriority)
 
-defineOgImage('CwaDefault', {
-  title: pageTitle,
-  description: metaDescription,
-  siteName: computed(() => $cwa.siteConfig.config.siteName),
-}, { height: 630 })
+if (import.meta.server || !useNuxtApp().isHydrating) {
+  defineOgImage('CwaDefault', {
+    title: pageTitle,
+    description: metaDescription,
+    siteName: computed(() => $cwa.siteConfig.config.siteName),
+  }, { height: 630 })
+}
 </script>
