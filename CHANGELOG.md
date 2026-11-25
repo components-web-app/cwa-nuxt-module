@@ -6,6 +6,7 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ### Added
 
+- Apps and extensions can hook `cwa:auth:signed-in`, which carries the user, and `cwa:auth:signed-out`, called when a session ends in the browser. [ec48b72b](https://github.com/components-web-app/cwa-nuxt-module/commit/ec48b72b804caaf1b919818567a7fa05e5a38dcd) [1aaafb2b](https://github.com/components-web-app/cwa-nuxt-module/commit/1aaafb2b716fc682594d3e5aa5b862a00c10f5d5) ([#487](https://github.com/components-web-app/cwa-nuxt-module/issues/487))
 - Extensions: a Nuxt module can register with CWA through the `cwa:extend` hook, adding prefixed components, layouts and CWA page templates an app can override by name, admin pages under `/_cwa` with an optional role and a menu entry, and paths kept out of the page cache. Two extensions that clash fail the build. [2d8267ae](https://github.com/components-web-app/cwa-nuxt-module/commit/2d8267ae1f79b0e7b50ec1d851c1399b00f40087) [139e221f](https://github.com/components-web-app/cwa-nuxt-module/commit/139e221f10f20117f0cc7d37d1d5d7700e4b0736) ([#487](https://github.com/components-web-app/cwa-nuxt-module/issues/487))
 - A route rule of `cwa: { pageCache: false }` keeps a page out of the shared page cache. [2d8267ae](https://github.com/components-web-app/cwa-nuxt-module/commit/2d8267ae1f79b0e7b50ec1d851c1399b00f40087) ([#487](https://github.com/components-web-app/cwa-nuxt-module/issues/487))
 
