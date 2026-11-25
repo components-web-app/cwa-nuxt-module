@@ -138,6 +138,20 @@ describe('addExtensionAdminPages', () => {
     expect(pages[1]!.children![1]).toEqual({ path: 'shop/reports', name: '_cwa-shop-reports', file: '/ext/shop/admin/reports.vue', meta: { cwaAdminRole: 'ROLE_SHOP_ACCOUNTS' } })
   })
 
+  test('an item page becomes a keyed :iri child of its list, as the built-in lists\' dialogs are, so a create pushing from add to the new IRI keeps the dialog mounted, and it takes the list\'s role', () => {
+    const pages = cwaPages()
+
+    addExtensionAdminPages(pages, [{ ...shop, adminPages: [{ path: 'shop/orders', file: '/ext/shop/admin/orders.vue', item: '/ext/shop/admin/order.vue', role: 'ROLE_SHOP' }] }])
+
+    expect(pages[1]!.children![1]).toEqual({
+      path: 'shop/orders',
+      name: '_cwa-shop-orders',
+      file: '/ext/shop/admin/orders.vue',
+      meta: { cwaAdminRole: 'ROLE_SHOP' },
+      children: [{ path: ':iri', name: '_cwa-shop-orders-iri', file: '/ext/shop/admin/order.vue', meta: { cwaAdminRole: 'ROLE_SHOP', key: '_cwa-shop-orders-iri' } }],
+    })
+  })
+
   test('throws when the layer\'s /_cwa page is missing, since an extension page outside it would be unguarded', () => {
     expect(() => addExtensionAdminPages([{ path: '/', file: '/app/pages/index.vue' }], [{ ...shop, adminPages: [{ path: 'orders', file: '/x.vue' }] }]))
       .toThrow('@acme/shop\'s admin pages need the /_cwa page from @cwa/nuxt/layer')
