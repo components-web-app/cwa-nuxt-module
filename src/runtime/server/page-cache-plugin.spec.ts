@@ -33,7 +33,7 @@ async function captureBeforeResponse() {
 
 const createEvent = (statusCode: number, cwaPageCache?: unknown) => ({
   node: { res: { statusCode } },
-  context: cwaPageCache === undefined ? {} : { cwaPageCache },
+  context: (cwaPageCache === undefined ? {} : { cwaPageCache }) as Record<string, unknown>,
 })
 
 describe('cwa page cache nitro plugin', () => {
@@ -52,6 +52,17 @@ describe('cwa page cache nitro plugin', () => {
 
     expect(mockSetResponseHeader).toHaveBeenCalledWith(event, 'Surrogate-Key', '/_api/_/routes//, /_api/component/titles/abc')
     expect(mockSetResponseHeader).toHaveBeenCalledWith(event, 'Cache-Control', 'public, max-age=0, s-maxage=300')
+  })
+
+  test('sends private, no-store when the site config could not be fetched, so a render with the fallback site name is never stored', async () => {
+    const beforeResponse = await captureBeforeResponse()
+    const event = createEvent(200, { surrogateKey: 'cwa-html', cacheControl: 'public, max-age=0, s-maxage=300' })
+    event.context.cwaSiteConfigUnavailable = true
+
+    beforeResponse(event)
+
+    expect(mockSetResponseHeader).toHaveBeenCalledWith(event, 'Cache-Control', 'private, no-store')
+    expect(mockSetResponseHeader).not.toHaveBeenCalledWith(event, 'Surrogate-Key', expect.anything())
   })
 
   test('sends private, no-store and no Surrogate-Key when the render resolved to a redirect, so Souin never coalesces concurrent visitors onto one response', async () => {

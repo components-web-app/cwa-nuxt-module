@@ -25,6 +25,8 @@ export const useFetcher = () => {
   }
 }
 
+export const fallbackSiteConfig = () => useCwaSiteConfig().mergeConfig(options.siteConfig)
+
 export const resolveConfigEventHandler = async (e?: { context: Record<string, any> }) => {
   if (e?.context.cwaSiteConfig) {
     return e.context.cwaSiteConfig

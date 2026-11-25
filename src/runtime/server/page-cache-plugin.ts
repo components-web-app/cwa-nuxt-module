@@ -15,7 +15,7 @@ export default defineNitroPlugin((nitroApp) => {
       return
     }
 
-    if (decision.unstorable) {
+    if (decision.unstorable || event.context.cwaSiteConfigUnavailable) {
       setResponseHeader(event, 'Cache-Control', 'private, no-store')
       return
     }

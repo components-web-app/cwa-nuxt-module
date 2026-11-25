@@ -10,6 +10,7 @@ const mockJwtDecode = vi.fn()
 const mockUpdateSiteConfig = vi.fn()
 const mockResolveConfigEventHandler = vi.fn()
 const mockResolvedConfigToSiteConfig = vi.fn(c => c)
+const mockFallbackSiteConfig = vi.fn(() => ({ siteName: 'Silverback Publishing', maintenanceModeEnabled: true }))
 
 vi.mock('h3', () => ({
   defineEventHandler: (fn: any) => fn,
@@ -38,6 +39,7 @@ vi.mock('#site-config/server/composables', () => ({
 
 vi.mock('#cwa/server/useFetcher', () => ({
   resolveConfigEventHandler: (...args: any[]) => mockResolveConfigEventHandler(...args),
+  fallbackSiteConfig: () => mockFallbackSiteConfig(),
 }))
 
 vi.mock('#cwa/server/is-admin', () => ({
@@ -93,12 +95,23 @@ describe('server-middleware', () => {
     expect(mockResolveConfigEventHandler).toHaveBeenCalled()
   })
 
-  test('does nothing when no resolved config', async () => {
+  test('when the API site config cannot be fetched, the site config falls back to the app\'s, so the title never shows %siteName, maintenance mode is not enforced, and the page is marked unstorable', async () => {
     mockResolveConfigEventHandler.mockResolvedValue(undefined)
     const handler = await importHandler()
+    const e = createEvent()
 
-    await expect(handler(createEvent())).resolves.toBeUndefined()
-    expect(mockUpdateSiteConfig).not.toHaveBeenCalled()
+    await expect(handler(e)).resolves.toBeUndefined()
+    expect(mockUpdateSiteConfig).toHaveBeenCalledWith(e, { siteName: 'Silverback Publishing', maintenanceModeEnabled: true })
+    expect(e.context.cwaSiteConfigUnavailable).toBe(true)
+  })
+
+  test('a fetched site config leaves the page storable', async () => {
+    mockResolveConfigEventHandler.mockResolvedValue({ maintenanceModeEnabled: false })
+    const handler = await importHandler()
+    const e = createEvent()
+
+    await handler(e)
+    expect(e.context.cwaSiteConfigUnavailable).toBeUndefined()
   })
 
   test('updates site config and returns when maintenance disabled', async () => {
