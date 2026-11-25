@@ -1,7 +1,6 @@
 import type { CookieRef, NuxtApp } from 'nuxt/app'
 import type { RouteLocationNormalizedLoaded } from 'vue-router'
 import { FetchError } from 'ofetch'
-import { consola as logger } from 'consola'
 import { computed, ref } from 'vue'
 import type { ComputedRef, Ref } from 'vue'
 import type { AuthStore, CwaAuthStoreInterface } from '../storage/stores/auth/auth-store'
@@ -288,7 +287,7 @@ export default class Auth {
   }
 
   private announce(...args: ['cwa:auth:signed-in', { user: CwaUser }] | ['cwa:auth:signed-out']) {
-    (this.nuxtApp.callHook as (...hook: unknown[]) => Promise<unknown>)(...args).catch(error => logger.error(error))
+    (this.nuxtApp.callHook as (...hook: unknown[]) => Promise<unknown>)(...args).catch(error => console.error(error))
   }
 
   private notifySessionEnded() {

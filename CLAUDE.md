@@ -486,6 +486,7 @@ Replay is not trusted. On reconnect (`connected` going `false` → `true`; `unde
 - **`pageCache: { '<path>': false }` becomes the route rule `cwa: { pageCache: false }`**, which `server/page-cache-plugin.ts` reads with `getRouteRules` and answers `private, no-store`; a rule the app already set for the same path wins; for different paths Nitro merges every matching rule and the most specific wins. `/x/**` also matches the bare `/x`. Only `false` exists until something needs more.
 - Trap: a helper shared by the middleware and lazy admin code became its own 96 B chunk named in the entry's `__vite__mapDeps` (~150 B on visitors); keep such checks on `Auth`.
 - The fixture extension (`test/fixtures/cwa-extension`) is in the playground and in `test:fresh-install`; `extension-fixture.mjs` and `page-cache-error-headers.mjs` check its build output and its route rule.
+- **Auth events** (`cwa:auth:signed-in` with `{ user }`, `cwa:auth:signed-out`) are Nuxt runtime hooks, typed in `types/cwa.d.ts`, called from `Auth` on the app it captured: signed in only after `signIn`'s user loads, signed out only when a signed-in session ends in the browser (an expiry found during SSR loads the page signed out). A handler's throw is logged with `console.error`, never passed to sign-in: importing `consola` into `Auth` put it in the entry (~340 B gzip).
 
 ## Composables
 

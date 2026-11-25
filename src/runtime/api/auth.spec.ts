@@ -2,7 +2,6 @@
 
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import { FetchError } from 'ofetch'
-import { consola } from 'consola'
 import { CwaUserRoles } from '../storage/stores/auth/state'
 import * as processComposables from '../composables/process'
 import Auth, { CwaAuthStatus } from './auth'
@@ -1212,7 +1211,7 @@ describe('sign-in and sign-out events for apps and extensions (#487)', () => {
   test('a handler that throws is logged and never fails the sign-in', async () => {
     const app = appWithHooks()
     app.callHook = vi.fn().mockRejectedValue(new Error('shop broke'))
-    const error = vi.spyOn(consola, 'error').mockImplementation(() => undefined)
+    const error = vi.spyOn(console, 'error').mockImplementation(() => undefined)
     const { auth } = createAuthWithCapturedApp(app, appWithHooks())
     const user = { '@id': '/users/1' }
     vi.spyOn(auth as any, 'loginRequest').mockResolvedValue(undefined)
