@@ -1185,6 +1185,17 @@ describe('sign-in and sign-out events for apps and extensions (#487)', () => {
     expect(app.callHook).not.toHaveBeenCalled()
   })
 
+  test('a sign-in that loads no user calls no event', async () => {
+    const app = appWithHooks()
+    const { auth } = createAuthWithCapturedApp(app, appWithHooks())
+    vi.spyOn(auth as any, 'loginRequest').mockResolvedValue(undefined)
+    vi.spyOn(auth, 'refreshUser').mockResolvedValue(undefined)
+
+    await auth.signIn({ username: 'a', password: 'b' })
+
+    expect(app.callHook).not.toHaveBeenCalled()
+  })
+
   test('a session ending in the browser calls cwa:auth:signed-out once, and only for a session that was signed in', async () => {
     vi.spyOn(processComposables, 'useProcess').mockReturnValue({ isClient: true, isServer: false })
     const app = appWithHooks()

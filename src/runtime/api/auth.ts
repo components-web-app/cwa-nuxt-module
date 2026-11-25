@@ -79,7 +79,7 @@ export default class Auth {
     }
     this.mercure.init(true)
     const user = await this.refreshUser()
-    if (!(user instanceof FetchError)) {
+    if (user && !(user instanceof FetchError)) {
       this.announce('cwa:auth:signed-in', { user })
     }
     return user
