@@ -25,7 +25,7 @@ const descriptors: CwaFieldDescriptor[] = [
   { name: 'key', label: 'Integration key', type: 'string', required: true, secret: true },
 ]
 
-async function mountForm() {
+async function mountForm(props: Record<string, unknown> = {}) {
   const stored = { '@id': iri, '@type': 'PaymentMethod', 'gatewayConfig': { vendor: 'shop', sandbox: true, retries: 2, notes: '', key: { set: true } } }
   const store = reactive<Record<string, any>>({ [iri]: { data: stored, apiState: { status: 'SUCCESS' } } })
   const updateResource = vi.fn()
@@ -39,7 +39,7 @@ async function mountForm() {
     setup() {
       const { form, saveResource } = useItemPage({ createEndpoint: '/payment_methods', emit: vi.fn() as any, defaultResource: {}, endpoint: ref(iri) })
       return () => h(FormGroup, { form, onSave: () => saveResource() }, {
-        default: () => h(DescriptorFields, { fields: descriptors, path: 'gatewayConfig' }),
+        default: () => h(DescriptorFields, { fields: descriptors, path: 'gatewayConfig', ...props }),
       })
     },
   })
@@ -78,6 +78,7 @@ describe('CwaUiDescriptorFields (#494)', () => {
 
     expect(field('gatewayConfig.vendor')!.textContent).not.toContain('Optional')
     expect(field('gatewayConfig.notes')!.textContent).toContain('Optional')
+    expect(field('gatewayConfig.retries')!.textContent).toContain('Optional')
   })
 
   test('each field typed into counts as one change on Save', async () => {
@@ -104,6 +105,30 @@ describe('CwaUiDescriptorFields (#494)', () => {
     expect(updateResource.mock.calls[0]![0].data).toEqual({ gatewayConfig: { vendor: 'nope' } })
     expect(field('gatewayConfig.vendor')!.querySelector('input')!.getAttribute('aria-invalid')).toBe('true')
     expect(field('gatewayConfig.vendor')!.querySelector('[data-testid="field-error"]')!.textContent).toContain('Unknown vendor.')
+  })
+
+  test('an optional whole number emptied is saved as null', async () => {
+    const { updateResource } = await mountForm()
+    const retries = field('gatewayConfig.retries')!.querySelector<HTMLInputElement>('input')!
+
+    await type('gatewayConfig.retries', '')
+    retries.dispatchEvent(new Event('blur'))
+    await flushPromises()
+    saveButton().click()
+    await flushPromises()
+
+    expect(updateResource.mock.calls[0]![0].data).toEqual({ gatewayConfig: { retries: null } })
+  })
+
+  test('disabled disables every field it renders', async () => {
+    await mountForm({ disabled: true })
+
+    for (const name of ['vendor', 'retries']) {
+      expect(field(`gatewayConfig.${name}`)!.querySelector<HTMLInputElement>('input')!.disabled).toBe(true)
+    }
+    expect(field('gatewayConfig.notes')!.querySelector('textarea')!.disabled).toBe(true)
+    expect(field('gatewayConfig.sandbox')!.querySelector<HTMLButtonElement>('[role="switch"]')!.disabled).toBe(true)
+    expect(field('gatewayConfig.key')!.querySelector('[data-testid="secret-replace"]')!.getAttribute('aria-disabled')).toBe('true')
   })
 
   test('has no accessibility violations', async () => {

@@ -6,6 +6,7 @@ import { useFieldModel } from '../core/ui/field-context'
 import { fieldBox, fieldDisabled, fieldFill, placeholderLook } from '../core/ui/field-looks'
 import CwaUiBadge from './Badge.vue'
 import CwaUiButton from './Button.vue'
+import RevealButton from '../core/ui/RevealButton.vue'
 import type { ResourceModelField } from '#cwa/resources/model-editors'
 
 type SecretValue = string | { set: boolean } | null
@@ -53,6 +54,7 @@ function isSet(stored: unknown) {
 
 const original = ref<{ value: SecretValue | undefined }>()
 const replacing = ref(false)
+const revealed = ref(false)
 let written: { value: SecretValue | undefined } | undefined
 
 watch(() => value.value, (now) => {
@@ -63,6 +65,7 @@ watch(() => value.value, (now) => {
   written = undefined
   original.value = undefined
   replacing.value = false
+  revealed.value = false
 })
 
 function write(next: SecretValue | undefined) {
@@ -141,7 +144,7 @@ function onInput(event: Event) {
         <input
           :id="id"
           ref="input"
-          type="password"
+          :type="revealed ? 'text' : 'password'"
           autocomplete="new-password"
           :value="typeof value === 'string' ? value : ''"
           :placeholder="placeholder"
@@ -153,6 +156,13 @@ function onInput(event: Event) {
           :class="placeholderLook(inactive)"
           @input="onInput"
         >
+        <RevealButton
+          v-model="revealed"
+          data-testid="secret-reveal"
+          noun="value"
+          :controls="id"
+          :disabled="inactive"
+        />
       </div>
       <output
         v-else

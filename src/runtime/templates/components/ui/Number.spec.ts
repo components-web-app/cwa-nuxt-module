@@ -102,3 +102,25 @@ describe('CwaUiNumber (#459)', () => {
     expect([down, up].map(button => drawsFocusRing(button.classes()))).toEqual([true, true])
   })
 })
+
+describe('CwaUiNumber when optional (#494)', () => {
+  test('an optional number emptied and left saves null', async () => {
+    const { wrapper, input } = mountNumber({ optional: true })
+
+    await input.setValue('')
+    await input.trigger('blur')
+
+    expect(wrapper.emitted('update:modelValue')).toEqual([[null]])
+    expect((input.element as HTMLInputElement).value).toBe('')
+  })
+
+  test('a number that is not optional, emptied and left, goes back to its value and saves nothing', async () => {
+    const { wrapper, input } = mountNumber()
+
+    await input.setValue('')
+    await input.trigger('blur')
+
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+    expect((input.element as HTMLInputElement).value).toBe('3')
+  })
+})

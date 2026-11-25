@@ -78,6 +78,24 @@ describe('CwaUiSecretInput (#494)', () => {
     expect(document.activeElement).toBe(input())
   })
 
+  test('Replace offers Show value, which shows what was typed and hides it again', async () => {
+    await mountForm({ set: true })
+    await click('secret-replace')
+    await type('s3cret')
+
+    const reveal = () => q<HTMLButtonElement>('[data-testid="secret-reveal"]')!
+    expect(reveal().getAttribute('aria-label')).toBe('Show value')
+    expect(reveal().getAttribute('aria-pressed')).toBe('false')
+
+    await click('secret-reveal')
+    expect(input()!.type).toBe('text')
+    expect(reveal().getAttribute('aria-label')).toBe('Hide value')
+    expect(reveal().getAttribute('aria-pressed')).toBe('true')
+
+    await click('secret-reveal')
+    expect(input()!.type).toBe('password')
+  })
+
   test('typing makes it unsaved, and Keep current puts the stored value back and sends nothing', async () => {
     const form = await mountForm({ set: true })
     await click('secret-replace')
