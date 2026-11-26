@@ -91,7 +91,7 @@
     <Pagination
       v-if="items.length"
       v-model:page="pageModel"
-      :total="hydraData?.totalItems || 0"
+      :total="hydraData?.pagedItems || 0"
       :per-page="perPageModel || PER_PAGE"
       :label="`${capitalise(noun)} pages`"
       class="cwa:mt-6"
@@ -147,7 +147,7 @@ watch(perPageModel, (newValue) => {
 })
 
 const props = withDefaults(defineProps<{
-  fetchUrl: string
+  fetchUrl: string | string[]
   searchFields?: string[]
   noun?: string
   columns?: ListColumn[]
@@ -163,7 +163,7 @@ const emit = defineEmits<{
 
 const loading = ref(true)
 const items = ref<any[]>([])
-const hydraData = ref<{ totalItems: number, view?: unknown }>()
+const hydraData = ref<{ totalItems: number, pagedItems: number, view?: unknown }>()
 const currentRequestId = ref<number>(0)
 const loadError = ref<string>()
 const loadedAt = ref<number>()
@@ -229,6 +229,35 @@ function buildRequestQuery(): LocationQuery {
   return query
 }
 
+function compareBy(query: LocationQuery) {
+  const orders = Object.entries(query).flatMap(([key, direction]) => {
+    const property = /^order\[(.+)\]$/.exec(key)?.[1]
+    return property ? [{ property, sign: direction === 'desc' ? -1 : 1 }] : []
+  })
+  return (a: CwaResource, b: CwaResource) => {
+    for (const { property, sign } of orders) {
+      const compared = String(a[property] ?? '').localeCompare(String(b[property] ?? ''))
+      if (compared) {
+        return compared * sign
+      }
+    }
+    return 0
+  }
+}
+
+async function fetchPages(query: LocationQuery): Promise<Record<string, any>> {
+  const urls = Array.isArray(props.fetchUrl) ? props.fetchUrl : [props.fetchUrl]
+  const pages = await Promise.all(urls.map(url => $cwa.fetch({ path: mergeQueryIntoPath(url, query), noQuery: true }).response.then(({ _data }) => _data)))
+  if (pages.length === 1) {
+    return { ...pages[0], pagedItems: pages[0]?.['totalItems'] }
+  }
+  return {
+    member: pages.flatMap(page => page?.['member'] ?? []).sort(compareBy(query)),
+    totalItems: pages.reduce((total, page) => total + (page?.['totalItems'] || 0), 0),
+    pagedItems: Math.max(0, ...pages.map(page => page?.['totalItems'] || 0)),
+  }
+}
+
 async function reloadItems() {
   const thisRequestId = currentRequestId.value + 1
   currentRequestId.value = thisRequestId
@@ -236,18 +265,18 @@ async function reloadItems() {
   items.value.length || (announcement.value = `Loading ${props.noun}`)
 
   try {
-    const { response } = $cwa.fetch({ path: mergeQueryIntoPath(props.fetchUrl, buildRequestQuery()), noQuery: true })
-    const { _data: data } = await response
+    const data = await fetchPages(buildRequestQuery())
     if (thisRequestId !== currentRequestId.value) {
       return
     }
-    const lastPage = Math.ceil((data?.['totalItems'] || 0) / (perPageModel.value || PER_PAGE))
+    const lastPage = Math.ceil((data?.pagedItems || 0) / (perPageModel.value || PER_PAGE))
     if (!data?.['member']?.length && lastPage > 0 && lastPage < (pageModel.value ?? 1)) {
       pageModel.value = lastPage
       return
     }
     hydraData.value = {
       totalItems: data?.['totalItems'] || 0,
+      pagedItems: data?.pagedItems || 0,
       view: data?.['view'],
     }
     items.value = data?.['member'] ?? []

@@ -1,3 +1,3 @@
 <template>
-  <h1>Fixture Reports</h1>
+  <p>Fixture reports</p>
 </template>

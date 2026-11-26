@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import type { NuxtPage } from '@nuxt/schema'
-import { addExtensionAdminPages, adminShellRoles, checkExtensions, extensionAdminRoles, extensionAreas, extensionPageRoles, extensionRouteRules, extensionSegment } from './extensions'
+import { addExtensionAdminPages, adminShellRoles, checkExtensions, extensionAdminRoles, extensionAreas, extensionPageDataTemplate, extensionPageRoles, extensionRouteRules, extensionSegment } from './extensions'
 import type { CwaExtension, ExtensionNames } from './extensions'
 
 const noNames: ExtensionNames = { components: [], layouts: [], pages: [] }
@@ -126,6 +126,44 @@ describe('checkExtensions', () => {
         .toThrow(`@acme/shop's admin page /_cwa/shop/orders declares the role "${role}". Use a ROLE_ name other than ROLE_USER, or leave it out for ROLE_ADMIN.`)
     })
   })
+
+  describe('page-data tabs and lists', () => {
+    const formats = { key: 'formats', label: 'Formats and prices', file: '/ext/shop/admin/formats.vue', forTypesWithProperty: 'variants' }
+    const products = { path: 'products', label: 'Products', forTypesWithProperty: 'variants' }
+
+    test('accepts a page-data tab and a page-data list', () => {
+      expect(() => check([{ ...shop, pageDataTabs: [formats], pageDataLists: [products] }])).not.toThrow()
+    })
+
+    test.each([['details', 'Details'], ['routes', 'Routes'], ['info', 'Info']])('refuses a page-data tab with the key of the built-in %s tab', (key, label) => {
+      expect(() => check([{ ...shop, pageDataTabs: [{ ...formats, key }] }]))
+        .toThrow(`@acme/shop's page-data tab "${key}" has the key of the built-in ${label} tab`)
+    })
+
+    test('refuses a page-data tab key another extension already uses, naming both, and one extension using a key twice', () => {
+      expect(() => check([{ ...shop, pageDataTabs: [formats] }, { name: '@acme/store', prefix: 'Store', label: 'Store', pageDataTabs: [formats] }]))
+        .toThrow('@acme/shop and @acme/store both have the page-data tab "formats"')
+      expect(() => check([{ ...shop, pageDataTabs: [formats, formats] }]))
+        .toThrow('@acme/shop has the page-data tab "formats" twice')
+    })
+
+    test.each([undefined, '', ' '])('refuses a page-data tab or list whose forTypesWithProperty is %j, as it would show for no type or every type', (forTypesWithProperty) => {
+      expect(() => check([{ ...shop, pageDataTabs: [{ ...formats, forTypesWithProperty } as never] }]))
+        .toThrow('@acme/shop\'s page-data tab "formats" needs forTypesWithProperty, the API property a page data type must have to show it')
+      expect(() => check([{ ...shop, pageDataLists: [{ ...products, forTypesWithProperty } as never] }]))
+        .toThrow('@acme/shop\'s page-data list /_cwa/shop/products needs forTypesWithProperty, the API property a page data type must have to be listed')
+    })
+
+    test('refuses a page-data list whose path is one of the extension\'s own admin pages', () => {
+      expect(() => check([{ ...shop, adminPages: [{ path: 'products', label: 'Catalogue', file: '/p.vue' }], pageDataLists: [{ ...products, path: '/products/' }] }]))
+        .toThrow('@acme/shop\'s page-data list /_cwa/shop/products has the path of its own admin page /_cwa/shop/products')
+    })
+
+    test('refuses a page-data tab with a role that is not an admin role', () => {
+      expect(() => check([{ ...shop, pageDataTabs: [{ ...formats, role: 'ROLE_USER' }] }]))
+        .toThrow('@acme/shop\'s page-data tab "formats" declares the role "ROLE_USER". Use a ROLE_ name other than ROLE_USER, or leave it out for ROLE_ADMIN.')
+    })
+  })
 })
 
 describe('extensionSegment', () => {
@@ -133,6 +171,8 @@ describe('extensionSegment', () => {
     expect(extensionSegment(prefix)).toBe(segment)
   })
 })
+
+const listFiles = { list: '/cwa/extension-page-data-list.vue', item: '/cwa/extension-page-data-item.vue' }
 
 describe('addExtensionAdminPages', () => {
   const ecommerce: CwaExtension = { name: '@acme/ecommerce', prefix: 'Ecommerce', label: 'E-commerce' }
@@ -153,7 +193,7 @@ describe('addExtensionAdminPages', () => {
     addExtensionAdminPages(pages, [{ ...ecommerce, adminPages: [
       { path: '/orders/', label: 'Orders', file: '/ext/admin/orders.vue', item: '/ext/admin/order.vue' },
       { path: 'reports', label: 'Reports', file: '/ext/admin/reports.vue', role: 'ROLE_SHOP_ACCOUNTS' },
-    ] }], '/cwa/extension-area.vue')
+    ] }], '/cwa/extension-area.vue', listFiles)
 
     expect(pages[1]!.children![2]).toEqual({
       path: 'ecommerce',
@@ -173,10 +213,30 @@ describe('addExtensionAdminPages', () => {
     })
   })
 
+  test('makes each page-data list a tab of the area after its admin pages, with the module\'s list page and the page-data dialog as its keyed :iri child', () => {
+    const pages = cwaPages()
+
+    addExtensionAdminPages(pages, [{ ...ecommerce, adminPages: [{ path: 'orders', label: 'Orders', file: '/ext/admin/orders.vue' }], pageDataLists: [
+      { path: 'products', label: 'Products', forTypesWithProperty: 'variants', role: 'ROLE_SHOP_PRODUCTS' },
+    ] }], '/cwa/extension-area.vue', listFiles)
+
+    expect(pages[1]!.children![2]!.meta!.cwaAdminRole).toEqual(['ROLE_ADMIN', 'ROLE_SHOP_PRODUCTS'])
+    expect(pages[1]!.children![2]!.children).toEqual([
+      { path: 'orders', name: '_cwa-ecommerce-orders', file: '/ext/admin/orders.vue', meta: { cwaAdminRole: 'ROLE_ADMIN' } },
+      {
+        path: 'products',
+        name: '_cwa-ecommerce-products',
+        file: listFiles.list,
+        meta: { cwaAdminRole: 'ROLE_SHOP_PRODUCTS' },
+        children: [{ path: ':iri', name: '_cwa-ecommerce-products-iri', file: listFiles.item, meta: { cwaAdminRole: 'ROLE_SHOP_PRODUCTS', key: '_cwa-ecommerce-products-iri' } }],
+      },
+    ])
+  })
+
   test('opens the Extensions page to admins and to every role an extension page needs', () => {
     const pages = cwaPages()
 
-    addExtensionAdminPages(pages, [{ ...ecommerce, adminPages: [{ path: 'reports', label: 'Reports', file: '/r.vue', role: 'ROLE_SHOP_ACCOUNTS' }] }], '/area.vue')
+    addExtensionAdminPages(pages, [{ ...ecommerce, adminPages: [{ path: 'reports', label: 'Reports', file: '/r.vue', role: 'ROLE_SHOP_ACCOUNTS' }] }], '/area.vue', listFiles)
 
     expect(pages[1]!.children![1]!.meta).toEqual({ cwaAdminRole: ['ROLE_ADMIN', 'ROLE_SHOP_ACCOUNTS'] })
   })
@@ -186,7 +246,7 @@ describe('addExtensionAdminPages', () => {
     pages[1]!.children!.push({ path: 'account', name: '_cwa-account', file: '/layer/pages/_cwa/index/account.vue' })
     const extensions = [{ ...ecommerce, adminPages: [{ path: 'reports', label: 'Reports', file: '/r.vue', role: 'ROLE_SHOP_ACCOUNTS' }] }]
 
-    addExtensionAdminPages(pages, extensions, '/area.vue')
+    addExtensionAdminPages(pages, extensions, '/area.vue', listFiles)
 
     expect(adminShellRoles(extensions)).toEqual(['ROLE_CMS_ADMIN', 'ROLE_USER_ADMIN', 'ROLE_SHOP_ACCOUNTS'])
     expect(pages[1]!.children!.find(page => page.name === '_cwa-account')!.meta).toEqual({ cwaAdminRole: adminShellRoles(extensions) })
@@ -196,20 +256,20 @@ describe('addExtensionAdminPages', () => {
     const pages = cwaPages()
     pages[1]!.children!.push({ path: 'account', name: '_cwa-account', file: '/layer/pages/_cwa/index/account.vue' })
 
-    addExtensionAdminPages(pages, [shop], '/area.vue')
+    addExtensionAdminPages(pages, [shop], '/area.vue', listFiles)
 
     expect(pages[1]!.children!.find(page => page.name === '_cwa-account')!.meta).toEqual({ cwaAdminRole: ['ROLE_CMS_ADMIN', 'ROLE_USER_ADMIN'] })
   })
 
   test('throws when the layer\'s /_cwa page is missing, since an extension page outside it would be unguarded', () => {
-    expect(() => addExtensionAdminPages([{ path: '/', file: '/app/pages/index.vue' }], [{ ...shop, adminPages: [{ path: 'orders', label: 'Orders', file: '/x.vue' }] }], '/area.vue'))
+    expect(() => addExtensionAdminPages([{ path: '/', file: '/app/pages/index.vue' }], [{ ...shop, adminPages: [{ path: 'orders', label: 'Orders', file: '/x.vue' }] }], '/area.vue', listFiles))
       .toThrow('@acme/shop\'s admin pages need the /_cwa page from @cwa/nuxt/layer')
   })
 
   test('adds no area when no extension has admin pages', () => {
     const pages = cwaPages()
 
-    addExtensionAdminPages(pages, [shop], '/area.vue')
+    addExtensionAdminPages(pages, [shop], '/area.vue', listFiles)
 
     expect(pages[1]!.children!.map(page => page.name)).toEqual(['_cwa-users', '_cwa-index-extensions'])
   })
@@ -233,6 +293,21 @@ describe('extensionAreas', () => {
   })
 })
 
+describe('extensionPageDataTemplate', () => {
+  test('lists every page-data tab with its role and property, loading its component on demand, and every page-data list by its route name', () => {
+    const template = extensionPageDataTemplate([
+      { ...shop, pageDataTabs: [{ key: 'formats', label: 'Formats and prices', file: '/ext/formats.vue', forTypesWithProperty: 'variants' }], pageDataLists: [
+        { path: '/products/', label: 'Products', forTypesWithProperty: 'variants', columns: [{ label: 'From', file: '/ext/from.vue' }] },
+      ] },
+      { name: '@acme/store', prefix: 'Store', label: 'Store', pageDataTabs: [{ key: 'stock', label: 'Stock', file: '/ext/stock.vue', forTypesWithProperty: 'stock', role: 'ROLE_STOCK' }] },
+    ])
+
+    expect(template).toContain('{ key: "formats", label: "Formats and prices", role: "ROLE_ADMIN", property: "variants", component: defineAsyncComponent(() => import("/ext/formats.vue")) },')
+    expect(template).toContain('{ key: "stock", label: "Stock", role: "ROLE_STOCK", property: "stock", component: defineAsyncComponent(() => import("/ext/stock.vue")) },')
+    expect(template).toContain('"_cwa-shop-products": { label: "Products", property: "variants", columns: [{ label: "From", component: defineAsyncComponent(() => import("/ext/from.vue")) }] },')
+  })
+})
+
 describe('extensionPageRoles', () => {
   test('lists each role an extension page needs, once, the default included', () => {
     expect(extensionPageRoles([
@@ -251,10 +326,13 @@ describe('extensionAdminRoles (bundle #611)', () => {
         { path: 'invoices', label: 'Invoices', file: '/i.vue', role: 'ROLE_SHOP_ACCOUNTS' },
         { path: 'exports', label: 'Exports', file: '/e.vue', role: 'ROLE_SHOP_EXPORTS' },
         { path: 'settings', label: 'Shop settings', file: '/s.vue', role: 'ROLE_ADMIN' },
+      ], pageDataLists: [{ path: 'products', label: 'Products', forTypesWithProperty: 'variants', role: 'ROLE_SHOP_PRODUCTS' }], pageDataTabs: [
+        { key: 'formats', label: 'Formats and prices', file: '/f.vue', forTypesWithProperty: 'variants', role: 'ROLE_SHOP_PRODUCTS' },
       ] },
     ])).toEqual([
       { role: 'ROLE_SHOP_ACCOUNTS', label: 'Accounts, Invoices' },
       { role: 'ROLE_SHOP_EXPORTS', label: 'Exports' },
+      { role: 'ROLE_SHOP_PRODUCTS', label: 'Products, Formats and prices' },
     ])
   })
 })
