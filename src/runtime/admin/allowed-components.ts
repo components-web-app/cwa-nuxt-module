@@ -1,4 +1,5 @@
 import { consola as logger } from 'consola'
+import { resourcesConfig } from '#build/cwa-config'
 import { ResourceTypeFromIri } from '../resources/resource-utils'
 import type { ApiDocumentationComponentMetadataCollection } from '../api/api-documentation'
 
@@ -18,6 +19,25 @@ export interface ResolvedAllowedComponents {
 }
 
 const warnedIriEntries = new Set<string>()
+const warnedFullUiNames = new Set<string>()
+
+function resolveUi(component: string, ui: string): string | null | undefined {
+  const primary = `CwaComponent${component}`
+  const prefix = `${primary}Ui`
+  const variants = (resourcesConfig[component]?.ui ?? []) as string[]
+  if (ui === 'default') {
+    return null
+  }
+  if (ui === primary || variants.includes(ui)) {
+    if (!warnedFullUiNames.has(ui)) {
+      warnedFullUiNames.add(ui)
+      const short = ui === primary ? 'default' : ui.startsWith(prefix) ? ui.slice(prefix.length) : ui
+      logger.warn(`[CWA] The allowedComponents UI '${ui}' is a full UI name, the old syntax. Use the short name '${short}', from CwaComponentUis.${component}. Full UI names will stop working in the next alpha, without further warning.`)
+    }
+    return ui === primary ? null : ui
+  }
+  return variants.find(variant => variant === `${prefix}${ui}`)
+}
 
 function isRule(entry: unknown): entry is AllowedComponentRule {
   return !!entry && typeof entry === 'object' && typeof (entry as AllowedComponentRule).component === 'string'
@@ -69,7 +89,13 @@ export async function resolveAllowedComponents(
   for (const rule of allowedComponents.filter(isRule)) {
     const restriction: AllowedComponentUi[string] = {}
     if (rule.ui?.length) {
-      restriction.ui = rule.ui.map(ui => ui === `CwaComponent${rule.component}` ? null : ui)
+      const uis = rule.ui.map(ui => resolveUi(rule.component, ui))
+      const unknown = rule.ui.filter((_ui, index) => uis[index] === undefined)
+      if (unknown.length) {
+        logger.warn(`[CWA] allowedComponents was not synced: ${rule.component} has no UI named ${unknown.join(', ')}. Use a name from CwaComponentUis.${rule.component}.`)
+        return
+      }
+      restriction.ui = uis as (string | null)[]
     }
     if (rule.styles?.length) {
       restriction.styles = rule.styles.map(style => `style:${style}`)

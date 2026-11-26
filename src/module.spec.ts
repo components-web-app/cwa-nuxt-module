@@ -623,8 +623,6 @@ export const currentModulePackageInfo:{ version: string, name: string } = {
   admin?: boolean
   disabled?: boolean
   layout?: string
-  /** @deprecated name the layout by its reference with layout */
-  staticLayout?: GlobalComponentNames
   fetch?: {
     iri: string
     manifestPath?: string
@@ -695,7 +693,7 @@ declare module '#app' {
         return { mockNuxt, template }
       }
 
-      test('generates a constant and a union type from each <Name>/<Name>.vue only, with each one\'s full UI names and style keys, so an allowedComponents rule is type-checked (#488)', async () => {
+      test('generates constants of each <Name>/<Name>.vue\'s short UI names, default first for the component itself, and of the primary\'s and every UI\'s style keys, so an allowedComponents rule is written and type-checked with them', async () => {
         vi.mocked(scanCwaConfigDeclarations).mockReturnValueOnce({
           components: { HtmlContent: { styles: { small: { name: 'Small', classes: 's' }, large: { name: 'Large', classes: 'l' } } } },
           ui: { CwaComponentHtmlContentUiAltUi: { styles: { wide: { name: 'Wide', classes: 'w' }, large: { name: 'Large', classes: 'l' } } } },
@@ -711,23 +709,67 @@ declare module '#app' {
   "WatchPastConference": "WatchPastConference"
 } as const
 export type CwaComponentName = typeof CwaComponentNames[keyof typeof CwaComponentNames]
-export interface CwaComponentUis {
-  "HtmlContent": "CwaComponentHtmlContent" | "CwaComponentHtmlContentUiAltUi"
-  "WatchPastConference": "CwaComponentWatchPastConference"
-}
-export interface CwaComponentStyles {
-  "HtmlContent": "small" | "large" | "wide"
-  "WatchPastConference": never
-}
+export const CwaComponentUis = {
+  "HtmlContent": {
+    "default": "default",
+    "AltUi": "AltUi"
+  },
+  "WatchPastConference": {
+    "default": "default"
+  }
+} as const
+export type CwaComponentUis = { [Name in CwaComponentName]: typeof CwaComponentUis[Name][keyof typeof CwaComponentUis[Name]] }
+export const CwaComponentStyles = {
+  "HtmlContent": {
+    "small": "small",
+    "large": "large",
+    "wide": "wide"
+  },
+  "WatchPastConference": {}
+} as const
+export type CwaComponentStyles = { [Name in CwaComponentName]: typeof CwaComponentStyles[Name][keyof typeof CwaComponentStyles[Name]] }
 `)
       })
 
-      test('auto-imports the UI and style types with the names', async () => {
+      test('a component with no UIs has only default', async () => {
+        const { template } = await prepare()
+
+        const contents: string = await template.getContents({ app: { components: [components[0], components[3]] } })
+        expect(contents).toContain(`export const CwaComponentUis = {
+  "HtmlContent": {
+    "default": "default"
+  },
+  "WatchPastConference": {
+    "default": "default"
+  }
+} as const`)
+      })
+
+      test('a ui/Default.vue is left out of the UIs and the constants and warned about once, since default names the component itself', async () => {
+        const logger = { info: vi.fn(), warn: vi.fn(), debug: vi.fn(), error: vi.fn(), success: vi.fn() }
+        vi.spyOn(nuxtKit, 'useLogger').mockReturnValue(logger as any)
+        const { template } = await prepare()
+        const withDefault = [...components, { filePath: 'cwa/components/HtmlContent/ui/Default.vue', pascalName: 'CwaComponentHtmlContentUiDefault', global: true }]
+
+        const contents: string = await template.getContents({ app: { components: withDefault } })
+        await template.getContents({ app: { components: withDefault } })
+
+        expect(contents).toContain(`  "HtmlContent": {
+    "default": "default",
+    "AltUi": "AltUi"
+  },`)
+        expect(contents).not.toContain('Default"')
+        expect(logger.warn.mock.calls.filter(([message]) => String(message).includes('ui/Default.vue'))).toEqual([[
+          '@cwa/nuxt: cwa/components/HtmlContent/ui/Default.vue is not one of HtmlContent\'s UIs, because default is the name of the component itself (HtmlContent/HtmlContent.vue) in allowedComponents. Rename the file.',
+        ]])
+      })
+
+      test('auto-imports the UI and style constants with the names', async () => {
         await prepare()
 
         expect(nuxtKit.addImports as Mock).toHaveBeenCalledWith(expect.arrayContaining([
-          { name: 'CwaComponentUis', from: '#build/cwa-component-names', type: true },
-          { name: 'CwaComponentStyles', from: '#build/cwa-component-names', type: true },
+          { name: 'CwaComponentUis', from: '#build/cwa-component-names' },
+          { name: 'CwaComponentStyles', from: '#build/cwa-component-names' },
         ]))
       })
 
@@ -757,8 +799,8 @@ export interface CwaComponentStyles {
         expect(nuxtKit.addImports as Mock).toHaveBeenCalledWith([
           { name: 'CwaComponentNames', from: '#build/cwa-component-names' },
           { name: 'CwaComponentName', from: '#build/cwa-component-names', type: true },
-          { name: 'CwaComponentUis', from: '#build/cwa-component-names', type: true },
-          { name: 'CwaComponentStyles', from: '#build/cwa-component-names', type: true },
+          { name: 'CwaComponentUis', from: '#build/cwa-component-names' },
+          { name: 'CwaComponentStyles', from: '#build/cwa-component-names' },
         ])
       })
 

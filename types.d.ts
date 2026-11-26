@@ -1,11 +1,10 @@
 import type Cwa from '#cwa/cwa'
 import 'nuxt'
-import type { GlobalComponentNames } from '#cwa/types'
 
 interface CwaRouteMeta {
   admin?: boolean
   disabled?: boolean
-  staticLayout?: GlobalComponentNames
+  layout?: string
   fetch?: {
     iri: string
     manifestPath?: string

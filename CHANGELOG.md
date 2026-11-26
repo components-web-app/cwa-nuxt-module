@@ -15,6 +15,18 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 - `CwaUiDescriptorFields` renders a dialog or FormGroup's fields from descriptors (`{ name, label, type, required, secret }`, typed as `CwaFieldDescriptor`) under a path: `bool`, `int`, `text`, `string`, or a secret. [1055d152](https://github.com/components-web-app/cwa-nuxt-module/commit/1055d152466626581d49920a0a1d6040a18b975f) ([#494](https://github.com/components-web-app/cwa-nuxt-module/issues/494))
 - `CwaUiSecretInput` edits a write-only value read back as `{ set }`: it shows Set or Not set, never the value, sends one only once it is typed, and offers Replace and Remove (which sends `null`; not for a required secret). [5bdef217](https://github.com/components-web-app/cwa-nuxt-module/commit/5bdef2176ad916b6b7591ee07e7edb43955e2962) ([#494](https://github.com/components-web-app/cwa-nuxt-module/issues/494))
 
+### Changed
+
+- An `allowedComponents` rule's `ui` takes short UI names: `default` for the component itself and the file name for a UI (`{ component: 'Image', ui: ['default', 'Hero'] }`), from the new auto-imported `CwaComponentUis` constant, with `CwaComponentStyles` for style keys. It syncs the same values as before. A `ui/Default.vue` is warned about and left out of the UIs, since `default` names the component itself. [#509](https://github.com/components-web-app/cwa-nuxt-module/pull/509)
+
+### Deprecated
+
+- Full UI names in an `allowedComponents` rule's `ui` (`CwaComponentImageUiHero`): use the short name (`Hero`). They still sync and warn once per name, but no longer type-check, and stop working in the next alpha without further warning. [#509](https://github.com/components-web-app/cwa-nuxt-module/pull/509)
+
+### Removed
+
+- `cwa.staticLayout` is removed. Name the layout by its reference with `cwa.layout`. [#509](https://github.com/components-web-app/cwa-nuxt-module/pull/509)
+
 ### Fixed
 
 - A signed-in non-admin sent from a `/_cwa` page to a CWA page no longer gets a 500 in development ("defineOgImage() … client-only context"): the page's og image is defined on the server or after hydration. [ed94b138](https://github.com/components-web-app/cwa-nuxt-module/commit/ed94b138bc9a43987ac407cd3ed17417558cb8bb)

@@ -381,6 +381,11 @@ export default defineNuxtModule<CwaModuleOptions>({
       return component.pascalName.replace(/^CwaComponent/, '')
     }
 
+    function uiShortName(resourceType: string, ui: string) {
+      const prefix = `CwaComponent${resourceType}Ui`
+      return ui.startsWith(prefix) ? ui.slice(prefix.length) : ui
+    }
+
     const reportedConfigUncheckable = new Set<string>()
     function warnConfigOnce(key: string, message: string) {
       if (reportedConfigUncheckable.has(key)) {
@@ -462,6 +467,13 @@ export default defineNuxtModule<CwaModuleOptions>({
 
         const ui = allUserComponents
           .filter(({ filePath, global }) => global && path.dirname(path.dirname(filePath)) === primaryDir && isUiVariant(filePath))
+          .filter(({ filePath, pascalName }) => {
+            if (uiShortName(resourceType, pascalName).toLowerCase() !== 'default') {
+              return true
+            }
+            warnConfigOnce(`${filePath}\0default`, `${NAME}: ${filePath} is not one of ${resourceType}'s UIs, because default is the name of the component itself (${resourceType}/${resourceType}.vue) in allowedComponents. Rename the file.`)
+            return false
+          })
           .map(({ pascalName }) => pascalName as GlobalComponentNames)
 
         const primary = declared ? declarations.components[resourceType] ?? {} : {}
@@ -582,17 +594,16 @@ export default defineNuxtModule<CwaModuleOptions>({
           const names = resolveUserComponents(app.components).userComponents.map(toResourceType)
           const constant = JSON.stringify(Object.fromEntries(names.map(name => [name, name])), undefined, 2)
           const { resourcesConfig, uiConfig } = resolveCwaConfig(app.components)
-          const union = (values: string[]) => values.length ? [...new Set(values)].map(value => JSON.stringify(value)).join(' | ') : 'never'
-          const typeMap = (valuesOf: (name: string) => string[]) => names.map(name => `  ${JSON.stringify(name)}: ${union(valuesOf(name))}`).join('\n')
           const uiOf = (name: string) => (resourcesConfig[name]?.ui ?? []) as string[]
+          const constants = (valuesOf: (name: string) => string[]) => JSON.stringify(Object.fromEntries(names.map(name => [name, Object.fromEntries(valuesOf(name).map(value => [value, value]))])), undefined, 2)
+          const uis = constants(name => ['default', ...uiOf(name).map(ui => uiShortName(name, ui))])
+          const styles = constants(name => [resourcesConfig[name]?.styles, ...uiOf(name).map(ui => uiConfig[ui]?.styles)].flatMap(styles => Object.keys(styles ?? {})))
           return `export const CwaComponentNames = ${constant} as const
 export type CwaComponentName = typeof CwaComponentNames[keyof typeof CwaComponentNames]
-export interface CwaComponentUis {
-${typeMap(name => [`CwaComponent${name}`, ...uiOf(name)])}
-}
-export interface CwaComponentStyles {
-${typeMap(name => [resourcesConfig[name]?.styles, ...uiOf(name).map(ui => uiConfig[ui]?.styles)].flatMap(styles => Object.keys(styles ?? {})))}
-}
+export const CwaComponentUis = ${uis} as const
+export type CwaComponentUis = { [Name in CwaComponentName]: typeof CwaComponentUis[Name][keyof typeof CwaComponentUis[Name]] }
+export const CwaComponentStyles = ${styles} as const
+export type CwaComponentStyles = { [Name in CwaComponentName]: typeof CwaComponentStyles[Name][keyof typeof CwaComponentStyles[Name]] }
 `
         },
       })
@@ -607,8 +618,8 @@ export const extensionAdminRoles: { role: string, label: string }[] = ${JSON.str
       addImports([
         { name: 'CwaComponentNames', from: '#build/cwa-component-names' },
         { name: 'CwaComponentName', from: '#build/cwa-component-names', type: true },
-        { name: 'CwaComponentUis', from: '#build/cwa-component-names', type: true },
-        { name: 'CwaComponentStyles', from: '#build/cwa-component-names', type: true },
+        { name: 'CwaComponentUis', from: '#build/cwa-component-names' },
+        { name: 'CwaComponentStyles', from: '#build/cwa-component-names' },
       ])
 
       const reportedUncheckable = new Set<string>()
@@ -728,8 +739,6 @@ declare module '#og-image/components' {
   admin?: boolean
   disabled?: boolean
   layout?: string
-  /** @deprecated name the layout by its reference with layout */
-  staticLayout?: GlobalComponentNames
   fetch?: {
     iri: string
     manifestPath?: string

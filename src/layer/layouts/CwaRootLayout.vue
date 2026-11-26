@@ -47,7 +47,6 @@
 <script setup lang="ts">
 import { computed, ref, getCurrentInstance, watch, nextTick } from 'vue'
 import { consola as logger } from 'consola'
-import { useRouter } from 'vue-router'
 import { useWindowScroll } from '@vueuse/core'
 import { useCwa, useHead } from '#imports'
 import { LazyCwaAdminHeader, LazyCwaAdminResourceManager, LazyCwaAdminResourceManagerLayoutPageOverlay, LazyCwaDefaultLayout } from '#components'
@@ -59,15 +58,10 @@ import { styleClasses } from '#build/cwa-styles'
 import { extensionMenu } from '#build/cwa-extension-menu'
 
 const $cwa = useCwa()
-const currentRoute = useRouter().currentRoute
 const resourceManager = ref<null | InstanceType<typeof LazyCwaAdminResourceManager>>(null)
 const page = ref<null | HTMLElement>(null)
 const rootLayout = ref<null | HTMLElement>(null)
 const instance = getCurrentInstance()
-
-const cwaPageMeta = computed(() => {
-  return currentRoute.value.meta?.cwa
-})
 
 function callResourceManagerHandler(handler: 'contextMenuHandler' | 'clickHandler', e: MouseEvent, type: 'layout' | 'page') {
   resourceManager.value && resourceManager.value[handler](e, type)
@@ -98,10 +92,10 @@ const layoutResource = computed(() => {
 })
 
 const layoutUiComponent = computed<GlobalComponentNames>(() => {
-  return cwaPageMeta.value?.staticLayout || (layoutResource.value?.data?.uiComponent as GlobalComponentNames) || LazyCwaDefaultLayout
+  return (layoutResource.value?.data?.uiComponent as GlobalComponentNames) || LazyCwaDefaultLayout
 })
 
-const hasNamedLayout = computed(() => !!(cwaPageMeta.value?.staticLayout || layoutResource.value?.data?.uiComponent))
+const hasNamedLayout = computed(() => !!layoutResource.value?.data?.uiComponent)
 
 const stableLayoutUiComponent = ref<GlobalComponentNames | undefined>(hasNamedLayout.value ? layoutUiComponent.value : undefined)
 watch(hasNamedLayout, (isNamed) => {
