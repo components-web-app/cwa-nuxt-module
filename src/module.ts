@@ -230,7 +230,7 @@ export default defineNuxtModule<CwaModuleOptions>({
     const extensions: CwaExtension[] = []
     addRouteMiddleware({ name: 'cwa-extension-area', path: resolve('./runtime/extension-area-middleware') })
     extendPages((pages: NuxtPage[]) => {
-      addExtensionAdminPages(pages, extensions, resolve(vueTemplatesDir, 'extension-area.vue'), { list: resolve(vueTemplatesDir, 'extension-page-data-list.vue'), item: resolve(vueTemplatesDir, 'extension-page-data-item.vue') })
+      addExtensionAdminPages(pages, extensions, resolve(vueTemplatesDir, 'extension-area.vue'), { types: resolve(vueTemplatesDir, 'extension-page-data-types.vue'), list: resolve(vueTemplatesDir, 'extension-page-data-list.vue'), item: resolve(vueTemplatesDir, 'extension-page-data-item.vue') })
     })
 
     nuxt.hook('pages:routerOptions', ({ files }) => {

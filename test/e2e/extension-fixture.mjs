@@ -31,7 +31,7 @@ const areas = read('cwa-extension-areas.ts')
 check('its area is listed with its label, description and lucide icon', /"segment": "fixture",\s+"label": "Fixture shop",\s+"description": "Orders and reports",\s+"icon": "<svg data-cwa-admin-icon/.test(areas))
 check('its admin pages are the area\'s tabs, in order, with their roles', /"path": "orders",\s+"label": "Orders",\s+"role": "ROLE_ADMIN"\s+\},\s+\{\s+"path": "reports",\s+"label": "Reports",\s+"role": "ROLE_FIXTURE_REPORTS"/.test(areas))
 const pageData = read('cwa-extension-page-data.ts')
-check('its page-data tab is listed with its key, label, default role and property', pageData.includes('{ key: "formats", label: "Formats and prices", role: "ROLE_ADMIN", property: "variants", component: defineAsyncComponent(() => import('))
+check('its page-data tab is listed with its key, label, the content admin role by default, and property', pageData.includes('{ key: "formats", label: "Formats and prices", role: "ROLE_CMS_ADMIN", property: "variants", component: defineAsyncComponent(() => import('))
 check('its page-data list is listed by its route name with its property and column', /"_cwa-fixture-products": \{ label: "Products", property: "variants", columns: \[\{ label: "From", component: defineAsyncComponent/.test(pageData))
 check('its page-data list is an area tab after its admin pages', /"path": "reports",\s+"label": "Reports",\s+"role": "ROLE_FIXTURE_REPORTS"\s+\},\s+\{\s+"path": "products",\s+"label": "Products",\s+"role": "ROLE_ADMIN"/.test(areas))
 
@@ -41,7 +41,8 @@ check('its area is a route under /_cwa named from its prefix', /name:\s*["'`]_cw
 check('its orders list is a route in its area', /name:\s*["'`]_cwa-fixture-orders["'`],\s*path:\s*["'`]orders["'`]/.test(clientCode))
 check('its orders list has its order dialog as an item route', /name:\s*["'`]_cwa-fixture-orders-iri["'`],\s*path:\s*["'`]:iri["'`]/.test(clientCode))
 check('its page-data list is a route in its area', /name:\s*["'`]_cwa-fixture-products["'`],\s*path:\s*["'`]products["'`]/.test(clientCode))
-check('its page-data list has the page-data dialog as an item route', /name:\s*["'`]_cwa-fixture-products-iri["'`],\s*path:\s*["'`]:iri["'`]/.test(clientCode))
+check('its page-data list lists one type at a time', /name:\s*["'`]_cwa-fixture-products-type["'`],\s*path:\s*["'`]:type["'`]/.test(clientCode))
+check('its one-type list has the page-data dialog as an item route', /name:\s*["'`]_cwa-fixture-products-type-iri["'`],\s*path:\s*["'`]:iri["'`]/.test(clientCode))
 
 console.log(`\nwrong: ${failures}`)
 if (failures) {

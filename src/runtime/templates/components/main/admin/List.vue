@@ -69,7 +69,7 @@ import { areaHeadingKey } from '#cwa/templates/components/core/ui/field-keys'
 
 const props = defineProps<{
   title: string
-  fetchUrl: string | string[]
+  fetchUrl: string
   noun: string
   createNoun?: string
   columns: ListColumn[]

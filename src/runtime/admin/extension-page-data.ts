@@ -24,8 +24,9 @@ export function classHasProperty(docs: CwaApiDocumentationDataInterface | undefi
 export function pageDataTypesWithProperty(docs: CwaApiDocumentationDataInterface | undefined, property: string) {
   return pageDataTypes(docs).flatMap((type) => {
     const className = type.resourceClass.split('\\').pop() ?? ''
-    const endpoint = docs?.entrypoint?.[className.charAt(0).toLowerCase() + className.slice(1)]
-    return endpoint && classHasProperty(docs, className, property) ? [{ className, endpoint }] : []
+    const key = className.charAt(0).toLowerCase() + className.slice(1)
+    const endpoint = docs?.entrypoint?.[key]
+    return endpoint && classHasProperty(docs, className, property) ? [{ className, key, endpoint }] : []
   })
 }
 
@@ -36,4 +37,8 @@ export function pageDataTabsFor(tabs: ExtensionPageDataTab[], { docs, className,
   hidden: string[] | undefined
 }) {
   return tabs.filter(tab => classHasProperty(docs, className, tab.property) && hasRole(tab.role) && !hidden?.includes(tab.key))
+}
+
+export function pageDataTypeName($cwa: { pageDataConfig?: Record<string, { name?: string }> }, className: string) {
+  return $cwa.pageDataConfig?.[className]?.name || className
 }

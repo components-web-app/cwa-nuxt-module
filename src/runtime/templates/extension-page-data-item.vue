@@ -9,17 +9,15 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import PageResourceAdminModal from '#cwa/templates/components/core/admin/PageResourceAdminModal.vue'
-import { useCwa } from '#cwa/composables/cwa'
 
 defineEmits<{
   reload: []
 }>()
 
-const $cwa = useCwa()
 const route = useRoute()
 
 const resourceType = computed(() => {
-  const iri = Array.isArray(route.params.iri) ? route.params.iri[0] : route.params.iri
-  return iri ? $cwa.resources.getResource(iri).value?.data?.['@type'] : undefined
+  const type = String(route.params.type ?? '')
+  return type.charAt(0).toUpperCase() + type.slice(1)
 })
 </script>

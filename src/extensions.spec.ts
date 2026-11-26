@@ -161,7 +161,7 @@ describe('checkExtensions', () => {
 
     test('refuses a page-data tab with a role that is not an admin role', () => {
       expect(() => check([{ ...shop, pageDataTabs: [{ ...formats, role: 'ROLE_USER' }] }]))
-        .toThrow('@acme/shop\'s page-data tab "formats" declares the role "ROLE_USER". Use a ROLE_ name other than ROLE_USER, or leave it out for ROLE_ADMIN.')
+        .toThrow('@acme/shop\'s page-data tab "formats" declares the role "ROLE_USER". Use a ROLE_ name other than ROLE_USER, or leave it out for ROLE_CMS_ADMIN.')
     })
   })
 })
@@ -172,7 +172,7 @@ describe('extensionSegment', () => {
   })
 })
 
-const listFiles = { list: '/cwa/extension-page-data-list.vue', item: '/cwa/extension-page-data-item.vue' }
+const listFiles = { types: '/cwa/extension-page-data-types.vue', list: '/cwa/extension-page-data-list.vue', item: '/cwa/extension-page-data-item.vue' }
 
 describe('addExtensionAdminPages', () => {
   const ecommerce: CwaExtension = { name: '@acme/ecommerce', prefix: 'Ecommerce', label: 'E-commerce' }
@@ -213,7 +213,7 @@ describe('addExtensionAdminPages', () => {
     })
   })
 
-  test('makes each page-data list a tab of the area after its admin pages, with the module\'s list page and the page-data dialog as its keyed :iri child', () => {
+  test('makes each page-data list a tab of the area after its admin pages: its types, then a :type child listing one type, then the page-data dialog as that list\'s keyed :iri child', () => {
     const pages = cwaPages()
 
     addExtensionAdminPages(pages, [{ ...ecommerce, adminPages: [{ path: 'orders', label: 'Orders', file: '/ext/admin/orders.vue' }], pageDataLists: [
@@ -226,9 +226,15 @@ describe('addExtensionAdminPages', () => {
       {
         path: 'products',
         name: '_cwa-ecommerce-products',
-        file: listFiles.list,
-        meta: { cwaAdminRole: 'ROLE_SHOP_PRODUCTS' },
-        children: [{ path: ':iri', name: '_cwa-ecommerce-products-iri', file: listFiles.item, meta: { cwaAdminRole: 'ROLE_SHOP_PRODUCTS', key: '_cwa-ecommerce-products-iri' } }],
+        file: listFiles.types,
+        meta: { cwaAdminRole: 'ROLE_SHOP_PRODUCTS', cwaPageDataList: '_cwa-ecommerce-products' },
+        children: [{
+          path: ':type',
+          name: '_cwa-ecommerce-products-type',
+          file: listFiles.list,
+          meta: { cwaAdminRole: 'ROLE_SHOP_PRODUCTS' },
+          children: [{ path: ':iri', name: '_cwa-ecommerce-products-type-iri', file: listFiles.item, meta: { cwaAdminRole: 'ROLE_SHOP_PRODUCTS', key: '_cwa-ecommerce-products-type-iri' } }],
+        }],
       },
     ])
   })
@@ -294,7 +300,7 @@ describe('extensionAreas', () => {
 })
 
 describe('extensionPageDataTemplate', () => {
-  test('lists every page-data tab with its role and property, loading its component on demand, and every page-data list by its route name', () => {
+  test('lists every page-data tab with its role, by default the content admin role that opens the page-data dialog, and its property, loading its component on demand, and every page-data list by its route name', () => {
     const template = extensionPageDataTemplate([
       { ...shop, pageDataTabs: [{ key: 'formats', label: 'Formats and prices', file: '/ext/formats.vue', forTypesWithProperty: 'variants' }], pageDataLists: [
         { path: '/products/', label: 'Products', forTypesWithProperty: 'variants', columns: [{ label: 'From', file: '/ext/from.vue' }] },
@@ -302,7 +308,7 @@ describe('extensionPageDataTemplate', () => {
       { name: '@acme/store', prefix: 'Store', label: 'Store', pageDataTabs: [{ key: 'stock', label: 'Stock', file: '/ext/stock.vue', forTypesWithProperty: 'stock', role: 'ROLE_STOCK' }] },
     ])
 
-    expect(template).toContain('{ key: "formats", label: "Formats and prices", role: "ROLE_ADMIN", property: "variants", component: defineAsyncComponent(() => import("/ext/formats.vue")) },')
+    expect(template).toContain('{ key: "formats", label: "Formats and prices", role: "ROLE_CMS_ADMIN", property: "variants", component: defineAsyncComponent(() => import("/ext/formats.vue")) },')
     expect(template).toContain('{ key: "stock", label: "Stock", role: "ROLE_STOCK", property: "stock", component: defineAsyncComponent(() => import("/ext/stock.vue")) },')
     expect(template).toContain('"_cwa-shop-products": { label: "Products", property: "variants", columns: [{ label: "From", component: defineAsyncComponent(() => import("/ext/from.vue")) }] },')
   })

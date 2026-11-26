@@ -46,20 +46,20 @@ export interface ExtensionNames {
 
 export const DEFAULT_ADMIN_ROLE = 'ROLE_ADMIN'
 
+export const DEFAULT_PAGE_DATA_TAB_ROLE = 'ROLE_CMS_ADMIN'
+
 const KINDS = ['components', 'layouts', 'pages'] as const
 
 const BUILT_IN_PAGE_DATA_TABS: Record<string, string> = { details: 'Details', routes: 'Routes', info: 'Info' }
 
 export interface PageDataListFiles {
+  types: string
   list: string
   item: string
 }
 
-function areaPages(extension: CwaExtension, files: PageDataListFiles = { list: '', item: '' }): CwaExtensionAdminPage[] {
-  return [
-    ...extension.adminPages ?? [],
-    ...(extension.pageDataLists ?? []).map(list => ({ path: list.path, label: list.label, role: list.role, file: files.list, item: files.item })),
-  ]
+function areaPages(extension: CwaExtension): { path: string, label: string, role?: string }[] {
+  return [...extension.adminPages ?? [], ...extension.pageDataLists ?? []]
 }
 
 function hasText(value: unknown): value is string {
@@ -202,7 +202,7 @@ export function checkExtensions({ extensions, namesOf, appNames, builtInAdminPat
         throw new Error(`${extension.name}'s page-data tab "${tab.key}" needs a label`)
       }
       if (!isAdminRole(tab.role)) {
-        throw new Error(`${extension.name}'s page-data tab "${tab.key}" declares the role "${tab.role}". Use a ROLE_ name other than ROLE_USER, or leave it out for ${DEFAULT_ADMIN_ROLE}.`)
+        throw new Error(`${extension.name}'s page-data tab "${tab.key}" declares the role "${tab.role}". Use a ROLE_ name other than ROLE_USER, or leave it out for ${DEFAULT_PAGE_DATA_TAB_ROLE}.`)
       }
     }
   }
@@ -247,17 +247,36 @@ export function addExtensionAdminPages(pages: NuxtPage[], extensions: CwaExtensi
       name: adminRouteName(segment),
       file: areaFile,
       meta: { cwaAdminRole: extensionPageRoles([extension]), middleware: ['cwa-extension-area'], pageTransition: false },
-      children: areaPages(extension, listFiles).map((page) => {
-        const name = adminRouteName(`${segment}/${trimPath(page.path)}`)
-        const cwaAdminRole = pageRole(page)
-        return {
-          path: trimPath(page.path),
-          name,
-          file: page.file,
-          meta: { cwaAdminRole },
-          ...(page.item ? { children: [{ path: ':iri', name: `${name}-iri`, file: page.item, meta: { cwaAdminRole, key: `${name}-iri` } }] } : {}),
-        }
-      }),
+      children: [
+        ...(extension.adminPages ?? []).map((page) => {
+          const name = adminRouteName(`${segment}/${trimPath(page.path)}`)
+          const cwaAdminRole = pageRole(page)
+          return {
+            path: trimPath(page.path),
+            name,
+            file: page.file,
+            meta: { cwaAdminRole },
+            ...(page.item ? { children: [{ path: ':iri', name: `${name}-iri`, file: page.item, meta: { cwaAdminRole, key: `${name}-iri` } }] } : {}),
+          }
+        }),
+        ...(extension.pageDataLists ?? []).map((list) => {
+          const name = adminRouteName(`${segment}/${trimPath(list.path)}`)
+          const cwaAdminRole = pageRole(list)
+          return {
+            path: trimPath(list.path),
+            name,
+            file: listFiles.types,
+            meta: { cwaAdminRole, cwaPageDataList: name },
+            children: [{
+              path: ':type',
+              name: `${name}-type`,
+              file: listFiles.list,
+              meta: { cwaAdminRole },
+              children: [{ path: ':iri', name: `${name}-type-iri`, file: listFiles.item, meta: { cwaAdminRole, key: `${name}-type-iri` } }],
+            }],
+          }
+        }),
+      ],
     })
   }
 }
@@ -288,7 +307,7 @@ export function extensionAdminRoles(extensions: CwaExtension[]): { role: string,
 
 export function extensionPageDataTemplate(extensions: CwaExtension[]) {
   const component = (file: string) => `defineAsyncComponent(() => import(${JSON.stringify(file)}))`
-  const tabs = extensions.flatMap(extension => (extension.pageDataTabs ?? []).map(tab => `  { key: ${JSON.stringify(tab.key)}, label: ${JSON.stringify(tab.label)}, role: ${JSON.stringify(pageRole(tab))}, property: ${JSON.stringify(tab.forTypesWithProperty)}, component: ${component(tab.file)} },\n`))
+  const tabs = extensions.flatMap(extension => (extension.pageDataTabs ?? []).map(tab => `  { key: ${JSON.stringify(tab.key)}, label: ${JSON.stringify(tab.label)}, role: ${JSON.stringify(tab.role ?? DEFAULT_PAGE_DATA_TAB_ROLE)}, property: ${JSON.stringify(tab.forTypesWithProperty)}, component: ${component(tab.file)} },\n`))
   const lists = extensions.flatMap(extension => (extension.pageDataLists ?? []).map((list) => {
     const columns = (list.columns ?? []).map(column => `{ label: ${JSON.stringify(column.label)}, component: ${component(column.file)} }`)
     return `  ${JSON.stringify(adminRouteName(`${extensionSegment(extension.prefix)}/${trimPath(list.path)}`))}: { label: ${JSON.stringify(list.label)}, property: ${JSON.stringify(list.forTypesWithProperty)}, columns: [${columns.join(', ')}] },\n`
