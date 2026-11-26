@@ -8,8 +8,8 @@ const here = dirname(fileURLToPath(import.meta.url))
 const repoRoot = resolve(here, '../..')
 
 const ROUNDS = process.argv.includes('--no-hoist-only')
-  ? [{ name: 'no-hoist', hoist: false }]
-  : [{ name: 'default install', hoist: true }, { name: 'no-hoist', hoist: false }]
+  ? [{ name: 'no-hoist', hoist: false, strict: false }]
+  : [{ name: 'default install', hoist: true, strict: true }, { name: 'no-hoist', hoist: false, strict: false }]
 
 const APP_FILES = {
   'package.json': JSON.stringify({
@@ -22,6 +22,10 @@ const APP_FILES = {
       'nuxt': '^4.6.0',
       'vue': '^3.5.41',
     },
+    devDependencies: {
+      'typescript': '^6.0.3',
+      'vue-tsc': '3.3.11',
+    },
   }, undefined, 2),
   'nuxt.config.ts': `export default defineNuxtConfig({
   extends: ['@cwa/nuxt/layer'],
@@ -29,9 +33,10 @@ const APP_FILES = {
   runtimeConfig: {
     public: { cwa: { apiUrl: 'https://localhost/_api', apiUrlBrowser: 'https://localhost/_api' } },
   },
-  typescript: { typeCheck: false },
+  typescript: { typeCheck: false, strict: STRICT },
 })
 `,
+  'tsconfig.json': JSON.stringify({ extends: './.nuxt/tsconfig.json' }, undefined, 2),
   'app/app.vue': `<template>
   <NuxtPage />
 </template>
@@ -60,10 +65,10 @@ function minimumReleaseAgeExclude() {
   return list ? `minimumReleaseAgeExclude:\n${list[1]}` : ''
 }
 
-function writeApp(appDir, tarball, hoist) {
+function writeApp(appDir, tarball, hoist, strict) {
   mkdirSync(join(appDir, 'app'), { recursive: true })
   for (const [file, contents] of Object.entries(APP_FILES)) {
-    writeFileSync(join(appDir, file), file === 'package.json' ? contents.replace('"@cwa/nuxt": ""', `"@cwa/nuxt": "file:${tarball}"`) : contents)
+    writeFileSync(join(appDir, file), contents.replace('"@cwa/nuxt": ""', `"@cwa/nuxt": "file:${tarball}"`).replace('STRICT', String(strict)))
   }
   cpSync(join(repoRoot, 'test/fixtures/cwa-extension'), join(appDir, 'extension'), { recursive: true })
   writeFileSync(join(appDir, 'pnpm-workspace.yaml'), `hoist: ${hoist}\nstrictDepBuilds: false\n${minimumReleaseAgeExclude()}`)
@@ -72,6 +77,7 @@ function writeApp(appDir, tarball, hoist) {
 function build(appDir) {
   run('pnpm', ['install', '--no-frozen-lockfile'], { cwd: appDir })
   run('node', [join(appDir, 'node_modules/nuxt/bin/nuxt.mjs'), 'build'], { cwd: appDir })
+  run('node', [join(appDir, 'node_modules/nuxt/bin/nuxt.mjs'), 'typecheck'], { cwd: appDir })
 }
 
 function checkExtension(appDir) {
@@ -103,13 +109,13 @@ try {
   for (const round of ROUNDS) {
     const appDir = join(workDir, round.name.replace(/\W+/g, '-'))
     mkdirSync(appDir, { recursive: true })
-    writeApp(appDir, tarball, round.hoist)
+    writeApp(appDir, tarball, round.hoist, round.strict)
 
     const started = Date.now()
     try {
       build(appDir)
       checkExtension(appDir)
-      console.log(`✓ ${round.name}: installs and builds with no optional packages and an extension registered through cwa:extend (${Math.round((Date.now() - started) / 1000)}s)`)
+      console.log(`✓ ${round.name}: installs, builds and type-checks (${round.strict ? 'strict' : 'not strict'}) with no optional packages and an extension registered through cwa:extend (${Math.round((Date.now() - started) / 1000)}s)`)
     }
     catch (error) {
       failed = true

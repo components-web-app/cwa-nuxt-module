@@ -44,6 +44,9 @@ importers:
       '@resvg/resvg-js':
         specifier: ^2.6.2
         version: 2.6.2
+      '@types/lodash-es':
+        specifier: ^4.17.12
+        version: 4.17.12
       '@vueuse/core':
         specifier: ^15.1.0
         version: 15.1.0(vue@3.5.46(typescript@6.0.3))
@@ -156,9 +159,6 @@ importers:
       '@tailwindcss/vite':
         specifier: ^4.3.5
         version: 4.3.5(vite@8.3.4(@types/node@26.2.0)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.50.0)(yaml@2.9.1))
-      '@types/lodash-es':
-        specifier: ^4.17.12
-        version: 4.17.12
       '@types/object-hash':
         specifier: ^3.0.6
         version: 3.0.6
