@@ -8,6 +8,19 @@
     :order-options="orderOptions"
     :search-label="`Search ${name.toLowerCase()}`"
   >
+    <template
+      v-if="severalTypes"
+      #back
+    >
+      <NuxtLink
+        :to="{ name: listName }"
+        data-testid="list-back"
+        class="cwa:mb-2 cwa:inline-flex cwa:min-h-6 cwa:items-center cwa:gap-1 cwa:text-label cwa:text-fg-muted cwa:outline-1 cwa:outline-transparent cwa:hover:text-fg cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-accent-fg"
+      >
+        <ChevronGlyph class="cwa:size-2.5 cwa:rotate-90" />
+        {{ list.label }}
+      </NuxtLink>
+    </template>
     <template #item="{ data, link }">
       <ListRow
         :to="link"
@@ -33,6 +46,7 @@ import { useRoute } from 'vue-router'
 import CwaAdminList from '#cwa/templates/components/main/admin/List.vue'
 import ListRow from '#cwa/templates/components/core/admin/ListRow.vue'
 import ListCell from '#cwa/templates/components/core/admin/ListCell.vue'
+import ChevronGlyph from '#cwa/templates/components/core/ui/ChevronGlyph.vue'
 import { useCwa } from '#cwa/composables/cwa'
 import { pageDataTypeName, pageDataTypesWithProperty } from '#cwa/admin/extension-page-data'
 import type { ExtensionPageDataList } from '#cwa/admin/extension-page-data'
@@ -42,10 +56,12 @@ import { extensionPageDataLists } from '#build/cwa-extension-page-data'
 const $cwa = useCwa()
 const route = useRoute()
 
-const list = computed(() => (extensionPageDataLists as Record<string, ExtensionPageDataList>)[String(route.meta.cwaPageDataList)])
+const listName = computed(() => String(route.meta.cwaPageDataList))
+const list = computed(() => (extensionPageDataLists as Record<string, ExtensionPageDataList>)[listName.value])
 const typeKey = computed(() => String(route.params.type ?? ''))
 const name = computed(() => pageDataTypeName($cwa, typeKey.value.charAt(0).toUpperCase() + typeKey.value.slice(1)))
 const endpoint = ref<string>()
+const severalTypes = ref(false)
 
 const columns = computed(() => [{ label: 'Title' }, ...(list.value?.columns ?? []).map(column => ({ label: column.label }))])
 
@@ -59,7 +75,9 @@ const orderOptions = [
 onMounted(async () => {
   const property = list.value?.property
   if (property) {
-    endpoint.value = pageDataTypesWithProperty(await $cwa.getApiDocumentation(), property).find(type => type.key === typeKey.value)?.endpoint
+    const types = pageDataTypesWithProperty(await $cwa.getApiDocumentation(), property)
+    endpoint.value = types.find(type => type.key === typeKey.value)?.endpoint
+    severalTypes.value = types.length > 1
   }
 })
 </script>
