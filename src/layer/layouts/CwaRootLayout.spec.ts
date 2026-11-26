@@ -16,6 +16,8 @@ vi.mock('#build/cwa-extension-menu', () => ({
   extensionMenu: [{ label: 'Orders', to: { name: '_cwa-orders' }, role: 'ROLE_SHOP_ADMIN' }],
 }))
 
+const routeMeta = vi.hoisted(() => ({ value: {} as Record<string, unknown> }))
+
 const headOptions: Record<string, any>[] = []
 const mockUseHead = vi.hoisted(() => vi.fn())
 mockNuxtImport('useHead', () => mockUseHead)
@@ -25,7 +27,7 @@ vi.mock('vue-router', async (importOriginal) => {
   const { ref: vueRef } = await import('vue')
   return {
     ...actual,
-    useRouter: () => ({ currentRoute: vueRef({ meta: {} }) }),
+    useRouter: () => ({ currentRoute: vueRef({ meta: routeMeta.value }) }),
   }
 })
 
@@ -198,6 +200,18 @@ describe('CwaRootLayout unresolvable uiComponent', () => {
     const { wrapper } = setup({ uiComponent: 'CwaLayoutPrimary', layoutIri: LAYOUT_IRI, registeredComponents: ['CwaLayoutPrimary'] })
     expect(wrapper.findComponent({ name: 'CwaUiAlertWarning' }).exists()).toBe(false)
     expect(wrapper.find('.page-content').exists()).toBe(true)
+  })
+
+  test('a page outside CWA that still names its layout component with staticLayout gets the default layout, since only cwa.layout names a layout now', () => {
+    routeMeta.value = { cwa: { disabled: true, staticLayout: 'CwaLayoutPrimary' } }
+    try {
+      const { wrapper } = setup({ registeredComponents: ['CwaLayoutPrimary'] })
+      expect(wrapper.html().toLowerCase()).not.toContain('cwa-layout-primary')
+      expect(wrapper.html().toLowerCase()).toContain('<asynccomponentwrapper-stub')
+    }
+    finally {
+      routeMeta.value = {}
+    }
   })
 
   test('does not warn when there is no named layout at all', () => {

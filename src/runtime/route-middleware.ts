@@ -12,7 +12,6 @@ import {
 import { useProcess } from '#cwa/composables/process'
 
 let middlewareToken = ''
-let warnedStaticLayout = false
 
 export default defineNuxtRouteMiddleware(async (to: RouteLocationNormalized, from: RouteLocationNormalized) => {
   // const err = useError()
@@ -44,11 +43,6 @@ export default defineNuxtRouteMiddleware(async (to: RouteLocationNormalized, fro
 
   if (isClient) {
     await nuxtApp.$cwa.initClientSide()
-  }
-
-  if (to.meta.cwa?.staticLayout && !warnedStaticLayout) {
-    warnedStaticLayout = true
-    logger.warn('[CWA] `cwa.staticLayout` in page meta is deprecated and will be removed without further warning. Name the layout by its reference with `cwa.layout` instead.')
   }
 
   if (to.meta.cwa?.disabled === true && !to.meta.cwa.layout) {

@@ -25,19 +25,21 @@ in its spec. An IRI entry then fails like any unknown name.
 
 ---
 
-### `cwa.staticLayout` in page meta
+## Remove in the alpha after 2.0.0-alpha.41
 
-A page outside CWA can still pick its layout component with `cwa.staticLayout`,
-which renders the component but loads no layout, so the layout's component
-groups are empty. `cwa.layout` names the layout by its reference instead. The
-route middleware warns once per process that it goes without further warning.
+### Full UI names in `allowedComponents`
 
-**Delete:** `staticLayout` from `CwaRouteMeta` in `module.ts` (and its type
-template assertion), the `staticLayout` reads in `CwaRootLayout.vue`, the warning
-and `warnedStaticLayout` in `route-middleware.ts` with its test, and switch the
-playground's `pages/static.vue` to `cwa.layout`.
+An `allowedComponents` rule's `ui` still accepts full UI names
+(`CwaComponentImage`, `CwaComponentImageUiHero`), the syntax from before short
+names (`default`, `Hero`, from `CwaComponentUis`). `resolveAllowedComponents`
+warns once per name that full names stop working in the next alpha without
+further warning.
 
-**First:** 2.0.0-alpha.40 is released, so apps have had one alpha of warnings.
+**Delete:** the full-name branch and `warnedFullUiNames` in
+`admin/allowed-components.ts`, and the full-name test in its spec. A full name
+then fails like any unknown UI.
+
+**First:** 2.0.0-alpha.41 is released, so apps have had one alpha of warnings.
 
 ---
 

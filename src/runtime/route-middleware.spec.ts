@@ -130,13 +130,13 @@ describe('Test route middleware', () => {
     expect(clearPrimaryFetch).not.toHaveBeenCalled()
   })
 
-  test('a page still choosing its layout component with staticLayout is warned once that it goes without further warning', async () => {
+  test('a page with staticLayout left in its meta, now removed, is not warned about', async () => {
     const warn = vi.spyOn(consola, 'warn').mockImplementation(() => {})
     const toRoute = createToRoute(false)
-    toRoute.meta.cwa!.staticLayout = 'CwaLayoutPrimary'
+    Object.assign(toRoute.meta.cwa!, { staticLayout: 'CwaLayoutPrimary' })
     await routeMiddleware(toRoute)
-    await routeMiddleware(toRoute)
-    expect(warn).toHaveBeenCalledExactlyOnceWith('[CWA] `cwa.staticLayout` in page meta is deprecated and will be removed without further warning. Name the layout by its reference with `cwa.layout` instead.')
+    expect(clearPrimaryFetch).toHaveBeenCalled()
+    expect(warn).not.toHaveBeenCalled()
     warn.mockRestore()
   })
 
