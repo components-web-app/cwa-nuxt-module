@@ -46,7 +46,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { definePageMeta, useCwaAdminItem } from '#imports'
+import { useCwaAdminItem } from '#imports'
 import { money } from '../order-format'
 
 const emit = defineEmits<{ close: [], reload: [] }>()
@@ -78,6 +78,4 @@ function refund() {
     success: 'Order refunded',
   })
 }
-
-definePageMeta({ name: '_cwa-fixture-orders-iri', key: '_cwa-fixture-orders-iri' })
 </script>
