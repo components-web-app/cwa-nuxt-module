@@ -233,7 +233,6 @@ export default defineNuxtConfig({
       enabled: true,
       suppressWarnings: false,
       navigateFallbackAllowlist: [/^\/$/],
-      type: 'module',
     },
   },
   sitemap: {
