@@ -55,7 +55,7 @@ import type { GlobalComponentNames } from '#cwa/types'
 import { resolveStyleClasses } from '#cwa/composables/cwa-styles'
 import { styleClasses } from '#build/cwa-styles'
 // @ts-ignore
-import { extensionPageRoles } from '#build/cwa-extension-menu'
+import { adminShellRoles } from '#build/cwa-extension-menu'
 
 const $cwa = useCwa()
 const resourceManager = ref<null | InstanceType<typeof LazyCwaAdminResourceManager>>(null)
@@ -174,7 +174,7 @@ watch(() => $cwa.admin.isEditing, async () => {
 })
 
 const showAdmin = $cwa.auth.isAdmin
-const showHeader = computed(() => showAdmin.value || $cwa.auth.hasRole('ROLE_USER_ADMIN') || (extensionPageRoles as string[]).some(role => $cwa.auth.hasRole(role)))
+const showHeader = computed(() => (adminShellRoles as string[]).some(role => $cwa.auth.hasRole(role)))
 useHead({
   titleTemplate: () => {
     if ($cwa.siteConfig.config.concatTitle) {

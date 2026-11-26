@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import type { NuxtPage } from '@nuxt/schema'
-import { addExtensionAdminPages, checkExtensions, extensionAdminRoles, extensionAreas, extensionPageRoles, extensionRouteRules, extensionSegment } from './extensions'
+import { addExtensionAdminPages, adminShellRoles, checkExtensions, extensionAdminRoles, extensionAreas, extensionPageRoles, extensionRouteRules, extensionSegment } from './extensions'
 import type { CwaExtension, ExtensionNames } from './extensions'
 
 const noNames: ExtensionNames = { components: [], layouts: [], pages: [] }
@@ -179,6 +179,26 @@ describe('addExtensionAdminPages', () => {
     addExtensionAdminPages(pages, [{ ...ecommerce, adminPages: [{ path: 'reports', label: 'Reports', file: '/r.vue', role: 'ROLE_SHOP_ACCOUNTS' }] }], '/area.vue')
 
     expect(pages[1]!.children![1]!.meta).toEqual({ cwaAdminRole: ['ROLE_ADMIN', 'ROLE_SHOP_ACCOUNTS'] })
+  })
+
+  test('opens My account to exactly the roles that get the admin header: content and user admins and every role an extension page needs (#508)', () => {
+    const pages = cwaPages()
+    pages[1]!.children!.push({ path: 'account', name: '_cwa-account', file: '/layer/pages/_cwa/index/account.vue' })
+    const extensions = [{ ...ecommerce, adminPages: [{ path: 'reports', label: 'Reports', file: '/r.vue', role: 'ROLE_SHOP_ACCOUNTS' }] }]
+
+    addExtensionAdminPages(pages, extensions, '/area.vue')
+
+    expect(adminShellRoles(extensions)).toEqual(['ROLE_CMS_ADMIN', 'ROLE_USER_ADMIN', 'ROLE_SHOP_ACCOUNTS'])
+    expect(pages[1]!.children!.find(page => page.name === '_cwa-account')!.meta).toEqual({ cwaAdminRole: adminShellRoles(extensions) })
+  })
+
+  test('opens My account to content and user admins when no extension has admin pages (#508)', () => {
+    const pages = cwaPages()
+    pages[1]!.children!.push({ path: 'account', name: '_cwa-account', file: '/layer/pages/_cwa/index/account.vue' })
+
+    addExtensionAdminPages(pages, [shop], '/area.vue')
+
+    expect(pages[1]!.children!.find(page => page.name === '_cwa-account')!.meta).toEqual({ cwaAdminRole: ['ROLE_CMS_ADMIN', 'ROLE_USER_ADMIN'] })
   })
 
   test('throws when the layer\'s /_cwa page is missing, since an extension page outside it would be unguarded', () => {

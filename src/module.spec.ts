@@ -178,6 +178,7 @@ describe('CWA module', () => {
       const templates = (nuxtKit.addTemplate as Mock).mock.calls.map(([template]) => template)
 
       expect(templates.find(template => template.filename === 'cwa-extension-menu.ts').getContents()).toBe(`export const extensionPageRoles: string[] = ["ROLE_ADMIN","ROLE_SHOP_ACCOUNTS"]
+export const adminShellRoles: string[] = ["ROLE_CMS_ADMIN","ROLE_USER_ADMIN","ROLE_ADMIN","ROLE_SHOP_ACCOUNTS"]
 `)
       const areas: string = templates.find(template => template.filename === 'cwa-extension-areas.ts').getContents()
       expect(areas).toMatch(/"segment": "shop",\s+"label": "Shop",\s+"description": "Orders",\s+"icon": "<svg data-cwa-admin-icon /)

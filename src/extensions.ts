@@ -143,11 +143,19 @@ export function extensionPageRoles(extensions: CwaExtension[]): string[] {
   return [...new Set(extensions.flatMap(extension => (extension.adminPages ?? []).map(pageRole)))]
 }
 
+export function adminShellRoles(extensions: CwaExtension[]): string[] {
+  return [...new Set(['ROLE_CMS_ADMIN', 'ROLE_USER_ADMIN', ...extensionPageRoles(extensions)])]
+}
+
 export function addExtensionAdminPages(pages: NuxtPage[], extensions: CwaExtension[], areaFile: string) {
   const parent = pages.find(page => page.path === '/_cwa')
   const extensionsPage = parent?.children?.find(page => page.path === 'extensions')
   if (extensionsPage) {
     extensionsPage.meta = { ...extensionsPage.meta, cwaAdminRole: [...new Set([DEFAULT_ADMIN_ROLE, ...extensionPageRoles(extensions)])] }
+  }
+  const accountPage = parent?.children?.find(page => page.path === 'account')
+  if (accountPage) {
+    accountPage.meta = { ...accountPage.meta, cwaAdminRole: adminShellRoles(extensions) }
   }
   const withPages = extensions.filter(extension => extension.adminPages?.length)
   if (!withPages.length) {
