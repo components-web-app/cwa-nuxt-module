@@ -13,7 +13,7 @@ const serverEntry = resolve(outputDir, 'server/index.mjs')
 const chunkDir = resolve(outputDir, 'public/_nuxt')
 const appBase = `http://127.0.0.1:${appPort}`
 
-const gzipBudget = 185400
+const gzipBudget = 163300
 
 const required = [
   { marker: 'cwa-start', source: 'core/ComponentPosition.vue' },
@@ -115,9 +115,9 @@ async function waitForApp() {
 }
 
 function readPreloads(html) {
-  const files = [...html.matchAll(/<link[^>]+rel="modulepreload"[^>]*>/g)]
-    .map(([tag]) => tag.match(/href="[^"]*\/_nuxt\/([^"]+)"/)?.[1])
-    .filter(Boolean)
+  const files = [...new Set([...html.matchAll(/<link[^>]+rel="modulepreload"[^>]*>|<script[^>]+type="module"[^>]*>/g)]
+    .map(([tag]) => tag.match(/(?:href|src)="[^"]*\/_nuxt\/([^"]+)"/)?.[1])
+    .filter(Boolean))]
   return files.map((file) => {
     const path = resolve(chunkDir, file)
     if (!existsSync(path)) {

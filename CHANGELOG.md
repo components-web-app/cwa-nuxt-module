@@ -24,6 +24,7 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ### Changed
 
+- Dependencies move to their latest versions: Vue `^3.5.46`, `@nuxtjs/seo` `^6.1.0`, `@nuxtjs/sitemap` `^9.2.0`, `nuxt-og-image` `^7.2.0`, `set-cookie-parser` `^4.0.0` and the other Nuxt SEO modules; developed and tested against Nuxt 4.7.0. reka-ui stays `^2.11.0`, and the Nuxt minimum stays 4.6.0. [#514](https://github.com/components-web-app/cwa-nuxt-module/pull/514)
 - `CwaAdminList` shows no heading inside an extension area, so the area's heading is the page's only `h1`. [#512](https://github.com/components-web-app/cwa-nuxt-module/pull/512)
 - An extension's admin pages move into its area: `/_cwa/<segment>/<path>`, named `_cwa-<segment>-<path>`, where the segment is the prefix in kebab-case (`SilverbackShop` → `silverback-shop`). An extension now needs a `label` (and may have `description` and `icon: 'lucide:<name>'`), and each admin page needs a `label`. **Upgrade:** remove the prefix from each page's `path` (`'shop-orders'` → `'orders'`), replace `menu: { label }` with `label`, and update links to the new route names, or use `cwaAdminRoute`. [#510](https://github.com/components-web-app/cwa-nuxt-module/pull/510)
 - The header menu has one Extensions link instead of a link per extension page, and shows Data only when the API docs list page data classes. [#510](https://github.com/components-web-app/cwa-nuxt-module/pull/510)
@@ -39,6 +40,7 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ### Fixed
 
+- A menu's ⓘ for an unavailable option, such as in the clone placement menu, now shows that its reasons are open. [#514](https://github.com/components-web-app/cwa-nuxt-module/pull/514)
 - A signed-in non-admin sent from a `/_cwa` page to a CWA page no longer gets a 500 in development ("defineOgImage() … client-only context"): the page's og image is defined on the server or after hydration. [ed94b138](https://github.com/components-web-app/cwa-nuxt-module/commit/ed94b138bc9a43987ac407cd3ed17417558cb8bb)
 - The header's status for a lost real-time connection reads "Collaborative editing unavailable", not "Live editing paused", which read as editing being switched off; its ⓘ explains that editing carries on and saves as normal. [e8e12e24](https://github.com/components-web-app/cwa-nuxt-module/commit/e8e12e24b215eafec54d9cc16fe443a79f193abe)
 - A user whose only admin role is one an extension's admin page needs now gets the admin header, so its menu reaches those pages. [64b1c858](https://github.com/components-web-app/cwa-nuxt-module/commit/64b1c85891d4efe86c587f04652ec6edf94b1e36)

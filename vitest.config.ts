@@ -2,6 +2,18 @@ import { fileURLToPath } from 'node:url'
 import { defineVitestConfig } from '@nuxt/test-utils/config'
 
 export default defineVitestConfig({
+  plugins: [
+    {
+      name: 'cwa:vitest-keep-nuxt-link-component',
+      configResolved(config) {
+        const plugins = config.plugins as unknown as { name?: string }[]
+        const index = plugins.findIndex(plugin => plugin?.name === 'nuxt:nuxt-link-client')
+        if (index !== -1) {
+          plugins.splice(index, 1)
+        }
+      },
+    },
+  ],
   test: {
     onConsoleLog: (l) => {
       return !l.includes('<Suspense> is an experimental feature')
