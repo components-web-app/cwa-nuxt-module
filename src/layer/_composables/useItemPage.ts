@@ -45,9 +45,17 @@ function leafChanges(local: unknown, stored: unknown, path: string, into: Record
     }
     return
   }
-  if (!isEqual(local, stored)) {
+  if (isChange(local, stored)) {
     into[path] = local === undefined ? null : local
   }
+}
+
+function isBlank(value: unknown) {
+  return value === undefined || value === null || value === ''
+}
+
+function isChange(local: unknown, stored: unknown) {
+  return !isEqual(local, stored) && !(isBlank(local) && isBlank(stored))
 }
 
 function nestPaths(paths: Record<string, unknown>) {
@@ -181,7 +189,7 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
       if (nested.has(key)) {
         leafChanges(value, stored[key], key, changed)
       }
-      else if (!isEqual(value, stored[key])) {
+      else if (isChange(value, stored[key])) {
         changed[key] = value
       }
     }
@@ -363,14 +371,10 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
     failures.value++
   }
 
-  function isBlank(value: unknown) {
-    return value === undefined || value === null || value === ''
-  }
-
   function addedFields() {
     const local: { [key: string]: any } = localResourceData.value || {}
     const defaults: { [key: string]: any } = { '@type': resourceType, ...toValue(defaultResource) }
-    return Object.entries(changedPaths(local, defaults)).filter(([path, value]) => !(isBlank(value) && isBlank(readPath(defaults, path)))).map(([path]) => path)
+    return Object.keys(changedPaths(local, defaults))
   }
 
   const modelCount = ref(0)
@@ -472,9 +476,7 @@ export const useItemPage = ({ emit, resourceType, defaultResource, createEndpoin
       syncLocalResourceWithStore(newResource)
       return
     }
-    const stored: { [key: string]: any } = oldResource
-    const edits = Object.entries(local).filter(([key, value]) => !isEqual(value, stored[key]))
-    localResourceData.value = { ...newResource, ...Object.fromEntries(edits) }
+    localResourceData.value = Object.keys(changedPaths(local, oldResource)).reduce<Data>((data, path) => writePath(data, path, readPath(local, path)), { ...newResource }) as CwaResource
   }
 
   watch(resource, keepLocalEdits)
