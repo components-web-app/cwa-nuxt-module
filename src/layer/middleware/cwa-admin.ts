@@ -7,7 +7,7 @@ export default defineNuxtRouteMiddleware(async (to: RouteLocationNormalized) => 
 
   await $cwa.auth.init()
 
-  if ($cwa.auth.hasRole((to.meta.cwaAdminRole as string | undefined) ?? 'ROLE_CMS_ADMIN')) {
+  if ([(to.meta.cwaAdminRole as string | string[] | undefined) ?? 'ROLE_CMS_ADMIN'].flat().some(role => $cwa.auth.hasRole(role))) {
     return
   }
 

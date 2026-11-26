@@ -1,16 +1,20 @@
 import type { NuxtPage } from '@nuxt/schema'
+import type { CwaExtensionArea } from './runtime/admin/extension-areas'
 
 export interface CwaExtensionAdminPage {
   path: string
+  label: string
   file: string
   item?: string
   role?: string
-  menu?: { label: string }
 }
 
 export interface CwaExtension {
   name: string
   prefix: string
+  label: string
+  description?: string
+  icon?: `lucide:${string}`
   dir?: string
   adminPages?: CwaExtensionAdminPage[]
   pageCache?: Record<string, false>
@@ -22,18 +26,16 @@ export interface ExtensionNames {
   pages: string[]
 }
 
-export interface CwaExtensionMenuEntry {
-  label: string
-  to: { name: string }
-  role: string
-}
-
 export const DEFAULT_ADMIN_ROLE = 'ROLE_ADMIN'
 
 const KINDS = ['components', 'layouts', 'pages'] as const
 
 function trimPath(path: string) {
   return path.replace(/^\/+|\/+$/g, '')
+}
+
+export function extensionSegment(prefix: string) {
+  return prefix.replace(/([a-z0-9])([A-Z])/g, '$1-$2').replace(/([A-Z])([A-Z][a-z])/g, '$1-$2').toLowerCase()
 }
 
 function adminRouteName(path: string) {
@@ -94,18 +96,36 @@ export function checkExtensions({ extensions, namesOf, appNames, builtInAdminPat
     }
   }
 
-  const adminPathOwners = new Map<string, CwaExtension>()
+  const segmentOwners = new Map<string, CwaExtension>()
+  const routeOwners = new Map<string, string>()
+  function claimRoute(path: string, extension: CwaExtension) {
+    const name = adminRouteName(path)
+    const other = routeOwners.get(name)
+    if (other) {
+      throw new Error(`/_cwa/${other} and /_cwa/${path} (${extension.name}) would both be the route ${name}`)
+    }
+    routeOwners.set(name, path)
+  }
   for (const extension of extensions) {
-    for (const page of extension.adminPages ?? []) {
-      const path = trimPath(page.path)
-      if (builtInAdminPaths.includes(path.split('/')[0]!)) {
-        throw new Error(`${extension.name}'s admin page /_cwa/${path} is a built-in admin page`)
+    if (!extension.adminPages?.length) {
+      continue
+    }
+    const segment = extensionSegment(extension.prefix)
+    if (builtInAdminPaths.includes(segment)) {
+      throw new Error(`${extension.name}'s admin area /_cwa/${segment}, from its prefix "${extension.prefix}", is a built-in admin page`)
+    }
+    const owner = segmentOwners.get(segment)
+    if (owner) {
+      throw new Error(`${owner.name} and ${extension.name} both have the admin area /_cwa/${segment}, from their prefixes "${owner.prefix}" and "${extension.prefix}"`)
+    }
+    segmentOwners.set(segment, extension)
+    claimRoute(segment, extension)
+    for (const page of extension.adminPages) {
+      const path = `${segment}/${trimPath(page.path)}`
+      claimRoute(path, extension)
+      if (typeof page.label !== 'string' || !page.label.trim()) {
+        throw new Error(`${extension.name}'s admin page /_cwa/${path} needs a label for its tab`)
       }
-      const owner = adminPathOwners.get(path)
-      if (owner) {
-        throw new Error(`/_cwa/${path} is registered by both ${owner.name} and ${extension.name}`)
-      }
-      adminPathOwners.set(path, extension)
       if (page.role !== undefined && (!/^ROLE_[A-Z0-9_]+$/.test(page.role) || page.role === 'ROLE_USER')) {
         throw new Error(`${extension.name}'s admin page /_cwa/${path} declares the role "${page.role}". Use a ROLE_ name other than ROLE_USER, or leave it out for ${DEFAULT_ADMIN_ROLE}.`)
       }
@@ -115,35 +135,61 @@ export function checkExtensions({ extensions, namesOf, appNames, builtInAdminPat
   return { overrides }
 }
 
-export function addExtensionAdminPages(pages: NuxtPage[], extensions: CwaExtension[]) {
+function pageRole(page: CwaExtensionAdminPage) {
+  return page.role ?? DEFAULT_ADMIN_ROLE
+}
+
+export function extensionPageRoles(extensions: CwaExtension[]): string[] {
+  return [...new Set(extensions.flatMap(extension => (extension.adminPages ?? []).map(pageRole)))]
+}
+
+export function addExtensionAdminPages(pages: NuxtPage[], extensions: CwaExtension[], areaFile: string) {
+  const parent = pages.find(page => page.path === '/_cwa')
+  const extensionsPage = parent?.children?.find(page => page.path === 'extensions')
+  if (extensionsPage) {
+    extensionsPage.meta = { ...extensionsPage.meta, cwaAdminRole: [...new Set([DEFAULT_ADMIN_ROLE, ...extensionPageRoles(extensions)])] }
+  }
   const withPages = extensions.filter(extension => extension.adminPages?.length)
   if (!withPages.length) {
     return
   }
-  const parent = pages.find(page => page.path === '/_cwa')
   if (!parent) {
     throw new Error(`${withPages[0]!.name}'s admin pages need the /_cwa page from @cwa/nuxt/layer`)
   }
   parent.children ??= []
   for (const extension of withPages) {
-    for (const page of extension.adminPages!) {
-      const name = adminRouteName(page.path)
-      const cwaAdminRole = page.role ?? DEFAULT_ADMIN_ROLE
-      parent.children.push({
-        path: trimPath(page.path),
-        name,
-        file: page.file,
-        meta: { cwaAdminRole },
-        ...(page.item ? { children: [{ path: ':iri', name: `${name}-iri`, file: page.item, meta: { cwaAdminRole, key: `${name}-iri` } }] } : {}),
-      })
-    }
+    const segment = extensionSegment(extension.prefix)
+    parent.children.push({
+      path: segment,
+      name: adminRouteName(segment),
+      file: areaFile,
+      meta: { cwaAdminRole: extensionPageRoles([extension]), middleware: ['cwa-extension-area'], pageTransition: false },
+      children: extension.adminPages!.map((page) => {
+        const name = adminRouteName(`${segment}/${trimPath(page.path)}`)
+        const cwaAdminRole = pageRole(page)
+        return {
+          path: trimPath(page.path),
+          name,
+          file: page.file,
+          meta: { cwaAdminRole },
+          ...(page.item ? { children: [{ path: ':iri', name: `${name}-iri`, file: page.item, meta: { cwaAdminRole, key: `${name}-iri` } }] } : {}),
+        }
+      }),
+    })
   }
 }
 
-export function extensionAdminMenu(extensions: CwaExtension[]): CwaExtensionMenuEntry[] {
-  return extensions.flatMap(extension => (extension.adminPages ?? [])
-    .filter(page => page.menu)
-    .map(page => ({ label: page.menu!.label, to: { name: adminRouteName(page.path) }, role: page.role ?? DEFAULT_ADMIN_ROLE })))
+export function extensionAreas(extensions: CwaExtension[], iconSvg: (icon: string) => string | undefined): CwaExtensionArea[] {
+  return extensions.map((extension) => {
+    const icon = extension.icon && iconSvg(extension.icon)
+    return {
+      segment: extensionSegment(extension.prefix),
+      label: extension.label,
+      ...(extension.description ? { description: extension.description } : {}),
+      ...(icon ? { icon } : {}),
+      pages: (extension.adminPages ?? []).map(page => ({ path: trimPath(page.path), label: page.label, role: pageRole(page) })),
+    }
+  })
 }
 
 export function extensionAdminRoles(extensions: CwaExtension[]): { role: string, label: string }[] {
@@ -152,13 +198,9 @@ export function extensionAdminRoles(extensions: CwaExtension[]): { role: string,
     if (!page.role || page.role === DEFAULT_ADMIN_ROLE) {
       continue
     }
-    const pageLabels = labels.get(page.role) ?? []
-    if (page.menu) {
-      pageLabels.push(page.menu.label)
-    }
-    labels.set(page.role, pageLabels)
+    labels.set(page.role, [...labels.get(page.role) ?? [], page.label])
   }
-  return [...labels].map(([role, pageLabels]) => ({ role, label: pageLabels.join(', ') || role }))
+  return [...labels].map(([role, pageLabels]) => ({ role, label: pageLabels.join(', ') }))
 }
 
 export function extensionRouteRules(routeRules: Record<string, Record<string, unknown>>, extensions: CwaExtension[]) {

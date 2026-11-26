@@ -8,6 +8,7 @@ import {
   addImports,
   addImportsDir,
   addPlugin,
+  addRouteMiddleware,
   addServerHandler,
   addServerTemplate,
   addTemplate,
@@ -29,9 +30,9 @@ import { READINESS_DEFAULTS } from './runtime/server/readiness'
 import { defaultSiteConfig } from './runtime/composables/useCwaSiteConfig'
 import { scanComponentGroupDeclarations } from './component-group-declarations'
 import { scanCwaConfigDeclarations } from './cwa-config-declarations'
-import { adminResourcesTemplate, lucideNamesTypeTemplate } from './admin-resources'
+import { adminResourcesTemplate, lucideIconSvg, lucideNamesTypeTemplate } from './admin-resources'
 import type { LucideIconSet } from './admin-resources'
-import { addExtensionAdminPages, checkExtensions, extensionAdminMenu, extensionAdminRoles, extensionRouteRules } from './extensions'
+import { addExtensionAdminPages, checkExtensions, extensionAdminRoles, extensionAreas, extensionPageRoles, extensionRouteRules } from './extensions'
 import type { CwaExtension, ExtensionNames } from './extensions'
 import type { CwaModuleOptions, CwaResourcesConfig, CwaResourcesMeta, CwaStyleClasses, CwaStyles, CwaUiVariantConfig, GlobalComponentNames } from './runtime/types'
 
@@ -227,8 +228,9 @@ export default defineNuxtModule<CwaModuleOptions>({
     })
 
     const extensions: CwaExtension[] = []
+    addRouteMiddleware({ name: 'cwa-extension-area', path: resolve('./runtime/extension-area-middleware') })
     extendPages((pages: NuxtPage[]) => {
-      addExtensionAdminPages(pages, extensions)
+      addExtensionAdminPages(pages, extensions, resolve(vueTemplatesDir, 'extension-area.vue'))
     })
 
     nuxt.hook('pages:routerOptions', ({ files }) => {
@@ -610,7 +612,20 @@ export type CwaComponentStyles = { [Name in CwaComponentName]: typeof CwaCompone
       addTemplate({
         filename: 'cwa-extension-menu.ts',
         write: true,
-        getContents: () => `export const extensionMenu: { label: string, to: { name: string }, role: string }[] = ${JSON.stringify(extensionAdminMenu(extensions), undefined, 2)}
+        getContents: () => `export const extensionPageRoles: string[] = ${JSON.stringify(extensionPageRoles(extensions))}
+`,
+      })
+      addTemplate({
+        filename: 'cwa-extension-areas.ts',
+        write: true,
+        getContents: () => `import type { CwaExtensionArea } from '#cwa/admin/extension-areas'
+export const extensionAreas: CwaExtensionArea[] = ${JSON.stringify(extensionAreas(extensions, (icon) => {
+  const svg = lucideIconSvg(readLucideIcons(), icon)
+  if (!svg) {
+    logger.warn(`${NAME}: the extension icon "${icon}" is not a lucide icon, so it is left out`)
+  }
+  return svg
+}), undefined, 2)}
 export const extensionAdminRoles: { role: string, label: string }[] = ${JSON.stringify(extensionAdminRoles(extensions), undefined, 2)}
 `,
       })

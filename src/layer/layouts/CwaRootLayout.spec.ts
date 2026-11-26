@@ -13,7 +13,7 @@ const styleClasses = vi.hoisted(() => ({
 }))
 vi.mock('#build/cwa-styles', () => ({ styleClasses }))
 vi.mock('#build/cwa-extension-menu', () => ({
-  extensionMenu: [{ label: 'Orders', to: { name: '_cwa-orders' }, role: 'ROLE_SHOP_ADMIN' }],
+  extensionPageRoles: ['ROLE_SHOP_ADMIN'],
 }))
 
 const routeMeta = vi.hoisted(() => ({ value: {} as Record<string, unknown> }))

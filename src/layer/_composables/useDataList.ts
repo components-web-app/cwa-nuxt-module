@@ -1,6 +1,7 @@
 import { onMounted, ref } from 'vue'
 import { useCwa } from '#cwa/composables/cwa'
 import type { PageDataMetadataResource } from '#cwa/storage/stores/api-documentation/state'
+import { pageDataTypes } from '#cwa/admin/page-data-types'
 
 export const useDataList = () => {
   const $cwa = useCwa()
@@ -31,13 +32,7 @@ export const useDataList = () => {
     await $cwa.fetchResource({
       path: $cwa.auth.user?.['@id'],
     })
-    const docs = await $cwa.getApiDocumentation()
-    const allMetadata = docs?.pageDataMetadata?.['member']
-    if (!allMetadata) {
-      isLoadingDataTypes.value = false
-      return
-    }
-    dataTypes.value = allMetadata.filter(data => (!data.resourceClass.endsWith('\\AbstractPageData')))
+    dataTypes.value = pageDataTypes(await $cwa.getApiDocumentation())
     isLoadingDataTypes.value = false
   })
 

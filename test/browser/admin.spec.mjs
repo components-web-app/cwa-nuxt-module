@@ -1775,6 +1775,7 @@ test('65. a shared component with unpublished changes offers Remove from here, D
   await dialog.getByText('Delete entire component deletes the draft and the live version from all 2 places it is used.').waitFor()
   await dialog.getByText('Neither delete can be undone.').waitFor()
   await eventually(() => dialog.getByRole('button', { name: 'Remove from here', exact: true }).evaluate(el => el === document.activeElement), 'Remove from here is not focused')
+  await dialog.evaluate(el => Promise.all(el.getAnimations({ subtree: true }).map(animation => animation.finished.catch(() => undefined))))
   const boxes = await Promise.all(['Cancel', 'Remove from here', 'Delete draft', 'Delete entire component'].map(name => dialog.getByRole('button', { name, exact: true }).boundingBox()))
   assert(new Set(boxes.map(box => Math.round(box.y))).size === 1, `The buttons are not in one row: ${JSON.stringify(boxes)}`)
   assert(boxes[1].x - (boxes[0].x + boxes[0].width) > boxes[2].x - (boxes[1].x + boxes[1].width), `Cancel is not on its own side: ${JSON.stringify(boxes)}`)

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import type { NuxtPage } from '@nuxt/schema'
-import { addExtensionAdminPages, checkExtensions, extensionAdminMenu, extensionAdminRoles, extensionRouteRules } from './extensions'
+import { addExtensionAdminPages, checkExtensions, extensionAdminRoles, extensionAreas, extensionPageRoles, extensionRouteRules, extensionSegment } from './extensions'
 import type { CwaExtension, ExtensionNames } from './extensions'
 
 const noNames: ExtensionNames = { components: [], layouts: [], pages: [] }
@@ -10,11 +10,11 @@ function check(extensions: CwaExtension[], names: Record<string, Partial<Extensi
     extensions,
     namesOf: extension => ({ ...noNames, ...names[extension.name] }),
     appNames: { ...noNames, ...appNames },
-    builtInAdminPaths: ['data', 'layouts', 'orphaned', 'pages', 'routes', 'settings', 'users'],
+    builtInAdminPaths: ['data', 'extensions', 'layouts', 'orphaned', 'pages', 'routes', 'settings', 'users'],
   })
 }
 
-const shop: CwaExtension = { name: '@acme/shop', prefix: 'Shop', dir: '/ext/shop' }
+const shop: CwaExtension = { name: '@acme/shop', prefix: 'Shop', label: 'Shop', dir: '/ext/shop' }
 
 describe('checkExtensions', () => {
   describe('prefixes', () => {
@@ -31,7 +31,7 @@ describe('checkExtensions', () => {
     })
 
     test('refuses a prefix another extension already uses, naming both', () => {
-      expect(() => check([shop, { name: '@other/shop', prefix: 'Shop' }])).toThrow('@acme/shop and @other/shop both use the prefix "Shop"')
+      expect(() => check([shop, { name: '@other/shop', prefix: 'Shop', label: 'Other shop' }])).toThrow('@acme/shop and @other/shop both use the prefix "Shop"')
     })
 
     test('refuses an extension registered twice under one name', () => {
@@ -55,7 +55,7 @@ describe('checkExtensions', () => {
     })
 
     test('refuses two extensions defining the same name, naming both files', () => {
-      const plus: CwaExtension = { name: '@acme/shop-plus', prefix: 'ShopPlus', dir: '/ext/plus' }
+      const plus: CwaExtension = { name: '@acme/shop-plus', prefix: 'ShopPlus', label: 'Shop plus', dir: '/ext/plus' }
       expect(() => check([shop, plus], { '@acme/shop': { components: ['ShopPlusBadge'] }, '@acme/shop-plus': { components: ['ShopPlusBadge'] } }))
         .toThrow('ShopPlusBadge is defined by both /ext/shop/components/ShopPlusBadge (@acme/shop) and /ext/plus/components/ShopPlusBadge (@acme/shop-plus)')
     })
@@ -79,25 +79,42 @@ describe('checkExtensions', () => {
   })
 
   describe('admin pages', () => {
-    const orders = { path: 'orders', file: '/ext/shop/admin/orders.vue' }
+    const orders = { path: 'orders', label: 'Orders', file: '/ext/shop/admin/orders.vue' }
 
-    test('accepts an admin page on a free path', () => {
+    test('accepts an admin page with a label', () => {
       expect(() => check([{ ...shop, adminPages: [orders] }])).not.toThrow()
     })
 
-    test('refuses an admin page on a built-in path', () => {
-      expect(() => check([{ ...shop, adminPages: [{ ...orders, path: 'users' }] }]))
-        .toThrow('@acme/shop\'s admin page /_cwa/users is a built-in admin page')
+    test('refuses an admin page without a label, which its tab needs', () => {
+      expect(() => check([{ ...shop, adminPages: [{ path: 'orders', file: '/o.vue' } as never] }]))
+        .toThrow('@acme/shop\'s admin page /_cwa/shop/orders needs a label for its tab')
+      expect(() => check([{ ...shop, adminPages: [{ ...orders, label: ' ' }] }]))
+        .toThrow('@acme/shop\'s admin page /_cwa/shop/orders needs a label for its tab')
     })
 
-    test('refuses an admin page whose first segment is a built-in path', () => {
-      expect(() => check([{ ...shop, adminPages: [{ ...orders, path: '/settings/shop/' }] }]))
-        .toThrow('@acme/shop\'s admin page /_cwa/settings/shop is a built-in admin page')
+    test.each(['extensions', 'pages', 'users'])('refuses an area whose segment is the built-in admin path %s', (segment) => {
+      const prefix = segment.charAt(0).toUpperCase() + segment.slice(1)
+      expect(() => check([{ ...shop, prefix, adminPages: [orders] }]))
+        .toThrow(`@acme/shop's admin area /_cwa/${segment}, from its prefix "${prefix}", is a built-in admin page`)
     })
 
-    test('refuses two extensions registering the same admin path, naming both', () => {
-      expect(() => check([{ ...shop, adminPages: [orders] }, { name: '@acme/store', prefix: 'Store', adminPages: [{ ...orders, path: '/orders' }] }]))
-        .toThrow('/_cwa/orders is registered by both @acme/shop and @acme/store')
+    test('lets an extension without admin pages use a prefix that would be a built-in path, as it has no area', () => {
+      expect(() => check([{ ...shop, prefix: 'Pages' }])).not.toThrow()
+    })
+
+    test('refuses two extensions whose prefixes give the same area segment, naming both', () => {
+      expect(() => check([{ ...shop, prefix: 'AbShop', adminPages: [orders] }, { name: '@acme/store', prefix: 'ABShop', label: 'Store', adminPages: [orders] }]))
+        .toThrow('@acme/shop and @acme/store both have the admin area /_cwa/ab-shop, from their prefixes "AbShop" and "ABShop"')
+    })
+
+    test('refuses an admin page whose route would be another extension\'s area', () => {
+      expect(() => check([{ ...shop, adminPages: [{ ...orders, path: 'plus' }] }, { name: '@acme/shop-plus', prefix: 'ShopPlus', label: 'Shop plus', adminPages: [orders] }]))
+        .toThrow('/_cwa/shop/plus and /_cwa/shop-plus (@acme/shop-plus) would both be the route _cwa-shop-plus')
+    })
+
+    test('refuses one extension registering the same admin page twice', () => {
+      expect(() => check([{ ...shop, adminPages: [orders, { ...orders, path: '/orders/' }] }]))
+        .toThrow('/_cwa/shop/orders and /_cwa/shop/orders (@acme/shop) would both be the route _cwa-shop-orders')
     })
 
     test.each(['ROLE_ADMIN', 'ROLE_SHOP_ACCOUNTS'])('accepts the role %s', (role) => {
@@ -106,91 +123,118 @@ describe('checkExtensions', () => {
 
     test.each(['', 'ROLE_USER', 'SHOP_ACCOUNTS', 'role_admin'])('refuses the role "%s", which would open an admin page to any signed-in user or match no role', (role) => {
       expect(() => check([{ ...shop, adminPages: [{ ...orders, role }] }]))
-        .toThrow(`@acme/shop's admin page /_cwa/orders declares the role "${role}". Use a ROLE_ name other than ROLE_USER, or leave it out for ROLE_ADMIN.`)
+        .toThrow(`@acme/shop's admin page /_cwa/shop/orders declares the role "${role}". Use a ROLE_ name other than ROLE_USER, or leave it out for ROLE_ADMIN.`)
     })
+  })
+})
+
+describe('extensionSegment', () => {
+  test.each([['Ecommerce', 'ecommerce'], ['SilverbackShop', 'silverback-shop'], ['ABShop', 'ab-shop'], ['Shop2Go', 'shop2-go']])('%s is the area /_cwa/%s', (prefix, segment) => {
+    expect(extensionSegment(prefix)).toBe(segment)
   })
 })
 
 describe('addExtensionAdminPages', () => {
+  const ecommerce: CwaExtension = { name: '@acme/ecommerce', prefix: 'Ecommerce', label: 'E-commerce' }
+
   function cwaPages(): NuxtPage[] {
     return [
       { path: '/', name: 'index', file: '/app/pages/index.vue' },
-      { path: '/_cwa', file: '/layer/pages/_cwa/index.vue', children: [{ path: 'users', name: '_cwa-users', file: '/layer/pages/_cwa/index/users.vue' }] },
+      { path: '/_cwa', file: '/layer/pages/_cwa/index.vue', children: [
+        { path: 'users', name: '_cwa-users', file: '/layer/pages/_cwa/index/users.vue' },
+        { path: 'extensions', name: '_cwa-index-extensions', file: '/layer/pages/_cwa/index/extensions.vue' },
+      ] },
     ]
   }
 
-  test('adds each admin page as a child of /_cwa, so it inherits the admin guard and sits in the admin shell', () => {
+  test('puts each extension\'s pages in its area, a child of /_cwa named from its prefix, so they inherit the admin guard and an item page becomes a keyed :iri child', () => {
     const pages = cwaPages()
 
-    addExtensionAdminPages(pages, [{ ...shop, adminPages: [{ path: '/orders/', file: '/ext/shop/admin/orders.vue' }] }])
+    addExtensionAdminPages(pages, [{ ...ecommerce, adminPages: [
+      { path: '/orders/', label: 'Orders', file: '/ext/admin/orders.vue', item: '/ext/admin/order.vue' },
+      { path: 'reports', label: 'Reports', file: '/ext/admin/reports.vue', role: 'ROLE_SHOP_ACCOUNTS' },
+    ] }], '/cwa/extension-area.vue')
 
-    expect(pages[1]!.children).toEqual([
-      { path: 'users', name: '_cwa-users', file: '/layer/pages/_cwa/index/users.vue' },
-      { path: 'orders', name: '_cwa-orders', file: '/ext/shop/admin/orders.vue', meta: { cwaAdminRole: 'ROLE_ADMIN' } },
-    ])
-  })
-
-  test('records a declared role in its own meta key, so the parent\'s cwa meta is not replaced', () => {
-    const pages = cwaPages()
-
-    addExtensionAdminPages(pages, [{ ...shop, adminPages: [{ path: 'shop/reports', file: '/ext/shop/admin/reports.vue', role: 'ROLE_SHOP_ACCOUNTS' }] }])
-
-    expect(pages[1]!.children![1]).toEqual({ path: 'shop/reports', name: '_cwa-shop-reports', file: '/ext/shop/admin/reports.vue', meta: { cwaAdminRole: 'ROLE_SHOP_ACCOUNTS' } })
-  })
-
-  test('an item page becomes a keyed :iri child of its list, as the built-in lists\' dialogs are, so a create pushing from add to the new IRI keeps the dialog mounted, and it takes the list\'s role', () => {
-    const pages = cwaPages()
-
-    addExtensionAdminPages(pages, [{ ...shop, adminPages: [{ path: 'shop/orders', file: '/ext/shop/admin/orders.vue', item: '/ext/shop/admin/order.vue', role: 'ROLE_SHOP' }] }])
-
-    expect(pages[1]!.children![1]).toEqual({
-      path: 'shop/orders',
-      name: '_cwa-shop-orders',
-      file: '/ext/shop/admin/orders.vue',
-      meta: { cwaAdminRole: 'ROLE_SHOP' },
-      children: [{ path: ':iri', name: '_cwa-shop-orders-iri', file: '/ext/shop/admin/order.vue', meta: { cwaAdminRole: 'ROLE_SHOP', key: '_cwa-shop-orders-iri' } }],
+    expect(pages[1]!.children![2]).toEqual({
+      path: 'ecommerce',
+      name: '_cwa-ecommerce',
+      file: '/cwa/extension-area.vue',
+      meta: { cwaAdminRole: ['ROLE_ADMIN', 'ROLE_SHOP_ACCOUNTS'], middleware: ['cwa-extension-area'], pageTransition: false },
+      children: [
+        {
+          path: 'orders',
+          name: '_cwa-ecommerce-orders',
+          file: '/ext/admin/orders.vue',
+          meta: { cwaAdminRole: 'ROLE_ADMIN' },
+          children: [{ path: ':iri', name: '_cwa-ecommerce-orders-iri', file: '/ext/admin/order.vue', meta: { cwaAdminRole: 'ROLE_ADMIN', key: '_cwa-ecommerce-orders-iri' } }],
+        },
+        { path: 'reports', name: '_cwa-ecommerce-reports', file: '/ext/admin/reports.vue', meta: { cwaAdminRole: 'ROLE_SHOP_ACCOUNTS' } },
+      ],
     })
   })
 
+  test('opens the Extensions page to admins and to every role an extension page needs', () => {
+    const pages = cwaPages()
+
+    addExtensionAdminPages(pages, [{ ...ecommerce, adminPages: [{ path: 'reports', label: 'Reports', file: '/r.vue', role: 'ROLE_SHOP_ACCOUNTS' }] }], '/area.vue')
+
+    expect(pages[1]!.children![1]!.meta).toEqual({ cwaAdminRole: ['ROLE_ADMIN', 'ROLE_SHOP_ACCOUNTS'] })
+  })
+
   test('throws when the layer\'s /_cwa page is missing, since an extension page outside it would be unguarded', () => {
-    expect(() => addExtensionAdminPages([{ path: '/', file: '/app/pages/index.vue' }], [{ ...shop, adminPages: [{ path: 'orders', file: '/x.vue' }] }]))
+    expect(() => addExtensionAdminPages([{ path: '/', file: '/app/pages/index.vue' }], [{ ...shop, adminPages: [{ path: 'orders', label: 'Orders', file: '/x.vue' }] }], '/area.vue'))
       .toThrow('@acme/shop\'s admin pages need the /_cwa page from @cwa/nuxt/layer')
   })
 
-  test('leaves the pages alone when no extension has admin pages', () => {
+  test('adds no area when no extension has admin pages', () => {
     const pages = cwaPages()
 
-    addExtensionAdminPages(pages, [shop])
+    addExtensionAdminPages(pages, [shop], '/area.vue')
 
-    expect(pages).toEqual(cwaPages())
+    expect(pages[1]!.children!.map(page => page.name)).toEqual(['_cwa-users', '_cwa-index-extensions'])
   })
 })
 
-describe('extensionAdminMenu', () => {
-  test('lists each admin page with a menu label, in registration order, with its route name and role', () => {
-    expect(extensionAdminMenu([
-      { ...shop, adminPages: [{ path: 'orders', file: '/o.vue', menu: { label: 'Orders' } }, { path: 'orders/refunds', file: '/r.vue' }] },
-      { name: '@acme/store', prefix: 'Store', adminPages: [{ path: 'reports', file: '/rp.vue', role: 'ROLE_SHOP_ACCOUNTS', menu: { label: 'Reports' } }] },
-    ])).toEqual([
-      { label: 'Orders', to: { name: '_cwa-orders' }, role: 'ROLE_ADMIN' },
-      { label: 'Reports', to: { name: '_cwa-reports' }, role: 'ROLE_SHOP_ACCOUNTS' },
+describe('extensionAreas', () => {
+  test('lists every extension with its label, description, icon and pages in declared order with their roles, and one without pages too', () => {
+    expect(extensionAreas([
+      { name: '@acme/ecommerce', prefix: 'Ecommerce', label: 'E-commerce', description: 'Orders, products and payments', icon: 'lucide:shopping-cart', adminPages: [
+        { path: 'orders', label: 'Orders', file: '/o.vue' },
+        { path: 'products', label: 'Products', file: '/p.vue', role: 'ROLE_SHOP_PRODUCTS' },
+      ] },
+      { name: '@acme/badges', prefix: 'Badges', label: 'Badges', icon: 'lucide:not-an-icon' },
+    ], icon => icon === 'lucide:shopping-cart' ? '<svg />' : undefined)).toEqual([
+      { segment: 'ecommerce', label: 'E-commerce', description: 'Orders, products and payments', icon: '<svg />', pages: [
+        { path: 'orders', label: 'Orders', role: 'ROLE_ADMIN' },
+        { path: 'products', label: 'Products', role: 'ROLE_SHOP_PRODUCTS' },
+      ] },
+      { segment: 'badges', label: 'Badges', pages: [] },
     ])
+  })
+})
+
+describe('extensionPageRoles', () => {
+  test('lists each role an extension page needs, once, the default included', () => {
+    expect(extensionPageRoles([
+      { ...shop, adminPages: [{ path: 'a', label: 'A', file: '/a.vue' }, { path: 'b', label: 'B', file: '/b.vue', role: 'ROLE_SHOP' }] },
+      { name: '@acme/store', prefix: 'Store', label: 'Store', adminPages: [{ path: 'c', label: 'C', file: '/c.vue', role: 'ROLE_SHOP' }] },
+    ])).toEqual(['ROLE_ADMIN', 'ROLE_SHOP'])
   })
 })
 
 describe('extensionAdminRoles (bundle #611)', () => {
-  test('lists each role a page declares, once, labelled by the menu labels of its pages, else the role, leaving out the admin default', () => {
+  test('lists each role a page declares, once, labelled by the labels of its pages, leaving out the admin default', () => {
     expect(extensionAdminRoles([
       { ...shop, adminPages: [
-        { path: 'orders', file: '/o.vue', menu: { label: 'Orders' } },
-        { path: 'accounts', file: '/a.vue', role: 'ROLE_SHOP_ACCOUNTS', menu: { label: 'Accounts' } },
-        { path: 'invoices', file: '/i.vue', role: 'ROLE_SHOP_ACCOUNTS', menu: { label: 'Invoices' } },
-        { path: 'exports', file: '/e.vue', role: 'ROLE_SHOP_EXPORTS' },
-        { path: 'settings', file: '/s.vue', role: 'ROLE_ADMIN', menu: { label: 'Shop settings' } },
+        { path: 'orders', label: 'Orders', file: '/o.vue' },
+        { path: 'accounts', label: 'Accounts', file: '/a.vue', role: 'ROLE_SHOP_ACCOUNTS' },
+        { path: 'invoices', label: 'Invoices', file: '/i.vue', role: 'ROLE_SHOP_ACCOUNTS' },
+        { path: 'exports', label: 'Exports', file: '/e.vue', role: 'ROLE_SHOP_EXPORTS' },
+        { path: 'settings', label: 'Shop settings', file: '/s.vue', role: 'ROLE_ADMIN' },
       ] },
     ])).toEqual([
       { role: 'ROLE_SHOP_ACCOUNTS', label: 'Accounts, Invoices' },
-      { role: 'ROLE_SHOP_EXPORTS', label: 'ROLE_SHOP_EXPORTS' },
+      { role: 'ROLE_SHOP_EXPORTS', label: 'Exports' },
     ])
   })
 })

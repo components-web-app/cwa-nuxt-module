@@ -6,6 +6,9 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ### Added
 
+- Extension admin areas: an extension's admin pages are tabs of its own area at `/_cwa/<segment>`, under its label, showing only the pages the user's roles open; the area opens on the first of them. [#510](https://github.com/components-web-app/cwa-nuxt-module/pull/510)
+- `/_cwa/extensions` lists the extensions the user can open, with their label, description and icon, and the header menu links to it. [#510](https://github.com/components-web-app/cwa-nuxt-module/pull/510)
+- `cwaAdminRoute(segment, page, iri?)` links to an extension's admin page or its item, and throws in development for a page that does not exist. [#510](https://github.com/components-web-app/cwa-nuxt-module/pull/510)
 - My account (`/_cwa/account`): any admin can change their own password and email, and resend or cancel a pending email change; the header menu's My account link opens it. [#505](https://github.com/components-web-app/cwa-nuxt-module/pull/505)
 - `useCwaAccount`, `useCwaChangePassword` and `useCwaChangeEmail` read the signed-in user and change their password or email, so an app can build its own account page. [#505](https://github.com/components-web-app/cwa-nuxt-module/pull/505)
 - `CwaUiSecretInput`'s Replace has a Show value button. [64fa7828](https://github.com/components-web-app/cwa-nuxt-module/commit/64fa7828ad3ddd907ddc42975fbb3c2b46441650) ([#494](https://github.com/components-web-app/cwa-nuxt-module/issues/494))
@@ -17,6 +20,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ### Changed
 
+- An extension's admin pages move into its area: `/_cwa/<segment>/<path>`, named `_cwa-<segment>-<path>`, where the segment is the prefix in kebab-case (`SilverbackShop` → `silverback-shop`). An extension now needs a `label` (and may have `description` and `icon: 'lucide:<name>'`), and each admin page needs a `label`. **Upgrade:** remove the prefix from each page's `path` (`'shop-orders'` → `'orders'`), replace `menu: { label }` with `label`, and update links to the new route names, or use `cwaAdminRoute`. [#510](https://github.com/components-web-app/cwa-nuxt-module/pull/510)
+- The header menu has one Extensions link instead of a link per extension page, and shows Data only when the API docs list page data classes. [#510](https://github.com/components-web-app/cwa-nuxt-module/pull/510)
 - An `allowedComponents` rule's `ui` takes short UI names: `default` for the component itself and the file name for a UI (`{ component: 'Image', ui: ['default', 'Hero'] }`), from the new auto-imported `CwaComponentUis` constant, with `CwaComponentStyles` for style keys. It syncs the same values as before. A `ui/Default.vue` is warned about and left out of the UIs, since `default` names the component itself. [#509](https://github.com/components-web-app/cwa-nuxt-module/pull/509)
 
 ### Deprecated

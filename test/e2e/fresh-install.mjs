@@ -83,8 +83,8 @@ function checkExtension(appDir) {
   if (!read('cwa-component-names.ts').includes('"FixtureBadge": "FixtureBadge"')) {
     throw new Error('the fixture extension\'s FixtureBadge component is not a CWA component name')
   }
-  if (!read('cwa-extension-menu.ts').includes('"name": "_cwa-fixture-orders"')) {
-    throw new Error('the fixture extension\'s admin page is not in the admin menu')
+  if (!/"segment": "fixture"[\s\S]*"path": "orders"/.test(read('cwa-extension-areas.ts'))) {
+    throw new Error('the fixture extension\'s admin area is not listed')
   }
 }
 

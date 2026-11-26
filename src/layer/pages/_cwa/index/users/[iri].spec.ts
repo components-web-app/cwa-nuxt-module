@@ -24,8 +24,8 @@ vi.mock('#cwa/composables/cwa-toast', () => ({
   useCwaToast: () => ({ show: showToast, dismiss: vi.fn() }),
 }))
 
-vi.mock('#build/cwa-extension-menu', () => ({
-  extensionMenu: [],
+vi.mock('#build/cwa-extension-areas', () => ({
+  extensionAreas: [],
   extensionAdminRoles: [{ role: 'ROLE_SHOP_ACCOUNTS', label: 'Accounts' }],
 }))
 
