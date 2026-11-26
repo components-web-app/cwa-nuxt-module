@@ -10,6 +10,10 @@ describe('admin pages ask for the role that manages them (bundle #611)', () => {
     expect(useRouter().resolve({ name, params }).meta.cwaAdminRole).toBe('ROLE_USER_ADMIN')
   })
 
+  test('_cwa-account opens for any admin, not only content admins', () => {
+    expect(useRouter().resolve({ name: '_cwa-account' }).meta.cwaAdminRole).toBe('ROLE_ADMIN')
+  })
+
   test.each(['/_cwa/layouts', '/_cwa/pages', '/_cwa/routes', '/_cwa/settings', '/_cwa/orphaned'])('%s declares no role, so it is for content admins, the guard\'s default', (path) => {
     expect(useRouter().resolve(path).meta.cwaAdminRole).toBeUndefined()
   })
