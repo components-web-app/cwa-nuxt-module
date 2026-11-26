@@ -13,6 +13,7 @@ vi.mock('@nuxt/kit', async () => {
   const newModule = {
     ...actual,
     addPlugin: vi.fn(),
+    addRouteMiddleware: vi.fn(),
     addImports: vi.fn(),
     addImportsDir: vi.fn(),
     addComponent: vi.fn(),
@@ -83,7 +84,7 @@ async function prepareMockNuxt(options = {}, nuxt?: any) {
 
 describe('CWA module', () => {
   describe('extensions', () => {
-    const shop = { name: '@acme/shop', prefix: 'Shop', dir: '/ext/shop', adminPages: [{ path: 'orders', file: '/ext/shop/admin/orders.vue', menu: { label: 'Orders' } }], pageCache: { '/basket': false as const } }
+    const shop = { name: '@acme/shop', prefix: 'Shop', label: 'Shop', dir: '/ext/shop', adminPages: [{ path: 'orders', label: 'Orders', file: '/ext/shop/admin/orders.vue' }], pageCache: { '/basket': false as const } }
 
     async function setupWithExtension(extension: Record<string, unknown> = shop, options: Record<string, unknown> = {}) {
       const hooks: Record<string, (...args: any[]) => any> = {}
@@ -154,7 +155,16 @@ describe('CWA module', () => {
 
       pageCallbacks.forEach(callback => callback(pages))
 
-      expect(pages[0].children).toContainEqual({ path: 'orders', name: '_cwa-orders', file: '/ext/shop/admin/orders.vue', meta: { cwaAdminRole: 'ROLE_ADMIN', layout: 'cwa-root-layout' } })
+      const area = pages[0].children.find((page: { name: string }) => page.name === '_cwa-shop')
+      expect(area.file).toMatch(/runtime\/templates\/extension-area\.vue$/)
+      expect(area.meta.layout).toBe('cwa-root-layout')
+      expect(area.children).toEqual([{ path: 'orders', name: '_cwa-shop-orders', file: '/ext/shop/admin/orders.vue', meta: { cwaAdminRole: 'ROLE_ADMIN', layout: 'cwa-root-layout' } }])
+    })
+
+    test('registers the middleware that opens an area on its first openable page as a named middleware, so it is loaded only with the admin', async () => {
+      await setupWithExtension()
+
+      expect(nuxtKit.addRouteMiddleware).toHaveBeenCalledWith({ name: 'cwa-extension-area', path: expect.stringMatching(/runtime\/extension-area-middleware$/) })
     })
 
     test('turns an extension\'s page cache rules into route rules', async () => {
@@ -163,22 +173,20 @@ describe('CWA module', () => {
       expect(mockNuxt.options.routeRules).toEqual({ '/basket': { cwa: { pageCache: false } } })
     })
 
-    test('writes the menu entries of the extensions\' admin pages, and the roles they declare, to a template the admin menu and user dialog read', async () => {
-      await setupWithExtension()
+    test('writes the roles the extensions\' admin pages need to the small template the header reads, and the areas and declared roles to the admin template the area, the Extensions page and the user dialog read', async () => {
+      await setupWithExtension({ ...shop, description: 'Orders', icon: 'lucide:shopping-cart', adminPages: [...shop.adminPages, { path: 'accounts', label: 'Accounts', file: '/a.vue', role: 'ROLE_SHOP_ACCOUNTS' }] })
+      const templates = (nuxtKit.addTemplate as Mock).mock.calls.map(([template]) => template)
 
-      const template = (nuxtKit.addTemplate as Mock).mock.calls.map(([template]) => template).find(template => template.filename === 'cwa-extension-menu.ts')
-
-      expect(template.getContents()).toBe(`export const extensionMenu: { label: string, to: { name: string }, role: string }[] = [
-  {
-    "label": "Orders",
-    "to": {
-      "name": "_cwa-orders"
-    },
-    "role": "ROLE_ADMIN"
-  }
-]
-export const extensionAdminRoles: { role: string, label: string }[] = []
+      expect(templates.find(template => template.filename === 'cwa-extension-menu.ts').getContents()).toBe(`export const extensionPageRoles: string[] = ["ROLE_ADMIN","ROLE_SHOP_ACCOUNTS"]
 `)
+      const areas: string = templates.find(template => template.filename === 'cwa-extension-areas.ts').getContents()
+      expect(areas).toMatch(/"segment": "shop",\s+"label": "Shop",\s+"description": "Orders",\s+"icon": "<svg data-cwa-admin-icon /)
+      expect(areas).toContain(`export const extensionAdminRoles: { role: string, label: string }[] = [
+  {
+    "role": "ROLE_SHOP_ACCOUNTS",
+    "label": "Accounts"
+  }
+]`)
     })
 
     test('an app component replacing an extension\'s takes its manager tabs and UI variants only from the app\'s folder, never the extension\'s', async () => {

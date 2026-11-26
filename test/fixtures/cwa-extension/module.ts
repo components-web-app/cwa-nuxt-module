@@ -9,10 +9,13 @@ export default defineNuxtModule({
       register({
         name: 'cwa-fixture-extension',
         prefix: 'Fixture',
+        label: 'Fixture shop',
+        description: 'Orders and reports',
+        icon: 'lucide:shopping-cart',
         dir: resolve('./cwa'),
         adminPages: [
-          { path: 'fixture-orders', file: resolve('./admin/orders.vue'), item: resolve('./admin/order.vue'), menu: { label: 'Orders' } },
-          { path: 'fixture-reports', file: resolve('./admin/reports.vue'), role: 'ROLE_FIXTURE_REPORTS', menu: { label: 'Reports' } },
+          { path: 'orders', label: 'Orders', file: resolve('./admin/orders.vue'), item: resolve('./admin/order.vue') },
+          { path: 'reports', label: 'Reports', file: resolve('./admin/reports.vue'), role: 'ROLE_FIXTURE_REPORTS' },
         ],
         pageCache: { '/fixture-basket': false, '/fixture-account/**': false },
       })
