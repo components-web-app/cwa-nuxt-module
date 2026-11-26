@@ -6,6 +6,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ### Added
 
+- My account (`/_cwa/account`): any admin can change their own password and email, and resend or cancel a pending email change; the header menu's My account link opens it. [#505](https://github.com/components-web-app/cwa-nuxt-module/pull/505)
+- `useCwaAccount`, `useCwaChangePassword` and `useCwaChangeEmail` read the signed-in user and change their password or email, so an app can build its own account page. [#505](https://github.com/components-web-app/cwa-nuxt-module/pull/505)
 - `CwaUiSecretInput`'s Replace has a Show value button. [64fa7828](https://github.com/components-web-app/cwa-nuxt-module/commit/64fa7828ad3ddd907ddc42975fbb3c2b46441650) ([#494](https://github.com/components-web-app/cwa-nuxt-module/issues/494))
 - `CwaUiNumber` takes `optional`: emptied, it saves `null` instead of going back to its value. [64fa7828](https://github.com/components-web-app/cwa-nuxt-module/commit/64fa7828ad3ddd907ddc42975fbb3c2b46441650) ([#494](https://github.com/components-web-app/cwa-nuxt-module/issues/494))
 - `CwaUiDescriptorFields` takes `disabled`, and its optional `int` fields clear to `null`. [64fa7828](https://github.com/components-web-app/cwa-nuxt-module/commit/64fa7828ad3ddd907ddc42975fbb3c2b46441650) ([#494](https://github.com/components-web-app/cwa-nuxt-module/issues/494))
