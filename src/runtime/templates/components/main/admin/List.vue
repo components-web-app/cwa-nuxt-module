@@ -3,6 +3,12 @@
     v-if="!inArea"
     :title="title"
   />
+  <div
+    v-else-if="$slots.back"
+    class="cwa:mx-auto cwa:w-full cwa:max-w-6xl cwa:px-4 cwa:sm:px-8"
+  >
+    <slot name="back" />
+  </div>
   <ListFilter
     :order-options="orderOptions"
     :search-label="searchLabel"
@@ -79,6 +85,7 @@ const props = defineProps<{
 
 defineSlots<{
   item(props: { data: CwaResource, rawData: CwaResource, link: RouteLocationRaw }): any
+  back?(): any
   filters?(): any
   notice?(): any
   empty?(): any
