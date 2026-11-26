@@ -207,3 +207,22 @@ describe('extension admin pages', () => {
     expect(wrapper.findAll('h3').map(heading => heading.text())).not.toContain('Extensions')
   })
 })
+
+describe('my account', () => {
+  afterEach(() => {
+    roles.list = ['ROLE_ADMIN', 'ROLE_CMS_ADMIN', 'ROLE_USER']
+  })
+
+  test.each([
+    [['ROLE_ADMIN']],
+    [['ROLE_ADMIN', 'ROLE_CMS_ADMIN', 'ROLE_USER']],
+    [['ROLE_ADMIN', 'ROLE_USER_ADMIN']],
+  ])('links any admin (%j) to their account page', async (list) => {
+    roles.list = list
+    wrapper = mountMenu()
+    await wrapper.get('button').trigger('click')
+
+    const link = wrapper.findAllComponents(LinkStub).find(candidate => candidate.text() === 'My account')
+    expect(link?.props('to')).toStrictEqual({ name: '_cwa-account' })
+  })
+})
