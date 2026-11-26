@@ -17,15 +17,15 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ### Changed
 
-- An `allowedComponents` rule's `ui` takes short UI names: `default` for the component itself and the file name for a UI (`{ component: 'Image', ui: ['default', 'Hero'] }`), from the new auto-imported `CwaComponentUis` constant, with `CwaComponentStyles` for style keys. It syncs the same values as before. A `ui/Default.vue` is warned about and left out of the UIs, since `default` names the component itself. [#PRNUM](https://github.com/components-web-app/cwa-nuxt-module/pull/PRNUM)
+- An `allowedComponents` rule's `ui` takes short UI names: `default` for the component itself and the file name for a UI (`{ component: 'Image', ui: ['default', 'Hero'] }`), from the new auto-imported `CwaComponentUis` constant, with `CwaComponentStyles` for style keys. It syncs the same values as before. A `ui/Default.vue` is warned about and left out of the UIs, since `default` names the component itself. [#509](https://github.com/components-web-app/cwa-nuxt-module/pull/509)
 
 ### Deprecated
 
-- Full UI names in an `allowedComponents` rule's `ui` (`CwaComponentImageUiHero`): use the short name (`Hero`). They still sync and warn once per name, but no longer type-check, and stop working in the next alpha without further warning. [#PRNUM](https://github.com/components-web-app/cwa-nuxt-module/pull/PRNUM)
+- Full UI names in an `allowedComponents` rule's `ui` (`CwaComponentImageUiHero`): use the short name (`Hero`). They still sync and warn once per name, but no longer type-check, and stop working in the next alpha without further warning. [#509](https://github.com/components-web-app/cwa-nuxt-module/pull/509)
 
 ### Removed
 
-- `cwa.staticLayout` is removed. Name the layout by its reference with `cwa.layout`. [#PRNUM](https://github.com/components-web-app/cwa-nuxt-module/pull/PRNUM)
+- `cwa.staticLayout` is removed. Name the layout by its reference with `cwa.layout`. [#509](https://github.com/components-web-app/cwa-nuxt-module/pull/509)
 
 ### Fixed
 
