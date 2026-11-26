@@ -4,6 +4,10 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+### Fixed
+
+- `nuxt typecheck` passes in an app again: alpha.41's root layout failed with TS2769 in any app with `typescript.strict: false`, and a strict app failed on the missing `@types/lodash-es`, which is now a dependency. [#515](https://github.com/components-web-app/cwa-nuxt-module/pull/515)
+
 ## [2.0.0-alpha.41] - 2026-11-26
 
 ### Added
