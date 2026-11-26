@@ -4,6 +4,12 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+## [2.0.0-alpha.42] - 2026-11-26
+
+### Fixed
+
+- `nuxt typecheck` passes in an app again: alpha.41's root layout failed with TS2769 in any app with `typescript.strict: false`, and a strict app failed on the missing `@types/lodash-es`, which is now a dependency. [#515](https://github.com/components-web-app/cwa-nuxt-module/pull/515)
+
 ## [2.0.0-alpha.41] - 2026-11-26
 
 ### Added
@@ -438,7 +444,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 - First tagged release of `@cwa/nuxt`; releases are now published from `v*` tags ([7c61b7c](https://github.com/components-web-app/cwa-nuxt-module/commit/7c61b7ce331ec4a0cb8e76951a5de2ff806ed07a))
 
-[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.41...HEAD
+[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.42...HEAD
+[2.0.0-alpha.42]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.41...v2.0.0-alpha.42
 [2.0.0-alpha.41]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.40...v2.0.0-alpha.41
 [2.0.0-alpha.40]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.39...v2.0.0-alpha.40
 [2.0.0-alpha.39]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.38...v2.0.0-alpha.39

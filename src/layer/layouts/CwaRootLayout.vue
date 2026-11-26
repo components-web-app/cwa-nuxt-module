@@ -46,6 +46,7 @@
 
 <script setup lang="ts">
 import { computed, ref, getCurrentInstance, watch, nextTick } from 'vue'
+import type { Component } from 'vue'
 import { consola as logger } from 'consola'
 import { useWindowScroll } from '@vueuse/core'
 import { useCwa, useHead } from '#imports'
@@ -91,13 +92,13 @@ const layoutResource = computed(() => {
   return $cwa.resources.layout.value
 })
 
-const layoutUiComponent = computed<GlobalComponentNames>(() => {
+const layoutUiComponent = computed<GlobalComponentNames | Component>(() => {
   return (layoutResource.value?.data?.uiComponent as GlobalComponentNames) || LazyCwaDefaultLayout
 })
 
 const hasNamedLayout = computed(() => !!layoutResource.value?.data?.uiComponent)
 
-const stableLayoutUiComponent = ref<GlobalComponentNames | undefined>(hasNamedLayout.value ? layoutUiComponent.value : undefined)
+const stableLayoutUiComponent = ref<GlobalComponentNames | Component | undefined>(hasNamedLayout.value ? layoutUiComponent.value : undefined)
 watch(hasNamedLayout, (isNamed) => {
   if (isNamed) {
     stableLayoutUiComponent.value = layoutUiComponent.value
