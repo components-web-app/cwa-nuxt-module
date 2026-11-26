@@ -4,6 +4,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+## [2.0.0-alpha.41] - 2026-11-26
+
 ### Added
 
 - Extension page-data tabs (`pageDataTabs: [{ key, label, file, role?, forTypesWithProperty }]`): a tab in the page-data dialog, after Details and before Routes, for each type whose API docs list the property. Its role defaults to `ROLE_CMS_ADMIN`, the role that opens the page-data dialog; it is hidden while adding and without its role, opens from its hash, and its component gets the page data's `iri` and `data`. Its own saves never count towards the dialog's Save. [#512](https://github.com/components-web-app/cwa-nuxt-module/pull/512)
@@ -436,7 +438,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 - First tagged release of `@cwa/nuxt`; releases are now published from `v*` tags ([7c61b7c](https://github.com/components-web-app/cwa-nuxt-module/commit/7c61b7ce331ec4a0cb8e76951a5de2ff806ed07a))
 
-[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.40...HEAD
+[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.41...HEAD
+[2.0.0-alpha.41]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.40...v2.0.0-alpha.41
 [2.0.0-alpha.40]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.39...v2.0.0-alpha.40
 [2.0.0-alpha.39]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.38...v2.0.0-alpha.39
 [2.0.0-alpha.38]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.37...v2.0.0-alpha.38
