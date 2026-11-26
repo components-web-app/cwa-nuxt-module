@@ -32,11 +32,11 @@ import { scanComponentGroupDeclarations } from './component-group-declarations'
 import { scanCwaConfigDeclarations } from './cwa-config-declarations'
 import { adminResourcesTemplate, lucideIconSvg, lucideNamesTypeTemplate } from './admin-resources'
 import type { LucideIconSet } from './admin-resources'
-import { addExtensionAdminPages, adminShellRoles, checkExtensions, extensionAdminRoles, extensionAreas, extensionPageRoles, extensionRouteRules } from './extensions'
+import { addExtensionAdminPages, adminShellRoles, checkExtensions, extensionAdminRoles, extensionAreas, extensionPageDataTemplate, extensionPageRoles, extensionRouteRules } from './extensions'
 import type { CwaExtension, ExtensionNames } from './extensions'
 import type { CwaModuleOptions, CwaResourcesConfig, CwaResourcesMeta, CwaStyleClasses, CwaStyles, CwaUiVariantConfig, GlobalComponentNames } from './runtime/types'
 
-export type { CwaExtension, CwaExtensionAdminPage } from './extensions'
+export type { CwaExtension, CwaExtensionAdminPage, CwaExtensionPageDataList, CwaExtensionPageDataTab } from './extensions'
 export type { CwaFieldDescriptor } from './runtime/templates/components/core/ui/field-descriptors'
 
 declare module 'nuxt/schema' {
@@ -230,7 +230,7 @@ export default defineNuxtModule<CwaModuleOptions>({
     const extensions: CwaExtension[] = []
     addRouteMiddleware({ name: 'cwa-extension-area', path: resolve('./runtime/extension-area-middleware') })
     extendPages((pages: NuxtPage[]) => {
-      addExtensionAdminPages(pages, extensions, resolve(vueTemplatesDir, 'extension-area.vue'))
+      addExtensionAdminPages(pages, extensions, resolve(vueTemplatesDir, 'extension-area.vue'), { types: resolve(vueTemplatesDir, 'extension-page-data-types.vue'), list: resolve(vueTemplatesDir, 'extension-page-data-list.vue'), item: resolve(vueTemplatesDir, 'extension-page-data-item.vue') })
     })
 
     nuxt.hook('pages:routerOptions', ({ files }) => {
@@ -629,6 +629,11 @@ export const extensionAreas: CwaExtensionArea[] = ${JSON.stringify(extensionArea
 }), undefined, 2)}
 export const extensionAdminRoles: { role: string, label: string }[] = ${JSON.stringify(extensionAdminRoles(extensions), undefined, 2)}
 `,
+      })
+      addTemplate({
+        filename: 'cwa-extension-page-data.ts',
+        write: true,
+        getContents: () => extensionPageDataTemplate(extensions),
       })
 
       addImports([

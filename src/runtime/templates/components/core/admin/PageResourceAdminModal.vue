@@ -199,6 +199,19 @@
         </CwaUiFormSection>
       </template>
     </template>
+    <template
+      v-for="extensionTab in extensionTabs"
+      :key="extensionTab.key"
+      #[extensionTab.key]
+    >
+      <ExtensionTabSurface>
+        <component
+          :is="extensionTab.component"
+          :iri="resource?.['@id']"
+          :data="resource"
+        />
+      </ExtensionTabSurface>
+    </template>
     <template #routes>
       <RoutesTabManage
         v-if="isAdding && !missing"
@@ -297,6 +310,12 @@ import RoutesTab from '#cwa/templates/components/core/admin/RoutesTab.vue'
 import RoutesTabManage from '#cwa/templates/components/core/admin/RoutesTabManage.vue'
 import { useRouteDefaults } from '#cwa/templates/components/core/admin/route-defaults'
 import PagePurgeCache from '#cwa/templates/components/core/admin/PagePurgeCache.vue'
+import ExtensionTabSurface from '#cwa/templates/components/core/admin/ExtensionTabSurface.vue'
+import { pageDataTabsFor } from '#cwa/admin/extension-page-data'
+import type { ExtensionPageDataTab } from '#cwa/admin/extension-page-data'
+import type { CwaApiDocumentationDataInterface } from '#cwa/storage/stores/api-documentation/state'
+// @ts-ignore
+import { extensionPageDataTabs } from '#build/cwa-extension-page-data'
 import type { MenuEntry } from '#cwa/templates/components/core/ui/menu-entries'
 import type { DialogTab } from '#cwa/templates/components/core/ui/dialog-form'
 import type { SelectOption } from '#cwa/composables/cwa-select'
@@ -772,6 +791,17 @@ const pageFields: Record<string, string> = { reference: 'Reference', layout: 'La
 const pageDataFields: Record<string, string> = { title: 'Title', metaDescription: 'SEO meta description', page: 'Dynamic page', parentPage: 'Parent page', parentPageData: 'Parent data' }
 const detailsFields = computed(() => isDisplayingPage.value ? pageFields : pageDataFields)
 
+const apiDocs = ref<CwaApiDocumentationDataInterface>()
+
+const extensionTabs = computed(() => isDisplayingPage.value
+  ? []
+  : pageDataTabsFor(extensionPageDataTabs as ExtensionPageDataTab[], {
+      docs: apiDocs.value,
+      className: props.resourceType || resource.value?.['@type'],
+      hasRole: role => $cwa.auth.hasRole(role),
+      hidden: pageDataConfig.value?.hideExtensionTabs,
+    }))
+
 const tabs = computed<DialogTab[]>(() => {
   if (isAdding.value) {
     return [
@@ -781,6 +811,7 @@ const tabs = computed<DialogTab[]>(() => {
   }
   return [
     { label: 'Details', key: 'details', fields: detailsFields.value },
+    ...extensionTabs.value.map(extensionTab => ({ label: extensionTab.label, key: extensionTab.key })),
     { label: 'Routes', key: 'routes', ...(!isDisplayingPage.value && { fields: { isReachableWithoutRoute: 'Public without a route' } }) },
     { label: 'Info', key: 'info' },
   ]
@@ -795,6 +826,13 @@ const tab = ref(tabFromHash(route.hash ?? ''))
 
 watch(() => route.hash, (hash) => {
   tab.value = tabFromHash(hash ?? '')
+})
+
+watch(() => tabs.value.map(item => item.key).join(), () => {
+  const fromHash = tabFromHash(route.hash ?? '')
+  if (!tabs.value.some(item => item.key === tab.value) || (tab.value === 'details' && fromHash !== 'details')) {
+    tab.value = fromHash
+  }
 })
 
 watch(tab, key => key === 'info' && refreshCounts())
@@ -839,6 +877,9 @@ onMounted(async () => {
     loadDynamicPageOptions().catch(logFailure('template pages')),
     loadParentPageOptions().catch(logFailure('parent pages')),
     loadDataTypes().catch(logFailure('page data types')),
+    $cwa.getApiDocumentation().then((docs) => {
+      apiDocs.value = docs
+    }).catch(logFailure('API documentation')),
   ])
   if (!isAdding.value || !localResourceData.value) {
     return

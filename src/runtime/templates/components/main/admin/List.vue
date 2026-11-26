@@ -1,5 +1,8 @@
 <template>
-  <ListHeading :title="title" />
+  <ListHeading
+    v-if="!inArea"
+    :title="title"
+  />
   <ListFilter
     :order-options="orderOptions"
     :search-label="searchLabel"
@@ -50,7 +53,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref } from 'vue'
+import { computed, inject, ref } from 'vue'
 import type { RouteLocationRaw } from 'vue-router'
 import ListHeading from '#cwa/templates/components/core/admin/ListHeading.vue'
 import ListContent from '#cwa/templates/components/core/admin/ListContent.vue'
@@ -62,6 +65,7 @@ import PlusIcon from '#cwa/templates/components/ui/icon/PlusIcon.vue'
 import { useListPage } from '#cwa-layer/_composables/useListPage'
 import type { CwaResource } from '#cwa/resources/resource-utils'
 import { useHead } from '#imports'
+import { areaHeadingKey } from '#cwa/templates/components/core/ui/field-keys'
 
 const props = defineProps<{
   title: string
@@ -79,6 +83,8 @@ defineSlots<{
   notice?(): any
   empty?(): any
 }>()
+
+const inArea = inject(areaHeadingKey, false)
 
 const listContent = ref<InstanceType<typeof ListContent> | null>(null)
 

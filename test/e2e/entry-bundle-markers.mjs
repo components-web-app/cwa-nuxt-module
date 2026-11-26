@@ -8,7 +8,7 @@ const outputDir = resolve(here, '../../playground/.output')
 const manifestPath = resolve(outputDir, 'server/chunks/virtual/precomputed.mjs')
 const chunkDir = resolve(outputDir, 'public/_nuxt')
 
-const gzipBudget = 164660
+const gzipBudget = 164900
 
 const forbidden = [
   { marker: 'Invalid DateTime', source: 'luxon' },
@@ -32,6 +32,7 @@ const forbidden = [
   { marker: 'The request could not be sent.', source: 'admin/field-states.ts' },
   { marker: 'data-cwa-admin-icon', source: 'cwa-admin-resources' },
   { marker: 'Already in this group', source: 'resource-manager/_parts/AddComponentDialog.vue' },
+  { marker: 'Formats and prices', source: 'cwa-extension-page-data' },
 ]
 
 async function readEntryChunks() {

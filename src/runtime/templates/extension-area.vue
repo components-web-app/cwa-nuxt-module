@@ -34,6 +34,7 @@
     <div
       :id="panelId"
       role="tabpanel"
+      class="cwa:pt-6"
       :aria-labelledby="selectedTab ? `${tabsId}-${selectedTab.path}` : undefined"
     >
       <NuxtPage />
@@ -42,9 +43,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, useId } from 'vue'
+import { computed, nextTick, provide, useId } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import TabIndicator from '#cwa/templates/components/core/ui/TabIndicator.vue'
+import { areaHeadingKey } from '#cwa/templates/components/core/ui/field-keys'
 import { useCwa } from '#cwa/composables/cwa'
 import { extensionRouteName, openablePages } from '#cwa/admin/extension-areas'
 import type { CwaExtensionArea } from '#cwa/admin/extension-areas'
@@ -56,6 +58,7 @@ const route = useRoute()
 const router = useRouter()
 const tabsId = useId()
 const panelId = `${tabsId}-panel`
+provide(areaHeadingKey, true)
 
 const area = computed(() => (extensionAreas as CwaExtensionArea[]).find(candidate => route.matched.some(record => record.name === extensionRouteName(candidate.segment))))
 

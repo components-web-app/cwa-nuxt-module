@@ -17,6 +17,12 @@ export default defineNuxtModule({
           { path: 'orders', label: 'Orders', file: resolve('./admin/orders.vue'), item: resolve('./admin/order.vue') },
           { path: 'reports', label: 'Reports', file: resolve('./admin/reports.vue'), role: 'ROLE_FIXTURE_REPORTS' },
         ],
+        pageDataTabs: [
+          { key: 'formats', label: 'Formats and prices', file: resolve('./admin/formats.vue'), forTypesWithProperty: 'variants' },
+        ],
+        pageDataLists: [
+          { path: 'products', label: 'Products', forTypesWithProperty: 'variants', columns: [{ label: 'From', file: resolve('./admin/from-price.vue') }] },
+        ],
         pageCache: { '/fixture-basket': false, '/fixture-account/**': false },
       })
     })
