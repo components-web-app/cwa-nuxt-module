@@ -14,6 +14,7 @@ const styleClasses = vi.hoisted(() => ({
 vi.mock('#build/cwa-styles', () => ({ styleClasses }))
 vi.mock('#build/cwa-extension-menu', () => ({
   extensionPageRoles: ['ROLE_SHOP_ADMIN'],
+  adminShellRoles: ['ROLE_CMS_ADMIN', 'ROLE_USER_ADMIN', 'ROLE_SHOP_ADMIN', 'ROLE_SHOP_REPORTS'],
 }))
 
 const routeMeta = vi.hoisted(() => ({ value: {} as Record<string, unknown> }))
@@ -168,6 +169,12 @@ describe('CwaRootLayout for the narrow admin roles (bundle #611)', () => {
     await flushPromises()
     expect(shows(wrapper, 'LazyCwaAdminHeader')).toBe(true)
     expect(shows(wrapper, 'LazyCwaAdminResourceManager')).toBe(false)
+  })
+
+  test('the header shows for a role only in the admin roles list the My account guard uses, not only the extension menu\'s (#508)', async () => {
+    const { wrapper } = setup({ isAdmin: false, roles: ['ROLE_SHOP_REPORTS', 'ROLE_USER'], registeredComponents: ['CwaLayoutPrimary'] })
+    await flushPromises()
+    expect(shows(wrapper, 'LazyCwaAdminHeader')).toBe(true)
   })
 
   test('a role no extension admin page needs gets no header', async () => {

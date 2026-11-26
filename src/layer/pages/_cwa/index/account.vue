@@ -220,7 +220,6 @@ import { definePageMeta, useHead } from '#imports'
 
 definePageMeta({
   name: '_cwa-account',
-  cwaAdminRole: 'ROLE_ADMIN',
   pageTransition: false,
 })
 

@@ -32,7 +32,7 @@ import { scanComponentGroupDeclarations } from './component-group-declarations'
 import { scanCwaConfigDeclarations } from './cwa-config-declarations'
 import { adminResourcesTemplate, lucideIconSvg, lucideNamesTypeTemplate } from './admin-resources'
 import type { LucideIconSet } from './admin-resources'
-import { addExtensionAdminPages, checkExtensions, extensionAdminRoles, extensionAreas, extensionPageRoles, extensionRouteRules } from './extensions'
+import { addExtensionAdminPages, adminShellRoles, checkExtensions, extensionAdminRoles, extensionAreas, extensionPageRoles, extensionRouteRules } from './extensions'
 import type { CwaExtension, ExtensionNames } from './extensions'
 import type { CwaModuleOptions, CwaResourcesConfig, CwaResourcesMeta, CwaStyleClasses, CwaStyles, CwaUiVariantConfig, GlobalComponentNames } from './runtime/types'
 
@@ -613,6 +613,7 @@ export type CwaComponentStyles = { [Name in CwaComponentName]: typeof CwaCompone
         filename: 'cwa-extension-menu.ts',
         write: true,
         getContents: () => `export const extensionPageRoles: string[] = ${JSON.stringify(extensionPageRoles(extensions))}
+export const adminShellRoles: string[] = ${JSON.stringify(adminShellRoles(extensions))}
 `,
       })
       addTemplate({
