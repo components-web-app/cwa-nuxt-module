@@ -88,7 +88,7 @@ function commit(n: number) {
 function settle() {
   if (typed.value === undefined) {
     if (props.optional && text.value === '') {
-      value.value !== null && (value.value = null)
+      value.value != null && (value.value = null)
       return
     }
     text.value = value.value === null || value.value === undefined ? '' : String(value.value)
