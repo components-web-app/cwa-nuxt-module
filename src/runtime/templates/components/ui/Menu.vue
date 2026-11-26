@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { POPOVER_GAP } from '../core/ui/popover-gap'
-import { computed, reactive, ref, useId, useTemplateRef, watch } from 'vue'
+import { computed, reactive, ref, shallowRef, useId, useTemplateRef, watch } from 'vue'
 import {
   DropdownMenuContent,
   DropdownMenuGroup,
@@ -103,7 +103,7 @@ const reference = computed(() => {
   }
 })
 
-const reasonsFor = ref<{ item: MenuItem, anchor: HTMLElement }>()
+const reasonsFor = shallowRef<{ item: MenuItem, anchor: HTMLElement }>()
 const whyElements = new Map<MenuItem, HTMLElement>()
 
 function keepWhy(item: MenuItem, instance: unknown) {

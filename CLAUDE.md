@@ -208,6 +208,8 @@ Tests use **vitest** with `happy-dom` and `vitest-environment-nuxt`, with the pl
 - `vi.hoisted()` cannot use `ref()`/`reactive()`; make mock data `reactive()` so computeds re-evaluate.
 - `ResourceTypeFromIri.setPathPrefix` is a module singleton — reset it in `afterEach`.
 - happy-dom has no layout (`scrollHeight` is 0) and no canvas — inject DOM reads rather than asserting on them.
+- **Nuxt ≥ 4.7 renders a static `<NuxtLink>` without its component in client builds** (`nuxt:nuxt-link-client`), which bypasses stubs and needs a Nuxt app; `vitest.config.ts` removes that plugin, so specs keep the component as `nuxt dev` does.
+- **`mount` props are shallow since `@vue/test-utils` 2.6**, as a parent's usually are: an object kept in a deep `ref` is a proxy and never `===` the prop it came from, so hold it in a `shallowRef` (`CwaUiMenu`'s ⓘ never showed open).
 - **Mutation-test guard assertions** (break the code, watch the test fail). Several past tests passed for the wrong reason.
 
 ---
@@ -332,7 +334,7 @@ On by default (`cwa.pageCache.enabled`; the `?? true` in `module.ts` and `resolv
 
 ## Dependencies
 
-- **`typescript` held at `^6`** (TS 7 breaks `vue-tsc`) and **`vue-tsc` pinned to `3.3.11`** (3.3.12 adds `.value` to template bindings that are not refs, vuejs/language-tools#6267): `pnpm up --latest -r "!typescript" "!vue-tsc"`. Trap: it also moves `h3` to `^2` (Nuxt 4 and Nitro 2 run h3 1) and `@nuxt/kit`/`@nuxt/schema` to the newest Nuxt, which raises `meta.compatibility.nuxt`; put `h3` back to `^1` and the kit/schema floor back to the supported minimum.
+- **`typescript` held at `^6`** (vue-tsc will not support TS 7: checking Vue files with it needs a new implementation) and **`vue-tsc` pinned to `3.3.11`** (3.3.12 adds `.value` to template bindings that are not refs, vuejs/language-tools#6267): `pnpm up --latest -r "!typescript" "!vue-tsc"`. Trap: it also moves `h3` to `^2` (Nuxt 4 and Nitro 2 run h3 1) and `@nuxt/kit`/`@nuxt/schema` to the newest Nuxt, which raises `meta.compatibility.nuxt`; put `h3` back to `^1` and the kit/schema floor back to the supported minimum.
 - **`vite` pinned to `^8` by override** — a mixed vite 7/8 tree stops every test file starting.
 - `@pinia/nuxt ^1` is required by `moduleDependencies` (breaking for apps).
 - **Nuxt SEO v6** ([#392](https://github.com/components-web-app/cwa-nuxt-module/issues/392)): sitemap events are Nuxt's portable `RequestEvent`, not h3's `H3Event`, so server helpers that take one read only `context`. Registering `@nuxtjs/seo` 6 also switches on `nuxt-skew-protection` and `nuxt-ai-ready` (~5.5 KB gzip on every visitor's entry); the playground turns both off so the bundle guards measure the module. `h3` is a declared dependency: v5 used to bring it in.
