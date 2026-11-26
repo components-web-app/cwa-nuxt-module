@@ -60,5 +60,5 @@ const states = computed({
   },
 })
 
-definePageMeta({ name: '_cwa-fixture-orders', pageTransition: false })
+definePageMeta({ pageTransition: false })
 </script>
