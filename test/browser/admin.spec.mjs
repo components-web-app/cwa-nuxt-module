@@ -1595,7 +1595,7 @@ test('61. outside edit mode the header\'s Edit button and menu sit on the header
   }
 })
 
-test('62. with live editing paused on a phone, the header\'s status is a glyph named for it beside Edit, clear of the page settings button and the menu, and a tap shows its text', async ({ cwa: t }) => {
+test('62. with collaborative editing unavailable on a phone, the header\'s status is its glyph and ⓘ beside Edit, clear of the page settings button and the menu, and a tap on the ⓘ explains it', async ({ cwa: t }) => {
   const { page, base, settle, seed } = t
   t.allowConsoleErrors(/^Failed to load resource: net::ERR_FAILED/)
   await page.route(`**${mercurePath}**`, route => route.abort())
@@ -1603,8 +1603,8 @@ test('62. with live editing paused on a phone, the header\'s status is a glyph n
     await page.setViewportSize({ width, height: 800 })
     await page.goto(`${base}${seed.paths.home}`)
     await page.getByRole('button', { name: 'Edit', exact: true }).waitFor()
-    const glyph = page.getByTestId('presence-paused-glyph')
-    await glyph.waitFor()
+    const info = page.getByTestId('presence-unavailable').getByTestId('field-info')
+    await info.waitFor()
     await settle()
     const boxes = await page.evaluate(() => {
       const box = (element) => {
@@ -1614,7 +1614,7 @@ test('62. with live editing paused on a phone, the header\'s status is a glyph n
       const menu = [...document.querySelectorAll('button')].find(button => button.querySelector('.cwa\\:sr-only')?.textContent === 'Menu')
       return {
         edit: box([...document.querySelectorAll('button')].find(button => button.textContent.trim() === 'Edit')),
-        status: box(document.querySelector('[data-testid="presence-paused"]')),
+        status: box(document.querySelector('[data-testid="presence-unavailable"]')),
         settings: box(document.querySelector('[data-testid="page-settings"]')),
         menu: box(menu.querySelector('svg')),
       }
@@ -1625,15 +1625,16 @@ test('62. with live editing paused on a phone, the header\'s status is a glyph n
       assert(boxes[before].right <= boxes[after].left, `At ${width}px the ${before} (${boxes[before].left}–${boxes[before].right}) overlaps the ${after} (${boxes[after].left}–${boxes[after].right})`)
     }
     assert(boxes.menu.right <= width, `At ${width}px the menu ends at ${boxes.menu.right}`)
-    assert(await glyph.getAttribute('aria-label') === null && (await glyph.textContent()).trim() === 'Live editing paused', 'The glyph is named "Live editing paused"')
-    assert(await page.evaluate(() => getComputedStyle(document.querySelector('[data-testid="presence-paused"] > span')).display) === 'none', 'The status text is hidden on a phone')
-    await glyph.click()
-    await page.getByTestId('presence-paused-tip').waitFor()
-    await page.getByTestId('presence-paused-tip').waitFor({ state: 'detached', timeout: 4000 })
+    assert(await info.getAttribute('aria-label') === 'About Collaborative editing unavailable', 'The ⓘ is named for the status')
+    assert(await page.evaluate(() => getComputedStyle(document.querySelector('[data-testid="presence-unavailable"] > span')).display) === 'none', 'The status text is hidden on a phone')
+    await info.click()
+    await page.getByTestId('field-info-popover').getByText('You can keep editing').waitFor()
+    await page.keyboard.press('Escape')
+    await page.getByTestId('field-info-popover').waitFor({ state: 'detached' })
   }
 })
 
-test('63. the header\'s Edit or Done button and the page settings button or path selector beside it share one height and one centre, at 1280 and 390, with a fine or a coarse pointer, while live editing is paused, and the manager bar\'s tabs and their group are exactly as tall as its CTA buttons and the controls in its panel', async ({ cwa: t }) => {
+test('63. the header\'s Edit or Done button and the page settings button or path selector beside it share one height and one centre, at 1280 and 390, with a fine or a coarse pointer, while collaborative editing is unavailable, and the manager bar\'s tabs and their group are exactly as tall as its CTA buttons and the controls in its panel', async ({ cwa: t }) => {
   const { page, base, seed } = t
   const cookies = await page.context().cookies()
   for (const hasTouch of [false, true]) {
@@ -1664,7 +1665,7 @@ test('63. the header\'s Edit or Done button and the page settings button or path
       }
       await tab.goto(`${base}${seed.paths.home}`)
       await tab.getByRole('button', { name: 'Edit', exact: true }).waitFor()
-      await tab.getByTestId('presence-paused').waitFor()
+      await tab.getByTestId('presence-unavailable').waitFor()
       await settle()
       await measure('page-settings')
       await tab.getByRole('button', { name: 'Edit', exact: true }).click()
@@ -1774,6 +1775,7 @@ test('65. a shared component with unpublished changes offers Remove from here, D
   await dialog.getByText('Delete entire component deletes the draft and the live version from all 2 places it is used.').waitFor()
   await dialog.getByText('Neither delete can be undone.').waitFor()
   await eventually(() => dialog.getByRole('button', { name: 'Remove from here', exact: true }).evaluate(el => el === document.activeElement), 'Remove from here is not focused')
+  await dialog.evaluate(el => Promise.all(el.getAnimations({ subtree: true }).map(animation => animation.finished.catch(() => undefined))))
   const boxes = await Promise.all(['Cancel', 'Remove from here', 'Delete draft', 'Delete entire component'].map(name => dialog.getByRole('button', { name, exact: true }).boundingBox()))
   assert(new Set(boxes.map(box => Math.round(box.y))).size === 1, `The buttons are not in one row: ${JSON.stringify(boxes)}`)
   assert(boxes[1].x - (boxes[0].x + boxes[0].width) > boxes[2].x - (boxes[1].x + boxes[1].width), `Cancel is not on its own side: ${JSON.stringify(boxes)}`)

@@ -12,6 +12,12 @@ const styleClasses = vi.hoisted(() => ({
   CwaLayoutSecondary: { dark: 'bg-black' },
 }))
 vi.mock('#build/cwa-styles', () => ({ styleClasses }))
+vi.mock('#build/cwa-extension-menu', () => ({
+  extensionPageRoles: ['ROLE_SHOP_ADMIN'],
+  adminShellRoles: ['ROLE_CMS_ADMIN', 'ROLE_USER_ADMIN', 'ROLE_SHOP_ADMIN', 'ROLE_SHOP_REPORTS'],
+}))
+
+const routeMeta = vi.hoisted(() => ({ value: {} as Record<string, unknown> }))
 
 const headOptions: Record<string, any>[] = []
 const mockUseHead = vi.hoisted(() => vi.fn())
@@ -22,7 +28,7 @@ vi.mock('vue-router', async (importOriginal) => {
   const { ref: vueRef } = await import('vue')
   return {
     ...actual,
-    useRouter: () => ({ currentRoute: vueRef({ meta: {} }) }),
+    useRouter: () => ({ currentRoute: vueRef({ meta: routeMeta.value }) }),
   }
 })
 
@@ -158,6 +164,24 @@ describe('CwaRootLayout for the narrow admin roles (bundle #611)', () => {
     expect(shows(wrapper, 'LazyCwaAdminHeader')).toBe(false)
     expect(shows(wrapper, 'LazyCwaAdminResourceManager')).toBe(false)
   })
+  test('a user whose only admin role is one an extension admin page needs gets the header, for its menu, and no resource manager', async () => {
+    const { wrapper } = setup({ isAdmin: false, roles: ['ROLE_SHOP_ADMIN', 'ROLE_USER'], registeredComponents: ['CwaLayoutPrimary'] })
+    await flushPromises()
+    expect(shows(wrapper, 'LazyCwaAdminHeader')).toBe(true)
+    expect(shows(wrapper, 'LazyCwaAdminResourceManager')).toBe(false)
+  })
+
+  test('the header shows for a role only in the admin roles list the My account guard uses, not only the extension menu\'s (#508)', async () => {
+    const { wrapper } = setup({ isAdmin: false, roles: ['ROLE_SHOP_REPORTS', 'ROLE_USER'], registeredComponents: ['CwaLayoutPrimary'] })
+    await flushPromises()
+    expect(shows(wrapper, 'LazyCwaAdminHeader')).toBe(true)
+  })
+
+  test('a role no extension admin page needs gets no header', async () => {
+    const { wrapper } = setup({ isAdmin: false, roles: ['ROLE_SHOP_CUSTOMER', 'ROLE_USER'], registeredComponents: ['CwaLayoutPrimary'] })
+    await flushPromises()
+    expect(shows(wrapper, 'LazyCwaAdminHeader')).toBe(false)
+  })
 })
 
 describe('CwaRootLayout unresolvable uiComponent', () => {
@@ -183,6 +207,18 @@ describe('CwaRootLayout unresolvable uiComponent', () => {
     const { wrapper } = setup({ uiComponent: 'CwaLayoutPrimary', layoutIri: LAYOUT_IRI, registeredComponents: ['CwaLayoutPrimary'] })
     expect(wrapper.findComponent({ name: 'CwaUiAlertWarning' }).exists()).toBe(false)
     expect(wrapper.find('.page-content').exists()).toBe(true)
+  })
+
+  test('a page outside CWA that still names its layout component with staticLayout gets the default layout, since only cwa.layout names a layout now', () => {
+    routeMeta.value = { cwa: { disabled: true, staticLayout: 'CwaLayoutPrimary' } }
+    try {
+      const { wrapper } = setup({ registeredComponents: ['CwaLayoutPrimary'] })
+      expect(wrapper.html().toLowerCase()).not.toContain('cwa-layout-primary')
+      expect(wrapper.html().toLowerCase()).toContain('<asynccomponentwrapper-stub')
+    }
+    finally {
+      routeMeta.value = {}
+    }
   })
 
   test('does not warn when there is no named layout at all', () => {

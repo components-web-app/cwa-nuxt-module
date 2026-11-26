@@ -5,7 +5,7 @@ definePageMeta({
   layout: 'cwa-root-layout',
   cwa: {
     disabled: true,
-    staticLayout: 'CwaLayoutPrimary',
+    layout: 'main',
   },
 })
 </script>

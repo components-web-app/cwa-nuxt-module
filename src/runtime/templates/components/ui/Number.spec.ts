@@ -102,3 +102,38 @@ describe('CwaUiNumber (#459)', () => {
     expect([down, up].map(button => drawsFocusRing(button.classes()))).toEqual([true, true])
   })
 })
+
+describe('CwaUiNumber when optional (#494)', () => {
+  test('an optional number emptied and left saves null', async () => {
+    const { wrapper, input } = mountNumber({ optional: true })
+
+    await input.setValue('')
+    await input.trigger('blur')
+
+    expect(wrapper.emitted('update:modelValue')).toEqual([[null]])
+    expect((input.element as HTMLInputElement).value).toBe('')
+  })
+
+  test.each([
+    ['left', (input: ReturnType<typeof mountNumber>['input']) => input.trigger('blur')],
+    ['settled with Enter', (input: ReturnType<typeof mountNumber>['input']) => input.trigger('keydown', { key: 'Enter' })],
+  ])('an empty optional number the API left out, focused and %s, writes nothing (#503)', async (_how, settle) => {
+    const { wrapper, input } = mountNumber({ optional: true, modelValue: undefined })
+
+    await input.trigger('focus')
+    await settle(input)
+
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+    expect((input.element as HTMLInputElement).value).toBe('')
+  })
+
+  test('a number that is not optional, emptied and left, goes back to its value and saves nothing', async () => {
+    const { wrapper, input } = mountNumber()
+
+    await input.setValue('')
+    await input.trigger('blur')
+
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+    expect((input.element as HTMLInputElement).value).toBe('3')
+  })
+})

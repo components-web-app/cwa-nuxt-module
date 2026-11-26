@@ -117,6 +117,21 @@ describe('useItemPage update body', () => {
     expect(updateResource.mock.calls[0]![0].data).toEqual({ reference: '' })
   })
 
+  test.each([
+    ['left out', {}],
+    ['null', { description: null }],
+  ])('a field the API sent as %s, typed in and cleared, is not unsaved and is not sent (#506)', async (_sent, blank) => {
+    const { itemPage, updateResource } = setup({ ...layout, ...blank })
+    await flushPromises()
+    const description = itemPage.form.model<string>('description')
+    description.model.value = 'a'
+    description.model.value = ''
+
+    expect(itemPage.form.unsavedFields).toEqual([])
+    await itemPage.saveResource()
+    expect(updateResource).not.toHaveBeenCalled()
+  })
+
   test('an unchanged nested value replaced by an equal copy is not sent', async () => {
     const { itemPage, updateResource } = setup({ ...layout })
     await flushPromises()
@@ -815,5 +830,175 @@ describe('useItemPage loading', () => {
     answers[parent]!(layoutAt(parent, 'Parent'))
     await flushPromises()
     expect(itemPage().localResourceData.value?.reference).toBe('Parent')
+  })
+})
+
+describe('useItemPage dotted field paths (#494)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  const configured = () => ({ ...layout, gatewayConfig: { a: '1', key: { set: true } } })
+
+  test('a model of a dotted path writes the nested value without mutating the stored object', async () => {
+    const stored = configured()
+    const { itemPage } = setup(stored)
+    await flushPromises()
+    const a = itemPage.form.model<string>('gatewayConfig.a')
+
+    expect(a.field).toBe('gatewayConfig.a')
+    expect(a.model.value).toBe('1')
+    a.model.value = 'new'
+
+    expect(itemPage.localResourceData.value?.gatewayConfig).toEqual({ a: 'new', key: { set: true } })
+    expect(itemPage.localResourceData.value?.gatewayConfig).not.toBe(stored.gatewayConfig)
+    expect(stored.gatewayConfig).toEqual({ a: '1', key: { set: true } })
+  })
+
+  test('a nested change is unsaved under its path', async () => {
+    const { itemPage } = setup(configured())
+    await flushPromises()
+    itemPage.form.model('gatewayConfig.key')
+    itemPage.form.model('gatewayConfig.a').model.value = 'new'
+
+    expect(itemPage.form.unsavedFields).toEqual(['gatewayConfig.a'])
+  })
+
+  test('saving a nested change sends only the changed leaf', async () => {
+    const { itemPage, updateResource } = setup(configured())
+    await flushPromises()
+    itemPage.form.model('gatewayConfig.key')
+    itemPage.form.model('gatewayConfig.a').model.value = 'new'
+
+    await itemPage.saveResource()
+
+    expect(updateResource.mock.calls[0]![0].data).toEqual({ gatewayConfig: { a: 'new' } })
+  })
+
+  test.each([
+    ['left out', {}],
+    ['null', { vendor: null }],
+  ])('a nested leaf the API sent as %s, typed in and cleared, is not unsaved and is not sent (#506)', async (_sent, blank) => {
+    const { itemPage, updateResource } = setup({ ...layout, gatewayConfig: { a: '1', ...blank } })
+    await flushPromises()
+    const vendor = itemPage.form.model<string>('gatewayConfig.vendor')
+    vendor.model.value = 'a'
+    vendor.model.value = ''
+
+    expect(itemPage.form.unsavedFields).toEqual([])
+    await itemPage.saveResource()
+    expect(updateResource).not.toHaveBeenCalled()
+  })
+
+  test('a nested leaf that had a value and is cleared is still sent (#506)', async () => {
+    const { itemPage, updateResource } = setup(configured())
+    await flushPromises()
+    itemPage.form.model('gatewayConfig.a').model.value = ''
+
+    expect(itemPage.form.unsavedFields).toEqual(['gatewayConfig.a'])
+    await itemPage.saveResource()
+    expect(updateResource.mock.calls[0]![0].data).toEqual({ gatewayConfig: { a: '' } })
+  })
+
+  test('a re-fetch changing a sibling of an edited nested leaf keeps their sibling and my leaf, and Save sends only my leaf (#502)', async () => {
+    const stored = { ...layout, gatewayConfig: { vendor: 'stripe', timeout: 30 } }
+    const { itemPage, updateResource, refetch } = setup(stored)
+    await flushPromises()
+    itemPage.form.model('gatewayConfig.timeout')
+    itemPage.form.model('gatewayConfig.vendor').model.value = 'adyen'
+
+    refetch({ ...stored, gatewayConfig: { vendor: 'stripe', timeout: 60 } })
+    await flushPromises()
+
+    expect(itemPage.localResourceData.value?.gatewayConfig).toEqual({ vendor: 'adyen', timeout: 60 })
+    expect(itemPage.form.unsavedFields).toEqual(['gatewayConfig.vendor'])
+    await itemPage.saveResource()
+    expect(updateResource.mock.calls[0]![0].data).toEqual({ gatewayConfig: { vendor: 'adyen' } })
+  })
+
+  test('a 412 whose body changed a sibling of an edited nested leaf shows their sibling, and the second Save sends only my leaf (#502)', async () => {
+    const stored = { ...layout, _metadata: { persisted: true, version: 1 }, gatewayConfig: { vendor: 'stripe', timeout: 30 } }
+    const { itemPage, updateResource, failWith } = setup(stored)
+    await flushPromises()
+    itemPage.form.model('gatewayConfig.timeout')
+    itemPage.form.model('gatewayConfig.vendor').model.value = 'adyen'
+    failWith(412, { ...stored, _metadata: { persisted: true, version: 2 }, gatewayConfig: { vendor: 'stripe', timeout: 60 } })
+
+    await itemPage.saveResource()
+    await flushPromises()
+
+    expect(itemPage.form.conflicts).toEqual({})
+    expect(itemPage.localResourceData.value?.gatewayConfig).toEqual({ vendor: 'adyen', timeout: 60 })
+    expect(itemPage.form.unsavedFields).toEqual(['gatewayConfig.vendor'])
+    await itemPage.saveResource()
+    expect(updateResource.mock.calls[1]![0].data).toEqual({ gatewayConfig: { vendor: 'adyen' } })
+  })
+
+  test('a 422 on a nested path lands on the field registered for it, and editing that field clears it', async () => {
+    const { itemPage, failWith } = setup(configured())
+    await flushPromises()
+    itemPage.form.model('gatewayConfig.key')
+    itemPage.form.model('gatewayConfig.a').model.value = 'new'
+    failWith(422, { violations: [{ propertyPath: 'gatewayConfig.a', message: 'Not a valid vendor.' }] })
+
+    await itemPage.saveResource()
+
+    expect(itemPage.form.fieldErrors).toEqual({ 'gatewayConfig.a': 'Not a valid vendor.' })
+    expect(itemPage.form.formError).toBeUndefined()
+    expect(itemPage.form.model('gatewayConfig.a').state!.value).toMatchObject({ status: 'error', error: { message: 'Not a valid vendor.' } })
+
+    itemPage.form.model('gatewayConfig.a').model.value = 'newer'
+    await flushPromises()
+    expect(itemPage.form.fieldErrors).toEqual({})
+  })
+
+  test('a 422 on a nested path with no registered field is the form error', async () => {
+    const { itemPage, failWith } = setup(configured())
+    await flushPromises()
+    itemPage.form.model('gatewayConfig.a').model.value = 'new'
+    failWith(422, { violations: [{ propertyPath: 'gatewayConfig.other', message: 'Unknown setting.' }] })
+
+    await itemPage.saveResource()
+
+    expect(itemPage.form.fieldErrors).toEqual({})
+    expect(itemPage.form.formError).toBe('Unknown setting.')
+  })
+
+  test('a 422 under a top-level field with no dotted model still lands on that field', async () => {
+    const { itemPage, failWith } = setup(configured())
+    await flushPromises()
+    itemPage.form.model('gatewayConfig.a').model.value = 'new'
+    itemPage.localResourceData.value!.settings = { theme: 'light', sizes: [1, 2] }
+    failWith(422, { violations: [{ propertyPath: 'settings.theme', message: 'Choose a theme.' }] })
+
+    await itemPage.saveResource()
+
+    expect(itemPage.form.fieldErrors).toEqual({ settings: 'Choose a theme.' })
+    expect(itemPage.form.formError).toBeUndefined()
+  })
+
+  test('after a save the answer replaces the sent object and nothing is unsaved', async () => {
+    const { itemPage, updateResource } = setup(configured())
+    await flushPromises()
+    itemPage.form.model('gatewayConfig.key').model.value = 'secret'
+    const answer = { ...configured(), gatewayConfig: { a: '1', key: { set: true } } }
+    updateResource.mockResolvedValueOnce(answer)
+
+    await itemPage.saveResource()
+
+    expect(updateResource.mock.calls[0]![0].data).toEqual({ gatewayConfig: { key: 'secret' } })
+    expect(itemPage.localResourceData.value?.gatewayConfig).toEqual({ a: '1', key: { set: true } })
+    expect(itemPage.form.unsavedFields).toEqual([])
+  })
+
+  test('discard restores nested values', async () => {
+    const { itemPage } = setup(configured())
+    await flushPromises()
+    itemPage.form.model('gatewayConfig.a').model.value = 'new'
+
+    itemPage.form.discard()
+
+    expect(itemPage.form.model('gatewayConfig.a').model.value).toBe('1')
+    expect(itemPage.form.unsavedFields).toEqual([])
   })
 })

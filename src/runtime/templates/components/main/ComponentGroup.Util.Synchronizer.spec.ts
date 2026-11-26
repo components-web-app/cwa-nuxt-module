@@ -17,6 +17,10 @@ vi.mock('../../../resources/resource-utils', async (importOriginal) => {
   }
 })
 
+vi.mock('#build/cwa-config', () => ({
+  resourcesConfig: { Image: { ui: ['CwaComponentImageUiHero'] } },
+}))
+
 vi.mock('vue', async () => {
   const mod = await vi.importActual<typeof import('vue')>('vue')
   return {
@@ -564,7 +568,7 @@ describe('Group synchronizer', () => {
     test('sends a rule\'s UIs and styles as the values a component stores, keyed by its endpoint, in the same PATCH as allowedComponents', async () => {
       const { resourcesManager } = await sync(existingGroup(), [
         'HtmlContent',
-        { component: 'Image', ui: ['CwaComponentImage', 'CwaComponentImageUiHero'], styles: ['large'] },
+        { component: 'Image', ui: ['default', 'Hero'], styles: ['large'] },
       ])
 
       expect(resourcesManager.updateResource).toHaveBeenCalledTimes(1)
@@ -581,7 +585,7 @@ describe('Group synchronizer', () => {
       const { resourcesManager } = await sync(existingGroup({
         allowedComponents: ['/_api/component/images'],
         allowedComponentUi: { '/_api/component/images': { ui: ['CwaComponentImageUiHero'] } },
-      }), [{ component: 'Image', ui: ['CwaComponentImageUiHero'] }])
+      }), [{ component: 'Image', ui: ['Hero'] }])
 
       expect(resourcesManager.updateResource).not.toHaveBeenCalled()
     })
@@ -613,7 +617,7 @@ describe('Group synchronizer', () => {
     test('creates a new group with its rules', async () => {
       const setup = createGroupSynchronizer()
       setup.getComponentMetadata.mockResolvedValue(metadata)
-      createSyncWatcher(setup.groupSynchronizer, { resource: null, allowedComponents: [{ component: 'Image', ui: ['CwaComponentImageUiHero'] }] })
+      createSyncWatcher(setup.groupSynchronizer, { resource: null, allowedComponents: [{ component: 'Image', ui: ['Hero'] }] })
       setup.auth.signedIn.value = true
       await vi.waitFor(() => expect(setup.resourcesManager.createResource).toHaveBeenCalled())
 

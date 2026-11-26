@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
-import { computed, nextTick, reactive } from 'vue'
+import { computed, reactive } from 'vue'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import type { Router } from 'vue-router'
@@ -217,48 +217,41 @@ describe('PresenceIndicator (#429)', () => {
     expect(wrapper.get('[data-testid="presence-indicator"]').attributes('aria-label')).toBe('2 other editors elsewhere. Show editors')
   })
 
-  test('while the connection is down it says live editing is paused instead of showing anyone', async () => {
+  test('while the connection is down it says collaborative editing is unavailable instead of showing anyone, with an ⓘ that explains editing carries on', async () => {
     mockCwa()
     presence!.start(true)
     arrive(ids[0]!, SAM, {})
     presence!.paused()
     const wrapper = await mountIndicator()
 
-    const pausedNotice = wrapper.get('[data-testid="presence-paused"]')
-    expect(text(pausedNotice.get('span').element)).toBe('Live editing paused')
-    expect(pausedNotice.attributes('role')).toBe('status')
-    expect(pausedNotice.attributes('title')).toBe('Other editors\' changes and who is here will catch up when the connection returns. You can keep editing.')
+    const notice = wrapper.get('[data-testid="presence-unavailable"]')
+    expect(text(notice.get('span').element)).toBe('Collaborative editing unavailable')
+    expect(notice.attributes('role')).toBe('status')
+    expect(notice.attributes('title')).toBeUndefined()
     expect(wrapper.findAll('[data-testid="presence-avatar"]')).toHaveLength(0)
+
+    const info = notice.get('[data-testid="field-info"]')
+    expect(info.attributes('aria-label')).toBe('About Collaborative editing unavailable')
+    await info.trigger('click')
+    await flushPromises()
+    const popover = document.querySelector<HTMLElement>('[data-testid="field-info-popover"]')!
+    expect(popover.querySelector('[data-glyph="info"]')!.nextElementSibling!.textContent).toBe('Collaborative editing unavailable')
+    expect(text(popover.querySelector('p')!)).toBe('You can keep editing, and your changes save as normal. Other editors\' changes, and who else is here, show again when the connection returns. If someone saved the same thing meanwhile, you\'ll be asked which version to keep.')
   })
 
-  test('on a phone the paused status is a glyph named for it, its text hidden, and a tap shows the text for 2 seconds', async () => {
+  test('on a phone the unavailable status keeps its glyph and its ⓘ, and hides its text', async () => {
     mockCwa()
     presence!.start(true)
     presence!.paused()
     const wrapper = await mountIndicator()
-    vi.useFakeTimers()
 
-    const notice = wrapper.get('[data-testid="presence-paused"]')
-    const glyph = wrapper.get('[data-testid="presence-paused-glyph"]')
+    const notice = wrapper.get('[data-testid="presence-unavailable"]')
     expect(notice.get('span').classes()).toContain('cwa:max-sm:hidden')
-    expect(glyph.element.tagName).toBe('BUTTON')
-    expect(glyph.classes()).toEqual(expect.arrayContaining(['cwa:sm:hidden', 'cwa:size-hit']))
-    expect(text(glyph.element)).toBe('Live editing paused')
-    expect(wrapper.find('[data-testid="presence-paused-tip"]').exists()).toBe(false)
-
-    await glyph.trigger('click')
-    const tip = wrapper.get('[data-testid="presence-paused-tip"]')
-    expect(text(tip.element)).toBe('Live editing paused')
-    expect(tip.attributes('aria-hidden')).toBe('true')
-    expect(tip.classes()).toContain('cwa:sm:hidden')
-
-    vi.advanceTimersByTime(1999)
-    await nextTick()
-    expect(wrapper.find('[data-testid="presence-paused-tip"]').exists()).toBe(true)
-    vi.advanceTimersByTime(1)
-    await nextTick()
-    expect(wrapper.find('[data-testid="presence-paused-tip"]').exists()).toBe(false)
-    vi.useRealTimers()
+    const glyph = notice.get('[data-testid="presence-unavailable-glyph"]')
+    expect(glyph.element.tagName).toBe('svg')
+    expect(glyph.attributes('aria-hidden')).toBe('true')
+    expect(glyph.classes()).toContain('cwa:sm:hidden')
+    expect(notice.find('[data-testid="field-info"]').exists()).toBe(true)
     expect(await axe(wrapper.element as HTMLElement)).toHaveNoViolations()
   })
 

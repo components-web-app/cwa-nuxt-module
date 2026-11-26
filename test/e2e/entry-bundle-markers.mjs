@@ -8,7 +8,7 @@ const outputDir = resolve(here, '../../playground/.output')
 const manifestPath = resolve(outputDir, 'server/chunks/virtual/precomputed.mjs')
 const chunkDir = resolve(outputDir, 'public/_nuxt')
 
-const gzipBudget = 164450
+const gzipBudget = 143900
 
 const forbidden = [
   { marker: 'Invalid DateTime', source: 'luxon' },
@@ -23,7 +23,7 @@ const forbidden = [
   { marker: 'The component being cloned no longer exists', source: 'admin/clone-component.ts' },
   { marker: 'were saved to a new draft', source: 'admin/remote-changes.ts' },
   { marker: 'Real-time presence is turned off on the API', source: 'admin/presence.ts' },
-  { marker: 'Live editing paused', source: 'header/_parts/PresenceIndicator.vue' },
+  { marker: 'Collaborative editing unavailable', source: 'header/_parts/PresenceIndicator.vue' },
   { marker: 'cwa:z-peer-outline', source: 'resource-manager/PeerOutlines.vue' },
   { marker: 'field-presence-flag', source: 'ui/FieldPresence.vue' },
   { marker: 'remote-change-accept', source: 'ui/RemoteChangeConflict.vue' },
@@ -32,6 +32,7 @@ const forbidden = [
   { marker: 'The request could not be sent.', source: 'admin/field-states.ts' },
   { marker: 'data-cwa-admin-icon', source: 'cwa-admin-resources' },
   { marker: 'Already in this group', source: 'resource-manager/_parts/AddComponentDialog.vue' },
+  { marker: 'Formats and prices', source: 'cwa-extension-page-data' },
 ]
 
 async function readEntryChunks() {

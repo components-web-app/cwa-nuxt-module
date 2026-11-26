@@ -13,6 +13,7 @@ const props = withDefaults(defineProps<{
   labelHidden?: boolean
   info?: string
   description?: string
+  optional?: boolean
   width?: FieldWidth
   disabled?: boolean
   disabledReason?: string
@@ -25,12 +26,13 @@ const props = withDefaults(defineProps<{
   decrementLabel?: string
   incrementLabel?: string
   field?: string
-  model?: ResourceModelField<number>
+  model?: ResourceModelField<number | null>
   modelValue?: number | null
 }>(), {
   labelHidden: false,
   info: undefined,
   description: undefined,
+  optional: false,
   width: 'sm',
   disabled: false,
   disabledReason: undefined,
@@ -49,7 +51,7 @@ const props = withDefaults(defineProps<{
 
 const emit = defineEmits<{ 'update:modelValue': [value: number | null | undefined] }>()
 
-const { model, value, state, unbound } = useFieldModel<number>(props, emit)
+const { model, value, state, unbound } = useFieldModel<number | null>(props, emit)
 const announce = useAnnounce()
 const id = useId()
 const reasonId = useId()
@@ -85,6 +87,10 @@ function commit(n: number) {
 
 function settle() {
   if (typed.value === undefined) {
+    if (props.optional && text.value === '') {
+      value.value != null && (value.value = null)
+      return
+    }
     text.value = value.value === null || value.value === undefined ? '' : String(value.value)
     return
   }
@@ -179,6 +185,7 @@ function toneOf(tone: FieldTone) {
     :label-hidden="labelHidden"
     :info="info"
     :description="description"
+    :optional="optional"
     :width="width"
     :state="state"
     :model="model"

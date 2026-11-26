@@ -226,7 +226,7 @@ import { useCwaConfirm } from '#cwa/composables/cwa-confirm'
 import { formatCountdown } from '#cwa/api/retry-after'
 import { definePageMeta } from '#imports'
 // @ts-ignore
-import { extensionAdminRoles as builtExtensionAdminRoles } from '#build/cwa-extension-menu'
+import { extensionAdminRoles as builtExtensionAdminRoles } from '#build/cwa-extension-areas'
 import { rolesForLevel, userRoleLevel, userRoleLevels } from '#cwa/admin/user-roles'
 import type { UserRoleLevel } from '#cwa/admin/user-roles'
 import CwaUiDialog from '#cwa/templates/components/ui/Dialog.vue'

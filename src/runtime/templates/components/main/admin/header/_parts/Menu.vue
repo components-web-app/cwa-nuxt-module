@@ -12,7 +12,7 @@
     />
     <Transition v-bind="menuTransition">
       <div
-        v-show="showMenu"
+        v-show="panelShown"
         :id="panelId"
         ref="menu"
         class="cwa:absolute cwa:z-10 cwa:-top-1.5 cwa:-right-2 cwa:bg-dark cwa:pt-6 cwa:pb-12 cwa:px-12 cwa:w-[90vw] cwa:max-w-lg cwa:origin-top-right"
@@ -45,7 +45,7 @@
                     <IconPages class="cwa:w-5 cwa:mx-1" />
                   </MenuPrimaryLink>
                 </li>
-                <li v-if="$cwa.auth.isAdmin.value">
+                <li v-if="$cwa.auth.isAdmin.value && hasPageData">
                   <MenuPrimaryLink
                     label="Data"
                     to="/_cwa/data"
@@ -72,25 +72,17 @@
               </ul>
             </div>
             <div class="cwa:flex cwa:flex-col cwa:gap-y-4">
-              <div v-if="$cwa.auth.isAdmin.value">
+              <div v-if="$cwa.auth.isAdmin.value || hasExtensions">
                 <h3>General</h3>
                 <ul class="cwa:text-sm">
-                  <li>
+                  <li v-if="$cwa.auth.isAdmin.value">
                     <MenuLink :to="{ name: '_cwa-settings' }">
                       Site settings
                     </MenuLink>
                   </li>
-                </ul>
-              </div>
-              <div v-if="extensionEntries.length">
-                <h3>Extensions</h3>
-                <ul class="cwa:text-sm">
-                  <li
-                    v-for="entry in extensionEntries"
-                    :key="entry.to.name"
-                  >
-                    <MenuLink :to="entry.to">
-                      {{ entry.label }}
+                  <li v-if="hasExtensions">
+                    <MenuLink :to="{ name: '_cwa-extensions' }">
+                      Extensions
                     </MenuLink>
                   </li>
                 </ul>
@@ -98,8 +90,8 @@
               <div>
                 <h3>Account</h3>
                 <ul class="cwa:text-sm">
-                  <li v-if="$cwa.auth.user">
-                    <MenuLink :to="{ name: '_cwa-users-user-iri', params: { iri: $cwa.auth.user['@id'] } }">
+                  <li>
+                    <MenuLink :to="{ name: '_cwa-account' }">
                       My account
                     </MenuLink>
                   </li>
@@ -144,15 +136,30 @@ import IconUsers from '#cwa/templates/components/core/assets/IconUsers.vue'
 import MenuLink from '#cwa/templates/components/main/admin/header/_parts/MenuLink.vue'
 import IconRoutes from '#cwa/templates/components/core/assets/IconRoutes.vue'
 import IconData from '#cwa/templates/components/core/assets/IconData.vue'
+import { pageDataTypes } from '#cwa/admin/page-data-types'
 // @ts-ignore
-import { extensionMenu } from '#build/cwa-extension-menu'
+import { extensionPageRoles } from '#build/cwa-extension-menu'
 
 const $cwa = useCwa()
 const { menu: menuTransition } = useTransitions()
 const route = useRoute()
 
 const showMenu = ref(false)
-const extensionEntries = computed(() => (extensionMenu as { label: string, to: { name: string }, role: string }[]).filter(entry => $cwa.auth.hasRole(entry.role)))
+const hasExtensions = computed(() => (extensionPageRoles as string[]).some(role => $cwa.auth.hasRole(role)))
+const hasPageData = ref(false)
+const pageDataDecided = ref(false)
+const panelShown = computed(() => showMenu.value && (pageDataDecided.value || !$cwa.auth.isAdmin.value))
+
+let decidingPageData: Promise<void> | undefined
+
+function decidePageData() {
+  decidingPageData ??= $cwa.getApiDocumentation()
+    .then(docs => pageDataTypes(docs).length > 0, () => false)
+    .then((found) => {
+      hasPageData.value = found
+      pageDataDecided.value = true
+    })
+}
 
 const menu = useTemplateRef('menu')
 const hamburger = ref<{ $el?: HTMLElement }>()
@@ -181,7 +188,13 @@ function closeOnFocusLeaving(event: FocusEvent) {
   showMenu.value = false
 }
 
-watch(showMenu, async (open) => {
+watch(showMenu, (open) => {
+  if (open && $cwa.auth.isAdmin.value) {
+    decidePageData()
+  }
+})
+
+watch(panelShown, async (open) => {
   if (!open) {
     return
   }

@@ -130,6 +130,7 @@ export interface CwaModuleOptions {
         label: string
         options?: SelectOption[]
       }[]
+      hideExtensionTabs?: string[]
     }
   }
   layoutName?: string

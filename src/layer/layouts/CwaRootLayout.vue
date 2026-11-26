@@ -47,7 +47,6 @@
 <script setup lang="ts">
 import { computed, ref, getCurrentInstance, watch, nextTick } from 'vue'
 import { consola as logger } from 'consola'
-import { useRouter } from 'vue-router'
 import { useWindowScroll } from '@vueuse/core'
 import { useCwa, useHead } from '#imports'
 import { LazyCwaAdminHeader, LazyCwaAdminResourceManager, LazyCwaAdminResourceManagerLayoutPageOverlay, LazyCwaDefaultLayout } from '#components'
@@ -55,17 +54,14 @@ import OutdatedContentNotice from '#cwa/templates/components/main/admin/header/_
 import type { GlobalComponentNames } from '#cwa/types'
 import { resolveStyleClasses } from '#cwa/composables/cwa-styles'
 import { styleClasses } from '#build/cwa-styles'
+// @ts-ignore
+import { adminShellRoles } from '#build/cwa-extension-menu'
 
 const $cwa = useCwa()
-const currentRoute = useRouter().currentRoute
 const resourceManager = ref<null | InstanceType<typeof LazyCwaAdminResourceManager>>(null)
 const page = ref<null | HTMLElement>(null)
 const rootLayout = ref<null | HTMLElement>(null)
 const instance = getCurrentInstance()
-
-const cwaPageMeta = computed(() => {
-  return currentRoute.value.meta?.cwa
-})
 
 function callResourceManagerHandler(handler: 'contextMenuHandler' | 'clickHandler', e: MouseEvent, type: 'layout' | 'page') {
   resourceManager.value && resourceManager.value[handler](e, type)
@@ -96,10 +92,10 @@ const layoutResource = computed(() => {
 })
 
 const layoutUiComponent = computed<GlobalComponentNames>(() => {
-  return cwaPageMeta.value?.staticLayout || (layoutResource.value?.data?.uiComponent as GlobalComponentNames) || LazyCwaDefaultLayout
+  return (layoutResource.value?.data?.uiComponent as GlobalComponentNames) || LazyCwaDefaultLayout
 })
 
-const hasNamedLayout = computed(() => !!(cwaPageMeta.value?.staticLayout || layoutResource.value?.data?.uiComponent))
+const hasNamedLayout = computed(() => !!layoutResource.value?.data?.uiComponent)
 
 const stableLayoutUiComponent = ref<GlobalComponentNames | undefined>(hasNamedLayout.value ? layoutUiComponent.value : undefined)
 watch(hasNamedLayout, (isNamed) => {
@@ -178,7 +174,7 @@ watch(() => $cwa.admin.isEditing, async () => {
 })
 
 const showAdmin = $cwa.auth.isAdmin
-const showHeader = computed(() => showAdmin.value || $cwa.auth.hasRole('ROLE_USER_ADMIN'))
+const showHeader = computed(() => (adminShellRoles as string[]).some(role => $cwa.auth.hasRole(role)))
 useHead({
   titleTemplate: () => {
     if ($cwa.siteConfig.config.concatTitle) {

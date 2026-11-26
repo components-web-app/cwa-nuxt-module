@@ -4,6 +4,53 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+## [2.0.0-alpha.41] - 2026-11-26
+
+### Added
+
+- Extension page-data tabs (`pageDataTabs: [{ key, label, file, role?, forTypesWithProperty }]`): a tab in the page-data dialog, after Details and before Routes, for each type whose API docs list the property. Its role defaults to `ROLE_CMS_ADMIN`, the role that opens the page-data dialog; it is hidden while adding and without its role, opens from its hash, and its component gets the page data's `iri` and `data`. Its own saves never count towards the dialog's Save. [#512](https://github.com/components-web-app/cwa-nuxt-module/pull/512)
+- An app hides an extension's page-data tab for one type with `pageData: { <Class>: { hideExtensionTabs: ['<key>'] } }`. [#512](https://github.com/components-web-app/cwa-nuxt-module/pull/512)
+- Extension page-data lists (`pageDataLists: [{ path, label, forTypesWithProperty, role?, columns? }]`): a tab of the extension's area (role `ROLE_ADMIN` by default, like admin pages) at `/_cwa/<segment>/<path>`, which lists the types with the property and opens each at `<path>/:type`, or goes straight to the list when only one type has it. A row opens that item's page-data dialog at `<path>/:type/:iri`, and `columns` adds components given the row's data. [#512](https://github.com/components-web-app/cwa-nuxt-module/pull/512)
+- An extension page-data list of one type links back to its type list, above the list, when more than one type matches; `CwaAdminList` takes a `back` slot for it. [#513](https://github.com/components-web-app/cwa-nuxt-module/pull/513)
+- Extension admin areas: an extension's admin pages are tabs of its own area at `/_cwa/<segment>`, under its label, showing only the pages the user's roles open; the area opens on the first of them. [#510](https://github.com/components-web-app/cwa-nuxt-module/pull/510)
+- `/_cwa/extensions` lists the extensions the user can open, with their label, description and icon, and the header menu links to it. [#510](https://github.com/components-web-app/cwa-nuxt-module/pull/510)
+- `cwaAdminRoute(segment, page, iri?)` links to an extension's admin page or its item, and throws in development for a page that does not exist. [#510](https://github.com/components-web-app/cwa-nuxt-module/pull/510)
+- My account (`/_cwa/account`): anyone who can open the admin can change their own password and email, and resend or cancel a pending email change; the header menu's My account link opens it. [#505](https://github.com/components-web-app/cwa-nuxt-module/pull/505)
+- `useCwaAccount`, `useCwaChangePassword` and `useCwaChangeEmail` read the signed-in user and change their password or email, so an app can build its own account page. [#505](https://github.com/components-web-app/cwa-nuxt-module/pull/505)
+- `CwaUiSecretInput`'s Replace has a Show value button. [64fa7828](https://github.com/components-web-app/cwa-nuxt-module/commit/64fa7828ad3ddd907ddc42975fbb3c2b46441650) ([#494](https://github.com/components-web-app/cwa-nuxt-module/issues/494))
+- `CwaUiNumber` takes `optional`: emptied, it saves `null` instead of going back to its value. [64fa7828](https://github.com/components-web-app/cwa-nuxt-module/commit/64fa7828ad3ddd907ddc42975fbb3c2b46441650) ([#494](https://github.com/components-web-app/cwa-nuxt-module/issues/494))
+- `CwaUiDescriptorFields` takes `disabled`, and its optional `int` fields clear to `null`. [64fa7828](https://github.com/components-web-app/cwa-nuxt-module/commit/64fa7828ad3ddd907ddc42975fbb3c2b46441650) ([#494](https://github.com/components-web-app/cwa-nuxt-module/issues/494))
+- `useItemPage` (and so `useCwaAdminItem`) takes dotted field paths, such as `field="gatewayConfig.vendor"`: a nested value is unsaved and sent on its own, nested under its parent, and a 422 on that path shows on its field. [62fef0c5](https://github.com/components-web-app/cwa-nuxt-module/commit/62fef0c5a8ebf6a08d24811d3d09bd86aaf7ee24) ([#494](https://github.com/components-web-app/cwa-nuxt-module/issues/494))
+- `CwaUiDescriptorFields` renders a dialog or FormGroup's fields from descriptors (`{ name, label, type, required, secret }`, typed as `CwaFieldDescriptor`) under a path: `bool`, `int`, `text`, `string`, or a secret. [1055d152](https://github.com/components-web-app/cwa-nuxt-module/commit/1055d152466626581d49920a0a1d6040a18b975f) ([#494](https://github.com/components-web-app/cwa-nuxt-module/issues/494))
+- `CwaUiSecretInput` edits a write-only value read back as `{ set }`: it shows Set or Not set, never the value, sends one only once it is typed, and offers Replace and Remove (which sends `null`; not for a required secret). [5bdef217](https://github.com/components-web-app/cwa-nuxt-module/commit/5bdef2176ad916b6b7591ee07e7edb43955e2962) ([#494](https://github.com/components-web-app/cwa-nuxt-module/issues/494))
+
+### Changed
+
+- Dependencies move to their latest versions: Vue `^3.5.46`, `@nuxtjs/seo` `^6.1.0`, `@nuxtjs/sitemap` `^9.2.0`, `nuxt-og-image` `^7.2.0`, `set-cookie-parser` `^4.0.0` and the other Nuxt SEO modules; developed and tested against Nuxt 4.7.0. reka-ui stays `^2.11.0`, and the Nuxt minimum stays 4.6.0. [#514](https://github.com/components-web-app/cwa-nuxt-module/pull/514)
+- `CwaAdminList` shows no heading inside an extension area, so the area's heading is the page's only `h1`. [#512](https://github.com/components-web-app/cwa-nuxt-module/pull/512)
+- An extension's admin pages move into its area: `/_cwa/<segment>/<path>`, named `_cwa-<segment>-<path>`, where the segment is the prefix in kebab-case (`SilverbackShop` → `silverback-shop`). An extension now needs a `label` (and may have `description` and `icon: 'lucide:<name>'`), and each admin page needs a `label`. **Upgrade:** remove the prefix from each page's `path` (`'shop-orders'` → `'orders'`), replace `menu: { label }` with `label`, and update links to the new route names, or use `cwaAdminRoute`. [#510](https://github.com/components-web-app/cwa-nuxt-module/pull/510)
+- The header menu has one Extensions link instead of a link per extension page, and shows Data only when the API docs list page data classes. [#510](https://github.com/components-web-app/cwa-nuxt-module/pull/510)
+- An `allowedComponents` rule's `ui` takes short UI names: `default` for the component itself and the file name for a UI (`{ component: 'Image', ui: ['default', 'Hero'] }`), from the new auto-imported `CwaComponentUis` constant, with `CwaComponentStyles` for style keys. It syncs the same values as before. A `ui/Default.vue` is warned about and left out of the UIs, since `default` names the component itself. [#509](https://github.com/components-web-app/cwa-nuxt-module/pull/509)
+
+### Deprecated
+
+- Full UI names in an `allowedComponents` rule's `ui` (`CwaComponentImageUiHero`): use the short name (`Hero`). They still sync and warn once per name, but no longer type-check, and stop working in the next alpha without further warning. [#509](https://github.com/components-web-app/cwa-nuxt-module/pull/509)
+
+### Removed
+
+- `cwa.staticLayout` is removed. Name the layout by its reference with `cwa.layout`. [#509](https://github.com/components-web-app/cwa-nuxt-module/pull/509)
+
+### Fixed
+
+- A menu's ⓘ for an unavailable option, such as in the clone placement menu, now shows that its reasons are open. [#514](https://github.com/components-web-app/cwa-nuxt-module/pull/514)
+- A signed-in non-admin sent from a `/_cwa` page to a CWA page no longer gets a 500 in development ("defineOgImage() … client-only context"): the page's og image is defined on the server or after hydration. [ed94b138](https://github.com/components-web-app/cwa-nuxt-module/commit/ed94b138bc9a43987ac407cd3ed17417558cb8bb)
+- The header's status for a lost real-time connection reads "Collaborative editing unavailable", not "Live editing paused", which read as editing being switched off; its ⓘ explains that editing carries on and saves as normal. [e8e12e24](https://github.com/components-web-app/cwa-nuxt-module/commit/e8e12e24b215eafec54d9cc16fe443a79f193abe)
+- A user whose only admin role is one an extension's admin page needs now gets the admin header, so its menu reaches those pages. [64b1c858](https://github.com/components-web-app/cwa-nuxt-module/commit/64b1c85891d4efe86c587f04652ec6edf94b1e36)
+- My account no longer sends a content admin, a user admin or a user with only an extension page's role to `/`: it opens for everyone who gets the admin header. [#511](https://github.com/components-web-app/cwa-nuxt-module/pull/511) ([#508](https://github.com/components-web-app/cwa-nuxt-module/issues/508))
+- In a dialog, a field the API left out or sent as `null` that is typed in and cleared no longer counts as unsaved or is sent as `''`. [#507](https://github.com/components-web-app/cwa-nuxt-module/pull/507) ([#506](https://github.com/components-web-app/cwa-nuxt-module/issues/506))
+- An empty optional `CwaUiNumber` whose value was never set no longer writes `null` when it is left or Enter is pressed, so it is not marked unsaved. [#507](https://github.com/components-web-app/cwa-nuxt-module/pull/507) ([#503](https://github.com/components-web-app/cwa-nuxt-module/issues/503))
+- With a dotted field such as `gatewayConfig.vendor` edited, a re-fetch or a 412 that changes another key of the same object now shows that change, and the next Save sends only the edited key instead of reverting it. [#507](https://github.com/components-web-app/cwa-nuxt-module/pull/507) ([#502](https://github.com/components-web-app/cwa-nuxt-module/issues/502))
+
 ## [2.0.0-alpha.40] - 2026-11-25
 
 ### Added
@@ -391,7 +438,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 - First tagged release of `@cwa/nuxt`; releases are now published from `v*` tags ([7c61b7c](https://github.com/components-web-app/cwa-nuxt-module/commit/7c61b7ce331ec4a0cb8e76951a5de2ff806ed07a))
 
-[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.40...HEAD
+[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.41...HEAD
+[2.0.0-alpha.41]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.40...v2.0.0-alpha.41
 [2.0.0-alpha.40]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.39...v2.0.0-alpha.40
 [2.0.0-alpha.39]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.38...v2.0.0-alpha.39
 [2.0.0-alpha.38]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.37...v2.0.0-alpha.38

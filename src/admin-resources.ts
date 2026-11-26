@@ -103,6 +103,11 @@ function lucideSvg(body: string) {
   return `<svg data-cwa-admin-icon xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true" focusable="false">${body}</svg>`
 }
 
+export function lucideIconSvg(lucide: LucideIconSet, icon: string): string | undefined {
+  const body = icon.startsWith('lucide:') ? lucideBody(lucide, icon.slice('lucide:'.length)) : undefined
+  return body ? lucideSvg(body) : undefined
+}
+
 function skeletonSvg(body: string) {
   return `<svg data-cwa-admin-icon xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 32" aria-hidden="true" focusable="false"><rect x=".5" y=".5" width="47" height="31" rx="2" fill="${FRAME}" stroke="${STROKE}"/>${body}</svg>`
 }

@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { afterEach, describe, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { defineComponent, h } from 'vue'
 import Menu from './Menu.vue'
@@ -13,21 +13,23 @@ vi.mock('#app/composables/router', async () => {
   return { useRoute: () => current }
 })
 const roles = vi.hoisted(() => ({ list: ['ROLE_ADMIN', 'ROLE_CMS_ADMIN', 'ROLE_USER'] }))
+const docs = vi.hoisted(() => ({
+  withPageData: { pageDataMetadata: { member: [{ resourceClass: 'App\\Entity\\AbstractPageData' }, { resourceClass: 'App\\Entity\\BlogArticleData' }] } },
+  load: vi.fn(),
+}))
 vi.mock('#cwa/composables/cwa', async () => {
   const { computed } = await import('vue')
   return {
     useCwa: () => ({
       config: { siteName: 'Site' },
       auth: { user: undefined, signOut: vi.fn(), isAdmin: computed(() => roles.list.includes('ROLE_CMS_ADMIN')), hasRole: (role: string) => roles.list.includes(role) },
+      getApiDocumentation: docs.load,
       navigationDisabled: false,
     }),
   }
 })
 vi.mock('#build/cwa-extension-menu', () => ({
-  extensionMenu: [
-    { label: 'Orders', to: { name: '_cwa-orders' }, role: 'ROLE_ADMIN' },
-    { label: 'Reports', to: { name: '_cwa-reports' }, role: 'ROLE_SHOP_ACCOUNTS' },
-  ],
+  extensionPageRoles: ['ROLE_ADMIN', 'ROLE_SHOP_ACCOUNTS'],
 }))
 
 const LinkStub = defineComponent({
@@ -52,6 +54,10 @@ function nextTask() {
 }
 
 let wrapper: ReturnType<typeof mountMenu> | undefined
+
+beforeEach(() => {
+  docs.load.mockResolvedValue(docs.withPageData)
+})
 
 afterEach(() => {
   wrapper?.unmount()
@@ -151,6 +157,7 @@ describe('the narrow admin roles (bundle #611)', () => {
   async function shownLinks() {
     wrapper = mountMenu()
     await wrapper.get('button').trigger('click')
+    await flushPromises()
     return wrapper.findAll('a').map(link => link.text().trim()).filter(Boolean)
   }
 
@@ -177,33 +184,104 @@ describe('the narrow admin roles (bundle #611)', () => {
   })
 })
 
-describe('extension admin pages', () => {
+describe('extensions', () => {
   afterEach(() => {
     roles.list = ['ROLE_ADMIN', 'ROLE_CMS_ADMIN', 'ROLE_USER']
   })
 
-  test('lists the pages extensions put in the menu that the user\'s roles open', async () => {
-    roles.list = ['ROLE_ADMIN', 'ROLE_SHOP_ACCOUNTS']
+  async function openMenu() {
     wrapper = mountMenu()
     await wrapper.get('button').trigger('click')
+    await flushPromises()
+    return wrapper.findAllComponents(LinkStub).map(link => ({ text: link.text().trim(), to: link.props('to') }))
+  }
 
-    const section = wrapper.findAll('h3').find(heading => heading.text() === 'Extensions')!.element.parentElement!
-    expect([...section.querySelectorAll('li')].map(item => item.textContent?.trim())).toEqual(['Orders', 'Reports'])
+  test('one Extensions link to the Extensions page replaces a link per extension page', async () => {
+    const links = await openMenu()
+
+    expect(links.filter(link => link.text === 'Extensions')).toEqual([{ text: 'Extensions', to: { name: '_cwa-extensions' } }])
+    expect(links.map(link => link.text)).not.toContain('Orders')
+    expect(wrapper!.findAll('h3').map(heading => heading.text())).not.toContain('Extensions')
   })
 
-  test('leaves out a page whose role the user lacks', async () => {
-    wrapper = mountMenu()
-    await wrapper.get('button').trigger('click')
+  test('a user with only an extension page\'s role gets the Extensions link and nothing of the content areas', async () => {
+    roles.list = ['ROLE_SHOP_ACCOUNTS', 'ROLE_USER']
+    const links = (await openMenu()).map(link => link.text)
 
-    const section = wrapper.findAll('h3').find(heading => heading.text() === 'Extensions')!.element.parentElement!
-    expect([...section.querySelectorAll('li')].map(item => item.textContent?.trim())).toEqual(['Orders'])
+    expect(links).toContain('Extensions')
+    expect(links).not.toContain('Site settings')
   })
 
-  test('shows no Extensions heading when the user can open none of them', async () => {
+  test('shows no Extensions link when the user can open no extension page', async () => {
     roles.list = ['ROLE_CMS_ADMIN']
+    const links = (await openMenu()).map(link => link.text)
+
+    expect(links).not.toContain('Extensions')
+    expect(links).toContain('Site settings')
+  })
+})
+
+describe('the Data link', () => {
+  test('shows when the API docs list page data classes', async () => {
+    wrapper = mountMenu()
+    await wrapper.get('button').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.findAll('a').map(link => link.text().trim())).toContain('Data')
+  })
+
+  test.each([
+    ['list only the abstract class', { pageDataMetadata: { member: [{ resourceClass: 'App\\Entity\\AbstractPageData' }] } }],
+    ['list none', {}],
+    ['fail to load', undefined],
+  ])('is hidden when the API docs %s', async (_, loaded) => {
+    docs.load.mockResolvedValue(loaded)
+    wrapper = mountMenu()
+    await wrapper.get('button').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.findAll('a').map(link => link.text().trim())).not.toContain('Data')
+    expect(wrapper.findAll('a').map(link => link.text().trim())).toContain('Pages')
+  })
+
+  test('the panel shows only once the docs have decided it, so the menu never jumps, and they are read once', async () => {
+    let resolve: (value: unknown) => void = () => undefined
+    docs.load.mockReturnValue(new Promise((done) => {
+      resolve = done
+    }))
+    wrapper = mountMenu()
+    await wrapper.get('button').trigger('click')
+    await flushPromises()
+    const panel = document.getElementById(wrapper.get('button').attributes('aria-controls')!)!
+
+    expect(panel.style.display).toBe('none')
+    resolve(docs.withPageData)
+    await flushPromises()
+    expect(panel.style.display).toBe('')
+    expect(document.activeElement?.textContent?.trim()).toBe('Layouts')
+
+    await wrapper.get('button').trigger('click')
+    await wrapper.get('button').trigger('click')
+    await flushPromises()
+    expect(docs.load).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('my account', () => {
+  afterEach(() => {
+    roles.list = ['ROLE_ADMIN', 'ROLE_CMS_ADMIN', 'ROLE_USER']
+  })
+
+  test.each([
+    [['ROLE_ADMIN']],
+    [['ROLE_ADMIN', 'ROLE_CMS_ADMIN', 'ROLE_USER']],
+    [['ROLE_ADMIN', 'ROLE_USER_ADMIN']],
+  ])('links any admin (%j) to their account page', async (list) => {
+    roles.list = list
     wrapper = mountMenu()
     await wrapper.get('button').trigger('click')
 
-    expect(wrapper.findAll('h3').map(heading => heading.text())).not.toContain('Extensions')
+    const link = wrapper.findAllComponents(LinkStub).find(candidate => candidate.text() === 'My account')
+    expect(link?.props('to')).toStrictEqual({ name: '_cwa-account' })
   })
 })

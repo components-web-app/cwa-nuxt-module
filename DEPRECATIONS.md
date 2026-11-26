@@ -25,19 +25,21 @@ in its spec. An IRI entry then fails like any unknown name.
 
 ---
 
-### `cwa.staticLayout` in page meta
+## Remove in the alpha after 2.0.0-alpha.41
 
-A page outside CWA can still pick its layout component with `cwa.staticLayout`,
-which renders the component but loads no layout, so the layout's component
-groups are empty. `cwa.layout` names the layout by its reference instead. The
-route middleware warns once per process that it goes without further warning.
+### Full UI names in `allowedComponents`
 
-**Delete:** `staticLayout` from `CwaRouteMeta` in `module.ts` (and its type
-template assertion), the `staticLayout` reads in `CwaRootLayout.vue`, the warning
-and `warnedStaticLayout` in `route-middleware.ts` with its test, and switch the
-playground's `pages/static.vue` to `cwa.layout`.
+An `allowedComponents` rule's `ui` still accepts full UI names
+(`CwaComponentImage`, `CwaComponentImageUiHero`), the syntax from before short
+names (`default`, `Hero`, from `CwaComponentUis`). `resolveAllowedComponents`
+warns once per name that full names stop working in the next alpha without
+further warning.
 
-**First:** 2.0.0-alpha.40 is released, so apps have had one alpha of warnings.
+**Delete:** the full-name branch and `warnedFullUiNames` in
+`admin/allowed-components.ts`, and the full-name test in its spec. A full name
+then fails like any unknown UI.
+
+**First:** 2.0.0-alpha.41 is released, so apps have had one alpha of warnings.
 
 ---
 
@@ -167,42 +169,36 @@ Until then a 404 is the normal answer, not a fault.
 
 ---
 
-## Remove when Nuxt's build tooling takes minimatch 11 and glob 14
+## Remove when the lint tooling takes minimatch 11
 
-### The ignored minimatch and glob advisories in `pnpm-workspace.yaml`
+### The ignored minimatch advisory in `pnpm-workspace.yaml`
 
 `auditConfig.ignoreGhsas` ignores `GHSA-g3hv-75wg-m249` (moderate, minimatch
-`<11.0.1`, globparts amplification) and `GHSA-3g3m-2fjr-6pw4` (moderate, glob
-`>=9.0.0 <=14.0.1`, AbortSignal bypass). The fixes are only in minimatch 11 and
-glob 14; no older major was patched. The tree holds minimatch 3, 5, 9 and 10 and
-glob 10, 11 and 13, each required by a different package's range (eslint,
-copyfiles, archiver through nitropack, workbox-build through `@vite-pwa/nuxt`,
-`@vercel/nft`), so neither dedupes to one version and an override would force
-those packages onto a major they do not support. Every path is build, test or
-lint tooling; nothing in `src/runtime` or `src/layer` imports either.
-
-**Delete:** both IDs.
-
-**When:** `pnpm audit` passes without them after `pnpm up --latest`.
-
----
-
-## Remove when `deepmerge` has a patched release
-
-### The ignored audit advisory in `pnpm-workspace.yaml`
-
-`auditConfig.ignoreGhsas` ignores `GHSA-gcqx-w48m-w2h4` (low): deepmerge's
-`mergeObject()` allows prototype poisoning of returned objects. It has **no
-patched release**; 4.3.1, the latest, is vulnerable. It is reached only through
-`@rollup/plugin-node-resolve`, used by `nitropack` (Nuxt's build) and `unbuild`
-(`@nuxt/module-builder`), so it is build tooling and is not in a built app's
-server bundle. It is ignored by ID, not by lowering the audit level, so any new
-advisory still fails CI.
+`<11.0.1`, globparts amplification). The fix is only in minimatch 11. The
+vulnerable minimatch 10 comes from `@stryker-mutator/core`,
+`@typescript-eslint/typescript-estree`, `editorconfig` and
+`eslint-plugin-import-x`, and an override cannot move them: minimatch 11
+removed `makeRe()`, which `eslint-plugin-import-x` calls. Every path is test or
+lint tooling; nothing in `src/runtime` or `src/layer` imports it.
 
 **Delete:** the ID (and `auditConfig` if it is empty).
 
-**When:** a patched deepmerge is on npm, or `@rollup/plugin-node-resolve` no
-longer depends on it; check with `pnpm audit` after removing it.
+**When:** `pnpm audit` passes without it after `pnpm up --latest`.
+
+---
+
+## Remove when `js-beautify` takes glob 14
+
+### The `js-beautify>glob` override in `pnpm-workspace.yaml`
+
+`js-beautify` 2.0.3 (through `@vue/test-utils`) requires glob `^13.0.6`, which
+`GHSA-3g3m-2fjr-6pw4` (moderate, AbortSignal bypass) covers; only glob 14 is
+patched. js-beautify uses glob only in its CLI (`globSync`, `hasMagic`), which
+glob 14 keeps, and the specs never run that CLI.
+
+**Delete:** the override.
+
+**When:** a js-beautify release requires glob 14 or later.
 
 ---
 

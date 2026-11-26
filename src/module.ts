@@ -8,6 +8,7 @@ import {
   addImports,
   addImportsDir,
   addPlugin,
+  addRouteMiddleware,
   addServerHandler,
   addServerTemplate,
   addTemplate,
@@ -29,13 +30,14 @@ import { READINESS_DEFAULTS } from './runtime/server/readiness'
 import { defaultSiteConfig } from './runtime/composables/useCwaSiteConfig'
 import { scanComponentGroupDeclarations } from './component-group-declarations'
 import { scanCwaConfigDeclarations } from './cwa-config-declarations'
-import { adminResourcesTemplate, lucideNamesTypeTemplate } from './admin-resources'
+import { adminResourcesTemplate, lucideIconSvg, lucideNamesTypeTemplate } from './admin-resources'
 import type { LucideIconSet } from './admin-resources'
-import { addExtensionAdminPages, checkExtensions, extensionAdminMenu, extensionAdminRoles, extensionRouteRules } from './extensions'
+import { addExtensionAdminPages, adminShellRoles, checkExtensions, extensionAdminRoles, extensionAreas, extensionPageDataTemplate, extensionPageRoles, extensionRouteRules } from './extensions'
 import type { CwaExtension, ExtensionNames } from './extensions'
 import type { CwaModuleOptions, CwaResourcesConfig, CwaResourcesMeta, CwaStyleClasses, CwaStyles, CwaUiVariantConfig, GlobalComponentNames } from './runtime/types'
 
-export type { CwaExtension, CwaExtensionAdminPage } from './extensions'
+export type { CwaExtension, CwaExtensionAdminPage, CwaExtensionPageDataList, CwaExtensionPageDataTab } from './extensions'
+export type { CwaFieldDescriptor } from './runtime/templates/components/core/ui/field-descriptors'
 
 declare module 'nuxt/schema' {
   interface NuxtHooks {
@@ -226,8 +228,9 @@ export default defineNuxtModule<CwaModuleOptions>({
     })
 
     const extensions: CwaExtension[] = []
+    addRouteMiddleware({ name: 'cwa-extension-area', path: resolve('./runtime/extension-area-middleware') })
     extendPages((pages: NuxtPage[]) => {
-      addExtensionAdminPages(pages, extensions)
+      addExtensionAdminPages(pages, extensions, resolve(vueTemplatesDir, 'extension-area.vue'), { types: resolve(vueTemplatesDir, 'extension-page-data-types.vue'), list: resolve(vueTemplatesDir, 'extension-page-data-list.vue'), item: resolve(vueTemplatesDir, 'extension-page-data-item.vue') })
     })
 
     nuxt.hook('pages:routerOptions', ({ files }) => {
@@ -380,6 +383,11 @@ export default defineNuxtModule<CwaModuleOptions>({
       return component.pascalName.replace(/^CwaComponent/, '')
     }
 
+    function uiShortName(resourceType: string, ui: string) {
+      const prefix = `CwaComponent${resourceType}Ui`
+      return ui.startsWith(prefix) ? ui.slice(prefix.length) : ui
+    }
+
     const reportedConfigUncheckable = new Set<string>()
     function warnConfigOnce(key: string, message: string) {
       if (reportedConfigUncheckable.has(key)) {
@@ -461,6 +469,13 @@ export default defineNuxtModule<CwaModuleOptions>({
 
         const ui = allUserComponents
           .filter(({ filePath, global }) => global && path.dirname(path.dirname(filePath)) === primaryDir && isUiVariant(filePath))
+          .filter(({ filePath, pascalName }) => {
+            if (uiShortName(resourceType, pascalName).toLowerCase() !== 'default') {
+              return true
+            }
+            warnConfigOnce(`${filePath}\0default`, `${NAME}: ${filePath} is not one of ${resourceType}'s UIs, because default is the name of the component itself (${resourceType}/${resourceType}.vue) in allowedComponents. Rename the file.`)
+            return false
+          })
           .map(({ pascalName }) => pascalName as GlobalComponentNames)
 
         const primary = declared ? declarations.components[resourceType] ?? {} : {}
@@ -581,33 +596,51 @@ export default defineNuxtModule<CwaModuleOptions>({
           const names = resolveUserComponents(app.components).userComponents.map(toResourceType)
           const constant = JSON.stringify(Object.fromEntries(names.map(name => [name, name])), undefined, 2)
           const { resourcesConfig, uiConfig } = resolveCwaConfig(app.components)
-          const union = (values: string[]) => values.length ? [...new Set(values)].map(value => JSON.stringify(value)).join(' | ') : 'never'
-          const typeMap = (valuesOf: (name: string) => string[]) => names.map(name => `  ${JSON.stringify(name)}: ${union(valuesOf(name))}`).join('\n')
           const uiOf = (name: string) => (resourcesConfig[name]?.ui ?? []) as string[]
+          const constants = (valuesOf: (name: string) => string[]) => JSON.stringify(Object.fromEntries(names.map(name => [name, Object.fromEntries(valuesOf(name).map(value => [value, value]))])), undefined, 2)
+          const uis = constants(name => ['default', ...uiOf(name).map(ui => uiShortName(name, ui))])
+          const styles = constants(name => [resourcesConfig[name]?.styles, ...uiOf(name).map(ui => uiConfig[ui]?.styles)].flatMap(styles => Object.keys(styles ?? {})))
           return `export const CwaComponentNames = ${constant} as const
 export type CwaComponentName = typeof CwaComponentNames[keyof typeof CwaComponentNames]
-export interface CwaComponentUis {
-${typeMap(name => [`CwaComponent${name}`, ...uiOf(name)])}
-}
-export interface CwaComponentStyles {
-${typeMap(name => [resourcesConfig[name]?.styles, ...uiOf(name).map(ui => uiConfig[ui]?.styles)].flatMap(styles => Object.keys(styles ?? {})))}
-}
+export const CwaComponentUis = ${uis} as const
+export type CwaComponentUis = { [Name in CwaComponentName]: typeof CwaComponentUis[Name][keyof typeof CwaComponentUis[Name]] }
+export const CwaComponentStyles = ${styles} as const
+export type CwaComponentStyles = { [Name in CwaComponentName]: typeof CwaComponentStyles[Name][keyof typeof CwaComponentStyles[Name]] }
 `
         },
       })
       addTemplate({
         filename: 'cwa-extension-menu.ts',
         write: true,
-        getContents: () => `export const extensionMenu: { label: string, to: { name: string }, role: string }[] = ${JSON.stringify(extensionAdminMenu(extensions), undefined, 2)}
+        getContents: () => `export const extensionPageRoles: string[] = ${JSON.stringify(extensionPageRoles(extensions))}
+export const adminShellRoles: string[] = ${JSON.stringify(adminShellRoles(extensions))}
+`,
+      })
+      addTemplate({
+        filename: 'cwa-extension-areas.ts',
+        write: true,
+        getContents: () => `import type { CwaExtensionArea } from '#cwa/admin/extension-areas'
+export const extensionAreas: CwaExtensionArea[] = ${JSON.stringify(extensionAreas(extensions, (icon) => {
+  const svg = lucideIconSvg(readLucideIcons(), icon)
+  if (!svg) {
+    logger.warn(`${NAME}: the extension icon "${icon}" is not a lucide icon, so it is left out`)
+  }
+  return svg
+}), undefined, 2)}
 export const extensionAdminRoles: { role: string, label: string }[] = ${JSON.stringify(extensionAdminRoles(extensions), undefined, 2)}
 `,
+      })
+      addTemplate({
+        filename: 'cwa-extension-page-data.ts',
+        write: true,
+        getContents: () => extensionPageDataTemplate(extensions),
       })
 
       addImports([
         { name: 'CwaComponentNames', from: '#build/cwa-component-names' },
         { name: 'CwaComponentName', from: '#build/cwa-component-names', type: true },
-        { name: 'CwaComponentUis', from: '#build/cwa-component-names', type: true },
-        { name: 'CwaComponentStyles', from: '#build/cwa-component-names', type: true },
+        { name: 'CwaComponentUis', from: '#build/cwa-component-names' },
+        { name: 'CwaComponentStyles', from: '#build/cwa-component-names' },
       ])
 
       const reportedUncheckable = new Set<string>()
@@ -727,8 +760,6 @@ declare module '#og-image/components' {
   admin?: boolean
   disabled?: boolean
   layout?: string
-  /** @deprecated name the layout by its reference with layout */
-  staticLayout?: GlobalComponentNames
   fetch?: {
     iri: string
     manifestPath?: string

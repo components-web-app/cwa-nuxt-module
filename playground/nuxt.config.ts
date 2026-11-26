@@ -195,7 +195,9 @@ export default defineNuxtConfig({
         {
           // Anchored to the API path prefix so the Mercure SSE stream (a different path) is NOT
           // matched — a broad API-origin pattern would swallow it and break real-time updates.
-          urlPattern: ({ url }) => /\/_api\/(?:_\/(?:routes|resource_manifest|pages|layouts|component_groups|component_positions)|page_data|component)\b/.test(url.pathname),
+          urlPattern: ({ url }) => {
+            return /\/_api\/(?:_\/(?:routes|resource_manifest|pages|layouts|component_groups|component_positions)|page_data|component)\b/.test(url.pathname)
+          },
           handler: 'NetworkFirst',
           options: {
             cacheName: 'cwa-api',
@@ -231,11 +233,11 @@ export default defineNuxtConfig({
       enabled: true,
       suppressWarnings: false,
       navigateFallbackAllowlist: [/^\/$/],
-      type: 'module',
     },
   },
   sitemap: {
     debug: true,
+    xsl: true,
   },
   skewProtection: { enabled: false },
   svgo: {

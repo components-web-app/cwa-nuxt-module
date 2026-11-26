@@ -2,8 +2,7 @@
 import { computed, inject, ref, useId, watch } from 'vue'
 import type { Directive } from 'vue'
 import StateGlyph from '../core/ui/StateGlyph.vue'
-import EyeIcon from './icon/EyeIcon.vue'
-import EyeOffIcon from './icon/EyeOffIcon.vue'
+import RevealButton from '../core/ui/RevealButton.vue'
 import Field from '../core/ui/Field.vue'
 import type { FieldWidth } from '../core/ui/Field.vue'
 import { useFieldModel } from '../core/ui/field-context'
@@ -125,31 +124,14 @@ function onInput(event: Event) {
           :class="placeholderLook(disabled || unbound)"
           @input="onInput"
         >
-        <button
+        <RevealButton
           v-if="canReveal"
-          type="button"
+          v-model="revealed"
           data-testid="input-reveal"
-          :aria-pressed="revealed ? 'true' : 'false'"
-          :aria-label="revealed ? 'Hide password' : 'Show password'"
-          :aria-controls="id"
+          noun="password"
+          :controls="id"
           :disabled="disabled || unbound"
-          class="cwa:me-1 cwa:inline-flex cwa:size-8 cwa:shrink-0 cwa:items-center cwa:justify-center cwa:self-center cwa:text-fg-muted cwa:outline-1 cwa:outline-transparent cwa:transition-colors cwa:duration-(--cwa-duration-fast) cwa:ease-out cwa:hover:text-fg cwa:motion-reduce:transition-none cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-accent-fg cwa:disabled:cursor-not-allowed cwa:pointer-coarse:min-h-hit cwa:pointer-coarse:min-w-hit"
-          @mousedown.prevent
-          @click="revealed = !revealed"
-        >
-          <EyeOffIcon
-            v-if="revealed"
-            data-testid="icon-eye-off"
-            aria-hidden="true"
-            class="cwa:size-4"
-          />
-          <EyeIcon
-            v-else
-            data-testid="icon-eye"
-            aria-hidden="true"
-            class="cwa:size-4"
-          />
-        </button>
+        />
         <slot name="suffix" />
       </div>
     </template>

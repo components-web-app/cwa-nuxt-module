@@ -117,6 +117,22 @@ describe('cwa-admin middleware', () => {
     })
   })
 
+  describe('an extension area, which lists the roles of its pages', () => {
+    const area = { cwaAdminRole: ['ROLE_ADMIN', 'ROLE_SHOP_ACCOUNTS'] }
+
+    test('lets in a user with any one of them', async () => {
+      mockCwa({ signedIn: true, isAdmin: false, roles: ['ROLE_SHOP_ACCOUNTS'] })
+      expect(await cwaAdminMiddleware(createRoute('/_cwa/shop', area), createRoute())).toBeUndefined()
+      expect(nuxt.navigateTo).not.toHaveBeenCalled()
+    })
+
+    test('sends home a user with none of them', async () => {
+      mockCwa({ signedIn: true, isAdmin: true, roles: ['ROLE_CMS_ADMIN'] })
+      await cwaAdminMiddleware(createRoute('/_cwa/shop', area), createRoute())
+      expect(nuxt.navigateTo).toHaveBeenCalledWith('/')
+    })
+  })
+
   describe('on the server, where a cross-origin API cookie is not sent', () => {
     beforeEach(() => {
       vi.spyOn(processComposables, 'useProcess').mockReturnValue({ isClient: false, isServer: true })
