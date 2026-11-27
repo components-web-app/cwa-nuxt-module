@@ -4,6 +4,12 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+## [2.0.0-alpha.43] - 2026-11-27
+
+### Fixed
+
+- A file chosen for a component before Add is uploaded to it again once Add creates it: since alpha.36 the component was created without its file, the page showed an empty placeholder and no error said so. [#516](https://github.com/components-web-app/cwa-nuxt-module/pull/516)
+
 ## [2.0.0-alpha.42] - 2026-11-26
 
 ### Fixed
@@ -444,7 +450,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 - First tagged release of `@cwa/nuxt`; releases are now published from `v*` tags ([7c61b7c](https://github.com/components-web-app/cwa-nuxt-module/commit/7c61b7ce331ec4a0cb8e76951a5de2ff806ed07a))
 
-[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.42...HEAD
+[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.43...HEAD
+[2.0.0-alpha.43]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.42...v2.0.0-alpha.43
 [2.0.0-alpha.42]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.41...v2.0.0-alpha.42
 [2.0.0-alpha.41]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.40...v2.0.0-alpha.41
 [2.0.0-alpha.40]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.39...v2.0.0-alpha.40
