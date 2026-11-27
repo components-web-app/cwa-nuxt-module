@@ -42,7 +42,7 @@ async function addResourceAction(publish?: boolean) {
     }
     $cwa.admin.emptyStack()
     if (fields.length) {
-      moveHeldUploads($cwa, NEW_RESOURCE_IRI, created['@id'])
+      moveHeldUploads($cwa, NEW_RESOURCE_IRI, created['@id'], fields)
       await uploadHeld(created['@id'], fields, publishAfter, draft)
     }
   }

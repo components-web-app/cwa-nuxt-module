@@ -51,9 +51,9 @@ export function heldFields($cwa: Cwa, iri: string) {
     .filter(field => !!heldUpload($cwa, iri, field))
 }
 
-export function moveHeldUploads($cwa: Cwa, from: string, to: string) {
+export function moveHeldUploads($cwa: Cwa, from: string, to: string, fields: string[]) {
   const held = heldOf($cwa)
-  for (const field of heldFields($cwa, from)) {
+  for (const field of fields) {
     const upload = held.get(keyOf(from, field))!
     held.delete(keyOf(from, field))
     held.set(keyOf(to, field), { ...upload, adding: undefined })
