@@ -6,7 +6,7 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ### Added
 
-- The admin area's top bar starts with a house back to the site page you were on, and Site settings chooses and orders its shortcuts (`adminTopBar`), including extensions with an icon (`topBar: true` makes one a default). [#517](https://github.com/components-web-app/cwa-nuxt-module/pull/517)
+- The admin area's top bar starts with a house back to the site page you were on, then shortcuts each admin chooses and orders on their Account page (saved on their own user as `adminPreferences`, needs api-components-bundle#619), defaulting to `cwa.admin.topBar` in nuxt.config, else the built-in areas and extensions with `topBar: true`. [#517](https://github.com/components-web-app/cwa-nuxt-module/pull/517)
 
 ## [2.0.0-alpha.43] - 2026-11-27
 

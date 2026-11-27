@@ -15,7 +15,6 @@ export const defaultSiteConfig: SiteConfigParams = {
   maintenanceModeEnabled: false,
   sitemapXml: '',
   canonicalUrl: '',
-  adminTopBar: '',
 }
 
 export function useCwaSiteConfig() {

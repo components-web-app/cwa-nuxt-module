@@ -13,7 +13,7 @@ const serverEntry = resolve(outputDir, 'server/index.mjs')
 const chunkDir = resolve(outputDir, 'public/_nuxt')
 const appBase = `http://127.0.0.1:${appPort}`
 
-const gzipBudget = 163350
+const gzipBudget = 163300
 
 const required = [
   { marker: 'cwa-start', source: 'core/ComponentPosition.vue' },
@@ -38,6 +38,7 @@ const forbidden = [
   { marker: 'data-cwa-admin-icon', source: 'cwa-admin-resources' },
   { marker: 'alt text</strong> for screen readers', source: 'Markdown description HTML in cwa-admin-resources, from playground Image.vue' },
   { marker: 'Already in this group', source: 'resource-manager/_parts/AddComponentDialog.vue' },
+  { marker: '`layouts`,`pages`,`data`,`routes`,`users`', source: 'cwa-admin-top-bar, the playground\'s cwa.admin.topBar' },
 ]
 
 let stub

@@ -30,8 +30,6 @@ vi.mock('#build/cwa-options', () => ({
 
 enableAutoUnmount(afterEach)
 
-vi.mock('#build/cwa-extension-areas', () => ({ extensionAreas: [] }))
-
 vi.mock('#cwa/composables/cwa-confirm', () => ({ useCwaConfirm: () => mockConfirm }))
 
 const storedConfig = ref<Record<string, any>>({})
@@ -763,19 +761,6 @@ describe('Site settings form on the kit (#461)', () => {
     await wrapper.get(`[data-cwa-field="${field}"] :is(input, textarea)`).setValue(value)
     await flushPromises()
   }
-
-  test('the General tab edits the admin top bar, which saves as the adminTopBar setting', async () => {
-    const wrapper = await setup()
-    const section = wrapper.get('[data-cwa-field="adminTopBar"]')
-    const layouts = section.findAll('[data-testid="top-bar-choice"]').find(row => row.get('label').text() === 'Layouts')!
-    await layouts.get('[role="switch"]').trigger('click')
-    await flushPromises()
-
-    expect(saveLabel(wrapper)).toBe('Save 1 change')
-    await save(wrapper).trigger('click')
-    await flushPromises()
-    expect(mockSaveConfig).toHaveBeenCalledWith({ adminTopBar: 'pages,data,routes,users' })
-  })
 
   test('edits a local copy and Save sends only the changed settings, with the one count on Save', async () => {
     const wrapper = await setup()

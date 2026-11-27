@@ -1,8 +1,5 @@
 <template>
-  <div
-    :data-cwa-field="field"
-    class="cwa:flex cwa:flex-col cwa:gap-3"
-  >
+  <div class="cwa:flex cwa:flex-col cwa:gap-3">
     <ul class="cwa:m-0 cwa:flex cwa:list-none cwa:flex-col cwa:p-0">
       <li
         v-for="(choice, index) in choices"
@@ -53,8 +50,8 @@
       <CwaUiButton
         label="Reset to default"
         data-testid="top-bar-reset"
-        :disabled="!value"
-        @click="value = ''"
+        :disabled="!modelValue"
+        @click="emit('update:modelValue', null)"
       />
     </div>
   </div>
@@ -71,26 +68,18 @@ import IconPages from '#cwa/templates/components/core/assets/IconPages.vue'
 import IconData from '#cwa/templates/components/core/assets/IconData.vue'
 import IconRoutes from '#cwa/templates/components/core/assets/IconRoutes.vue'
 import IconUsers from '#cwa/templates/components/core/assets/IconUsers.vue'
-import { useFieldModel } from '#cwa/templates/components/core/ui/field-context'
-import { topBarChoices, topBarSetting } from '#cwa/admin/top-bar'
+import { topBarChoices } from '#cwa/admin/top-bar'
 import type { CwaExtensionArea } from '#cwa/admin/extension-areas'
-import type { ResourceModelField } from '#cwa/resources/model-editors'
 // @ts-ignore
 import { extensionAreas } from '#build/cwa-extension-areas'
+// @ts-ignore
+import { topBarDefault } from '#build/cwa-admin-top-bar'
 
-const props = withDefaults(defineProps<{
-  field?: string
-  model?: ResourceModelField<string>
-  modelValue?: string | null
-}>(), {
-  field: undefined,
-  model: undefined,
-  modelValue: undefined,
-})
+const { modelValue } = defineProps<{
+  modelValue: string[] | null
+}>()
 
-const emit = defineEmits<{ 'update:modelValue': [value: string | null | undefined] }>()
-
-const { value } = useFieldModel<string>(props, emit)
+const emit = defineEmits<{ 'update:modelValue': [value: string[] | null] }>()
 
 const builtInIcons: Record<string, Component> = {
   layouts: IconLayouts,
@@ -100,17 +89,17 @@ const builtInIcons: Record<string, Component> = {
   users: IconUsers,
 }
 
-const choices = computed(() => topBarChoices(extensionAreas as CwaExtensionArea[], value.value || undefined))
+const choices = computed(() => topBarChoices(extensionAreas as CwaExtensionArea[], { own: modelValue, developer: topBarDefault }))
 const shownIds = computed(() => choices.value.filter(choice => choice.shown).map(choice => choice.item.id))
 
 function toggle(id: string, shown: boolean) {
-  value.value = topBarSetting(shown ? [...shownIds.value, id] : shownIds.value.filter(other => other !== id))
+  emit('update:modelValue', shown ? [...shownIds.value, id] : shownIds.value.filter(other => other !== id))
 }
 
 function move(index: number, by: number) {
   const ids = [...shownIds.value]
   const [id] = ids.splice(index, 1)
   ids.splice(index + by, 0, id!)
-  value.value = topBarSetting(ids)
+  emit('update:modelValue', ids)
 }
 </script>

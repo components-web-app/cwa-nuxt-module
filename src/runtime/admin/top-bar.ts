@@ -39,29 +39,39 @@ function entries(areas: CwaExtensionArea[]): TopBarEntry[] {
   ]
 }
 
-function shownEntries(all: TopBarEntry[], saved: string | undefined) {
-  if (!saved) {
+export interface TopBarLists {
+  own?: unknown
+  developer?: string[]
+}
+
+function isIdList(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every(id => typeof id === 'string')
+}
+
+function shownEntries(all: TopBarEntry[], { own, developer }: TopBarLists) {
+  const chosen = isIdList(own) ? own : developer
+  if (!chosen) {
     return all.filter(entry => entry.isDefault)
   }
-  const ids = [...new Set(saved.split(','))]
-  return ids.flatMap(id => all.filter(entry => entry.item.id === id))
+  return [...new Set(chosen)].flatMap(id => all.filter(entry => entry.item.id === id))
 }
 
-export function topBarItems(areas: CwaExtensionArea[], saved: string | undefined, hasRole: (role: string) => boolean): TopBarItem[] {
-  return shownEntries(entries(areas), saved).filter(entry => entry.allowed(hasRole)).map(entry => entry.item)
+export function topBarItems(areas: CwaExtensionArea[], lists: TopBarLists, hasRole: (role: string) => boolean): TopBarItem[] {
+  return shownEntries(entries(areas), lists).filter(entry => entry.allowed(hasRole)).map(entry => entry.item)
 }
 
-export function topBarChoices(areas: CwaExtensionArea[], saved: string | undefined): { item: TopBarItem, shown: boolean }[] {
+export function topBarChoices(areas: CwaExtensionArea[], lists: TopBarLists): { item: TopBarItem, shown: boolean }[] {
   const all = entries(areas)
-  const shown = shownEntries(all, saved)
+  const shown = shownEntries(all, lists)
   return [
     ...shown.map(entry => ({ item: entry.item, shown: true })),
     ...all.filter(entry => !shown.includes(entry)).map(entry => ({ item: entry.item, shown: false })),
   ]
 }
 
-export function topBarSetting(ids: string[]) {
-  return ids.length ? ids.join(',') : 'none'
+export function unknownTopBarIds(ids: string[], areas: CwaExtensionArea[]) {
+  const known = new Set(entries(areas).map(entry => entry.item.id))
+  return ids.filter(id => !known.has(id))
 }
 
 const sitePaths = new WeakMap<Cwa, string>()

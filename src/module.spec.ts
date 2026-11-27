@@ -86,13 +86,13 @@ describe('CWA module', () => {
   describe('extensions', () => {
     const shop = { name: '@acme/shop', prefix: 'Shop', label: 'Shop', dir: '/ext/shop', adminPages: [{ path: 'orders', label: 'Orders', file: '/ext/shop/admin/orders.vue' }], pageCache: { '/basket': false as const } }
 
-    async function setupWithExtension(extension: Record<string, unknown> = shop, options: Record<string, unknown> = {}) {
+    async function setupWithExtension(extension: Record<string, unknown> = shop, options: Record<string, unknown> = {}, moduleOptions: Record<string, unknown> = {}) {
       const hooks: Record<string, (...args: any[]) => any> = {}
       const pageCallbacks: ((pages: any[]) => void)[] = []
       vi.spyOn(nuxtKit, 'extendPages').mockImplementation((callback) => {
         pageCallbacks.push(callback)
       })
-      const mockNuxt = await prepareMockNuxt({}, {
+      const mockNuxt = await prepareMockNuxt(moduleOptions, {
         hook: vi.fn((name: string, callback: (...args: any[]) => any) => {
           hooks[name] = callback
           if (name === 'modules:done') {
@@ -190,6 +190,50 @@ export const adminShellRoles: string[] = ["ROLE_CMS_ADMIN","ROLE_USER_ADMIN","RO
 ]`)
     })
 
+    describe('the admin top bar default', () => {
+      const withIcon = { ...shop, icon: 'lucide:shopping-cart' }
+      const template = () => (nuxtKit.addTemplate as Mock).mock.calls.map(([entry]) => entry).findLast(entry => entry.filename === 'cwa-admin-top-bar.ts')
+      const optionsTemplate = () => (nuxtKit.addTemplate as Mock).mock.calls.map(([entry]) => entry).findLast(entry => entry.filename === 'cwa-options.ts')
+      const warnings = (logger: { warn: Mock }) => logger.warn.mock.calls.map(([message]) => String(message)).filter(message => message.includes('admin.topBar'))
+
+      function mockLogger() {
+        const logger = { info: vi.fn(), warn: vi.fn(), debug: vi.fn(), error: vi.fn(), success: vi.fn() }
+        vi.spyOn(nuxtKit, 'useLogger').mockReturnValue(logger as any)
+        return logger
+      }
+
+      test('is written to its own admin-only template, never to the options every visitor loads', async () => {
+        const logger = mockLogger()
+        await setupWithExtension(withIcon, {}, { admin: { topBar: ['routes', 'ext:shop'] } })
+
+        expect(template().getContents()).toBe('export const topBarDefault: string[] | undefined = ["routes","ext:shop"]\n')
+        expect(optionsTemplate().getContents()).not.toContain('topBar')
+        expect(warnings(logger)).toEqual([])
+      })
+
+      test('is undefined when the app sets none, so the built-in default applies', async () => {
+        await setupWithExtension(withIcon)
+
+        expect(template().getContents()).toBe('export const topBarDefault: string[] | undefined = undefined\n')
+      })
+
+      test('warns once naming each id that is not a built-in or a top-bar extension, and keeps the list as given', async () => {
+        const logger = mockLogger()
+        await setupWithExtension(shop, {}, { admin: { topBar: ['pages', 'ext:shop', 'page'] } })
+
+        expect(warnings(logger)).toEqual([expect.stringMatching(/admin\.topBar.*"ext:shop", "page"/)])
+        expect(template().getContents()).toContain('["pages","ext:shop","page"]')
+      })
+
+      test('warns and is left out when it is not a list of ids', async () => {
+        const logger = mockLogger()
+        await setupWithExtension(withIcon, {}, { admin: { topBar: 'pages,routes' } })
+
+        expect(warnings(logger)).toEqual([expect.stringContaining('admin.topBar must be a list of top bar ids')])
+        expect(template().getContents()).toBe('export const topBarDefault: string[] | undefined = undefined\n')
+      })
+    })
+
     test('an app component replacing an extension\'s takes its manager tabs and UI variants only from the app\'s folder, never the extension\'s', async () => {
       await setupWithExtension()
       const template = (nuxtKit.addTemplate as Mock).mock.calls.map(([entry]) => entry).findLast(entry => entry.filename === 'cwa-config.ts')
@@ -258,7 +302,6 @@ export const adminShellRoles: string[] = ["ROLE_CMS_ADMIN","ROLE_USER_ADMIN","RO
         storeName: 'cwa',
         siteConfig: {
           canonicalUrl: '',
-          adminTopBar: '',
           indexable: true,
           robotsAllowNonSeoCrawlers: true,
           robotsAllowAiBots: true,

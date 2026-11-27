@@ -195,6 +195,16 @@
           </p>
         </form>
       </CwaUiFormSection>
+      <CwaUiFormSection
+        v-if="'adminPreferences' in account"
+        title="Admin top bar"
+        description="Choose and order the shortcuts in your top bar. Only you see this choice."
+      >
+        <TopBarSettings
+          :model-value="topBar"
+          @update:model-value="saveTopBar"
+        />
+      </CwaUiFormSection>
     </div>
   </div>
 </template>
@@ -216,6 +226,10 @@ import { useCwaChangeEmail } from '#cwa/composables/useCwaChangeEmail'
 import { useCwaChangePassword } from '#cwa/composables/useCwaChangePassword'
 import { useResendVerifyEmail } from '#cwa/composables/useResendVerifyEmail'
 import { formatCountdown } from '#cwa/api/retry-after'
+import { writeOwnUser } from '#cwa/api/own-user-write'
+import { useCwa } from '#cwa/composables/cwa'
+import { useCwaToast } from '#cwa/composables/cwa-toast'
+import TopBarSettings from '#cwa/templates/components/core/admin/TopBarSettings.vue'
 import { definePageMeta, useHead } from '#imports'
 
 definePageMeta({
@@ -231,6 +245,32 @@ provide(formSurfaceKey, { unsaved: () => false, register: () => () => {} })
 provide(sectionHeadingKey, 'h2')
 
 const { account, loading, loadFailed, reload } = useCwaAccount()
+
+const $cwa = useCwa()
+const toast = useCwaToast()
+
+function savedTopBar() {
+  const topBar = account.value?.adminPreferences?.topBar
+  return Array.isArray(topBar) ? topBar as string[] : null
+}
+
+const topBar = ref<string[] | null>(null)
+watch(account, () => {
+  topBar.value = savedTopBar()
+}, { immediate: true })
+
+async function saveTopBar(next: string[] | null) {
+  topBar.value = next
+  const adminPreferences = next ? { ...account.value?.adminPreferences, topBar: next } : null
+  const { user, failure } = await writeOwnUser($cwa, { adminPreferences }, ['adminPreferences'])
+  if (!user) {
+    topBar.value = savedTopBar()
+    toast.show({ tone: 'error', title: 'Your top bar wasn\'t saved.', description: failure })
+    return
+  }
+  account.value = { ...account.value!, adminPreferences: user.adminPreferences }
+  await $cwa.auth.refreshUser()
+}
 
 const {
   newEmail,

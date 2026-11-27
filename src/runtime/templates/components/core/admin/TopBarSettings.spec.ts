@@ -12,14 +12,25 @@ const { areas } = vi.hoisted(() => ({
   ],
 }))
 
+const developer = vi.hoisted(() => ({ topBar: undefined as string[] | undefined }))
+
 vi.mock('#build/cwa-extension-areas', () => ({ extensionAreas: areas }))
+vi.mock('#build/cwa-admin-top-bar', () => ({
+  get topBarDefault() {
+    return developer.topBar
+  },
+}))
 
 enableAutoUnmount(afterEach)
 
-function setup(saved = '') {
-  const value = ref(saved)
+afterEach(() => {
+  developer.topBar = undefined
+})
+
+function setup(saved: string[] | null = null) {
+  const value = ref<string[] | null>(saved)
   const wrapper = mount(defineComponent({
-    setup: () => () => h(TopBarSettings, { 'modelValue': value.value, 'onUpdate:modelValue': (next: string) => { value.value = next } }),
+    setup: () => () => h(TopBarSettings, { 'modelValue': value.value, 'onUpdate:modelValue': (next: string[] | null) => { value.value = next } }),
   }), { attachTo: document.body })
   return { wrapper, value }
 }
@@ -44,52 +55,58 @@ describe('TopBarSettings', () => {
     expect(row(wrapper, 'Shop').find('#shop-icon').exists()).toBe(true)
   })
 
-  test('lists a saved setting\'s items first, in its order', () => {
-    const { wrapper } = setup('ext:reports,pages')
+  test('with nothing saved follows the developer\'s list when there is one', () => {
+    developer.topBar = ['ext:reports', 'data']
+    const { wrapper } = setup()
+    expect(rows(wrapper).slice(0, 3)).toEqual([['Reports', 'true'], ['Data', 'true'], ['Layouts', 'false']])
+  })
+
+  test('lists a saved list\'s items first, in its order', () => {
+    const { wrapper } = setup(['ext:reports', 'pages'])
     expect(rows(wrapper).slice(0, 3)).toEqual([['Reports', 'true'], ['Pages', 'true'], ['Layouts', 'false']])
   })
 
   test('switching an item off saves every other shown item, in order, so the list no longer follows the default', async () => {
     const { wrapper, value } = setup()
     await row(wrapper, 'Data').get('[role="switch"]').trigger('click')
-    expect(value.value).toBe('layouts,pages,routes,users,ext:shop')
+    expect(value.value).toEqual(['layouts', 'pages', 'routes', 'users', 'ext:shop'])
   })
 
   test('switching an item on adds it after the shown items', async () => {
-    const { wrapper, value } = setup('pages')
+    const { wrapper, value } = setup(['pages'])
     await row(wrapper, 'Reports').get('[role="switch"]').trigger('click')
-    expect(value.value).toBe('pages,ext:reports')
+    expect(value.value).toEqual(['pages', 'ext:reports'])
   })
 
-  test('switching off the last shown item saves a list naming nothing, never the empty default', async () => {
-    const { wrapper, value } = setup('pages')
+  test('switching off the last shown item saves an empty list, never the default', async () => {
+    const { wrapper, value } = setup(['pages'])
     await row(wrapper, 'Pages').get('[role="switch"]').trigger('click')
-    expect(value.value).toBe('none')
+    expect(value.value).toEqual([])
   })
 
   test('moves a shown item up or down, and only shown items can move, within the shown ones', async () => {
-    const { wrapper, value } = setup('pages,layouts,ext:shop')
+    const { wrapper, value } = setup(['pages', 'layouts', 'ext:shop'])
     expect(row(wrapper, 'Pages').get('button[aria-label="Move Pages up"]').attributes('aria-disabled')).toBe('true')
     expect(row(wrapper, 'Shop').get('button[aria-label="Move Shop down"]').attributes('aria-disabled')).toBe('true')
     expect(row(wrapper, 'Data').find('button[aria-label="Move Data up"]').exists()).toBe(false)
 
     await row(wrapper, 'Layouts').get('button[aria-label="Move Layouts up"]').trigger('click')
-    expect(value.value).toBe('layouts,pages,ext:shop')
+    expect(value.value).toEqual(['layouts', 'pages', 'ext:shop'])
     await flushPromises()
     await row(wrapper, 'Pages').get('button[aria-label="Move Pages down"]').trigger('click')
-    expect(value.value).toBe('layouts,ext:shop,pages')
+    expect(value.value).toEqual(['layouts', 'ext:shop', 'pages'])
   })
 
-  test('Reset to default clears the setting, and is unavailable while nothing is saved', async () => {
-    const { wrapper, value } = setup('pages')
+  test('Reset to default clears the saved list, and is unavailable while nothing is saved', async () => {
+    const { wrapper, value } = setup(['pages'])
     await wrapper.get('[data-testid="top-bar-reset"]').trigger('click')
-    expect(value.value).toBe('')
+    expect(value.value).toBeNull()
     await flushPromises()
     expect(wrapper.get('[data-testid="top-bar-reset"]').attributes('aria-disabled')).toBe('true')
   })
 
   test('has no accessibility violations', async () => {
-    setup('pages')
+    setup(['pages'])
     expect(await axe(document.body)).toHaveNoViolations()
   })
 })

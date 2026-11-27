@@ -28,6 +28,7 @@ import {
 import type { Component, ModuleDependencies, Nuxt, NuxtPage, ViteConfig } from '@nuxt/schema'
 import { READINESS_DEFAULTS } from './runtime/server/readiness'
 import { defaultSiteConfig } from './runtime/composables/useCwaSiteConfig'
+import { unknownTopBarIds } from './runtime/admin/top-bar'
 import { scanComponentGroupDeclarations } from './component-group-declarations'
 import { scanCwaConfigDeclarations } from './cwa-config-declarations'
 import { adminResourcesTemplate, lucideIconSvg, lucideNamesTypeTemplate } from './admin-resources'
@@ -566,6 +567,21 @@ export default defineNuxtModule<CwaModuleOptions>({
       return options.auth?.clearCachesOnSessionEnd ?? ['cwa-api']
     }
 
+    function resolveTopBarDefault(topBar: unknown) {
+      if (topBar === undefined) {
+        return undefined
+      }
+      if (!Array.isArray(topBar) || !topBar.every(id => typeof id === 'string')) {
+        logger.warn(`${NAME}: cwa.admin.topBar must be a list of top bar ids, so it is ignored and the built-in default applies.`)
+        return undefined
+      }
+      const unknown = unknownTopBarIds(topBar, extensionAreas(extensions, icon => lucideIconSvg(readLucideIcons(), icon)))
+      if (unknown.length) {
+        logger.warn(`${NAME}: cwa.admin.topBar names ${unknown.map(id => JSON.stringify(id)).join(', ')}, which no built-in area or extension with an icon and admin pages has, so the top bar leaves them out.`)
+      }
+      return topBar as string[]
+    }
+
     function hasStaticRouteRules(): boolean {
       const routeRules = { ...nuxt.options.routeRules, ...nuxt.options.nitro?.routeRules }
       return Object.values(routeRules).some(rule => !!(rule?.isr || rule?.swr || rule?.prerender))
@@ -576,6 +592,8 @@ export default defineNuxtModule<CwaModuleOptions>({
       logger.info(`Configuring template to propagate module options and adding plugin for ${NAME} module...`)
       // clear options no longer needed and add plugin
       delete options.pagesDepth
+      const topBarDefault = resolveTopBarDefault(options.admin?.topBar)
+      delete options.admin
 
       const sessionEndCaches = resolveSessionEndCaches()
       if (sessionEndCaches.length) {
@@ -615,6 +633,11 @@ export type CwaComponentStyles = { [Name in CwaComponentName]: typeof CwaCompone
         getContents: () => `export const extensionPageRoles: string[] = ${JSON.stringify(extensionPageRoles(extensions))}
 export const adminShellRoles: string[] = ${JSON.stringify(adminShellRoles(extensions))}
 `,
+      })
+      addTemplate({
+        filename: 'cwa-admin-top-bar.ts',
+        write: true,
+        getContents: () => `export const topBarDefault: string[] | undefined = ${topBarDefault ? JSON.stringify(topBarDefault) : 'undefined'}\n`,
       })
       addTemplate({
         filename: 'cwa-extension-areas.ts',

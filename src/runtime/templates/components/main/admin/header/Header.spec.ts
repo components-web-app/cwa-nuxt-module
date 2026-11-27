@@ -20,10 +20,14 @@ vi.mock('#cwa/admin/stranded-component-groups', () => ({
   }),
 }))
 
-const extensionState = vi.hoisted(() => ({ areas: [] as any[] }))
+const extensionState = vi.hoisted(() => ({ areas: [] as any[], topBarDefault: undefined as string[] | undefined }))
 
 vi.mock('#build/cwa-extension-areas', () => ({
   get extensionAreas() { return extensionState.areas },
+}))
+
+vi.mock('#build/cwa-admin-top-bar', () => ({
+  get topBarDefault() { return extensionState.topBarDefault },
 }))
 
 vi.mock('#cwa/templates/components/core/admin/StrandedComponentGroupsModal.vue', () => ({
@@ -73,22 +77,21 @@ function mockCwa({
   admin,
   requestCount = 0,
   roles = ['ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_USER_ADMIN', 'ROLE_CMS_ADMIN', 'ROLE_USER'],
-  siteConfig = {},
+  user = { '@id': '/_/users/admin' },
 }: {
   resources?: any
   admin?: any
   requestCount?: number
   roles?: string[]
-  siteConfig?: Record<string, any>
+  user?: Record<string, any>
 } = {}) {
   const res = resources ?? buildResources()
   const adm = admin ?? buildAdmin()
   const cwa = {
     resources: res,
     admin: adm,
-    auth: { user: { '@id': '/_/users/admin' }, isAdmin: computed(() => roles.includes('ROLE_CMS_ADMIN')), hasRole: (role: string) => roles.includes(role) },
+    auth: { user: reactive(user), isAdmin: computed(() => roles.includes('ROLE_CMS_ADMIN')), hasRole: (role: string) => roles.includes(role) },
     resourcesManager: { requestCount: { value: requestCount }, confirmDiscardAddingResource: vi.fn(async () => true) },
-    siteConfig: reactive({ config: siteConfig }),
   } as unknown as Cwa
   vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => cwa)
   mockedCwas.push(cwa)
@@ -159,6 +162,7 @@ describe('Header', () => {
     mockRouteMeta.cwa = { admin: false }
     mockRoute.fullPath = '/'
     extensionState.areas = []
+    extensionState.topBarDefault = undefined
     strandedState.stranded = []
     strandedState.shown = []
   })
@@ -467,14 +471,34 @@ describe('Header', () => {
       expect(wrapper.find('[data-testid="header-centre"] #shop-icon').exists()).toBe(true)
     })
 
-    test('follows the saved setting, keeping the house first', () => {
+    test('follows the developer\'s default when the admin has chosen nothing, keeping the house first', () => {
       mockRouteMeta.cwa = { admin: true }
       extensionState.areas = [shop]
-      mockCwa({ siteConfig: { adminTopBar: 'ext:shop,pages' } })
+      extensionState.topBarDefault = ['routes', 'ext:shop']
+      mockCwa()
       expect(centreLinks(mountHeader())).toEqual([
+        ['/', 'Back to the site'],
+        ['/_cwa/routes', 'Routes'],
+        ['{"name":"_cwa-shop"}', 'Shop'],
+      ])
+    })
+
+    test('follows the admin\'s own list over the developer\'s, and changes as soon as it is saved', async () => {
+      mockRouteMeta.cwa = { admin: true }
+      extensionState.areas = [shop]
+      extensionState.topBarDefault = ['routes']
+      const { cwa } = mockCwa({ user: { '@id': '/_/users/admin', 'adminPreferences': { topBar: ['ext:shop', 'pages'] } } })
+      const wrapper = mountHeader()
+      expect(centreLinks(wrapper)).toEqual([
         ['/', 'Back to the site'],
         ['{"name":"_cwa-shop"}', 'Shop'],
         ['/_cwa/pages', 'Pages'],
+      ])
+      cwa.auth.user!.adminPreferences = { topBar: ['data'] }
+      await flushPromises()
+      expect(centreLinks(wrapper)).toEqual([
+        ['/', 'Back to the site'],
+        ['/_cwa/data', 'Data'],
       ])
     })
   })

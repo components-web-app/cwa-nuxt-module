@@ -160,6 +160,8 @@ import { rememberSitePath, sitePath, topBarItems } from '#cwa/admin/top-bar'
 import type { CwaExtensionArea } from '#cwa/admin/extension-areas'
 // @ts-ignore
 import { extensionAreas } from '#build/cwa-extension-areas'
+// @ts-ignore
+import { topBarDefault } from '#build/cwa-admin-top-bar'
 import { useStrandedComponentGroups } from '#cwa/admin/stranded-component-groups'
 import { useCloneMode } from '#cwa/admin/clone-mode'
 
@@ -198,7 +200,7 @@ const builtInIcons: Record<string, { icon: Component, class?: string }> = {
   users: { icon: IconUsers },
 }
 
-const topBar = computed(() => topBarItems(extensionAreas as CwaExtensionArea[], $cwa.siteConfig.config?.adminTopBar, role => $cwa.auth.hasRole(role)))
+const topBar = computed(() => topBarItems(extensionAreas as CwaExtensionArea[], { own: $cwa.auth.user?.adminPreferences?.topBar, developer: topBarDefault }, role => $cwa.auth.hasRole(role)))
 
 const showEditModal = ref(false)
 const showStrandedModal = ref(false)

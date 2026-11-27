@@ -94,7 +94,6 @@ export type SiteConfigParams = {
   maintenanceModeEnabled: boolean
   sitemapXml: string
   canonicalUrl: string
-  adminTopBar: string
 }
 
 export interface CwaModuleOptions {
@@ -108,6 +107,9 @@ export interface CwaModuleOptions {
   }
   realtime?: {
     enabled?: boolean
+  }
+  admin?: {
+    topBar?: string[]
   }
   upload?: {
     image?: Partial<ImageDownscaleOptions>
