@@ -39,7 +39,7 @@ function setup(opts: { isPublishable?: boolean, uploads?: (boolean | undefined)[
   const wrapper = mount(NewResourceCta, { props: { currentIri: '__new__', resource: store.__new__.data } })
   const hold = (field: string, name = `${field}.jpg`) => holdUpload($cwa as unknown as Cwa, '__new__', field, new File(['1'], name, { type: 'image/jpeg' }))
   const sent = () => $cwa.resourcesManager.updateResource.mock.calls.map(([event]) => event as { iri?: string, endpoint: string, data: unknown })
-  return { wrapper, $cwa, hold, sent, button: () => wrapper.findComponent(Button) }
+  return { wrapper, $cwa, store, hold, sent, button: () => wrapper.findComponent(Button) }
 }
 
 describe('NewResourceCta: a component not added yet, with files held for it (#461)', () => {
@@ -74,6 +74,23 @@ describe('NewResourceCta: a component not added yet, with files held for it (#46
     ])
     expect(heldFields($cwa as unknown as Cwa, CREATED)).toEqual([])
     expect(toast.show).not.toHaveBeenCalled()
+  })
+
+  test('the held files are still uploaded when creating the component replaces the stored new resource, as the store does', async () => {
+    const { $cwa, hold, sent, button, store } = setup()
+    hold('image')
+    $cwa.resourcesManager.addResourceAction.mockImplementationOnce(async () => {
+      store.__new__ = { data: { '@id': '__new__', '_metadata': { persisted: false, adding: { ...adding } } } }
+      return { '@id': CREATED }
+    })
+
+    await button().vm.$emit('click')
+    await flushPromises()
+
+    expect(sent().map(event => [event.iri, event.endpoint, [...(event.data as FormData).entries()][0]])).toEqual([
+      [CREATED, `${CREATED}/upload`, ['image', expect.objectContaining({ name: 'image.jpg' })]],
+    ])
+    expect(heldFields($cwa as unknown as Cwa, CREATED)).toEqual([])
   })
 
   test('Add and publish creates a draft, uploads its files and only then publishes it', async () => {
