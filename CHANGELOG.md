@@ -4,9 +4,11 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+## [2.0.0-alpha.44] - 2026-11-27
+
 ### Added
 
-- The admin area's top bar starts with a house back to the site page you were on, then shortcuts each admin chooses and orders on their Account page (saved on their own user as `adminPreferences`, needs api-components-bundle#619), defaulting to `cwa.admin.topBar` in nuxt.config, else the built-in areas and extensions with `topBar: true`. [#517](https://github.com/components-web-app/cwa-nuxt-module/pull/517)
+- The admin area's top bar starts with a house back to the site page you were on, then shortcuts each admin chooses and orders on their Account page (saved on their own user as `adminPreferences`, needs a bundle release with api-components-bundle#619), defaulting to `cwa.admin.topBar` in nuxt.config, else the built-in areas and extensions with `topBar: true`. [#517](https://github.com/components-web-app/cwa-nuxt-module/pull/517)
 
 ## [2.0.0-alpha.43] - 2026-11-27
 
@@ -454,7 +456,8 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 - First tagged release of `@cwa/nuxt`; releases are now published from `v*` tags ([7c61b7c](https://github.com/components-web-app/cwa-nuxt-module/commit/7c61b7ce331ec4a0cb8e76951a5de2ff806ed07a))
 
-[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.43...HEAD
+[Unreleased]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.44...HEAD
+[2.0.0-alpha.44]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.43...v2.0.0-alpha.44
 [2.0.0-alpha.43]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.42...v2.0.0-alpha.43
 [2.0.0-alpha.42]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.41...v2.0.0-alpha.42
 [2.0.0-alpha.41]: https://github.com/components-web-app/cwa-nuxt-module/compare/v2.0.0-alpha.40...v2.0.0-alpha.41
