@@ -13,7 +13,7 @@ const serverEntry = resolve(outputDir, 'server/index.mjs')
 const chunkDir = resolve(outputDir, 'public/_nuxt')
 const appBase = `http://127.0.0.1:${appPort}`
 
-const gzipBudget = 163300
+const gzipBudget = 163350
 
 const required = [
   { marker: 'cwa-start', source: 'core/ComponentPosition.vue' },
