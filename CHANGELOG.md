@@ -4,6 +4,10 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+### Fixed
+
+- A file chosen for a component before Add is uploaded to it again once Add creates it: since alpha.36 the component was created without its file, the page showed an empty placeholder and no error said so. [#516](https://github.com/components-web-app/cwa-nuxt-module/pull/516)
+
 ## [2.0.0-alpha.42] - 2026-11-26
 
 ### Fixed
