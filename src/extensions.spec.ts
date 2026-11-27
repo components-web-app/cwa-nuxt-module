@@ -164,6 +164,26 @@ describe('checkExtensions', () => {
         .toThrow('@acme/shop\'s page-data tab "formats" declares the role "ROLE_USER". Use a ROLE_ name other than ROLE_USER, or leave it out for ROLE_CMS_ADMIN.')
     })
   })
+  describe('the admin top bar', () => {
+    const orders = { path: 'orders', label: 'Orders', file: '/ext/shop/admin/orders.vue' }
+
+    test('accepts topBar on an extension with an icon and admin pages', () => {
+      expect(() => check([{ ...shop, icon: 'lucide:store', topBar: true, adminPages: [orders] }])).not.toThrow()
+      expect(() => check([{ ...shop, topBar: false }])).not.toThrow()
+    })
+
+    test('refuses a topBar that is not true or false', () => {
+      expect(() => check([{ ...shop, icon: 'lucide:store', topBar: 'yes' as never, adminPages: [orders] }]))
+        .toThrow('@acme/shop\'s topBar must be true or false')
+    })
+
+    test('refuses topBar on an extension the top bar cannot show: one without an icon or without admin pages', () => {
+      expect(() => check([{ ...shop, topBar: true, adminPages: [orders] }]))
+        .toThrow('@acme/shop asks for the admin top bar but has no icon to show there')
+      expect(() => check([{ ...shop, icon: 'lucide:store', topBar: true }]))
+        .toThrow('@acme/shop asks for the admin top bar but has no admin pages to link to')
+    })
+  })
 })
 
 describe('extensionSegment', () => {
@@ -296,6 +316,14 @@ describe('extensionAreas', () => {
       ] },
       { segment: 'badges', label: 'Badges', pages: [] },
     ])
+  })
+
+  test('carries topBar only for an extension that asks for the top bar', () => {
+    const page = { path: 'orders', label: 'Orders', file: '/o.vue' }
+    expect(extensionAreas([
+      { name: '@acme/shop', prefix: 'Shop', label: 'Shop', icon: 'lucide:store', topBar: true, adminPages: [page] },
+      { name: '@acme/reports', prefix: 'Reports', label: 'Reports', icon: 'lucide:store', topBar: false, adminPages: [page] },
+    ], () => '<svg />').map(area => area.topBar)).toEqual([true, undefined])
   })
 })
 

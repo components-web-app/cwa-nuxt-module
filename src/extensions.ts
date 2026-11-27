@@ -31,6 +31,7 @@ export interface CwaExtension {
   label: string
   description?: string
   icon?: `lucide:${string}`
+  topBar?: boolean
   dir?: string
   adminPages?: CwaExtensionAdminPage[]
   pageDataTabs?: CwaExtensionPageDataTab[]
@@ -145,6 +146,17 @@ export function checkExtensions({ extensions, namesOf, appNames, builtInAdminPat
       throw new Error(`/_cwa/${other} and /_cwa/${path} (${extension.name}) would both be the route ${name}`)
     }
     routeOwners.set(name, path)
+  }
+  for (const extension of extensions) {
+    if (extension.topBar !== undefined && typeof extension.topBar !== 'boolean') {
+      throw new Error(`${extension.name}'s topBar must be true or false`)
+    }
+    if (extension.topBar && !extension.icon) {
+      throw new Error(`${extension.name} asks for the admin top bar but has no icon to show there`)
+    }
+    if (extension.topBar && !areaPages(extension).length) {
+      throw new Error(`${extension.name} asks for the admin top bar but has no admin pages to link to`)
+    }
   }
   for (const extension of extensions) {
     const pages = areaPages(extension)
@@ -289,6 +301,7 @@ export function extensionAreas(extensions: CwaExtension[], iconSvg: (icon: strin
       label: extension.label,
       ...(extension.description ? { description: extension.description } : {}),
       ...(icon ? { icon } : {}),
+      ...(extension.topBar === true ? { topBar: true } : {}),
       pages: areaPages(extension).map(page => ({ path: trimPath(page.path), label: page.label, role: pageRole(page) })),
     }
   })

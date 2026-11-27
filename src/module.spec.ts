@@ -258,6 +258,7 @@ export const adminShellRoles: string[] = ["ROLE_CMS_ADMIN","ROLE_USER_ADMIN","RO
         storeName: 'cwa',
         siteConfig: {
           canonicalUrl: '',
+          adminTopBar: '',
           indexable: true,
           robotsAllowNonSeoCrawlers: true,
           robotsAllowAiBots: true,

@@ -20,6 +20,12 @@ vi.mock('#cwa/admin/stranded-component-groups', () => ({
   }),
 }))
 
+const extensionState = vi.hoisted(() => ({ areas: [] as any[] }))
+
+vi.mock('#build/cwa-extension-areas', () => ({
+  get extensionAreas() { return extensionState.areas },
+}))
+
 vi.mock('#cwa/templates/components/core/admin/StrandedComponentGroupsModal.vue', () => ({
   default: {
     name: 'StrandedComponentGroupsModal',
@@ -35,7 +41,9 @@ const replaceMock = vi.fn()
 const mockRouteMeta = reactive<{ cwa?: { admin?: boolean } }>({ cwa: { admin: false } })
 
 mockNuxtImport('useError', () => () => errorRef)
-mockNuxtImport('useRoute', () => () => ({ meta: mockRouteMeta }))
+const mockRoute = reactive({ meta: mockRouteMeta, fullPath: '/' })
+
+mockNuxtImport('useRoute', () => () => mockRoute)
 mockNuxtImport('useRouter', () => () => ({ replace: replaceMock }))
 
 function buildResources(overrides: Record<string, any> = {}) {
@@ -65,11 +73,13 @@ function mockCwa({
   admin,
   requestCount = 0,
   roles = ['ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_USER_ADMIN', 'ROLE_CMS_ADMIN', 'ROLE_USER'],
+  siteConfig = {},
 }: {
   resources?: any
   admin?: any
   requestCount?: number
   roles?: string[]
+  siteConfig?: Record<string, any>
 } = {}) {
   const res = resources ?? buildResources()
   const adm = admin ?? buildAdmin()
@@ -78,6 +88,7 @@ function mockCwa({
     admin: adm,
     auth: { user: { '@id': '/_/users/admin' }, isAdmin: computed(() => roles.includes('ROLE_CMS_ADMIN')), hasRole: (role: string) => roles.includes(role) },
     resourcesManager: { requestCount: { value: requestCount }, confirmDiscardAddingResource: vi.fn(async () => true) },
+    siteConfig: reactive({ config: siteConfig }),
   } as unknown as Cwa
   vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => cwa)
   mockedCwas.push(cwa)
@@ -124,7 +135,7 @@ function mountHeader(options: { stubs?: Record<string, any>, attachTo?: HTMLElem
         },
         CwaUiIconCogIcon: { name: 'CwaUiIconCogIcon', template: '<svg class="cog-icon-stub" />' },
         CwaUiIconWarningIcon: { name: 'CwaUiIconWarningIcon', template: '<svg class="warning-icon-stub" />' },
-        NuxtLink: { name: 'NuxtLink', props: ['to', 'activeClass'], template: '<a :href="to"><slot /></a>' },
+        NuxtLink: { name: 'NuxtLink', props: ['to', 'activeClass'], template: '<a :href="typeof to === \'string\' ? to : JSON.stringify(to)"><slot /></a>' },
         IconLayouts: { name: 'IconLayouts', template: '<svg class="icon-layouts" />' },
         IconPages: { name: 'IconPages', template: '<svg class="icon-pages" />' },
         IconData: { name: 'IconData', template: '<svg class="icon-data" />' },
@@ -146,6 +157,8 @@ describe('Header', () => {
     vi.clearAllMocks()
     errorRef.value = null
     mockRouteMeta.cwa = { admin: false }
+    mockRoute.fullPath = '/'
+    extensionState.areas = []
     strandedState.stranded = []
     strandedState.shown = []
   })
@@ -398,6 +411,71 @@ describe('Header', () => {
       const wrapper = mountHeader()
       const hrefs = wrapper.findAll('a').map(a => a.attributes('href'))
       expect(hrefs).not.toContain('/_cwa/layouts')
+    })
+  })
+
+  describe('the admin top bar', () => {
+    const centreLinks = (wrapper: ReturnType<typeof mountHeader>) => wrapper.findAll('[data-testid="header-centre"] a').map(link => [link.attributes('href'), link.find('.cwa\\:sr-only').text()])
+    const shop = { segment: 'shop', label: 'Shop', icon: '<svg id="shop-icon" />', topBar: true, pages: [{ path: '', label: 'Orders', role: 'ROLE_ADMIN' }] }
+
+    test('starts with a house linking back to the site page the admin was on before opening the admin area', async () => {
+      mockCwa()
+      mockRoute.fullPath = '/blog/first?tag=news'
+      const wrapper = mountHeader()
+      mockRouteMeta.cwa = { admin: true }
+      mockRoute.fullPath = '/_cwa/pages'
+      await flushPromises()
+      const home = wrapper.get('[data-testid="header-centre"] a')
+      expect(home.attributes('href')).toBe('/blog/first?tag=news')
+      expect(home.text()).toBe('Back to the site')
+      expect(home.find('[data-testid="top-bar-home-icon"]').exists()).toBe(true)
+    })
+
+    test('remembers the site page when the header is mounted again in the admin area, and never an error page', async () => {
+      mockCwa()
+      mockRoute.fullPath = '/about'
+      mountHeader().unmount()
+      errorRef.value = { statusCode: 404 }
+      mockRoute.fullPath = '/missing'
+      mountHeader().unmount()
+      errorRef.value = null
+      mockRouteMeta.cwa = { admin: true }
+      mockRoute.fullPath = '/_cwa/pages'
+      expect(mountHeader().get('[data-testid="header-centre"] a').attributes('href')).toBe('/about')
+    })
+
+    test('goes to the home page when no site page has been seen', () => {
+      mockRouteMeta.cwa = { admin: true }
+      mockCwa()
+      expect(centreLinks(mountHeader())[0]).toEqual(['/', 'Back to the site'])
+    })
+
+    test('after the house come the default items, with an extension that asks for the top bar and its icon', () => {
+      mockRouteMeta.cwa = { admin: true }
+      extensionState.areas = [shop]
+      mockCwa()
+      const wrapper = mountHeader()
+      expect(centreLinks(wrapper)).toEqual([
+        ['/', 'Back to the site'],
+        ['/_cwa/layouts', 'Layouts'],
+        ['/_cwa/pages', 'Pages'],
+        ['/_cwa/data', 'Data'],
+        ['/_cwa/routes', 'Routes'],
+        ['/_cwa/users', 'Users'],
+        ['{"name":"_cwa-shop"}', 'Shop'],
+      ])
+      expect(wrapper.find('[data-testid="header-centre"] #shop-icon').exists()).toBe(true)
+    })
+
+    test('follows the saved setting, keeping the house first', () => {
+      mockRouteMeta.cwa = { admin: true }
+      extensionState.areas = [shop]
+      mockCwa({ siteConfig: { adminTopBar: 'ext:shop,pages' } })
+      expect(centreLinks(mountHeader())).toEqual([
+        ['/', 'Back to the site'],
+        ['{"name":"_cwa-shop"}', 'Shop'],
+        ['/_cwa/pages', 'Pages'],
+      ])
     })
   })
 
@@ -709,13 +787,13 @@ describe('the header for the narrow admin roles (bundle #611)', () => {
   test('on an admin page a content admin who is not a user admin gets the content areas and no Users', () => {
     mockRouteMeta.cwa = { admin: true }
     mockCwa({ roles: ['ROLE_CMS_ADMIN', 'ROLE_USER'] })
-    expect(adminLinks(mountHeader())).toEqual(['Layouts', 'Pages', 'Data', 'Routes'])
+    expect(adminLinks(mountHeader())).toEqual(['Back to the site', 'Layouts', 'Pages', 'Data', 'Routes'])
   })
 
   test('on an admin page a user admin who cannot edit content gets Users alone', () => {
     mockRouteMeta.cwa = { admin: true }
     mockCwa({ roles: ['ROLE_USER_ADMIN', 'ROLE_USER'] })
-    expect(adminLinks(mountHeader())).toEqual(['Users'])
+    expect(adminLinks(mountHeader())).toEqual(['Back to the site', 'Users'])
   })
 
   test('on a page of the site a user admin who cannot edit content gets no Edit and no page settings', () => {

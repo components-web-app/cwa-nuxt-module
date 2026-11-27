@@ -94,6 +94,7 @@ export type SiteConfigParams = {
   maintenanceModeEnabled: boolean
   sitemapXml: string
   canonicalUrl: string
+  adminTopBar: string
 }
 
 export interface CwaModuleOptions {

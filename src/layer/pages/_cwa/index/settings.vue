@@ -94,6 +94,12 @@
             </CwaUiAlert>
           </div>
         </CwaUiFormSection>
+        <CwaUiFormSection
+          title="Admin top bar"
+          description="The shortcuts in the top bar of the admin area, after the house that takes you back to the site. Each admin sees only the ones they can open."
+        >
+          <TopBarSettings field="adminTopBar" />
+        </CwaUiFormSection>
       </template>
       <template #seo>
         <CwaUiFormSection
@@ -341,6 +347,7 @@ import ListHeading from '#cwa/templates/components/core/admin/ListHeading.vue'
 import FormGroup from '#cwa/templates/components/core/ui/FormGroup.vue'
 import type { DialogTab } from '#cwa/templates/components/core/ui/dialog-form'
 import CwaUiFormSection from '#cwa/templates/components/ui/FormSection.vue'
+import TopBarSettings from '#cwa/templates/components/core/admin/TopBarSettings.vue'
 import CwaUiInput from '#cwa/templates/components/ui/Input.vue'
 import CwaUiToggle from '#cwa/templates/components/ui/Toggle.vue'
 import CwaReveal from '#cwa/templates/components/core/ui/Reveal.vue'
