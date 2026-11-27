@@ -58,54 +58,39 @@
           </template>
           <template v-else>
             <ul class="cwa:flex cwa:gap-x-8 cwa:text-stone-400 cwa:items-center">
-              <li v-if="$cwa.auth.isAdmin.value">
+              <li>
                 <NuxtLink
-                  to="/_cwa/layouts"
+                  :to="homePath"
                   class="cwa:hover:text-white cwa:transition-colors"
-                  active-class="cwa:text-white"
                 >
-                  <IconLayouts />
-                  <span class="cwa:sr-only">Layouts</span>
+                  <IconHome
+                    class="cwa:h-6"
+                    data-testid="top-bar-home-icon"
+                  />
+                  <span class="cwa:sr-only">Back to the site</span>
                 </NuxtLink>
               </li>
-              <li v-if="$cwa.auth.isAdmin.value">
+              <li
+                v-for="item in topBar"
+                :key="item.id"
+              >
                 <NuxtLink
-                  to="/_cwa/pages"
+                  :to="item.to"
                   class="cwa:hover:text-white cwa:transition-colors"
                   active-class="cwa:text-white"
                 >
-                  <IconPages class="cwa:h-6" />
-                  <span class="cwa:sr-only">Pages</span>
-                </NuxtLink>
-              </li>
-              <li v-if="$cwa.auth.isAdmin.value">
-                <NuxtLink
-                  to="/_cwa/data"
-                  class="cwa:hover:text-white cwa:transition-colors"
-                  active-class="cwa:text-white"
-                >
-                  <IconData class="cwa:h-6" />
-                  <span class="cwa:sr-only">Data</span>
-                </NuxtLink>
-              </li>
-              <li v-if="$cwa.auth.isAdmin.value">
-                <NuxtLink
-                  to="/_cwa/routes"
-                  class="cwa:hover:text-white cwa:transition-colors"
-                  active-class="cwa:text-white"
-                >
-                  <IconRoutes class="cwa:h-6" />
-                  <span class="cwa:sr-only">Routes</span>
-                </NuxtLink>
-              </li>
-              <li v-if="$cwa.auth.hasRole('ROLE_USER_ADMIN')">
-                <NuxtLink
-                  to="/_cwa/users"
-                  class="cwa:hover:text-white cwa:transition-colors"
-                  active-class="cwa:text-white"
-                >
-                  <IconUsers />
-                  <span class="cwa:sr-only">Users</span>
+                  <component
+                    :is="builtInIcons[item.id]?.icon"
+                    v-if="builtInIcons[item.id]"
+                    :class="builtInIcons[item.id]?.class"
+                  />
+                  <span
+                    v-else
+                    aria-hidden="true"
+                    class="cwa:block cwa:size-6 cwa:[&>svg]:size-full"
+                    v-html="item.icon"
+                  />
+                  <span class="cwa:sr-only">{{ item.label }}</span>
                 </NuxtLink>
               </li>
             </ul>
@@ -152,7 +137,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, defineAsyncComponent, onMounted, ref, useTemplateRef } from 'vue'
+import { computed, defineAsyncComponent, onMounted, ref, useTemplateRef, watch } from 'vue'
+import type { Component } from 'vue'
 import ResourceLoadingIndicator from '../_common/ResourceLoadingIndicator.vue'
 import SpinnerTick from '../../../utils/SpinnerTick.vue'
 import PathSelector from './_parts/PathSelector.vue'
@@ -169,6 +155,13 @@ import WarningIcon from '#cwa/templates/components/ui/icon/WarningIcon.vue'
 import PageResourceAdminModal from '#cwa/templates/components/core/admin/PageResourceAdminModal.vue'
 import IconRoutes from '#cwa/templates/components/core/assets/IconRoutes.vue'
 import IconData from '#cwa/templates/components/core/assets/IconData.vue'
+import IconHome from '#cwa/templates/components/core/assets/IconHome.vue'
+import { rememberSitePath, sitePath, topBarItems } from '#cwa/admin/top-bar'
+import type { CwaExtensionArea } from '#cwa/admin/extension-areas'
+// @ts-ignore
+import { extensionAreas } from '#build/cwa-extension-areas'
+// @ts-ignore
+import { topBarDefault } from '#build/cwa-admin-top-bar'
 import { useStrandedComponentGroups } from '#cwa/admin/stranded-component-groups'
 import { useCloneMode } from '#cwa/admin/clone-mode'
 
@@ -190,6 +183,25 @@ const { source: cloneSource, placed: clonePlaced } = useCloneMode($cwa)
 
 const pageIsAdmin = computed(() => route.meta.cwa?.admin)
 const isErrorPage = computed(() => !!error.value)
+const homePath = ref(sitePath($cwa))
+
+watch(() => [route.fullPath, pageIsAdmin.value, isErrorPage.value] as const, ([path, admin, failed]) => {
+  if (!admin && !failed) {
+    rememberSitePath($cwa, path)
+  }
+  homePath.value = sitePath($cwa)
+}, { immediate: true })
+
+const builtInIcons: Record<string, { icon: Component, class?: string }> = {
+  layouts: { icon: IconLayouts },
+  pages: { icon: IconPages, class: 'cwa:h-6' },
+  data: { icon: IconData, class: 'cwa:h-6' },
+  routes: { icon: IconRoutes, class: 'cwa:h-6' },
+  users: { icon: IconUsers },
+}
+
+const topBar = computed(() => topBarItems(extensionAreas as CwaExtensionArea[], { own: $cwa.auth.user?.adminPreferences?.topBar, developer: topBarDefault }, role => $cwa.auth.hasRole(role)))
+
 const showEditModal = ref(false)
 const showStrandedModal = ref(false)
 const { stranded: strandedGroups, shown: shownGroups } = useStrandedComponentGroups()

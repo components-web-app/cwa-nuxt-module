@@ -13,6 +13,9 @@ vi.mock('#cwa/composables/cwa-toast', () => ({
   useCwaToast: () => ({ show: showToast, dismiss: vi.fn() }),
 }))
 
+vi.mock('#build/cwa-extension-areas', () => ({ extensionAreas: [] }))
+vi.mock('#build/cwa-admin-top-bar', () => ({ topBarDefault: undefined }))
+
 enableAutoUnmount(afterEach)
 
 afterEach(() => {
@@ -43,10 +46,11 @@ async function setup(user: Record<string, any> = me, opts: { loadFails?: boolean
     return resource
   })
   const resendVerifyNewEmail = vi.fn(async () => ({}))
+  const refreshUser = vi.fn(async () => ({ ...user }))
   // @ts-expect-error partial mock
   vi.spyOn(cwaComposable, 'useCwa').mockImplementation(() => ({
     cwaFetch: { fetch },
-    auth: { user: { ...user }, hasRole: (role: string) => user.roles.includes(role), resendVerifyNewEmail, resendVerifyEmail: vi.fn() },
+    auth: { user: { ...user }, hasRole: (role: string) => user.roles.includes(role), resendVerifyNewEmail, resendVerifyEmail: vi.fn(), refreshUser },
     resourcesManager: { updateResource, removeError: vi.fn(), get errors() { return errors } },
   }))
   const wrapper = mount(AccountPage, { attachTo: document.body })
@@ -61,7 +65,7 @@ async function setup(user: Record<string, any> = me, opts: { loadFails?: boolean
     })
   }
 
-  return { wrapper, fetch, updateResource, resendVerifyNewEmail, refuseOldPassword }
+  return { wrapper, fetch, updateResource, resendVerifyNewEmail, refreshUser, refuseOldPassword }
 }
 
 function fieldByLabel(label: string) {
@@ -176,5 +180,53 @@ describe('the account page', () => {
 
     expect(document.querySelector('[data-password-saved]')?.textContent?.trim()).toBe('Your password has been changed.')
     expect(fieldByLabel('New password')!.value).toBe('')
+  })
+
+  describe('the admin top bar', () => {
+    const headings = () => [...document.querySelectorAll('h2')].map(heading => heading.textContent?.trim())
+    const switchOf = (label: string) => [...document.querySelectorAll('[data-testid="top-bar-choice"]')].find(row => row.querySelector('label')?.textContent?.trim() === label)!.querySelector<HTMLElement>('[role="switch"]')!
+
+    test('is left out while the API does not store admin preferences, which /me shows by having no adminPreferences key', async () => {
+      await setup()
+      expect(headings()).toEqual(['Email', 'Password'])
+      expect(document.querySelector('[data-testid="top-bar-choice"]')).toBeNull()
+    })
+
+    test('saves the admin\'s own list on their user as soon as it changes, and refreshes the signed-in user so the header follows', async () => {
+      const { updateResource, refreshUser } = await setup({ ...me, adminPreferences: null })
+      expect(headings()).toEqual(['Email', 'Password', 'Admin top bar'])
+
+      switchOf('Layouts').click()
+      await flushPromises()
+
+      expect(updateResource).toHaveBeenCalledTimes(1)
+      expect(updateResource.mock.calls[0]![0]).toMatchObject({ endpoint: ME, data: { adminPreferences: { topBar: ['pages', 'data', 'routes', 'users'] } } })
+      expect(refreshUser).toHaveBeenCalledTimes(1)
+      expect(switchOf('Layouts').getAttribute('aria-checked')).toBe('false')
+    })
+
+    test('Reset to default clears the admin\'s preferences, so the developer\'s default applies again', async () => {
+      const { updateResource } = await setup({ ...me, adminPreferences: { topBar: ['pages'] } })
+
+      await click('[data-testid="top-bar-reset"]')
+
+      expect(updateResource.mock.calls[0]![0].data).toStrictEqual({ adminPreferences: null })
+      expect(switchOf('Layouts').getAttribute('aria-checked')).toBe('true')
+    })
+
+    test('a failed save says so and shows what is saved', async () => {
+      const { updateResource, refreshUser } = await setup({ ...me, adminPreferences: { topBar: ['pages'] } })
+      updateResource.mockImplementationOnce(async (event: any) => {
+        event.onRequest?.(event.endpoint, Promise.resolve({ error: Object.assign(new Error('500'), { statusCode: 500 }) }))
+        return undefined
+      })
+
+      switchOf('Data').click()
+      await flushPromises()
+
+      expect(showToast).toHaveBeenCalledWith(expect.objectContaining({ tone: 'error', title: 'Your top bar wasn\'t saved.' }))
+      expect(refreshUser).not.toHaveBeenCalled()
+      expect(switchOf('Data').getAttribute('aria-checked')).toBe('false')
+    })
   })
 })

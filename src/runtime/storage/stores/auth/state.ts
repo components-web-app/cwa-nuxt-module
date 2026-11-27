@@ -15,6 +15,7 @@ export interface CwaUser extends CwaResource {
   enabled: boolean
   roles: (string | CwaUserRoles)[]
   username: string
+  adminPreferences?: { topBar?: unknown } | null
 }
 
 export interface CwaAuthStateInterface {

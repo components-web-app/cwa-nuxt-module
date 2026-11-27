@@ -38,6 +38,7 @@ const forbidden = [
   { marker: 'data-cwa-admin-icon', source: 'cwa-admin-resources' },
   { marker: 'alt text</strong> for screen readers', source: 'Markdown description HTML in cwa-admin-resources, from playground Image.vue' },
   { marker: 'Already in this group', source: 'resource-manager/_parts/AddComponentDialog.vue' },
+  { marker: '`layouts`,`pages`,`data`,`routes`,`users`', source: 'cwa-admin-top-bar, the playground\'s cwa.admin.topBar' },
 ]
 
 let stub

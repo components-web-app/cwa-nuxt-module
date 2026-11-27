@@ -3276,6 +3276,9 @@
   --tw-font-weight: var(--cwa-font-weight-semibold);
   font-weight: var(--cwa-font-weight-semibold);
 }
+.cwa\:\[\&_svg\]\:rotate-180 svg {
+  rotate: 180deg;
+}
 .cwa\:\[\&\:\:-webkit-scrollbar\]\:hidden::-webkit-scrollbar {
   display: none;
 }

@@ -108,6 +108,9 @@ export default defineNuxtConfig({
   },
   aiReady: { enabled: false },
   cwa: {
+    admin: {
+      topBar: ['layouts', 'pages', 'data', 'routes', 'users'],
+    },
     pageData: {
       BlogArticleData: {
         name: 'Blog Articles',
