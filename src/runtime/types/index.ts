@@ -108,6 +108,9 @@ export interface CwaModuleOptions {
   realtime?: {
     enabled?: boolean
   }
+  admin?: {
+    topBar?: string[]
+  }
   upload?: {
     image?: Partial<ImageDownscaleOptions>
   }

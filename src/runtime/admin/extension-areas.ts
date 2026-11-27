@@ -3,6 +3,7 @@ export interface CwaExtensionArea {
   label: string
   description?: string
   icon?: string
+  topBar?: boolean
   pages: { path: string, label: string, role: string }[]
 }
 
