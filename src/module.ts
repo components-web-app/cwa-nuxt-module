@@ -611,7 +611,7 @@ export default defineNuxtModule<CwaModuleOptions>({
         filename: 'cwa-component-names.ts',
         write: true,
         getContents: ({ app }) => {
-          const names = resolveUserComponents(app.components).userComponents.map(toResourceType)
+          const names = [...resolveUserComponents(app.components).userComponents.map(toResourceType), ...Object.keys(BUILT_IN_RENDERERS)]
           const constant = JSON.stringify(Object.fromEntries(names.map(name => [name, name])), undefined, 2)
           const { resourcesConfig, uiConfig } = resolveCwaConfig(app.components)
           const uiOf = (name: string) => (resourcesConfig[name]?.ui ?? []) as string[]

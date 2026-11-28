@@ -4,6 +4,10 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+### Fixed
+
+- `CwaComponentNames` names the module's own `Form` type, with an app's `Form/ui/` variants and styles in `CwaComponentUis`/`CwaComponentStyles`, so `allowedComponents` can name it instead of `/component/forms` ([#521](https://github.com/components-web-app/cwa-nuxt-module/pull/521), [#520](https://github.com/components-web-app/cwa-nuxt-module/issues/520)).
+
 ### Changed
 
 - The admin has a Dashboard at `/_cwa` listing every area you can open, Site settings and your account, in place of the Extensions page; on admin pages the bar's Home opens it and View site goes back to the site, the quick links overflow into ⋯, the menu lists your quick links, and phones get a bottom bar ([#519](https://github.com/components-web-app/cwa-nuxt-module/pull/519), [#518](https://github.com/components-web-app/cwa-nuxt-module/issues/518)). About the CWA moved to Site settings → About.

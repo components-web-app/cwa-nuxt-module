@@ -765,7 +765,8 @@ declare module '#app' {
         expect(template.write).toBe(true)
         expect(await template.getContents({ app: { components } })).toEqual(`export const CwaComponentNames = {
   "HtmlContent": "HtmlContent",
-  "WatchPastConference": "WatchPastConference"
+  "WatchPastConference": "WatchPastConference",
+  "Form": "Form"
 } as const
 export type CwaComponentName = typeof CwaComponentNames[keyof typeof CwaComponentNames]
 export const CwaComponentUis = {
@@ -774,6 +775,9 @@ export const CwaComponentUis = {
     "AltUi": "AltUi"
   },
   "WatchPastConference": {
+    "default": "default"
+  },
+  "Form": {
     "default": "default"
   }
 } as const
@@ -784,10 +788,41 @@ export const CwaComponentStyles = {
     "large": "large",
     "wide": "wide"
   },
-  "WatchPastConference": {}
+  "WatchPastConference": {},
+  "Form": {}
 } as const
 export type CwaComponentStyles = { [Name in CwaComponentName]: typeof CwaComponentStyles[Name][keyof typeof CwaComponentStyles[Name]] }
 `)
+      })
+
+      test('names the module\'s own Form type, with an app\'s Form/ui variants and their styles, so allowedComponents can name it without a collection IRI (#520)', async () => {
+        vi.mocked(scanCwaConfigDeclarations).mockReturnValueOnce({
+          components: {},
+          ui: { CwaComponentFormUiContact: { styles: { inline: { name: 'Inline', classes: 'i' } } } },
+          layouts: {},
+          pages: {},
+        } as never)
+        const { template } = await prepare()
+        const withFormVariant = [...components, { filePath: 'cwa/components/Form/ui/Contact.vue', pascalName: 'CwaComponentFormUiContact', global: true }]
+
+        const contents: string = await template.getContents({ app: { components: withFormVariant } })
+
+        expect(contents).toContain(`export const CwaComponentNames = {
+  "HtmlContent": "HtmlContent",
+  "WatchPastConference": "WatchPastConference",
+  "Form": "Form"
+} as const`)
+        expect(contents).toContain(`  "Form": {
+    "default": "default",
+    "Contact": "Contact"
+  }
+} as const
+export type CwaComponentUis`)
+        expect(contents).toContain(`  "Form": {
+    "inline": "inline"
+  }
+} as const
+export type CwaComponentStyles`)
       })
 
       test('a component with no UIs has only default', async () => {
@@ -799,6 +834,9 @@ export type CwaComponentStyles = { [Name in CwaComponentName]: typeof CwaCompone
     "default": "default"
   },
   "WatchPastConference": {
+    "default": "default"
+  },
+  "Form": {
     "default": "default"
   }
 } as const`)
