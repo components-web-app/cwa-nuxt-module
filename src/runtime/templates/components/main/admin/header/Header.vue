@@ -8,9 +8,27 @@
       :class="highlightClass"
       @click.stop
     >
-      <div class="cwa:flex cwa:min-w-0 cwa:flex-1 cwa:justify-between cwa:items-center cwa:max-sm:gap-x-2">
+      <div
+        class="cwa:flex cwa:min-w-0 cwa:flex-1 cwa:justify-between cwa:items-center cwa:max-sm:gap-x-2"
+        :class="{ 'cwa:sm:gap-x-4': adminChrome }"
+      >
         <div class="cwa:flex cwa:shrink-0 cwa:items-center cwa:justify-start cwa:gap-x-4">
-          <template v-if="!pageIsAdmin && !isErrorPage && $cwa.auth.isAdmin.value">
+          <template v-if="adminChrome">
+            <CwaUiButton
+              label="View site"
+              :icon="EyeIcon"
+              icon-only
+              class="cwa:sm:hidden"
+              @click="viewSite"
+            />
+            <CwaUiButton
+              label="View site"
+              :icon="EyeIcon"
+              class="cwa:max-sm:hidden"
+              @click="viewSite"
+            />
+          </template>
+          <template v-else-if="$cwa.auth.isAdmin.value">
             <CwaUiButton
               variant="solid"
               class="cwa:min-w-24"
@@ -39,9 +57,10 @@
         </div>
         <div
           data-testid="header-centre"
-          class="cwa:max-sm:flex cwa:max-sm:min-w-0 cwa:max-sm:flex-1 cwa:max-sm:justify-center cwa:sm:absolute cwa:sm:left-1/2 cwa:sm:top-1/2 cwa:sm:-translate-x-1/2 cwa:sm:-translate-y-1/2 cwa:text-center cwa:text-gray-300 cwa:z-manager"
+          class="cwa:text-center cwa:text-gray-300 cwa:z-manager"
+          :class="centreClass"
         >
-          <template v-if="!pageIsAdmin && !isErrorPage">
+          <template v-if="!adminChrome">
             <CwaUiButton
               v-if="!$cwa.admin.isEditing && $cwa.resources?.page?.value?.data && $cwa.auth.isAdmin.value"
               :label="editPageLabel"
@@ -56,32 +75,44 @@
               :avoid="status"
             />
           </template>
-          <template v-else>
-            <ul class="cwa:flex cwa:gap-x-8 cwa:text-stone-400 cwa:items-center">
-              <li>
+          <nav
+            v-else
+            aria-label="Admin"
+            class="cwa:w-full cwa:min-w-0"
+          >
+            <ul
+              ref="list"
+              class="cwa:flex cwa:w-full cwa:items-center cwa:justify-center cwa:gap-x-8 cwa:pointer-coarse:gap-x-2 cwa:text-stone-400"
+            >
+              <li data-top-bar-home>
                 <NuxtLink
-                  :to="homePath"
-                  class="cwa:hover:text-white cwa:transition-colors"
+                  to="/_cwa"
+                  :class="linkClass"
+                  :aria-current="onDashboard ? 'page' : undefined"
                 >
                   <IconHome
                     class="cwa:h-6"
+                    aria-hidden="true"
                     data-testid="top-bar-home-icon"
                   />
-                  <span class="cwa:sr-only">Back to the site</span>
+                  <span class="cwa:sr-only">Dashboard</span>
                 </NuxtLink>
               </li>
               <li
                 v-for="item in topBar"
                 :key="item.id"
+                :data-top-bar-id="item.id"
+                :hidden="overflowIds.includes(item.id)"
               >
                 <NuxtLink
                   :to="item.to"
-                  class="cwa:hover:text-white cwa:transition-colors"
-                  active-class="cwa:text-white"
+                  :class="linkClass"
+                  :aria-current="item.id === activeId ? 'page' : undefined"
                 >
                   <component
                     :is="builtInIcons[item.id]?.icon"
                     v-if="builtInIcons[item.id]"
+                    aria-hidden="true"
                     :class="builtInIcons[item.id]?.class"
                   />
                   <span
@@ -93,8 +124,44 @@
                   <span class="cwa:sr-only">{{ item.label }}</span>
                 </NuxtLink>
               </li>
+              <li
+                v-if="moreItems.length"
+                data-top-bar-more
+              >
+                <CwaUiMenu
+                  :items="moreItems"
+                  label="More quick links"
+                  side="bottom"
+                  align="end"
+                >
+                  <button
+                    type="button"
+                    aria-label="More quick links"
+                    :class="[linkClass, 'cwa:h-6 cwa:cursor-pointer cwa:aria-expanded:text-accent-fg']"
+                  >
+                    <svg
+                      viewBox="0 0 16 16"
+                      aria-hidden="true"
+                      fill="currentColor"
+                      class="cwa:size-6"
+                    ><circle
+                      cx="3"
+                      cy="8"
+                      r="1.6"
+                    /><circle
+                      cx="8"
+                      cy="8"
+                      r="1.6"
+                    /><circle
+                      cx="13"
+                      cy="8"
+                      r="1.6"
+                    /></svg>
+                  </button>
+                </CwaUiMenu>
+              </li>
             </ul>
-          </template>
+          </nav>
         </div>
         <div
           v-if="$cwa.admin.isEditing"
@@ -109,6 +176,7 @@
         <div
           v-else
           class="cwa:flex cwa:min-h-9 cwa:items-center"
+          :class="{ 'cwa:max-sm:hidden': pageIsAdmin }"
         >
           <Menu />
         </div>
@@ -137,7 +205,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, defineAsyncComponent, onMounted, ref, useTemplateRef, watch } from 'vue'
+import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue'
 import type { Component } from 'vue'
 import ResourceLoadingIndicator from '../_common/ResourceLoadingIndicator.vue'
 import SpinnerTick from '../../../utils/SpinnerTick.vue'
@@ -145,6 +213,7 @@ import PathSelector from './_parts/PathSelector.vue'
 import RequestErrors from './_parts/RequestErrors.vue'
 import Menu from './_parts/Menu.vue'
 import CloneModeBar from './_parts/CloneModeBar.vue'
+import { measureTopBar } from './_parts/top-bar-measure'
 import { useCwa, useError, useRoute, useRouter } from '#imports'
 import OutdatedContentNotice from '#cwa/templates/components/main/admin/header/_parts/OutdatedContentNotice.vue'
 import IconPages from '#cwa/templates/components/core/assets/IconPages.vue'
@@ -156,7 +225,11 @@ import PageResourceAdminModal from '#cwa/templates/components/core/admin/PageRes
 import IconRoutes from '#cwa/templates/components/core/assets/IconRoutes.vue'
 import IconData from '#cwa/templates/components/core/assets/IconData.vue'
 import IconHome from '#cwa/templates/components/core/assets/IconHome.vue'
-import { rememberSitePath, sitePath, topBarItems } from '#cwa/admin/top-bar'
+import EyeIcon from '#cwa/templates/components/ui/icon/EyeIcon.vue'
+import CwaUiMenu from '#cwa/templates/components/ui/Menu.vue'
+import type { MenuItem } from '#cwa/templates/components/core/ui/menu-entries'
+import { currentArea, fitTopBar, rememberSitePath, sitePath, topBarItems } from '#cwa/admin/top-bar'
+import { hasPageDataTypes } from '#cwa/admin/page-data-presence'
 import type { CwaExtensionArea } from '#cwa/admin/extension-areas'
 // @ts-ignore
 import { extensionAreas } from '#build/cwa-extension-areas'
@@ -177,12 +250,14 @@ const router = useRouter()
 const header = useTemplateRef<undefined | HTMLElement>('header')
 const spacer = useTemplateRef<undefined | HTMLElement>('spacer')
 const status = useTemplateRef<HTMLElement | null>('status')
+const list = useTemplateRef<HTMLElement | null>('list')
 
 const error = useError()
 const { source: cloneSource, placed: clonePlaced } = useCloneMode($cwa)
 
 const pageIsAdmin = computed(() => route.meta.cwa?.admin)
 const isErrorPage = computed(() => !!error.value)
+const adminChrome = computed(() => !!pageIsAdmin.value || isErrorPage.value)
 const homePath = ref(sitePath($cwa))
 
 watch(() => [route.fullPath, pageIsAdmin.value, isErrorPage.value] as const, ([path, admin, failed]) => {
@@ -200,7 +275,82 @@ const builtInIcons: Record<string, { icon: Component, class?: string }> = {
   users: { icon: IconUsers },
 }
 
-const topBar = computed(() => topBarItems(extensionAreas as CwaExtensionArea[], { own: $cwa.auth.user?.adminPreferences?.topBar, developer: topBarDefault }, role => $cwa.auth.hasRole(role)))
+const hasPageData = ref(false)
+
+watch(adminChrome, (shown) => {
+  shown && hasPageDataTypes($cwa).then((answer) => {
+    hasPageData.value = answer
+  })
+}, { immediate: true })
+
+const topBar = computed(() => topBarItems(extensionAreas as CwaExtensionArea[], { own: $cwa.auth.user?.adminPreferences?.topBar, developer: topBarDefault }, { hasRole: role => $cwa.auth.hasRole(role), hasPageData: hasPageData.value }))
+
+const activeId = computed(() => currentArea(topBar.value.map(item => ({ id: item.id, path: router.resolve(item.to).path })), route.path))
+
+const onDashboard = computed(() => route.path === '/_cwa')
+
+const linkClass = 'cwa:inline-flex cwa:items-center cwa:justify-center cwa:pointer-coarse:min-h-hit cwa:pointer-coarse:min-w-hit cwa:hover:text-white cwa:aria-[current=page]:text-white cwa:transition-colors cwa:duration-(--cwa-duration-fast) cwa:motion-reduce:transition-none cwa:outline-1 cwa:outline-transparent cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-accent-fg'
+
+const centreClass = computed(() => {
+  if (!adminChrome.value) {
+    return 'cwa:max-sm:flex cwa:max-sm:min-w-0 cwa:max-sm:flex-1 cwa:max-sm:justify-center cwa:sm:absolute cwa:sm:left-1/2 cwa:sm:top-1/2 cwa:sm:-translate-x-1/2 cwa:sm:-translate-y-1/2'
+  }
+  return ['cwa:flex cwa:min-w-0 cwa:flex-1 cwa:justify-center', { 'cwa:max-sm:hidden': pageIsAdmin.value }]
+})
+
+const widths = new Map<string, number>()
+const overflowIds = ref<string[]>([])
+
+const moreItems = computed<MenuItem[]>(() => topBar.value.filter(item => overflowIds.value.includes(item.id)).map(item => ({
+  label: item.label,
+  value: item.id,
+  onSelect: () => router.push(item.to),
+})))
+
+function fit() {
+  const element = list.value
+  if (!element) {
+    return
+  }
+  const measured = measureTopBar(element)
+  for (const [id, width] of Object.entries(measured.widths)) {
+    widths.set(id, width)
+  }
+  const items = topBar.value
+  const { overflow } = fitTopBar(items.map(item => widths.get(item.id) ?? 0), measured.available, {
+    active: items.findIndex(item => item.id === activeId.value),
+    more: measured.more,
+  })
+  const ids = overflow.map(index => items[index]!.id)
+  if (ids.join() !== overflowIds.value.join()) {
+    overflowIds.value = ids
+  }
+}
+
+let resizes: ResizeObserver | undefined
+
+watch([list, () => topBar.value.map(item => item.id).join(), activeId], () => {
+  resizes?.disconnect()
+  resizes = undefined
+  const element = list.value
+  if (!element) {
+    return
+  }
+  fit()
+  if (typeof ResizeObserver !== 'undefined') {
+    resizes = new ResizeObserver(fit)
+    resizes.observe(element)
+    for (const item of element.children) {
+      resizes.observe(item)
+    }
+  }
+}, { flush: 'post', immediate: true })
+
+onBeforeUnmount(() => resizes?.disconnect())
+
+function viewSite() {
+  router.push(homePath.value)
+}
 
 const showEditModal = ref(false)
 const showStrandedModal = ref(false)

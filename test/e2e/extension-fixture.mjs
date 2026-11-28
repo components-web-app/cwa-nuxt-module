@@ -26,7 +26,7 @@ console.log('#487 the fixture extension registers through cwa:extend\n')
 check('its component is a CWA component name', read('cwa-component-names.ts').includes('"FixtureBadge": "FixtureBadge"'))
 check('its component\'s defineCwaConfig is read', /"FixtureBadge": \{\s+"name": "Fixture badge"/.test(read('cwa-config.ts')))
 
-check('the header knows the roles its admin pages need', read('cwa-extension-menu.ts').includes('export const extensionPageRoles: string[] = ["ROLE_ADMIN","ROLE_FIXTURE_REPORTS"]'))
+check('the header knows the roles its admin pages need', read('cwa-extension-menu.ts').includes('export const adminShellRoles: string[] = ["ROLE_CMS_ADMIN","ROLE_USER_ADMIN","ROLE_ADMIN","ROLE_FIXTURE_REPORTS"]'))
 const areas = read('cwa-extension-areas.ts')
 check('its area is listed with its label, description and lucide icon', /"segment": "fixture",\s+"label": "Fixture shop",\s+"description": "Orders and reports",\s+"icon": "<svg data-cwa-admin-icon/.test(areas))
 check('its admin pages are the area\'s tabs, in order, with their roles', /"path": "orders",\s+"label": "Orders",\s+"role": "ROLE_ADMIN"\s+\},\s+\{\s+"path": "reports",\s+"label": "Reports",\s+"role": "ROLE_FIXTURE_REPORTS"/.test(areas))

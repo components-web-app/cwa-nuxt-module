@@ -4,6 +4,10 @@ Changes to `@cwa/nuxt`, newest first. Add a line under **Unreleased** with every
 
 ## [Unreleased]
 
+### Changed
+
+- The admin has a Dashboard at `/_cwa` listing every area you can open, Site settings and your account, in place of the Extensions page; on admin pages the bar's Home opens it and View site goes back to the site, the quick links overflow into ⋯, the menu lists your quick links, and phones get a bottom bar ([#518](https://github.com/components-web-app/cwa-nuxt-module/issues/518)). About the CWA moved to Site settings → About.
+
 ## [2.0.0-alpha.44] - 2026-11-27
 
 ### Added

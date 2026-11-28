@@ -37,8 +37,8 @@ describe('an extension\'s admin area', () => {
     expect(router.resolve('/_cwa/fixture/reports').meta.cwaAdminRole).toBe('ROLE_FIXTURE_REPORTS')
   })
 
-  test('the Extensions page opens for admins and for every role an extension page needs', () => {
-    expect(useRouter().resolve('/_cwa/extensions').meta.cwaAdminRole).toEqual(['ROLE_ADMIN', 'ROLE_FIXTURE_REPORTS'])
+  test('the Dashboard opens for everyone the admin header shows for', () => {
+    expect(useRouter().resolve('/_cwa').meta.cwaAdminRole).toEqual(['ROLE_CMS_ADMIN', 'ROLE_USER_ADMIN', 'ROLE_ADMIN', 'ROLE_FIXTURE_REPORTS'])
   })
 })
 

@@ -173,12 +173,11 @@ describe('CWA module', () => {
       expect(mockNuxt.options.routeRules).toEqual({ '/basket': { cwa: { pageCache: false } } })
     })
 
-    test('writes the roles the extensions\' admin pages need to the small template the header reads, and the areas and declared roles to the admin template the area, the Extensions page and the user dialog read', async () => {
+    test('writes the roles the extensions\' admin pages need to the small template the header reads, and the areas and declared roles to the admin template the area, the Dashboard and the user dialog read', async () => {
       await setupWithExtension({ ...shop, description: 'Orders', icon: 'lucide:shopping-cart', adminPages: [...shop.adminPages, { path: 'accounts', label: 'Accounts', file: '/a.vue', role: 'ROLE_SHOP_ACCOUNTS' }] })
       const templates = (nuxtKit.addTemplate as Mock).mock.calls.map(([template]) => template)
 
-      expect(templates.find(template => template.filename === 'cwa-extension-menu.ts').getContents()).toBe(`export const extensionPageRoles: string[] = ["ROLE_ADMIN","ROLE_SHOP_ACCOUNTS"]
-export const adminShellRoles: string[] = ["ROLE_CMS_ADMIN","ROLE_USER_ADMIN","ROLE_ADMIN","ROLE_SHOP_ACCOUNTS"]
+      expect(templates.find(template => template.filename === 'cwa-extension-menu.ts').getContents()).toBe(`export const adminShellRoles: string[] = ["ROLE_CMS_ADMIN","ROLE_USER_ADMIN","ROLE_ADMIN","ROLE_SHOP_ACCOUNTS"]
 `)
       const areas: string = templates.find(template => template.filename === 'cwa-extension-areas.ts').getContents()
       expect(areas).toMatch(/"segment": "shop",\s+"label": "Shop",\s+"description": "Orders",\s+"icon": "<svg data-cwa-admin-icon /)
@@ -217,12 +216,19 @@ export const adminShellRoles: string[] = ["ROLE_CMS_ADMIN","ROLE_USER_ADMIN","RO
         expect(template().getContents()).toBe('export const topBarDefault: string[] | undefined = undefined\n')
       })
 
-      test('warns once naming each id that is not a built-in or a top-bar extension, and keeps the list as given', async () => {
+      test('warns once that the ids it names are not quick links, saying what a quick link is, and keeps the list as given', async () => {
         const logger = mockLogger()
         await setupWithExtension(shop, {}, { admin: { topBar: ['pages', 'ext:shop', 'page'] } })
 
-        expect(warnings(logger)).toEqual([expect.stringMatching(/admin\.topBar.*"ext:shop", "page"/)])
+        expect(warnings(logger)).toEqual([expect.stringContaining('cwa.admin.topBar names "ext:shop", "page", which are not quick links: quick links are the built-in areas and extensions with an icon and admin pages.')])
         expect(template().getContents()).toContain('["pages","ext:shop","page"]')
+      })
+
+      test('names a single id that is not a quick link in the singular', async () => {
+        const logger = mockLogger()
+        await setupWithExtension(withIcon, {}, { admin: { topBar: ['pages', 'x'] } })
+
+        expect(warnings(logger)).toEqual([expect.stringContaining('cwa.admin.topBar names "x", which is not a quick link: quick links are the built-in areas and extensions with an icon and admin pages.')])
       })
 
       test('warns and is left out when it is not a list of ids', async () => {

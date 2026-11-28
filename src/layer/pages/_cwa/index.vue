@@ -1,5 +1,5 @@
 <template>
-  <div class="cwa:flex cwa:flex-col cwa:h-full">
+  <div class="cwa:flex cwa:flex-col cwa:h-full cwa:max-sm:pb-[calc(var(--cwa-spacing-hit)+1px+env(safe-area-inset-bottom))]">
     <div class="cwa:bg-stone-800 cwa:text-white cwa:grow">
       <NuxtPage />
     </div>
@@ -12,12 +12,14 @@
         <CwaLogo class="cwa:h-5 cwa:w-auto" /><span class="cwa:sr-only">Components Web App</span>
       </NuxtLink>
     </div>
+    <BottomBar />
   </div>
 </template>
 
 <script lang="ts" setup>
 import { definePageMeta, useHead } from '#imports'
 import cwaAdmin from '#cwa-layer/middleware/cwa-admin'
+import BottomBar from '#cwa/templates/components/main/admin/header/_parts/BottomBar.vue'
 
 definePageMeta({
   middleware: cwaAdmin,
