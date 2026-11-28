@@ -124,6 +124,10 @@ export function fitTopBar(widths: number[], available: number, { active, more }:
   return { shown, overflow: all.filter(index => !shown.includes(index)) }
 }
 
+export function currentArea(items: { id: string, path: string }[], path: string) {
+  return items.find(item => path === item.path || path.startsWith(`${item.path}/`))?.id
+}
+
 export function bottomBar<T>(items: T[]) {
   return { shown: items.slice(0, 3), more: items.slice(3) }
 }

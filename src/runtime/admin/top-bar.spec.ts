@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { adminAreas, bottomBar, fitTopBar, rememberSitePath, sitePath, topBarChoices, topBarItems, unknownTopBarIds } from './top-bar'
+import { adminAreas, bottomBar, currentArea, fitTopBar, rememberSitePath, sitePath, topBarChoices, topBarItems, unknownTopBarIds } from './top-bar'
 import type { CwaExtensionArea } from './extension-areas'
 import type Cwa from '#cwa/cwa'
 
@@ -95,6 +95,22 @@ describe('fitTopBar', () => {
   test('with no room shows nothing and puts everything behind More', () => {
     expect(fitTopBar([40, 40], 0, { active: 1, more: 30 })).toEqual({ shown: [], overflow: [0, 1] })
     expect(fitTopBar([], 0, { active: -1, more: 30 })).toEqual({ shown: [], overflow: [] })
+  })
+})
+
+describe('currentArea', () => {
+  const items = [{ id: 'pages', path: '/_cwa/pages' }, { id: 'ext:shop', path: '/_cwa/shop' }, { id: 'ext:shopfront', path: '/_cwa/shopfront' }]
+
+  test('is the area whose path the route is on or under', () => {
+    expect(currentArea(items, '/_cwa/pages')).toBe('pages')
+    expect(currentArea(items, '/_cwa/pages/abc/routes')).toBe('pages')
+    expect(currentArea(items, '/_cwa/shop/orders')).toBe('ext:shop')
+  })
+
+  test('never matches a longer segment that only starts the same, and is undefined elsewhere', () => {
+    expect(currentArea(items, '/_cwa/shopfront/x')).toBe('ext:shopfront')
+    expect(currentArea(items, '/_cwa/pagesx')).toBeUndefined()
+    expect(currentArea(items, '/_cwa')).toBeUndefined()
   })
 })
 
