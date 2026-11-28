@@ -602,6 +602,9 @@
 .cwa\:h-12 {
   height: calc(var(--cwa-spacing) * 12);
 }
+.cwa\:h-14 {
+  height: calc(var(--cwa-spacing) * 14);
+}
 .cwa\:h-16 {
   height: calc(var(--cwa-spacing) * 16);
 }
@@ -1472,6 +1475,9 @@
   @supports (color: color-mix(in lab, red, red)) {
     background-color: color-mix(in oklab, var(--cwa-color-dark) 80%, transparent);
   }
+}
+.cwa\:bg-fg-muted {
+  background-color: var(--cwa-color-fg-muted);
 }
 .cwa\:bg-field {
   background-color: var(--cwa-color-field);

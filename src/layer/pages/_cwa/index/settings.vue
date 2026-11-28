@@ -334,7 +334,7 @@
               target="_blank"
               rel="noopener"
               :class="textLink"
-            >About the CWA</a>
+            >View the official CWA website</a>
           </p>
         </CwaUiFormSection>
       </template>

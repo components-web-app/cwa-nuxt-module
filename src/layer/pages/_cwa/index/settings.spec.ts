@@ -989,9 +989,9 @@ describe('Site settings About the CWA (#518)', () => {
     mockFetchFileReport.mockReset().mockResolvedValue(undefined)
   })
 
-  test('the About tab links to cwa.rocks in a new tab, styled as its other links', async () => {
+  test('the About tab links to cwa.rocks in a new tab as View the official CWA website, styled as its other links', async () => {
     const wrapper = await setup({ hash: '#about' })
-    const about = wrapper.findAll('a').find(link => link.text() === 'About the CWA')!
+    const about = wrapper.findAll('a').find(link => link.text() === 'View the official CWA website')!
 
     expect(about.attributes('href')).toBe('https://cwa.rocks')
     expect(about.attributes('target')).toBe('_blank')

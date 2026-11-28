@@ -295,7 +295,7 @@ const sideButton = 'cwa:grid cwa:size-hit cwa:shrink-0 cwa:cursor-pointer cwa:pl
               <div
                 aria-hidden="true"
                 :data-testid="`${testId}-handle`"
-                class="cwa:mx-auto cwa:mt-2 cwa:h-1 cwa:w-10 cwa:bg-line-strong"
+                class="cwa:mx-auto cwa:mt-2 cwa:h-1 cwa:w-10 cwa:bg-fg-muted"
               />
               <div
                 class="cwa:flex cwa:min-h-11 cwa:items-center cwa:gap-2"

@@ -175,6 +175,6 @@ const current = computed(() => currentArea(items.value.map(item => ({ id: item.i
 const moreOpen = ref(false)
 const moreButton = useTemplateRef<HTMLElement>('moreButton')
 
-const tabLook = 'cwa:flex cwa:h-hit cwa:min-w-0 cwa:flex-1 cwa:cursor-pointer cwa:flex-col cwa:items-center cwa:justify-center cwa:gap-0.5 cwa:px-1 cwa:text-fg-muted cwa:outline-1 cwa:outline-transparent cwa:transition-colors cwa:duration-(--cwa-duration-fast) cwa:hover:text-fg cwa:focus-visible:outline-2 cwa:focus-visible:-outline-offset-2 cwa:focus-visible:outline-accent-fg cwa:aria-[current=page]:text-fg cwa:aria-expanded:text-accent-fg'
+const tabLook = 'cwa:flex cwa:h-14 cwa:min-w-0 cwa:flex-1 cwa:cursor-pointer cwa:flex-col cwa:items-center cwa:justify-center cwa:gap-0.5 cwa:px-1 cwa:text-fg-muted cwa:outline-1 cwa:outline-transparent cwa:transition-colors cwa:duration-(--cwa-duration-fast) cwa:hover:text-fg cwa:focus-visible:outline-2 cwa:focus-visible:-outline-offset-2 cwa:focus-visible:outline-accent-fg cwa:aria-[current=page]:text-fg cwa:aria-expanded:text-accent-fg'
 const labelLook = 'cwa:max-w-full cwa:truncate cwa:text-flag'
 </script>
