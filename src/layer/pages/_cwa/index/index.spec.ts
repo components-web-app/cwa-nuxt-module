@@ -4,6 +4,7 @@ import { computed, defineComponent, h } from 'vue'
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { mockNuxtImport } from '@nuxt/test-utils/runtime'
 import { useRouter } from '#app/composables/router'
+import { useNuxtApp } from '#app/nuxt'
 import CwaAdminParentPage from '../index.vue'
 import DashboardPage from './index.vue'
 import { axe } from '../../../../../test/utils/axe'
@@ -99,6 +100,9 @@ describe('/_cwa', () => {
     vi.restoreAllMocks()
     document.body.innerHTML = ''
     await useRouter().replace('/')
+    await flushPromises()
+    await useNuxtApp().callHook('page:loading:end')
+    await new Promise(resolve => requestAnimationFrame(resolve))
   })
 
   test('visiting /_cwa opens the Dashboard beneath the guarded /_cwa parent, so the parent\'s guard still runs', async () => {
