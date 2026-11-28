@@ -202,7 +202,7 @@ describe('addExtensionAdminPages', () => {
       { path: '/', name: 'index', file: '/app/pages/index.vue' },
       { path: '/_cwa', file: '/layer/pages/_cwa/index.vue', children: [
         { path: 'users', name: '_cwa-users', file: '/layer/pages/_cwa/index/users.vue' },
-        { path: 'extensions', name: '_cwa-index-extensions', file: '/layer/pages/_cwa/index/extensions.vue' },
+        { path: '', name: '_cwa', file: '/layer/pages/_cwa/index/index.vue' },
       ] },
     ]
   }
@@ -259,12 +259,12 @@ describe('addExtensionAdminPages', () => {
     ])
   })
 
-  test('opens the Extensions page to admins and to every role an extension page needs', () => {
+  test('opens the Dashboard to everyone the admin header shows for, so a user holding only an extension role is never shut out of /_cwa (#518)', () => {
     const pages = cwaPages()
 
     addExtensionAdminPages(pages, [{ ...ecommerce, adminPages: [{ path: 'reports', label: 'Reports', file: '/r.vue', role: 'ROLE_SHOP_ACCOUNTS' }] }], '/area.vue', listFiles)
 
-    expect(pages[1]!.children![1]!.meta).toEqual({ cwaAdminRole: ['ROLE_ADMIN', 'ROLE_SHOP_ACCOUNTS'] })
+    expect(pages[1]!.children!.find(page => page.name === '_cwa')!.meta).toEqual({ cwaAdminRole: ['ROLE_CMS_ADMIN', 'ROLE_USER_ADMIN', 'ROLE_SHOP_ACCOUNTS'] })
   })
 
   test('opens My account to exactly the roles that get the admin header: content and user admins and every role an extension page needs (#508)', () => {
@@ -297,7 +297,7 @@ describe('addExtensionAdminPages', () => {
 
     addExtensionAdminPages(pages, [shop], '/area.vue', listFiles)
 
-    expect(pages[1]!.children!.map(page => page.name)).toEqual(['_cwa-users', '_cwa-index-extensions'])
+    expect(pages[1]!.children!.map(page => page.name)).toEqual(['_cwa-users', '_cwa'])
   })
 })
 

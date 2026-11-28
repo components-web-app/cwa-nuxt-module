@@ -11,10 +11,11 @@
       class="cwa:relative cwa:z-20"
     />
     <Transition v-bind="menuTransition">
-      <div
+      <nav
         v-show="panelShown"
         :id="panelId"
         ref="menu"
+        aria-label="Admin menu"
         class="cwa:absolute cwa:z-10 cwa:-top-1.5 cwa:-right-2 cwa:bg-dark cwa:pt-6 cwa:pb-12 cwa:px-12 cwa:w-[90vw] cwa:max-w-lg cwa:origin-top-right"
       >
         <div class="cwa:text-light cwa:flex cwa:flex-col cwa:text-center cwa:gap-y-2 cwa:mb-5">
@@ -26,104 +27,78 @@
           </h2>
         </div>
         <div class="cwa:flex cwa:justify-center">
-          <div class="cwa:flex cwa:justify-between cwa:w-full cwa:max-w-[350px]">
+          <div
+            data-testid="menu-columns"
+            class="cwa:flex cwa:flex-col cwa:gap-y-8 cwa:sm:flex-row cwa:sm:justify-between cwa:w-full cwa:max-w-[350px]"
+          >
             <div class="cwa:mt-2">
+              <h3
+                v-if="quickLinks.length"
+                class="cwa:sr-only"
+              >
+                Quick links
+              </h3>
               <ul class="cwa:text-xl cwa:flex cwa:flex-col cwa:gap-y-5">
-                <li v-if="$cwa.auth.isAdmin.value">
+                <li
+                  v-for="item in quickLinks"
+                  :key="item.id"
+                >
                   <MenuPrimaryLink
-                    label="Layouts"
-                    to="/_cwa/layouts"
+                    :label="item.label"
+                    :to="item.to"
                   >
-                    <IconLayouts class="cwa:w-7" />
+                    <component
+                      :is="builtInIcons[item.id]?.icon"
+                      v-if="builtInIcons[item.id]"
+                      aria-hidden="true"
+                      :class="builtInIcons[item.id]?.class"
+                    />
+                    <span
+                      v-else
+                      aria-hidden="true"
+                      class="cwa:block cwa:size-7 cwa:[&>svg]:size-full"
+                      v-html="item.icon"
+                    />
                   </MenuPrimaryLink>
                 </li>
-                <li v-if="$cwa.auth.isAdmin.value">
+                <li>
                   <MenuPrimaryLink
-                    label="Pages"
-                    to="/_cwa/pages"
+                    label="Dashboard"
+                    to="/_cwa"
                   >
-                    <IconPages class="cwa:w-5 cwa:mx-1" />
-                  </MenuPrimaryLink>
-                </li>
-                <li v-if="$cwa.auth.isAdmin.value && hasPageData">
-                  <MenuPrimaryLink
-                    label="Data"
-                    to="/_cwa/data"
-                  >
-                    <IconData class="cwa:w-6 cwa:mx-0.5" />
-                  </MenuPrimaryLink>
-                </li>
-                <li v-if="$cwa.auth.isAdmin.value">
-                  <MenuPrimaryLink
-                    label="Routes"
-                    to="/_cwa/routes"
-                  >
-                    <IconRoutes class="cwa:w-7" />
-                  </MenuPrimaryLink>
-                </li>
-                <li v-if="$cwa.auth.hasRole('ROLE_USER_ADMIN')">
-                  <MenuPrimaryLink
-                    label="Users"
-                    :to="{ name: '_cwa-users-user' }"
-                  >
-                    <IconUsers class="cwa:w-7" />
+                    <IconHome
+                      aria-hidden="true"
+                      class="cwa:w-6 cwa:mx-0.5"
+                    />
                   </MenuPrimaryLink>
                 </li>
               </ul>
             </div>
-            <div class="cwa:flex cwa:flex-col cwa:gap-y-4">
-              <div v-if="$cwa.auth.isAdmin.value || hasExtensions">
-                <h3>General</h3>
-                <ul class="cwa:text-sm">
-                  <li v-if="$cwa.auth.isAdmin.value">
-                    <MenuLink :to="{ name: '_cwa-settings' }">
-                      Site settings
-                    </MenuLink>
-                  </li>
-                  <li v-if="hasExtensions">
-                    <MenuLink :to="{ name: '_cwa-extensions' }">
-                      Extensions
-                    </MenuLink>
-                  </li>
-                </ul>
-              </div>
-              <div>
-                <h3>Account</h3>
-                <ul class="cwa:text-sm">
-                  <li>
-                    <MenuLink :to="{ name: '_cwa-account' }">
-                      My account
-                    </MenuLink>
-                  </li>
-                  <li>
-                    <MenuLink @click="signOut">
-                      Sign out
-                    </MenuLink>
-                  </li>
-                </ul>
-              </div>
-              <div class="cwa:py-2 cwa:rounded-lg">
-                <h3>CWA</h3>
-                <ul class="cwa:text-sm">
-                  <li>
-                    <MenuLink
-                      to="https://cwa.rocks"
-                    >
-                      About the CWA
-                    </MenuLink>
-                  </li>
-                </ul>
-              </div>
+            <div>
+              <h3>Account</h3>
+              <ul class="cwa:text-sm">
+                <li>
+                  <MenuLink :to="{ name: '_cwa-account' }">
+                    My account
+                  </MenuLink>
+                </li>
+                <li>
+                  <MenuLink @click="signOut">
+                    Sign out
+                  </MenuLink>
+                </li>
+              </ul>
             </div>
           </div>
         </div>
-      </div>
+      </nav>
     </Transition>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, nextTick, ref, useId, useTemplateRef, watch } from 'vue'
+import type { Component } from 'vue'
 import { onClickOutside } from '@vueuse/core'
 import MenuPrimaryLink from './MenuPrimaryLink.vue'
 import CwaLogo from '#cwa/templates/components/core/assets/CwaLogo.vue'
@@ -136,29 +111,41 @@ import IconUsers from '#cwa/templates/components/core/assets/IconUsers.vue'
 import MenuLink from '#cwa/templates/components/main/admin/header/_parts/MenuLink.vue'
 import IconRoutes from '#cwa/templates/components/core/assets/IconRoutes.vue'
 import IconData from '#cwa/templates/components/core/assets/IconData.vue'
-import { pageDataTypes } from '#cwa/admin/page-data-types'
+import IconHome from '#cwa/templates/components/core/assets/IconHome.vue'
+import { hasPageDataTypes } from '#cwa/admin/page-data-presence'
+import { topBarItems } from '#cwa/admin/top-bar'
+import type { CwaExtensionArea } from '#cwa/admin/extension-areas'
 // @ts-ignore
-import { extensionPageRoles } from '#build/cwa-extension-menu'
+import { extensionAreas } from '#build/cwa-extension-areas'
+// @ts-ignore
+import { topBarDefault } from '#build/cwa-admin-top-bar'
 
 const $cwa = useCwa()
 const { menu: menuTransition } = useTransitions()
 const route = useRoute()
 
 const showMenu = ref(false)
-const hasExtensions = computed(() => (extensionPageRoles as string[]).some(role => $cwa.auth.hasRole(role)))
 const hasPageData = ref(false)
 const pageDataDecided = ref(false)
 const panelShown = computed(() => showMenu.value && (pageDataDecided.value || !$cwa.auth.isAdmin.value))
 
-let decidingPageData: Promise<void> | undefined
+const quickLinks = computed(() => topBarItems(
+  extensionAreas as CwaExtensionArea[],
+  { own: $cwa.auth.user?.adminPreferences?.topBar, developer: topBarDefault },
+  { hasRole: role => $cwa.auth.hasRole(role), hasPageData: hasPageData.value },
+))
 
-function decidePageData() {
-  decidingPageData ??= $cwa.getApiDocumentation()
-    .then(docs => pageDataTypes(docs).length > 0, () => false)
-    .then((found) => {
-      hasPageData.value = found
-      pageDataDecided.value = true
-    })
+const builtInIcons: Record<string, { icon: Component, class: string }> = {
+  layouts: { icon: IconLayouts, class: 'cwa:w-7' },
+  pages: { icon: IconPages, class: 'cwa:w-5 cwa:mx-1' },
+  data: { icon: IconData, class: 'cwa:w-6 cwa:mx-0.5' },
+  routes: { icon: IconRoutes, class: 'cwa:w-7' },
+  users: { icon: IconUsers, class: 'cwa:w-7' },
+}
+
+async function decidePageData() {
+  hasPageData.value = await hasPageDataTypes($cwa)
+  pageDataDecided.value = true
 }
 
 const menu = useTemplateRef('menu')

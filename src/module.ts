@@ -33,7 +33,7 @@ import { scanComponentGroupDeclarations } from './component-group-declarations'
 import { scanCwaConfigDeclarations } from './cwa-config-declarations'
 import { adminResourcesTemplate, lucideIconSvg, lucideNamesTypeTemplate } from './admin-resources'
 import type { LucideIconSet } from './admin-resources'
-import { addExtensionAdminPages, adminShellRoles, checkExtensions, extensionAdminRoles, extensionAreas, extensionPageDataTemplate, extensionPageRoles, extensionRouteRules } from './extensions'
+import { addExtensionAdminPages, adminShellRoles, checkExtensions, extensionAdminRoles, extensionAreas, extensionPageDataTemplate, extensionRouteRules } from './extensions'
 import type { CwaExtension, ExtensionNames } from './extensions'
 import type { CwaModuleOptions, CwaResourcesConfig, CwaResourcesMeta, CwaStyleClasses, CwaStyles, CwaUiVariantConfig, GlobalComponentNames } from './runtime/types'
 
@@ -577,7 +577,7 @@ export default defineNuxtModule<CwaModuleOptions>({
       }
       const unknown = unknownTopBarIds(topBar, extensionAreas(extensions, icon => lucideIconSvg(readLucideIcons(), icon)))
       if (unknown.length) {
-        logger.warn(`${NAME}: cwa.admin.topBar names ${unknown.map(id => JSON.stringify(id)).join(', ')}, which no built-in area or extension with an icon and admin pages has, so the top bar leaves them out.`)
+        logger.warn(`${NAME}: cwa.admin.topBar names ${unknown.map(id => JSON.stringify(id)).join(', ')}, which ${unknown.length === 1 ? 'is not a quick link' : 'are not quick links'}: quick links are the built-in areas and extensions with an icon and admin pages.`)
       }
       return topBar as string[]
     }
@@ -630,8 +630,7 @@ export type CwaComponentStyles = { [Name in CwaComponentName]: typeof CwaCompone
       addTemplate({
         filename: 'cwa-extension-menu.ts',
         write: true,
-        getContents: () => `export const extensionPageRoles: string[] = ${JSON.stringify(extensionPageRoles(extensions))}
-export const adminShellRoles: string[] = ${JSON.stringify(adminShellRoles(extensions))}
+        getContents: () => `export const adminShellRoles: string[] = ${JSON.stringify(adminShellRoles(extensions))}
 `,
       })
       addTemplate({

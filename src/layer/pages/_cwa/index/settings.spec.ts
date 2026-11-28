@@ -982,6 +982,25 @@ describe('Site settings CWA version', () => {
   })
 })
 
+describe('Site settings About the CWA (#518)', () => {
+  beforeEach(() => {
+    mockOptions.pageCache = undefined
+    mockFetchOrphanReport.mockReset().mockResolvedValue(undefined)
+    mockFetchFileReport.mockReset().mockResolvedValue(undefined)
+  })
+
+  test('the About tab links to cwa.rocks in a new tab, styled as its other links', async () => {
+    const wrapper = await setup({ hash: '#about' })
+    const about = wrapper.findAll('a').find(link => link.text() === 'About the CWA')!
+
+    expect(about.attributes('href')).toBe('https://cwa.rocks')
+    expect(about.attributes('target')).toBe('_blank')
+    expect(about.attributes('rel')).toBe('noopener')
+    expect(about.classes()).toStrictEqual(wrapper.get('[data-testid="version-app"]').classes())
+    expect(about.element.closest('[role="tabpanel"]')).toBe(wrapper.get('[data-testid="version-app"]').element.closest('[role="tabpanel"]'))
+  })
+})
+
 describe('Site settings tabs (#461)', () => {
   beforeEach(() => {
     mockOptions.pageCache = undefined

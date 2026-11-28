@@ -7,6 +7,7 @@ import Header from './Header.vue'
 import { useCloneMode } from '#cwa/admin/clone-mode'
 import type Cwa from '#cwa/cwa'
 import * as cwaComposable from '#cwa/composables/cwa'
+import { hasPageDataTypes } from '#cwa/admin/page-data-presence'
 
 const strandedState = reactive({
   stranded: [] as any[],
@@ -39,16 +40,67 @@ vi.mock('#cwa/templates/components/core/admin/StrandedComponentGroupsModal.vue',
   },
 }))
 
+const pageDataState = vi.hoisted(() => ({ answer: Promise.resolve(true) as Promise<boolean> }))
+
+vi.mock('#cwa/admin/page-data-presence', () => ({
+  hasPageDataTypes: vi.fn(() => pageDataState.answer),
+}))
+
+const fitState = vi.hoisted(() => ({ available: 10000, more: 40, widths: {} as Record<string, number> }))
+
+vi.mock('./_parts/top-bar-measure', () => ({
+  measureTopBar: vi.fn((list: HTMLElement) => ({
+    available: fitState.available,
+    more: fitState.more,
+    widths: Object.fromEntries([...list.querySelectorAll<HTMLElement>('[data-top-bar-id]')]
+      .filter(item => !item.hidden)
+      .map(item => [item.dataset.topBarId!, fitState.widths[item.dataset.topBarId!] ?? 50])),
+  })),
+}))
+
+vi.mock('#cwa/templates/components/ui/Menu.vue', () => ({
+  default: {
+    name: 'CwaUiMenu',
+    props: ['items', 'label', 'side', 'align'],
+    template: '<div class="kit-menu-stub"><slot /></div>',
+  },
+}))
+
+class FakeResizeObserver {
+  static all: FakeResizeObserver[] = []
+  observed: Element[] = []
+  constructor(public callback: () => void) {
+    FakeResizeObserver.all.push(this)
+  }
+
+  observe(element: Element) {
+    this.observed.push(element)
+  }
+
+  unobserve() {}
+
+  disconnect() {
+    this.observed = []
+  }
+}
+
+vi.stubGlobal('ResizeObserver', FakeResizeObserver)
+
 const errorRef = ref<any>(null)
 const replaceMock = vi.fn()
+const pushMock = vi.fn()
+
+function resolveRoute(to: string | { name: string }) {
+  return { path: typeof to === 'string' ? to : `/_cwa/${to.name.slice('_cwa-'.length)}` }
+}
 
 const mockRouteMeta = reactive<{ cwa?: { admin?: boolean } }>({ cwa: { admin: false } })
 
 mockNuxtImport('useError', () => () => errorRef)
-const mockRoute = reactive({ meta: mockRouteMeta, fullPath: '/' })
+const mockRoute = reactive({ meta: mockRouteMeta, fullPath: '/', path: '/' })
 
 mockNuxtImport('useRoute', () => () => mockRoute)
-mockNuxtImport('useRouter', () => () => ({ replace: replaceMock }))
+mockNuxtImport('useRouter', () => () => ({ replace: replaceMock, push: pushMock, resolve: resolveRoute }))
 
 function buildResources(overrides: Record<string, any> = {}) {
   return reactive({
@@ -127,7 +179,7 @@ function mountHeader(options: { stubs?: Record<string, any>, attachTo?: HTMLElem
         },
         CwaUiButton: {
           name: 'CwaUiButton',
-          props: ['label', 'variant', 'tone', 'size', 'icon', 'iconOnly', 'loading', 'ariaLabel'],
+          props: { label: String, variant: String, tone: String, size: String, icon: Object, iconOnly: Boolean, loading: Boolean, ariaLabel: String },
           emits: ['click'],
           template: '<button type="button" :aria-label="ariaLabel" @click="$emit(\'click\', $event)">{{ label }}<slot /></button>',
         },
@@ -138,7 +190,7 @@ function mountHeader(options: { stubs?: Record<string, any>, attachTo?: HTMLElem
         },
         CwaUiIconCogIcon: { name: 'CwaUiIconCogIcon', template: '<svg class="cog-icon-stub" />' },
         CwaUiIconWarningIcon: { name: 'CwaUiIconWarningIcon', template: '<svg class="warning-icon-stub" />' },
-        NuxtLink: { name: 'NuxtLink', props: ['to', 'activeClass'], template: '<a :href="typeof to === \'string\' ? to : JSON.stringify(to)"><slot /></a>' },
+        NuxtLink: { name: 'NuxtLink', props: ['to'], template: '<a :href="typeof to === \'string\' ? to : JSON.stringify(to)"><slot /></a>' },
         IconLayouts: { name: 'IconLayouts', template: '<svg class="icon-layouts" />' },
         IconPages: { name: 'IconPages', template: '<svg class="icon-pages" />' },
         IconData: { name: 'IconData', template: '<svg class="icon-data" />' },
@@ -161,6 +213,12 @@ describe('Header', () => {
     errorRef.value = null
     mockRouteMeta.cwa = { admin: false }
     mockRoute.fullPath = '/'
+    mockRoute.path = '/'
+    pageDataState.answer = Promise.resolve(true)
+    fitState.available = 10000
+    fitState.more = 40
+    fitState.widths = {}
+    FakeResizeObserver.all = []
     extensionState.areas = []
     extensionState.topBarDefault = undefined
     strandedState.stranded = []
@@ -400,10 +458,11 @@ describe('Header', () => {
   })
 
   describe('admin nav links', () => {
-    test('renders the admin navigation links when on an admin page', () => {
+    test('renders the admin navigation links when on an admin page', async () => {
       mockRouteMeta.cwa = { admin: true }
       mockCwa()
       const wrapper = mountHeader()
+      await flushPromises()
       const hrefs = wrapper.findAll('a').map(a => a.attributes('href'))
       expect(hrefs).toEqual(
         expect.arrayContaining(['/_cwa/layouts', '/_cwa/pages', '/_cwa/data', '/_cwa/routes', '/_cwa/users']),
@@ -418,21 +477,29 @@ describe('Header', () => {
     })
   })
 
-  describe('the admin top bar', () => {
-    const centreLinks = (wrapper: ReturnType<typeof mountHeader>) => wrapper.findAll('[data-testid="header-centre"] a').map(link => [link.attributes('href'), link.find('.cwa\\:sr-only').text()])
-    const shop = { segment: 'shop', label: 'Shop', icon: '<svg id="shop-icon" />', topBar: true, pages: [{ path: '', label: 'Orders', role: 'ROLE_ADMIN' }] }
+  describe('View site (#518)', () => {
+    const viewSite = (wrapper: ReturnType<typeof mountHeader>) => wrapper.findAllComponents({ name: 'CwaUiButton' }).filter(button => button.props('label') === 'View site')
 
-    test('starts with a house linking back to the site page the admin was on before opening the admin area', async () => {
+    test('on an admin page View site sits where Edit sits on the site, a labelled button from sm and an icon below it, and goes back to the site page the admin was on', async () => {
       mockCwa()
       mockRoute.fullPath = '/blog/first?tag=news'
       const wrapper = mountHeader()
       mockRouteMeta.cwa = { admin: true }
       mockRoute.fullPath = '/_cwa/pages'
       await flushPromises()
-      const home = wrapper.get('[data-testid="header-centre"] a')
-      expect(home.attributes('href')).toBe('/blog/first?tag=news')
-      expect(home.text()).toBe('Back to the site')
-      expect(home.find('[data-testid="top-bar-home-icon"]').exists()).toBe(true)
+      const [icon, labelled] = viewSite(wrapper)
+      expect(icon!.props('iconOnly')).toBe(true)
+      expect(icon!.props('icon')).toBeTruthy()
+      expect(icon!.classes()).toContain('cwa:sm:hidden')
+      expect(labelled!.props('iconOnly')).toBe(false)
+      expect(labelled!.classes()).toContain('cwa:max-sm:hidden')
+      expect(wrapper.get('[data-testid="header-centre"]').element.contains(icon!.element)).toBe(false)
+      expect(icon!.element.compareDocumentPosition(wrapper.get('[data-testid="header-centre"]').element) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+      await labelled!.trigger('click')
+      expect(pushMock).toHaveBeenCalledWith('/blog/first?tag=news')
+      await icon!.trigger('click')
+      expect(pushMock).toHaveBeenCalledTimes(2)
+      expect(wrapper.findAll('button').map(button => button.text())).not.toContain('Edit')
     })
 
     test('remembers the site page when the header is mounted again in the admin area, and never an error page', async () => {
@@ -445,22 +512,59 @@ describe('Header', () => {
       errorRef.value = null
       mockRouteMeta.cwa = { admin: true }
       mockRoute.fullPath = '/_cwa/pages'
-      expect(mountHeader().get('[data-testid="header-centre"] a').attributes('href')).toBe('/about')
+      await viewSite(mountHeader())[1]!.trigger('click')
+      expect(pushMock).toHaveBeenCalledWith('/about')
     })
 
-    test('goes to the home page when no site page has been seen', () => {
+    test('goes to the home page when no site page has been seen', async () => {
       mockRouteMeta.cwa = { admin: true }
       mockCwa()
-      expect(centreLinks(mountHeader())[0]).toEqual(['/', 'Back to the site'])
+      await viewSite(mountHeader())[1]!.trigger('click')
+      expect(pushMock).toHaveBeenCalledWith('/')
     })
 
-    test('after the house come the default items, with an extension that asks for the top bar and its icon', () => {
-      mockRouteMeta.cwa = { admin: true }
-      extensionState.areas = [shop]
+    test('shows on an error page, where Edit does not', () => {
+      errorRef.value = { statusCode: 500 }
+      mockCwa()
+      expect(viewSite(mountHeader())).toHaveLength(2)
+    })
+
+    test('a page of the site keeps Edit and has no View site', () => {
       mockCwa()
       const wrapper = mountHeader()
+      expect(viewSite(wrapper)).toHaveLength(0)
+      expect(wrapper.findAll('button').map(button => button.text())).toContain('Edit')
+    })
+  })
+
+  describe('the admin top bar', () => {
+    const centreLinks = (wrapper: ReturnType<typeof mountHeader>) => wrapper.findAll('[data-testid="header-centre"] a').map(link => [link.attributes('href'), link.find('.cwa\\:sr-only').text()])
+    const shop = { segment: 'shop', label: 'Shop', icon: '<svg id="shop-icon" />', topBar: true, pages: [{ path: '', label: 'Orders', role: 'ROLE_ADMIN' }] }
+
+    async function mountAdminBar(path = '/_cwa/pages') {
+      mockRouteMeta.cwa = { admin: true }
+      mockRoute.fullPath = path
+      mockRoute.path = path
+      const wrapper = mountHeader()
+      await flushPromises()
+      return wrapper
+    }
+
+    test('starts with a house named Dashboard that goes to the Dashboard', async () => {
+      mockCwa()
+      const wrapper = await mountAdminBar()
+      const home = wrapper.get('[data-testid="header-centre"] a')
+      expect(home.attributes('href')).toBe('/_cwa')
+      expect(home.text()).toBe('Dashboard')
+      expect(home.get('[data-testid="top-bar-home-icon"]').attributes('aria-hidden')).toBe('true')
+    })
+
+    test('after the house come the default items, with an extension that asks for the top bar and its icon', async () => {
+      extensionState.areas = [shop]
+      mockCwa()
+      const wrapper = await mountAdminBar()
       expect(centreLinks(wrapper)).toEqual([
-        ['/', 'Back to the site'],
+        ['/_cwa', 'Dashboard'],
         ['/_cwa/layouts', 'Layouts'],
         ['/_cwa/pages', 'Pages'],
         ['/_cwa/data', 'Data'],
@@ -471,35 +575,206 @@ describe('Header', () => {
       expect(wrapper.find('[data-testid="header-centre"] #shop-icon').exists()).toBe(true)
     })
 
-    test('follows the developer\'s default when the admin has chosen nothing, keeping the house first', () => {
-      mockRouteMeta.cwa = { admin: true }
+    test('follows the developer\'s default when the admin has chosen nothing, keeping the house first', async () => {
       extensionState.areas = [shop]
       extensionState.topBarDefault = ['routes', 'ext:shop']
       mockCwa()
-      expect(centreLinks(mountHeader())).toEqual([
-        ['/', 'Back to the site'],
+      expect(centreLinks(await mountAdminBar())).toEqual([
+        ['/_cwa', 'Dashboard'],
         ['/_cwa/routes', 'Routes'],
         ['{"name":"_cwa-shop"}', 'Shop'],
       ])
     })
 
     test('follows the admin\'s own list over the developer\'s, and changes as soon as it is saved', async () => {
-      mockRouteMeta.cwa = { admin: true }
       extensionState.areas = [shop]
       extensionState.topBarDefault = ['routes']
       const { cwa } = mockCwa({ user: { '@id': '/_/users/admin', 'adminPreferences': { topBar: ['ext:shop', 'pages'] } } })
-      const wrapper = mountHeader()
+      const wrapper = await mountAdminBar()
       expect(centreLinks(wrapper)).toEqual([
-        ['/', 'Back to the site'],
+        ['/_cwa', 'Dashboard'],
         ['{"name":"_cwa-shop"}', 'Shop'],
         ['/_cwa/pages', 'Pages'],
       ])
       cwa.auth.user!.adminPreferences = { topBar: ['data'] }
       await flushPromises()
       expect(centreLinks(wrapper)).toEqual([
-        ['/', 'Back to the site'],
+        ['/_cwa', 'Dashboard'],
         ['/_cwa/data', 'Data'],
       ])
+    })
+
+    test('Data is left out until the API documentation says the site has page data types', async () => {
+      let answer!: (value: boolean) => void
+      pageDataState.answer = new Promise((resolve) => {
+        answer = resolve
+      })
+      const { cwa } = mockCwa()
+      const wrapper = await mountAdminBar()
+      expect(vi.mocked(hasPageDataTypes)).toHaveBeenCalledWith(cwa)
+      expect(centreLinks(wrapper).map(([, label]) => label)).not.toContain('Data')
+      answer(true)
+      await flushPromises()
+      expect(centreLinks(wrapper).map(([, label]) => label)).toContain('Data')
+    })
+
+    test('Data stays out when the site has no page data types', async () => {
+      pageDataState.answer = Promise.resolve(false)
+      mockCwa()
+      expect(centreLinks(await mountAdminBar()).map(([, label]) => label)).toEqual(['Dashboard', 'Layouts', 'Pages', 'Routes', 'Users'])
+    })
+
+    test('the house and the quick links are one landmark named Admin', async () => {
+      mockCwa()
+      const wrapper = await mountAdminBar()
+      const nav = wrapper.get('nav[aria-label="Admin"]')
+      expect(nav.findAll('a')).toHaveLength(centreLinks(wrapper).length)
+      expect(nav.findAll('a')[0]!.text()).toBe('Dashboard')
+    })
+
+    test.each([
+      ['/_cwa', 'Dashboard'],
+      ['/_cwa/pages', 'Pages'],
+      ['/_cwa/pages/some-page-id', 'Pages'],
+      ['/_cwa/shop/orders', 'Shop'],
+    ])('on %s only the %s link is the current page', async (path, current) => {
+      extensionState.areas = [shop]
+      mockCwa()
+      const wrapper = await mountAdminBar(path)
+      const marked = wrapper.findAll('nav[aria-label="Admin"] a').filter(link => link.attributes('aria-current') === 'page').map(link => link.text())
+      expect(marked).toEqual([current])
+    })
+
+    test('the built-in icons are hidden from assistive technology, and every link shows a focus ring and is a full target on touch', async () => {
+      mockCwa()
+      const wrapper = await mountAdminBar()
+      const links = wrapper.findAll('nav[aria-label="Admin"] a')
+      expect(links.map(link => link.find('svg').attributes('aria-hidden'))).toEqual(links.map(() => 'true'))
+      for (const link of links) {
+        expect(link.classes()).toEqual(expect.arrayContaining(['cwa:outline-transparent', 'cwa:focus-visible:outline-2', 'cwa:focus-visible:outline-accent-fg', 'cwa:pointer-coarse:min-h-hit', 'cwa:pointer-coarse:min-w-hit']))
+        expect(link.classes()).not.toContain('cwa:outline-none')
+      }
+      expect(wrapper.get('nav[aria-label="Admin"] ul').classes()).toContain('cwa:pointer-coarse:gap-x-2')
+    })
+
+    test('on an admin page the bar is one row, so the links take the room between View site and the menu and never sit over them', async () => {
+      mockCwa()
+      const wrapper = await mountAdminBar()
+      const centre = wrapper.get('[data-testid="header-centre"]')
+      expect(centre.classes()).toEqual(expect.arrayContaining(['cwa:flex', 'cwa:flex-1', 'cwa:min-w-0']))
+      expect(centre.classes()).not.toContain('cwa:sm:absolute')
+    })
+
+    test('a page of the site keeps its centred page settings', () => {
+      mockCwa()
+      expect(mountHeader().get('[data-testid="header-centre"]').classes()).toContain('cwa:sm:absolute')
+    })
+
+    test('below sm on an admin page the links and the menu give way to the bottom bar', async () => {
+      mockCwa()
+      const wrapper = await mountAdminBar()
+      expect(wrapper.get('[data-testid="header-centre"]').classes()).toContain('cwa:max-sm:hidden')
+      expect(wrapper.get('.menu-stub').element.parentElement!.classList).toContain('cwa:max-sm:hidden')
+    })
+
+    test('a page of the site keeps the menu at every width, as the way into the admin', () => {
+      mockCwa()
+      const wrapper = mountHeader()
+      expect(wrapper.get('.menu-stub').element.parentElement!.classList).not.toContain('cwa:max-sm:hidden')
+    })
+
+    test('an error page keeps the menu at every width, where no bottom bar shows', () => {
+      errorRef.value = { statusCode: 404 }
+      mockCwa()
+      const wrapper = mountHeader()
+      expect(wrapper.get('.menu-stub').element.parentElement!.classList).not.toContain('cwa:max-sm:hidden')
+      expect(wrapper.get('[data-testid="header-centre"]').classes()).not.toContain('cwa:max-sm:hidden')
+    })
+  })
+
+  describe('the quick links that do not fit (#518)', () => {
+    const items = (wrapper: ReturnType<typeof mountHeader>) => wrapper.findAll('[data-top-bar-id]')
+    const shownLabels = (wrapper: ReturnType<typeof mountHeader>) => items(wrapper).filter(item => !(item.element as HTMLElement).hidden).map(item => item.find('.cwa\\:sr-only').text())
+    const hiddenLabels = (wrapper: ReturnType<typeof mountHeader>) => items(wrapper).filter(item => (item.element as HTMLElement).hidden).map(item => item.find('.cwa\\:sr-only').text())
+    const more = (wrapper: ReturnType<typeof mountHeader>) => wrapper.findComponent({ name: 'CwaUiMenu' })
+
+    async function mountAdminBar(path = '/_cwa/layouts') {
+      mockRouteMeta.cwa = { admin: true }
+      mockRoute.fullPath = path
+      mockRoute.path = path
+      const wrapper = mountHeader()
+      await flushPromises()
+      return wrapper
+    }
+
+    test('when every link fits, all show and there is no More', async () => {
+      fitState.available = 250
+      mockCwa()
+      const wrapper = await mountAdminBar()
+      expect(shownLabels(wrapper)).toEqual(['Layouts', 'Pages', 'Data', 'Routes', 'Users'])
+      expect(more(wrapper).exists()).toBe(false)
+      expect(wrapper.find('[aria-label="More quick links"]').exists()).toBe(false)
+    })
+
+    test('the links that do not fit are hidden, so Tab skips them, and More quick links lists exactly those in order', async () => {
+      fitState.available = 249
+      mockCwa()
+      const wrapper = await mountAdminBar()
+      expect(shownLabels(wrapper)).toEqual(['Layouts', 'Pages', 'Data', 'Routes'])
+      expect(hiddenLabels(wrapper)).toEqual(['Users'])
+      fitState.available = 170
+      FakeResizeObserver.all.at(-1)!.callback()
+      await flushPromises()
+      expect(shownLabels(wrapper)).toEqual(['Layouts', 'Pages'])
+      const menu = more(wrapper)
+      expect(menu.props('label')).toBe('More quick links')
+      expect(menu.props('items').map((item: { label: string }) => item.label)).toEqual(['Data', 'Routes', 'Users'])
+      const trigger = menu.get('button')
+      expect(trigger.attributes('aria-label')).toBe('More quick links')
+      expect(trigger.get('svg').attributes('aria-hidden')).toBe('true')
+      expect(trigger.classes()).toEqual(expect.arrayContaining(['cwa:outline-transparent', 'cwa:focus-visible:outline-2', 'cwa:pointer-coarse:min-h-hit', 'cwa:pointer-coarse:min-w-hit']))
+      menu.props('items')[1].onSelect()
+      expect(pushMock).toHaveBeenCalledWith('/_cwa/routes')
+    })
+
+    test('the current area takes the last place that shows, never the More menu', async () => {
+      fitState.available = 170
+      mockCwa()
+      const wrapper = await mountAdminBar('/_cwa/users/some-user')
+      expect(shownLabels(wrapper)).toEqual(['Layouts', 'Users'])
+      expect(more(wrapper).props('items').map((item: { label: string }) => item.label)).toEqual(['Pages', 'Data', 'Routes'])
+    })
+
+    test('measures again when the bar or a link is resized, keeping the width of a link while it is hidden', async () => {
+      fitState.available = 120
+      mockCwa()
+      const wrapper = await mountAdminBar()
+      expect(shownLabels(wrapper)).toEqual(['Layouts'])
+      const observer = FakeResizeObserver.all.at(-1)!
+      const list = wrapper.get('nav[aria-label="Admin"] ul').element
+      expect(observer.observed).toContain(list)
+      expect(observer.observed).toEqual(expect.arrayContaining(items(wrapper).map(item => item.element)))
+      fitState.available = 200
+      observer.callback()
+      await flushPromises()
+      expect(shownLabels(wrapper)).toEqual(['Layouts', 'Pages', 'Data'])
+      fitState.available = 250
+      FakeResizeObserver.all.at(-1)!.callback()
+      await flushPromises()
+      expect(shownLabels(wrapper)).toEqual(['Layouts', 'Pages', 'Data', 'Routes', 'Users'])
+      expect(more(wrapper).exists()).toBe(false)
+    })
+
+    test('measures again when the links change', async () => {
+      fitState.available = 170
+      const { cwa } = mockCwa({ user: { '@id': '/_/users/admin', 'adminPreferences': { topBar: ['pages'] } } })
+      const wrapper = await mountAdminBar()
+      expect(shownLabels(wrapper)).toEqual(['Pages'])
+      fitState.widths = { routes: 200 }
+      cwa.auth.user!.adminPreferences = { topBar: ['pages', 'routes'] }
+      await flushPromises()
+      expect(shownLabels(wrapper)).toEqual(['Pages'])
+      expect(more(wrapper).props('items').map((item: { label: string }) => item.label)).toEqual(['Routes'])
     })
   })
 
@@ -808,16 +1083,20 @@ describe('the header for the narrow admin roles (bundle #611)', () => {
 
   const adminLinks = (wrapper: ReturnType<typeof mountHeader>) => wrapper.findAll('[data-testid="header-centre"] a .cwa\\:sr-only').map(label => label.text())
 
-  test('on an admin page a content admin who is not a user admin gets the content areas and no Users', () => {
+  test('on an admin page a content admin who is not a user admin gets the content areas and no Users', async () => {
     mockRouteMeta.cwa = { admin: true }
     mockCwa({ roles: ['ROLE_CMS_ADMIN', 'ROLE_USER'] })
-    expect(adminLinks(mountHeader())).toEqual(['Back to the site', 'Layouts', 'Pages', 'Data', 'Routes'])
+    const wrapper = mountHeader()
+    await flushPromises()
+    expect(adminLinks(wrapper)).toEqual(['Dashboard', 'Layouts', 'Pages', 'Data', 'Routes'])
   })
 
-  test('on an admin page a user admin who cannot edit content gets Users alone', () => {
+  test('on an admin page a user admin who cannot edit content gets Users alone', async () => {
     mockRouteMeta.cwa = { admin: true }
     mockCwa({ roles: ['ROLE_USER_ADMIN', 'ROLE_USER'] })
-    expect(adminLinks(mountHeader())).toEqual(['Back to the site', 'Users'])
+    const wrapper = mountHeader()
+    await flushPromises()
+    expect(adminLinks(wrapper)).toEqual(['Dashboard', 'Users'])
   })
 
   test('on a page of the site a user admin who cannot edit content gets no Edit and no page settings', () => {

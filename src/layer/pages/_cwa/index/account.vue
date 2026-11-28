@@ -197,6 +197,7 @@
       </CwaUiFormSection>
       <CwaUiFormSection
         v-if="'adminPreferences' in account"
+        id="quick-links"
         title="Admin top bar"
         description="Choose and order the shortcuts in your top bar. Only you see this choice."
       >

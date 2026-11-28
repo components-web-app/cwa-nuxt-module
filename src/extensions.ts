@@ -236,13 +236,8 @@ export function adminShellRoles(extensions: CwaExtension[]): string[] {
 
 export function addExtensionAdminPages(pages: NuxtPage[], extensions: CwaExtension[], areaFile: string, listFiles: PageDataListFiles) {
   const parent = pages.find(page => page.path === '/_cwa')
-  const extensionsPage = parent?.children?.find(page => page.path === 'extensions')
-  if (extensionsPage) {
-    extensionsPage.meta = { ...extensionsPage.meta, cwaAdminRole: [...new Set([DEFAULT_ADMIN_ROLE, ...extensionPageRoles(extensions)])] }
-  }
-  const accountPage = parent?.children?.find(page => page.path === 'account')
-  if (accountPage) {
-    accountPage.meta = { ...accountPage.meta, cwaAdminRole: adminShellRoles(extensions) }
+  for (const shell of parent?.children?.filter(page => page.path === '' || page.path === 'account') ?? []) {
+    shell.meta = { ...shell.meta, cwaAdminRole: adminShellRoles(extensions) }
   }
   const withPages = extensions.filter(extension => areaPages(extension).length)
   if (!withPages.length) {

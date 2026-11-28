@@ -328,6 +328,14 @@
               >{{ apiVersionRef }}</span>
             </dd>
           </dl>
+          <p class="cwa:m-0 cwa:mt-3 cwa:text-control">
+            <a
+              href="https://cwa.rocks"
+              target="_blank"
+              rel="noopener"
+              :class="textLink"
+            >About the CWA</a>
+          </p>
         </CwaUiFormSection>
       </template>
     </FormGroup>
