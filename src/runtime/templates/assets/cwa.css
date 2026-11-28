@@ -2956,8 +2956,8 @@
   .cwa\:max-sm\:pb-\[calc\(0\.75rem\+env\(safe-area-inset-bottom\)\)\] {
     padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
   }
-  .cwa\:max-sm\:pb-\[calc\(var\(--cwa-spacing-hit\)\+1px\+env\(safe-area-inset-bottom\)\)\] {
-    padding-bottom: calc(var(--cwa-spacing-hit) + 1px + env(safe-area-inset-bottom));
+  .cwa\:max-sm\:pb-\[calc\(3\.5rem\+1px\+env\(safe-area-inset-bottom\)\)\] {
+    padding-bottom: calc(3.5rem + 1px + env(safe-area-inset-bottom));
   }
   :where(:is(.cwa-fullscreen-dialog)) .cwa\:max-sm\:in-\[\.cwa-fullscreen-dialog\]\:top-26 {
     top: calc(var(--cwa-spacing) * 26);

@@ -28,6 +28,6 @@ describe('the /_cwa wrapper (#518)', () => {
   test('below sm, leaves room at the bottom for the bar and the home indicator, so no content hides behind it', () => {
     const wrapper = mountWrapper()
 
-    expect(wrapper.classes()).toContain('cwa:max-sm:pb-[calc(var(--cwa-spacing-hit)+1px+env(safe-area-inset-bottom))]')
+    expect(wrapper.classes()).toContain('cwa:max-sm:pb-[calc(3.5rem+1px+env(safe-area-inset-bottom))]')
   })
 })
