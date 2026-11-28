@@ -102,7 +102,7 @@ describe('BottomBar (#518)', () => {
     }
   })
 
-  test('shows Dashboard first, then the first three quick links, each a 44px target with a hidden icon over a short truncated label', async () => {
+  test('shows Dashboard first, then the first three quick links, each a 56px target, roomier than a 44px hit area as a native tab bar is, with a hidden icon over a label that truncates when long', async () => {
     state.areas = [shop]
     mockCwa({ topBar: ['ext:shop', 'pages', 'routes', 'users'] })
     const wrapper = await mountBar()
@@ -110,7 +110,7 @@ describe('BottomBar (#518)', () => {
     expect(tabLabels(wrapper)).toEqual(['Dashboard', 'Shop', 'Pages', 'Routes', 'More'])
     expect(tabs(wrapper).slice(0, 4).map(tab => tab.attributes('href'))).toEqual(['/_cwa', JSON.stringify({ name: '_cwa-shop' }), '/_cwa/pages', '/_cwa/routes'])
     for (const tab of tabs(wrapper)) {
-      expect(tab.classes()).toContain('cwa:h-hit')
+      expect(tab.classes()).toContain('cwa:h-14')
       expect(tab.find('svg').exists()).toBe(true)
       expect(tab.find('svg').element.closest('[aria-hidden="true"]')).not.toBeNull()
       expect(tab.find('[data-testid="admin-bottom-bar-label"]').classes()).toContain('cwa:truncate')

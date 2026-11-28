@@ -1,5 +1,5 @@
 <template>
-  <div class="cwa:flex cwa:flex-col cwa:h-full cwa:max-sm:pb-[calc(var(--cwa-spacing-hit)+1px+env(safe-area-inset-bottom))]">
+  <div class="cwa:flex cwa:flex-col cwa:h-full cwa:max-sm:pb-[calc(3.5rem+1px+env(safe-area-inset-bottom))]">
     <div class="cwa:bg-stone-800 cwa:text-white cwa:grow">
       <NuxtPage />
     </div>

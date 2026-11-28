@@ -17,14 +17,6 @@
             <CwaUiButton
               label="View site"
               :icon="EyeIcon"
-              icon-only
-              class="cwa:sm:hidden"
-              @click="viewSite"
-            />
-            <CwaUiButton
-              label="View site"
-              :icon="EyeIcon"
-              class="cwa:max-sm:hidden"
               @click="viewSite"
             />
           </template>
@@ -289,7 +281,7 @@ const activeId = computed(() => currentArea(topBar.value.map(item => ({ id: item
 
 const onDashboard = computed(() => route.path === '/_cwa')
 
-const linkClass = 'cwa:inline-flex cwa:items-center cwa:justify-center cwa:pointer-coarse:min-h-hit cwa:pointer-coarse:min-w-hit cwa:hover:text-white cwa:aria-[current=page]:text-white cwa:transition-colors cwa:duration-(--cwa-duration-fast) cwa:motion-reduce:transition-none cwa:outline-1 cwa:outline-transparent cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-accent-fg'
+const linkClass = 'cwa:flex cwa:items-center cwa:justify-center cwa:pointer-coarse:min-h-hit cwa:pointer-coarse:min-w-hit cwa:hover:text-white cwa:aria-[current=page]:text-white cwa:transition-colors cwa:duration-(--cwa-duration-fast) cwa:motion-reduce:transition-none cwa:outline-1 cwa:outline-transparent cwa:focus-visible:outline-2 cwa:focus-visible:outline-offset-2 cwa:focus-visible:outline-accent-fg'
 
 const centreClass = computed(() => {
   if (!adminChrome.value) {

@@ -4,6 +4,7 @@ import { defineComponent, h, nextTick, ref } from 'vue'
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { axe } from '../../../../../../test/utils/axe'
 import { drag, onPhone, stubVisualViewport } from '../../../../../../test/utils/sheet-media'
+import { shownFill } from '../../../../../../test/utils/kit-css'
 import BottomSheet from './BottomSheet.vue'
 
 enableAutoUnmount(afterEach)
@@ -305,6 +306,12 @@ describe('BottomSheet (#461)', () => {
 })
 
 describe('BottomSheet swiped down (#461)', () => {
+  test('its handle is drawn in a colour the kit defines, so a phone shows it can be dragged down (#518)', async () => {
+    await openSheet()
+
+    expect(shownFill(part('handle'))).toBe('fg-muted')
+  })
+
   test('its handle and title row take the drag from the browser, and the sheet follows the finger down but never up', async () => {
     const { sheet } = await openSheet()
 

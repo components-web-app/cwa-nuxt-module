@@ -480,25 +480,23 @@ describe('Header', () => {
   describe('View site (#518)', () => {
     const viewSite = (wrapper: ReturnType<typeof mountHeader>) => wrapper.findAllComponents({ name: 'CwaUiButton' }).filter(button => button.props('label') === 'View site')
 
-    test('on an admin page View site sits where Edit sits on the site, a labelled button from sm and an icon below it, and goes back to the site page the admin was on', async () => {
+    test('on an admin page View site sits where Edit sits on the site, a labelled button at every width since a phone\'s header has nothing else, and goes back to the site page the admin was on', async () => {
       mockCwa()
       mockRoute.fullPath = '/blog/first?tag=news'
       const wrapper = mountHeader()
       mockRouteMeta.cwa = { admin: true }
       mockRoute.fullPath = '/_cwa/pages'
       await flushPromises()
-      const [icon, labelled] = viewSite(wrapper)
-      expect(icon!.props('iconOnly')).toBe(true)
-      expect(icon!.props('icon')).toBeTruthy()
-      expect(icon!.classes()).toContain('cwa:sm:hidden')
-      expect(labelled!.props('iconOnly')).toBe(false)
-      expect(labelled!.classes()).toContain('cwa:max-sm:hidden')
-      expect(wrapper.get('[data-testid="header-centre"]').element.contains(icon!.element)).toBe(false)
-      expect(icon!.element.compareDocumentPosition(wrapper.get('[data-testid="header-centre"]').element) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-      await labelled!.trigger('click')
+      const buttons = viewSite(wrapper)
+      expect(buttons).toHaveLength(1)
+      const [button] = buttons
+      expect(button!.props('iconOnly')).toBe(false)
+      expect(button!.props('icon')).toBeTruthy()
+      expect(button!.classes().filter(name => /sm:hidden/.test(name))).toEqual([])
+      expect(wrapper.get('[data-testid="header-centre"]').element.contains(button!.element)).toBe(false)
+      expect(button!.element.compareDocumentPosition(wrapper.get('[data-testid="header-centre"]').element) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+      await button!.trigger('click')
       expect(pushMock).toHaveBeenCalledWith('/blog/first?tag=news')
-      await icon!.trigger('click')
-      expect(pushMock).toHaveBeenCalledTimes(2)
       expect(wrapper.findAll('button').map(button => button.text())).not.toContain('Edit')
     })
 
@@ -512,21 +510,21 @@ describe('Header', () => {
       errorRef.value = null
       mockRouteMeta.cwa = { admin: true }
       mockRoute.fullPath = '/_cwa/pages'
-      await viewSite(mountHeader())[1]!.trigger('click')
+      await viewSite(mountHeader())[0]!.trigger('click')
       expect(pushMock).toHaveBeenCalledWith('/about')
     })
 
     test('goes to the home page when no site page has been seen', async () => {
       mockRouteMeta.cwa = { admin: true }
       mockCwa()
-      await viewSite(mountHeader())[1]!.trigger('click')
+      await viewSite(mountHeader())[0]!.trigger('click')
       expect(pushMock).toHaveBeenCalledWith('/')
     })
 
     test('shows on an error page, where Edit does not', () => {
       errorRef.value = { statusCode: 500 }
       mockCwa()
-      expect(viewSite(mountHeader())).toHaveLength(2)
+      expect(viewSite(mountHeader())).toHaveLength(1)
     })
 
     test('a page of the site keeps Edit and has no View site', () => {

@@ -2346,3 +2346,41 @@ test('79. moving the page on screen to another parent page moves its route under
   const old = await t.api.get(`/_/routes/${paths.post}`)
   assert(old.redirectPath === moved, `The old path redirects to ${old.redirectPath}`)
 })
+
+test('80. the Dashboard\'s top bar centres its links on the bar, and on a phone shows View site with its label and a bottom bar of 56px tabs (#518)', async ({ cwa: t }) => {
+  const { page, base, settle } = t
+  await page.goto(`${base}/_cwa`)
+  await page.getByRole('heading', { name: 'Dashboard', exact: true }).waitFor()
+  await page.getByRole('link', { name: 'Data', exact: true }).first().waitFor()
+  await settle()
+  const centres = await page.evaluate(() => {
+    const centre = (element) => {
+      const rect = element.getBoundingClientRect()
+      return rect.top + rect.height / 2
+    }
+    const nav = document.querySelector('nav[aria-label="Admin"]')
+    return { nav: centre(nav), links: [...nav.querySelectorAll('a')].filter(link => link.offsetParent).map(link => [link.getAttribute('aria-label') || link.textContent.trim(), centre(link)]) }
+  })
+  assert(centres.links.length > 0, 'No top bar links')
+  for (const [name, linkCentre] of centres.links) {
+    assert(Math.abs(linkCentre - centres.nav) <= 1, `${name} is centred at ${linkCentre}, the bar at ${centres.nav}`)
+  }
+
+  await page.setViewportSize({ width: 390, height: 844 })
+  await settle()
+  const viewSite = page.getByRole('button', { name: 'View site', exact: true })
+  assert(await viewSite.count() === 1, `${await viewSite.count()} View site buttons`)
+  assert((await viewSite.innerText()).trim() === 'View site', `View site reads ${await viewSite.innerText()}`)
+  const tabHeights = await page.evaluate(() => [...document.querySelectorAll('nav[aria-label="Admin"] li > a, nav[aria-label="Admin"] li > button')].filter(tab => tab.offsetParent).map(tab => tab.getBoundingClientRect().height))
+  assert(tabHeights.length > 0 && tabHeights.every(height => height === 56), `Bottom bar tabs are ${tabHeights.join(', ')}px`)
+  await page.setViewportSize({ width: 390, height: 480 })
+  await page.getByRole('button', { name: 'Sign out', exact: true }).scrollIntoViewIfNeeded()
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight))
+  await settle()
+  const gap = await page.evaluate(() => {
+    const bar = [...document.querySelectorAll('nav[aria-label="Admin"]')].find(nav => getComputedStyle(nav).position === 'fixed' && getComputedStyle(nav).display !== 'none')
+    const content = [...bar.parentElement.querySelectorAll('*')].filter(element => !bar.contains(element) && getComputedStyle(element).position !== 'fixed' && element.getClientRects().length && !element.closest('nuxt-devtools-frame, #nuxt-devtools-container'))
+    return bar.getBoundingClientRect().top - Math.max(...content.map(element => element.getBoundingClientRect().bottom))
+  })
+  assert(gap >= 0, `The end of the Dashboard is ${-gap}px under the bottom bar`)
+})
